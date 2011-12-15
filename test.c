@@ -16,14 +16,14 @@ static void EXPECTEQfn(long x, long val, int line) {
 
 #define EXPECTEQ(x, y) EXPECTEQfn((x), (y), __LINE__)
 
-void
+static void
 testNumber(const char *str, long val)
 {
     TokenType tok;
     LexStream L;
     int t;
     int c;
-    printf("testing %s...", str);
+    printf("testing number[%s]...", str);
     strToLex(&L, str);
     t = getToken(&L, &tok);
     EXPECTEQ(t, T_NUM);
@@ -33,9 +33,33 @@ testNumber(const char *str, long val)
     printf("passed\n");
 }
 
+static void
+testTokenStream(const char *str, int *tokens, int numtokens)
+{
+    int i;
+    LexStream L;
+    TokenType tok;
+    int t;
+
+    printf("testing tokens [%s]...", str);
+    strToLex(&L, str);
+    for (i = 0; i < numtokens; i++) {
+        t = getToken(&L, &tok);
+        EXPECTEQ(t, tokens[i]);
+    }
+    printf("passed\n");
+}
+
+#define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
+static int tokens0[] = { T_NUM, '+', T_NUM, T_EOF };
+
 int
 main()
 {
+    testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
+    testTokenStream("'' a comment line\n $1 + 1", tokens0, N_ELEM(tokens0));
+    testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
+
     testNumber("0", 0);
     testNumber("00", 0);
     testNumber("007", 7);

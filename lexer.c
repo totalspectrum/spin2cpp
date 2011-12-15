@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "lexer.h"
 
+int lineCounter = 1;
 
 /* functions for handling string streams */
 static int 
@@ -77,15 +78,49 @@ parseNumber(LexStream *L, unsigned int base, unsigned long *num)
     return T_NUM;
 }
 
+//
+// skip over comments and spaces
+// return first non-comment non-space character
+//
+int
+skipSpace(LexStream *L)
+{
+    int c;
+
+again:
+    c = lexgetc(L);
+    while (c == ' ' || c == '\t')
+        c = lexgetc(L);
+    if (c == '\'') {
+        do {
+            c = lexgetc(L);
+        } while (c != '\n' && c != T_EOF);
+    }
+    if (c == '{') {
+        do {
+            c = lexgetc(L);
+            if (c == '\n')
+                lineCounter++;
+        } while (c != '}' && c != T_EOF);
+        if (c == T_EOF)
+            return c;
+        goto again;
+    }
+    if (c == '\n') {
+        lineCounter++;
+        goto again;
+    }
+    return c;
+}
+
 int
 getToken(LexStream *L, TokenType *tok)
 {
 //    int base = 10;
     int c;
 
-    c = lexgetc(L);
-    while (c == ' ' || c == '\t')
-        c = lexgetc(L);
+    c = skipSpace(L);
+
     if (isdigit(c)) {
         lexungetc(L,c);
         c = parseNumber(L, 10, &tok->val);
