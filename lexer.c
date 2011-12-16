@@ -40,11 +40,31 @@ strungetc(LexStream *L, int c)
     }
 }
 
+/* open a stream from a string s */
 void strToLex(LexStream *L, const char *s)
 {
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
     L->ungetcf = strungetc;
+}
+
+/*
+ * utility functions
+ */
+int
+isIdentifierStart(int c)
+{
+    if (isalpha(c))
+        return 1;
+    if (c == '_')
+        return 1;
+    return 0;
+}
+
+int
+isIdentifierChar(int c)
+{
+    return isIdentifierStart(c) || isdigit(c);
 }
 
 /*
@@ -76,6 +96,17 @@ parseNumber(LexStream *L, unsigned int base, unsigned long *num)
     lexungetc(L, c);
     *num = uval;
     return T_NUM;
+}
+
+static int
+parseIdentifier(LexStream *L)
+{
+    int c;
+    do {
+        c = lexgetc(L);
+    } while (isIdentifierChar(c));
+    lexungetc(L, c);
+    return T_IDENTIFIER;
 }
 
 //
@@ -140,6 +171,9 @@ getToken(LexStream *L, TokenType *tok)
             lexungetc(L, c);
             c = parseNumber(L, 2, &tok->val);
         }
+    } else if (isIdentifierStart(c)) {
+        lexungetc(L, c);
+        c = parseIdentifier(L);
     }
 
     return c;

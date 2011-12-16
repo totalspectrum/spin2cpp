@@ -41,7 +41,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     TokenType tok;
     int t;
 
-    printf("testing tokens [%s]...", str);
+    printf("testing tokens [%s]...", str); fflush(stdout);
     strToLex(&L, str);
     for (i = 0; i < numtokens; i++) {
         t = getToken(&L, &tok);
@@ -52,6 +52,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
 
 #define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
 static int tokens0[] = { T_NUM, '+', T_NUM, T_EOF };
+static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOF };
 
 int
 main()
@@ -60,6 +61,8 @@ main()
     testTokenStream("'' a comment line\n $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{{a nested comment}} $1 + 1", tokens0, N_ELEM(tokens0));
+    testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
+    testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
 
     testNumber("0", 0);
     testNumber("00", 0);

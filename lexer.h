@@ -27,6 +27,7 @@ typedef struct {
  * defines for tokens
  */
 #define T_NUM 256
+#define T_IDENTIFIER 257
 #define T_EOF (-1)
 
 /*
