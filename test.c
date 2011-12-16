@@ -59,6 +59,7 @@ main()
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("'' a comment line\n $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
+    testTokenStream("{{a nested comment}} $1 + 1", tokens0, N_ELEM(tokens0));
 
     testNumber("0", 0);
     testNumber("00", 0);

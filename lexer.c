@@ -86,6 +86,7 @@ int
 skipSpace(LexStream *L)
 {
     int c;
+    int commentNest;
 
 again:
     c = lexgetc(L);
@@ -97,11 +98,16 @@ again:
         } while (c != '\n' && c != T_EOF);
     }
     if (c == '{') {
+        commentNest = 1;
         do {
             c = lexgetc(L);
             if (c == '\n')
                 lineCounter++;
-        } while (c != '}' && c != T_EOF);
+            if (c == '{')
+                commentNest++;
+            else if (c == '}')
+                --commentNest;
+        } while (commentNest > 0 && c != T_EOF);
         if (c == T_EOF)
             return c;
         goto again;
