@@ -1,6 +1,8 @@
 #ifndef LEX_H
 #define LEX_H
 
+#include "spin.tab.h"
+
 /*
  * input stream; could be either a string or a file
  */
@@ -19,16 +21,8 @@ struct lexstream {
 /*
  * token struct
  */
-typedef struct {
-    unsigned long val;
-} TokenType;
+typedef YYSTYPE TokenType;
 
-/*
- * defines for tokens
- */
-#define T_NUM 256
-#define T_IDENTIFIER 257
-#define T_EOF (-1)
 
 /*
  * function to open a lexer stream from a string

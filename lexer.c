@@ -160,16 +160,16 @@ getToken(LexStream *L, TokenType *tok)
 
     if (isdigit(c)) {
         lexungetc(L,c);
-        c = parseNumber(L, 10, &tok->val);
+        c = parseNumber(L, 10, &tok->ival);
     } else if (c == '$') {
-        c = parseNumber(L, 16, &tok->val);
+        c = parseNumber(L, 16, &tok->ival);
     } else if (c == '%') {
         c = lexgetc(L);
         if (c == '%') {
-            c = parseNumber(L, 4, &tok->val);
+            c = parseNumber(L, 4, &tok->ival);
         } else {
             lexungetc(L, c);
-            c = parseNumber(L, 2, &tok->val);
+            c = parseNumber(L, 2, &tok->ival);
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);

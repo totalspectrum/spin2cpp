@@ -29,7 +29,7 @@ testNumber(const char *str, long val)
     EXPECTEQ(t, T_NUM);
     c = lexgetc(&L);
     EXPECTEQ(c, T_EOF);
-    EXPECTEQ(tok.val, val);
+    EXPECTEQ(tok.ival, val);
     printf("passed\n");
 }
 
