@@ -36,6 +36,7 @@
 /* other stuff */
 %token T_INDENT
 %token T_OUTDENT
+%token T_EOLN
 %token T_EOF
 
 %%
@@ -51,7 +52,7 @@ topelement:
 
 conblock:
   condecl
-  | condecl conblock
+  | condecl T_EOLN conblock
   | condecl ',' conblock
   ;
 
@@ -62,6 +63,11 @@ condecl:
   ;
 
 datblock:
+  datline
+  | datline T_EOLN datline
+  ;
+
+datline:
   optsymbol sizespec datalist
   ;
 

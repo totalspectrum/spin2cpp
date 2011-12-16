@@ -164,6 +164,8 @@ again:
         do {
             c = lexgetc(L);
         } while (c != '\n' && c != T_EOF);
+        if (c == '\n')
+            goto again;
     }
     if (c == '{') {
         commentNest = 1;
@@ -182,7 +184,7 @@ again:
     }
     if (c == '\n') {
         L->lineCounter++;
-        goto again;
+        return T_EOLN;
     }
     return c;
 }
