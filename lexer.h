@@ -13,6 +13,10 @@ struct lexstream {
     void *arg;  /* original value of pointer */
     int (*getcf)(LexStream *);
     void (*ungetcf)(LexStream *, int c);
+
+    /* input state */
+    int lineCounter;
+    const char *fileName;
 };
 
 #define lexgetc(p) ((p)->getcf((p)))
@@ -23,6 +27,10 @@ struct lexstream {
  */
 typedef YYSTYPE TokenType;
 
+/*
+ * function to initialize the lexer
+ */
+void initLexer(void);
 
 /*
  * function to open a lexer stream from a string

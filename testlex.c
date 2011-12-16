@@ -68,16 +68,19 @@ testTokenStream(const char *str, int *tokens, int numtokens)
 #define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
 static int tokens0[] = { T_NUM, '+', T_NUM, T_EOF };
 static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOF };
-
+static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOF };
 int
 main()
 {
+    initLexer();
+
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("'' a comment line\n $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{{a nested comment}} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
     testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
+    testTokenStream("con CON con99 Con 99", tokens2, N_ELEM(tokens2));
 
     testNumber("0", 0);
     testNumber("00", 0);

@@ -29,6 +29,10 @@
 %token T_PRI
 %token T_OBJ
 
+%token T_BYTE
+%token T_WORD
+%token T_LONG
+
 /* other stuff */
 %token T_INDENT
 %token T_OUTDENT
@@ -42,16 +46,58 @@ input:
 
 topelement:
   T_CON conblock
+  | T_DAT datblock
 ;
 
 conblock:
   condecl
   | condecl conblock
+  | condecl ',' conblock
   ;
 
 condecl:
   T_IDENTIFIER '=' T_NUM
+  | T_IDENTIFIER
+  | '#' T_NUM
   ;
+
+datblock:
+  optsymbol sizespec datalist
+  ;
+
+datalist:
+  dataelem
+  | datalist ',' dataelem
+  ;
+
+dataelem:
+  optsize expr optcount
+;
+
+optsize:
+  | sizespec
+  ;
+
+optcount:
+  | '[' expr ']'
+  ;
+
+optsymbol:
+  | T_IDENTIFIER
+  ;
+
+expr:
+  T_NUM
+  | T_IDENTIFIER
+  | '(' expr ')'
+  ;
+
+sizespec:
+  T_BYTE
+  | T_WORD
+  | T_LONG
+  ;
+
 %%
 
 void

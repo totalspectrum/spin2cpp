@@ -8,9 +8,11 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdint.h>
+#include "symbol.h"
 #include "lexer.h"
 
-int lineCounter = 1;
+SymbolTable reservedWords;
 
 /* functions for handling string streams */
 static int 
@@ -47,6 +49,8 @@ void strToLex(LexStream *L, const char *s)
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
     L->ungetcf = strungetc;
+    L->lineCounter = 1;
+    L->fileName = "<string>";
 }
 
 /*
@@ -122,6 +126,8 @@ parseIdentifier(LexStream *L, char **deststr)
     char *place = NULL;
     size_t space = 0;
     size_t len = 0;
+    Symbol *sym;
+
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
         addchar(c, &place, &space, &len);
@@ -129,6 +135,13 @@ parseIdentifier(LexStream *L, char **deststr)
     }
     addchar('\0', &place, &space, &len);
     lexungetc(L, c);
+
+    /* check for reserved words */
+    sym = FindSymbol(&reservedWords, place);
+    if (sym != NULL) {
+        free(place);
+        return INTVAL(sym);
+    }
     *deststr = place;
     return T_IDENTIFIER;
 }
@@ -157,7 +170,7 @@ again:
         do {
             c = lexgetc(L);
             if (c == '\n')
-                lineCounter++;
+                L->lineCounter++;
             if (c == '{')
                 commentNest++;
             else if (c == '}')
@@ -168,7 +181,7 @@ again:
         goto again;
     }
     if (c == '\n') {
-        lineCounter++;
+        L->lineCounter++;
         goto again;
     }
     return c;
@@ -201,4 +214,37 @@ getToken(LexStream *L, TokenType *tok)
     }
 
     return c;
+}
+
+
+/*
+ * function to initialize the lexer
+ */
+struct reservedword {
+    const char *name;
+    intptr_t val;
+} init_words[] = {
+    { "con", T_CON },
+    { "dat", T_DAT },
+    { "var", T_VAR },
+    { "pub", T_PUB },
+    { "pri", T_PRI },
+    { "obj", T_OBJ },
+
+    { "byte", T_BYTE },
+    { "word", T_WORD },
+    { "long", T_LONG },
+
+};
+
+#define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
+
+void
+initLexer(void)
+{
+    int i;
+
+    for (i = 0; i < N_ELEMENTS(init_words); i++) {
+        AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
+    }
 }
