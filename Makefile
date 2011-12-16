@@ -22,4 +22,4 @@ spin.tab.c spin.tab.h: spin.y
 lexer.c: spin.tab.h
 
 clean:
-	$(RM) $(PROGS) *.o
+	$(RM) $(PROGS) *.o spin.tab.c spin.tab.h

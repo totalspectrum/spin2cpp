@@ -7,6 +7,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "lexer.h"
 
 int lineCounter = 1;
@@ -98,14 +99,37 @@ parseNumber(LexStream *L, unsigned int base, unsigned long *num)
     return T_NUM;
 }
 
+/* dynamically grow a string */
+#define INCSTR 16
+
+static void
+addchar(int c, char **place, size_t *space, size_t *len)
+{
+    if (*len + 1 > *space) {
+        *space += 16;
+        *place = realloc(*place, *space);
+    }
+    assert(*place != NULL);
+    (*place)[*len] = c;
+    *len += 1;
+}
+
+/* parse an identifier */
 static int
-parseIdentifier(LexStream *L)
+parseIdentifier(LexStream *L, char **deststr)
 {
     int c;
-    do {
+    char *place = NULL;
+    size_t space = 0;
+    size_t len = 0;
+    c = lexgetc(L);
+    while (isIdentifierChar(c)) {
+        addchar(c, &place, &space, &len);
         c = lexgetc(L);
-    } while (isIdentifierChar(c));
+    }
+    addchar('\0', &place, &space, &len);
     lexungetc(L, c);
+    *deststr = place;
     return T_IDENTIFIER;
 }
 
@@ -173,7 +197,7 @@ getToken(LexStream *L, TokenType *tok)
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
-        c = parseIdentifier(L);
+        c = parseIdentifier(L, &tok->string);
     }
 
     return c;

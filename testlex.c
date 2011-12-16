@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lexer.h"
 
 static void EXPECTEQfn(long x, long val, int line) {
@@ -31,6 +32,20 @@ testNumber(const char *str, long val)
     EXPECTEQ(c, T_EOF);
     EXPECTEQ(tok.ival, val);
     printf("passed\n");
+}
+
+static void
+testIdentifier(const char *str, const char *expect)
+{
+    LexStream L;
+    TokenType tok;
+    int t;
+
+    strToLex(&L, str);
+    t = getToken(&L, &tok);
+    EXPECTEQ(t, T_IDENTIFIER);
+    EXPECTEQ(0, strcmp(tok.string, expect));
+    printf("from [%s] read identifier [%s]\n", str, tok.string);
 }
 
 static void
@@ -77,6 +92,9 @@ main()
     testNumber("%11", 3);
     testNumber("%%31", 13);
     testNumber("80_000_000", 80000000);
+
+    testIdentifier("x99+8", "x99");
+    testIdentifier("_a_b", "_a_b");
     printf("all tests passed\n");
     return 0;
 }
