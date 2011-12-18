@@ -76,7 +76,7 @@ isIdentifierChar(int c)
  * actual parsing functions
  */
 static int
-parseNumber(LexStream *L, unsigned int base, unsigned long *num)
+parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 {
     unsigned long uval, digit;
     unsigned int c;
@@ -120,13 +120,14 @@ addchar(int c, char **place, size_t *space, size_t *len)
 
 /* parse an identifier */
 static int
-parseIdentifier(LexStream *L, char **deststr)
+parseIdentifier(LexStream *L, AST **ast_ptr)
 {
     int c;
     char *place = NULL;
     size_t space = 0;
     size_t len = 0;
     Symbol *sym;
+    AST *ast;
 
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
@@ -142,7 +143,10 @@ parseIdentifier(LexStream *L, char **deststr)
         free(place);
         return INTVAL(sym);
     }
-    *deststr = place;
+
+    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    ast->d.string = place;
+    *ast_ptr = ast;
     return T_IDENTIFIER;
 }
 
@@ -190,31 +194,36 @@ again:
 }
 
 int
-getToken(LexStream *L, TokenType *tok)
+getToken(LexStream *L, AST **ast_ptr)
 {
 //    int base = 10;
     int c;
+    AST *ast = NULL;
 
     c = skipSpace(L);
 
     if (isdigit(c)) {
         lexungetc(L,c);
-        c = parseNumber(L, 10, &tok->ival);
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 10, &ast->d.ival);
     } else if (c == '$') {
-        c = parseNumber(L, 16, &tok->ival);
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 16, &ast->d.ival);
     } else if (c == '%') {
+        ast = NewAST(AST_INTEGER, NULL, NULL);
         c = lexgetc(L);
         if (c == '%') {
-            c = parseNumber(L, 4, &tok->ival);
+            c = parseNumber(L, 4, &ast->d.ival);
         } else {
             lexungetc(L, c);
-            c = parseNumber(L, 2, &tok->ival);
+            c = parseNumber(L, 2, &ast->d.ival);
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
-        c = parseIdentifier(L, &tok->string);
+        c = parseIdentifier(L, &ast);
     }
 
+    *ast_ptr = ast;
     return c;
 }
 

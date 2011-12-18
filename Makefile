@@ -9,12 +9,12 @@ YACC = bison
 RM = rm -f
 
 PROGS = testlex
-LEXOBJS = lexer.o symbol.o
+LEXOBJS = lexer.o symbol.o ast.o
 OBJS = $(LEXOBJS) spin.tab.o
 
 all: $(PROGS)
 
-testlex: testlex.c lexer.o symbol.o
+testlex: testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 spin.tab.c spin.tab.h: spin.y

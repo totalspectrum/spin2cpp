@@ -18,19 +18,21 @@ static void EXPECTEQfn(long x, long val, int line) {
 #define EXPECTEQ(x, y) EXPECTEQfn((x), (y), __LINE__)
 
 static void
-testNumber(const char *str, long val)
+testNumber(const char *str, uint32_t val)
 {
-    TokenType tok;
+    AST *ast;
     LexStream L;
     int t;
     int c;
     printf("testing number[%s]...", str);
     strToLex(&L, str);
-    t = getToken(&L, &tok);
+    t = getToken(&L, &ast);
     EXPECTEQ(t, T_NUM);
     c = lexgetc(&L);
     EXPECTEQ(c, T_EOF);
-    EXPECTEQ(tok.ival, val);
+    assert(ast != NULL);
+    assert(ast->kind == AST_INTEGER);
+    EXPECTEQ(ast->d.ival, val);
     printf("passed\n");
 }
 
@@ -38,14 +40,16 @@ static void
 testIdentifier(const char *str, const char *expect)
 {
     LexStream L;
-    TokenType tok;
+    AST *ast;
     int t;
 
     strToLex(&L, str);
-    t = getToken(&L, &tok);
+    t = getToken(&L, &ast);
     EXPECTEQ(t, T_IDENTIFIER);
-    EXPECTEQ(0, strcmp(tok.string, expect));
-    printf("from [%s] read identifier [%s]\n", str, tok.string);
+    assert(ast != NULL);
+    assert(ast->kind == AST_IDENTIFIER);
+    EXPECTEQ(0, strcmp(ast->d.string, expect));
+    printf("from [%s] read identifier [%s]\n", str, ast->d.string);
 }
 
 static void
@@ -53,13 +57,13 @@ testTokenStream(const char *str, int *tokens, int numtokens)
 {
     int i;
     LexStream L;
-    TokenType tok;
+    AST *ast;
     int t;
 
     printf("testing tokens [%s]...", str); fflush(stdout);
     strToLex(&L, str);
     for (i = 0; i < numtokens; i++) {
-        t = getToken(&L, &tok);
+        t = getToken(&L, &ast);
         EXPECTEQ(t, tokens[i]);
     }
     printf("passed\n");

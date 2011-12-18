@@ -46,29 +46,37 @@ input:
   ;
 
 topelement:
-  T_CON conblock
-  | T_DAT datblock
+  T_CON T_EOLN conblock
+  | T_DAT T_EOLN datblock
 ;
 
 conblock:
-  condecl
-  | condecl T_EOLN conblock
-  | condecl ',' conblock
+  conline
+  | conblock conline
   ;
 
-condecl:
-  T_IDENTIFIER '=' T_NUM
-  | T_IDENTIFIER
+conline:
+  T_IDENTIFIER '=' T_NUM T_EOLN
+  | enumlist T_EOLN
+  ;
+
+enumlist:
+  | enumitem
+  | enumlist ',' enumitem
+  ;
+
+enumitem:
+  T_IDENTIFIER
   | '#' T_NUM
   ;
 
 datblock:
   datline
-  | datline T_EOLN datline
+  | datblock datline
   ;
 
 datline:
-  optsymbol sizespec datalist
+  optsymbol sizespec datalist T_EOLN
   ;
 
 datalist:

@@ -1,6 +1,7 @@
 #ifndef LEX_H
 #define LEX_H
 
+#include "spinc.h"
 #include "spin.tab.h"
 
 /*
@@ -23,11 +24,6 @@ struct lexstream {
 #define lexungetc(p, c) ((p)->ungetcf((p),(c)))
 
 /*
- * token struct
- */
-typedef YYSTYPE TokenType;
-
-/*
  * function to initialize the lexer
  */
 void initLexer(void);
@@ -39,7 +35,9 @@ void strToLex(LexStream *lex, const char *s);
 
 /*
  * function to get the next token from a stream
+ * it will allocate and fill in an AST if necessary,
+ * otherwise *ast will be set to NULL
  */
-int getToken(LexStream *, TokenType *tok);
+int getToken(LexStream *, AST **ast);
 
 #endif
