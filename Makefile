@@ -8,7 +8,7 @@ CFLAGS = -g -Wall -Werror
 YACC = bison
 RM = rm -f
 
-PROGS = testlex
+PROGS = testlex spin2c
 LEXOBJS = lexer.o symbol.o ast.o
 OBJS = $(LEXOBJS) spin.tab.o
 
@@ -28,3 +28,5 @@ clean:
 test: testlex
 	./testlex
 
+spin2c: spin2c.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^

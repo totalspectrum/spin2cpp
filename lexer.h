@@ -1,6 +1,7 @@
 #ifndef LEX_H
 #define LEX_H
 
+#include <stdio.h>
 #include "spinc.h"
 #include "spin.tab.h"
 
@@ -32,6 +33,11 @@ void initLexer(void);
  * function to open a lexer stream from a string
  */
 void strToLex(LexStream *lex, const char *s);
+
+/*
+ * function to open a lexer stream from a FILE
+ */
+void fileToLex(LexStream *lex, FILE *f, const char *name);
 
 /*
  * function to get the next token from a stream

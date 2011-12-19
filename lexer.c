@@ -53,6 +53,40 @@ void strToLex(LexStream *L, const char *s)
     L->fileName = "<string>";
 }
 
+/* functions for handling FILE streams */
+static int 
+filegetc(LexStream *L)
+{
+    FILE *f;
+    int c;
+
+    f = (FILE *)L->ptr;
+    c = fgetc(f);
+    return (c >= 0) ? c : T_EOF;
+}
+
+static void
+fileungetc(LexStream *L, int c)
+{
+    FILE *f = L->ptr;
+
+    if (c != T_EOF) {
+        ungetc(c, f);
+    }
+}
+
+/* open a stream from a FILE f */
+void fileToLex(LexStream *L, FILE *f, const char *name)
+{
+    L->ptr = (void *)f;
+    L->arg = NULL;
+    L->getcf = filegetc;
+    L->ungetcf = fileungetc;
+    L->lineCounter = 1;
+    L->fileName = name;
+}
+
+
 /*
  * utility functions
  */

@@ -41,7 +41,7 @@
 
 %%
 input:
-  T_EOF /* empty */
+  /* empty */
   | topelement input
   ;
 
