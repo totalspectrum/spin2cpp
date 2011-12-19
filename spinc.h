@@ -31,11 +31,22 @@ struct AST {
 #define AST_STRING     2
 #define AST_IDENTIFIER 3
 #define AST_EXPR       4
+#define AST_FLOAT      5
+
+#define AST_CONBLOCK   6
+
+/* parser state structure */
+typedef struct parserstate {
+    AST *conblock;
+    AST *functions;
+    AST *datblock;
+} ParserState;
 
 /* Yacc define */
 #define YYSTYPE AST *
 
 /* function declarations */
 AST *NewAST(int kind, AST *left, AST *right);
+AST *AddToList(AST *list, AST *newelement);
 
 #endif
