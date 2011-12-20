@@ -34,6 +34,10 @@
 %token T_EOLN
 %token T_EOF
 
+/* precedence of operators */
+%left '-' '+'
+%left '*' '/'
+
 %%
 input:
   topelement
@@ -106,6 +110,14 @@ optsymbol:
 expr:
   integer
   | identifier
+  | expr '+' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '+'; }
+  | expr '-' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '-'; }
+  | expr '*' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '*'; }
+  | expr '/' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '/'; }
   | '(' expr ')'
   ;
 

@@ -21,7 +21,7 @@ enum astkind {
     AST_INTEGER,
     AST_STRING,
     AST_IDENTIFIER,
-    AST_EXPR,
+    AST_OPERATOR,
     AST_FLOAT,
     AST_ASSIGN,
     AST_CONDECL,

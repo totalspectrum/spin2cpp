@@ -31,17 +31,43 @@ PrintExpr(FILE *f, AST *expr)
             PrintSymbol(f, sym);
         }
         break;
+    case AST_OPERATOR:
+        fprintf(f, "(");
+        PrintExpr(f, expr->left);
+        fprintf(f, "%c", expr->d.ival);
+        PrintExpr(f, expr->right);
+        fprintf(f, ")");
+        break;
     default:
         ERROR("Internal error, bad expression");
         break;
     }
 }
 
+static long
+EvalOperator(int op, long lval, long rval)
+{
+    switch (op) {
+    case '+':
+        return lval + rval;
+    case '-':
+        return lval - rval;
+    case '/':
+        return lval / rval;
+    case '*':
+        return lval * rval;
+    default:
+        ERROR("unknown operator %d\n", op);
+        return 0;
+    }
+}
 
 long
 EvalConstExpr(AST *expr)
 {
     Symbol *sym;
+    long lval, rval;
+
     switch (expr->kind) {
     case AST_INTEGER:
         return expr->d.ival;
@@ -60,6 +86,10 @@ EvalConstExpr(AST *expr)
             }
         }
         break;
+    case AST_OPERATOR:
+        lval = EvalConstExpr(expr->left);
+        rval = EvalConstExpr(expr->right);
+        return EvalOperator(expr->d.ival, lval, rval);
     default:
         ERROR("Bad constant expression");
         break;
