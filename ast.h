@@ -18,6 +18,7 @@ typedef struct AST AST;
 /* AST types */
 enum astkind {
     AST_UNKNOWN = 0,
+    AST_LISTHOLDER,
     AST_INTEGER,
     AST_STRING,
     AST_IDENTIFIER,
@@ -25,7 +26,11 @@ enum astkind {
     AST_FLOAT,
     AST_ASSIGN,
     AST_CONDECL,
-    AST_ENUMSET
+    AST_ENUMSET,
+    AST_ARRAYDECL,
+    AST_BYTELIST,
+    AST_WORDLIST,
+    AST_LONGLIST,
 };
 
 struct AST {

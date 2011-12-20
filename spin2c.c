@@ -114,10 +114,42 @@ PrintConstantDecl(FILE *f, AST *ast)
 }
 
 static void
+PrintVarList(FILE *f, const char *typename, AST *ast)
+{
+    AST *decl;
+
+    while (ast != NULL) {
+        if (ast->kind != AST_LISTHOLDER) {
+            ERROR("Expected variable list element\n");
+            return;
+        }
+        decl = ast->left;
+        switch (decl->kind) {
+        case AST_IDENTIFIER:
+            fprintf(f, "  %s\t%s;\n", typename, decl->d.string);
+            break;
+        case AST_ARRAYDECL:
+            fprintf(f, "  %s\t%s[%ld];\n", typename, decl->left->d.string,
+                    EvalConstExpr(decl->right));
+            break;
+        default:
+            ERROR("Internal problem in variable list: type=%d\n", decl->kind);
+            break;
+        }
+        ast = ast->right;
+    }
+}
+
+static void
 PrintHeaderFile(FILE *f)
 {
     AST *ast;
-    fprintf(f, "class %s {\n", current->classname);
+
+    /* things we always need */
+    fprintf(f, "#include <stdint.h>\n\n");
+
+    /* print the constant declarations */
+    fprintf(f, "class %s {\npublic:\n", current->classname);
     for (ast = current->conblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_IDENTIFIER:
@@ -128,6 +160,23 @@ PrintHeaderFile(FILE *f)
             break;
         default:
             /* do nothing */
+            break;
+        }
+    }
+    /* now the private members */
+    fprintf(f, "private:\n");
+    for (ast = current->varblock; ast; ast = ast->right) {
+        switch (ast->kind) {
+        case AST_BYTELIST:
+            PrintVarList(f, "uint8_t", ast->left);
+            break;
+        case AST_WORDLIST:
+            PrintVarList(f, "uint16_t", ast->left);
+            break;
+        case AST_LONGLIST:
+            PrintVarList(f, "int32_t", ast->left);
+            break;
+        default:
             break;
         }
     }
@@ -181,7 +230,7 @@ ERROR(const char *msg, ...)
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);
-
+    fprintf(stderr, "\n");
     gl_errors++;
 }
 

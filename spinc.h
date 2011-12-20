@@ -20,6 +20,7 @@ typedef struct parserstate {
     AST *conblock;
     AST *functions;
     AST *datblock;
+    AST *varblock;
 
     /* AST for current token */
     AST *ast;

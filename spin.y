@@ -45,10 +45,13 @@ input:
   ;
 
 topelement:
-  T_CON T_EOLN conblock
+  T_EOLN
+  | T_CON T_EOLN conblock
   { $$ = current->conblock = AddToList(current->conblock, $3); }
   | T_DAT T_EOLN datblock
   { $$ = current->datblock = AddToList(current->datblock, $3); }
+  | T_VAR T_EOLN varblock
+  { $$ = current->varblock = AddToList(current->varblock, $3); }
 ;
 
 conblock:
@@ -94,6 +97,36 @@ datalist:
 dataelem:
   optsize expr optcount
 ;
+
+varblock:
+    varline
+    { $$ = $1; }
+  | varblock varline
+    { $$ = AddToList($1, $2); }
+  ;
+
+varline:
+  T_BYTE identlist T_EOLN
+    { $$ = NewAST(AST_BYTELIST, $2, NULL); }
+  | T_WORD identlist T_EOLN
+    { $$ = NewAST(AST_WORDLIST, $2, NULL); }
+  | T_LONG identlist T_EOLN
+    { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+  ;
+
+identlist:
+  identdecl
+  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identlist ',' identdecl
+  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+  ;
+
+identdecl:
+  identifier
+  { $$ = $1; }
+  | identifier '[' expr ']'
+  { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+  ;
 
 optsize:
   | sizespec
