@@ -13,13 +13,8 @@
     int yylex(void);
 %}
 
-%union {
-    unsigned long ival; /* integer value */
-    char *string;      /* identifier string */
-}
-
-%token <string> T_IDENTIFIER
-%token <ival>   T_NUM
+%token T_IDENTIFIER
+%token T_NUM
 
 /* various keywords */
 %token T_CON
@@ -41,33 +36,41 @@
 
 %%
 input:
-  /* empty */
+  topelement
   | topelement input
   ;
 
 topelement:
   T_CON T_EOLN conblock
+  { $$ = current->conblock = AddToList(current->conblock, $3); }
   | T_DAT T_EOLN datblock
+  { $$ = current->datblock = AddToList(current->datblock, $3); }
 ;
 
 conblock:
   conline
+  { $$ = $1; }
   | conblock conline
+  { $$ = AddToList($1, $2); }
   ;
 
 conline:
-  T_IDENTIFIER '=' T_NUM T_EOLN
+  identifier '=' expr T_EOLN
+     { $$ = NewAST(AST_CONDECL, NewAST(AST_ASSIGN, $1, $3), NULL); }
   | enumlist T_EOLN
+     { $$ = $1; }
   ;
 
 enumlist:
-  | enumitem
+  enumitem
   | enumlist ',' enumitem
+    { $$ = AddToList($1, $3); }
   ;
 
 enumitem:
-  T_IDENTIFIER
-  | '#' T_NUM
+  identifier
+  | '#' expr
+  { $$ = NewAST(AST_ENUMSET, $2, NULL); }
   ;
 
 datblock:
@@ -97,12 +100,12 @@ optcount:
   ;
 
 optsymbol:
-  | T_IDENTIFIER
+  | identifier
   ;
 
 expr:
-  T_NUM
-  | T_IDENTIFIER
+  integer
+  | identifier
   | '(' expr ')'
   ;
 
@@ -112,6 +115,16 @@ sizespec:
   | T_LONG
   ;
 
+integer:
+  T_NUM
+  { $$ = current->ast; }
+;
+
+identifier:
+  T_IDENTIFIER
+  { $$ = current->ast; }
+;
+ 
 %%
 
 void

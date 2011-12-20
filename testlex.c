@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lexer.h"
+#include "spinc.h"
 
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {

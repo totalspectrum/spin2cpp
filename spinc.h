@@ -5,48 +5,47 @@
 #ifndef SPINC_H
 #define SPINC_H
 
-#include <stdint.h>
+/* Yacc define */
+/* we need to put it up here because the lexer includes spin.tab.h */
+#define YYSTYPE AST *
 
-/*
- * types of data which may be contained within an AST node
- */
-
-union ASTdata {
-    uint32_t ival;      /* unsigned integer value */
-    const char *string; /* string value */
-    void *ptr;          /* generic pointer */
-};
-
-typedef struct AST AST;
-
-struct AST {
-    int kind;        /* type of this node */
-    union ASTdata d; /* data in this node */
-    AST *left;
-    AST *right;
-};
-
-/* AST types */
-#define AST_INTEGER    1
-#define AST_STRING     2
-#define AST_IDENTIFIER 3
-#define AST_EXPR       4
-#define AST_FLOAT      5
-
-#define AST_CONBLOCK   6
+#include "ast.h"
+#include "lexer.h"
+#include "symbol.h"
 
 /* parser state structure */
 typedef struct parserstate {
+    struct parserstate *next;  /* to make a stack */
+    /* top level objects */
     AST *conblock;
     AST *functions;
     AST *datblock;
+
+    /* AST for current token */
+    AST *ast;
+
+    /* lexer state */
+    LexStream L;
+
+    /* the symbol table */
+    SymbolTable objsyms;
+
+    /* various file name related strings */
+    char *basename;    /* the file name without ".spin" */
+    char *classname;   /* the class name */
 } ParserState;
 
-/* Yacc define */
-#define YYSTYPE AST *
+/* the current parser state */
+extern ParserState *current;
 
-/* function declarations */
-AST *NewAST(int kind, AST *left, AST *right);
-AST *AddToList(AST *list, AST *newelement);
+/* printing functions */
+void PrintExpr(FILE *f, AST *expr);
+
+/* evaluate a constant expression */
+long EvalConstExpr(AST *expr);
+
+/* code for printing errors */
+extern int gl_errors;
+void ERROR(const char *msg, ...);
 
 #endif

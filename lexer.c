@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
-#include "symbol.h"
-#include "lexer.h"
+#include "spinc.h"
 
 SymbolTable reservedWords;
 

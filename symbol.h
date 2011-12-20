@@ -16,6 +16,7 @@ typedef struct symbol {
 #define SYM_HW_REG    1     /* hardware register */
 #define SYM_RESERVED  2     /* reserved word */
 #define SYM_CONSTANT  3     /* constant */
+#define SYM_VARIABLE  4     /* member variable */
 
 /*
  * symbol tables are basically just hash tables containing

@@ -2,7 +2,6 @@
 #define LEX_H
 
 #include <stdio.h>
-#include "spinc.h"
 #include "spin.tab.h"
 
 /*
