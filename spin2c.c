@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include "spinc.h"
 
-#define DEBUG_YACC
+//#define DEBUG_YACC
 
 extern int yyparse(void);
 
@@ -77,30 +77,30 @@ EnterConstant(const char *name, long val)
 static void
 DeclareConstants(void)
 {
-    AST *ast, *sub;
+    AST *upper, *ast;
     int default_val = 0;
 
-    for (ast = current->conblock; ast; ast = ast->right) {
-        switch (ast->kind) {
-        case AST_ENUMSET:
-            default_val = EvalConstExpr(ast->left);
-            break;
-        case AST_IDENTIFIER:
-            EnterConstant(ast->d.string, default_val);
-            default_val++;
-            break;
-        case AST_CONDECL:
-            sub = ast->left;
-            if (sub->kind == AST_ASSIGN) {
-                EnterConstant(sub->left->d.string, EvalConstExpr(sub->right));
-            } else {
-                ERROR("Internal error: expected constant assignment");
-            }
-            break;
-        default:
-            ERROR("Internal error: bad AST value");
-            break;
-        } 
+    for (upper = current->conblock; upper; upper = upper->right) {
+        if (upper->kind == AST_LISTHOLDER) {
+            ast = upper->left;
+            switch (ast->kind) {
+            case AST_ENUMSET:
+                default_val = EvalConstExpr(ast->left);
+                break;
+            case AST_IDENTIFIER:
+                EnterConstant(ast->d.string, default_val);
+                default_val++;
+                break;
+            case AST_ASSIGN:
+                EnterConstant(ast->left->d.string, EvalConstExpr(ast->right));
+                break;
+            default:
+                ERROR("Internal error: bad AST value %d", ast->kind);
+                break;
+            } 
+        } else {
+            ERROR("Expected list in constant, found %d instead", upper->kind);
+        }
     }
 }
 
@@ -143,20 +143,21 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
 static void
 PrintHeaderFile(FILE *f)
 {
-    AST *ast;
+    AST *ast, *upper;
 
     /* things we always need */
     fprintf(f, "#include <stdint.h>\n\n");
 
     /* print the constant declarations */
     fprintf(f, "class %s {\npublic:\n", current->classname);
-    for (ast = current->conblock; ast; ast = ast->right) {
+    for (upper = current->conblock; upper; upper = upper->right) {
+        ast = upper->left;
         switch (ast->kind) {
         case AST_IDENTIFIER:
             PrintConstantDecl(f, ast);
             break;
-        case AST_CONDECL:
-            PrintConstantDecl(f, ast->left->left);
+        case AST_ASSIGN:
+            PrintConstantDecl(f, ast->left);
             break;
         default:
             /* do nothing */

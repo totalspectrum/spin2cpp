@@ -226,6 +226,8 @@ again:
     return c;
 }
 
+static char operator_chars[] = "-+*/|<>=!@~#^";
+
 int
 getToken(LexStream *L, AST **ast_ptr)
 {
@@ -254,8 +256,31 @@ getToken(LexStream *L, AST **ast_ptr)
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
         c = parseIdentifier(L, &ast);
-    }
+    } else if (strchr(operator_chars, c) != NULL) {
+        char op[6];
+        int i;
+        int token;
+        Symbol *sym = NULL;
 
+        op[0] = token = c;
+        for (i = 1; i < sizeof(op)-1; i++) {
+            c = lexgetc(L);
+            if (strchr(operator_chars, c) == NULL) {
+                lexungetc(L, c);
+                break;
+            }
+            op[i] = c;
+            op[i+1] = 0;
+            sym = FindSymbol(&reservedWords, op);
+            if (sym) {
+                token = INTVAL(sym);
+            } else {
+                lexungetc(L, c);
+                break;
+            }
+        }
+        c = token;
+    }
     *ast_ptr = ast;
     return c;
 }
@@ -268,17 +293,41 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_words[] = {
+    { "byte", T_BYTE },
     { "con", T_CON },
     { "dat", T_DAT },
-    { "var", T_VAR },
-    { "pub", T_PUB },
-    { "pri", T_PRI },
-    { "obj", T_OBJ },
 
-    { "byte", T_BYTE },
+    { "else", T_ELSE },
+    { "elseif", T_ELSEIF },
+    { "elseifnot", T_ELSEIFNOT },
+    { "if", T_IF },
+    { "ifnot", T_IFNOT },
+
+    { "obj", T_OBJ },
+    { "pri", T_PRI },
+    { "pub", T_PUB },
+    { "repeat", T_REPEAT },
+    { "return", T_RETURN },
+
+    { "var", T_VAR },
+
     { "word", T_WORD },
     { "long", T_LONG },
 
+    /* operators */
+    { "+", '+' },
+    { "-", '-' },
+    { "/", '/' },
+    { "//", T_MODULUS },
+    { "*", '*' },
+    { "**", T_HIGHMULT },
+    { ">", '>' },
+    { "<", '<' },
+    { "=<", T_LE },
+    { "=>", T_GE },
+    { "=", '=' },
+    { "==", T_EQ },
+    { "<>", T_NE },
 };
 
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))

@@ -14,6 +14,51 @@ PrintSymbol(FILE *f, Symbol *sym)
     fprintf(f, "%s", sym->name);
 }
 
+/* code to print left operator right */
+static void
+PrintInOp(FILE *f, const char *op, AST *left, AST *right)
+{
+    PrintExpr(f, left);
+    fprintf(f, " %s ", op);
+    PrintExpr(f, right);
+}
+
+void
+PrintBinaryOperator(FILE *f, int op, AST *left, AST *right)
+{
+    char opstring[4];
+
+    switch (op) {
+    case T_HIGHMULT:
+        fprintf(f, "(( (long long)");
+        PrintExpr(f, left);
+        fprintf(f, " * (long long)");
+        PrintExpr(f, right);
+        fprintf(f, ") >> 32)");
+        break;
+    case T_LE:
+        PrintInOp(f, "<=", left, right);
+        break;
+    case T_GE:
+        PrintInOp(f, ">=", left, right);
+        break;
+    case T_EQ:
+        PrintInOp(f, "==", left, right);
+        break;
+    case T_NE:
+        PrintInOp(f, "!=", left, right);
+        break;
+    case T_MODULUS:
+        PrintInOp(f, "%", left, right);
+        break;
+    default:
+        opstring[0] = op;
+        opstring[1] = 0;
+        PrintInOp(f, opstring, left, right);
+        break;
+    }
+}
+ 
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -33,9 +78,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_OPERATOR:
         fprintf(f, "(");
-        PrintExpr(f, expr->left);
-        fprintf(f, "%c", expr->d.ival);
-        PrintExpr(f, expr->right);
+        PrintBinaryOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
     default:
@@ -54,8 +97,24 @@ EvalOperator(int op, long lval, long rval)
         return lval - rval;
     case '/':
         return lval / rval;
+    case T_MODULUS:
+        return lval % rval;
     case '*':
         return lval * rval;
+    case T_HIGHMULT:
+        return (int)(((long long)lval * (long long)rval) >> 32LL);
+    case '<':
+        return lval < rval;
+    case '>':
+        return lval > rval;
+    case T_LE:
+        return lval <= rval;
+    case T_GE:
+        return lval >= rval;
+    case T_NE:
+        return lval != rval;
+    case T_EQ:
+        return lval == rval;
     default:
         ERROR("unknown operator %d\n", op);
         return 0;
