@@ -110,15 +110,21 @@ DeclareConstants(void)
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
-    fprintf(f, "  const int %s = %ld; \n", ast->d.string, EvalConstExpr(ast));
+    fprintf(f, "  const int %s = %ld;\n", ast->d.string, EvalConstExpr(ast));
 }
 
 static void
 PrintVarList(FILE *f, const char *typename, AST *ast)
 {
     AST *decl;
+    int needcomma = 0;
 
+    fprintf(f, "  %s\t", typename);
     while (ast != NULL) {
+        if (needcomma) {
+            fprintf(f, ", ");
+        }
+        needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
             ERROR("Expected variable list element\n");
             return;
@@ -126,10 +132,10 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
         decl = ast->left;
         switch (decl->kind) {
         case AST_IDENTIFIER:
-            fprintf(f, "  %s\t%s;\n", typename, decl->d.string);
+            fprintf(f, "%s", decl->d.string);
             break;
         case AST_ARRAYDECL:
-            fprintf(f, "  %s\t%s[%ld];\n", typename, decl->left->d.string,
+            fprintf(f, "%s[%ld]", decl->left->d.string,
                     EvalConstExpr(decl->right));
             break;
         default:
@@ -138,6 +144,7 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
         }
         ast = ast->right;
     }
+    fprintf(f, ";\n");
 }
 
 static void

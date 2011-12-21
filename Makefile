@@ -27,6 +27,7 @@ clean:
 
 test: testlex
 	./testlex
+	(cd Test; ./runtests.sh)
 
 spin2c: spin2c.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
