@@ -223,6 +223,9 @@ PrintHeaderFile(FILE *f)
             break;
         }
     }
+    /* now the public members */
+    PrintPublicFunctions(f);
+
     /* now the private members */
     fprintf(f, "private:\n");
     for (ast = current->varblock; ast; ast = ast->right) {
@@ -240,6 +243,8 @@ PrintHeaderFile(FILE *f)
             break;
         }
     }
+    /* now the private methods */
+    PrintPrivateFunctions(f);
     fprintf(f, "};\n");
 }
 

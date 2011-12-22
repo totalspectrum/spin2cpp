@@ -56,3 +56,56 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
         ERROR("Internal error: bad variable declaration");
     }
 }
+
+static void
+PrintParameterList(FILE *f, AST *ast)
+{
+    int needcomma = 0;
+    if (!ast) {
+        fprintf(f, "void");
+        return;
+    }
+    while (ast) {
+        if (ast->kind != AST_IDENTIFIER) {
+            ERROR("Internal error: expected identifier in function parameter list");
+            return;
+        }
+        if (needcomma)
+            fprintf(f, ", ");
+        fprintf(f, "%s", ast->d.string);
+        needcomma = 1;
+        ast = ast->right;
+    }
+}
+
+static void
+PrintFunction(FILE *f, Function *func)
+{
+    fprintf(f, "  int32_t\t%s(", func->name);
+    PrintParameterList(f, func->params);
+    fprintf(f, ");\n");
+}
+
+void
+PrintPublicFunctions(FILE *f)
+{
+    Function *pf;
+
+    for (pf = current->functions; pf; pf = pf->next) {
+        if (!pf->is_public)
+            continue;
+        PrintFunction(f, pf);
+    }
+}
+
+void
+PrintPrivateFunctions(FILE *f)
+{
+    Function *pf;
+
+    for (pf = current->functions; pf; pf = pf->next) {
+        if (pf->is_public)
+            continue;
+        PrintFunction(f, pf);
+    }
+}

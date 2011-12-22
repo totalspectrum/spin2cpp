@@ -77,6 +77,8 @@ long EvalConstExpr(AST *expr);
  holding a list of identifiers and/or array declarations
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body);
+void PrintPublicFunctions(FILE *f);
+void PrintPrivateFunctions(FILE *f);
 
 /* code for printing errors */
 extern int gl_errors;
