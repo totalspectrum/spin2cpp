@@ -11,6 +11,8 @@
 /* Yacc functions */
     void yyerror(char *);
     int yylex(void);
+
+    extern int gl_errors;
 %}
 
 %token T_IDENTIFIER
@@ -113,7 +115,7 @@ stmt:
 |  T_RETURN expr T_EOLN
 |  ifstmt
 |  stmtblock
-|  expr
+|  expr T_EOLN
   ;
 
 stmtblock:
@@ -276,5 +278,6 @@ identifier:
 void
 yyerror(char *msg)
 {
-    fprintf(stderr, "error %s\n", msg);
+    fprintf(stderr, "%s at line %d\n", msg, current->L.lineCounter);
+    gl_errors++;
 }

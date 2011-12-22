@@ -275,6 +275,11 @@ parseFile(const char *name)
     DeclareConstants();
     DeclareVariables();
 
+    if (gl_errors > 0) {
+        fprintf(stderr, "%d errors\n", gl_errors);
+        exit(1);
+    }
+
     /* print out the header file */
     fname = malloc(strlen(current->basename + 8));
     sprintf(fname, "%s.h", current->basename);
@@ -285,6 +290,11 @@ parseFile(const char *name)
     }
     PrintHeaderFile(f);
     fclose(f);
+
+    if (gl_errors > 0) {
+        fprintf(stderr, "%d errors\n", gl_errors);
+        exit(1);
+    }
 }
 
 void
@@ -321,6 +331,10 @@ main(int argc, char **argv)
     /* parse arguments */
     if (argv[0] != NULL) {
         gl_progname = argv[0];
+        argv++; --argc;
+    }
+    if (argv[0] && !strcmp(argv[0], "-y")) {
+        yydebug = 1;
         argv++; --argc;
     }
     if (argv[0] == NULL) {

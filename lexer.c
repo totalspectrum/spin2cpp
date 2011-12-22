@@ -226,7 +226,7 @@ again:
     return c;
 }
 
-static char operator_chars[] = "-+*/|<>=!@~#^";
+static char operator_chars[] = "-+*/|<>=!@~#^:";
 
 int
 getToken(LexStream *L, AST **ast_ptr)
@@ -328,6 +328,8 @@ struct reservedword {
     { "=", '=' },
     { "==", T_EQ },
     { "<>", T_NE },
+
+    { ":=", T_ASSIGN },
 };
 
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))

@@ -4,12 +4,13 @@
 #
 
 CC = gcc
-CFLAGS = -g -Wall -Werror
+#CFLAGS = -g -Wall -Werror
+CFLAGS = -O -g -Wall -Werror
 YACC = bison
 RM = rm -f
 
 PROGS = testlex spin2c
-LEXOBJS = lexer.o symbol.o ast.o
+LEXOBJS = lexer.o symbol.o ast.o pasm.o
 OBJS = $(LEXOBJS) spin.tab.o expr.o functions.o
 
 all: $(PROGS)

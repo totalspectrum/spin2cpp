@@ -18,6 +18,24 @@ extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
 
+typedef enum InstrOps {
+    NO_OPERANDS,
+    ONE_OPERAND,
+    TWO_OPERANDS,
+    CALL_OPERAND,
+    JMP_OPERAND,
+} InstrOps;
+
+/* structure describing a PASM instruction */
+typedef struct Instruction {
+    const char *name;      /* instruction mnemonic */
+    uint32_t    binary;    /* binary form of instruction */
+    InstrOps    ops;       /* operand forms */
+
+    /* function for the spin form of the instruction */
+    void      (*spinform)(FILE *, AST *);
+} Instruction;
+
 /* structure describing a function */
 typedef struct funcdef {
     struct funcdef *next;
@@ -28,6 +46,7 @@ typedef struct funcdef {
     AST *params;      /* parameter list */
     AST *body;
 } Function;
+
 /* parser state structure */
 typedef struct parserstate {
     struct parserstate *next;  /* to make a stack */

@@ -9,11 +9,11 @@ do
 #  diff -u $j.h Expect/$j.h && diff -u $j.cpp Expect/$j.cpp
   if diff -u $j.h Expect/$j.h
   then
+      rm -f $j.h $j.cpp
       echo $j passed
   else
       echo $j failed
       endmsg="TEST FAILURES"
   fi
 done
-rm -f *.h *.cpp
 echo $endmsg
