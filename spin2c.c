@@ -104,6 +104,65 @@ DeclareConstants(void)
     }
 }
 
+static Symbol *
+EnterVariable(const char *name, AST *type)
+{
+    Symbol *sym;
+
+    sym = AddSymbol(&current->objsyms, name, SYM_VARIABLE, (void *)type);
+    return sym;
+}
+
+static void
+DeclareVariables(void)
+{
+    AST *upper, *lower, *ast;
+    AST *longdecl, *worddecl, *bytedecl;
+    AST *curtype;
+
+    longdecl = NewAST(AST_INTTYPE, NULL, NULL);
+    longdecl->d.ival = 4;
+    worddecl = NewAST(AST_UNSIGNEDTYPE, NULL, NULL);
+    worddecl->d.ival = 2;
+    bytedecl = NewAST(AST_UNSIGNEDTYPE, NULL, NULL);
+    bytedecl->d.ival = 1;
+
+    for (upper = current->varblock; upper; upper = upper->right) {
+        switch (upper->kind) {
+        case AST_BYTELIST:
+            curtype = bytedecl;
+            break;
+        case AST_WORDLIST:
+            curtype = worddecl;
+            break;
+        case AST_LONGLIST:
+            curtype = longdecl;
+            break;
+        default:
+            ERROR("bad type  %d in variable list\n", upper->kind);
+            return;
+        }
+        for (lower = upper->left; lower; lower = lower->right) {
+            if (lower->kind == AST_LISTHOLDER) {
+                ast = lower->left;
+                switch (ast->kind) {
+                case AST_IDENTIFIER:
+                    EnterVariable(ast->d.string, curtype);
+                    break;
+                case AST_ARRAYDECL:
+                    EnterVariable(ast->left->d.string, NewAST(AST_ARRAYTYPE, curtype, ast->right));
+                    break;
+                default:
+                    ERROR("Internal error: bad AST value %d", ast->kind);
+                    break;
+                }
+            } else {
+                ERROR("Expected list in constant, found %d instead", upper->kind);
+            }
+        }
+    }
+}
+
 /*
  * print out a header file
  */
@@ -216,6 +275,7 @@ parseFile(const char *name)
 
     /* now declare all the symbols */
     DeclareConstants();
+    DeclareVariables();
 
     /* print out the header file */
     fname = malloc(strlen(current->basename + 8));

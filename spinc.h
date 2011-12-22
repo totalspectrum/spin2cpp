@@ -45,6 +45,22 @@ void PrintExpr(FILE *f, AST *expr);
 /* evaluate a constant expression */
 long EvalConstExpr(AST *expr);
 
+/* declare a function */
+/* "body" is the list of statements */
+/* "funcdef" is an AST_FUNCDEF; this is set up as follows:
+            AST_FUNCDEF
+           /           \
+    AST_FUNCDECL       AST_FUNCVARS
+     /      \            /       \
+    name    result    parameters locals
+
+ here:
+ "name" and "result" are AST_IDENTIFIERS
+ "parameters" and "locals" are AST_LISTHOLDERS
+ holding a list of identifiers and/or array declarations
+*/
+void DeclareFunction(int is_public, AST *funcdef, AST *body);
+
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(const char *msg, ...);

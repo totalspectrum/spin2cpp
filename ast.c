@@ -3,6 +3,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "spinc.h"
 
 AST *
@@ -37,4 +38,22 @@ AddToList(AST *list, AST *newelement)
         ;
     p->right = newelement;
     return list;
+}
+
+/*
+ * duplicate an AST
+ */
+AST *
+DupAST(AST *orig)
+{
+    AST *dup;
+
+    if (!orig)
+        return NULL;
+
+    dup = NewAST(orig->kind, NULL, NULL);
+    memcpy(dup, orig, sizeof(dup));
+    dup->left = DupAST(orig->left);
+    dup->right = DupAST(orig->right);
+    return dup;
 }

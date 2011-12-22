@@ -35,17 +35,6 @@
 %token T_ELSEIF
 %token T_ELSEIFNOT
 
-/* operators */
-%token T_GE
-%token T_LE
-%token T_NE
-%token T_EQ
-%token T_MODULUS
-%token T_HIGHMULT
-
-/* assignment operators */
-%token T_ASSIGN
-
 /* other stuff */
 %token T_RETURN
 %token T_INDENT
@@ -53,10 +42,11 @@
 %token T_EOLN
 %token T_EOF
 
-/* precedence of operators */
+/* operators */
+%right T_ASSIGN
 %left '<' '>' T_GE T_LE T_NE T_EQ
 %left '-' '+'
-%left '*' '/'
+%left '*' '/' T_MODULUS T_HIGHMULT
 
 %%
 input:
@@ -72,40 +62,74 @@ topelement:
   { $$ = current->datblock = AddToList(current->datblock, $3); }
   | T_VAR T_EOLN varblock
   { $$ = current->varblock = AddToList(current->varblock, $3); }
-  | T_PUB funcdef funcbody
-  | T_PRI funcdef funcbody
+  | T_PUB funcdef stmtlist
+  { DeclareFunction(1, $2, $3); }
+  | T_PRI funcdef stmtlist
+  { DeclareFunction(0, $2, $3); }
 ;
 
 funcdef:
-  T_IDENTIFIER optparamlist localvars T_EOLN
+  T_IDENTIFIER optparamlist T_EOLN
+  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
+    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  }
+|  T_IDENTIFIER optparamlist localvars T_EOLN
+  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $2, $3);
+    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  }
+|  T_IDENTIFIER optparamlist resultname localvars T_EOLN
+  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
+    AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
+    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  }
+
 ;
 
 optparamlist:
 /* nothing */
-| paramlist
-;
+  { $$ = NULL; }
+| identlist
+  { $$ = $1; }
+  ;
 
-paramlist:
-  identifier
-| paramlist ',' identifier
-  { $$ = AddToList($1, $3); }
+resultname: ':' T_IDENTIFIER
+  { $$ = $2; }
   ;
 
 localvars:
-/* nothing */
-| '|' identlist
+ '|' identlist
   { $$ = $2 }
     ;
 
-funcbody:
+stmtlist:
   stmt
-| funcbody stmt
+  | stmtlist stmt
   ;
 
 stmt:
-  T_RETURN expr
+   T_RETURN T_EOLN
+|  T_RETURN expr T_EOLN
+|  ifstmt
+|  stmtblock
   ;
 
+stmtblock:
+  T_INDENT stmtlist T_OUTDENT
+  { $$ = $2; }
+;
+
+ifstmt:
+  iforifnot expr T_EOLN stmtblock
+  ;
+
+iforifnot:
+  T_IF
+| T_IFNOT
+  ;
+
+ 
 conblock:
   conline
   { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
@@ -196,6 +220,8 @@ optsymbol:
 expr:
   integer
   | lhs
+  | lhs T_ASSIGN expr
+    { $$ = NewAST(AST_ASSIGN, $1, $3); $$->d.ival = T_ASSIGN; }
   | expr '+' expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '+'; }
   | expr '-' expr
@@ -220,8 +246,6 @@ expr:
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_MODULUS; }
   | expr T_HIGHMULT expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_HIGHMULT; }
-  | lhs T_ASSIGN expr
-    { $$ = NewAST(AST_ASSIGN, $1, $3); $$->d.ival = T_ASSIGN; }
   | '(' expr ')'
   ;
 

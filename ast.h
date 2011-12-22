@@ -33,6 +33,13 @@ enum astkind {
     AST_WORDLIST,
 
     AST_LONGLIST,
+    AST_INTTYPE,
+    AST_UNSIGNEDTYPE,
+    AST_ARRAYTYPE,
+
+    AST_FUNCDECL,
+    AST_FUNCDEF,
+    AST_FUNCVARS,
 };
 
 struct AST {
@@ -45,5 +52,6 @@ struct AST {
 /* function declarations */
 AST *NewAST(int kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
+AST *DupAST(AST *ast);
 
 #endif

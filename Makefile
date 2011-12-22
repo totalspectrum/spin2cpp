@@ -10,7 +10,7 @@ RM = rm -f
 
 PROGS = testlex spin2c
 LEXOBJS = lexer.o symbol.o ast.o
-OBJS = $(LEXOBJS) spin.tab.o expr.o
+OBJS = $(LEXOBJS) spin.tab.o expr.o functions.o
 
 all: $(PROGS)
 
