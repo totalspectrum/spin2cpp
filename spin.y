@@ -69,17 +69,17 @@ topelement:
 ;
 
 funcdef:
-  T_IDENTIFIER optparamlist T_EOLN
+  identifier optparamlist T_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  T_IDENTIFIER optparamlist localvars T_EOLN
+|  identifier optparamlist localvars T_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $3);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  T_IDENTIFIER optparamlist resultname localvars T_EOLN
+|  identifier optparamlist resultname localvars T_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
@@ -94,7 +94,7 @@ optparamlist:
   { $$ = $1; }
   ;
 
-resultname: ':' T_IDENTIFIER
+resultname: ':' identifier
   { $$ = $2; }
   ;
 
@@ -113,6 +113,7 @@ stmt:
 |  T_RETURN expr T_EOLN
 |  ifstmt
 |  stmtblock
+|  expr
   ;
 
 stmtblock:

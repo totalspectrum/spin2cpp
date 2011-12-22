@@ -57,3 +57,11 @@ DupAST(AST *orig)
     dup->right = DupAST(orig->right);
     return dup;
 }
+
+AST *
+AstInteger(long ival)
+{
+    AST *ast = NewAST(AST_INTEGER, NULL, NULL);
+    ast->d.ival = ival;
+    return ast;
+}

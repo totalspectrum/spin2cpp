@@ -11,6 +11,7 @@ extern int yydebug;
 
 ParserState *current;
 int gl_errors;
+AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 int
 yylex(void)
@@ -117,26 +118,18 @@ static void
 DeclareVariables(void)
 {
     AST *upper, *lower, *ast;
-    AST *longdecl, *worddecl, *bytedecl;
     AST *curtype;
-
-    longdecl = NewAST(AST_INTTYPE, NULL, NULL);
-    longdecl->d.ival = 4;
-    worddecl = NewAST(AST_UNSIGNEDTYPE, NULL, NULL);
-    worddecl->d.ival = 2;
-    bytedecl = NewAST(AST_UNSIGNEDTYPE, NULL, NULL);
-    bytedecl->d.ival = 1;
 
     for (upper = current->varblock; upper; upper = upper->right) {
         switch (upper->kind) {
         case AST_BYTELIST:
-            curtype = bytedecl;
+            curtype = ast_type_byte;
             break;
         case AST_WORDLIST:
-            curtype = worddecl;
+            curtype = ast_type_word;
             break;
         case AST_LONGLIST:
-            curtype = longdecl;
+            curtype = ast_type_long;
             break;
         default:
             ERROR("bad type  %d in variable list\n", upper->kind);
@@ -302,10 +295,20 @@ ERROR(const char *msg, ...)
     gl_errors++;
 }
 
+static void
+init()
+{
+    ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
+    ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
+    ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
+
+    initLexer();
+}
+
 int
 main(int argc, char **argv)
 {
-    initLexer();
+    init();
 
 #ifdef DEBUG_YACC
     yydebug = 1;  /* turn on yacc debugging */

@@ -13,14 +13,31 @@
 #include "lexer.h"
 #include "symbol.h"
 
+/* some globals */
+extern AST *ast_type_long;
+extern AST *ast_type_word;
+extern AST *ast_type_byte;
+
+/* structure describing a function */
+typedef struct funcdef {
+    struct funcdef *next;
+    int is_public;
+    const char *name;
+    AST *type;        /* the function type, normally long */
+    int numparams;
+    AST *params;      /* parameter list */
+    AST *body;
+} Function;
 /* parser state structure */
 typedef struct parserstate {
     struct parserstate *next;  /* to make a stack */
     /* top level objects */
     AST *conblock;
-    AST *functions;
     AST *datblock;
     AST *varblock;
+
+    /* list of methods */
+    Function *functions;
 
     /* AST for current token */
     AST *ast;
