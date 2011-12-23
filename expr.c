@@ -23,6 +23,14 @@ PrintSymbol(FILE *f, Symbol *sym)
     fprintf(f, "%s", sym->name);
 }
 
+/* code to print a function call to a file */
+void
+PrintFuncCall(FILE *f, Symbol *sym, AST *params)
+{
+    fprintf(f, "%s(", sym->name);
+    fprintf(f, ")");
+}
+
 /* code to print left operator right */
 static void
 PrintInOp(FILE *f, const char *op, AST *left, AST *right)
@@ -70,9 +78,11 @@ PrintBinaryOperator(FILE *f, int op, AST *left, AST *right)
 
 /* code to print a source expression (could be an array reference or
  * range)
+ * if "assignment" is true then we are in an assignment operator, so
+ * only certain types of symbols are valid
  */
 void
-PrintLHS(FILE *f, AST *expr)
+PrintLHS(FILE *f, AST *expr, int assignment)
 {
     Symbol *sym;
     HwReg *hw;
@@ -83,7 +93,15 @@ PrintLHS(FILE *f, AST *expr)
         if (!sym) {
             ERROR("Unknown symbol %s", expr->d.string);
         } else {
-            PrintSymbol(f, sym);
+            if (sym->type == SYM_FUNCTION) {
+                if (assignment) {
+                    ERROR("symbol %s on left hand side of assignment", sym->name);
+                } else {
+                    PrintFuncCall(f, sym, NULL);
+                }
+            } else {
+                PrintSymbol(f, sym);
+            }
         }
         break;
     case AST_HWREG:
@@ -126,7 +144,7 @@ PrintRangeAssign(FILE *f, AST *src, AST *dst)
     }
     nbits = (hi - lo + 1);
     if (nbits >= 32) {
-        PrintLHS(f, src->left);
+        PrintLHS(f, src->left, 1);
         fprintf(f, " = ");
         PrintExpr(f, dst);
         return;
@@ -134,9 +152,9 @@ PrintRangeAssign(FILE *f, AST *src, AST *dst)
     mask = ((1U<<nbits) - 1);
     mask = (mask << lo) | (mask >> (32-lo));
 
-    PrintLHS(f, src->left);
+    PrintLHS(f, src->left, 1);
     fprintf(f, " = (");
-    PrintLHS(f, src->left);
+    PrintLHS(f, src->left, 1);
     fprintf(f, " & 0x%08x) | ((", ~mask);
     PrintExpr(f, dst);
     fprintf(f, " << %d) & 0x%08x)", lo, mask); 
@@ -152,7 +170,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
-        PrintLHS(f, expr);
+        PrintLHS(f, expr, 0);
         break;
     case AST_OPERATOR:
         fprintf(f, "(");
@@ -163,7 +181,7 @@ PrintExpr(FILE *f, AST *expr)
         if (expr->left->kind == AST_RANGEREF) {
             PrintRangeAssign(f, expr->left, expr->right);
         } else {
-            PrintLHS(f, expr->left);
+            PrintLHS(f, expr->left, 1);
             fprintf(f, " = ");
             PrintExpr(f, expr->right);
         }

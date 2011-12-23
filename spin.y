@@ -47,6 +47,7 @@
 %token T_EOLN
 %token T_EOF
 %token T_DOTS
+%token T_COGNEW
 
 /* operators */
 %right T_ASSIGN

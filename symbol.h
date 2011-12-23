@@ -12,6 +12,7 @@ typedef enum symtype {
     SYM_VARIABLE,        /* member variable */
     SYM_INSTR,           /* PASM instruction */
     SYM_HWREG,           /* hardware register */
+    SYM_FUNCTION,        /* function */
 } Symtype;
 
 typedef struct symbol {

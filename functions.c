@@ -101,6 +101,8 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     EnterVars(&fdef->localsyms, ast_type_long, vars->right);
 
     fdef->body = body;
+
+    AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 }
 
 static void

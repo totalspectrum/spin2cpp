@@ -309,6 +309,7 @@ struct reservedword {
 } init_words[] = {
     { "byte", T_BYTE },
     { "con", T_CON },
+    { "cognew", T_COGNEW },
     { "dat", T_DAT },
 
     { "else", T_ELSE },
@@ -316,6 +317,8 @@ struct reservedword {
     { "elseifnot", T_ELSEIFNOT },
     { "if", T_IF },
     { "ifnot", T_IFNOT },
+
+    { "long", T_LONG },
 
     { "obj", T_OBJ },
     { "pri", T_PRI },
@@ -326,7 +329,6 @@ struct reservedword {
     { "var", T_VAR },
 
     { "word", T_WORD },
-    { "long", T_LONG },
 
     /* operators */
     { "+", '+' },
