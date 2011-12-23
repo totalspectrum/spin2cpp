@@ -81,6 +81,11 @@ PrintExpr(FILE *f, AST *expr)
         PrintBinaryOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
+    case AST_ASSIGN:
+        PrintExpr(f, expr->left);
+        fprintf(f, " = ");
+        PrintExpr(f, expr->right);
+        break;
     default:
         ERROR("Internal error, bad expression");
         break;

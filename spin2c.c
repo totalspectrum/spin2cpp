@@ -200,7 +200,7 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
 }
 
 static void
-PrintHeaderFile(FILE *f)
+PrintHeaderFile(FILE *f, ParserState *parse)
 {
     AST *ast, *upper;
 
@@ -208,8 +208,8 @@ PrintHeaderFile(FILE *f)
     fprintf(f, "#include <stdint.h>\n\n");
 
     /* print the constant declarations */
-    fprintf(f, "class %s {\npublic:\n", current->classname);
-    for (upper = current->conblock; upper; upper = upper->right) {
+    fprintf(f, "class %s {\npublic:\n", parse->classname);
+    for (upper = parse->conblock; upper; upper = upper->right) {
         ast = upper->left;
         switch (ast->kind) {
         case AST_IDENTIFIER:
@@ -224,11 +224,11 @@ PrintHeaderFile(FILE *f)
         }
     }
     /* now the public members */
-    PrintPublicFunctions(f);
+    PrintPublicFunctionDecls(f, parse);
 
     /* now the private members */
     fprintf(f, "private:\n");
-    for (ast = current->varblock; ast; ast = ast->right) {
+    for (ast = parse->varblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
             PrintVarList(f, "uint8_t", ast->left);
@@ -244,8 +244,18 @@ PrintHeaderFile(FILE *f)
         }
     }
     /* now the private methods */
-    PrintPrivateFunctions(f);
+    PrintPrivateFunctionDecls(f, parse);
     fprintf(f, "};\n");
+}
+
+static void
+PrintCppFile(FILE *f, ParserState *parse)
+{
+    /* things we always need */
+    fprintf(f, "#include <propeller.h>\n");
+    fprintf(f, "#include \"%s.h\"\n", parse->basename);
+    fprintf(f, "\n");
+    PrintFunctionBodies(f, parse);
 }
 
 /*
@@ -281,20 +291,35 @@ parseFile(const char *name)
     }
 
     /* print out the header file */
-    fname = malloc(strlen(current->basename + 8));
-    sprintf(fname, "%s.h", current->basename);
+    fname = malloc(strlen(P->basename + 8));
+    sprintf(fname, "%s.h", P->basename);
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
         exit(1);
     }
-    PrintHeaderFile(f);
+    PrintHeaderFile(f, P);
     fclose(f);
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
         exit(1);
     }
+
+    sprintf(fname, "%s.cpp", P->basename);
+    f = fopen(fname, "w");
+    if (!f) {
+        perror(fname);
+        exit(1);
+    }
+    PrintCppFile(f, P);
+    fclose(f);
+
+    if (gl_errors > 0) {
+        fprintf(stderr, "%d errors\n", gl_errors);
+        exit(1);
+    }
+
 }
 
 void

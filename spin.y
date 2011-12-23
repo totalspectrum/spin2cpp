@@ -107,15 +107,22 @@ localvars:
 
 stmtlist:
   stmt
+    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
   | stmtlist stmt
+    { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
   ;
 
 stmt:
    T_RETURN T_EOLN
-|  T_RETURN expr T_EOLN
-|  ifstmt
-|  stmtblock
-|  expr T_EOLN
+    { $$ = NewAST(AST_RETURN, NULL, NULL); }
+  |  T_RETURN expr T_EOLN
+    { $$ = NewAST(AST_RETURN, $2, NULL); }
+  |  ifstmt
+    { $$ = $1; }
+  |  stmtblock
+    { $$ = $1; }
+  |  expr T_EOLN
+    { $$ = $1; }
   ;
 
 stmtblock:
@@ -124,13 +131,12 @@ stmtblock:
 ;
 
 ifstmt:
-  iforifnot expr T_EOLN stmtblock
+  T_IF expr T_EOLN stmtblock
+    { $$ = NewAST(AST_IF, $2, NewAST(AST_THENELSE, $4, NULL)); }
+  | T_IF expr T_EOLN stmtblock T_ELSE T_EOLN stmtblock
+    { $$ = NewAST(AST_IF, $2, NewAST(AST_THENELSE, $4, $7)); }
   ;
 
-iforifnot:
-  T_IF
-| T_IFNOT
-  ;
 
  
 conblock:
@@ -166,7 +172,7 @@ datblock:
   ;
 
 datline:
-  optsymbol sizespec datalist T_EOLN
+  sizespec datalist T_EOLN
   ;
 
 datalist:
@@ -216,9 +222,6 @@ optcount:
   | '[' expr ']'
   ;
 
-optsymbol:
-  | identifier
-  ;
 
 expr:
   integer

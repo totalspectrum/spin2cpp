@@ -42,6 +42,7 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *type;        /* the function type, normally long */
+    const char *resultname;
     int numparams;
     AST *params;      /* parameter list */
     AST *body;
@@ -74,6 +75,7 @@ typedef struct parserstate {
 
 /* the current parser state */
 extern ParserState *current;
+extern Function *curfunc;
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
@@ -96,8 +98,9 @@ long EvalConstExpr(AST *expr);
  holding a list of identifiers and/or array declarations
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body);
-void PrintPublicFunctions(FILE *f);
-void PrintPrivateFunctions(FILE *f);
+void PrintPublicFunctionDecls(FILE *f, ParserState *P);
+void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
+void PrintFunctionBodies(FILE *f, ParserState *P);
 
 /* code for printing errors */
 extern int gl_errors;

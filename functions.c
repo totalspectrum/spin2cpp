@@ -6,6 +6,8 @@
 #include <string.h>
 #include "spinc.h"
 
+Function *curfunc;
+
 Function *
 NewFunction(void)
 {
@@ -32,29 +34,33 @@ NewFunction(void)
 void
 DeclareFunction(int is_public, AST *funcdef, AST *body)
 {
-    const char *name;
     Function *fdef;
     AST *vars;
-
+    AST *src;
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR("Internal error: bad function definition");
         return;
     }
-    if (funcdef->left->left->kind != AST_IDENTIFIER) {
+    src = funcdef->left;
+    if (src->left->kind != AST_IDENTIFIER) {
         ERROR("Internal error: no function name");
         return;
     }
-    name = funcdef->left->left->d.string;
-
     fdef = NewFunction();
+    fdef->name = src->left->d.string;
+    if (src->right)
+        fdef->resultname = src->right->d.string;
+    else
+        fdef->resultname = "result";
     fdef->is_public = is_public;
     fdef->type = ast_type_long;
-    fdef->name = name;
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
         ERROR("Internal error: bad variable declaration");
     }
+
+    fdef->body = body;
 }
 
 static void
@@ -87,11 +93,11 @@ PrintFunction(FILE *f, Function *func)
 }
 
 void
-PrintPublicFunctions(FILE *f)
+PrintPublicFunctionDecls(FILE *f, ParserState *parse)
 {
     Function *pf;
 
-    for (pf = current->functions; pf; pf = pf->next) {
+    for (pf = parse->functions; pf; pf = pf->next) {
         if (!pf->is_public)
             continue;
         PrintFunction(f, pf);
@@ -99,13 +105,80 @@ PrintPublicFunctions(FILE *f)
 }
 
 void
-PrintPrivateFunctions(FILE *f)
+PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
 {
     Function *pf;
 
-    for (pf = current->functions; pf; pf = pf->next) {
+    for (pf = parse->functions; pf; pf = pf->next) {
         if (pf->is_public)
             continue;
         PrintFunction(f, pf);
+    }
+}
+
+static void
+PrintFunctionVariables(FILE *f, Function *func)
+{
+    fprintf(f, "  int32_t %s;\n", func->resultname);
+}
+ 
+static void PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
+
+static void
+PrintStatementList(FILE *f, AST *ast, int indent)
+{
+    while (ast) {
+        if (ast->kind != AST_STMTLIST) {
+            ERROR("Internal error: expected statement list, got %d",
+                  ast->kind);
+            return;
+        }
+        PrintStatement(f, ast->left, indent);
+        ast = ast->right;
+    }
+}
+
+static void
+PrintStatement(FILE *f, AST *ast, int indent)
+{
+    switch (ast->kind) {
+    case AST_RETURN:
+        fprintf(f, "%*creturn ", indent, ' ');
+        if (ast->left) {
+            PrintExpr(f, ast->left);
+        } else {
+            fprintf(f, "%s", curfunc->resultname);
+        }
+        fprintf(f, ";\n");
+        break;
+    default:
+        fprintf(f, "%*c", indent, ' ');
+        PrintExpr(f, ast);
+        fprintf(f, ";\n");
+        break;
+    }
+            
+}
+
+static void
+PrintFunctionStmts(FILE *f, Function *func)
+{
+    PrintStatementList(f, func->body, 2);
+}
+
+void
+PrintFunctionBodies(FILE *f, ParserState *parse)
+{
+    Function *pf;
+
+    for (pf = parse->functions; pf; pf = pf->next) {
+        curfunc = pf;
+        fprintf(f, "int32_t ");
+        fprintf(f, "%s::%s(", parse->classname, pf->name);
+        PrintParameterList(f, pf->params);
+        fprintf(f, ")\n{\n");
+        PrintFunctionVariables(f, pf);
+        PrintFunctionStmts(f, pf);
+        fprintf(f, "}\n\n");
     }
 }
