@@ -53,6 +53,7 @@
 %left '<' '>' T_GE T_LE T_NE T_EQ
 %left '-' '+'
 %left '*' '/' T_MODULUS T_HIGHMULT
+%right T_UNARY_MINUS T_BIT_NOT
 
 %%
 input:
@@ -98,6 +99,8 @@ optparamlist:
   { $$ = NULL; }
 | identlist
   { $$ = $1; }
+| '(' identlist ')'
+  { $$ = $2; }
   ;
 
 resultname: ':' identifier

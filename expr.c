@@ -4,7 +4,16 @@
 Symbol *
 LookupSymbol(const char *name)
 {
-    return FindSymbol(&current->objsyms, name);
+    Symbol *sym = NULL;
+    if (curfunc) {
+        sym = FindSymbol(&curfunc->localsyms, name);
+        if (!sym) {
+            sym = FindSymbol(&curfunc->parse->objsyms, name);
+        }
+    } else {
+        sym = FindSymbol(&current->objsyms, name);
+    }
+    return sym;
 }
 
 /* code to print a symbol to a file */

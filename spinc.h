@@ -46,6 +46,9 @@ typedef struct hwreg {
     const char *cname;
 } HwReg;
 
+/* forward declaration */
+typedef struct parserstate ParserState;
+
 /* structure describing a function */
 typedef struct funcdef {
     struct funcdef *next;
@@ -56,10 +59,16 @@ typedef struct funcdef {
     int numparams;
     AST *params;      /* parameter list */
     AST *body;
+
+    /* local symbols */
+    SymbolTable localsyms;
+
+    /* parser state during compilation */
+    ParserState *parse;
 } Function;
 
 /* parser state structure */
-typedef struct parserstate {
+struct parserstate {
     struct parserstate *next;  /* to make a stack */
     /* top level objects */
     AST *conblock;
@@ -81,7 +90,7 @@ typedef struct parserstate {
     /* various file name related strings */
     char *basename;    /* the file name without ".spin" */
     char *classname;   /* the class name */
-} ParserState;
+};
 
 /* the current parser state */
 extern ParserState *current;
@@ -111,6 +120,7 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body);
 void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
+void EnterVars(SymbolTable *stab, AST *type, AST *varlist);
 
 /* code for printing errors */
 extern int gl_errors;

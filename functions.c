@@ -28,7 +28,43 @@ NewFunction(void)
             pf = pf->next;
         pf->next = f;
     }
+    f->parse = current;
     return f;
+}
+
+static Symbol *
+EnterVariable(SymbolTable *stab, const char *name, AST *type)
+{
+    Symbol *sym;
+
+    sym = AddSymbol(stab, name, SYM_VARIABLE, (void *)type);
+    return sym;
+}
+
+void
+EnterVars(SymbolTable *stab, AST *curtype, AST *varlist)
+{
+    AST *lower;
+    AST *ast;
+
+    for (lower = varlist; lower; lower = lower->right) {
+        if (lower->kind == AST_LISTHOLDER) {
+            ast = lower->left;
+            switch (ast->kind) {
+            case AST_IDENTIFIER:
+                EnterVariable(stab, ast->d.string, curtype);
+                break;
+            case AST_ARRAYDECL:
+                EnterVariable(stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, curtype, ast->right));
+                break;
+            default:
+                ERROR("Internal error: bad AST value %d", ast->kind);
+                break;
+            }
+        } else {
+            ERROR("Expected list in constant, found %d instead", lower->kind);
+        }
+    }
 }
 
 void
@@ -59,6 +95,10 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     if (vars->kind != AST_FUNCVARS) {
         ERROR("Internal error: bad variable declaration");
     }
+
+    /* enter the variables into the local symbol table */
+    EnterVars(&fdef->localsyms, ast_type_long, vars->left);
+    EnterVars(&fdef->localsyms, ast_type_long, vars->right);
 
     fdef->body = body;
 }
