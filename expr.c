@@ -58,18 +58,17 @@ PrintBinaryOperator(FILE *f, int op, AST *left, AST *right)
         break;
     }
 }
- 
-/* code to print an expression to a file */
+
+/* code to print a source expression (could be an array reference or
+ * range)
+ */
 void
-PrintExpr(FILE *f, AST *expr)
+PrintLHS(FILE *f, AST *expr)
 {
     Symbol *sym;
     HwReg *hw;
 
     switch (expr->kind) {
-    case AST_INTEGER:
-        fprintf(f, "%lu", (unsigned long)expr->d.ival);
-        break;
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
@@ -82,15 +81,83 @@ PrintExpr(FILE *f, AST *expr)
         hw = (HwReg *)expr->d.ptr;
         fprintf(f, "%s", hw->cname);
         break;
+    default:
+        ERROR("bad target for assignment");
+        break;
+    }
+}
+
+/*
+ * special code for printing a range expression
+ * src->left is the hardware register
+ * src->right is an AST_RANGE with left being the start, right the end
+ *
+ * outa[2..1] := foo
+ * should evaluate to:
+ *   _OUTA = (_OUTA & ~(0x3<<1)) | (foo<<1);
+ */
+void
+PrintRangeAssign(FILE *f, AST *src, AST *dst)
+{
+    int lo, hi;
+    int reverse = 0;
+    unsigned int mask;
+    int nbits;
+
+    if (src->right->kind != AST_RANGE) {
+        ERROR("internal error: expecting range");
+        return;
+    }
+    hi = EvalConstExpr(src->right->left);
+    lo = EvalConstExpr(src->right->right);
+    if (hi < lo) {
+        int tmp;
+        reverse = 1;
+        tmp = lo; lo = hi; hi = tmp;
+    }
+    nbits = (hi - lo + 1);
+    if (nbits >= 32) {
+        PrintLHS(f, src->left);
+        fprintf(f, " = ");
+        PrintExpr(f, dst);
+        return;
+    }
+    mask = ~((1U<<nbits) - 1);
+    mask = (mask << lo) | (mask >> (32-lo));
+
+    PrintLHS(f, src->left);
+    fprintf(f, " = (");
+    PrintLHS(f, src->left);
+    fprintf(f, " & 0x%08x) | (", mask);
+    PrintExpr(f, dst);
+    fprintf(f, " << %d)", lo); 
+}
+
+/* code to print an expression to a file */
+void
+PrintExpr(FILE *f, AST *expr)
+{
+    switch (expr->kind) {
+    case AST_INTEGER:
+        fprintf(f, "%lu", (unsigned long)expr->d.ival);
+        break;
+    case AST_IDENTIFIER:
+    case AST_HWREG:
+        PrintLHS(f, expr);
+        break;
     case AST_OPERATOR:
         fprintf(f, "(");
         PrintBinaryOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
     case AST_ASSIGN:
-        PrintExpr(f, expr->left);
-        fprintf(f, " = ");
-        PrintExpr(f, expr->right);
+        if (expr->left->kind == AST_RANGEREF) {
+            PrintRangeAssign(f, expr->left, expr->right);
+        } else {
+            PrintLHS(f, expr->left);
+            fprintf(f, " = ");
+            PrintExpr(f, expr->right);
+        }
         break;
     default:
         ERROR("Internal error, bad expression");
