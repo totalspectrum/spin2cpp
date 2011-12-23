@@ -119,7 +119,7 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
-    fprintf(f, "  int32_t %s;\n", func->resultname);
+    fprintf(f, "  int32_t %s = 0;\n", func->resultname);
 }
  
 static void PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */

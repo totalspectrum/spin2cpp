@@ -13,6 +13,9 @@
 #include "lexer.h"
 #include "symbol.h"
 
+/* useful macro */
+#define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
+
 /* some globals */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
@@ -35,6 +38,13 @@ typedef struct Instruction {
     /* function for the spin form of the instruction */
     void      (*spinform)(FILE *, AST *);
 } Instruction;
+
+/* structure describing a hardware register */
+typedef struct hwreg {
+    const char *name;
+    uint32_t    addr;
+    const char *cname;
+} HwReg;
 
 /* structure describing a function */
 typedef struct funcdef {
@@ -105,5 +115,8 @@ void PrintFunctionBodies(FILE *f, ParserState *P);
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(const char *msg, ...);
+
+extern SymbolTable reservedWords;
+extern void InitPasm(void);
 
 #endif

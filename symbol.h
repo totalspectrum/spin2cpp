@@ -3,20 +3,26 @@
 
 #include <stdint.h>
 
+
+typedef enum symtype {
+    SYM_UNKNOWN = 0,     /* unknown symbol */
+    SYM_HW_REG,          /* hardware register */
+    SYM_RESERVED,        /* reserved word */
+    SYM_CONSTANT,        /* constant */
+    SYM_VARIABLE,        /* member variable */
+    SYM_INSTR,           /* PASM instruction */
+    SYM_HWREG,           /* hardware register */
+} Symtype;
+
 typedef struct symbol {
     struct symbol *next;  /* next in hash table */
     const char   *name;   /* name */
-    int    type;          /* symbol type */
-    void   *val;          /* symbol value */
+    Symtype       type;   /* symbol type */
+    void         *val;    /* symbol value */
 } Symbol;
 
 #define INTVAL(sym) ((intptr_t)((sym)->val))
 
-#define SYM_UNKNOWN   0     /* unknown symbol */
-#define SYM_HW_REG    1     /* hardware register */
-#define SYM_RESERVED  2     /* reserved word */
-#define SYM_CONSTANT  3     /* constant */
-#define SYM_VARIABLE  4     /* member variable */
 
 /*
  * symbol tables are basically just hash tables containing

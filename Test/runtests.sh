@@ -6,8 +6,7 @@ for i in test*.spin
 do
   j=`basename $i .spin`
   $PROG $i
-#  diff -u $j.h Expect/$j.h && diff -u $j.cpp Expect/$j.cpp
-  if diff -u $j.h Expect/$j.h
+  if  diff -u $j.h Expect/$j.h && diff -u $j.cpp Expect/$j.cpp
   then
       rm -f $j.h $j.cpp
       echo $j passed

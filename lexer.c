@@ -174,7 +174,21 @@ parseIdentifier(LexStream *L, AST **ast_ptr)
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
         free(place);
-        return INTVAL(sym);
+        if (sym->type == SYM_RESERVED)
+            return INTVAL(sym);
+        if (sym->type == SYM_INSTR) {
+            ast = NewAST(AST_INSTR, NULL, NULL);
+            ast->d.ptr = sym->val;
+            *ast_ptr = ast;
+            return T_INSTR;
+        }
+        if (sym->type == SYM_HWREG) {
+            ast = NewAST(AST_HWREG, NULL, NULL);
+            ast->d.ptr = sym->val;
+            *ast_ptr = ast;
+            return T_HWREG;
+        }
+        fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
     }
 
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
@@ -226,7 +240,7 @@ again:
     return c;
 }
 
-static char operator_chars[] = "-+*/|<>=!@~#^:";
+static char operator_chars[] = "-+*/|<>=!@~#^:.";
 
 int
 getToken(LexStream *L, AST **ast_ptr)
@@ -330,16 +344,19 @@ struct reservedword {
     { "<>", T_NE },
 
     { ":=", T_ASSIGN },
+    { "..", T_DOTS },
 };
-
-#define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
 
 void
 initLexer(void)
 {
     int i;
 
+    /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_words); i++) {
         AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
     }
+
+    /* add the PASM instructions */
+    InitPasm();
 }

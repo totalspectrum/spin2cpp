@@ -106,3 +106,41 @@ instr[] = {
 
     { "xor",    0x6c800000, TWO_OPERANDS, nofunc },
 };
+
+HwReg hwreg[] = {
+    { "par", 0x1f0, "_PAR" },
+    { "cnt", 0x1f1, "_CNT" },
+    { "ina", 0x1f2, "_INA" },
+    { "inb", 0x1f3, "_INB" },
+    { "outa", 0x1f4, "_OUTA" },
+    { "outb", 0x1f5, "_OUTB" },
+    { "dira", 0x1f6, "_DIRA" },
+    { "dirb", 0x1f7, "_DIRB" },
+    { "ctra", 0x1f8, "_CTRA" },
+    { "ctrb", 0x1f9, "_CTRB" },
+
+    { "frqa", 0x1fa, "_FRQA" },
+    { "frqb", 0x1fb, "_FRQB" },
+    { "phsa", 0x1fc, "_PHSA" },
+    { "phsb", 0x1fd, "_PHSB" },
+
+    { "vcfg", 0x1fe, "_VCFG" },
+    { "vscl", 0x1ff, "_VSCL" },
+
+};
+
+void
+InitPasm(void)
+{
+    int i;
+
+    /* add instructions */
+    for (i = 0; i < N_ELEMENTS(instr); i++) {
+        AddSymbol(&reservedWords, instr[i].name, SYM_INSTR, (void *)&instr[i]);
+    }
+
+    /* add hardware registers */
+    for (i = 0; i < N_ELEMENTS(hwreg); i++) {
+        AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+    }
+}

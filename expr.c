@@ -64,6 +64,8 @@ void
 PrintExpr(FILE *f, AST *expr)
 {
     Symbol *sym;
+    HwReg *hw;
+
     switch (expr->kind) {
     case AST_INTEGER:
         fprintf(f, "%lu", (unsigned long)expr->d.ival);
@@ -75,6 +77,10 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             PrintSymbol(f, sym);
         }
+        break;
+    case AST_HWREG:
+        hw = (HwReg *)expr->d.ptr;
+        fprintf(f, "%s", hw->cname);
         break;
     case AST_OPERATOR:
         fprintf(f, "(");

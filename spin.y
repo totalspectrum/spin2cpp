@@ -30,6 +30,9 @@
 %token T_WORD
 %token T_LONG
 
+%token T_INSTR
+%token T_HWREG
+
 %token T_REPEAT
 %token T_IF
 %token T_IFNOT
@@ -43,6 +46,7 @@
 %token T_OUTDENT
 %token T_EOLN
 %token T_EOF
+%token T_DOTS
 
 /* operators */
 %right T_ASSIGN
@@ -256,8 +260,18 @@ expr:
   ;
 
 lhs: identifier
-  | lhs '[' expr ']'
+  | identifier '[' expr ']'
     { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+  | hwreg
+  | hwreg '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $3); }
+  ;
+
+range:
+  expr
+    { $$ = NewAST(AST_RANGE, $1, $1); }
+  | expr T_DOTS expr
+    { $$ = NewAST(AST_RANGE, $1, $3); }
   ;
 
 sizespec:
@@ -273,6 +287,11 @@ integer:
 
 identifier:
   T_IDENTIFIER
+  { $$ = current->ast; }
+;
+
+hwreg:
+  T_HWREG
   { $$ = current->ast; }
 ;
  

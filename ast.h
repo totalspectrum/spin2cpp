@@ -42,9 +42,14 @@ enum astkind {
     AST_FUNCVARS,
     AST_STMTLIST,
 
-    AST_RETURN = 20,
+    AST_INSTR = 20,
+    AST_HWREG,
+    AST_RETURN,
     AST_IF,
-    AST_THENELSE,
+
+    AST_THENELSE = 24,
+    AST_RANGE,
+    AST_RANGEREF,
 };
 
 struct AST {
