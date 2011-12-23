@@ -260,6 +260,7 @@ expr:
   | expr T_HIGHMULT expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_HIGHMULT; }
   | '(' expr ')'
+    { $$ = $2; }
   ;
 
 lhs: identifier

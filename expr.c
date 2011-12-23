@@ -131,15 +131,15 @@ PrintRangeAssign(FILE *f, AST *src, AST *dst)
         PrintExpr(f, dst);
         return;
     }
-    mask = ~((1U<<nbits) - 1);
+    mask = ((1U<<nbits) - 1);
     mask = (mask << lo) | (mask >> (32-lo));
 
     PrintLHS(f, src->left);
     fprintf(f, " = (");
     PrintLHS(f, src->left);
-    fprintf(f, " & 0x%08x) | (", mask);
+    fprintf(f, " & 0x%08x) | ((", ~mask);
     PrintExpr(f, dst);
-    fprintf(f, " << %d)", lo); 
+    fprintf(f, " << %d) & 0x%08x)", lo, mask); 
 }
 
 /* code to print an expression to a file */
