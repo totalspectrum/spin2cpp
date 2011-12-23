@@ -50,6 +50,9 @@ enum astkind {
     AST_THENELSE = 24,
     AST_RANGE,
     AST_RANGEREF,
+    AST_FUNCCALL,
+
+    AST_EXPRLIST = 28,
 };
 
 struct AST {

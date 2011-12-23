@@ -98,6 +98,7 @@ extern Function *curfunc;
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
+void PrintExprList(FILE *f, AST *list);
 
 /* evaluate a constant expression */
 long EvalConstExpr(AST *expr);

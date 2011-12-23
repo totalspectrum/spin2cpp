@@ -262,6 +262,7 @@ expr:
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_HIGHMULT; }
   | '(' expr ')'
     { $$ = $2; }
+  | funccall
   ;
 
 lhs: identifier
@@ -271,6 +272,18 @@ lhs: identifier
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3); }
   ;
+
+funccall:
+  identifier '(' exprlist ')'
+  { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  ;
+
+exprlist:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+ | exprlist ',' expr
+   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+ ;
 
 range:
   expr

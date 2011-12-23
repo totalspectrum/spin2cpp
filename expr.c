@@ -28,6 +28,7 @@ void
 PrintFuncCall(FILE *f, Symbol *sym, AST *params)
 {
     fprintf(f, "%s(", sym->name);
+    PrintExprList(f, params);
     fprintf(f, ")");
 }
 
@@ -164,6 +165,8 @@ PrintRangeAssign(FILE *f, AST *src, AST *dst)
 void
 PrintExpr(FILE *f, AST *expr)
 {
+    Symbol *sym;
+
     switch (expr->kind) {
     case AST_INTEGER:
         fprintf(f, "%lu", (unsigned long)expr->d.ival);
@@ -184,6 +187,18 @@ PrintExpr(FILE *f, AST *expr)
             PrintLHS(f, expr->left, 1);
             fprintf(f, " = ");
             PrintExpr(f, expr->right);
+        }
+        break;
+    case AST_FUNCCALL:
+        sym = NULL;
+        if (expr->left) {
+            if (expr->left->kind == AST_IDENTIFIER)
+                sym = LookupSymbol(expr->left->d.string);
+        }
+        if (!sym || sym->type != SYM_FUNCTION) {
+            ERROR("not a function");
+        } else {
+            PrintFuncCall(f, sym, expr->right);
         }
         break;
     default:
@@ -259,4 +274,22 @@ EvalConstExpr(AST *expr)
         break;
     }
     return 0;
+}
+
+void
+PrintExprList(FILE *f, AST *list)
+{
+    int needcomma = 0;
+    while (list) {
+        if (list->kind != AST_EXPRLIST) {
+            ERROR("expected expression list");
+            return;
+        }
+        if (needcomma) {
+            fprintf(f, ", ");
+        }
+        PrintExpr(f, list->left);
+        needcomma = 1;
+        list = list->right;
+    }
 }
