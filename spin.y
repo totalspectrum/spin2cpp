@@ -176,21 +176,20 @@ enumitem:
 
 datblock:
   datline
+    { $$ = $1; }
   | datblock datline
+    { $$ = AddToList($1, $2); }
   ;
 
 datline:
-  sizespec datalist T_EOLN
+  T_BYTE exprlist T_EOLN
+    { $$ = NewAST(AST_BYTELIST, $2, NULL); }
+  | T_WORD exprlist T_EOLN
+    { $$ = NewAST(AST_WORDLIST, $2, NULL); }
+  | T_LONG exprlist T_EOLN
+    { $$ = NewAST(AST_LONGLIST, $2, NULL); }
   ;
 
-datalist:
-  dataelem
-  | datalist ',' dataelem
-  ;
-
-dataelem:
-  optsize expr optcount
-;
 
 varblock:
     varline
@@ -220,14 +219,6 @@ identdecl:
   { $$ = $1; }
   | identifier '[' expr ']'
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
-  ;
-
-optsize:
-  | sizespec
-  ;
-
-optcount:
-  | '[' expr ']'
   ;
 
 
@@ -290,12 +281,6 @@ range:
     { $$ = NewAST(AST_RANGE, $1, $1); }
   | expr T_DOTS expr
     { $$ = NewAST(AST_RANGE, $1, $3); }
-  ;
-
-sizespec:
-  T_BYTE
-  | T_WORD
-  | T_LONG
   ;
 
 integer:

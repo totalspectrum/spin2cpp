@@ -193,6 +193,9 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         fprintf(f, ";\n");
         break;
+    case AST_STMTLIST:
+        PrintStatementList(f, ast, indent+2);
+        break;
     default:
         fprintf(f, "%*c", indent, ' ');
         PrintExpr(f, ast);
@@ -205,7 +208,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
 static void
 PrintFunctionStmts(FILE *f, Function *func)
 {
-    PrintStatementList(f, func->body, 2);
+    PrintStatementList(f, func->body, 0);
 }
 
 void
