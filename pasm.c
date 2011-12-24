@@ -33,7 +33,7 @@ outputByte(FILE *f, int c)
 }
 
 void
-outputAlignedDataList(FILE *f, int size, AST *ast)
+outputDataList(FILE *f, int size, AST *ast)
 {
     unsigned val;
     int i;
@@ -46,6 +46,17 @@ outputAlignedDataList(FILE *f, int size, AST *ast)
         }
         ast = ast->right;
     }
+}
+
+void
+outputAlignedDataList(FILE *f, int size, AST *ast)
+{
+    if (size > 1) {
+        while ((datacount % size) != 0) {
+            outputByte(f, 0);
+        }
+    }
+    outputDataList(f, size, ast);
 }
 
 /*

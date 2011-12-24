@@ -26,7 +26,7 @@ lexer.c: spin.tab.h
 clean:
 	$(RM) $(PROGS) *.o spin.tab.c spin.tab.h
 
-test: testlex
+test: $(PROGS)
 	./testlex
 	(cd Test; ./runtests.sh)
 

@@ -1,3 +1,3 @@
 DAT
-  byte $aa, $bb, $cc, $dd
+  byte $aa, $bb, $cc
   long $aabbccdd
