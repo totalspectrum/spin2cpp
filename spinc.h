@@ -121,6 +121,7 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body);
 void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
+void PrintDataBlock(FILE *f, ParserState *P);
 void EnterVars(SymbolTable *stab, AST *type, AST *varlist);
 
 /* code for printing errors */

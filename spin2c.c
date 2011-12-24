@@ -197,6 +197,10 @@ PrintHeaderFile(FILE *f, ParserState *parse)
             break;
         }
     }
+    /* data block, if applicable */
+    if (parse->datblock) {
+        fprintf(f, "  static uint8_t dat[];\n");
+    }
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
 
@@ -229,6 +233,13 @@ PrintCppFile(FILE *f, ParserState *parse)
     fprintf(f, "#include <propeller.h>\n");
     fprintf(f, "#include \"%s.h\"\n", parse->basename);
     fprintf(f, "\n");
+    /* print data block, if applicable */
+    if (parse->datblock) {
+        fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+        PrintDataBlock(f, parse);
+        fprintf(f, "};\n");
+    }
+    /* functions */
     PrintFunctionBodies(f, parse);
 }
 
