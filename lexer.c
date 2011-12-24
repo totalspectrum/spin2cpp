@@ -45,6 +45,7 @@ strungetc(LexStream *L, int c)
 /* open a stream from a string s */
 void strToLex(LexStream *L, const char *s)
 {
+    memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
     L->ungetcf = strungetc;
@@ -77,6 +78,7 @@ fileungetc(LexStream *L, int c)
 /* open a stream from a FILE f */
 void fileToLex(LexStream *L, FILE *f, const char *name)
 {
+    memset(L, 0, sizeof(*L));
     L->ptr = (void *)f;
     L->arg = NULL;
     L->getcf = filegetc;
@@ -174,8 +176,16 @@ parseIdentifier(LexStream *L, AST **ast_ptr)
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
         free(place);
-        if (sym->type == SYM_RESERVED)
-            return INTVAL(sym);
+        if (sym->type == SYM_RESERVED) {
+            c = INTVAL(sym);
+            /* check for special handling */
+            if (c == T_PUB || c == T_PRI) {
+                L->in_func = 1;
+            } else if (c == T_DAT || c == T_OBJ || c == T_VAR || c == T_CON) {
+                L->in_func = 0;
+            }
+            return c;
+        }
         if (sym->type == SYM_INSTR) {
             ast = NewAST(AST_INSTR, NULL, NULL);
             ast->d.ptr = sym->val;
@@ -200,23 +210,56 @@ parseIdentifier(LexStream *L, AST **ast_ptr)
 //
 // skip over comments and spaces
 // return first non-comment non-space character
+// if we are inside a function, emit T_INDENT when
+// we increase the indent level, T_OUTDENT when we
+// decrease it
 //
+#define TAB_STOP 8
+
 int
 skipSpace(LexStream *L)
 {
     int c;
     int commentNest;
-
+    int indent = 0;
 again:
     c = lexgetc(L);
-    while (c == ' ' || c == '\t')
+    while (c == ' ' || c == '\t') {
+        if (L->eoln) {
+            if (c == '\t') {
+                indent = TAB_STOP * ((indent + (TAB_STOP-1))/TAB_STOP);
+            } else {
+                indent++;
+            }
+        }
         c = lexgetc(L);
+    }
+    if (L->in_func && L->eoln) {
+        if (indent > L->indent) {
+            lexungetc(L, c);
+            L->indent = indent;
+            L->eoln = 0;
+            return T_INDENT;
+        }
+        if (indent < L->indent) {
+            lexungetc(L, c);
+            L->indent = indent;
+            L->eoln = 0;
+            return T_OUTDENT;
+        }
+    }
+    L->eoln = 0;
+
+    /* single quote comments */
     if (c == '\'') {
         do {
             c = lexgetc(L);
         } while (c != '\n' && c != T_EOF);
-        if (c == '\n')
+        if (c == '\n') {
+            L->lineCounter++;
+            L->eoln = 1;
             goto again;
+        }
     }
     if (c == '{') {
         commentNest = 1;
@@ -235,6 +278,7 @@ again:
     }
     if (c == '\n') {
         L->lineCounter++;
+        L->eoln = 1;
         return T_EOLN;
     }
     return c;

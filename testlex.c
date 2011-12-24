@@ -88,6 +88,9 @@ static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOF };
 static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOF };
 static int tokens3[] = { '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
 
+static int tokens4[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
+static const char *token4test = "pub \n  if\n    foo\n  bar\n";
+
 int
 main()
 {
@@ -101,6 +104,7 @@ main()
     testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
     testTokenStream("con CON con99 Con 99", tokens2, N_ELEM(tokens2));
     testTokenStream("< =< => > == = +<", tokens3, N_ELEM(tokens3));
+    testTokenStream(token4test, tokens4, N_ELEM(tokens4));
 
     testNumber("0", 0);
     testNumber("00", 0);
