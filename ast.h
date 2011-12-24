@@ -53,6 +53,7 @@ enum astkind {
     AST_FUNCCALL,
 
     AST_EXPRLIST = 28,
+    AST_INSTRHOLDER,
 };
 
 struct AST {

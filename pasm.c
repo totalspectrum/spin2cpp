@@ -60,6 +60,101 @@ outputAlignedDataList(FILE *f, int size, AST *ast)
 }
 
 /*
+ * find the length of a data list, in bytes
+ */
+unsigned
+dataListLen(AST *ast, int elemsize)
+{
+    unsigned size = 0;
+
+    while (ast) {
+        size += elemsize;
+        ast = ast->right;
+    }
+    return size;
+}
+
+/*
+ * align a pc on a boundary
+ */
+unsigned
+align(unsigned pc, int size)
+{
+    pc = (pc + (size-1)) & ~(size-1);
+    return pc;
+}
+
+/*
+ * enter a label
+ */
+void
+EnterLabel(ParserState *P, const char *name, long pc, long asmbase)
+{
+    Symbol *sym;
+    Label *labelref;
+
+    labelref = calloc(1, sizeof(*labelref));
+    if (!labelref) {
+        fprintf(stderr, "out of memory\n");
+        exit(1);
+    }
+    labelref->offset = pc;
+    labelref->asmval = pc - asmbase;
+    labelref->type = ast_type_long;
+    sym = AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
+}
+
+/*
+ * emit pending labels
+ */
+AST *
+emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmbase)
+{
+    while (label) {
+        EnterLabel(P, label->left->d.string, pc, asmbase);
+        label = label->right;
+    }
+    return NULL;
+}
+
+/*
+ * declare labels for a data block
+ */
+void
+DeclareLabels(ParserState *P)
+{
+    unsigned pc = 0;
+    unsigned asmbase = 0;
+    AST *ast = NULL;
+    AST *pendingLabels = NULL;
+
+    for (ast = P->datblock; ast; ast = ast->right) {
+        switch (ast->kind) {
+        case AST_BYTELIST:
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pc += dataListLen(ast->left, 1);
+            break;
+        case AST_WORDLIST:
+            pc = align(pc, 2);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pc += dataListLen(ast->left, 2);
+            break;
+        case AST_LONGLIST:
+            pc = align(pc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pc += dataListLen(ast->left, 4);
+            break;
+        case AST_IDENTIFIER:
+            pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
+            break;
+        default:
+            ERROR("unknown element in data block");
+            break;
+        }
+    }
+}
+
+/*
  * print out a data block
  */
 void
@@ -68,7 +163,7 @@ PrintDataBlock(FILE *f, ParserState *P)
     AST *ast;
 
     initDataOutput();
-    //DeclareLabels(P);
+    DeclareLabels(P);
     for (ast = P->datblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
@@ -79,6 +174,9 @@ PrintDataBlock(FILE *f, ParserState *P)
             break;
         case AST_LONGLIST:
             outputAlignedDataList(f, 4, ast->left);
+            break;
+        case AST_IDENTIFIER:
+            /* just skip labels */
             break;
         default:
             ERROR("unknown element in data block");

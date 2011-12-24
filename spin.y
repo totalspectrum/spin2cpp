@@ -182,12 +182,20 @@ datblock:
   ;
 
 datline:
+  basedatline
+  | identifier basedatline
+    { $$ = AddToList($1, $2); }
+  ;
+
+basedatline:
   T_BYTE exprlist T_EOLN
     { $$ = NewAST(AST_BYTELIST, $2, NULL); }
   | T_WORD exprlist T_EOLN
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | T_LONG exprlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+  | instruction exprlist T_EOLN
+    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
   ;
 
 
@@ -295,6 +303,11 @@ identifier:
 
 hwreg:
   T_HWREG
+  { $$ = current->ast; }
+;
+
+instruction:
+  T_INSTR
   { $$ = current->ast; }
 ;
  

@@ -39,6 +39,13 @@ typedef struct Instruction {
     void      (*spinform)(FILE *, AST *);
 } Instruction;
 
+/* structure describing a dat block label */
+typedef struct label {
+    uint32_t offset;
+    uint32_t asmval;
+    AST *type;  /* type of value following the label */
+} Label;
+
 /* structure describing a hardware register */
 typedef struct hwreg {
     const char *name;

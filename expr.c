@@ -20,7 +20,16 @@ LookupSymbol(const char *name)
 void
 PrintSymbol(FILE *f, Symbol *sym)
 {
-    fprintf(f, "%s", sym->name);
+    Label *ref;
+    switch (sym->type) {
+    case SYM_LABEL:
+        ref = (Label *)sym->val;
+        fprintf(f, "(*(int32_t *)&dat[%d])", ref->offset);
+        break;
+    default:
+        fprintf(f, "%s", sym->name);
+        break;
+    }
 }
 
 /* code to print a function call to a file */
