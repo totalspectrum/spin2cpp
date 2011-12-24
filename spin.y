@@ -52,9 +52,12 @@
 /* operators */
 %right T_ASSIGN
 %left '<' '>' T_GE T_LE T_NE T_EQ
+%left T_LIMITMIN T_LIMITMAX
 %left '-' '+'
 %left '*' '/' T_MODULUS T_HIGHMULT
-%right T_UNARY_MINUS T_BIT_NOT
+%left '|' '^'
+%left '&'
+%left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
 
 %%
 input:
@@ -243,6 +246,12 @@ expr:
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '*'; }
   | expr '/' expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '/'; }
+  | expr '&' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '&'; }
+  | expr '|' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '|'; }
+  | expr '^' expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '^'; }
   | expr '>' expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '>'; }
   | expr '<' expr
@@ -259,9 +268,23 @@ expr:
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_MODULUS; }
   | expr T_HIGHMULT expr
     { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_HIGHMULT; }
+  | expr T_LIMITMIN expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_LIMITMIN; }
+  | expr T_LIMITMAX expr
+    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_LIMITMAX; }
   | '(' expr ')'
     { $$ = $2; }
   | funccall
+  | '-' expr %prec T_NEGATE
+    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_NEGATE; }
+  | '!' expr %prec T_BIT_NOT
+    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_BIT_NOT; }
+  | T_ABS expr
+    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_ABS; }
+  | T_DECODE expr
+    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_DECODE; }
+  | T_ENCODE expr
+    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_ENCODE; }
   ;
 
 lhs: identifier

@@ -230,6 +230,10 @@ EvalOperator(int op, long lval, long rval)
         return lval % rval;
     case '*':
         return lval * rval;
+    case '|':
+        return lval | rval;
+    case '&':
+        return lval & rval;
     case T_HIGHMULT:
         return (int)(((long long)lval * (long long)rval) >> 32LL);
     case '<':
@@ -244,17 +248,30 @@ EvalOperator(int op, long lval, long rval)
         return lval != rval;
     case T_EQ:
         return lval == rval;
+    case T_NEGATE:
+        return -lval;
+    case T_BIT_NOT:
+        return ~lval;
+    case T_ABS:
+        return (lval < 0) ? -lval : lval;
+    case T_DECODE:
+        return (1L << lval);
+    case T_ENCODE:
+        return 32 - __builtin_clz(lval);
     default:
         ERROR("unknown operator %d\n", op);
         return 0;
     }
 }
 
-long
-EvalConstExpr(AST *expr)
+static long
+EvalExpr(AST *expr, unsigned flags)
 {
     Symbol *sym;
     long lval, rval;
+
+    if (!expr)
+        return 0;
 
     switch (expr->kind) {
     case AST_INTEGER:
@@ -275,14 +292,20 @@ EvalConstExpr(AST *expr)
         }
         break;
     case AST_OPERATOR:
-        lval = EvalConstExpr(expr->left);
-        rval = EvalConstExpr(expr->right);
+        lval = EvalExpr(expr->left, flags);
+        rval = EvalExpr(expr->right, flags);
         return EvalOperator(expr->d.ival, lval, rval);
     default:
         ERROR("Bad constant expression");
         break;
     }
     return 0;
+}
+
+long
+EvalConstExpr(AST *expr)
+{
+    return EvalExpr(expr, 0);
 }
 
 void

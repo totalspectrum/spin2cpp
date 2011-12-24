@@ -391,6 +391,11 @@ struct reservedword {
 
     { ":=", T_ASSIGN },
     { "..", T_DOTS },
+    { "|<", T_DECODE },
+    { ">|", T_ENCODE },
+    { "||", T_ABS },
+    { "#>", T_LIMITMIN },
+    { "#<", T_LIMITMAX },
 };
 
 void
