@@ -45,9 +45,17 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params)
 static void
 PrintInOp(FILE *f, const char *op, AST *left, AST *right)
 {
-    PrintExpr(f, left);
-    fprintf(f, " %s ", op);
-    PrintExpr(f, right);
+    if (left && right) {
+        PrintExpr(f, left);
+        fprintf(f, " %s ", op);
+        PrintExpr(f, right);
+    } else if (right) {
+        fprintf(f, "%s", op);
+        PrintExpr(f, right);
+    } else {
+        PrintExpr(f, left);
+        fprintf(f, "%s", op);
+    }
 }
 
 void
@@ -74,6 +82,18 @@ PrintBinaryOperator(FILE *f, int op, AST *left, AST *right)
         break;
     case T_NE:
         PrintInOp(f, "!=", left, right);
+        break;
+    case T_SHL:
+        PrintInOp(f, "<<", left, right);
+        break;
+    case T_SAR:
+        PrintInOp(f, ">>", left, right);
+        break;
+    case T_SHR:
+        fprintf(f, "((uint32_t)");
+        PrintExpr(f, left);
+        fprintf(f, ") >> ");
+        PrintExpr(f, right);
         break;
     case T_MODULUS:
         PrintInOp(f, "%", left, right);
@@ -236,6 +256,12 @@ EvalOperator(int op, long lval, long rval)
         return lval & rval;
     case T_HIGHMULT:
         return (int)(((long long)lval * (long long)rval) >> 32LL);
+    case T_SHL:
+        return lval << rval;
+    case T_SHR:
+        return ((uint32_t)lval) >> rval;
+    case T_SAR:
+        return ((int32_t)lval) >> rval;
     case '<':
         return lval < rval;
     case '>':
@@ -249,15 +275,15 @@ EvalOperator(int op, long lval, long rval)
     case T_EQ:
         return lval == rval;
     case T_NEGATE:
-        return -lval;
+        return -rval;
     case T_BIT_NOT:
-        return ~lval;
+        return ~rval;
     case T_ABS:
-        return (lval < 0) ? -lval : lval;
+        return (rval < 0) ? -rval : rval;
     case T_DECODE:
-        return (1L << lval);
+        return (1L << rval);
     case T_ENCODE:
-        return 32 - __builtin_clz(lval);
+        return 32 - __builtin_clz(rval);
     default:
         ERROR("unknown operator %d\n", op);
         return 0;

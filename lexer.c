@@ -389,6 +389,10 @@ struct reservedword {
     { "==", T_EQ },
     { "<>", T_NE },
 
+    { "<<", T_SHL },
+    { ">>", T_SHR },
+    { "~>", T_SAR },
+
     { ":=", T_ASSIGN },
     { "..", T_DOTS },
     { "|<", T_DECODE },

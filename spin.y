@@ -57,6 +57,7 @@
 %left '*' '/' T_MODULUS T_HIGHMULT
 %left '|' '^'
 %left '&'
+%left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
 
 %%
@@ -276,15 +277,15 @@ expr:
     { $$ = $2; }
   | funccall
   | '-' expr %prec T_NEGATE
-    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_NEGATE; }
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_NEGATE; }
   | '!' expr %prec T_BIT_NOT
-    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_BIT_NOT; }
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_BIT_NOT; }
   | T_ABS expr
-    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_ABS; }
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ABS; }
   | T_DECODE expr
-    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_DECODE; }
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_DECODE; }
   | T_ENCODE expr
-    { $$ = NewAST(AST_OPERATOR, $2, NULL); $$->d.ival = T_ENCODE; }
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ENCODE; }
   ;
 
 lhs: identifier
