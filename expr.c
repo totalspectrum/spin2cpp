@@ -237,7 +237,7 @@ PrintExpr(FILE *f, AST *expr)
 }
 
 static long
-EvalOperator(int op, long lval, long rval)
+EvalOperator(int op, int32_t lval, int32_t rval)
 {
     switch (op) {
     case '+':
@@ -290,11 +290,13 @@ EvalOperator(int op, long lval, long rval)
     }
 }
 
-static long
+#define PASM_FLAG 0x01
+
+static int32_t
 EvalExpr(AST *expr, unsigned flags)
 {
     Symbol *sym;
-    long lval, rval;
+    int32_t lval, rval;
 
     if (!expr)
         return 0;
@@ -310,7 +312,17 @@ EvalExpr(AST *expr, unsigned flags)
         } else {
             switch (sym->type) {
             case SYM_CONSTANT:
-                return (long)sym->val;
+                return (int32_t)(intptr_t)sym->val;
+            case SYM_LABEL:
+                if (flags & PASM_FLAG) {
+                    Label *lref = sym->val;
+                    if (lref->asmval & 0x03) {
+                        ERROR("label %s not on longword boundary", sym->name);
+                        return 0;
+                    }
+                    return lref->asmval >> 2;
+                }
+                /* otherwise fall through */
             default:
                 ERROR("Symbol %s is not constant", expr->d.string);
                 break;
@@ -321,6 +333,13 @@ EvalExpr(AST *expr, unsigned flags)
         lval = EvalExpr(expr->left, flags);
         rval = EvalExpr(expr->right, flags);
         return EvalOperator(expr->d.ival, lval, rval);
+    case AST_HWREG:
+        if (flags & PASM_FLAG) {
+            HwReg *hw = expr->d.ptr;
+            return hw->addr;
+        }
+        ERROR("Used hardware register where constant is expected");
+        break;
     default:
         ERROR("Bad constant expression");
         break;
@@ -328,10 +347,16 @@ EvalExpr(AST *expr, unsigned flags)
     return 0;
 }
 
-long
+int32_t
 EvalConstExpr(AST *expr)
 {
     return EvalExpr(expr, 0);
+}
+
+int32_t
+EvalPasmExpr(AST *expr)
+{
+    return EvalExpr(expr, PASM_FLAG);
 }
 
 void

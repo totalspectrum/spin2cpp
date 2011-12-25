@@ -32,8 +32,11 @@
 
 %token T_INSTR
 %token T_HWREG
+%token T_ORG
 
 %token T_REPEAT
+%token T_WHILE
+%token T_UNTIL
 %token T_IF
 %token T_IFNOT
 %token T_ELSE
@@ -189,12 +192,12 @@ datline:
   basedatline
   | identifier basedatline
     { $$ = AddToList($1, $2); }
-  | identifier T_EOLN
-    { $$ = $1; }
   ;
 
 basedatline:
-  T_BYTE exprlist T_EOLN
+  T_EOLN
+    { $$ = NULL; }
+  | T_BYTE exprlist T_EOLN
     { $$ = NewAST(AST_BYTELIST, $2, NULL); }
   | T_WORD exprlist T_EOLN
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
@@ -204,6 +207,8 @@ basedatline:
     { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
   | instruction T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
+  | T_ORG T_EOLN
+    { $$ = NewAST(AST_ORG, NULL, NULL); }
   ;
 
 

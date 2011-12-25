@@ -5,6 +5,8 @@
 #ifndef SPINC_H
 #define SPINC_H
 
+#include <stdint.h>
+
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
 #define YYSTYPE AST *
@@ -108,7 +110,10 @@ void PrintExpr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 
 /* evaluate a constant expression */
-long EvalConstExpr(AST *expr);
+int32_t EvalConstExpr(AST *expr);
+
+/* similar but for PASM */
+int32_t EvalPasmExpr(AST *expr);
 
 /* declare a function */
 /* "body" is the list of statements */

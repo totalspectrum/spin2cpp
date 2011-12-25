@@ -365,13 +365,17 @@ struct reservedword {
     { "long", T_LONG },
 
     { "obj", T_OBJ },
+    { "org", T_ORG },
     { "pri", T_PRI },
     { "pub", T_PUB },
     { "repeat", T_REPEAT },
     { "return", T_RETURN },
 
+    { "until", T_UNTIL },
+
     { "var", T_VAR },
 
+    { "while", T_WHILE },
     { "word", T_WORD },
 
     /* operators */

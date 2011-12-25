@@ -136,7 +136,7 @@ DeclareVariables(void)
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
-    fprintf(f, "  const int %s = %ld;\n", ast->d.string, EvalConstExpr(ast));
+    fprintf(f, "  const int %s = %d;\n", ast->d.string, (int)EvalConstExpr(ast));
 }
 
 static void
@@ -161,8 +161,8 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
             fprintf(f, "%s", decl->d.string);
             break;
         case AST_ARRAYDECL:
-            fprintf(f, "%s[%ld]", decl->left->d.string,
-                    EvalConstExpr(decl->right));
+            fprintf(f, "%s[%d]", decl->left->d.string,
+                    (int)EvalConstExpr(decl->right));
             break;
         default:
             ERROR("Internal problem in variable list: type=%d\n", decl->kind);

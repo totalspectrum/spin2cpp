@@ -51,12 +51,15 @@ outputDataList(FILE *f, int size, AST *ast)
 /*
  * assemble an instruction, along with its modifiers
  */
+#define MAX_OPERANDS 2
+
 void
 assembleInstruction(FILE *f, AST *ast)
 {
-    uint32_t val, mask;
+    uint32_t val, mask, src, dst;
     Instruction *instr;
-    int i;
+    int i, numoperands, expectops;
+    AST *operand[MAX_OPERANDS];
 
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
@@ -64,11 +67,18 @@ assembleInstruction(FILE *f, AST *ast)
         /* for anything except NOP set the condition to "always" */
         val |= 0xf << 18;
     }
-    /* check for modifiers */
+    /* check for modifiers and operands */
+    numoperands = 0;
     ast = ast->right;
     while (ast != NULL) {
-        if (ast->kind != AST_INSTRMODIFIER) {
-            ERROR("Internal error: expected instruction modifier");
+        if (ast->kind == AST_EXPRLIST) {
+            if (numoperands >= MAX_OPERANDS) {
+                ERROR("Too many operands to instruction");
+                return;
+            }
+            operand[numoperands++] = ast->left;
+        } else if (ast->kind != AST_INSTRMODIFIER) {
+            ERROR("Internal error: expected instruction modifier found %d", ast->kind);
             return;
         }
         mask = ast->d.ival;
@@ -79,6 +89,45 @@ assembleInstruction(FILE *f, AST *ast)
         }
         ast = ast->right;
     }
+
+    /* parse operands and put them in place */
+    switch (instr->ops) {
+    case NO_OPERANDS:
+        expectops = 0;
+        break;
+    case TWO_OPERANDS:
+        expectops = 2;
+        break;
+    default:
+        expectops = 1;
+        break;
+    }
+    if (expectops != numoperands) {
+        ERROR("Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
+        return;
+    }
+    src = dst = 0;
+    switch (instr->ops) {
+    case NO_OPERANDS:
+        break;
+    case TWO_OPERANDS:
+        dst = EvalPasmExpr(operand[0]);
+        src = EvalPasmExpr(operand[1]);
+        break;
+    default:
+        ERROR("Unsupported instruction %s", instr->name);
+        return;
+    }
+    if (src > 511) {
+        ERROR("Source operand too big for %s", instr->name);
+        return;
+    }
+    if (dst > 511) {
+        ERROR("Destination operand too big for %s", instr->name);
+        return;
+    }
+    val = val | (dst << 9) | src;
+    /* output the instruction */
     for (i = 0; i < 4; i++) {
         outputByte(f, val & 0xff);
         val = val >> 8;
@@ -189,6 +238,9 @@ DeclareLabels(ParserState *P)
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
+        case AST_ORG:
+            asmbase = pc;
+            break;
         default:
             ERROR("unknown element %d in data block", ast->kind);
             break;
@@ -224,6 +276,8 @@ PrintDataBlock(FILE *f, ParserState *P)
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
+            break;
+        case AST_ORG:
             break;
         default:
             ERROR("unknown element in data block");
