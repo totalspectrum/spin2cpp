@@ -138,7 +138,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     }
     lexungetc(L, c);
     *num = uval;
-    return sawdigit ? T_NUM : ((base == 16) ? '$' : '%');
+    return sawdigit ? T_NUM : ((base == 16) ? T_HERE : '%');
 }
 
 /* dynamically grow a string */

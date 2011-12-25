@@ -182,7 +182,7 @@ align(unsigned pc, int size)
  * enter a label
  */
 void
-EnterLabel(ParserState *P, const char *name, long pc, long asmbase)
+EnterLabel(ParserState *P, const char *name, long offset, long asmpc)
 {
     Symbol *sym;
     Label *labelref;
@@ -192,8 +192,8 @@ EnterLabel(ParserState *P, const char *name, long pc, long asmbase)
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
-    labelref->offset = pc;
-    labelref->asmval = pc - asmbase;
+    labelref->offset = offset;
+    labelref->asmval = asmpc;
     labelref->type = ast_type_long;
     sym = AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
 }
@@ -202,13 +202,30 @@ EnterLabel(ParserState *P, const char *name, long pc, long asmbase)
  * emit pending labels
  */
 AST *
-emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmbase)
+emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmpc)
 {
     while (label) {
-        EnterLabel(P, label->left->d.string, pc, asmbase);
+        EnterLabel(P, label->left->d.string, pc, asmpc);
         label = label->right;
     }
     return NULL;
+}
+
+/*
+ * replace AST_HERE with AST_INTEGER having pc as its value
+ */
+void
+replaceHeres(AST *ast, uint32_t asmpc)
+{
+    if (ast == NULL)
+        return;
+    if (ast->kind == AST_HERE) {
+        ast->kind = AST_INTEGER;
+        ast->d.ival = asmpc;
+        return;
+    }
+    replaceHeres(ast->left, asmpc);
+    replaceHeres(ast->right, asmpc);
 }
 
 /*
@@ -219,28 +236,31 @@ DeclareLabels(ParserState *P)
 {
     unsigned pc = 0;
     unsigned asmbase = 0;
+    unsigned asmpc = 0;
     AST *ast = NULL;
     AST *pendingLabels = NULL;
 
     for (ast = P->datblock; ast; ast = ast->right) {
+        asmpc = pc - asmbase;
         switch (ast->kind) {
         case AST_BYTELIST:
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
             pc += dataListLen(ast->left, 1);
             break;
         case AST_WORDLIST:
             pc = align(pc, 2);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
             pc += dataListLen(ast->left, 2);
             break;
         case AST_LONGLIST:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
             pc += dataListLen(ast->left, 4);
             break;
         case AST_INSTRHOLDER:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            replaceHeres(ast->left, asmpc/4);
             pc += 4;
             break;
         case AST_IDENTIFIER:

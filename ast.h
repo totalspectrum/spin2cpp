@@ -56,6 +56,8 @@ enum astkind {
     AST_INSTRHOLDER,
     AST_INSTRMODIFIER,
     AST_ORG,
+
+    AST_HERE = 32,
 };
 
 struct AST {

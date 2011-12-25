@@ -51,6 +51,7 @@
 %token T_EOF
 %token T_DOTS
 %token T_COGNEW
+%token T_HERE
 
 /* operators */
 %right T_ASSIGN
@@ -298,6 +299,8 @@ expr:
     { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_DECODE; }
   | T_ENCODE expr
     { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ENCODE; }
+  | T_HERE
+    { $$ = NewAST(AST_HERE, NULL, NULL); }
   ;
 
 lhs: identifier
@@ -320,17 +323,17 @@ exprlist:
    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
  ;
 
-operandlist:
+operand:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
  | '#' expr
    { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(IMMEDIATE_INSTR)); }
- | operandlist ',' expr
-   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
- | operandlist ',' '#' expr
-   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $4, NULL));
-     $$ = AddToList($$, AstInstrModifier(IMMEDIATE_INSTR));
-   }
+
+operandlist:
+   operand
+   { $$ = $1; }
+ | operandlist ',' operand
+   { $$ = AddToList($1, $3); }
  ;
 
 range:
