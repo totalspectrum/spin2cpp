@@ -59,11 +59,15 @@ PrintInOp(FILE *f, const char *op, AST *left, AST *right)
 }
 
 void
-PrintBinaryOperator(FILE *f, int op, AST *left, AST *right)
+PrintOperator(FILE *f, int op, AST *left, AST *right)
 {
     char opstring[4];
 
     switch (op) {
+    case '@':
+        fprintf(f, "&");
+        PrintExpr(f, right);
+        break;
     case T_HIGHMULT:
         fprintf(f, "(( (long long)");
         PrintExpr(f, left);
@@ -206,7 +210,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_OPERATOR:
         fprintf(f, "(");
-        PrintBinaryOperator(f, expr->d.ival, expr->left, expr->right);
+        PrintOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
     case AST_ASSIGN:

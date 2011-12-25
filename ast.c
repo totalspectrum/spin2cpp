@@ -65,3 +65,14 @@ AstInteger(long ival)
     ast->d.ival = ival;
     return ast;
 }
+
+/*
+ * create an instruction modifier with a specific bit pattern
+ */
+AST *
+AstInstrModifier(int32_t ival)
+{
+    AST *ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+    ast->d.ival = ival;
+    return ast;
+}

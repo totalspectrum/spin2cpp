@@ -62,6 +62,7 @@
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
+%left '@'
 
 %%
 input:
@@ -203,7 +204,7 @@ basedatline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | T_LONG exprlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
-  | instruction exprlist T_EOLN
+  | instruction operandlist T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
   | instruction T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
@@ -246,6 +247,8 @@ identdecl:
 expr:
   integer
   | lhs
+  | '@' lhs
+    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = '@'; }
   | lhs T_ASSIGN expr
     { $$ = NewAST(AST_ASSIGN, $1, $3); $$->d.ival = T_ASSIGN; }
   | expr '+' expr
@@ -315,6 +318,19 @@ exprlist:
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
  | exprlist ',' expr
    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+ ;
+
+operandlist:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+ | '#' expr
+   { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(IMMEDIATE_INSTR)); }
+ | operandlist ',' expr
+   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+ | operandlist ',' '#' expr
+   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $4, NULL));
+     $$ = AddToList($$, AstInstrModifier(IMMEDIATE_INSTR));
+   }
  ;
 
 range:

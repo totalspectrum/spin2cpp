@@ -25,10 +25,10 @@ extern AST *ast_type_byte;
 
 typedef enum InstrOps {
     NO_OPERANDS,
-    ONE_OPERAND,
+    SRC_OPERAND_ONLY,
+    DST_OPERAND_ONLY,
     TWO_OPERANDS,
     CALL_OPERAND,
-    JMP_OPERAND,
 } InstrOps;
 
 /* structure describing a PASM instruction */
@@ -40,6 +40,9 @@ typedef struct Instruction {
     /* function for the spin form of the instruction */
     void      (*spinform)(FILE *, AST *);
 } Instruction;
+
+/* instruction modifiers */
+#define IMMEDIATE_INSTR (1<<22)
 
 /* structure describing a dat block label */
 typedef struct label {

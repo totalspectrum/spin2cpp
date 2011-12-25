@@ -115,6 +115,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 {
     unsigned long uval, digit;
     unsigned int c;
+    int sawdigit = 0;
 
     uval = 0;
 
@@ -128,14 +129,16 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             digit = 10 + c - 'a';
         else
             digit = (c - '0');
-        if (digit < base)
+        if (digit < base) {
             uval = base * uval + digit;
-        else
+            sawdigit = 1;
+        } else {
             break;
+        }
     }
     lexungetc(L, c);
     *num = uval;
-    return T_NUM;
+    return sawdigit ? T_NUM : ((base == 16) ? '$' : '%');
 }
 
 /* dynamically grow a string */
@@ -439,25 +442,25 @@ instr[] = {
     { "andn",   0x64800000, TWO_OPERANDS, nofunc },
 
     { "call",   0x5cc00000, CALL_OPERAND, nofunc },
-    { "clkset", 0x0c400000, ONE_OPERAND, nofunc },
+    { "clkset", 0x0c400000, DST_OPERAND_ONLY, nofunc },
     { "cmp",    0x84000000, TWO_OPERANDS, nofunc },
     { "cmps",   0xc0000000, TWO_OPERANDS, nofunc },
     { "cmpsx",  0xc4000000, TWO_OPERANDS, nofunc },
     { "cmpx",   0xcc000000, TWO_OPERANDS, nofunc },
 
-    { "cogid",  0x0c400001, ONE_OPERAND, nofunc },
-    { "coginit", 0x0c400002, ONE_OPERAND, nofunc },
-    { "cogstop", 0x0c400003, ONE_OPERAND, nofunc },
+    { "cogid",  0x0c400001, DST_OPERAND_ONLY, nofunc },
+    { "coginit", 0x0c400002, DST_OPERAND_ONLY, nofunc },
+    { "cogstop", 0x0c400003, DST_OPERAND_ONLY, nofunc },
 
     { "djnz",   0xe4800000, TWO_OPERANDS, nofunc },
     { "hubop",  0x0c000000, TWO_OPERANDS, nofunc },
-    { "jmp",    0x5c000000, JMP_OPERAND, nofunc },
+    { "jmp",    0x5c000000, SRC_OPERAND_ONLY, nofunc },
     { "jmpret", 0x5c800000, TWO_OPERANDS, nofunc },
 
-    { "lockclr",0x0c400007, ONE_OPERAND, nofunc },
-    { "locknew",0x0c400004, ONE_OPERAND, nofunc },
-    { "lockret",0x0c400005, ONE_OPERAND, nofunc },
-    { "lockset",0x0c400006, ONE_OPERAND, nofunc },
+    { "lockclr",0x0c400007, DST_OPERAND_ONLY, nofunc },
+    { "locknew",0x0c400004, DST_OPERAND_ONLY, nofunc },
+    { "lockret",0x0c400005, DST_OPERAND_ONLY, nofunc },
+    { "lockset",0x0c400006, DST_OPERAND_ONLY, nofunc },
 
     { "max",    0x4c800000, TWO_OPERANDS, nofunc },
     { "maxs",   0x44800000, TWO_OPERANDS, nofunc },

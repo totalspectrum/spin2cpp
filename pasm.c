@@ -114,6 +114,14 @@ assembleInstruction(FILE *f, AST *ast)
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
+    case SRC_OPERAND_ONLY:
+        dst = 0;
+        src = EvalPasmExpr(operand[0]);
+        break;
+    case DST_OPERAND_ONLY:
+        dst = EvalPasmExpr(operand[0]);
+        src = 0;
+        break;
     default:
         ERROR("Unsupported instruction %s", instr->name);
         return;
