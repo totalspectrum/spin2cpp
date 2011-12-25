@@ -41,6 +41,15 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params)
     fprintf(f, ")");
 }
 
+/* code to print a cognew function call to a file */
+void
+PrintCognewCall(FILE *f, AST *params)
+{
+    fprintf(f, "cognew(");
+    PrintExprList(f, params);
+    fprintf(f, ")");
+}
+
 /* code to print left operator right */
 static void
 PrintInOp(FILE *f, const char *op, AST *left, AST *right)
@@ -233,6 +242,9 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             PrintFuncCall(f, sym, expr->right);
         }
+        break;
+    case AST_COGNEW:
+        PrintCognewCall(f, expr->right);
         break;
     default:
         ERROR("Internal error, bad expression");

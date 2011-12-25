@@ -237,6 +237,7 @@ DeclareLabels(ParserState *P)
     unsigned pc = 0;
     unsigned asmbase = 0;
     unsigned asmpc = 0;
+    unsigned offset;
     AST *ast = NULL;
     AST *pendingLabels = NULL;
 
@@ -267,7 +268,12 @@ DeclareLabels(ParserState *P)
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
-            asmbase = pc;
+            if (ast->left) {
+                offset = EvalPasmExpr(ast->left);
+            } else {
+                offset = 0;
+            }
+            asmbase = pc + offset;
             break;
         default:
             ERROR("unknown element %d in data block", ast->kind);

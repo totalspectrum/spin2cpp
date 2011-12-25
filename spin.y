@@ -75,8 +75,8 @@ topelement:
   T_EOLN
   | T_CON T_EOLN conblock
   { $$ = current->conblock = AddToList(current->conblock, $3); }
-  | T_DAT T_EOLN datblock
-  { $$ = current->datblock = AddToList(current->datblock, $3); }
+  | T_DAT datblock
+  { $$ = current->datblock = AddToList(current->datblock, $2); }
   | T_VAR T_EOLN varblock
   { $$ = current->varblock = AddToList(current->varblock, $3); }
   | T_PUB funcdef stmtlist
@@ -211,6 +211,8 @@ basedatline:
     { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
   | T_ORG T_EOLN
     { $$ = NewAST(AST_ORG, NULL, NULL); }
+  | T_ORG expr T_EOLN
+    { $$ = NewAST(AST_ORG, $1, NULL); }
   ;
 
 
@@ -314,7 +316,9 @@ lhs: identifier
 funccall:
   identifier '(' exprlist ')'
   { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  ;
+  | T_COGNEW '(' exprlist ')'
+  { $$ = NewAST(AST_COGNEW, $1, $3); }
+;
 
 exprlist:
   expr
