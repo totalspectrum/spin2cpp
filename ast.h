@@ -54,6 +54,7 @@ enum astkind {
 
     AST_EXPRLIST = 28,
     AST_INSTRHOLDER,
+    AST_INSTRMODIFIER,
 };
 
 struct AST {

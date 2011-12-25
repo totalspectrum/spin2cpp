@@ -554,3 +554,4 @@ InitPasm(void)
         AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
     }
 }
+

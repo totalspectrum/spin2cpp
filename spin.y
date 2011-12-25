@@ -189,6 +189,8 @@ datline:
   basedatline
   | identifier basedatline
     { $$ = AddToList($1, $2); }
+  | identifier T_EOLN
+    { $$ = $1; }
   ;
 
 basedatline:
@@ -200,6 +202,8 @@ basedatline:
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
   | instruction exprlist T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
+  | instruction T_EOLN
+    { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
   ;
 
 

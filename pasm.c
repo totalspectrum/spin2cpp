@@ -48,6 +48,43 @@ outputDataList(FILE *f, int size, AST *ast)
     }
 }
 
+/*
+ * assemble an instruction, along with its modifiers
+ */
+void
+assembleInstruction(FILE *f, AST *ast)
+{
+    uint32_t val, mask;
+    Instruction *instr;
+    int i;
+
+    instr = (Instruction *)ast->d.ptr;
+    val = instr->binary;
+    if (val != 0) {
+        /* for anything except NOP set the condition to "always" */
+        val |= 0xf << 18;
+    }
+    /* check for modifiers */
+    ast = ast->right;
+    while (ast != NULL) {
+        if (ast->kind != AST_INSTRMODIFIER) {
+            ERROR("Internal error: expected instruction modifier");
+            return;
+        }
+        mask = ast->d.ival;
+        if (mask & 0x80000000U) {
+            val = val & mask;
+        } else {
+            val = val | mask;
+        }
+        ast = ast->right;
+    }
+    for (i = 0; i < 4; i++) {
+        outputByte(f, val & 0xff);
+        val = val >> 8;
+    }
+}
+
 void
 outputAlignedDataList(FILE *f, int size, AST *ast)
 {
@@ -144,11 +181,16 @@ DeclareLabels(ParserState *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
             pc += dataListLen(ast->left, 4);
             break;
+        case AST_INSTRHOLDER:
+            pc = align(pc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmbase);
+            pc += 4;
+            break;
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         default:
-            ERROR("unknown element in data block");
+            ERROR("unknown element %d in data block", ast->kind);
             break;
         }
     }
@@ -164,6 +206,8 @@ PrintDataBlock(FILE *f, ParserState *P)
 
     initDataOutput();
     DeclareLabels(P);
+    if (gl_errors != 0)
+        return;
     for (ast = P->datblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
@@ -174,6 +218,9 @@ PrintDataBlock(FILE *f, ParserState *P)
             break;
         case AST_LONGLIST:
             outputAlignedDataList(f, 4, ast->left);
+            break;
+        case AST_INSTRHOLDER:
+            assembleInstruction(f, ast->left);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
