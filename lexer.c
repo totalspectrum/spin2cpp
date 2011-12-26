@@ -230,6 +230,12 @@ skipSpace(LexStream *L)
     int c;
     int commentNest;
     int indent = 0;
+
+    if (L->emit_outdents > 0) {
+        --L->emit_outdents;
+        return T_OUTDENT;
+    }
+
 again:
     c = lexgetc(L);
     while (c == ' ' || c == '\t') {
@@ -243,15 +249,23 @@ again:
         c = lexgetc(L);
     }
     if (L->in_block == T_PUB && L->eoln) {
-        if (indent > L->indent) {
+        if (indent > L->indent[L->indentsp]) {
             lexungetc(L, c);
-            L->indent = indent;
+            if (L->indentsp >= MAX_INDENTS) {
+                ERROR("too much nesting");
+                return T_INDENT;
+            }
+            L->indent[++L->indentsp] = indent;
             L->eoln = 0;
             return T_INDENT;
         }
-        if (indent < L->indent) {
+        if (indent < L->indent[L->indentsp] && L->indentsp > 0) {
             lexungetc(L, c);
-            L->indent = indent;
+            while (indent < L->indent[L->indentsp] && L->indentsp > 0) {
+                --L->indentsp;
+                ++L->emit_outdents;
+            }
+            --L->emit_outdents;
             L->eoln = 0;
             return T_OUTDENT;
         }

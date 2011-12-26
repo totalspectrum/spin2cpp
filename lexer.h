@@ -15,9 +15,12 @@ struct lexstream {
     int (*getcf)(LexStream *);
     void (*ungetcf)(LexStream *, int c);
 
+#define MAX_INDENTS 64
     /* input state */
     int in_block;  /* T_DAT, T_PUB, or T_CON */
-    int indent;    /* current indentation level */
+    int indent[MAX_INDENTS];    /* current indentation level */
+    int indentsp;               /* pointer into stack of indentation level */
+    int emit_outdents;          /* how many T_OUTDENTS to emit */
     int eoln;      /* 1 if end of line seen */
 
     /* last global label */
