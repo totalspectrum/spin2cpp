@@ -97,6 +97,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     }
 
     /* enter the variables into the local symbol table */
+    fdef->params = vars->left;
     EnterVars(&fdef->localsyms, ast_type_long, vars->left);
     EnterVars(&fdef->localsyms, ast_type_long, vars->right);
 
@@ -106,23 +107,30 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
 }
 
 static void
-PrintParameterList(FILE *f, AST *ast)
+PrintParameterList(FILE *f, AST *list)
 {
     int needcomma = 0;
-    if (!ast) {
+    AST *ast;
+
+    if (!list) {
         fprintf(f, "void");
         return;
     }
-    while (ast) {
+    while (list) {
+        if (list->kind != AST_LISTHOLDER) {
+            ERROR("Internal error: expected parameter list");
+            return;
+        }
+        ast = list->left;
         if (ast->kind != AST_IDENTIFIER) {
             ERROR("Internal error: expected identifier in function parameter list");
             return;
         }
         if (needcomma)
             fprintf(f, ", ");
-        fprintf(f, "%s", ast->d.string);
+        fprintf(f, "int32_t %s", ast->d.string);
         needcomma = 1;
-        ast = ast->right;
+        list = list->right;
     }
 }
 
