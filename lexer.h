@@ -16,9 +16,12 @@ struct lexstream {
     void (*ungetcf)(LexStream *, int c);
 
     /* input state */
-    int in_func;   /* 1 if parsing a function, so indents matter */
+    int in_block;  /* T_DAT, T_PUB, or T_CON */
     int indent;    /* current indentation level */
     int eoln;      /* 1 if end of line seen */
+
+    /* last global label */
+    const char *lastGlobal;
 
     /* for error messages */
     int lineCounter;

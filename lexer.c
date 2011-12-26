@@ -158,7 +158,7 @@ addchar(int c, char **place, size_t *space, size_t *len)
 
 /* parse an identifier */
 static int
-parseIdentifier(LexStream *L, AST **ast_ptr)
+parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
     char *place = NULL;
@@ -167,6 +167,11 @@ parseIdentifier(LexStream *L, AST **ast_ptr)
     Symbol *sym;
     AST *ast;
 
+    if (prefix) {
+        place = strdup(prefix);
+        space = len = strlen(prefix);
+        addchar(':', &place, &space, &len);
+    }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
         addchar(c, &place, &space, &len);
@@ -183,9 +188,9 @@ parseIdentifier(LexStream *L, AST **ast_ptr)
             c = INTVAL(sym);
             /* check for special handling */
             if (c == T_PUB || c == T_PRI) {
-                L->in_func = 1;
+                L->in_block = T_PUB;
             } else if (c == T_DAT || c == T_OBJ || c == T_VAR || c == T_CON) {
-                L->in_func = 0;
+                L->in_block = c;
             }
             return c;
         }
@@ -237,7 +242,7 @@ again:
         }
         c = lexgetc(L);
     }
-    if (L->in_func && L->eoln) {
+    if (L->in_block == T_PUB && L->eoln) {
         if (indent > L->indent) {
             lexungetc(L, c);
             L->indent = indent;
@@ -287,7 +292,7 @@ again:
     return c;
 }
 
-static char operator_chars[] = "-+*/|<>=!@~#^:.";
+static char operator_chars[] = "-+*/|<>=!@~#^.";
 
 int
 getToken(LexStream *L, AST **ast_ptr)
@@ -295,6 +300,7 @@ getToken(LexStream *L, AST **ast_ptr)
 //    int base = 10;
     int c;
     AST *ast = NULL;
+    int at_startofline = (L->eoln == 1);
 
     c = skipSpace(L);
 
@@ -316,7 +322,22 @@ getToken(LexStream *L, AST **ast_ptr)
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
-        c = parseIdentifier(L, &ast);
+        c = parseIdentifier(L, &ast, NULL);
+        /* if in pasm, and at start of line, restart temporary
+           labels */
+        if (c == T_IDENTIFIER && L->in_block == T_DAT && at_startofline) {
+            L->lastGlobal = ast->d.string;
+        }
+    } else if (c == ':') {
+        int peekc = lexgetc(L);
+        if (peekc == '=') {
+            c = T_ASSIGN;
+        } else if (isIdentifierStart(peekc) && L->in_block == T_DAT && L->lastGlobal) {
+            lexungetc(L, peekc);
+            c = parseIdentifier(L, &ast, L->lastGlobal);
+        } else {
+            lexungetc(L, peekc);
+        }
     } else if (strchr(operator_chars, c) != NULL) {
         char op[6];
         int i;
@@ -400,7 +421,6 @@ struct reservedword {
     { ">>", T_SHR },
     { "~>", T_SAR },
 
-    { ":=", T_ASSIGN },
     { "..", T_DOTS },
     { "|<", T_DECODE },
     { ">|", T_ENCODE },
