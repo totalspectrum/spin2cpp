@@ -31,6 +31,7 @@
 %token T_LONG
 
 %token T_INSTR
+%token T_INSTRMODIFIER
 %token T_HWREG
 %token T_ORG
 
@@ -205,10 +206,14 @@ basedatline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | T_LONG exprlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
-  | instruction operandlist T_EOLN
-    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
   | instruction T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
+  | instruction operandlist T_EOLN
+    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
+  | instruction modifierlist T_EOLN
+    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
+  | instruction operandlist modifierlist T_EOLN
+    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, AddToList($2, $3)), NULL); }
   | T_ORG T_EOLN
     { $$ = NewAST(AST_ORG, NULL, NULL); }
   | T_ORG expr T_EOLN
@@ -365,8 +370,23 @@ hwreg:
 instruction:
   T_INSTR
   { $$ = current->ast; }
+  | instrmodifier instruction
+  { $$ = AddToList($2, $1); }
 ;
  
+instrmodifier:
+  T_INSTRMODIFIER
+  { $$ = current->ast; }
+;
+
+modifierlist:
+  instrmodifier
+    { $$ = $1; }
+  | modifierlist instrmodifier
+    { $$ = AddToList($1, $2); }
+  | modifierlist ',' instrmodifier
+    { $$ = AddToList($1, $3); }
+  ;
 %%
 
 void

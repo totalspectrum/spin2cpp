@@ -14,6 +14,7 @@ typedef enum symtype {
     SYM_HWREG,           /* hardware register */
     SYM_FUNCTION,        /* function */
     SYM_LABEL,           /* dat block label */
+    SYM_INSTRMODIFIER,   /* effect or condition */
 } Symtype;
 
 typedef struct symbol {

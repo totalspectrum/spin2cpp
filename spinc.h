@@ -42,6 +42,11 @@ typedef struct Instruction {
 } Instruction;
 
 /* instruction modifiers */
+typedef struct instrmodifier {
+    const char *name;
+    uint32_t modifier;
+} InstrModifier;
+
 #define IMMEDIATE_INSTR (1<<22)
 
 /* structure describing a dat block label */

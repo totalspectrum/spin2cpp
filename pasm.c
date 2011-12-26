@@ -77,15 +77,16 @@ assembleInstruction(FILE *f, AST *ast)
                 return;
             }
             operand[numoperands++] = ast->left;
-        } else if (ast->kind != AST_INSTRMODIFIER) {
+        } else if (ast->kind == AST_INSTRMODIFIER) {
+            mask = ast->d.ival;
+            if (mask & 0x80000000) {
+                val = val & mask;
+            } else {
+                val = val | mask;
+            }
+        } else {
             ERROR("Internal error: expected instruction modifier found %d", ast->kind);
             return;
-        }
-        mask = ast->d.ival;
-        if (mask & 0x80000000U) {
-            val = val & mask;
-        } else {
-            val = val | mask;
         }
         ast = ast->right;
     }

@@ -12,6 +12,7 @@
 #include "spinc.h"
 
 SymbolTable reservedWords;
+SymbolTable pasmWords;
 
 /* functions for handling string streams */
 static int 
@@ -207,6 +208,19 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             return T_HWREG;
         }
         fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
+    }
+    if (L->in_block == T_DAT) {
+        sym = FindSymbol(&pasmWords, place);
+        if (sym) {
+            free(place);
+            if (sym->type == SYM_INSTRMODIFIER) {
+                ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+                ast->d.ival = (int32_t)(intptr_t)sym->val;
+                *ast_ptr = ast;
+                return T_INSTRMODIFIER;
+            }
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+        }
     }
 
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
@@ -580,6 +594,64 @@ HwReg hwreg[] = {
 
 };
 
+#define IF_NEVER 0xffc3ffff
+
+InstrModifier modifiers[] = {
+    { "IF_ALWAYS", IF_NEVER | (0xf<<18) },
+    { "IF_NEVER",  IF_NEVER },
+
+    { "IF_A",           IF_NEVER | (0x1<<18) },
+    { "IF_NC_AND_NZ",   IF_NEVER | (0x1<<18) },
+    { "IF_NZ_AND_NC",   IF_NEVER | (0x1<<18) },
+
+    { "IF_NC_AND_Z",    IF_NEVER | (0x2<<18) },
+    { "IF_Z_AND_NC",    IF_NEVER | (0x2<<18) },
+
+    { "IF_AE",     IF_NEVER | (0x3<<18) },
+    { "IF_NC",     IF_NEVER | (0x3<<18) },
+
+    { "IF_C_AND_NZ",    IF_NEVER | (0x4<<18) },
+    { "IF_NZ_AND_C",    IF_NEVER | (0x4<<18) },
+
+    { "IF_NE",     IF_NEVER | (0x5<<18) },
+    { "IF_NZ",     IF_NEVER | (0x5<<18) },
+
+    { "IF_C_NE_Z", IF_NEVER | (0x6<<18) },
+    { "IF_Z_NE_C", IF_NEVER | (0x6<<18) },
+
+    { "IF_NC_OR_NZ", IF_NEVER | (0x7<<18) },
+    { "IF_NZ_OR_NC", IF_NEVER | (0x7<<18) },
+
+    { "IF_C_AND_Z", IF_NEVER | (0x8<<18) },
+    { "IF_Z_AND_C", IF_NEVER | (0x8<<18) },
+
+    { "IF_C_EQ_Z", IF_NEVER | (0x9<<18) },
+    { "IF_Z_EQ_C", IF_NEVER | (0x9<<18) },
+
+    { "IF_E",      IF_NEVER | (0xa<<18) },
+    { "IF_Z",      IF_NEVER | (0xa<<18) },
+
+    { "IF_NC_OR_Z", IF_NEVER | (0xb<<18) },
+    { "IF_Z_OR_NC", IF_NEVER | (0xb<<18) },
+
+    { "IF_B",      IF_NEVER | (0xc<<18) },
+    { "IF_C",      IF_NEVER | (0xc<<18) },
+
+    { "IF_C_OR_NZ", IF_NEVER | (0xd<<18) },
+    { "IF_NZ_OR_C", IF_NEVER | (0xd<<18) },
+
+    { "IF_BE",     IF_NEVER | (0xe<<18) },
+    { "IF_C_OR_Z", IF_NEVER | (0xe<<18) },
+    { "IF_Z_OR_C", IF_NEVER | (0xe<<18) },
+
+
+    { "WZ", (1<<25) },
+    { "WC", (1<<24) },
+    { "WR", (1<<23) },
+    { "NR", ~(1<<23) }
+
+};
+
 void
 InitPasm(void)
 {
@@ -593,6 +665,11 @@ InitPasm(void)
     /* add hardware registers */
     for (i = 0; i < N_ELEMENTS(hwreg); i++) {
         AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+    }
+
+    /* instruction modifiers */
+    for (i = 0; i < N_ELEMENTS(modifiers); i++) {
+        AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)(intptr_t)modifiers[i].modifier);
     }
 }
 

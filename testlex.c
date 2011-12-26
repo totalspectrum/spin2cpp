@@ -88,11 +88,15 @@ static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOF };
 static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOF };
 static int tokens3[] = { '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
 
-static int tokens4[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
 static const char *token4test = "pub \n  if\n    foo\n  bar\n";
+static int tokens4[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
 
-static int tokens5[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_OUTDENT, T_ELSE};
 static const char *token5test = "pub\n  if\n    foo\n      bar\n  else";
+static int tokens5[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_OUTDENT, T_ELSE};
+
+static const char *token6test = "dat\nlabel if_z add x,#1 wc";
+static int tokens6[] = { T_DAT, T_EOLN, T_IDENTIFIER, T_INSTRMODIFIER, T_INSTR,
+                         T_IDENTIFIER, ',', '#', T_NUM, T_INSTRMODIFIER};
 
 int
 main()
@@ -108,6 +112,7 @@ main()
     testTokenStream("< =< => > == = +<", tokens3, N_ELEM(tokens3));
     testTokenStream(token4test, tokens4, N_ELEM(tokens4));
     testTokenStream(token5test, tokens5, N_ELEM(tokens5));
+    testTokenStream(token6test, tokens6, N_ELEM(tokens6));
 
     testNumber("0", 0);
     testNumber("00", 0);
