@@ -27,34 +27,21 @@ strgetc(LexStream *L)
     return (c == 0) ? T_EOF : c;
 }
 
-static void
-strungetc(LexStream *L, int c)
-{
-    char *s = L->ptr;
-
-    if (s != L->arg) {
-        --s;
-        /* the source string may be constant, so only
-           try to write if we have to */
-        if (*s != c && c != T_EOF) {
-            *s = c;
-        }
-        L->ptr = s;
-    }
-}
-
 /* open a stream from a string s */
 void strToLex(LexStream *L, const char *s)
 {
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
-    L->ungetcf = strungetc;
     L->lineCounter = 1;
     L->fileName = "<string>";
 }
 
 /* functions for handling FILE streams */
+/* filegetc is for ASCII streams;
+   filegetwc is for UCS-16LE streams
+*/
+
 static int 
 filegetc(LexStream *L)
 {
@@ -66,26 +53,66 @@ filegetc(LexStream *L)
     return (c >= 0) ? c : T_EOF;
 }
 
-static void
-fileungetc(LexStream *L, int c)
+static int 
+filegetwc(LexStream *L)
 {
-    FILE *f = L->ptr;
+    FILE *f;
+    int c1, c2;
 
-    if (c != T_EOF) {
-        ungetc(c, f);
+    f = (FILE *)L->ptr;
+    c1 = fgetc(f);
+    if (c1 < 0) return T_EOF;
+    c2 = fgetc(f);
+    if (c2 != 0) {
+        /* FIXME: should convert to UTF-8 */
+        return 0xff;
     }
+    return c1;
 }
 
 /* open a stream from a FILE f */
 void fileToLex(LexStream *L, FILE *f, const char *name)
 {
+    int c1, c2;
+
     memset(L, 0, sizeof(*L));
     L->ptr = (void *)f;
     L->arg = NULL;
     L->getcf = filegetc;
-    L->ungetcf = fileungetc;
     L->lineCounter = 1;
     L->fileName = name;
+
+    /* check for Unicode */
+    c1 = fgetc(f);
+    c2 = fgetc(f);
+    if (c1 == 0xff && c2 == 0xfe) {
+        L->getcf = filegetwc;
+    } else {
+        rewind(f);
+    }
+}
+
+/*
+ *
+ */
+int
+lexgetc(LexStream *L)
+{
+    if (L->ungot_valid) {
+        L->ungot_valid = 0;
+        return L->ungot;
+    }
+    return (L->getcf(L));
+}
+
+void
+lexungetc(LexStream *L, int c)
+{
+    if (L->ungot_valid) {
+        fprintf(stderr, "ERROR: unget limit exceeded");
+    }
+    L->ungot_valid = 1;
+    L->ungot = c;
 }
 
 

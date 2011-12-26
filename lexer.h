@@ -13,7 +13,8 @@ struct lexstream {
     void *ptr;  /* current pointer */
     void *arg;  /* original value of pointer */
     int (*getcf)(LexStream *);
-    void (*ungetcf)(LexStream *, int c);
+    int ungot;  /* single character from ungetc */
+    int ungot_valid;
 
 #define MAX_INDENTS 64
     /* input state */
@@ -31,8 +32,8 @@ struct lexstream {
     const char *fileName;
 };
 
-#define lexgetc(p) ((p)->getcf((p)))
-#define lexungetc(p, c) ((p)->ungetcf((p),(c)))
+extern int lexgetc(LexStream *L);
+extern void lexungetc(LexStream *L, int c);
 
 /*
  * function to initialize the lexer
