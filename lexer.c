@@ -261,7 +261,7 @@ again:
         if (c == '\n') {
             L->lineCounter++;
             L->eoln = 1;
-            goto again;
+            return T_EOLN;
         }
     }
     if (c == '{') {

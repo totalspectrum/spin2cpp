@@ -97,7 +97,6 @@ main()
     initLexer();
 
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
-    testTokenStream("'' a comment line\n $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{{a nested comment}} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
