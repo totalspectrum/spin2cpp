@@ -100,7 +100,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     fdef->params = vars->left;
     EnterVars(&fdef->localsyms, ast_type_long, vars->left);
     EnterVars(&fdef->localsyms, ast_type_long, vars->right);
-
+    EnterVariable(&fdef->localsyms, fdef->resultname, ast_type_long);
     fdef->body = body;
 
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
@@ -172,25 +172,31 @@ PrintFunctionVariables(FILE *f, Function *func)
     fprintf(f, "  int32_t %s = 0;\n", func->resultname);
 }
  
-static void PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
+static int PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
 
-static void
+static int
 PrintStatementList(FILE *f, AST *ast, int indent)
 {
+    int sawreturn = 0;
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
             ERROR("Internal error: expected statement list, got %d",
                   ast->kind);
-            return;
+            return 0;
         }
-        PrintStatement(f, ast->left, indent);
+        sawreturn |= PrintStatement(f, ast->left, indent);
         ast = ast->right;
     }
+    return sawreturn;
 }
 
-static void
+/*
+ * returns 1 if a return statement was seen
+ */
+static int
 PrintStatement(FILE *f, AST *ast, int indent)
 {
+    int sawreturn = 0;
     switch (ast->kind) {
     case AST_RETURN:
         fprintf(f, "%*creturn ", indent, ' ');
@@ -200,9 +206,10 @@ PrintStatement(FILE *f, AST *ast, int indent)
             fprintf(f, "%s", curfunc->resultname);
         }
         fprintf(f, ";\n");
+        sawreturn = 1;
         break;
     case AST_STMTLIST:
-        PrintStatementList(f, ast, indent+2);
+        sawreturn = PrintStatementList(f, ast, indent+2);
         break;
     default:
         fprintf(f, "%*c", indent, ' ');
@@ -210,19 +217,20 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ";\n");
         break;
     }
-            
+    return sawreturn;
 }
 
-static void
+static int
 PrintFunctionStmts(FILE *f, Function *func)
 {
-    PrintStatementList(f, func->body, 0);
+    return PrintStatementList(f, func->body, 0);
 }
 
 void
 PrintFunctionBodies(FILE *f, ParserState *parse)
 {
     Function *pf;
+    int sawreturn;
 
     for (pf = parse->functions; pf; pf = pf->next) {
         curfunc = pf;
@@ -231,7 +239,10 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         PrintParameterList(f, pf->params);
         fprintf(f, ")\n{\n");
         PrintFunctionVariables(f, pf);
-        PrintFunctionStmts(f, pf);
+        sawreturn = PrintFunctionStmts(f, pf);
+        if (!sawreturn) {
+            fprintf(f, "  return %s;\n", pf->resultname);
+        }
         fprintf(f, "}\n\n");
     }
 }

@@ -102,6 +102,11 @@ funcdef:
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
+|  identifier optparamlist resultname T_EOLN
+  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
+    AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
+    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+  }
 
 ;
 
