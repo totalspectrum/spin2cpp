@@ -74,12 +74,12 @@ input:
 
 topelement:
   T_EOLN
-  | T_CON T_EOLN conblock
-  { $$ = current->conblock = AddToList(current->conblock, $3); }
+  | T_CON conblock
+  { $$ = current->conblock = AddToList(current->conblock, $2); }
   | T_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
-  | T_VAR T_EOLN varblock
-  { $$ = current->varblock = AddToList(current->varblock, $3); }
+  | T_VAR varblock
+  { $$ = current->varblock = AddToList(current->varblock, $2); }
   | T_PUB funcdef stmtlist
   { DeclareFunction(1, $2, $3); }
   | T_PRI funcdef stmtlist
@@ -159,16 +159,18 @@ ifstmt:
  
 conblock:
   conline
-  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  { $$ = $1; }
   | conblock conline
-  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+  { $$ = AddToList($1, $2); }
   ;
 
 conline:
   identifier '=' expr T_EOLN
-     { $$ = NewAST(AST_ASSIGN, $1, $3); }
+    { $$ = NewAST(AST_LISTHOLDER, NewAST(AST_ASSIGN, $1, $3), NULL); }
   | enumlist T_EOLN
-     { $$ = $1; }
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | T_EOLN
+    { $$ = NULL; }
   ;
 
 enumlist:
@@ -235,6 +237,8 @@ varline:
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
   | T_LONG identlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+  | T_EOLN
+    { $$ = NULL; }
   ;
 
 identlist:
