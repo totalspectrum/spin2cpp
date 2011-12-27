@@ -279,7 +279,7 @@ skipSpace(LexStream *L)
 
 again:
     c = lexgetc(L);
-    while (c == ' ' || c == '\t') {
+    while (c == ' ' || c == '\t' || c == '\r') {
         if (L->eoln) {
             if (c == '\t') {
                 indent = TAB_STOP * ((indent + (TAB_STOP-1))/TAB_STOP);
