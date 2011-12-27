@@ -36,9 +36,6 @@ typedef struct Instruction {
     const char *name;      /* instruction mnemonic */
     uint32_t    binary;    /* binary form of instruction */
     InstrOps    ops;       /* operand forms */
-
-    /* function for the spin form of the instruction */
-    void      (*spinform)(FILE *, AST *);
 } Instruction;
 
 /* instruction modifiers */

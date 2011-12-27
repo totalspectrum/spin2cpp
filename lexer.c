@@ -209,6 +209,25 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     lexungetc(L, c);
 
     /* check for reserved words */
+    if (L->in_block == T_DAT) {
+        sym = FindSymbol(&pasmWords, place);
+        if (sym) {
+            free(place);
+            if (sym->type == SYM_INSTR) {
+                ast = NewAST(AST_INSTR, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return T_INSTR;
+            }
+            if (sym->type == SYM_INSTRMODIFIER) {
+                ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+                ast->d.ival = (int32_t)(intptr_t)sym->val;
+                *ast_ptr = ast;
+                return T_INSTRMODIFIER;
+            }
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+        }
+    }
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
         free(place);
@@ -222,12 +241,6 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             return c;
         }
-        if (sym->type == SYM_INSTR) {
-            ast = NewAST(AST_INSTR, NULL, NULL);
-            ast->d.ptr = sym->val;
-            *ast_ptr = ast;
-            return T_INSTR;
-        }
         if (sym->type == SYM_HWREG) {
             ast = NewAST(AST_HWREG, NULL, NULL);
             ast->d.ptr = sym->val;
@@ -235,19 +248,6 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             return T_HWREG;
         }
         fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
-    }
-    if (L->in_block == T_DAT) {
-        sym = FindSymbol(&pasmWords, place);
-        if (sym) {
-            free(place);
-            if (sym->type == SYM_INSTRMODIFIER) {
-                ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-                ast->d.ival = (int32_t)(intptr_t)sym->val;
-                *ast_ptr = ast;
-                return T_INSTRMODIFIER;
-            }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
-        }
     }
 
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
@@ -498,105 +498,99 @@ initLexer(void)
     InitPasm();
 }
 
-static void
-nofunc(FILE *f, AST *expr)
-{
-    ERROR("bad assembly instruction in spin code");
-}
-
 Instruction
 instr[] = {
-    { "abs",    0xa8800000, TWO_OPERANDS, nofunc },
-    { "absneg", 0xac800000, TWO_OPERANDS, nofunc },
-    { "add",    0x80800000, TWO_OPERANDS, nofunc },
-    { "addabs", 0x88800000, TWO_OPERANDS, nofunc },
-    { "adds",   0xd0800000, TWO_OPERANDS, nofunc },
-    { "addsx",  0xd8800000, TWO_OPERANDS, nofunc },
-    { "addx",   0xc8800000, TWO_OPERANDS, nofunc },
-    { "and",    0x60800000, TWO_OPERANDS, nofunc },
-    { "andn",   0x64800000, TWO_OPERANDS, nofunc },
+    { "abs",    0xa8800000, TWO_OPERANDS },
+    { "absneg", 0xac800000, TWO_OPERANDS },
+    { "add",    0x80800000, TWO_OPERANDS },
+    { "addabs", 0x88800000, TWO_OPERANDS },
+    { "adds",   0xd0800000, TWO_OPERANDS },
+    { "addsx",  0xd8800000, TWO_OPERANDS },
+    { "addx",   0xc8800000, TWO_OPERANDS },
+    { "and",    0x60800000, TWO_OPERANDS },
+    { "andn",   0x64800000, TWO_OPERANDS },
 
-    { "call",   0x5cc00000, CALL_OPERAND, nofunc },
-    { "clkset", 0x0c400000, DST_OPERAND_ONLY, nofunc },
-    { "cmp",    0x84000000, TWO_OPERANDS, nofunc },
-    { "cmps",   0xc0000000, TWO_OPERANDS, nofunc },
-    { "cmpsx",  0xc4000000, TWO_OPERANDS, nofunc },
-    { "cmpx",   0xcc000000, TWO_OPERANDS, nofunc },
+    { "call",   0x5cc00000, CALL_OPERAND },
+    { "clkset", 0x0c400000, DST_OPERAND_ONLY },
+    { "cmp",    0x84000000, TWO_OPERANDS },
+    { "cmps",   0xc0000000, TWO_OPERANDS },
+    { "cmpsx",  0xc4000000, TWO_OPERANDS },
+    { "cmpx",   0xcc000000, TWO_OPERANDS },
 
-    { "cogid",  0x0c400001, DST_OPERAND_ONLY, nofunc },
-    { "coginit", 0x0c400002, DST_OPERAND_ONLY, nofunc },
-    { "cogstop", 0x0c400003, DST_OPERAND_ONLY, nofunc },
+    { "cogid",  0x0c400001, DST_OPERAND_ONLY },
+    { "coginit", 0x0c400002, DST_OPERAND_ONLY },
+    { "cogstop", 0x0c400003, DST_OPERAND_ONLY },
 
-    { "djnz",   0xe4800000, TWO_OPERANDS, nofunc },
-    { "hubop",  0x0c000000, TWO_OPERANDS, nofunc },
-    { "jmp",    0x5c000000, SRC_OPERAND_ONLY, nofunc },
-    { "jmpret", 0x5c800000, TWO_OPERANDS, nofunc },
+    { "djnz",   0xe4800000, TWO_OPERANDS },
+    { "hubop",  0x0c000000, TWO_OPERANDS },
+    { "jmp",    0x5c000000, SRC_OPERAND_ONLY },
+    { "jmpret", 0x5c800000, TWO_OPERANDS },
 
-    { "lockclr",0x0c400007, DST_OPERAND_ONLY, nofunc },
-    { "locknew",0x0c400004, DST_OPERAND_ONLY, nofunc },
-    { "lockret",0x0c400005, DST_OPERAND_ONLY, nofunc },
-    { "lockset",0x0c400006, DST_OPERAND_ONLY, nofunc },
+    { "lockclr",0x0c400007, DST_OPERAND_ONLY },
+    { "locknew",0x0c400004, DST_OPERAND_ONLY },
+    { "lockret",0x0c400005, DST_OPERAND_ONLY },
+    { "lockset",0x0c400006, DST_OPERAND_ONLY },
 
-    { "max",    0x4c800000, TWO_OPERANDS, nofunc },
-    { "maxs",   0x44800000, TWO_OPERANDS, nofunc },
-    { "min",    0x48800000, TWO_OPERANDS, nofunc },
-    { "mins",   0x40800000, TWO_OPERANDS, nofunc },
-    { "mov",    0xa0800000, TWO_OPERANDS, nofunc },
-    { "movd",   0x54800000, TWO_OPERANDS, nofunc },
-    { "movi",   0x58800000, TWO_OPERANDS, nofunc },
-    { "movs",   0x50800000, TWO_OPERANDS, nofunc },
+    { "max",    0x4c800000, TWO_OPERANDS },
+    { "maxs",   0x44800000, TWO_OPERANDS },
+    { "min",    0x48800000, TWO_OPERANDS },
+    { "mins",   0x40800000, TWO_OPERANDS },
+    { "mov",    0xa0800000, TWO_OPERANDS },
+    { "movd",   0x54800000, TWO_OPERANDS },
+    { "movi",   0x58800000, TWO_OPERANDS },
+    { "movs",   0x50800000, TWO_OPERANDS },
 
-    { "muxc",   0x70800000, TWO_OPERANDS, nofunc },
-    { "muxnc",  0x74800000, TWO_OPERANDS, nofunc },
-    { "muxz",   0x78800000, TWO_OPERANDS, nofunc },
-    { "muxnz",  0x7c800000, TWO_OPERANDS, nofunc },
+    { "muxc",   0x70800000, TWO_OPERANDS },
+    { "muxnc",  0x74800000, TWO_OPERANDS },
+    { "muxz",   0x78800000, TWO_OPERANDS },
+    { "muxnz",  0x7c800000, TWO_OPERANDS },
 
-    { "neg",    0xa4800000, TWO_OPERANDS, nofunc },
-    { "negc",   0xb0800000, TWO_OPERANDS, nofunc },
-    { "negnc",  0xb4800000, TWO_OPERANDS, nofunc },
-    { "negnz",  0xbc800000, TWO_OPERANDS, nofunc },
-    { "negz",   0xb8800000, TWO_OPERANDS, nofunc },
-    { "nop",    0x00000000, NO_OPERANDS, nofunc },
+    { "neg",    0xa4800000, TWO_OPERANDS },
+    { "negc",   0xb0800000, TWO_OPERANDS },
+    { "negnc",  0xb4800000, TWO_OPERANDS },
+    { "negnz",  0xbc800000, TWO_OPERANDS },
+    { "negz",   0xb8800000, TWO_OPERANDS },
+    { "nop",    0x00000000, NO_OPERANDS },
 
-    { "or",     0x68800000, TWO_OPERANDS, nofunc },
+    { "or",     0x68800000, TWO_OPERANDS },
 
-    { "rcl",    0x34800000, TWO_OPERANDS, nofunc },
-    { "rcr",    0x30800000, TWO_OPERANDS, nofunc },
-    { "rdbyte", 0x00800000, TWO_OPERANDS, nofunc },
-    { "rdlong", 0x08800000, TWO_OPERANDS, nofunc },
-    { "rdword", 0x04800000, TWO_OPERANDS, nofunc },
-    { "ret",    0x5c400000, NO_OPERANDS, nofunc },
-    { "rev",    0x3c800000, TWO_OPERANDS, nofunc },
-    { "rol",    0x24800000, TWO_OPERANDS, nofunc },
-    { "ror",    0x20800000, TWO_OPERANDS, nofunc },
+    { "rcl",    0x34800000, TWO_OPERANDS },
+    { "rcr",    0x30800000, TWO_OPERANDS },
+    { "rdbyte", 0x00800000, TWO_OPERANDS },
+    { "rdlong", 0x08800000, TWO_OPERANDS },
+    { "rdword", 0x04800000, TWO_OPERANDS },
+    { "ret",    0x5c400000, NO_OPERANDS },
+    { "rev",    0x3c800000, TWO_OPERANDS },
+    { "rol",    0x24800000, TWO_OPERANDS },
+    { "ror",    0x20800000, TWO_OPERANDS },
 
-    { "sar",    0x38800000, TWO_OPERANDS, nofunc },
-    { "shl",    0x2c800000, TWO_OPERANDS, nofunc },
-    { "shr",    0x28800000, TWO_OPERANDS, nofunc },
-    { "sub",    0x84800000, TWO_OPERANDS, nofunc },
-    { "subs",   0xc0800000, TWO_OPERANDS, nofunc },
-    { "subsx",  0xc4800000, TWO_OPERANDS, nofunc },
-    { "subx",   0xcc800000, TWO_OPERANDS, nofunc },
-    { "sumc",   0x90800000, TWO_OPERANDS, nofunc },
-    { "sumnc",  0x94800000, TWO_OPERANDS, nofunc },
-    { "sumnz",  0x9c800000, TWO_OPERANDS, nofunc },
-    { "sumz",   0x98800000, TWO_OPERANDS, nofunc },
+    { "sar",    0x38800000, TWO_OPERANDS },
+    { "shl",    0x2c800000, TWO_OPERANDS },
+    { "shr",    0x28800000, TWO_OPERANDS },
+    { "sub",    0x84800000, TWO_OPERANDS },
+    { "subs",   0xc0800000, TWO_OPERANDS },
+    { "subsx",  0xc4800000, TWO_OPERANDS },
+    { "subx",   0xcc800000, TWO_OPERANDS },
+    { "sumc",   0x90800000, TWO_OPERANDS },
+    { "sumnc",  0x94800000, TWO_OPERANDS },
+    { "sumnz",  0x9c800000, TWO_OPERANDS },
+    { "sumz",   0x98800000, TWO_OPERANDS },
 
-    { "test",   0x60000000, TWO_OPERANDS, nofunc },
-    { "testn",  0x64000000, TWO_OPERANDS, nofunc },
-    { "tjnz",   0xe8000000, TWO_OPERANDS, nofunc },
-    { "tjz",    0xec000000, TWO_OPERANDS, nofunc },
+    { "test",   0x60000000, TWO_OPERANDS },
+    { "testn",  0x64000000, TWO_OPERANDS },
+    { "tjnz",   0xe8000000, TWO_OPERANDS },
+    { "tjz",    0xec000000, TWO_OPERANDS },
 
-    { "waitcnt", 0xf8800000, TWO_OPERANDS, nofunc },
-    { "waitpeq", 0xf0800000, TWO_OPERANDS, nofunc },
-    { "waitpne", 0xf4800000, TWO_OPERANDS, nofunc },
-    { "waitvid", 0xfc800000, TWO_OPERANDS, nofunc },
+    { "waitcnt", 0xf8800000, TWO_OPERANDS },
+    { "waitpeq", 0xf0800000, TWO_OPERANDS },
+    { "waitpne", 0xf4800000, TWO_OPERANDS },
+    { "waitvid", 0xfc800000, TWO_OPERANDS },
 
-    { "wrbyte", 0x00000000, TWO_OPERANDS, nofunc },
-    { "wrlong", 0x08000000, TWO_OPERANDS, nofunc },
-    { "wrword", 0x04000000, TWO_OPERANDS, nofunc },
+    { "wrbyte", 0x00000000, TWO_OPERANDS },
+    { "wrlong", 0x08000000, TWO_OPERANDS },
+    { "wrword", 0x04000000, TWO_OPERANDS },
 
-    { "xor",    0x6c800000, TWO_OPERANDS, nofunc },
+    { "xor",    0x6c800000, TWO_OPERANDS },
 };
 
 HwReg hwreg[] = {
@@ -684,14 +678,14 @@ InitPasm(void)
 {
     int i;
 
-    /* add instructions */
-    for (i = 0; i < N_ELEMENTS(instr); i++) {
-        AddSymbol(&reservedWords, instr[i].name, SYM_INSTR, (void *)&instr[i]);
-    }
-
     /* add hardware registers */
     for (i = 0; i < N_ELEMENTS(hwreg); i++) {
         AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+    }
+
+    /* add instructions */
+    for (i = 0; i < N_ELEMENTS(instr); i++) {
+        AddSymbol(&pasmWords, instr[i].name, SYM_INSTR, (void *)&instr[i]);
     }
 
     /* instruction modifiers */
