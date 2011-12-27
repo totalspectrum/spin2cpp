@@ -34,6 +34,8 @@ AddToList(AST *list, AST *newelement)
     AST *p;
     if (!list)
         return newelement;
+    if (!newelement)
+        return list;
     for (p = list; p->right != NULL; p = p->right)
         ;
     p->right = newelement;

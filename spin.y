@@ -130,9 +130,17 @@ localvars:
 
 stmtlist:
   stmt
-    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+    { if ($1)
+        $$ = NewAST(AST_STMTLIST, $1, NULL); 
+      else
+        $$ = NULL;
+    }
   | stmtlist stmt
-    { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
+  { if ($2)
+      $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); 
+    else
+      $$ = $1;  
+  }
   ;
 
 stmt:
@@ -146,6 +154,8 @@ stmt:
     { $$ = $1; }
   |  expr T_EOLN
     { $$ = $1; }
+  | T_EOLN
+    { $$ = NULL; }
   ;
 
 stmtblock:
