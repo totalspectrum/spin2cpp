@@ -485,6 +485,8 @@ struct reservedword {
     { "||", T_ABS },
     { "#>", T_LIMITMIN },
     { "#<", T_LIMITMAX },
+
+    { "~~", T_DOUBLETILDE },
 };
 
 extern void defaultBuiltin(FILE *, Builtin *, AST *);

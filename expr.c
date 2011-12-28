@@ -53,14 +53,6 @@ defaultBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ")");
 }
 
-/* code to print a cognew function call to a file */
-void
-PrintCognewCall(FILE *f, AST *params)
-{
-    fprintf(f, "cognew(");
-    PrintExprList(f, params);
-    fprintf(f, ")");
-}
 
 /* code to print left operator right */
 static void
@@ -175,6 +167,29 @@ PrintLHS(FILE *f, AST *expr, int assignment)
 }
 
 /*
+ * code to print a postfix operator like x~ (which returns x then sets x to 0)
+ */
+void
+PrintPostfix(FILE *f, AST *expr)
+{
+    const char *str;
+
+    if (expr->d.ival == '~')
+        str = "0";
+    else if (expr->d.ival == T_DOUBLETILDE) {
+        str = "-1";
+    } else {
+        ERROR("bad postfix operator %d", expr->d.ival);
+        return;
+    }
+    fprintf(f, "__extension__({ int32_t _tmp_ = ");
+    PrintLHS(f, expr->left, 0);
+    fprintf(f, "; ");
+    PrintLHS(f, expr->left, 1);
+    fprintf(f, " = %s; _tmp_; })", str);
+}
+
+/*
  * special code for printing a range expression
  * src->left is the hardware register
  * src->right is an AST_RANGE with left being the start, right the end
@@ -239,6 +254,9 @@ PrintExpr(FILE *f, AST *expr)
         PrintOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
+    case AST_POSTEFFECT:
+        PrintPostfix(f, expr);
+        break;
     case AST_ASSIGN:
         if (expr->left->kind == AST_RANGEREF) {
             PrintRangeAssign(f, expr->left, expr->right);
@@ -264,9 +282,6 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             ERROR("not a function");
         }
-        break;
-    case AST_COGNEW:
-        PrintCognewCall(f, expr->right);
         break;
     default:
         ERROR("Internal error, bad expression");

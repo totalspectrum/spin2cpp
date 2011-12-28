@@ -58,7 +58,7 @@ enum astkind {
     AST_ORG,
 
     AST_HERE = 32,
-    AST_COGNEW,
+    AST_POSTEFFECT,
 };
 
 struct AST {

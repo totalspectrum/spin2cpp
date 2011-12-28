@@ -63,7 +63,7 @@
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
-%left '@'
+%left '@' '~' T_DOUBLETILDE
 
 %%
 input:
@@ -326,6 +326,10 @@ expr:
     { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ENCODE; }
   | T_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
+  | lhs '~'
+    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
+  | lhs T_DOUBLETILDE
+    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
   ;
 
 lhs: identifier
