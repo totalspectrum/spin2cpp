@@ -149,6 +149,8 @@ stmt:
     { $$ = NewAST(AST_RETURN, $2, NULL); }
   |  ifstmt
     { $$ = $1; }
+  | repeatstmt
+    { $$ = $1; }
   |  stmtblock
     { $$ = $1; }
   |  expr T_EOLN
@@ -169,8 +171,13 @@ ifstmt:
     { $$ = NewAST(AST_IF, $2, NewAST(AST_THENELSE, $4, $7)); }
   ;
 
+repeatstmt:
+  T_REPEAT T_WHILE expr T_EOLN stmtblock
+    { $$ = NewAST(AST_WHILE, $3, $5); }
+  | T_REPEAT T_WHILE expr T_EOLN
+    { $$ = NewAST(AST_WHILE, $3, NULL); }
+;
 
- 
 conblock:
   conline
   { $$ = $1; }

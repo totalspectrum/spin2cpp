@@ -59,6 +59,7 @@ enum astkind {
 
     AST_HERE = 32,
     AST_POSTEFFECT,
+    AST_WHILE
 };
 
 struct AST {

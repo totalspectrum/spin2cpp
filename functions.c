@@ -197,6 +197,9 @@ static int
 PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
+
+    if (!ast) return 0;
+
     switch (ast->kind) {
     case AST_RETURN:
         fprintf(f, "%*creturn ", indent, ' ');
@@ -207,6 +210,22 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         fprintf(f, ";\n");
         sawreturn = 1;
+        break;
+    case AST_IF:
+        fprintf(f, "%*cif (", indent, ' ');
+        PrintExpr(f, ast->left);
+        fprintf(f, ") {\n");
+        ast = ast->right;
+        if (ast->kind != AST_THENELSE) {
+            ERROR("error parsing if/then/else");
+            return 0;
+        }
+        sawreturn = PrintStatementList(f, ast->left, indent+2);
+        if (ast->right) {
+            fprintf(f, "%*c} else {\n", indent, ' ');
+            sawreturn = sawreturn && PrintStatementList(f, ast->right, indent+2);
+        }
+        fprintf(f, "%*c}\n", indent, ' ');
         break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
