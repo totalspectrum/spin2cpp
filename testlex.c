@@ -8,6 +8,9 @@
 #include <stdarg.h>
 #include "spinc.h"
 
+ParserState *current;
+Function *curfunc;
+
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {
         fprintf(stderr, "test failed at line %d of %s: expected %ld got %ld\n",

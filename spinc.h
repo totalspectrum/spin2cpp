@@ -63,7 +63,7 @@ typedef struct hwreg {
 /* forward declaration */
 typedef struct parserstate ParserState;
 
-/* structure describing a function */
+/* structure describing an object function (method) */
 typedef struct funcdef {
     struct funcdef *next;
     int is_public;
@@ -80,6 +80,14 @@ typedef struct funcdef {
     /* parser state during compilation */
     ParserState *parse;
 } Function;
+
+/* structure describing a builtin function */
+typedef struct builtin {
+    const char *name;
+    int         numparameters;
+    void        (*printit)(FILE *, struct builtin *, AST *params);
+    const char *cname;
+} Builtin;
 
 /* parser state structure */
 struct parserstate {

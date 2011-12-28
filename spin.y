@@ -51,7 +51,6 @@
 %token T_EOLN
 %token T_EOF
 %token T_DOTS
-%token T_COGNEW
 %token T_HERE
 
 /* operators */
@@ -340,8 +339,6 @@ lhs: identifier
 funccall:
   identifier '(' exprlist ')'
   { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | T_COGNEW '(' exprlist ')'
-  { $$ = NewAST(AST_COGNEW, $1, $3); }
 ;
 
 exprlist:

@@ -13,6 +13,9 @@ LookupSymbol(const char *name)
     } else {
         sym = FindSymbol(&current->objsyms, name);
     }
+    if (!sym) {
+        sym = FindSymbol(&reservedWords, name);
+    }
     return sym;
 }
 
@@ -37,6 +40,15 @@ void
 PrintFuncCall(FILE *f, Symbol *sym, AST *params)
 {
     fprintf(f, "%s(", sym->name);
+    PrintExprList(f, params);
+    fprintf(f, ")");
+}
+
+/* code to print a builtin function call to a file */
+void
+defaultBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    fprintf(f, "%s(", b->cname);
     PrintExprList(f, params);
     fprintf(f, ")");
 }
@@ -136,11 +148,16 @@ PrintLHS(FILE *f, AST *expr, int assignment)
         if (!sym) {
             ERROR("Unknown symbol %s", expr->d.string);
         } else {
-            if (sym->type == SYM_FUNCTION) {
+            if (sym->type == SYM_FUNCTION || sym->type == SYM_BUILTIN) {
                 if (assignment) {
                     ERROR("symbol %s on left hand side of assignment", sym->name);
                 } else {
-                    PrintFuncCall(f, sym, NULL);
+                    if (sym->type == SYM_BUILTIN) {
+                        Builtin *b = sym->val;
+                        (*b->printit)(f, b, NULL);
+                    } else {
+                        PrintFuncCall(f, sym, NULL);
+                    }
                 }
             } else {
                 PrintSymbol(f, sym);
@@ -237,10 +254,15 @@ PrintExpr(FILE *f, AST *expr)
             if (expr->left->kind == AST_IDENTIFIER)
                 sym = LookupSymbol(expr->left->d.string);
         }
-        if (!sym || sym->type != SYM_FUNCTION) {
-            ERROR("not a function");
-        } else {
+        if (!sym) {
+            ERROR("undefined identifier in function call");
+        } else if (sym->type == SYM_BUILTIN) {
+            Builtin *b = sym->val;
+            (*b->printit)(f, b, expr->right);
+        } else if (sym->type == SYM_FUNCTION) {
             PrintFuncCall(f, sym, expr->right);
+        } else {
+            ERROR("not a function");
         }
         break;
     case AST_COGNEW:

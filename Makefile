@@ -10,8 +10,8 @@ YACC = bison
 RM = rm -f
 
 PROGS = testlex spin2c
-LEXOBJS = lexer.o symbol.o ast.o
-OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o expr.o
+LEXOBJS = lexer.o symbol.o ast.o expr.o
+OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o
 
 all: $(PROGS)
 

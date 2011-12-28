@@ -15,6 +15,7 @@ typedef enum symtype {
     SYM_FUNCTION,        /* function */
     SYM_LABEL,           /* dat block label */
     SYM_INSTRMODIFIER,   /* effect or condition */
+    SYM_BUILTIN,         /* builtin symbol */
 } Symtype;
 
 typedef struct symbol {

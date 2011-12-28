@@ -230,6 +230,9 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
+        if (sym->type == SYM_BUILTIN)
+            goto is_identifier;
+
         free(place);
         if (sym->type == SYM_RESERVED) {
             c = INTVAL(sym);
@@ -250,6 +253,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
     }
 
+is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     ast->d.string = place;
     *ast_ptr = ast;
@@ -432,7 +436,6 @@ struct reservedword {
 } init_words[] = {
     { "byte", T_BYTE },
     { "con", T_CON },
-    { "cognew", T_COGNEW },
     { "dat", T_DAT },
 
     { "else", T_ELSE },
@@ -484,6 +487,16 @@ struct reservedword {
     { "#<", T_LIMITMAX },
 };
 
+extern void defaultBuiltin(FILE *, Builtin *, AST *);
+
+Builtin builtinfuncs[] = {
+    { "cognew", 2, defaultBuiltin, "cognew" },
+    { "locknew", 0, defaultBuiltin, "locknew" },
+    { "lockset", 1, defaultBuiltin, "lockset" },
+    { "lockclr", 1, defaultBuiltin, "lockclr" },
+    { "lockret", 1, defaultBuiltin, "lockret" },
+};
+
 void
 initLexer(void)
 {
@@ -492,6 +505,11 @@ initLexer(void)
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_words); i++) {
         AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
+    }
+
+    /* add builtin functions */
+    for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
+        AddSymbol(&reservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
     }
 
     /* add the PASM instructions */
