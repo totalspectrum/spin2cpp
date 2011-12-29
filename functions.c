@@ -235,6 +235,13 @@ PrintStatement(FILE *f, AST *ast, int indent)
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}\n", indent, ' ');
         break;
+    case AST_DOWHILE:
+        fprintf(f, "%*cdo {\n", indent, ' ');
+        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        fprintf(f, "%*c} while (", indent, ' ');
+        PrintExpr(f, ast->left);
+        fprintf(f, ");\n");
+        break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
         break;

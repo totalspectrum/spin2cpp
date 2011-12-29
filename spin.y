@@ -177,6 +177,10 @@ ifstmt:
 repeatstmt:
     T_REPEAT T_EOLN stmtblock
     { $$ = NewAST(AST_WHILE, AstInteger(1), $3); }
+  | T_REPEAT T_EOLN stmtblock T_WHILE expr
+    { $$ = NewAST(AST_DOWHILE, $5, $3); }
+  | T_REPEAT T_EOLN stmtblock T_UNTIL expr
+    { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), $3); }
   | T_REPEAT T_EOLN
     { $$ = NewAST(AST_WHILE, AstInteger(1), NULL); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
