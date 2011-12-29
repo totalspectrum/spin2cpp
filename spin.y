@@ -55,6 +55,9 @@
 
 /* operators */
 %right T_ASSIGN
+%left T_NOT
+%left T_OR
+%left T_AND
 %left '<' '>' T_GE T_LE T_NE T_EQ
 %left T_LIMITMIN T_LIMITMAX
 %left '-' '+'
@@ -151,7 +154,7 @@ stmt:
     { $$ = $1; }
   | repeatstmt
     { $$ = $1; }
-  |  stmtblock
+  | stmtblock
     { $$ = $1; }
   |  expr T_EOLN
     { $$ = $1; }
@@ -172,10 +175,18 @@ ifstmt:
   ;
 
 repeatstmt:
-  T_REPEAT T_WHILE expr T_EOLN stmtblock
+    T_REPEAT T_EOLN stmtblock
+    { $$ = NewAST(AST_WHILE, AstInteger(1), $3); }
+  | T_REPEAT T_EOLN
+    { $$ = NewAST(AST_WHILE, AstInteger(1), NULL); }
+  | T_REPEAT T_WHILE expr T_EOLN stmtblock
     { $$ = NewAST(AST_WHILE, $3, $5); }
   | T_REPEAT T_WHILE expr T_EOLN
     { $$ = NewAST(AST_WHILE, $3, NULL); }
+  | T_REPEAT T_UNTIL expr T_EOLN stmtblock
+    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), $5); }
+  | T_REPEAT T_UNTIL expr T_EOLN
+    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), NULL); }
 ;
 
 conblock:
@@ -318,6 +329,22 @@ expr:
     { $$ = AstOperator(T_LIMITMIN, $1, $3); }
   | expr T_LIMITMAX expr
     { $$ = AstOperator(T_LIMITMAX, $1, $3); }
+  | expr T_REV expr
+    { $$ = AstOperator(T_REV, $1, $3); }
+  | expr T_ROTL expr
+    { $$ = AstOperator(T_ROTL, $1, $3); }
+  | expr T_ROTR expr
+    { $$ = AstOperator(T_ROTR, $1, $3); }
+  | expr T_SHL expr
+    { $$ = AstOperator(T_SHL, $1, $3); }
+  | expr T_SHR expr
+    { $$ = AstOperator(T_SHR, $1, $3); }
+  | expr T_SAR expr
+    { $$ = AstOperator(T_SAR, $1, $3); }
+  | expr T_OR expr
+    { $$ = AstOperator(T_OR, $1, $3); }
+  | expr T_AND expr
+    { $$ = AstOperator(T_AND, $1, $3); }
   | '(' expr ')'
     { $$ = $2; }
   | funccall
@@ -325,6 +352,8 @@ expr:
     { $$ = AstOperator(T_NEGATE, NULL, $2); }
   | '!' expr %prec T_BIT_NOT
     { $$ = AstOperator(T_BIT_NOT, NULL, $2); }
+  | T_NOT expr
+    { $$ = AstOperator(T_NOT, NULL, $2); }
   | T_ABS expr
     { $$ = AstOperator(T_ABS, NULL, $2); }
   | T_DECODE expr

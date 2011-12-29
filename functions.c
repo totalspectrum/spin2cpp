@@ -241,8 +241,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
     case AST_OPERATOR:
         switch (ast->d.ival) {
         case T_NEGATE:
-        case T_BIT_NOT:
         case T_ABS:
+        case T_BIT_NOT:
             lhsast = DupAST(ast->right);
             ast = AstAssign(T_ASSIGN, lhsast, ast);
             break;

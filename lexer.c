@@ -434,6 +434,7 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_words[] = {
+    { "and", T_AND },
     { "byte", T_BYTE },
     { "con", T_CON },
     { "dat", T_DAT },
@@ -445,8 +446,10 @@ struct reservedword {
     { "ifnot", T_IFNOT },
 
     { "long", T_LONG },
+    { "not", T_NOT },
 
     { "obj", T_OBJ },
+    { "or", T_OR },
     { "org", T_ORG },
     { "pri", T_PRI },
     { "pub", T_PUB },
@@ -475,6 +478,10 @@ struct reservedword {
     { "==", T_EQ },
     { "<>", T_NE },
 
+    { "><", T_REV },
+    { "->", T_ROTR },
+    { "-<", T_ROTL },
+
     { "<<", T_SHL },
     { ">>", T_SHR },
     { "~>", T_SAR },
@@ -501,6 +508,28 @@ Builtin builtinfuncs[] = {
     { "lockret", 1, defaultBuiltin, "lockret" },
 };
 
+struct constants {
+    const char *name;
+    int     type;
+    int32_t val;
+} constants[] = {
+    { "TRUE", SYM_CONSTANT, -1 },
+    { "FALSE", SYM_CONSTANT, 0 },
+    { "POSX", SYM_CONSTANT, 0x7fffffff },
+    { "NEGX", SYM_CONSTANT, 0x80000000U },
+    { "RCFAST", SYM_CONSTANT, 0x00000001 },
+    { "RCSLOW", SYM_CONSTANT, 0x00000002 },
+    { "XINPUT", SYM_CONSTANT, 0x00000004 },
+    { "XTAL1", SYM_CONSTANT, 0x00000008 },
+    { "XTAL2", SYM_CONSTANT, 0x00000010 },
+    { "XTAL3", SYM_CONSTANT, 0x00000020 },
+    { "PLL1X", SYM_CONSTANT, 0x00000040 },
+    { "PLL2X", SYM_CONSTANT, 0x00000080 },
+    { "PLL4X", SYM_CONSTANT, 0x00000100 },
+    { "PLL8X", SYM_CONSTANT, 0x00000200 },
+    { "PLL16X", SYM_CONSTANT, 0x00000400 },
+};
+
 void
 initLexer(void)
 {
@@ -514,6 +543,11 @@ initLexer(void)
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
         AddSymbol(&reservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
+    }
+
+    /* and builtin constants */
+    for (i = 0; i < N_ELEMENTS(constants); i++) {
+        AddSymbol(&reservedWords, constants[i].name, constants[i].type, (void *)(intptr_t)constants[i].val);
     }
 
     /* add the PASM instructions */

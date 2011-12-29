@@ -112,6 +112,13 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         fprintf(f, ") >> ");
         PrintExpr(f, right);
         break;
+    case T_REV:
+        fprintf(f, "__builtin_propeller_reverse(");
+        PrintExpr(f, left);
+        fprintf(f, ", 32 - ");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
     case T_MODULUS:
         PrintInOp(f, "%", left, right);
         break;
@@ -126,6 +133,15 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         break;
     case T_BIT_NOT:
         PrintInOp(f, "~", left, right);
+        break;
+    case T_AND:
+        PrintInOp(f, "&&", left, right);
+        break;
+    case T_OR:
+        PrintInOp(f, "||", left, right);
+        break;
+    case T_NOT:
+        PrintInOp(f, "!", left, right);
         break;
     default:
         opstring[0] = op;
@@ -209,41 +225,47 @@ PrintPostfix(FILE *f, AST *expr)
  * outa[2..1] := foo
  * should evaluate to:
  *   _OUTA = (_OUTA & ~(0x3<<1)) | (foo<<1);
+ *
+ * Note that we want to special case some common idioms:
+ *  outa[2..1] := outa[2..1] ^ -1, for example
  */
 void
-PrintRangeAssign(FILE *f, AST *src, AST *dst)
+PrintRangeAssign(FILE *f, AST *dst, AST *src)
 {
     int lo, hi;
     int reverse = 0;
     unsigned int mask;
     int nbits;
 
-    if (src->right->kind != AST_RANGE) {
+    if (dst->right->kind != AST_RANGE) {
         ERROR("internal error: expecting range");
         return;
     }
-    hi = EvalConstExpr(src->right->left);
-    lo = EvalConstExpr(src->right->right);
+    hi = EvalConstExpr(dst->right->left);
+    lo = EvalConstExpr(dst->right->right);
     if (hi < lo) {
         int tmp;
         reverse = 1;
         tmp = lo; lo = hi; hi = tmp;
+        ERROR("cannot currently handle reversed range");
     }
     nbits = (hi - lo + 1);
+
     if (nbits >= 32) {
-        PrintLHS(f, src->left, 1);
+        PrintLHS(f, dst->left, 1);
         fprintf(f, " = ");
-        PrintExpr(f, dst);
+        PrintExpr(f, src);
         return;
     }
     mask = ((1U<<nbits) - 1);
     mask = (mask << lo) | (mask >> (32-lo));
 
-    PrintLHS(f, src->left, 1);
+
+    PrintLHS(f, dst->left, 1);
     fprintf(f, " = (");
-    PrintLHS(f, src->left, 1);
+    PrintLHS(f, dst->left, 1);
     fprintf(f, " & 0x%08x) | ((", ~mask);
-    PrintExpr(f, dst);
+    PrintExpr(f, src);
     fprintf(f, " << %d) & 0x%08x)", lo, mask); 
 }
 
@@ -294,6 +316,9 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             ERROR("not a function");
         }
+        break;
+    case AST_RANGEREF:
+        ERROR("cannot handle range in expression yet");
         break;
     default:
         ERROR("Internal error, bad expression");
