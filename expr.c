@@ -121,6 +121,12 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     case T_DECREMENT:
         PrintInOp(f, "--", left, right);
         break;
+    case T_NEGATE:
+        PrintInOp(f, "-", left, right);
+        break;
+    case T_BIT_NOT:
+        PrintInOp(f, "~", left, right);
+        break;
     default:
         opstring[0] = op;
         opstring[1] = 0;

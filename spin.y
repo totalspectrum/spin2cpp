@@ -281,62 +281,66 @@ expr:
   integer
   | lhs
   | '@' lhs
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = '@'; }
+    { $$ = AstOperator('@', NULL, $2); }
   | lhs T_ASSIGN expr
-    { $$ = NewAST(AST_ASSIGN, $1, $3); $$->d.ival = T_ASSIGN; }
+    { $$ = AstAssign(T_ASSIGN, $1, $3); }
   | expr '+' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '+'; }
+    { $$ = AstOperator('+', $1, $3); }
   | expr '-' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '-'; }
+    { $$ = AstOperator('-', $1, $3); }
   | expr '*' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '*'; }
+    { $$ = AstOperator('*', $1, $3); }
   | expr '/' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '/'; }
+    { $$ = AstOperator('/', $1, $3); }
   | expr '&' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '&'; }
+    { $$ = AstOperator('&', $1, $3); }
   | expr '|' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '|'; }
+    { $$ = AstOperator('|', $1, $3); }
   | expr '^' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '^'; }
+    { $$ = AstOperator('^', $1, $3); }
   | expr '>' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '>'; }
+    { $$ = AstOperator('>', $1, $3); }
   | expr '<' expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = '<'; }
+    { $$ = AstOperator('<', $1, $3); }
   | expr T_GE expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_GE; }
+    { $$ = AstOperator(T_GE, $1, $3); }
   | expr T_LE expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_LE; }
+    { $$ = AstOperator(T_LE, $1, $3); }
   | expr T_NE expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_NE; }
+    { $$ = AstOperator(T_NE, $1, $3); }
   | expr T_EQ expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_EQ; }
+    { $$ = AstOperator(T_EQ, $1, $3); }
   | expr T_MODULUS expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_MODULUS; }
+    { $$ = AstOperator(T_MODULUS, $1, $3); }
   | expr T_HIGHMULT expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_HIGHMULT; }
+    { $$ = AstOperator(T_HIGHMULT, $1, $3); }
   | expr T_LIMITMIN expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_LIMITMIN; }
+    { $$ = AstOperator(T_LIMITMIN, $1, $3); }
   | expr T_LIMITMAX expr
-    { $$ = NewAST(AST_OPERATOR, $1, $3); $$->d.ival = T_LIMITMAX; }
+    { $$ = AstOperator(T_LIMITMAX, $1, $3); }
   | '(' expr ')'
     { $$ = $2; }
   | funccall
   | '-' expr %prec T_NEGATE
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_NEGATE; }
+    { $$ = AstOperator(T_NEGATE, NULL, $2); }
   | '!' expr %prec T_BIT_NOT
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_BIT_NOT; }
+    { $$ = AstOperator(T_BIT_NOT, NULL, $2); }
   | T_ABS expr
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ABS; }
+    { $$ = AstOperator(T_ABS, NULL, $2); }
   | T_DECODE expr
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_DECODE; }
+    { $$ = AstOperator(T_DECODE, NULL, $2); }
   | T_ENCODE expr
-    { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ENCODE; }
+    { $$ = AstOperator(T_ENCODE, NULL, $2); }
   | T_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
   | lhs T_INCREMENT
-    { $$ = NewAST(AST_OPERATOR, $1, NULL); $$->d.ival = T_INCREMENT; }
+    { $$ = AstOperator(T_INCREMENT, $1, NULL); }
   | lhs T_DECREMENT
-    { $$ = NewAST(AST_OPERATOR, $1, NULL); $$->d.ival = T_DECREMENT; }
+    { $$ = AstOperator(T_DECREMENT, $1, NULL); }
+  | T_INCREMENT lhs
+    { $$ = AstOperator(T_INCREMENT, NULL, $2); }
+  | T_DECREMENT lhs
+    { $$ = AstOperator(T_DECREMENT, NULL, $2); }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE

@@ -54,7 +54,7 @@ DupAST(AST *orig)
         return NULL;
 
     dup = NewAST(orig->kind, NULL, NULL);
-    memcpy(dup, orig, sizeof(dup));
+    memcpy(dup, orig, sizeof(*dup));
     dup->left = DupAST(orig->left);
     dup->right = DupAST(orig->right);
     return dup;
@@ -75,6 +75,25 @@ AST *
 AstInstrModifier(int32_t ival)
 {
     AST *ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+    ast->d.ival = ival;
+    return ast;
+}
+
+/*
+ * create an operator
+ */
+AST *
+AstOperator(int32_t ival, AST *left, AST *right)
+{
+    AST *ast = NewAST(AST_OPERATOR, left, right);
+    ast->d.ival = ival;
+    return ast;
+}
+
+AST *
+AstAssign(int32_t ival, AST *left, AST *right)
+{
+    AST *ast = NewAST(AST_ASSIGN, left, right);
     ast->d.ival = ival;
     return ast;
 }

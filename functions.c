@@ -197,6 +197,7 @@ static int
 PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
+    AST *lhsast = NULL;
 
     if (!ast) return 0;
 
@@ -237,6 +238,16 @@ PrintStatement(FILE *f, AST *ast, int indent)
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
         break;
+    case AST_OPERATOR:
+        switch (ast->d.ival) {
+        case T_NEGATE:
+        case T_BIT_NOT:
+        case T_ABS:
+            lhsast = DupAST(ast->right);
+            ast = AstAssign(T_ASSIGN, lhsast, ast);
+            break;
+        }
+        /* fall through */
     default:
         fprintf(f, "%*c", indent, ' ');
         PrintExpr(f, ast);
