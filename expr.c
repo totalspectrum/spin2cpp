@@ -115,6 +115,12 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     case T_MODULUS:
         PrintInOp(f, "%", left, right);
         break;
+    case T_INCREMENT:
+        PrintInOp(f, "++", left, right);
+        break;
+    case T_DECREMENT:
+        PrintInOp(f, "--", left, right);
+        break;
     default:
         opstring[0] = op;
         opstring[1] = 0;

@@ -63,7 +63,7 @@
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
-%left '@' '~' T_DOUBLETILDE
+%left '@' '~' T_DOUBLETILDE T_INCREMENT T_DECREMENT
 
 %%
 input:
@@ -333,6 +333,10 @@ expr:
     { $$ = NewAST(AST_OPERATOR, NULL, $2); $$->d.ival = T_ENCODE; }
   | T_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
+  | lhs T_INCREMENT
+    { $$ = NewAST(AST_OPERATOR, $1, NULL); $$->d.ival = T_INCREMENT; }
+  | lhs T_DECREMENT
+    { $$ = NewAST(AST_OPERATOR, $1, NULL); $$->d.ival = T_DECREMENT; }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE
