@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 #include "symbol.h"
 
 /* do case insensitive comparisons */
@@ -76,4 +77,28 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
     sym->next = table->hash[hash];
     table->hash[hash] = sym;
     return sym;
+}
+
+/*
+ * create a temporary variable name
+ */
+char *
+NewTemporaryVariable(const char *prefix)
+{
+    char *str;
+    char *s;
+    static int tmpvarnum = 0;
+
+    if (!prefix)
+        prefix = "_tmp_";
+    s = str = malloc(strlen(prefix)+16);
+    if (!s) {
+        fprintf(stderr, "Out of memory!\n");
+        exit(1);
+    }
+    while (*prefix)
+        *s++ = *prefix++;
+    *s++ = '_';
+    sprintf(s, "%04d", tmpvarnum++);
+    return str;
 }

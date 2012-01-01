@@ -17,6 +17,7 @@
 
 %token T_IDENTIFIER
 %token T_NUM
+%token T_STRING
 
 /* various keywords */
 %token T_CON
@@ -52,6 +53,7 @@
 %token T_EOF
 %token T_DOTS
 %token T_HERE
+%token T_STRINGPTR
 
 /* operators */
 %right T_ASSIGN
@@ -191,6 +193,9 @@ repeatstmt:
     { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), $5); }
   | T_REPEAT T_UNTIL expr T_EOLN
     { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), NULL); }
+  | T_REPEAT expr T_EOLN stmtblock
+    { $$ = NewAST(AST_COUNTFOR, $2, $4); }
+
 ;
 
 conblock:
@@ -294,6 +299,7 @@ identdecl:
 
 expr:
   integer
+  | string
   | lhs
   | '@' lhs
     { $$ = AstOperator('@', NULL, $2); }
@@ -382,11 +388,24 @@ expr:
 
 lhs: identifier
   | identifier '[' expr ']'
-    { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | hwreg
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3); }
+  | memref '[' expr ']'
+    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+  | memref
+    { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   ;
+
+memref:
+  T_BYTE '[' expr ']'
+    { $$ = NewAST(AST_MEMREF, ast_type_byte, $3); }
+  | T_WORD '[' expr ']'
+    { $$ = NewAST(AST_MEMREF, ast_type_word, $3); }
+  | T_LONG '[' expr ']'
+    { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
+;
 
 funccall:
   identifier '(' exprlist ')'
@@ -422,6 +441,11 @@ range:
 
 integer:
   T_NUM
+  { $$ = current->ast; }
+;
+
+string:
+  T_STRING
   { $$ = current->ast; }
 ;
 

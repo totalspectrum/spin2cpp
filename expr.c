@@ -151,6 +151,42 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     }
 }
 
+/*
+ * code to print out a type declaration
+ */
+void
+PrintType(FILE *f, AST *typedecl)
+{
+    int size;
+
+    switch (typedecl->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+        if (typedecl->kind == AST_UNSIGNEDTYPE) {
+            fprintf(f, "u");
+        }
+        size = EvalConstExpr(typedecl->left);
+        switch (size) {
+        case 1:
+            fprintf(f, "int8_t");
+            break;
+        case 2:
+            fprintf(f, "int16_t");
+            break;
+        case 4:
+            fprintf(f, "int32_t");
+            break;
+        default:
+            ERROR("unsupported integer size %d", size);
+            break;
+        }
+        break;
+    default:
+        ERROR("unknown type declaration %d", typedecl->kind);
+        break;
+    }
+}
+
 /* code to print a source expression (could be an array reference or
  * range)
  * if "assignment" is true then we are in an assignment operator, so
@@ -184,9 +220,22 @@ PrintLHS(FILE *f, AST *expr, int assignment)
             }
         }
         break;
+    case AST_ARRAYREF:
+        PrintLHS(f, expr->left, assignment);
+        fprintf(f, "[");
+        PrintExpr(f, expr->right);
+        fprintf(f, "]");
+        break;
     case AST_HWREG:
         hw = (HwReg *)expr->d.ptr;
         fprintf(f, "%s", hw->cname);
+        break;
+    case AST_MEMREF:
+        fprintf(f, "((");
+        PrintType(f, expr->left);
+        fprintf(f, " *)");
+        PrintExpr(f, expr->right);
+        fprintf(f, ")");
         break;
     default:
         ERROR("bad target for assignment");
@@ -281,6 +330,8 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
+    case AST_MEMREF:
+    case AST_ARRAYREF:
         PrintLHS(f, expr, 0);
         break;
     case AST_OPERATOR:

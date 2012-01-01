@@ -63,6 +63,9 @@ enum astkind {
     AST_DOWHILE,
 
     AST_FOR = 36,
+    AST_MEMREF,
+    AST_ARRAYREF,
+    AST_COUNTFOR,
 };
 
 struct AST {

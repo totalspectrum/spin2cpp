@@ -230,7 +230,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
-        if (sym->type == SYM_BUILTIN)
+        if (sym->type == SYM_BUILTIN || sym->type == SYM_CONSTANT)
             goto is_identifier;
 
         free(place);
@@ -258,6 +258,29 @@ is_identifier:
     ast->d.string = place;
     *ast_ptr = ast;
     return T_IDENTIFIER;
+}
+
+/* parse a string */
+static int
+parseString(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    char *place = NULL;
+    size_t space = 0;
+    size_t len = 0;
+    AST *ast;
+
+    c = lexgetc(L);
+    while (c != '"') {
+        addchar(c, &place, &space, &len);
+        c = lexgetc(L);
+    }
+    addchar('\0', &place, &space, &len);
+
+    ast = NewAST(AST_STRING, NULL, NULL);
+    ast->d.string = place;
+    *ast_ptr = ast;
+    return T_STRING;
 }
 
 //
@@ -351,6 +374,7 @@ again:
     return c;
 }
 
+
 static char operator_chars[] = "-+*/|<>=!@~#^.";
 
 int
@@ -421,6 +445,8 @@ getToken(LexStream *L, AST **ast_ptr)
             }
         }
         c = token;
+    } else if (c == '"') {
+        c = parseString(L, &ast);
     }
     *ast_ptr = ast;
     return c;
@@ -456,6 +482,7 @@ struct reservedword {
     { "repeat", T_REPEAT },
     { "return", T_RETURN },
 
+    { "string", T_STRINGPTR },
     { "until", T_UNTIL },
 
     { "var", T_VAR },
@@ -506,6 +533,7 @@ Builtin builtinfuncs[] = {
     { "lockset", 1, defaultBuiltin, "lockset" },
     { "lockclr", 1, defaultBuiltin, "lockclr" },
     { "lockret", 1, defaultBuiltin, "lockret" },
+    { "strsize", 1, defaultBuiltin, "strlen" },
 };
 
 struct constants {

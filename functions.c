@@ -198,6 +198,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
     AST *lhsast = NULL;
+    char *tmpvarname;
 
     if (!ast) return 0;
 
@@ -241,6 +242,14 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, "%*c} while (", indent, ' ');
         PrintExpr(f, ast->left);
         fprintf(f, ");\n");
+        break;
+    case AST_COUNTFOR:
+        tmpvarname = NewTemporaryVariable(NULL);
+        fprintf(f, "%*cfor (int %s = ", indent, ' ', tmpvarname);
+        PrintExpr(f, ast->left);
+        fprintf(f, "; %s > 0; --%s) {\n", tmpvarname, tmpvarname);
+        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        fprintf(f, "%*c}\n", indent, ' ');
         break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
