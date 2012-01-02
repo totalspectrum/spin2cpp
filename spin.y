@@ -45,6 +45,11 @@
 %token T_ELSEIF
 %token T_ELSEIFNOT
 
+%token T_LOOKDOWN
+%token T_LOOKDOWNZ
+%token T_LOOKUP
+%token T_LOOKUPZ
+
 /* other stuff */
 %token T_RETURN
 %token T_INDENT

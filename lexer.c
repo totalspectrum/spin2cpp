@@ -23,6 +23,13 @@ strgetc(LexStream *L)
 
     s = (char *)L->ptr;
     c = (*s++) & 0x00ff;
+    if (c == '\r') {
+        c = (*s++) & 0x00ff;
+        if (c != '\n') {
+            --s;
+            c = '\n';
+        }
+    }
     L->ptr = s;
     return (c == 0) ? T_EOF : c;
 }
@@ -50,6 +57,15 @@ filegetc(LexStream *L)
 
     f = (FILE *)L->ptr;
     c = fgetc(f);
+    /* translate CR+LF ->LF, plain CR ->LF */
+    if (c == '\r') {
+        c = fgetc(f);
+        if (c != '\n') {
+            ungetc(c, f);
+            c = '\n';
+        }
+    }
+
     return (c >= 0) ? c : T_EOF;
 }
 
@@ -306,7 +322,7 @@ skipSpace(LexStream *L)
 
 again:
     c = lexgetc(L);
-    while (c == ' ' || c == '\t' || c == '\r') {
+    while (c == ' ' || c == '\t') {
         if (L->eoln) {
             if (c == '\t') {
                 indent = TAB_STOP * ((indent + (TAB_STOP-1))/TAB_STOP);
@@ -472,6 +488,10 @@ struct reservedword {
     { "ifnot", T_IFNOT },
 
     { "long", T_LONG },
+    { "lookdown", T_LOOKDOWN },
+    { "lookdownz", T_LOOKDOWNZ },
+    { "lookup", T_LOOKUP },
+    { "lookupz", T_LOOKUPZ },
     { "not", T_NOT },
 
     { "obj", T_OBJ },
