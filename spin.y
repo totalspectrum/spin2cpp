@@ -170,10 +170,16 @@ stmtblock:
 ;
 
 ifstmt:
-  T_IF expr T_EOLN stmtblock
-    { $$ = NewAST(AST_IF, $2, NewAST(AST_THENELSE, $4, NULL)); }
-  | T_IF expr T_EOLN stmtblock T_ELSE T_EOLN stmtblock
-    { $$ = NewAST(AST_IF, $2, NewAST(AST_THENELSE, $4, $7)); }
+  T_IF expr T_EOLN elseblock
+    { $$ = NewAST(AST_IF, $2, $4); }
+
+elseblock:
+  stmtblock
+    { $$ = NewAST(AST_THENELSE, $1, NULL); }
+  | stmtblock T_ELSE T_EOLN stmtblock
+    { $$ = NewAST(AST_THENELSE, $1, $4); }
+  | stmtblock T_ELSEIF expr T_EOLN elseblock
+  { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, $3, $5), NULL)); }
   ;
 
 repeatstmt:
