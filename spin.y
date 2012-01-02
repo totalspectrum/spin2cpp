@@ -355,6 +355,30 @@ expr:
     { $$ = AstOperator(T_OR, $1, $3); }
   | expr T_AND expr
     { $$ = AstOperator(T_AND, $1, $3); }
+  | expr '+' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('+', $1, $4); }
+  | expr '-' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('-', $1, $4); }
+  | expr '/' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('/', $1, $4); }
+  | expr '*' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('*', $1, $4); }
+  | expr T_MODULUS '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_MODULUS, $1, $4); }
+  | expr T_HIGHMULT '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_HIGHMULT, $1, $4); }
+  | expr T_REV '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_REV, $1, $4); }
+  | expr T_ROTL '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_ROTL, $1, $4); }
+  | expr T_ROTR '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_ROTR, $1, $4); }
+  | expr T_SHL '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_SHL, $1, $4); }
+  | expr T_SHR '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_SHR, $1, $4); }
+  | expr T_SAR '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_SAR, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
   | funccall

@@ -93,7 +93,15 @@ AstOperator(int32_t ival, AST *left, AST *right)
 AST *
 AstAssign(int32_t ival, AST *left, AST *right)
 {
-    AST *ast = NewAST(AST_ASSIGN, left, right);
+    AST *ast;
+    AST *rhs;
+
+    if (ival == T_ASSIGN)
+        rhs = right;
+    else
+        rhs = AstOperator(ival, left, right);
+
+    ast = NewAST(AST_ASSIGN, left, rhs);
     ast->d.ival = ival;
     return ast;
 }
