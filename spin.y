@@ -67,6 +67,7 @@
 %token T_DOTS
 %token T_HERE
 %token T_STRINGPTR
+%token T_CONSTANT
 
 /* operators */
 %right T_ASSIGN
@@ -515,6 +516,8 @@ expr:
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
+  | T_CONSTANT expr
+    { $$ = $1; }
   ;
 
 lhs: identifier

@@ -491,6 +491,8 @@ struct reservedword {
 
     { "case", T_CASE },
     { "con", T_CON },
+    { "constant", T_CONSTANT },
+
     { "dat", T_DAT },
 
     { "else", T_ELSE },
