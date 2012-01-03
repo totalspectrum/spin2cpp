@@ -458,9 +458,9 @@ expr:
   | expr T_HIGHMULT '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_HIGHMULT, $1, $4); }
   | expr T_LIMITMIN '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMIN, $1, $3); current->needsMinMax = 1; }
+    { $$ = AstAssign(T_LIMITMIN, $1, $4); current->needsMinMax = 1; }
   | expr T_LIMITMAX '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMAX, $1, $3); current->needsMinMax = 1; }
+    { $$ = AstAssign(T_LIMITMAX, $1, $4); current->needsMinMax = 1; }
   | expr T_REV '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_REV, $1, $4); }
   | expr T_ROTL '=' expr %prec T_ASSIGN
