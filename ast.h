@@ -70,6 +70,7 @@ enum astkind {
     AST_CASE = 40,
     AST_CASEITEM,
     AST_OTHER,
+    AST_RES,
 };
 
 struct AST {

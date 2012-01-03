@@ -81,8 +81,13 @@ filegetwc(LexStream *L)
     if (c1 < 0) return T_EOF;
     c2 = fgetc(f);
     if (c2 != 0) {
+        if (c2 < 0) return T_EOF;
         /* FIXME: should convert to UTF-8 */
         return 0xff;
+    }
+    /* eliminate carriage returns */
+    if (c1 == '\r') {
+        c1 = ' ';
     }
     return c1;
 }
@@ -509,6 +514,7 @@ struct reservedword {
     { "pri", T_PRI },
     { "pub", T_PUB },
     { "repeat", T_REPEAT },
+    { "res", T_RES },
     { "return", T_RETURN },
 
     { "string", T_STRINGPTR },
@@ -536,7 +542,7 @@ struct reservedword {
 
     { "><", T_REV },
     { "->", T_ROTR },
-    { "-<", T_ROTL },
+    { "<-", T_ROTL },
 
     { "<<", T_SHL },
     { ">>", T_SHR },

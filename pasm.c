@@ -276,6 +276,12 @@ DeclareLabels(ParserState *P)
             }
             asmbase = pc + offset;
             break;
+        case AST_RES:
+            pc = align(pc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            offset = EvalPasmExpr(ast->left);
+            pc += 4*offset;
+            break;
         default:
             ERROR("unknown element %d in data block", ast->kind);
             break;
@@ -313,6 +319,7 @@ PrintDataBlock(FILE *f, ParserState *P)
             /* just skip labels */
             break;
         case AST_ORG:
+        case AST_RES:
             break;
         default:
             ERROR("unknown element in data block");

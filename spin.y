@@ -35,6 +35,7 @@
 %token T_INSTRMODIFIER
 %token T_HWREG
 %token T_ORG
+%token T_RES
 
 %token T_REPEAT
 %token T_WHILE
@@ -327,6 +328,8 @@ basedatline:
     { $$ = NewAST(AST_ORG, NULL, NULL); }
   | T_ORG expr T_EOLN
     { $$ = NewAST(AST_ORG, $1, NULL); }
+  | T_RES expr T_EOLN
+    { $$ = NewAST(AST_RES, $1, NULL); }
   ;
 
 

@@ -360,6 +360,7 @@ PrintExpr(FILE *f, AST *expr)
 {
     Symbol *sym;
     int c;
+    const char *name = "";
 
     switch (expr->kind) {
     case AST_INTEGER:
@@ -399,11 +400,13 @@ PrintExpr(FILE *f, AST *expr)
     case AST_FUNCCALL:
         sym = NULL;
         if (expr->left) {
-            if (expr->left->kind == AST_IDENTIFIER)
-                sym = LookupSymbol(expr->left->d.string);
+            if (expr->left->kind == AST_IDENTIFIER) {
+                name = expr->left->d.string;
+                sym = LookupSymbol(name);
+            }
         }
         if (!sym) {
-            ERROR("undefined identifier in function call");
+            ERROR("undefined identifier %s in function call", name);
         } else if (sym->type == SYM_BUILTIN) {
             Builtin *b = sym->val;
             (*b->printit)(f, b, expr->right);
