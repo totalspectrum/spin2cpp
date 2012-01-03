@@ -66,6 +66,16 @@ PrintInOp(FILE *f, const char *op, AST *left, AST *right)
     }
 }
 
+static void
+PrintMacroExpr(FILE *f, const char *name, AST *left, AST *right)
+{
+    fprintf(f, "%s(", name);
+    PrintExpr(f, left);
+    fprintf(f, ", ");
+    PrintExpr(f, right);
+    fprintf(f, ")");
+}
+
 void
 PrintOperator(FILE *f, int op, AST *left, AST *right)
 {
@@ -73,7 +83,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
 
     switch (op) {
     case '@':
-        fprintf(f, "&");
+        fprintf(f, "(int32_t)&");
         PrintExpr(f, right);
         break;
     case T_HIGHMULT:
@@ -139,18 +149,16 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, "!", left, right);
         break;
     case T_LIMITMIN:
-        fprintf(f, "Max__(");
-        PrintExpr(f, left);
-        fprintf(f, ", ");
-        PrintExpr(f, right);
-        fprintf(f, ")");
+        PrintMacroExpr(f, "Max__", left, right);
         break;
     case T_LIMITMAX:
-        fprintf(f, "Min__(");
-        PrintExpr(f, left);
-        fprintf(f, ", ");
-        PrintExpr(f, right);
-        fprintf(f, ")");
+        PrintMacroExpr(f, "Min__", left, right);
+        break;
+    case T_ROTL:
+        PrintMacroExpr(f, "Rotl__", left, right);
+        break;
+    case T_ROTR:
+        PrintMacroExpr(f, "Rotr__", left, right);
         break;
     default:
         opstring[0] = op;

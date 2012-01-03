@@ -115,6 +115,7 @@ struct parserstate {
 
     /* flags for emitting macros */
     char needsMinMax;
+    char needsRotate;
 };
 
 /* the current parser state */

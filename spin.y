@@ -67,7 +67,6 @@
 %token T_DOTS
 %token T_HERE
 %token T_STRINGPTR
-%token T_CONSTANT
 
 /* operators */
 %right T_ASSIGN
@@ -83,6 +82,7 @@
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
 %left '@' '~' T_DOUBLETILDE T_INCREMENT T_DECREMENT
+%left T_CONSTANT
 
 %%
 input:
@@ -432,9 +432,9 @@ expr:
   | expr T_REV expr
     { $$ = AstOperator(T_REV, $1, $3); }
   | expr T_ROTL expr
-    { $$ = AstOperator(T_ROTL, $1, $3); }
+    { $$ = AstOperator(T_ROTL, $1, $3); current->needsRotate = 1; }
   | expr T_ROTR expr
-    { $$ = AstOperator(T_ROTR, $1, $3); }
+    { $$ = AstOperator(T_ROTR, $1, $3); current->needsRotate = 1; }
   | expr T_SHL expr
     { $$ = AstOperator(T_SHL, $1, $3); }
   | expr T_SHR expr

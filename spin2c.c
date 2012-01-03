@@ -233,6 +233,10 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define Min__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a < b ? a : b;})\n"); 
         fprintf(f, "#define Max__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a > b ? a : b;})\n\n");
     }
+    if (parse->needsRotate) {
+        fprintf(f, "#define Rotl__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); (a<<b) | (a>>(32-b)); })\n"); 
+        fprintf(f, "#define Rotr__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); (a>>b) | (a<<(32-b)); })\n"); 
+    }
 }
 
 static void
