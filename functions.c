@@ -190,6 +190,51 @@ PrintStatementList(FILE *f, AST *ast, int indent)
     return sawreturn;
 }
 
+static void
+PrintCaseExprList(FILE *f, AST *ast, int indent)
+{
+    while (ast) {
+        if (ast->kind == AST_OTHER) {
+            fprintf(f, "%*cdefault:\n", indent, ' ');
+        } else {
+            fprintf(f, "%*ccase ", indent, ' ');
+            PrintExpr(f, ast->left);
+            fprintf(f, ":\n");
+        }
+        ast = ast->right;
+    }
+}
+
+static int
+PrintCaseItem(FILE *f, AST *ast, int indent)
+{
+    int sawreturn;
+
+    PrintCaseExprList(f, ast->left, indent);
+    sawreturn = PrintStatementList(f, ast->right, indent+2);
+    fprintf(f, "%*cbreak;\n", indent+2, ' ');
+    return sawreturn;
+}
+
+static int
+PrintCaseList(FILE *f, AST *ast, int indent)
+{
+    int sawreturn = 1;
+    int items = 0;
+
+    while (ast) {
+        if (ast->kind != AST_LISTHOLDER) {
+            ERROR("Internal error in case list");
+            return 0;
+        }
+        sawreturn = sawreturn && PrintCaseItem(f, ast->left, indent);
+        ast = ast->right;
+        items++;
+    }
+
+    return (items > 0) && sawreturn;
+}
+
 /*
  * returns 1 if a return statement was seen
  */
@@ -253,6 +298,13 @@ PrintStatement(FILE *f, AST *ast, int indent)
         break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
+        break;
+    case AST_CASE:
+        fprintf(f, "%*cswitch (", indent, ' ');
+        PrintExpr(f, ast->left);
+        fprintf(f, ") {\n");
+        sawreturn = PrintCaseList(f, ast->right, indent+2);
+        fprintf(f, "%*c}\n", indent, ' ');
         break;
     case AST_OPERATOR:
         switch (ast->d.ival) {

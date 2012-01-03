@@ -267,6 +267,27 @@ PrintPostfix(FILE *f, AST *expr)
 }
 
 /*
+ * special case an assignment like outa[2..1] ^= -1
+ */
+static void
+RangeXor(FILE *f, AST *dst, AST *src)
+{
+    int lo, hi, nbits;
+    uint32_t mask;
+
+    /* now handle the ordinary case */
+    hi = EvalConstExpr(dst->right->left);
+    lo = EvalConstExpr(dst->right->right);
+    if (hi < lo) {
+        int tmp;
+        tmp = lo; lo = hi; hi = tmp;
+    }
+    nbits = (hi - lo + 1);
+    mask = ((1U<<nbits) - 1);
+    mask = (mask << lo) | (mask >> (32-lo));
+}
+
+/*
  * special code for printing a range expression
  * src->left is the hardware register
  * src->right is an AST_RANGE with left being the start, right the end
@@ -283,15 +304,25 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
 {
     int lo, hi;
     int reverse = 0;
-    unsigned int mask;
+    uint32_t mask;
     int nbits;
 
     if (dst->right->kind != AST_RANGE) {
         ERROR("internal error: expecting range");
         return;
     }
+    /* special case logical operators */
+    if (src->kind == AST_OPERATOR && src->d.ival == '^'
+        && AstMatch(dst->right, src->left)
+        && IsConstExpr(src->right))
+    {
+        RangeXor(f, dst, src->right);
+    }
+
+    /* now handle the ordinary case */
     hi = EvalConstExpr(dst->right->left);
     lo = EvalConstExpr(dst->right->right);
+
     if (hi < lo) {
         int tmp;
         reverse = 1;
@@ -378,7 +409,7 @@ PrintExpr(FILE *f, AST *expr)
 }
 
 static long
-EvalOperator(int op, int32_t lval, int32_t rval)
+EvalOperator(int op, int32_t lval, int32_t rval, int *valid)
 {
     switch (op) {
     case '+':
@@ -426,18 +457,26 @@ EvalOperator(int op, int32_t lval, int32_t rval)
     case T_ENCODE:
         return 32 - __builtin_clz(rval);
     default:
-        ERROR("unknown operator %d\n", op);
+        if (valid)
+            *valid = 0;
+        else
+            ERROR("unknown operator %d\n", op);
         return 0;
     }
 }
 
 #define PASM_FLAG 0x01
 
+/*
+ * evaluate an expression
+ * if unable to evaluate, return 0 and set "*valid" to 0
+ */
 static int32_t
-EvalExpr(AST *expr, unsigned flags)
+EvalExpr(AST *expr, unsigned flags, int *valid)
 {
     Symbol *sym;
     int32_t lval, rval;
+    int reportError = (valid == NULL);
 
     if (!expr)
         return 0;
@@ -449,7 +488,11 @@ EvalExpr(AST *expr, unsigned flags)
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
-            ERROR("Unknown symbol %s", expr->d.string);
+            if (reportError)
+                ERROR("Unknown symbol %s", expr->d.string);
+            else
+                *valid = 0;
+            return 0;
         } else {
             switch (sym->type) {
             case SYM_CONSTANT:
@@ -458,31 +501,43 @@ EvalExpr(AST *expr, unsigned flags)
                 if (flags & PASM_FLAG) {
                     Label *lref = sym->val;
                     if (lref->asmval & 0x03) {
-                        ERROR("label %s not on longword boundary", sym->name);
+                        if (reportError)
+                            ERROR("label %s not on longword boundary", sym->name);
+                        else
+                            *valid = 0;
                         return 0;
                     }
                     return lref->asmval >> 2;
                 }
                 /* otherwise fall through */
             default:
-                ERROR("Symbol %s is not constant", expr->d.string);
-                break;
+                if (reportError)
+                    ERROR("Symbol %s is not constant", expr->d.string);
+                else
+                    *valid = 0;
+                return 0;
             }
         }
         break;
     case AST_OPERATOR:
-        lval = EvalExpr(expr->left, flags);
-        rval = EvalExpr(expr->right, flags);
-        return EvalOperator(expr->d.ival, lval, rval);
+        lval = EvalExpr(expr->left, flags, valid);
+        rval = EvalExpr(expr->right, flags, valid);
+        return EvalOperator(expr->d.ival, lval, rval, valid);
     case AST_HWREG:
         if (flags & PASM_FLAG) {
             HwReg *hw = expr->d.ptr;
             return hw->addr;
         }
-        ERROR("Used hardware register where constant is expected");
+        if (reportError)
+            ERROR("Used hardware register where constant is expected");
+        else
+            *valid = 0;
         break;
     default:
-        ERROR("Bad constant expression");
+        if (reportError)
+            ERROR("Bad constant expression");
+        else
+            *valid = 0;
         break;
     }
     return 0;
@@ -491,13 +546,22 @@ EvalExpr(AST *expr, unsigned flags)
 int32_t
 EvalConstExpr(AST *expr)
 {
-    return EvalExpr(expr, 0);
+    return EvalExpr(expr, 0, NULL);
 }
 
 int32_t
 EvalPasmExpr(AST *expr)
 {
-    return EvalExpr(expr, PASM_FLAG);
+    return EvalExpr(expr, PASM_FLAG, NULL);
+}
+
+int
+IsConstExpr(AST *expr)
+{
+    int valid;
+    valid = 1;
+    EvalExpr(expr, 0, &valid);
+    return valid;
 }
 
 void

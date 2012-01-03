@@ -30,7 +30,8 @@ strgetc(LexStream *L)
             c = '\n';
         }
     }
-    L->ptr = s;
+    if (c != 0)
+        L->ptr = s;
     return (c == 0) ? T_EOF : c;
 }
 
@@ -343,6 +344,9 @@ again:
             L->eoln = 0;
             return T_INDENT;
         }
+        /* ignore completely empty lines */
+        if (indent == 0 && c == '\n')
+            goto again;
         if (indent < L->indent[L->indentsp] && L->indentsp > 0) {
             lexungetc(L, c);
             while (indent < L->indent[L->indentsp] && L->indentsp > 0) {
@@ -478,6 +482,8 @@ struct reservedword {
 } init_words[] = {
     { "and", T_AND },
     { "byte", T_BYTE },
+
+    { "case", T_CASE },
     { "con", T_CON },
     { "dat", T_DAT },
 
@@ -497,6 +503,8 @@ struct reservedword {
     { "obj", T_OBJ },
     { "or", T_OR },
     { "org", T_ORG },
+    { "other", T_OTHER },
+
     { "pri", T_PRI },
     { "pub", T_PUB },
     { "repeat", T_REPEAT },

@@ -60,6 +60,33 @@ DupAST(AST *orig)
     return dup;
 }
 
+/* see if two trees match */
+int
+AstMatch(AST *a, AST *b)
+{
+    if (a == NULL)
+        return b == NULL;
+    if (b == NULL)
+        return 0;
+    if (a->kind != b->kind)
+        return 0;
+    switch (a->kind) {
+    case AST_INTEGER:
+        return a->d.ival == b->d.ival;
+    case AST_STRING:
+    case AST_IDENTIFIER:
+        return strcasecmp(a->d.string, b->d.string) == 0;
+    case AST_OPERATOR:
+    case AST_ASSIGN:
+        if (a->d.ival != b->d.ival)
+            return 0;
+    default:
+        break;
+    }
+    return AstMatch(a->left, b->left) && AstMatch(a->right, b->right);
+}
+
+/* create an integer */
 AST *
 AstInteger(long ival)
 {

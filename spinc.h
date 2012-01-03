@@ -128,6 +128,9 @@ int32_t EvalConstExpr(AST *expr);
 /* similar but for PASM */
 int32_t EvalPasmExpr(AST *expr);
 
+/* determine whether an expression is constant */
+int IsConstExpr(AST *expr);
+
 /* declare a function */
 /* "body" is the list of statements */
 /* "funcdef" is an AST_FUNCDEF; this is set up as follows:

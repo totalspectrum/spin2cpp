@@ -50,6 +50,9 @@
 %token T_LOOKUP
 %token T_LOOKUPZ
 
+%token T_CASE
+%token T_OTHER
+
 /* other stuff */
 %token T_RETURN
 %token T_INDENT
@@ -165,6 +168,8 @@ stmt:
     { $$ = $1; }
   |  expr T_EOLN
     { $$ = $1; }
+  | casestmt
+    { $$ = $1; }
   | T_EOLN
     { $$ = NULL; }
   ;
@@ -185,6 +190,40 @@ elseblock:
     { $$ = NewAST(AST_THENELSE, $1, $4); }
   | stmtblock T_ELSEIF expr T_EOLN elseblock
   { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, $3, $5), NULL)); }
+  ;
+
+casestmt:
+  T_CASE expr T_EOLN T_INDENT casematchlist T_OUTDENT
+    { $$ = NewAST(AST_CASE, $2, $5); }
+;
+
+casematchlist:
+  casematchitem
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | casematchlist casematchitem
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+  ;
+
+casematchitem:
+  matchexprlist ':' stmt optstmtlist
+    {
+        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
+        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $4));
+    }
+  ;
+
+optstmtlist:
+  /* nothing */
+    { $$ = NULL }
+  | stmtblock
+    { $$ = $1 }
+  ;
+
+matchexprlist:
+  T_OTHER
+    { $$ = NewAST(AST_OTHER, NULL, NULL); }
+  | exprlist
+    { $$ = $1 }
   ;
 
 repeatstmt:
