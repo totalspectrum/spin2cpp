@@ -35,14 +35,24 @@ outputByte(FILE *f, int c)
 void
 outputDataList(FILE *f, int size, AST *ast)
 {
-    unsigned val;
-    int i;
+    unsigned val, origval;
+    int i, reps;
 
     while (ast) {
-        val = EvalConstExpr(ast->left);
-        for (i = 0; i < size; i++) {
-            outputByte(f, val & 0xff);
-            val = val >> 8;
+        if (ast->left->kind == AST_ARRAYDECL) {
+            origval = EvalConstExpr(ast->left->left);
+            reps = EvalConstExpr(ast->left->right);
+        } else {
+            origval = EvalConstExpr(ast->left);
+            reps = 1;
+        }
+        while (reps > 0) {
+            val = origval;
+            for (i = 0; i < size; i++) {
+                outputByte(f, val & 0xff);
+                val = val >> 8;
+            }
+            --reps;
         }
         ast = ast->right;
     }
@@ -177,8 +187,13 @@ unsigned
 dataListLen(AST *ast, int elemsize)
 {
     unsigned size = 0;
-
+    unsigned numelems;
     while (ast) {
+        if (ast->left && ast->left->kind == AST_ARRAYDECL) {
+            numelems = EvalConstExpr(ast->left->right);
+        } else {
+            numelems = 1;
+        }
         size += elemsize;
         ast = ast->right;
     }

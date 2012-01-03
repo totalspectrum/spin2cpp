@@ -352,6 +352,9 @@ PrintExpr(FILE *f, AST *expr)
     int c;
     const char *name = "";
 
+    if (!expr) {
+        return;
+    }
     switch (expr->kind) {
     case AST_INTEGER:
         fprintf(f, "%ld", (long)(int32_t)expr->d.ival);
