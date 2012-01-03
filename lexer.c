@@ -558,7 +558,7 @@ struct reservedword {
     { ">|", T_ENCODE },
     { "||", T_ABS },
     { "#>", T_LIMITMIN },
-    { "#<", T_LIMITMAX },
+    { "<#", T_LIMITMAX },
 
     { "~~", T_DOUBLETILDE },
     { "++", T_INCREMENT },
@@ -643,6 +643,7 @@ instr[] = {
     { "cmps",   0xc0000000, TWO_OPERANDS },
     { "cmpsx",  0xc4000000, TWO_OPERANDS },
     { "cmpx",   0xcc000000, TWO_OPERANDS },
+    { "cmpsub", 0xe0000000, TWO_OPERANDS },
 
     { "cogid",  0x0c400001, DST_OPERAND_ONLY },
     { "coginit", 0x0c400002, DST_OPERAND_ONLY },

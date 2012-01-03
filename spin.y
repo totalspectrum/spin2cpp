@@ -469,6 +469,10 @@ expr:
     { $$ = AstAssign(T_SHR, $1, $4); }
   | expr T_SAR '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_SAR, $1, $4); }
+  | expr T_AND '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_AND, $1, $4); }
+  | expr T_OR '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_OR, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
   | funccall
@@ -529,6 +533,10 @@ memref:
     { $$ = NewAST(AST_MEMREF, ast_type_word, $3); }
   | T_LONG '[' expr ']'
     { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
+  | identifier '.' T_BYTE
+    { $$ = NewAST(AST_MEMREF, ast_type_byte, AstOperator('@', NULL, $1)); }
+  | identifier '.' T_WORD
+    { $$ = NewAST(AST_MEMREF, ast_type_word, AstOperator('@', NULL, $1)); }
 ;
 
 funccall:
