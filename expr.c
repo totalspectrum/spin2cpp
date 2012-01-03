@@ -54,6 +54,12 @@ defaultBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ")");
 }
 
+/* code to print a builtin variable reference call to a file */
+void
+defaultVariable(FILE *f, Builtin *b, AST *params)
+{
+    fprintf(f, "%s", b->cname);
+}
 
 /* code to print left operator right */
 static void
