@@ -38,6 +38,9 @@
 %token T_RES
 
 %token T_REPEAT
+%token T_FROM
+%token T_TO
+%token T_STEP
 %token T_WHILE
 %token T_UNTIL
 %token T_IF
@@ -260,8 +263,22 @@ repeatstmt:
     { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), $5); }
   | T_REPEAT T_UNTIL expr T_EOLN
     { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), NULL); }
+  | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
+    {
+      AST *from, *to, *step; 
+      step = NewAST(AST_STEP, $8, $10);
+      to = NewAST(AST_TO, $6, step);
+      from = NewAST(AST_FROM, $4, to);
+      $$ = NewAST(AST_COUNTFOR, $2, from);
+    }
   | T_REPEAT expr T_EOLN stmtblock
-    { $$ = NewAST(AST_COUNTFOR, $2, $4); }
+    {
+      AST *from, *to, *step;
+      step = NewAST(AST_STEP, AstInteger(-1), $4);
+      to = NewAST(AST_TO, AstInteger(1), step);
+      from = NewAST(AST_FROM, $2, to);
+      $$ = NewAST(AST_COUNTFOR, NULL, from);
+    }
 
 ;
 

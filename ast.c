@@ -132,3 +132,15 @@ AstAssign(int32_t ival, AST *left, AST *right)
     ast->d.ival = ival;
     return ast;
 }
+
+AST *
+AstTempVariable(const char *prefix)
+{
+    char *name;
+    AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+
+    name = NewTemporaryVariable(prefix);
+    AddSymbol(&current->objsyms, name, SYM_VARIABLE, (void *)ast_type_long);
+    ast->d.string = name;
+    return ast;
+}

@@ -251,6 +251,69 @@ PrintCaseList(FILE *f, AST *ast, int indent)
 }
 
 /*
+ * print a counting for loop
+ */
+static int
+PrintCountRepeat(FILE *f, AST *ast, int indent)
+{
+    const char *loopname = NULL;
+    AST *fromval, *toval;
+    AST *stepval;
+    int sawreturn = 0;
+    int32_t delta;
+
+    fprintf(f, "%*cfor (", indent, ' ');
+    if (ast->left) {
+        if (ast->left->kind == AST_IDENTIFIER)
+            loopname = ast->left->d.string;
+        else
+            ERROR("Need a variable name for the loop");
+    }
+    if (!loopname) {
+        loopname = NewTemporaryVariable(NULL);
+        fprintf(f, "int32_t ");
+    }
+    fprintf(f, "%s = ", loopname);
+    ast = ast->right;
+    if (ast->kind != AST_FROM) {
+        ERROR("expected FROM");
+        return 0;
+    }
+    fromval = ast->left;
+    PrintExpr(f, fromval);
+    fprintf(f, "; %s != ", loopname);
+    ast = ast->right;
+    if (ast->kind != AST_TO) {
+        ERROR("expected TO");
+        return 0;
+    }
+    toval = ast->left;
+    PrintExpr(f, toval);
+    ast = ast->right;
+    if (ast->kind != AST_STEP) {
+        ERROR("expected STEP");
+        return 0;
+    }
+    if (ast->left) {
+        stepval = ast->left;
+    } else {
+        if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+            delta = EvalConstExpr(toval) - EvalConstExpr(fromval);
+            stepval = (delta < 0) ? AstInteger(-1) : AstInteger(+1);
+        } else {
+            ERROR("Unable to calculate step value");
+            return 0;
+        }
+    }
+    fprintf(f, "; %s += ", loopname);
+    PrintExpr(f, stepval);
+    fprintf(f, ") {\n");
+    sawreturn = PrintStatementList(f, ast->right, indent+2);
+    fprintf(f, "%*c}\n", indent, ' ');
+    return sawreturn;
+}
+
+/*
  * returns 1 if a return statement was seen
  */
 static int
@@ -258,7 +321,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
     AST *lhsast = NULL;
-    char *tmpvarname;
 
     if (!ast) return 0;
 
@@ -304,12 +366,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ");\n");
         break;
     case AST_COUNTFOR:
-        tmpvarname = NewTemporaryVariable(NULL);
-        fprintf(f, "%*cfor (int %s = ", indent, ' ', tmpvarname);
-        PrintExpr(f, ast->left);
-        fprintf(f, "; %s > 0; --%s) {\n", tmpvarname, tmpvarname);
-        sawreturn = PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}\n", indent, ' ');
+        sawreturn = PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);

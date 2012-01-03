@@ -71,6 +71,10 @@ enum astkind {
     AST_CASEITEM,
     AST_OTHER,
     AST_RES,
+
+    AST_FROM,
+    AST_TO,
+    AST_STEP,
 };
 
 struct AST {
@@ -88,6 +92,7 @@ AST *AstInteger(long intval);
 AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);
 AST *AstAssign(int32_t intval, AST *left, AST *right);
+AST *AstTempVariable(const char *prefix);
 
 /* check to see if two trees are identical */
 int AstMatch(AST *a, AST *b);

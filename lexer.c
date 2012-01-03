@@ -496,6 +496,8 @@ struct reservedword {
     { "else", T_ELSE },
     { "elseif", T_ELSEIF },
     { "elseifnot", T_ELSEIFNOT },
+    { "from", T_FROM },
+
     { "if", T_IF },
     { "ifnot", T_IFNOT },
 
@@ -517,7 +519,10 @@ struct reservedword {
     { "res", T_RES },
     { "return", T_RETURN },
 
+    { "step", T_STEP },
     { "string", T_STRINGPTR },
+    { "to", T_TO },
+
     { "until", T_UNTIL },
 
     { "var", T_VAR },

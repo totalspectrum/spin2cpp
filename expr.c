@@ -370,7 +370,7 @@ PrintExpr(FILE *f, AST *expr)
 
     switch (expr->kind) {
     case AST_INTEGER:
-        fprintf(f, "%lu", (unsigned long)expr->d.ival);
+        fprintf(f, "%ld", (long)(int32_t)expr->d.ival);
         break;
     case AST_STRING:
         c = expr->d.string[0];
