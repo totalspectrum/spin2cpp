@@ -231,7 +231,7 @@ PrintCppFile(FILE *f, ParserState *parse)
 {
     /* things we always need */
     fprintf(f, "#include <propeller.h>\n");
-    fprintf(f, "#include \"%s.h\"\n", parse->basename);
+    fprintf(f, "#include \"%s.h\"\n", parse->classname);
     fprintf(f, "\n");
     /* print data block, if applicable */
     if (parse->datblock) {

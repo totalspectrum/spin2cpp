@@ -9,7 +9,7 @@ int32_t test32::fun(int32_t Y)
     case 'C':
       _OUTA ^= 0x1;
       break;
-    case (A * 2):
+    case (4 * 2):
       _OUTA ^= 0x2;
       break;
     case 30 ... 40:

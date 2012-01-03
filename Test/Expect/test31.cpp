@@ -8,7 +8,7 @@ int32_t test31::fun(int32_t Y)
     case 10:
       _OUTA ^= 0x1;
       break;
-    case (A * 2):
+    case (4 * 2):
       _OUTA ^= 0x2;
       _OUTA ^= 0x4;
       break;

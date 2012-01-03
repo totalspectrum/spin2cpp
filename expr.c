@@ -31,6 +31,9 @@ PrintSymbol(FILE *f, Symbol *sym)
         ref = (Label *)sym->val;
         fprintf(f, "(*(int32_t *)&dat[%d])", ref->offset);
         break;
+    case SYM_CONSTANT:
+        fprintf(f, "%ld", (long)(intptr_t)sym->val);
+        break;
     default:
         fprintf(f, "%s", sym->name);
         break;
