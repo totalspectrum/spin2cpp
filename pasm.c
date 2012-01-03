@@ -60,6 +60,9 @@ assembleInstruction(FILE *f, AST *ast)
     Instruction *instr;
     int i, numoperands, expectops;
     AST *operand[MAX_OPERANDS];
+    AST *line = ast;
+    char *callname;
+    AST *retast;
 
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
@@ -73,7 +76,7 @@ assembleInstruction(FILE *f, AST *ast)
     while (ast != NULL) {
         if (ast->kind == AST_EXPRLIST) {
             if (numoperands >= MAX_OPERANDS) {
-                ERROR("Too many operands to instruction");
+                ERROR(line, "Too many operands to instruction");
                 return;
             }
             operand[numoperands++] = ast->left;
@@ -85,7 +88,7 @@ assembleInstruction(FILE *f, AST *ast)
                 val = val | mask;
             }
         } else {
-            ERROR("Internal error: expected instruction modifier found %d", ast->kind);
+            ERROR(line, "Internal error: expected instruction modifier found %d", ast->kind);
             return;
         }
         ast = ast->right;
@@ -104,7 +107,7 @@ assembleInstruction(FILE *f, AST *ast)
         break;
     }
     if (expectops != numoperands) {
-        ERROR("Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
+        ERROR(line, "Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
         return;
     }
     src = dst = 0;
@@ -123,16 +126,29 @@ assembleInstruction(FILE *f, AST *ast)
         dst = EvalPasmExpr(operand[0]);
         src = 0;
         break;
+    case CALL_OPERAND:
+        if (operand[0]->kind != AST_IDENTIFIER) {
+            ERROR(operand[0], "call operand must be an identifier");
+            return;
+        }
+        src = EvalPasmExpr(operand[0]);
+        callname = malloc(strlen(operand[0]->d.string) + 8);
+        strcpy(callname, operand[0]->d.string);
+        strcat(callname, "_ret");
+        retast = NewAST(AST_IDENTIFIER, NULL, NULL);
+        retast->d.string = callname;
+        dst = EvalPasmExpr(retast);
+        break;
     default:
-        ERROR("Unsupported instruction %s", instr->name);
+        ERROR(line, "Unsupported instruction `%s'", instr->name);
         return;
     }
     if (src > 511) {
-        ERROR("Source operand too big for %s", instr->name);
+        ERROR(line, "Source operand too big for %s", instr->name);
         return;
     }
     if (dst > 511) {
-        ERROR("Destination operand too big for %s", instr->name);
+        ERROR(line, "Destination operand too big for %s", instr->name);
         return;
     }
     val = val | (dst << 9) | src;
@@ -289,12 +305,12 @@ DeclareLabels(ParserState *P)
                 int32_t max = EvalConstExpr(ast->left);
                 int32_t cur = (pc - asmbase) / 4;
                 if ( cur > max ) {
-                    ERROR("fit %d failed: pc is %d", max, cur);
+                    ERROR(ast, "fit %d failed: pc is %d", max, cur);
                 }
             }
             break;
         default:
-            ERROR("unknown element %d in data block", ast->kind);
+            ERROR(ast, "unknown element %d in data block", ast->kind);
             break;
         }
     }
@@ -334,7 +350,7 @@ PrintDataBlock(FILE *f, ParserState *P)
         case AST_FIT:
             break;
         default:
-            ERROR("unknown element in data block");
+            ERROR(ast, "unknown element in data block");
             break;
         }
     }

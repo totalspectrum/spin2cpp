@@ -19,6 +19,10 @@ NewAST(int kind, AST *left, AST *right)
     ast->kind = kind;
     ast->left = left;
     ast->right = right;
+    if (current)
+        ast->line = current->L.lineCounter;
+    else
+        ast->line = 0;
     return ast;
 }
 
@@ -143,4 +147,15 @@ AstTempVariable(const char *prefix)
     AddSymbol(&current->objsyms, name, SYM_VARIABLE, (void *)ast_type_long);
     ast->d.string = name;
     return ast;
+}
+
+int
+AstListLen(AST *list)
+{
+    int val = 0;
+    while (list) {
+        val++;
+        list = list->right;
+    }
+    return val;
 }

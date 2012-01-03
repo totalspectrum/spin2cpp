@@ -81,6 +81,7 @@ enum astkind {
 struct AST {
     enum astkind kind;        /* type of this node */
     union ASTdata d; /* data in this node */
+    int line;        /* line number */
     AST *left;
     AST *right;
 };
@@ -97,5 +98,8 @@ AST *AstTempVariable(const char *prefix);
 
 /* check to see if two trees are identical */
 int AstMatch(AST *a, AST *b);
+
+/* length of an AST list */
+int AstListLen(AST *a);
 
 #endif

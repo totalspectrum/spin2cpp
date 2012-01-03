@@ -76,11 +76,15 @@ testTokenStream(const char *str, int *tokens, int numtokens)
 }
 
 void
-ERROR(const char *msg, ...)
+ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
 
-    fprintf(stderr, "Error: ");
+    if (instr)
+        fprintf(stderr, "Error on line %d: ", instr->line);
+    else
+        fprintf(stderr, "Error: ");
+
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);

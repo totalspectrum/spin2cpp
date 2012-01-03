@@ -58,11 +58,11 @@ EnterVars(SymbolTable *stab, AST *curtype, AST *varlist)
                 EnterVariable(stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, curtype, ast->right));
                 break;
             default:
-                ERROR("Internal error: bad AST value %d", ast->kind);
+                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
             }
         } else {
-            ERROR("Expected list in constant, found %d instead", lower->kind);
+            ERROR(lower, "Expected list in constant, found %d instead", lower->kind);
         }
     }
 }
@@ -74,12 +74,12 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     AST *vars;
     AST *src;
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
-        ERROR("Internal error: bad function definition");
+        ERROR(funcdef, "Internal error: bad function definition");
         return;
     }
     src = funcdef->left;
     if (src->left->kind != AST_IDENTIFIER) {
-        ERROR("Internal error: no function name");
+        ERROR(funcdef, "Internal error: no function name");
         return;
     }
     fdef = NewFunction();
@@ -93,7 +93,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
-        ERROR("Internal error: bad variable declaration");
+        ERROR(vars, "Internal error: bad variable declaration");
     }
 
     /* enter the variables into the local symbol table */
@@ -118,12 +118,12 @@ PrintParameterList(FILE *f, AST *list)
     }
     while (list) {
         if (list->kind != AST_LISTHOLDER) {
-            ERROR("Internal error: expected parameter list");
+            ERROR(list, "Internal error: expected parameter list");
             return;
         }
         ast = list->left;
         if (ast->kind != AST_IDENTIFIER) {
-            ERROR("Internal error: expected identifier in function parameter list");
+            ERROR(ast, "Internal error: expected identifier in function parameter list");
             return;
         }
         if (needcomma)
@@ -180,7 +180,7 @@ PrintStatementList(FILE *f, AST *ast, int indent)
     int sawreturn = 0;
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
-            ERROR("Internal error: expected statement list, got %d",
+            ERROR(ast, "Internal error: expected statement list, got %d",
                   ast->kind);
             return 0;
         }
@@ -203,14 +203,14 @@ PrintCaseExprList(FILE *f, AST *ast, int indent)
                 a = ast->left->left;
                 b = ast->left->right;
                 if (!IsConstExpr(a) || !IsConstExpr(b)) {
-                    ERROR("spin2c cannot handle non-constant expressions in case");
+                    ERROR(ast, "spin2c cannot handle non-constant expressions in case");
                 }
                 PrintExpr(f, a);
                 fprintf(f, " ... ");
                 PrintExpr(f, b);
             } else {
                 if (!IsConstExpr(ast->left)) {
-                    ERROR("spin2c cannot handle non-constant expressions in case");
+                    ERROR(ast, "spin2c cannot handle non-constant expressions in case");
                 }
                 PrintExpr(f, ast->left);
             }
@@ -239,7 +239,7 @@ PrintCaseList(FILE *f, AST *ast, int indent)
 
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {
-            ERROR("Internal error in case list");
+            ERROR(ast, "Internal error in case list");
             return 0;
         }
         sawreturn = PrintCaseItem(f, ast->left, indent) && sawreturn;
@@ -267,7 +267,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         if (ast->left->kind == AST_IDENTIFIER)
             loopname = ast->left->d.string;
         else
-            ERROR("Need a variable name for the loop");
+            ERROR(ast, "Need a variable name for the loop");
     }
     if (!loopname) {
         loopname = NewTemporaryVariable(NULL);
@@ -276,7 +276,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     fprintf(f, "%s = ", loopname);
     ast = ast->right;
     if (ast->kind != AST_FROM) {
-        ERROR("expected FROM");
+        ERROR(ast, "expected FROM");
         return 0;
     }
     fromval = ast->left;
@@ -284,14 +284,14 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     fprintf(f, "; %s != ", loopname);
     ast = ast->right;
     if (ast->kind != AST_TO) {
-        ERROR("expected TO");
+        ERROR(ast, "expected TO");
         return 0;
     }
     toval = ast->left;
     PrintExpr(f, toval);
     ast = ast->right;
     if (ast->kind != AST_STEP) {
-        ERROR("expected STEP");
+        ERROR(ast, "expected STEP");
         return 0;
     }
     if (ast->left) {
@@ -301,7 +301,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             delta = EvalConstExpr(toval) - EvalConstExpr(fromval);
             stepval = (delta < 0) ? AstInteger(-1) : AstInteger(+1);
         } else {
-            ERROR("Unable to calculate step value");
+            ERROR(ast, "Unable to calculate step value");
             return 0;
         }
     }
@@ -341,7 +341,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ") {\n");
         ast = ast->right;
         if (ast->kind != AST_THENELSE) {
-            ERROR("error parsing if/then/else");
+            ERROR(ast, "error parsing if/then/else");
             return 0;
         }
         sawreturn = PrintStatementList(f, ast->left, indent+2);

@@ -547,11 +547,19 @@ funccall:
   { $$ = NewAST(AST_FUNCCALL, $1, $3); }
 ;
 
-exprlist:
+expritem:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
- | exprlist ',' expr
-   { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+  | integer '[' expr ']'
+   {
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
+   }
+  ;
+
+exprlist:
+  expritem
+ | exprlist ',' expritem
+   { $$ = AddToList($1, $3); }
  ;
 
 operand:

@@ -45,22 +45,6 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params)
     fprintf(f, ")");
 }
 
-/* code to print a builtin function call to a file */
-void
-defaultBuiltin(FILE *f, Builtin *b, AST *params)
-{
-    fprintf(f, "%s(", b->cname);
-    PrintExprList(f, params);
-    fprintf(f, ")");
-}
-
-/* code to print a builtin variable reference call to a file */
-void
-defaultVariable(FILE *f, Builtin *b, AST *params)
-{
-    fprintf(f, "%s", b->cname);
-}
-
 /* code to print left operator right */
 static void
 PrintInOp(FILE *f, const char *op, AST *left, AST *right)
@@ -184,12 +168,12 @@ PrintType(FILE *f, AST *typedecl)
             fprintf(f, "int32_t");
             break;
         default:
-            ERROR("unsupported integer size %d", size);
+            ERROR(NULL, "unsupported integer size %d", size);
             break;
         }
         break;
     default:
-        ERROR("unknown type declaration %d", typedecl->kind);
+        ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;
     }
 }
@@ -209,11 +193,11 @@ PrintLHS(FILE *f, AST *expr, int assignment)
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
-            ERROR("Unknown symbol %s", expr->d.string);
+            ERROR(expr, "Unknown symbol %s", expr->d.string);
         } else {
             if (sym->type == SYM_FUNCTION || sym->type == SYM_BUILTIN) {
                 if (assignment) {
-                    ERROR("symbol %s on left hand side of assignment", sym->name);
+                    ERROR(expr, "symbol %s on left hand side of assignment", sym->name);
                 } else {
                     if (sym->type == SYM_BUILTIN) {
                         Builtin *b = sym->val;
@@ -245,7 +229,7 @@ PrintLHS(FILE *f, AST *expr, int assignment)
         fprintf(f, ")");
         break;
     default:
-        ERROR("bad target for assignment");
+        ERROR(expr, "bad target for assignment");
         break;
     }
 }
@@ -263,7 +247,7 @@ PrintPostfix(FILE *f, AST *expr)
     else if (expr->d.ival == T_DOUBLETILDE) {
         str = "-1";
     } else {
-        ERROR("bad postfix operator %d", expr->d.ival);
+        ERROR(expr, "bad postfix operator %d", expr->d.ival);
         return;
     }
     fprintf(f, "__extension__({ int32_t _tmp_ = ");
@@ -319,7 +303,7 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     int nbits;
 
     if (dst->right->kind != AST_RANGE) {
-        ERROR("internal error: expecting range");
+        ERROR(dst, "internal error: expecting range");
         return;
     }
     /* special case logical operators */
@@ -338,7 +322,7 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         int tmp;
         reverse = 1;
         tmp = lo; lo = hi; hi = tmp;
-        ERROR("cannot currently handle reversed range");
+        ERROR(dst, "cannot currently handle reversed range");
     }
     nbits = (hi - lo + 1);
 
@@ -412,21 +396,21 @@ PrintExpr(FILE *f, AST *expr)
             }
         }
         if (!sym) {
-            ERROR("undefined identifier %s in function call", name);
+            ERROR(expr, "undefined identifier %s in function call", name);
         } else if (sym->type == SYM_BUILTIN) {
             Builtin *b = sym->val;
             (*b->printit)(f, b, expr->right);
         } else if (sym->type == SYM_FUNCTION) {
             PrintFuncCall(f, sym, expr->right);
         } else {
-            ERROR("not a function");
+            ERROR(expr, "%s is not a function", sym->name);
         }
         break;
     case AST_RANGEREF:
-        ERROR("cannot handle range in expression yet");
+        ERROR(expr, "cannot handle range in expression yet");
         break;
     default:
-        ERROR("Internal error, bad expression");
+        ERROR(expr, "Internal error, bad expression");
         break;
     }
 }
@@ -483,7 +467,7 @@ EvalOperator(int op, int32_t lval, int32_t rval, int *valid)
         if (valid)
             *valid = 0;
         else
-            ERROR("unknown operator %d\n", op);
+            ERROR(NULL, "unknown operator %d\n", op);
         return 0;
     }
 }
@@ -515,7 +499,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
             if (reportError)
-                ERROR("Unknown symbol %s", expr->d.string);
+                ERROR(expr, "Unknown symbol %s", expr->d.string);
             else
                 *valid = 0;
             return 0;
@@ -528,7 +512,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                     Label *lref = sym->val;
                     if (lref->asmval & 0x03) {
                         if (reportError)
-                            ERROR("label %s not on longword boundary", sym->name);
+                            ERROR(expr, "label %s not on longword boundary", sym->name);
                         else
                             *valid = 0;
                         return 0;
@@ -538,7 +522,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                 /* otherwise fall through */
             default:
                 if (reportError)
-                    ERROR("Symbol %s is not constant", expr->d.string);
+                    ERROR(expr, "Symbol %s is not constant", expr->d.string);
                 else
                     *valid = 0;
                 return 0;
@@ -555,13 +539,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return hw->addr;
         }
         if (reportError)
-            ERROR("Used hardware register where constant is expected");
+            ERROR(expr, "Used hardware register where constant is expected");
         else
             *valid = 0;
         break;
     default:
         if (reportError)
-            ERROR("Bad constant expression");
+            ERROR(expr, "Bad constant expression");
         else
             *valid = 0;
         break;
@@ -596,7 +580,7 @@ PrintExprList(FILE *f, AST *list)
     int needcomma = 0;
     while (list) {
         if (list->kind != AST_EXPRLIST) {
-            ERROR("expected expression list");
+            ERROR(list, "expected expression list");
             return;
         }
         if (needcomma) {
@@ -606,4 +590,45 @@ PrintExprList(FILE *f, AST *list)
         needcomma = 1;
         list = list->right;
     }
+}
+
+
+/* code to print a builtin function call to a file */
+void
+defaultBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    if (AstListLen(params) != b->numparameters) {
+        ERROR(params, "wrong number of parameters to %s", b->name);
+    }
+    fprintf(f, "%s(", b->cname);
+    PrintExprList(f, params);
+    fprintf(f, ")");
+}
+
+/* code to print a builtin variable reference call to a file */
+void
+defaultVariable(FILE *f, Builtin *b, AST *params)
+{
+    fprintf(f, "%s", b->cname);
+}
+
+/* code to do memory fills */
+void
+memBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    if (AstListLen(params) != 3) {
+        ERROR(params, "incorrect parameters to %s", b->name);
+        return;
+    }
+    fprintf(f, "%s(", b->cname);
+    PrintExpr(f, params->left); params = params->right;
+    fprintf(f, ", ");
+    PrintExpr(f, params->left); params = params->right;
+
+    /* b->numparameters is overloaded to mean the size of memory we
+       are working with
+    */
+    fprintf(f, ", %d*(", b->numparameters);
+    PrintExpr(f, params->left);
+    fprintf(f, "))");
 }

@@ -96,11 +96,11 @@ DeclareConstants(void)
                 EnterConstant(ast->left->d.string, EvalConstExpr(ast->right));
                 break;
             default:
-                ERROR("Internal error: bad AST value %d", ast->kind);
+                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
             } 
         } else {
-            ERROR("Expected list in constant, found %d instead", upper->kind);
+            ERROR(upper, "Expected list in constant, found %d instead", upper->kind);
         }
     }
 }
@@ -123,7 +123,7 @@ DeclareVariables(void)
             curtype = ast_type_long;
             break;
         default:
-            ERROR("bad type  %d in variable list\n", upper->kind);
+            ERROR(upper, "bad type  %d in variable list\n", upper->kind);
             return;
         }
         EnterVars(&current->objsyms, curtype, upper->left);
@@ -152,7 +152,7 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
         }
         needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
-            ERROR("Expected variable list element\n");
+            ERROR(ast, "Expected variable list element\n");
             return;
         }
         decl = ast->left;
@@ -165,7 +165,7 @@ PrintVarList(FILE *f, const char *typename, AST *ast)
                     (int)EvalConstExpr(decl->right));
             break;
         default:
-            ERROR("Internal problem in variable list: type=%d\n", decl->kind);
+            ERROR(decl, "Internal problem in variable list: type=%d\n", decl->kind);
             break;
         }
         ast = ast->right;
@@ -308,11 +308,15 @@ parseFile(const char *name)
 }
 
 void
-ERROR(const char *msg, ...)
+ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
 
-    fprintf(stderr, "Error: ");
+    if (instr)
+        fprintf(stderr, "Error on line %d: ", instr->line);
+    else
+        fprintf(stderr, "Error: ");
+
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);

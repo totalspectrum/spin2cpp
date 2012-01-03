@@ -154,7 +154,7 @@ void EnterVars(SymbolTable *stab, AST *type, AST *varlist);
 
 /* code for printing errors */
 extern int gl_errors;
-void ERROR(const char *msg, ...);
+void ERROR(AST *, const char *msg, ...);
 
 extern SymbolTable reservedWords;
 extern void InitPasm(void);

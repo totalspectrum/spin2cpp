@@ -346,7 +346,7 @@ again:
         if (indent > L->indent[L->indentsp]) {
             lexungetc(L, c);
             if (L->indentsp >= MAX_INDENTS) {
-                ERROR("too much nesting");
+                ERROR(NULL, "too much nesting");
                 return T_INDENT;
             }
             L->indent[++L->indentsp] = indent;
@@ -569,6 +569,7 @@ struct reservedword {
 
 extern void defaultBuiltin(FILE *, Builtin *, AST *);
 extern void defaultVariable(FILE *, Builtin *, AST *);
+extern void memBuiltin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "_CLKFREQ" },
@@ -579,6 +580,11 @@ Builtin builtinfuncs[] = {
     { "lockclr", 1, defaultBuiltin, "lockclr" },
     { "lockret", 1, defaultBuiltin, "lockret" },
     { "strsize", 1, defaultBuiltin, "strlen" },
+
+    { "longfill", 4, memBuiltin, "memset" },
+    { "longmove", 4, memBuiltin, "memcpy" },
+    { "wordfill", 2, memBuiltin, "memset" },
+    { "wordmove", 2, memBuiltin, "memcpy" },
 };
 
 struct constants {
@@ -586,6 +592,7 @@ struct constants {
     int     type;
     int32_t val;
 } constants[] = {
+    { "CHIPVER", SYM_CONSTANT, 1 },
     { "TRUE", SYM_CONSTANT, -1 },
     { "FALSE", SYM_CONSTANT, 0 },
     { "POSX", SYM_CONSTANT, 0x7fffffff },
