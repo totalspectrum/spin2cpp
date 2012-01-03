@@ -220,10 +220,18 @@ optstmtlist:
   ;
 
 matchexprlist:
+  matchexpritem
+  | matchexprlist ',' matchexpritem
+    { $$ = AddToList($1, $3); }
+  ;
+
+matchexpritem:
   T_OTHER
     { $$ = NewAST(AST_OTHER, NULL, NULL); }
-  | exprlist
-    { $$ = $1 }
+  | expr
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | expr T_DOTS expr
+    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); }
   ;
 
 repeatstmt:

@@ -198,10 +198,22 @@ PrintCaseExprList(FILE *f, AST *ast, int indent)
             fprintf(f, "%*cdefault:\n", indent, ' ');
         } else {
             fprintf(f, "%*ccase ", indent, ' ');
-            if (!IsConstExpr(ast->left)) {
-                ERROR("spin2c cannot handle non-constant expressions in case");
+            if (ast->left->kind == AST_RANGE) {
+                AST *a, *b;
+                a = ast->left->left;
+                b = ast->left->right;
+                if (!IsConstExpr(a) || !IsConstExpr(b)) {
+                    ERROR("spin2c cannot handle non-constant expressions in case");
+                }
+                PrintExpr(f, a);
+                fprintf(f, " ... ");
+                PrintExpr(f, b);
+            } else {
+                if (!IsConstExpr(ast->left)) {
+                    ERROR("spin2c cannot handle non-constant expressions in case");
+                }
+                PrintExpr(f, ast->left);
             }
-            PrintExpr(f, ast->left);
             fprintf(f, ":\n");
         }
         ast = ast->right;
