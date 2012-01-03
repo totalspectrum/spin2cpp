@@ -426,9 +426,9 @@ expr:
   | expr T_HIGHMULT expr
     { $$ = AstOperator(T_HIGHMULT, $1, $3); }
   | expr T_LIMITMIN expr
-    { $$ = AstOperator(T_LIMITMIN, $1, $3); }
+    { $$ = AstOperator(T_LIMITMIN, $1, $3); current->needsMinMax = 1; }
   | expr T_LIMITMAX expr
-    { $$ = AstOperator(T_LIMITMAX, $1, $3); }
+    { $$ = AstOperator(T_LIMITMAX, $1, $3); current->needsMinMax = 1;}
   | expr T_REV expr
     { $$ = AstOperator(T_REV, $1, $3); }
   | expr T_ROTL expr

@@ -227,12 +227,23 @@ PrintHeaderFile(FILE *f, ParserState *parse)
 }
 
 static void
+PrintMacros(FILE *f, ParserState *parse)
+{
+    if (parse->needsMinMax) {
+        fprintf(f, "#define Min__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a < b ? a : b;})\n"); 
+        fprintf(f, "#define Max__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a > b ? a : b;})\n\n");
+    }
+}
+
+static void
 PrintCppFile(FILE *f, ParserState *parse)
 {
     /* things we always need */
     fprintf(f, "#include <propeller.h>\n");
     fprintf(f, "#include \"%s.h\"\n", parse->classname);
     fprintf(f, "\n");
+    PrintMacros(f, parse);
+
     /* print data block, if applicable */
     if (parse->datblock) {
         fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);

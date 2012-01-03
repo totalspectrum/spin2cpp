@@ -138,6 +138,20 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     case T_NOT:
         PrintInOp(f, "!", left, right);
         break;
+    case T_LIMITMIN:
+        fprintf(f, "Max__(");
+        PrintExpr(f, left);
+        fprintf(f, ", ");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
+    case T_LIMITMAX:
+        fprintf(f, "Min__(");
+        PrintExpr(f, left);
+        fprintf(f, ", ");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
     default:
         opstring[0] = op;
         opstring[1] = 0;

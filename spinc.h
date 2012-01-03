@@ -112,6 +112,9 @@ struct parserstate {
     /* various file name related strings */
     char *basename;    /* the file name without ".spin" */
     char *classname;   /* the class name */
+
+    /* flags for emitting macros */
+    char needsMinMax;
 };
 
 /* the current parser state */
