@@ -155,7 +155,7 @@ stmtlist:
   }
   ;
 
-stmt:
+nonemptystmt:
    T_RETURN T_EOLN
     { $$ = NewAST(AST_RETURN, NULL, NULL); }
   |  T_RETURN expr T_EOLN
@@ -170,6 +170,10 @@ stmt:
     { $$ = $1; }
   | casestmt
     { $$ = $1; }
+;
+
+stmt:
+  nonemptystmt
   | T_EOLN
     { $$ = NULL; }
   ;
@@ -205,19 +209,23 @@ casematchlist:
   ;
 
 casematchitem:
-  matchexprlist ':' stmt optstmtlist
+  matchexprlist ':' T_EOLN stmtblock
+    {
+        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
+        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $4));
+    }
+  | matchexprlist ':' nonemptystmt
+    {
+        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
+        $$ = NewAST(AST_CASEITEM, $1, slist);
+    }
+  | matchexprlist ':' nonemptystmt stmtblock
     {
         AST *slist = NewAST(AST_STMTLIST, $3, NULL);
         $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $4));
     }
   ;
 
-optstmtlist:
-  /* nothing */
-    { $$ = NULL }
-  | stmtblock
-    { $$ = $1 }
-  ;
 
 matchexprlist:
   matchexpritem
@@ -444,6 +452,16 @@ expr:
     { $$ = AstOperator(T_NEGATE, NULL, $2); }
   | '!' expr %prec T_BIT_NOT
     { $$ = AstOperator(T_BIT_NOT, NULL, $2); }
+  | '~' expr
+    { AST *shf;
+      shf = AstOperator(T_SHL, $2, AstInteger(24));
+      $$ = AstOperator(T_SAR, shf, AstInteger(24)); 
+    }
+  | T_DOUBLETILDE expr
+    { AST *shf;
+      shf = AstOperator(T_SHL, $2, AstInteger(16));
+      $$ = AstOperator(T_SAR, shf, AstInteger(16)); 
+    }
   | T_NOT expr
     { $$ = AstOperator(T_NOT, NULL, $2); }
   | T_ABS expr
