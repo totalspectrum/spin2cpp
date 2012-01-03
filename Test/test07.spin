@@ -1,3 +1,11 @@
+''
+'' another teset
+''
+
+{
+  with an inline comment
+}
+
 VAR
   long count
 

@@ -1,3 +1,7 @@
+''
+'' this is a simple test
+''
+
 CON
   myval = 1
 
