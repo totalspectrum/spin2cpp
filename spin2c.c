@@ -136,7 +136,7 @@ DeclareVariables(void)
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
-    fprintf(f, "  const int %s = %d;\n", ast->d.string, (int)EvalConstExpr(ast));
+    fprintf(f, "  static const int %s = %d;\n", ast->d.string, (int)EvalConstExpr(ast));
 }
 
 static void

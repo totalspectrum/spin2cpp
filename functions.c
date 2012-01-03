@@ -198,6 +198,9 @@ PrintCaseExprList(FILE *f, AST *ast, int indent)
             fprintf(f, "%*cdefault:\n", indent, ' ');
         } else {
             fprintf(f, "%*ccase ", indent, ' ');
+            if (!IsConstExpr(ast->left)) {
+                ERROR("spin2c cannot handle non-constant expressions in case");
+            }
             PrintExpr(f, ast->left);
             fprintf(f, ":\n");
         }
@@ -227,7 +230,7 @@ PrintCaseList(FILE *f, AST *ast, int indent)
             ERROR("Internal error in case list");
             return 0;
         }
-        sawreturn = sawreturn && PrintCaseItem(f, ast->left, indent);
+        sawreturn = PrintCaseItem(f, ast->left, indent) && sawreturn;
         ast = ast->right;
         items++;
     }

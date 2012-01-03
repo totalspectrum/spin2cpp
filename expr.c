@@ -1,4 +1,5 @@
 #include "spinc.h"
+#include <ctype.h>
 
 /* code to find a symbol */
 Symbol *
@@ -284,7 +285,11 @@ RangeXor(FILE *f, AST *dst, AST *src)
     }
     nbits = (hi - lo + 1);
     mask = ((1U<<nbits) - 1);
+    mask = mask & EvalConstExpr(src);
     mask = (mask << lo) | (mask >> (32-lo));
+
+    PrintLHS(f, dst->left, 1);
+    fprintf(f, " ^= 0x%x", mask);
 }
 
 /*
@@ -312,11 +317,11 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         return;
     }
     /* special case logical operators */
-    if (src->kind == AST_OPERATOR && src->d.ival == '^'
-        && AstMatch(dst->right, src->left)
-        && IsConstExpr(src->right))
+    if (src->kind == AST_OPERATOR && src->d.ival == T_BIT_NOT
+        && AstMatch(dst, src->right))
     {
-        RangeXor(f, dst, src->right);
+        RangeXor(f, dst, AstInteger(0xffffffff));
+        return;
     }
 
     /* now handle the ordinary case */
@@ -354,10 +359,19 @@ void
 PrintExpr(FILE *f, AST *expr)
 {
     Symbol *sym;
+    int c;
 
     switch (expr->kind) {
     case AST_INTEGER:
         fprintf(f, "%lu", (unsigned long)expr->d.ival);
+        break;
+    case AST_STRING:
+        c = expr->d.string[0];
+        if (isprint(c)) {
+            fprintf(f, "'%c'", c);
+        } else {
+            fprintf(f, "%d", c);
+        }
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
@@ -484,7 +498,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     switch (expr->kind) {
     case AST_INTEGER:
         return expr->d.ival;
-        break;
+
+    case AST_STRING:
+        return expr->d.string[0];
+
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {

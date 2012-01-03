@@ -2,7 +2,7 @@
 
 class test20 {
 public:
-  const int EOL = 10;
+  static const int EOL = 10;
 private:
   int32_t	cog;
   int32_t	rx_head;
