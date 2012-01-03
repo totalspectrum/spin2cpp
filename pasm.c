@@ -194,7 +194,7 @@ dataListLen(AST *ast, int elemsize)
         } else {
             numelems = 1;
         }
-        size += elemsize;
+        size += (numelems*elemsize);
         ast = ast->right;
     }
     return size;
@@ -214,7 +214,7 @@ align(unsigned pc, int size)
  * enter a label
  */
 void
-EnterLabel(ParserState *P, const char *name, long offset, long asmpc)
+EnterLabel(ParserState *P, const char *name, long offset, long asmpc, AST *ltype)
 {
     Symbol *sym;
     Label *labelref;
@@ -226,7 +226,7 @@ EnterLabel(ParserState *P, const char *name, long offset, long asmpc)
     }
     labelref->offset = offset;
     labelref->asmval = asmpc;
-    labelref->type = ast_type_long;
+    labelref->type = ltype;
     sym = AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
 }
 
@@ -234,10 +234,10 @@ EnterLabel(ParserState *P, const char *name, long offset, long asmpc)
  * emit pending labels
  */
 AST *
-emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmpc)
+emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype)
 {
     while (label) {
-        EnterLabel(P, label->left->d.string, pc, asmpc);
+        EnterLabel(P, label->left->d.string, pc, asmpc, ltype);
         label = label->right;
     }
     return NULL;
@@ -277,22 +277,22 @@ DeclareLabels(ParserState *P)
         asmpc = pc - asmbase;
         switch (ast->kind) {
         case AST_BYTELIST:
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_byte);
             pc += dataListLen(ast->left, 1);
             break;
         case AST_WORDLIST:
             pc = align(pc, 2);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_word);
             pc += dataListLen(ast->left, 2);
             break;
         case AST_LONGLIST:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
             pc += dataListLen(ast->left, 4);
             break;
         case AST_INSTRHOLDER:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
             pc += 4;
             break;
@@ -309,13 +309,13 @@ DeclareLabels(ParserState *P)
             break;
         case AST_RES:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
             offset = EvalPasmExpr(ast->left);
             pc += 4*offset;
             break;
         case AST_FIT:
             pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
             if (ast->left) {
                 int32_t max = EvalConstExpr(ast->left);
                 int32_t cur = (pc - asmbase) / 4;

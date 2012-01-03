@@ -21,15 +21,28 @@ LookupSymbol(const char *name)
     return sym;
 }
 
+/* code to print a label to a file
+ * if "ref" is nonzero this is an array reference, so do not
+ * dereference again
+ */
+void
+PrintLabel(FILE *f, Symbol *sym, int ref)
+{
+    Label *lab;
+
+    lab = (Label *)sym->val;
+    fprintf(f, "(%s(", ref ? "" : "*");
+    PrintType(f, lab->type);
+    fprintf(f, " *)&dat[%d])", lab->offset);
+}
+
 /* code to print a symbol to a file */
 void
 PrintSymbol(FILE *f, Symbol *sym)
 {
-    Label *ref;
     switch (sym->type) {
     case SYM_LABEL:
-        ref = (Label *)sym->val;
-        fprintf(f, "(*(int32_t *)&dat[%d])", ref->offset);
+        PrintLabel(f, sym, 0);
         break;
     case SYM_CONSTANT:
         fprintf(f, "%ld", (long)(intptr_t)sym->val);
@@ -208,9 +221,11 @@ PrintType(FILE *f, AST *typedecl)
  * range)
  * if "assignment" is true then we are in an assignment operator, so
  * only certain types of symbols are valid
+ * if "ref" is true then we are dereferencing the LHS, so do
+ * not add any additional dereference operators
  */
 void
-PrintLHS(FILE *f, AST *expr, int assignment)
+PrintLHS(FILE *f, AST *expr, int assignment, int ref)
 {
     Symbol *sym;
     HwReg *hw;
@@ -232,13 +247,15 @@ PrintLHS(FILE *f, AST *expr, int assignment)
                         PrintFuncCall(f, sym, NULL);
                     }
                 }
+            } else if (sym->type == SYM_LABEL) {
+                PrintLabel(f, sym, ref);
             } else {
                 PrintSymbol(f, sym);
             }
         }
         break;
     case AST_ARRAYREF:
-        PrintLHS(f, expr->left, assignment);
+        PrintLHS(f, expr->left, assignment, 1);
         fprintf(f, "[");
         PrintExpr(f, expr->right);
         fprintf(f, "]");
@@ -277,9 +294,9 @@ PrintPostfix(FILE *f, AST *expr)
         return;
     }
     fprintf(f, "__extension__({ int32_t _tmp_ = ");
-    PrintLHS(f, expr->left, 0);
+    PrintLHS(f, expr->left, 0, 0);
     fprintf(f, "; ");
-    PrintLHS(f, expr->left, 1);
+    PrintLHS(f, expr->left, 1, 0);
     fprintf(f, " = %s; _tmp_; })", str);
 }
 
@@ -304,7 +321,7 @@ RangeXor(FILE *f, AST *dst, AST *src)
     mask = mask & EvalConstExpr(src);
     mask = (mask << lo) | (mask >> (32-lo));
 
-    PrintLHS(f, dst->left, 1);
+    PrintLHS(f, dst->left, 1, 0);
     fprintf(f, " ^= 0x%x", mask);
 }
 
@@ -353,7 +370,7 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     nbits = (hi - lo + 1);
 
     if (nbits >= 32) {
-        PrintLHS(f, dst->left, 1);
+        PrintLHS(f, dst->left, 1, 0);
         fprintf(f, " = ");
         PrintExpr(f, src);
         return;
@@ -362,9 +379,9 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     mask = (mask << lo) | (mask >> (32-lo));
 
 
-    PrintLHS(f, dst->left, 1);
+    PrintLHS(f, dst->left, 1, 0);
     fprintf(f, " = (");
-    PrintLHS(f, dst->left, 1);
+    PrintLHS(f, dst->left, 1, 0);
     fprintf(f, " & 0x%08x) | ((", ~mask);
     PrintExpr(f, src);
     fprintf(f, " << %d) & 0x%08x)", lo, mask); 
@@ -397,7 +414,7 @@ PrintExpr(FILE *f, AST *expr)
     case AST_HWREG:
     case AST_MEMREF:
     case AST_ARRAYREF:
-        PrintLHS(f, expr, 0);
+        PrintLHS(f, expr, 0, 0);
         break;
     case AST_OPERATOR:
         fprintf(f, "(");
@@ -411,7 +428,7 @@ PrintExpr(FILE *f, AST *expr)
         if (expr->left->kind == AST_RANGEREF) {
             PrintRangeAssign(f, expr->left, expr->right);
         } else {
-            PrintLHS(f, expr->left, 1);
+            PrintLHS(f, expr->left, 1, 0);
             fprintf(f, " = ");
             PrintExpr(f, expr->right);
         }
@@ -675,7 +692,7 @@ str1Builtin(FILE *f, Builtin *b, AST *params)
         ERROR(params, "incorrect parameters to %s", b->name);
         return;
     }
-    fprintf(f, "%s( (char *)", b->cname);
+    fprintf(f, "%s((char *) ", b->cname);
     PrintExpr(f, params->left); params = params->right;
     fprintf(f, ")");
 }

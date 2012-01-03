@@ -125,6 +125,7 @@ extern Function *curfunc;
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
+void PrintType(FILE *f, AST *type);
 
 /* evaluate a constant expression */
 int32_t EvalConstExpr(AST *expr);

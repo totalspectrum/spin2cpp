@@ -1,0 +1,21 @@
+#include <propeller.h>
+#include "test39.h"
+
+uint8_t test39::dat[] = {
+  0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 
+  0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 
+};
+int32_t test39::setword(int32_t x, int32_t a)
+{
+  int32_t result = 0;
+  ((uint16_t *)&dat[0])[x] = a;
+  return result;
+}
+
+int32_t test39::setbyte(int32_t x, int32_t b)
+{
+  int32_t result = 0;
+  ((uint8_t *)&dat[16])[x] = b;
+  return result;
+}
+

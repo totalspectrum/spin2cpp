@@ -458,15 +458,15 @@ expr:
   | expr T_HIGHMULT '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_HIGHMULT, $1, $4); }
   | expr T_LIMITMIN '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMIN, $1, $3); }
+    { $$ = AstAssign(T_LIMITMIN, $1, $3); current->needsMinMax = 1; }
   | expr T_LIMITMAX '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMAX, $1, $3); }
+    { $$ = AstAssign(T_LIMITMAX, $1, $3); current->needsMinMax = 1; }
   | expr T_REV '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_REV, $1, $4); }
   | expr T_ROTL '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_ROTL, $1, $4); }
+    { $$ = AstAssign(T_ROTL, $1, $4); current->needsRotate = 1; }
   | expr T_ROTR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_ROTR, $1, $4); }
+    { $$ = AstAssign(T_ROTR, $1, $4); current->needsRotate = 1; }
   | expr T_SHL '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_SHL, $1, $4); }
   | expr T_SHR '=' expr %prec T_ASSIGN
@@ -517,7 +517,7 @@ expr:
   | lhs T_DOUBLETILDE
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
   | T_CONSTANT expr
-    { $$ = $1; }
+    { $$ = $2; }
   ;
 
 lhs: identifier
