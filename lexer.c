@@ -115,11 +115,15 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
 int
 lexgetc(LexStream *L)
 {
+    int c;
     if (L->ungot_valid) {
         L->ungot_valid = 0;
         return L->ungot;
     }
-    return (L->getcf(L));
+    c = (L->getcf(L));
+    if (c == '\n')
+        L->lineCounter++;
+    return c;
 }
 
 void
@@ -345,8 +349,9 @@ again:
             return T_INDENT;
         }
         /* ignore completely empty lines */
-        if (indent == 0 && c == '\n')
+        if (indent == 0 && c == '\n') {
             goto again;
+        }
         if (indent < L->indent[L->indentsp] && L->indentsp > 0) {
             lexungetc(L, c);
             while (indent < L->indent[L->indentsp] && L->indentsp > 0) {
@@ -366,7 +371,6 @@ again:
             c = lexgetc(L);
         } while (c != '\n' && c != T_EOF);
         if (c == '\n') {
-            L->lineCounter++;
             L->eoln = 1;
             return T_EOLN;
         }
@@ -375,8 +379,6 @@ again:
         commentNest = 1;
         do {
             c = lexgetc(L);
-            if (c == '\n')
-                L->lineCounter++;
             if (c == '{')
                 commentNest++;
             else if (c == '}')
@@ -387,7 +389,6 @@ again:
         goto again;
     }
     if (c == '\n') {
-        L->lineCounter++;
         L->eoln = 1;
         return T_EOLN;
     }
