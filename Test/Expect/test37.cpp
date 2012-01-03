@@ -7,7 +7,7 @@ uint8_t test37::dat[] = {
 int32_t test37::zero(int32_t n)
 {
   int32_t result = 0;
-  memset( &(*(int32_t *)&dat[0]), 0, 4*(n));
+  memset(((int32_t *)&dat[0]), 0, 4*(n));
   return result;
 }
 

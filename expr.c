@@ -666,15 +666,28 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
         ERROR(params, "incorrect parameters to %s", b->name);
         return;
     }
-    fprintf(f, "%s( &", b->cname);
-    PrintExpr(f, params->left); params = params->right;
-
-    if (!strcmp(b->cname, "memcpy")) {
-        fprintf(f, ", &");
+    fprintf(f, "%s(", b->cname);
+    if (params->left->kind == AST_IDENTIFIER) {
+        PrintLHS(f, params->left, 0, 1);
     } else {
-        fprintf(f, ", ");
+        fprintf(f, "&(");
+        PrintExpr(f, params->left);
+        fprintf(f, ")");
     }
-    PrintExpr(f, params->left); params = params->right;
+    params = params->right;
+    fprintf(f, ", ");
+    if (!strcmp(b->cname, "memcpy")) {
+        if (params->left->kind == AST_IDENTIFIER) {
+            PrintLHS(f, params->left, 0, 1);
+        } else {
+            fprintf(f, "&(");
+            PrintExpr(f, params->left);
+            fprintf(f, ")");
+        }
+    } else {
+        PrintExpr(f, params->left);
+    }
+    params = params->right;
 
     /* b->numparameters is overloaded to mean the size of memory we
        are working with
