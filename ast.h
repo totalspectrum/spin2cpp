@@ -72,9 +72,10 @@ enum astkind {
     AST_OTHER,
     AST_RES,
 
-    AST_FROM,
+    AST_FROM = 44,
     AST_TO,
     AST_STEP,
+    AST_FIT,
 };
 
 struct AST {

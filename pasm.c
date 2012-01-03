@@ -282,6 +282,17 @@ DeclareLabels(ParserState *P)
             offset = EvalPasmExpr(ast->left);
             pc += 4*offset;
             break;
+        case AST_FIT:
+            pc = align(pc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc);
+            if (ast->left) {
+                int32_t max = EvalConstExpr(ast->left);
+                int32_t cur = (pc - asmbase) / 4;
+                if ( cur > max ) {
+                    ERROR("fit %d failed: pc is %d", max, cur);
+                }
+            }
+            break;
         default:
             ERROR("unknown element %d in data block", ast->kind);
             break;
@@ -320,6 +331,7 @@ PrintDataBlock(FILE *f, ParserState *P)
             break;
         case AST_ORG:
         case AST_RES:
+        case AST_FIT:
             break;
         default:
             ERROR("unknown element in data block");

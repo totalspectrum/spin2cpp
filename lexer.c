@@ -496,6 +496,8 @@ struct reservedword {
     { "else", T_ELSE },
     { "elseif", T_ELSEIF },
     { "elseifnot", T_ELSEIFNOT },
+
+    { "fit", T_FIT },
     { "from", T_FROM },
 
     { "if", T_IF },

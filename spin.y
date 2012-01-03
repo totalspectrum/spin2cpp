@@ -36,6 +36,7 @@
 %token T_HWREG
 %token T_ORG
 %token T_RES
+%token T_FIT
 
 %token T_REPEAT
 %token T_FROM
@@ -347,6 +348,8 @@ basedatline:
     { $$ = NewAST(AST_ORG, $1, NULL); }
   | T_RES expr T_EOLN
     { $$ = NewAST(AST_RES, $1, NULL); }
+  | T_FIT expr T_EOLN
+    { $$ = NewAST(AST_FIT, $1, NULL); }
   ;
 
 
