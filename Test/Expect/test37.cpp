@@ -1,0 +1,13 @@
+#include <propeller.h>
+#include "test37.h"
+
+uint8_t test37::dat[] = {
+  0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 
+};
+int32_t test37::zero(int32_t n)
+{
+  int32_t result = 0;
+  memset( &(*(int32_t *)&dat[0]), 0, 4*(n));
+  return result;
+}
+

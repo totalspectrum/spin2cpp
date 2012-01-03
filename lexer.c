@@ -572,6 +572,7 @@ struct reservedword {
 extern void defaultBuiltin(FILE *, Builtin *, AST *);
 extern void defaultVariable(FILE *, Builtin *, AST *);
 extern void memBuiltin(FILE *, Builtin *, AST *);
+extern void str1Builtin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "_CLKFREQ" },
@@ -581,7 +582,7 @@ Builtin builtinfuncs[] = {
     { "lockset", 1, defaultBuiltin, "lockset" },
     { "lockclr", 1, defaultBuiltin, "lockclr" },
     { "lockret", 1, defaultBuiltin, "lockret" },
-    { "strsize", 1, defaultBuiltin, "strlen" },
+    { "strsize", 1, str1Builtin, "strlen" },
 
     { "longfill", 4, memBuiltin, "memset" },
     { "longmove", 4, memBuiltin, "memcpy" },

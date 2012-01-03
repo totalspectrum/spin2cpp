@@ -1,5 +1,6 @@
 #include "spinc.h"
 #include <ctype.h>
+#include <string.h>
 
 /* code to find a symbol */
 Symbol *
@@ -623,9 +624,14 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
         ERROR(params, "incorrect parameters to %s", b->name);
         return;
     }
-    fprintf(f, "%s(", b->cname);
+    fprintf(f, "%s( &", b->cname);
     PrintExpr(f, params->left); params = params->right;
-    fprintf(f, ", ");
+
+    if (!strcmp(b->cname, "memcpy")) {
+        fprintf(f, ", &");
+    } else {
+        fprintf(f, ", ");
+    }
     PrintExpr(f, params->left); params = params->right;
 
     /* b->numparameters is overloaded to mean the size of memory we
@@ -634,4 +640,17 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ", %d*(", b->numparameters);
     PrintExpr(f, params->left);
     fprintf(f, "))");
+}
+
+/* code to do strsize */
+void
+str1Builtin(FILE *f, Builtin *b, AST *params)
+{
+    if (AstListLen(params) != 1) {
+        ERROR(params, "incorrect parameters to %s", b->name);
+        return;
+    }
+    fprintf(f, "%s( (char *)", b->cname);
+    PrintExpr(f, params->left); params = params->right;
+    fprintf(f, ")");
 }
