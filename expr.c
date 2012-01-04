@@ -424,7 +424,7 @@ PrintAsAddr(FILE *f, AST *expr)
         break;
     case AST_ADDROF:
         fprintf(f, "&");
-        PrintLHS(f, expr, 0, 1);
+        PrintLHS(f, expr->left, 0, 0);
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
@@ -433,12 +433,10 @@ PrintAsAddr(FILE *f, AST *expr)
         PrintLHS(f, expr, 0, 1);
         break;
     case AST_ASSIGN:
+    default:
         fprintf(f, "(void *)(");
         PrintExpr(f, expr);
         fprintf(f, ")");
-        break;
-    default:
-        ERROR(expr, "Cannot take the address of this expression");
         break;
     }
 }
