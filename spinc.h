@@ -72,6 +72,7 @@ typedef struct funcdef {
     const char *resultname;
     int numparams;
     AST *params;      /* parameter list */
+    AST *locals;      /* local variables */
     AST *body;
 
     /* local symbols */
@@ -116,6 +117,7 @@ struct parserstate {
     /* flags for emitting macros */
     char needsMinMax;
     char needsRotate;
+    char needsStdlib;
 };
 
 /* the current parser state */
@@ -127,6 +129,7 @@ void PrintExpr(FILE *f, AST *expr);
 void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
+void PrintVarList(FILE *f, AST *type, AST *list);
 
 /* evaluate a constant expression */
 int32_t EvalConstExpr(AST *expr);

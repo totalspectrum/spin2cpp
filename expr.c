@@ -169,10 +169,26 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     case T_ROTR:
         PrintMacroExpr(f, "Rotr__", left, right);
         break;
-    default:
+    case T_ABS:
+        fprintf(f, "abs(");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
+    case '+':
+    case '-':
+    case '/':
+    case '*':
+    case '&':
+    case '|':
+    case '^':
+    case '<':
+    case '>':
         opstring[0] = op;
         opstring[1] = 0;
         PrintInOp(f, opstring, left, right);
+        break;
+    default:
+        ERROR(NULL, "unsupported operator %d", op);
         break;
     }
 }

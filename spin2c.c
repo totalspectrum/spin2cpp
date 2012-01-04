@@ -139,39 +139,6 @@ PrintConstantDecl(FILE *f, AST *ast)
     fprintf(f, "  static const int %s = %d;\n", ast->d.string, (int)EvalConstExpr(ast));
 }
 
-static void
-PrintVarList(FILE *f, const char *typename, AST *ast)
-{
-    AST *decl;
-    int needcomma = 0;
-
-    fprintf(f, "  %s\t", typename);
-    while (ast != NULL) {
-        if (needcomma) {
-            fprintf(f, ", ");
-        }
-        needcomma = 1;
-        if (ast->kind != AST_LISTHOLDER) {
-            ERROR(ast, "Expected variable list element\n");
-            return;
-        }
-        decl = ast->left;
-        switch (decl->kind) {
-        case AST_IDENTIFIER:
-            fprintf(f, "%s", decl->d.string);
-            break;
-        case AST_ARRAYDECL:
-            fprintf(f, "%s[%d]", decl->left->d.string,
-                    (int)EvalConstExpr(decl->right));
-            break;
-        default:
-            ERROR(decl, "Internal problem in variable list: type=%d\n", decl->kind);
-            break;
-        }
-        ast = ast->right;
-    }
-    fprintf(f, ";\n");
-}
 
 static void
 PrintHeaderFile(FILE *f, ParserState *parse)
@@ -209,13 +176,13 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     for (ast = parse->varblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
-            PrintVarList(f, "uint8_t", ast->left);
+            PrintVarList(f, ast_type_byte, ast->left);
             break;
         case AST_WORDLIST:
-            PrintVarList(f, "uint16_t", ast->left);
+            PrintVarList(f, ast_type_word, ast->left);
             break;
         case AST_LONGLIST:
-            PrintVarList(f, "int32_t", ast->left);
+            PrintVarList(f, ast_type_long, ast->left);
             break;
         default:
             break;
@@ -243,6 +210,9 @@ static void
 PrintCppFile(FILE *f, ParserState *parse)
 {
     /* things we always need */
+    if (parse->needsStdlib) {
+        fprintf(f, "#include <stdlib.h>\n");
+    }
     fprintf(f, "#include <propeller.h>\n");
     fprintf(f, "#include \"%s.h\"\n", parse->classname);
     fprintf(f, "\n");

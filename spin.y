@@ -497,7 +497,7 @@ expr:
   | T_NOT expr
     { $$ = AstOperator(T_NOT, NULL, $2); }
   | T_ABS expr
-    { $$ = AstOperator(T_ABS, NULL, $2); }
+    { $$ = AstOperator(T_ABS, NULL, $2); current->needsStdlib = 1; }
   | T_DECODE expr
     { $$ = AstOperator(T_DECODE, NULL, $2); }
   | T_ENCODE expr

@@ -98,8 +98,9 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
 
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
-    EnterVars(&fdef->localsyms, ast_type_long, vars->left);
-    EnterVars(&fdef->localsyms, ast_type_long, vars->right);
+    fdef->locals = vars->right;
+    EnterVars(&fdef->localsyms, ast_type_long, fdef->params);
+    EnterVars(&fdef->localsyms, ast_type_long, fdef->locals);
     EnterVariable(&fdef->localsyms, fdef->resultname, ast_type_long);
     fdef->body = body;
 
@@ -166,10 +167,49 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
     }
 }
 
+void
+PrintVarList(FILE *f, AST *typeast, AST *ast)
+{
+    AST *decl;
+    int needcomma = 0;
+
+    fprintf(f, "  ");
+    PrintType(f, typeast);
+    fprintf(f, "\t");
+    while (ast != NULL) {
+        if (needcomma) {
+            fprintf(f, ", ");
+        }
+        needcomma = 1;
+        if (ast->kind != AST_LISTHOLDER) {
+            ERROR(ast, "Expected variable list element\n");
+            return;
+        }
+        decl = ast->left;
+        switch (decl->kind) {
+        case AST_IDENTIFIER:
+            fprintf(f, "%s", decl->d.string);
+            break;
+        case AST_ARRAYDECL:
+            fprintf(f, "%s[%d]", decl->left->d.string,
+                    (int)EvalConstExpr(decl->right));
+            break;
+        default:
+            ERROR(decl, "Internal problem in variable list: type=%d\n", decl->kind);
+            break;
+        }
+        ast = ast->right;
+    }
+    fprintf(f, ";\n");
+}
+
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
     fprintf(f, "  int32_t %s = 0;\n", func->resultname);
+    if (func->locals) {
+        PrintVarList(f, ast_type_long, func->locals);
+    }
 }
  
 static int PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
@@ -347,7 +387,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         sawreturn = PrintStatementList(f, ast->left, indent+2);
         if (ast->right) {
             fprintf(f, "%*c} else {\n", indent, ' ');
-            sawreturn = sawreturn && PrintStatementList(f, ast->right, indent+2);
+            sawreturn = PrintStatementList(f, ast->right, indent+2) && sawreturn;
         }
         fprintf(f, "%*c}\n", indent, ' ');
         break;
