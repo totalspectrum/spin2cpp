@@ -19,7 +19,7 @@ int32_t test40::dec(int32_t value)
     tx('-');
   }
   i = 1000000000;
-  for (int32_t _tmp__0000 = 10; _tmp__0000 != 1; _tmp__0000 += -1) {
+  for (int32_t _tmp__0000 = 10; _tmp__0000 != 0; _tmp__0000 += -1) {
     if ((value >= i)) {
       tx((((value / i) + '0') + (x * (i == 1))));
       value = (value % i);

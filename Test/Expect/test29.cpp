@@ -13,7 +13,7 @@ int32_t test29::str(int32_t stringptr)
   int32_t result = 0;
   while (lockset(strlock)) {
   }
-  for (int32_t _tmp__0000 = strlen((char *) stringptr); _tmp__0000 != 1; _tmp__0000 += -1) {
+  for (int32_t _tmp__0000 = strlen((char *) stringptr); _tmp__0000 != 0; _tmp__0000 += -1) {
     tx(((uint8_t *)(stringptr++))[0]);
   }
   lockclr(strlock);
