@@ -392,7 +392,7 @@ expr:
   | string
   | lhs
   | '@' lhs
-    { $$ = AstOperator('@', NULL, $2); }
+    { $$ = NewAST(AST_ADDROF, $2, NULL); }
   | lhs T_ASSIGN expr
     { $$ = AstAssign(T_ASSIGN, $1, $3); }
   | expr '+' expr
@@ -540,9 +540,9 @@ memref:
   | T_LONG '[' expr ']'
     { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
   | identifier '.' T_BYTE
-    { $$ = NewAST(AST_MEMREF, ast_type_byte, AstOperator('@', NULL, $1)); }
+    { $$ = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL)); }
   | identifier '.' T_WORD
-    { $$ = NewAST(AST_MEMREF, ast_type_word, AstOperator('@', NULL, $1)); }
+    { $$ = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL)); }
 ;
 
 funccall:

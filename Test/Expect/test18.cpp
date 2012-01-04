@@ -7,6 +7,6 @@ uint8_t test18::dat[] = {
 int32_t test18::start(void)
 {
   int32_t result = 0;
-  return ((int32_t)&(*(int32_t *)&dat[0]));
+  return (int32_t)(&(*(int32_t *)&dat[0]));
 }
 

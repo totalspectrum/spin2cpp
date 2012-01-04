@@ -95,10 +95,6 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
     char opstring[4];
 
     switch (op) {
-    case '@':
-        fprintf(f, "(int32_t)&");
-        PrintExpr(f, right);
-        break;
     case T_HIGHMULT:
         fprintf(f, "(( (long long)");
         PrintExpr(f, left);
@@ -221,8 +217,9 @@ PrintType(FILE *f, AST *typedecl)
  * range)
  * if "assignment" is true then we are in an assignment operator, so
  * only certain types of symbols are valid
- * if "ref" is true then we are dereferencing the LHS, so do
- * not add any additional dereference operators
+ * if "ref" is true then we are planning to use the expression
+ * as a reference, so no extra dereferencing should be added to
+ * e.g. labels, and plain symbols and such should be cast appropriately
  */
 void
 PrintLHS(FILE *f, AST *expr, int assignment, int ref)
@@ -250,9 +247,18 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
             } else if (sym->type == SYM_LABEL) {
                 PrintLabel(f, sym, ref);
             } else {
+                if (ref) {
+                    fprintf(f, "(void *)");
+                }
                 PrintSymbol(f, sym);
             }
         }
+        break;
+    case AST_ADDROF:
+        if (!ref) {
+            fprintf(f, "(int32_t)");
+        }
+        PrintLHS(f, expr->left, assignment, 1);
         break;
     case AST_ARRAYREF:
         PrintLHS(f, expr->left, assignment, 1);
@@ -387,6 +393,56 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     fprintf(f, " << %d) & 0x%08x)", lo, mask); 
 }
 
+static void
+PrintStringLiteral(FILE *f, const char *s)
+{
+    int c;
+    fprintf(f, "\"");
+    while ((c = *s++) != 0) {
+        if (isprint(c) && c != '"') {
+            fprintf(f, "%c", c);
+        } else if (c == 10) {
+            fprintf(f, "\\n");
+        } else if (c == 13) {
+            fprintf(f, "\\r");
+        } else {
+            fprintf(f, "\\%03o", c);
+        }
+    }
+    fprintf(f, "\"");
+}
+
+/* code to print an object, treating it as an address */
+void
+PrintAsAddr(FILE *f, AST *expr)
+{
+    if (!expr)
+        return;
+    switch(expr->kind) {
+    case AST_STRING:
+        PrintStringLiteral(f, expr->d.string);
+        break;
+    case AST_ADDROF:
+        fprintf(f, "&");
+        PrintLHS(f, expr, 0, 1);
+        break;
+    case AST_IDENTIFIER:
+    case AST_HWREG:
+    case AST_MEMREF:
+    case AST_ARRAYREF:
+        PrintLHS(f, expr, 0, 1);
+        break;
+    case AST_ASSIGN:
+        fprintf(f, "(void *)(");
+        PrintExpr(f, expr);
+        fprintf(f, ")");
+        break;
+    default:
+        ERROR(expr, "Cannot take the address of this expression");
+        break;
+    }
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -409,6 +465,11 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             fprintf(f, "%d", c);
         }
+        break;
+    case AST_ADDROF:
+        fprintf(f, "(int32_t)(&");
+        PrintLHS(f, expr->left, 0, 0);
+        fprintf(f, ")");
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
@@ -667,23 +728,11 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
         return;
     }
     fprintf(f, "%s(", b->cname);
-    if (params->left->kind == AST_IDENTIFIER) {
-        PrintLHS(f, params->left, 0, 1);
-    } else {
-        fprintf(f, "&(");
-        PrintExpr(f, params->left);
-        fprintf(f, ")");
-    }
+    PrintAsAddr(f, params->left);
     params = params->right;
     fprintf(f, ", ");
     if (!strcmp(b->cname, "memcpy")) {
-        if (params->left->kind == AST_IDENTIFIER) {
-            PrintLHS(f, params->left, 0, 1);
-        } else {
-            fprintf(f, "&(");
-            PrintExpr(f, params->left);
-            fprintf(f, ")");
-        }
+        PrintAsAddr(f, params->left);
     } else {
         PrintExpr(f, params->left);
     }
