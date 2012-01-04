@@ -263,9 +263,6 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
             } else if (sym->type == SYM_LABEL) {
                 PrintLabel(f, sym, ref);
             } else {
-                if (ref) {
-                    fprintf(f, "(void *)");
-                }
                 PrintSymbol(f, sym);
             }
         }
