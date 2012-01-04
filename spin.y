@@ -346,11 +346,11 @@ basedatline:
   | T_ORG T_EOLN
     { $$ = NewAST(AST_ORG, NULL, NULL); }
   | T_ORG expr T_EOLN
-    { $$ = NewAST(AST_ORG, $1, NULL); }
+    { $$ = NewAST(AST_ORG, $2, NULL); }
   | T_RES expr T_EOLN
-    { $$ = NewAST(AST_RES, $1, NULL); }
+    { $$ = NewAST(AST_RES, $2, NULL); }
   | T_FIT expr T_EOLN
-    { $$ = NewAST(AST_FIT, $1, NULL); }
+    { $$ = NewAST(AST_FIT, $2, NULL); }
   ;
 
 
