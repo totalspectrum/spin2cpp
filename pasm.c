@@ -76,7 +76,7 @@ assembleInstruction(FILE *f, AST *ast)
 
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
-    if (val != 0) {
+    if (instr->ops != NOP_OPERANDS) {
         /* for anything except NOP set the condition to "always" */
         val |= 0xf << 18;
     }
@@ -107,6 +107,7 @@ assembleInstruction(FILE *f, AST *ast)
     /* parse operands and put them in place */
     switch (instr->ops) {
     case NO_OPERANDS:
+    case NOP_OPERANDS:
         expectops = 0;
         break;
     case TWO_OPERANDS:
@@ -123,6 +124,7 @@ assembleInstruction(FILE *f, AST *ast)
     src = dst = 0;
     switch (instr->ops) {
     case NO_OPERANDS:
+    case NOP_OPERANDS:
         break;
     case TWO_OPERANDS:
         dst = EvalPasmExpr(operand[0]);

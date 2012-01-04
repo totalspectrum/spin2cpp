@@ -693,7 +693,7 @@ instr[] = {
     { "negnc",  0xb4800000, TWO_OPERANDS },
     { "negnz",  0xbc800000, TWO_OPERANDS },
     { "negz",   0xb8800000, TWO_OPERANDS },
-    { "nop",    0x00000000, NO_OPERANDS },
+    { "nop",    0x00000000, NOP_OPERANDS },
 
     { "or",     0x68800000, TWO_OPERANDS },
 

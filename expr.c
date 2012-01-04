@@ -454,6 +454,21 @@ PrintAsAddr(FILE *f, AST *expr)
     }
 }
 
+/*
+ * code to print an assignment
+ */
+void
+PrintAssign(FILE *f, AST *lhs, AST *rhs)
+{
+    if (lhs->kind == AST_RANGEREF) {
+        PrintRangeAssign(f, lhs, rhs);
+    } else {
+        PrintLHS(f, lhs, 1, 0);
+        fprintf(f, " = ");
+        PrintExpr(f, rhs);
+    }
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -497,13 +512,9 @@ PrintExpr(FILE *f, AST *expr)
         PrintPostfix(f, expr);
         break;
     case AST_ASSIGN:
-        if (expr->left->kind == AST_RANGEREF) {
-            PrintRangeAssign(f, expr->left, expr->right);
-        } else {
-            PrintLHS(f, expr->left, 1, 0);
-            fprintf(f, " = ");
-            PrintExpr(f, expr->right);
-        }
+        fprintf(f, "(");
+        PrintAssign(f, expr->left, expr->right);
+        fprintf(f, ")");
         break;
     case AST_FUNCCALL:
         sym = NULL;

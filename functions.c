@@ -353,6 +353,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     return sawreturn;
 }
 
+
 /*
  * returns 1 if a return statement was seen
  */
@@ -429,8 +430,13 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         /* fall through */
     default:
+    case AST_ASSIGN:
         fprintf(f, "%*c", indent, ' ');
-        PrintExpr(f, ast);
+        if (ast->kind == AST_ASSIGN) {
+            PrintAssign(f, ast->left, ast->right);
+        } else {
+            PrintExpr(f, ast);
+        }
         fprintf(f, ";\n");
         break;
     }

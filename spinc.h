@@ -25,6 +25,7 @@ extern AST *ast_type_byte;
 
 typedef enum InstrOps {
     NO_OPERANDS,
+    NOP_OPERANDS,
     SRC_OPERAND_ONLY,
     DST_OPERAND_ONLY,
     TWO_OPERANDS,
@@ -130,6 +131,7 @@ void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
 void PrintVarList(FILE *f, AST *type, AST *list);
+void PrintAssign(FILE *f, AST *left, AST *right);
 
 /* evaluate a constant expression */
 int32_t EvalConstExpr(AST *expr);
