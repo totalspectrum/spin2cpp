@@ -588,6 +588,8 @@ Builtin builtinfuncs[] = {
     { "longmove", 4, memBuiltin, "memcpy" },
     { "wordfill", 2, memBuiltin, "memset" },
     { "wordmove", 2, memBuiltin, "memcpy" },
+    { "bytefill", 1, memBuiltin, "memset" },
+    { "bytemove", 1, memBuiltin, "memcpy" },
 };
 
 struct constants {
