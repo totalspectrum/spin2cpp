@@ -9,7 +9,7 @@ CFLAGS = -g -Wall -Werror
 YACC = bison
 RM = rm -f
 
-PROGS = testlex spin2c
+PROGS = testlex spin2cpp
 LEXOBJS = lexer.o symbol.o ast.o expr.o
 OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o
 
@@ -30,5 +30,5 @@ test: $(PROGS)
 	./testlex
 	(cd Test; ./runtests.sh)
 
-spin2c: spin2c.c $(OBJS)
+spin2cpp: spin2cpp.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^

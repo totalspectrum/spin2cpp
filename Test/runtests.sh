@@ -1,5 +1,5 @@
 #!/bin/sh
-PROG=../spin2c
+PROG=../spin2cpp
 endmsg="ok"
 
 for i in test*.spin
