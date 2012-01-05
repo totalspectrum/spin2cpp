@@ -78,6 +78,7 @@ enum astkind {
     AST_FIT,
 
     AST_ADDROF = 48,
+    AST_LOOKUP,
 };
 
 struct AST {

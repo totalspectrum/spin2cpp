@@ -45,17 +45,17 @@ NewParserState(const char *name)
     }
     /* set up the base file name */
     P->basename = strdup(name);
-    s = rindex(P->basename, '.');
+    s = strrchr(P->basename, '.');
     if (s) *s = 0;
 
     /* set up the class name */
-    s = rindex(P->basename, '/');
+    s = strrchr(P->basename, '/');
     if (s)
         P->classname = strdup(s+1);
     else
         P->classname = strdup(P->basename);
 #if defined(WIN32)
-    s = rindex(P->classname, '\\');
+    s = strrchr(P->classname, '\\');
     if (s)
         P->classname = s+1;
 #endif
@@ -196,6 +196,7 @@ PrintHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintMacros(FILE *f, ParserState *parse)
 {
+    AST *ast;
     if (parse->needsMinMax) {
         fprintf(f, "#define Min__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a < b ? a : b;})\n"); 
         fprintf(f, "#define Max__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a > b ? a : b;})\n\n");
@@ -203,6 +204,14 @@ PrintMacros(FILE *f, ParserState *parse)
     if (parse->needsRotate) {
         fprintf(f, "#define Rotl__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a<<b) | (a>>(32-b)); })\n"); 
         fprintf(f, "#define Rotr__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a>>b) | (a<<(32-b)); })\n\n"); 
+    }
+
+    if (parse->arrays) {
+        fprintf(f, "#define Lookup__(x, a) __extension__({ int32_t i = (x); (i < 0 || i >= sizeof(a)/sizeof(a[0])) ? 0 : a[i]; })\n");
+        for (ast = parse->arrays; ast; ast = ast->right) {
+            PrintLookupArray(f, ast->left);
+        }
+        fprintf(f, "\n");
     }
 }
 

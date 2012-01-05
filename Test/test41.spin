@@ -1,2 +1,2 @@
-PUB rx : rxbyte
-  repeat while (rxbyte := outa) < 0
+PUB hexdigit(x)
+  return lookupz( x & $F : "0".."9", "A".."F")

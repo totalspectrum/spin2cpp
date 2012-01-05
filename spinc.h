@@ -102,6 +102,9 @@ struct parserstate {
     /* list of methods */
     Function *functions;
 
+    /* list of lookup arrays required */
+    AST *arrays;
+
     /* AST for current token */
     AST *ast;
 
@@ -132,6 +135,7 @@ void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
 void PrintVarList(FILE *f, AST *type, AST *list);
 void PrintAssign(FILE *f, AST *left, AST *right);
+void PrintLookupArray(FILE *f, AST *array);
 
 /* evaluate a constant expression */
 int32_t EvalConstExpr(AST *expr);
@@ -141,6 +145,9 @@ int32_t EvalPasmExpr(AST *expr);
 
 /* determine whether an expression is constant */
 int IsConstExpr(AST *expr);
+
+/* create a new AST describing a table lookup */
+AST *NewLookup(AST *expr, AST *table);
 
 /* declare a function */
 /* "body" is the list of statements */
