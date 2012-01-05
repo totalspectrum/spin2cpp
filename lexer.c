@@ -77,6 +77,7 @@ filegetwc(LexStream *L)
     int c1, c2;
 
     f = (FILE *)L->ptr;
+again:
     c1 = fgetc(f);
     if (c1 < 0) return T_EOF;
     c2 = fgetc(f);
@@ -86,8 +87,23 @@ filegetwc(LexStream *L)
         return 0xff;
     }
     /* eliminate carriage returns */
+    /* actually there's a problem: if we have a MAC file,
+       we may not have line feeds, so we need to
+       convert carriage returns to line feeds; but for
+       Windows we need to ignore a line feed right after a
+       carriage return!
+    */
     if (c1 == '\r') {
-        c1 = ' ';
+        c1 = '\n';
+        L->sawCr = 1;
+    } else {
+        if (c1 == '\n') {
+            if (L->sawCr) {
+                L->sawCr = 0;
+                goto again;
+            }
+        }
+        L->sawCr = 0;
     }
     return c1;
 }

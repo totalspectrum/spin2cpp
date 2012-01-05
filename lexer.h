@@ -30,6 +30,9 @@ struct lexstream {
     /* for error messages */
     int lineCounter;
     const char *fileName;
+
+    /* for handling Unicode CR+LF */
+    int sawCr;
 };
 
 extern int lexgetc(LexStream *L);
