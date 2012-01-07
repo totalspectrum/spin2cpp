@@ -17,6 +17,7 @@ typedef enum symtype {
     SYM_INSTRMODIFIER,   /* effect or condition */
     SYM_BUILTIN,         /* builtin symbol */
     SYM_NAME,            /* a plain identifier */
+    SYM_OBJECT,          /* an object name */
 } Symtype;
 
 typedef struct symbol {

@@ -79,6 +79,10 @@ enum astkind {
 
     AST_ADDROF = 48,
     AST_LOOKUP,
+    AST_LOOKDOWN,
+    AST_OBJECT,
+
+    AST_METHODREF = 52,
 };
 
 struct AST {

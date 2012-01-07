@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011 Total Spectrum Software Inc.
+ * Copyright (c) 2011,2012 Total Spectrum Software Inc.
  */
 
 %{
@@ -98,6 +98,8 @@ topelement:
   { $$ = current->datblock = AddToList(current->datblock, $2); }
   | T_VAR varblock
   { $$ = current->varblock = AddToList(current->varblock, $2); }
+  | T_OBJ objblock
+  { $$ = current->objblock = AddToList(current->objblock, $2); }
   | T_PUB funcdef stmtlist
   { DeclareFunction(1, $2, $3); }
   | T_PRI funcdef stmtlist
@@ -371,6 +373,19 @@ basedatline:
     { $$ = NewAST(AST_FIT, $2, NULL); }
   ;
 
+objblock:
+  objline
+  { $$ = $1; }
+  | objblock objline
+  { $$ = AddToList($1, $2); }
+;
+
+objline:
+    T_EOLN
+    { $$ = NULL; }
+  | identifier ':' string
+    { $$ = NewAST(AST_LISTHOLDER, NewAST(AST_OBJECT, $1, $3), NULL); }
+;
 
 varblock:
     varline
@@ -566,7 +581,15 @@ memref:
 
 funccall:
   identifier '(' exprlist ')'
-  { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | identifier '.' identifier '(' exprlist ')'
+    { 
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+    }
+  | identifier '.' identifier
+    { 
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
+    }
 ;
 
 expritem:

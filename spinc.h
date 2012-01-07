@@ -98,6 +98,7 @@ struct parserstate {
     AST *conblock;
     AST *datblock;
     AST *varblock;
+    AST *objblock;
 
     /* list of methods */
     Function *functions;
