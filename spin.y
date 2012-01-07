@@ -288,11 +288,19 @@ repeatstmt:
       from = NewAST(AST_FROM, $4, to);
       $$ = NewAST(AST_COUNTFOR, $2, from);
     }
+  | T_REPEAT identifier T_FROM expr T_TO expr T_EOLN stmtblock
+    {
+      AST *from, *to, *step; 
+      step = NewAST(AST_STEP, AstInteger(1), $8);
+      to = NewAST(AST_TO, $6, step);
+      from = NewAST(AST_FROM, $4, to);
+      $$ = NewAST(AST_COUNTFOR, $2, from);
+    }
   | T_REPEAT expr T_EOLN stmtblock
     {
       AST *from, *to, *step;
       step = NewAST(AST_STEP, AstInteger(-1), $4);
-      to = NewAST(AST_TO, AstInteger(0), step);
+      to = NewAST(AST_TO, AstInteger(1), step);
       from = NewAST(AST_FROM, $2, to);
       $$ = NewAST(AST_COUNTFOR, NULL, from);
     }

@@ -328,7 +328,6 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         return 0;
     }
     toval = ast->left;
-    PrintExpr(f, toval);
     ast = ast->right;
     if (ast->kind != AST_STEP) {
         ERROR(ast, "expected STEP");
@@ -344,6 +343,12 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             ERROR(ast, "Unable to calculate step value");
             return 0;
         }
+    }
+    toval = AstOperator('+', toval, stepval);
+    if (IsConstExpr(toval)) {
+        fprintf(f, "%d", EvalConstExpr(toval));
+    } else {
+        PrintExpr(f, toval);
     }
     fprintf(f, "; %s += ", loopname);
     PrintExpr(f, stepval);
