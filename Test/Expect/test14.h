@@ -1,3 +1,6 @@
+#ifndef test14_class_defined__
+#define test14_class_defined__
+
 #include <stdint.h>
 
 class test14 {
@@ -6,3 +9,5 @@ public:
   int32_t	myfunc(void);
 private:
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef test20_class_defined__
+#define test20_class_defined__
+
 #include <stdint.h>
 
 class test20 {
@@ -15,3 +18,5 @@ private:
   int32_t	bit_ticks;
   int32_t	buffer_ptr;
 };
+
+#endif

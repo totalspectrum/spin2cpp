@@ -146,6 +146,9 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     AST *ast, *upper;
 
     /* things we always need */
+    fprintf(f, "#ifndef %s_class_defined__\n", parse->classname);
+    fprintf(f, "#define %s_class_defined__\n\n", parse->classname);
+
     fprintf(f, "#include <stdint.h>\n\n");
 
     /* print the constant declarations */
@@ -190,7 +193,8 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     }
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
-    fprintf(f, "};\n");
+    fprintf(f, "};\n\n");
+    fprintf(f, "#endif\n");
 }
 
 static void

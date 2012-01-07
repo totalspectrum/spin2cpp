@@ -1,3 +1,6 @@
+#ifndef test16_class_defined__
+#define test16_class_defined__
+
 #include <stdint.h>
 
 class test16 {
@@ -6,3 +9,5 @@ public:
   int32_t	start(void);
 private:
 };
+
+#endif

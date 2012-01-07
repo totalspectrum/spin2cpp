@@ -1,3 +1,6 @@
+#ifndef test39_class_defined__
+#define test39_class_defined__
+
 #include <stdint.h>
 
 class test39 {
@@ -7,3 +10,5 @@ public:
   int32_t	setbyte(int32_t x, int32_t b);
 private:
 };
+
+#endif

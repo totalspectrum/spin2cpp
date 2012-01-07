@@ -1,3 +1,6 @@
+#ifndef test37_class_defined__
+#define test37_class_defined__
+
 #include <stdint.h>
 
 class test37 {
@@ -6,3 +9,5 @@ public:
   int32_t	zero(int32_t n);
 private:
 };
+
+#endif

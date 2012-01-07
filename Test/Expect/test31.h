@@ -1,3 +1,6 @@
+#ifndef test31_class_defined__
+#define test31_class_defined__
+
 #include <stdint.h>
 
 class test31 {
@@ -7,3 +10,5 @@ public:
 private:
   int32_t	X;
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef test29_class_defined__
+#define test29_class_defined__
+
 #include <stdint.h>
 
 class test29 {
@@ -8,3 +11,5 @@ private:
   int32_t	strlock;
   int32_t	idx;
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef test01_class_defined__
+#define test01_class_defined__
+
 #include <stdint.h>
 
 class test01 {
@@ -6,3 +9,5 @@ public:
   static const int y = 2;
 private:
 };
+
+#endif

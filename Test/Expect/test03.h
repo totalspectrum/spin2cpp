@@ -1,3 +1,6 @@
+#ifndef test03_class_defined__
+#define test03_class_defined__
+
 #include <stdint.h>
 
 class test03 {
@@ -7,3 +10,5 @@ private:
   uint16_t	a, b, c;
   int32_t	t;
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef test11_class_defined__
+#define test11_class_defined__
+
 #include <stdint.h>
 
 class test11 {
@@ -7,3 +10,5 @@ public:
 private:
   int32_t	count;
 };
+
+#endif

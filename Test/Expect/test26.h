@@ -1,3 +1,6 @@
+#ifndef test26_class_defined__
+#define test26_class_defined__
+
 #include <stdint.h>
 
 class test26 {
@@ -7,3 +10,5 @@ private:
   int32_t	thelock;
   int32_t	x;
 };
+
+#endif

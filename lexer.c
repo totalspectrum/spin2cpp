@@ -727,6 +727,7 @@ instr[] = {
     { "shl",    0x2c800000, TWO_OPERANDS },
     { "shr",    0x28800000, TWO_OPERANDS },
     { "sub",    0x84800000, TWO_OPERANDS },
+    { "subabs", 0x8c800000, TWO_OPERANDS },
     { "subs",   0xc0800000, TWO_OPERANDS },
     { "subsx",  0xc4800000, TWO_OPERANDS },
     { "subx",   0xcc800000, TWO_OPERANDS },
@@ -741,9 +742,9 @@ instr[] = {
     { "tjz",    0xec000000, TWO_OPERANDS },
 
     { "waitcnt", 0xf8800000, TWO_OPERANDS },
-    { "waitpeq", 0xf0800000, TWO_OPERANDS },
-    { "waitpne", 0xf4800000, TWO_OPERANDS },
-    { "waitvid", 0xfc800000, TWO_OPERANDS },
+    { "waitpeq", 0xf0000000, TWO_OPERANDS },
+    { "waitpne", 0xf4000000, TWO_OPERANDS },
+    { "waitvid", 0xfc000000, TWO_OPERANDS },
 
     { "wrbyte", 0x00000000, TWO_OPERANDS },
     { "wrlong", 0x08000000, TWO_OPERANDS },
