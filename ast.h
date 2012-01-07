@@ -83,6 +83,8 @@ enum astkind {
     AST_OBJECT,
 
     AST_METHODREF = 52,
+    AST_CONSTREF,
+    AST_OBJDECL,
 };
 
 struct AST {

@@ -3,6 +3,8 @@
  * Copyright (c) 2011,2012 Total Spectrum Software Inc.
  */
 
+%define api.pure
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +12,7 @@
 
 /* Yacc functions */
     void yyerror(char *);
-    int yylex(void);
+    int yylex(YYSTYPE *);
 
     extern int gl_errors;
 %}
@@ -384,7 +386,7 @@ objline:
     T_EOLN
     { $$ = NULL; }
   | identifier ':' string
-    { $$ = NewAST(AST_LISTHOLDER, NewAST(AST_OBJECT, $1, $3), NULL); }
+    { $$ = NewObject($1, $3); }
 ;
 
 varblock:
@@ -428,6 +430,8 @@ expr:
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
   | lhs T_ASSIGN expr
     { $$ = AstAssign(T_ASSIGN, $1, $3); }
+  | identifier '#' identifier
+    { $$ = NewAST(AST_CONSTREF, $1, $3); }
   | expr '+' expr
     { $$ = AstOperator('+', $1, $3); }
   | expr '-' expr

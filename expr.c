@@ -21,6 +21,47 @@ LookupSymbol(const char *name)
     return sym;
 }
 
+/*
+ * look up an AST that should be a symbol; print an error
+ * message if it is not found
+ */
+Symbol *
+LookupAstSymbol(AST *id, const char *msg)
+{
+    Symbol *sym;
+    if (id->kind != AST_IDENTIFIER) {
+        ERROR(id, "expected an identifier");
+        return NULL;
+    }
+    sym = LookupSymbol(id->d.string);
+    if (!sym) {
+        ERROR(id, "unknown identifier %s used in %s", id->d.string, msg);
+    }
+    return sym;
+}
+
+/*
+ * look up an object method or constant
+ * "expr" is the context (for error messages)
+ */
+Symbol *
+LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
+{
+    Symbol *sym;
+    ParserState *objstate;
+
+    if (obj->type != SYM_OBJECT) {
+        ERROR(expr, "expected an object");
+        return NULL;
+    }
+    objstate = (ParserState *)obj->val;
+    sym = FindSymbol(&objstate->objsyms, name);
+    if (!sym) {
+        ERROR(expr, "unknown identifier %s in %s", name, obj->name);
+    }
+    return sym;
+}
+
 /* code to print a label to a file
  * if "ref" is nonzero this is an array reference, so do not
  * dereference again
@@ -473,9 +514,8 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
 void
 PrintExpr(FILE *f, AST *expr)
 {
-    Symbol *sym;
+    Symbol *sym, *objsym;
     int c;
-    const char *name = "";
 
     if (!expr) {
         return;
@@ -517,15 +557,9 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, ")");
         break;
     case AST_FUNCCALL:
-        sym = NULL;
-        if (expr->left) {
-            if (expr->left->kind == AST_IDENTIFIER) {
-                name = expr->left->d.string;
-                sym = LookupSymbol(name);
-            }
-        }
+        sym = LookupAstSymbol(expr->left, "function call");
         if (!sym) {
-            ERROR(expr, "undefined identifier %s in function call", name);
+            ; /* do nothing, printed error already */
         } else if (sym->type == SYM_BUILTIN) {
             Builtin *b = sym->val;
             (*b->printit)(f, b, expr->right);
@@ -540,6 +574,24 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_LOOKUP:
         PrintMacroExpr(f, "Lookup__", expr->left, expr->right);
+        break;
+    case AST_CONSTREF:
+        objsym = LookupAstSymbol(expr->left, "object reference");
+        if (!objsym) return;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(expr, "%s is not an object", objsym->name);
+            return;
+        }
+        if (expr->right->kind != AST_IDENTIFIER) {
+            ERROR(expr, "expected identifier after '.'");
+            return;
+        }
+        sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
+        if (!sym || sym->type != SYM_CONSTANT) {
+            ERROR(expr, "%s is not a constant of object %s",
+                  expr->right->d.string, objsym->name);
+        }
+        fprintf(f, "%s.%s", objsym->name, sym->name);
         break;
     default:
         ERROR(expr, "Internal error, bad expression");

@@ -178,4 +178,6 @@ void ERROR(AST *, const char *msg, ...);
 extern SymbolTable reservedWords;
 extern void InitPasm(void);
 
+/* return a new object */
+AST *NewObject(AST *identifier, AST *string);
 #endif

@@ -14,7 +14,7 @@ int gl_errors;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 int
-yylex(void)
+yylex(YYSTYPE *lvalp)
 {
     int c;
     c = getToken(&current->L, &current->ast);
@@ -130,6 +130,20 @@ DeclareVariables(void)
     }
 }
 
+static void
+DeclareObjects(ParserState *parse)
+{
+    AST *ast;
+
+    for (ast = parse->objblock; ast; ast = ast->right) {
+        if (ast->kind != AST_OBJECT) {
+            ERROR(ast, "Internal error: expected an OBJECT");
+            break;
+        }
+        AddSymbol(&current->objsyms, ast->left->d.string, SYM_OBJECT, ast->d.ptr);
+    }
+}
+
 /*
  * print out a header file
  */
@@ -143,13 +157,37 @@ PrintConstantDecl(FILE *f, AST *ast)
 static void
 PrintHeaderFile(FILE *f, ParserState *parse)
 {
-    AST *ast, *upper;
+    AST *ast, *upper, *sub;
+    int already_done;
+    ParserState *objstate;
 
     /* things we always need */
     fprintf(f, "#ifndef %s_class_defined__\n", parse->classname);
     fprintf(f, "#define %s_class_defined__\n\n", parse->classname);
 
-    fprintf(f, "#include <stdint.h>\n\n");
+    fprintf(f, "#include <stdint.h>\n");
+
+    /* include any needed object headers */
+    for (ast = parse->objblock; ast; ast = ast->right) {
+        if (ast->kind != AST_OBJECT) {
+            ERROR(ast, "Internal error: expected an OBJECT");
+            break;
+        }
+
+        /* see if we've already printed this header */
+        objstate = ast->d.ptr;
+        already_done = 0;
+        for (sub = parse->objblock; sub && sub != ast; sub = sub->right) {
+            if (sub->d.ptr == objstate) {
+                already_done = 1;
+                break;
+            }
+        }
+        if (!already_done) {
+            fprintf(f, "#include \"%s.h\"\n", objstate->basename);
+        }
+    }
+    fprintf(f, "\n");
 
     /* print the constant declarations */
     fprintf(f, "class %s {\npublic:\n", parse->classname);
@@ -166,6 +204,11 @@ PrintHeaderFile(FILE *f, ParserState *parse)
             /* do nothing */
             break;
         }
+    }
+    /* object references */
+    for (ast = parse->objblock; ast; ast = ast->right) {
+        ParserState *P = ast->d.ptr;
+        fprintf(f, "  %s\t%s\n", P->classname, ast->left->d.string);
     }
     /* data block, if applicable */
     if (parse->datblock) {
@@ -227,7 +270,7 @@ PrintCppFile(FILE *f, ParserState *parse)
         fprintf(f, "#include <stdlib.h>\n");
     }
     fprintf(f, "#include <propeller.h>\n");
-    fprintf(f, "#include \"%s.h\"\n", parse->classname);
+    fprintf(f, "#include \"%s.h\"\n", parse->basename);
     fprintf(f, "\n");
     PrintMacros(f, parse);
 
@@ -244,7 +287,7 @@ PrintCppFile(FILE *f, ParserState *parse)
 /*
  * parse a file
  */
-static void
+static ParserState *
 parseFile(const char *name)
 {
     FILE *f;
@@ -265,6 +308,7 @@ parseFile(const char *name)
     fclose(f);
 
     /* now declare all the symbols */
+    DeclareObjects(P);
     DeclareConstants();
     DeclareVariables();
 
@@ -302,7 +346,19 @@ parseFile(const char *name)
         fprintf(stderr, "%d errors\n", gl_errors);
         exit(1);
     }
+    current = P->next;
+    P->next = NULL;
+    return P;
+}
 
+AST *
+NewObject(AST *identifier, AST *string)
+{
+    AST *ast;
+
+    ast = NewAST(AST_OBJECT, identifier, NULL);
+    ast->d.ptr = parseFile(string->d.string);
+    return ast;
 }
 
 void
