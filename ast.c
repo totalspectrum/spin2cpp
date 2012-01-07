@@ -19,10 +19,13 @@ NewAST(int kind, AST *left, AST *right)
     ast->kind = kind;
     ast->left = left;
     ast->right = right;
-    if (current)
+    if (current) {
+        ast->fileName = current->L.fileName;
         ast->line = current->L.lineCounter;
-    else
+    } else {
+        ast->fileName = "<unknown>";
         ast->line = 0;
+    }
     return ast;
 }
 

@@ -90,6 +90,7 @@ enum astkind {
 struct AST {
     enum astkind kind;        /* type of this node */
     union ASTdata d; /* data in this node */
+    const char *fileName; /* file associated with this */
     int line;        /* line number */
     AST *left;
     AST *right;

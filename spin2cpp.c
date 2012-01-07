@@ -367,7 +367,7 @@ ERROR(AST *instr, const char *msg, ...)
     va_list args;
 
     if (instr)
-        fprintf(stderr, "Error on line %d: ", instr->line);
+        fprintf(stderr, "Error: %s line %d: ", instr->fileName, instr->line);
     else
         fprintf(stderr, "Error: ");
 
