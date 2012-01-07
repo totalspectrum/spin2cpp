@@ -307,6 +307,11 @@ parseFile(const char *name)
     yyparse();
     fclose(f);
 
+    if (gl_errors > 0) {
+        fprintf(stderr, "%d errors\n", gl_errors);
+        exit(1);
+    }
+
     /* now declare all the symbols */
     DeclareObjects(P);
     DeclareConstants();

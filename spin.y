@@ -221,8 +221,8 @@ casematchlist:
 casematchitem:
   matchexprlist ':' T_EOLN stmtblock
     {
-        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
-        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $4));
+        AST *slist = NewAST(AST_STMTLIST, $4, NULL);
+        $$ = NewAST(AST_CASEITEM, $1, slist);
     }
   | matchexprlist ':' nonemptystmt
     {
@@ -676,6 +676,6 @@ modifierlist:
 void
 yyerror(char *msg)
 {
-    fprintf(stderr, "%s at line %d\n", msg, current->L.lineCounter);
+    fprintf(stderr, "%s: %s at line %d\n", current->L.fileName, msg, current->L.lineCounter);
     gl_errors++;
 }

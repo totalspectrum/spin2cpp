@@ -197,8 +197,11 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             digit = 10 + c - 'A';
         else if (c >= 'a' && c <= 'z')
             digit = 10 + c - 'a';
-        else
+        else if (c >= '0' && c <= '9') {
             digit = (c - '0');
+        } else {
+            break;
+        }
         if (digit < base) {
             uval = base * uval + digit;
             sawdigit = 1;

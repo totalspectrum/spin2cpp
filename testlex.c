@@ -107,6 +107,24 @@ static const char *token6test = "dat\nlabel if_z add x,#1 wc";
 static int tokens6[] = { T_DAT, T_EOLN, T_IDENTIFIER, T_INSTRMODIFIER, T_INSTR,
                          T_IDENTIFIER, ',', '#', T_NUM, T_INSTRMODIFIER};
 
+static const char *token7test = 
+"pub f(x,y)\n"
+"  case x\n"
+"    1: case +\n"
+"        *: g\n"
+"        -: repeat\n"
+"    other if\n";
+static int tokens7[] = 
+{ 
+  T_PUB, T_IDENTIFIER, '(', T_IDENTIFIER, ',', T_IDENTIFIER, ')', T_EOLN,
+  T_INDENT, T_CASE, T_IDENTIFIER, T_EOLN,
+  T_INDENT, T_NUM, ':', T_CASE, '+', T_EOLN,
+  T_INDENT, '*', ':', T_IDENTIFIER, T_EOLN,
+  '-', ':', T_REPEAT, T_EOLN,
+  T_OUTDENT, T_OTHER, T_IF, T_EOLN,
+  T_OUTDENT, T_OUTDENT, T_EOF
+};
+
 int
 main()
 {
@@ -122,6 +140,7 @@ main()
     testTokenStream(token4test, tokens4, N_ELEM(tokens4));
     testTokenStream(token5test, tokens5, N_ELEM(tokens5));
     testTokenStream(token6test, tokens6, N_ELEM(tokens6));
+    testTokenStream(token7test, tokens7, N_ELEM(tokens7));
 
     testNumber("0", 0);
     testNumber("00", 0);
