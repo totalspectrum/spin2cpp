@@ -210,7 +210,7 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
         ParserState *P = ast->d.ptr;
-        fprintf(f, "  %s\t%s\n", P->classname, ast->left->d.string);
+        fprintf(f, "  %s\t%s;\n", P->classname, ast->left->d.string);
     }
     /* data block, if applicable */
     if (parse->datblock) {

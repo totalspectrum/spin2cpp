@@ -10,7 +10,7 @@ public:
   static const int rows = 12;
   static const int screensize = 480;
   static const int lastrow = 440;
-  test01	a
+  test01	a;
   int32_t	getx(void);
 private:
 };

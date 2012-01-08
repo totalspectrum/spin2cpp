@@ -30,7 +30,7 @@ LookupAstSymbol(AST *id, const char *msg)
 {
     Symbol *sym;
     if (id->kind != AST_IDENTIFIER) {
-        ERROR(id, "expected an identifier");
+        ERROR(id, "expected an identifier, got %d", id->kind);
         return NULL;
     }
     sym = LookupSymbol(id->d.string);
@@ -557,7 +557,22 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, ")");
         break;
     case AST_FUNCCALL:
-        sym = LookupAstSymbol(expr->left, "function call");
+        if (expr->left && expr->left->kind == AST_METHODREF) {
+            objsym = LookupAstSymbol(expr->left->left, "object reference");
+            if (!objsym) return;
+            if (objsym->type != SYM_OBJECT) {
+                ERROR(expr, "%s is not an object", objsym->name);
+                return;
+            }
+            sym = LookupObjSymbol(expr, objsym, expr->left->right->d.string);
+            if (!sym || sym->type != SYM_FUNCTION) {
+                ERROR(expr, "%s is not a method of %s", sym->name, objsym->name);
+                return;
+            }
+            fprintf(f, "%s.", objsym->name);
+        } else {
+            sym = LookupAstSymbol(expr->left, "function call");
+        }
         if (!sym) {
             ; /* do nothing, printed error already */
         } else if (sym->type == SYM_BUILTIN) {

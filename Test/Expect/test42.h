@@ -6,7 +6,7 @@
 
 class test42 {
 public:
-  test01	a
+  test01	a;
   int32_t	getx(void);
 private:
 };
