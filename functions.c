@@ -472,5 +472,6 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
             fprintf(f, "  return %s;\n", pf->resultname);
         }
         fprintf(f, "}\n\n");
+        curfunc = NULL;
     }
 }

@@ -10,6 +10,8 @@ extern int yyparse(void);
 extern int yydebug;
 
 ParserState *current;
+ParserState *allparse;
+
 int gl_errors;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
@@ -291,7 +293,7 @@ static ParserState *
 parseFile(const char *name)
 {
     FILE *f;
-    ParserState *P;
+    ParserState *P, *save;
     char *fname;
 
     f = fopen(name, "r");
@@ -299,8 +301,10 @@ parseFile(const char *name)
         perror(name);
         exit(1);
     }
+    save = current;
     P = NewParserState(name);
-    P->next = current;
+    P->next = allparse;
+    allparse = P;
     current = P;
 
     fileToLex(&current->L, f, name);
@@ -351,8 +355,7 @@ parseFile(const char *name)
         fprintf(stderr, "%d errors\n", gl_errors);
         exit(1);
     }
-    current = P->next;
-    P->next = NULL;
+    current = save;
     return P;
 }
 
@@ -398,6 +401,7 @@ main(int argc, char **argv)
 {
     init();
 
+    allparse = NULL;
 #ifdef DEBUG_YACC
     yydebug = 1;  /* turn on yacc debugging */
 #endif
