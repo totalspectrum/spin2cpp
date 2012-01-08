@@ -239,6 +239,9 @@ static void
 PrintMacros(FILE *f, ParserState *parse)
 {
     AST *ast;
+    if (parse->needsYield) {
+        fprintf(f, "#define Yield__() (__napuntil(_CNT + 256))\n");
+    }
     if (parse->needsMinMax) {
         fprintf(f, "#define Min__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a < b ? a : b;})\n"); 
         fprintf(f, "#define Max__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a > b ? a : b;})\n\n");
@@ -263,6 +266,9 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* things we always need */
     if (parse->needsStdlib) {
         fprintf(f, "#include <stdlib.h>\n");
+    }
+    if (parse->needsYield) {
+        fprintf(f, "#include <sys/thread.h>\n");
     }
     fprintf(f, "#include <propeller.h>\n");
     fprintf(f, "#include \"%s.h\"\n", parse->basename);

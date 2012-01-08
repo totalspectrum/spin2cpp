@@ -15,6 +15,15 @@
     int yylex(YYSTYPE *);
 
     extern int gl_errors;
+
+/* utility functions */
+AST *
+AstYield(void)
+{
+    current->needsYield = 1;
+    return NewAST(AST_STMTLIST, NewAST(AST_YIELD, NULL, NULL), NULL);
+}
+
 %}
 
 %token T_IDENTIFIER
@@ -271,15 +280,15 @@ repeatstmt:
   | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
     { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), $3); }
   | T_REPEAT T_EOLN
-    { $$ = NewAST(AST_WHILE, AstInteger(1), NULL); }
+    { $$ = NewAST(AST_WHILE, AstInteger(1), AstYield()); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
     { $$ = NewAST(AST_WHILE, $3, $5); }
   | T_REPEAT T_WHILE expr T_EOLN
-    { $$ = NewAST(AST_WHILE, $3, NULL); }
+    { $$ = NewAST(AST_WHILE, $3, AstYield()); }
   | T_REPEAT T_UNTIL expr T_EOLN stmtblock
     { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), $5); }
   | T_REPEAT T_UNTIL expr T_EOLN
-    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), NULL); }
+    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), AstYield()); }
   | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
     {
       AST *from, *to, *step; 

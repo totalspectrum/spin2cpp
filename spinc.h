@@ -125,6 +125,7 @@ struct parserstate {
     char needsMinMax;
     char needsRotate;
     char needsStdlib;
+    char needsYield;
 };
 
 /* the current parser state */

@@ -381,6 +381,9 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ";\n");
         sawreturn = 1;
         break;
+    case AST_YIELD:
+        fprintf(f, "%*cYield__();\n", indent, ' ');
+        break;
     case AST_IF:
         fprintf(f, "%*cif (", indent, ' ');
         PrintExpr(f, ast->left);

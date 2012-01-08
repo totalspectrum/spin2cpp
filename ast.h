@@ -86,6 +86,8 @@ enum astkind {
     AST_CONSTREF,
     AST_OBJDECL,
     AST_STRINGPTR,
+
+    AST_YIELD = 56,
 };
 
 struct AST {
