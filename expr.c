@@ -815,26 +815,44 @@ defaultVariable(FILE *f, Builtin *b, AST *params)
 void
 memBuiltin(FILE *f, Builtin *b, AST *params)
 {
+    int ismemcpy = !strcmp(b->cname, "memcpy");
+    int parmNum = -1;
+    AST *dst, *src, *count;
+
     if (AstListLen(params) != 3) {
         ERROR(params, "incorrect parameters to %s", b->name);
         return;
     }
-    fprintf(f, "%s(", b->cname);
-    PrintAsAddr(f, params->left);
+
+    dst = params->left;
     params = params->right;
-    fprintf(f, ", ");
-    if (!strcmp(b->cname, "memcpy")) {
-        PrintAsAddr(f, params->left);
-    } else {
-        PrintExpr(f, params->left);
+    src = params->left;
+    params = params->right;
+    count = params->left;
+
+    /* special case: if copying from a function parameter,
+     * we need to set up an array (because parameters get passed
+     * in registers, not memory, in C++, but copying parameters
+     * from the stack is a spin idiom
+     */
+    if (ismemcpy && src->kind == AST_ADDROF && (parmNum = funcParameterNum(curfunc, src->left)) >= 0) {
+        ERROR(src, "unable to deal with memcpy from function parameters");
     }
-    params = params->right;
+
+    fprintf(f, "%s(", b->cname);
+    PrintAsAddr(f, dst);
+    fprintf(f, ", ");
+    if (ismemcpy) {
+        PrintAsAddr(f, src);
+    } else {
+        PrintExpr(f, src);
+    }
 
     /* b->numparameters is overloaded to mean the size of memory we
        are working with
     */
     fprintf(f, ", %d*(", b->numparameters);
-    PrintExpr(f, params->left);
+    PrintExpr(f, count);
     fprintf(f, "))");
 }
 
@@ -914,4 +932,33 @@ PrintLookupArray(FILE *f, AST *array)
         }
     }
     fprintf(f, "\n};\n");
+}
+
+/*
+ * see if an AST refers to a parameter of this function, and return
+ * an index into the list if it is
+ * otherwise, return -1
+ */
+
+int
+funcParameterNum(Function *func, AST *var)
+{
+    AST *parm, *list;
+    int idx = 0;
+
+    if (var->kind != AST_IDENTIFIER)
+        return -1;
+    for (list = func->params; list; list = list->right) {
+        if (list->kind != AST_LISTHOLDER) {
+            ERROR(list, "bad internal parameter list");
+            return -1;
+        }
+        parm = list->left;
+        if (parm->kind != AST_IDENTIFIER)
+            continue;
+        if (!strcasecmp(var->d.string, parm->d.string))
+            return idx;
+        idx++;
+    }
+    return -1;
 }

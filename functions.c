@@ -475,3 +475,4 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         curfunc = NULL;
     }
 }
+

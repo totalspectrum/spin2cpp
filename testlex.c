@@ -1,6 +1,8 @@
 //
 // Microtests for lexical analyzer
 //
+#define TESTLEX
+
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -20,6 +22,7 @@ static void EXPECTEQfn(long x, long val, int line) {
         abort();
     }
 }
+
 
 #define EXPECTEQ(x, y) EXPECTEQfn((x), (y), __LINE__)
 

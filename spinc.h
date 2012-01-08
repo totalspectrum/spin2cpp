@@ -171,6 +171,9 @@ void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P);
 void EnterVars(SymbolTable *stab, AST *type, AST *varlist);
 
+/* checks to see whether an AST is a function parameter */
+int funcParameterNum(Function *func, AST *var);
+
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
