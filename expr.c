@@ -447,6 +447,47 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     fprintf(f, " << %d) & 0x%08x)", lo, mask); 
 }
 
+/*
+ * print a range use
+ */
+void
+PrintRangeUse(FILE *f, AST *src)
+{
+    int lo, hi;
+    int reverse = 0;
+    uint32_t mask;
+    int nbits;
+
+    if (src->left->kind != AST_HWREG) {
+        ERROR(src, "range not applied to hardware register");
+        return;
+    }
+    if (src->right->kind != AST_RANGE) {
+        ERROR(src, "internal error: expecting range");
+        return;
+    }
+    /* now handle the ordinary case */
+    hi = EvalConstExpr(src->right->left);
+    lo = EvalConstExpr(src->right->right);
+
+    if (hi < lo) {
+        int tmp;
+        reverse = 1;
+        tmp = lo; lo = hi; hi = tmp;
+        ERROR(src, "cannot currently handle reversed range");
+    }
+    nbits = (hi - lo + 1);
+
+    mask = ((1U<<nbits) - 1);
+
+
+    fprintf(f, "((");
+    PrintLHS(f, src->left, 1, 0);
+    fprintf(f, " >> %d)", lo); 
+    fprintf(f, " & 0x%x)", mask);
+}
+
+
 static void
 PrintStringChar(FILE *f, int c)
 {
@@ -623,7 +664,7 @@ PrintExpr(FILE *f, AST *expr)
         }
         break;
     case AST_RANGEREF:
-        ERROR(expr, "cannot handle range in expression yet");
+        PrintRangeUse(f, expr);
         break;
     case AST_LOOKUP:
         PrintMacroExpr(f, "Lookup__", expr->left, expr->right);

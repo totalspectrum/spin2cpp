@@ -313,6 +313,14 @@ repeatstmt:
       from = NewAST(AST_FROM, $2, to);
       $$ = NewAST(AST_COUNTFOR, NULL, from);
     }
+  | T_REPEAT expr T_EOLN
+    {
+      AST *from, *to, *step;
+      step = NewAST(AST_STEP, AstInteger(-1), AstYield());
+      to = NewAST(AST_TO, AstInteger(1), step);
+      from = NewAST(AST_FROM, $2, to);
+      $$ = NewAST(AST_COUNTFOR, NULL, from);
+    }
 
 ;
 

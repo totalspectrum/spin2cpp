@@ -1,8 +1,13 @@
-default: demo.elf
+default: hello.elf fibo.elf
 
-demo.elf: Hello.spin FullDuplexSerial.spin
+hello.elf: Hello.spin FullDuplexSerial.spin
 	../spin2cpp -main Hello.spin
-	propeller-elf-gcc -o demo.elf -Os Hello.cpp FullDuplexSerial.cpp -s
+	propeller-elf-gcc -o hello.elf -O Hello.cpp FullDuplexSerial.cpp -s
+
+fibo.elf: Fibo.spin FullDuplexSerial.spin
+	../spin2cpp -main Fibo.spin
+	propeller-elf-gcc -o fibo.elf -O Fibo.cpp FullDuplexSerial.cpp -s
+
 
 clean:
-	rm -f *.cpp *.h demo.elf
+	rm -f *.cpp *.h *.elf 
