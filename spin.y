@@ -442,7 +442,7 @@ identdecl:
 expr:
   integer
   | string
-  | T_STRINGPTR '(' string ')'
+  | T_STRINGPTR '(' exprlist ')'
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
   | '@' lhs

@@ -448,20 +448,54 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
 }
 
 static void
+PrintStringChar(FILE *f, int c)
+{
+    if (isprint(c) && c != '"') {
+        fprintf(f, "%c", c);
+    } else if (c == 10) {
+        fprintf(f, "\\n");
+    } else if (c == 13) {
+        fprintf(f, "\\r");
+    } else {
+        fprintf(f, "\\%03o", c);
+    }
+}
+
+static void
+PrintStringList(FILE *f, AST *ast)
+{
+    int c;
+    const char *s;
+    AST *elem;
+    fprintf(f, "\"");
+    while (ast) {
+        elem = ast->left;
+        if (!elem) {
+            ERROR(ast, "internal error in string list");
+            break;
+        }
+        if (elem->kind == AST_STRING) {
+            s = elem->d.string;
+            while (s && *s) {
+                c = *s++;
+                PrintStringChar(f, c);
+            }
+        } else {
+            c = EvalConstExpr(elem);
+            PrintStringChar(f, c);
+        }
+        ast = ast->right;
+    }
+    fprintf(f, "\"");
+}
+
+static void
 PrintStringLiteral(FILE *f, const char *s)
 {
     int c;
     fprintf(f, "\"");
     while ((c = *s++) != 0) {
-        if (isprint(c) && c != '"') {
-            fprintf(f, "%c", c);
-        } else if (c == 10) {
-            fprintf(f, "\\n");
-        } else if (c == 13) {
-            fprintf(f, "\\r");
-        } else {
-            fprintf(f, "\\%03o", c);
-        }
+        PrintStringChar(f, c);
     }
     fprintf(f, "\"");
 }
@@ -534,7 +568,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_STRINGPTR:
         fprintf(f, "(int32_t)");
-        PrintStringLiteral(f, expr->left->d.string);
+        PrintStringList(f, expr->left);
         break;
     case AST_ADDROF:
         fprintf(f, "(int32_t)(&");
