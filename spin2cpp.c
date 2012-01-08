@@ -410,9 +410,10 @@ init()
 static void
 Usage(void)
 {
+    fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
     fprintf(stderr, "Usage: %s [-main] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, " -main:    include C++ main() function\n");
+    fprintf(stderr, "  -main:    include C++ main() function\n");
     exit(2);
 }
 

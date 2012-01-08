@@ -533,6 +533,7 @@ PrintExpr(FILE *f, AST *expr)
         }
         break;
     case AST_STRINGPTR:
+        fprintf(f, "(int32_t)");
         PrintStringLiteral(f, expr->left->d.string);
         break;
     case AST_ADDROF:
