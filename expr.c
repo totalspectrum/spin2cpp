@@ -532,6 +532,9 @@ PrintExpr(FILE *f, AST *expr)
             fprintf(f, "%d", c);
         }
         break;
+    case AST_STRINGPTR:
+        PrintStringLiteral(f, expr->left->d.string);
+        break;
     case AST_ADDROF:
         fprintf(f, "(int32_t)(&");
         PrintLHS(f, expr->left, 0, 0);
@@ -835,8 +838,20 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
      * in registers, not memory, in C++, but copying parameters
      * from the stack is a spin idiom
      */
-    if (ismemcpy && src->kind == AST_ADDROF && (parmNum = funcParameterNum(curfunc, src->left)) >= 0) {
-        ERROR(src, "unable to deal with memcpy from function parameters");
+    if (ismemcpy && src->kind == AST_ADDROF && (parmNum = funcParameterNum(curfunc, src->left)) >= 0)
+    {
+        AST *arrayref;
+        AST *v;
+        AST *arrayident = AstTempVariable("_param_");
+        AddSymbol(&curfunc->localsyms, arrayident->d.string, SYM_NAME, NULL);
+        fprintf(f, "int32_t %s[] = { ", arrayident->d.string);
+        for (v = curfunc->params; v; v = v->right) {
+            PrintExpr(f, v->left);
+            if (v->right) fprintf(f, ", ");
+        }
+        fprintf(f, " }; ");
+        arrayref = NewAST(AST_ARRAYREF, arrayident, AstInteger(parmNum));
+        src = NewAST(AST_ADDROF, arrayref, NULL);
     }
 
     fprintf(f, "%s(", b->cname);

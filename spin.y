@@ -433,6 +433,8 @@ identdecl:
 expr:
   integer
   | string
+  | T_STRINGPTR '(' string ')'
+    { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
   | '@' lhs
     { $$ = NewAST(AST_ADDROF, $2, NULL); }

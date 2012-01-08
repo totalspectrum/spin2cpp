@@ -27,13 +27,6 @@ yylex(YYSTYPE *lvalp)
 
 const char *gl_progname = "spintoc";
 
-static void
-Usage(void)
-{
-    fprintf(stderr, "Usage: %s file.spin\n", gl_progname);
-    exit(2);
-}
-
 ParserState *
 NewParserState(const char *name)
 {
@@ -290,7 +283,7 @@ PrintCppFile(FILE *f, ParserState *parse)
  * parse a file
  */
 static ParserState *
-parseFile(const char *name)
+parseFile(const char *name, int printMain)
 {
     FILE *f;
     ParserState *P, *save;
@@ -349,6 +342,24 @@ parseFile(const char *name)
         exit(1);
     }
     PrintCppFile(f, P);
+    if (printMain) {
+        Function *defaultMethod = P->functions;
+        if (defaultMethod == NULL) {
+            ERROR(NULL, "unable to find default method for %s", P->classname);
+            goto done;
+        }
+        if (defaultMethod->params) {
+            ERROR(NULL, "default method of %s expects parameters", P->classname);
+            goto done;
+        }
+        fprintf(f, "\n");
+        fprintf(f, "%s MainObj__;\n\n", P->classname);
+        fprintf(f, "int main() {\n");
+        fprintf(f, "  return MainObj__.%s();\n", defaultMethod->name);
+        fprintf(f, "}\n");
+    }
+
+done:
     fclose(f);
 
     if (gl_errors > 0) {
@@ -365,7 +376,7 @@ NewObject(AST *identifier, AST *string)
     AST *ast;
 
     ast = NewAST(AST_OBJECT, identifier, NULL);
-    ast->d.ptr = parseFile(string->d.string);
+    ast->d.ptr = parseFile(string->d.string, 0);
     return ast;
 }
 
@@ -396,9 +407,19 @@ init()
     initLexer();
 }
 
+static void
+Usage(void)
+{
+    fprintf(stderr, "Usage: %s [-main] file.spin\n", gl_progname);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, " -main:    include C++ main() function\n");
+    exit(2);
+}
+
 int
 main(int argc, char **argv)
 {
+    int outputMain = 0;
     init();
 
     allparse = NULL;
@@ -410,13 +431,20 @@ main(int argc, char **argv)
         gl_progname = argv[0];
         argv++; --argc;
     }
-    if (argv[0] && !strcmp(argv[0], "-y")) {
-        yydebug = 1;
-        argv++; --argc;
+    while (argv[0] && argv[0][0] == '-') {
+        if (!strcmp(argv[0], "-y")) {
+            yydebug = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "-m", 2)) {
+            outputMain = 1;
+            argv++; --argc;
+        } else {
+            Usage();
+        }
     }
     if (argv[0] == NULL) {
         Usage();
     }
-    parseFile(argv[0]);
+    parseFile(argv[0], outputMain);
     return 0;
 }
