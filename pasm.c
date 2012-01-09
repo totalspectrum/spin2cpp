@@ -218,7 +218,6 @@ align(unsigned pc, int size)
 void
 EnterLabel(ParserState *P, const char *name, long offset, long asmpc, AST *ltype)
 {
-    Symbol *sym;
     Label *labelref;
 
     labelref = calloc(1, sizeof(*labelref));
@@ -229,7 +228,7 @@ EnterLabel(ParserState *P, const char *name, long offset, long asmpc, AST *ltype
     labelref->offset = offset;
     labelref->asmval = asmpc;
     labelref->type = ltype;
-    sym = AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
+    AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
 }
 
 /*

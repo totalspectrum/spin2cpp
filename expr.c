@@ -425,6 +425,8 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         int tmp;
         reverse = 1;
         tmp = lo; lo = hi; hi = tmp;
+    }
+    if (reverse) {
         ERROR(dst, "cannot currently handle reversed range");
     }
     nbits = (hi - lo + 1);
@@ -474,6 +476,8 @@ PrintRangeUse(FILE *f, AST *src)
         int tmp;
         reverse = 1;
         tmp = lo; lo = hi; hi = tmp;
+    }
+    if (reverse) {
         ERROR(src, "cannot currently handle reversed range");
     }
     nbits = (hi - lo + 1);

@@ -326,7 +326,7 @@ parseFile(const char *name, int printMain)
     }
 
     /* print out the header file */
-    fname = malloc(strlen(P->basename + 8));
+    fname = malloc(strlen(P->basename) + 8);
     sprintf(fname, "%s.h", P->basename);
     f = fopen(fname, "w");
     if (!f) {
