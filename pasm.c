@@ -40,10 +40,10 @@ outputDataList(FILE *f, int size, AST *ast)
 
     while (ast) {
         if (ast->left->kind == AST_ARRAYDECL) {
-            origval = EvalConstExpr(ast->left->left);
-            reps = EvalConstExpr(ast->left->right);
+            origval = EvalPasmExpr(ast->left->left);
+            reps = EvalPasmExpr(ast->left->right);
         } else {
-            origval = EvalConstExpr(ast->left);
+            origval = EvalPasmExpr(ast->left);
             reps = 1;
         }
         while (reps > 0) {
@@ -264,62 +264,65 @@ replaceHeres(AST *ast, uint32_t asmpc)
 /*
  * declare labels for a data block
  */
+
+#define ALIGNPC(size)  do { inc = size; asmpc = align(asmpc, inc); datoff = align(datoff, inc); } while (0)
+#define INCPC(size)  do { inc = size; asmpc += inc; datoff += inc; } while (0)
+
 void
 DeclareLabels(ParserState *P)
 {
-    unsigned pc = 0;
-    unsigned asmbase = 0;
     unsigned asmpc = 0;
-    unsigned offset;
+    unsigned datoff = 0;
+    unsigned inc = 0;
+    unsigned delta;
+
     AST *ast = NULL;
     AST *pendingLabels = NULL;
 
     for (ast = P->datblock; ast; ast = ast->right) {
-        asmpc = pc - asmbase;
         switch (ast->kind) {
         case AST_BYTELIST:
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_byte);
-            pc += dataListLen(ast->left, 1);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
+            INCPC(dataListLen(ast->left, 1));
             break;
         case AST_WORDLIST:
-            pc = align(pc, 2);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_word);
-            pc += dataListLen(ast->left, 2);
+            ALIGNPC(2);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_word);
+            INCPC(dataListLen(ast->left, 2));
             break;
         case AST_LONGLIST:
-            pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
-            pc += dataListLen(ast->left, 4);
+            ALIGNPC(4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            INCPC(dataListLen(ast->left, 4));
             break;
         case AST_INSTRHOLDER:
-            pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
+            ALIGNPC(4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
-            pc += 4;
+            INCPC(4);
             break;
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
             if (ast->left) {
-                offset = EvalPasmExpr(ast->left);
+                asmpc = EvalPasmExpr(ast->left);
             } else {
-                offset = 0;
+                asmpc = 0;
             }
-            asmbase = pc + offset;
             break;
         case AST_RES:
-            pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
-            offset = EvalPasmExpr(ast->left);
-            pc += 4*offset;
+            asmpc = align(asmpc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            delta = EvalPasmExpr(ast->left);
+            asmpc += 4*delta;
             break;
         case AST_FIT:
-            pc = align(pc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, pc, asmpc, ast_type_long);
+            asmpc = align(asmpc, 4);
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             if (ast->left) {
                 int32_t max = EvalConstExpr(ast->left);
-                int32_t cur = (pc - asmbase) / 4;
+                int32_t cur = (asmpc) / 4;
                 if ( cur > max ) {
                     ERROR(ast, "fit %d failed: pc is %d", max, cur);
                 }
