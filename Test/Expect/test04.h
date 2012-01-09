@@ -1,5 +1,5 @@
-#ifndef test04_class_defined__
-#define test04_class_defined__
+#ifndef test04_Class_Defined__
+#define test04_Class_Defined__
 
 #include <stdint.h>
 

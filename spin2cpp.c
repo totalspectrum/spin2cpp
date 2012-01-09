@@ -157,8 +157,8 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     ParserState *objstate;
 
     /* things we always need */
-    fprintf(f, "#ifndef %s_class_defined__\n", parse->classname);
-    fprintf(f, "#define %s_class_defined__\n\n", parse->classname);
+    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
+    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
 
     fprintf(f, "#include <stdint.h>\n");
 
