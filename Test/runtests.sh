@@ -1,6 +1,7 @@
 #!/bin/sh
 PROG=../spin2cpp
-endmsg="ok"
+ok="ok"
+endmsg=$ok
 
 for i in test*.spin
 do
@@ -15,4 +16,10 @@ do
       endmsg="TEST FAILURES"
   fi
 done
+
+if [ "x$endmsg" = "x$ok" ]
+then
+  rm -f *.h *.cpp
+fi
+
 echo $endmsg

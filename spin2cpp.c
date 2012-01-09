@@ -79,20 +79,26 @@ DeclareConstants(void)
     for (upper = current->conblock; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
-            switch (ast->kind) {
-            case AST_ENUMSET:
-                default_val = EvalConstExpr(ast->left);
-                break;
-            case AST_IDENTIFIER:
-                EnterConstant(ast->d.string, default_val);
-                default_val++;
-                break;
-            case AST_ASSIGN:
-                EnterConstant(ast->left->d.string, EvalConstExpr(ast->right));
-                break;
-            default:
-                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
-                break;
+            while (ast) {
+                switch (ast->kind) {
+                case AST_ENUMSET:
+                    default_val = EvalConstExpr(ast->left);
+                    ast = ast->right;
+                    break;
+                case AST_IDENTIFIER:
+                    EnterConstant(ast->d.string, default_val);
+                    default_val++;
+                    ast = ast->right;
+                    break;
+                case AST_ASSIGN:
+                    EnterConstant(ast->left->d.string, EvalConstExpr(ast->right));
+                    ast = NULL;
+                    break;
+                default:
+                    ERROR(ast, "Internal error: bad AST value %d", ast->kind);
+                    ast = NULL;
+                    break;
+                }
             } 
         } else {
             ERROR(upper, "Expected list in constant, found %d instead", upper->kind);
@@ -188,16 +194,21 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     fprintf(f, "class %s {\npublic:\n", parse->classname);
     for (upper = parse->conblock; upper; upper = upper->right) {
         ast = upper->left;
-        switch (ast->kind) {
-        case AST_IDENTIFIER:
-            PrintConstantDecl(f, ast);
-            break;
-        case AST_ASSIGN:
-            PrintConstantDecl(f, ast->left);
-            break;
-        default:
-            /* do nothing */
-            break;
+        while (ast) {
+            switch (ast->kind) {
+            case AST_IDENTIFIER:
+                PrintConstantDecl(f, ast);
+                ast = ast->right;
+                break;
+            case AST_ASSIGN:
+                PrintConstantDecl(f, ast->left);
+                ast = NULL;
+                break;
+            default:
+                /* do nothing */
+                ast = ast->right;
+                break;
+            }
         }
     }
     /* object references */
