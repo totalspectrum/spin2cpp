@@ -685,11 +685,11 @@ instr[] = {
     { "clkset", 0x0c400000, DST_OPERAND_ONLY },
     { "cmp",    0x84000000, TWO_OPERANDS },
     { "cmps",   0xc0000000, TWO_OPERANDS },
+    { "cmpsub", 0xe0800000, TWO_OPERANDS },
     { "cmpsx",  0xc4000000, TWO_OPERANDS },
     { "cmpx",   0xcc000000, TWO_OPERANDS },
-    { "cmpsub", 0xe0000000, TWO_OPERANDS },
 
-    { "cogid",  0x0c400001, DST_OPERAND_ONLY },
+    { "cogid",   0x0cc00001, DST_OPERAND_ONLY },
     { "coginit", 0x0c400002, DST_OPERAND_ONLY },
     { "cogstop", 0x0c400003, DST_OPERAND_ONLY },
 
@@ -699,7 +699,7 @@ instr[] = {
     { "jmpret", 0x5c800000, TWO_OPERANDS },
 
     { "lockclr",0x0c400007, DST_OPERAND_ONLY },
-    { "locknew",0x0c400004, DST_OPERAND_ONLY },
+    { "locknew",0x0cc00004, DST_OPERAND_ONLY },
     { "lockret",0x0c400005, DST_OPERAND_ONLY },
     { "lockset",0x0c400006, DST_OPERAND_ONLY },
 
