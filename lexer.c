@@ -600,6 +600,7 @@ struct reservedword {
 extern void defaultBuiltin(FILE *, Builtin *, AST *);
 extern void defaultVariable(FILE *, Builtin *, AST *);
 extern void memBuiltin(FILE *, Builtin *, AST *);
+extern void memFillBuiltin(FILE *, Builtin *, AST *);
 extern void str1Builtin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
@@ -614,10 +615,10 @@ Builtin builtinfuncs[] = {
     { "waitcnt", 1, defaultBuiltin, "waitcnt" },
     { "reboot", 0, defaultBuiltin, "abort" },
 
-    { "longfill", 4, memBuiltin, "memset" },
-    { "longmove", 4, memBuiltin, "memcpy" },
-    { "wordfill", 2, memBuiltin, "memset" },
-    { "wordmove", 2, memBuiltin, "memcpy" },
+    { "longfill", 4, memFillBuiltin, "memset" },
+    { "longmove", 4, memBuiltin, "memmove" },
+    { "wordfill", 2, memFillBuiltin, "memset" },
+    { "wordmove", 2, memBuiltin, "memmove" },
     { "bytefill", 1, memBuiltin, "memset" },
     { "bytemove", 1, memBuiltin, "memcpy" },
 };

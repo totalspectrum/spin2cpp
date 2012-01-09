@@ -951,11 +951,11 @@ defaultVariable(FILE *f, Builtin *b, AST *params)
     fprintf(f, "%s", b->cname);
 }
 
-/* code to do memory fills */
+/* code to do memory copies; also does 1 byte fills */
 void
 memBuiltin(FILE *f, Builtin *b, AST *params)
 {
-    int ismemcpy = !strcmp(b->cname, "memcpy");
+    int ismemcpy = !strcmp(b->cname, "memcpy") || !strcmp(b->cname, "memmove");
     int parmNum = -1;
     AST *dst, *src, *count;
 
@@ -1006,6 +1006,45 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ", %d*(", b->numparameters);
     PrintExpr(f, count);
     fprintf(f, "))");
+}
+
+/* code to do 2 and 4 byte memory fills */
+void
+memFillBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    const char *idxname;
+    const char *valname;
+    const char *typename;
+    const char *ptrname;
+    AST *dst, *src, *count;
+
+    if (AstListLen(params) != 3) {
+        ERROR(params, "incorrect parameters to %s", b->name);
+        return;
+    }
+
+    dst = params->left;
+    params = params->right;
+    src = params->left;
+    params = params->right;
+    count = params->left;
+
+    idxname = NewTemporaryVariable("_fill_");
+    valname = NewTemporaryVariable("_val_");
+    ptrname = NewTemporaryVariable("_ptr_");
+    /* b->numparameters is overloaded to mean the size of memory we
+       are working with
+    */
+    typename = (b->numparameters == 2) ? "uint16_t" : "int32_t";
+    fprintf(f, "{ int32_t %s; ", idxname);
+    fprintf(f, "%s *%s = (%s *)", typename, ptrname, typename);
+    PrintAsAddr(f, dst);
+    fprintf(f, "; %s %s = ", typename, valname);
+    PrintExpr(f, src);
+    fprintf(f, "; for (%s = ", idxname);
+    PrintExpr(f, count);
+    fprintf(f, "; %s > 0; --%s) { ", idxname, idxname);
+    fprintf(f, " *%s++ = %s; } }", ptrname, valname);
 }
 
 /* code to do strsize */
