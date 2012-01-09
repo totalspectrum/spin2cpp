@@ -612,6 +612,7 @@ Builtin builtinfuncs[] = {
     { "lockret", 1, defaultBuiltin, "lockret" },
     { "strsize", 1, str1Builtin, "strlen" },
     { "waitcnt", 1, defaultBuiltin, "waitcnt" },
+    { "reboot", 0, defaultBuiltin, "abort" },
 
     { "longfill", 4, memBuiltin, "memset" },
     { "longmove", 4, memBuiltin, "memcpy" },
