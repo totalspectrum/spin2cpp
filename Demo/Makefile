@@ -1,12 +1,15 @@
+CC = propeller-elf-gcc
+CFLAGS = -O -mfcache
+
 default: hello.elf fibo.elf
 
 hello.elf: Hello.spin FullDuplexSerial.spin
 	../spin2cpp -main Hello.spin
-	propeller-elf-gcc -o hello.elf -O Hello.cpp FullDuplexSerial.cpp -s
+	$(CC) $(CFLAGS) -o hello.elf Hello.cpp FullDuplexSerial.cpp -s
 
 fibo.elf: Fibo.spin FullDuplexSerial.spin
 	../spin2cpp -main Fibo.spin
-	propeller-elf-gcc -o fibo.elf -O Fibo.cpp FullDuplexSerial.cpp -s
+	$(CC) $(CFLAGS) -o fibo.elf Fibo.cpp FullDuplexSerial.cpp -s
 
 
 clean:
