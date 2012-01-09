@@ -247,7 +247,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        addchar(c, &place, &space, &len);
+        addchar(tolower(c), &place, &space, &len);
         c = lexgetc(L);
     }
     addchar('\0', &place, &space, &len);

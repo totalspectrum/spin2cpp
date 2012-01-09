@@ -1,12 +1,12 @@
 #include <propeller.h>
 #include "test46.h"
 
-int32_t test46::fun(int32_t X, int32_t Y)
+int32_t test46::fun(int32_t x, int32_t y)
 {
   int32_t result = 0;
-  switch (X) {
+  switch (x) {
     case 0:
-        switch (Y) {
+        switch (y) {
           case 0:
             _OUTA ^= 0x1;
             break;

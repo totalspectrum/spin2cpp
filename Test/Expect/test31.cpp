@@ -1,10 +1,10 @@
 #include <propeller.h>
 #include "test31.h"
 
-int32_t test31::fun(int32_t Y)
+int32_t test31::fun(int32_t y)
 {
   int32_t result = 0;
-  switch ((X + Y)) {
+  switch ((x + y)) {
     case 10:
       _OUTA ^= 0x1;
       break;
@@ -16,7 +16,7 @@ int32_t test31::fun(int32_t Y)
       _OUTA ^= 0x8;
       break;
   }
-  X = (X + 5);
+  x = (x + 5);
   return result;
 }
 
