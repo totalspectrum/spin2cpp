@@ -92,7 +92,7 @@ AstYield(void)
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
-%left '@' '~' T_DOUBLETILDE T_INCREMENT T_DECREMENT
+%left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT
 %left T_CONSTANT
 
 %%
@@ -194,6 +194,8 @@ nonemptystmt:
 stmt:
   nonemptystmt
   | T_EOLN
+    { $$ = NULL; }
+  | error T_EOLN
     { $$ = NULL; }
   ;
 
@@ -345,6 +347,8 @@ conline:
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | T_EOLN
     { $$ = NULL; }
+  | error T_EOLN
+    { $$ = NULL; }
   ;
 
 enumlist:
@@ -375,6 +379,8 @@ datline:
 
 basedatline:
   T_EOLN
+    { $$ = NULL; }
+  | error T_EOLN
     { $$ = NULL; }
   | T_BYTE exprlist T_EOLN
     { $$ = NewAST(AST_BYTELIST, $2, NULL); }
@@ -410,6 +416,8 @@ objblock:
 objline:
     T_EOLN
     { $$ = NULL; }
+  | error  T_EOLN
+    { $$ = NULL; }
   | identifier ':' string
     { $$ = NewObject($1, $3); }
 ;
@@ -429,6 +437,8 @@ varline:
   | T_LONG identlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
   | T_EOLN
+    { $$ = NULL; }
+  | error T_EOLN
     { $$ = NULL; }
   ;
 
@@ -576,6 +586,10 @@ expr:
     { $$ = AstOperator(T_INCREMENT, NULL, $2); }
   | T_DECREMENT lhs
     { $$ = AstOperator(T_DECREMENT, NULL, $2); }
+  | lhs '?'
+    { $$ = AstOperator('?', $1, NULL); current->needsStdlib = 1; }
+  | '?' lhs
+    { $$ = AstOperator('?', NULL, $1); current->needsStdlib = 1; }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE

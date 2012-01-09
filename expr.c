@@ -215,6 +215,9 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintExpr(f, right);
         fprintf(f, ")");
         break;
+    case '?':
+        fprintf(f, "rand()");
+        break;
     case '+':
     case '-':
     case '/':
