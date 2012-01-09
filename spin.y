@@ -207,6 +207,9 @@ stmtblock:
 ifstmt:
   T_IF expr T_EOLN elseblock
     { $$ = NewAST(AST_IF, $2, $4); }
+  | T_IFNOT expr T_EOLN elseblock
+    { $$ = NewAST(AST_IF, AstOperator(T_NOT, NULL, $2), $4); }
+;
 
 elseblock:
   stmtblock
@@ -214,7 +217,9 @@ elseblock:
   | stmtblock T_ELSE T_EOLN stmtblock
     { $$ = NewAST(AST_THENELSE, $1, $4); }
   | stmtblock T_ELSEIF expr T_EOLN elseblock
-  { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, $3, $5), NULL)); }
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, $3, $5), NULL)); }
+  | stmtblock T_ELSEIFNOT expr T_EOLN elseblock
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, AstOperator(T_NOT, NULL, $3), $5), NULL)); }
   ;
 
 casestmt:
