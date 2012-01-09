@@ -11,6 +11,15 @@
 #include <stdint.h>
 #include "spinc.h"
 
+static inline int
+safe_isalpha(unsigned int x) {
+    return (x < 255) ? isalpha(x) : 0;
+}
+static inline int
+safe_isdigit(unsigned int x) {
+    return (x < 255) ? isdigit(x) : 0;
+}
+
 SymbolTable reservedWords;
 SymbolTable pasmWords;
 
@@ -164,7 +173,7 @@ lexungetc(LexStream *L, int c)
 int
 isIdentifierStart(int c)
 {
-    if (isalpha(c))
+    if (safe_isalpha(c))
         return 1;
     if (c == '_')
         return 1;
@@ -174,7 +183,7 @@ isIdentifierStart(int c)
 int
 isIdentifierChar(int c)
 {
-    return isIdentifierStart(c) || isdigit(c);
+    return isIdentifierStart(c) || safe_isdigit(c);
 }
 
 /*
@@ -432,7 +441,7 @@ getToken(LexStream *L, AST **ast_ptr)
 
     c = skipSpace(L);
 
-    if (isdigit(c)) {
+    if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
