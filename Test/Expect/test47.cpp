@@ -10,7 +10,7 @@ int32_t test47::test(int32_t c)
           case 9:
             do {
               _OUTA = (cols++);
-            } while ((cols & 7));
+            } while (cols & 7);
             break;
           case 13:
             _OUTA = c;

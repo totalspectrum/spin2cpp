@@ -386,7 +386,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         break;
     case AST_IF:
         fprintf(f, "%*cif (", indent, ' ');
-        PrintExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left);
         fprintf(f, ") {\n");
         ast = ast->right;
         if (ast->kind != AST_THENELSE) {
@@ -402,7 +402,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         break;
     case AST_WHILE:
         fprintf(f, "%*cwhile (", indent, ' ');
-        PrintExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left);
         fprintf(f, ") {\n");
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}\n", indent, ' ');
@@ -411,7 +411,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, "%*cdo {\n", indent, ' ');
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c} while (", indent, ' ');
-        PrintExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left);
         fprintf(f, ");\n");
         break;
     case AST_COUNTFOR:

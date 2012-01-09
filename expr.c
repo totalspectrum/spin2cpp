@@ -592,6 +592,31 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
     }
 }
 
+static int
+isBooleanOperator(AST *expr)
+{
+    int x;
+
+    if (expr->kind != AST_OPERATOR)
+        return 0;
+
+    x = expr->d.ival;
+    switch (x) {
+    case T_NOT:
+    case T_AND:
+    case T_OR:
+    case T_LE:
+    case '<':
+    case T_GE:
+    case '>':
+    case T_EQ:
+    case T_NE:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -630,7 +655,7 @@ PrintExpr(FILE *f, AST *expr)
         PrintLHS(f, expr, 0, 0);
         break;
     case AST_OPERATOR:
-        fprintf(f, "(");
+        fprintf(f, "%s(", isBooleanOperator(expr) ? "-" : "");
         PrintOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
@@ -697,6 +722,35 @@ PrintExpr(FILE *f, AST *expr)
     default:
         ERROR(expr, "Internal error, bad expression");
         break;
+    }
+}
+
+void
+PrintBoolExpr(FILE *f, AST *expr)
+{
+    int op;
+    if (expr->kind == AST_OPERATOR) {
+        op = expr->d.ival;
+        switch (op) {
+        case T_NOT:
+            fprintf(f, "!(");
+            PrintBoolExpr(f, expr->right);
+            fprintf(f, ")");
+            break;
+        case T_OR:
+        case T_AND:
+            fprintf(f, "(");
+            PrintBoolExpr(f, expr->left);
+            fprintf(f, "%s", op == T_OR ? ") || (" : ") && (");
+            PrintBoolExpr(f, expr->right);
+            fprintf(f, ")");
+            break;
+        default:
+            PrintOperator(f, op, expr->left, expr->right);
+            break;
+        }
+    } else {
+        PrintExpr(f, expr);
     }
 }
 

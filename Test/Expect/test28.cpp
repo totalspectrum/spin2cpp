@@ -5,7 +5,7 @@ int32_t test28::lock(void)
 {
   int32_t result = 0;
   x = 0;
-  while ((!(x > 9))) {
+  while (!(x > 9)) {
     lockret(x);
     (x++);
   }
@@ -13,7 +13,7 @@ int32_t test28::lock(void)
   do {
     lockret(x);
     (x++);
-  } while ((x < 10));
+  } while (x < 10);
   return result;
 }
 

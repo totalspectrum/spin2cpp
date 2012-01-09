@@ -134,6 +134,7 @@ extern Function *curfunc;
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
+void PrintBoolExpr(FILE *f, AST *expr);
 void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
