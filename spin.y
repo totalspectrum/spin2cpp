@@ -115,6 +115,10 @@ topelement:
   { DeclareFunction(1, $2, $3); }
   | T_PRI funcdef stmtlist
   { DeclareFunction(0, $2, $3); }
+  | T_PUB funcdef
+  { DeclareFunction(1, $2, NULL); }
+  | T_PRI funcdef
+  { DeclareFunction(0, $2, NULL); }
 ;
 
 funcdef:
