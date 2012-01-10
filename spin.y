@@ -532,6 +532,12 @@ expr:
     { $$ = AstAssign('/', $1, $4); }
   | expr '*' '=' expr %prec T_ASSIGN
     { $$ = AstAssign('*', $1, $4); }
+  | expr '&' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('&', $1, $4); }
+  | expr '|' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('|', $1, $4); }
+  | expr '^' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('^', $1, $4); }
   | expr T_MODULUS '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_MODULUS, $1, $4); }
   | expr T_HIGHMULT '=' expr %prec T_ASSIGN
