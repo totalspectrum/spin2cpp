@@ -298,17 +298,28 @@ PrintCppFile(FILE *f, ParserState *parse)
 
 /*
  * parse a file
+ * This is the main entry point for the compiler
+ * "name" is the file name; if it has no .spin suffix
+ * we'll try it with one
+ * "printMain" is nonzero if we should emit a main() function
+ * that calls the first method in the object
  */
-static ParserState *
+ParserState *
 parseFile(const char *name, int printMain)
 {
-    FILE *f;
+    FILE *f = NULL;
     ParserState *P, *save;
-    char *fname;
+    char *fname = NULL;
 
+    fname = malloc(strlen(name) + 8);
     f = fopen(name, "r");
     if (!f) {
+        sprintf(fname, "%s.spin", name);
+        f = fopen(fname, "r");
+    }
+    if (!f) {
         perror(name);
+        free(fname);
         exit(1);
     }
     save = current;
@@ -323,6 +334,7 @@ parseFile(const char *name, int printMain)
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
+        free(fname);
         exit(1);
     }
 
@@ -333,15 +345,16 @@ parseFile(const char *name, int printMain)
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
+        free(fname);
         exit(1);
     }
 
     /* print out the header file */
-    fname = malloc(strlen(P->basename) + 8);
     sprintf(fname, "%s.h", P->basename);
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
+        free(fname);
         exit(1);
     }
     PrintHeaderFile(f, P);
@@ -349,6 +362,7 @@ parseFile(const char *name, int printMain)
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
+        free(fname);
         exit(1);
     }
 
@@ -356,6 +370,7 @@ parseFile(const char *name, int printMain)
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
+        free(fname);
         exit(1);
     }
     PrintCppFile(f, P);
@@ -377,7 +392,8 @@ parseFile(const char *name, int printMain)
     }
 
 done:
-    fclose(f);
+    if (f) fclose(f);
+    if (fname) free(fname);
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);

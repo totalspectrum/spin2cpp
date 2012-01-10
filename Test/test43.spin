@@ -7,7 +7,7 @@ CON
   lastrow = screensize - cols
 
 OBJ
-  a: "test01.spin"
+  a: "test01"
 
 PUB getx
   return a#x
