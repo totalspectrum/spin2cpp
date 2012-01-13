@@ -322,9 +322,11 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     sym = FindSymbol(&reservedWords, place);
     if (sym != NULL) {
-        if (sym->type == SYM_BUILTIN || sym->type == SYM_CONSTANT)
+        if (sym->type == SYM_BUILTIN || sym->type == SYM_CONSTANT
+            || sym->type == SYM_FLOAT_CONSTANT)
+        {
             goto is_identifier;
-
+        }
         free(place);
         if (sym->type == SYM_RESERVED) {
             c = INTVAL(sym);
@@ -688,6 +690,7 @@ struct constants {
     { "PLL4X", SYM_CONSTANT, 0x00000100 },
     { "PLL8X", SYM_CONSTANT, 0x00000200 },
     { "PLL16X", SYM_CONSTANT, 0x00000400 },
+    { "PI", SYM_FLOAT_CONSTANT, 0x40490fdb },
 };
 
 void

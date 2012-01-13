@@ -8,7 +8,7 @@ typedef enum symtype {
     SYM_UNKNOWN = 0,     /* unknown symbol */
     SYM_HW_REG,          /* hardware register */
     SYM_RESERVED,        /* reserved word */
-    SYM_CONSTANT,        /* constant */
+    SYM_CONSTANT,        /* integer constant */
     SYM_VARIABLE,        /* member variable */
     SYM_INSTR,           /* PASM instruction */
     SYM_HWREG,           /* hardware register */
@@ -19,6 +19,7 @@ typedef enum symtype {
     SYM_NAME,            /* a plain identifier */
     SYM_OBJECT,          /* an object name */
     SYM_PARAMETER,       /* function parameter */
+    SYM_FLOAT_CONSTANT,  /* floating point constant */
 } Symtype;
 
 typedef struct symbol {

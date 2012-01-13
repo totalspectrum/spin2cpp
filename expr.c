@@ -88,6 +88,9 @@ PrintSymbol(FILE *f, Symbol *sym)
     case SYM_CONSTANT:
         fprintf(f, "%ld", (long)(intptr_t)sym->val);
         break;
+    case SYM_FLOAT_CONSTANT:
+        fprintf(f, "0x%lx", (long)(intptr_t)sym->val);
+        break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
             fprintf(f, "%s[%ld]", curfunc->parmarray, (long)(intptr_t)sym->val);
@@ -720,7 +723,7 @@ PrintExpr(FILE *f, AST *expr)
             return;
         }
         sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
-        if (!sym || sym->type != SYM_CONSTANT) {
+        if (!sym || (sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
             ERROR(expr, "%s is not a constant of object %s",
                   expr->right->d.string, objsym->name);
         }
@@ -920,6 +923,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             switch (sym->type) {
             case SYM_CONSTANT:
                 return intExpr((intptr_t)sym->val);
+            case SYM_FLOAT_CONSTANT:
+                return floatExpr(intAsFloat((intptr_t)sym->val));
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = sym->val;
