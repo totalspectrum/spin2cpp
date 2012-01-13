@@ -906,7 +906,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         return intExpr(expr->d.string[0]);
 
     case AST_FLOAT:
-        return floatExpr(expr->d.ival);
+        return floatExpr(intAsFloat(expr->d.ival));
 
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
@@ -1217,11 +1217,11 @@ ExprVal intExpr(int32_t x)
     return e;
 }
 
-ExprVal floatExpr(int32_t f)
+ExprVal floatExpr(float f)
 {
     ExprVal e;
     e.type = FLOAT_EXPR;
-    e.val = f;
+    e.val = floatAsInt(f);
     return e;
 }
 

@@ -486,6 +486,8 @@ getToken(LexStream *L, AST **ast_ptr)
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
+        if (c == T_FLOATNUM)
+            ast->kind = AST_FLOAT;
     } else if (c == '$') {
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 16, &ast->d.ival);

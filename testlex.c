@@ -67,7 +67,7 @@ testFloat(const char *str, float fval)
     c = lexgetc(&L);
     EXPECTEQ(c, T_EOF);
     assert(ast != NULL);
-    assert(ast->kind == AST_INTEGER);
+    assert(ast->kind == AST_FLOAT);
     EXPECTEQ(ast->d.ival, val);
     printf("passed\n");
 }
