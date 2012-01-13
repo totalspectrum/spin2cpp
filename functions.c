@@ -62,10 +62,70 @@ EnterVars(SymbolTable *stab, AST *curtype, AST *varlist)
                 break;
             }
         } else {
-            ERROR(lower, "Expected list in constant, found %d instead", lower->kind);
+            ERROR(lower, "Expected list of variables, found %d instead", lower->kind);
         }
     }
 }
+
+void
+EnterParameters(SymbolTable *stab, AST *curtype, AST *varlist)
+{
+    AST *lower;
+    AST *ast;
+    int paramnum = 0;
+
+    if (curtype != ast_type_long) {
+        ERROR(varlist, "bad type in parameter list");
+        return;
+    }
+    for (lower = varlist; lower; lower = lower->right) {
+        if (lower->kind == AST_LISTHOLDER) {
+            ast = lower->left;
+            switch (ast->kind) {
+            case AST_IDENTIFIER:
+                AddSymbol(stab, ast->d.string, SYM_PARAMETER, (void *)(intptr_t)paramnum);
+                paramnum++;
+                break;
+            default:
+                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
+                break;
+            }
+        } else {
+            ERROR(lower, "Expected list for parameters, found %d instead", lower->kind);
+        }
+    }
+}
+
+/*
+ * scan a function body for various special conditions
+ */
+static void
+ScanFunctionBody(Function *fdef, AST *body)
+{
+    AST *ast;
+    if (!body)
+        return;
+    switch(body->kind) {
+    case AST_ADDROF:
+        /* see if it's a parameter whose address is being taken */
+        ast = body->left;
+        if (ast->kind == AST_IDENTIFIER && fdef->parmarray == NULL) {
+            Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
+            if (sym && sym->type == SYM_PARAMETER) {
+                fdef->parmarray = NewTemporaryVariable("_parm_");
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    ScanFunctionBody(fdef, body->left);
+    ScanFunctionBody(fdef, body->right);
+}
+
+/*
+ * declare a function and create a Function structure for it
+ */
 
 void
 DeclareFunction(int is_public, AST *funcdef, AST *body)
@@ -99,11 +159,13 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-    EnterVars(&fdef->localsyms, ast_type_long, fdef->params);
+    EnterParameters(&fdef->localsyms, ast_type_long, fdef->params);
     EnterVars(&fdef->localsyms, ast_type_long, fdef->locals);
     EnterVariable(&fdef->localsyms, fdef->resultname, ast_type_long);
     fdef->body = body;
 
+    /* check for special conditions */
+    ScanFunctionBody(fdef, body);
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 }
 
@@ -206,9 +268,18 @@ PrintVarList(FILE *f, AST *typeast, AST *ast)
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
+    AST *v;
     fprintf(f, "  int32_t %s = 0;\n", func->resultname);
     if (func->locals) {
         PrintVarList(f, ast_type_long, func->locals);
+    }
+    if (func->parmarray) {
+        fprintf(f, "  int32_t %s[] = { ", func->parmarray);
+        for (v = func->params; v; v = v->right) {
+            fprintf(f, "%s", v->left->d.string);
+            if (v->right) fprintf(f, ", ");
+        }
+        fprintf(f, " };\n");
     }
 }
  

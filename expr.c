@@ -88,6 +88,13 @@ PrintSymbol(FILE *f, Symbol *sym)
     case SYM_CONSTANT:
         fprintf(f, "%ld", (long)(intptr_t)sym->val);
         break;
+    case SYM_PARAMETER:
+        if (curfunc && curfunc->parmarray) {
+            fprintf(f, "%s[%ld]", curfunc->parmarray, (long)(intptr_t)sym->val);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
+        break;              
     default:
         fprintf(f, "%s", sym->name);
         break;
@@ -956,7 +963,6 @@ void
 memBuiltin(FILE *f, Builtin *b, AST *params)
 {
     int ismemcpy = !strcmp(b->cname, "memcpy") || !strcmp(b->cname, "memmove");
-    int parmNum = -1;
     AST *dst, *src, *count;
 
     if (AstListLen(params) != 3) {
@@ -969,27 +975,6 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     src = params->left;
     params = params->right;
     count = params->left;
-
-    /* special case: if copying from a function parameter,
-     * we need to set up an array (because parameters get passed
-     * in registers, not memory, in C++, but copying parameters
-     * from the stack is a spin idiom
-     */
-    if (ismemcpy && src->kind == AST_ADDROF && (parmNum = funcParameterNum(curfunc, src->left)) >= 0)
-    {
-        AST *arrayref;
-        AST *v;
-        AST *arrayident = AstTempVariable("_param_");
-        AddSymbol(&curfunc->localsyms, arrayident->d.string, SYM_NAME, NULL);
-        fprintf(f, "int32_t %s[] = { ", arrayident->d.string);
-        for (v = curfunc->params; v; v = v->right) {
-            PrintExpr(f, v->left);
-            if (v->right) fprintf(f, ", ");
-        }
-        fprintf(f, " }; ");
-        arrayref = NewAST(AST_ARRAYREF, arrayident, AstInteger(parmNum));
-        src = NewAST(AST_ADDROF, arrayref, NULL);
-    }
 
     fprintf(f, "%s(", b->cname);
     PrintAsAddr(f, dst);

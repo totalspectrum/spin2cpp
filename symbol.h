@@ -18,6 +18,7 @@ typedef enum symtype {
     SYM_BUILTIN,         /* builtin symbol */
     SYM_NAME,            /* a plain identifier */
     SYM_OBJECT,          /* an object name */
+    SYM_PARAMETER,       /* function parameter */
 } Symtype;
 
 typedef struct symbol {
@@ -36,7 +37,7 @@ typedef struct symbol {
  */
 
 /* make this a power of two, please */
-#define SYMTABLE_HASH_SIZE 256
+#define SYMTABLE_HASH_SIZE 128
 
 typedef struct symtab {
     Symbol *hash[SYMTABLE_HASH_SIZE];

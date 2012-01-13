@@ -1,3 +1,7 @@
+''
+'' Fibonacci demo
+''
+
 CON
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
