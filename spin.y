@@ -612,7 +612,7 @@ expr:
   | lhs T_DOUBLETILDE
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
   | T_CONSTANT expr
-    { $$ = $2; }
+    { $$ = NewAST(AST_CONSTANT, $2, NULL); }
   | lookupexpr
   ;
 

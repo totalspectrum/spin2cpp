@@ -641,6 +641,9 @@ PrintExpr(FILE *f, AST *expr)
     case AST_INTEGER:
         fprintf(f, "%ld", (long)(int32_t)expr->d.ival);
         break;
+    case AST_FLOAT:
+        fprintf(f, "0x%lx", (long)(int32_t)expr->d.ival);
+        break;
     case AST_STRING:
         c = expr->d.string[0];
         if (isprint(c)) {
@@ -653,6 +656,9 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, "(int32_t)");
         PrintStringList(f, expr->left);
         break;
+    case AST_CONSTANT:
+        fprintf(f, "0x%x", EvalConstExpr(expr->left));
+        break;      
     case AST_ADDROF:
         fprintf(f, "(int32_t)(&");
         PrintLHS(f, expr->left, 0, 0);
@@ -910,6 +916,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
 
     case AST_FLOAT:
         return floatExpr(intAsFloat(expr->d.ival));
+
+    case AST_CONSTANT:
+        return EvalExpr(expr->left, flags, valid);
+        break;
 
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
