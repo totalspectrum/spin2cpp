@@ -46,6 +46,33 @@ testNumber(const char *str, uint32_t val)
 }
 
 static void
+testFloat(const char *str, float fval)
+{
+    AST *ast;
+    LexStream L;
+    int t;
+    int c;
+    uint32_t val;
+    union {
+        uint32_t i;
+        float f;
+    } v;
+    v.f = fval;
+    val = v.i;
+
+    printf("testing number[%s]...", str);
+    strToLex(&L, str);
+    t = getToken(&L, &ast);
+    EXPECTEQ(t, T_FLOATNUM);
+    c = lexgetc(&L);
+    EXPECTEQ(c, T_EOF);
+    assert(ast != NULL);
+    assert(ast->kind == AST_INTEGER);
+    EXPECTEQ(ast->d.ival, val);
+    printf("passed\n");
+}
+
+static void
 testIdentifier(const char *str, const char *expect)
 {
     LexStream L;
@@ -158,6 +185,13 @@ main()
     testNumber("%11", 3);
     testNumber("%%31", 13);
     testNumber("80_000_000", 80000000);
+
+    testFloat("1.0", 1.0f);
+    testFloat("2.0", 2.0f);
+    testFloat("0.01", 0.01f);
+    testFloat("1.0e-2", 0.01f);
+    testFloat("1.e-2", 0.01f);
+    testFloat("3.14e5", 314000.0f);
 
     testIdentifier("x99+8", "x99");
     testIdentifier("_a_b", "_a_b");

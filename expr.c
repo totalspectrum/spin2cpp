@@ -905,6 +905,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     case AST_STRING:
         return intExpr(expr->d.string[0]);
 
+    case AST_FLOAT:
+        return floatExpr(expr->d.ival);
+
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <math.h>
 #include "spinc.h"
 
 static inline int
@@ -146,9 +147,9 @@ int
 lexgetc(LexStream *L)
 {
     int c;
-    if (L->ungot_valid) {
-        L->ungot_valid = 0;
-        return L->ungot;
+    if (L->ungot_ptr) {
+        --L->ungot_ptr;
+        return L->ungot[L->ungot_ptr];
     }
     c = (L->getcf(L));
     if (c == '\n')
@@ -159,11 +160,10 @@ lexgetc(LexStream *L)
 void
 lexungetc(LexStream *L, int c)
 {
-    if (L->ungot_valid) {
+    if (L->ungot_ptr == UNGET_MAX-1) {
         fprintf(stderr, "ERROR: unget limit exceeded");
     }
-    L->ungot_valid = 1;
-    L->ungot = c;
+    L->ungot[L->ungot_ptr++] = c;
 }
 
 
@@ -195,6 +195,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     unsigned long uval, digit;
     unsigned int c;
     int sawdigit = 0;
+    int kind = T_NUM;
 
     uval = 0;
 
@@ -218,9 +219,46 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             break;
         }
     }
+    if (c == '.' && base == 10) {
+        /* potential floating point number */
+        float f = (float)uval;
+        float divby = 0.1f;
+        c = lexgetc(L);
+        if ( c != 'e' && c != 'E' && (c < '0' || c > '9')) {
+            lexungetc(L, c);
+            c = '.';
+            goto donefloat;
+        }
+        while (c >= '0' && c <= '9') {
+            f = f + divby*(float)(c-'0');
+            c = lexgetc(L);
+            divby = divby / 10.0;
+        }
+        if (c == 'e' || c == 'E') {
+            int exponent = 0;
+            int neg = 1;
+            c = lexgetc(L);
+            if (c == '+') {
+                c = lexgetc(L);
+            } else if (c == '-') {
+                c = lexgetc(L);
+                neg = -neg;
+            }
+            while (c >= '0' && c <= '9') {
+                exponent = 10*exponent + (c - '0');
+                c = lexgetc(L);
+            }
+            if (neg < 0)
+                exponent = -exponent;
+            f *= powf(10.0f, (float)exponent);
+        }
+        uval = floatAsInt(f);
+        kind = T_FLOATNUM;
+    }
+donefloat:
     lexungetc(L, c);
     *num = uval;
-    return sawdigit ? T_NUM : ((base == 16) ? T_HERE : '%');
+    return sawdigit ? kind : ((base == 16) ? T_HERE : '%');
 }
 
 /* dynamically grow a string */

@@ -6,6 +6,7 @@
 CC = gcc
 CFLAGS = -g -Wall -Werror
 #CFLAGS = -O -g -Wall -Werror
+LIBS = -lm
 YACC = bison
 RM = rm -f
 
@@ -16,7 +17,7 @@ OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o
 all: $(PROGS)
 
 testlex: testlex.c $(LEXOBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 spin.tab.c spin.tab.h: spin.y
 	$(YACC) -t -b spin -d spin.y
@@ -31,4 +32,4 @@ test: $(PROGS)
 	(cd Test; ./runtests.sh)
 
 spin2cpp: spin2cpp.c $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)

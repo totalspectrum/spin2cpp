@@ -469,6 +469,7 @@ identdecl:
 
 expr:
   integer
+  | float
   | string
   | T_STRINGPTR '(' exprlist ')'
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
@@ -690,6 +691,11 @@ range:
 
 integer:
   T_NUM
+  { $$ = current->ast; }
+;
+
+float:
+  T_FLOATNUM
   { $$ = current->ast; }
 ;
 
