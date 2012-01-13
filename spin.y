@@ -29,6 +29,7 @@ AstYield(void)
 %token T_IDENTIFIER
 %token T_NUM
 %token T_STRING
+%token T_FLOATNUM
 
 /* various keywords */
 %token T_CON
@@ -93,7 +94,7 @@ AstYield(void)
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
 %left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT
-%left T_CONSTANT
+%left T_CONSTANT T_FLOAT
 
 %%
 input:

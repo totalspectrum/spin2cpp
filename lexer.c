@@ -441,7 +441,10 @@ getToken(LexStream *L, AST **ast_ptr)
 
     c = skipSpace(L);
 
-    if (safe_isdigit(c)) {
+    if (c >= 127) {
+        *ast_ptr = ast;
+        return c;
+    } else if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
@@ -528,6 +531,7 @@ struct reservedword {
     { "elseifnot", T_ELSEIFNOT },
 
     { "fit", T_FIT },
+    { "float", T_FLOAT },
     { "from", T_FROM },
 
     { "if", T_IF },

@@ -761,6 +761,58 @@ PrintBoolExpr(FILE *f, AST *expr)
     }
 }
 
+static float
+EvalFloatOperator(int op, float lval, float rval, int *valid)
+{
+    
+    switch (op) {
+    case '+':
+        return lval + rval;
+    case '-':
+        return lval - rval;
+    case '/':
+        return lval / rval;
+    case '*':
+        return lval * rval;
+    case '|':
+        return intAsFloat(floatAsInt(lval) | floatAsInt(rval));
+    case '&':
+        return intAsFloat(floatAsInt(lval) & floatAsInt(rval));
+    case '^':
+        return intAsFloat(floatAsInt(lval) ^ floatAsInt(rval));
+    case T_HIGHMULT:
+        return lval*rval / (float)(1LL<<32);
+    case T_SHL:
+        return intAsFloat(floatAsInt(lval) << floatAsInt(rval));
+    case T_SHR:
+        return intAsFloat(((uint32_t)floatAsInt(lval)) >> floatAsInt(rval));
+    case T_SAR:
+        return intAsFloat(((int32_t)floatAsInt(lval)) >> floatAsInt(rval));
+    case '<':
+        return intAsFloat(-(lval < rval));
+    case '>':
+        return intAsFloat(-(lval > rval));
+    case T_LE:
+        return intAsFloat(-(lval <= rval));
+    case T_GE:
+        return intAsFloat(-(lval >= rval));
+    case T_NE:
+        return intAsFloat(-(lval != rval));
+    case T_EQ:
+        return intAsFloat(-(lval == rval));
+    case T_NEGATE:
+        return -rval;
+    case T_ABS:
+        return (rval < 0) ? -rval : rval;
+    default:
+        if (valid)
+            *valid = 0;
+        else
+            ERROR(NULL, "invalid floating point operator %d\n", op);
+        return 0;
+    }
+}
+
 static int32_t
 EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 {
@@ -778,6 +830,8 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval * rval;
     case '|':
         return lval | rval;
+    case '^':
+        return lval ^ rval;
     case '&':
         return lval & rval;
     case T_HIGHMULT:
@@ -789,17 +843,17 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case T_SAR:
         return ((int32_t)lval) >> rval;
     case '<':
-        return lval < rval;
+        return -(lval < rval);
     case '>':
-        return lval > rval;
+        return -(lval > rval);
     case T_LE:
-        return lval <= rval;
+        return -(lval <= rval);
     case T_GE:
-        return lval >= rval;
+        return -(lval >= rval);
     case T_NE:
-        return lval != rval;
+        return -(lval != rval);
     case T_EQ:
-        return lval == rval;
+        return -(lval == rval);
     case T_NEGATE:
         return -rval;
     case T_BIT_NOT:
@@ -822,6 +876,9 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 static ExprVal
 EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 {
+    if (le.type == FLOAT_EXPR || re.type == FLOAT_EXPR) {
+        return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
+    }
     return intExpr(EvalIntOperator(op, le.val, re.val, valid));
 }
 
