@@ -16,6 +16,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "symbol.h"
+#include "expr.h"
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
@@ -135,23 +136,9 @@ extern ParserState *current;
 extern Function *curfunc;
 
 /* printing functions */
-void PrintExpr(FILE *f, AST *expr);
-void PrintBoolExpr(FILE *f, AST *expr);
-void PrintAsAddr(FILE *f, AST *expr);
-void PrintExprList(FILE *f, AST *list);
-void PrintType(FILE *f, AST *type);
 void PrintVarList(FILE *f, AST *type, AST *list);
 void PrintAssign(FILE *f, AST *left, AST *right);
 void PrintLookupArray(FILE *f, AST *array);
-
-/* evaluate a constant expression */
-int32_t EvalConstExpr(AST *expr);
-
-/* similar but for PASM */
-int32_t EvalPasmExpr(AST *expr);
-
-/* determine whether an expression is constant */
-int IsConstExpr(AST *expr);
 
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);

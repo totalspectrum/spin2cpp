@@ -761,9 +761,10 @@ PrintBoolExpr(FILE *f, AST *expr)
     }
 }
 
-static long
-EvalOperator(int op, int32_t lval, int32_t rval, int *valid)
+static int32_t
+EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 {
+    
     switch (op) {
     case '+':
         return lval + rval;
@@ -818,28 +819,34 @@ EvalOperator(int op, int32_t lval, int32_t rval, int *valid)
     }
 }
 
+static ExprVal
+EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
+{
+    return intExpr(EvalIntOperator(op, le.val, re.val, valid));
+}
+
 #define PASM_FLAG 0x01
 
 /*
  * evaluate an expression
  * if unable to evaluate, return 0 and set "*valid" to 0
  */
-static int32_t
+static ExprVal
 EvalExpr(AST *expr, unsigned flags, int *valid)
 {
     Symbol *sym;
-    int32_t lval, rval;
+    ExprVal lval, rval;
     int reportError = (valid == NULL);
 
     if (!expr)
-        return 0;
+        return intExpr(0);
 
     switch (expr->kind) {
     case AST_INTEGER:
-        return expr->d.ival;
+        return intExpr(expr->d.ival);
 
     case AST_STRING:
-        return expr->d.string[0];
+        return intExpr(expr->d.string[0]);
 
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
@@ -848,11 +855,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                 ERROR(expr, "Unknown symbol %s", expr->d.string);
             else
                 *valid = 0;
-            return 0;
+            return intExpr(0);
         } else {
             switch (sym->type) {
             case SYM_CONSTANT:
-                return (int32_t)(intptr_t)sym->val;
+                return intExpr((intptr_t)sym->val);
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = sym->val;
@@ -861,9 +868,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                             ERROR(expr, "label %s not on longword boundary", sym->name);
                         else
                             *valid = 0;
-                        return 0;
+                        return intExpr(0);
                     }
-                    return lref->asmval >> 2;
+                    return intExpr(lref->asmval >> 2);
                 }
                 /* otherwise fall through */
             default:
@@ -871,7 +878,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                     ERROR(expr, "Symbol %s is not constant", expr->d.string);
                 else
                     *valid = 0;
-                return 0;
+                return intExpr(0);
             }
         }
         break;
@@ -882,7 +889,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     case AST_HWREG:
         if (flags & PASM_FLAG) {
             HwReg *hw = expr->d.ptr;
-            return hw->addr;
+            return intExpr(hw->addr);
         }
         if (reportError)
             ERROR(expr, "Used hardware register where constant is expected");
@@ -896,19 +903,21 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             *valid = 0;
         break;
     }
-    return 0;
+    return intExpr(0);
 }
 
 int32_t
 EvalConstExpr(AST *expr)
 {
-    return EvalExpr(expr, 0, NULL);
+    ExprVal e = EvalExpr(expr, 0, NULL);
+    return e.val;
 }
 
 int32_t
 EvalPasmExpr(AST *expr)
 {
-    return EvalExpr(expr, PASM_FLAG, NULL);
+    ExprVal e = EvalExpr(expr, PASM_FLAG, NULL);
+    return e.val;
 }
 
 int
@@ -1137,4 +1146,37 @@ funcParameterNum(Function *func, AST *var)
         idx++;
     }
     return -1;
+}
+
+/* expression utility functions */
+ExprVal intExpr(int32_t x)
+{
+    ExprVal e;
+    e.type = INT_EXPR;
+    e.val = x;
+    return e;
+}
+
+ExprVal floatExpr(int32_t f)
+{
+    ExprVal e;
+    e.type = FLOAT_EXPR;
+    e.val = f;
+    return e;
+}
+
+int32_t  floatAsInt(float f)
+{
+    union float_or_int v;
+
+    v.f = f;
+    return v.i;
+}
+
+float intAsFloat(int32_t i)
+{
+    union float_or_int v;
+
+    v.i = i;
+    return v.f;
 }
