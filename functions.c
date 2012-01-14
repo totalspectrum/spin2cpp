@@ -362,7 +362,7 @@ PrintCaseList(FILE *f, AST *ast, int indent)
 }
 
 /*
- * print a counting for loop
+ * print a counting repeat loop
  */
 static int
 PrintCountRepeat(FILE *f, AST *ast, int indent)
@@ -370,29 +370,33 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     const char *loopname = NULL;
     AST *fromval, *toval;
     AST *stepval;
+    AST *limit;
+    AST *step;
+    AST *loop_le_limit, *loop_ge_limit;
+    AST *loopvar = NULL;
+    AST *loopleft, *loopright;
+    AST *stepstmt;
     int sawreturn = 0;
+    int negstep = 0;
+    int needsteptest = 1;
+    int deltaknown = 0;
     int32_t delta;
 
-    fprintf(f, "%*cfor (", indent, ' ');
     if (ast->left) {
-        if (ast->left->kind == AST_IDENTIFIER)
+        if (ast->left->kind == AST_IDENTIFIER) {
+            loopvar = ast->left;
             loopname = ast->left->d.string;
-        else
+        } else {
             ERROR(ast, "Need a variable name for the loop");
+            return 0;
+        }
     }
-    if (!loopname) {
-        loopname = NewTemporaryVariable(NULL);
-        fprintf(f, "int32_t ");
-    }
-    fprintf(f, "%s = ", loopname);
     ast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
         return 0;
     }
     fromval = ast->left;
-    PrintExpr(f, fromval);
-    fprintf(f, "; %s != ", loopname);
     ast = ast->right;
     if (ast->kind != AST_TO) {
         ERROR(ast, "expected TO");
@@ -407,28 +411,113 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     if (ast->left) {
         stepval = ast->left;
     } else {
-        if (IsConstExpr(fromval) && IsConstExpr(toval)) {
-            delta = EvalConstExpr(toval) - EvalConstExpr(fromval);
-            stepval = (delta < 0) ? AstInteger(-1) : AstInteger(+1);
-        } else {
-            ERROR(ast, "Unable to calculate step value");
-            return 0;
-        }
+        stepval = AstInteger(1);
     }
-    toval = AstOperator('+', toval, stepval);
+
+    /* for fixed counts (like "REPEAT expr") we get a NULL value
+       for toval; this signals that we should be counting
+       down from expr to 1
+    */
+    if (toval == NULL) {
+        needsteptest = 0;
+        negstep = 0;
+        toval = AstInteger(1);
+    } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+        int32_t fromi, toi;
+
+        fromi = EvalConstExpr(fromval);
+        toi = EvalConstExpr(toval);
+        needsteptest = 0;
+        negstep = (fromi > toi);
+    }
+
+    /* set the loop variable */
+            
+    if (!loopname) {
+        loopvar = AstTempVariable("_idx_");
+        loopname = loopvar->d.string;
+        fprintf(f, "%*cint32_t %s;\n", indent, ' ', loopname);
+    }
+    fprintf(f, "%*c%s = ", indent, ' ', loopname);
+    PrintExpr(f, fromval);
+    fprintf(f, ";\n");
+
+    /* set the limit variable */
     if (IsConstExpr(toval)) {
-        fprintf(f, "%d", EvalConstExpr(toval));
+        limit = AstInteger(EvalConstExpr(toval));
     } else {
+        limit = AstTempVariable("_limit_");
+        fprintf(f, "%*cint32_t ", indent, ' ');
+        PrintExpr(f, limit);
+        fprintf(f, " = ");
         PrintExpr(f, toval);
+        fprintf(f, ";\n");
     }
-    fprintf(f, "; %s += ", loopname);
-    PrintExpr(f, stepval);
-    fprintf(f, ") {\n");
+    /* set the step variable */
+    if (IsConstExpr(stepval) && !needsteptest) {
+        delta = EvalConstExpr(stepval);
+        if (negstep) delta = -delta;
+        step = AstInteger(delta);
+        deltaknown = 1;
+    } else {
+        if (negstep) stepval = AstOperator(T_NEGATE, NULL, stepval);
+        step = AstTempVariable("_step_");
+        fprintf(f, "%*cint32_t ", indent, ' ');
+        PrintExpr(f, step);
+        fprintf(f, " = ");
+        PrintExpr(f, stepval);
+        fprintf(f, ";\n");
+    }
+
+    stepstmt = AstAssign('+', loopvar, step);
+
+    /* want to do:
+     * if (loopvar > limit) step = -step;
+     * do {
+     *   body
+     * } while ( (step > 0 && loopvar <= limit) || (step < 0 && loopvar >= limit));
+     */
+    loop_ge_limit = AstOperator(T_GE, loopvar, limit);
+    loop_le_limit = AstOperator(T_LE, loopvar, limit);
+    if (needsteptest) {
+        fprintf(f, "%*cif (", indent, ' ');
+        PrintBoolExpr(f, loop_ge_limit);
+        fprintf(f, ") ");
+        PrintExpr(f, step);
+        fprintf(f, " = -");
+        PrintExpr(f, step);
+        fprintf(f, ";\n");
+    }
+
+    if (deltaknown) {
+        if (delta > 0) {
+            loopleft = loop_le_limit;
+            loopright = AstInteger(0);
+        } else if (delta < 0) {
+            loopleft = AstInteger(0);
+            loopright = loop_ge_limit;
+        } else {
+            loopleft = loopright = AstInteger(0);
+        }
+    } else {
+        loopleft = AstOperator(T_AND, AstOperator('>', step, AstInteger(0)), loop_le_limit);
+        loopright = AstOperator(T_AND, AstOperator('<', step, AstInteger(0)), loop_ge_limit);
+    }
+
+    fprintf(f, "%*cdo {\n", indent, ' ');
     sawreturn = PrintStatementList(f, ast->right, indent+2);
-    fprintf(f, "%*c}\n", indent, ' ');
+    PrintStatement(f, stepstmt, indent+2);
+    fprintf(f, "%*c} while (", indent, ' ');
+    if (IsConstExpr(loopleft)) {
+        PrintBoolExpr(f, loopright);
+    } else if (IsConstExpr(loopright)) {
+        PrintBoolExpr(f, loopleft);
+    } else {
+        PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
+    }
+    fprintf(f, ");\n");
     return sawreturn;
 }
-
 
 /*
  * returns 1 if a return statement was seen
@@ -485,7 +574,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintBoolExpr(f, ast->left);
         fprintf(f, ");\n");
         break;
-    case AST_COUNTFOR:
+    case AST_COUNTREPEAT:
         sawreturn = PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:

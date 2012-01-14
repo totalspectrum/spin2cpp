@@ -307,7 +307,7 @@ repeatstmt:
       step = NewAST(AST_STEP, $8, $10);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
-      $$ = NewAST(AST_COUNTFOR, $2, from);
+      $$ = NewAST(AST_COUNTREPEAT, $2, from);
     }
   | T_REPEAT identifier T_FROM expr T_TO expr T_EOLN stmtblock
     {
@@ -315,23 +315,23 @@ repeatstmt:
       step = NewAST(AST_STEP, AstInteger(1), $8);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
-      $$ = NewAST(AST_COUNTFOR, $2, from);
+      $$ = NewAST(AST_COUNTREPEAT, $2, from);
     }
   | T_REPEAT expr T_EOLN stmtblock
     {
       AST *from, *to, *step;
       step = NewAST(AST_STEP, AstInteger(-1), $4);
-      to = NewAST(AST_TO, AstInteger(1), step);
+      to = NewAST(AST_TO, NULL, step);
       from = NewAST(AST_FROM, $2, to);
-      $$ = NewAST(AST_COUNTFOR, NULL, from);
+      $$ = NewAST(AST_COUNTREPEAT, NULL, from);
     }
   | T_REPEAT expr T_EOLN
     {
       AST *from, *to, *step;
       step = NewAST(AST_STEP, AstInteger(-1), AstYield());
-      to = NewAST(AST_TO, AstInteger(1), step);
+      to = NewAST(AST_TO, NULL, step);
       from = NewAST(AST_FROM, $2, to);
-      $$ = NewAST(AST_COUNTFOR, NULL, from);
+      $$ = NewAST(AST_COUNTREPEAT, NULL, from);
     }
 
 ;

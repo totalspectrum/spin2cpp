@@ -65,7 +65,7 @@ enum astkind {
     AST_FOR = 36,
     AST_MEMREF,
     AST_ARRAYREF,
-    AST_COUNTFOR,
+    AST_COUNTREPEAT,
 
     AST_CASE = 40,
     AST_CASEITEM,

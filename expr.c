@@ -959,6 +959,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         break;
     case AST_OPERATOR:
         lval = EvalExpr(expr->left, flags, valid);
+        if (expr->d.ival == T_OR && lval.val)
+            return lval;
+        if (expr->d.ival == T_AND && lval.val == 0)
+            return lval;
         rval = EvalExpr(expr->right, flags, valid);
         return EvalOperator(expr->d.ival, lval, rval, valid);
     case AST_HWREG:

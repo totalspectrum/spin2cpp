@@ -16,9 +16,12 @@ int32_t test29::str(int32_t stringptr)
   while (lockset(strlock)) {
     Yield__();
   }
-  for (int32_t _tmp__0000 = strlen((char *) stringptr); _tmp__0000 != 0; _tmp__0000 += -1) {
+  int32_t _idx__0000;
+  _idx__0000 = strlen((char *) stringptr);
+  do {
     tx(((uint8_t *)(stringptr++))[0]);
-  }
+    _idx__0000 = (_idx__0000 + -1);
+  } while (_idx__0000 >= 1);
   lockclr(strlock);
   return result;
 }
