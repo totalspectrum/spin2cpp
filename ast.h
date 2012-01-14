@@ -90,7 +90,7 @@ enum astkind {
     AST_YIELD = 56,
     AST_CONSTANT,
     AST_QUIT,
-    AST_CONTINUE,
+    AST_NEXT,
 
     AST_RESULT = 60,
 };

@@ -547,7 +547,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
     case AST_QUIT:
         fprintf(f, "%*cbreak;\n", indent, ' ');
         break;
-    case AST_CONTINUE:
+    case AST_NEXT:
         fprintf(f, "%*ccontinue;\n", indent, ' ');
         break;
     case AST_IF:

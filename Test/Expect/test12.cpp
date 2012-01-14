@@ -7,7 +7,7 @@ int32_t test12::sum(int32_t x, int32_t y)
   return (x + y);
 }
 
-int32_t test12::next(int32_t x)
+int32_t test12::donext(int32_t x)
 {
   int32_t result = 0;
   return sum(x, 1);

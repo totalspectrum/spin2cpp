@@ -583,6 +583,8 @@ struct reservedword {
     { "lookdownz", T_LOOKDOWNZ },
     { "lookup", T_LOOKUP },
     { "lookupz", T_LOOKUPZ },
+
+    { "next", T_NEXT },
     { "not", T_NOT },
 
     { "obj", T_OBJ },

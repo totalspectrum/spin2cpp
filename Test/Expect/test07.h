@@ -5,7 +5,7 @@
 
 class test07 {
 public:
-  int32_t	next(void);
+  int32_t	donext(void);
 private:
   int32_t	count;
 };

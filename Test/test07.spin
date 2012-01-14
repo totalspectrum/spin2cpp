@@ -9,6 +9,6 @@
 VAR
   long count
 
-PUB next
+PUB donext
   count := count+1
   return count

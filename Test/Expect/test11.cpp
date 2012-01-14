@@ -7,7 +7,7 @@ int32_t test11::peek(void)
   return count;
 }
 
-int32_t test11::next(void)
+int32_t test11::donext(void)
 {
   int32_t result = 0;
   count = (peek() + 1);

@@ -4,7 +4,7 @@ VAR
 PUB peek
   return count
 
-PUB next
+PUB donext
   count := peek + 1
   return count
 

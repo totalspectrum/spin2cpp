@@ -71,7 +71,7 @@ AstYield(void)
 %token T_OTHER
 
 %token T_QUIT
-%token T_CONTINUE
+%token T_NEXT
 
 /* other stuff */
 %token T_RESULT
@@ -200,8 +200,8 @@ nonemptystmt:
     { $$ = $1; }
   | T_QUIT T_EOLN
     { $$ = NewAST(AST_QUIT, NULL, NULL); }
-  | T_CONTINUE T_EOLN
-    { $$ = NewAST(AST_CONTINUE, NULL, NULL); }
+  | T_NEXT T_EOLN
+    { $$ = NewAST(AST_NEXT, NULL, NULL); }
 
 ;
 
