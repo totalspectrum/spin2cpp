@@ -298,6 +298,13 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
     HwReg *hw;
 
     switch (expr->kind) {
+    case AST_RESULT:
+        if (!curfunc) {
+            ERROR(expr, "RESULT keyword outside of function");
+        } else {
+            fprintf(f, "%s", curfunc->resultname);
+        }
+        break;
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
@@ -572,6 +579,7 @@ PrintAsAddr(FILE *f, AST *expr)
         fprintf(f, "&");
         PrintLHS(f, expr->left, 0, 0);
         break;
+    case AST_RESULT:
     case AST_IDENTIFIER:
     case AST_HWREG:
     case AST_MEMREF:
@@ -668,6 +676,7 @@ PrintExpr(FILE *f, AST *expr)
     case AST_HWREG:
     case AST_MEMREF:
     case AST_ARRAYREF:
+    case AST_RESULT:
         PrintLHS(f, expr, 0, 0);
         break;
     case AST_OPERATOR:

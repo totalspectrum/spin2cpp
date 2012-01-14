@@ -528,7 +528,7 @@ getToken(LexStream *L, AST **ast_ptr)
         op[0] = token = c;
         for (i = 1; i < sizeof(op)-1; i++) {
             c = lexgetc(L);
-            if (strchr(operator_chars, c) == NULL) {
+            if (c >= 128 || strchr(operator_chars, c) == NULL) {
                 lexungetc(L, c);
                 break;
             }
@@ -590,10 +590,12 @@ struct reservedword {
     { "org", T_ORG },
     { "other", T_OTHER },
 
+    { "quit", T_QUIT },
     { "pri", T_PRI },
     { "pub", T_PUB },
     { "repeat", T_REPEAT },
     { "res", T_RES },
+    { "result", T_RESULT },
     { "return", T_RETURN },
 
     { "step", T_STEP },

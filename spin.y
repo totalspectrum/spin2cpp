@@ -70,7 +70,11 @@ AstYield(void)
 %token T_CASE
 %token T_OTHER
 
+%token T_QUIT
+%token T_CONTINUE
+
 /* other stuff */
+%token T_RESULT
 %token T_RETURN
 %token T_INDENT
 %token T_OUTDENT
@@ -194,6 +198,11 @@ nonemptystmt:
     { $$ = $1; }
   | casestmt
     { $$ = $1; }
+  | T_QUIT T_EOLN
+    { $$ = NewAST(AST_QUIT, NULL, NULL); }
+  | T_CONTINUE T_EOLN
+    { $$ = NewAST(AST_CONTINUE, NULL, NULL); }
+
 ;
 
 stmt:
@@ -707,6 +716,8 @@ string:
 identifier:
   T_IDENTIFIER
   { $$ = current->ast; }
+  | T_RESULT
+  { $$ = NewAST(AST_RESULT, NULL, NULL); }
 ;
 
 hwreg:

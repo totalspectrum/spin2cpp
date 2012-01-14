@@ -544,6 +544,12 @@ PrintStatement(FILE *f, AST *ast, int indent)
     case AST_YIELD:
         fprintf(f, "%*cYield__();\n", indent, ' ');
         break;
+    case AST_QUIT:
+        fprintf(f, "%*cbreak;\n", indent, ' ');
+        break;
+    case AST_CONTINUE:
+        fprintf(f, "%*ccontinue;\n", indent, ' ');
+        break;
     case AST_IF:
         fprintf(f, "%*cif (", indent, ' ');
         PrintBoolExpr(f, ast->left);
