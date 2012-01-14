@@ -219,15 +219,17 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             break;
         }
     }
-    if (c == '.' && base == 10) {
+    if ( base == 10 && (c == '.' || c == 'e' || c == 'E') ) {
         /* potential floating point number */
         float f = (float)uval;
         float divby = 0.1f;
-        c = lexgetc(L);
-        if ( c != 'e' && c != 'E' && (c < '0' || c > '9')) {
-            lexungetc(L, c);
-            c = '.';
-            goto donefloat;
+        if (c == '.') {
+            c = lexgetc(L);
+            if ( c != 'e' && c != 'E' && (c < '0' || c > '9')) {
+                lexungetc(L, c);
+                c = '.';
+                goto donefloat;
+            }
         }
         while (c >= '0' && c <= '9') {
             f = f + divby*(float)(c-'0');
