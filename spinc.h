@@ -129,6 +129,7 @@ struct parserstate {
     char needsRotate;
     char needsStdlib;
     char needsYield;
+    char needsBetween;
 };
 
 /* the current parser state */

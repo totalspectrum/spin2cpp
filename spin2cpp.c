@@ -261,7 +261,9 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define Rotl__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a<<b) | (a>>(32-b)); })\n"); 
         fprintf(f, "#define Rotr__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a>>b) | (a<<(32-b)); })\n\n"); 
     }
-
+    if (parse->needsBetween) {
+        fprintf(f, "static inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
+    }
     if (parse->arrays) {
         fprintf(f, "#define Lookup__(x, a) __extension__({ int32_t i = (x); (i < 0 || i >= sizeof(a)/sizeof(a[0])) ? 0 : a[i]; })\n");
         for (ast = parse->arrays; ast; ast = ast->right) {

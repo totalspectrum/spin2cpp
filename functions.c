@@ -302,62 +302,79 @@ PrintStatementList(FILE *f, AST *ast, int indent)
 }
 
 static void
-PrintCaseExprList(FILE *f, AST *ast, int indent)
+PrintCaseExprList(FILE *f, AST *var, AST *ast)
 {
+    int needor = 0;
     while (ast) {
+        if (needor) fprintf(f, " || ");
         if (ast->kind == AST_OTHER) {
-            fprintf(f, "%*cdefault:\n", indent, ' ');
+            fprintf(f, "1");
         } else {
-            fprintf(f, "%*ccase ", indent, ' ');
             if (ast->left->kind == AST_RANGE) {
                 AST *a, *b;
                 a = ast->left->left;
                 b = ast->left->right;
-                if (!IsConstExpr(a) || !IsConstExpr(b)) {
-                    ERROR(ast, "spin2c cannot handle non-constant expressions in case");
-                }
+                fprintf(f, "Between__(");
+                PrintExpr(f, var);
+                fprintf(f, ", ");
                 PrintExpr(f, a);
-                fprintf(f, " ... ");
+                fprintf(f, ", ");
                 PrintExpr(f, b);
+                fprintf(f, ")");
             } else {
-                if (!IsConstExpr(ast->left)) {
-                    ERROR(ast, "spin2c cannot handle non-constant expressions in case");
-                }
-                PrintExpr(f, ast->left);
+                PrintBoolExpr(f, AstOperator(T_EQ, var, ast->left));
             }
-            fprintf(f, ":\n");
         }
+        needor = 1;
         ast = ast->right;
     }
 }
 
 static int
-PrintCaseItem(FILE *f, AST *ast, int indent)
+PrintCaseItem(FILE *f, AST *var, AST *ast, int indent)
 {
     int sawreturn;
 
-    PrintCaseExprList(f, ast->left, indent);
+    fprintf(f, "(");
+    PrintCaseExprList(f, var, ast->left);
+    fprintf(f, ") {\n");
     sawreturn = PrintStatementList(f, ast->right, indent+2);
-    fprintf(f, "%*cbreak;\n", indent+2, ' ');
+    fprintf(f, "%*c}", indent, ' ');
     return sawreturn;
 }
 
 static int
-PrintCaseList(FILE *f, AST *ast, int indent)
+PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
 {
     int sawreturn = 1;
     int items = 0;
+    int first = 1;
+    AST *var;
 
+    if (expr->kind == AST_IDENTIFIER) {
+        var = expr;
+    } else {
+        var = AstTempVariable(NULL);
+        fprintf(f, "%*cint32_t %s = ", indent, ' ', var->d.string);
+        PrintExpr(f, expr);
+        fprintf(f, ";\n");
+    }
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Internal error in case list");
             return 0;
         }
-        sawreturn = PrintCaseItem(f, ast->left, indent) && sawreturn;
+        if (first) {
+            fprintf(f, "%*cif ", indent, ' ');
+            first = 0;
+        } else {
+            fprintf(f, " else if ");
+        }
+        sawreturn = PrintCaseItem(f, var, ast->left, indent) && sawreturn;
         ast = ast->right;
         items++;
     }
-
+    fprintf(f, "\n");
     return (items > 0) && sawreturn;
 }
 
@@ -587,11 +604,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         sawreturn = PrintStatementList(f, ast, indent+2);
         break;
     case AST_CASE:
-        fprintf(f, "%*cswitch (", indent, ' ');
-        PrintExpr(f, ast->left);
-        fprintf(f, ") {\n");
-        sawreturn = PrintCaseList(f, ast->right, indent+2);
-        fprintf(f, "%*c}\n", indent, ' ');
+        sawreturn = PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
     case AST_OPERATOR:
         switch (ast->d.ival) {

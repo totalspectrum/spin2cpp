@@ -4,25 +4,18 @@
 int32_t test47::test(int32_t c)
 {
   int32_t result = 0;
-  switch (flag) {
-    case 0:
-        switch (c) {
-          case 9:
-            do {
-              _OUTA = (cols++);
-            } while (cols & 7);
-            break;
-          case 13:
-            _OUTA = c;
-            break;
-          default:
-            _OUTA = flag;
-            break;
-        }
-      break;
-    case 10:
-      cols = (c % cols);
-      break;
+  if (flag == 0) {
+      if (c == 9) {
+        do {
+          _OUTA = (cols++);
+        } while (cols & 7);
+      } else if (c == 13) {
+        _OUTA = c;
+      } else if (1) {
+        _OUTA = flag;
+      }
+  } else if (flag == 10) {
+    cols = (c % cols);
   }
   flag = 0;
   return result;
