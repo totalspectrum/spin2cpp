@@ -412,7 +412,18 @@ again:
         }
         c = lexgetc(L);
     }
+
+    /* ignore completely empty lines or ones with just comments */
+    if (c == '\'') {
+        do {
+            c = lexgetc(L);
+        } while (c != '\n' && c != T_EOF);
+    }
     if (L->in_block == T_PUB && L->eoln) {
+        if (c == '\n') {
+            indent = 0;
+            goto again;
+        }
         if (indent > L->indent[L->indentsp]) {
             lexungetc(L, c);
             if (L->indentsp >= MAX_INDENTS) {
@@ -422,10 +433,6 @@ again:
             L->indent[++L->indentsp] = indent;
             L->eoln = 0;
             return T_INDENT;
-        }
-        /* ignore completely empty lines */
-        if (indent == 0 && c == '\n') {
-            goto again;
         }
         if (indent < L->indent[L->indentsp] && L->indentsp > 0) {
             lexungetc(L, c);
@@ -440,16 +447,6 @@ again:
     }
     L->eoln = 0;
 
-    /* single quote comments */
-    if (c == '\'') {
-        do {
-            c = lexgetc(L);
-        } while (c != '\n' && c != T_EOF);
-        if (c == '\n') {
-            L->eoln = 1;
-            return T_EOLN;
-        }
-    }
     if (c == '{') {
         commentNest = 1;
         do {
