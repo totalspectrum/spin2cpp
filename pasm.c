@@ -37,11 +37,23 @@ outputDataList(FILE *f, int size, AST *ast)
 {
     unsigned val, origval;
     int i, reps;
+    AST *sub;
 
     while (ast) {
-        if (ast->left->kind == AST_ARRAYDECL) {
+        sub = ast->left;
+        if (sub->kind == AST_ARRAYDECL) {
             origval = EvalPasmExpr(ast->left->left);
             reps = EvalPasmExpr(ast->left->right);
+        } else if (sub->kind == AST_STRING) {
+            const char *ptr = sub->d.string;
+            while (*ptr) {
+                val = (*ptr++) & 0xff;
+                outputByte(f, val);
+                for (i = 1; i < size; i++) {
+                    outputByte(f, 0);
+                }
+            }
+            reps = 0;
         } else {
             origval = EvalPasmExpr(ast->left);
             reps = 1;
@@ -190,13 +202,20 @@ dataListLen(AST *ast, int elemsize)
 {
     unsigned size = 0;
     unsigned numelems;
+    AST *sub;
+
     while (ast) {
-        if (ast->left && ast->left->kind == AST_ARRAYDECL) {
-            numelems = EvalConstExpr(ast->left->right);
-        } else {
-            numelems = 1;
+        sub = ast->left;
+        if (sub) {
+            if (sub->kind == AST_ARRAYDECL) {
+                numelems = EvalConstExpr(ast->left->right);
+            } else if (sub->kind == AST_STRING) {
+                numelems = strlen(sub->d.string);
+            } else {
+                numelems = 1;
+            }
+            size += (numelems*elemsize);
         }
-        size += (numelems*elemsize);
         ast = ast->right;
     }
     return size;
