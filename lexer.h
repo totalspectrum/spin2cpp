@@ -22,14 +22,16 @@ struct lexstream {
     int in_block;  /* T_DAT, T_PUB, or T_CON */
     int indent[MAX_INDENTS];    /* current indentation level */
     int indentsp;               /* pointer into stack of indentation level */
-    int emit_outdents;          /* how many T_OUTDENTS to emit */
+    int pending_indent;
     int eoln;      /* 1 if end of line seen */
+    int firstNonBlank;
 
     /* last global label */
     const char *lastGlobal;
 
     /* for error messages */
     int lineCounter;
+    int colCounter;
     const char *fileName;
 
     /* for handling Unicode CR+LF */
@@ -38,6 +40,8 @@ struct lexstream {
 
 extern int lexgetc(LexStream *L);
 extern void lexungetc(LexStream *L, int c);
+extern void EstablishIndent(LexStream *L, int level);
+extern void resetLineState(LexStream *L);
 
 /*
  * function to initialize the lexer

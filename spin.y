@@ -216,6 +216,8 @@ stmt:
 stmtblock:
   T_INDENT stmtlist T_OUTDENT
   { $$ = $2; }
+  | T_INDENT T_OUTDENT
+  { $$ = NULL; }
 ;
 
 ifstmt:
@@ -249,23 +251,30 @@ casematchlist:
   ;
 
 casematchitem:
-  matchexprlist ':' T_EOLN stmtblock
+  casematch T_EOLN stmtblock
     {
-        AST *slist = NewAST(AST_STMTLIST, $4, NULL);
+        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
         $$ = NewAST(AST_CASEITEM, $1, slist);
     }
-  | matchexprlist ':' nonemptystmt stmtblock
+  | casematch nonemptystmt stmtblock
     {
-        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
-        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $4));
+        AST *slist = NewAST(AST_STMTLIST, $2, NULL);
+        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $3));
     }
-  | matchexprlist ':' nonemptystmt
+  | casematch nonemptystmt
     {
-        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
+        AST *slist = NewAST(AST_STMTLIST, $2, NULL);
         $$ = NewAST(AST_CASEITEM, $1, slist);
     }
   ;
 
+casematch:
+  matchexprlist ':'
+  {
+      $$ = $1;
+      EstablishIndent(&current->L, -1);
+      resetLineState(&current->L);
+  }
 
 matchexprlist:
   matchexpritem
@@ -298,21 +307,18 @@ rangeexprlist:
 
 repeatstmt:
     T_REPEAT T_EOLN stmtblock
-    { $$ = NewAST(AST_WHILE, AstInteger(1), $3); }
+    {   AST *body = $3; if (!body) body = AstYield(); 
+        $$ = NewAST(AST_WHILE, AstInteger(1), body); }
   | T_REPEAT T_EOLN stmtblock T_WHILE expr T_EOLN
     { $$ = NewAST(AST_DOWHILE, $5, $3); }
   | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
     { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), $3); }
-  | T_REPEAT T_EOLN
-    { $$ = NewAST(AST_WHILE, AstInteger(1), AstYield()); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
-    { $$ = NewAST(AST_WHILE, $3, $5); }
-  | T_REPEAT T_WHILE expr T_EOLN
-    { $$ = NewAST(AST_WHILE, $3, AstYield()); }
+    {   AST *body = $5; if (!body) body = AstYield(); 
+        $$ = NewAST(AST_WHILE, $3, body); }
   | T_REPEAT T_UNTIL expr T_EOLN stmtblock
-    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), $5); }
-  | T_REPEAT T_UNTIL expr T_EOLN
-    { $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), AstYield()); }
+    {   AST *body = $5; if (!body) body = AstYield(); 
+        $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), body); }
   | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
     {
       AST *from, *to, *step; 
@@ -332,15 +338,9 @@ repeatstmt:
   | T_REPEAT expr T_EOLN stmtblock
     {
       AST *from, *to, *step;
-      step = NewAST(AST_STEP, AstInteger(-1), $4);
-      to = NewAST(AST_TO, NULL, step);
-      from = NewAST(AST_FROM, $2, to);
-      $$ = NewAST(AST_COUNTREPEAT, NULL, from);
-    }
-  | T_REPEAT expr T_EOLN
-    {
-      AST *from, *to, *step;
-      step = NewAST(AST_STEP, AstInteger(-1), AstYield());
+      AST *body = $4;
+      if (!body) body = AstYield();
+      step = NewAST(AST_STEP, AstInteger(-1), body);
       to = NewAST(AST_TO, NULL, step);
       from = NewAST(AST_FROM, $2, to);
       $$ = NewAST(AST_COUNTREPEAT, NULL, from);

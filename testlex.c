@@ -10,6 +10,8 @@
 #include <stdarg.h>
 #include "spinc.h"
 
+typedef enum yytokentype Token;
+
 ParserState *current;
 Function *curfunc;
 
@@ -31,7 +33,7 @@ testNumber(const char *str, uint32_t val)
 {
     AST *ast;
     LexStream L;
-    int t;
+    Token t;
     int c;
     printf("testing number[%s]...", str);
     strToLex(&L, str);
@@ -50,7 +52,7 @@ testFloat(const char *str, float fval)
 {
     AST *ast;
     LexStream L;
-    int t;
+    Token t;
     int c;
     uint32_t val;
     union {
@@ -77,7 +79,7 @@ testIdentifier(const char *str, const char *expect)
 {
     LexStream L;
     AST *ast;
-    int t;
+    Token t;
 
     strToLex(&L, str);
     t = getToken(&L, &ast);
@@ -94,7 +96,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     int i;
     LexStream L;
     AST *ast;
-    int t;
+    Token t;
 
     printf("testing tokens [%s]...", str); fflush(stdout);
     strToLex(&L, str);
@@ -128,31 +130,28 @@ static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOF };
 static int tokens3[] = { '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
 
 static const char *token4test = "pub \r\n  if\n    foo\n  bar\n";
-static int tokens4[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
+static int tokens4[] = { T_PUB, T_EOLN, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
 
-static const char *token5test = "pub\n  if\n    foo\n      bar\n  else";
-static int tokens5[] = { T_PUB, T_EOLN, T_INDENT, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_OUTDENT, T_ELSE};
+static const char *token5test = "pub\n  if\n    foo\n      repeat\n  else";
+static int tokens5[] = { T_PUB, T_EOLN, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_REPEAT, T_EOLN, T_INDENT, T_OUTDENT, T_OUTDENT, T_ELSE};
 
 static const char *token6test = "dat\nlabel if_z add x,#1 wc";
 static int tokens6[] = { T_DAT, T_EOLN, T_IDENTIFIER, T_INSTRMODIFIER, T_INSTR,
                          T_IDENTIFIER, ',', '#', T_NUM, T_INSTRMODIFIER};
 
 static const char *token7test = 
-"pub f(x,y)\n"
-"  case x\n"
-"    1: case +\n"
-"        *: g\n"
-"        -: repeat\n"
-"    other if\n";
+"pub f\n"
+"   foo\n"
+"  repeat while x\n"
+"  return x\n";
+
 static int tokens7[] = 
 { 
-  T_PUB, T_IDENTIFIER, '(', T_IDENTIFIER, ',', T_IDENTIFIER, ')', T_EOLN,
-  T_INDENT, T_CASE, T_IDENTIFIER, T_EOLN,
-  T_INDENT, T_NUM, ':', T_CASE, '+', T_EOLN,
-  T_INDENT, '*', ':', T_IDENTIFIER, T_EOLN,
-  '-', ':', T_REPEAT, T_EOLN,
-  T_OUTDENT, T_OTHER, T_IF, T_EOLN,
-  T_OUTDENT, T_OUTDENT, T_EOF
+  T_PUB, T_IDENTIFIER, T_EOLN,
+  T_IDENTIFIER, T_EOLN,
+  T_REPEAT, T_WHILE, T_IDENTIFIER, T_EOLN,
+  T_INDENT, T_OUTDENT,
+  T_RETURN, T_IDENTIFIER, T_EOLN, T_EOF
 };
 
 int

@@ -338,7 +338,7 @@ PrintCaseItem(FILE *f, AST *var, AST *ast, int indent)
     fprintf(f, "(");
     PrintCaseExprList(f, var, ast->left);
     fprintf(f, ") {\n");
-    sawreturn = PrintStatementList(f, ast->right, indent+2);
+    sawreturn = PrintStatementList(f, ast->right, indent);
     fprintf(f, "%*c}", indent, ' ');
     return sawreturn;
 }
@@ -633,7 +633,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
 static int
 PrintFunctionStmts(FILE *f, Function *func)
 {
-    return PrintStatementList(f, func->body, 0);
+    return PrintStatementList(f, func->body, 2);
 }
 
 void

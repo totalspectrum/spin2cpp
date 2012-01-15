@@ -13,7 +13,7 @@ int32_t test44::fun(int32_t x, int32_t y)
   } else if (x == 20) {
     _OUTA ^= 0x4;
   } else if (1) {
-      _OUTA ^= 0x8;
+    _OUTA ^= 0x8;
   }
   return result;
 }

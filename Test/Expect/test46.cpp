@@ -7,15 +7,15 @@ int32_t test46::fun(int32_t x, int32_t y)
 {
   int32_t result = 0;
   if (x == 0) {
-      if (y == 0) {
-        _OUTA ^= 0x1;
-      } else if (y == 1) {
-        _OUTA ^= 0x2;
-      }
+    if (y == 0) {
+      _OUTA ^= 0x1;
+    } else if (y == 1) {
+      _OUTA ^= 0x2;
+    }
   } else if (Between__(x, 10, 12)) {
     _OUTA ^= 0x4;
   } else if (1) {
-      _OUTA ^= 0x8;
+    _OUTA ^= 0x8;
   }
   return result;
 }

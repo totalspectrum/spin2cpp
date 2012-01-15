@@ -140,6 +140,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     }
 }
 
+#define TAB_STOP 8
 /*
  *
  */
@@ -152,8 +153,15 @@ lexgetc(LexStream *L)
         return L->ungot[L->ungot_ptr];
     }
     c = (L->getcf(L));
-    if (c == '\n')
+    if (c == '\n') {
         L->lineCounter++;
+        L->colCounter = 0;
+        L->firstNonBlank = 0;
+    } else if (c == '\t') {
+        L->colCounter = TAB_STOP * ((L->colCounter + TAB_STOP-1)/TAB_STOP);
+    } else {
+        L->colCounter++;
+    }
     return c;
 }
 
@@ -166,6 +174,33 @@ lexungetc(LexStream *L, int c)
     L->ungot[L->ungot_ptr++] = c;
 }
 
+
+//
+// establish an indent level
+// if the line is indented more than this, a T_INDENT will
+// be emitted
+//
+void
+EstablishIndent(LexStream *L, int level)
+{
+    AST *dummy = NewAST(0, NULL, NULL);
+    if (L->indentsp >= MAX_INDENTS-1) {
+        ERROR(dummy, "too many nested indentation levels");
+        return;
+    }
+    if (level < 0) {
+        level = L->firstNonBlank;
+    }
+    L->indentsp++;
+    L->indent[L->indentsp] = level;
+    L->pending_indent++;
+}
+
+void
+resetLineState(LexStream *L)
+{
+    L->eoln = 1;
+}
 
 /*
  * utility functions
@@ -288,6 +323,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     size_t len = 0;
     Symbol *sym;
     AST *ast;
+    int startColumn = L->colCounter - 1;
 
     if (prefix) {
         place = strdup(prefix);
@@ -333,10 +369,25 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         if (sym->type == SYM_RESERVED) {
             c = INTVAL(sym);
             /* check for special handling */
-            if (c == T_PUB || c == T_PRI) {
-                L->in_block = T_PUB;
-            } else if (c == T_DAT || c == T_OBJ || c == T_VAR || c == T_CON) {
+            switch(c) {
+            case T_PUB:
+            case T_PRI:
+            case T_DAT:
+            case T_OBJ:
+            case T_VAR:
+            case T_CON:
                 L->in_block = c;
+                //EstablishIndent(L, 1);
+                break;
+            case T_IF:
+            case T_ELSE:
+            case T_ELSEIF:
+            case T_REPEAT:
+            case T_CASE:
+                EstablishIndent(L, startColumn);
+                break;
+            default:
+                break;
             }
             return c;
         }
@@ -386,30 +437,17 @@ parseString(LexStream *L, AST **ast_ptr)
 // we increase the indent level, T_OUTDENT when we
 // decrease it
 //
-#define TAB_STOP 8
 
 int
 skipSpace(LexStream *L)
 {
     int c;
     int commentNest;
-    int indent = 0;
+    int start_indent;
 
-    if (L->emit_outdents > 0) {
-        --L->emit_outdents;
-        return T_OUTDENT;
-    }
-
-again:
     c = lexgetc(L);
+again:
     while (c == ' ' || c == '\t') {
-        if (L->eoln) {
-            if (c == '\t') {
-                indent = TAB_STOP * ((indent + (TAB_STOP-1))/TAB_STOP);
-            } else {
-                indent++;
-            }
-        }
         c = lexgetc(L);
     }
 
@@ -419,34 +457,37 @@ again:
             c = lexgetc(L);
         } while (c != '\n' && c != T_EOF);
     }
-    if (L->in_block == T_PUB && L->eoln) {
+    if (L->eoln && (L->in_block == T_PUB || L->in_block == T_PRI)) {
         if (c == '\n') {
-            indent = 0;
+            c = lexgetc(L);
             goto again;
         }
-        if (indent > L->indent[L->indentsp]) {
+        /* if there is a pending indent, send it back */
+        if (L->pending_indent) {
             lexungetc(L, c);
-            if (L->indentsp >= MAX_INDENTS) {
-                ERROR(NULL, "too much nesting");
-                return T_INDENT;
-            }
-            L->indent[++L->indentsp] = indent;
-            L->eoln = 0;
+            --L->pending_indent;
             return T_INDENT;
         }
-        if (indent < L->indent[L->indentsp] && L->indentsp > 0) {
-            lexungetc(L, c);
-            while (indent < L->indent[L->indentsp] && L->indentsp > 0) {
+        /* on EOF send as many OUTDENTS as we need */
+        if (c == T_EOF) {
+            if (L->indentsp > 0) {
+                lexungetc(L, c);
                 --L->indentsp;
-                ++L->emit_outdents;
+                return T_OUTDENT;
             }
-            --L->emit_outdents;
-            L->eoln = 0;
+        }
+        /* if our indentation is <= the start value, send back an outdent */
+        start_indent = L->colCounter-1;
+        if (start_indent <= L->indent[L->indentsp] && L->indentsp > 0) {
+            lexungetc(L, c);
+            --L->indentsp;
             return T_OUTDENT;
         }
     }
-    L->eoln = 0;
-
+    if (L->eoln) {
+        L->eoln = 0;
+        L->firstNonBlank = L->colCounter-1;
+    }
     if (c == '{') {
         commentNest = 1;
         do {
@@ -458,6 +499,7 @@ again:
         } while (commentNest > 0 && c != T_EOF);
         if (c == T_EOF)
             return c;
+        c = lexgetc(L);
         goto again;
     }
     if (c == '\n') {
