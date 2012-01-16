@@ -251,7 +251,7 @@ PrintMacros(FILE *f, ParserState *parse)
 {
     AST *ast;
     if (parse->needsYield) {
-        fprintf(f, "#define Yield__() (__napuntil(_CNT + 256))\n");
+        fprintf(f, "#define Yield__() (__napuntil(_CNT + 1))\n");
     }
     if (parse->needsMinMax) {
         fprintf(f, "extern inline int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 

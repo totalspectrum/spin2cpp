@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test29.h"
 
-#define Yield__() (__napuntil(_CNT + 256))
+#define Yield__() (__napuntil(_CNT + 1))
 int32_t test29::tx(int32_t val)
 {
   int32_t result = 0;
