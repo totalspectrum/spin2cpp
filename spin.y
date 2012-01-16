@@ -24,6 +24,22 @@ AstYield(void)
     return NewAST(AST_STMTLIST, NewAST(AST_YIELD, NULL, NULL), NULL);
 }
 
+/* determine whether a loop needs a yield, and if so, insert one */
+AST *
+CheckYield(AST *body)
+{
+    AST *ast = body;
+
+    if (!body)
+        return AstYield();
+    while (ast) {
+        if (ast->left)
+            return body;
+        ast = ast->right;
+    }
+    return AddToList(body, AstYield());
+}
+
 %}
 
 %token T_IDENTIFIER
@@ -297,17 +313,17 @@ rangeexprlist:
 
 repeatstmt:
     T_REPEAT T_EOLN stmtblock
-    {   AST *body = $3; if (!body) body = AstYield(); 
+    {   AST *body = $3; body = CheckYield(body); 
         $$ = NewAST(AST_WHILE, AstInteger(1), body); }
   | T_REPEAT T_EOLN stmtblock T_WHILE expr T_EOLN
-    { $$ = NewAST(AST_DOWHILE, $5, $3); }
+    { $$ = NewAST(AST_DOWHILE, $5, CheckYield($3)); }
   | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
-    { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), $3); }
+    { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), CheckYield($3)); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
-    {   AST *body = $5; if (!body) body = AstYield(); 
+    {   AST *body = $5; body = CheckYield(body); 
         $$ = NewAST(AST_WHILE, $3, body); }
   | T_REPEAT T_UNTIL expr T_EOLN stmtblock
-    {   AST *body = $5; if (!body) body = AstYield(); 
+    {   AST *body = $5; body = CheckYield(body); 
         $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), body); }
   | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
     {
@@ -329,7 +345,7 @@ repeatstmt:
     {
       AST *from, *to, *step;
       AST *body = $4;
-      if (!body) body = AstYield();
+      body = CheckYield(body);
       step = NewAST(AST_STEP, AstInteger(-1), body);
       to = NewAST(AST_TO, NULL, step);
       from = NewAST(AST_FROM, $2, to);
