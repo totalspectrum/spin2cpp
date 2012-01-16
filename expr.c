@@ -643,8 +643,8 @@ PrintAsAddr(FILE *f, AST *expr)
         fprintf(f, "&");
         PrintLHS(f, expr->left, 0, 0);
         break;
-    case AST_RESULT:
     case AST_IDENTIFIER:
+    case AST_RESULT:
     case AST_HWREG:
     case AST_MEMREF:
     case AST_ARRAYREF:
@@ -1155,10 +1155,11 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     params = params->right;
     count = params->left;
 
-    fprintf(f, "%s(", b->cname);
+    fprintf(f, "%s( (void *)", b->cname);
     PrintAsAddr(f, dst);
     fprintf(f, ", ");
     if (ismemcpy) {
+        fprintf(f, "(void *)");
         PrintAsAddr(f, src);
     } else {
         PrintExpr(f, src);
