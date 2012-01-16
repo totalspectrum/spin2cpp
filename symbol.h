@@ -20,6 +20,7 @@ typedef enum symtype {
     SYM_OBJECT,          /* an object name */
     SYM_PARAMETER,       /* function parameter */
     SYM_FLOAT_CONSTANT,  /* floating point constant */
+    SYM_RESULT,          /* result expression */
 } Symtype;
 
 typedef struct symbol {

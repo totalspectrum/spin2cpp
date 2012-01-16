@@ -112,6 +112,7 @@ AST *NewAST(int kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
 AST *DupAST(AST *ast);
 AST *AstInteger(long intval);
+AST *AstIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);
 AST *AstAssign(int32_t intval, AST *left, AST *right);

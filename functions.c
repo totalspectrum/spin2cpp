@@ -149,9 +149,9 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     fdef = NewFunction();
     fdef->name = src->left->d.string;
     if (src->right)
-        fdef->resultname = src->right->d.string;
+        fdef->resultexpr = AstIdentifier(src->right->d.string);
     else
-        fdef->resultname = "result";
+        fdef->resultexpr = AstIdentifier("result");
     fdef->is_public = is_public;
     fdef->type = ast_type_long;
 
@@ -165,7 +165,9 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     fdef->locals = vars->right;
     EnterParameters(&fdef->localsyms, ast_type_long, fdef->params);
     EnterVars(&fdef->localsyms, ast_type_long, fdef->locals);
-    EnterVariable(&fdef->localsyms, fdef->resultname, ast_type_long);
+
+    AddSymbol(&fdef->localsyms, fdef->resultexpr->d.string, SYM_RESULT, ast_type_long);
+
     fdef->body = body;
 
     /* check for special conditions */
@@ -274,10 +276,10 @@ PrintFunctionVariables(FILE *f, Function *func)
 {
     AST *v;
 
-    /* the result has to come right before parmarray in order
-       for F32 to work
+    /* the result has to come right after parmarray in order
+       for F32 to work (the way gcc allocates variables on
+       the stack is kind of backwards)
     */
-    fprintf(f, "  int32_t %s = 0;\n", func->resultname);
     if (func->parmarray) {
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
         for (v = func->params; v; v = v->right) {
@@ -286,6 +288,7 @@ PrintFunctionVariables(FILE *f, Function *func)
         }
         fprintf(f, " };\n");
     }
+    fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
     if (func->locals) {
         PrintVarList(f, ast_type_long, func->locals);
     }
@@ -561,7 +564,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         if (ast->left) {
             PrintExpr(f, ast->left);
         } else {
-            fprintf(f, "%s", curfunc->resultname);
+            PrintExpr(f, curfunc->resultexpr);
         }
         fprintf(f, ";\n");
         sawreturn = 1;
@@ -659,7 +662,9 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         PrintFunctionVariables(f, pf);
         sawreturn = PrintFunctionStmts(f, pf);
         if (!sawreturn) {
-            fprintf(f, "  return %s;\n", pf->resultname);
+            fprintf(f, "  return ");
+            PrintExpr(f, pf->resultexpr);
+            fprintf(f, ";\n");
         }
         fprintf(f, "}\n\n");
         curfunc = NULL;

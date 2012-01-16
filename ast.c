@@ -102,6 +102,14 @@ AstInteger(long ival)
     return ast;
 }
 
+/* create an identifier */
+AST *
+AstIdentifier(const char *name)
+{
+    AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    ast->d.string = name;
+    return ast;
+}
 /*
  * create an instruction modifier with a specific bit pattern
  */

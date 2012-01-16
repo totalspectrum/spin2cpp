@@ -366,7 +366,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
         if (!curfunc) {
             ERROR(expr, "RESULT keyword outside of function");
         } else {
-            fprintf(f, "%s", curfunc->resultname);
+            PrintLHS(f, curfunc->resultexpr, assignment, ref);
         }
         break;
     case AST_IDENTIFIER:

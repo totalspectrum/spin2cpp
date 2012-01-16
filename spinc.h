@@ -73,11 +73,11 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *type;        /* the function type, normally long */
-    const char *resultname;
     int numparams;
     AST *params;      /* parameter list */
     AST *locals;      /* local variables */
     AST *body;
+    AST *resultexpr;
 
     /* array holding parameters, if necessary */
     const char *parmarray;
