@@ -98,7 +98,7 @@ AstYield(void)
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
 %left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT
-%left T_CONSTANT T_FLOAT
+%left T_CONSTANT T_FLOAT T_TRUNC T_ROUND
 
 %%
 input:
@@ -613,9 +613,16 @@ expr:
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
-  | T_CONSTANT expr
-    { $$ = NewAST(AST_CONSTANT, $2, NULL); }
+  | T_CONSTANT '(' expr ')'
+    { $$ = NewAST(AST_CONSTANT, $3, NULL); }
+  | T_FLOAT '(' expr ')'
+    { $$ = NewAST(AST_TOFLOAT, $3, NULL); }
+  | T_ROUND '(' expr ')'
+    { $$ = NewAST(AST_ROUND, $3, NULL); }
+  | T_TRUNC '(' expr ')'
+    { $$ = NewAST(AST_TRUNC, $3, NULL); }
   | lookupexpr
+    { $$ = $1; }
   ;
 
 lhs: identifier

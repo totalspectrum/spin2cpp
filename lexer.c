@@ -640,10 +640,12 @@ struct reservedword {
     { "res", T_RES },
     { "result", T_RESULT },
     { "return", T_RETURN },
+    { "round", T_ROUND },
 
     { "step", T_STEP },
     { "string", T_STRINGPTR },
     { "to", T_TO },
+    { "trunc", T_TRUNC },
 
     { "until", T_UNTIL },
 

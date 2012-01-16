@@ -93,6 +93,9 @@ enum astkind {
     AST_NEXT,
 
     AST_RESULT = 60,
+    AST_ROUND,
+    AST_TRUNC,
+    AST_TOFLOAT,
 };
 
 struct AST {

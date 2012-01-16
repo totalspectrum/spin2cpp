@@ -1,6 +1,7 @@
 #include "spinc.h"
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 
 /* code to find a symbol */
 Symbol *
@@ -921,15 +922,35 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     case AST_INTEGER:
         return intExpr(expr->d.ival);
 
-    case AST_STRING:
-        return intExpr(expr->d.string[0]);
-
     case AST_FLOAT:
         return floatExpr(intAsFloat(expr->d.ival));
 
+    case AST_STRING:
+        return intExpr(expr->d.string[0]);
+
+    case AST_TOFLOAT:
+        lval = EvalExpr(expr->left, flags, valid);
+        if (lval.type != INT_EXPR) {
+            ERROR(expr, "applying float to a non integer expression");
+        }
+        return floatExpr((float)(lval.val));
+
+    case AST_TRUNC:
+        lval = EvalExpr(expr->left, flags, valid);
+        if (lval.type != FLOAT_EXPR) {
+            ERROR(expr, "applying trunc to a non float expression");
+        }
+        return intExpr((int)intAsFloat(lval.val));
+
+    case AST_ROUND:
+        lval = EvalExpr(expr->left, flags, valid);
+        if (lval.type != FLOAT_EXPR) {
+            ERROR(expr, "applying trunc to a non float expression");
+        }
+        return intExpr((int)roundf(intAsFloat(lval.val)));
+
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid);
-        break;
 
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
