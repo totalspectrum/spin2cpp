@@ -62,11 +62,11 @@ NewParserState(const char *name)
  * declare constant symbols
  */
 static Symbol *
-EnterConstant(const char *name, long val)
+EnterConstant(const char *name, AST *expr)
 {
     Symbol *sym;
 
-    sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)val);
+    sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr);
     return sym;
 }
 
@@ -86,12 +86,12 @@ DeclareConstants(void)
                     ast = ast->right;
                     break;
                 case AST_IDENTIFIER:
-                    EnterConstant(ast->d.string, default_val);
+                    EnterConstant(ast->d.string, AstInteger(default_val));
                     default_val++;
                     ast = ast->right;
                     break;
                 case AST_ASSIGN:
-                    EnterConstant(ast->left->d.string, EvalConstExpr(ast->right));
+                    EnterConstant(ast->left->d.string, ast->right);
                     ast = NULL;
                     break;
                 default:

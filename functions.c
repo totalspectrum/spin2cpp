@@ -109,9 +109,13 @@ ScanFunctionBody(Function *fdef, AST *body)
     case AST_ADDROF:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
-        if (ast->kind == AST_IDENTIFIER && fdef->parmarray == NULL) {
-            Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
-            if (sym && sym->type == SYM_PARAMETER) {
+        if (fdef->parmarray == NULL) {
+            if (ast->kind == AST_IDENTIFIER) {
+                Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
+                if (sym && sym->type == SYM_PARAMETER) {
+                    fdef->parmarray = NewTemporaryVariable("_parm_");
+                }
+            } else if (ast->kind == AST_RESULT) {
                 fdef->parmarray = NewTemporaryVariable("_parm_");
             }
         }
@@ -269,10 +273,11 @@ static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
     AST *v;
+
+    /* the result has to come right before parmarray in order
+       for F32 to work
+    */
     fprintf(f, "  int32_t %s = 0;\n", func->resultname);
-    if (func->locals) {
-        PrintVarList(f, ast_type_long, func->locals);
-    }
     if (func->parmarray) {
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
         for (v = func->params; v; v = v->right) {
@@ -280,6 +285,9 @@ PrintFunctionVariables(FILE *f, Function *func)
             if (v->right) fprintf(f, ", ");
         }
         fprintf(f, " };\n");
+    }
+    if (func->locals) {
+        PrintVarList(f, ast_type_long, func->locals);
     }
 }
  

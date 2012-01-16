@@ -13,7 +13,7 @@ int32_t test40::dec(int32_t value)
 {
   int32_t result = 0;
   int32_t	i, x;
-  x = -(value == -2147483648);
+  x = -(value == 0x80000000);
   if (value < 0) {
     value = (abs((value + x)));
     tx('-');

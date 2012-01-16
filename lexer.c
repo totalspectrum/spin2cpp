@@ -756,7 +756,7 @@ initLexer(void)
 
     /* and builtin constants */
     for (i = 0; i < N_ELEMENTS(constants); i++) {
-        AddSymbol(&reservedWords, constants[i].name, constants[i].type, (void *)(intptr_t)constants[i].val);
+        AddSymbol(&reservedWords, constants[i].name, constants[i].type, AstInteger(constants[i].val));
     }
 
     /* add the PASM instructions */

@@ -670,6 +670,10 @@ expritem:
    {
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
    }
+  | float '[' expr ']'
+   {
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
+   }
   ;
 
 exprlist:

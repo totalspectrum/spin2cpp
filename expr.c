@@ -63,6 +63,40 @@ LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
     return sym;
 }
 
+/*
+ * look up an object constant reference
+ * sets *objsym to the object and *sym to the symbol
+ */
+
+int
+GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr)
+{
+    Symbol *objsym, *sym;
+    objsym = LookupAstSymbol(expr->left, "object reference");
+    if (!objsym) {
+        // error already printed
+        return 0;
+    }
+    if (objsym->type != SYM_OBJECT) {
+        ERROR(expr, "%s is not an object", objsym->name);
+        return 0;
+    }
+    if (expr->right->kind != AST_IDENTIFIER) {
+        ERROR(expr, "expected identifier after '.'");
+        return 0;
+    }
+    sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
+    if (!sym || (sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
+        ERROR(expr, "%s is not a constant of object %s",
+              expr->right->d.string, objsym->name);
+        return 0;
+    }
+
+    if (objsym_ptr) *objsym_ptr = objsym;
+    if (sym_ptr) *sym_ptr = sym;
+    return 1;
+}
+
 /* code to print a label to a file
  * if "ref" is nonzero this is an array reference, so do not
  * dereference again
@@ -82,15 +116,21 @@ PrintLabel(FILE *f, Symbol *sym, int ref)
 void
 PrintSymbol(FILE *f, Symbol *sym)
 {
+    int32_t v;
+
     switch (sym->type) {
     case SYM_LABEL:
         PrintLabel(f, sym, 0);
         break;
     case SYM_CONSTANT:
-        fprintf(f, "%ld", (long)(intptr_t)sym->val);
+        v = EvalConstExpr((AST *)sym->val);
+        if (v >= -9999 && v <= 9999)
+            fprintf(f, "%ld", (long)v);
+        else
+            fprintf(f, "0x%lx", (long)(uint32_t)v);
         break;
     case SYM_FLOAT_CONSTANT:
-        fprintf(f, "0x%lx", (long)(intptr_t)sym->val);
+        fprintf(f, "0x%lx", (long)(uint32_t)EvalConstExpr((AST*)sym->val));
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
@@ -242,6 +282,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         opstring[0] = op;
         opstring[1] = 0;
         PrintInOp(f, opstring, left, right);
+        break;
+    case T_ENCODE:
+        fprintf(f, "(1 << ");
+        PrintExpr(f, right);
+        fprintf(f, ")");
         break;
     default:
         ERROR(NULL, "unsupported operator %d", op);
@@ -729,21 +774,8 @@ PrintExpr(FILE *f, AST *expr)
         PrintMacroExpr(f, "Lookup__", expr->left, expr->right);
         break;
     case AST_CONSTREF:
-        objsym = LookupAstSymbol(expr->left, "object reference");
-        if (!objsym) return;
-        if (objsym->type != SYM_OBJECT) {
-            ERROR(expr, "%s is not an object", objsym->name);
+        if (!GetObjConstant(expr, &objsym, &sym))
             return;
-        }
-        if (expr->right->kind != AST_IDENTIFIER) {
-            ERROR(expr, "expected identifier after '.'");
-            return;
-        }
-        sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
-        if (!sym || (sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
-            ERROR(expr, "%s is not a constant of object %s",
-                  expr->right->d.string, objsym->name);
-        }
         fprintf(f, "%s.%s", objsym->name, sym->name);
         break;
     default:
@@ -911,9 +943,11 @@ EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 static ExprVal
 EvalExpr(AST *expr, unsigned flags, int *valid)
 {
-    Symbol *sym;
+    Symbol *sym, *objsym;
     ExprVal lval, rval;
     int reportError = (valid == NULL);
+    ExprVal ret;
+    ParserState *pushed;
 
     if (!expr)
         return intExpr(0);
@@ -951,7 +985,16 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
 
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid);
-
+    case AST_CONSTREF:
+        if (!GetObjConstant(expr, &objsym, &sym)) {
+            return intExpr(0);
+        }
+        /* while we're evaluating, use the object context */
+        pushed = current;
+        current = objsym->val;
+        ret = EvalExpr(sym->val, flags, valid);
+        current = pushed;
+        return ret;
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
@@ -963,9 +1006,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         } else {
             switch (sym->type) {
             case SYM_CONSTANT:
-                return intExpr((intptr_t)sym->val);
+                return intExpr(EvalConstExpr((AST *)sym->val));
             case SYM_FLOAT_CONSTANT:
-                return floatExpr(intAsFloat((intptr_t)sym->val));
+                return floatExpr(intAsFloat(EvalConstExpr((AST *)sym->val)));
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = sym->val;
