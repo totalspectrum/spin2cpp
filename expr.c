@@ -151,11 +151,18 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
-            fprintf(f, "%s[%ld]", curfunc->parmarray, (long)(intptr_t)sym->val);
+            fprintf(f, "%s[%ld]", curfunc->parmarray, curfunc->result_in_parmarray+(long)(intptr_t)sym->val);
         } else {
             fprintf(f, "%s", sym->name);
         }
         break;              
+    case SYM_RESULT:
+        if (curfunc && curfunc->result_in_parmarray) {
+            fprintf(f, "%s[0]", curfunc->parmarray);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
+        break;
     default:
         fprintf(f, "%s", sym->name);
         break;
@@ -301,9 +308,9 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, opstring, left, right);
         break;
     case T_ENCODE:
-        fprintf(f, "(1 << ");
+        fprintf(f, "(32 - __builtin_clz(");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        fprintf(f, "))");
         break;
     default:
         ERROR(NULL, "unsupported operator %d", op);
@@ -365,6 +372,8 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
     case AST_RESULT:
         if (!curfunc) {
             ERROR(expr, "RESULT keyword outside of function");
+        } else if (curfunc->result_in_parmarray) {
+            fprintf(f, "%s[0]", curfunc->parmarray);
         } else {
             PrintLHS(f, curfunc->resultexpr, assignment, ref);
         }

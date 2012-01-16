@@ -119,6 +119,10 @@ ScanFunctionBody(Function *fdef, AST *body)
                 fdef->parmarray = NewTemporaryVariable("_parm_");
             }
         }
+        if (ast->kind == AST_RESULT && !fdef->result_in_parmarray) {
+            fdef->result_in_parmarray = 1;
+            fdef->resultexpr = NewAST(AST_RESULT, NULL, NULL);
+        }
         break;
     default:
         break;
@@ -137,6 +141,8 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     Function *fdef;
     AST *vars;
     AST *src;
+    const char *resultname;
+
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
         return;
@@ -149,9 +155,10 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     fdef = NewFunction();
     fdef->name = src->left->d.string;
     if (src->right)
-        fdef->resultexpr = AstIdentifier(src->right->d.string);
+        resultname = src->right->d.string;
     else
-        fdef->resultexpr = AstIdentifier("result");
+        resultname = "result";
+    fdef->resultexpr = AstIdentifier(resultname);
     fdef->is_public = is_public;
     fdef->type = ast_type_long;
 
@@ -166,7 +173,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     EnterParameters(&fdef->localsyms, ast_type_long, fdef->params);
     EnterVars(&fdef->localsyms, ast_type_long, fdef->locals);
 
-    AddSymbol(&fdef->localsyms, fdef->resultexpr->d.string, SYM_RESULT, ast_type_long);
+    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
     fdef->body = body;
 
@@ -282,13 +289,17 @@ PrintFunctionVariables(FILE *f, Function *func)
     */
     if (func->parmarray) {
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
+        if (func->result_in_parmarray) {
+            fprintf(f, "0, ");
+        }
         for (v = func->params; v; v = v->right) {
             fprintf(f, "%s", v->left->d.string);
             if (v->right) fprintf(f, ", ");
         }
         fprintf(f, " };\n");
     }
-    fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
+    if (!func->result_in_parmarray)
+        fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
     if (func->locals) {
         PrintVarList(f, ast_type_long, func->locals);
     }

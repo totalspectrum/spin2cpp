@@ -1,6 +1,6 @@
 VAR
   long ga, gb, gc
 
-PUB myinit(a, b) : x
+PUB myinit(a, b)
   a := 1
-  longmove(@x, @ga, 3)
+  longmove(@result, @ga, 3)

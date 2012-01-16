@@ -78,9 +78,11 @@ typedef struct funcdef {
     AST *locals;      /* local variables */
     AST *body;
     AST *resultexpr;
-
     /* array holding parameters, if necessary */
     const char *parmarray;
+    /* true if the result should be placed in the parameter array */
+    int result_in_parmarray;
+
     /* local symbols */
     SymbolTable localsyms;
 
