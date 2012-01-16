@@ -117,7 +117,7 @@ void
 PrintInteger(FILE *f, int32_t v)
 {
     if (v == (int32_t)0x80000000)
-        fprintf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
+        fprintf(f, "(int32_t)0x%lxU", (long)(uint32_t)v);
     else
         fprintf(f, "%ld", (long)v);
 }

@@ -151,7 +151,9 @@ DeclareObjects(ParserState *parse)
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
-    fprintf(f, "  static const int %s = %d;\n", ast->d.string, (int)EvalConstExpr(ast));
+    fprintf(f, "  static const int %s = ", ast->d.string);
+    PrintInteger(f, EvalConstExpr(ast));
+    fprintf(f, ";\n");
 }
 
 
