@@ -198,7 +198,7 @@ PrintParameterList(FILE *f, AST *list)
 }
 
 static void
-PrintFunction(FILE *f, Function *func)
+PrintFunctionDecl(FILE *f, Function *func)
 {
     fprintf(f, "  int32_t\t%s(", func->name);
     PrintParameterList(f, func->params);
@@ -213,7 +213,7 @@ PrintPublicFunctionDecls(FILE *f, ParserState *parse)
     for (pf = parse->functions; pf; pf = pf->next) {
         if (!pf->is_public)
             continue;
-        PrintFunction(f, pf);
+        PrintFunctionDecl(f, pf);
     }
 }
 
@@ -225,7 +225,7 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
     for (pf = parse->functions; pf; pf = pf->next) {
         if (pf->is_public)
             continue;
-        PrintFunction(f, pf);
+        PrintFunctionDecl(f, pf);
     }
 }
 
