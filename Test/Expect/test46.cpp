@@ -1,7 +1,7 @@
 #include <propeller.h>
 #include "test46.h"
 
-static inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }
+extern inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }
 
 int32_t test46::fun(int32_t x, int32_t y)
 {

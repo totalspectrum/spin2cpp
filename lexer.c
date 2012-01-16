@@ -156,7 +156,6 @@ lexgetc(LexStream *L)
     if (c == '\n') {
         L->lineCounter++;
         L->colCounter = 0;
-        L->firstNonBlank = 0;
     } else if (c == '\t') {
         L->colCounter = TAB_STOP * ((L->colCounter + TAB_STOP-1)/TAB_STOP);
     } else {
@@ -199,7 +198,7 @@ EstablishIndent(LexStream *L, int level)
 void
 resetLineState(LexStream *L)
 {
-    L->eoln = 1;
+    lexungetc(L, '\n');
 }
 
 /*

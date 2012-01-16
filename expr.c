@@ -172,11 +172,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, ">>", left, right);
         break;
     case T_SHR:
-        fprintf(f, "( (int32_t)((uint32_t)");
+        fprintf(f, "Shr__(");
         PrintExpr(f, left);
-        fprintf(f, ") >> ");
+        fprintf(f, ", ");
         PrintExpr(f, right);
-        fprintf(f, " )");
+        fprintf(f, ")");
         break;
     case T_REV:
         fprintf(f, "__builtin_propeller_reverse(");

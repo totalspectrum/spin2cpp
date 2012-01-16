@@ -256,16 +256,6 @@ casematchitem:
         AST *slist = NewAST(AST_STMTLIST, $3, NULL);
         $$ = NewAST(AST_CASEITEM, $1, slist);
     }
-  | casematch nonemptystmt stmtblock
-    {
-        AST *slist = NewAST(AST_STMTLIST, $2, NULL);
-        $$ = NewAST(AST_CASEITEM, $1, AddToList(slist, $3));
-    }
-  | casematch nonemptystmt
-    {
-        AST *slist = NewAST(AST_STMTLIST, $2, NULL);
-        $$ = NewAST(AST_CASEITEM, $1, slist);
-    }
   ;
 
 casematch:
@@ -285,10 +275,10 @@ matchexprlist:
 matchexpritem:
   T_OTHER
     { $$ = NewAST(AST_OTHER, NULL, NULL); }
-  | expr
-    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   | expr T_DOTS expr
     { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); current->needsBetween = 1; }
+  | expr
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   ;
 
 
@@ -535,7 +525,7 @@ expr:
   | expr T_SHL expr
     { $$ = AstOperator(T_SHL, $1, $3); }
   | expr T_SHR expr
-    { $$ = AstOperator(T_SHR, $1, $3); }
+    { $$ = AstOperator(T_SHR, $1, $3); current->needsShr = 1; }
   | expr T_SAR expr
     { $$ = AstOperator(T_SAR, $1, $3); }
   | expr T_OR expr

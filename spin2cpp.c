@@ -254,15 +254,18 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define Yield__() (__napuntil(_CNT + 256))\n");
     }
     if (parse->needsMinMax) {
-        fprintf(f, "#define Min__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a < b ? a : b;})\n"); 
-        fprintf(f, "#define Max__(x, y) __extension__({ int32_t a = (x); int32_t b = (y); a > b ? a : b;})\n\n");
+        fprintf(f, "extern inline int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
+        fprintf(f, "extern inline int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsRotate) {
-        fprintf(f, "#define Rotl__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a<<b) | (a>>(32-b)); })\n"); 
-        fprintf(f, "#define Rotr__(x, y) __extension__({ uint32_t a = (x); uint32_t b = (y); (a>>b) | (a<<(32-b)); })\n\n"); 
+        fprintf(f, "extern inline int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
+        fprintf(f, "extern inline int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
+    }
+    if (parse->needsShr) {
+        fprintf(f, "extern inline int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
     if (parse->needsBetween) {
-        fprintf(f, "static inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
+        fprintf(f, "extern inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
     }
     if (parse->arrays) {
         fprintf(f, "#define Lookup__(x, a) __extension__({ int32_t i = (x); (i < 0 || i >= sizeof(a)/sizeof(a[0])) ? 0 : a[i]; })\n");

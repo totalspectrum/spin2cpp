@@ -127,6 +127,7 @@ struct parserstate {
     /* flags for emitting macros */
     char needsMinMax;
     char needsRotate;
+    char needsShr;
     char needsStdlib;
     char needsYield;
     char needsBetween;
