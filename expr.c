@@ -112,6 +112,26 @@ PrintLabel(FILE *f, Symbol *sym, int ref)
     fprintf(f, " *)&dat[%d])", lab->offset);
 }
 
+/* code to print an integer */
+void
+PrintInteger(FILE *f, int32_t v)
+{
+    if (v == (int32_t)0x80000000)
+        fprintf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
+    else
+        fprintf(f, "%ld", (long)v);
+}
+
+/* code to print a float */
+void
+PrintFloat(FILE *f, int32_t v)
+{
+    if (v < 0)
+        fprintf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
+    else
+        fprintf(f, "0x%lx", (long)v);
+}
+
 /* code to print a symbol to a file */
 void
 PrintSymbol(FILE *f, Symbol *sym)
@@ -124,13 +144,10 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_CONSTANT:
         v = EvalConstExpr((AST *)sym->val);
-        if (v >= -9999 && v <= 9999)
-            fprintf(f, "%ld", (long)v);
-        else
-            fprintf(f, "0x%lx", (long)(uint32_t)v);
+        PrintInteger(f, v);
         break;
     case SYM_FLOAT_CONSTANT:
-        fprintf(f, "0x%lx", (long)(uint32_t)EvalConstExpr((AST*)sym->val));
+        PrintFloat(f, EvalConstExpr((AST*)sym->val));
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
@@ -694,10 +711,10 @@ PrintExpr(FILE *f, AST *expr)
     }
     switch (expr->kind) {
     case AST_INTEGER:
-        fprintf(f, "%ld", (long)(int32_t)expr->d.ival);
+        PrintInteger(f, (int32_t)expr->d.ival);
         break;
     case AST_FLOAT:
-        fprintf(f, "0x%lx", (long)(int32_t)expr->d.ival);
+        PrintFloat(f, (int32_t)expr->d.ival);
         break;
     case AST_STRING:
         c = expr->d.string[0];

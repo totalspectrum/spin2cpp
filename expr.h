@@ -26,6 +26,7 @@ void PrintBoolExpr(FILE *f, AST *expr);
 void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
+void PrintInteger(FILE *f, int32_t v);
 
 /* expression utility functions */
 union float_or_int {
