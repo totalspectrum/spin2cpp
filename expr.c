@@ -151,7 +151,7 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
-            fprintf(f, "%s[%ld]", curfunc->parmarray, curfunc->result_in_parmarray+(long)(intptr_t)sym->val);
+            fprintf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->count);
         } else {
             fprintf(f, "%s", sym->name);
         }

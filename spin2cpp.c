@@ -127,7 +127,7 @@ DeclareVariables(void)
             ERROR(upper, "bad type  %d in variable list\n", upper->kind);
             return;
         }
-        EnterVars(&current->objsyms, curtype, upper->left);
+        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, upper->left);
     }
 }
 

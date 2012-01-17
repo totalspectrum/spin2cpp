@@ -21,6 +21,7 @@ typedef enum symtype {
     SYM_PARAMETER,       /* function parameter */
     SYM_FLOAT_CONSTANT,  /* floating point constant */
     SYM_RESULT,          /* result expression */
+    SYM_LOCALVAR,        /* local variable in function */
 } Symtype;
 
 typedef struct symbol {
@@ -28,6 +29,7 @@ typedef struct symbol {
     const char   *name;   /* name */
     Symtype       type;   /* symbol type */
     void         *val;    /* symbol value */
+    int           count;  /* extra value recording symbol order within a function */
 } Symbol;
 
 #define INTVAL(sym) ((intptr_t)((sym)->val))

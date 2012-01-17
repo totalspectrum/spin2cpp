@@ -166,7 +166,7 @@ void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P);
-void EnterVars(SymbolTable *stab, AST *type, AST *varlist);
+void EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);

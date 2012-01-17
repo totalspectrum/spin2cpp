@@ -33,29 +33,33 @@ NewFunction(void)
 }
 
 static Symbol *
-EnterVariable(SymbolTable *stab, const char *name, AST *type)
+EnterVariable(int kind, SymbolTable *stab, const char *name, AST *type)
 {
     Symbol *sym;
 
-    sym = AddSymbol(stab, name, SYM_VARIABLE, (void *)type);
+    sym = AddSymbol(stab, name, kind, (void *)type);
     return sym;
 }
 
 void
-EnterVars(SymbolTable *stab, AST *curtype, AST *varlist)
+EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
 {
     AST *lower;
     AST *ast;
+    Symbol *sym;
+    int count = 0;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
             switch (ast->kind) {
             case AST_IDENTIFIER:
-                EnterVariable(stab, ast->d.string, curtype);
+                sym = EnterVariable(kind, stab, ast->d.string, symval);
+                sym->count = count++;
                 break;
             case AST_ARRAYDECL:
-                EnterVariable(stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, curtype, ast->right));
+                sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symval, ast->right));
+                sym->count = count++;
                 break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
@@ -70,30 +74,7 @@ EnterVars(SymbolTable *stab, AST *curtype, AST *varlist)
 void
 EnterParameters(SymbolTable *stab, AST *curtype, AST *varlist)
 {
-    AST *lower;
-    AST *ast;
-    int paramnum = 0;
-
-    if (curtype != ast_type_long) {
-        ERROR(varlist, "bad type in parameter list");
-        return;
-    }
-    for (lower = varlist; lower; lower = lower->right) {
-        if (lower->kind == AST_LISTHOLDER) {
-            ast = lower->left;
-            switch (ast->kind) {
-            case AST_IDENTIFIER:
-                AddSymbol(stab, ast->d.string, SYM_PARAMETER, (void *)(intptr_t)paramnum);
-                paramnum++;
-                break;
-            default:
-                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
-                break;
-            }
-        } else {
-            ERROR(lower, "Expected list for parameters, found %d instead", lower->kind);
-        }
-    }
+    EnterVars(SYM_PARAMETER, stab, curtype, varlist);
 }
 
 /*
@@ -171,7 +152,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     fdef->params = vars->left;
     fdef->locals = vars->right;
     EnterParameters(&fdef->localsyms, ast_type_long, fdef->params);
-    EnterVars(&fdef->localsyms, ast_type_long, fdef->locals);
+    EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals);
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
