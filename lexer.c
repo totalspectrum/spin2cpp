@@ -256,7 +256,21 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     if ( base == 10 && (c == '.' || c == 'e' || c == 'E') ) {
         /* potential floating point number */
         float f = (float)uval;
-        float divby = 0.1f;
+        float ff = 0.0;
+        static float divby[45] = {
+            1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
+            1e-6f, 1e-7f, 1e-8f, 1e-9f, 1e-10f,
+            1e-11f, 1e-12f, 1e-13f, 1e-14f, 1e-15f,
+            1e-16f, 1e-17f, 1e-18f, 1e-19f, 1e-20f,
+            1e-21f, 1e-22f, 1e-23f, 1e-24f, 1e-25f,
+            1e-26f, 1e-27f, 1e-28f, 1e-29f, 1e-30f,
+            1e-31f, 1e-32f, 1e-33f, 1e-34f, 1e-35f,
+            1e-36f, 1e-37f, 1e-38f, 1e-39f, 1e-40f,
+            1e-41f, 1e-42f, 1e-43f, 1e-44f, 1e-45f,
+        };
+        int counter = 0;
+        int exponent = 0;
+
         if (c == '.') {
             c = lexgetc(L);
             if ( c != 'e' && c != 'E' && (c < '0' || c > '9')) {
@@ -266,12 +280,12 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             }
         }
         while (c >= '0' && c <= '9') {
-            f = f + divby*(float)(c-'0');
+            ff = ff + divby[counter]*(float)(c-'0');
             c = lexgetc(L);
-            divby = divby / 10.0;
+            counter++;
         }
         if (c == 'e' || c == 'E') {
-            int exponent = 0;
+            int expval = 0;
             int neg = 1;
             c = lexgetc(L);
             if (c == '+') {
@@ -281,11 +295,17 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 neg = -neg;
             }
             while (c >= '0' && c <= '9') {
-                exponent = 10*exponent + (c - '0');
+                expval = 10*expval + (c - '0');
                 c = lexgetc(L);
             }
             if (neg < 0)
-                exponent = -exponent;
+                expval = -expval;
+            exponent += expval;
+        }
+        f = f + ff;
+        if (exponent < 0 && exponent >= -45) {
+            f *= divby[-(exponent+1)];
+        } else if (exponent != 0) {
             f *= powf(10.0f, (float)exponent);
         }
         uval = floatAsInt(f);
