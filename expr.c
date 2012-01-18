@@ -156,6 +156,13 @@ PrintSymbol(FILE *f, Symbol *sym)
             fprintf(f, "%s", sym->name);
         }
         break;              
+    case SYM_LOCALVAR:
+        if (curfunc && curfunc->localarray) {
+            fprintf(f, "%s[%d]", curfunc->localarray, sym->count);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
+        break;              
     case SYM_RESULT:
         if (curfunc && curfunc->result_in_parmarray) {
             fprintf(f, "%s[0]", curfunc->parmarray);

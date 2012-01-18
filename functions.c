@@ -41,13 +41,14 @@ EnterVariable(int kind, SymbolTable *stab, const char *name, AST *type)
     return sym;
 }
 
-void
+int
 EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
 {
     AST *lower;
     AST *ast;
     Symbol *sym;
     int count = 0;
+    int size;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
@@ -59,7 +60,9 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
                 break;
             case AST_ARRAYDECL:
                 sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symval, ast->right));
-                sym->count = count++;
+                size = EvalConstExpr(ast->right);
+                sym->count = count;
+                count += size;
                 break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
@@ -67,14 +70,10 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
             }
         } else {
             ERROR(lower, "Expected list of variables, found %d instead", lower->kind);
+            return 0;
         }
     }
-}
-
-void
-EnterParameters(SymbolTable *stab, AST *curtype, AST *varlist)
-{
-    EnterVars(SYM_PARAMETER, stab, curtype, varlist);
+    return count;
 }
 
 /*
@@ -90,19 +89,30 @@ ScanFunctionBody(Function *fdef, AST *body)
     case AST_ADDROF:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
-        if (fdef->parmarray == NULL) {
-            if (ast->kind == AST_IDENTIFIER) {
-                Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
-                if (sym && sym->type == SYM_PARAMETER) {
-                    fdef->parmarray = NewTemporaryVariable("_parm_");
+        if (ast->kind == AST_IDENTIFIER) {
+            Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
+            if (sym) {
+                if (sym->type == SYM_PARAMETER) {
+                    if (!fdef->parmarray)
+                        fdef->parmarray = NewTemporaryVariable("_parm_");
+                } else if (sym->type == SYM_LOCALVAR) {
+                    if (!fdef->localarray)
+                        fdef->localarray = NewTemporaryVariable("_local_");
                 }
-            } else if (ast->kind == AST_RESULT) {
+            }
+        } else if (ast->kind == AST_RESULT) {
+            /* hack to make F32.spin work: it expects all variables
+               to be arranged as result,parameters,locals
+               so force all of those into the _parm_ array
+            */
+            if (!fdef->parmarray) {
                 fdef->parmarray = NewTemporaryVariable("_parm_");
             }
-        }
-        if (ast->kind == AST_RESULT && !fdef->result_in_parmarray) {
-            fdef->result_in_parmarray = 1;
-            fdef->resultexpr = NewAST(AST_RESULT, NULL, NULL);
+            fdef->localarray = fdef->parmarray;
+            if (!fdef->result_in_parmarray) {
+                fdef->result_in_parmarray = 1;
+                fdef->resultexpr = NewAST(AST_RESULT, NULL, NULL);
+            }
         }
         break;
     default:
@@ -123,6 +133,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     AST *vars;
     AST *src;
     const char *resultname;
+    int localcount;
 
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
@@ -151,8 +162,8 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-    EnterParameters(&fdef->localsyms, ast_type_long, fdef->params);
-    EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals);
+    EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params);
+    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals);
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
@@ -160,6 +171,12 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
 
     /* check for special conditions */
     ScanFunctionBody(fdef, body);
+
+    /* if we put the locals into an array, record the size of that array */
+    if (fdef->localarray)
+        fdef->localarray_len = localcount;
+
+    /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 }
 
@@ -259,30 +276,56 @@ PrintVarList(FILE *f, AST *typeast, AST *ast)
     fprintf(f, ";\n");
 }
 
+Symbol *VarSymbol(Function *func, AST *ast)
+{
+    if (ast && ast->kind == AST_ARRAYDECL)
+        ast = ast->left;
+    if (ast == 0 || ast->kind != AST_IDENTIFIER) {
+        ERROR(ast, "internal error: expected variable name\n");
+        return NULL;
+    }
+    return FindSymbol(&func->localsyms, ast->d.string);
+}
+
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
     AST *v;
+    int offset = 0;
 
-    /* the result has to come right after parmarray in order
-       for F32 to work (the way gcc allocates variables on
-       the stack is kind of backwards)
-    */
     if (func->parmarray) {
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
         if (func->result_in_parmarray) {
-            fprintf(f, "0, ");
+            fprintf(f, "0"); offset++;
         }
         for (v = func->params; v; v = v->right) {
+            if (offset) fprintf(f, ", ");
             fprintf(f, "%s", v->left->d.string);
-            if (v->right) fprintf(f, ", ");
+            offset++;
+            
+        }
+        if (func->localarray == func->parmarray) {
+            Symbol *sym;
+            for (v = func->locals; v; v = v->right) {
+                fprintf(f, ", ");
+                fprintf(f, "0");
+                sym = VarSymbol(func, v->left);
+                if (sym)
+                    sym->count += offset;
+            }
         }
         fprintf(f, " };\n");
     }
     if (!func->result_in_parmarray)
         fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
     if (func->locals) {
-        PrintVarList(f, ast_type_long, func->locals);
+        if (func->localarray && func->localarray == func->parmarray) {
+            /* nothing to do here */
+        } else if (func->localarray && func->localarray_len > 0) {
+            fprintf(f, "  int32_t %s[%d];\n", func->localarray, func->localarray_len);
+        } else {
+            PrintVarList(f, ast_type_long, func->locals);
+        }
     }
 }
  

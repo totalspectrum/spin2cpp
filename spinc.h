@@ -82,6 +82,10 @@ typedef struct funcdef {
     const char *parmarray;
     /* true if the result should be placed in the parameter array */
     int result_in_parmarray;
+    /* array holding locals, if necessary */
+    const char *localarray;
+    /* total size of localarray */
+    int localarray_len;
 
     /* local symbols */
     SymbolTable localsyms;
@@ -166,7 +170,7 @@ void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P);
-void EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
+int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);
