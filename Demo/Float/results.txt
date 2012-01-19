@@ -1,0 +1,22 @@
+Here are some results of running time.spin either in the spin
+interpreter or compiled in C++.
+
+The expected series result is 0.9990234 (which all of the functions got).
+It is the sum from 1 to 10 of 1/2^(1+n). The timing output is the time
+to calculate this series:
+
+Spin interpreter:
+F32:          832.4 microseconds
+Float32Full:  926.4 microseconds
+FloatMath:  15435.6 microseconds
+
+C++: (options -Os -mfcache)
+
+F32:          696.6 microseconds (469.8 at -O2)
+Float32Full:  498.2 microseconds (475.6 at -O2)
+FloatMath:   2129.0 microseconds (2384.8 at -O2)
+FloatNative:  558.6 microseconds (561.6 at -O2)
+
+Note: to test with FloatNative, compile for FloatMath
+and then manually edit time.h to include "FloatNative.hh"
+and replace all references to FloatMath with FloatNative.
