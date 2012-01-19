@@ -449,6 +449,9 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         if (ast->left->kind == AST_IDENTIFIER) {
             loopvar = ast->left;
             loopname = ast->left->d.string;
+        } else if (ast->left->kind == AST_RESULT) {
+            loopvar = ast->left;
+            loopname = "result";
         } else {
             ERROR(ast, "Need a variable name for the loop");
             return 0;

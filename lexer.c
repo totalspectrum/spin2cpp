@@ -399,8 +399,10 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 //EstablishIndent(L, 1);
                 break;
             case T_IF:
+            case T_IFNOT:
             case T_ELSE:
             case T_ELSEIF:
+            case T_ELSEIFNOT:
             case T_REPEAT:
             case T_CASE:
                 EstablishIndent(L, startColumn);
