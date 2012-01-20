@@ -721,6 +721,8 @@ Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "_CLKFREQ" },
     { "cognew", 2, defaultBuiltin, "cognew" },
     { "cogstop", 1, defaultBuiltin, "cogstop" },
+    { "cogid", 0, defaultVariable, "cogid" },
+
     { "locknew", 0, defaultBuiltin, "locknew" },
     { "lockset", 1, defaultBuiltin, "lockset" },
     { "lockclr", 1, defaultBuiltin, "lockclr" },
