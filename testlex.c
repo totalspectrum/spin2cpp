@@ -192,7 +192,7 @@ main()
     testFloat("1.e-2", 0.01f);
     testFloat("3.14e5", 314000.0f);
 
-    testIdentifier("x99+8", "x99");
+    testIdentifier("x99+8", "X99");
     testIdentifier("_a_b", "_a_b");
     printf("all tests passed\n");
     return 0;

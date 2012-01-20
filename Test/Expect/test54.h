@@ -6,7 +6,7 @@
 class test54 {
 public:
   static uint8_t dat[];
-  int32_t	getfoo(void);
+  int32_t	Getfoo(void);
 private:
 };
 

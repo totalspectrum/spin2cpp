@@ -5,7 +5,7 @@
 
 class test52 {
 public:
-  int32_t	func(void);
+  int32_t	Func(void);
 private:
 };
 

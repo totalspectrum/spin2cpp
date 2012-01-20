@@ -3,26 +3,26 @@
 #include "test29.h"
 
 #define Yield__() (__napuntil(_CNT + 1))
-int32_t test29::tx(int32_t val)
+int32_t test29::Tx(int32_t Val)
 {
   int32_t result = 0;
-  ((uint8_t *)28672)[idx] = 0;
+  ((uint8_t *)28672)[Idx] = 0;
   return result;
 }
 
-int32_t test29::str(int32_t stringptr)
+int32_t test29::Str(int32_t Stringptr)
 {
   int32_t result = 0;
-  while (lockset(strlock)) {
+  while (lockset(Strlock)) {
     Yield__();
   }
   int32_t _idx__0000;
-  _idx__0000 = strlen((char *) stringptr);
+  _idx__0000 = strlen((char *) Stringptr);
   do {
-    tx(((uint8_t *)(stringptr++))[0]);
+    Tx(((uint8_t *)(Stringptr++))[0]);
     _idx__0000 = (_idx__0000 + -1);
   } while (_idx__0000 >= 1);
-  lockclr(strlock);
+  lockclr(Strlock);
   return result;
 }
 

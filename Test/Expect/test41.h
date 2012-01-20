@@ -5,7 +5,7 @@
 
 class test41 {
 public:
-  int32_t	hexdigit(int32_t x);
+  int32_t	Hexdigit(int32_t X);
 private:
 };
 

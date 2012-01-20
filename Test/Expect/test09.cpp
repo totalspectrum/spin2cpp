@@ -1,7 +1,7 @@
 #include <propeller.h>
 #include "test09.h"
 
-int32_t test09::init(void)
+int32_t test09::Init(void)
 {
   int32_t result = 0;
   _DIRA = (_DIRA & 0xfffffffb) | ((1 << 2) & 0x00000004);

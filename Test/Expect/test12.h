@@ -5,8 +5,8 @@
 
 class test12 {
 public:
-  int32_t	sum(int32_t x, int32_t y);
-  int32_t	donext(int32_t x);
+  int32_t	Sum(int32_t X, int32_t Y);
+  int32_t	Donext(int32_t X);
 private:
 };
 

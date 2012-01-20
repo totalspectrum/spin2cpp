@@ -6,8 +6,8 @@
 
 class test42 {
 public:
-  test01	a;
-  int32_t	getx(void);
+  test01	A;
+  int32_t	Getx(void);
 private:
 };
 

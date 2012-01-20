@@ -5,9 +5,9 @@
 
 class test07 {
 public:
-  int32_t	donext(void);
+  int32_t	Donext(void);
 private:
-  int32_t	count;
+  int32_t	Count;
 };
 
 #endif

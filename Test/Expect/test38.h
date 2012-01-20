@@ -5,8 +5,8 @@
 
 class test38 {
 public:
-  int32_t	big(int32_t x, int32_t y);
-  int32_t	small(int32_t x, int32_t y);
+  int32_t	Big(int32_t X, int32_t Y);
+  int32_t	Small(int32_t X, int32_t Y);
 private:
 };
 

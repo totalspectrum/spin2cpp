@@ -6,7 +6,7 @@
 class test04 {
 public:
 private:
-  uint8_t	str[2];
+  uint8_t	Str[2];
 };
 
 #endif

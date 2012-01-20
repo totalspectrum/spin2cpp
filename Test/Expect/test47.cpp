@@ -1,23 +1,23 @@
 #include <propeller.h>
 #include "test47.h"
 
-int32_t test47::test(int32_t c)
+int32_t test47::Test(int32_t C)
 {
   int32_t result = 0;
-  if (flag == 0) {
-    if (c == 9) {
+  if (Flag == 0) {
+    if (C == 9) {
       do {
-        _OUTA = (cols++);
-      } while (cols & 7);
-    } else if (c == 13) {
-      _OUTA = c;
+        _OUTA = (Cols++);
+      } while (Cols & 7);
+    } else if (C == 13) {
+      _OUTA = C;
     } else if (1) {
-      _OUTA = flag;
+      _OUTA = Flag;
     }
-  } else if (flag == 10) {
-    cols = (c % cols);
+  } else if (Flag == 10) {
+    Cols = (C % Cols);
   }
-  flag = 0;
+  Flag = 0;
   return result;
 }
 

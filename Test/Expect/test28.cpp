@@ -1,19 +1,19 @@
 #include <propeller.h>
 #include "test28.h"
 
-int32_t test28::lock(void)
+int32_t test28::Lock(void)
 {
   int32_t result = 0;
-  x = 0;
-  while (!(x > 9)) {
-    lockret(x);
-    (x++);
+  X = 0;
+  while (!(X > 9)) {
+    lockret(X);
+    (X++);
   }
-  x = 0;
+  X = 0;
   do {
-    lockret(x);
-    (x++);
-  } while (x < 10);
+    lockret(X);
+    (X++);
+  } while (X < 10);
   return result;
 }
 

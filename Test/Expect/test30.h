@@ -5,9 +5,9 @@
 
 class test30 {
 public:
-  int32_t	test(void);
+  int32_t	Test(void);
 private:
-  int32_t	a, b;
+  int32_t	A, B;
 };
 
 #endif

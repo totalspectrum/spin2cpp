@@ -5,10 +5,10 @@
 
 class test53 {
 public:
-  static const int x = 1;
-  static const int y = 2;
-  static const int negone = -1;
-  int32_t	start(void);
+  static const int X = 1;
+  static const int Y = 2;
+  static const int Negone = -1;
+  int32_t	Start(void);
 private:
 };
 

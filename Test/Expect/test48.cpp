@@ -1,20 +1,20 @@
 #include <propeller.h>
 #include "test48.h"
 
-int32_t test48::setcolors(int32_t colorptr)
+int32_t test48::Setcolors(int32_t Colorptr)
 {
   int32_t result = 0;
-  int32_t	i, fore, back;
-  i = 0;
+  int32_t	I, Fore, Back;
+  I = 0;
   do {
-    fore = (((uint8_t *)colorptr)[(i << 1)] << 2);
-    _OUTA = (_OUTA & 0xffffff00) | ((fore << 0) & 0x000000ff);
-    i = (i + 1);
-  } while (i <= 7);
+    Fore = (((uint8_t *)Colorptr)[(I << 1)] << 2);
+    _OUTA = (_OUTA & 0xffffff00) | ((Fore << 0) & 0x000000ff);
+    I = (I + 1);
+  } while (I <= 7);
   return result;
 }
 
-int32_t test48::stop(void)
+int32_t test48::Stop(void)
 {
   int32_t result = 0;
   _OUTA = (_OUTA & 0xffffff00) | ((0 << 0) & 0x000000ff);

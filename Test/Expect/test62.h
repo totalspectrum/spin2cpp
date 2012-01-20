@@ -5,9 +5,9 @@
 
 class test62 {
 public:
-  int32_t	testit(int32_t x);
+  int32_t	Testit(int32_t X);
 private:
-  int32_t	command, response;
+  int32_t	Command, Response;
 };
 
 #endif

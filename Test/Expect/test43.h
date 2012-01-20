@@ -6,12 +6,12 @@
 
 class test43 {
 public:
-  static const int cols = 40;
-  static const int rows = 12;
-  static const int screensize = 480;
-  static const int lastrow = 440;
-  test01	a;
-  int32_t	getx(void);
+  static const int Cols = 40;
+  static const int Rows = 12;
+  static const int Screensize = 480;
+  static const int Lastrow = 440;
+  test01	A;
+  int32_t	Getx(void);
 private:
 };
 

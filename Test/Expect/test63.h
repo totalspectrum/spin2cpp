@@ -5,7 +5,7 @@
 
 class test63 {
 public:
-  int32_t	test(int32_t exponent);
+  int32_t	Test(int32_t Exponent);
 private:
 };
 

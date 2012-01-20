@@ -6,8 +6,8 @@
 class test39 {
 public:
   static uint8_t dat[];
-  int32_t	setword(int32_t x, int32_t a);
-  int32_t	setbyte(int32_t x, int32_t b);
+  int32_t	Setword(int32_t X, int32_t A);
+  int32_t	Setbyte(int32_t X, int32_t B);
 private:
 };
 

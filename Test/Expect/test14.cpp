@@ -4,7 +4,7 @@
 uint8_t test14::dat[] = {
   0x01, 0x00, 0x00, 0x00, 0xdd, 0xcc, 0xbb, 0xaa, 
 };
-int32_t test14::myfunc(void)
+int32_t test14::Myfunc(void)
 {
   int32_t result = 0;
   return (*(int32_t *)&dat[4]);

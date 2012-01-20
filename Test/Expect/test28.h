@@ -5,10 +5,10 @@
 
 class test28 {
 public:
-  int32_t	lock(void);
+  int32_t	Lock(void);
 private:
-  int32_t	thelock;
-  int32_t	x;
+  int32_t	Thelock;
+  int32_t	X;
 };
 
 #endif

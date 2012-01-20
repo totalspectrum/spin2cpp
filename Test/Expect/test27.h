@@ -5,9 +5,9 @@
 
 class test27 {
 public:
-  int32_t	blink(void);
+  int32_t	Blink(void);
 private:
-  int32_t	x;
+  int32_t	X;
 };
 
 #endif

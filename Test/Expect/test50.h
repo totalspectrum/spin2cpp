@@ -5,9 +5,9 @@
 
 class test50 {
 public:
-  int32_t	myinit(int32_t a, int32_t b, int32_t c);
+  int32_t	Myinit(int32_t A, int32_t B, int32_t C);
 private:
-  int32_t	ga, gb, gc;
+  int32_t	Ga, Gb, Gc;
 };
 
 #endif

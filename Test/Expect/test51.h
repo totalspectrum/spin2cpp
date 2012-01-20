@@ -5,8 +5,8 @@
 
 class test51 {
 public:
-  int32_t	run(void);
-  int32_t	len(int32_t stringptr);
+  int32_t	Run(void);
+  int32_t	Len(int32_t Stringptr);
 private:
 };
 

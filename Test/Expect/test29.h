@@ -5,11 +5,11 @@
 
 class test29 {
 public:
-  int32_t	tx(int32_t val);
-  int32_t	str(int32_t stringptr);
+  int32_t	Tx(int32_t Val);
+  int32_t	Str(int32_t Stringptr);
 private:
-  int32_t	strlock;
-  int32_t	idx;
+  int32_t	Strlock;
+  int32_t	Idx;
 };
 
 #endif

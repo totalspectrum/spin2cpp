@@ -423,6 +423,9 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 
 is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    /* make sure identifiers do not conflict with C keywords by giving them
+       an upper case first letter */
+    place[0] = toupper(place[0]);
     ast->d.string = place;
     *ast_ptr = ast;
     return T_IDENTIFIER;

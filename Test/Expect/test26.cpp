@@ -3,16 +3,16 @@
 #include "test26.h"
 
 #define Yield__() (__napuntil(_CNT + 1))
-int32_t test26::lock(void)
+int32_t test26::Lock(void)
 {
   int32_t result = 0;
-  while (lockset(thelock) != 0) {
+  while (lockset(Thelock) != 0) {
     Yield__();
   }
-  x = 0;
-  while (x < 4) {
-    lockret(x);
-    (x++);
+  X = 0;
+  while (X < 4) {
+    lockret(X);
+    (X++);
   }
   return result;
 }

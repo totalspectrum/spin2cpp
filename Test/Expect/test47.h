@@ -5,10 +5,10 @@
 
 class test47 {
 public:
-  int32_t	test(int32_t c);
+  int32_t	Test(int32_t C);
 private:
-  int32_t	flag, cols;
-  int32_t	screenptr;
+  int32_t	Flag, Cols;
+  int32_t	Screenptr;
 };
 
 #endif

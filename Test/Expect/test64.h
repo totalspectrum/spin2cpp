@@ -5,10 +5,10 @@
 
 class test64 {
 public:
-  static const int x = 3;
-  static const int y = 9;
+  static const int X = 3;
+  static const int Y = 9;
   static uint8_t dat[];
-  int32_t	getit(void);
+  int32_t	Getit(void);
 private:
 };
 
