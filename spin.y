@@ -432,6 +432,8 @@ basedatline:
     { $$ = NewAST(AST_RES, $2, NULL); }
   | T_FIT expr T_EOLN
     { $$ = NewAST(AST_FIT, $2, NULL); }
+  | T_FIT T_EOLN
+    { $$ = NewAST(AST_FIT, AstInteger(0x1f0), NULL); }
   ;
 
 objblock:
