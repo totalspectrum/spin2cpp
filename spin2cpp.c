@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <ctype.h>
 #include "spinc.h"
 
 //#define DEBUG_YACC
@@ -27,6 +28,45 @@ yylex(YYSTYPE *lvalp)
 
 const char *gl_progname = "spintoc";
 
+/*
+ * make sure that a class name is safe, i.e. will
+ * not conflict with any identifier or C keyword/function
+ * Identifiers will have exactly 1 capital letter (the first),
+ * so if there is any capital letter other than the first then
+ * we are fine. If the class name is all lower case, but has
+ * some digits or underscores, then it's also OK. Otherwise
+ * add a "Spin" to the end
+ * We also have to make sure that the 
+ */
+static void
+makeClassNameSafe(char *classname)
+{
+    char *s;
+    int hasUpper = 0;
+    int hasDigit = 0;
+    int ok = 0;
+
+    for (s = classname; *s; s++) {
+        if (isupper(*s))
+            hasUpper++;
+        else if (isdigit(*s) || *s == '_')
+            hasDigit++;
+        else if (!islower(*s)) {
+            *s = '_';
+            hasDigit++;
+        }
+    }
+    ok = (hasUpper > 1) || (hasUpper == 1 && !isupper(classname[0]))
+        || (hasUpper == 0 && hasDigit > 0);
+
+    if (!ok) {
+        strcat(classname, "Spin");
+    }
+}
+
+/*
+ * allocate a new parser state
+ */ 
 ParserState *
 NewParserState(const char *name)
 {
@@ -45,16 +85,18 @@ NewParserState(const char *name)
 
     /* set up the class name */
     s = strrchr(P->basename, '/');
+    /* allocate enough space to append "Spin" if necessary */
+    P->classname = calloc(1, strlen(P->basename)+5);
     if (s)
-        P->classname = strdup(s+1);
+        strcpy(P->classname, s+1);
     else
-        P->classname = strdup(P->basename);
+        strcpy(P->classname, P->basename);
 #if defined(WIN32)
     s = strrchr(P->classname, '\\');
     if (s)
         P->classname = s+1;
 #endif
-
+    makeClassNameSafe(P->classname);
     return P;
 }
 
