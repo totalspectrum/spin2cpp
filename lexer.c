@@ -720,18 +720,20 @@ extern void defaultVariable(FILE *, Builtin *, AST *);
 extern void memBuiltin(FILE *, Builtin *, AST *);
 extern void memFillBuiltin(FILE *, Builtin *, AST *);
 extern void str1Builtin(FILE *, Builtin *, AST *);
+extern void strcompBuiltin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "_CLKFREQ" },
     { "cognew", 2, defaultBuiltin, "cognew" },
     { "cogstop", 1, defaultBuiltin, "cogstop" },
-    { "cogid", 0, defaultVariable, "cogid" },
+    { "cogid", 0, defaultBuiltin, "cogid" },
 
     { "locknew", 0, defaultBuiltin, "locknew" },
     { "lockset", 1, defaultBuiltin, "lockset" },
     { "lockclr", 1, defaultBuiltin, "lockclr" },
     { "lockret", 1, defaultBuiltin, "lockret" },
     { "strsize", 1, str1Builtin, "strlen" },
+    { "strcomp", 1, strcompBuiltin, "strcmp" },
     { "waitcnt", 1, defaultBuiltin, "waitcnt" },
     { "reboot", 0, defaultBuiltin, "abort" },
 

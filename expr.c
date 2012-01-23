@@ -1241,6 +1241,21 @@ str1Builtin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ")");
 }
 
+/* code to do strcomp(a, b) */
+void
+strcompBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    if (AstListLen(params) != 2) {
+        ERROR(params, "incorrect parameters to %s", b->name);
+        return;
+    }
+    fprintf(f, "-(0 == strcmp((char *)");
+    PrintExpr(f, params->left); params = params->right;
+    fprintf(f, ", (char *)");
+    PrintExpr(f, params->left); params = params->right;
+    fprintf(f, "))");
+}
+
 /*
  * create a lookup expression
  * this actually has several parts:
