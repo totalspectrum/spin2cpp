@@ -4,8 +4,8 @@
 #
 
 CC = gcc
-CFLAGS = -g -Wall -Werror
-#CFLAGS = -O -g -Wall -Werror
+#CFLAGS = -g -Wall -Werror
+CFLAGS = -O -g -Wall -Werror
 LIBS = -lm
 YACC = bison
 RM = rm -f

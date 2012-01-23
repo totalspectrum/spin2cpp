@@ -728,6 +728,10 @@ Builtin builtinfuncs[] = {
     { "cogstop", 1, defaultBuiltin, "cogstop" },
     { "cogid", 0, defaultBuiltin, "cogid" },
 
+    /* FIXME: we will need to distinguish spin methods from
+       pasm ones eventually! */
+    { "coginit", 3, defaultBuiltin, "coginit" },
+
     { "locknew", 0, defaultBuiltin, "locknew" },
     { "lockset", 1, defaultBuiltin, "lockset" },
     { "lockclr", 1, defaultBuiltin, "lockclr" },

@@ -2,7 +2,7 @@ This is a very simple Spin to C++ converter. There is much of the Spin
 language that it does not handle, and its results will not always be
 correct. 
 
-This version (0.4) includes some more functionality. A simple "Hello,
+This version (0.5) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -28,4 +28,53 @@ You can then compile it with:
 
 where "obj1.spin" and "obj2.spin" are the objects referred to by
 "test.spin". See Demo/Makefile for examples.
+
+
+LIMITATIONS
+===========
+
+There are a number of Spin features that are not supported yet,
+including:
+
+ABORT
+_CLKMODE
+CLKSET
+COGINIT on a Spin method (PASM should work)
+_FREE
+LOOKDOWN and LOOKDOWNZ
+SPR
+_STACK
+_XINFREQ
+arrays of objects in OBJ
+operators:
+  the ^^ operator is not supported at all
+  the ? operator is not properly supported (it will return a random
+  number,but will not change the variable it is applied to)
+using reversed ranges in the pins field affecting a hardware register
+  (e.g. OUTA[12..7] should work, but OUTA[7..12] will not)
+
+There are probably many other features not supported yet!
+
+The lexer and parser are different from the Parallax ones, so they may
+well report errors on code the Parallax compiler accepts. For example,
+spin2cpp does not handle files that end without a newline very well at
+all.
+
+DEVELOPER NOTES
+===============
+There is a test suite in Test/; to run it do "make test" (this also
+builds and runs a simple test program for the lexer).
+
+Parsing is done via a yacc file (spin.y), but lexing is done with a
+hand crafted parser rather than using lex/flex. This is done to make
+state dependence a little easier.
+
+Mostly the parser builds an Abstract Syntax Tree (AST) which we then
+walk to compile the .cpp and .h files. Each AST node contains a "kind"
+(telling what type of node it is), some immediate data (such as an
+integer or string), and left and right pointers. The left and right
+pointers are NULL for leaf nodes. Lists are generally represented by
+a series of nodes with kind=AST_LISTHOLDER (or similar), with the data
+pointed to by ast->left and the rest of the list pointed to by
+ast->right.
 
