@@ -99,6 +99,7 @@ CheckYield(AST *body)
 %token T_DOTS
 %token T_HERE
 %token T_STRINGPTR
+%token T_FILE
 
 /* operators */
 %right T_ASSIGN
@@ -434,6 +435,8 @@ basedatline:
     { $$ = NewAST(AST_FIT, $2, NULL); }
   | T_FIT T_EOLN
     { $$ = NewAST(AST_FIT, AstInteger(0x1f0), NULL); }
+  | T_FILE string T_EOLN
+    { $$ = NewAST(AST_FILE, $2, NULL); }
   ;
 
 objblock:

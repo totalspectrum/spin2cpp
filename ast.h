@@ -96,6 +96,8 @@ enum astkind {
     AST_ROUND,
     AST_TRUNC,
     AST_TOFLOAT,
+
+    AST_FILE = 64,
 };
 
 struct AST {

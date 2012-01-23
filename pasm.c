@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "spinc.h"
 
 /*
@@ -281,6 +282,53 @@ replaceHeres(AST *ast, uint32_t asmpc)
 }
 
 /*
+ * find the length of a file
+ */
+static long
+filelen(AST *ast)
+{
+    FILE *f;
+    const char *name = ast->d.string;
+    int r;
+    long siz;
+
+    f = fopen(name, "rb");
+    if (!f) {
+        ERROR(ast, "file %s: %s", name, strerror(errno));
+        return 0;
+    }
+    r = fseek(f, 0L, SEEK_END);
+    if (r < 0) {
+        ERROR(ast, "file %s: %s", name, strerror(errno));
+        return 0;
+    }
+    siz = ftell(f);
+    fclose(f);
+    return siz;
+}
+
+/*
+ * output bytes for a file
+ */
+static void
+assembleFile(FILE *f, AST *ast)
+{
+    FILE *inf;
+    const char *name = ast->d.string;
+    int c;
+
+    inf = fopen(name, "rb");
+    if (!inf) {
+        ERROR(ast, "file %s: %s", name, strerror(errno));
+        return;
+    }
+    while ((c = fgetc(inf)) >= 0) {
+        outputByte(f, c);
+    }
+    fclose(inf);
+}
+
+/*
  * declare labels for a data block
  */
 
@@ -347,6 +395,10 @@ DeclareLabels(ParserState *P)
                 }
             }
             break;
+        case AST_FILE:
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
+            INCPC(filelen(ast->left));
+            break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);
             break;
@@ -382,6 +434,9 @@ PrintDataBlock(FILE *f, ParserState *P)
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
+            break;
+        case AST_FILE:
+            assembleFile(f, ast->left);
             break;
         case AST_ORG:
         case AST_RES:

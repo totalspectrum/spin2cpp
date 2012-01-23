@@ -637,6 +637,7 @@ struct reservedword {
     { "elseif", T_ELSEIF },
     { "elseifnot", T_ELSEIFNOT },
 
+    { "file", T_FILE },
     { "fit", T_FIT },
     { "float", T_FLOAT },
     { "from", T_FROM },
