@@ -19,23 +19,23 @@ private:
   }
 
 public:
-  void start() {
+  void Start() {
   }
 
-  int32_t ffloat(int32_t x) {
+  int32_t Ffloat(int32_t x) {
     return asInt((float)x);
   }
 
-  int32_t fadd(int32_t a, int32_t b) {
+  int32_t Fadd(int32_t a, int32_t b) {
     return asInt(asFloat(a) + asFloat(b));
   }
-  int32_t fsub(int32_t a, int32_t b) {
+  int32_t Fsub(int32_t a, int32_t b) {
     return asInt(asFloat(a) - asFloat(b));
   }
-  int32_t fmul(int32_t a, int32_t b) {
+  int32_t Fmul(int32_t a, int32_t b) {
     return asInt(asFloat(a) * asFloat(b));
   }
-  int32_t fdiv(int32_t a, int32_t b) {
+  int32_t Fdiv(int32_t a, int32_t b) {
     return asInt(asFloat(a) / asFloat(b));
   }
 };
