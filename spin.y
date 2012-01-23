@@ -584,7 +584,7 @@ expr:
   | expr T_SHL '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_SHL, $1, $4); }
   | expr T_SHR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_SHR, $1, $4); }
+    { $$ = AstAssign(T_SHR, $1, $4); current->needsShr = 1; }
   | expr T_SAR '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_SAR, $1, $4); }
   | expr T_AND '=' expr %prec T_ASSIGN

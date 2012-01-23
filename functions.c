@@ -453,7 +453,6 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
 static int
 PrintCountRepeat(FILE *f, AST *ast, int indent)
 {
-    const char *loopname = NULL;
     AST *fromval, *toval;
     AST *stepval;
     AST *limit;
@@ -471,10 +470,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
             loopvar = ast->left;
-            loopname = ast->left->d.string;
         } else if (ast->left->kind == AST_RESULT) {
             loopvar = ast->left;
-            loopname = "result";
         } else {
             ERROR(ast, "Need a variable name for the loop");
             return 0;
@@ -522,12 +519,13 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 
     /* set the loop variable */
             
-    if (!loopname) {
+    if (!loopvar) {
         loopvar = AstTempVariable("_idx_");
-        loopname = loopvar->d.string;
-        fprintf(f, "%*cint32_t %s;\n", indent, ' ', loopname);
+        fprintf(f, "%*cint32_t %s;\n", indent, ' ', loopvar->d.string);
     }
-    fprintf(f, "%*c%s = ", indent, ' ', loopname);
+    fprintf(f, "%*c", indent, ' ');
+    PrintExpr(f, loopvar);
+    fprintf(f, " = ");
     PrintExpr(f, fromval);
     fprintf(f, ";\n");
 
