@@ -319,6 +319,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintExpr(f, right);
         fprintf(f, "))");
         break;
+    case T_DECODE:
+        fprintf(f, "(1<<");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
     default:
         ERROR(NULL, "unsupported operator %d", op);
         break;
@@ -415,10 +420,21 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
         PrintLHS(f, expr->left, assignment, 1);
         break;
     case AST_ARRAYREF:
-        PrintLHS(f, expr->left, assignment, 1);
-        fprintf(f, "[");
-        PrintExpr(f, expr->right);
-        fprintf(f, "]");
+        if (expr->left && expr->left->kind == AST_IDENTIFIER) {
+            sym = LookupSymbol(expr->left->d.string);
+        } else {
+            sym = NULL;
+        }
+        if (sym && sym->type == SYM_LOCALVAR && curfunc && curfunc->localarray) {
+            fprintf(f, "%s[%d + ", curfunc->localarray, sym->count);
+            PrintExpr(f, expr->right);
+            fprintf(f, "]");
+        } else {
+            PrintLHS(f, expr->left, assignment, 1);
+            fprintf(f, "[");
+            PrintExpr(f, expr->right);
+            fprintf(f, "]");
+        }
         break;
     case AST_HWREG:
         hw = (HwReg *)expr->d.ptr;

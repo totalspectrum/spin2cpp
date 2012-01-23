@@ -287,6 +287,23 @@ Symbol *VarSymbol(Function *func, AST *ast)
     return FindSymbol(&func->localsyms, ast->d.string);
 }
 
+/*
+ * calculate the size of a type
+ */
+int typeSize(AST *ast)
+{
+    if (!ast)
+        return 1;
+    if (ast->kind == AST_ARRAYTYPE) {
+        return typeSize(ast->left)*EvalConstExpr(ast->right);
+    }
+    if (ast->kind == AST_INTTYPE || ast->kind == AST_UNSIGNEDTYPE) {
+        return EvalConstExpr(ast->left);
+    }
+    ERROR(ast, "internal error: bad type kind %d", ast->kind);
+    return 0;
+}
+
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
@@ -294,6 +311,7 @@ PrintFunctionVariables(FILE *f, Function *func)
     int offset = 0;
 
     if (func->parmarray) {
+        int n;
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
         if (func->result_in_parmarray) {
             fprintf(f, "0"); offset++;
@@ -307,11 +325,16 @@ PrintFunctionVariables(FILE *f, Function *func)
         if (func->localarray == func->parmarray) {
             Symbol *sym;
             for (v = func->locals; v; v = v->right) {
-                fprintf(f, ", ");
-                fprintf(f, "0");
                 sym = VarSymbol(func, v->left);
-                if (sym)
+                if (sym) {
                     sym->count += offset;
+                    n = typeSize((AST *)sym->val);
+                    while (n > 0) {
+                        fprintf(f, ", ");
+                        fprintf(f, "0");
+                        n -= 4;
+                    }
+                }
             }
         }
         fprintf(f, " };\n");
@@ -660,6 +683,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
         case T_NEGATE:
         case T_ABS:
         case T_BIT_NOT:
+        case T_DECODE:
+        case T_ENCODE:
             lhsast = DupAST(ast->right);
             ast = AstAssign(T_ASSIGN, lhsast, ast);
             break;
