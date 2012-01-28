@@ -36,7 +36,6 @@ LIMITATIONS
 There are a number of Spin features that are not supported yet,
 including:
 
-ABORT
 _CLKMODE
 CLKSET
 COGINIT on a Spin method (PASM should work)

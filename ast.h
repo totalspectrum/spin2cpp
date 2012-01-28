@@ -98,6 +98,8 @@ enum astkind {
     AST_TOFLOAT,
 
     AST_FILE = 64,
+    AST_ABORT,
+    AST_CATCH,
 };
 
 struct AST {

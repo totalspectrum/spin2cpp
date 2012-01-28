@@ -624,6 +624,7 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_words[] = {
+    { "abort", T_ABORT },
     { "and", T_AND },
     { "byte", T_BYTE },
 

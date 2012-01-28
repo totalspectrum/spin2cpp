@@ -628,6 +628,17 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ";\n");
         sawreturn = 1;
         break;
+    case AST_ABORT:
+        fprintf(f, "%*cif (!abortChain__) abort();\n", indent, ' ');
+        fprintf(f, "%*cabortChain__->val =  ", indent, ' ');
+        if (ast->left) {
+            PrintExpr(f, ast->left);
+        } else {
+            PrintExpr(f, curfunc->resultexpr);
+        }
+        fprintf(f, ";\n");
+        fprintf(f, "%*clongjmp(abortChain__->jmp, 1);\n", indent, ' ');
+        break;
     case AST_YIELD:
         fprintf(f, "%*cYield__();\n", indent, ' ');
         break;

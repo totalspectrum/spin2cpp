@@ -827,6 +827,13 @@ PrintExpr(FILE *f, AST *expr)
             return;
         fprintf(f, "%s.%s", objsym->name, sym->name);
         break;
+    case AST_CATCH:
+        fprintf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");
+        fprintf(f, "int32_t tmp__; abortChain__ = &here__; ");
+        fprintf(f, "if (setjmp(here__.jmp) == 0) tmp__ = ");
+        PrintExpr(f, expr->left);
+        fprintf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
+        break;
     default:
         ERROR(expr, "Internal error, bad expression");
         break;

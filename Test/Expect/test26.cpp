@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test26.h"
 
-#define Yield__() (__napuntil(_CNT + 1))
+#define Yield__() (__napuntil(_CNT))
 int32_t test26::Lock(void)
 {
   int32_t result = 0;

@@ -24,6 +24,21 @@ AstYield(void)
     return NewAST(AST_STMTLIST, NewAST(AST_YIELD, NULL, NULL), NULL);
 }
 
+AST *
+AstAbort(AST *expr)
+{
+    current->needsAbortdef = 1;
+    current->needsStdlib = 1;
+    return NewAST(AST_ABORT, expr, NULL);
+}
+
+AST *
+AstCatch(AST *expr)
+{
+    current->needsAbortdef = 1;
+    return NewAST(AST_CATCH, expr, NULL);
+}
+
 /* determine whether a loop needs a yield, and if so, insert one */
 AST *
 CheckYield(AST *body)
@@ -90,6 +105,7 @@ CheckYield(AST *body)
 %token T_NEXT
 
 /* other stuff */
+%token T_ABORT
 %token T_RESULT
 %token T_RETURN
 %token T_INDENT
@@ -205,6 +221,10 @@ nonemptystmt:
     { $$ = NewAST(AST_RETURN, NULL, NULL); }
   |  T_RETURN expr T_EOLN
     { $$ = NewAST(AST_RETURN, $2, NULL); }
+  | T_ABORT T_EOLN
+    { $$ = AstAbort(NULL); }
+  |  T_ABORT expr T_EOLN
+    { $$ = AstAbort($2); }
   |  ifstmt
     { $$ = $1; }
   | repeatstmt
@@ -593,7 +613,10 @@ expr:
     { $$ = AstAssign(T_OR, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
+  | '\\' funccall
+    { $$ = AstCatch($2); }
   | funccall
+    { $$ = $1; }
   | '-' expr %prec T_NEGATE
     { $$ = AstOperator(T_NEGATE, NULL, $2); }
   | '!' expr %prec T_BIT_NOT

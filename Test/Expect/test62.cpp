@@ -2,7 +2,7 @@
 #include <propeller.h>
 #include "test62.h"
 
-#define Yield__() (__napuntil(_CNT + 1))
+#define Yield__() (__napuntil(_CNT))
 int32_t test62::Testit(int32_t X)
 {
   int32_t result = 0;

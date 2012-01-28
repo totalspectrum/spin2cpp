@@ -137,6 +137,7 @@ struct parserstate {
     char needsStdlib;
     char needsYield;
     char needsBetween;
+    char needsAbortdef;
 };
 
 /* the current parser state */
