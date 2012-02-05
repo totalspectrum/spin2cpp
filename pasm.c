@@ -373,7 +373,8 @@ DeclareLabels(ParserState *P)
             break;
         case AST_ORG:
             if (ast->left) {
-                asmpc = EvalPasmExpr(ast->left);
+                replaceHeres(ast->left, asmpc/4);
+                asmpc = 4*EvalPasmExpr(ast->left);
             } else {
                 asmpc = 0;
             }

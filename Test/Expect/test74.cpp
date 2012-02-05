@@ -1,0 +1,12 @@
+#include <propeller.h>
+#include "test74.h"
+
+uint8_t test74::dat[] = {
+  0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 
+};
+int32_t test74::Func(void)
+{
+  int32_t result = 0;
+  return (*(int32_t *)&dat[8]);
+}
+
