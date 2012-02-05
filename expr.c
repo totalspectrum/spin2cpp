@@ -477,6 +477,23 @@ PrintPostfix(FILE *f, AST *expr)
 }
 
 /*
+ * reverse bits 0..N-1 of A
+ */
+static int32_t
+ReverseBits(int32_t A, int32_t N)
+{
+    uint32_t x = A;
+
+    x = (((x & 0xaaaaaaaa) >> 1) | ((x & 0x55555555) << 1));
+    x = (((x & 0xcccccccc) >> 2) | ((x & 0x33333333) << 2));
+    x = (((x & 0xf0f0f0f0) >> 4) | ((x & 0x0f0f0f0f) << 4));
+    x = (((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8));
+    x = (x >> 16) | (x << 16);
+
+    return (x >> (32-N));
+}
+
+/*
  * special case an assignment like outa[2..1] ^= -1
  */
 static void
@@ -542,10 +559,13 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         reverse = 1;
         tmp = lo; lo = hi; hi = tmp;
     }
-    if (reverse) {
-        ERROR(dst, "cannot currently handle reversed range");
-    }
     nbits = (hi - lo + 1);
+    if (reverse) {
+        src = AstOperator(T_REV, src, AstInteger(nbits));
+        if (IsConstExpr(src)) {
+            src = AstInteger(EvalConstExpr(src));
+        }
+    }
 
     if (nbits >= 32) {
         PrintLHS(f, dst->left, 1, 0);
@@ -950,6 +970,10 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return ((uint32_t)lval) >> rval;
     case T_SAR:
         return ((int32_t)lval) >> rval;
+    case T_ROTL:
+        return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
+    case T_ROTR:
+        return ((uint32_t)lval >> rval) | ((uint32_t) lval) << (32-rval);
     case '<':
         return -(lval < rval);
     case '>':
@@ -972,11 +996,17 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return (1L << rval);
     case T_ENCODE:
         return 32 - __builtin_clz(rval);
+    case T_LIMITMIN:
+        return (lval < rval) ? rval : lval;
+    case T_LIMITMAX:
+        return (lval > rval) ? rval : lval;
+    case T_REV:
+        return ReverseBits(lval, rval);
     default:
         if (valid)
             *valid = 0;
         else
-            ERROR(NULL, "unknown operator %d\n", op);
+            ERROR(NULL, "unknown operator in constant expression %d", op);
         return 0;
     }
 }
