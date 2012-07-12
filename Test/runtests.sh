@@ -22,9 +22,13 @@ done
 if [ "x$endmsg" = "x$ok" ]
 then
   rm -f *.h *.cpp
+else
+  echo $endmsg
+  echo "skipping execute tests"
+  exit 1
 fi
 
-# run tests
+# execute tests
 for i in exec*.spin
 do
   j=`basename $i .spin`
