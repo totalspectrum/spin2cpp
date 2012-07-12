@@ -168,7 +168,7 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* print data block, if applicable */
     if (parse->datblock) {
         fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
-        PrintDataBlock(f, parse);
+        PrintDataBlock(f, parse, TEXT_OUTPUT);
         fprintf(f, "};\n");
     }
     /* functions */
@@ -188,7 +188,7 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
     fname = malloc(strlen(name) + 8);
 
     /* print out the header file */
-    sprintf(fname, "%s.h", P->basename);
+    sprintf(fname, "%s.h", name);
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);

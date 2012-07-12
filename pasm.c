@@ -13,15 +13,22 @@
 #define BYTES_PER_LINE 16  /* must be at least 4 */
 int datacount = 0;
 
+static int binFlag = 0;
+
 static void
-initDataOutput(void)
+initDataOutput(int isBinary)
 {
     datacount = 0;
+    binFlag = isBinary;
 }
 
 static void
 outputByte(FILE *f, int c)
 {
+    if (binFlag) {
+        fputc(c, f);
+        return;
+    }
     if (datacount == 0) {
         fprintf(f, "  ");
     }
@@ -411,12 +418,11 @@ DeclareLabels(ParserState *P)
  * print out a data block
  */
 void
-PrintDataBlock(FILE *f, ParserState *P)
+PrintDataBlock(FILE *f, ParserState *P, int isBinary)
 {
     AST *ast;
 
-    initDataOutput();
-    DeclareLabels(P);
+    initDataOutput(isBinary);
     if (gl_errors != 0)
         return;
     for (ast = P->datblock; ast; ast = ast->right) {
@@ -449,7 +455,7 @@ PrintDataBlock(FILE *f, ParserState *P)
         }
     }
 
-    if (datacount != 0) {
+    if (datacount != 0 && !isBinary) {
         fprintf(f, "\n");
     }
 }

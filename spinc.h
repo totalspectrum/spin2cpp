@@ -152,6 +152,12 @@ void PrintLookupArray(FILE *f, AST *array);
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);
 
+/* declare labels in PASM */
+void DeclareLabels(ParserState *);
+
+/* declare constants */
+void DeclareConstants(AST *conlist);
+
 /* declare a function */
 /* "body" is the list of statements */
 /* "funcdef" is an AST_FUNCDEF; this is set up as follows:
@@ -170,14 +176,15 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body);
 void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
-void PrintDataBlock(FILE *f, ParserState *P);
+void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
+
+/* defines for isBinary flag of PrintDataBlock */
+#define TEXT_OUTPUT 0
+#define BINARY_OUTPUT 1
 
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);
-
-/* different kinds of output functions */
-void OutputCppCode(const char *name, ParserState *P, int printMain);
 
 /* code for printing errors */
 extern int gl_errors;
@@ -188,4 +195,9 @@ extern void InitPasm(void);
 
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);
+
+/* different kinds of output functions */
+void OutputCppCode(const char *name, ParserState *P, int printMain);
+void OutputDatFile(const char *name, ParserState *P);
+
 #endif

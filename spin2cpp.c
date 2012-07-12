@@ -26,7 +26,7 @@ yylex(YYSTYPE *lvalp)
     return c;
 }
 
-const char *gl_progname = "spintoc";
+const char *gl_progname = "spin2cpp";
 
 /*
  * make sure that a class name is safe, i.e. will
@@ -111,13 +111,13 @@ EnterConstant(const char *name, AST *expr)
     return sym;
 }
 
-static void
-DeclareConstants(void)
+void
+DeclareConstants(AST *conlist)
 {
     AST *upper, *ast;
     int default_val = 0;
 
-    for (upper = current->conblock; upper; upper = upper->right) {
+    for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
             while (ast) {
@@ -228,10 +228,10 @@ parseFile(const char *name)
         exit(1);
     }
 
-    /* now declare all the symbols */
+    /* now declare all the symbols that weren't already declared */
     DeclareObjects(P);
-    DeclareConstants();
     DeclareVariables();
+    DeclareLabels(P);
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
@@ -285,9 +285,10 @@ static void
 Usage(void)
 {
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
-    fprintf(stderr, "Usage: %s [-main] file.spin\n", gl_progname);
+    fprintf(stderr, "Usage: %s [--main][--dat] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -main:    include C++ main() function\n");
+    fprintf(stderr, "  --main:    include C++ main() function\n");
+    fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     exit(2);
 }
 
@@ -295,6 +296,7 @@ int
 main(int argc, char **argv)
 {
     int outputMain = 0;
+    int outputDat = 0;
     ParserState *P;
     init();
 
@@ -311,8 +313,11 @@ main(int argc, char **argv)
         if (!strcmp(argv[0], "-y")) {
             yydebug = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "-m", 2)) {
+        } else if (!strncmp(argv[0], "--m", 3)) {
             outputMain = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--dat", 5)) {
+            outputDat = 1;
             argv++; --argc;
         } else {
             Usage();
@@ -323,31 +328,34 @@ main(int argc, char **argv)
     }
     P = parseFile(argv[0]);
     if (P) {
-        AST *ast, *sub;
-        ParserState *objstate;
-        int already_done;
+        if (outputDat) {
+            OutputDatFile(P->basename, P);
+        } else {
+            AST *ast, *sub;
+            ParserState *objstate;
+            int already_done;
 
-        /* compile any sub-objects needed */
-        for (ast = P->objblock; ast; ast = ast->right) {
-            if (ast->kind != AST_OBJECT) {
-                ERROR(ast, "Internal error: expected an OBJECT");
-                exit(1);
-            }
-            /* see if we've already compiled this object */
-            objstate = ast->d.ptr;
-            already_done = 0;
-            for (sub = P->objblock; sub && sub != ast; sub = sub->right) {
-                if (sub->d.ptr == objstate) {
-                    already_done = 1;
-                    break;
+            /* compile any sub-objects needed */
+            for (ast = P->objblock; ast; ast = ast->right) {
+                if (ast->kind != AST_OBJECT) {
+                    ERROR(ast, "Internal error: expected an OBJECT");
+                    exit(1);
+                }
+                /* see if we've already compiled this object */
+                objstate = ast->d.ptr;
+                already_done = 0;
+                for (sub = P->objblock; sub && sub != ast; sub = sub->right) {
+                    if (sub->d.ptr == objstate) {
+                        already_done = 1;
+                        break;
+                    }
+                }
+                if (!already_done) {
+                    OutputCppCode(objstate->basename, objstate, 0);
                 }
             }
-            if (!already_done) {
-                OutputCppCode(objstate->basename, objstate, 0);
-            }
+            OutputCppCode(P->basename, P, outputMain);
         }
- 
-        OutputCppCode(P->basename, P, outputMain);
     }
     return 0;
 }
