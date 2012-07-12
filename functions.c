@@ -691,6 +691,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         switch (ast->d.ival) {
         case T_NEGATE:
         case T_ABS:
+        case T_SQRT:
         case T_BIT_NOT:
         case T_DECODE:
         case T_ENCODE:
