@@ -19,6 +19,8 @@ int32_t EvalPasmExpr(AST *expr);
 
 /* determine whether an expression is constant */
 int IsConstExpr(AST *expr);
+/* determine whether an expression is a float constant */
+int IsFloatConst(AST *expr);
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);

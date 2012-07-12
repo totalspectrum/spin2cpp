@@ -1185,6 +1185,18 @@ IsConstExpr(AST *expr)
     return valid;
 }
 
+int
+IsFloatConst(AST *expr)
+{
+    int valid;
+    ExprVal eval;
+    valid = 1;
+    eval = EvalExpr(expr, 0, &valid);
+    if (valid && eval.type == FLOAT_EXPR)
+        return 1;
+    return 0;
+}
+
 void
 PrintExprList(FILE *f, AST *list)
 {

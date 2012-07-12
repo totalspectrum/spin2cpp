@@ -107,7 +107,11 @@ EnterConstant(const char *name, AST *expr)
 {
     Symbol *sym;
 
-    sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr);
+    if (IsFloatConst(expr)) {
+        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr);
+    } else {
+        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr);
+    }
     return sym;
 }
 
