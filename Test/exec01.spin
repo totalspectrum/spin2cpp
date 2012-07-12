@@ -21,7 +21,9 @@ PUB demo | x,y
   x := 1
   putnum(?x)
   putnum(?x)
+  exit
 
+PUB exit
   waitcnt(cnt + 40000000)
   fds.stop
 
