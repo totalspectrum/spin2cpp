@@ -650,9 +650,9 @@ expr:
   | T_DECREMENT lhs
     { $$ = AstOperator(T_DECREMENT, NULL, $2); }
   | lhs '?'
-    { $$ = AstOperator('?', $1, NULL); current->needsStdlib = 1; }
+    { $$ = AstOperator('?', $1, NULL); current->needsRand = 1; }
   | '?' lhs
-    { $$ = AstOperator('?', NULL, $1); current->needsStdlib = 1; }
+    { $$ = AstOperator('?', NULL, $2); current->needsRand = 1; }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs T_DOUBLETILDE

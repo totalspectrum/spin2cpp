@@ -139,7 +139,7 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "extern inline int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
     if (parse->needsBetween) {
-        fprintf(f, "extern inline int Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
+        fprintf(f, "extern inline int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
     }
     if (parse->arrays) {
         fprintf(f, "#define Lookup__(x, a) __extension__({ int32_t i = (x); (i < 0 || i >= sizeof(a)/sizeof(a[0])) ? 0 : a[i]; })\n");
@@ -147,6 +147,21 @@ PrintMacros(FILE *f, ParserState *parse)
             PrintLookupArray(f, ast->left);
         }
         fprintf(f, "\n");
+    }
+    if (parse->needsRand) {
+        fprintf(f, "static uint32_t LFSR__(uint32_t x, uint32_t forward) {\n");
+        fprintf(f, "    uint32_t y, c, a;\n");
+        fprintf(f, "    if (x < 1) x = 1;\n");
+        fprintf(f, "    a = forward ? 0x8000000B : 0x17;\n");
+        fprintf(f, "    for (y = 0; y < 32; y++) {\n");
+        fprintf(f, "       c = __builtin_parity(x & a);\n");
+        fprintf(f, "       if (forward) x = (x<<1) | c;\n");
+        fprintf(f, "       else         x = (x>>1) | (c<<31);\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    return x;\n");
+        fprintf(f, "}\n");
+        fprintf(f, "#define RandForw__(x) ((x) = LFSR__((x), 1))\n");
+        fprintf(f, "#define RandBack__(x) ((x) = LFSR__((x), 0))\n");
     }
 }
 

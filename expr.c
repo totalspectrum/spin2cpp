@@ -299,7 +299,15 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         fprintf(f, ")");
         break;
     case '?':
-        fprintf(f, "rand()");
+        if (left) {
+            fprintf(f, "RandForw__(");
+            PrintExpr(f, left);
+            fprintf(f, ")");
+        } else {
+            fprintf(f, "RandBack__(");
+            PrintExpr(f, right);
+            fprintf(f, ")");
+        }
         break;
     case '+':
     case '-':

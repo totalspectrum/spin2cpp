@@ -138,6 +138,7 @@ struct parserstate {
     char needsYield;
     char needsBetween;
     char needsAbortdef;
+    char needsRand;
 };
 
 /* the current parser state */
