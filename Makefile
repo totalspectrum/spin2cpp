@@ -12,7 +12,7 @@ RM = rm -f
 
 PROGS = testlex spin2cpp
 LEXOBJS = lexer.o symbol.o ast.o expr.o
-OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o
+OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o outcpp.o
 
 all: $(PROGS)
 

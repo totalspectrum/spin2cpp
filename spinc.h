@@ -176,6 +176,9 @@ int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);
 
+/* different kinds of output functions */
+void OutputCppCode(const char *name, ParserState *P, int printMain);
+
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
