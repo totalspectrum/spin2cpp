@@ -163,6 +163,21 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define RandForw__(x) ((x) = LFSR__((x), 1))\n");
         fprintf(f, "#define RandBack__(x) ((x) = LFSR__((x), 0))\n");
     }
+    if (parse->needsSqrt) {
+        fprintf(f, "static uint32_t Sqrt__(uint32_t a) {\n");
+        fprintf(f, "    uint32_t res = 0;\n");
+        fprintf(f, "    uint32_t bit = 1<<30;\n");
+        fprintf(f, "    while (bit > a) bit = bit>>2;\n");
+        fprintf(f, "    while (bit != 0) {\n");
+        fprintf(f, "        if (a >= res+bit) {\n");
+        fprintf(f, "            a = a - (res+bit);\n");
+        fprintf(f, "            res = (res>>1) + bit;\n");
+        fprintf(f, "        } else res = res >> 1;\n");
+        fprintf(f, "        bit = bit >> 2;\n");
+        fprintf(f, "    }\n");
+        fprintf(f, "    return res;\n");
+        fprintf(f, "}\n"); 
+    }
 }
 
 static void

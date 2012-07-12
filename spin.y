@@ -129,7 +129,7 @@ CheckYield(AST *body)
 %left '|' '^'
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
-%left T_NEGATE T_BIT_NOT T_ABS T_DECODE T_ENCODE
+%left T_NEGATE T_BIT_NOT T_ABS T_SQRT T_DECODE T_ENCODE
 %left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT
 %left T_CONSTANT T_FLOAT T_TRUNC T_ROUND
 
@@ -635,6 +635,8 @@ expr:
     { $$ = AstOperator(T_NOT, NULL, $2); }
   | T_ABS expr
     { $$ = AstOperator(T_ABS, NULL, $2); current->needsStdlib = 1; }
+  | T_SQRT expr
+    { $$ = AstOperator(T_SQRT, NULL, $2); current->needsSqrt = 1; }
   | T_DECODE expr
     { $$ = AstOperator(T_DECODE, NULL, $2); }
   | T_ENCODE expr

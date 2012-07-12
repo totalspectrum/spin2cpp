@@ -298,6 +298,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintExpr(f, right);
         fprintf(f, ")");
         break;
+    case T_SQRT:
+        fprintf(f, "Sqrt__(");
+        PrintExpr(f, right);
+        fprintf(f, ")");
+        break;
     case '?':
         if (left) {
             fprintf(f, "RandForw__(");
@@ -940,6 +945,8 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
         return -rval;
     case T_ABS:
         return (rval < 0) ? -rval : rval;
+    case T_SQRT:
+        return sqrtf(rval);
     default:
         if (valid)
             *valid = 0;
@@ -1000,6 +1007,8 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return ~rval;
     case T_ABS:
         return (rval < 0) ? -rval : rval;
+    case T_SQRT:
+        return (unsigned int)sqrtf((float)(unsigned int)rval);
     case T_DECODE:
         return (1L << rval);
     case T_ENCODE:
