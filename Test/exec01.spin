@@ -22,6 +22,9 @@ PUB demo | x,y
   putnum(?x)
   putnum(?x)
 
+  waitcnt(cnt + 40000000)
+  fds.stop
+
 PUB putnum(x)
   fds.dec(x)
   fds.str(string(13, 10))

@@ -1,8 +1,10 @@
 #!/bin/sh
 PROG=../spin2cpp
+CC=propeller-elf-gcc
 ok="ok"
 endmsg=$ok
 
+# compilation tests
 for i in test*.spin
 do
   j=`basename $i .spin`
@@ -21,5 +23,23 @@ if [ "x$endmsg" = "x$ok" ]
 then
   rm -f *.h *.cpp
 fi
+
+# run tests
+for i in exec*.spin
+do
+  j=`basename $i .spin`
+  $PROG --main $i
+  $CC -Os -u __serial_exit -o $j.elf $j.cpp FullDuplexSerial.cpp
+  rm -f $j.out
+  propeller-load $j.elf -r -t -q > $j.out
+  if diff -ub Expect/$j.txt $j.out
+  then
+    echo $j passed
+  else
+    echo $j failed
+    endmsg="TEST FAILURES"
+  fi
+  rm -f $j.out $j.elf $j.cpp $j.h
+done
 
 echo $endmsg
