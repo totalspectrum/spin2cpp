@@ -216,7 +216,7 @@ dataListLen(AST *ast, int elemsize)
         sub = ast->left;
         if (sub) {
             if (sub->kind == AST_ARRAYDECL) {
-                numelems = EvalConstExpr(ast->left->right);
+                numelems = EvalPasmExpr(ast->left->right);
             } else if (sub->kind == AST_STRING) {
                 numelems = strlen(sub->d.string);
             } else {
@@ -396,7 +396,7 @@ DeclareLabels(ParserState *P)
             asmpc = align(asmpc, 4);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             if (ast->left) {
-                int32_t max = EvalConstExpr(ast->left);
+                int32_t max = EvalPasmExpr(ast->left);
                 int32_t cur = (asmpc) / 4;
                 if ( cur > max ) {
                     ERROR(ast, "fit %d failed: pc is %d", max, cur);
