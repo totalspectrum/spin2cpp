@@ -2,7 +2,7 @@ This is a very simple Spin to C++ converter. There is much of the Spin
 language that it does not handle, and its results will not always be
 correct. 
 
-This version (0.6) includes some more functionality. A simple "Hello,
+This version (0.7) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -86,10 +86,6 @@ SPR
 _STACK
 _XINFREQ
 arrays of objects in OBJ
-operators:
-  the ^^ operator is not supported at all
-  the ? operator is not properly supported (it will return a random
-  number,but will not change the variable it is applied to)
 
 There are probably many other features not supported yet!
 
@@ -101,7 +97,10 @@ all.
 DEVELOPER NOTES
 ===============
 There is a test suite in Test/; to run it do "make test" (this also
-builds and runs a simple test program for the lexer).
+builds and runs a simple test program for the lexer). Some of the
+tests need to run on the propeller board, so make sure one is plugged
+in to a serial port and works with propeller-load (and that
+propeller-load is on the path).
 
 Parsing is done via a yacc file (spin.y), but lexing is done with a
 hand crafted parser rather than using lex/flex. This is done to make
