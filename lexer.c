@@ -715,6 +715,8 @@ struct reservedword {
     { "++", T_INCREMENT },
     { "--", T_DECREMENT },
     { "^^", T_SQRT },
+
+    { "@@", T_DOUBLEAT },
 };
 
 extern void defaultBuiltin(FILE *, Builtin *, AST *);

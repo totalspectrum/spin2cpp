@@ -130,7 +130,7 @@ CheckYield(AST *body)
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_SQRT T_DECODE T_ENCODE
-%left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT
+%left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT T_DOUBLEAT
 %left T_CONSTANT T_FLOAT T_TRUNC T_ROUND
 
 %%
@@ -531,6 +531,8 @@ expr:
   | lhs
   | '@' lhs
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
+  | T_DOUBLEAT lhs
+    { $$ = NewAST(AST_DATADDROF, $2, NULL); }
   | lhs T_ASSIGN expr
     { $$ = AstAssign(T_ASSIGN, $1, $3); }
   | identifier '#' identifier

@@ -868,6 +868,11 @@ PrintExpr(FILE *f, AST *expr)
         PrintLHS(f, expr->left, 0, 0);
         fprintf(f, ")");
         break;
+    case AST_DATADDROF:
+        fprintf(f, "(int32_t)((");
+        PrintLHS(f, expr->left, 0, 0);
+        fprintf(f, ")+dat)");
+        break;
     case AST_IDENTIFIER:
     case AST_HWREG:
     case AST_MEMREF:
@@ -1221,6 +1226,30 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             ERROR(expr, "Used hardware register where constant is expected");
         else
             *valid = 0;
+        break;
+    case AST_ADDROF:
+        /* it's OK to take the address of a label; in that case, just
+           send back the offset into the dat section
+        */
+        expr = expr->left;
+        if (expr->kind != AST_IDENTIFIER) {
+            if (reportError)
+                ERROR(expr, "Only addresses of identifiers allowed");
+            else
+                *valid = 0;
+            return intExpr(0);
+        }
+        sym = LookupSymbol(expr->d.string);
+        if (!sym || sym->type != SYM_LABEL) {
+            if (reportError)
+                ERROR(expr, "Only addresses of labels allowed");
+            else
+                *valid = 0;
+            return intExpr(0);
+        } else {
+            Label *lref = sym->val;
+            return intExpr(lref->asmval);
+        }
         break;
     default:
         if (reportError)
