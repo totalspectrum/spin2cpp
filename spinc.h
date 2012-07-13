@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "0.7"
+#define VERSIONSTR "0.8"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -114,9 +114,6 @@ struct parserstate {
     /* list of methods */
     Function *functions;
 
-    /* list of lookup arrays required */
-    AST *arrays;
-
     /* AST for current token */
     AST *ast;
 
@@ -140,6 +137,8 @@ struct parserstate {
     char needsAbortdef;
     char needsRand;
     char needsSqrt;
+    char needsLookup;
+    char needsLookdown;
 };
 
 /* the current parser state */
@@ -149,7 +148,6 @@ extern Function *curfunc;
 /* printing functions */
 void PrintVarList(FILE *f, AST *type, AST *list);
 void PrintAssign(FILE *f, AST *left, AST *right);
-void PrintLookupArray(FILE *f, AST *array);
 
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);

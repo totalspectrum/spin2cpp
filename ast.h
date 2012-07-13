@@ -100,6 +100,8 @@ enum astkind {
     AST_FILE = 64,
     AST_ABORT,
     AST_CATCH,
+    AST_LOOKEXPR,
+
 };
 
 struct AST {
@@ -112,7 +114,7 @@ struct AST {
 };
 
 /* function declarations */
-AST *NewAST(int kind, AST *left, AST *right);
+AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
 AST *DupAST(AST *ast);
 AST *AstInteger(long intval);
@@ -121,6 +123,7 @@ AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);
 AST *AstAssign(int32_t intval, AST *left, AST *right);
 AST *AstTempVariable(const char *prefix);
+AST *AstLookup(enum astkind kind, int index, AST *expr, AST *table);
 
 /* check to see if two trees are identical */
 int AstMatch(AST *a, AST *b);

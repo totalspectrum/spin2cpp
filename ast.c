@@ -7,7 +7,7 @@
 #include "spinc.h"
 
 AST *
-NewAST(int kind, AST *left, AST *right)
+NewAST(enum astkind kind, AST *left, AST *right)
 {
     AST *ast;
 
@@ -158,6 +158,22 @@ AstTempVariable(const char *prefix)
     AddSymbol(&current->objsyms, name, SYM_VARIABLE, (void *)ast_type_long);
     ast->d.string = name;
     return ast;
+}
+
+/*
+ * create a lookup expression for LOOKUP, LOOKUPZ, etc.
+ * "kind" is either AST_LOOKUP or AST_LOOKDOWN, "base"
+ * is 0 or 1 (for LOOKUPZ, LOOKUP respectively),
+ * expr is the index into the table,
+ * table is the array to lookup (lookdown) in
+ */
+
+AST *
+AstLookup(enum astkind kind, int base, AST *expr, AST *table)
+{
+    AST *ev;
+    ev = NewAST(AST_LOOKEXPR, AstInteger(base), expr);
+    return NewAST(kind, ev, table);
 }
 
 int

@@ -764,6 +764,73 @@ isBooleanOperator(AST *expr)
     }
 }
 
+
+/*
+ * print a lookup array; returns the number of elements in it
+ */
+static int
+PrintLookupArray(FILE *f, AST *array)
+{
+    AST *ast;
+    AST *expr;
+    int c, d;
+    int i;
+    int sz = 0;
+
+    fprintf(f, "((int32_t[]){");
+    ast = array;
+    while (ast) {
+        expr = ast->left;
+        ast = ast->right;
+
+        if (expr->kind == AST_RANGE) {
+            c = EvalConstExpr(expr->left);
+            d = EvalConstExpr(expr->right);
+            if (c > d) {
+                int tmp = d; d = c; c = tmp;
+            }
+            for (i = c; i <= d; i++) {
+                fprintf(f, "%d, ", i);
+                sz++;
+            }
+        } else {
+            PrintExpr(f, expr);
+            fprintf(f, ", ");
+            sz++;
+        }
+    }
+    fprintf(f, "})");
+    return sz;
+}
+
+//
+// lookup/lookdown macros look like
+// Lookup__(idx, base, ((int32_t[]){1, 2, 3...}), N)
+// where idx is the indexing expression,
+// base is 0 or 1 (array index base)
+// N is the length of the array
+//
+
+static void
+PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
+{
+    int len;
+    AST *idx, *base;
+    if (ev->kind != AST_LOOKEXPR || table->kind != AST_EXPRLIST) {
+        ERROR(ev, "Internal error in lookup");
+        return;
+    }
+    base = ev->left;
+    idx = ev->right;
+    fprintf(f, "%s(", name);
+    PrintExpr(f, idx);
+    fprintf(f, ", ");
+    PrintExpr(f, base);
+    fprintf(f, ", ");
+    len = PrintLookupArray(f, table);
+    fprintf(f, ", %u)", len);
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -853,7 +920,10 @@ PrintExpr(FILE *f, AST *expr)
         PrintRangeUse(f, expr);
         break;
     case AST_LOOKUP:
-        PrintMacroExpr(f, "Lookup__", expr->left, expr->right);
+        PrintLookExpr(f, "Lookup__", expr->left, expr->right);
+        break;
+    case AST_LOOKDOWN:
+        PrintLookExpr(f, "Lookdown__", expr->left, expr->right);
         break;
     case AST_CONSTREF:
         if (!GetObjConstant(expr, &objsym, &sym))
@@ -1336,71 +1406,6 @@ strcompBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ", (char *)");
     PrintExpr(f, params->left); params = params->right;
     fprintf(f, "))");
-}
-
-/*
- * create a lookup expression
- * this actually has several parts:
- * (1) create a temporary identifier for the array
- * (2) add an entry for the array into the current parse state
- * (3) return an expression tree with the lookup in the array
- */
-
-AST *
-NewLookup(AST *expr, AST *table)
-{
-    AST *arrayident;
-    AST *array;
-
-    arrayident = AstTempVariable("_lookup_");
-    AddSymbol(&current->objsyms, arrayident->d.string, SYM_NAME, NULL);
-    array = NewAST(AST_ARRAYDECL, arrayident, table);
-    current->arrays = AddToList(current->arrays, NewAST(AST_LISTHOLDER, array, NULL));
-    return NewAST(AST_LOOKUP, expr, arrayident);
-}
-
-/*
- * print the array
- */
-void
-PrintLookupArray(FILE *f, AST *array)
-{
-    AST *name;
-    AST *ast;
-    AST *expr;
-    int c, d;
-    int i;
-
-    if (!array || array->kind != AST_ARRAYDECL) {
-        ERROR(array, "internal error bad array type");
-        return;
-    }
-    name = array->left;
-    if (!name || name->kind != AST_IDENTIFIER) {
-        ERROR(name, "internal error: array name expected");
-        return;
-    }
-    fprintf(f, "int32_t %s[] = {\n  ", name->d.string);
-    ast = array->right;
-    while (ast) {
-        expr = ast->left;
-        ast = ast->right;
-
-        if (expr->kind == AST_RANGE) {
-            c = EvalConstExpr(expr->left);
-            d = EvalConstExpr(expr->right);
-            if (c > d) {
-                int tmp = d; d = c; c = tmp;
-            }
-            for (i = c; i <= d; i++) {
-                fprintf(f, "%d, ", i);
-            }
-        } else {
-            c = EvalConstExpr(expr);
-            fprintf(f, "%d, ", c);
-        }
-    }
-    fprintf(f, "\n};\n");
 }
 
 /*

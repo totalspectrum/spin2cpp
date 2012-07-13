@@ -1,0 +1,17 @@
+lookup/lookdown tests
+lookup( 0: 9, 4, 3, 4, 5) = 0
+lookupz( 0: 9, 4, 3, 4, 5) = 9
+lookup( 1: 9, 4, 3, 4, 5) = 9
+lookupz( 1: 9, 4, 3, 4, 5) = 4
+lookup( 4: 9, 4, 3, 4, 5) = 4
+lookupz( 4: 9, 4, 3, 4, 5) = 5
+lookup( 5: 9, 4, 3, 4, 5) = 5
+lookupz( 5: 9, 4, 3, 4, 5) = 0
+lookdown( 4: 8, 7, 3, 4, 5) = 4
+lookdownz( 4: 1, 2, 3, 4, 5) = 3
+lookdown( 7: 8, 7, 3, 4, 5) = 2
+lookdownz( 7: 1, 2, 3, 4, 5) = 0
+lookdown( 3: 8, 7, 3, 4, 5) = 3
+lookdownz( 3: 1, 2, 3, 4, 5) = 2
+lookdown( 99: 8, 7, 3, 4, 5) = 0
+lookdownz( 99: 1, 2, 3, 4, 5) = 0

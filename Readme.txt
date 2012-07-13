@@ -81,7 +81,6 @@ _CLKMODE
 CLKSET
 COGINIT on a Spin method (PASM should work)
 _FREE
-LOOKDOWN and LOOKDOWNZ
 SPR
 _STACK
 _XINFREQ

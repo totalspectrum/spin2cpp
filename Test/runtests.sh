@@ -29,6 +29,7 @@ else
 fi
 
 # execute tests
+echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`

@@ -377,9 +377,15 @@ repeatstmt:
 
 lookupexpr:
   T_LOOKUPZ '(' expr ':' rangeexprlist ')'
-    { $$ = NewLookup($3, $5); }
+    { $$ = AstLookup(AST_LOOKUP, 0, $3, $5); }
   | T_LOOKUP '(' expr ':' rangeexprlist ')'
-    { $$ = NewLookup(AstOperator('-', $3, AstInteger(1)), $5); }
+    { $$ = AstLookup(AST_LOOKUP, 1, $3, $5); }
+;
+lookdownexpr:
+  T_LOOKDOWNZ '(' expr ':' rangeexprlist ')'
+    { $$ = AstLookup(AST_LOOKDOWN, 0, $3, $5); }
+  | T_LOOKDOWN '(' expr ':' rangeexprlist ')'
+    { $$ = AstLookup(AST_LOOKDOWN, 1, $3, $5); }
 ;
 
 conblock:
@@ -674,7 +680,9 @@ expr:
   | T_TRUNC '(' expr ')'
     { $$ = NewAST(AST_TRUNC, $3, NULL); }
   | lookupexpr
-    { $$ = $1; }
+    { $$ = $1; current->needsLookup = 1; }
+  | lookdownexpr
+    { $$ = $1; current->needsLookdown = 1; }
   ;
 
 lhs: identifier

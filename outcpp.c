@@ -118,7 +118,6 @@ PrintHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintMacros(FILE *f, ParserState *parse)
 {
-    AST *ast;
     if (parse->needsYield) {
         fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
     }
@@ -141,11 +140,12 @@ PrintMacros(FILE *f, ParserState *parse)
     if (parse->needsBetween) {
         fprintf(f, "extern inline int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
     }
-    if (parse->arrays) {
-        fprintf(f, "#define Lookup__(x, a) __extension__({ int32_t i = (x); (i < 0 || i >= sizeof(a)/sizeof(a[0])) ? 0 : a[i]; })\n");
-        for (ast = parse->arrays; ast; ast = ast->right) {
-            PrintLookupArray(f, ast->left);
-        }
+    if (parse->needsLookup) {
+        fprintf(f, "#define Lookup__(x, b, a, n) __extension__({ int32_t i = (x)-(b); ((unsigned)i >= n) ? 0 : (a)[i]; })\n");
+        fprintf(f, "\n");
+    }
+    if (parse->needsLookdown) {
+        fprintf(f, "#define Lookdown__(x, b, a, n) __extension__({ int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; r; })\n");
         fprintf(f, "\n");
     }
     if (parse->needsRand) {
