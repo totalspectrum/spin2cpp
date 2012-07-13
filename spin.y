@@ -431,10 +431,16 @@ basedatline:
     { $$ = NULL; }
   | error T_EOLN
     { $$ = NULL; }
+  | T_BYTE T_EOLN
+    { $$ = NewAST(AST_BYTELIST, NULL, NULL); }
   | T_BYTE exprlist T_EOLN
     { $$ = NewAST(AST_BYTELIST, $2, NULL); }
+  | T_WORD T_EOLN
+    { $$ = NewAST(AST_WORDLIST, NULL, NULL); }
   | T_WORD exprlist T_EOLN
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
+  | T_LONG T_EOLN
+    { $$ = NewAST(AST_LONGLIST, NULL, NULL); }
   | T_LONG exprlist T_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
   | instruction T_EOLN
