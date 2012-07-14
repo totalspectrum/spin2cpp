@@ -508,6 +508,11 @@ again:
             return T_OUTDENT;
         }
     }
+    // force an end-of line at EOF
+    if (c == T_EOF && !L->eoln && !L->eof) {
+        L->eof = L->eoln = 1;
+        return T_EOLN;
+    }
     if (L->eoln) {
         L->eoln = 0;
         L->firstNonBlank = L->colCounter-1;

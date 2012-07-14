@@ -24,10 +24,10 @@ and produce .cpp and .h files for them as well.
 
 If this is a top level spin object and you plan to compile it, you may
 want spin2cpp to automatically insert a main() function and a call to
-the first method of the object. To do this, give spin2cpp the -main
+the first method of the object. To do this, give spin2cpp the --main
 option:
 
-  spin2cpp -main test.spin
+  spin2cpp --main test.spin
 
 You can then compile it with:
 

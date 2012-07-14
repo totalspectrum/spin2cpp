@@ -24,6 +24,7 @@ struct lexstream {
     int indentsp;               /* pointer into stack of indentation level */
     int pending_indent;
     int eoln;      /* 1 if end of line seen */
+    int eof;       /* 1 if EOF seen */
     int firstNonBlank;
 
     /* last global label */

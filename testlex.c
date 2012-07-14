@@ -124,9 +124,9 @@ ERROR(AST *instr, const char *msg, ...)
 }
 
 #define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
-static int tokens0[] = { T_NUM, '+', T_NUM, T_EOF };
-static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOF };
-static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOF };
+static int tokens0[] = { T_NUM, '+', T_NUM, T_EOLN, T_EOF };
+static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOLN, T_EOF };
+static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOLN, T_EOF };
 static int tokens3[] = { '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
 
 static const char *token4test = "pub \r\n  if\n    foo\n  bar\n";
