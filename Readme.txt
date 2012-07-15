@@ -89,9 +89,8 @@ arrays of objects in OBJ
 There are probably many other features not supported yet!
 
 The lexer and parser are different from the Parallax ones, so they may
-well report errors on code the Parallax compiler accepts. For example,
-spin2cpp does not handle files that end without a newline very well at
-all.
+well report errors on code the Parallax compiler accepts.
+
 
 DEVELOPER NOTES
 ===============

@@ -472,21 +472,21 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
 void
 PrintPostfix(FILE *f, AST *expr)
 {
-    const char *str;
+    AST *target;
 
     if (expr->d.ival == '~')
-        str = "0";
+        target = AstInteger(0);
     else if (expr->d.ival == T_DOUBLETILDE) {
-        str = "-1";
+        target = AstInteger(-1);
     } else {
         ERROR(expr, "bad postfix operator %d", expr->d.ival);
         return;
     }
     fprintf(f, "__extension__({ int32_t _tmp_ = ");
-    PrintLHS(f, expr->left, 0, 0);
+    PrintExpr(f, expr->left);
     fprintf(f, "; ");
-    PrintLHS(f, expr->left, 1, 0);
-    fprintf(f, " = %s; _tmp_; })", str);
+    PrintAssign(f, expr->left, target);
+    fprintf(f, "; _tmp_; })");
 }
 
 /*
