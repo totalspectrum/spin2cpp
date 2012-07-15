@@ -644,8 +644,12 @@ PrintRangeUse(FILE *f, AST *src)
 static void
 PrintStringChar(FILE *f, int c)
 {
-    if (isprint(c) && c != '"') {
-        fprintf(f, "%c", c);
+    if (isprint(c)) {
+        if (c == '\\' || c == '"' || c == '\'') {
+            fprintf(f, "\\%c", c);
+        } else {
+            fprintf(f, "%c", c);
+        }
     } else if (c == 10) {
         fprintf(f, "\\n");
     } else if (c == 13) {
@@ -850,8 +854,11 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_STRING:
         c = expr->d.string[0];
+        
         if (isprint(c)) {
-            fprintf(f, "'%c'", c);
+            fputc('\'', f);
+            PrintStringChar(f, c);
+            fputc('\'', f);
         } else {
             fprintf(f, "%d", c);
         }
