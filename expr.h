@@ -41,4 +41,6 @@ ExprVal floatExpr(float f);
 int32_t  floatAsInt(float f);
 float    intAsFloat(int32_t i);
 
+int IsArray(AST *expr);
+
 #endif

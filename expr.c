@@ -737,6 +737,14 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
     if (lhs->kind == AST_RANGEREF) {
         PrintRangeAssign(f, lhs, rhs);
     } else {
+        /* in Spin an expression like
+             arr := 1
+           where arr is an array is equivalent to
+             arr[0] := 1
+        */
+        if (IsArray(lhs)) {
+            lhs = NewAST(AST_ARRAYREF, lhs, AstInteger(0));
+        }
         PrintLHS(f, lhs, 1, 0);
         fprintf(f, " = ");
         PrintExpr(f, rhs);
@@ -853,6 +861,9 @@ PrintExpr(FILE *f, AST *expr)
         PrintFloat(f, (int32_t)expr->d.ival);
         break;
     case AST_STRING:
+        if (strlen(expr->d.string) > 1) 
+            ERROR(expr, "string too long, expected a single character");
+
         c = expr->d.string[0];
         
         if (isprint(c)) {
@@ -1504,4 +1515,24 @@ float intAsFloat(int32_t i)
 
     v.i = i;
     return v.f;
+}
+
+int
+IsArray(AST *expr)
+{
+    Symbol *sym;
+    AST *type;
+    if (!expr || expr->kind != AST_IDENTIFIER)
+        return 0;
+    sym = LookupSymbol(expr->d.string);
+    if (!sym)
+        return 0;
+    if (sym->type == SYM_LABEL)
+        return 1;
+    if (sym->type != SYM_VARIABLE && sym->type != SYM_LOCALVAR)
+        return 0;
+    type = (AST *)sym->val;
+    if (type->kind == AST_ARRAYTYPE)
+        return 1;
+    return 0;
 }
