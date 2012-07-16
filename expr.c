@@ -971,23 +971,31 @@ PrintBoolExpr(FILE *f, AST *expr)
 {
     int op;
     if (expr->kind == AST_OPERATOR) {
+        AST *lhs = expr->left;
+        AST *rhs = expr->right;
+        if (IsArray(lhs)) {
+            lhs = NewAST(AST_ARRAYREF, lhs, AstInteger(0));
+        }
+        if (IsArray(rhs)) {
+            rhs = NewAST(AST_ARRAYREF, rhs, AstInteger(0));
+        }
         op = expr->d.ival;
         switch (op) {
         case T_NOT:
             fprintf(f, "!(");
-            PrintBoolExpr(f, expr->right);
+            PrintBoolExpr(f, rhs);
             fprintf(f, ")");
             break;
         case T_OR:
         case T_AND:
             fprintf(f, "(");
-            PrintBoolExpr(f, expr->left);
+            PrintBoolExpr(f, lhs);
             fprintf(f, "%s", op == T_OR ? ") || (" : ") && (");
-            PrintBoolExpr(f, expr->right);
+            PrintBoolExpr(f, rhs);
             fprintf(f, ")");
             break;
         default:
-            PrintOperator(f, op, expr->left, expr->right);
+            PrintOperator(f, op, lhs, rhs);
             break;
         }
     } else {
