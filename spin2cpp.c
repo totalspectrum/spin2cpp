@@ -202,7 +202,7 @@ ParserState *
 parseFile(const char *name)
 {
     FILE *f = NULL;
-    ParserState *P, *save;
+    ParserState *P, *save, *Q;
     char *fname = NULL;
 
     fname = malloc(strlen(name) + 8);
@@ -218,6 +218,16 @@ parseFile(const char *name)
     }
     save = current;
     P = NewParserState(name);
+    /* if we have already visited an object with this name, skip it */
+    for (Q = allparse; Q; Q = Q->next) {
+        if (!strcmp(P->basename, Q->basename)) {
+            free(fname);
+            free(P);
+            fclose(f);
+            return Q;
+        }
+    }
+
     P->next = allparse;
     allparse = P;
     current = P;
@@ -293,6 +303,7 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
+    fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     exit(2);
 }
 
@@ -301,7 +312,9 @@ main(int argc, char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
+    int outputFiles = 0;
     ParserState *P;
+
     init();
 
     allparse = NULL;
@@ -317,11 +330,14 @@ main(int argc, char **argv)
         if (!strcmp(argv[0], "-y")) {
             yydebug = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--m", 3)) {
+        } else if (!strncmp(argv[0], "--m", 3) || !strncmp(argv[0], "-m", 2)) {
             outputMain = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5)) {
             outputDat = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--file", 7)) {
+            outputFiles = 1;
             argv++; --argc;
         } else {
             Usage();
@@ -335,30 +351,15 @@ main(int argc, char **argv)
         if (outputDat) {
             OutputDatFile(P->basename, P);
         } else {
-            AST *ast, *sub;
-            ParserState *objstate;
-            int already_done;
+            ParserState *Q;
 
             /* compile any sub-objects needed */
-            for (ast = P->objblock; ast; ast = ast->right) {
-                if (ast->kind != AST_OBJECT) {
-                    ERROR(ast, "Internal error: expected an OBJECT");
-                    exit(1);
-                }
-                /* see if we've already compiled this object */
-                objstate = ast->d.ptr;
-                already_done = 0;
-                for (sub = P->objblock; sub && sub != ast; sub = sub->right) {
-                    if (sub->d.ptr == objstate) {
-                        already_done = 1;
-                        break;
-                    }
-                }
-                if (!already_done) {
-                    OutputCppCode(objstate->basename, objstate, 0);
+            for (Q = allparse; Q; Q = Q->next) {
+                OutputCppCode(Q->basename, Q, outputMain && Q == P);
+                if (outputFiles) {
+                    printf("%s.cpp\n", Q->basename);
                 }
             }
-            OutputCppCode(P->basename, P, outputMain);
         }
     }
     return 0;
