@@ -299,7 +299,7 @@ static void
 Usage(void)
 {
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
-    fprintf(stderr, "Usage: %s [--main][--dat] file.spin\n", gl_progname);
+    fprintf(stderr, "Usage: %s [--main][--dat][--files] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
@@ -336,7 +336,7 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--dat", 5)) {
             outputDat = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--file", 7)) {
+        } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
             argv++; --argc;
         } else {
