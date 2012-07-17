@@ -1,5 +1,8 @@
 dat
-   byte 1
+
+Header  byte "--", 13
+	byte 0
+Error   byte " !", 0
 
 pub start
    cognew(@entry, 0)

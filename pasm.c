@@ -12,13 +12,14 @@
  */
 #define BYTES_PER_LINE 16  /* must be at least 4 */
 int datacount = 0;
+int totaldata = 0;
 
 static int binFlag = 0;
 
 static void
 initDataOutput(int isBinary)
 {
-    datacount = 0;
+    totaldata = datacount = 0;
     binFlag = isBinary;
 }
 
@@ -27,6 +28,8 @@ outputByte(FILE *f, int c)
 {
     if (binFlag) {
         fputc(c, f);
+        datacount++;
+        totaldata++;
         return;
     }
     if (datacount == 0) {
@@ -34,6 +37,7 @@ outputByte(FILE *f, int c)
     }
     fprintf(f, "0x%02x, ", c);
     datacount++;
+    totaldata++;
     if (datacount == BYTES_PER_LINE) {
         fprintf(f, "\n");
         datacount = 0;

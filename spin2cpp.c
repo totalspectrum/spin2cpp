@@ -299,12 +299,43 @@ static void
 Usage(void)
 {
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
-    fprintf(stderr, "Usage: %s [--main][--dat][--files] file.spin\n", gl_progname);
+    fprintf(stderr, "Usage: %s [options] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
+    fprintf(stderr, "  --elf:     create executable ELF file\n");
     exit(2);
+}
+
+#define MAX_CMDLINE 4096
+static char cmdline[MAX_CMDLINE];
+
+static void
+appendWithoutSpace(const char *s)
+{
+    int len;
+    len = strlen(cmdline) + strlen(s);
+    if (len >= MAX_CMDLINE) {
+        fprintf(stderr, "command line too long");
+    }
+    strcat(cmdline, s);
+}
+
+static void
+appendToCmd(const char *s)
+{
+    if (cmdline[0] != 0)
+        appendWithoutSpace(" ");
+    appendWithoutSpace(s);
+}
+
+static void
+appendCompiler(void)
+{
+    const char *ccompiler = getenv("CC");
+    if (!ccompiler) ccompiler = "propeller-elf-gcc";
+    appendToCmd(ccompiler);
 }
 
 int
@@ -313,7 +344,10 @@ main(int argc, char **argv)
     int outputMain = 0;
     int outputDat = 0;
     int outputFiles = 0;
+    int outputElf = 0;
+    int compile = 0;
     ParserState *P;
+    int r = 0;
 
     init();
 
@@ -330,7 +364,7 @@ main(int argc, char **argv)
         if (!strcmp(argv[0], "-y")) {
             yydebug = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--m", 3) || !strncmp(argv[0], "-m", 2)) {
+        } else if (!strncmp(argv[0], "--main", 6) || !strcmp(argv[0], "-main")) {
             outputMain = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5)) {
@@ -339,11 +373,27 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--elf", 5)) {
+            outputElf = compile = 1;
+            outputMain = 1;
+            argv++; --argc;
+            appendCompiler();
+        } else if (compile) {
+            /* pass along arguments */
+            if (!strncmp(argv[0], "-O", 2)) {
+                appendToCmd(argv[0]); argv++; --argc;
+            } else if (!strncmp(argv[0], "-f", 2)) {
+                appendToCmd(argv[0]); argv++; --argc;
+            } else if (!strncmp(argv[0], "-m", 2)) {
+                appendToCmd(argv[0]); argv++; --argc;
+            } else {
+                Usage();
+            }
         } else {
             Usage();
         }
     }
-    if (argv[0] == NULL) {
+    if (argv[0] == NULL || argc != 1) {
         Usage();
     }
     P = parseFile(argv[0]);
@@ -359,8 +409,28 @@ main(int argc, char **argv)
                 if (outputFiles) {
                     printf("%s.cpp\n", Q->basename);
                 }
+                if (compile) {
+                    appendToCmd(Q->basename);
+                    appendWithoutSpace(".cpp");
+                }
+            }
+            if (compile && gl_errors == 0) {
+                r = system(cmdline);
+                if (r < 0) {
+                    fprintf(stderr, "Unable to run command: %s\n", cmdline);
+                    exit(1);
+                }
             }
         }
+    } else {
+        fprintf(stderr, "parse error\n");
+        return 1;
     }
-    return 0;
+
+    if (gl_errors > 0) {
+        fprintf(stderr, "%d errors\n", gl_errors);
+        exit(1);
+    }
+
+    return r;
 }
