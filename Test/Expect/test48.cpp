@@ -17,7 +17,7 @@ int32_t test48::Setcolors(int32_t Colorptr)
 int32_t test48::Stop(void)
 {
   int32_t result = 0;
-  _OUTA = (_OUTA & 0xffffff00) | ((0 << 0) & 0x000000ff);
+  _OUTA &= ~(255<<0);
   return result;
 }
 

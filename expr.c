@@ -535,6 +535,39 @@ RangeXor(FILE *f, AST *dst, AST *src)
 }
 
 /*
+ * special case setting or clearing a range of bits
+ *   outa[x] := 1
+ * becomes
+ *   outa |= (1<<x)
+ * and
+ *   outa[x] := 0
+ * becomes
+ *   outa[x] &= ~(1<<x)
+ */
+/* WARNING: mask must be a contiguous set of bits that fill
+ * the desired range
+ */
+static void
+RangeBitSet(FILE *f, AST *dst, uint32_t mask, int bitset)
+{
+    AST *loexpr;
+
+    if (dst->right->right) {
+        loexpr = dst->right->right;
+    } else {
+        loexpr = dst->right->left;
+    }
+    PrintLHS(f, dst->left, 1, 0);
+    if (bitset) {
+        fprintf(f, " |= (%u<<", mask);
+    } else {
+        fprintf(f, " &= ~(%u<<", mask);
+    }
+    PrintExpr(f, loexpr);
+    fprintf(f, ")");
+}
+
+/*
  * special code for printing a range expression
  * src->left is the hardware register
  * src->right is an AST_RANGE with left being the start, right the end
@@ -552,7 +585,8 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     int reverse = 0;
     uint32_t mask;
     int nbits;
-    int lo;
+    AST *loexpr;
+    int loshift;
 
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
@@ -571,10 +605,10 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     */
     if (dst->right->right == NULL) {
         nbits = 1;
-        lo = EvalConstExpr(dst->right->left);
+        loexpr = dst->right->left;
     } else {
         int hi = EvalConstExpr(dst->right->left);
-        lo = EvalConstExpr(dst->right->right);
+        int lo = EvalConstExpr(dst->right->right);
 
         if (hi < lo) {
             int tmp;
@@ -588,24 +622,36 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
                 src = AstInteger(EvalConstExpr(src));
             }
         }
+        loexpr = AstInteger(lo);
     }
-
+    mask = ((1U<<nbits) - 1);
+    if (IsConstExpr(src)) {
+        int bitset = EvalConstExpr(src);
+        if (bitset == 0 || bitset == mask) {
+            RangeBitSet(f, dst, mask, bitset);
+            return;
+        }
+    }
     if (nbits >= 32) {
         PrintLHS(f, dst->left, 1, 0);
         fprintf(f, " = ");
         PrintExpr(f, src);
         return;
     }
-    mask = ((1U<<nbits) - 1);
-    mask = (mask << lo) | (mask >> (32-lo));
 
+    /* we deferred evaluation of "lo" til here so that
+       in simple cases (bit set/clr) we can allow variable
+       shifts
+    */
+    loshift = EvalConstExpr(loexpr);
+    mask = (mask << loshift) | (mask >> (32-loshift));
 
     PrintLHS(f, dst->left, 1, 0);
     fprintf(f, " = (");
     PrintLHS(f, dst->left, 1, 0);
     fprintf(f, " & 0x%08x) | ((", ~mask);
     PrintExpr(f, src);
-    fprintf(f, " << %d) & 0x%08x)", lo, mask); 
+    fprintf(f, " << %d) & 0x%08x)", loshift, mask); 
 }
 
 /*

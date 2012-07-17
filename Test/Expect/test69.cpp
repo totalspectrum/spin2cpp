@@ -8,7 +8,7 @@ int32_t test69::Demo(void)
     abort();
   } else {
     if (!(((_INA >> 1) & 1))) {
-      _OUTA = (_OUTA & 0xfffffff8) | ((0 << 0) & 0x00000007);
+      _OUTA &= ~(7<<0);
     }
   }
   return result;
