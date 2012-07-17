@@ -185,6 +185,10 @@ assembleInstruction(FILE *f, AST *ast)
     }
     val = val | (dst << 9) | src;
     /* output the instruction */
+    /* make sure it is aligned */
+    while ((datacount % 4) != 0) {
+        outputByte(f, 0);
+    }
     for (i = 0; i < 4; i++) {
         outputByte(f, val & 0xff);
         val = val >> 8;
