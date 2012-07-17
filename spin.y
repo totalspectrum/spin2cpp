@@ -759,7 +759,7 @@ operandlist:
 
 range:
   expr
-    { $$ = NewAST(AST_RANGE, $1, $1); }
+    { $$ = NewAST(AST_RANGE, $1, NULL); }
   | expr T_DOTS expr
     { $$ = NewAST(AST_RANGE, $1, $3); }
   ;

@@ -517,7 +517,10 @@ RangeXor(FILE *f, AST *dst, AST *src)
 
     /* now handle the ordinary case */
     hi = EvalConstExpr(dst->right->left);
-    lo = EvalConstExpr(dst->right->right);
+    if (dst->right->right == NULL)
+        lo = hi;
+    else
+        lo = EvalConstExpr(dst->right->right);
     if (hi < lo) {
         int tmp;
         tmp = lo; lo = hi; hi = tmp;
@@ -546,10 +549,10 @@ RangeXor(FILE *f, AST *dst, AST *src)
 void
 PrintRangeAssign(FILE *f, AST *dst, AST *src)
 {
-    int lo, hi;
     int reverse = 0;
     uint32_t mask;
     int nbits;
+    int lo;
 
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
@@ -562,21 +565,28 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         RangeXor(f, dst, AstInteger(0xffffffff));
         return;
     }
-
     /* now handle the ordinary case */
-    hi = EvalConstExpr(dst->right->left);
-    lo = EvalConstExpr(dst->right->right);
+    /* if the "range" is just a single item it does not have to
+       be constant, but for a real range we need constants on each end
+    */
+    if (dst->right->right == NULL) {
+        nbits = 1;
+        lo = EvalConstExpr(dst->right->left);
+    } else {
+        int hi = EvalConstExpr(dst->right->left);
+        lo = EvalConstExpr(dst->right->right);
 
-    if (hi < lo) {
-        int tmp;
-        reverse = 1;
-        tmp = lo; lo = hi; hi = tmp;
-    }
-    nbits = (hi - lo + 1);
-    if (reverse) {
-        src = AstOperator(T_REV, src, AstInteger(nbits));
-        if (IsConstExpr(src)) {
-            src = AstInteger(EvalConstExpr(src));
+        if (hi < lo) {
+            int tmp;
+            reverse = 1;
+            tmp = lo; lo = hi; hi = tmp;
+        }
+        nbits = (hi - lo + 1);
+        if (reverse) {
+            src = AstOperator(T_REV, src, AstInteger(nbits));
+            if (IsConstExpr(src)) {
+                src = AstInteger(EvalConstExpr(src));
+            }
         }
     }
 
@@ -604,10 +614,11 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
 void
 PrintRangeUse(FILE *f, AST *src)
 {
-    int lo, hi;
     int reverse = 0;
-    uint32_t mask;
+    AST *mask;
     int nbits;
+    AST *loexpr;
+    AST *val;
 
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
@@ -618,26 +629,32 @@ PrintRangeUse(FILE *f, AST *src)
         return;
     }
     /* now handle the ordinary case */
-    hi = EvalConstExpr(src->right->left);
-    lo = EvalConstExpr(src->right->right);
+    if (src->right->right == NULL) {
+        loexpr = src->right->left;
+        nbits = 1;
+    } else {
+        int hi = EvalConstExpr(src->right->left);
+        int lo = EvalConstExpr(src->right->right);
 
-    if (hi < lo) {
-        int tmp;
-        reverse = 1;
-        tmp = lo; lo = hi; hi = tmp;
+        if (hi < lo) {
+            int tmp;
+            reverse = 1;
+            tmp = lo; lo = hi; hi = tmp;
+        }
+        if (reverse) {
+            ERROR(src, "cannot currently handle reversed range");
+        }
+        nbits = (hi - lo + 1);
+        loexpr = AstInteger(lo);
     }
-    if (reverse) {
-        ERROR(src, "cannot currently handle reversed range");
-    }
-    nbits = (hi - lo + 1);
+    mask = AstInteger((1U<<nbits) - 1);
 
-    mask = ((1U<<nbits) - 1);
-
-
-    fprintf(f, "((");
-    PrintLHS(f, src->left, 1, 0);
-    fprintf(f, " >> %d)", lo); 
-    fprintf(f, " & 0x%x)", mask);
+    /* we want to end up with:
+       ((src->left >> lo) & mask)
+    */
+    val = AstOperator(T_SAR, src->left, loexpr);
+    val = AstOperator('&', val, mask);
+    PrintExpr(f, val);
 }
 
 
