@@ -512,20 +512,38 @@ ReverseBits(int32_t A, int32_t N)
 static void
 RangeXor(FILE *f, AST *dst, AST *src)
 {
-    int lo, hi, nbits;
+    int nbits;
     uint32_t mask;
+    int lo;
 
-    /* now handle the ordinary case */
-    hi = EvalConstExpr(dst->right->left);
-    if (dst->right->right == NULL)
-        lo = hi;
-    else
+    if (dst->right->right == NULL) {
+        AST *loexpr = dst->right->left;
+        nbits = 1;
+        /* special case: if src is -1 or 0
+         * then we don't have to construct a mask,
+         * a single bit is enough
+         */
+        if (IsConstExpr(src) && !IsConstExpr(loexpr)) {
+            int32_t srcval = EvalConstExpr(src);
+            if (srcval == -1 || srcval == 0) {
+                srcval = srcval & 1;
+                PrintLHS(f, dst->left, 1, 0);
+                fprintf(f, " ^= (1<<");
+                PrintExpr(f, loexpr);
+                fprintf(f, ")");
+                return;
+            }
+        }
+        lo = EvalConstExpr(loexpr);
+    } else {
+        int hi = EvalConstExpr(dst->right->left);
         lo = EvalConstExpr(dst->right->right);
-    if (hi < lo) {
-        int tmp;
-        tmp = lo; lo = hi; hi = tmp;
+        if (hi < lo) {
+            int tmp;
+            tmp = lo; lo = hi; hi = tmp;
+        }
+        nbits = (hi - lo + 1);
     }
-    nbits = (hi - lo + 1);
     mask = ((1U<<nbits) - 1);
     mask = mask & EvalConstExpr(src);
     mask = (mask << lo) | (mask >> (32-lo));
