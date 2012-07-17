@@ -2,9 +2,11 @@
 #include <propeller.h>
 #include "test72.h"
 
+extern "C" {
 #include <setjmp.h>
+}
 typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;
-AbortHook__ *abortChain__;
+AbortHook__ *abortChain__ __attribute__((common));
 
 int32_t test72::Top(int32_t X)
 {

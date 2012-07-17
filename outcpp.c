@@ -126,9 +126,11 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "extern inline int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsAbortdef) {
+        fprintf(f, "extern \"C\" {\n");
         fprintf(f, "#include <setjmp.h>\n");
+        fprintf(f, "}\n");
         fprintf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
-        fprintf(f, "AbortHook__ *abortChain__;\n\n");
+        fprintf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
     }
     if (parse->needsRotate) {
         fprintf(f, "extern inline int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
