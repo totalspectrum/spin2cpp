@@ -1,0 +1,9 @@
+Counting demo:
+count 1 to 4 step 1: 1 2 3 4 
+count 2 to 8 step 2: 2 4 6 8 
+count 2 to 9 step 2: 2 4 6 8 
+count 9 to 2 step 2: 9 7 5 3 
+count 1 to 4 step -1: 1 
+count 4 to 0 step -1: 4 
+count -4 to 0 step 1: -4 -3 -2 -1 0 
+count -4 to 0 step -1: -4 

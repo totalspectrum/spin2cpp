@@ -380,12 +380,22 @@ main(int argc, char **argv)
             appendCompiler();
         } else if (compile) {
             /* pass along arguments */
-            if (!strncmp(argv[0], "-O", 2)) {
+            if (!strncmp(argv[0], "-O", 2)
+                || !strncmp(argv[0], "-f", 2)
+                || !strncmp(argv[0], "-m", 2)
+                || !strncmp(argv[0], "-D", 2)
+                ) {
                 appendToCmd(argv[0]); argv++; --argc;
-            } else if (!strncmp(argv[0], "-f", 2)) {
-                appendToCmd(argv[0]); argv++; --argc;
-            } else if (!strncmp(argv[0], "-m", 2)) {
-                appendToCmd(argv[0]); argv++; --argc;
+            } else if (!strncmp(argv[0], "-o", 2) || !strncmp(argv[0], "-u", 2)) {
+                char *opt = argv[0];
+                appendToCmd(opt); argv++; --argc;
+                if (opt[2] == 0) {
+                    if (argv[0] == NULL) {
+                        fprintf(stderr, "Error: expected file name after %s option\n", opt);
+                        exit(2);
+                    }
+                    appendToCmd(argv[0]); argv++; --argc;
+                }
             } else {
                 Usage();
             }

@@ -33,8 +33,7 @@ echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`
-  $PROG --main $i
-  $CC -Os -u __serial_exit -o $j.elf $j.cpp FullDuplexSerial.cpp
+  $PROG --elf -Os -u __serial_exit -o $j.elf $i
   rm -f $j.out
   propeller-load $j.elf -r -t -q > $j.out
   tail --lines=+6 $j.out >$j.txt
