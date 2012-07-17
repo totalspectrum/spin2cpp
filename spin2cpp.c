@@ -383,10 +383,15 @@ main(int argc, char **argv)
             if (!strncmp(argv[0], "-O", 2)
                 || !strncmp(argv[0], "-f", 2)
                 || !strncmp(argv[0], "-m", 2)
-                || !strncmp(argv[0], "-D", 2)
-                ) {
+                || !strncmp(argv[0], "-g", 2)
+                )
+            {
                 appendToCmd(argv[0]); argv++; --argc;
-            } else if (!strncmp(argv[0], "-o", 2) || !strncmp(argv[0], "-u", 2)) {
+            } else if (!strncmp(argv[0], "-o", 2)
+                       || !strncmp(argv[0], "-u", 2)
+                       || !strncmp(argv[0], "-D", 2)
+                )
+            {
                 char *opt = argv[0];
                 appendToCmd(opt); argv++; --argc;
                 if (opt[2] == 0) {
