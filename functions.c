@@ -146,7 +146,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     }
     fdef = NewFunction();
     fdef->name = src->left->d.string;
-    if (src->right)
+    if (src->right && src->right->kind == AST_IDENTIFIER)
         resultname = src->right->d.string;
     else
         resultname = "result";
