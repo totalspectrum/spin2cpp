@@ -25,7 +25,7 @@ int32_t test40::Dec(int32_t Value)
     if (Value >= I) {
       Tx((((Value / I) + '0') + (X * -(I == 1))));
       Value = (Value % I);
-      __extension__({ int32_t _tmp_ = result; result = -1; _tmp_; });
+      result = -1;
     } else {
       if ((result) || (I == 1)) {
         Tx('0');

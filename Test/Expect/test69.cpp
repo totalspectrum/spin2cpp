@@ -4,10 +4,10 @@
 int32_t test69::Demo(void)
 {
   int32_t result = 0;
-  if (!(((_INA >> 0) & 1))) {
+  if (!(((_INA >> 0) & 0x1))) {
     abort();
   } else {
-    if (!(((_INA >> 1) & 1))) {
+    if (!(((_INA >> 1) & 0x1))) {
       _OUTA &= ~(7<<0);
     }
   }

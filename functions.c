@@ -687,6 +687,11 @@ PrintStatement(FILE *f, AST *ast, int indent)
     case AST_CASE:
         sawreturn = PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
+    case AST_POSTEFFECT:
+        fprintf(f, "%*c", indent, ' ');
+        PrintPostfix(f, ast, 1);
+        fprintf(f, ";\n");
+        break;
     case AST_OPERATOR:
         switch (ast->d.ival) {
         case T_NEGATE:

@@ -8,7 +8,7 @@ int32_t test47::Test(int32_t C)
     if (C == 9) {
       do {
         _OUTA = (Cols++);
-      } while (Cols & 7);
+      } while (Cols & 0x7);
     } else if (C == 13) {
       _OUTA = C;
     } else if (1) {

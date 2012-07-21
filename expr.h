@@ -21,6 +21,8 @@ int32_t EvalPasmExpr(AST *expr);
 int IsConstExpr(AST *expr);
 /* determine whether an expression is a float constant */
 int IsFloatConst(AST *expr);
+/* evaluate to an integer if an expression is constant */
+AST *FoldIfConst(AST *expr);
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
@@ -28,6 +30,7 @@ void PrintBoolExpr(FILE *f, AST *expr);
 void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
+void PrintPostfix(FILE *f, AST *val, int toplevel);
 void PrintInteger(FILE *f, int32_t v);
 
 /* expression utility functions */

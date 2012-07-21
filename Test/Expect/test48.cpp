@@ -8,7 +8,7 @@ int32_t test48::Setcolors(int32_t Colorptr)
   I = 0;
   do {
     Fore = (((uint8_t *)Colorptr)[(I << 1)] << 2);
-    _OUTA = (_OUTA & 0xffffff00) | ((Fore << 0) & 0x000000ff);
+    _OUTA = ((_OUTA & 0xffffff00) | ((Fore & 0xff) << 0));
     I = (I + 1);
   } while (I <= 7);
   return result;

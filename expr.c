@@ -201,7 +201,8 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params)
     fprintf(f, ")");
 }
 
-/* code to print left operator right */
+/* code to print left operator right
+ */
 static void
 PrintInOp(FILE *f, const char *op, AST *left, AST *right)
 {
@@ -214,6 +215,36 @@ PrintInOp(FILE *f, const char *op, AST *left, AST *right)
         PrintExpr(f, right);
     } else {
         PrintExpr(f, left);
+        fprintf(f, "%s", op);
+    }
+}
+
+/* code to print left operator right where operator is a bit manipulation
+ * operator
+ * just like PrintInOp, but prints integer constants in hex
+ */
+static void
+PrintHexExpr(FILE *f, AST *left)
+{
+    if (IsConstExpr(left)) {
+        fprintf(f, "0x%x", EvalConstExpr(left));
+    } else {
+        PrintExpr(f, left);
+    }
+}
+
+static void
+PrintLogicOp(FILE *f, const char *op, AST *left, AST *right)
+{
+    if (left && right) {
+        PrintHexExpr(f, left);
+        fprintf(f, " %s ", op);
+        PrintHexExpr(f, right);
+    } else if (right) {
+        fprintf(f, "%s", op);
+        PrintHexExpr(f, right);
+    } else {
+        PrintHexExpr(f, left);
         fprintf(f, "%s", op);
     }
 }
@@ -286,7 +317,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, "-", left, right);
         break;
     case T_BIT_NOT:
-        PrintInOp(f, "~", left, right);
+        PrintLogicOp(f, "~", left, right);
         break;
     case T_AND:
         PrintInOp(f, "&&", left, right);
@@ -330,13 +361,17 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
             fprintf(f, ")");
         }
         break;
+    case '&':
+    case '|':
+    case '^':
+        opstring[0] = op;
+        opstring[1] = 0;
+        PrintLogicOp(f, opstring, left, right);
+        break;
     case '+':
     case '-':
     case '/':
     case '*':
-    case '&':
-    case '|':
-    case '^':
     case '<':
     case '>':
         opstring[0] = op;
@@ -484,9 +519,10 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
 
 /*
  * code to print a postfix operator like x~ (which returns x then sets x to 0)
+ * if "toplevel" is 1 then we can skip the saving of the original value
  */
 void
-PrintPostfix(FILE *f, AST *expr)
+PrintPostfix(FILE *f, AST *expr, int toplevel)
 {
     AST *target;
 
@@ -498,11 +534,15 @@ PrintPostfix(FILE *f, AST *expr)
         ERROR(expr, "bad postfix operator %d", expr->d.ival);
         return;
     }
-    fprintf(f, "__extension__({ int32_t _tmp_ = ");
-    PrintExpr(f, expr->left);
-    fprintf(f, "; ");
-    PrintAssign(f, expr->left, target);
-    fprintf(f, "; _tmp_; })");
+    if (toplevel) {
+        PrintAssign(f, expr->left, target);
+    } else {
+        fprintf(f, "__extension__({ int32_t _tmp_ = ");
+        PrintExpr(f, expr->left);
+        fprintf(f, "; ");
+        PrintAssign(f, expr->left, target);
+        fprintf(f, "; _tmp_; })");
+    }
 }
 
 /*
@@ -620,7 +660,6 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     uint32_t mask;
     int nbits;
     AST *loexpr;
-    int loshift;
 
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
@@ -669,23 +708,33 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     if (nbits >= 32) {
         PrintLHS(f, dst->left, 1, 0);
         fprintf(f, " = ");
-        PrintExpr(f, src);
+        PrintExpr(f, FoldIfConst(src));
         return;
     }
 
-    /* we deferred evaluation of "lo" til here so that
-       in simple cases (bit set/clr) we can allow variable
-       shifts
-    */
-    loshift = EvalConstExpr(loexpr);
-    mask = (mask << loshift) | (mask >> (32-loshift));
+    /*
+     * outa[lo] := src
+     * can translate to:
+     *   outa = (outa & ~(mask<<lo)) | ((src & mask) << lo)
+     */
+    {
+        AST *andexpr;
+        AST *orexpr;
+        AST *maskexpr = AstInteger(mask);
+        andexpr = AstOperator(T_SHL, maskexpr, loexpr);
+        andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
+        andexpr = FoldIfConst(andexpr);
+        andexpr = AstOperator('&', dst->left, andexpr);
 
-    PrintLHS(f, dst->left, 1, 0);
-    fprintf(f, " = (");
-    PrintLHS(f, dst->left, 1, 0);
-    fprintf(f, " & 0x%08x) | ((", ~mask);
-    PrintExpr(f, src);
-    fprintf(f, " << %d) & 0x%08x)", loshift, mask); 
+        orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
+        orexpr = AstOperator(T_SHL, orexpr, loexpr);
+        orexpr = FoldIfConst(orexpr);
+        orexpr = AstOperator('|', andexpr, orexpr);
+
+        PrintLHS(f, dst->left, 1, 0);
+        fprintf(f, " = ");
+        PrintExpr(f, orexpr);
+    }
 }
 
 /*
@@ -1001,7 +1050,7 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, ")");
         break;
     case AST_POSTEFFECT:
-        PrintPostfix(f, expr);
+        PrintPostfix(f, expr, 0);
         break;
     case AST_ASSIGN:
         fprintf(f, "(");
@@ -1642,4 +1691,13 @@ IsArray(AST *expr)
     if (type->kind == AST_ARRAYTYPE)
         return 1;
     return 0;
+}
+
+AST *
+FoldIfConst(AST *expr)
+{
+    if (IsConstExpr(expr)) {
+        expr = AstInteger(EvalConstExpr(expr));
+    }
+    return expr;
 }
