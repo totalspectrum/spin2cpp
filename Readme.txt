@@ -2,7 +2,7 @@ This is a very simple Spin to C++ converter. There is much of the Spin
 language that it does not handle, and its results will not always be
 correct. 
 
-This version (0.9) includes some more functionality. A simple "Hello,
+This version (0.91) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -102,7 +102,6 @@ _FREE
 SPR
 _STACK
 _XINFREQ
-arrays of objects in OBJ
 
 There are probably many other features not supported yet!
 
