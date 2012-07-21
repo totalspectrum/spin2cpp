@@ -483,7 +483,7 @@ objline:
     { $$ = NULL; }
   | error  T_EOLN
     { $$ = NULL; }
-  | identifier ':' string
+  | identdecl ':' string
     { $$ = NewObject($1, $3); }
 ;
 
@@ -723,7 +723,18 @@ funccall:
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
     }
+  | identifier '[' expr ']' '.' identifier '(' exprlist ')'
+    { 
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, arr, $6), $8);
+    }
+  | identifier '[' expr ']' '.' identifier
+    { 
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, arr, $6), NULL);
+    }
 ;
+
 
 expritem:
   expr

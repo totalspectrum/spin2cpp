@@ -83,7 +83,21 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
         ParserState *P = ast->d.ptr;
-        fprintf(f, "  %s\t%s;\n", P->classname, ast->left->d.string);
+        AST *objdef = ast->left;
+        if (objdef->kind == AST_IDENTIFIER) {
+            fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
+        } else if (objdef->kind == AST_ARRAYDECL) {
+            AST *arrname = objdef->left;
+            AST *arrsize = objdef->right;
+            if (arrname->kind == AST_IDENTIFIER) {
+                fprintf(f, "  %s\t%s[%d];\n", P->classname,
+                        arrname->d.string,
+                        EvalConstExpr(arrsize)
+                    );
+            } else {
+                ERROR(objdef, "internal error in object printing");
+            }
+        }
     }
     /* data block, if applicable */
     if (parse->datblock) {

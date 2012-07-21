@@ -180,13 +180,27 @@ static void
 DeclareObjects(ParserState *parse)
 {
     AST *ast;
+    AST *obj;
 
     for (ast = parse->objblock; ast; ast = ast->right) {
         if (ast->kind != AST_OBJECT) {
             ERROR(ast, "Internal error: expected an OBJECT");
             break;
         }
-        AddSymbol(&current->objsyms, ast->left->d.string, SYM_OBJECT, ast->d.ptr);
+        obj = ast->left;
+        if (obj->kind == AST_IDENTIFIER) {
+            AddSymbol(&current->objsyms, ast->left->d.string, SYM_OBJECT, ast);
+        } else if (obj->kind == AST_ARRAYDECL) {
+            AST *id = obj->left;
+            AST *idx = obj->right;
+            if (id->kind != AST_IDENTIFIER || !IsConstExpr(idx)) {
+                ERROR(ast, "bad object definition");
+            } else {
+                AddSymbol(&current->objsyms, id->d.string, SYM_OBJECT, ast);
+            }
+        } else {
+            ERROR(ast, "Internal error: bad object definition");
+        }
     }
 }
 

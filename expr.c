@@ -27,9 +27,19 @@ LookupSymbol(const char *name)
  * message if it is not found
  */
 Symbol *
-LookupAstSymbol(AST *id, const char *msg)
+LookupAstSymbol(AST *ast, const char *msg)
 {
     Symbol *sym;
+    AST *id;
+
+    if (ast->kind == AST_IDENTIFIER) {
+        id = ast;
+    } else if (ast->kind == AST_ARRAYREF) {
+        id = ast->left;
+    } else {
+        ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
+        return NULL;
+    }
     if (id->kind != AST_IDENTIFIER) {
         ERROR(id, "expected an identifier, got %d", id->kind);
         return NULL;
@@ -49,13 +59,19 @@ Symbol *
 LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 {
     Symbol *sym;
+    AST *objast;
     ParserState *objstate;
 
     if (obj->type != SYM_OBJECT) {
         ERROR(expr, "expected an object");
         return NULL;
     }
-    objstate = (ParserState *)obj->val;
+    objast = (AST *)obj->val;
+    if (objast->kind != AST_OBJECT) {
+        ERROR(expr, "Internal error: expected object symbol\n");
+        return NULL;
+    }
+    objstate = (ParserState *)objast->d.ptr;
     sym = FindSymbol(&objstate->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in %s", name, obj->name);
@@ -994,7 +1010,8 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_FUNCCALL:
         if (expr->left && expr->left->kind == AST_METHODREF) {
-            objsym = LookupAstSymbol(expr->left->left, "object reference");
+            AST *objref = expr->left->left;
+            objsym = LookupAstSymbol(objref, "object reference");
             if (!objsym) return;
             if (objsym->type != SYM_OBJECT) {
                 ERROR(expr, "%s is not an object", objsym->name);
@@ -1005,7 +1022,8 @@ PrintExpr(FILE *f, AST *expr)
                 ERROR(expr, "%s is not a method of %s", sym->name, objsym->name);
                 return;
             }
-            fprintf(f, "%s.", objsym->name);
+            PrintLHS(f, objref, 0, 0);
+            fprintf(f, ".");
         } else {
             sym = LookupAstSymbol(expr->left, "function call");
         }
