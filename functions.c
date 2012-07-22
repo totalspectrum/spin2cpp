@@ -87,6 +87,7 @@ ScanFunctionBody(Function *fdef, AST *body)
         return;
     switch(body->kind) {
     case AST_ADDROF:
+    case AST_ARRAYREF:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
         if (ast->kind == AST_IDENTIFIER) {
@@ -95,7 +96,10 @@ ScanFunctionBody(Function *fdef, AST *body)
                 if (sym->type == SYM_PARAMETER) {
                     if (!fdef->parmarray)
                         fdef->parmarray = NewTemporaryVariable("_parm_");
-                } else if (sym->type == SYM_LOCALVAR) {
+                } else if (sym->type == SYM_LOCALVAR
+                           && (body->kind == AST_ADDROF
+                               || (body->kind == AST_ARRAYREF && !IsArrayType(sym->val)))
+                    ) {
                     if (!fdef->localarray)
                         fdef->localarray = NewTemporaryVariable("_local_");
                 }

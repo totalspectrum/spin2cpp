@@ -45,5 +45,7 @@ int32_t  floatAsInt(float f);
 float    intAsFloat(int32_t i);
 
 int IsArray(AST *expr);
+int IsArrayType(AST *typ);
+int IsArraySymbol(Symbol *);
 
 #endif

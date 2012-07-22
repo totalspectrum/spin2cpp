@@ -494,7 +494,14 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
             PrintExpr(f, expr->right);
             fprintf(f, "]");
         } else {
-            PrintLHS(f, expr->left, assignment, 1);
+            if (sym && !IsArraySymbol(sym)) {
+//                ERROR(expr, "array dereference of bad symbol %s", sym->name);
+                fprintf(f, "(&");
+                PrintLHS(f, expr->left, assignment, 1);
+                fprintf(f, ")");
+            } else {
+                PrintLHS(f, expr->left, assignment, 1);
+            }
             fprintf(f, "[");
             PrintExpr(f, expr->right);
             fprintf(f, "]");
@@ -1701,3 +1708,44 @@ FoldIfConst(AST *expr)
     }
     return expr;
 }
+
+/*
+ * check a type declaration to see if it is an array type
+ */
+int
+IsArrayType(AST *ast)
+{
+    switch (ast->kind) {
+    case AST_ARRAYTYPE:
+        return 1;
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+        return 0;
+    default:
+        ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
+              ast->kind);
+    }
+    return 0;
+}
+
+int
+IsArraySymbol(Symbol *sym)
+{
+    AST *type = NULL;
+    if (!sym) return 0;
+    switch (sym->type) {
+    case SYM_LOCALVAR:
+    case SYM_VARIABLE:
+        type = sym->val;
+        break;
+    case SYM_OBJECT:
+        /* accept all objects as arrays, even if they are not */
+        return 1;
+    case SYM_LABEL:
+        return 1;
+    default:
+        return 0;
+    }
+    return IsArrayType(type);
+}
+
