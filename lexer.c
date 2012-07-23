@@ -157,6 +157,7 @@ lexgetc(LexStream *L)
         L->lineCounter++;
         L->colCounter = 0;
     } else if (c == '\t') {
+        L->colCounter += TAB_STOP;
         L->colCounter = TAB_STOP * ((L->colCounter + TAB_STOP-1)/TAB_STOP);
     } else {
         L->colCounter++;
@@ -481,6 +482,20 @@ again:
             c = lexgetc(L);
         } while (c != '\n' && c != T_EOF);
     }
+    if (c == '{') {
+        commentNest = 1;
+        do {
+            c = lexgetc(L);
+            if (c == '{')
+                commentNest++;
+            else if (c == '}')
+                --commentNest;
+        } while (commentNest > 0 && c != T_EOF);
+        if (c == T_EOF)
+            return c;
+        c = lexgetc(L);
+        goto again;
+    }
     if (L->eoln && (L->in_block == T_PUB || L->in_block == T_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
@@ -516,20 +531,6 @@ again:
     if (L->eoln) {
         L->eoln = 0;
         L->firstNonBlank = L->colCounter-1;
-    }
-    if (c == '{') {
-        commentNest = 1;
-        do {
-            c = lexgetc(L);
-            if (c == '{')
-                commentNest++;
-            else if (c == '}')
-                --commentNest;
-        } while (commentNest > 0 && c != T_EOF);
-        if (c == T_EOF)
-            return c;
-        c = lexgetc(L);
-        goto again;
     }
     if (c == '\n') {
         L->eoln = 1;
