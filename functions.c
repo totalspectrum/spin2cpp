@@ -96,6 +96,7 @@ ScanFunctionBody(Function *fdef, AST *body)
                 if (sym->type == SYM_PARAMETER) {
                     if (!fdef->parmarray)
                         fdef->parmarray = NewTemporaryVariable("_parm_");
+                    fdef->localarray = fdef->parmarray;
                 } else if (sym->type == SYM_LOCALVAR
                            && (body->kind == AST_ADDROF
                                || (body->kind == AST_ARRAYREF && !IsArrayType(sym->val)))
@@ -314,6 +315,15 @@ PrintFunctionVariables(FILE *f, Function *func)
     AST *v;
     int offset = 0;
 
+    if (func->locals) {
+        if (func->localarray && func->localarray == func->parmarray) {
+            /* nothing to do here */
+        } else if (func->localarray && func->localarray_len > 0) {
+            fprintf(f, "  int32_t %s[%d];\n", func->localarray, func->localarray_len);
+        } else {
+            PrintVarList(f, ast_type_long, func->locals);
+        }
+    }
     if (func->parmarray) {
         int n;
         fprintf(f, "  int32_t %s[] = { ", func->parmarray);
@@ -345,15 +355,6 @@ PrintFunctionVariables(FILE *f, Function *func)
     }
     if (!func->result_in_parmarray)
         fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
-    if (func->locals) {
-        if (func->localarray && func->localarray == func->parmarray) {
-            /* nothing to do here */
-        } else if (func->localarray && func->localarray_len > 0) {
-            fprintf(f, "  int32_t %s[%d];\n", func->localarray, func->localarray_len);
-        } else {
-            PrintVarList(f, ast_type_long, func->locals);
-        }
-    }
 }
  
 static int PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */

@@ -19,8 +19,8 @@ int32_t test85::Main(void)
 
 int32_t test85::Printn(int32_t I)
 {
-  int32_t result = 0;
   int32_t	R;
+  int32_t result = 0;
   Fds.Str((int32_t)"v[");
   Fds.Dec(I);
   Fds.Str((int32_t)"] = ");
