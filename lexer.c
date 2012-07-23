@@ -158,7 +158,8 @@ lexgetc(LexStream *L)
         L->colCounter = 0;
     } else if (c == '\t') {
         L->colCounter += TAB_STOP;
-        L->colCounter = TAB_STOP * ((L->colCounter + TAB_STOP-1)/TAB_STOP);
+        /* now go back to the previous stop */
+        L->colCounter = TAB_STOP * (L->colCounter/TAB_STOP);
     } else {
         L->colCounter++;
     }
