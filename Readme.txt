@@ -2,7 +2,7 @@ This is a very simple Spin to C++ converter. There is much of the Spin
 language that it does not handle, and its results will not always be
 correct. 
 
-This version (0.91) includes some more functionality. A simple "Hello,
+This version (0.95) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -26,7 +26,7 @@ If this is a top level spin object and you plan to compile it, you may
 want spin2cpp to automatically compile the object and all
 dependencies:
 
-  spin2cpp --elf test.spin
+  spin2cpp --elf -O test.spin
 
 This will create an a.out file that is ready to run with
 propeller-load. You can also pass propgcc command line arguments
@@ -36,7 +36,8 @@ the --elf argument; for example:
   spin2cpp --elf -o test.elf -Os -DFOO=1 test.spin
 
 creates the output file "test.elf" instead of "a.out", and uses
-optimization level -Os instead of no optimization.
+optimization level -Os instead of no optimization. It is strongly
+recommended to pass some form of optimization to gcc.
 
 If you just want to convert a top level option to C++, you may want
 spin2cpp to automatically insert a main() function and a call to the
