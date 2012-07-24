@@ -2,6 +2,24 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+
+/* code to get an object pointer from an object symbol */
+ParserState *
+GetObjectPtr(Symbol *sym)
+{
+    AST *oval;
+    if (sym->type != SYM_OBJECT) {
+        fprintf(stderr, "internal error, not an object symbol\n");
+        abort();
+    }
+    oval = (AST *)sym->val;
+    if (oval->kind != AST_OBJECT) {
+        fprintf(stderr, "internal error, not an object AST\n");
+        abort();
+    }
+    return oval->d.ptr;
+}
 
 /* code to find a symbol */
 Symbol *
@@ -59,19 +77,13 @@ Symbol *
 LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 {
     Symbol *sym;
-    AST *objast;
     ParserState *objstate;
 
     if (obj->type != SYM_OBJECT) {
         ERROR(expr, "expected an object");
         return NULL;
     }
-    objast = (AST *)obj->val;
-    if (objast->kind != AST_OBJECT) {
-        ERROR(expr, "Internal error: expected object symbol\n");
-        return NULL;
-    }
-    objstate = (ParserState *)objast->d.ptr;
+    objstate = GetObjectPtr(obj);
     sym = FindSymbol(&objstate->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in %s", name, obj->name);
@@ -1350,7 +1362,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
         /* while we're evaluating, use the object context */
         pushed = current;
-        current = objsym->val;
+        current = GetObjectPtr(objsym);
         ret = EvalExpr(sym->val, flags, valid);
         current = pushed;
         return ret;
