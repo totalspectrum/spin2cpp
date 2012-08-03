@@ -103,6 +103,7 @@ enum astkind {
     AST_LOOKEXPR,
 
     AST_DATADDROF = 68,
+    AST_ANNOTATION,
 };
 
 struct AST {

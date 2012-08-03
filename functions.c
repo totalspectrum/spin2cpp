@@ -64,6 +64,9 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
                 sym->count = count;
                 count += size;
                 break;
+            case AST_ANNOTATION:
+                /* just ignore it */
+                break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
@@ -132,7 +135,7 @@ ScanFunctionBody(Function *fdef, AST *body)
  */
 
 void
-DeclareFunction(int is_public, AST *funcdef, AST *body)
+DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation)
 {
     Function *fdef;
     AST *vars;
@@ -151,6 +154,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body)
     }
     fdef = NewFunction();
     fdef->name = src->left->d.string;
+    fdef->annotations = annotation;
     if (src->right && src->right->kind == AST_IDENTIFIER)
         resultname = src->right->d.string;
     else
@@ -271,6 +275,10 @@ PrintVarList(FILE *f, AST *typeast, AST *ast)
         case AST_ARRAYDECL:
             fprintf(f, "%s[%d]", decl->left->d.string,
                     (int)EvalConstExpr(decl->right));
+            break;
+        case AST_ANNOTATION:
+            fprintf(f, "%s ", decl->d.string);
+            needcomma = 0;
             break;
         default:
             ERROR(decl, "Internal problem in variable list: type=%d\n", decl->kind);
@@ -731,6 +739,19 @@ PrintFunctionStmts(FILE *f, Function *func)
 }
 
 void
+PrintAnnotationList(FILE *f, AST *ast)
+{
+    while (ast) {
+        if (ast->kind != AST_ANNOTATION) {
+            ERROR(ast, "Internal error in function print: expecting annotation");
+            return;
+        }
+        fprintf(f, "%s\n", ast->d.string);
+        ast = ast->right;
+    }
+}
+
+void
 PrintFunctionBodies(FILE *f, ParserState *parse)
 {
     Function *pf;
@@ -738,6 +759,7 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
 
     for (pf = parse->functions; pf; pf = pf->next) {
         curfunc = pf;
+        PrintAnnotationList(f, curfunc->annotations);
         fprintf(f, "int32_t ");
         fprintf(f, "%s::%s(", parse->classname, pf->name);
         PrintParameterList(f, pf->params);

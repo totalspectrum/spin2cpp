@@ -73,6 +73,7 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *type;        /* the function type, normally long */
+    AST *annotations; /* any annotations for the function (section, etc.) */
     int numparams;
     AST *params;      /* parameter list */
     AST *locals;      /* local variables */
@@ -171,8 +172,10 @@ void DeclareConstants(AST *conlist);
  "name" and "result" are AST_IDENTIFIERS
  "parameters" and "locals" are AST_LISTHOLDERS
  holding a list of identifiers and/or array declarations
+
+ "annotate" is a list of C++ annotation strings
 */
-void DeclareFunction(int is_public, AST *funcdef, AST *body);
+void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate);
 void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);

@@ -222,6 +222,20 @@ isIdentifierChar(int c)
     return isIdentifierStart(c) || safe_isdigit(c);
 }
 
+/* dynamically grow a string */
+#define INCSTR 16
+
+static void
+addchar(int c, char **place, size_t *space, size_t *len)
+{
+    if (*len + 1 > *space) {
+        *space += 16;
+        *place = realloc(*place, *space);
+    }
+    assert(*place != NULL);
+    (*place)[*len] = c;
+    *len += 1;
+}
 /*
  * actual parsing functions
  */
@@ -319,20 +333,6 @@ donefloat:
     return sawdigit ? kind : ((base == 16) ? T_HERE : '%');
 }
 
-/* dynamically grow a string */
-#define INCSTR 16
-
-static void
-addchar(int c, char **place, size_t *space, size_t *len)
-{
-    if (*len + 1 > *space) {
-        *space += 16;
-        *place = realloc(*place, *space);
-    }
-    assert(*place != NULL);
-    (*place)[*len] = c;
-    *len += 1;
-}
 
 /* parse an identifier */
 static int
@@ -465,7 +465,7 @@ parseString(LexStream *L, AST **ast_ptr)
 //
 
 int
-skipSpace(LexStream *L)
+skipSpace(LexStream *L, AST **ast_ptr)
 {
     int c;
     int commentNest;
@@ -484,16 +484,44 @@ again:
         } while (c != '\n' && c != T_EOF);
     }
     if (c == '{') {
+        char *anno_string = NULL;
+        size_t anno_string_len = 0;
+        size_t anno_string_size = 16;
+
         commentNest = 1;
-        do {
+        /* check for special comments {++... } which indicate 
+           C++ annotations
+        */
+        c = lexgetc(L);
+        if (c == '+') {
+            c = lexgetc(L);
+            if (c == '+') {
+                anno_string = calloc(anno_string_size, 1);
+                c = lexgetc(L);
+            }
+
+        }
+        lexungetc(L, c);
+        for(;;) {
             c = lexgetc(L);
             if (c == '{')
                 commentNest++;
             else if (c == '}')
                 --commentNest;
-        } while (commentNest > 0 && c != T_EOF);
+            if (commentNest <= 0 || c == T_EOF)
+                break;
+            if (anno_string) {
+                addchar(c, &anno_string, &anno_string_size, &anno_string_len);
+            }
+        }
         if (c == T_EOF)
             return c;
+        if (anno_string) {
+            AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
+            ast->d.string = anno_string;
+            *ast_ptr = ast;
+            return T_ANNOTATION;
+        }
         c = lexgetc(L);
         goto again;
     }
@@ -551,7 +579,7 @@ getToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
 
-    c = skipSpace(L);
+    c = skipSpace(L, &ast);
 
     if (c >= 127) {
         *ast_ptr = ast;

@@ -117,6 +117,8 @@ CheckYield(AST *body)
 %token T_STRINGPTR
 %token T_FILE
 
+%token T_ANNOTATION
+
 /* operators */
 %right T_ASSIGN
 %left T_NOT
@@ -150,13 +152,13 @@ topelement:
   | T_OBJ objblock
   { $$ = current->objblock = AddToList(current->objblock, $2); }
   | T_PUB funcdef stmtlist
-  { DeclareFunction(1, $2, $3); }
+  { DeclareFunction(1, $2, $3, NULL); }
   | T_PRI funcdef stmtlist
-  { DeclareFunction(0, $2, $3); }
-  | T_PUB funcdef
-  { DeclareFunction(1, $2, NULL); }
-  | T_PRI funcdef
-  { DeclareFunction(0, $2, NULL); }
+  { DeclareFunction(0, $2, $3, NULL); }
+  | T_PUB annotation funcdef stmtlist
+  { DeclareFunction(1, $3, $4, $2); }
+  | T_PRI annotation funcdef stmtlist
+  { DeclareFunction(0, $3, $4, $2); }
 ;
 
 funcdef:
@@ -180,11 +182,10 @@ funcdef:
     AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-
 ;
 
 optparamlist:
-/* nothing */
+/* empty */
   { $$ = NULL; }
 | identlist
   { $$ = $1; }
@@ -510,6 +511,9 @@ varline:
 identlist:
   identdecl
   { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | annotation identdecl
+  { $$ = AddToList(NewAST(AST_LISTHOLDER, $1, NULL),
+                   NewAST(AST_LISTHOLDER, $2, NULL)); }
   | identlist ',' identdecl
   { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
@@ -796,6 +800,12 @@ identifier:
   | T_RESULT
   { $$ = NewAST(AST_RESULT, NULL, NULL); }
 ;
+
+annotation:
+  T_ANNOTATION
+  { $$ = current->ast; }
+;
+
 
 hwreg:
   T_HWREG

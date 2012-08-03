@@ -19,7 +19,7 @@ AST *ast_type_long, *ast_type_word, *ast_type_byte;
 
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {
-        fprintf(stderr, "test failed at line %d of %s: expected %lx got %lx\n",
+        fprintf(stderr, "test failed at line %d of %s: expected %ld got %ld\n",
                 line, __FILE__, val, x);
         abort();
     }
