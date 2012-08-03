@@ -137,13 +137,22 @@ CheckYield(AST *body)
 
 %%
 input:
+  emptyline
+  | emptyline input
+  | rest
+;
+
+rest:
   topelement
-  | topelement input
+  | topelement rest
+  ;
+
+emptyline:
+  T_EOLN
   ;
 
 topelement:
-  T_EOLN
-  | T_CON conblock
+  T_CON conblock
   { DeclareConstants($2); $$ = current->conblock = AddToList(current->conblock, $2); }
   | T_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
@@ -151,13 +160,13 @@ topelement:
   { $$ = current->varblock = AddToList(current->varblock, $2); }
   | T_OBJ objblock
   { $$ = current->objblock = AddToList(current->objblock, $2); }
-  | T_PUB funcdef stmtlist
+  | T_PUB funcdef funcbody
   { DeclareFunction(1, $2, $3, NULL); }
-  | T_PRI funcdef stmtlist
+  | T_PRI funcdef funcbody
   { DeclareFunction(0, $2, $3, NULL); }
-  | T_PUB annotation funcdef stmtlist
+  | T_PUB annotation funcdef funcbody
   { DeclareFunction(1, $3, $4, $2); }
-  | T_PRI annotation funcdef stmtlist
+  | T_PRI annotation funcdef funcbody
   { DeclareFunction(0, $3, $4, $2); }
 ;
 
@@ -201,6 +210,13 @@ localvars:
  '|' identlist
   { $$ = $2 }
     ;
+
+funcbody:
+  /* empty */
+  { $$ = NULL; }
+| stmtlist
+  { $$ = $1; }
+  ;
 
 stmtlist:
   stmt
