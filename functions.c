@@ -217,10 +217,27 @@ PrintParameterList(FILE *f, AST *list)
     }
 }
 
+void
+PrintAnnotationList(FILE *f, AST *ast, char terminal)
+{
+    while (ast) {
+        if (ast->kind != AST_ANNOTATION) {
+            ERROR(ast, "Internal error in function print: expecting annotation");
+            return;
+        }
+        fprintf(f, "%s%c", ast->d.string, terminal);
+        ast = ast->right;
+    }
+}
+
 static void
 PrintFunctionDecl(FILE *f, Function *func)
 {
-    fprintf(f, "  int32_t\t%s(", func->name);
+    fprintf(f, "  ");
+    if (func->annotations) {
+        PrintAnnotationList(f, func->annotations, ' ');
+    }
+    fprintf(f, "int32_t\t%s(", func->name);
     PrintParameterList(f, func->params);
     fprintf(f, ");\n");
 }
@@ -738,18 +755,6 @@ PrintFunctionStmts(FILE *f, Function *func)
     return PrintStatementList(f, func->body, 2);
 }
 
-void
-PrintAnnotationList(FILE *f, AST *ast)
-{
-    while (ast) {
-        if (ast->kind != AST_ANNOTATION) {
-            ERROR(ast, "Internal error in function print: expecting annotation");
-            return;
-        }
-        fprintf(f, "%s\n", ast->d.string);
-        ast = ast->right;
-    }
-}
 
 void
 PrintFunctionBodies(FILE *f, ParserState *parse)
@@ -759,7 +764,7 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
 
     for (pf = parse->functions; pf; pf = pf->next) {
         curfunc = pf;
-        PrintAnnotationList(f, curfunc->annotations);
+        PrintAnnotationList(f, curfunc->annotations, '\n');
         fprintf(f, "int32_t ");
         fprintf(f, "%s::%s(", parse->classname, pf->name);
         PrintParameterList(f, pf->params);
