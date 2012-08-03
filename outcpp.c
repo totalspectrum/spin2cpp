@@ -23,6 +23,25 @@ PrintConstantDecl(FILE *f, AST *ast)
     fprintf(f, ";\n");
 }
 
+static void
+PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type)
+{
+    AST *ast;
+    enum astkind kind;
+
+    if (type == ast_type_byte)
+        kind = AST_BYTELIST;
+    else if (type == ast_type_word)
+        kind = AST_WORDLIST;
+    else
+        kind = AST_LONGLIST;
+    
+    for (ast = parse->varblock; ast; ast = ast->right) {
+        if (ast->kind == kind) {
+            PrintVarList(f, type, ast->left);
+        }
+    }
+}
 
 static void
 PrintHeaderFile(FILE *f, ParserState *parse)
@@ -107,22 +126,14 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     PrintPublicFunctionDecls(f, parse);
 
     /* now the private members */
+    /* Note that Spin sorts these, outputing first the 32 bit
+       vars, then 16, finally 8
+    */
     fprintf(f, "private:\n");
-    for (ast = parse->varblock; ast; ast = ast->right) {
-        switch (ast->kind) {
-        case AST_BYTELIST:
-            PrintVarList(f, ast_type_byte, ast->left);
-            break;
-        case AST_WORDLIST:
-            PrintVarList(f, ast_type_word, ast->left);
-            break;
-        case AST_LONGLIST:
-            PrintVarList(f, ast_type_long, ast->left);
-            break;
-        default:
-            break;
-        }
-    }
+    PrintAllVarListsOfType(f, parse, ast_type_long);
+    PrintAllVarListsOfType(f, parse, ast_type_word);
+    PrintAllVarListsOfType(f, parse, ast_type_byte);
+
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
     fprintf(f, "};\n\n");

@@ -7,8 +7,8 @@ class test05 {
 public:
   static const int Size = 4;
 private:
-  uint8_t	Str[4];
   int32_t	X[4];
+  uint8_t	Str[4];
 };
 
 #endif

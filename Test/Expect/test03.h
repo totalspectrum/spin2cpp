@@ -7,8 +7,8 @@ class test03 {
 public:
 private:
   int32_t	X;
-  uint16_t	A, B, C;
   int32_t	T;
+  uint16_t	A, B, C;
 };
 
 #endif
