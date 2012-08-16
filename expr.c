@@ -310,7 +310,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         fprintf(f, ")");
         break;
     case T_REV:
-        fprintf(f, "__builtin_propeller_reverse(");
+        fprintf(f, "__builtin_propeller_rev(");
         PrintExpr(f, left);
         fprintf(f, ", 32 - ");
         PrintExpr(f, right);
