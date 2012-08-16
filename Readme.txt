@@ -55,8 +55,31 @@ where "obj1.spin" and "obj2.spin" are the objects referred to by
 
 See Demo/Makefile for examples.
 
-VARIABLE NAMES
-==============
+LIMITATIONS
+===========
+
+There are a number of Spin features that are not supported yet,
+including:
+
+_CLKMODE
+CLKSET
+COGINIT on a Spin method (PASM should work)
+_FREE
+SPR
+_STACK
+_XINFREQ
+
+There are probably many other features not supported yet!
+
+The lexer and parser are different from the Parallax ones, so they may
+well report errors on code the Parallax compiler accepts.
+
+
+C INTEROPERATION
+===============
+
+Variable Names
+--------------
 Spin is a case-insensitive language, which means that the strings
 "str", "Str", "STR", and "sTr" all refer to the same variable. C++, on
 the other hand, is case sensitive; all of those strings would be
@@ -89,25 +112,12 @@ someFile.spin	       class someFile
 foo99.spin	       class foo99
 foo.spin	       class fooSpin
 
-
-LIMITATIONS
-===========
-
-There are a number of Spin features that are not supported yet,
-including:
-
-_CLKMODE
-CLKSET
-COGINIT on a Spin method (PASM should work)
-_FREE
-SPR
-_STACK
-_XINFREQ
-
-There are probably many other features not supported yet!
-
-The lexer and parser are different from the Parallax ones, so they may
-well report errors on code the Parallax compiler accepts.
+Annotations and Inline C code
+-----------------------------
+spin2cpp recognizes special comments called "annotations". Annotations
+are Spin comments that start with {++ and end with }. The text between
+annotations is passed through to the C++ compiler. This provides a way
+to give extra semantic information beyond that available in Spin.
 
 
 DEVELOPER NOTES
