@@ -92,6 +92,22 @@ LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 }
 
 /*
+ * look up the class name of an object
+ */
+const char *
+ObjClassName(Symbol *obj)
+{
+    ParserState *objstate;
+
+    if (obj->type != SYM_OBJECT) {
+        ERROR(NULL, "expected an object");
+        return NULL;
+    }
+    objstate = GetObjectPtr(obj);
+    return objstate->classname;
+}
+
+/*
  * look up an object constant reference
  * sets *objsym to the object and *sym to the symbol
  */
@@ -481,6 +497,9 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
                         Builtin *b = sym->val;
                         (*b->printit)(f, b, NULL);
                     } else {
+                        if (gl_ccode) {
+                            fprintf(f, "%s_", current->classname);
+                        }
                         PrintFuncCall(f, sym, NULL);
                     }
                 }
@@ -1092,11 +1111,12 @@ PrintExpr(FILE *f, AST *expr)
                 ERROR(expr, "%s is not a method of %s", sym->name, objsym->name);
                 return;
             }
-            PrintLHS(f, objref, 0, 0);
-            if (gl_ccode)
-                fprintf(f, "_");
-            else
+            if (gl_ccode) {
+                fprintf(f, "%s_", ObjClassName(objsym));
+            } else {
+                PrintLHS(f, objref, 0, 0);
                 fprintf(f, ".");
+            }
         } else {
             sym = LookupAstSymbol(expr->left, "function call");
             if (gl_ccode && sym && sym->type == SYM_FUNCTION)

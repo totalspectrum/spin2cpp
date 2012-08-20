@@ -364,6 +364,7 @@ main(int argc, char **argv)
     int compile = 0;
     ParserState *P;
     int r = 0;
+    const char *cext = ".cpp";
 
     init();
 
@@ -388,6 +389,7 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_ccode = 1;
+            cext = ".c";
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
@@ -441,11 +443,11 @@ main(int argc, char **argv)
             for (Q = allparse; Q; Q = Q->next) {
                 OutputCppCode(Q->basename, Q, outputMain && Q == P);
                 if (outputFiles) {
-                    printf("%s.cpp\n", Q->basename);
+                    printf("%s%s\n", Q->basename, cext);
                 }
                 if (compile) {
                     appendToCmd(Q->basename);
-                    appendWithoutSpace(".cpp");
+                    appendWithoutSpace(cext);
                 }
             }
             if (compile && gl_errors == 0) {
