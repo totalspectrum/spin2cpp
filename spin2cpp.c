@@ -386,6 +386,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--dat", 5)) {
             outputDat = 1;
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--ccode", 7)) {
+            gl_ccode = 1;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
             argv++; --argc;

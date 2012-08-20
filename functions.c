@@ -231,17 +231,24 @@ PrintAnnotationList(FILE *f, AST *ast, char terminal)
 }
 
 static void
-PrintFunctionDecl(FILE *f, Function *func)
+PrintFunctionDecl(FILE *f, Function *func, int isLocal)
 {
     /* this may just be a placeholder for inline C++ code */
     if (!func->name)
         return;
 
+    if (gl_ccode && isLocal) {
+        fprintf(f, "static");
+    }
     fprintf(f, "  ");
     if (func->annotations) {
         PrintAnnotationList(f, func->annotations, ' ');
     }
-    fprintf(f, "int32_t\t%s(", func->name);
+    if (gl_ccode) {
+        fprintf(f, "int32_t\t%s_%s(", current->classname, func->name);
+    } else {
+        fprintf(f, "int32_t\t%s(", func->name);
+    }
     PrintParameterList(f, func->params);
     fprintf(f, ");\n");
 }
@@ -254,7 +261,7 @@ PrintPublicFunctionDecls(FILE *f, ParserState *parse)
     for (pf = parse->functions; pf; pf = pf->next) {
         if (!pf->is_public)
             continue;
-        PrintFunctionDecl(f, pf);
+        PrintFunctionDecl(f, pf, 0);
     }
 }
 
@@ -266,7 +273,7 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
     for (pf = parse->functions; pf; pf = pf->next) {
         if (pf->is_public)
             continue;
-        PrintFunctionDecl(f, pf);
+        PrintFunctionDecl(f, pf, 1);
     }
 }
 

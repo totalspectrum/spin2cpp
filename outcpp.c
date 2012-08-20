@@ -18,9 +18,15 @@
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
-    fprintf(f, "  static const int %s = ", ast->d.string);
-    PrintInteger(f, EvalConstExpr(ast));
-    fprintf(f, ";\n");
+    if (gl_ccode) {
+        fprintf(f, "#define %s (", ast->d.string);
+        PrintInteger(f, EvalConstExpr(ast));
+        fprintf(f, ")\n");
+    } else {
+        fprintf(f, "  static const int %s = ", ast->d.string);
+        PrintInteger(f, EvalConstExpr(ast));
+        fprintf(f, ";\n");
+    }
 }
 
 static void
@@ -44,17 +50,11 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type)
 }
 
 static void
-PrintHeaderFile(FILE *f, ParserState *parse)
+PrintSubHeaders(FILE *f, ParserState *parse)
 {
-    AST *ast, *upper, *sub;
-    int already_done;
+    AST *ast, *sub;
     ParserState *objstate;
-
-    /* things we always need */
-    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
-    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
-
-    fprintf(f, "#include <stdint.h>\n");
+    int already_done;
 
     /* include any needed object headers */
     for (ast = parse->objblock; ast; ast = ast->right) {
@@ -78,12 +78,97 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     }
     fprintf(f, "\n");
 
+}
+
+static void
+PrintCHeaderFile(FILE *f, ParserState *parse)
+{
+    AST *ast, *upper;
+
+    /* things we always need */
+    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
+    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
+
+    fprintf(f, "#include <stdint.h>\n");
+
+    PrintSubHeaders(f, parse);
+
     /* print the constant declarations */
-    if (gl_ccode) {
-        /* nothing here?? */
-    } else {
-        fprintf(f, "class %s {\npublic:\n", parse->classname);
+    for (upper = parse->conblock; upper; upper = upper->right) {
+        ast = upper->left;
+        while (ast) {
+            switch (ast->kind) {
+            case AST_IDENTIFIER:
+                PrintConstantDecl(f, ast);
+                ast = ast->right;
+                break;
+            case AST_ASSIGN:
+                PrintConstantDecl(f, ast->left);
+                ast = NULL;
+                break;
+            default:
+                /* do nothing */
+                ast = ast->right;
+                break;
+            }
+        }
     }
+
+    /* object references */
+    for (ast = parse->objblock; ast; ast = ast->right) {
+        ParserState *P = ast->d.ptr;
+        AST *objdef = ast->left;
+        if (objdef->kind == AST_IDENTIFIER) {
+            fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
+        } else if (objdef->kind == AST_ARRAYDECL) {
+            AST *arrname = objdef->left;
+            AST *arrsize = objdef->right;
+            if (arrname->kind == AST_IDENTIFIER) {
+                fprintf(f, "  %s\t%s[%d];\n", P->classname,
+                        arrname->d.string,
+                        EvalConstExpr(arrsize)
+                    );
+            } else {
+                ERROR(objdef, "internal error in object printing");
+            }
+        }
+    }
+
+    /* now the public members */
+    PrintPublicFunctionDecls(f, parse);
+
+    /* now the private members */
+    /* Note that Spin sorts these, outputing first the 32 bit
+       vars, then 16, finally 8
+    */
+
+    PrintAllVarListsOfType(f, parse, ast_type_long);
+    PrintAllVarListsOfType(f, parse, ast_type_word);
+    PrintAllVarListsOfType(f, parse, ast_type_byte);
+
+    /* now the private methods */
+    /* PrintPrivateFunctionDecls(f, parse); */
+
+    fprintf(f, "#endif\n");
+}
+
+static void
+PrintCppHeaderFile(FILE *f, ParserState *parse)
+{
+    AST *ast, *upper;
+
+    /* things we always need */
+    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
+    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
+
+    fprintf(f, "#include <stdint.h>\n");
+
+    /* include any needed object headers */
+    PrintSubHeaders(f, parse);
+
+    /* print the constant declarations */
+    fprintf(f, "class %s {\npublic:\n", parse->classname);
+
     for (upper = parse->conblock; upper; upper = upper->right) {
         ast = upper->left;
         while (ast) {
@@ -140,9 +225,7 @@ PrintHeaderFile(FILE *f, ParserState *parse)
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
-    if (!gl_ccode) {
-        fprintf(f, "};\n\n");
-    }
+    fprintf(f, "};\n\n");
     fprintf(f, "#endif\n");
 }
 
@@ -228,6 +311,10 @@ PrintCppFile(FILE *f, ParserState *parse)
     fprintf(f, "\n");
     PrintMacros(f, parse);
 
+    /* declare static functions */
+    if (gl_ccode) {
+        PrintPrivateFunctionDecls(f, parse);
+    }
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_ccode) {
@@ -262,7 +349,11 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         free(fname);
         exit(1);
     }
-    PrintHeaderFile(f, P);
+    if (gl_ccode) {
+        PrintCHeaderFile(f, P);
+    } else {
+        PrintCppHeaderFile(f, P);
+    }
     fclose(f);
 
     if (gl_errors > 0) {
@@ -271,7 +362,11 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         exit(1);
     }
 
-    sprintf(fname, "%s.cpp", P->basename);
+    if (gl_ccode) {
+        sprintf(fname, "%s.c", P->basename);
+    } else {
+        sprintf(fname, "%s.cpp", P->basename);
+    }
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
