@@ -525,6 +525,7 @@ again:
         c = lexgetc(L);
         goto again;
     }
+
     if (L->eoln && (L->in_block == T_PUB || L->in_block == T_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);

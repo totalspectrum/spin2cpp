@@ -233,6 +233,10 @@ PrintAnnotationList(FILE *f, AST *ast, char terminal)
 static void
 PrintFunctionDecl(FILE *f, Function *func)
 {
+    /* this may just be a placeholder for inline C++ code */
+    if (!func->name)
+        return;
+
     fprintf(f, "  ");
     if (func->annotations) {
         PrintAnnotationList(f, func->annotations, ' ');
@@ -763,10 +767,19 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
     int sawreturn;
 
     for (pf = parse->functions; pf; pf = pf->next) {
+        if (pf->name == NULL) {
+            PrintAnnotationList(f, pf->annotations, '\n');
+            continue;
+        }
         curfunc = pf;
         PrintAnnotationList(f, curfunc->annotations, '\n');
         fprintf(f, "int32_t ");
-        fprintf(f, "%s::%s(", parse->classname, pf->name);
+        if (gl_ccode) {
+            fprintf(f, "%s_%s", parse->classname, pf->name);
+        } else {
+            fprintf(f, "%s::%s", parse->classname, pf->name);
+        }
+        fprintf(f, "(");
         PrintParameterList(f, pf->params);
         fprintf(f, ")\n{\n");
         PrintFunctionVariables(f, pf);
@@ -781,3 +794,13 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
     }
 }
 
+/*
+ * an annotation just looks like a function with no name or body
+ */
+void
+DeclareAnnotation(AST *anno)
+{
+    Function *f = NewFunction();
+
+    f->annotations = anno;
+}

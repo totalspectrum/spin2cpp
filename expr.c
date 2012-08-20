@@ -198,6 +198,14 @@ PrintSymbol(FILE *f, Symbol *sym)
             fprintf(f, "%s", sym->name);
         }
         break;
+    case SYM_VARIABLE:
+    case SYM_FUNCTION:
+        if (gl_ccode) {
+            fprintf(f, "%s_%s", current->classname, sym->name);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
+        break;
     default:
         fprintf(f, "%s", sym->name);
         break;
@@ -208,6 +216,9 @@ PrintSymbol(FILE *f, Symbol *sym)
 void
 PrintFuncCall(FILE *f, Symbol *sym, AST *params)
 {
+    if (gl_ccode) {
+        fprintf(f, "%s_", current->classname);
+    }
     fprintf(f, "%s(", sym->name);
     PrintExprList(f, params);
     fprintf(f, ")");
@@ -1118,7 +1129,11 @@ PrintExpr(FILE *f, AST *expr)
     case AST_CONSTREF:
         if (!GetObjConstant(expr, &objsym, &sym))
             return;
-        fprintf(f, "%s.%s", objsym->name, sym->name);
+        if (gl_ccode) {
+            fprintf(f, "%s", sym->name);
+        } else {
+            fprintf(f, "%s.%s", objsym->name, sym->name);
+        }
         break;
     case AST_CATCH:
         fprintf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");

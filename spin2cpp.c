@@ -14,6 +14,7 @@ ParserState *current;
 ParserState *allparse;
 
 int gl_errors;
+int gl_ccode;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 int
@@ -317,6 +318,7 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
+    fprintf(stderr, "  --ccode:   output C code\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --elf:     create executable ELF file\n");
     exit(2);

@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "0.95"
+#define VERSIONSTR "0.96"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -22,6 +22,11 @@
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
 
 /* some globals */
+
+/* compilation flags */
+extern int gl_ccode;  /* if set, we are outputting C code */
+
+/* types */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
@@ -176,6 +181,7 @@ void DeclareConstants(AST *conlist);
  "annotate" is a list of C++ annotation strings
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate);
+void DeclareAnnotation(AST *annotation);
 void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);

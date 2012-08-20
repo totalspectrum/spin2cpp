@@ -151,6 +151,10 @@ emptyline:
   T_EOLN
   ;
 
+emptylines: 
+  | emptylines emptyline
+  ;
+
 topelement:
   T_CON conblock
   { DeclareConstants($2); $$ = current->conblock = AddToList(current->conblock, $2); }
@@ -168,6 +172,8 @@ topelement:
   { DeclareFunction(1, $3, $4, $2); }
   | T_PRI annotation funcdef funcbody
   { DeclareFunction(0, $3, $4, $2); }
+  | annotation emptylines
+  { DeclareAnnotation($1); }
 ;
 
 funcdef:
@@ -848,6 +854,7 @@ modifierlist:
   | modifierlist ',' instrmodifier
     { $$ = AddToList($1, $3); }
   ;
+
 %%
 
 void

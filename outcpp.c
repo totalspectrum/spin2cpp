@@ -79,7 +79,11 @@ PrintHeaderFile(FILE *f, ParserState *parse)
     fprintf(f, "\n");
 
     /* print the constant declarations */
-    fprintf(f, "class %s {\npublic:\n", parse->classname);
+    if (gl_ccode) {
+        /* nothing here?? */
+    } else {
+        fprintf(f, "class %s {\npublic:\n", parse->classname);
+    }
     for (upper = parse->conblock; upper; upper = upper->right) {
         ast = upper->left;
         while (ast) {
@@ -136,7 +140,9 @@ PrintHeaderFile(FILE *f, ParserState *parse)
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
-    fprintf(f, "};\n\n");
+    if (!gl_ccode) {
+        fprintf(f, "};\n\n");
+    }
     fprintf(f, "#endif\n");
 }
 
@@ -224,7 +230,11 @@ PrintCppFile(FILE *f, ParserState *parse)
 
     /* print data block, if applicable */
     if (parse->datblock) {
-        fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+        if (gl_ccode) {
+            fprintf(f, "static uint8_t %s_dat[] = {\n", parse->classname);
+        } else {
+            fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+        }
         PrintDataBlock(f, parse, TEXT_OUTPUT);
         fprintf(f, "};\n");
     }
@@ -280,10 +290,17 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
             goto done;
         }
         fprintf(f, "\n");
-        fprintf(f, "%s MainObj__;\n\n", P->classname);
-        fprintf(f, "int main() {\n");
-        fprintf(f, "  return MainObj__.%s();\n", defaultMethod->name);
-        fprintf(f, "}\n");
+
+        if (gl_ccode) {
+            fprintf(f, "int main() {\n");
+            fprintf(f, "  return %s_%s();\n", P->classname, defaultMethod->name);
+            fprintf(f, "}\n");
+        } else {
+            fprintf(f, "%s MainObj__;\n\n", P->classname);
+            fprintf(f, "int main() {\n");
+            fprintf(f, "  return MainObj__.%s();\n", defaultMethod->name);
+            fprintf(f, "}\n");
+        }
     }
 done:
     if (f) fclose(f);
