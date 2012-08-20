@@ -152,7 +152,10 @@ extern ParserState *current;
 extern Function *curfunc;
 
 /* printing functions */
-void PrintVarList(FILE *f, AST *type, AST *list);
+#define PUBLIC 0
+#define PRIVATE 1
+#define LOCAL 2
+void PrintVarList(FILE *f, AST *type, AST *list, int scope);
 void PrintAssign(FILE *f, AST *left, AST *right);
 
 /* create a new AST describing a table lookup */

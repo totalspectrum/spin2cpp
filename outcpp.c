@@ -30,7 +30,7 @@ PrintConstantDecl(FILE *f, AST *ast)
 }
 
 static void
-PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type)
+PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int private)
 {
     AST *ast;
     enum astkind kind;
@@ -44,7 +44,7 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type)
     
     for (ast = parse->varblock; ast; ast = ast->right) {
         if (ast->kind == kind) {
-            PrintVarList(f, type, ast->left);
+            PrintVarList(f, type, ast->left, private);
         }
     }
 }
@@ -137,15 +137,6 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
 
-    /* now the private members */
-    /* Note that Spin sorts these, outputing first the 32 bit
-       vars, then 16, finally 8
-    */
-
-    PrintAllVarListsOfType(f, parse, ast_type_long);
-    PrintAllVarListsOfType(f, parse, ast_type_word);
-    PrintAllVarListsOfType(f, parse, ast_type_byte);
-
     /* now the private methods */
     /* PrintPrivateFunctionDecls(f, parse); */
 
@@ -219,9 +210,9 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
        vars, then 16, finally 8
     */
     fprintf(f, "private:\n");
-    PrintAllVarListsOfType(f, parse, ast_type_long);
-    PrintAllVarListsOfType(f, parse, ast_type_word);
-    PrintAllVarListsOfType(f, parse, ast_type_byte);
+    PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
+    PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
+    PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
@@ -240,9 +231,11 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "extern inline int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsAbortdef) {
-        fprintf(f, "extern \"C\" {\n");
+        if (!gl_ccode)
+            fprintf(f, "extern \"C\" {\n");
         fprintf(f, "#include <setjmp.h>\n");
-        fprintf(f, "}\n");
+        if (!gl_ccode)
+            fprintf(f, "}\n");
         fprintf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
         fprintf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
     }
@@ -311,14 +304,17 @@ PrintCppFile(FILE *f, ParserState *parse)
     fprintf(f, "\n");
     PrintMacros(f, parse);
 
-    /* declare static functions */
+    /* declare static functions and variables */
     if (gl_ccode) {
         PrintPrivateFunctionDecls(f, parse);
+        PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
+        PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
+        PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
     }
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_ccode) {
-            fprintf(f, "static uint8_t %s_dat[] = {\n", parse->classname);
+            fprintf(f, "static uint8_t dat[] = {\n");
         } else {
             fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
         }

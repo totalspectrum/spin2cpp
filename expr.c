@@ -198,14 +198,8 @@ PrintSymbol(FILE *f, Symbol *sym)
             fprintf(f, "%s", sym->name);
         }
         break;
-    case SYM_VARIABLE:
     case SYM_FUNCTION:
-        if (gl_ccode) {
-            fprintf(f, "%s_%s", current->classname, sym->name);
-        } else {
-            fprintf(f, "%s", sym->name);
-        }
-        break;
+    case SYM_VARIABLE:
     default:
         fprintf(f, "%s", sym->name);
         break;
@@ -216,9 +210,6 @@ PrintSymbol(FILE *f, Symbol *sym)
 void
 PrintFuncCall(FILE *f, Symbol *sym, AST *params)
 {
-    if (gl_ccode) {
-        fprintf(f, "%s_", current->classname);
-    }
     fprintf(f, "%s(", sym->name);
     PrintExprList(f, params);
     fprintf(f, ")");
@@ -1102,9 +1093,14 @@ PrintExpr(FILE *f, AST *expr)
                 return;
             }
             PrintLHS(f, objref, 0, 0);
-            fprintf(f, ".");
+            if (gl_ccode)
+                fprintf(f, "_");
+            else
+                fprintf(f, ".");
         } else {
             sym = LookupAstSymbol(expr->left, "function call");
+            if (gl_ccode && sym && sym->type == SYM_FUNCTION)
+                fprintf(f, "%s_", current->classname);
         }
         if (!sym) {
             ; /* do nothing, printed error already */

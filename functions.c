@@ -278,11 +278,14 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
 }
 
 void
-PrintVarList(FILE *f, AST *typeast, AST *ast)
+PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
 {
     AST *decl;
     int needcomma = 0;
 
+    if (gl_ccode && scope == PRIVATE) {
+        fprintf(f, "static");
+    }
     fprintf(f, "  ");
     PrintType(f, typeast);
     fprintf(f, "\t");
@@ -357,7 +360,7 @@ PrintFunctionVariables(FILE *f, Function *func)
         } else if (func->localarray && func->localarray_len > 0) {
             fprintf(f, "  int32_t %s[%d];\n", func->localarray, func->localarray_len);
         } else {
-            PrintVarList(f, ast_type_long, func->locals);
+            PrintVarList(f, ast_type_long, func->locals, LOCAL);
         }
     }
     if (func->parmarray) {
