@@ -231,6 +231,7 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define lockclr(i) _lockclr(i)\n");
         fprintf(f, "#define coginit(id, code, par) _coginit(par, code, id)\n");
         fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
+        fprintf(f, "#define cogstop(i) _cogstop(i)\n");
     }
     fprintf(f, "#endif\n");
     fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");

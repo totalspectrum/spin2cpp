@@ -766,7 +766,7 @@ extern void str1Builtin(FILE *, Builtin *, AST *);
 extern void strcompBuiltin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "_CLKFREQ" },
+    { "clkfreq", 0, defaultVariable, "CLKFREQ" },
     { "cognew", 2, defaultBuiltin, "cognew" },
     { "cogstop", 1, defaultBuiltin, "cogstop" },
     { "cogid", 0, defaultBuiltin, "cogid" },
