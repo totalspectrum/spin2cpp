@@ -229,7 +229,7 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define lockret(i) _lockret(i)\n");
         fprintf(f, "#define lockset(i) _lockset(i)\n");
         fprintf(f, "#define lockclr(i) _lockclr(i)\n");
-        fprintf(f, "#define coginit(id, code, par) _coginit(par, code, id)\n");
+        fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
         fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
         fprintf(f, "#define cogstop(i) _cogstop(i)\n");
     }

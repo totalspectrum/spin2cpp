@@ -15,7 +15,7 @@ PUB run | i,x,now,elapsed
   fds.start(31, 30, 0, 115200)
 
   '' and say hello
-  repeat i from 10 to 20
+  repeat i from 10 to 26
     now := cnt
     x := fibo(i)
     elapsed := cnt - now
@@ -25,7 +25,12 @@ PUB run | i,x,now,elapsed
     fds.dec(x)
     fds.str(string("  time taken: "))
     fds.dec(elapsed)
-    fds.str(string(" cycles", 13, 10))
+    fds.str(string(" cycles ("))
+    fds.dec(elapsed/80000)
+    fds.str(string(" ms)", 13, 10))
+  '' now just hang
+  fds.str(string("done", 13, 10))
+  repeat
 
 PUB fibo(x)
   if (x < 2)
