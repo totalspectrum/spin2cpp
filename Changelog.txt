@@ -1,0 +1,26 @@
+Version 0.96 New in this version:
+
+- preliminary support for output of C code instead of C++
+- fix the order of defines so constants in one object may be used to
+define constants in another object
+- support for placing C code inline in the Spin code (via "annotations")
+- bug fix for reverse()
+- sort variables the way Spin does
+
+Version 0.95. New in this version:
+
+- arrays of objects
+- fix outa[pin] with variable pin
+- handle TAB characters correctly
+- various other bug fixes
+
+Version 0.9. New in this version:
+
+- correct handling of files that do not end in a newline
+- fixed array references
+- fixed nesting of objects more than 2 deep
+- work around some library and compiler issues with the abort feature
+- better handling of bit set and clear
+- fixed a bug preventing PASM instructions from always being aligned
+- --files option to list generated .cpp files
+- --elf option to automatically invoke propeller-elf-gcc to compile the .spin file
