@@ -219,7 +219,7 @@ ParserState *
 parseFile(const char *name)
 {
     FILE *f = NULL;
-    ParserState *P, *save, *Q;
+    ParserState *P, *save, *Q, *LastQ;
     char *fname = NULL;
 
     fname = malloc(strlen(name) + 8);
@@ -236,6 +236,9 @@ parseFile(const char *name)
     save = current;
     P = NewParserState(name);
     /* if we have already visited an object with this name, skip it */
+    /* also finds the last element in the list, so we can append to
+       the list easily */
+    LastQ = NULL;
     for (Q = allparse; Q; Q = Q->next) {
         if (!strcmp(P->basename, Q->basename)) {
             free(fname);
@@ -248,10 +251,12 @@ parseFile(const char *name)
             }
             return Q;
         }
+        LastQ = Q;
     }
-
-    P->next = allparse;
-    allparse = P;
+    if (LastQ)
+        LastQ->next = P;
+    else
+        allparse = P;
     current = P;
 
     fileToLex(&current->L, f, name);

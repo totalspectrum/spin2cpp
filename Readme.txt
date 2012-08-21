@@ -42,18 +42,37 @@ recommended to pass some form of optimization to gcc.
 If you just want to convert a top level option to C++, you may want
 spin2cpp to automatically insert a main() function and a call to the
 first method of the object. To do this, give spin2cpp the --main
-option:
+option.
 
-  spin2cpp --main test.spin
 
-You can then compile it with:
+Examples
+--------
+spin2cpp is a command line tool, so the examples below are for a CLI
+and assume that the appropriate C compilers are in your PATH.
 
-  propeller-elf-gcc -O -o test.elf test.cpp obj1.cpp obj2.cpp
+(1) To compile the Count.spin demo with propeller-elf-gcc in
+C mode, do:
 
-where "obj1.spin" and "obj2.spin" are the objects referred to by
-"test.spin".
+spin2cpp --elf -O -o Count.elf Count.spin
 
-See Demo/Makefile for examples.
+This produces an executable file Count.elf which may be loaded with
+propeller-load.
+
+(2) To compile the Count.spin demo with Catalina, do:
+
+spin2cpp --main --ccode --files Count.spin
+
+spin2cpp will print:
+Count.c
+FullDuplexSerial.c
+
+showing you the files that it produced. Now you can run catalina:
+
+catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
+
+This produces Count.binary, which may be downloaded and run as usual.
+
+See Demo/Makefile for more examples.
 
 OPTIONS
 =======
@@ -96,7 +115,7 @@ including:
 
 _CLKMODE
 CLKSET
-COGINIT on a Spin method (PASM should work)
+COGINIT on a Spin method (PASM works)
 _FREE
 SPR
 _STACK
@@ -107,6 +126,18 @@ There are probably many other features not supported yet!
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
 
+Catalina Issues
+---------------
+The C code support in spin2cpp is still in very early stages, and so
+there are some spin features which are not supported in Catalina (they
+do work in PropGCC because the latter supports some C++ extensions
+even in C mode).
+
+(1) The LOOKUP and LOOKDOWN functions in Spin do not work in Catalina.
+(2) Any code which takes the address of a parameter or of a local
+variable will not work in Catalina.
+
+I'm still working on fixing these issues.
 
 C INTEROPERATION
 ===============
@@ -144,6 +175,11 @@ FooBar.spin	       class FooBar
 someFile.spin	       class someFile
 foo99.spin	       class foo99
 foo.spin	       class fooSpin
+
+In C mode, all the functions have the object name prepended. So
+for example in a file named FooBar.spin the "start"
+function will be named "FooBar_Start" in the C code.
+
 
 Annotations and Inline C code
 -----------------------------

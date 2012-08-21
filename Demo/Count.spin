@@ -12,6 +12,7 @@ PUB demo
 
   fds.str(string("Counting demo:", 13, 10))
   count(1,4,1)
+  count(4,1,1)
   count(2,8,2)
   count(2,9,2)
   count(9,2,2)
@@ -19,6 +20,8 @@ PUB demo
   count(4,0,-1)
   count(-4,0,1)
   count(-4,0,-1)
+  fds.str(string("done"))
+  repeat
 
 PUB count(a,b,c) | i
   fds.str(string("count "))
