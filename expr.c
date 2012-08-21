@@ -214,8 +214,14 @@ PrintSymbol(FILE *f, Symbol *sym)
             fprintf(f, "%s", sym->name);
         }
         break;
-    case SYM_FUNCTION:
     case SYM_VARIABLE:
+        if (gl_ccode) {
+            fprintf(f, "thisobj.%s", sym->name);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
+        break;
+    case SYM_FUNCTION:
     default:
         fprintf(f, "%s", sym->name);
         break;

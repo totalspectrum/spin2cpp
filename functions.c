@@ -283,9 +283,6 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
     AST *decl;
     int needcomma = 0;
 
-    if (gl_ccode && scope == PRIVATE) {
-        fprintf(f, "static");
-    }
     fprintf(f, "  ");
     PrintType(f, typeast);
     fprintf(f, "\t");

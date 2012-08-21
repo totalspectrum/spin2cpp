@@ -114,6 +114,13 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
         }
     }
 
+    /* print the structure definition */
+    fprintf(f, "\ntypedef struct %s {\n", parse->classname);
+    PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
+    PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
+    PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+    fprintf(f, "} %s;\n\n", parse->classname);
+
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
 
@@ -287,9 +294,7 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* declare static functions and variables */
     if (gl_ccode) {
         PrintPrivateFunctionDecls(f, parse);
-        PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
-        PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
-        PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+        fprintf(f, "static %s thisobj;\n", parse->classname);
     }
     /* print data block, if applicable */
     if (parse->datblock) {

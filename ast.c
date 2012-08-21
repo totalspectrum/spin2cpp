@@ -155,7 +155,7 @@ AstTempVariable(const char *prefix)
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
 
     name = NewTemporaryVariable(prefix);
-    AddSymbol(&current->objsyms, name, SYM_VARIABLE, (void *)ast_type_long);
+    AddSymbol(&current->objsyms, name, SYM_TEMPVAR, (void *)ast_type_long);
     ast->d.string = name;
     return ast;
 }
