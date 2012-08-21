@@ -15,12 +15,12 @@ int32_t test47::Test(int32_t C)
   if (Flag == 0) {
     if (C == 9) {
       do {
-        _OUTA = (Cols++);
+        OUTA = (Cols++);
       } while (Cols & 0x7);
     } else if (C == 13) {
-      _OUTA = C;
+      OUTA = C;
     } else if (1) {
-      _OUTA = Flag;
+      OUTA = Flag;
     }
   } else if (Flag == 10) {
     Cols = (C % Cols);

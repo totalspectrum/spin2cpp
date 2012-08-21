@@ -12,7 +12,7 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 int32_t test08::Init(void)
 {
   int32_t result = 0;
-  _OUTA = 1;
+  OUTA = 1;
   return result;
 }
 

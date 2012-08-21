@@ -12,16 +12,16 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 int32_t test81::High8(void)
 {
   int32_t result = 0;
-  _OUTA |= (1<<8);
-  _DIRA |= (1<<8);
+  OUTA |= (1<<8);
+  DIRA |= (1<<8);
   return result;
 }
 
 int32_t test81::High(int32_t Pin)
 {
   int32_t result = 0;
-  _OUTA |= (1<<Pin);
-  _DIRA |= (1<<Pin);
+  OUTA |= (1<<Pin);
+  DIRA |= (1<<Pin);
   return result;
 }
 

@@ -938,24 +938,24 @@ instr[] = {
 };
 
 HwReg hwreg[] = {
-    { "par", 0x1f0, "_PAR" },
-    { "cnt", 0x1f1, "_CNT" },
-    { "ina", 0x1f2, "_INA" },
-    { "inb", 0x1f3, "_INB" },
-    { "outa", 0x1f4, "_OUTA" },
-    { "outb", 0x1f5, "_OUTB" },
-    { "dira", 0x1f6, "_DIRA" },
-    { "dirb", 0x1f7, "_DIRB" },
-    { "ctra", 0x1f8, "_CTRA" },
-    { "ctrb", 0x1f9, "_CTRB" },
+    { "par", 0x1f0, "PAR" },
+    { "cnt", 0x1f1, "CNT" },
+    { "ina", 0x1f2, "INA" },
+    { "inb", 0x1f3, "INB" },
+    { "outa", 0x1f4, "OUTA" },
+    { "outb", 0x1f5, "OUTB" },
+    { "dira", 0x1f6, "DIRA" },
+    { "dirb", 0x1f7, "DIRB" },
+    { "ctra", 0x1f8, "CTRA" },
+    { "ctrb", 0x1f9, "CTRB" },
 
-    { "frqa", 0x1fa, "_FRQA" },
-    { "frqb", 0x1fb, "_FRQB" },
-    { "phsa", 0x1fc, "_PHSA" },
-    { "phsb", 0x1fd, "_PHSB" },
+    { "frqa", 0x1fa, "FRQA" },
+    { "frqb", 0x1fb, "FRQB" },
+    { "phsa", 0x1fc, "PHSA" },
+    { "phsb", 0x1fd, "PHSB" },
 
-    { "vcfg", 0x1fe, "_VCFG" },
-    { "vscl", 0x1ff, "_VSCL" },
+    { "vcfg", 0x1fe, "VCFG" },
+    { "vscl", 0x1ff, "VSCL" },
 
 };
 

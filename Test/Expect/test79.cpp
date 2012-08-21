@@ -12,12 +12,12 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 int32_t test79::I2c_start(void)
 {
   int32_t result = 0;
-  _OUTA = ((_OUTA & 0xefffffff) | 0x10000000);
-  _DIRA = ((_DIRA & 0xefffffff) | 0x10000000);
-  _OUTA = ((_OUTA & 0xdfffffff) | 0x20000000);
-  _DIRA = ((_DIRA & 0xdfffffff) | 0x20000000);
-  _OUTA &= ~(1<<29);
-  _OUTA &= ~(1<<28);
+  OUTA = ((OUTA & 0xefffffff) | 0x10000000);
+  DIRA = ((DIRA & 0xefffffff) | 0x10000000);
+  OUTA = ((OUTA & 0xdfffffff) | 0x20000000);
+  DIRA = ((DIRA & 0xdfffffff) | 0x20000000);
+  OUTA &= ~(1<<29);
+  OUTA &= ~(1<<28);
   return result;
 }
 

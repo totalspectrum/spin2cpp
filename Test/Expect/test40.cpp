@@ -13,7 +13,7 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 int32_t test40::Tx(int32_t Character)
 {
   int32_t result = 0;
-  _OUTA = Character;
+  OUTA = Character;
   return result;
 }
 

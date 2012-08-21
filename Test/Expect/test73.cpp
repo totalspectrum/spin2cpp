@@ -15,7 +15,7 @@ uint8_t test73::dat[] = {
 int32_t test73::Flip(int32_t X)
 {
   int32_t result = 0;
-  _OUTA = ((_OUTA & 0xfffffff0) | 0xc);
+  OUTA = ((OUTA & 0xfffffff0) | 0xc);
   return (*(int32_t *)&dat[0]);
 }
 
