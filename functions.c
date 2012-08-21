@@ -780,6 +780,9 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');
             continue;
+        } else if (gl_nospin) {
+            /* skip all Spin methods */
+            continue;
         }
         curfunc = pf;
         PrintAnnotationList(f, curfunc->annotations, '\n');
@@ -805,12 +808,39 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
 }
 
 /*
+ * parse annotation directives
+ */
+int match(const char *str, const char *pat)
+{
+    return !strncmp(str, pat, strlen(pat));
+}
+
+static void
+ParseDirectives(const char *str)
+{
+    if (match(str, "nospin"))
+        gl_nospin = 1;
+    else if (match(str, "ccode"))
+        gl_ccode = 1;
+}
+
+/*
  * an annotation just looks like a function with no name or body
  */
 void
 DeclareAnnotation(AST *anno)
 {
-    Function *f = NewFunction();
+    Function *f;
+    const char *str;
 
-    f->annotations = anno;
+    /* check the annotation string; some of them are special */
+    str = anno->d.string;
+    if (*str == '!') {
+        /* directives, not code */
+        str += 1;
+        ParseDirectives(str);
+    } else {
+        f = NewFunction();
+        f->annotations = anno;
+    }
 }

@@ -15,6 +15,7 @@ ParserState *allparse;
 
 int gl_errors;
 int gl_ccode;
+int gl_nospin;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 int

@@ -228,13 +228,16 @@ isIdentifierChar(int c)
 static void
 addchar(int c, char **place, size_t *space, size_t *len)
 {
-    if (*len + 1 > *space) {
+    int curlen = *len;
+    if (curlen + 2 > *space) {
         *space += 16;
         *place = realloc(*place, *space);
     }
     assert(*place != NULL);
-    (*place)[*len] = c;
-    *len += 1;
+    (*place)[curlen] = c;
+    curlen++;
+    (*place)[curlen] = 0; /* make sure it stays 0 terminated */
+    *len = curlen;
 }
 /*
  * actual parsing functions

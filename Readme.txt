@@ -119,6 +119,13 @@ are Spin comments that start with {++ and end with }. The text between
 annotations is passed through to the C++ compiler. This provides a way
 to give extra semantic information beyond that available in Spin.
 
+Directives
+----------
+Annotations which begin with the character '!' are special
+directives for spin2cpp. The following special directives are
+recognized:
+   {++!nospin}: do not output any Spin methods
+   {++!ccode}:  output C rather than C++ code
 
 DEVELOPER NOTES
 ===============
