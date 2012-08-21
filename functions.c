@@ -507,6 +507,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     int needsteptest = 1;
     int deltaknown = 0;
     int32_t delta;
+    int needindent;
 
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -558,18 +559,18 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         negstep = (fromi > toi);
     }
 
+    needindent = !loopvar || !IsConstExpr(toval) || !(IsConstExpr(stepval) && !needsteptest);
+
+    if (needindent) {
+        fprintf(f, "%*c{\n", indent, ' ');
+        indent += 2;
+    }
+
     /* set the loop variable */
-            
     if (!loopvar) {
         loopvar = AstTempVariable("_idx_");
         fprintf(f, "%*cint32_t %s;\n", indent, ' ', loopvar->d.string);
     }
-    fprintf(f, "%*c", indent, ' ');
-    PrintExpr(f, loopvar);
-    fprintf(f, " = ");
-    PrintExpr(f, fromval);
-    fprintf(f, ";\n");
-
     /* set the limit variable */
     if (IsConstExpr(toval)) {
         limit = AstInteger(EvalConstExpr(toval));
@@ -596,6 +597,13 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintExpr(f, stepval);
         fprintf(f, ";\n");
     }
+
+    /* set the loop variable */
+    fprintf(f, "%*c", indent, ' ');
+    PrintExpr(f, loopvar);
+    fprintf(f, " = ");
+    PrintExpr(f, fromval);
+    fprintf(f, ";\n");
 
     stepstmt = AstAssign('+', loopvar, step);
 
@@ -644,6 +652,11 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
     }
     fprintf(f, ");\n");
+
+    if (needindent) {
+        indent -= 2;
+        fprintf(f, "%*c}\n", indent, ' ');
+    }
     return sawreturn;
 }
 

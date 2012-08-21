@@ -7,6 +7,8 @@
 #else
 #define INLINE__ static
 #endif
+INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }
+#define PostEffect__(X, Y) PostFunc__(&(X), (Y))
 
 int32_t test40::Tx(int32_t Character)
 {
@@ -25,21 +27,23 @@ int32_t test40::Dec(int32_t Value)
     Tx('-');
   }
   I = 1000000000;
-  int32_t _idx__0000;
-  _idx__0000 = 10;
-  do {
-    if (Value >= I) {
-      Tx((((Value / I) + '0') + (X * -(I == 1))));
-      Value = (Value % I);
-      result = -1;
-    } else {
-      if ((result) || (I == 1)) {
-        Tx('0');
+  {
+    int32_t _idx__0000;
+    _idx__0000 = 10;
+    do {
+      if (Value >= I) {
+	Tx((((Value / I) + '0') + (X * -(I == 1))));
+	Value = (Value % I);
+	result = -1;
+      } else {
+	if ((result) || (I == 1)) {
+	  Tx('0');
+	}
       }
-    }
-    I = (I / 10);
-    _idx__0000 = (_idx__0000 + -1);
-  } while (_idx__0000 >= 1);
+      I = (I / 10);
+      _idx__0000 = (_idx__0000 + -1);
+    } while (_idx__0000 >= 1);
+  }
   return result;
 }
 

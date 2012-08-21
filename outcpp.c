@@ -119,6 +119,8 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
     PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
     PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
     PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+    /* needed to avoid problems with empty structures on Catalina */
+    fprintf(f, "  char dummy__;\n");
     fprintf(f, "} %s;\n\n", parse->classname);
 
     /* now the public members */
@@ -212,12 +214,19 @@ PrintMacros(FILE *f, ParserState *parse)
 {
     fprintf(f, "#ifdef __GNUC__\n");
     fprintf(f, "#define INLINE__ static inline\n");
-    fprintf(f, "#else\n");
-    fprintf(f, "#define INLINE__ static\n");
-    fprintf(f, "#endif\n\n");
     if (parse->needsYield) {
+        fprintf(f, "#include <sys/thread.h>\n");
         fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
     }
+    fprintf(f, "#else\n");
+    fprintf(f, "#define INLINE__ static\n");
+    if (parse->needsYield) {
+        fprintf(f, "#define Yield__()\n");
+    }
+    fprintf(f, "#endif\n");
+    fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");
+    fprintf(f, "#define PostEffect__(X, Y) PostFunc__(&(X), (Y))\n");
+    fprintf(f, "\n");
     if (parse->needsMinMax) {
         fprintf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
         fprintf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
@@ -287,9 +296,6 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* things we always need */
     if (parse->needsStdlib) {
         fprintf(f, "#include <stdlib.h>\n");
-    }
-    if (parse->needsYield) {
-        fprintf(f, "#include <sys/thread.h>\n");
     }
     fprintf(f, "#include <propeller.h>\n");
     fprintf(f, "#include \"%s.h\"\n", parse->basename);

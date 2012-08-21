@@ -6,6 +6,8 @@
 #else
 #define INLINE__ static
 #endif
+INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }
+#define PostEffect__(X, Y) PostFunc__(&(X), (Y))
 
 INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }
 

@@ -583,11 +583,11 @@ PrintPostfix(FILE *f, AST *expr, int toplevel)
     if (toplevel) {
         PrintAssign(f, expr->left, target);
     } else {
-        fprintf(f, "__extension__({ int32_t _tmp_ = ");
+        fprintf(f, "PostEffect__(");
         PrintExpr(f, expr->left);
-        fprintf(f, "; ");
-        PrintAssign(f, expr->left, target);
-        fprintf(f, "; _tmp_; })");
+        fprintf(f, ", ");
+        PrintExpr(f, target);
+        fprintf(f, ")");
     }
 }
 

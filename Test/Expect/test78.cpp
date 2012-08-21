@@ -6,6 +6,8 @@
 #else
 #define INLINE__ static
 #endif
+INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }
+#define PostEffect__(X, Y) PostFunc__(&(X), (Y))
 
 uint8_t test78::dat[] = {
   0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x14, 0x00, 0x1c, 0x00, 0x24, 0x00, 0x05, 0x00, 0x07, 0x00, 
