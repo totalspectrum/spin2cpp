@@ -26,6 +26,7 @@
 /* compilation flags */
 extern int gl_ccode;  /* if set, we are outputting C code instead of C++*/
 extern int gl_nospin; /* if set, suppress output of Spin methods */
+extern int gl_static; /* if set, objects are static; this is the default in C mode */
 
 /* types */
 extern AST *ast_type_long;
