@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test74.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 uint8_t test74::dat[] = {
   0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 
 };

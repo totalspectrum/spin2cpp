@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test71.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test71::Blah(void)
 {
   int32_t _parm__0000[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };

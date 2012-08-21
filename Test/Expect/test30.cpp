@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test30.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test30::Test(void)
 {
   int32_t X = 0;

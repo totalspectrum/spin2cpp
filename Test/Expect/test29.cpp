@@ -2,6 +2,12 @@
 #include <propeller.h>
 #include "test29.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 #define Yield__() (__napuntil(_CNT))
 int32_t test29::Tx(int32_t Val)
 {

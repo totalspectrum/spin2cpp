@@ -14,4 +14,5 @@ count.elf: Count.spin FullDuplexSerial.spin
 
 
 clean:
-	rm -f *.cpp *.h *.elf 
+	rm -f *.cpp *.c *.h *.elf *.binary
+

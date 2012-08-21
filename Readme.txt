@@ -2,7 +2,7 @@ This is a very simple Spin to C++ converter. There is much of the Spin
 language that it does not handle, and its results will not always be
 correct. 
 
-This version (0.95) includes some more functionality. A simple "Hello,
+This version (0.96) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -51,9 +51,42 @@ You can then compile it with:
   propeller-elf-gcc -O -o test.elf test.cpp obj1.cpp obj2.cpp
 
 where "obj1.spin" and "obj2.spin" are the objects referred to by
-"test.spin". 
+"test.spin".
 
 See Demo/Makefile for examples.
+
+OPTIONS
+=======
+Spin2cpp accepts the following options:
+
+--ccode
+  Output static C code instead of C++. Note that in C mode only a
+  single instance of an object may be active at a time; that is, code
+  like:
+    OBJ
+       a: "FullDuplexSerial"
+       b: "FullDuplexSerial"
+  will not work, because "a" and "b" will both be using the same
+  variables. This restriction applies only to C code, C++ code is able
+  to use multiple objects without a problem.
+ 
+--dat
+  Output a binary blob of the DAT section only, similar to the
+  bstc -c option
+
+--elf
+  Run the compiler and output a linked executable ELF file. Note that
+  this option imples --main. Also note that after --elf you may
+  specify options to be passed to PropGCC, such as -Os or -mxmmc.
+
+--files
+  Print a list of the .cpp (or .c) files that were produced by
+  spin2cpp. Useful for tracking object dependencies.
+
+--main
+  Automatically add a C++ main() function that will invoke the default
+  Spin method. Use this on top level objects only. 
+
 
 LIMITATIONS
 ===========

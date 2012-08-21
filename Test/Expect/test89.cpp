@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test89.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test89::Catchlong(int32_t Longvar)
 {
   int32_t _parm__0000[] = { Longvar };

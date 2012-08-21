@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test77.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 static uint32_t Sqrt__(uint32_t a) {
     uint32_t res = 0;
     uint32_t bit = 1<<30;

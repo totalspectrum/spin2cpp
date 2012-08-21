@@ -1,8 +1,14 @@
 #include <propeller.h>
 #include "test38.h"
 
-extern inline int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }
-extern inline int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
+INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }
+INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }
 int32_t test38::Big(int32_t X, int32_t Y)
 {
   int32_t result = 0;

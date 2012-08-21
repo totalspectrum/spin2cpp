@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test48.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test48::Setcolors(int32_t Colorptr)
 {
   int32_t	I, Fore, Back;

@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test68.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test68::Foo(int32_t N)
 {
   int32_t result = 0;

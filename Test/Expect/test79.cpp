@@ -1,6 +1,12 @@
 #include <propeller.h>
 #include "test79.h"
 
+#ifdef __GNUC__
+#define INLINE__ static inline
+#else
+#define INLINE__ static
+#endif
+
 int32_t test79::I2c_start(void)
 {
   int32_t result = 0;

@@ -316,11 +316,11 @@ Usage(void)
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
     fprintf(stderr, "Usage: %s [options] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  --main:    include C++ main() function\n");
+    fprintf(stderr, "  --ccode:   output (static) C code instead of C++\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
-    fprintf(stderr, "  --ccode:   output C code\n");
-    fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --elf:     create executable ELF file\n");
+    fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
+    fprintf(stderr, "  --main:    include C++ main() function\n");
     exit(2);
 }
 

@@ -210,12 +210,17 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintMacros(FILE *f, ParserState *parse)
 {
+    fprintf(f, "#ifdef __GNUC__\n");
+    fprintf(f, "#define INLINE__ static inline\n");
+    fprintf(f, "#else\n");
+    fprintf(f, "#define INLINE__ static\n");
+    fprintf(f, "#endif\n\n");
     if (parse->needsYield) {
         fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
     }
     if (parse->needsMinMax) {
-        fprintf(f, "extern inline int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
-        fprintf(f, "extern inline int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
+        fprintf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
+        fprintf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsAbortdef) {
         if (!gl_ccode)
@@ -227,21 +232,21 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
     }
     if (parse->needsRotate) {
-        fprintf(f, "extern inline int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
-        fprintf(f, "extern inline int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
+        fprintf(f, "INLINE__ int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
+        fprintf(f, "INLINE__ int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
     }
     if (parse->needsShr) {
-        fprintf(f, "extern inline int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
+        fprintf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
     if (parse->needsBetween) {
-        fprintf(f, "extern inline int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
+        fprintf(f, "INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
     }
     if (parse->needsLookup) {
-        fprintf(f, "#define Lookup__(x, b, a, n) __extension__({ int32_t i = (x)-(b); ((unsigned)i >= n) ? 0 : (a)[i]; })\n");
+        fprintf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
         fprintf(f, "\n");
     }
     if (parse->needsLookdown) {
-        fprintf(f, "#define Lookdown__(x, b, a, n) __extension__({ int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; r; })\n");
+        fprintf(f, "INLINE__ int32_t Lookdown__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; return r; }\n");
         fprintf(f, "\n");
     }
     if (parse->needsRand) {
