@@ -177,13 +177,13 @@ DeclareVariables(void)
     }
 }
 
-static void
-DeclareObjects(ParserState *parse)
+void
+DeclareObjects(AST *newobjs)
 {
     AST *ast;
     AST *obj;
 
-    for (ast = parse->objblock; ast; ast = ast->right) {
+    for (ast = newobjs; ast; ast = ast->right) {
         if (ast->kind != AST_OBJECT) {
             ERROR(ast, "Internal error: expected an OBJECT");
             break;
@@ -258,7 +258,6 @@ parseFile(const char *name)
     }
 
     /* now declare all the symbols that weren't already declared */
-    DeclareObjects(P);
     DeclareVariables();
     DeclareLabels(P);
 

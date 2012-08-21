@@ -191,6 +191,8 @@ void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 
+void DeclareObjects(AST *newobjs);
+
 /* defines for isBinary flag of PrintDataBlock */
 #define TEXT_OUTPUT 0
 #define BINARY_OUTPUT 1

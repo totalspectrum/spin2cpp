@@ -163,7 +163,8 @@ topelement:
   | T_VAR varblock
   { $$ = current->varblock = AddToList(current->varblock, $2); }
   | T_OBJ objblock
-  { $$ = current->objblock = AddToList(current->objblock, $2); }
+  { DeclareObjects($2);
+    $$ = current->objblock = AddToList(current->objblock, $2); }
   | T_PUB funcdef funcbody
   { DeclareFunction(1, $2, $3, NULL); }
   | T_PRI funcdef funcbody
