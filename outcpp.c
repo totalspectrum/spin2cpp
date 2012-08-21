@@ -223,6 +223,15 @@ PrintMacros(FILE *f, ParserState *parse)
     if (parse->needsYield) {
         fprintf(f, "#define Yield__()\n");
     }
+    if (gl_ccode) {
+        fprintf(f, "#define waitcnt(n) _waitcnt(n)\n");
+        fprintf(f, "#define locknew() _locknew()\n");
+        fprintf(f, "#define lockret(i) _lockret(i)\n");
+        fprintf(f, "#define lockset(i) _lockset(i)\n");
+        fprintf(f, "#define lockclr(i) _lockclr(i)\n");
+        fprintf(f, "#define coginit(id, code, par) _coginit(par, code, id)\n");
+        fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
+    }
     fprintf(f, "#endif\n");
     fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");
     fprintf(f, "#define PostEffect__(X, Y) PostFunc__(&(X), (Y))\n");
