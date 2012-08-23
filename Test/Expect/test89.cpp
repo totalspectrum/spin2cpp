@@ -11,8 +11,9 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 
 int32_t test89::Catchlong(int32_t Longvar)
 {
-  int32_t _parm__0000[] = { Longvar };
+  int32_t _parm__0000[1];
   int32_t result = 0;
+  _parm__0000[0] = Longvar;
   B0 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[0];
   B1 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[1];
   B2 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[2];

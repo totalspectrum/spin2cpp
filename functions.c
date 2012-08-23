@@ -362,35 +362,48 @@ PrintFunctionVariables(FILE *f, Function *func)
     }
     if (func->parmarray) {
         int n;
-        fprintf(f, "  int32_t %s[] = { ", func->parmarray);
+        int parmsiz;
+
+        parmsiz = AstListLen(func->params);
         if (func->result_in_parmarray) {
-            fprintf(f, "0"); offset++;
-        }
-        for (v = func->params; v; v = v->right) {
-            if (offset) fprintf(f, ", ");
-            fprintf(f, "%s", v->left->d.string);
-            offset++;
-            
+            parmsiz++;
         }
         if (func->localarray == func->parmarray) {
             Symbol *sym;
+            offset = parmsiz;
             for (v = func->locals; v; v = v->right) {
                 sym = VarSymbol(func, v->left);
                 if (sym) {
                     sym->count += offset;
                     n = typeSize((AST *)sym->val);
                     while (n > 0) {
-                        fprintf(f, ", ");
-                        fprintf(f, "0");
                         n -= 4;
+                        parmsiz++;
                     }
                 }
             }
         }
-        fprintf(f, " };\n");
+
+        fprintf(f, "  int32_t %s[%d];\n", func->parmarray, parmsiz);
     }
     if (!func->result_in_parmarray)
         fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
+
+    /* now actually assign initial values for the array */
+    if (func->parmarray) {
+        int indent = 2;
+        offset = 0;
+
+        if (func->result_in_parmarray) {
+            fprintf(f, "%*c%s[%d] = 0\n", indent, ' ', func->parmarray, offset);
+            offset++;
+        }
+        for (v = func->params; v; v = v->right) {
+            fprintf(f, "%*c%s[%d] = ", indent, ' ', func->parmarray, offset);
+            fprintf(f, "%s;\n", v->left->d.string);
+            offset++;
+        }
+    }
 }
  
 static int PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
