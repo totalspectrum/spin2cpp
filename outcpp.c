@@ -215,8 +215,11 @@ PrintMacros(FILE *f, ParserState *parse)
     fprintf(f, "#ifdef __GNUC__\n");
     fprintf(f, "#define INLINE__ static inline\n");
     if (parse->needsYield) {
-        fprintf(f, "#include <sys/thread.h>\n");
-        fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
+        // old way
+        //fprintf(f, "#include <sys/thread.h>\n");
+        //fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
+        // new way -- not as thread friendly, but much faster
+        fprintf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
     }
     fprintf(f, "#else\n");
     fprintf(f, "#define INLINE__ static\n");

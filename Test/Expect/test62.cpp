@@ -3,8 +3,7 @@
 
 #ifdef __GNUC__
 #define INLINE__ static inline
-#include <sys/thread.h>
-#define Yield__() (__napuntil(_CNT))
+#define Yield__() __asm__ volatile( "" ::: "memory" )
 #else
 #define INLINE__ static
 #define Yield__()
