@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <math.h>
 #include "spinc.h"
+#include "flexbuf.h"
 
 static inline int
 safe_isalpha(unsigned int x) {
@@ -225,20 +226,6 @@ isIdentifierChar(int c)
 /* dynamically grow a string */
 #define INCSTR 16
 
-static void
-addchar(int c, char **place, size_t *space, size_t *len)
-{
-    int curlen = *len;
-    if (curlen + 2 > *space) {
-        *space += 16;
-        *place = realloc(*place, *space);
-    }
-    assert(*place != NULL);
-    (*place)[curlen] = c;
-    curlen++;
-    (*place)[curlen] = 0; /* make sure it stays 0 terminated */
-    *len = curlen;
-}
 /*
  * actual parsing functions
  */
@@ -342,31 +329,31 @@ static int
 parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
-    char *place = NULL;
-    size_t space = 0;
-    size_t len = 0;
+    struct flexbuf fb;
     Symbol *sym;
     AST *ast;
     int startColumn = L->colCounter - 1;
+    char *idstr;
 
+    flexbuf_init(&fb, INCSTR);
     if (prefix) {
-        place = strdup(prefix);
-        space = len = strlen(prefix);
-        addchar(':', &place, &space, &len);
+        flexbuf_addmem(&fb, prefix, strlen(prefix));
+        flexbuf_addchar(&fb, ':');
     }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        addchar(tolower(c), &place, &space, &len);
+        flexbuf_addchar(&fb, tolower(c));
         c = lexgetc(L);
     }
-    addchar('\0', &place, &space, &len);
+    flexbuf_addchar(&fb, '\0');
+    idstr = flexbuf_get(&fb);
     lexungetc(L, c);
 
     /* check for reserved words */
     if (L->in_block == T_DAT) {
-        sym = FindSymbol(&pasmWords, place);
+        sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
-            free(place);
+            free(idstr);
             if (sym->type == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
@@ -382,14 +369,14 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
         }
     }
-    sym = FindSymbol(&reservedWords, place);
+    sym = FindSymbol(&reservedWords, idstr);
     if (sym != NULL) {
         if (sym->type == SYM_BUILTIN || sym->type == SYM_CONSTANT
             || sym->type == SYM_FLOAT_CONSTANT)
         {
             goto is_identifier;
         }
-        free(place);
+        free(idstr);
         if (sym->type == SYM_RESERVED) {
             c = INTVAL(sym);
             /* check for special handling */
@@ -430,8 +417,8 @@ is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     /* make sure identifiers do not conflict with C keywords by giving them
        an upper case first letter */
-    place[0] = toupper(place[0]);
-    ast->d.string = place;
+    idstr[0] = toupper(idstr[0]);
+    ast->d.string = idstr;
     *ast_ptr = ast;
     return T_IDENTIFIER;
 }
@@ -441,20 +428,19 @@ static int
 parseString(LexStream *L, AST **ast_ptr)
 {
     int c;
-    char *place = NULL;
-    size_t space = 0;
-    size_t len = 0;
+    struct flexbuf fb;
     AST *ast;
 
+    flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (c != '"') {
-        addchar(c, &place, &space, &len);
+        flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
-    addchar('\0', &place, &space, &len);
+    flexbuf_addchar(&fb, '\0');
 
     ast = NewAST(AST_STRING, NULL, NULL);
-    ast->d.string = place;
+    ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
     return T_STRING;
 }
@@ -487,10 +473,10 @@ again:
         } while (c != '\n' && c != T_EOF);
     }
     if (c == '{') {
-        char *anno_string = NULL;
-        size_t anno_string_len = 0;
-        size_t anno_string_size = 16;
+        struct flexbuf anno;
+        int annotate = 0;
 
+        flexbuf_init(&anno, INCSTR);
         commentNest = 1;
         /* check for special comments {++... } which indicate 
            C++ annotations
@@ -499,7 +485,7 @@ again:
         if (c == '+') {
             c = lexgetc(L);
             if (c == '+') {
-                anno_string = calloc(anno_string_size, 1);
+                annotate = 1;
                 c = lexgetc(L);
             }
 
@@ -513,15 +499,16 @@ again:
                 --commentNest;
             if (commentNest <= 0 || c == T_EOF)
                 break;
-            if (anno_string) {
-                addchar(c, &anno_string, &anno_string_size, &anno_string_len);
+            if (annotate) {
+                flexbuf_addchar(&anno, c);
             }
         }
         if (c == T_EOF)
             return c;
-        if (anno_string) {
+        if (annotate) {
             AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
-            ast->d.string = anno_string;
+            flexbuf_addchar(&anno, '\0');
+            ast->d.string = flexbuf_get(&anno);
             *ast_ptr = ast;
             return T_ANNOTATION;
         }
