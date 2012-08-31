@@ -8,7 +8,7 @@ endmsg=$ok
 for i in test*.spin
 do
   j=`basename $i .spin`
-  $PROG $i
+  $PROG --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
   then
       rm -f $j.h $j.cpp

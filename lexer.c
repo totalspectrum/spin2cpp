@@ -15,7 +15,7 @@
 #include "flexbuf.h"
 
 /* flag: if set, run the  preprocessor */
-int gl_preprocess = 0;
+int gl_preprocess = 1;
 
 static inline int
 safe_isalpha(unsigned int x) {
