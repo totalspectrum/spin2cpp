@@ -12,4 +12,4 @@ time.elf: time.spin F32.spin Float32Full.spin FloatMath.spin FloatString.spin Fu
 
 
 clean:
-	rm -f *.cpp *.h *.elf
+	rm -f *.cpp *.c *.h *.elf

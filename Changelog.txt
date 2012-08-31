@@ -1,3 +1,10 @@
+Verison 0.97
+
+- Added a simple preprocessor similar to the one in bstc
+- A comment giving the command line is output at the start of files
+- Somewhat improved support for Catalina
+- Some minor bugs fixes
+
 Version 0.96 New in this version:
 
 - preliminary support for output of C code instead of C++
