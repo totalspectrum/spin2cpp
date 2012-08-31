@@ -11,7 +11,7 @@ YACC = bison
 RM = rm -f
 
 PROGS = testlex spin2cpp
-LEXOBJS = lexer.o symbol.o ast.o expr.o flexbuf.o
+LEXOBJS = lexer.o symbol.o ast.o expr.o flexbuf.o preprocess.o
 OBJS = $(LEXOBJS) spin.tab.o functions.o pasm.o outcpp.o outdat.o
 
 all: $(PROGS)

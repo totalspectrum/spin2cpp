@@ -22,6 +22,18 @@ struct preprocess {
     struct predef *defs;
     int ifdepth;
     int skipdepth;
+
+    /* comment handling code */
+    const char *linecomment;
+    const char *startcomment;
+    const char *endcomment;
+
+    int incomment;
+
 };
+
+void pp_init(struct preprocess *pp, FILE *f);
+void pp_setcomments(struct preprocess *pp, const char *s, const char *e);
+char *pp_run(struct preprocess *pp);
 
 #endif

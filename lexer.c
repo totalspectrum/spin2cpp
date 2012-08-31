@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // is significant
 //
-// Copyright (c) 2011 Total Spectrum Software Inc.
+// Copyright (c) 2011,2012 Total Spectrum Software Inc.
 //
 #include <string.h>
 #include <ctype.h>
@@ -11,7 +11,11 @@
 #include <stdint.h>
 #include <math.h>
 #include "spinc.h"
+#include "preprocess.h"
 #include "flexbuf.h"
+
+/* flag: if set, run the  preprocessor */
+int gl_preprocess = 0;
 
 static inline int
 safe_isalpha(unsigned int x) {
@@ -123,22 +127,32 @@ again:
 void fileToLex(LexStream *L, FILE *f, const char *name)
 {
     int c1, c2;
+    char *str;
+    struct preprocess pp;
 
-    memset(L, 0, sizeof(*L));
-    L->ptr = (void *)f;
-    L->arg = NULL;
-    L->getcf = filegetc;
-    L->lineCounter = 1;
+    if (gl_preprocess) {
+        /* run the preprocessor to convert to a string */
+        pp_init(&pp, f);
+        pp_setcomments(&pp, "{", "}");
+        str = pp_run(&pp);
+        strToLex(L, str);
+    } else {
+        memset(L, 0, sizeof(*L));
+        L->ptr = (void *)f;
+        L->arg = NULL;
+        L->getcf = filegetc;
+        L->lineCounter = 1;
+        /* check for Unicode */
+        c1 = fgetc(f);
+        c2 = fgetc(f);
+        if (c1 == 0xff && c2 == 0xfe) {
+            L->getcf = filegetwc;
+        } else {
+            rewind(f);
+        }
+    }
     L->fileName = name;
 
-    /* check for Unicode */
-    c1 = fgetc(f);
-    c2 = fgetc(f);
-    if (c1 == 0xff && c2 == 0xfe) {
-        L->getcf = filegetwc;
-    } else {
-        rewind(f);
-    }
 }
 
 #define TAB_STOP 8

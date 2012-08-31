@@ -338,6 +338,7 @@ Usage(void)
     fprintf(stderr, "  --elf:     create executable ELF file\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
+    fprintf(stderr, "  --preproc: run preprocessor on the .spin file\n"); 
     exit(2);
 }
 
@@ -417,6 +418,9 @@ main(int argc, char **argv)
             outputMain = 1;
             argv++; --argc;
             appendCompiler();
+        } else if (!strncmp(argv[0], "--preproc", 5)) {
+            gl_preprocess = 1;
+            argv++; --argc;
         } else if (compile) {
             /* pass along arguments */
             if (!strncmp(argv[0], "-O", 2)

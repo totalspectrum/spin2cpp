@@ -106,6 +106,11 @@ Spin2cpp accepts the following options:
   Automatically add a C++ main() function that will invoke the default
   Spin method. Use this on top level objects only. 
 
+--preproc
+  Run a very simple pre-processor on the Spin code before parsing it.
+  The pre-processor understands only #define (of simple macros, no
+  parameters), #ifdef, #ifndef, #else, #endif, and #error.
+
 
 LIMITATIONS
 ===========

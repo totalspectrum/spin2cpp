@@ -29,7 +29,7 @@ char *flexbuf_addchar(struct flexbuf *fb, int c);
 char *flexbuf_addmem(struct flexbuf *fb, const char *buf, size_t N);
 
 /* add a string to a buffer */
-char *flexbuf_addbuf(struct flexbuf *fb, const char *str);
+char *flexbuf_addstr(struct flexbuf *fb, const char *str);
 
 /* reset the buffer to empty */
 void flexbuf_clear(struct flexbuf *fb);

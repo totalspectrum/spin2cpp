@@ -180,10 +180,16 @@ static char *parse_getword(ParseState *P)
     }
     word = ptr;
     if (!*ptr) return ptr;
-    state = isalnum(*ptr);
-    ptr++;
-    while (*ptr && isalnum(*ptr) == state)
+    if (isspace(*ptr)) {
+        while (*ptr && isspace(*ptr)) {
+            ptr++;
+        }
+    } else {
+        state = isalnum(*ptr);
         ptr++;
+        while (*ptr && isalnum(*ptr) == state && !isspace(*ptr))
+            ptr++;
+    }
     P->save = ptr;
     P->c = *ptr;
     *ptr = 0;
@@ -257,11 +263,23 @@ expand_macros(struct preprocess *pp, char *data)
         word = parse_getword(&P);
         if (!*word)
             break;
-        if (isalpha(*word)) {
+        if (pp->incomment) {
+            if (strstr(word, pp->endcomment)) {
+                --pp->incomment;
+            } else {
+                if (strstr(word, pp->startcomment)) {
+                    pp->incomment++;
+                }
+            }
+            def = word;
+        } else if (isalpha(*word)) {
             def = pp_getdef(pp, word);
             if (!def)
                 def = word;
         } else {
+            if (pp->startcomment && strstr(word, pp->startcomment)) {
+                pp->incomment++;
+            }
             def = word;
         }
         flexbuf_addstr(&pp->line, def);
@@ -338,16 +356,16 @@ handle_define(struct preprocess *pp, ParseState *P)
 }
 
 /*
- * check for directives
+ * expand a line and process any directives
  */
-int
-check_directives(struct preprocess *pp)
+static int
+do_line(struct preprocess *pp)
 {
     char *data = flexbuf_get(&pp->line);
     char *func;
     int r;
 
-    if (data[0] != '#') {
+    if (data[0] != '#' || pp->incomment) {
         r = expand_macros(pp, data);
     } else {
         ParseState P;
@@ -379,12 +397,44 @@ check_directives(struct preprocess *pp)
  * main function
  */
 char *
+pp_run(struct preprocess *pp)
+{
+    int linelen;
+
+    for(;;) {
+        linelen = pp_nextline(pp);
+        if (linelen <= 0) break;  /* end of file */
+        /* now expand directives and/or macros */
+        linelen = do_line(pp);
+        /* if the whole line should be skipped check_directives will return 0 */
+        if (linelen == 0) {
+            /* add a newline so line number errors will be correct */
+            flexbuf_addchar(&pp->whole, '\n');
+        } else {
+            char *line = flexbuf_get(&pp->line);
+            flexbuf_addstr(&pp->whole, line);
+        }
+    }
+    flexbuf_addchar(&pp->whole, 0);
+    return flexbuf_get(&pp->whole);
+}
+
+/*
+ * set comment characters
+ */
+void
+pp_setcomments(struct preprocess *pp, const char *start, const char *end)
+{
+    pp->startcomment = start;
+    pp->endcomment = end;
+}
+
+char *
 preprocess(const char *filename)
 {
     struct preprocess pp;
     FILE *f;
-    int c;
-    int linelen;
+    char *result;
 
     f = fopen(filename, "rb");
     if (!f) {
@@ -392,24 +442,9 @@ preprocess(const char *filename)
         return NULL;
     }
     pp_init(&pp, f);
-
-    for(;;) {
-        linelen = pp_nextline(&pp);
-        if (linelen <= 0) break;  /* end of file */
-        /* now expand directives and/or macros */
-        linelen = check_directives(&pp);
-        /* if the whole line should be skipped check_directives will return 0 */
-        if (linelen == 0) {
-            /* add a newline so line number errors will be correct */
-            flexbuf_addchar(&pp.whole, '\n');
-        } else {
-            char *line = flexbuf_get(&pp.line);
-            flexbuf_addstr(&pp.whole, line, linelen);
-        }
-    }
+    result = pp_run(&pp);
     fclose(f);
-    flexbuf_addchar(&pp.whole, 0);
-    return flexbuf_get(&pp.whole);
+    return result;
 }
 
 #ifdef TEST
