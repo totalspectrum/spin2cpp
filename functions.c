@@ -395,7 +395,7 @@ PrintFunctionVariables(FILE *f, Function *func)
         offset = 0;
 
         if (func->result_in_parmarray) {
-            fprintf(f, "%*c%s[%d] = 0\n", indent, ' ', func->parmarray, offset);
+            fprintf(f, "%*c%s[%d] = 0;\n", indent, ' ', func->parmarray, offset);
             offset++;
         }
         for (v = func->params; v; v = v->right) {

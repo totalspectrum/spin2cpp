@@ -12,7 +12,7 @@ INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; ret
 int32_t test66::Myinit(int32_t A, int32_t B)
 {
   int32_t _parm__0000[3];
-  _parm__0000[0] = 0
+  _parm__0000[0] = 0;
   _parm__0000[1] = A;
   _parm__0000[2] = B;
   _parm__0000[1] = 1;
