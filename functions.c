@@ -800,17 +800,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
     AST *lhsast = NULL;
-    AST *optdecl = NULL;
 
     if (!ast) return 0;
-
-    /* possibly optimize some kinds of statements (like lookup) */
-    optdecl = Optimize(ast);
-    if (optdecl) {
-        fprintf(f, "%*c{\n", indent, ' ');
-        indent += 2;
-        PrintOptimizeDecl(f, optdecl, indent);
-    }
 
     switch (ast->kind) {
     case AST_RETURN:
@@ -911,16 +902,19 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ";\n");
         break;
     }
-    if (optdecl) {
-        indent -= 2;
-        fprintf(f, "%*c}\n", indent, ' ');
-    }
     return sawreturn;
 }
 
 static int
 PrintFunctionStmts(FILE *f, Function *func)
 {
+    AST *optdecl;
+
+    optdecl = Optimize(func->body);
+    if (optdecl) {
+        PrintOptimizeDecl(f, optdecl, 2);
+        fprintf(f, "\n");
+    }
     return PrintStatementList(f, func->body, 2);
 }
 
