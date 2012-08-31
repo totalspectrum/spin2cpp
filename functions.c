@@ -674,6 +674,125 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 }
 
 /*
+ * print declarations for optimizer
+ */
+static void
+PrintOptimizeDecl(FILE *f, AST *ast, int indent)
+{
+    AST *decl;
+    AST *id;
+    while (ast) {
+        decl = ast->left;
+        ast = ast->right;
+
+        if (decl && decl->kind == AST_TEMPARRAYDECL) {
+            id = decl->left;
+            fprintf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
+            PrintLookupArray(f, decl->right);
+            fprintf(f, "};\n");
+        } else {
+            ERROR(ast, "internal error in expression re-arranging");
+            return;
+        }
+    }
+}
+
+/*
+ * try to optimize lookup on constant arrays
+ * if we can, modifies ast and returns any
+ * declarations needed
+ */
+static AST *
+ModifyLookup(AST *top)
+{
+    int len = 0;
+    AST *ast;
+    AST *expr;
+    AST *ev;
+    AST *table;
+    AST *id;
+    AST *decl;
+
+    ev = top->left;
+    table = top->right;
+    if (table->kind == AST_TEMPARRAYUSE) {
+        /* already modified, skip it */
+        return NULL;
+    }
+    if (ev->kind != AST_LOOKEXPR || table->kind != AST_EXPRLIST) {
+        ERROR(ev, "Internal error in lookup");
+        return NULL;
+    }
+    /* see if the table is constant, and count the number of elements */
+    ast = table;
+    while (ast) {
+        int c, d;
+        expr = ast->left;
+        ast = ast->right;
+
+        if (expr->kind == AST_RANGE) {
+            c = EvalConstExpr(expr->left);
+            d = EvalConstExpr(expr->right);
+            len += abs(d - c) + 1;
+        } else {
+            if (IsConstExpr(expr))
+                len++;
+            else
+                return NULL;
+        }
+    }
+
+    /* if we get here, the array is constant of length "len" */
+    /* create a temporary identifier for it */
+    id = AstTempVariable("look_");
+    /* replace the table in the top expression */
+    top->right = NewAST(AST_TEMPARRAYUSE, id, AstInteger(len));
+
+    /* create a declaration */
+    decl = NewAST(AST_TEMPARRAYDECL, id, table);
+
+    /* put it in a list holder */
+    decl = NewAST(AST_LISTHOLDER, decl, NULL);
+
+    return decl;
+}
+
+/*
+ * hook for optimization
+ */
+static AST *
+Optimize(AST *ast)
+{
+    AST *ldecl;
+    AST *rdecl;
+
+    if (!ast)
+        return NULL;
+
+    switch (ast->kind) {
+    case AST_IDENTIFIER:
+    case AST_INTEGER:
+    case AST_FLOAT:
+    case AST_STRING:
+    case AST_STRINGPTR:
+    case AST_CONSTANT:
+    case AST_HWREG:
+    case AST_RESULT:
+    case AST_CONSTREF:
+        return NULL;
+    case AST_ASSIGN:
+        return Optimize(ast->right);
+    case AST_LOOKUP:
+    case AST_LOOKDOWN:
+        return ModifyLookup(ast);
+    default:
+        ldecl = Optimize(ast->left);
+        rdecl = Optimize(ast->right);
+        return AddToList(ldecl, rdecl);
+    }
+}
+
+/*
  * returns 1 if a return statement was seen
  */
 static int
@@ -681,8 +800,17 @@ PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
     AST *lhsast = NULL;
+    AST *optdecl = NULL;
 
     if (!ast) return 0;
+
+    /* possibly optimize some kinds of statements (like lookup) */
+    optdecl = Optimize(ast);
+    if (optdecl) {
+        fprintf(f, "%*c{\n", indent, ' ');
+        indent += 2;
+        PrintOptimizeDecl(f, optdecl, indent);
+    }
 
     switch (ast->kind) {
     case AST_RETURN:
@@ -782,6 +910,10 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         fprintf(f, ";\n");
         break;
+    }
+    if (optdecl) {
+        indent -= 2;
+        fprintf(f, "%*c}\n", indent, ' ');
     }
     return sawreturn;
 }

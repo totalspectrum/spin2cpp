@@ -104,6 +104,8 @@ enum astkind {
 
     AST_DATADDROF = 68,
     AST_ANNOTATION,
+    AST_TEMPARRAYDECL,
+    AST_TEMPARRAYUSE
 };
 
 struct AST {

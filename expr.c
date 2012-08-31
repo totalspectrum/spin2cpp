@@ -972,7 +972,7 @@ isBooleanOperator(AST *expr)
 /*
  * print a lookup array; returns the number of elements in it
  */
-static int
+int
 PrintLookupArray(FILE *f, AST *array)
 {
     AST *ast;
@@ -981,7 +981,6 @@ PrintLookupArray(FILE *f, AST *array)
     int i;
     int sz = 0;
 
-    fprintf(f, "((int32_t[]){");
     ast = array;
     while (ast) {
         expr = ast->left;
@@ -1003,7 +1002,6 @@ PrintLookupArray(FILE *f, AST *array)
             sz++;
         }
     }
-    fprintf(f, "})");
     return sz;
 }
 
@@ -1020,7 +1018,9 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
 {
     int len;
     AST *idx, *base;
-    if (ev->kind != AST_LOOKEXPR || table->kind != AST_EXPRLIST) {
+    if (ev->kind != AST_LOOKEXPR
+        || (table->kind != AST_EXPRLIST && table->kind != AST_TEMPARRAYUSE))
+    {
         ERROR(ev, "Internal error in lookup");
         return;
     }
@@ -1031,7 +1031,14 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
     fprintf(f, ", ");
     PrintExpr(f, base);
     fprintf(f, ", ");
-    len = PrintLookupArray(f, table);
+    if (table->kind == AST_TEMPARRAYUSE) {
+        PrintExpr(f, table->left);
+        len = EvalConstExpr(table->right);
+    } else {
+        fprintf(f, "((int32_t[]){");
+        len = PrintLookupArray(f, table);
+        fprintf(f, "})");
+    }
     fprintf(f, ", %u)", len);
 }
 

@@ -32,6 +32,7 @@ void PrintExprList(FILE *f, AST *list);
 void PrintType(FILE *f, AST *type);
 void PrintPostfix(FILE *f, AST *val, int toplevel);
 void PrintInteger(FILE *f, int32_t v);
+int  PrintLookupArray(FILE *f, AST *arr);
 
 /* expression utility functions */
 union float_or_int {

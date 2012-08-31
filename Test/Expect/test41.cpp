@@ -14,6 +14,9 @@ INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_
 int32_t test41::Hexdigit(int32_t X)
 {
   int32_t result = 0;
-  return Lookup__((X & 0xf), 0, ((int32_t[]){48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, }), 16);
+  {
+    static int32_t look__0000[] = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, };
+    return Lookup__((X & 0xf), 0, look__0000, 16);
+  }
 }
 
