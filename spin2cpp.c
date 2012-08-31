@@ -344,6 +344,7 @@ Usage(void)
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
+    fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     exit(2);
 }
 
