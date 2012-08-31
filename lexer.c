@@ -129,11 +129,16 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     int c1, c2;
     char *str;
     struct preprocess pp;
+    int i;
 
     if (gl_preprocess) {
         /* run the preprocessor to convert to a string */
         pp_init(&pp, f);
         pp_setcomments(&pp, "{", "}");
+        /* add command line defines */
+        for (i = 0; i < gl_numcdefs; i++) {
+            pp_define(&pp, gl_cdefs[i].name, gl_cdefs[i].val);
+        }
         str = pp_run(&pp);
         strToLex(L, str);
     } else {

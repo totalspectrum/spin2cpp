@@ -17,6 +17,8 @@ Function *curfunc;
 
 AST *ast_type_long, *ast_type_word, *ast_type_byte;
 int gl_ccode = 0;
+struct cmddefs *gl_cdefs = NULL;
+int gl_numcdefs = 0;
 
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {

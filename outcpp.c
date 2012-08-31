@@ -86,6 +86,9 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
     AST *ast, *upper;
 
     /* things we always need */
+    if (gl_header) {
+        fprintf(f, "%s", gl_header);
+    }
     fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
     fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
 
@@ -138,6 +141,9 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
     AST *ast, *upper;
 
     /* things we always need */
+    if (gl_header) {
+        fprintf(f, "%s", gl_header);
+    }
     fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
     fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
 
@@ -311,6 +317,9 @@ static void
 PrintCppFile(FILE *f, ParserState *parse)
 {
     /* things we always need */
+    if (gl_header) {
+        fprintf(f, "%s", gl_header);
+    }
     if (parse->needsStdlib) {
         fprintf(f, "#include <stdlib.h>\n");
     }

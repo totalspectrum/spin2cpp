@@ -34,6 +34,7 @@ struct preprocess {
 
 void pp_init(struct preprocess *pp, FILE *f);
 void pp_setcomments(struct preprocess *pp, const char *s, const char *e);
+void pp_define(struct preprocess *pp, const char *name, const char *val);
 char *pp_run(struct preprocess *pp);
 
 #endif

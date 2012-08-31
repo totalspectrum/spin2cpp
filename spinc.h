@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "0.96"
+#define VERSIONSTR "0.97"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -28,6 +28,8 @@ extern int gl_ccode;  /* if set, we are outputting C code instead of C++*/
 extern int gl_nospin; /* if set, suppress output of Spin methods */
 extern int gl_static; /* if set, objects are static; this is the default in C mode */
 extern int gl_preprocess; /* if set, run the preprocessor on input */
+
+extern char *gl_header; /* comment to prepend to files */
 
 /* types */
 extern AST *ast_type_long;
@@ -153,6 +155,14 @@ struct parserstate {
 /* the current parser state */
 extern ParserState *current;
 extern Function *curfunc;
+
+/* defines given on the command line */
+struct cmddefs {
+    const char *name;
+    const char *val;
+};
+extern struct cmddefs *gl_cdefs;
+extern int gl_numcdefs;
 
 /* printing functions */
 #define PUBLIC 0
