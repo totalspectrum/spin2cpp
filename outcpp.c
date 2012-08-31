@@ -221,8 +221,14 @@ PrintMacros(FILE *f, ParserState *parse)
         // new way -- not as thread friendly, but much faster
         fprintf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
     }
+    fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
+
     fprintf(f, "#else\n");
+
     fprintf(f, "#define INLINE__ static\n");
+    fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");
+    fprintf(f, "#define PostEffect__(X, Y) PostFunc__(&(X), (Y))\n");
+
     if (parse->needsYield) {
         fprintf(f, "#define Yield__()\n");
     }
@@ -237,8 +243,6 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define cogstop(i) _cogstop(i)\n");
     }
     fprintf(f, "#endif\n");
-    fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");
-    fprintf(f, "#define PostEffect__(X, Y) PostFunc__(&(X), (Y))\n");
     fprintf(f, "\n");
     if (parse->needsMinMax) {
         fprintf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
