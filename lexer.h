@@ -52,7 +52,7 @@ void initLexer(void);
 /*
  * function to open a lexer stream from a string
  */
-void strToLex(LexStream *lex, const char *s);
+void strToLex(LexStream *lex, const char *s, const char *name);
 
 /*
  * function to open a lexer stream from a FILE

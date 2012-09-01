@@ -51,13 +51,13 @@ strgetc(LexStream *L)
 }
 
 /* open a stream from a string s */
-void strToLex(LexStream *L, const char *s)
+void strToLex(LexStream *L, const char *s, const char *name)
 {
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
     L->lineCounter = 1;
-    L->fileName = "<string>";
+    L->fileName = name ? name : "<string>";
 }
 
 /* functions for handling FILE streams */
@@ -127,34 +127,19 @@ again:
 void fileToLex(LexStream *L, FILE *f, const char *name)
 {
     int c1, c2;
-    char *str;
-    struct preprocess pp;
-    int i;
 
-    if (gl_preprocess) {
-        /* run the preprocessor to convert to a string */
-        pp_init(&pp, f);
-        pp_setcomments(&pp, "{", "}");
-        /* add command line defines */
-        for (i = 0; i < gl_numcdefs; i++) {
-            pp_define(&pp, gl_cdefs[i].name, gl_cdefs[i].val);
-        }
-        str = pp_run(&pp);
-        strToLex(L, str);
+    memset(L, 0, sizeof(*L));
+    L->ptr = (void *)f;
+    L->arg = NULL;
+    L->getcf = filegetc;
+    L->lineCounter = 1;
+    /* check for Unicode */
+    c1 = fgetc(f);
+    c2 = fgetc(f);
+    if (c1 == 0xff && c2 == 0xfe) {
+        L->getcf = filegetwc;
     } else {
-        memset(L, 0, sizeof(*L));
-        L->ptr = (void *)f;
-        L->arg = NULL;
-        L->getcf = filegetc;
-        L->lineCounter = 1;
-        /* check for Unicode */
-        c1 = fgetc(f);
-        c2 = fgetc(f);
-        if (c1 == 0xff && c2 == 0xfe) {
-            L->getcf = filegetwc;
-        } else {
-            rewind(f);
-        }
+        rewind(f);
     }
     L->fileName = name;
 

@@ -47,9 +47,9 @@
  * returns number of bytes placed in buffer, or -1 on EOF
  */
 static int
-read_single(struct preprocess *pp, char buf[4])
+read_single(FILE *f, char buf[4])
 {
-    int c = fgetc(pp->f);
+    int c = fgetc(f);
     if (c == EOF)
         return -1;
     buf[0] = c;
@@ -62,14 +62,14 @@ read_single(struct preprocess *pp, char buf[4])
  * returns number of bytes placed in buffer, or -1 on EOF
  */
 static int
-read_utf16(struct preprocess *pp, char buf[4])
+read_utf16(FILE *f, char buf[4])
 {
     int c, d;
     int r;
-    c = fgetc(pp->f);
+    c = fgetc(f);
     if (c < 0)
         return -1;
-    d = fgetc(pp->f);
+    d = fgetc(f);
     if (d < 0)
         return -1;
 
@@ -103,23 +103,29 @@ pp_nextline(struct preprocess *pp)
 {
     int r;
     int count = 0;
-    FILE *f = pp->f;
+    FILE *f;
     char buf[4];
+    struct filestate *A;
+
+    A = pp->fil;
+    if (!A)
+        return 0;
+    f = A->f;
 
     flexbuf_clear(&pp->line);
-    if (pp->readfunc == NULL) {
+    if (A->readfunc == NULL) {
         int c0, c1;
         c0 = fgetc(f);
         if (c0 < 0) return 0;
         if (c0 != 0xff) {
-            pp->readfunc = read_single;
+            A->readfunc = read_single;
             flexbuf_addchar(&pp->line, c0);
         } else {
             c1 = fgetc(f);
             if (c1 == 0xfe) {
-                pp->readfunc = read_utf16;
+                A->readfunc = read_utf16;
             } else {
-                pp->readfunc = read_single;
+                A->readfunc = read_single;
                 flexbuf_addchar(&pp->line, c0);
                 ungetc(c1, f);
             }
@@ -130,7 +136,7 @@ pp_nextline(struct preprocess *pp)
         }
     }
     for(;;) {
-        r = (*pp->readfunc)(pp, buf);
+        r = (*A->readfunc)(f, buf);
         if (r <= 0) break;
         count += r;
         flexbuf_addmem(&pp->line, buf, r);
@@ -144,13 +150,50 @@ pp_nextline(struct preprocess *pp)
  * initialize preprocessor
  */
 void
-pp_init(struct preprocess *pp, FILE *f)
+pp_init(struct preprocess *pp)
 {
     memset(pp, 0, sizeof(*pp));
-    pp->f = f;
-    pp->readfunc = NULL;
     flexbuf_init(&pp->line, 128);
     flexbuf_init(&pp->whole, 102400);
+}
+
+/*
+ * push a file into the preprocessor
+ * files will be processed in LIFO order,
+ * so the one on top of the stack is the
+ * "current" one; this makes #include implementation
+ * easier
+ */
+void
+pp_push_file(struct preprocess *pp, FILE *f)
+{
+    struct filestate *A;
+
+    A = calloc(1, sizeof(*A));
+    if (!A) {
+        fprintf(stderr, "Out of memory!\n");
+        return;
+    }
+    A->lineno = 1;
+    A->f = f;
+    A->next = pp->fil;
+    pp->fil = A;
+}
+
+/*
+ * pop the current file state off the stack
+ * closes the file as a side effect
+ */
+void pp_pop_file(struct preprocess *pp)
+{
+    struct filestate *A;
+
+    A = pp->fil;
+    if (A) {
+        pp->fil = A->next;
+        fclose(A->f);
+        free(A);
+    }
 }
 
 /*
@@ -427,25 +470,33 @@ do_line(struct preprocess *pp)
 /*
  * main function
  */
-char *
+void
 pp_run(struct preprocess *pp)
 {
     int linelen;
 
-    for(;;) {
-        linelen = pp_nextline(pp);
-        if (linelen <= 0) break;  /* end of file */
-        /* now expand directives and/or macros */
-        linelen = do_line(pp);
-        /* if the whole line should be skipped check_directives will return 0 */
-        if (linelen == 0) {
-            /* add a newline so line number errors will be correct */
-            flexbuf_addchar(&pp->whole, '\n');
-        } else {
-            char *line = flexbuf_get(&pp->line);
-            flexbuf_addstr(&pp->whole, line);
+    while (pp->fil) {
+        for(;;) {
+            linelen = pp_nextline(pp);
+            if (linelen <= 0) break;  /* end of file */
+            /* now expand directives and/or macros */
+            linelen = do_line(pp);
+            /* if the whole line should be skipped check_directives will return 0 */
+            if (linelen == 0) {
+                /* add a newline so line number errors will be correct */
+                flexbuf_addchar(&pp->whole, '\n');
+            } else {
+                char *line = flexbuf_get(&pp->line);
+                flexbuf_addstr(&pp->whole, line);
+            }
         }
+        pp_pop_file(pp);
     }
+}
+
+char *
+pp_finish(struct preprocess *pp)
+{
     flexbuf_addchar(&pp->whole, 0);
     return flexbuf_get(&pp->whole);
 }
@@ -460,6 +511,7 @@ pp_setcomments(struct preprocess *pp, const char *start, const char *end)
     pp->endcomment = end;
 }
 
+#ifdef TEST
 char *
 preprocess(const char *filename)
 {
@@ -472,13 +524,14 @@ preprocess(const char *filename)
         perror(filename);
         return NULL;
     }
-    pp_init(&pp, f);
-    result = pp_run(&pp);
+    pp_init(&pp);
+    pp_push_file(&pp, f);
+    pp_run(&pp);
+    result = pp_finish(&pp);
     fclose(f);
     return result;
 }
 
-#ifdef TEST
 int
 main(int argc, char **argv)
 {

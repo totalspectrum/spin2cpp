@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <time.h>
 #include "spinc.h"
-#include "flexbuf.h"
+#include "preprocess.h"
 
 //#define DEBUG_YACC
 
@@ -14,14 +14,14 @@ extern int yydebug;
 
 ParserState *current;
 ParserState *allparse;
-struct cmddefs *gl_cdefs;
-int gl_numcdefs = 0;
 
 int gl_errors;
 int gl_ccode;
 int gl_nospin;
 int gl_static;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
+
+struct preprocess gl_pp;
 
 int
 yylex(YYSTYPE *lvalp)
@@ -226,6 +226,7 @@ parseFile(const char *name)
     FILE *f = NULL;
     ParserState *P, *save, *Q, *LastQ;
     char *fname = NULL;
+    char *parseString = NULL;
 
     fname = malloc(strlen(name) + 8);
     f = fopen(name, "r");
@@ -264,9 +265,18 @@ parseFile(const char *name)
         allparse = P;
     current = P;
 
-    fileToLex(&current->L, f, name);
-    yyparse();
-    fclose(f);
+    if (gl_preprocess) {
+        pp_push_file(&gl_pp, f);
+        pp_run(&gl_pp);
+        parseString = pp_finish(&gl_pp);
+        strToLex(&current->L, parseString, name);
+        yyparse();
+        free(parseString);
+    } else {
+        fileToLex(&current->L, f, name);
+        yyparse();
+        fclose(f);
+    }
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);
@@ -329,6 +339,8 @@ init()
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
 
+    pp_init(&gl_pp);
+    pp_setcomments(&gl_pp, "{", "}");
     initLexer();
 }
 
@@ -387,10 +399,11 @@ main(int argc, char **argv)
     int outputElf = 0;
     int compile = 0;
     ParserState *P;
-    int r = 0;
+    int retval = 0;
     const char *cext = ".cpp";
     struct flexbuf argbuf;
     time_t timep;
+    int i;
 
     init();
 
@@ -402,16 +415,13 @@ main(int argc, char **argv)
     time(&timep);
     flexbuf_addstr(&argbuf, asctime(localtime(&timep)));
     flexbuf_addstr(&argbuf, "// ");
-    for (r = 0; r < argc; r++) {
-        flexbuf_addstr(&argbuf, argv[r]);
+    for (i = 0; i < argc; i++) {
+        flexbuf_addstr(&argbuf, argv[i]);
         flexbuf_addchar(&argbuf, ' ');
     }
     flexbuf_addstr(&argbuf, "\n//\n\n");
     flexbuf_addchar(&argbuf, 0);
     gl_header = flexbuf_get(&argbuf);
-
-    /* there will be at most argc command line definitions */
-    gl_cdefs = calloc(sizeof(struct cmddefs), argc);
 
     allparse = NULL;
 #ifdef DEBUG_YACC
@@ -454,6 +464,7 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "-D", 2)) {
             char *opt = argv[0];
+            char *name;
             argv++; --argc;
             if (opt[2] == 0) {
                 if (argv[0] == NULL) {
@@ -471,15 +482,15 @@ main(int argc, char **argv)
                 appendToCmd(opt);
             }
             opt = strdup(opt);
-            gl_cdefs[gl_numcdefs].name = opt;
-            while (*opt && *opt != '=') opt++;
+            name = opt;
+            while (*opt && *opt != '=')
+                opt++;
             if (*opt) {
                 *opt++ = 0;
-                gl_cdefs[gl_numcdefs].val = opt;
             } else {
-                gl_cdefs[gl_numcdefs].val = "1";
+                opt = "1";
             }
-            gl_numcdefs++;
+            pp_define(&gl_pp, name, opt);
         } else if (compile) {
             /* pass along arguments */
             if (!strncmp(argv[0], "-O", 2)
@@ -532,8 +543,8 @@ main(int argc, char **argv)
                 }
             }
             if (compile && gl_errors == 0) {
-                r = system(cmdline);
-                if (r < 0) {
+                retval = system(cmdline);
+                if (retval < 0) {
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
                     exit(1);
                 }
@@ -549,5 +560,5 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    return r;
+    return retval;
 }

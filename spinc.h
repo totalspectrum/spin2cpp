@@ -161,8 +161,6 @@ struct cmddefs {
     const char *name;
     const char *val;
 };
-extern struct cmddefs *gl_cdefs;
-extern int gl_numcdefs;
 
 /* printing functions */
 #define PUBLIC 0

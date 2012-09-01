@@ -14,11 +14,17 @@ struct predef {
 #define MODE_UTF8    1
 #define MODE_UTF16   2
 
-struct preprocess {
+struct filestate {
+    struct filestate *next;
     FILE *f;
+    int lineno;
+    int (*readfunc)(FILE *f, char *buf);
+};
+
+struct preprocess {
+    struct filestate *fil;
     struct flexbuf line;
     struct flexbuf whole;
-    int (*readfunc)(struct preprocess *p, char *buf);
     struct predef *defs;
     int ifdepth;
     int skipdepth;
@@ -32,9 +38,11 @@ struct preprocess {
 
 };
 
-void pp_init(struct preprocess *pp, FILE *f);
+void pp_init(struct preprocess *pp);
+void pp_push_file(struct preprocess *pp, FILE *f);
 void pp_setcomments(struct preprocess *pp, const char *s, const char *e);
 void pp_define(struct preprocess *pp, const char *name, const char *val);
-char *pp_run(struct preprocess *pp);
+void pp_run(struct preprocess *pp);
+char *pp_finish(struct preprocess *pp);
 
 #endif

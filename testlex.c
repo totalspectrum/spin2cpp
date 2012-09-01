@@ -17,8 +17,6 @@ Function *curfunc;
 
 AST *ast_type_long, *ast_type_word, *ast_type_byte;
 int gl_ccode = 0;
-struct cmddefs *gl_cdefs = NULL;
-int gl_numcdefs = 0;
 
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {
@@ -39,7 +37,7 @@ testNumber(const char *str, uint32_t val)
     Token t;
     int c;
     printf("testing number[%s]...", str);
-    strToLex(&L, str);
+    strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
     EXPECTEQ(t, T_NUM);
     c = lexgetc(&L);
@@ -66,7 +64,7 @@ testFloat(const char *str, float fval)
     val = v.i;
 
     printf("testing number[%s]...", str);
-    strToLex(&L, str);
+    strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
     EXPECTEQ(t, T_FLOATNUM);
     c = lexgetc(&L);
@@ -84,7 +82,7 @@ testIdentifier(const char *str, const char *expect)
     AST *ast;
     Token t;
 
-    strToLex(&L, str);
+    strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
     EXPECTEQ(t, T_IDENTIFIER);
     assert(ast != NULL);
@@ -102,7 +100,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     Token t;
 
     printf("testing tokens [%s]...", str); fflush(stdout);
-    strToLex(&L, str);
+    strToLex(&L, str, NULL);
     for (i = 0; i < numtokens; i++) {
         t = getToken(&L, &ast);
         EXPECTEQ(t, tokens[i]);
