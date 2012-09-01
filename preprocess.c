@@ -511,6 +511,33 @@ pp_setcomments(struct preprocess *pp, const char *start, const char *end)
     pp->endcomment = end;
 }
 
+/*
+ * get/restore define state
+ * this may be used to ensure that #defines in sub files are not
+ * seen in the main file
+ */
+void *
+pp_get_define_state(struct preprocess *pp)
+{
+    return (void *)pp->defs;
+}
+
+void
+pp_restore_define_state(struct preprocess *pp, void *vp)
+{
+    struct predef *where = vp;
+    struct predef *x, *old;
+
+    if (!vp) return;
+    x = pp->defs;
+    while (x && x != where) {
+        old = x;
+        x = old->next;
+        free(old);
+    }
+    pp->defs = x;
+}
+
 #ifdef TEST
 char *
 preprocess(const char *filename)

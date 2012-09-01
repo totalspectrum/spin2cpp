@@ -266,9 +266,14 @@ parseFile(const char *name)
     current = P;
 
     if (gl_preprocess) {
+        void *defineState;
+
         pp_push_file(&gl_pp, f);
+        defineState = pp_get_define_state(&gl_pp);
         pp_run(&gl_pp);
         parseString = pp_finish(&gl_pp);
+        pp_restore_define_state(&gl_pp, defineState);
+
         strToLex(&current->L, parseString, name);
         yyparse();
         free(parseString);
