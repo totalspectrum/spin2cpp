@@ -4,6 +4,7 @@
  * string containing UTF-8 characters.
  * The following directives are supported:
  *  #define FOO  - simple macros with no arguments
+ *  #undef
  *  #ifdef FOO / #ifndef FOO
  *  #else
  *  #endif
@@ -38,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include "flexbuf.h"
 #include "preprocess.h"
 
@@ -147,6 +149,21 @@ pp_nextline(struct preprocess *pp)
 }
 
 /*
+ * default error handling functions
+ */
+static void default_errfunc(void *dummy, const char *msg, ...)
+{
+    const char *level = (const char *)dummy;
+    va_list args;
+
+    fprintf(stderr, "%s: ", level);
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+/*
  * initialize preprocessor
  */
 void
@@ -155,6 +172,11 @@ pp_init(struct preprocess *pp)
     memset(pp, 0, sizeof(*pp));
     flexbuf_init(&pp->line, 128);
     flexbuf_init(&pp->whole, 102400);
+
+    pp->errfunc = default_errfunc;
+    pp->warnfunc = default_errfunc;
+    pp->errarg = "ERROR";
+    pp->warnarg = "Warning";
 }
 
 /*
@@ -171,13 +193,27 @@ pp_push_file(struct preprocess *pp, FILE *f)
 
     A = calloc(1, sizeof(*A));
     if (!A) {
-        fprintf(stderr, "Out of memory!\n");
+        (*pp->errfunc)(pp->errarg, "Out of memory!\n");
         return;
     }
     A->lineno = 1;
     A->f = f;
     A->next = pp->fil;
     pp->fil = A;
+}
+
+void
+pp_push_name(struct preprocess *pp, const char *name)
+{
+    FILE *f;
+
+    f = fopen(name, "rb");
+    if (!f) {
+        (*pp->errfunc)(pp->errarg, "Unable to open file %s", name);
+        return;
+    }
+    pp_push_file(pp, f);
+    pp->fil->flags |= FILE_FLAGS_CLOSEFILE;
 }
 
 /*
@@ -191,26 +227,45 @@ void pp_pop_file(struct preprocess *pp)
     A = pp->fil;
     if (A) {
         pp->fil = A->next;
-        fclose(A->f);
+        if (A->flags & FILE_FLAGS_CLOSEFILE)
+            fclose(A->f);
         free(A);
     }
 }
 
 /*
  * add a definition
+ * "flags" indicates things like whether we must free the memory
+ * associated with name and def
  */
-void
-pp_define(struct preprocess *pp, const char *name, const char *str)
+static void
+pp_define_internal(struct preprocess *pp, const char *name, const char *def, int flags)
 {
     struct predef *the;
 
     the = calloc(sizeof(*the), 1);
     the->name = name;
-    the->def = str;
+    the->def = def;
+    the->flags = flags;
     the->next = pp->defs;
     pp->defs = the;
 }
 
+/*
+ * the user visible "pp_define"; used mainly for constant strings and
+ * such, so we do not free those
+ */
+void
+pp_define(struct preprocess *pp, const char *name, const char *str)
+{
+    pp_define_internal(pp, name, str, 0);
+}
+
+/*
+ * retrieive a definition
+ * returns NULL if no definition exists (or if there was an
+ * explicit #undef)
+ */
 const char *
 pp_getdef(struct preprocess *pp, const char *name)
 {
@@ -241,6 +296,25 @@ static void parse_init(ParseState *P, char *s)
     P->c = 0;
 }
 
+#define PARSE_ISSPACE 1
+#define PARSE_IDCHAR  2
+#define PARSE_OTHER   3
+
+static int
+classify_char(int c)
+{
+    if (isspace(c))
+        return PARSE_ISSPACE;
+    if (isalnum(c) || (c == '_'))
+        return PARSE_IDCHAR;
+    return PARSE_OTHER;
+}
+
+/*
+ * fetch the next word
+ * a word is a sequence of identifier characters, spaces, or
+ * other characters
+ */
 static char *parse_getword(ParseState *P)
 {
     char *word, *ptr;
@@ -254,16 +328,11 @@ static char *parse_getword(ParseState *P)
     }
     word = ptr;
     if (!*ptr) return ptr;
-    if (isspace(*ptr)) {
-        while (*ptr && isspace(*ptr)) {
-            ptr++;
-        }
-    } else {
-        state = isalnum(*ptr);
+    state = classify_char(*ptr);
+    ptr++;
+    while (*ptr && classify_char(*ptr) == state)
         ptr++;
-        while (*ptr && isalnum(*ptr) == state && !isspace(*ptr))
-            ptr++;
-    }
+
     P->save = ptr;
     P->c = *ptr;
     *ptr = 0;
@@ -408,11 +477,22 @@ handle_error(struct preprocess *pp, ParseState *P)
         return;
     }
     msg = parse_restofline(P);
-    fprintf(stderr, "#error: %s\n", msg);
+    (*pp->errfunc)(pp->errarg, "#error: %s\n", msg);
 }
 
 static void
-handle_define(struct preprocess *pp, ParseState *P)
+handle_warn(struct preprocess *pp, ParseState *P)
+{
+    char *msg;
+    if (pp->skipdepth > 0) {
+        return;
+    }
+    msg = parse_restofline(P);
+    (*pp->warnfunc)(pp->warnarg, "#warn: %s\n", msg);
+}
+
+static void
+handle_define(struct preprocess *pp, ParseState *P, int isDef)
 {
     char *def;
     char *name;
@@ -422,11 +502,14 @@ handle_define(struct preprocess *pp, ParseState *P)
     name = parse_getwordafterspaces(P);
     name = strdup(name);
 
-    parse_skipspaces(P);
-    def = parse_restofline(P);
-    def = strdup(def);
-    fprintf(stderr, "define [%s] to [%s]\n", name, def);
-    pp_define(pp, name, def);
+    if (isDef) {
+        parse_skipspaces(P);
+        def = parse_restofline(P);
+        def = strdup(def);
+    } else {
+        def = NULL;
+    }
+    pp_define_internal(pp, name, def, PREDEF_FLAG_FREEDEFS);
 }
 
 /*
@@ -456,10 +539,14 @@ do_line(struct preprocess *pp)
             handle_endif(pp, &P);
         } else if (!strcmp(func, "error")) {
             handle_error(pp, &P);
+        } else if (!strcmp(func, "warning")) {
+            handle_warn(pp, &P);
         } else if (!strcmp(func, "define")) {
-            handle_define(pp, &P);
+            handle_define(pp, &P, 1);
+        } else if (!strcmp(func, "undef")) {
+            handle_define(pp, &P, 0);
         } else {
-            fprintf(stderr, "Unknown preprocessor directive `%s'\n", func);
+            (*pp->errfunc)(pp->errarg, "Unknown preprocessor directive `%s'\n", func);
         }
         r = 0;
     }
@@ -533,6 +620,11 @@ pp_restore_define_state(struct preprocess *pp, void *vp)
     while (x && x != where) {
         old = x;
         x = old->next;
+        if (old->flags & PREDEF_FLAG_FREEDEFS)
+        {
+            free((void *)old->name);
+            if (old->def) free((void *)old->def);
+        }
         free(old);
     }
     pp->defs = x;
