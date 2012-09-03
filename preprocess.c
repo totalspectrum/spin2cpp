@@ -262,7 +262,14 @@ pp_push_file(struct preprocess *pp, const char *name)
 void pp_pop_file(struct preprocess *pp)
 {
     struct filestate *A;
+    struct ifstate *I;
 
+    while (pp->ifs) {
+        I = pp->ifs;
+        pp->ifs = I->next;
+        doerror(pp, "Unterminated #if starting at line %d", I->linenum);
+        free(I);
+    }
     A = pp->fil;
     if (A) {
         pp->fil = A->next;
@@ -506,6 +513,9 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
         return;
     }
     I->next = pp->ifs;
+    if (pp->fil) {
+        I->linenum = pp->fil->lineno;
+    }
     pp->ifs = I;
     if (!pp_active(pp)) {
         I->skip = 1;
