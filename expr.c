@@ -302,11 +302,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
 
     switch (op) {
     case T_HIGHMULT:
-        fprintf(f, "(( (long long)");
-        PrintExpr(f, left);
-        fprintf(f, " * (long long)");
-        PrintExpr(f, right);
-        fprintf(f, ") >> 32)");
+        PrintMacroExpr(f, "Highmult__", left, right);
         break;
     case T_LE:
         PrintInOp(f, "<=", left, right);
@@ -327,11 +323,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, ">>", left, right);
         break;
     case T_SHR:
-        fprintf(f, "Shr__(");
-        PrintExpr(f, left);
-        fprintf(f, ", ");
-        PrintExpr(f, right);
-        fprintf(f, ")");
+        PrintMacroExpr(f, "Shr__", left, right);
         break;
     case T_REV:
         fprintf(f, "__builtin_propeller_rev(");
@@ -415,9 +407,9 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, opstring, left, right);
         break;
     case T_ENCODE:
-        fprintf(f, "(32 - __builtin_clz(");
+        fprintf(f, "BitEncode__(");
         PrintExpr(f, right);
-        fprintf(f, "))");
+        fprintf(f, ")");
         break;
     case T_DECODE:
         fprintf(f, "(1<<");

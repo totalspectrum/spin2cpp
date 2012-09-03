@@ -593,7 +593,7 @@ expr:
   | expr T_MODULUS expr
     { $$ = AstOperator(T_MODULUS, $1, $3); }
   | expr T_HIGHMULT expr
-    { $$ = AstOperator(T_HIGHMULT, $1, $3); }
+    { $$ = AstOperator(T_HIGHMULT, $1, $3); current->needsHighmult = 1; }
   | expr T_LIMITMIN expr
     { $$ = AstOperator(T_LIMITMIN, $1, $3); current->needsMinMax = 1; }
   | expr T_LIMITMAX expr
@@ -631,7 +631,7 @@ expr:
   | expr T_MODULUS '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_MODULUS, $1, $4); }
   | expr T_HIGHMULT '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_HIGHMULT, $1, $4); }
+    { $$ = AstAssign(T_HIGHMULT, $1, $4); current->needsHighmult = 1;}
   | expr T_LIMITMIN '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_LIMITMIN, $1, $4); current->needsMinMax = 1; }
   | expr T_LIMITMAX '=' expr %prec T_ASSIGN
@@ -681,7 +681,7 @@ expr:
   | T_DECODE expr
     { $$ = AstOperator(T_DECODE, NULL, $2); }
   | T_ENCODE expr
-    { $$ = AstOperator(T_ENCODE, NULL, $2); }
+    { $$ = AstOperator(T_ENCODE, NULL, $2); current->needsBitEncode = 1; }
   | T_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
   | lhs T_INCREMENT

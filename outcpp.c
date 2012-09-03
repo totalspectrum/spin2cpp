@@ -227,6 +227,12 @@ PrintMacros(FILE *f, ParserState *parse)
         // new way -- not as thread friendly, but much faster
         fprintf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
     }
+    if (parse->needsHighmult) {
+        fprintf(f, "#define Highmult__(X, Y) ( ( (X) * (int64_t)(Y) ) >> 32 )\n");
+    }
+    if (parse->needsBitEncode) {
+        fprintf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
+    }
     fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
 
     fprintf(f, "#else\n");
@@ -247,6 +253,30 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
         fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
         fprintf(f, "#define cogstop(i) _cogstop(i)\n");
+        if (parse->needsHighmult) {
+            fprintf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
+            fprintf(f, "  int sign = (a^b)>>31;\n");
+            fprintf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
+            fprintf(f, "  uint32_t ub = b < 0 ? -b : b;\n");
+            fprintf(f, "  uint32_t rhi = 0, rlo = 0;\n");
+            fprintf(f, "  int i;\n");
+            fprintf(f, "  for (i = 0; i < 32; i++) {\n");
+            fprintf(f, "    rhi = (rhi << 1) | (rlo >> 31);\n");
+            fprintf(f, "    rlo = rlo << 1;\n");
+            fprintf(f, "    if (ua >> 31) {rlo += ub; if (rlo < ub) rhi++;}\n");
+            fprintf(f, "    ua = ua<<1;\n");
+            fprintf(f, "  }\n");
+            fprintf(f, "  if (sign) { rhi = -rhi; rhi -= (rlo != 0); }\n");
+            fprintf(f, "  return rhi;\n");
+            fprintf(f, "}\n");
+        }
+        if (parse->needsBitEncode) {
+            fprintf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
+            fprintf(f, "  int r=0;\n");
+            fprintf(f, "  while (a != 0) { a = a>>1; r++; }\n");
+            fprintf(f, "  return r;\n");
+            fprintf(f, "}\n");
+        }
     }
     fprintf(f, "#endif\n");
     fprintf(f, "\n");

@@ -150,6 +150,8 @@ struct parserstate {
     char needsSqrt;
     char needsLookup;
     char needsLookdown;
+    char needsHighmult;
+    char needsBitEncode;
 };
 
 /* the current parser state */
