@@ -447,20 +447,22 @@ static char *parse_getquotedstring(ParseState *P)
 
 
 /*
- * expand macros in a line
+ * expand macros in a buffer
+ * "src" is the source data
+ * "dst" is a destination flexbuf
  */
 static int
-expand_macros(struct preprocess *pp, char *data)
+expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
 {
     ParseState P;
     char *word;
     const char *def;
     int len;
 
-    if (pp->skipdepth > 0)
+    if (!pp_active(pp))
         return 0;
 
-    parse_init(&P, data);
+    parse_init(&P, src);
     for(;;) {
         word = parse_getword(&P);
         if (!*word)
@@ -484,10 +486,10 @@ expand_macros(struct preprocess *pp, char *data)
             }
             def = word;
         }
-        flexbuf_addstr(&pp->line, def);
+        flexbuf_addstr(dst, def);
     }
-    len = flexbuf_curlen(&pp->line);
-    flexbuf_addchar(&pp->line, 0);
+    len = flexbuf_curlen(dst);
+    flexbuf_addchar(dst, 0);
     return len;
 }
 
@@ -496,43 +498,97 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
 {
     char *word;
     const char *def;
+    struct ifstate *I;
 
-    if (pp->skipdepth > 0) {
-        pp->skipdepth++;
+    I = calloc(1, sizeof(*I));
+    if (!I) {
+        doerror(pp, "Out of memory\n");
+        return;
+    }
+    I->next = pp->ifs;
+    pp->ifs = I;
+    if (!pp_active(pp)) {
+        I->skip = 1;
+        I->skiprest = 1;  /* skip all branches, even else */
         return;
     }
     word = parse_getwordafterspaces(P);
     def = pp_getdef(pp, word);
     if (invert ^ (def != NULL)) {
-        /* test passed */
+        I->skip = 0;
+        I->skiprest = 1;
     } else {
-        pp->skipdepth++;
+        I->skip = 1;
     }
 }
 
 static void
 handle_else(struct preprocess *pp, ParseState *P)
 {
-    if (pp->skipdepth > 1) {
+    struct ifstate *I = pp->ifs;
+
+    if (!I) {
+        doerror(pp, "#else without matching #if");
         return;
     }
-    pp->skipdepth = 1 - pp->skipdepth;
+    if (I->sawelse) {
+        doerror(pp, "multiple #else statements in #if");
+        return;
+    }
+    I->sawelse = 1;
+    if (I->skiprest) {
+        /* some branch was already handled */
+        I->skip = 1;
+    } else {
+        I->skip = 0;
+    }
+}
+
+static void
+handle_elseifdef(struct preprocess *pp, ParseState *P, int invert)
+{
+    struct ifstate *I = pp->ifs;
+    char *word;
+    const char *def;
+
+    if (!I) {
+        doerror(pp, "#else without matching #if");
+        return;
+    }
+
+    if (I->skiprest) {
+        /* some branch was already handled */
+        I->skip = 1;
+        return;
+    }
+    word = parse_getwordafterspaces(P);
+    def = pp_getdef(pp, word);
+    if (invert ^ (def != NULL)) {
+        I->skip = 0;
+        I->skiprest = 1;
+    } else {
+        I->skip = 1;
+    }
 }
 
 static void
 handle_endif(struct preprocess *pp, ParseState *P)
 {
-    if (pp->skipdepth > 0) {
-        --pp->skipdepth;
+    struct ifstate *I = pp->ifs;
+
+    if (!I) {
+        doerror(pp, "#endif without matching #if");
         return;
     }
+    pp->ifs = I->next;
+    free(I);
 }
 
 static void
 handle_error(struct preprocess *pp, ParseState *P)
 {
     char *msg;
-    if (pp->skipdepth > 0) {
+    if (!pp_active(pp)) {
         return;
     }
     msg = parse_restofline(P);
@@ -543,7 +599,7 @@ static void
 handle_warn(struct preprocess *pp, ParseState *P)
 {
     char *msg;
-    if (pp->skipdepth > 0) {
+    if (!pp_active(pp)) {
         return;
     }
     msg = parse_restofline(P);
@@ -556,8 +612,9 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
     char *def;
     char *name;
     const char *oldvalue;
+    struct flexbuf newdef;
 
-    if (pp->skipdepth > 0) {
+    if (!pp_active(pp)) {
         return;
     }
     name = parse_getwordafterspaces(P);
@@ -574,7 +631,9 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
     if (isDef) {
         parse_skipspaces(P);
         def = parse_restofline(P);
-        def = strdup(def);
+        flexbuf_init(&newdef, 80);
+        expand_macros(pp, &newdef, def);
+        def = flexbuf_get(&newdef);
     } else {
         def = NULL;
     }
@@ -585,7 +644,7 @@ static void
 handle_include(struct preprocess *pp, ParseState *P)
 {
     char *name;
-    if (pp->skipdepth > 0) {
+    if (!pp_active(pp)) {
         return;
     }
     name = parse_getquotedstring(P);
@@ -607,7 +666,7 @@ do_line(struct preprocess *pp)
     int r;
 
     if (data[0] != '#' || pp->incomment) {
-        r = expand_macros(pp, data);
+        r = expand_macros(pp, &pp->line, data);
     } else {
         ParseState P;
         parse_init(&P, data+1);
@@ -619,6 +678,10 @@ do_line(struct preprocess *pp)
             handle_ifdef(pp, &P, 1);
         } else if (!strcmp(func, "else")) {
             handle_else(pp, &P);
+        } else if (!strcmp(func, "elseifdef")) {
+            handle_elseifdef(pp, &P, 0);
+        } else if (!strcmp(func, "elseifndef")) {
+            handle_elseifdef(pp, &P, 1);
         } else if (!strcmp(func, "endif")) {
             handle_endif(pp, &P);
         } else if (!strcmp(func, "error")) {

@@ -27,14 +27,21 @@ struct filestate {
 };
 #define FILE_FLAGS_CLOSEFILE 0x01
 
+struct ifstate {
+    struct ifstate *next;
+    int skip;      /* if we are currently skipping code */
+    int linenum;   /* the line number it started on */
+    int skiprest;  /* if we have already processed some branch */
+    int sawelse;  /* if we have already processed a #else */
+};
+
 struct preprocess {
     struct filestate *fil;
     struct flexbuf line;
     struct flexbuf whole;
     struct predef *defs;
 
-    int ifdepth;
-    int skipdepth;
+    struct ifstate *ifs;
 
     /* comment handling code */
     const char *linecomment;
@@ -54,6 +61,8 @@ struct preprocess {
 
     int  in_error; /* flag to help the default error handling function */
 };
+
+#define pp_active(pp) (!((pp)->ifs && (pp)->ifs->skip))
 
 /* initialize for reading */
 void pp_init(struct preprocess *pp);
