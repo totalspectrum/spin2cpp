@@ -232,8 +232,8 @@ PrintMacros(FILE *f, ParserState *parse)
     fprintf(f, "#else\n");
 
     fprintf(f, "#define INLINE__ static\n");
-    fprintf(f, "INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }\n");
-    fprintf(f, "#define PostEffect__(X, Y) PostFunc__(&(X), (Y))\n");
+    fprintf(f, "static int32_t tmp__;\n");
+    fprintf(f, "#define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)\n");
 
     if (parse->needsYield) {
         fprintf(f, "#define Yield__()\n");

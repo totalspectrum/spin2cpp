@@ -6,8 +6,8 @@
 #define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })
 #else
 #define INLINE__ static
-INLINE__ int32_t PostFunc__(int32_t *x, int32_t y) { int32_t t = *x; *x = y; return t; }
-#define PostEffect__(X, Y) PostFunc__(&(X), (Y))
+static int32_t tmp__;
+#define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
 int32_t test89::Catchlong(int32_t Longvar)
