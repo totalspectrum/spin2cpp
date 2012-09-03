@@ -861,6 +861,6 @@ modifierlist:
 void
 yyerror(char *msg)
 {
-    fprintf(stderr, "%s: %s at line %d\n", current->L.fileName, msg, current->L.lineCounter);
+    fprintf(stderr, "%s:%d: %s\n", current->L.fileName, current->L.lineCounter, msg);
     gl_errors++;
 }

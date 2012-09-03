@@ -156,7 +156,7 @@ static void default_errfunc(void *dummy, const char *filename, int line, const c
 {
     const char *level = (const char *)dummy;
 
-    fprintf(stderr, "%s: %s line %d: ", level, filename, line);
+    fprintf(stderr, "%s:%d: %s: ", filename, line, level);
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "\n");
 }
@@ -213,8 +213,8 @@ pp_init(struct preprocess *pp)
 
     pp->errfunc = default_errfunc;
     pp->warnfunc = default_errfunc;
-    pp->errarg = "ERROR";
-    pp->warnarg = "Warning";
+    pp->errarg = "error";
+    pp->warnarg = "warning";
 }
 
 /*
@@ -590,7 +590,8 @@ handle_include(struct preprocess *pp, ParseState *P)
     }
     name = parse_getquotedstring(P);
     if (!name) {
-        doerror(pp, "no string found");
+        doerror(pp, "no string found for include");
+        return;
     }
     pp_push_file(pp, strdup(name));
 }
