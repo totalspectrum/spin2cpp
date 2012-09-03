@@ -1,4 +1,14 @@
-Verison 0.97
+Version 0.98
+
+- Cleaned up and improved preprocessor
+- Added #include, #elseifdef, #elseifndef
+- Further improved Catalina support
+- Fixed an issue with returns inside if statements
+- Made error messages more consistent (now they all have the format
+  "file:line: message", like Catalina and gcc)
+
+
+Version 0.97
 
 - Added a simple preprocessor similar to the one in bstc
 - A comment giving the command line is output at the start of files

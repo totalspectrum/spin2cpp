@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "0.97"
+#define VERSIONSTR "0.98"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */

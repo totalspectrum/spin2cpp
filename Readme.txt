@@ -1,8 +1,8 @@
-This is a very simple Spin to C++ converter. There is much of the Spin
-language that it does not handle, and its results will not always be
-correct. 
+This is a very simple Spin to C/C++ converter. There still some of the
+Spin language that it does not handle, but it can deal with most
+objects and constructs that are commonly encountered. 
 
-This version (0.97) includes some more functionality. A simple "Hello,
+This version (0.98) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -108,9 +108,10 @@ Spin2cpp accepts the following options:
 
 --nopre
   Skip the preprocessor. Normally spin2cpp runs a very simple
-  preprocessor on the input.  The pre-processor understands only
-  #define (of simple macros, no parameters), #ifdef, #ifndef, #else,
-  #endif, and #error. Use of the preprocessor should not normally
+  preprocessor on the input.  The pre-processor understands
+  #define (of simple macros, no parameters), #undef, #ifdef, #ifndef,
+  #else, #elseifdef, #elseifndef, #endif, #include, #error,
+  and #warning. Use of the preprocessor should not normally
   cause any issues, but it is still experimental.
 
 -Dname=val
@@ -142,9 +143,10 @@ there are some spin features which are not supported in Catalina (they
 do work in PropGCC because the latter supports some C++ extensions
 even in C mode).
 
-(1) The LOOKUP and LOOKDOWN functions in Spin do not work in Catalina.
-(2) Any code which takes the address of a parameter or of a local
-variable will not work in Catalina.
+(1) The LOOKUP and LOOKDOWN functions in Spin do not work in Catalina
+unless all the arguments are constant.
+
+(2) The reverse operator will not work in Catalina.
 
 I'm still working on fixing these issues.
 
