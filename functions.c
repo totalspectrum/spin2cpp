@@ -847,6 +847,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
         if (ast->right) {
             fprintf(f, "%*c} else {\n", indent, ' ');
             sawreturn = PrintStatementList(f, ast->right, indent+2) && sawreturn;
+        } else {
+            sawreturn = 0;
         }
         fprintf(f, "%*c}\n", indent, ' ');
         break;
