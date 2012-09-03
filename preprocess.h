@@ -20,6 +20,7 @@ struct predef {
 struct filestate {
     struct filestate *next;
     FILE *f;
+    const char *name;
     int lineno;
     int (*readfunc)(FILE *f, char *buf);
     int flags;
@@ -43,20 +44,25 @@ struct preprocess {
     int incomment;
 
     /* error handling code */
-    void (*errfunc)(void *arg, const char *str, ...);
-    void (*warnfunc)(void *arg, const char *str, ...);
+    void (*errfunc)(void *arg, const char *filename, int linenum, const char *msg);
+    void (*warnfunc)(void *arg, const char *filename, int linenum, const char *msg);
     void *errarg;
     void *warnarg;
+
+    int  numwarnings;
+    int  numerrors;
+
+    int  in_error; /* flag to help the default error handling function */
 };
 
 /* initialize for reading */
 void pp_init(struct preprocess *pp);
 
 /* push an opened FILE struct */
-void pp_push_file(struct preprocess *pp, FILE *f);
+void pp_push_file_struct(struct preprocess *pp, FILE *f);
 
 /* push a file by name */
-void pp_push_name(struct preprocess *pp, const char *filename);
+void pp_push_file(struct preprocess *pp, const char *filename);
 
 /* pop a file (finish processing it) */
 void pp_pop_file(struct preprocess *pp);

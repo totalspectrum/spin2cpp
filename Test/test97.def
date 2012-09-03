@@ -1,0 +1,4 @@
+{ some additional defines }
+
+#undef TEST
+#define TEST 9

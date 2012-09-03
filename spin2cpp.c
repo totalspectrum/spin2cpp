@@ -229,7 +229,8 @@ parseFile(const char *name)
     char *parseString = NULL;
 
     fname = malloc(strlen(name) + 8);
-    f = fopen(name, "r");
+    strcpy(fname, name);
+    f = fopen(fname, "r");
     if (!f) {
         sprintf(fname, "%s.spin", name);
         f = fopen(fname, "r");
@@ -268,20 +269,20 @@ parseFile(const char *name)
     if (gl_preprocess) {
         void *defineState;
 
-        pp_push_file(&gl_pp, f);
+        pp_push_file(&gl_pp, fname);
         defineState = pp_get_define_state(&gl_pp);
         pp_run(&gl_pp);
         parseString = pp_finish(&gl_pp);
         pp_restore_define_state(&gl_pp, defineState);
 
-        strToLex(&current->L, parseString, name);
+        strToLex(&current->L, parseString, fname);
         yyparse();
         free(parseString);
     } else {
-        fileToLex(&current->L, f, name);
+        fileToLex(&current->L, f, fname);
         yyparse();
-        fclose(f);
     }
+    fclose(f);
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);

@@ -113,6 +113,7 @@ pp_nextline(struct preprocess *pp)
     if (!A)
         return 0;
     f = A->f;
+    A->lineno++;
 
     flexbuf_clear(&pp->line);
     if (A->readfunc == NULL) {
@@ -151,16 +152,53 @@ pp_nextline(struct preprocess *pp)
 /*
  * default error handling functions
  */
-static void default_errfunc(void *dummy, const char *msg, ...)
+static void default_errfunc(void *dummy, const char *filename, int line, const char *msg)
 {
     const char *level = (const char *)dummy;
-    va_list args;
 
-    fprintf(stderr, "%s: ", level);
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
+    fprintf(stderr, "%s: %s line %d: ", level, filename, line);
+    fprintf(stderr, "%s", msg);
     fprintf(stderr, "\n");
+}
+
+static void
+doerror(struct preprocess *pp, const char *msg, ...)
+{
+    va_list args;
+    char tmpmsg[BUFSIZ];
+    struct filestate *fil;
+
+    va_start(args, msg);
+    vsnprintf(tmpmsg, sizeof(tmpmsg), msg, args);
+    va_end(args);
+
+    pp->numerrors++;
+    fil = pp->fil;
+    if (fil) {
+        (*pp->errfunc)(pp->errarg, pp->fil->name, pp->fil->lineno, tmpmsg);
+    } else {
+        (*pp->errfunc)(pp->errarg, "", 0, tmpmsg);
+    }
+}
+
+static void
+dowarning(struct preprocess *pp, const char *msg, ...)
+{
+    va_list args;
+    char tmpmsg[BUFSIZ];
+    struct filestate *fil;
+
+    pp->numwarnings++;
+    va_start(args, msg);
+    vsnprintf(tmpmsg, sizeof(tmpmsg), msg, args);
+    va_end(args);
+
+    fil = pp->fil;
+    if (fil) {
+        (*pp->warnfunc)(pp->warnarg, pp->fil->name, pp->fil->lineno, tmpmsg);
+    } else {
+        (*pp->warnfunc)(pp->warnarg, "", 0, tmpmsg);
+    }
 }
 
 /*
@@ -187,33 +225,34 @@ pp_init(struct preprocess *pp)
  * easier
  */
 void
-pp_push_file(struct preprocess *pp, FILE *f)
+pp_push_file_struct(struct preprocess *pp, FILE *f)
 {
     struct filestate *A;
 
     A = calloc(1, sizeof(*A));
     if (!A) {
-        (*pp->errfunc)(pp->errarg, "Out of memory!\n");
+        doerror(pp, "Out of memory!\n");
         return;
     }
-    A->lineno = 1;
+    A->lineno = 0;
     A->f = f;
     A->next = pp->fil;
     pp->fil = A;
 }
 
 void
-pp_push_name(struct preprocess *pp, const char *name)
+pp_push_file(struct preprocess *pp, const char *name)
 {
     FILE *f;
 
     f = fopen(name, "rb");
     if (!f) {
-        (*pp->errfunc)(pp->errarg, "Unable to open file %s", name);
+        doerror(pp, "Unable to open file %s", name);
         return;
     }
-    pp_push_file(pp, f);
+    pp_push_file_struct(pp, f);
     pp->fil->flags |= FILE_FLAGS_CLOSEFILE;
+    pp->fil->name = name;
 }
 
 /*
@@ -386,6 +425,26 @@ static char *parse_getwordafterspaces(ParseState *P)
     return parse_getword(P);
 }
 
+static char *parse_getquotedstring(ParseState *P)
+{
+    char *ptr, *start;
+    parse_skipspaces(P);
+    ptr = P->str;
+    if (*ptr != '\"')
+        return NULL;
+    ptr++;
+    start = ptr;
+    while (*ptr && *ptr != '\"') {
+        ptr++;
+    }
+    if (!*ptr)
+        return NULL;
+    P->save = ptr;
+    P->c = *ptr;
+    *ptr = 0;
+    return start;
+}
+
 
 /*
  * expand macros in a line
@@ -477,7 +536,7 @@ handle_error(struct preprocess *pp, ParseState *P)
         return;
     }
     msg = parse_restofline(P);
-    (*pp->errfunc)(pp->errarg, "#error: %s\n", msg);
+    doerror(pp, "#error: %s", msg);
 }
 
 static void
@@ -488,7 +547,7 @@ handle_warn(struct preprocess *pp, ParseState *P)
         return;
     }
     msg = parse_restofline(P);
-    (*pp->warnfunc)(pp->warnarg, "#warn: %s\n", msg);
+    dowarning(pp, "#warn: %s", msg);
 }
 
 static void
@@ -496,10 +555,20 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
 {
     char *def;
     char *name;
+    const char *oldvalue;
+
     if (pp->skipdepth > 0) {
         return;
     }
     name = parse_getwordafterspaces(P);
+    if (classify_char(name[0]) != PARSE_IDCHAR) {
+        doerror(pp, "%s is not a valid identifier for define", name);
+        return;
+    }
+    oldvalue = pp_getdef(pp, name);
+    if (oldvalue && isDef) {
+        dowarning(pp, "redefining `%s'", name);
+    }
     name = strdup(name);
 
     if (isDef) {
@@ -510,6 +579,20 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
         def = NULL;
     }
     pp_define_internal(pp, name, def, PREDEF_FLAG_FREEDEFS);
+}
+
+static void
+handle_include(struct preprocess *pp, ParseState *P)
+{
+    char *name;
+    if (pp->skipdepth > 0) {
+        return;
+    }
+    name = parse_getquotedstring(P);
+    if (!name) {
+        doerror(pp, "no string found");
+    }
+    pp_push_file(pp, strdup(name));
 }
 
 /*
@@ -545,8 +628,10 @@ do_line(struct preprocess *pp)
             handle_define(pp, &P, 1);
         } else if (!strcmp(func, "undef")) {
             handle_define(pp, &P, 0);
+        } else if (!strcmp(func, "include")) {
+            handle_include(pp, &P);
         } else {
-            (*pp->errfunc)(pp->errarg, "Unknown preprocessor directive `%s'\n", func);
+            doerror(pp, "Unknown preprocessor directive `%s'", func);
         }
         r = 0;
     }
