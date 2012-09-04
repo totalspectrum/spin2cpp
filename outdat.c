@@ -20,7 +20,7 @@ OutputDatFile(const char *name, ParserState *P)
     save = current;
     current = P;
 
-    fname = malloc(strlen(name) + 4);
+    fname = malloc(strlen(name) + 8);
     sprintf(fname, "%s.dat", name);
     f = fopen(fname, "w");
     if (!f) {
