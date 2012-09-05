@@ -157,7 +157,7 @@ emptylines:
 
 topelement:
   T_CON conblock
-  { DeclareConstants($2); $$ = current->conblock = AddToList(current->conblock, $2); }
+  { $$ = current->conblock = AddToList(current->conblock, $2); }
   | T_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
   | T_VAR varblock

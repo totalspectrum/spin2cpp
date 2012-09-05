@@ -160,12 +160,12 @@ DeclareConstants(AST *conlist)
 }
 
 static void
-DeclareVariables(void)
+DeclareVariables(ParserState *P)
 {
     AST *upper;
     AST *curtype;
 
-    for (upper = current->varblock; upper; upper = upper->right) {
+    for (upper = P->varblock; upper; upper = upper->right) {
         switch (upper->kind) {
         case AST_BYTELIST:
             curtype = ast_type_byte;
@@ -200,12 +200,7 @@ DeclareObjects(AST *newobjs)
             AddSymbol(&current->objsyms, ast->left->d.string, SYM_OBJECT, ast);
         } else if (obj->kind == AST_ARRAYDECL) {
             AST *id = obj->left;
-            AST *idx = obj->right;
-            if (id->kind != AST_IDENTIFIER || !IsConstExpr(idx)) {
-                ERROR(ast, "bad object definition");
-            } else {
-                AddSymbol(&current->objsyms, id->d.string, SYM_OBJECT, ast);
-            }
+            AddSymbol(&current->objsyms, id->d.string, SYM_OBJECT, ast);
         } else {
             ERROR(ast, "Internal error: bad object definition");
         }
@@ -291,8 +286,10 @@ parseFile(const char *name)
     }
 
     /* now declare all the symbols that weren't already declared */
-    DeclareVariables();
+    DeclareConstants(P->conblock);
+    DeclareVariables(P);
     DeclareLabels(P);
+    DeclareFunctions(P);
 
     if (gl_errors > 0) {
         fprintf(stderr, "%d errors\n", gl_errors);

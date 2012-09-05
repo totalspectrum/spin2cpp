@@ -121,6 +121,7 @@ struct parserstate {
     AST *datblock;
     AST *varblock;
     AST *objblock;
+    AST *funcblock;
 
     /* list of methods */
     Function *functions;
@@ -179,6 +180,9 @@ void DeclareLabels(ParserState *);
 
 /* declare constants */
 void DeclareConstants(AST *conlist);
+
+/* declare all functions */
+void DeclareFunctions(ParserState *);
 
 /* declare a function */
 /* "body" is the list of statements */

@@ -137,11 +137,34 @@ ScanFunctionBody(Function *fdef, AST *body)
 void
 DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation)
 {
+    AST *funcblock;
+    AST *holder;
+
+    holder = NewAST(AST_FUNCHOLDER, funcdef, body);
+    funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
+    funcblock = NewAST(AST_LISTHOLDER, funcblock, NULL);
+    current->funcblock = AddToList(current->funcblock, funcblock);
+}
+
+static void
+doDeclareFunction(AST *funcblock)
+{
+    AST *holder;
+    AST *funcdef;
+    AST *body;
+    AST *annotation;
     Function *fdef;
     AST *vars;
     AST *src;
     const char *resultname;
     int localcount;
+    int is_public;
+
+    is_public = (funcblock->kind == AST_PUBFUNC);
+    holder = funcblock->left;
+    annotation = funcblock->right;
+    funcdef = holder->left;
+    body = holder->right;
 
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
@@ -187,6 +210,18 @@ DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation)
 
     /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
+}
+
+void
+DeclareFunctions(ParserState *P)
+{
+    AST *ast;
+
+    ast = P->funcblock;
+    while (ast) {
+        doDeclareFunction(ast->left);
+        ast = ast->right;
+    }
 }
 
 static void
