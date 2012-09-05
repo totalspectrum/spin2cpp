@@ -218,6 +218,9 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintMacros(FILE *f, ParserState *parse)
 {
+    if (gl_nospin)
+        return;
+
     fprintf(f, "#ifdef __GNUC__\n");
     fprintf(f, "#define INLINE__ static inline\n");
     if (parse->needsYield) {
@@ -359,7 +362,7 @@ PrintCppFile(FILE *f, ParserState *parse)
     PrintMacros(f, parse);
 
     /* declare static functions and variables */
-    if (gl_ccode) {
+    if (gl_ccode && !gl_nospin) {
         PrintPrivateFunctionDecls(f, parse);
         fprintf(f, "static %s thisobj;\n", parse->classname);
     }
