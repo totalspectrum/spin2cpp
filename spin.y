@@ -1,9 +1,8 @@
 /*
  * Spin compiler parser
  * Copyright (c) 2011,2012 Total Spectrum Software Inc.
+ * See the file COPYING for terms of use.
  */
-
-%define api.pure
 
 %{
 #include <stdio.h>
@@ -12,7 +11,7 @@
 
 /* Yacc functions */
     void yyerror(char *);
-    int yylex(YYSTYPE *);
+    int yylex();
 
     extern int gl_errors;
 

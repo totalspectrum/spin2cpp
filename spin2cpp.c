@@ -24,7 +24,7 @@ AST *ast_type_word, *ast_type_long, *ast_type_byte;
 struct preprocess gl_pp;
 
 int
-yylex(YYSTYPE *lvalp)
+yylex()
 {
     int c;
     c = getToken(&current->L, &current->ast);
