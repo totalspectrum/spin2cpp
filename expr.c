@@ -1163,6 +1163,13 @@ PrintExpr(FILE *f, AST *expr)
         PrintExpr(f, expr->left);
         fprintf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
         break;
+    case AST_TRUNC:
+        if (!IsConstExpr(expr->left)) {
+            ERROR(expr, "argument to trunc is not constant");
+            break;
+        }
+        fprintf(f, "%d", EvalConstExpr(expr->left));
+        break;
     default:
         ERROR(expr, "Internal error, bad expression");
         break;
