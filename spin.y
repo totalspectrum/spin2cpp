@@ -420,7 +420,7 @@ conblock:
 
 conline:
   enumlist T_EOLN
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+    { $$ = $1; }
   | T_EOLN
     { $$ = NULL; }
   | error T_EOLN
@@ -429,8 +429,9 @@ conline:
 
 enumlist:
   enumitem
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL);  }
   | enumlist ',' enumitem
-    { $$ = AddToList($1, $3); }
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
 
 enumitem:

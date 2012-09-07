@@ -16,3 +16,9 @@ int32_t test100::Foo(void)
   return 1;
 }
 
+int32_t test100::Foo2(void)
+{
+  int32_t result = 0;
+  return 3;
+}
+
