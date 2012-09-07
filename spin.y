@@ -419,9 +419,7 @@ conblock:
   ;
 
 conline:
-  identifier '=' expr T_EOLN
-    { $$ = NewAST(AST_LISTHOLDER, NewAST(AST_ASSIGN, $1, $3), NULL); }
-  | enumlist T_EOLN
+  enumlist T_EOLN
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | T_EOLN
     { $$ = NULL; }
@@ -436,7 +434,9 @@ enumlist:
   ;
 
 enumitem:
-  identifier
+  identifier '=' expr
+  { $$ = NewAST(AST_ASSIGN, $1, $3); }
+  | identifier
   { $$ = $1; }
   | '#' expr
   { $$ = NewAST(AST_ENUMSET, $2, NULL); }
