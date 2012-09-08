@@ -31,6 +31,8 @@ OutputDatFile(const char *name, ParserState *P)
 
     PrintDataBlock(f, P, BINARY_OUTPUT);
 
+    current = save;
+
     fclose(f);
     free(fname);
 }
