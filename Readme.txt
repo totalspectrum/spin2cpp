@@ -39,9 +39,9 @@ creates the output file "test.elf" instead of "a.out", and uses
 optimization level -Os instead of no optimization. It is strongly
 recommended to pass some form of optimization to gcc.
 
-If you just want to convert a top level option to C++, you may want
-spin2cpp to automatically insert a main() function and a call to the
-first method of the object. To do this, give spin2cpp the --main
+If you just want to convert a top level object to C++ (or C), you may
+want spin2cpp to automatically insert a main() function and a call to
+the first method of the object. To do this, give spin2cpp the --main
 option.
 
 
@@ -103,7 +103,7 @@ Spin2cpp accepts the following options:
   spin2cpp. Useful for tracking object dependencies.
 
 --main
-  Automatically add a C++ main() function that will invoke the default
+  Automatically add a C or C++ main() function that will invoke the default
   Spin method. Use this on top level objects only. 
 
 --nopre
