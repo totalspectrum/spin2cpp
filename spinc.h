@@ -153,6 +153,9 @@ struct parserstate {
     char needsLookdown;
     char needsHighmult;
     char needsBitEncode;
+
+    /* flags for output */
+    char printLabelsVerbatim;
 };
 
 /* the current parser state */
@@ -206,7 +209,7 @@ void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
-void PrintDataBlockForGas(FILE *f, ParserState *P);
+void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 
 void DeclareObjects(AST *newobjs);
@@ -231,5 +234,5 @@ AST *NewObject(AST *identifier, AST *string);
 /* different kinds of output functions */
 void OutputCppCode(const char *name, ParserState *P, int printMain);
 void OutputDatFile(const char *name, ParserState *P);
-
+void OutputGasFile(const char *name, ParserState *P);
 #endif

@@ -36,3 +36,30 @@ OutputDatFile(const char *name, ParserState *P)
     fclose(f);
     free(fname);
 }
+
+void
+OutputGasFile(const char *name, ParserState *P)
+{
+    FILE *f = NULL;
+    char *fname = NULL;
+    ParserState *save;
+
+    save = current;
+    current = P;
+
+    fname = malloc(strlen(name) + 8);
+    sprintf(fname, "%s.S", name);
+    f = fopen(fname, "w");
+    if (!f) {
+        perror(fname);
+        free(fname);
+        exit(1);
+    }
+
+    PrintDataBlockForGas(f, P, 0);
+
+    current = save;
+
+    fclose(f);
+    free(fname);
+}

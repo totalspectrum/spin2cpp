@@ -477,7 +477,7 @@ outputGasDataList(FILE *f, const char *prefix, AST *ast)
     char *comma = "";
     AST *origval = NULL;
 
-    fprintf(f, "\"\t%s\t", prefix);
+    fprintf(f, "\t\t%s\t", prefix);
     while (ast) {
         sub = ast->left;
         if (sub->kind == AST_ARRAYDECL) {
@@ -508,60 +508,132 @@ outputGasDataList(FILE *f, const char *prefix, AST *ast)
         }
         ast = ast->right;
     }
-    fprintf(f, "\\n\"\n");
 }
 
 static void
 outputGasDirective(FILE *f, const char *prefix, AST *expr)
 {
-    fprintf(f, "\"\t%s\t", prefix);
+    fprintf(f, "\t\t%s\t", prefix);
     if (expr)
         PrintExpr(f, expr);
     else
         fprintf(f, "0");
-    fprintf(f, "\\n\"\n");
 }
+
+#define GAS_WZ 1
+#define GAS_WC 2
+#define GAS_NR 4
+#define GAS_WR 8
 
 static void
 outputGasInstruction(FILE *f, AST *ast)
 {
     Instruction *instr;
-    AST *operand;
+    AST *operand[MAX_OPERANDS];
     AST *sub;
+    int immflag = 0;
+    int effects = 0;
+    int i;
+    int numoperands = 0;
 
     instr = (Instruction *)ast->d.ptr;
-    operand = ast->right;
-    fprintf(f, "\"\t");
+    fprintf(f, "\t");
     /* print modifiers */
     sub = ast->right;
     while (sub != NULL) {
         if (sub->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = sub->d.ptr;
-            fprintf(f, "%s ", mod->name);
+            if (!strncmp(mod->name, "if_", 3)) {
+                fprintf(f, "%s ", mod->name);
+            } else if (!strcmp(mod->name, "wz")) {
+                effects |= GAS_WZ;
+            } else if (!strcmp(mod->name, "wc")) {
+                effects |= GAS_WC;
+            } else if (!strcmp(mod->name, "wr")) {
+                effects |= GAS_WR;
+            } else if (!strcmp(mod->name, "nr")) {
+                effects |= GAS_NR;
+            } else if (!strcmp(mod->name, "#")) {
+                immflag = 1;
+            } else {
+                ERROR(sub, "unknown modifier %s", mod->name);
+            }
+        } else if (sub->kind == AST_EXPRLIST) {
+            if (numoperands >= MAX_OPERANDS) {
+                ERROR(ast, "Too many operands to instruction");
+                return;
+            }
+            operand[numoperands++] = sub->left;
+        } else {
+            ERROR(ast, "Internal error parsing instruction");
         }
         sub = sub->right;
     }
     /* print instruction opcode */
-    fprintf(f, "\t%s\t", instr->name);
-    fprintf(f, "\\n\"\n");
+    fprintf(f, "\t%s", instr->name);
+    /* now print the operands */
+    for (i = 0; i < numoperands; i++) {
+        if (i == 0)
+            fprintf(f, "\t");
+        else
+            fprintf(f, ", ");
+        if (immflag) {
+            switch (instr->ops) {
+            case CALL_OPERAND:
+            case SRC_OPERAND_ONLY:
+                if (i == 0) {
+                    fprintf(f, "#");
+                    immflag = 0;
+                }
+                break;
+            default:
+                if (i == 1) {
+                    fprintf(f, "#");
+                    immflag = 0;
+                }
+                break;
+            }
+        }
+        PrintExpr(f, operand[i]);
+    }
+    if (effects) {
+        const char *comma = "";
+        const char *effnames[] = { "wz", "wc", "wr", "nr" };
+        fprintf(f, "\t");
+        for (i = 0; i < 4; i++) {
+            if (effects & (1<<i)) {
+                fprintf(f, "%s%s", comma, effnames[i]);
+                comma = ", ";
+            }
+        }
+    }
 }
 
 static void
 outputGasLabel(FILE *f, AST *id)
 {
-    fprintf(f, "\"%s\\n\"\n", id->d.string);
+    fprintf(f, "%s", id->d.string);
 }
 
 void
-PrintDataBlockForGas(FILE *f, ParserState *P)
+PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
 {
     AST *ast;
-
+    int saveState;
     if (gl_errors != 0)
         return;
-    fprintf(f, "__asm__(\n");
+
+    saveState = P->printLabelsVerbatim;
+    P->printLabelsVerbatim = 1;
+
+    if (inlineAsm)
+        fprintf(f, "__asm__(\n");
 
     for (ast = P->datblock; ast; ast = ast->right) {
+        /* print anything for start of line here */
+        if (inlineAsm) {
+            fprintf(f, "\"");
+        }
         switch (ast->kind) {
         case AST_BYTELIST:
             outputGasDataList(f, ".byte", ast->left);
@@ -594,7 +666,14 @@ PrintDataBlockForGas(FILE *f, ParserState *P)
             ERROR(ast, "unknown element in data block");
             break;
         }
+        /* print end of line stuff here */
+        if (inlineAsm) {
+            fprintf(f, "\\n\"");
+        }
+        fprintf(f, "\n");
     }
 
-    fprintf(f, "\n);\n");
+    if (inlineAsm)
+        fprintf(f, "\n);\n");
+    P->printLabelsVerbatim = saveState;
 }

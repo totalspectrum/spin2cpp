@@ -535,6 +535,8 @@ main(int argc, char **argv)
     if (P) {
         if (outputDat) {
             OutputDatFile(P->basename, P);
+        } else if (gl_gas_dat) {
+            OutputGasFile(P->basename, P);
         } else {
             ParserState *Q;
 

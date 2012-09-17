@@ -369,7 +369,7 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_gas_dat) {
-            PrintDataBlockForGas(f, parse);
+            PrintDataBlockForGas(f, parse, 1);
         } else {
             if (gl_ccode) {
                 fprintf(f, "static uint8_t dat[] = {\n");

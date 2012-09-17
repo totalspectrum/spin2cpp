@@ -953,58 +953,58 @@ HwReg hwreg[] = {
 #define IF_NEVER 0xffc3ffff
 
 InstrModifier modifiers[] = {
-    { "IF_ALWAYS", IF_NEVER | (0xf<<18) },
-    { "IF_NEVER",  IF_NEVER },
+    { "if_always", IF_NEVER | (0xf<<18) },
+    { "if_never",  IF_NEVER },
 
-    { "IF_A",           IF_NEVER | (0x1<<18) },
-    { "IF_NC_AND_NZ",   IF_NEVER | (0x1<<18) },
-    { "IF_NZ_AND_NC",   IF_NEVER | (0x1<<18) },
+    { "if_a",           IF_NEVER | (0x1<<18) },
+    { "if_nc_and_nz",   IF_NEVER | (0x1<<18) },
+    { "if_nz_and_nc",   IF_NEVER | (0x1<<18) },
 
-    { "IF_NC_AND_Z",    IF_NEVER | (0x2<<18) },
-    { "IF_Z_AND_NC",    IF_NEVER | (0x2<<18) },
+    { "if_nc_and_z",    IF_NEVER | (0x2<<18) },
+    { "if_z_and_nc",    IF_NEVER | (0x2<<18) },
 
-    { "IF_AE",     IF_NEVER | (0x3<<18) },
-    { "IF_NC",     IF_NEVER | (0x3<<18) },
+    { "if_ae",     IF_NEVER | (0x3<<18) },
+    { "if_nc",     IF_NEVER | (0x3<<18) },
 
-    { "IF_C_AND_NZ",    IF_NEVER | (0x4<<18) },
-    { "IF_NZ_AND_C",    IF_NEVER | (0x4<<18) },
+    { "if_c_and_nz",    IF_NEVER | (0x4<<18) },
+    { "if_nz_and_c",    IF_NEVER | (0x4<<18) },
 
-    { "IF_NE",     IF_NEVER | (0x5<<18) },
-    { "IF_NZ",     IF_NEVER | (0x5<<18) },
+    { "if_ne",     IF_NEVER | (0x5<<18) },
+    { "if_nz",     IF_NEVER | (0x5<<18) },
 
-    { "IF_C_NE_Z", IF_NEVER | (0x6<<18) },
-    { "IF_Z_NE_C", IF_NEVER | (0x6<<18) },
+    { "if_c_ne_z", IF_NEVER | (0x6<<18) },
+    { "if_z_ne_c", IF_NEVER | (0x6<<18) },
 
-    { "IF_NC_OR_NZ", IF_NEVER | (0x7<<18) },
-    { "IF_NZ_OR_NC", IF_NEVER | (0x7<<18) },
+    { "if_nc_of_nz", IF_NEVER | (0x7<<18) },
+    { "if_nz_of_nc", IF_NEVER | (0x7<<18) },
 
-    { "IF_C_AND_Z", IF_NEVER | (0x8<<18) },
-    { "IF_Z_AND_C", IF_NEVER | (0x8<<18) },
+    { "if_c_and_z", IF_NEVER | (0x8<<18) },
+    { "if_z_and_c", IF_NEVER | (0x8<<18) },
 
-    { "IF_C_EQ_Z", IF_NEVER | (0x9<<18) },
-    { "IF_Z_EQ_C", IF_NEVER | (0x9<<18) },
+    { "if_c_eq_z", IF_NEVER | (0x9<<18) },
+    { "if_z_eq_c", IF_NEVER | (0x9<<18) },
 
-    { "IF_E",      IF_NEVER | (0xa<<18) },
-    { "IF_Z",      IF_NEVER | (0xa<<18) },
+    { "if_e",      IF_NEVER | (0xa<<18) },
+    { "if_z",      IF_NEVER | (0xa<<18) },
 
-    { "IF_NC_OR_Z", IF_NEVER | (0xb<<18) },
-    { "IF_Z_OR_NC", IF_NEVER | (0xb<<18) },
+    { "if_nc_or_z", IF_NEVER | (0xb<<18) },
+    { "if_z_or_nc", IF_NEVER | (0xb<<18) },
 
-    { "IF_B",      IF_NEVER | (0xc<<18) },
-    { "IF_C",      IF_NEVER | (0xc<<18) },
+    { "if_b",      IF_NEVER | (0xc<<18) },
+    { "if_c",      IF_NEVER | (0xc<<18) },
 
-    { "IF_C_OR_NZ", IF_NEVER | (0xd<<18) },
-    { "IF_NZ_OR_C", IF_NEVER | (0xd<<18) },
+    { "if_c_or_nz", IF_NEVER | (0xd<<18) },
+    { "if_nz_or_c", IF_NEVER | (0xd<<18) },
 
-    { "IF_BE",     IF_NEVER | (0xe<<18) },
-    { "IF_C_OR_Z", IF_NEVER | (0xe<<18) },
-    { "IF_Z_OR_C", IF_NEVER | (0xe<<18) },
+    { "if_be",     IF_NEVER | (0xe<<18) },
+    { "if_c_or_z", IF_NEVER | (0xe<<18) },
+    { "if_z_or_c", IF_NEVER | (0xe<<18) },
 
 
-    { "WZ", (1<<25) },
-    { "WC", (1<<24) },
-    { "WR", (1<<23) },
-    { "NR", ~(1<<23) }
+    { "wz", (1<<25) },
+    { "wc", (1<<24) },
+    { "wr", (1<<23) },
+    { "nr", ~(1<<23) }
 
 };
 

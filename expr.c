@@ -150,17 +150,28 @@ PrintLabel(FILE *f, Symbol *sym, int ref)
 {
     Label *lab;
 
-    lab = (Label *)sym->val;
-    fprintf(f, "(%s(", ref ? "" : "*");
-    PrintType(f, lab->type);
-    fprintf(f, " *)&dat[%d])", lab->offset);
+    if (current->printLabelsVerbatim) {
+        fprintf(f, "%s", sym->name);
+    } else {
+        lab = (Label *)sym->val;
+        fprintf(f, "(%s(", ref ? "" : "*");
+        PrintType(f, lab->type);
+        fprintf(f, " *)&dat[%d])", lab->offset);
+    }
 }
 
 /* code to print an integer */
 void
 PrintInteger(FILE *f, int32_t v)
 {
-    if (v == (int32_t)0x80000000)
+    if (current->printLabelsVerbatim) {
+        if (v > -10 && v < 10) {
+            fprintf(f, "%ld", (long)v);
+        } else {
+            fprintf(f, "$%lx", (long)(uint32_t)v);
+        }
+    }
+    else if (v == (int32_t)0x80000000)
         fprintf(f, "(int32_t)0x%lxU", (long)(uint32_t)v);
     else
         fprintf(f, "%ld", (long)v);
@@ -187,8 +198,13 @@ PrintSymbol(FILE *f, Symbol *sym)
         PrintLabel(f, sym, 0);
         break;
     case SYM_CONSTANT:
-        v = EvalConstExpr((AST *)sym->val);
-        PrintInteger(f, v);
+
+        if (current->printLabelsVerbatim) {
+            fprintf(f, "%s", sym->name);
+        } else {
+            v = EvalConstExpr((AST *)sym->val);
+            PrintInteger(f, v);
+        }
         break;
     case SYM_FLOAT_CONSTANT:
         PrintFloat(f, EvalConstExpr((AST*)sym->val));
