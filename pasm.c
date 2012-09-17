@@ -115,7 +115,8 @@ assembleInstruction(FILE *f, AST *ast)
             }
             operand[numoperands++] = ast->left;
         } else if (ast->kind == AST_INSTRMODIFIER) {
-            mask = ast->d.ival;
+            InstrModifier *mod = (InstrModifier *)ast->d.ptr;
+            mask = mod->modifier;
             if (mask & 0x80000000) {
                 val = val & mask;
             } else {
@@ -466,4 +467,134 @@ PrintDataBlock(FILE *f, ParserState *P, int isBinary)
     if (datacount != 0 && !isBinary) {
         fprintf(f, "\n");
     }
+}
+
+static void
+outputGasDataList(FILE *f, const char *prefix, AST *ast)
+{
+    int reps;
+    AST *sub;
+    char *comma = "";
+    AST *origval = NULL;
+
+    fprintf(f, "\"\t%s\t", prefix);
+    while (ast) {
+        sub = ast->left;
+        if (sub->kind == AST_ARRAYDECL) {
+            origval = ast->left->left;
+            reps = EvalPasmExpr(ast->left->right);
+        } else if (sub->kind == AST_STRING) {
+            const char *ptr = sub->d.string;
+            unsigned val;
+            while (*ptr) {
+                val = (*ptr++) & 0xff;
+                if (val >= ' ' && val < 0x7f) {
+                    fprintf(f, "%s'%c'", comma, val);
+                } else {
+                    fprintf(f, "%s%d", comma, val);
+                }
+                comma = ", ";
+            }
+            reps = 0;
+        } else {
+            origval = ast->left;
+            reps = 1;
+        }
+        while (reps > 0) {
+            fprintf(f, "%s", comma);
+            PrintExpr(f, origval);
+            comma = ", ";
+            --reps;
+        }
+        ast = ast->right;
+    }
+    fprintf(f, "\\n\"\n");
+}
+
+static void
+outputGasDirective(FILE *f, const char *prefix, AST *expr)
+{
+    fprintf(f, "\"\t%s\t", prefix);
+    if (expr)
+        PrintExpr(f, expr);
+    else
+        fprintf(f, "0");
+    fprintf(f, "\\n\"\n");
+}
+
+static void
+outputGasInstruction(FILE *f, AST *ast)
+{
+    Instruction *instr;
+    AST *operand;
+    AST *sub;
+
+    instr = (Instruction *)ast->d.ptr;
+    operand = ast->right;
+    fprintf(f, "\"\t");
+    /* print modifiers */
+    sub = ast->right;
+    while (sub != NULL) {
+        if (sub->kind == AST_INSTRMODIFIER) {
+            InstrModifier *mod = sub->d.ptr;
+            fprintf(f, "%s ", mod->name);
+        }
+        sub = sub->right;
+    }
+    /* print instruction opcode */
+    fprintf(f, "\t%s\t", instr->name);
+    fprintf(f, "\\n\"\n");
+}
+
+static void
+outputGasLabel(FILE *f, AST *id)
+{
+    fprintf(f, "\"%s\\n\"\n", id->d.string);
+}
+
+void
+PrintDataBlockForGas(FILE *f, ParserState *P)
+{
+    AST *ast;
+
+    if (gl_errors != 0)
+        return;
+    fprintf(f, "__asm__(\n");
+
+    for (ast = P->datblock; ast; ast = ast->right) {
+        switch (ast->kind) {
+        case AST_BYTELIST:
+            outputGasDataList(f, ".byte", ast->left);
+            break;
+        case AST_WORDLIST:
+            outputGasDataList(f, ".word", ast->left);
+            break;
+        case AST_LONGLIST:
+            outputGasDataList(f, ".long", ast->left);
+            break;
+        case AST_INSTRHOLDER:
+            outputGasInstruction(f, ast->left);
+            break;
+        case AST_IDENTIFIER:
+            outputGasLabel(f, ast);
+            break;
+        case AST_FILE:
+            ERROR(ast, "File directive not supported in GAS output");
+            break;
+        case AST_ORG:
+            outputGasDirective(f, ".org", ast->left);
+            break;
+        case AST_RES:
+            outputGasDirective(f, ".res", ast->left);
+            break;
+        case AST_FIT:
+            outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496));
+            break;
+        default:
+            ERROR(ast, "unknown element in data block");
+            break;
+        }
+    }
+
+    fprintf(f, "\n);\n");
 }

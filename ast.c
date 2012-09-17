@@ -116,8 +116,17 @@ AstIdentifier(const char *name)
 AST *
 AstInstrModifier(int32_t ival)
 {
+    static InstrModifier Imm = {
+        "#", IMMEDIATE_INSTR
+    };
     AST *ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-    ast->d.ival = ival;
+
+    if (ival == Imm.modifier) {
+        ast->d.ptr = (void *)&Imm;
+    } else {
+        ERROR(NULL, "Unknown instruction modifier");
+        return NULL;
+    }
     return ast;
 }
 

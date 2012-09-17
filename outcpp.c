@@ -368,13 +368,17 @@ PrintCppFile(FILE *f, ParserState *parse)
     }
     /* print data block, if applicable */
     if (parse->datblock) {
-        if (gl_ccode) {
-            fprintf(f, "static uint8_t dat[] = {\n");
+        if (gl_gas_dat) {
+            PrintDataBlockForGas(f, parse);
         } else {
-            fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+            if (gl_ccode) {
+                fprintf(f, "static uint8_t dat[] = {\n");
+            } else {
+                fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+            }
+            PrintDataBlock(f, parse, TEXT_OUTPUT);
+            fprintf(f, "};\n");
         }
-        PrintDataBlock(f, parse, TEXT_OUTPUT);
-        fprintf(f, "};\n");
     }
     /* functions */
     PrintFunctionBodies(f, parse);

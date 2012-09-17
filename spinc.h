@@ -28,7 +28,7 @@ extern int gl_ccode;  /* if set, we are outputting C code instead of C++*/
 extern int gl_nospin; /* if set, suppress output of Spin methods */
 extern int gl_static; /* if set, objects are static; this is the default in C mode */
 extern int gl_preprocess; /* if set, run the preprocessor on input */
-
+extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
 extern char *gl_header; /* comment to prepend to files */
 
 /* types */
@@ -206,6 +206,7 @@ void PrintPublicFunctionDecls(FILE *f, ParserState *P);
 void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
+void PrintDataBlockForGas(FILE *f, ParserState *P);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 
 void DeclareObjects(AST *newobjs);

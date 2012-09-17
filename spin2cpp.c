@@ -19,6 +19,7 @@ int gl_errors;
 int gl_ccode;
 int gl_nospin;
 int gl_static;
+int gl_gas_dat;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 struct preprocess gl_pp;
@@ -444,6 +445,9 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5)) {
             outputDat = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--gas", 5)) {
+            gl_gas_dat = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_ccode = 1;

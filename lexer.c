@@ -366,7 +366,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             if (sym->type == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
-                ast->d.ival = (int32_t)(intptr_t)sym->val;
+                ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return T_INSTRMODIFIER;
             }
@@ -1025,7 +1025,7 @@ InitPasm(void)
 
     /* instruction modifiers */
     for (i = 0; i < N_ELEMENTS(modifiers); i++) {
-        AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)(intptr_t)modifiers[i].modifier);
+        AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)&modifiers[i]);
     }
 }
 
