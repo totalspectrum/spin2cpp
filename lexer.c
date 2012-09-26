@@ -755,6 +755,7 @@ extern void memBuiltin(FILE *, Builtin *, AST *);
 extern void memFillBuiltin(FILE *, Builtin *, AST *);
 extern void str1Builtin(FILE *, Builtin *, AST *);
 extern void strcompBuiltin(FILE *, Builtin *, AST *);
+extern void waitBuiltin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "CLKFREQ" },
@@ -762,8 +763,6 @@ Builtin builtinfuncs[] = {
     { "cogstop", 1, defaultBuiltin, "cogstop" },
     { "cogid", 0, defaultBuiltin, "cogid" },
 
-    /* FIXME: we will need to distinguish spin methods from
-       pasm ones eventually! */
     { "coginit", 3, defaultBuiltin, "coginit" },
 
     { "locknew", 0, defaultBuiltin, "locknew" },
@@ -773,6 +772,10 @@ Builtin builtinfuncs[] = {
     { "strsize", 1, str1Builtin, "strlen" },
     { "strcomp", 1, strcompBuiltin, "strcmp" },
     { "waitcnt", 1, defaultBuiltin, "waitcnt" },
+
+    { "waitpne", 3, waitBuiltin, "waitpne" },
+    { "waitpeq", 3, waitBuiltin, "waitpeq" },
+
     { "reboot", 0, defaultBuiltin, "abort" },
 
     { "longfill", 4, memFillBuiltin, "memset" },

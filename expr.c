@@ -1689,6 +1689,30 @@ strcompBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, "))");
 }
 
+/* code for waitpne and waitpeq */
+/* the last parameter must be a constant 0 */
+
+void
+waitBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    AST *arg1, *arg2, *arg3;
+    if (AstListLen(params) != b->numparameters) {
+        ERROR(params, "wrong number of parameters to %s", b->name);
+    }
+    arg1 = params->left; params = params->right;
+    arg2 = params->left; params = params->right;
+    arg3 = params->left; params = params->right;
+
+    if (EvalConstExpr(arg3) != 0) {
+        ERROR(arg3, "Final parameter to %s must be 0", b->name);
+    }
+    fprintf(f, "%s(", b->cname);
+    PrintExpr(f, arg1);
+    fprintf(f, ", ");
+    PrintExpr(f, arg2);
+    fprintf(f, ")");
+}
+
 /*
  * see if an AST refers to a parameter of this function, and return
  * an index into the list if it is
