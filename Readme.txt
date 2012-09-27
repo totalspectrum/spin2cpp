@@ -72,6 +72,23 @@ catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
 
 This produces Count.binary, which may be downloaded and run as usual.
 
+
+(3) To just convert a .spin file into a .c file:
+
+spin2cpp --ccode F32.spin
+
+This produces .c and .h files which can be compiled together
+with your other C code.
+
+(4) To convert the PASM portion of a .spin file into a GAS .S file:
+
+spin2cpp --dat --gas FullDuplexSerial.spin
+
+This produces a file FullDuplexSerial.S which contains the GAS syntax
+translation of the PASM portion of FullDuplexSerial.spin. Beware that
+--gas support is still experimental, and the output may need some
+manual tweaking to make it correct.
+
 See Demo/Makefile for more examples.
 
 OPTIONS
@@ -91,7 +108,8 @@ Spin2cpp accepts the following options:
  
 --dat
   Output a binary blob of the DAT section only, similar to the
-  bstc -c option
+  bstc -c option; or, if --gas is given, output GAS assembly for
+  the DAT section.
 
 --elf
   Run the compiler and output a linked executable ELF file. Note that
@@ -101,6 +119,14 @@ Spin2cpp accepts the following options:
 --files
   Print a list of the .cpp (or .c) files that were produced by
   spin2cpp. Useful for tracking object dependencies.
+
+--gas
+  Output inline GAS assembly code instead of binary constants. If
+  given with the --dat option, produces a .S file containing the
+  translation of the PASM code in the file. In other cases, causes
+  the DAT section to be compiled into a separate GCC section
+  containing inline GAS code. This option is still experimental and
+  may not always work correctly.
 
 --main
   Automatically add a C or C++ main() function that will invoke the default

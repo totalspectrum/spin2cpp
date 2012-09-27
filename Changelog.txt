@@ -1,3 +1,11 @@
+Version 0.99
+
+- Added preliminary support for translating PASM to GAS (--gas)
+- Added support for waitpne and waitpeq
+- Fixed the trunc operator
+- Fixed some issues with constants declared in other objects
+- Fixed a problem with catching abort of functions with no parameters
+
 Version 0.98
 
 - Cleaned up and improved preprocessor

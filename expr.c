@@ -343,7 +343,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, ">>", left, right);
         break;
     case T_SHR:
-        PrintMacroExpr(f, "Shr__", left, right);
+        if (current->printLabelsVerbatim) {
+            PrintInOp(f, ">>", left, right);
+        } else {
+            PrintMacroExpr(f, "Shr__", left, right);
+        }
         break;
     case T_REV:
         fprintf(f, "__builtin_propeller_rev(");

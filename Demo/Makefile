@@ -1,6 +1,6 @@
 CC = propeller-elf-gcc
 CFLAGS = -O -mfcache
-SPIN2CPP = ../spin2cpp --gas
+SPIN2CPP = ../spin2cpp
 
 default: hello.elf fibo.elf count.elf
 
