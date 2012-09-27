@@ -43,6 +43,7 @@ typedef enum InstrOps {
     DST_OPERAND_ONLY,
     TWO_OPERANDS,
     CALL_OPERAND,
+    JMPRET_OPERANDS,
 } InstrOps;
 
 /* structure describing a PASM instruction */
@@ -139,6 +140,8 @@ struct parserstate {
     char *basename;    /* the file name without ".spin" */
     char *classname;   /* the class name */
 
+    char *datname;     /* the name of the dat section (normally "dat") */
+
     /* flags for emitting macros */
     char needsMinMax;
     char needsRotate;
@@ -156,6 +159,7 @@ struct parserstate {
 
     /* flags for output */
     char printLabelsVerbatim;
+    char fixImmediate;
 };
 
 /* the current parser state */

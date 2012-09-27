@@ -342,7 +342,11 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
-        flexbuf_addchar(&fb, ':');
+        if (gl_gas_dat) {
+            flexbuf_addchar(&fb, '.');
+        } else {
+            flexbuf_addchar(&fb, ':');
+        }
     }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
@@ -858,10 +862,10 @@ instr[] = {
     { "coginit", 0x0c400002, DST_OPERAND_ONLY },
     { "cogstop", 0x0c400003, DST_OPERAND_ONLY },
 
-    { "djnz",   0xe4800000, TWO_OPERANDS },
+    { "djnz",   0xe4800000, JMPRET_OPERANDS },
     { "hubop",  0x0c000000, TWO_OPERANDS },
     { "jmp",    0x5c000000, SRC_OPERAND_ONLY },
-    { "jmpret", 0x5c800000, TWO_OPERANDS },
+    { "jmpret", 0x5c800000, JMPRET_OPERANDS },
 
     { "lockclr",0x0c400007, DST_OPERAND_ONLY },
     { "locknew",0x0cc00004, DST_OPERAND_ONLY },
@@ -916,8 +920,8 @@ instr[] = {
 
     { "test",   0x60000000, TWO_OPERANDS },
     { "testn",  0x64000000, TWO_OPERANDS },
-    { "tjnz",   0xe8000000, TWO_OPERANDS },
-    { "tjz",    0xec000000, TWO_OPERANDS },
+    { "tjnz",   0xe8000000, JMPRET_OPERANDS },
+    { "tjz",    0xec000000, JMPRET_OPERANDS },
 
     { "waitcnt", 0xf8800000, TWO_OPERANDS },
     { "waitpeq", 0xf0000000, TWO_OPERANDS },

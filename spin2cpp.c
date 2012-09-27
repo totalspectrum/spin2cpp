@@ -262,6 +262,16 @@ parseFile(const char *name)
         allparse = P;
     current = P;
 
+    if (gl_gas_dat) {
+        current->datname = malloc(strlen(P->basename) + 40);
+        if (!current->datname) {
+            fprintf(stderr, "Out of memory!\n");
+            exit(2);
+        }
+        sprintf(current->datname, "_load_start_%s_cog", P->basename);
+    } else {
+        current->datname = "dat";
+    }
     if (gl_preprocess) {
         void *defineState;
 
@@ -534,9 +544,11 @@ main(int argc, char **argv)
     P = parseFile(argv[0]);
     if (P) {
         if (outputDat) {
-            OutputDatFile(P->basename, P);
-        } else if (gl_gas_dat) {
-            OutputGasFile(P->basename, P);
+            if (gl_gas_dat) {
+                OutputGasFile(P->basename, P);
+            } else {
+                OutputDatFile(P->basename, P);
+            }
         } else {
             ParserState *Q;
 

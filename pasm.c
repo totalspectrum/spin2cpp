@@ -136,6 +136,7 @@ assembleInstruction(FILE *f, AST *ast)
         expectops = 0;
         break;
     case TWO_OPERANDS:
+    case JMPRET_OPERANDS:
         expectops = 2;
         break;
     default:
@@ -152,6 +153,7 @@ assembleInstruction(FILE *f, AST *ast)
     case NOP_OPERANDS:
         break;
     case TWO_OPERANDS:
+    case JMPRET_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
@@ -535,6 +537,7 @@ outputGasInstruction(FILE *f, AST *ast)
     int effects = 0;
     int i;
     int numoperands = 0;
+    const char *opcode;
 
     instr = (Instruction *)ast->d.ptr;
     fprintf(f, "\t");
@@ -569,8 +572,10 @@ outputGasInstruction(FILE *f, AST *ast)
         }
         sub = sub->right;
     }
+
     /* print instruction opcode */
-    fprintf(f, "\t%s", instr->name);
+    opcode = instr->name;
+    fprintf(f, "\t%s", opcode);
     /* now print the operands */
     for (i = 0; i < numoperands; i++) {
         if (i == 0)
@@ -590,11 +595,16 @@ outputGasInstruction(FILE *f, AST *ast)
                 if (i == 1) {
                     fprintf(f, "#");
                     immflag = 0;
+                    if (instr->ops == TWO_OPERANDS)
+                    {
+                        current->fixImmediate = 1;
+                    }
                 }
                 break;
             }
         }
         PrintExpr(f, operand[i]);
+        current->fixImmediate = 0;
     }
     if (effects) {
         const char *comma = "";
@@ -620,15 +630,20 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
 {
     AST *ast;
     int saveState;
+
     if (gl_errors != 0)
         return;
 
     saveState = P->printLabelsVerbatim;
     P->printLabelsVerbatim = 1;
 
-    if (inlineAsm)
+    if (inlineAsm) {
         fprintf(f, "__asm__(\n");
-
+        fprintf(f, "\"\t\t.section .%s.cog, \\\"ax\\\"\\n\"\n",
+                P->basename);
+        fprintf(f, "\"\t\t.compress off\\n\"\n");
+        fprintf(f, "\"..start\\n\"\n");
+    }
     for (ast = P->datblock; ast; ast = ast->right) {
         /* print anything for start of line here */
         if (inlineAsm) {
@@ -673,7 +688,9 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
         fprintf(f, "\n");
     }
 
-    if (inlineAsm)
+    if (inlineAsm) {
+        fprintf(f, "\"    .compress default\\n\"\n");
         fprintf(f, "\n);\n");
+    }
     P->printLabelsVerbatim = saveState;
 }

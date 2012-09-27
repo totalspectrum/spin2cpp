@@ -151,12 +151,16 @@ PrintLabel(FILE *f, Symbol *sym, int ref)
     Label *lab;
 
     if (current->printLabelsVerbatim) {
-        fprintf(f, "%s", sym->name);
+        if (current->fixImmediate) {
+            fprintf(f, "((%s-..start)/4)", sym->name);
+        } else {
+            fprintf(f, "%s", sym->name);
+        }
     } else {
         lab = (Label *)sym->val;
         fprintf(f, "(%s(", ref ? "" : "*");
         PrintType(f, lab->type);
-        fprintf(f, " *)&dat[%d])", lab->offset);
+        fprintf(f, " *)&%s[%d])", current->datname, lab->offset);
     }
 }
 
@@ -1096,7 +1100,7 @@ PrintExpr(FILE *f, AST *expr)
     case AST_DATADDROF:
         fprintf(f, "(int32_t)((");
         PrintLHS(f, expr->left, 0, 0);
-        fprintf(f, ")+dat)");
+        fprintf(f, ")+%s)", current->datname);
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:

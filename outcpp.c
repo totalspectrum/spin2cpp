@@ -194,7 +194,7 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
         }
     }
     /* data block, if applicable */
-    if (parse->datblock) {
+    if (parse->datblock && !gl_gas_dat) {
         fprintf(f, "  static uint8_t dat[];\n");
     }
     /* now the public members */
@@ -369,6 +369,7 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_gas_dat) {
+            fprintf(f, "extern uint8_t %s[];\n", parse->datname);
             PrintDataBlockForGas(f, parse, 1);
         } else {
             if (gl_ccode) {
