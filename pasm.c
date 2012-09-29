@@ -608,7 +608,7 @@ outputGasInstruction(FILE *f, AST *ast)
     }
     if (effects) {
         const char *comma = "";
-        const char *effnames[] = { "wz", "wc", "wr", "nr" };
+        const char *effnames[] = { "wz", "wc", "nr", "wr" };
         fprintf(f, "\t");
         for (i = 0; i < 4; i++) {
             if (effects & (1<<i)) {
@@ -625,6 +625,58 @@ outputGasLabel(FILE *f, AST *id)
     fprintf(f, "%s", id->d.string);
 }
 
+static void
+startLine(FILE *f, int inlineAsm)
+{
+    if (inlineAsm) {
+        fprintf(f, "\"");
+    }
+}
+
+static void
+endLine(FILE *f, int inlineAsm)
+{
+    if (inlineAsm) {
+        fprintf(f, "\\n\"");
+    }
+    fprintf(f, "\n");
+}
+
+static void
+PrintGasConstantDecl(FILE *f, AST *ast, int inlineAsm)
+{
+    startLine(f, inlineAsm);
+    fprintf(f, "\t\t.equ\t%s, ", ast->d.string);
+    PrintInteger(f, EvalConstExpr(ast));
+    endLine(f, inlineAsm);
+}
+
+void
+PrintConstantsGas(FILE *f, ParserState *P, int inlineAsm)
+{
+    AST *upper, *ast;
+
+    for (upper = P->conblock; upper; upper = upper->right) {
+        ast = upper->left;
+        while (ast) {
+            switch (ast->kind) {
+            case AST_IDENTIFIER:
+                PrintGasConstantDecl(f, ast, inlineAsm);
+                ast = ast->right;
+                break;
+            case AST_ASSIGN:
+                PrintGasConstantDecl(f, ast->left, inlineAsm);
+                ast = NULL;
+                break;
+            default:
+                /* do nothing */
+                ast = ast->right;
+                break;
+            }
+        }
+    }
+}
+
 void
 PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
 {
@@ -633,7 +685,6 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
 
     if (gl_errors != 0)
         return;
-
     saveState = P->printLabelsVerbatim;
     P->printLabelsVerbatim = 1;
 
@@ -641,14 +692,18 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
         fprintf(f, "__asm__(\n");
         fprintf(f, "\"\t\t.section .%s.cog, \\\"ax\\\"\\n\"\n",
                 P->basename);
-        fprintf(f, "\"\t\t.compress off\\n\"\n");
-        fprintf(f, "\"..start\\n\"\n");
     }
+    /* print constant declarations */
+    PrintConstantsGas(f, P, inlineAsm);
+    if (inlineAsm) {
+        fprintf(f, "\"\t\t.compress off\\n\"\n");
+    }
+    startLine(f, inlineAsm);
+    fprintf(f, "..start");
+    endLine(f, inlineAsm);
     for (ast = P->datblock; ast; ast = ast->right) {
         /* print anything for start of line here */
-        if (inlineAsm) {
-            fprintf(f, "\"");
-        }
+        startLine(f, inlineAsm);
         switch (ast->kind) {
         case AST_BYTELIST:
             outputGasDataList(f, ".byte", ast->left);
@@ -682,10 +737,7 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
             break;
         }
         /* print end of line stuff here */
-        if (inlineAsm) {
-            fprintf(f, "\\n\"");
-        }
-        fprintf(f, "\n");
+        endLine(f, inlineAsm);
     }
 
     if (inlineAsm) {
