@@ -1,39 +1,34 @@
 /*
  * Generic and very simple preprocessor
+ * Copyright (c) 2012 Total Spectrum Software Inc.
+ * MIT Licensed, see terms of use at end of file
+ *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
  * string containing UTF-8 characters.
  * The following directives are supported:
  *  #define FOO  - simple macros with no arguments
  *  #undef
  *  #ifdef FOO / #ifndef FOO
- *  #else
+ *  #else / #elseifdef FOO / #elseifndef FOO
  *  #endif
- *  #error
+ *  #error message
+ *  #warn message
+ *  #include "file"
  *
- * Copyright (c) 2012 Total Spectrum Software Inc.
- * +--------------------------------------------------------------------
- * ¦  TERMS OF USE: MIT License
- * +--------------------------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files
- * (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge,
- * publish, distribute, sublicense, and/or sell copies of the Software,
- * and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
+ * Here's an example of reading a file foo.txt in and preprocessing
+ * it in an environment where "VALUE1" is defined to "VALUE" and
+ * "VALUE2" is defined to "0":
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
+ *   struct preprocess pp;
+ *   char *parser_str;
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * +--------------------------------------------------------------------
- * 
+ *   pp_init(&pp);
+ *   pp_define(&pp, "VALUE1", "VALUE");
+ *   pp_define(&pp, "VALUE2", "0");
+ *   pp_push_file(&pp, "foo.txt");
+ *   pp_run(&pp);
+ *   // any additional files to read can be pushed and run here
+ *   parser_str = pp_finish(&pp);
  */
 
 #include <stdio.h>
@@ -803,7 +798,7 @@ preprocess(const char *filename)
         return NULL;
     }
     pp_init(&pp);
-    pp_push_file(&pp, f);
+    pp_push_file_struct(&pp, f);
     pp_run(&pp);
     result = pp_finish(&pp);
     fclose(f);
@@ -829,3 +824,28 @@ main(int argc, char **argv)
     return 0;
 }
 #endif
+
+/*
+ * +--------------------------------------------------------------------
+ * ¦  TERMS OF USE: MIT License
+ * +--------------------------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files
+ * (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * +--------------------------------------------------------------------
+ */
