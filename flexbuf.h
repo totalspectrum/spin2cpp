@@ -4,7 +4,7 @@
  *
  * Written by Eric R. Smith
  * Copyright (c) 2012 Total Spectrum Software Inc.
- * See the file COPYING for terms of use
+ * See terms of use in flexbuf.c
  */
 
 #ifndef FLEXBUF_H_
