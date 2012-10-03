@@ -769,7 +769,6 @@ pp_restore_define_state(struct preprocess *pp, void *vp)
     struct predef *where = (struct predef *)vp;
     struct predef *x, *old;
 
-    if (!vp) return;
     x = pp->defs;
     while (x && x != where) {
         old = x;
