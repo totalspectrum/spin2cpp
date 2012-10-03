@@ -68,7 +68,7 @@ struct preprocess {
 void pp_init(struct preprocess *pp);
 
 /* push an opened FILE struct */
-void pp_push_file_struct(struct preprocess *pp, FILE *f);
+void pp_push_file_struct(struct preprocess *pp, FILE *f, const char *name);
 
 /* push a file by name */
 void pp_push_file(struct preprocess *pp, const char *filename);

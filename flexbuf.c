@@ -33,7 +33,7 @@ char *flexbuf_addchar(struct flexbuf *fb, int c)
 
     if (newlen > fb->space) {
         char *newdata;
-        newdata = realloc(fb->data, fb->space + fb->growsize);
+        newdata = (char *)realloc(fb->data, fb->space + fb->growsize);
         if (!newdata) return newdata;
         fb->space += fb->growsize;
         fb->data = newdata;
@@ -55,7 +55,7 @@ char *flexbuf_addmem(struct flexbuf *fb, const char *buf, size_t N)
         if (newspace < newlen) {
             newspace = newlen + fb->growsize;
         }
-        newdata = realloc(fb->data, newspace);
+        newdata = (char *)realloc(fb->data, newspace);
         if (!newdata) return newdata;
         fb->space = newspace;
         fb->data = newdata;

@@ -208,8 +208,8 @@ pp_init(struct preprocess *pp)
 
     pp->errfunc = default_errfunc;
     pp->warnfunc = default_errfunc;
-    pp->errarg = "error";
-    pp->warnarg = "warning";
+    pp->errarg = (void *)"error";
+    pp->warnarg = (void *)"warning";
 }
 
 /*
@@ -220,11 +220,11 @@ pp_init(struct preprocess *pp)
  * easier
  */
 void
-pp_push_file_struct(struct preprocess *pp, FILE *f)
+pp_push_file_struct(struct preprocess *pp, FILE *f, const char *filename)
 {
     struct filestate *A;
 
-    A = calloc(1, sizeof(*A));
+    A = (struct filestate *)calloc(1, sizeof(*A));
     if (!A) {
         doerror(pp, "Out of memory!\n");
         return;
@@ -232,6 +232,7 @@ pp_push_file_struct(struct preprocess *pp, FILE *f)
     A->lineno = 0;
     A->f = f;
     A->next = pp->fil;
+    A->name = filename;
     pp->fil = A;
 }
 
@@ -245,9 +246,8 @@ pp_push_file(struct preprocess *pp, const char *name)
         doerror(pp, "Unable to open file %s", name);
         return;
     }
-    pp_push_file_struct(pp, f);
+    pp_push_file_struct(pp, f, name);
     pp->fil->flags |= FILE_FLAGS_CLOSEFILE;
-    pp->fil->name = name;
 }
 
 /*
@@ -284,7 +284,7 @@ pp_define_internal(struct preprocess *pp, const char *name, const char *def, int
 {
     struct predef *the;
 
-    the = calloc(sizeof(*the), 1);
+    the = (struct predef *)calloc(sizeof(*the), 1);
     the->name = name;
     the->def = def;
     the->flags = flags;
@@ -502,7 +502,7 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
     const char *def;
     struct ifstate *I;
 
-    I = calloc(1, sizeof(*I));
+    I = (struct ifstate *)calloc(1, sizeof(*I));
     if (!I) {
         doerror(pp, "Out of memory\n");
         return;
@@ -766,7 +766,7 @@ pp_get_define_state(struct preprocess *pp)
 void
 pp_restore_define_state(struct preprocess *pp, void *vp)
 {
-    struct predef *where = vp;
+    struct predef *where = (struct predef *)vp;
     struct predef *x, *old;
 
     if (!vp) return;
