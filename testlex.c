@@ -10,7 +10,8 @@
 #include <stdarg.h>
 #include "spinc.h"
 
-typedef enum yytokentype Token;
+//typedef enum yytokentype Token;
+typedef int Token;
 
 ParserState *current;
 Function *curfunc;

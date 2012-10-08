@@ -3,11 +3,16 @@
 # Copyright (c) 2011 Total Spectrum Software Inc.
 #
 
-CC = gcc
-CFLAGS = -g -Wall -Werror
-#CFLAGS = -O -g -Wall -Werror
-LIBS = -lm
+#
+# WARNING: byacc probably will not work!
+#
+#YACC = byacc
 YACC = bison
+CC = gcc
+#CFLAGS = -g -Wall -Werror
+#CC = clang
+CFLAGS = -O -g -Wall -Werror
+LIBS = -lm
 RM = rm -f
 
 PROGS = testlex spin2cpp

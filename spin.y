@@ -56,6 +56,7 @@ CheckYield(AST *body)
 
 %}
 
+%pure-parser
 %token T_IDENTIFIER
 %token T_NUM
 %token T_STRING
