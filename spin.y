@@ -214,7 +214,7 @@ resultname: ':' identifier
 
 localvars:
  '|' identlist
-  { $$ = $2 }
+  { $$ = $2; }
     ;
 
 funcbody:

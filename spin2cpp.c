@@ -410,7 +410,6 @@ main(int argc, char **argv)
     int outputMain = 0;
     int outputDat = 0;
     int outputFiles = 0;
-    int outputElf = 0;
     int compile = 0;
     ParserState *P;
     int retval = 0;
@@ -468,7 +467,7 @@ main(int argc, char **argv)
             outputFiles = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--elf", 5)) {
-            outputElf = compile = 1;
+            compile = 1;
             outputMain = 1;
             argv++; --argc;
             appendCompiler();
