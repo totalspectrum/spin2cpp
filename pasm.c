@@ -300,6 +300,23 @@ replaceHeres(AST *ast, uint32_t asmpc)
 }
 
 /*
+ * do replaceHeres on each element of a long list
+ */
+void
+replaceHereDataList(AST *ast, uint32_t asmpc, uint32_t inc)
+{
+    AST *sub;
+
+    while (ast) {
+        sub = ast->left;
+        if (sub)
+            replaceHeres(sub, asmpc/4);
+        asmpc += inc;
+        ast = ast->right;
+    }
+}
+
+/*
  * find the length of a file
  */
 static long
@@ -368,16 +385,19 @@ DeclareLabels(ParserState *P)
         switch (ast->kind) {
         case AST_BYTELIST:
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
+            replaceHereDataList(ast->left, asmpc, 1);
             INCPC(dataListLen(ast->left, 1));
             break;
         case AST_WORDLIST:
             ALIGNPC(2);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_word);
+            replaceHereDataList(ast->left, asmpc, 2);
             INCPC(dataListLen(ast->left, 2));
             break;
         case AST_LONGLIST:
             ALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            replaceHereDataList(ast->left, asmpc, 4);
             INCPC(dataListLen(ast->left, 4));
             break;
         case AST_INSTRHOLDER:
