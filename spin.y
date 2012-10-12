@@ -662,7 +662,16 @@ expr:
   | funccall
     { $$ = $1; }
   | '-' expr %prec T_NEGATE
-    { $$ = AstOperator(T_NEGATE, NULL, $2); }
+    {
+        AST *op = $2;
+        /* special case -x where x is a float constant */
+        if (op->kind == AST_FLOAT) {
+            op->d.ival ^= 0x80000000U;
+            $$ = op;
+        } else {
+            $$ = AstOperator(T_NEGATE, NULL, $2);
+        }
+    }
   | '!' expr %prec T_BIT_NOT
     { $$ = AstOperator(T_BIT_NOT, NULL, $2); }
   | '~' expr
