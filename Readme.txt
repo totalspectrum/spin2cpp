@@ -2,7 +2,7 @@ This is a very simple Spin to C/C++ converter. There still some of the
 Spin language that it does not handle, but it can deal with most
 objects and constructs that are commonly encountered. 
 
-This version (0.98) includes some more functionality. A simple "Hello,
+This version (1.00) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -51,7 +51,7 @@ spin2cpp is a command line tool, so the examples below are for a CLI
 and assume that the appropriate C compilers are in your PATH.
 
 (1) To compile the Count.spin demo with propeller-elf-gcc in
-C mode, do:
+C++ mode, do:
 
 spin2cpp --elf -O -o Count.elf Count.spin
 
