@@ -662,13 +662,15 @@ handle_include(struct preprocess *pp, ParseState *P)
 
 /*
  * expand a line and process any directives
+ * returns 0 if the line should be skipped, otherwise returns the length
+ * of the expanded line
  */
 static int
 do_line(struct preprocess *pp)
 {
     char *data = flexbuf_get(&pp->line);
     char *func;
-    int r;
+    int r = 0;
 
     if (data[0] != '#' || pp->incomment) {
         r = expand_macros(pp, &pp->line, data);
@@ -700,9 +702,14 @@ do_line(struct preprocess *pp)
         } else if (!strcmp(func, "include")) {
             handle_include(pp, &P);
         } else {
-            doerror(pp, "Unknown preprocessor directive `%s'", func);
+//            doerror(pp, "Unknown preprocessor directive `%s'", func);
+            // just pass it through for the language processor to deal with
+            if (P.save) {
+                *P.save = P.c;
+                P.save = NULL;
+            }
+            r = expand_macros(pp, &pp->line, data);
         }
-        r = 0;
     }
     free(data);
     return r;
