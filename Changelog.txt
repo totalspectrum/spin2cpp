@@ -1,3 +1,9 @@
+Version 1.00
+
+- Fixed a problem with parsing negative floating point constants
+- Fixed use of $ in PASM data declarations
+- Some fixes to the internal source code
+
 Version 0.99
 
 - Added preliminary support for translating PASM to GAS (--gas)
