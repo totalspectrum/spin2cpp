@@ -1,3 +1,8 @@
+Version 1.01
+
+- Put the spin2cpp version number in the comment header of generated
+  files
+
 Version 1.00
 
 - Fixed a problem with parsing negative floating point constants
