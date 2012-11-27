@@ -368,6 +368,8 @@ Usage(void)
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --elf:     create executable ELF file\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
+    fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
+    fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
