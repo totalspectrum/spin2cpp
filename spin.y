@@ -653,6 +653,14 @@ expr:
     { $$ = AstAssign(T_AND, $1, $4); }
   | expr T_OR '=' expr %prec T_ASSIGN
     { $$ = AstAssign(T_OR, $1, $4); }
+  | expr '<' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('<', $1, $4); }
+  | expr '>' '=' expr %prec T_ASSIGN
+    { $$ = AstAssign('>', $1, $4); }
+  | expr T_LE '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_LE, $1, $4); }
+  | expr T_GE '=' expr %prec T_ASSIGN
+    { $$ = AstAssign(T_GE, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' funccall
