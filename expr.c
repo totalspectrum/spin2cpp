@@ -195,19 +195,17 @@ PrintFloat(FILE *f, int32_t v)
 void
 PrintSymbol(FILE *f, Symbol *sym)
 {
-    int32_t v;
-
     switch (sym->type) {
     case SYM_LABEL:
         PrintLabel(f, sym, 0);
         break;
     case SYM_CONSTANT:
-
-        if (current->printLabelsVerbatim) {
-            fprintf(f, "%s", sym->name);
-        } else {
+        if (IsReservedWord(sym->name)) {
+            int32_t v;
             v = EvalConstExpr((AST *)sym->val);
             PrintInteger(f, v);
+        } else {
+            fprintf(f, "%s", sym->name);
         }
         break;
     case SYM_FLOAT_CONSTANT:

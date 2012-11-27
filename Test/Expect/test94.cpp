@@ -13,6 +13,6 @@ static int32_t tmp__;
 int32_t test94::Foo(void)
 {
   int32_t result = 0;
-  return 101;
+  return Myticks;
 }
 

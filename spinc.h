@@ -232,6 +232,8 @@ void ERROR(AST *, const char *msg, ...);
 extern SymbolTable reservedWords;
 extern void InitPasm(void);
 
+extern int IsReservedWord(const char *str);
+
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);
 

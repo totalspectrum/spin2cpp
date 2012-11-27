@@ -18,7 +18,7 @@ int32_t test32::Fun(int32_t Y)
   int32_t _tmp__0000 = (X + Y);
   if (_tmp__0000 == 10 || _tmp__0000 == 'C') {
     OUTA ^= 0x1;
-  } else if (_tmp__0000 == (4 * 2)) {
+  } else if (_tmp__0000 == (A * 2)) {
     OUTA ^= 0x2;
   } else if (Between__(_tmp__0000, 30, 40)) {
     OUTA ^= 0x4;

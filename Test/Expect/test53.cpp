@@ -13,6 +13,6 @@ static int32_t tmp__;
 int32_t test53::Start(void)
 {
   int32_t result = 0;
-  return 1;
+  return X;
 }
 

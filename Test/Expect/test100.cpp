@@ -13,12 +13,12 @@ static int32_t tmp__;
 int32_t test100::Foo(void)
 {
   int32_t result = 0;
-  return 1;
+  return Something;
 }
 
 int32_t test100::Foo2(void)
 {
   int32_t result = 0;
-  return 3;
+  return C;
 }
 

@@ -1,5 +1,7 @@
 Version 1.01
 
+- Output symbolic names for constants instead of the constant value itself
+- Added missing =>= and =<= operators
 - Put the spin2cpp version number in the comment header of generated
   files
 

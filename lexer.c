@@ -838,6 +838,12 @@ initLexer(void)
     InitPasm();
 }
 
+int
+IsReservedWord(const char *name)
+{
+    return FindSymbol(&reservedWords, name) != 0;
+}
+
 Instruction
 instr[] = {
     { "abs",    0xa8800000, TWO_OPERANDS },
