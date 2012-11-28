@@ -1719,6 +1719,16 @@ waitBuiltin(FILE *f, Builtin *b, AST *params)
     fprintf(f, ")");
 }
 
+/* code to do reboot() -> clkset(0x80, 0) */
+void
+rebootBuiltin(FILE *f, Builtin *b, AST *params)
+{
+    if (AstListLen(params) != b->numparameters) {
+        ERROR(params, "wrong number of parameters to %s", b->name);
+    }
+    fprintf(f, "clkset(0x80, 0)");
+}
+
 /*
  * see if an AST refers to a parameter of this function, and return
  * an index into the list if it is

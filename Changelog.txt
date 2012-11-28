@@ -1,3 +1,7 @@
+Version 1.02
+
+- Fixed reboot command to really reboot (not just abort)
+
 Version 1.01
 
 - Output symbolic names for constants instead of the constant value itself

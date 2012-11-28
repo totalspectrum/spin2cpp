@@ -760,6 +760,7 @@ extern void memFillBuiltin(FILE *, Builtin *, AST *);
 extern void str1Builtin(FILE *, Builtin *, AST *);
 extern void strcompBuiltin(FILE *, Builtin *, AST *);
 extern void waitBuiltin(FILE *, Builtin *, AST *);
+extern void rebootBuiltin(FILE *, Builtin *, AST *);
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "CLKFREQ" },
@@ -780,7 +781,7 @@ Builtin builtinfuncs[] = {
     { "waitpne", 3, waitBuiltin, "waitpne" },
     { "waitpeq", 3, waitBuiltin, "waitpeq" },
 
-    { "reboot", 0, defaultBuiltin, "abort" },
+    { "reboot", 0, rebootBuiltin, "reboot" },
 
     { "longfill", 4, memFillBuiltin, "memset" },
     { "longmove", 4, memBuiltin, "memmove" },

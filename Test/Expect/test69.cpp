@@ -14,7 +14,7 @@ int32_t test69::Demo(void)
 {
   int32_t result = 0;
   if (!(((INA >> 0) & 0x1))) {
-    abort();
+    clkset(0x80, 0);
   } else {
     if (!(((INA >> 1) & 0x1))) {
       OUTA &= ~(7<<0);
