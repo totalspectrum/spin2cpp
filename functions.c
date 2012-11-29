@@ -385,6 +385,9 @@ int typeSize(AST *ast)
     return 0;
 }
 
+/*
+ * print variables in a function
+ */
 static void
 PrintFunctionVariables(FILE *f, Function *func)
 {
