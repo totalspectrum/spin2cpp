@@ -1,4 +1,8 @@
 /*
+ * Spin to C/C++ converter
+ * Copyright 2011,2012 Total Spectrum Software Inc.
+ * See the file COPYING for terms of use
+ *
  * code for handling functions
  */
 #include <stdio.h>
@@ -120,6 +124,7 @@ ScanFunctionBody(Function *fdef, AST *body)
             if (!fdef->result_in_parmarray) {
                 fdef->result_in_parmarray = 1;
                 fdef->resultexpr = NewAST(AST_RESULT, NULL, NULL);
+                fdef->result_used = 1;
             }
         }
         break;
@@ -794,9 +799,16 @@ ModifyLookup(AST *top)
 
 /*
  * hook for optimization
+ * there are a number of simple optimizations we can perform on a function
+ * (1) Convert lookup/lookdown into constant array references
+ * (2) Eliminate unused result variables
+ *
+ * Called recursively; the top level call has ast = func->body
+ * Returns an AST that should be printed before the function body, e.g.
+ * to declare temporary arrays.
  */
 static AST *
-Optimize(AST *ast)
+Optimize(AST *ast, Function *func)
 {
     AST *ldecl;
     AST *rdecl;
@@ -805,6 +817,15 @@ Optimize(AST *ast)
         return NULL;
 
     switch (ast->kind) {
+    case AST_RETURN:
+        if (!ast->left) {
+            func->result_used = 1;
+            return NULL;
+        }
+        return Optimize(ast->left, func);
+    case AST_RESULT:
+        func->result_used = 1;
+        /* fall through */
     case AST_IDENTIFIER:
     case AST_INTEGER:
     case AST_FLOAT:
@@ -812,17 +833,16 @@ Optimize(AST *ast)
     case AST_STRINGPTR:
     case AST_CONSTANT:
     case AST_HWREG:
-    case AST_RESULT:
     case AST_CONSTREF:
         return NULL;
     case AST_ASSIGN:
-        return Optimize(ast->right);
+        return Optimize(ast->right, func);
     case AST_LOOKUP:
     case AST_LOOKDOWN:
         return ModifyLookup(ast);
     default:
-        ldecl = Optimize(ast->left);
-        rdecl = Optimize(ast->right);
+        ldecl = Optimize(ast->left, func);
+        rdecl = Optimize(ast->right, func);
         return AddToList(ldecl, rdecl);
     }
 }
@@ -947,7 +967,7 @@ PrintFunctionStmts(FILE *f, Function *func)
 {
     AST *optdecl;
 
-    optdecl = Optimize(func->body);
+    optdecl = Optimize(func->body, func);
     if (optdecl) {
         PrintOptimizeDecl(f, optdecl, 2);
         fprintf(f, "\n");

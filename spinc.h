@@ -1,4 +1,6 @@
 /*
+ * Spin to C/C++ converter
+ * Copyright 2011,2012 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -104,6 +106,9 @@ typedef struct funcdef {
 
     /* parser state during compilation */
     ParserState *parse;
+
+    /* various flags */
+    unsigned result_used:1;
 } Function;
 
 /* structure describing a builtin function */
