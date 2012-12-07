@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test31::Fun(int32_t Y)
 {
-  int32_t result = 0;
   int32_t _tmp__0000 = (X + Y);
   if (_tmp__0000 == 10) {
     OUTA ^= 0x1;
@@ -23,6 +22,6 @@ int32_t test31::Fun(int32_t Y)
     OUTA ^= 0x8;
   }
   X = (X + 5);
-  return result;
+  return 0;
 }
 

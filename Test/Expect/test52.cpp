@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test52::Func(void)
 {
-  int32_t result = 0;
   return ((INA >> 1) & 0x3);
 }
 

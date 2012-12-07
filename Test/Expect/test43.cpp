@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test43::Getx(void)
 {
-  int32_t result = 0;
   return A.X;
 }
 

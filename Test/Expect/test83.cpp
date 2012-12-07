@@ -15,8 +15,7 @@ uint8_t test83::dat[] = {
 };
 int32_t test83::Start(void)
 {
-  int32_t result = 0;
   cognew((int32_t)(&(*(int32_t *)&dat[8])), 0);
-  return result;
+  return 0;
 }
 

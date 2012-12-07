@@ -14,10 +14,9 @@ static int32_t tmp__;
 
 int32_t test65::Dofunc(int32_t X)
 {
-  int32_t result = 0;
   do {
     Yield__();
   } while (X);
-  return result;
+  return 0;
 }
 

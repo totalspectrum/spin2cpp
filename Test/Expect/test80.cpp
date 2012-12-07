@@ -12,8 +12,7 @@ static int32_t tmp__;
 
 int32_t test80::Init(void)
 {
-  int32_t result = 0;
   Namebuffer[0] = '.';
-  return result;
+  return 0;
 }
 

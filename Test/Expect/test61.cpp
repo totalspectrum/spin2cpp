@@ -17,7 +17,6 @@ uint8_t test61::dat[] = {
 };
 int32_t test61::Getstr(void)
 {
-  int32_t result = 0;
   return (*(uint8_t *)&dat[0]);
 }
 

@@ -12,10 +12,9 @@ static int32_t tmp__;
 
 int32_t test98::Blah(int32_t X)
 {
-  int32_t result = 0;
   if (X) {
     return 2;
   }
-  return result;
+  return 0;
 }
 

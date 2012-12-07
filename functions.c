@@ -229,6 +229,118 @@ DeclareFunctions(ParserState *P)
     }
 }
 
+/*
+ * try to optimize lookup on constant arrays
+ * if we can, modifies ast and returns any
+ * declarations needed
+ */
+static AST *
+ModifyLookup(AST *top)
+{
+    int len = 0;
+    AST *ast;
+    AST *expr;
+    AST *ev;
+    AST *table;
+    AST *id;
+    AST *decl;
+
+    ev = top->left;
+    table = top->right;
+    if (table->kind == AST_TEMPARRAYUSE) {
+        /* already modified, skip it */
+        return NULL;
+    }
+    if (ev->kind != AST_LOOKEXPR || table->kind != AST_EXPRLIST) {
+        ERROR(ev, "Internal error in lookup");
+        return NULL;
+    }
+    /* see if the table is constant, and count the number of elements */
+    ast = table;
+    while (ast) {
+        int c, d;
+        expr = ast->left;
+        ast = ast->right;
+
+        if (expr->kind == AST_RANGE) {
+            c = EvalConstExpr(expr->left);
+            d = EvalConstExpr(expr->right);
+            len += abs(d - c) + 1;
+        } else {
+            if (IsConstExpr(expr))
+                len++;
+            else
+                return NULL;
+        }
+    }
+
+    /* if we get here, the array is constant of length "len" */
+    /* create a temporary identifier for it */
+    id = AstTempVariable("look_");
+    /* replace the table in the top expression */
+    top->right = NewAST(AST_TEMPARRAYUSE, id, AstInteger(len));
+
+    /* create a declaration */
+    decl = NewAST(AST_TEMPARRAYDECL, id, table);
+
+    /* put it in a list holder */
+    decl = NewAST(AST_LISTHOLDER, decl, NULL);
+
+    return decl;
+}
+
+/*
+ * hook for optimization
+ * there are a number of simple optimizations we can perform on a function
+ * (1) Convert lookup/lookdown into constant array references
+ * (2) Eliminate unused result variables
+ *
+ * Called recursively; the top level call has ast = func->body
+ * Returns an AST that should be printed before the function body, e.g.
+ * to declare temporary arrays.
+ */
+static AST *
+Optimize(AST *ast, Function *func)
+{
+    AST *ldecl;
+    AST *rdecl;
+
+    if (!ast)
+        return NULL;
+
+    switch (ast->kind) {
+    case AST_RETURN:
+        if (!ast->left) {
+            func->result_used = 1;
+            return NULL;
+        }
+        return Optimize(ast->left, func);
+    case AST_RESULT:
+        func->result_used = 1;
+        return NULL;
+    case AST_IDENTIFIER:
+        rdecl = func->resultexpr;
+        if (rdecl && AstMatch(rdecl, ast))
+            func->result_used = 1;
+        return NULL;
+    case AST_INTEGER:
+    case AST_FLOAT:
+    case AST_STRING:
+    case AST_STRINGPTR:
+    case AST_CONSTANT:
+    case AST_HWREG:
+    case AST_CONSTREF:
+        return NULL;
+    case AST_LOOKUP:
+    case AST_LOOKDOWN:
+        return ModifyLookup(ast);
+    default:
+        ldecl = Optimize(ast->left, func);
+        rdecl = Optimize(ast->right, func);
+        return AddToList(ldecl, rdecl);
+    }
+}
+
 static void
 PrintParameterList(FILE *f, AST *list)
 {
@@ -429,9 +541,10 @@ PrintFunctionVariables(FILE *f, Function *func)
 
         fprintf(f, "  int32_t %s[%d];\n", func->parmarray, parmsiz);
     }
-    if (!func->result_in_parmarray)
-        fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
-
+    if (!func->result_in_parmarray) {
+        if (func->resultexpr->kind == AST_IDENTIFIER)
+            fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
+    }
     /* now actually assign initial values for the array */
     if (func->parmarray) {
         int indent = 2;
@@ -741,116 +854,6 @@ PrintOptimizeDecl(FILE *f, AST *ast, int indent)
 }
 
 /*
- * try to optimize lookup on constant arrays
- * if we can, modifies ast and returns any
- * declarations needed
- */
-static AST *
-ModifyLookup(AST *top)
-{
-    int len = 0;
-    AST *ast;
-    AST *expr;
-    AST *ev;
-    AST *table;
-    AST *id;
-    AST *decl;
-
-    ev = top->left;
-    table = top->right;
-    if (table->kind == AST_TEMPARRAYUSE) {
-        /* already modified, skip it */
-        return NULL;
-    }
-    if (ev->kind != AST_LOOKEXPR || table->kind != AST_EXPRLIST) {
-        ERROR(ev, "Internal error in lookup");
-        return NULL;
-    }
-    /* see if the table is constant, and count the number of elements */
-    ast = table;
-    while (ast) {
-        int c, d;
-        expr = ast->left;
-        ast = ast->right;
-
-        if (expr->kind == AST_RANGE) {
-            c = EvalConstExpr(expr->left);
-            d = EvalConstExpr(expr->right);
-            len += abs(d - c) + 1;
-        } else {
-            if (IsConstExpr(expr))
-                len++;
-            else
-                return NULL;
-        }
-    }
-
-    /* if we get here, the array is constant of length "len" */
-    /* create a temporary identifier for it */
-    id = AstTempVariable("look_");
-    /* replace the table in the top expression */
-    top->right = NewAST(AST_TEMPARRAYUSE, id, AstInteger(len));
-
-    /* create a declaration */
-    decl = NewAST(AST_TEMPARRAYDECL, id, table);
-
-    /* put it in a list holder */
-    decl = NewAST(AST_LISTHOLDER, decl, NULL);
-
-    return decl;
-}
-
-/*
- * hook for optimization
- * there are a number of simple optimizations we can perform on a function
- * (1) Convert lookup/lookdown into constant array references
- * (2) Eliminate unused result variables
- *
- * Called recursively; the top level call has ast = func->body
- * Returns an AST that should be printed before the function body, e.g.
- * to declare temporary arrays.
- */
-static AST *
-Optimize(AST *ast, Function *func)
-{
-    AST *ldecl;
-    AST *rdecl;
-
-    if (!ast)
-        return NULL;
-
-    switch (ast->kind) {
-    case AST_RETURN:
-        if (!ast->left) {
-            func->result_used = 1;
-            return NULL;
-        }
-        return Optimize(ast->left, func);
-    case AST_RESULT:
-        func->result_used = 1;
-        /* fall through */
-    case AST_IDENTIFIER:
-    case AST_INTEGER:
-    case AST_FLOAT:
-    case AST_STRING:
-    case AST_STRINGPTR:
-    case AST_CONSTANT:
-    case AST_HWREG:
-    case AST_CONSTREF:
-        return NULL;
-    case AST_ASSIGN:
-        return Optimize(ast->right, func);
-    case AST_LOOKUP:
-    case AST_LOOKDOWN:
-        return ModifyLookup(ast);
-    default:
-        ldecl = Optimize(ast->left, func);
-        rdecl = Optimize(ast->right, func);
-        return AddToList(ldecl, rdecl);
-    }
-}
-
-/*
  * returns 1 if a return statement was seen
  */
 static int
@@ -968,13 +971,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
 static int
 PrintFunctionStmts(FILE *f, Function *func)
 {
-    AST *optdecl;
-
-    optdecl = Optimize(func->body, func);
-    if (optdecl) {
-        PrintOptimizeDecl(f, optdecl, 2);
-        fprintf(f, "\n");
-    }
     return PrintStatementList(f, func->body, 2);
 }
 
@@ -986,6 +982,8 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
     int sawreturn;
 
     for (pf = parse->functions; pf; pf = pf->next) {
+        AST *optdecl;
+        optdecl = Optimize(pf->body, pf);
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');
             continue;
@@ -1004,8 +1002,16 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         fprintf(f, "(");
         PrintParameterList(f, pf->params);
         fprintf(f, ")\n{\n");
+        if (!pf->result_used) {
+            pf->resultexpr = AstInteger(0);
+        }
         PrintFunctionVariables(f, pf);
+        if (optdecl) {
+            PrintOptimizeDecl(f, optdecl, 2);
+            fprintf(f, "\n");
+        }
         sawreturn = PrintFunctionStmts(f, pf);
+
         if (!sawreturn) {
             fprintf(f, "  return ");
             PrintExpr(f, pf->resultexpr);

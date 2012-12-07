@@ -17,7 +17,6 @@ uint8_t test78::dat[] = {
 };
 int32_t test78::Geterr(int32_t N)
 {
-  int32_t result = 0;
   return (int32_t)((((uint16_t *)&dat[6])[N])+dat);
 }
 

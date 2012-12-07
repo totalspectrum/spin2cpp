@@ -1,5 +1,5 @@
 #include <propeller.h>
-#include "test33.h"
+#include "test104.h"
 
 #ifdef __GNUC__
 #define INLINE__ static inline
@@ -10,13 +10,11 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test33::Byteextend(int32_t X)
+uint8_t test104::dat[] = {
+  0x01, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x81, 0x01, 0x00, 0x00, 
+};
+int32_t test104::Get(void)
 {
-  return ((X << 24) >> 24);
-}
-
-int32_t test33::Wordextend(int32_t X)
-{
-  return ((X << 16) >> 16);
+  return (int32_t)(&(*(int32_t *)&dat[0]));
 }
 

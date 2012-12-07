@@ -13,7 +13,6 @@ static int32_t tmp__;
 __NATIVE
 int32_t test91::Nativefunc(int32_t I)
 {
-  int32_t result = 0;
   return (I + 1);
 }
 

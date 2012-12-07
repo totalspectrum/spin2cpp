@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test47::Test(int32_t C)
 {
-  int32_t result = 0;
   if (Flag == 0) {
     if (C == 9) {
       do {
@@ -27,6 +26,6 @@ int32_t test47::Test(int32_t C)
     Cols = (C % Cols);
   }
   Flag = 0;
-  return result;
+  return 0;
 }
 

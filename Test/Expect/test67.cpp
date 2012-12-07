@@ -15,7 +15,6 @@ uint8_t test67::dat[] = {
 };
 int32_t test67::Getx(void)
 {
-  int32_t result = 0;
   return (*(int32_t *)&dat[0]);
 }
 

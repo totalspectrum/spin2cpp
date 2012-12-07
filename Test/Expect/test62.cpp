@@ -14,7 +14,6 @@ static int32_t tmp__;
 
 int32_t test62::Testit(int32_t X)
 {
-  int32_t result = 0;
   Command = X;
   while (Command) {
     Yield__();

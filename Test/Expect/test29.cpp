@@ -14,14 +14,12 @@ static int32_t tmp__;
 
 int32_t test29::Tx(int32_t Val)
 {
-  int32_t result = 0;
   ((uint8_t *)28672)[Idx] = 0;
-  return result;
+  return 0;
 }
 
 int32_t test29::Str(int32_t Stringptr)
 {
-  int32_t result = 0;
   while (lockset(Strlock)) {
     Yield__();
   }
@@ -34,6 +32,6 @@ int32_t test29::Str(int32_t Stringptr)
     } while (_idx__0000 >= 1);
   }
   lockclr(Strlock);
-  return result;
+  return 0;
 }
 

@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test69::Demo(void)
 {
-  int32_t result = 0;
   if (!(((INA >> 0) & 0x1))) {
     clkset(0x80, 0);
   } else {
@@ -20,6 +19,6 @@ int32_t test69::Demo(void)
       OUTA &= ~(7<<0);
     }
   }
-  return result;
+  return 0;
 }
 

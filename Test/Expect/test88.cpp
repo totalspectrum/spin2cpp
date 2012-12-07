@@ -13,7 +13,6 @@ static int32_t tmp__;
 int32_t test88::Sum(void)
 {
   int32_t	R, X;
-  int32_t result = 0;
   R = 0;
   X = 0;
   do {

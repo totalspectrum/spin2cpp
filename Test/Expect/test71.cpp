@@ -24,8 +24,7 @@ int32_t test71::Blah(void)
 
 int32_t test71::Foo(int32_t M, int32_t N)
 {
-  int32_t result = 0;
   OUTA = (OUTA | ((1<<N)));
-  return result;
+  return 0;
 }
 

@@ -12,8 +12,7 @@ static int32_t tmp__;
 
 int32_t test08::Init(void)
 {
-  int32_t result = 0;
   OUTA = 1;
-  return result;
+  return 0;
 }
 

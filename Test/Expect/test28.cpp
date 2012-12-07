@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test28::Lock(void)
 {
-  int32_t result = 0;
   X = 0;
   while (!(X > 9)) {
     lockret(X);
@@ -23,6 +22,6 @@ int32_t test28::Lock(void)
     lockret(X);
     (X++);
   } while (X < 10);
-  return result;
+  return 0;
 }
 

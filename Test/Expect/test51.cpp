@@ -12,14 +12,12 @@ static int32_t tmp__;
 
 int32_t test51::Run(void)
 {
-  int32_t result = 0;
   OUTA = Len((int32_t)"hello, world\r\n");
-  return result;
+  return 0;
 }
 
 int32_t test51::Len(int32_t Stringptr)
 {
-  int32_t result = 0;
   return strlen((char *) Stringptr);
 }
 

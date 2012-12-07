@@ -14,7 +14,6 @@ INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return 
 
 int32_t test32::Fun(int32_t Y)
 {
-  int32_t result = 0;
   int32_t _tmp__0000 = (X + Y);
   if (_tmp__0000 == 10 || _tmp__0000 == 'C') {
     OUTA ^= 0x1;
@@ -27,6 +26,6 @@ int32_t test32::Fun(int32_t Y)
     OUTA ^= 0x10;
   }
   X = (X + 5);
-  return result;
+  return 0;
 }
 

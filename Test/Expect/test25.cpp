@@ -12,10 +12,9 @@ static int32_t tmp__;
 
 int32_t test25::Unlock(void)
 {
-  int32_t result = 0;
   if (X != 0) {
     return PostEffect__(X, 0);
   }
-  return result;
+  return 0;
 }
 

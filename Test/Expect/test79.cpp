@@ -12,13 +12,12 @@ static int32_t tmp__;
 
 int32_t test79::I2c_start(void)
 {
-  int32_t result = 0;
   OUTA = ((OUTA & 0xefffffff) | 0x10000000);
   DIRA = ((DIRA & 0xefffffff) | 0x10000000);
   OUTA = ((OUTA & 0xdfffffff) | 0x20000000);
   DIRA = ((DIRA & 0xdfffffff) | 0x20000000);
   OUTA &= ~(1<<Sda);
   OUTA &= ~(1<<Scl);
-  return result;
+  return 0;
 }
 

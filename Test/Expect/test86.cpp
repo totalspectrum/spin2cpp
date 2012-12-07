@@ -12,15 +12,13 @@ static int32_t tmp__;
 
 int32_t test86::Set1(void)
 {
-  int32_t result = 0;
   OUTA = ((OUTA & 0xfffffffd) | 0x2);
-  return result;
+  return 0;
 }
 
 int32_t test86::Set(int32_t Pin)
 {
-  int32_t result = 0;
   OUTA = ((OUTA & (~(1 << Pin))) | (1 << Pin));
-  return result;
+  return 0;
 }
 

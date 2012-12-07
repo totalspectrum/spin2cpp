@@ -12,13 +12,11 @@ static int32_t tmp__;
 
 int32_t test55::Emptyfunc(void)
 {
-  int32_t result = 0;
-  return result;
+  return 0;
 }
 
 int32_t test55::Fullfunc(void)
 {
-  int32_t result = 0;
   return 0;
 }
 

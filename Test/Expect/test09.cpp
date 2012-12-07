@@ -12,9 +12,8 @@ static int32_t tmp__;
 
 int32_t test09::Init(void)
 {
-  int32_t result = 0;
   DIRA |= (1<<2);
   OUTA = ((OUTA & 0xffffff0f) | 0xa0);
-  return result;
+  return 0;
 }
 

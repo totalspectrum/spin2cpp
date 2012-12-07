@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test44::Fun(int32_t X, int32_t Y)
 {
-  int32_t result = 0;
   if (X == 10) {
     if (Y == 0) {
       OUTA ^= 0x1;
@@ -24,6 +23,6 @@ int32_t test44::Fun(int32_t X, int32_t Y)
   } else if (1) {
     OUTA ^= 0x8;
   }
-  return result;
+  return 0;
 }
 

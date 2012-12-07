@@ -13,9 +13,8 @@ static int32_t tmp__;
 
 int32_t test40::Tx(int32_t Character)
 {
-  int32_t result = 0;
   OUTA = Character;
-  return result;
+  return 0;
 }
 
 int32_t test40::Dec(int32_t Value)

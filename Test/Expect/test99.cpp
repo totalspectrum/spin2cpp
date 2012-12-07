@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test99::Blah(int32_t X)
 {
-  int32_t result = 0;
   return 99;
 }
 

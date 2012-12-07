@@ -12,19 +12,16 @@ static int32_t tmp__;
 
 int32_t test103::Blah(int32_t X, int32_t Y)
 {
-  int32_t result = 0;
   return -(X >= Y);
 }
 
 int32_t test103::Foo(int32_t X, int32_t Y)
 {
-  int32_t result = 0;
   return -(X <= Y);
 }
 
 int32_t test103::Blah2(int32_t X)
 {
-  int32_t result = 0;
   J = -(J >= X);
   return J;
 }

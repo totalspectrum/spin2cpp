@@ -16,15 +16,13 @@ uint8_t test39::dat[] = {
 };
 int32_t test39::Setword(int32_t X, int32_t A)
 {
-  int32_t result = 0;
   ((uint16_t *)&dat[0])[X] = A;
-  return result;
+  return 0;
 }
 
 int32_t test39::Setbyte(int32_t X, int32_t B)
 {
-  int32_t result = 0;
   ((uint8_t *)&dat[16])[X] = B;
-  return result;
+  return 0;
 }
 

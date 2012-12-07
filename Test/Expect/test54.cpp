@@ -15,7 +15,6 @@ uint8_t test54::dat[] = {
 };
 int32_t test54::Getfoo(void)
 {
-  int32_t result = 0;
   return (int32_t)(&(*(int32_t *)&dat[4]));
 }
 

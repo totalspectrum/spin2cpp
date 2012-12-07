@@ -12,7 +12,6 @@ static int32_t tmp__;
 
 int32_t test24::Unlock(void)
 {
-  int32_t result = 0;
   return PostEffect__(X, 0);
 }
 

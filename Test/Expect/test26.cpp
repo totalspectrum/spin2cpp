@@ -14,7 +14,6 @@ static int32_t tmp__;
 
 int32_t test26::Lock(void)
 {
-  int32_t result = 0;
   while (lockset(Thelock) != 0) {
     Yield__();
   }
@@ -23,6 +22,6 @@ int32_t test26::Lock(void)
     lockret(X);
     (X++);
   }
-  return result;
+  return 0;
 }
 
