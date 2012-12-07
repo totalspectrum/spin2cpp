@@ -154,33 +154,41 @@ EnterConstant(const char *name, AST *expr)
 void
 DeclareConstants(AST *conlist)
 {
-    AST *upper, *ast;
+    AST *upper, *ast, *id;
     int default_val = 0;
 
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
-            while (ast) {
-                switch (ast->kind) {
-                case AST_ENUMSET:
-                    default_val = EvalConstExpr(ast->left);
-                    ast = ast->right;
-                    break;
-                case AST_IDENTIFIER:
-                    EnterConstant(ast->d.string, AstInteger(default_val));
-                    default_val++;
-                    ast = ast->right;
-                    break;
-                case AST_ASSIGN:
-                    EnterConstant(ast->left->d.string, ast->right);
-                    ast = NULL;
-                    break;
-                default:
-                    ERROR(ast, "Internal error: bad AST value %d", ast->kind);
-                    ast = NULL;
-                    break;
+            switch (ast->kind) {
+            case AST_ENUMSET:
+                default_val = EvalConstExpr(ast->left);
+                ast = ast->right;
+                break;
+            case AST_IDENTIFIER:
+                EnterConstant(ast->d.string, AstInteger(default_val));
+                default_val++;
+                ast = ast->right;
+                break;
+            case AST_ENUMSKIP:
+                id = ast->left;
+                if (id->kind != AST_IDENTIFIER) {
+                    ERROR(ast, "Internal error, expected identifier in constant list");
+                } else {
+                    EnterConstant(id->d.string, AstInteger(default_val));
+                    default_val += EvalConstExpr(ast->right);
                 }
-            } 
+                break;
+            case AST_ASSIGN:
+                EnterConstant(ast->left->d.string, ast->right);
+                default_val = EvalConstExpr(ast->right) + 1;
+                ast = NULL;
+                break;
+            default:
+                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
+                ast = NULL;
+                break;
+            }
         } else {
             ERROR(upper, "Expected list in constant, found %d instead", upper->kind);
         }

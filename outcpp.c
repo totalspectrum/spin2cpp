@@ -81,10 +81,33 @@ PrintSubHeaders(FILE *f, ParserState *parse)
 }
 
 static void
-PrintCHeaderFile(FILE *f, ParserState *parse)
+PrintAllConstants(FILE *f, ParserState *parse)
 {
     AST *ast, *upper;
 
+    /* print the constant declarations */
+    for (upper = parse->conblock; upper; upper = upper->right) {
+        ast = upper->left;
+        switch (ast->kind) {
+        case AST_ENUMSKIP:
+            PrintConstantDecl(f, ast->left);
+            break;
+        case AST_IDENTIFIER:
+            PrintConstantDecl(f, ast);
+            break;
+        case AST_ASSIGN:
+            PrintConstantDecl(f, ast->left);
+            break;
+        default:
+            /* do nothing */
+            break;
+        }
+    }
+}
+
+static void
+PrintCHeaderFile(FILE *f, ParserState *parse)
+{
     /* things we always need */
     if (gl_header) {
         fprintf(f, "%s", gl_header);
@@ -95,27 +118,7 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
     fprintf(f, "#include <stdint.h>\n");
 
     PrintSubHeaders(f, parse);
-
-    /* print the constant declarations */
-    for (upper = parse->conblock; upper; upper = upper->right) {
-        ast = upper->left;
-        while (ast) {
-            switch (ast->kind) {
-            case AST_IDENTIFIER:
-                PrintConstantDecl(f, ast);
-                ast = ast->right;
-                break;
-            case AST_ASSIGN:
-                PrintConstantDecl(f, ast->left);
-                ast = NULL;
-                break;
-            default:
-                /* do nothing */
-                ast = ast->right;
-                break;
-            }
-        }
-    }
+    PrintAllConstants(f, parse);
 
     /* print the structure definition */
     fprintf(f, "\ntypedef struct %s {\n", parse->classname);
@@ -138,7 +141,7 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintCppHeaderFile(FILE *f, ParserState *parse)
 {
-    AST *ast, *upper;
+    AST *ast;
 
     /* things we always need */
     if (gl_header) {
@@ -155,25 +158,8 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
     /* print the constant declarations */
     fprintf(f, "class %s {\npublic:\n", parse->classname);
 
-    for (upper = parse->conblock; upper; upper = upper->right) {
-        ast = upper->left;
-        while (ast) {
-            switch (ast->kind) {
-            case AST_IDENTIFIER:
-                PrintConstantDecl(f, ast);
-                ast = ast->right;
-                break;
-            case AST_ASSIGN:
-                PrintConstantDecl(f, ast->left);
-                ast = NULL;
-                break;
-            default:
-                /* do nothing */
-                ast = ast->right;
-                break;
-            }
-        }
-    }
+    PrintAllConstants(f, parse);
+
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
         ParserState *P = ast->d.ptr;

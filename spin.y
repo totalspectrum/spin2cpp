@@ -440,6 +440,10 @@ enumitem:
   { $$ = NewAST(AST_ASSIGN, $1, $3); }
   | identifier
   { $$ = $1; }
+  | identifier '[' expr ']'
+    {
+        $$ = NewAST(AST_ENUMSKIP, $1, $3);
+    }
   | '#' expr
   { $$ = NewAST(AST_ENUMSET, $2, NULL); }
   ;

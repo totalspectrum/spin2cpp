@@ -110,6 +110,7 @@ enum astkind {
     AST_PUBFUNC = 72,
     AST_PRIFUNC,
     AST_FUNCHOLDER,
+    AST_ENUMSKIP,
 };
 
 struct AST {
