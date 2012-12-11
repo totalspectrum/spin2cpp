@@ -4,6 +4,8 @@ Version 1.02
 - Modified C/C++ output so that unused return values are not declared
 - Fixed reboot command to really reboot (not just abort)
 - Fixed a typo which could cause segmentation faults
+- Follow Spin's practice of allowing the first object of an object
+  array to be used without a subscript.
 
 Version 1.01
 
