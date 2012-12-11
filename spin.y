@@ -670,7 +670,7 @@ expr:
   | '\\' funccall
     { $$ = AstCatch($2); }
   | '\\' identifier
-    { $$ = AstCatch(NewAST(AST_FUNCCALL, $1, NULL)); }
+    { $$ = AstCatch(NewAST(AST_FUNCCALL, $2, NULL)); }
   | funccall
     { $$ = $1; }
   | '-' expr %prec T_NEGATE
