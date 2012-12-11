@@ -1056,6 +1056,37 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
     fprintf(f, ", %u)", len);
 }
 
+/* print an object symbol */
+static void
+PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
+{
+    AST *decl;
+    int isArray = 0;
+
+    if (objsym->type != SYM_OBJECT) {
+        ERROR(expr, "Internal error, expecting an object symbol\n");
+        return;
+    }
+    decl = (AST *)objsym->val;
+    if (decl->kind != AST_OBJECT) {
+        ERROR(expr, "Internal error, symbol has no AST_OBJECT kind");
+        return;
+    }
+    isArray = (decl->left && decl->left->kind == AST_ARRAYDECL);
+
+    if (expr->kind == AST_ARRAYREF) {
+        if (!isArray) {
+            ERROR(expr, "%s is not an array of objects", objsym->name);
+        }
+        PrintLHS(f, expr, 0, 0);
+    } else {
+        fprintf(f, "%s", objsym->name);
+        if (isArray) {
+            fprintf(f, "[0]");
+        }
+    }
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)
@@ -1141,7 +1172,7 @@ PrintExpr(FILE *f, AST *expr)
             if (gl_ccode) {
                 fprintf(f, "%s_", ObjClassName(objsym));
             } else {
-                PrintLHS(f, objref, 0, 0);
+                PrintObjectSym(f, objsym, objref);
                 fprintf(f, ".");
             }
         } else {

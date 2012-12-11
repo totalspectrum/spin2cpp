@@ -14,7 +14,7 @@ PUB main
   printn(1)
   printn(2)
   fds.str(string("increment v[0]", 10, 13))
-  v[0].incn
+  v.incn  '' should be the same as v[0].incn
   printn(0)
   printn(1)
   printn(2)
