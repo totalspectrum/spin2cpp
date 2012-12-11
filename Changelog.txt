@@ -3,6 +3,7 @@ Version 1.02
 - Made CON section accept x[y] syntax for skipping over ranges of values
 - Modified C/C++ output so that unused return values are not declared
 - Fixed reboot command to really reboot (not just abort)
+- Fixed a typo which could cause segmentation faults
 
 Version 1.01
 
