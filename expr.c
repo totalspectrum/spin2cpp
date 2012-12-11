@@ -1060,19 +1060,12 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
 static void
 PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
 {
-    AST *decl;
-    int isArray = 0;
+    int isArray = IsArraySymbol(objsym);
 
     if (objsym->type != SYM_OBJECT) {
         ERROR(expr, "Internal error, expecting an object symbol\n");
         return;
     }
-    decl = (AST *)objsym->val;
-    if (decl->kind != AST_OBJECT) {
-        ERROR(expr, "Internal error, symbol has no AST_OBJECT kind");
-        return;
-    }
-    isArray = (decl->left && decl->left->kind == AST_ARRAYDECL);
 
     if (expr->kind == AST_ARRAYREF) {
         if (!isArray) {
@@ -1881,8 +1874,8 @@ IsArraySymbol(Symbol *sym)
         type = sym->val;
         break;
     case SYM_OBJECT:
-        /* accept all objects as arrays, even if they are not */
-        return 1;
+        type = (AST *)sym->val;
+        return type->left && type->left->kind == AST_ARRAYDECL;
     case SYM_LABEL:
         return 1;
     default:
