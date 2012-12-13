@@ -8,9 +8,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include "spinc.h"
 
+
+/*
+ * print out a declaration for the dat[] array
+ * "tail" is appended to the declaration
+ * if "classname" is TRUE, then add the class name as well
+ */
+static void
+PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
+{
+    char *datname = parse->datname;
+
+    fprintf(f, "uint8_t ");
+    if (parse->datannotations) {
+        PrintAnnotationList(f, parse->datannotations, ' ');
+    }
+    if (classname) {
+        fprintf(f, "%s::", parse->basename);
+    }
+    fprintf(f, "%s[]%s", datname, tail);
+}
 
 /*
  * print out a header file
@@ -181,7 +202,8 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
     }
     /* data block, if applicable */
     if (parse->datblock && !gl_gas_dat) {
-        fprintf(f, "  static uint8_t dat[];\n");
+        fprintf(f, "  static ");
+        PrintDatArray(f, parse, ";\n", false);
     }
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
@@ -355,13 +377,15 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_gas_dat) {
-            fprintf(f, "extern uint8_t %s[];\n", parse->datname);
+            fprintf(f, "extern ");
+            PrintDatArray(f, parse, ";\n", false);
             PrintDataBlockForGas(f, parse, 1);
         } else {
             if (gl_ccode) {
-                fprintf(f, "static uint8_t dat[] = {\n");
+                fprintf(f, "static ");
+                PrintDatArray(f, parse, ";\n", false);
             } else {
-                fprintf(f, "uint8_t %s::dat[] = {\n", parse->classname);
+                PrintDatArray(f, parse, " = {\n", true);
             }
             PrintDataBlock(f, parse, TEXT_OUTPUT);
             fprintf(f, "};\n");

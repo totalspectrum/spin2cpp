@@ -6,6 +6,7 @@ Version 1.02
 - Fixed a typo which could cause segmentation faults
 - Follow Spin's practice of allowing the first object of an object
   array to be used without a subscript.
+- Accept annotations on the DAT section of a file.
 
 Version 1.01
 

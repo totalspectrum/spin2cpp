@@ -160,6 +160,11 @@ topelement:
   { $$ = current->conblock = AddToList(current->conblock, $2); }
   | T_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
+  | T_DAT annotation datblock
+  { 
+      current->datannotations = AddToList(current->datannotations, $2);
+      $$ = current->datblock = AddToList(current->datblock, $3); 
+  }
   | T_VAR varblock
   { $$ = current->varblock = AddToList(current->varblock, $2); }
   | T_OBJ objblock

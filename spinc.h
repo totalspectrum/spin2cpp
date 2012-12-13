@@ -129,6 +129,9 @@ struct parserstate {
     AST *objblock;
     AST *funcblock;
 
+    /* annotations for the DAT block */
+    AST *datannotations;
+
     /* list of methods */
     Function *functions;
 
@@ -220,6 +223,7 @@ void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
+void PrintAnnotationList(FILE *f, AST *ast, char terminal);
 
 void DeclareObjects(AST *newobjs);
 
