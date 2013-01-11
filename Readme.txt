@@ -2,7 +2,7 @@ This is a very simple Spin to C/C++ converter. There still some of the
 Spin language that it does not handle, but it can deal with most
 objects and constructs that are commonly encountered. 
 
-This version (1.01) includes some more functionality. A simple "Hello,
+This version (1.02) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -247,7 +247,10 @@ Code Annotations
 Whole blocks of C/C++ code may be embedded between {++ and }. Make
 sure the '{' and '}' characters are balanced in such code! This
 feature is useful for adding additional methods that appear only in C,
-or for overriding Spin versions of methods.
+or for overriding Spin versions of methods. At present, it is not
+possible to override individual Spin methods; one has to disable all
+Spin methods with the {++!nospin} directive (see below) and then write
+replacements for all of them in the code annotations.
 
 
 Directives

@@ -9,9 +9,9 @@
 #YACC = byacc
 YACC = bison
 CC = gcc
-CFLAGS = -g -Wall -Werror
+#CFLAGS = -g -Wall -Werror
 #CC = clang
-#CFLAGS = -O -g -Wall -Werror
+CFLAGS = -O -g -Wall -Werror
 LIBS = -lm
 RM = rm -f
 

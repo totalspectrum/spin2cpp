@@ -28,7 +28,7 @@ PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
         PrintAnnotationList(f, parse->datannotations, ' ');
     }
     if (classname) {
-        fprintf(f, "%s::", parse->basename);
+        fprintf(f, "%s::", parse->classname);
     }
     fprintf(f, "%s[]%s", datname, tail);
 }
@@ -383,7 +383,7 @@ PrintCppFile(FILE *f, ParserState *parse)
         } else {
             if (gl_ccode) {
                 fprintf(f, "static ");
-                PrintDatArray(f, parse, ";\n", false);
+                PrintDatArray(f, parse, " = {\n", false);
             } else {
                 PrintDatArray(f, parse, " = {\n", true);
             }

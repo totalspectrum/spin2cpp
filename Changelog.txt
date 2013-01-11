@@ -1,3 +1,9 @@
+Version 1.03
+
+- Fixed a bug in the DAT section output for classes with names that
+have "Spin" appended.
+- Fixed DAT section output in C mode.
+
 Version 1.02
 
 - Made CON section accept x[y] syntax for skipping over ranges of values
