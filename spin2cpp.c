@@ -388,8 +388,6 @@ init()
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
 
-    pp_init(&gl_pp);
-    pp_setcomments(&gl_pp, "{", "}");
     initLexer();
 }
 
@@ -455,7 +453,13 @@ main(int argc, char **argv)
     time_t timep;
     int i;
 
-    init();
+    /* Initialize the global preprocessor; we need to do this here
+       so that the -D command line option can define preprocessor
+       symbols. The rest of initialization happens after command line
+       options have been parsed
+    */
+    pp_init(&gl_pp);
+    pp_setcomments(&gl_pp, "{", "}");
 
     /* save our command line arguments and comments describing
        how we were run
@@ -577,6 +581,12 @@ main(int argc, char **argv)
     if (argv[0] == NULL || argc != 1) {
         Usage();
     }
+
+    /* initialize the parser; we do that after command line processing
+       so that command line options can influence it */
+    init();
+
+    /* now actually parse the file */
     P = parseFile(argv[0]);
     if (P) {
         if (outputDat) {
