@@ -160,7 +160,7 @@ static int tokens7[] =
 int
 main()
 {
-    initLexer();
+    initLexer(0);
 
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));

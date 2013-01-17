@@ -17,6 +17,8 @@
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
+extern int gl_prop2;
+
 static inline int
 safe_isalpha(unsigned int x) {
     return (x < 255) ? isalpha(x) : 0;
@@ -789,6 +791,8 @@ Builtin builtinfuncs[] = {
     { "wordmove", 2, memBuiltin, "memmove" },
     { "bytefill", 1, memBuiltin, "memset" },
     { "bytemove", 1, memBuiltin, "memcpy" },
+
+    { "getcnt", 0, defaultBuiltin, "getcnt" },
 };
 
 struct constants {
@@ -816,7 +820,7 @@ struct constants {
 };
 
 void
-initLexer(void)
+initLexer(int prop2)
 {
     int i;
 
@@ -836,7 +840,7 @@ initLexer(void)
     }
 
     /* add the PASM instructions */
-    InitPasm();
+    InitPasm(prop2);
 }
 
 int
@@ -942,7 +946,7 @@ instr[] = {
     { "xor",    0x6c800000, TWO_OPERANDS },
 };
 
-HwReg hwreg[] = {
+HwReg hwreg_p1[] = {
     { "par", 0x1f0, "PAR" },
     { "cnt", 0x1f1, "CNT" },
     { "ina", 0x1f2, "INA" },
@@ -961,6 +965,18 @@ HwReg hwreg[] = {
 
     { "vcfg", 0x1fe, "VCFG" },
     { "vscl", 0x1ff, "VSCL" },
+
+};
+
+HwReg hwreg_p2[] = {
+    { "pina", 0x1f8, "PINA" },
+    { "pinb", 0x1f9, "PINB" },
+    { "pinc", 0x1fa, "PINC" },
+    { "pind", 0x1fb, "PIND" },
+    { "dira", 0x1fc, "DIRA" },
+    { "dirb", 0x1fd, "DIRB" },
+    { "dirc", 0x1fe, "DIRC" },
+    { "dird", 0x1ff, "DIRD" },
 
 };
 
@@ -1023,12 +1039,22 @@ InstrModifier modifiers[] = {
 };
 
 void
-InitPasm(void)
+InitPasm(int prop2)
 {
-    int i;
+    HwReg *hwreg;
+    int cnt, i;
+
+    if (prop2) {
+	    hwreg = hwreg_p2;
+	    cnt = N_ELEMENTS(hwreg_p2);
+    }
+    else {
+	    hwreg = hwreg_p1;
+	    cnt = N_ELEMENTS(hwreg_p1);
+    }
 
     /* add hardware registers */
-    for (i = 0; i < N_ELEMENTS(hwreg); i++) {
+    for (i = 0; i < cnt; i++) {
         AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
     }
 
