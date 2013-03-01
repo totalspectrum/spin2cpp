@@ -60,6 +60,11 @@ struct preprocess {
     int  numerrors;
 
     int  in_error; /* flag to help the default error handling function */
+
+    /* printf format for the line emitted when a #include causes
+       line number or file to be different
+    */
+    const char *linechange;
 };
 
 #define pp_active(pp) (!((pp)->ifs && (pp)->ifs->skip))
@@ -79,6 +84,11 @@ void pp_pop_file(struct preprocess *pp);
 /* set the strings that will be recognized to start and end multi-line
    comments; these nest */
 void pp_setcomments(struct preprocess *pp, const char *s, const char *e);
+
+/* set the format for #line directives indicating changes of file or line
+   number; the default is "#line %d \"%s\"
+*/
+void pp_setlinedirective(struct preprocess *pp, const char *s);
 
 /* define symbol "name" to have "val", or undefine it if val is NULL */
 void pp_define(struct preprocess *pp, const char *name, const char *val);

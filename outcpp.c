@@ -423,7 +423,6 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
     fclose(f);
 
     if (gl_errors > 0) {
-        fprintf(stderr, "%d errors\n", gl_errors);
         free(fname);
         exit(1);
     }
@@ -468,7 +467,6 @@ done:
     if (fname) free(fname);
 
     if (gl_errors > 0) {
-        fprintf(stderr, "%d errors\n", gl_errors);
         exit(1);
     }
     current = save;

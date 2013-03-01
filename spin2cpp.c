@@ -315,7 +315,6 @@ parseFile(const char *name)
         pp_run(&gl_pp);
         parseString = pp_finish(&gl_pp);
         pp_restore_define_state(&gl_pp, defineState);
-
         strToLex(&current->L, parseString, fname);
         yyparse();
         free(parseString);
@@ -326,7 +325,6 @@ parseFile(const char *name)
     fclose(f);
 
     if (gl_errors > 0) {
-        fprintf(stderr, "%d errors\n", gl_errors);
         free(fname);
         exit(1);
     }
@@ -338,7 +336,6 @@ parseFile(const char *name)
     DeclareFunctions(P);
 
     if (gl_errors > 0) {
-        fprintf(stderr, "%d errors\n", gl_errors);
         free(fname);
         exit(1);
     }
@@ -462,6 +459,7 @@ main(int argc, char **argv)
     */
     pp_init(&gl_pp);
     pp_setcomments(&gl_pp, "{", "}");
+    pp_setlinedirective(&gl_pp, "{#line %d %s}");
 
     /* save our command line arguments and comments describing
        how we were run
@@ -631,7 +629,6 @@ main(int argc, char **argv)
     }
 
     if (gl_errors > 0) {
-        fprintf(stderr, "%d errors\n", gl_errors);
         exit(1);
     }
 

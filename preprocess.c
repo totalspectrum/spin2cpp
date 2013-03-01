@@ -15,6 +15,14 @@
  *  #warn message
  *  #include "file"
  *
+ * Any other # directives are passed through.
+ *
+ * Note that the preprocessor itself will insert #line directives
+ * before and after any included text, of the form:
+ *   #line NNNN "filename"
+ * where NNNN is a decimal line number. The scanner or parser may
+ * use these directives to make sure error numbers come out right.
+ *
  * Here's an example of reading a file foo.txt in and preprocessing
  * it in an environment where "VALUE1" is defined to "VALUE" and
  * "VALUE2" is defined to "0":
@@ -108,7 +116,6 @@ pp_nextline(struct preprocess *pp)
     if (!A)
         return 0;
     f = A->f;
-    A->lineno++;
 
     flexbuf_clear(&pp->line);
     if (A->readfunc == NULL) {
@@ -130,6 +137,7 @@ pp_nextline(struct preprocess *pp)
         }
         if (c0 == '\n') {
             flexbuf_addchar(&pp->line, 0);
+            A->lineno++;
             return 1;
         }
     }
@@ -138,7 +146,10 @@ pp_nextline(struct preprocess *pp)
         if (r <= 0) break;
         count += r;
         flexbuf_addmem(&pp->line, buf, r);
-        if (r == 1 && buf[0] == '\n') break;
+        if (r == 1 && buf[0] == '\n') {
+            A->lineno++;
+            break;
+        }
     }
     flexbuf_addchar(&pp->line, '\0');
     return count;
@@ -210,6 +221,7 @@ pp_init(struct preprocess *pp)
     pp->warnfunc = default_errfunc;
     pp->errarg = (void *)"error";
     pp->warnarg = (void *)"warning";
+    pp->linechange = "#line %d \"%s\"\n";
 }
 
 /*
@@ -229,11 +241,17 @@ pp_push_file_struct(struct preprocess *pp, FILE *f, const char *filename)
         doerror(pp, "Out of memory!\n");
         return;
     }
-    A->lineno = 0;
+    A->lineno = 1;
     A->f = f;
     A->next = pp->fil;
     A->name = filename;
     pp->fil = A;
+    if (A->name) {
+        char temp[128];
+        snprintf(temp, sizeof(temp), pp->linechange, A->lineno, A->name);
+        temp[127] = 0; /* make sure it is 0 terminated */
+        flexbuf_addstr(&pp->whole, temp);
+    }
 }
 
 void
@@ -271,6 +289,13 @@ void pp_pop_file(struct preprocess *pp)
         if (A->flags & FILE_FLAGS_CLOSEFILE)
             fclose(A->f);
         free(A);
+        A = pp->fil;
+        if (A && A->name) {
+            char temp[128];
+            snprintf(temp, sizeof(temp), pp->linechange, A->lineno, A->name);
+            temp[127] = 0; /* make sure it is 0 terminated */
+            flexbuf_addstr(&pp->whole, temp);
+        }
     }
 }
 
@@ -757,6 +782,15 @@ pp_setcomments(struct preprocess *pp, const char *start, const char *end)
 {
     pp->startcomment = start;
     pp->endcomment = end;
+}
+
+/*
+ * set line directive format
+ */
+void
+pp_setlinedirective(struct preprocess *pp, const char *dir)
+{
+    pp->linechange = dir;
 }
 
 /*

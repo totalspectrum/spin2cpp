@@ -485,11 +485,14 @@ again:
     if (c == '{') {
         struct flexbuf anno;
         int annotate = 0;
+        int directive = 0;
 
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
         /* check for special comments {++... } which indicate 
            C++ annotations
+           We also set up the preprocessor to emit {#line xx} directives when
+           doing #include
         */
         c = lexgetc(L);
         if (c == '+') {
@@ -498,7 +501,9 @@ again:
                 annotate = 1;
                 c = lexgetc(L);
             }
-
+        } else if (c == '#') {
+            c = lexgetc(L);
+            directive = 1;
         }
         lexungetc(L, c);
         for(;;) {
@@ -509,7 +514,7 @@ again:
                 --commentNest;
             if (commentNest <= 0 || c == T_EOF)
                 break;
-            if (annotate) {
+            if (annotate || directive) {
                 flexbuf_addchar(&anno, c);
             }
         }
@@ -521,6 +526,22 @@ again:
             ast->d.string = flexbuf_get(&anno);
             *ast_ptr = ast;
             return T_ANNOTATION;
+        } else if (directive) {
+            char *dir;
+            flexbuf_addchar(&anno, '\0');
+            dir = flexbuf_get(&anno);
+
+            if (!strncmp(dir, "line ", 5)) {
+                char *ptr = dir+5;
+                int lineno;
+                lineno = strtol(ptr, &ptr, 10);
+                if (lineno > 0) {
+                    if (*ptr == ' ') ptr++;
+                    L->fileName = strdup(ptr);
+                    L->lineCounter = lineno;
+                }
+            }
+            free(dir);
         }
         c = lexgetc(L);
         goto again;
