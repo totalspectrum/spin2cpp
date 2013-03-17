@@ -81,9 +81,10 @@ void pp_push_file(struct preprocess *pp, const char *filename);
 /* pop a file (finish processing it) */
 void pp_pop_file(struct preprocess *pp);
 
-/* set the strings that will be recognized to start and end multi-line
-   comments; these nest */
-void pp_setcomments(struct preprocess *pp, const char *s, const char *e);
+/* set the strings that will be recognized to start single line comments
+   (line) and start and end multi-line comments (s and n); the multi-line
+   comments nest */
+void pp_setcomments(struct preprocess *pp, const char *line, const char *s, const char *e);
 
 /* set the format for #line directives indicating changes of file or line
    number; the default is "#line %d \"%s\"
@@ -104,5 +105,10 @@ void pp_run(struct preprocess *pp);
 
 /* finish preprocessing and retrieve the result string */
 char *pp_finish(struct preprocess *pp);
+
+/* find a file on the standard include path */
+/* "ext" is an optional extension which may be applied to the file */
+/* returns the full name */
+char *find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *path);
 
 #endif

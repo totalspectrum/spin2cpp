@@ -46,6 +46,30 @@
 #include "flexbuf.h"
 #include "preprocess.h"
 
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
+/*
+ * function to read a single LATIN-1 character
+ * from a file
+ * returns number of bytes placed in buffer, or -1 on EOF
+ */
+static int
+read_latin1(FILE *f, char buf[4])
+{
+  int c = fgetc(f);
+  if (c == EOF)
+    return -1;
+  if (c <= 127) {
+    buf[0] = (char)c;
+    return 1;
+  }
+  buf[0] = 0xC0 + ((c>>6) & 0x1f);
+  buf[1] = 0x80 + ( c & 0x3f );
+  return 2;
+}
+
 /*
  * function to read a single UTF-8 character
  * from a file
@@ -57,7 +81,7 @@ read_single(FILE *f, char buf[4])
     int c = fgetc(f);
     if (c == EOF)
         return -1;
-    buf[0] = c;
+    buf[0] = (char)c;
     return 1;
 }
 
@@ -84,20 +108,27 @@ read_utf16(FILE *f, char buf[4])
        not handle surrogate pairs (0xD800 - 0xDFFF)
      */
     if (c < 128) {
-        buf[0] = c;
+        buf[0] = (char)c;
         r = 1;
     } else if (c < 0x800) {
         buf[0] = 0xC0 + ((c>>6) &  0x1F);
         buf[1] = 0x80 + ( c & 0x3F );
         r = 2;
-    } else {
+    } else if (c < 0x10000) {
         buf[0] = 0xE0 + ((c>>12) & 0x0F);
         buf[1] = 0x80 + ((c>>6) & 0x3F);
         buf[2] = 0x80 + (c & 0x3F);
         r = 3;
+    } else {
+        buf[0] = 0xE0 + ((c>>18) & 0x07);
+        buf[1] = 0x80 + ((c>>12) & 0x3F);
+        buf[2] = 0x80 + ((c>>6) & 0x3F);
+        buf[3] = 0x80 + (c & 0x3F);
+        r = 4;
     }
     return r;
 }
+
 
 /*
  * read a line
@@ -123,7 +154,11 @@ pp_nextline(struct preprocess *pp)
         c0 = fgetc(f);
         if (c0 < 0) return 0;
         if (c0 != 0xff) {
-            A->readfunc = read_single;
+            if (c0 >= 0x80 && c0 < 0xc0) {
+	        A->readfunc = read_latin1;
+	    } else {
+                A->readfunc = read_single;
+	    }
             flexbuf_addchar(&pp->line, c0);
         } else {
             c1 = fgetc(f);
@@ -387,16 +422,16 @@ static char *parse_getword(ParseState *P)
     int state;
 
     if (P->save) {
-        *P->save = P->c;
+        *P->save = (char)P->c;
         ptr = P->save;
     } else {
         ptr = P->str;
     }
     word = ptr;
     if (!*ptr) return ptr;
-    state = classify_char(*ptr);
+    state = classify_char((unsigned char)*ptr);
     ptr++;
-    while (*ptr && classify_char(*ptr) == state)
+    while (*ptr && classify_char((unsigned char)*ptr) == state)
         ptr++;
 
     P->save = ptr;
@@ -411,7 +446,7 @@ static char *parse_restofline(ParseState *P)
     char *ret;
 
     if (P->save) {
-        *P->save = P->c;
+      *P->save = (char)(P->c);
         ptr = P->save;
     } else {
         ptr = P->str;
@@ -503,7 +538,7 @@ expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
                 }
             }
             def = word;
-        } else if (isalpha(*word)) {
+        } else if (isalpha((unsigned char)*word)) {
             def = pp_getdef(pp, word);
             if (!def)
                 def = word;
@@ -557,6 +592,7 @@ handle_else(struct preprocess *pp, ParseState *P)
 {
     struct ifstate *I = pp->ifs;
 
+    (void)(P); /* unused parameter */
     if (!I) {
         doerror(pp, "#else without matching #if");
         return;
@@ -670,19 +706,79 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
     pp_define_internal(pp, name, def, PREDEF_FLAG_FREEDEFS);
 }
 
+char *
+find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *incpath)
+{
+  const char *path = NULL;
+  char *ret;
+  char *last;
+  FILE *f;
+
+  if (name[0] == '/' || name[0] == '\\') {
+    /* absolute path */
+    path = "";
+  } else if (incpath) {
+      path = incpath;
+  } else {
+    if (pp && pp->fil)
+      path = pp->fil->name;
+    if (!path)
+      path = "";
+  }
+  if (ext) {
+    ret = malloc(strlen(path) + strlen(name) + strlen(ext) + 2);
+  } else {
+    ret = malloc(strlen(path) + strlen(name) + 2);
+  }
+  if (!ret) {
+    fprintf(stderr, "FATAL ERROR: out of memory\n");
+    exit(2);
+  }
+  strcpy(ret, path);
+  last = strrchr(ret, '/');
+  if (last) {
+    last[1] = 0;
+  } else {
+    ret[0] = 0;
+  }
+  strcat(ret, name);
+  f = fopen(ret, "r");
+  if (!f && ext) {
+    strcat(ret, ext);
+    f = fopen(ret, "r");
+  }
+  if (!f) {
+    /* give up */
+    free(ret);
+    ret = NULL;
+  }
+  if (f)
+    fclose(f);
+  return ret;
+}
+
 static void
 handle_include(struct preprocess *pp, ParseState *P)
 {
     char *name;
+    char *orig_name;
+
     if (!pp_active(pp)) {
         return;
     }
-    name = parse_getquotedstring(P);
-    if (!name) {
+    orig_name = parse_getquotedstring(P);
+    if (!orig_name) {
         doerror(pp, "no string found for include");
         return;
     }
-    pp_push_file(pp, strdup(name));
+    /* if the file does not start with a /, it could be relative
+       to the current file name
+    */
+    name = find_file_on_path(pp, orig_name, NULL, NULL);
+    if (!name)
+      name = strdup(orig_name);
+    pp_push_file(pp, name);
+    pp->fil->lineno = 0;  /* hack to correct for \n in buffer?? */
 }
 
 /*
@@ -778,8 +874,9 @@ pp_finish(struct preprocess *pp)
  * set comment characters
  */
 void
-pp_setcomments(struct preprocess *pp, const char *start, const char *end)
+pp_setcomments(struct preprocess *pp, const char *line, const char *start, const char *end)
 {
+    pp->linecomment = line;
     pp->startcomment = start;
     pp->endcomment = end;
 }

@@ -1,5 +1,10 @@
 #!/bin/sh
-PROG=../spin2cpp
+
+if [ "$1" != "" ]; then
+  PROG=$1
+else
+  PROG=../spin2cpp
+fi
 CC=propeller-elf-gcc
 ok="ok"
 endmsg=$ok

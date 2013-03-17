@@ -103,10 +103,11 @@ makeClassNameSafe(char *classname)
  * allocate a new parser state
  */ 
 ParserState *
-NewParserState(const char *name)
+NewParserState(const char *fullname)
 {
     ParserState *P;
     char *s;
+    char *root;
 
     P = calloc(1, sizeof(*P));
     if (!P) {
@@ -114,23 +115,24 @@ NewParserState(const char *name)
         exit(1);
     }
     /* set up the base file name */
-    P->basename = strdup(name);
+    P->fullname = fullname;
+    P->basename = strdup(fullname);
     s = strrchr(P->basename, '.');
     if (s) *s = 0;
-
+    root = strrchr(P->basename, '/');
+#if defined(WIN32) || defined(WIN64)
+    if (!root) {
+      root = strrchr(P->basename, '\\');
+    }
+#endif
+    if (!root)
+      root = P->basename;
+    else
+      P->basename = root+1;
     /* set up the class name */
-    s = strrchr(P->basename, '/');
     /* allocate enough space to append "Spin" if necessary */
     P->classname = calloc(1, strlen(P->basename)+5);
-    if (s)
-        strcpy(P->classname, s+1);
-    else
-        strcpy(P->classname, P->basename);
-#if defined(WIN32)
-    s = strrchr(P->classname, '\\');
-    if (s)
-        P->classname = s+1;
-#endif
+    strcpy(P->classname, P->basename);
     makeClassNameSafe(P->classname);
     return P;
 }
@@ -259,20 +261,20 @@ parseFile(const char *name)
     char *fname = NULL;
     char *parseString = NULL;
 
-    fname = malloc(strlen(name) + 8);
-    strcpy(fname, name);
+    if (current)
+      fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
+    if (!fname)
+      fname = strdup(name);
+
     f = fopen(fname, "r");
-    if (!f) {
-        sprintf(fname, "%s.spin", name);
-        f = fopen(fname, "r");
-    }
     if (!f) {
         perror(name);
         free(fname);
         exit(1);
     }
     save = current;
-    P = NewParserState(name);
+    P = NewParserState(fname);
+
     /* if we have already visited an object with this name, skip it */
     /* also finds the last element in the list, so we can append to
        the list easily */
@@ -394,6 +396,7 @@ Usage(void)
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
     fprintf(stderr, "Usage: %s [options] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --ccode:   output (static) C code instead of C++\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --elf:     create executable ELF file\n");
@@ -409,6 +412,12 @@ Usage(void)
 
 #define MAX_CMDLINE 4096
 static char cmdline[MAX_CMDLINE];
+
+static void
+initCmdline(void)
+{
+  cmdline[0] = 0;
+}
 
 static void
 appendWithoutSpace(const char *s)
@@ -437,12 +446,67 @@ appendCompiler(void)
     appendToCmd(ccompiler);
 }
 
+char *
+ReplaceExtension(const char *basename, const char *extension)
+{
+  char *ret = malloc(strlen(basename) + strlen(extension) + 1);
+  char *dot;
+  if (!ret) {
+    fprintf(stderr, "FATAL: out of memory\n");
+    exit(2);
+  }
+  strcpy(ret, basename);
+  dot = strrchr(ret, '/');
+  if (!dot) dot = ret;
+  dot = strrchr(dot, '.');
+  if (dot) *dot = 0;
+  strcat(ret, extension);
+  return ret;
+}
+
+/* calculate a checksum for a file */
+/* the checksum is the 6th byte in the file */
+#define CHKSUM_OFFSET 5
+static int
+DoBinaryChecksum(const char *fname)
+{
+    int sum = 0;
+    int c;
+    int count = 0;
+    int retval = -1;
+    FILE *f;
+
+    f = fopen(fname, "r+b");
+    if (!f) {
+        fprintf(stderr, "spin2cpp binary output: ");
+        perror(fname);
+	return -1;
+    }
+    for(;;) {
+      c = fgetc(f);
+      if (c < 0) break;
+      if (count != CHKSUM_OFFSET)
+	sum += c;
+      count++;
+    }
+    sum = (0x14 - sum) & 0xff;
+    if (fseek(f, CHKSUM_OFFSET, SEEK_SET) == -1) {
+      fprintf(stderr, "Seek error on %s\n", fname);
+    } else {
+      fputc(sum, f);
+      retval = 0;
+    }
+    fclose(f);
+    return retval;
+}
+
 int
 main(int argc, char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
     int outputFiles = 0;
+    int outputBin = 0;
     int compile = 0;
     int prop2 = 0;
     ParserState *P;
@@ -451,6 +515,7 @@ main(int argc, char **argv)
     struct flexbuf argbuf;
     time_t timep;
     int i;
+    char *outname = NULL;
 
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor
@@ -458,7 +523,7 @@ main(int argc, char **argv)
        options have been parsed
     */
     pp_init(&gl_pp);
-    pp_setcomments(&gl_pp, "{", "}");
+    pp_setcomments(&gl_pp, "\'", "{", "}");
     pp_setlinedirective(&gl_pp, "{#line %d %s}");
 
     /* save our command line arguments and comments describing
@@ -493,7 +558,7 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--main", 6) || !strcmp(argv[0], "-main")) {
             outputMain = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--dat", 5)) {
+        } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
             outputDat = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--gas", 5)) {
@@ -512,6 +577,12 @@ main(int argc, char **argv)
             outputMain = 1;
             argv++; --argc;
             appendCompiler();
+        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")) {
+            compile = 1;
+            outputMain = 1;
+	    outputBin = 1;
+            argv++; --argc;
+            appendCompiler();
         } else if (!strncmp(argv[0], "--nopre", 7)) {
             gl_preprocess = 0;
             argv++; --argc;
@@ -525,6 +596,26 @@ main(int argc, char **argv)
                 appendToCmd("-mp2");
             }
             argv++; --argc;
+	} else if (!strncmp(argv[0], "-o", 2)) {
+	    char *opt;
+	    opt = argv[0];
+            argv++; --argc;
+            if (opt[2] == 0) {
+                if (argv[0] == NULL) {
+                    fprintf(stderr, "Error: expected another argument after -D\n");
+                    exit(2);
+                }
+                opt = argv[0];
+		argv++; --argc;
+            } else {
+                opt += 2;
+            }
+            /* if we are compiling, pass this on to the compiler too */
+            if (compile && !outputBin) {
+                appendToCmd("-o");
+                appendToCmd(opt);
+            }
+	    outname = strdup(opt);
         } else if (!strncmp(argv[0], "-D", 2)) {
             char *opt = argv[0];
             char *name;
@@ -534,8 +625,8 @@ main(int argc, char **argv)
                     fprintf(stderr, "Error: expected another argument after -D\n");
                     exit(2);
                 }
-                argv++; --argc;
                 opt = argv[0];
+                argv++; --argc;
             } else {
                 opt += 2;
             }
@@ -563,8 +654,7 @@ main(int argc, char **argv)
                 )
             {
                 appendToCmd(argv[0]); argv++; --argc;
-            } else if (!strncmp(argv[0], "-o", 2)
-                       || !strncmp(argv[0], "-u", 2)
+            } else if (!strncmp(argv[0], "-u", 2)
                        || !strncmp(argv[0], "-D", 2)
                 )
             {
@@ -597,9 +687,13 @@ main(int argc, char **argv)
     if (P) {
         if (outputDat) {
             if (gl_gas_dat) {
-                OutputGasFile(P->basename, P);
+	        if (!outname) outname = P->basename;
+	        outname = ReplaceExtension(outname, ".S");
+                OutputGasFile(outname, P);
             } else {
-                OutputDatFile(P->basename, P);
+	        if (!outname) outname = P->basename;
+		outname = ReplaceExtension(outname, ".dat");
+                OutputDatFile(outname, P);
             }
         } else {
             ParserState *Q;
@@ -621,6 +715,21 @@ main(int argc, char **argv)
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
                     exit(1);
                 }
+		if (retval == 0 && outputBin) {
+		  if (!outname) outname = argv[0];
+		  outname = ReplaceExtension(outname, ".binary");
+		  initCmdline();
+		  appendToCmd("propeller-elf-objcopy");
+		  appendToCmd("-O binary a.out");
+		  appendToCmd(outname);
+		  retval = system(cmdline);
+		  remove("a.out");
+		  if (retval == 0) {
+		      retval = DoBinaryChecksum(outname);
+		  }
+		}
+		if (retval != 0)
+		  gl_errors++;
             }
         }
     } else {

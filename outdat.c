@@ -11,21 +11,17 @@
 #include "spinc.h"
 
 void
-OutputDatFile(const char *name, ParserState *P)
+OutputDatFile(const char *fname, ParserState *P)
 {
     FILE *f = NULL;
-    char *fname = NULL;
     ParserState *save;
 
     save = current;
     current = P;
 
-    fname = malloc(strlen(name) + 8);
-    sprintf(fname, "%s.dat", name);
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
-        free(fname);
         exit(1);
     }
 
@@ -34,25 +30,20 @@ OutputDatFile(const char *name, ParserState *P)
     current = save;
 
     fclose(f);
-    free(fname);
 }
 
 void
-OutputGasFile(const char *name, ParserState *P)
+OutputGasFile(const char *fname, ParserState *P)
 {
     FILE *f = NULL;
-    char *fname = NULL;
     ParserState *save;
 
     save = current;
     current = P;
 
-    fname = malloc(strlen(name) + 8);
-    sprintf(fname, "%s.S", name);
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
-        free(fname);
         exit(1);
     }
 
@@ -61,5 +52,4 @@ OutputGasFile(const char *name, ParserState *P)
     current = save;
 
     fclose(f);
-    free(fname);
 }

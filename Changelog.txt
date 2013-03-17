@@ -1,7 +1,12 @@
 Version 1.03
 
+- Fixed error messages after #include (so correct line number and file
+  information is preserved)
+- Made the search paths for #include and OBJ sections relative to the
+  currently processed file.
+- Added --binary output option to produce a .binary file
 - Fixed a bug in the DAT section output for classes with names that
-have "Spin" appended.
+  have "Spin" appended.
 - Fixed DAT section output in C mode.
 
 Version 1.02
