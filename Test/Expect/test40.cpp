@@ -29,8 +29,7 @@ int32_t test40::Dec(int32_t Value)
   I = 1000000000;
   {
     int32_t _idx__0000;
-    _idx__0000 = 10;
-    do {
+    for(_idx__0000 = 1; _idx__0000 <= 10; (_idx__0000 = (_idx__0000 + 1))) {
       if (Value >= I) {
         Tx((((Value / I) + '0') + (X * -(I == 1))));
         Value = (Value % I);
@@ -41,8 +40,7 @@ int32_t test40::Dec(int32_t Value)
         }
       }
       I = (I / 10);
-      _idx__0000 = (_idx__0000 + -1);
-    } while (_idx__0000 >= 1);
+    }
   }
   return result;
 }

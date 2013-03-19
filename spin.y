@@ -396,9 +396,9 @@ repeatstmt:
       AST *from, *to, *step;
       AST *body = $4;
       body = CheckYield(body);
-      step = NewAST(AST_STEP, AstInteger(-1), body);
-      to = NewAST(AST_TO, NULL, step);
-      from = NewAST(AST_FROM, $2, to);
+      step = NewAST(AST_STEP, AstInteger(1), body);
+      to = NewAST(AST_TO, $2, step);
+      from = NewAST(AST_FROM, NULL, to);
       $$ = NewAST(AST_COUNTREPEAT, NULL, from);
     }
 
@@ -800,6 +800,10 @@ expritem:
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
    }
   | float '[' expr ']'
+   {
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
+   }
+  | string '[' expr ']'
    {
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
    }

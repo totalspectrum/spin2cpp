@@ -1,5 +1,7 @@
 Version 1.03
 
+- Use for() loop instead of do/while for simple counting loops
+- Added a -o option to specify the output file name
 - Fixed error messages after #include (so correct line number and file
   information is preserved)
 - Made the search paths for #include and OBJ sections relative to the
@@ -8,6 +10,7 @@ Version 1.03
 - Fixed a bug in the DAT section output for classes with names that
   have "Spin" appended.
 - Fixed DAT section output in C mode.
+- Fixed several other miscellaneous bugs.
 
 Version 1.02
 

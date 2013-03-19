@@ -25,11 +25,10 @@ int32_t test29::Str(int32_t Stringptr)
   }
   {
     int32_t _idx__0000;
-    _idx__0000 = strlen((char *) Stringptr);
-    do {
+    int32_t _limit__0001 = strlen((char *) Stringptr);
+    for(_idx__0000 = 1; _idx__0000 <= _limit__0001; (_idx__0000 = (_idx__0000 + 1))) {
       Tx(((uint8_t *)(Stringptr++))[0]);
-      _idx__0000 = (_idx__0000 + -1);
-    } while (_idx__0000 >= 1);
+    }
   }
   lockclr(Strlock);
   return 0;
