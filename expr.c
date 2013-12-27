@@ -141,6 +141,41 @@ GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr)
     return 1;
 }
 
+static int
+isBooleanOperator(AST *expr)
+{
+    int x;
+
+    if (expr->kind != AST_OPERATOR)
+        return 0;
+
+    x = expr->d.ival;
+    switch (x) {
+    case T_NOT:
+    case T_AND:
+    case T_OR:
+    case T_LE:
+    case '<':
+    case T_GE:
+    case '>':
+    case T_EQ:
+    case T_NE:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static int
+isNegateOperator(AST *expr)
+{
+  if (expr->kind != AST_OPERATOR)
+    return 0;
+  if (expr->d.ival != T_NEGATE)
+    return 0;
+  return 1;
+}
+
 /* code to print a label to a file
  * if "ref" is nonzero this is an array reference, so do not
  * dereference again
@@ -364,7 +399,14 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, "--", left, right);
         break;
     case T_NEGATE:
-        PrintInOp(f, "-", left, right);
+        /* watch out for a special case: boolean operators get a negation as well,
+	   so optimize away the double negate */
+        /* similarly for - - x */
+        if (isBooleanOperator(right) || (isNegateOperator(right))) {
+	    PrintOperator(f, right->d.ival, right->left, right->right);
+	} else {
+            PrintInOp(f, "-", left, right);
+	}
         break;
     case T_BIT_NOT:
         PrintLogicOp(f, "~", left, right);
@@ -685,11 +727,22 @@ static void
 RangeBitSet(FILE *f, AST *dst, uint32_t mask, int bitset)
 {
     AST *loexpr;
+    AST *hiexpr;
 
-    if (dst->right->right) {
-        loexpr = dst->right->right;
-    } else {
+    if (dst->right->right == NULL) {
         loexpr = dst->right->left;
+    } else {
+        int hi, lo;
+        loexpr = dst->right->right;
+	hiexpr = dst->right->left;
+	lo = EvalConstExpr(loexpr);
+	hi = EvalConstExpr(hiexpr);
+	if (hi < lo) {
+	  AST *tmp = loexpr;
+	  loexpr = hiexpr;
+	  hiexpr = tmp;
+	}
+
     }
     PrintLHS(f, dst->left, 1, 0);
     if (bitset) {
@@ -957,31 +1010,6 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
     }
 }
 
-static int
-isBooleanOperator(AST *expr)
-{
-    int x;
-
-    if (expr->kind != AST_OPERATOR)
-        return 0;
-
-    x = expr->d.ival;
-    switch (x) {
-    case T_NOT:
-    case T_AND:
-    case T_OR:
-    case T_LE:
-    case '<':
-    case T_GE:
-    case '>':
-    case T_EQ:
-    case T_NE:
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 
 /*
  * print a lookup array; returns the number of elements in it
@@ -1136,7 +1164,10 @@ PrintExpr(FILE *f, AST *expr)
         PrintLHS(f, expr, 0, 0);
         break;
     case AST_OPERATOR:
-        fprintf(f, "%s(", isBooleanOperator(expr) ? "-" : "");
+        if (isBooleanOperator(expr)) {
+	    fprintf(f, "-");
+	}
+	fprintf(f, "(");
         PrintOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
@@ -1324,11 +1355,11 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval - rval;
     case '/':
         if (rval == 0)
-            return 0;
+	    return rval;
         return lval / rval;
     case T_MODULUS:
         if (rval == 0)
-            return 0;
+	    return rval;
         return lval % rval;
     case '*':
         return lval * rval;

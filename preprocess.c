@@ -153,6 +153,21 @@ pp_nextline(struct preprocess *pp)
         int c0, c1;
         c0 = fgetc(f);
         if (c0 < 0) return 0;
+	if (c0 == 0xef) {
+	    A->readfunc = read_single;
+	    c1 = fgetc(f);
+	    if (c1 == 0xbb) {
+	        c1 = fgetc(f);
+		if (c1 == 0xbf) {
+		  /* discard the byte order mark */
+		} else {
+		  ungetc(c1, f);
+		  ungetc(0xbb, f);
+		}
+	    } else {
+	        ungetc(c1, f);
+	    }
+	} else
         if (c0 != 0xff) {
             if (c0 >= 0x80 && c0 < 0xc0) {
 	        A->readfunc = read_latin1;
@@ -412,6 +427,18 @@ classify_char(int c)
 }
 
 /*
+ * skip over a quoted string
+ * returns a pointer to the last character (normally a quote)
+ */
+static char *
+skip_quoted_string(char *ptr)
+{
+  while (*ptr && (*ptr != '\"'))
+    ptr++;
+  return ptr;
+}
+
+/*
  * fetch the next word
  * a word is a sequence of identifier characters, spaces, or
  * other characters
@@ -429,11 +456,16 @@ static char *parse_getword(ParseState *P)
     }
     word = ptr;
     if (!*ptr) return ptr;
-    state = classify_char((unsigned char)*ptr);
-    ptr++;
-    while (*ptr && classify_char((unsigned char)*ptr) == state)
-        ptr++;
 
+    if (*ptr == '\"') {
+      ptr = skip_quoted_string(ptr+1);
+      if (*ptr == '\"') ptr++;
+    } else {
+      state = classify_char((unsigned char)*ptr);
+      ptr++;
+      while (*ptr && classify_char((unsigned char)*ptr) == state)
+        ptr++;
+    }
     P->save = ptr;
     P->c = *ptr;
     *ptr = 0;
@@ -496,9 +528,7 @@ static char *parse_getquotedstring(ParseState *P)
         return NULL;
     ptr++;
     start = ptr;
-    while (*ptr && *ptr != '\"') {
-        ptr++;
-    }
+    ptr = skip_quoted_string(ptr);
     if (!*ptr)
         return NULL;
     P->save = ptr;

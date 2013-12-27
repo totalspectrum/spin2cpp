@@ -165,6 +165,7 @@ main()
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{{a nested comment}} $1 + 1", tokens0, N_ELEM(tokens0));
+    testTokenStream("{{{a nested doc comment}} $1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
     testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
     testTokenStream("con CON con99 Con 99", tokens2, N_ELEM(tokens2));
@@ -196,7 +197,7 @@ main()
     testFloat("3.14e5", 314000.0f);
 
     testIdentifier("x99+8", "X99");
-    testIdentifier("_a_b", "_a_b");
+    testIdentifier("_a_b", "_A_b");
     printf("all tests passed\n");
     return 0;
 }

@@ -19,7 +19,7 @@ OutputDatFile(const char *fname, ParserState *P)
     save = current;
     current = P;
 
-    f = fopen(fname, "w");
+    f = fopen(fname, "wb");
     if (!f) {
         perror(fname);
         exit(1);

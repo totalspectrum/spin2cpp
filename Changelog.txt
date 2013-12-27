@@ -1,3 +1,17 @@
+Version 1.05
+
+- Fixed a problem with double negation or negation of boolean operators
+  being printed as a predecrement.
+- Fixed usage of ID[n] in PASM code (where ID is a constant).
+
+Version 1.04
+
+- Fix precedence of NOT operator
+- Add quoting for spaces inside file names
+- Produce an error for redefined labels in DAT sections.
+- Rename constants that start with an _ to avoid conflicts with C.
+- Fix "reversed" range expressions like OUTA[9..10].
+
 Version 1.03
 
 - Use for() loop instead of do/while for simple counting loops

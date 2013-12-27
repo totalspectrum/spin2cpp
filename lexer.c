@@ -58,7 +58,7 @@ void strToLex(LexStream *L, const char *s, const char *name)
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
-    L->lineCounter = 1;
+    L->pendingLine = 1;
     L->fileName = name ? name : "<string>";
 }
 
@@ -134,7 +134,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     L->ptr = (void *)f;
     L->arg = NULL;
     L->getcf = filegetc;
-    L->lineCounter = 1;
+    L->pendingLine = 1;
     /* check for Unicode */
     c1 = fgetc(f);
     c2 = fgetc(f);
@@ -159,10 +159,14 @@ lexgetc(LexStream *L)
         --L->ungot_ptr;
         return L->ungot[L->ungot_ptr];
     }
+    if (L->pendingLine) {
+      L->lineCounter ++;
+      L->pendingLine = 0;
+      L->colCounter = 0;
+    }
     c = (L->getcf(L));
     if (c == '\n') {
-        L->lineCounter++;
-        L->colCounter = 0;
+        L->pendingLine = 1;
     } else if (c == '\t') {
         L->colCounter += TAB_STOP;
         /* now go back to the previous stop */
@@ -177,7 +181,7 @@ void
 lexungetc(LexStream *L, int c)
 {
     if (L->ungot_ptr == UNGET_MAX-1) {
-        fprintf(stderr, "ERROR: unget limit exceeded");
+        fprintf(stderr, "ERROR: unget limit exceeded\n");
     }
     L->ungot[L->ungot_ptr++] = c;
 }
@@ -427,7 +431,13 @@ is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     /* make sure identifiers do not conflict with C keywords by giving them
        an upper case first letter */
-    idstr[0] = toupper(idstr[0]);
+    {
+      char *p = idstr;
+      while (*p && *p == '_')
+	p++;
+      if (*p)
+	*p = toupper(*p);
+    }
     ast->d.string = idstr;
     *ast_ptr = ast;
     return T_IDENTIFIER;
@@ -486,6 +496,7 @@ again:
         struct flexbuf anno;
         int annotate = 0;
         int directive = 0;
+	int doccomment = 0;
 
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
@@ -504,22 +515,39 @@ again:
         } else if (c == '#') {
             c = lexgetc(L);
             directive = 1;
-        }
+        } else if (c == '{') {
+	    c = lexgetc(L);
+	    doccomment = 1;
+	}
         lexungetc(L, c);
         for(;;) {
             c = lexgetc(L);
-            if (c == '{')
+            if (c == '{' && !doccomment)
                 commentNest++;
-            else if (c == '}')
-                --commentNest;
+            else if (c == '}') {
+	        if (doccomment) {
+	            int peekc;
+		    peekc = lexgetc(L);
+		    if (peekc == '}') {
+		        commentNest = 0;
+		    } else {
+		        lexungetc(L, peekc);
+		    }
+		} else {
+		  --commentNest;
+		}
+	    }
             if (commentNest <= 0 || c == T_EOF)
                 break;
             if (annotate || directive) {
                 flexbuf_addchar(&anno, c);
             }
         }
-        if (c == T_EOF)
+        if (c == T_EOF) {
+	    if (commentNest > 0)
+	        fprintf(stderr, "WARNING: EOF seen inside comment\n");
             return c;
+	}
         if (annotate) {
             AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
             flexbuf_addchar(&anno, '\0');

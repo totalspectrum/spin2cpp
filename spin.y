@@ -121,7 +121,6 @@ CheckYield(AST *body)
 
 /* operators */
 %right T_ASSIGN
-%left T_NOT
 %left T_OR
 %left T_AND
 %left '<' '>' T_GE T_LE T_NE T_EQ
@@ -132,6 +131,7 @@ CheckYield(AST *body)
 %left '&'
 %left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
 %left T_NEGATE T_BIT_NOT T_ABS T_SQRT T_DECODE T_ENCODE
+%left T_NOT
 %left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT T_DOUBLEAT
 %left T_CONSTANT T_FLOAT T_TRUNC T_ROUND
 

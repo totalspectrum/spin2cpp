@@ -419,23 +419,55 @@ initCmdline(void)
   cmdline[0] = 0;
 }
 
+#define needsquote(x) (needEscape && ((x) == ' '))
+
 static void
-appendWithoutSpace(const char *s)
+appendWithoutSpace(const char *s, int needEscape)
 {
-    int len;
-    len = strlen(cmdline) + strlen(s);
-    if (len >= MAX_CMDLINE) {
-        fprintf(stderr, "command line too long");
+    int len = 0;
+    const char *src = s;
+    char *dst = cmdline;
+    int c;
+    int addquote = 0;
+
+    // move dst to the end of cmdline, and count up
+    // the size
+    while (*dst) {
+      dst++;
+      len++;
     }
-    strcat(cmdline, s);
+    // check to see if "s" contains any spaces; if so,
+    // we will have to escape those
+    while (*s) {
+      if (needsquote(*s))
+	addquote = 1;
+      s++;
+      len++;
+    }
+    if (addquote) len += 2;
+    if (len >= MAX_CMDLINE) {
+        fprintf(stderr, "command line too long: aborting");
+	exit(2);
+    }
+    // now actually copy it in
+    if (addquote)
+      *dst++ = '"';
+    do {
+      c = *src++;
+      if (!c) break;
+      *dst++ = c;
+    } while (c);
+    if (addquote)
+      *dst++ = '"';
+    *dst++ = 0;
 }
 
 static void
 appendToCmd(const char *s)
 {
     if (cmdline[0] != 0)
-        appendWithoutSpace(" ");
-    appendWithoutSpace(s);
+      appendWithoutSpace(" ", 0);
+    appendWithoutSpace(s, 1);
 }
 
 static void
@@ -706,7 +738,7 @@ main(int argc, char **argv)
                 }
                 if (compile) {
                     appendToCmd(Q->basename);
-                    appendWithoutSpace(cext);
+                    appendWithoutSpace(cext, 1);
                 }
             }
             if (compile && gl_errors == 0) {

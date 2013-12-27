@@ -37,6 +37,9 @@ struct lexstream {
 
     /* for handling Unicode CR+LF */
     int sawCr;
+
+    int pendingLine;  /* 1 if lineCounter needs incrementing */
+
 };
 
 extern int lexgetc(LexStream *L);
