@@ -50,11 +50,12 @@ PrintConstantDecl(FILE *f, AST *ast)
     }
 }
 
-static void
+static int
 PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int private)
 {
     AST *ast;
     enum astkind kind;
+    int n = 0;
 
     if (type == ast_type_byte)
         kind = AST_BYTELIST;
@@ -65,9 +66,10 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int private)
     
     for (ast = parse->varblock; ast; ast = ast->right) {
         if (ast->kind == kind) {
-            PrintVarList(f, type, ast->left, private);
+            n += PrintVarList(f, type, ast->left, private);
         }
     }
+    return n;
 }
 
 static void
@@ -126,9 +128,19 @@ PrintAllConstants(FILE *f, ParserState *parse)
     }
 }
 
+#if 0
+static void
+PrintObjectRefs(FILE *f, ParserState *parse)
+{
+}
+#endif
+
 static void
 PrintCHeaderFile(FILE *f, ParserState *parse)
 {
+    int n;
+    AST *ast;
+
     /* things we always need */
     if (gl_header) {
         fprintf(f, "%s", gl_header);
@@ -143,11 +155,35 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
 
     /* print the structure definition */
     fprintf(f, "\ntypedef struct %s {\n", parse->classname);
-    PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
-    PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
-    PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+    n = PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
+    n += PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
+    n += PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+
+    /* object references */
+    for (ast = parse->objblock; ast; ast = ast->right) {
+        ParserState *P = ast->d.ptr;
+        AST *objdef = ast->left;
+        if (objdef->kind == AST_IDENTIFIER) {
+            fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
+            n++;
+        } else if (objdef->kind == AST_ARRAYDECL) {
+            AST *arrname = objdef->left;
+            AST *arrsize = objdef->right;
+            if (arrname->kind == AST_IDENTIFIER) {
+                fprintf(f, "  %s\t%s[%d];\n", P->classname,
+                        arrname->d.string,
+                        EvalConstExpr(arrsize)
+                    );
+                n++;
+            } else {
+                ERROR(objdef, "internal error in object printing");
+            }
+        }
+    }
+
     /* needed to avoid problems with empty structures on Catalina */
-    fprintf(f, "  char dummy__;\n");
+    if (n == 0)
+        fprintf(f, "  char dummy__;\n");
     fprintf(f, "} %s;\n\n", parse->classname);
 
     /* now the public members */
@@ -372,7 +408,6 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* declare static functions and variables */
     if (gl_ccode && !gl_nospin) {
         PrintPrivateFunctionDecls(f, parse);
-        fprintf(f, "static %s thisobj;\n", parse->classname);
     }
     /* print data block, if applicable */
     if (parse->datblock) {
@@ -452,8 +487,9 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         fprintf(f, "\n");
 
         if (gl_ccode) {
+            fprintf(f, "%s MainObj__;\n\n", P->classname);
             fprintf(f, "int main() {\n");
-            fprintf(f, "  return %s_%s();\n", P->classname, defaultMethod->name);
+            fprintf(f, "  return %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
             fprintf(f, "}\n");
         } else {
             fprintf(f, "%s MainObj__;\n\n", P->classname);

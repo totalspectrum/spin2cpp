@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011,2012 Total Spectrum Software Inc.
+ * Copyright 2011-2014 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -47,6 +47,7 @@ int gl_ccode;
 int gl_nospin;
 int gl_static;
 int gl_gas_dat;
+int gl_normalizeIdents;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 struct preprocess gl_pp;
@@ -95,7 +96,8 @@ makeClassNameSafe(char *classname)
         || (hasUpper == 0 && hasDigit > 0);
 
     if (!ok) {
-        strcat(classname, "Spin");
+        classname[0] = toupper(classname[0]);
+        //strcat(classname, "Spin");
     }
 }
 
@@ -596,9 +598,12 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--normalize", 8) || !strcmp(argv[0], "-n")) {
+            gl_normalizeIdents = 1;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_ccode = 1;
-            gl_static = 1;
+            //gl_static = 1; // no longer necessary
             cext = ".c";
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {

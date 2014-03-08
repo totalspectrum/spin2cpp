@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011,2012 Total Spectrum Software Inc.
+ * Copyright 2011-2014 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -397,7 +397,16 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_ccode) {
-        fprintf(f, "int32_t\t%s_%s(", current->classname, func->name);
+        fprintf(f, "int32_t\t%s_%s( %s *self", current->classname, 
+                func->name, current->classname);
+        if (func->params) {
+            // more parameters coming
+            fprintf(f, ", ");
+        } else {
+            // all done
+            fprintf(f, " );\n");
+            return;
+        }
     } else {
         fprintf(f, "int32_t\t%s(", func->name);
     }
@@ -429,11 +438,13 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
     }
 }
 
-void
+/* returns the number of variables printed */
+int
 PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
 {
     AST *decl;
     int needcomma = 0;
+    int count = 0;
 
     fprintf(f, "  ");
     PrintType(f, typeast);
@@ -445,16 +456,18 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
         needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Expected variable list element\n");
-            return;
+            return count;
         }
         decl = ast->left;
         switch (decl->kind) {
         case AST_IDENTIFIER:
             fprintf(f, "%s", decl->d.string);
+            count++;
             break;
         case AST_ARRAYDECL:
             fprintf(f, "%s[%d]", decl->left->d.string,
                     (int)EvalConstExpr(decl->right));
+            count++;
             break;
         case AST_ANNOTATION:
             fprintf(f, "%s ", decl->d.string);
@@ -467,6 +480,7 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
         ast = ast->right;
     }
     fprintf(f, ";\n");
+    return count;
 }
 
 Symbol *VarSymbol(Function *func, AST *ast)
@@ -1024,12 +1038,16 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         PrintAnnotationList(f, curfunc->annotations, '\n');
         fprintf(f, "int32_t ");
         if (gl_ccode) {
-            fprintf(f, "%s_%s", parse->classname, pf->name);
+            fprintf(f, "%s_%s(", parse->classname, pf->name);
+            fprintf(f, "%s *self", parse->classname);
+            if (pf->params) {
+                fprintf(f, ", ");
+                PrintParameterList(f, pf->params);
+            }
         } else {
-            fprintf(f, "%s::%s", parse->classname, pf->name);
+            fprintf(f, "%s::%s(", parse->classname, pf->name);
+            PrintParameterList(f, pf->params);
         }
-        fprintf(f, "(");
-        PrintParameterList(f, pf->params);
         fprintf(f, ")\n{\n");
         if (!pf->result_used) {
             pf->resultexpr = AstInteger(0);

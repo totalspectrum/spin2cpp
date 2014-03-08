@@ -2,13 +2,14 @@
 // Simple lexical analyzer for a language where indentation
 // is significant
 //
-// Copyright (c) 2011,2012 Total Spectrum Software Inc.
+// Copyright (c) 2011-2014 Total Spectrum Software Inc.
 //
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 #include "spinc.h"
 #include "preprocess.h"
@@ -30,6 +31,7 @@ safe_isdigit(unsigned int x) {
 
 SymbolTable reservedWords;
 SymbolTable pasmWords;
+SymbolTable ckeywords;
 
 /* functions for handling string streams */
 static int 
@@ -359,6 +361,9 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         flexbuf_addchar(&fb, tolower(c));
         c = lexgetc(L);
     }
+    // add a trailing 0, and make sure there is room for an extra
+    // character in case the name mangling needs it
+    flexbuf_addchar(&fb, '\0');
     flexbuf_addchar(&fb, '\0');
     idstr = flexbuf_get(&fb);
     lexungetc(L, c);
@@ -429,15 +434,8 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 
 is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    /* make sure identifiers do not conflict with C keywords by giving them
-       an upper case first letter */
-    {
-      char *p = idstr;
-      while (*p && *p == '_')
-	p++;
-      if (*p)
-	*p = toupper(*p);
-    }
+    /* make sure identifiers do not conflict with C keywords */
+    CanonicalizeIdentifier(idstr);
     ast->d.string = idstr;
     *ast_ptr = ast;
     return T_IDENTIFIER;
@@ -804,6 +802,104 @@ struct reservedword {
     { "@@", T_DOUBLEAT },
 };
 
+static char *c_words[] = {
+    "abort",
+    "abs",
+    "and",
+    "and_eq",
+    "asm",
+    "atexit",
+    "atof",
+    "atoi",
+    "atol",
+    "auto",
+    "bitand",
+    "bitor",
+    "bool",
+    "break",
+    "bsearch",
+    "calloc",
+    "case",
+    "catch",
+    "char",
+    "class",
+    "compl",
+    "const",
+    "const_cast",
+    "continue",
+    "default",
+    "delete",
+    "div",
+    "do",
+    "double",
+    "dynamic_cast",
+    "else",
+    "enum",
+    "exit",
+    "explicit",
+    "export",
+    "extern",
+    "false",
+    "float",
+    "for",
+    "free",
+    "friend",
+    "getenv",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "labs",
+    "ldiv",
+    "long",
+    "malloc"
+    "mutable",
+    "namespace",
+    "new",
+    "not",
+    "not_eq",
+    "operator",
+    "or",
+    "or_eq",
+    "private",
+    "protected",
+    "public",
+    "qsort",
+    "rand",
+    "register",
+    "reinterpret_cast",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "srand",
+    "static",
+    "static_cast",
+    "struct",
+    "strtod",
+    "strtof",
+    "strtol",
+    "strtoul",
+    "system",
+    "switch",
+    "template",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typedef",
+    "typeid",
+    "union",
+    "unsigned",
+    "using",
+    "virtual",
+    "void",
+    "volatile",
+    "while",
+    "xor",
+    "xor_eq"
+};
+
 extern void defaultBuiltin(FILE *, Builtin *, AST *);
 extern void defaultVariable(FILE *, Builtin *, AST *);
 extern void memBuiltin(FILE *, Builtin *, AST *);
@@ -886,6 +982,11 @@ initLexer(int prop2)
     /* and builtin constants */
     for (i = 0; i < N_ELEMENTS(constants); i++) {
         AddSymbol(&reservedWords, constants[i].name, constants[i].type, AstInteger(constants[i].val));
+    }
+
+    /* C keywords */
+    for (i = 0; i < N_ELEMENTS(c_words); i++) {
+        AddSymbol(&ckeywords, c_words[i], SYM_RESERVED, NULL);
     }
 
     /* add the PASM instructions */
@@ -1116,5 +1217,50 @@ InitPasm(int prop2)
     for (i = 0; i < N_ELEMENTS(modifiers); i++) {
         AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)&modifiers[i]);
     }
+
 }
 
+
+/*
+ * "canonicalize" an identifier, to make sure it
+ * does not conflict with any C reserved words
+ */
+static bool
+Is_C_Reserved(const char *name)
+{
+    Symbol *s;
+    const char *ptr;
+    s = FindSymbol(&ckeywords, name);
+    if (s && !strcmp(name, s->name))
+        return true;
+    if (strlen(name) < 3)
+        return false;
+    for (ptr = name; *ptr; ptr++)
+        ;
+    if (ptr[-2] == '_' && ptr[-1] == 't')
+        return true;
+
+    return false;
+}
+
+void
+CanonicalizeIdentifier(char *idstr)
+{
+    if (gl_normalizeIdents) {
+        char *ptr = idstr;
+        int needCap = 1;
+        while (*ptr) {
+            if (needCap && isalpha(*ptr)) {
+                *ptr = toupper(*ptr);
+                needCap = 0;
+            } else {
+                *ptr = tolower(*ptr);
+            }
+            ptr++;
+        }
+        return;
+    }
+    if (Is_C_Reserved(idstr)) {
+        idstr[0] = toupper(idstr[0]);
+    }
+}

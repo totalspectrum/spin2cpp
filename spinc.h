@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011,2012 Total Spectrum Software Inc.
+ * Copyright 2011-2014 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "1.05"
+#define VERSIONSTR "2.00"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -32,6 +32,7 @@ extern int gl_static; /* if set, objects are static; this is the default in C mo
 extern int gl_preprocess; /* if set, run the preprocessor on input */
 extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
 extern char *gl_header; /* comment to prepend to files */
+extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 
 /* types */
 extern AST *ast_type_long;
@@ -185,7 +186,8 @@ struct cmddefs {
 #define PUBLIC 0
 #define PRIVATE 1
 #define LOCAL 2
-void PrintVarList(FILE *f, AST *type, AST *list, int scope);
+int PrintVarList(FILE *f, AST *type, AST *list, int scope);
+
 void PrintAssign(FILE *f, AST *left, AST *right);
 
 /* create a new AST describing a table lookup */
@@ -255,4 +257,8 @@ char *ReplaceExtension(const char *base, const char *ext);
 void OutputCppCode(const char *name, ParserState *P, int printMain);
 void OutputDatFile(const char *name, ParserState *P);
 void OutputGasFile(const char *name, ParserState *P);
+
+/* function to canonicalize an identifier */
+void CanonicalizeIdentifier(char *idstr);
+
 #endif

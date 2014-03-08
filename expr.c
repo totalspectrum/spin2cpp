@@ -4,6 +4,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+static void PrintObjectSym(FILE *f, Symbol *objsym, AST *expr);
+
 /* code to get an object pointer from an object symbol */
 ParserState *
 GetObjectPtr(Symbol *sym)
@@ -269,7 +271,7 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_VARIABLE:
         if (gl_ccode) {
-            fprintf(f, "thisobj.%s", sym->name);
+            fprintf(f, "self->%s", sym->name);
         } else {
             fprintf(f, "%s", sym->name);
         }
@@ -283,9 +285,19 @@ PrintSymbol(FILE *f, Symbol *sym)
 
 /* code to print a function call to a file */
 void
-PrintFuncCall(FILE *f, Symbol *sym, AST *params)
+PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 {
+    /* check for object method call */
     fprintf(f, "%s(", sym->name);
+    if (gl_ccode) {
+        if (objsym) {
+            PrintObjectSym(f, objsym, objref);
+        } else {
+            fprintf(f, "self");
+        }
+        if (params)
+            fprintf(f, ", ");
+    }
     PrintExprList(f, params);
     fprintf(f, ")");
 }
@@ -562,7 +574,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
                         if (gl_ccode) {
                             fprintf(f, "%s_", current->classname);
                         }
-                        PrintFuncCall(f, sym, NULL);
+                        PrintFuncCall(f, sym, NULL, NULL, NULL);
                     }
                 }
             } else if (sym->type == SYM_LABEL) {
@@ -1101,6 +1113,8 @@ PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
         }
         PrintLHS(f, expr, 0, 0);
     } else {
+        if (gl_ccode)
+            fprintf(f, "&self->");
         fprintf(f, "%s", objsym->name);
         if (isArray) {
             fprintf(f, "[0]");
@@ -1113,11 +1127,14 @@ void
 PrintExpr(FILE *f, AST *expr)
 {
     Symbol *sym, *objsym;
+    AST *objref;
     int c;
 
     if (!expr) {
         return;
     }
+    objref = NULL;
+    objsym = sym = NULL;
     switch (expr->kind) {
     case AST_INTEGER:
         PrintInteger(f, (int32_t)expr->d.ival);
@@ -1181,7 +1198,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_FUNCCALL:
         if (expr->left && expr->left->kind == AST_METHODREF) {
-            AST *objref = expr->left->left;
+            objref = expr->left->left;
             objsym = LookupAstSymbol(objref, "object reference");
             if (!objsym) return;
             if (objsym->type != SYM_OBJECT) {
@@ -1210,7 +1227,7 @@ PrintExpr(FILE *f, AST *expr)
             Builtin *b = sym->val;
             (*b->printit)(f, b, expr->right);
         } else if (sym->type == SYM_FUNCTION) {
-            PrintFuncCall(f, sym, expr->right);
+            PrintFuncCall(f, sym, expr->right, objsym, objref);
         } else {
             ERROR(expr, "%s is not a function", sym->name);
         }
