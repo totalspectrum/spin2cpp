@@ -11,6 +11,6 @@ PUB demo | i
   fds.start(31, 30, 0, 115200)
 
   '' and say hello
-  repeat
+  repeat 3
     fds.str(string("Hello, world!", 13, 10))
 
