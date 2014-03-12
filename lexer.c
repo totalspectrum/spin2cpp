@@ -1171,8 +1171,8 @@ InstrModifier modifiers[] = {
     { "if_c_ne_z", IF_NEVER | (0x6<<18) },
     { "if_z_ne_c", IF_NEVER | (0x6<<18) },
 
-    { "if_nc_of_nz", IF_NEVER | (0x7<<18) },
-    { "if_nz_of_nc", IF_NEVER | (0x7<<18) },
+    { "if_nc_or_nz", IF_NEVER | (0x7<<18) },
+    { "if_nz_or_nc", IF_NEVER | (0x7<<18) },
 
     { "if_c_and_z", IF_NEVER | (0x8<<18) },
     { "if_z_and_c", IF_NEVER | (0x8<<18) },
