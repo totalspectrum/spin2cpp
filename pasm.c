@@ -765,7 +765,8 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
     }
 
     if (inlineAsm) {
-        fprintf(f, "\"    .compress default\\n\"\n");
+        fprintf(f, "\"\t\t.compress default\\n\"\n");
+        fprintf(f, "\"\t\t.text\\n\"\n");
         fprintf(f, "\n);\n");
     }
     P->printLabelsVerbatim = saveState;
