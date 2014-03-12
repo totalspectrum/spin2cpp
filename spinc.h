@@ -189,10 +189,13 @@ struct cmddefs {
 };
 
 /* printing functions */
+
+/* flags for PrintVarList */
 #define PUBLIC 0
 #define PRIVATE 1
 #define LOCAL 2
-int PrintVarList(FILE *f, AST *type, AST *list, int scope);
+#define VOLATILE 4
+int PrintVarList(FILE *f, AST *type, AST *list, int flags);
 
 void PrintAssign(FILE *f, AST *left, AST *right);
 

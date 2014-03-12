@@ -51,7 +51,7 @@ PrintConstantDecl(FILE *f, AST *ast)
 }
 
 static int
-PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int private)
+PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int flags)
 {
     AST *ast;
     enum astkind kind;
@@ -66,7 +66,7 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int private)
     
     for (ast = parse->varblock; ast; ast = ast->right) {
         if (ast->kind == kind) {
-            n += PrintVarList(f, type, ast->left, private);
+            n += PrintVarList(f, type, ast->left, flags);
         }
     }
     return n;
@@ -140,6 +140,7 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
 {
     int n;
     AST *ast;
+    int flags = PRIVATE;
 
     /* things we always need */
     if (gl_header) {
@@ -153,11 +154,14 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
     PrintSubHeaders(f, parse);
     PrintAllConstants(f, parse);
 
+    if (parse->volatileVariables)
+        flags |= VOLATILE;
+
     /* print the structure definition */
     fprintf(f, "\ntypedef struct %s {\n", parse->classname);
-    n = PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
-    n += PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
-    n += PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+    n = PrintAllVarListsOfType(f, parse, ast_type_long, flags);
+    n += PrintAllVarListsOfType(f, parse, ast_type_word, flags);
+    n += PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
@@ -199,6 +203,7 @@ static void
 PrintCppHeaderFile(FILE *f, ParserState *parse)
 {
     AST *ast;
+    int flags = PRIVATE;
 
     /* things we always need */
     if (gl_header) {
@@ -248,10 +253,12 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
     /* Note that Spin sorts these, outputing first the 32 bit
        vars, then 16, finally 8
     */
+    if (parse->volatileVariables)
+        flags |= VOLATILE;
     fprintf(f, "private:\n");
-    PrintAllVarListsOfType(f, parse, ast_type_long, PRIVATE);
-    PrintAllVarListsOfType(f, parse, ast_type_word, PRIVATE);
-    PrintAllVarListsOfType(f, parse, ast_type_byte, PRIVATE);
+    PrintAllVarListsOfType(f, parse, ast_type_long, flags);
+    PrintAllVarListsOfType(f, parse, ast_type_word, flags);
+    PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);

@@ -446,13 +446,16 @@ PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(FILE *f, AST *typeast, AST *ast, int scope)
+PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
 
     fprintf(f, "  ");
+    if (flags & VOLATILE) {
+        fprintf(f, "volatile ");
+    }
     PrintType(f, typeast);
     fprintf(f, "\t");
     while (ast != NULL) {

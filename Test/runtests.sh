@@ -80,6 +80,7 @@ do
   $PROG --elf -Os -u __serial_exit -o $j.elf $i
   rm -f $j.out
   propeller-load $j.elf -r -t -q > $j.out
+  # the --lines=+6 skips the first 6 lines that propeller-load printed
   tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
