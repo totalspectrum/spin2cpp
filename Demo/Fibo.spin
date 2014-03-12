@@ -17,7 +17,7 @@ PUB run | i,x,now,elapsed
   '' and say hello
   repeat i from 10 to 26
     now := cnt
-    x := fibo(i)
+    x := Fibo(i)
     elapsed := cnt - now
     fds.str(string("fibo("))
     fds.dec(i)
@@ -32,7 +32,7 @@ PUB run | i,x,now,elapsed
   fds.str(string("done", 13, 10))
   repeat
 
-PUB fibo(x)
+PUB Fibo(x)
   if (x < 2)
     return x
   return fibo(x-1) + fibo(x-2)
