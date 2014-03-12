@@ -1,5 +1,5 @@
 CC = propeller-elf-gcc
-CFLAGS = -O
+CFLAGS = -Os
 SPIN2CPP = ../spin2cpp --ccode --gas
 
 default: hello.elf fibo.elf count.elf
