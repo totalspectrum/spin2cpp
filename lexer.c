@@ -358,7 +358,8 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        flexbuf_addchar(&fb, tolower(c));
+        //flexbuf_addchar(&fb, tolower(c));
+        flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
     // add a trailing 0, and make sure there is room for an extra
@@ -390,7 +391,16 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     sym = FindSymbol(&reservedWords, idstr);
     if (sym != NULL) {
-        if (sym->type == SYM_BUILTIN || sym->type == SYM_CONSTANT
+        if (sym->type == SYM_BUILTIN)
+        {
+            /* run any parse hooks */
+            Builtin *b = (Builtin *)sym->val;
+            if (b && b->parsehook) {
+                (*b->parsehook)(b);
+            }
+            goto is_identifier;
+        }
+        if (sym->type == SYM_CONSTANT
             || sym->type == SYM_FLOAT_CONSTANT)
         {
             goto is_identifier;
@@ -435,7 +445,9 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     /* make sure identifiers do not conflict with C keywords */
-    CanonicalizeIdentifier(idstr);
+    if (gl_normalizeIdents || Is_C_Reserved(idstr)) {
+        NormalizeIdentifier(idstr);
+    }
     ast->d.string = idstr;
     *ast_ptr = ast;
     return T_IDENTIFIER;
@@ -909,35 +921,39 @@ extern void strcompBuiltin(FILE *, Builtin *, AST *);
 extern void waitBuiltin(FILE *, Builtin *, AST *);
 extern void rebootBuiltin(FILE *, Builtin *, AST *);
 
+/* hooks to be called when we recognize a builtin */
+static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }
+
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "CLKFREQ" },
-    { "cognew", 2, defaultBuiltin, "cognew" },
-    { "cogstop", 1, defaultBuiltin, "cogstop" },
-    { "cogid", 0, defaultBuiltin, "cogid" },
+    { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL },
+    { "cognew", 2, defaultBuiltin, "cognew", NULL },
+    { "cogstop", 1, defaultBuiltin, "cogstop", NULL },
+    { "cogid", 0, defaultBuiltin, "cogid", NULL },
 
-    { "coginit", 3, defaultBuiltin, "coginit" },
+    { "coginit", 3, defaultBuiltin, "coginit", NULL },
 
-    { "locknew", 0, defaultBuiltin, "locknew" },
-    { "lockset", 1, defaultBuiltin, "lockset" },
-    { "lockclr", 1, defaultBuiltin, "lockclr" },
-    { "lockret", 1, defaultBuiltin, "lockret" },
-    { "strsize", 1, str1Builtin, "strlen" },
-    { "strcomp", 1, strcompBuiltin, "strcmp" },
-    { "waitcnt", 1, defaultBuiltin, "waitcnt" },
+    { "locknew", 0, defaultBuiltin, "locknew", lockhook },
+    { "lockset", 1, defaultBuiltin, "lockset", lockhook },
+    { "lockclr", 1, defaultBuiltin, "lockclr", lockhook },
+    { "lockret", 1, defaultBuiltin, "lockret", lockhook },
 
-    { "waitpne", 3, waitBuiltin, "waitpne" },
-    { "waitpeq", 3, waitBuiltin, "waitpeq" },
+    { "strsize", 1, str1Builtin, "strlen", NULL },
+    { "strcomp", 1, strcompBuiltin, "strcmp", NULL },
+    { "waitcnt", 1, defaultBuiltin, "waitcnt", NULL },
 
-    { "reboot", 0, rebootBuiltin, "reboot" },
+    { "waitpne", 3, waitBuiltin, "waitpne", NULL },
+    { "waitpeq", 3, waitBuiltin, "waitpeq", NULL },
 
-    { "longfill", 4, memFillBuiltin, "memset" },
-    { "longmove", 4, memBuiltin, "memmove" },
-    { "wordfill", 2, memFillBuiltin, "memset" },
-    { "wordmove", 2, memBuiltin, "memmove" },
-    { "bytefill", 1, memBuiltin, "memset" },
-    { "bytemove", 1, memBuiltin, "memcpy" },
+    { "reboot", 0, rebootBuiltin, "reboot", NULL },
 
-    { "getcnt", 0, defaultBuiltin, "getcnt" },
+    { "longfill", 4, memFillBuiltin, "memset", NULL },
+    { "longmove", 4, memBuiltin, "memmove", NULL },
+    { "wordfill", 2, memFillBuiltin, "memset", NULL },
+    { "wordmove", 2, memBuiltin, "memmove", NULL },
+    { "bytefill", 1, memBuiltin, "memset", NULL },
+    { "bytemove", 1, memBuiltin, "memcpy", NULL },
+
+    { "getcnt", 0, defaultBuiltin, "getcnt", NULL },
 };
 
 struct constants {
@@ -1225,7 +1241,7 @@ InitPasm(int prop2)
  * "canonicalize" an identifier, to make sure it
  * does not conflict with any C reserved words
  */
-static bool
+bool
 Is_C_Reserved(const char *name)
 {
     Symbol *s;
@@ -1244,23 +1260,17 @@ Is_C_Reserved(const char *name)
 }
 
 void
-CanonicalizeIdentifier(char *idstr)
+NormalizeIdentifier(char *idstr)
 {
-    if (gl_normalizeIdents) {
-        char *ptr = idstr;
-        int needCap = 1;
-        while (*ptr) {
-            if (needCap && isalpha(*ptr)) {
-                *ptr = toupper(*ptr);
-                needCap = 0;
-            } else {
-                *ptr = tolower(*ptr);
-            }
-            ptr++;
+    char *ptr = idstr;
+    int needCap = 1;
+    while (*ptr) {
+        if (needCap && isalpha(*ptr)) {
+            *ptr = toupper(*ptr);
+            needCap = 0;
+        } else {
+            *ptr = tolower(*ptr);
         }
-        return;
-    }
-    if (Is_C_Reserved(idstr)) {
-        idstr[0] = toupper(idstr[0]);
+        ptr++;
     }
 }

@@ -65,39 +65,39 @@ yylex()
 const char *gl_progname = "spin2cpp";
 char *gl_header = NULL;
 
+static int
+FindSymbolExact(SymbolTable *S, const char *name)
+{
+    Symbol *sym = FindSymbol(S, name);
+    if (!sym)
+        return 0;
+    if (!strcmp(sym->name, name))
+        return 1;
+    return 0;
+}
+
 /*
  * make sure that a class name is safe, i.e. will
  * not conflict with any identifier or C keyword/function
- * Identifiers will have exactly 1 capital letter (the first),
- * so if there is any capital letter other than the first then
- * we are fine. If the class name is all lower case, but has
- * some digits or underscores, then it's also OK. Otherwise
- * add a "Spin" to the end
  */
 static void
-makeClassNameSafe(char *classname)
+makeClassNameSafe(ParserState *P)
 {
-    char *s;
-    int hasUpper = 0;
-    int hasDigit = 0;
-    int ok = 0;
-
-    for (s = classname; *s; s++) {
-        if (isupper(*s))
-            hasUpper++;
-        else if (isdigit(*s) || *s == '_')
-            hasDigit++;
-        else if (!islower(*s)) {
-            *s = '_';
-            hasDigit++;
-        }
+    // check for conflict with C reserved word */
+    if ( Is_C_Reserved(P->classname) 
+         || (0 != FindSymbolExact(&P->objsyms, P->classname))
+        )
+    {
+        NormalizeIdentifier(P->classname);
     }
-    ok = (hasUpper > 1) || (hasUpper == 1 && !isupper(classname[0]))
-        || (hasUpper == 0 && hasDigit > 0);
 
-    if (!ok) {
-        classname[0] = toupper(classname[0]);
-        //strcat(classname, "Spin");
+    // now check for conflicts within the class
+    while (0 != FindSymbolExact(&P->objsyms, P->classname)) {
+        char *newname = calloc(1, strlen(P->classname)+8);
+        strcpy(newname, P->classname);
+        free(P->classname);
+        P->classname = newname;
+        strcat(P->classname, "Class");
     }
 }
 
@@ -132,10 +132,8 @@ NewParserState(const char *fullname)
     else
       P->basename = root+1;
     /* set up the class name */
-    /* allocate enough space to append "Spin" if necessary */
-    P->classname = calloc(1, strlen(P->basename)+5);
+    P->classname = calloc(1, strlen(P->basename)+1);
     strcpy(P->classname, P->basename);
-    makeClassNameSafe(P->classname);
     return P;
 }
 
@@ -338,6 +336,9 @@ parseFile(const char *name)
     DeclareVariables(P);
     DeclareLabels(P);
     DeclareFunctions(P);
+
+    /* work to avoid conflicts with variables and constants */
+    makeClassNameSafe(P);
 
     if (gl_errors > 0) {
         free(fname);

@@ -7,7 +7,7 @@
 class test94 {
 public:
   static const int Myticks = 101;
-  Userdef	U;
+  userdef	U;
   int32_t	Foo(void);
 private:
 };

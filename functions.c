@@ -111,6 +111,12 @@ ScanFunctionBody(Function *fdef, AST *body)
                     if (!fdef->localarray)
                         fdef->localarray = NewTemporaryVariable("_local_");
                 }
+            } else {
+                /* Taking the address of an object variable? That will make the object volatile. */
+                sym = FindSymbol(&current->objsyms, ast->d.string);
+                if (sym && sym->type == SYM_VARIABLE) {
+                    current->volatileVariables = 1;
+                }
             }
         } else if (ast->kind == AST_RESULT) {
             /* hack to make F32.spin work: it expects all variables

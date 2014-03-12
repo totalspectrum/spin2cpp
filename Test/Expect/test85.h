@@ -11,7 +11,7 @@ public:
   static const int _Clkfreq = 80000000;
   static const int Max_obj = 3;
   FullDuplexSerial	Fds;
-  Objarrtest	V[3];
+  objarrtest	V[3];
   int32_t	Main(void);
 private:
   int32_t	Printn(int32_t I);

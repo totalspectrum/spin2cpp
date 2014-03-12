@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012 Total Spectrum Software Inc.
+// Copyright 2012-2014 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -282,6 +282,12 @@ PrintMacros(FILE *f, ParserState *parse)
     }
     fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
 
+    // note: the lockset() and lockclr() macros really should be memory
+    // barriers, but older propgcc do not have them marked that way
+    if (parse->needsLockFuncs) {
+        fprintf(f, "#undef lockclr /* work around a bug in propgcc */\n");
+        fprintf(f, "#define lockclr(i) __asm__ volatile( \"  lockclr %%[_id]\" : : [_id] \"r\"(i) :)\n");
+    }
     fprintf(f, "#else\n");
 
     fprintf(f, "#define INLINE__ static\n");
@@ -293,10 +299,12 @@ PrintMacros(FILE *f, ParserState *parse)
     }
     if (gl_ccode) {
         fprintf(f, "#define waitcnt(n) _waitcnt(n)\n");
-        fprintf(f, "#define locknew() _locknew()\n");
-        fprintf(f, "#define lockret(i) _lockret(i)\n");
-        fprintf(f, "#define lockset(i) _lockset(i)\n");
-        fprintf(f, "#define lockclr(i) _lockclr(i)\n");
+        if (parse->needsLockFuncs) {
+            fprintf(f, "#define locknew() _locknew()\n");
+            fprintf(f, "#define lockret(i) _lockret(i)\n");
+            fprintf(f, "#define lockset(i) _lockset(i)\n");
+            fprintf(f, "#define lockclr(i) _lockclr(i)\n");
+        }
         fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
         fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
         fprintf(f, "#define cogstop(i) _cogstop(i)\n");

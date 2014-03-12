@@ -2,6 +2,7 @@
 #define LEX_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "spin.tab.h"
 
 /*
@@ -68,5 +69,16 @@ void fileToLex(LexStream *lex, FILE *f, const char *name);
  * otherwise *ast will be set to NULL
  */
 int getToken(LexStream *, AST **ast);
+
+/*
+ * function to check for C reserved words
+ */
+bool Is_C_Reserved(const char *);
+
+/*
+ * function to convert an identifier to have upper case
+ * first char and lower case remainder
+ */
+void NormalizeIdentifier(char *name);
 
 #endif

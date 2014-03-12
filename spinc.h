@@ -116,8 +116,12 @@ typedef struct funcdef {
 typedef struct builtin {
     const char *name;
     int         numparameters;
+    /* function to actually print the builtin */
     void        (*printit)(FILE *, struct builtin *, AST *params);
-    const char *cname;
+    const char *cname;  /* c version of the name */
+
+    /* hook called during parsing, or NULL if none needed */
+    void        (*parsehook)(struct builtin *);
 } Builtin;
 
 /* parser state structure */
@@ -166,10 +170,12 @@ struct parserstate {
     char needsLookdown;
     char needsHighmult;
     char needsBitEncode;
+    char needsLockFuncs;
 
     /* flags for output */
     char printLabelsVerbatim;
     char fixImmediate;
+    char volatileVariables;
 };
 
 /* the current parser state */
