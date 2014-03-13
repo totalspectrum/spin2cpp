@@ -6,7 +6,7 @@
 
 class test94 {
 public:
-  static const int Myticks = 101;
+  static const int Myticks = (userdef::Ticks + 1);
   userdef	U;
   int32_t	Foo(void);
 private:

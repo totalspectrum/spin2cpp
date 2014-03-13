@@ -327,7 +327,7 @@ PrintInOp(FILE *f, const char *op, AST *left, AST *right)
 static void
 PrintHexExpr(FILE *f, AST *left)
 {
-    if (IsConstExpr(left)) {
+    if (left->kind == AST_INTEGER || left->kind == AST_FLOAT) {
         fprintf(f, "0x%x", EvalConstExpr(left));
     } else {
         PrintExpr(f, left);

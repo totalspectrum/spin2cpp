@@ -36,16 +36,44 @@ PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
 /*
  * print out a header file
  */
+
+/*
+ * print constant declarations
+ */
+static void
+PrintConstant(FILE *f, AST *ast)
+{
+    if (IsFloatConst(ast)) {
+        PrintFloat(f, EvalConstExpr(ast));
+        return;
+    }
+    PrintExpr(f, ast);
+}
+
 static void
 PrintConstantDecl(FILE *f, AST *ast)
 {
+    const char *name = ast->d.string;
+    AST *expr = NULL;
+    Symbol *sym;
+
+    if (!IsConstExpr(ast)) {
+        ERROR(ast, "%s is not constant", name);
+        return;
+    }
+    sym = LookupSymbol(name);
+    if (!sym) {
+        ERROR(ast, "constant symbol %s not declared??", name);
+        return;
+    }
+    expr = (AST *)sym->val;
     if (gl_ccode) {
         fprintf(f, "#define %s (", ast->d.string);
-        PrintInteger(f, EvalConstExpr(ast));
+        PrintConstant(f, expr);
         fprintf(f, ")\n");
     } else {
         fprintf(f, "  static const int %s = ", ast->d.string);
-        PrintInteger(f, EvalConstExpr(ast));
+        PrintConstant(f, expr);
         fprintf(f, ";\n");
     }
 }

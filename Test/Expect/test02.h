@@ -6,7 +6,7 @@
 class test02 {
 public:
   static const int X = 1;
-  static const int Y = 3;
+  static const int Y = (X + 2);
 private:
 };
 

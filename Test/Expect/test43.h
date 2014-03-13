@@ -8,8 +8,8 @@ class test43 {
 public:
   static const int Cols = 40;
   static const int Rows = 12;
-  static const int Screensize = 480;
-  static const int Lastrow = 440;
+  static const int Screensize = (Cols * Rows);
+  static const int Lastrow = (Screensize - Cols);
   test01	A;
   int32_t	Getx(void);
 private:

@@ -1,5 +1,5 @@
 #include <propeller.h>
-#include "test42.h"
+#include "test113.h"
 
 #ifdef __GNUC__
 #define INLINE__ static inline
@@ -10,8 +10,8 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test42::Getx(void)
+int32_t test113::Foo(int32_t Aa)
 {
-  return test01::X;
+  return (Aa | (Z << 1));
 }
 
