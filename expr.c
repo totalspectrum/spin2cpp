@@ -1450,6 +1450,28 @@ EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 
 #define PASM_FLAG 0x01
 
+static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid);
+
+/*
+ * evaluate an expression in a particular parser state
+ */
+static ExprVal
+EvalExprInState(ParserState *P, AST *expr, unsigned flags, int *valid)
+{
+    ParserState *saveState;
+    Function *saveFunc;
+    ExprVal ret;
+
+    saveState = current;
+    saveFunc = curfunc;
+    current = P;
+    curfunc = 0;
+    ret = EvalExpr(expr, flags, valid);
+    current = saveState;
+    curfunc = saveFunc;
+    return ret;
+}
+
 /*
  * evaluate an expression
  * if unable to evaluate, return 0 and set "*valid" to 0
@@ -1461,7 +1483,6 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     ExprVal lval, rval;
     int reportError = (valid == NULL);
     ExprVal ret;
-    ParserState *pushed;
 
     if (!expr)
         return intExpr(0);
@@ -1504,10 +1525,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return intExpr(0);
         }
         /* while we're evaluating, use the object context */
-        pushed = current;
-        current = GetObjectPtr(objsym);
-        ret = EvalExpr(sym->val, flags, valid);
-        current = pushed;
+        ret = EvalExprInState(GetObjectPtr(objsym), sym->val, flags, valid);
         return ret;
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
