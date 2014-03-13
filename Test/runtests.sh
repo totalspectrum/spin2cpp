@@ -16,7 +16,7 @@ do
   $PROG --ccode --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.c $j.c
   then
-      rm -f $j.h $j.cpp
+      rm -f $j.h $j.c
       echo $j passed
   else
       echo $j failed

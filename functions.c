@@ -403,7 +403,7 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_ccode) {
-        fprintf(f, "int32_t\t%s_%s( %s *self", current->classname, 
+        fprintf(f, "int32_t %s_%s( %s *self", current->classname, 
                 func->name, current->classname);
         if (func->params) {
             // more parameters coming
@@ -420,28 +420,34 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
     fprintf(f, ");\n");
 }
 
-void
+int
 PrintPublicFunctionDecls(FILE *f, ParserState *parse)
 {
     Function *pf;
+    int n = 0;
 
     for (pf = parse->functions; pf; pf = pf->next) {
         if (!pf->is_public)
             continue;
         PrintFunctionDecl(f, pf, 0);
+        n++;
     }
+    return n;
 }
 
-void
+int
 PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
 {
     Function *pf;
+    int n = 0;
 
     for (pf = parse->functions; pf; pf = pf->next) {
         if (pf->is_public)
             continue;
         PrintFunctionDecl(f, pf, 1);
+        n++;
     }
+    return n;
 }
 
 /* returns the number of variables printed */
@@ -1045,16 +1051,18 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         }
         curfunc = pf;
         PrintAnnotationList(f, curfunc->annotations, '\n');
-        fprintf(f, "int32_t ");
         if (gl_ccode) {
-            fprintf(f, "%s_%s(", parse->classname, pf->name);
+            if (!pf->is_public) {
+                fprintf(f, "static ");
+            }
+            fprintf(f, "int32_t %s_%s(", parse->classname, pf->name);
             fprintf(f, "%s *self", parse->classname);
             if (pf->params) {
                 fprintf(f, ", ");
                 PrintParameterList(f, pf->params);
             }
         } else {
-            fprintf(f, "%s::%s(", parse->classname, pf->name);
+            fprintf(f, "int32_t %s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf->params);
         }
         fprintf(f, ")\n{\n");

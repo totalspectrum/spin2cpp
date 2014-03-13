@@ -229,8 +229,8 @@ void DeclareFunctions(ParserState *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate);
 void DeclareAnnotation(AST *annotation);
-void PrintPublicFunctionDecls(FILE *f, ParserState *P);
-void PrintPrivateFunctionDecls(FILE *f, ParserState *P);
+int PrintPublicFunctionDecls(FILE *f, ParserState *P);
+int PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);

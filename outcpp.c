@@ -450,7 +450,11 @@ PrintCppFile(FILE *f, ParserState *parse)
 
     /* declare static functions and variables */
     if (gl_ccode && !gl_nospin) {
-        PrintPrivateFunctionDecls(f, parse);
+        int n;
+
+        n = PrintPrivateFunctionDecls(f, parse);
+        if (n > 0)
+            fprintf(f, "\n");
     }
     /* print data block, if applicable */
     if (parse->datblock) {
