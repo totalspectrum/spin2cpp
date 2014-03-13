@@ -206,7 +206,7 @@ AST *NewLookup(AST *expr, AST *table);
 void DeclareLabels(ParserState *);
 
 /* declare constants */
-void DeclareConstants(AST *conlist);
+void DeclareConstants(AST **conlist);
 
 /* declare all functions */
 void DeclareFunctions(ParserState *);

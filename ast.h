@@ -125,6 +125,7 @@ struct AST {
 /* function declarations */
 AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
+void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
 AST *AstInteger(long intval);
 AST *AstIdentifier(const char *name);

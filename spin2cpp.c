@@ -154,10 +154,44 @@ EnterConstant(const char *name, AST *expr)
 }
 
 void
-DeclareConstants(AST *conlist)
+DeclareConstants(AST **conlist_ptr)
 {
+    AST *conlist;
     AST *upper, *ast, *id;
+    AST *next;
     int default_val = 0;
+    int n;
+
+    conlist = *conlist_ptr;
+
+    // first do all the simple assignments
+    // this is necessary because Spin will sometimes allow out-of-order
+    // assignments
+
+    do {
+        n = 0; // no assignments yet
+        upper = conlist;
+        while (upper) {
+            next = upper->right;
+            if (upper->kind == AST_LISTHOLDER) {
+                ast = upper->left;
+                if (ast->kind == AST_ASSIGN) {
+                    if (IsConstExpr(ast->right)) {
+                        EnterConstant(ast->left->d.string, ast->right);
+                        n++;
+                        // now pull the assignment out so we don't see it again
+                        RemoveFromList(conlist_ptr, upper);
+                        upper->right = *conlist_ptr;
+                        *conlist_ptr = upper;
+                        conlist_ptr = &upper->right;
+                        conlist = *conlist_ptr;
+                    }
+                }
+            }
+            upper = next;
+        }
+
+    } while (n > 0);
 
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
@@ -332,7 +366,7 @@ parseFile(const char *name)
     }
 
     /* now declare all the symbols that weren't already declared */
-    DeclareConstants(P->conblock);
+    DeclareConstants(&P->conblock);
     DeclareVariables(P);
     DeclareLabels(P);
     DeclareFunctions(P);
@@ -402,7 +436,8 @@ Usage(void)
     fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --ccode:   output (static) C code instead of C++\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
-    fprintf(stderr, "  --elf:     create executable ELF file\n");
+    fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
+    fprintf(stderr, "  --catalina: convert to C and run Catalina on result\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
@@ -474,10 +509,14 @@ appendToCmd(const char *s)
 }
 
 static void
-appendCompiler(void)
+appendCompiler(const char *ccompiler)
 {
-    const char *ccompiler = getenv("CC");
-    if (!ccompiler) ccompiler = "propeller-elf-gcc";
+    if (!ccompiler) {
+        ccompiler = getenv("CC");
+    }
+    if (!ccompiler) {
+        ccompiler = "propeller-elf-gcc";
+    }
     appendToCmd(ccompiler);
 }
 
@@ -614,13 +653,20 @@ main(int argc, char **argv)
             compile = 1;
             outputMain = 1;
             argv++; --argc;
-            appendCompiler();
+            appendCompiler(NULL);
+        } else if (!strncmp(argv[0], "--catalina", 10)) {
+            compile = 1;
+            outputMain = 1;
+            gl_ccode = 1;
+            cext = ".c";
+            argv++; --argc;
+            appendCompiler("catalina");
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")) {
             compile = 1;
             outputMain = 1;
 	    outputBin = 1;
             argv++; --argc;
-            appendCompiler();
+            appendCompiler(NULL);
         } else if (!strncmp(argv[0], "--nopre", 7)) {
             gl_preprocess = 0;
             argv++; --argc;
@@ -640,7 +686,7 @@ main(int argc, char **argv)
             argv++; --argc;
             if (opt[2] == 0) {
                 if (argv[0] == NULL) {
-                    fprintf(stderr, "Error: expected another argument after -D\n");
+                    fprintf(stderr, "Error: expected another argument after -o\n");
                     exit(2);
                 }
                 opt = argv[0];
@@ -654,13 +700,17 @@ main(int argc, char **argv)
                 appendToCmd(opt);
             }
 	    outname = strdup(opt);
-        } else if (!strncmp(argv[0], "-D", 2)) {
+        } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
             char *opt = argv[0];
             char *name;
+            char optchar[3];
             argv++; --argc;
+            // save the -D or -C
+            strncpy(optchar, opt, 2);
+            optchar[3] = 0;
             if (opt[2] == 0) {
                 if (argv[0] == NULL) {
-                    fprintf(stderr, "Error: expected another argument after -D\n");
+                    fprintf(stderr, "Error: expected another argument after %s\n", optchar);
                     exit(2);
                 }
                 opt = argv[0];
@@ -670,7 +720,7 @@ main(int argc, char **argv)
             }
             /* if we are compiling, pass this on to the compiler too */
             if (compile) {
-                appendToCmd("-D");
+                appendToCmd(optchar);
                 appendToCmd(opt);
             }
             opt = strdup(opt);
@@ -689,6 +739,7 @@ main(int argc, char **argv)
                 || !strncmp(argv[0], "-f", 2)
                 || !strncmp(argv[0], "-m", 2)
                 || !strncmp(argv[0], "-g", 2)
+                || !strncmp(argv[0], "-l", 2)
                 )
             {
                 appendToCmd(argv[0]); argv++; --argc;
@@ -712,7 +763,7 @@ main(int argc, char **argv)
             Usage();
         }
     }
-    if (argv[0] == NULL || argc != 1) {
+    if (argv[0] == NULL || (argc != 1 && !compile)) {
         Usage();
     }
 
@@ -722,6 +773,13 @@ main(int argc, char **argv)
 
     /* now actually parse the file */
     P = parseFile(argv[0]);
+    if (compile && argc > 1) {
+        /* append the remaining arguments to the command line */
+        for (i = 1; i < argc; i++) {
+            appendToCmd(argv[i]);
+        }
+    }
+
     if (P) {
         if (outputDat) {
             if (gl_gas_dat) {
@@ -758,8 +816,11 @@ main(int argc, char **argv)
 		  outname = ReplaceExtension(outname, ".binary");
 		  initCmdline();
 		  appendToCmd("propeller-elf-objcopy");
-		  appendToCmd("-O binary a.out");
+		  appendToCmd("-O");
+                  appendToCmd("binary");
+                  appendToCmd("a.out");
 		  appendToCmd(outname);
+                  //printf("running: [%s]\n", cmdline);
 		  retval = system(cmdline);
 		  remove("a.out");
 		  if (retval == 0) {

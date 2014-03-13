@@ -196,3 +196,23 @@ AstListLen(AST *list)
     return val;
 }
 
+
+void
+RemoveFromList(AST **listptr, AST *elem)
+{
+    AST *next;
+    AST *cur;
+
+    next = *listptr;
+    for(;;) {
+        cur = next;
+        if (!cur) return;
+        if (cur == elem) {
+            *listptr = elem->right;
+            elem->right = 0;
+            return;
+        }
+        listptr = &cur->right;
+        next = cur->right;
+    }
+}
