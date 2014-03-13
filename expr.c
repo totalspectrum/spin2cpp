@@ -1247,7 +1247,9 @@ PrintExpr(FILE *f, AST *expr)
         if (gl_ccode) {
             fprintf(f, "%s", sym->name);
         } else {
-            fprintf(f, "%s.%s", objsym->name, sym->name);
+            AST *objast = objsym->val;
+            ParserState *P = objast->d.ptr;
+            fprintf(f, "%s::%s", P->classname, sym->name);
         }
         break;
     case AST_CATCH:
