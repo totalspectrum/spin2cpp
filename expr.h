@@ -49,4 +49,6 @@ int IsArray(AST *expr);
 int IsArrayType(AST *typ);
 int IsArraySymbol(Symbol *);
 
+Symbol *LookupSymbol(const char *name);
+
 #endif
