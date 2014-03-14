@@ -870,6 +870,7 @@ static char *c_words[] = {
     "new",
     "not",
     "not_eq",
+    "NULL",
     "operator",
     "or",
     "or_eq",
@@ -926,6 +927,9 @@ static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL },
+    { "clkmode", 0, defaultVariable, "CLKMODE", NULL },
+    { "clkset", 2, defaultBuiltin, "clkset", NULL },
+
     { "cognew", 2, defaultBuiltin, "cognew", NULL },
     { "cogstop", 1, defaultBuiltin, "cogstop", NULL },
     { "cogid", 0, defaultBuiltin, "cogid", NULL },
