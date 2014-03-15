@@ -84,12 +84,27 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
 }
 
 /*
+ * check for a variable having its address taken
+ */
+static bool
+IsAddrRef(AST *body, Symbol *sym)
+{
+    if (body->kind == AST_ADDROF)
+        return true;
+    if (body->kind == AST_ARRAYREF && !IsArraySymbol(sym))
+        return true;
+    return false;
+}
+
+/*
  * scan a function body for various special conditions
  */
 static void
-ScanFunctionBody(Function *fdef, AST *body)
+ScanFunctionBody(Function *fdef, AST *body, AST *upper)
 {
     AST *ast;
+    Symbol *sym;
+
     if (!body)
         return;
     switch(body->kind) {
@@ -98,23 +113,20 @@ ScanFunctionBody(Function *fdef, AST *body)
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
         if (ast->kind == AST_IDENTIFIER) {
-            Symbol *sym = FindSymbol(&fdef->localsyms, ast->d.string);
+            sym = FindSymbol(&fdef->localsyms, ast->d.string);
             if (sym) {
                 if (sym->type == SYM_PARAMETER) {
                     if (!fdef->parmarray)
                         fdef->parmarray = NewTemporaryVariable("_parm_");
                     fdef->localarray = fdef->parmarray;
-                } else if (sym->type == SYM_LOCALVAR
-                           && (body->kind == AST_ADDROF
-                               || (body->kind == AST_ARRAYREF && !IsArrayType(sym->val)))
-                    ) {
+                } else if (sym->type == SYM_LOCALVAR && IsAddrRef(body, sym) ) {
                     if (!fdef->localarray)
                         fdef->localarray = NewTemporaryVariable("_local_");
                 }
             } else {
                 /* Taking the address of an object variable? That will make the object volatile. */
                 sym = FindSymbol(&current->objsyms, ast->d.string);
-                if (sym && sym->type == SYM_VARIABLE) {
+                if (sym && sym->type == SYM_VARIABLE && IsAddrRef(body, sym)) {
                     current->volatileVariables = 1;
                 }
             }
@@ -134,11 +146,27 @@ ScanFunctionBody(Function *fdef, AST *body)
             }
         }
         break;
+    case AST_IDENTIFIER:
+        // convert plain foo into foo[0] if foo is an array
+        sym = LookupSymbol(body->d.string);
+        if (sym && IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR)) 
+        {
+            if (upper && upper->kind != AST_ARRAYREF) {
+                AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
+                if (body == upper->left) {
+                    upper->left = deref;
+                } else if (body == upper->right) {
+                    upper->right = deref;
+                } else {
+                    ERROR(body, "failed to dereference %s", body->d.string); 
+                }
+            }
+        }
     default:
         break;
     }
-    ScanFunctionBody(fdef, body->left);
-    ScanFunctionBody(fdef, body->right);
+    ScanFunctionBody(fdef, body->left, body);
+    ScanFunctionBody(fdef, body->right, body);
 }
 
 /*
@@ -213,7 +241,7 @@ doDeclareFunction(AST *funcblock)
     fdef->body = body;
 
     /* check for special conditions */
-    ScanFunctionBody(fdef, body);
+    ScanFunctionBody(fdef, body, NULL);
 
     /* if we put the locals into an array, record the size of that array */
     if (fdef->localarray)
