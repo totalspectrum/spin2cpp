@@ -111,6 +111,8 @@ enum astkind {
     AST_PRIFUNC,
     AST_FUNCHOLDER,
     AST_ENUMSKIP,
+
+    AST_LINEBREAK = 76,
 };
 
 struct AST {

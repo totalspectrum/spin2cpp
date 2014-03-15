@@ -463,7 +463,9 @@ datblock:
 datline:
   basedatline
   | identifier basedatline
-    { $$ = AddToList($1, $2); }
+    {   AST *linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        $$ = AddToList(linebreak, AddToList($1, $2)); 
+    }
   ;
 
 basedatline:

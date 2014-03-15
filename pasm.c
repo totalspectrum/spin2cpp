@@ -384,6 +384,7 @@ DeclareLabels(ParserState *P)
 
     AST *ast = NULL;
     AST *pendingLabels = NULL;
+    AST *lasttype = ast_type_long;
 
     for (ast = P->datblock; ast; ast = ast->right) {
         switch (ast->kind) {
@@ -391,24 +392,28 @@ DeclareLabels(ParserState *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
             replaceHereDataList(ast->left, asmpc, 1);
             INCPC(dataListLen(ast->left, 1));
+            lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
             ALIGNPC(2);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_word);
             replaceHereDataList(ast->left, asmpc, 2);
             INCPC(dataListLen(ast->left, 2));
+            lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
             ALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             replaceHereDataList(ast->left, asmpc, 4);
             INCPC(dataListLen(ast->left, 4));
+            lasttype = ast_type_long;
             break;
         case AST_INSTRHOLDER:
             ALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
             INCPC(4);
+            lasttype = ast_type_long;
             break;
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
@@ -421,12 +426,14 @@ DeclareLabels(ParserState *P)
             } else {
                 asmpc = 0;
             }
+            lasttype = ast_type_long;
             break;
         case AST_RES:
             asmpc = align(asmpc, 4);
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
             delta = EvalPasmExpr(ast->left);
             asmpc += 4*delta;
+            lasttype = ast_type_long;
             break;
         case AST_FIT:
             asmpc = align(asmpc, 4);
@@ -438,10 +445,14 @@ DeclareLabels(ParserState *P)
                     ERROR(ast, "fit %d failed: pc is %d", max, cur);
                 }
             }
+            lasttype = ast_type_long;
             break;
         case AST_FILE:
             pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
             INCPC(filelen(ast->left));
+            break;
+        case AST_LINEBREAK:
+            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, lasttype);
             break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);
@@ -484,6 +495,7 @@ PrintDataBlock(FILE *f, ParserState *P, int isBinary)
         case AST_ORG:
         case AST_RES:
         case AST_FIT:
+        case AST_LINEBREAK:
             break;
         default:
             ERROR(ast, "unknown element in data block");
@@ -742,7 +754,10 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
         case AST_INSTRHOLDER:
             outputGasInstruction(f, ast->left);
             break;
+        case AST_LINEBREAK:
+            break;
         case AST_IDENTIFIER:
+            // FIXME: need to handle labels not on lines (type and alignment)
             outputGasLabel(f, ast);
             break;
         case AST_FILE:
