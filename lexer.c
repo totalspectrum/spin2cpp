@@ -476,6 +476,20 @@ parseString(LexStream *L, AST **ast_ptr)
 }
 
 //
+// keep track of accumulated comments
+//
+
+AST *comment_chain;
+
+AST *
+GetComments(void)
+{
+    AST *ret = comment_chain;
+    comment_chain = NULL;
+    return ret;
+}
+
+//
 // skip over comments and spaces
 // return first non-comment non-space character
 // if we are inside a function, emit T_INDENT when
@@ -489,7 +503,10 @@ skipSpace(LexStream *L, AST **ast_ptr)
     int c;
     int commentNest;
     int start_indent;
+    struct flexbuf cb;
+    AST *ast;
 
+    flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
 again:
     while (c == ' ' || c == '\t') {
@@ -498,9 +515,16 @@ again:
 
     /* ignore completely empty lines or ones with just comments */
     if (c == '\'') {
-        do {
+        while (c == '\'') c = lexgetc(L);
+        while (c != '\n' && c != T_EOF) {
+            flexbuf_addchar(&cb, c);
             c = lexgetc(L);
-        } while (c != '\n' && c != T_EOF);
+        }
+        flexbuf_addchar(&cb, '\n');
+        flexbuf_addchar(&cb, 0);
+        ast = NewAST(AST_COMMENT, NULL, NULL);
+        ast->d.string = flexbuf_get(&cb);
+        comment_chain = AddToList(comment_chain, ast);
     }
     if (c == '{') {
         struct flexbuf anno;
@@ -551,6 +575,8 @@ again:
                 break;
             if (annotate || directive) {
                 flexbuf_addchar(&anno, c);
+            } else {
+                flexbuf_addchar(&cb, c);
             }
         }
         if (c == T_EOF) {
@@ -580,6 +606,10 @@ again:
                 }
             }
             free(dir);
+        } else {
+            ast = NewAST(AST_COMMENT, NULL, NULL);
+            ast->d.string = flexbuf_get(&cb);
+            comment_chain = AddToList(comment_chain, ast);
         }
         c = lexgetc(L);
         goto again;
@@ -624,6 +654,11 @@ again:
     if (c == '\n') {
         L->eoln = 1;
         return T_EOLN;
+    }
+    if (current && !current->sawToken) {
+        current->sawToken = 1;
+        current->topcomment = comment_chain;
+        comment_chain = NULL;
     }
     return c;
 }

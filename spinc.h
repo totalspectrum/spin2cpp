@@ -133,6 +133,7 @@ struct parserstate {
     AST *varblock;
     AST *objblock;
     AST *funcblock;
+    AST *topcomment;
 
     /* annotations for the DAT block */
     AST *datannotations;
@@ -176,6 +177,7 @@ struct parserstate {
     char printLabelsVerbatim;
     char fixImmediate;
     char volatileVariables;
+    char sawToken;
 };
 
 /* the current parser state */

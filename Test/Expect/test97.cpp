@@ -1,3 +1,4 @@
+/*  some additional defines  */
 #include <propeller.h>
 #include "test97.h"
 

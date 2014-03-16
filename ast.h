@@ -113,6 +113,7 @@ enum astkind {
     AST_ENUMSKIP,
 
     AST_LINEBREAK = 76,
+    AST_COMMENT,
 };
 
 struct AST {

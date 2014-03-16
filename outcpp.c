@@ -34,6 +34,62 @@ PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
 }
 
 /*
+ * print out a comment string
+ */
+static void
+PrintCommentString(FILE *f, const char *str)
+{
+    int numLines = 0;
+    int lastNewLine = 0;
+    const char *p;
+    for (p = str; *p; p++) {
+        if (*p =='\n') {
+            numLines++; lastNewLine = 1;
+        } else {
+            lastNewLine = 0;
+        }
+    }
+    if (numLines == 1 && lastNewLine == 1) {
+        fprintf(f, "// ");
+        fprintf(f, "%s", str);
+        return;
+    }
+    fprintf(f, "/* ");
+    while (str[0]) {
+        if (str[0] == '*' && str[1] == '/') {
+            fputc('*', f);
+            fputc('%', f);
+            str += 2;
+        } else {
+            fputc(str[0], f);
+            lastNewLine = (str[0] == '\n');
+            str++;
+        }
+    }
+    if (numLines > 0 && !lastNewLine) {
+        fprintf(f, "\n");
+    }
+    fprintf(f, " */\n");
+}
+
+
+/*
+ * print out a list of comments
+ */
+static void
+PrintComment(FILE *f, AST *ast)
+{
+    while (ast) {
+        if (ast->kind != AST_COMMENT) {
+            ERROR(ast, "Internal error: expected comment");
+            return;
+        }
+        PrintCommentString(f, ast->d.string);
+        ast = ast->right;
+    }
+}
+
+/*
  * print out a header file
  */
 
@@ -439,6 +495,9 @@ PrintCppFile(FILE *f, ParserState *parse)
     /* things we always need */
     if (gl_header) {
         fprintf(f, "%s", gl_header);
+    }
+    if (parse->topcomment) {
+        PrintComment(f, parse->topcomment);
     }
     if (parse->needsStdlib) {
         fprintf(f, "#include <stdlib.h>\n");

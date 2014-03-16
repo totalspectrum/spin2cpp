@@ -1,3 +1,9 @@
+// 
+//  another test
+// 
+/* 
+  with an inline comment
+ */
 #include <propeller.h>
 #include "test07.h"
 

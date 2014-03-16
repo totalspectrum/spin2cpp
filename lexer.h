@@ -81,4 +81,9 @@ bool Is_C_Reserved(const char *);
  */
 void NormalizeIdentifier(char *name);
 
+/*
+ * function to retrieve pending comments
+ */
+AST *GetComments(void);
+
 #endif
