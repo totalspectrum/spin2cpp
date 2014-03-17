@@ -114,6 +114,7 @@ enum astkind {
 
     AST_LINEBREAK = 76,
     AST_COMMENT,
+    AST_COMMENTEDNODE,
 };
 
 struct AST {

@@ -195,6 +195,10 @@ PrintAllConstants(FILE *f, ParserState *parse)
     /* print the constant declarations */
     for (upper = parse->conblock; upper; upper = upper->right) {
         ast = upper->left;
+        if (ast->kind == AST_COMMENTEDNODE) {
+            PrintComment(f, ast->right);
+            ast = ast->left;
+        }
         switch (ast->kind) {
         case AST_ENUMSKIP:
             PrintConstantDecl(f, ast->left);

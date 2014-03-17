@@ -175,6 +175,8 @@ DeclareConstants(AST **conlist_ptr)
             next = upper->right;
             if (upper->kind == AST_LISTHOLDER) {
                 ast = upper->left;
+                if (ast->kind == AST_COMMENTEDNODE)
+                    ast = ast->left;
                 if (ast->kind == AST_ASSIGN) {
                     if (IsConstExpr(ast->right)) {
                         EnterConstant(ast->left->d.string, ast->right);
@@ -196,15 +198,15 @@ DeclareConstants(AST **conlist_ptr)
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
+            if (ast->kind == AST_COMMENTEDNODE)
+                ast = ast->left;
             switch (ast->kind) {
             case AST_ENUMSET:
                 default_val = EvalConstExpr(ast->left);
-                ast = ast->right;
                 break;
             case AST_IDENTIFIER:
                 EnterConstant(ast->d.string, AstInteger(default_val));
                 default_val++;
-                ast = ast->right;
                 break;
             case AST_ENUMSKIP:
                 id = ast->left;
@@ -218,11 +220,12 @@ DeclareConstants(AST **conlist_ptr)
             case AST_ASSIGN:
                 EnterConstant(ast->left->d.string, ast->right);
                 default_val = EvalConstExpr(ast->right) + 1;
-                ast = NULL;
+                break;
+            case AST_COMMENT:
+                /* just skip it for now */
                 break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
-                ast = NULL;
                 break;
             }
         } else {
@@ -247,6 +250,9 @@ DeclareVariables(ParserState *P)
             break;
         case AST_LONGLIST:
             curtype = ast_type_long;
+            break;
+        case AST_COMMENT:
+            /* skip */
             break;
         default:
             ERROR(upper, "bad type  %d in variable list\n", upper->kind);

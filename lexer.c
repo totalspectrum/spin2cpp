@@ -659,8 +659,7 @@ again:
     }
     if (current && !current->sawToken) {
         current->sawToken = 1;
-        current->topcomment = comment_chain;
-        comment_chain = NULL;
+        current->topcomment = GetComments();
     }
     return c;
 }

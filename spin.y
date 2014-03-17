@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011,2012 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2014 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -36,6 +36,19 @@ AstCatch(AST *expr)
 {
     current->needsAbortdef = 1;
     return NewAST(AST_CATCH, expr, NULL);
+}
+
+/* add a list element together with accumulated comments */
+AST *
+CommentedListHolder(AST *ast)
+{
+    AST *comment = GetComments();
+
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    ast = NewAST(AST_LISTHOLDER, ast, NULL);
+    return ast;
 }
 
 /* determine whether a loop needs a yield, and if so, insert one */
@@ -435,9 +448,9 @@ conline:
 
 enumlist:
   enumitem
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL);  }
+    { $$ = CommentedListHolder($1); }
   | enumlist ',' enumitem
-    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+    { $$ = AddToList($1, CommentedListHolder($3)); }
   ;
 
 enumitem:

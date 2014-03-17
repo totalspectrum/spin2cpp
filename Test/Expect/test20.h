@@ -5,6 +5,7 @@
 
 class test20 {
 public:
+//  unix end of line
   static const int Eol = 10;
 private:
   int32_t	Cog;
