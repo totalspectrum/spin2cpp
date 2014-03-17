@@ -1,3 +1,5 @@
+/*  indicate to spin2cpp that it should not output Spin methods  */
+/*  the Spin version of the methods  */
 #include <propeller.h>
 #include "test95.h"
 

@@ -571,8 +571,9 @@ again:
 		  --commentNest;
 		}
 	    }
-            if (commentNest <= 0 || c == T_EOF)
+            if (commentNest <= 0 || c == T_EOF) {
                 break;
+            }
             if (annotate || directive) {
                 flexbuf_addchar(&anno, c);
             } else {
@@ -607,6 +608,7 @@ again:
             }
             free(dir);
         } else {
+            flexbuf_addchar(&cb, '\0');
             ast = NewAST(AST_COMMENT, NULL, NULL);
             ast->d.string = flexbuf_get(&cb);
             comment_chain = AddToList(comment_chain, ast);

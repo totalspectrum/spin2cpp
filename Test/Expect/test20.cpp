@@ -7,7 +7,6 @@
 /* -----------------REVISION HISTORY-----------------
  v1.2 - 5/7/2009 fixed bug in dec method causing largest negative value (-2,147,483,648) to be output as -0.
  v1.1 - 3/1/2006 first official release.
-
  */
 #include <propeller.h>
 #include "test20.h"

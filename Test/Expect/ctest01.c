@@ -1,3 +1,6 @@
+/* 
+  Counter object
+ */
 #include <propeller.h>
 #include "ctest01.h"
 
