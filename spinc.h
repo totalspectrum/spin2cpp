@@ -238,7 +238,9 @@ void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 void PrintAnnotationList(FILE *f, AST *ast, char terminal);
-void PrintComment(FILE *f, AST *ast);
+void PrintIndentedComment(FILE *f, AST *ast, int indent);
+
+#define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
 void DeclareObjects(AST *newobjs);
 

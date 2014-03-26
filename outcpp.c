@@ -37,7 +37,7 @@ PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
  * print out a comment string
  */
 static void
-PrintCommentString(FILE *f, const char *str)
+PrintCommentString(FILE *f, const char *str, int indent)
 {
     int numLines = 0;
     int lastNewLine = 0;
@@ -49,9 +49,11 @@ PrintCommentString(FILE *f, const char *str)
             lastNewLine = 0;
         }
     }
+    if (indent > 0)
+        fprintf(f, "%*c", indent, ' ');
     if (numLines == 1 && lastNewLine == 1) {
         fprintf(f, "// ");
-        fprintf(f, "%s", str);
+        fprintf(f, "%s", str);  // note the string ended in a newline
         return;
     }
     fprintf(f, "/* ");
@@ -63,11 +65,16 @@ PrintCommentString(FILE *f, const char *str)
         } else {
             fputc(str[0], f);
             lastNewLine = (str[0] == '\n');
+            if (lastNewLine && indent > 0) {
+                fprintf(f, "%*c", indent, ' ');
+            }
             str++;
         }
     }
     if (numLines > 0 && !lastNewLine) {
         fprintf(f, "\n");
+        if (indent > 0)
+            fprintf(f, "%*c", indent, ' ');
     }
     fprintf(f, " */\n");
 }
@@ -77,14 +84,14 @@ PrintCommentString(FILE *f, const char *str)
  * print out a list of comments
  */
 void
-PrintComment(FILE *f, AST *ast)
+PrintIndentedComment(FILE *f, AST *ast, int indent)
 {
     while (ast) {
         if (ast->kind != AST_COMMENT) {
             ERROR(ast, "Internal error: expected comment");
             return;
         }
-        PrintCommentString(f, ast->d.string);
+        PrintCommentString(f, ast->d.string, indent);
         ast = ast->right;
     }
 }

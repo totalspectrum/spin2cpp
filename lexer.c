@@ -417,7 +417,6 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case T_VAR:
             case T_CON:
                 L->in_block = c;
-                ast = GetComments();
                 //EstablishIndent(L, 1);
                 break;
             case T_IF:
@@ -432,6 +431,8 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             default:
                 break;
             }
+            if (!ast)
+                ast = GetComments();
             *ast_ptr = ast;
             return c;
         }

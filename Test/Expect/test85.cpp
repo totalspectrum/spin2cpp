@@ -18,6 +18,7 @@ int32_t test85::Main(void)
   Printn(1);
   Printn(2);
   Fds.Str((int32_t)"increment v[0]\n\r");
+  //  should be the same as v[0].incn
   V[0].Incn();
   Printn(0);
   Printn(1);

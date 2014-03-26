@@ -12,6 +12,7 @@ static int32_t tmp__;
 
 int32_t test80::Init(void)
 {
+  //  this really means nameBuffer[0] := '.'
   Namebuffer[0] = '.';
   return 0;
 }

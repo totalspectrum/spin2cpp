@@ -963,8 +963,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
 
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
-        fprintf(f, "%*c", indent, ' ');
-        PrintComment(f, ast->right);
+        PrintIndentedComment(f, ast->right, indent);
         PrintStatement(f, ast->left, indent);
         break;
     case AST_RETURN:

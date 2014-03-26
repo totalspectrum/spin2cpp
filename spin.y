@@ -38,6 +38,19 @@ AstCatch(AST *expr)
     return NewAST(AST_CATCH, expr, NULL);
 }
 
+/* create an AST in a comment holder */
+AST *
+NewCommentedAST(enum astkind kind, AST *left, AST *right, AST *comment)
+{
+    AST *ast;
+
+    ast = NewAST(kind, left, right);
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    return ast;
+}
+
 /* add a list element together with accumulated comments */
 AST *
 CommentedListHolder(AST *ast)
@@ -323,9 +336,9 @@ stmtblock:
 
 ifstmt:
   T_IF expr T_EOLN elseblock
-    { $$ = NewAST(AST_IF, $2, $4); }
+    { $$ = NewCommentedAST(AST_IF, $2, $4, $1); }
   | T_IFNOT expr T_EOLN elseblock
-    { $$ = NewAST(AST_IF, AstOperator(T_NOT, NULL, $2), $4); }
+    { $$ = NewCommentedAST(AST_IF, AstOperator(T_NOT, NULL, $2), $4, $1); }
 ;
 
 elseblock:
@@ -341,7 +354,7 @@ elseblock:
 
 casestmt:
   T_CASE expr T_EOLN T_INDENT casematchlist T_OUTDENT
-    { $$ = NewAST(AST_CASE, $2, $5); }
+    { $$ = NewCommentedAST(AST_CASE, $2, $5, $1); }
 ;
 
 casematchlist:
@@ -399,24 +412,24 @@ rangeexprlist:
 repeatstmt:
     T_REPEAT T_EOLN stmtblock
     {   AST *body = $3; body = CheckYield(body); 
-        $$ = NewAST(AST_WHILE, AstInteger(1), body); }
+        $$ = NewCommentedAST(AST_WHILE, AstInteger(1), body, $1); }
   | T_REPEAT T_EOLN stmtblock T_WHILE expr T_EOLN
-    { $$ = NewAST(AST_DOWHILE, $5, CheckYield($3)); }
+    { $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($3), $1); }
   | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
-    { $$ = NewAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), CheckYield($3)); }
+    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), CheckYield($3), $1); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
-        $$ = NewAST(AST_WHILE, $3, body); }
+        $$ = NewCommentedAST(AST_WHILE, $3, body, $1); }
   | T_REPEAT T_UNTIL expr T_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
-        $$ = NewAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), body); }
+        $$ = NewCommentedAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), body, $1); }
   | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
     {
       AST *from, *to, *step; 
       step = NewAST(AST_STEP, $8, $10);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
-      $$ = NewAST(AST_COUNTREPEAT, $2, from);
+      $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
     }
   | T_REPEAT identifier T_FROM expr T_TO expr T_EOLN stmtblock
     {
@@ -424,7 +437,7 @@ repeatstmt:
       step = NewAST(AST_STEP, AstInteger(1), $8);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
-      $$ = NewAST(AST_COUNTREPEAT, $2, from);
+      $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
     }
   | T_REPEAT expr T_EOLN stmtblock
     {
@@ -434,7 +447,7 @@ repeatstmt:
       step = NewAST(AST_STEP, AstInteger(1), body);
       to = NewAST(AST_TO, $2, step);
       from = NewAST(AST_FROM, NULL, to);
-      $$ = NewAST(AST_COUNTREPEAT, NULL, from);
+      $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
 
 ;

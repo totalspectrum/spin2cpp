@@ -15,6 +15,7 @@ int32_t test87::Check(int32_t N)
   int32_t Sum = 0;
   Sum = 0;
   if (N > 1) {
+    /*  other part  */
     while (N--) {
       Sum = (Sum + N);
     }
