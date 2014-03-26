@@ -138,6 +138,8 @@ static int
 PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int flags)
 {
     AST *ast;
+    AST *upper;
+    AST *comment;
     enum astkind kind;
     int n = 0;
 
@@ -148,8 +150,20 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int flags)
     else
         kind = AST_LONGLIST;
     
-    for (ast = parse->varblock; ast; ast = ast->right) {
+    for (upper = parse->varblock; upper; upper = upper->right) {
+        if (upper->kind != AST_LISTHOLDER) {
+            ERROR(upper, "internal error: expected listholder");
+            return n;
+        }
+        ast = upper->left;
+        comment = NULL;
+        if (ast->kind == AST_COMMENTEDNODE) {
+            comment = ast->right;
+            ast = ast->left;
+        }
         if (ast->kind == kind) {
+            if (comment)
+                PrintComment(f, comment);
             n += PrintVarList(f, type, ast->left, flags);
         }
     }

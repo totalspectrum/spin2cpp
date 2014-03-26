@@ -8,7 +8,9 @@ public:
 //  unix end of line
   static const int Eol = 10;
 private:
+// cog flag/id
   int32_t	Cog;
+// 9 contiguous longs
   int32_t	Rx_head;
   int32_t	Rx_tail;
   int32_t	Tx_head;

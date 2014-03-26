@@ -42,7 +42,12 @@ AstCatch(AST *expr)
 AST *
 CommentedListHolder(AST *ast)
 {
-    AST *comment = GetComments();
+    AST *comment;
+
+    if (!ast)
+        return ast;
+
+    comment = GetComments();
 
     if (comment) {
         ast = NewAST(AST_COMMENTEDNODE, ast, comment);
@@ -538,9 +543,9 @@ objline:
 
 varblock:
     varline
-    { $$ = $1; }
+    { $$ = CommentedListHolder($1); }
   | varblock varline
-    { $$ = AddToList($1, $2); }
+    { $$ = AddToList($1, CommentedListHolder($2)); }
   ;
 
 varline:

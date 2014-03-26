@@ -239,9 +239,16 @@ DeclareVariables(ParserState *P)
 {
     AST *upper;
     AST *curtype;
+    AST *ast;
 
     for (upper = P->varblock; upper; upper = upper->right) {
-        switch (upper->kind) {
+        if (upper->kind != AST_LISTHOLDER) {
+            ERROR(upper, "Expected list holder\n");
+        }
+        ast = upper->left;
+        if (ast->kind == AST_COMMENTEDNODE)
+            ast = ast->left;
+        switch (ast->kind) {
         case AST_BYTELIST:
             curtype = ast_type_byte;
             break;
@@ -255,10 +262,10 @@ DeclareVariables(ParserState *P)
             /* skip */
             break;
         default:
-            ERROR(upper, "bad type  %d in variable list\n", upper->kind);
+            ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return;
         }
-        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, upper->left);
+        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left);
     }
 }
 
