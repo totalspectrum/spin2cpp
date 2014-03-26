@@ -56,6 +56,27 @@ CommentedListHolder(AST *ast)
     return ast;
 }
 
+AST *
+NewStatement(AST *stmt)
+{
+    AST *ast;
+    AST *comment;
+
+    if (!stmt) return NULL;
+    comment = GetComments();
+    if (comment) {
+        stmt = NewAST(AST_COMMENTEDNODE, stmt, comment);
+    }
+    ast = NewAST(AST_STMTLIST, stmt, NULL);
+    return ast;
+}
+
+void
+SkipComments(void)
+{
+    (void)GetComments();
+}
+
 /* determine whether a loop needs a yield, and if so, insert one */
 AST *
 CheckYield(AST *body)
@@ -189,13 +210,13 @@ topelement:
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
   | T_PUB funcdef funcbody
-  { DeclareFunction(1, $2, $3, NULL); }
+  { DeclareFunction(1, $2, $3, NULL, $1); }
   | T_PRI funcdef funcbody
-  { DeclareFunction(0, $2, $3, NULL); }
+  { DeclareFunction(0, $2, $3, NULL, $1); }
   | T_PUB annotation funcdef funcbody
-  { DeclareFunction(1, $3, $4, $2); }
+  { DeclareFunction(1, $3, $4, $2, $1); }
   | T_PRI annotation funcdef funcbody
-  { DeclareFunction(0, $3, $4, $2); }
+  { DeclareFunction(0, $3, $4, $2, $1); }
   | annotation emptylines
   { DeclareAnnotation($1); }
 ;
@@ -250,16 +271,12 @@ funcbody:
 
 stmtlist:
   stmt
-    { if ($1)
-        $$ = NewAST(AST_STMTLIST, $1, NULL); 
-      else
-        $$ = NULL;
+    {
+        $$ = NewStatement($1);
     }
   | stmtlist stmt
-  { if ($2)
-      $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); 
-    else
-      $$ = $1;  
+  {
+      $$ = AddToList($1, NewStatement($2)); 
   }
   ;
 
@@ -473,7 +490,7 @@ enumitem:
 
 datblock:
   datline
-    { $$ = $1; }
+    { $$ = $1; SkipComments(); }
   | datblock datline
     { $$ = AddToList($1, $2); }
   ;
@@ -857,47 +874,44 @@ range:
 
 integer:
   T_NUM
-  { $$ = current->ast; }
 ;
 
 float:
   T_FLOATNUM
-  { $$ = current->ast; }
 ;
 
 string:
   T_STRING
-  { $$ = current->ast; }
 ;
 
 identifier:
   T_IDENTIFIER
-  { $$ = current->ast; }
+  { $$ = $1; }
   | T_RESULT
   { $$ = NewAST(AST_RESULT, NULL, NULL); }
 ;
 
 annotation:
   T_ANNOTATION
-  { $$ = current->ast; }
+  { $$ = $1; }
 ;
 
 
 hwreg:
   T_HWREG
-  { $$ = current->ast; }
+  { $$ = $1; }
 ;
 
 instruction:
   T_INSTR
-  { $$ = current->ast; }
+  { $$ = $1; }
   | instrmodifier instruction
   { $$ = AddToList($2, $1); }
 ;
  
 instrmodifier:
   T_INSTRMODIFIER
-  { $$ = current->ast; }
+  { $$ = $1; }
 ;
 
 modifierlist:

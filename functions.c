@@ -174,14 +174,16 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
  */
 
 void
-DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation)
+DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
 {
     AST *funcblock;
     AST *holder;
 
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
+    funcblock->d.ptr = (void *)comment;
     funcblock = NewAST(AST_LISTHOLDER, funcblock, NULL);
+
     current->funcblock = AddToList(current->funcblock, funcblock);
 }
 
@@ -195,6 +197,7 @@ doDeclareFunction(AST *funcblock)
     Function *fdef;
     AST *vars;
     AST *src;
+    AST *comment;
     const char *resultname;
     int localcount;
     int is_public;
@@ -204,6 +207,7 @@ doDeclareFunction(AST *funcblock)
     annotation = funcblock->right;
     funcdef = holder->left;
     body = holder->right;
+    comment = (AST *)funcblock->d.ptr;
 
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
@@ -217,6 +221,13 @@ doDeclareFunction(AST *funcblock)
     fdef = NewFunction();
     fdef->name = src->left->d.string;
     fdef->annotations = annotation;
+    if (comment) {
+        if (comment->kind != AST_COMMENT) {
+            ERROR(comment, "Internal error: expected comment");
+            abort();
+        }
+        fdef->doccomment = comment;
+    }
     if (src->right && src->right->kind == AST_IDENTIFIER)
         resultname = src->right->d.string;
     else
@@ -951,6 +962,11 @@ PrintStatement(FILE *f, AST *ast, int indent)
     if (!ast) return 0;
 
     switch (ast->kind) {
+    case AST_COMMENTEDNODE:
+        fprintf(f, "%*c", indent, ' ');
+        PrintComment(f, ast->right);
+        PrintStatement(f, ast->left, indent);
+        break;
     case AST_RETURN:
         fprintf(f, "%*creturn ", indent, ' ');
         if (ast->left) {
@@ -1070,6 +1086,7 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
     for (pf = parse->functions; pf; pf = pf->next) {
         AST *optdecl;
         optdecl = Optimize(pf->body, pf);
+        PrintComment(f, pf->doccomment);
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');
             continue;

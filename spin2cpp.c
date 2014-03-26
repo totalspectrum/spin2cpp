@@ -53,10 +53,10 @@ AST *ast_type_word, *ast_type_long, *ast_type_byte;
 struct preprocess gl_pp;
 
 int
-yylex()
+yylex(YYSTYPE *yval)
 {
     int c;
-    c = getToken(&current->L, &current->ast);
+    c = getToken(&current->L, yval);
     if (c == T_EOF)
         return 0;
     return c;
@@ -377,6 +377,7 @@ parseFile(const char *name)
         free(fname);
         exit(1);
     }
+    P->botcomment = GetComments();
 
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);

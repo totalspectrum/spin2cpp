@@ -76,7 +76,7 @@ PrintCommentString(FILE *f, const char *str)
 /*
  * print out a list of comments
  */
-static void
+void
 PrintComment(FILE *f, AST *ast)
 {
     while (ast) {
@@ -552,6 +552,12 @@ PrintCppFile(FILE *f, ParserState *parse)
     }
     /* functions */
     PrintFunctionBodies(f, parse);
+
+    /* any closing comments */
+    if (parse->botcomment) {
+        PrintComment(f, parse->botcomment);
+    }
+
 }
 
 void

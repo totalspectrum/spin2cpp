@@ -343,7 +343,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     int c;
     struct flexbuf fb;
     Symbol *sym;
-    AST *ast;
+    AST *ast = NULL;
     int startColumn = L->colCounter - 1;
     char *idstr;
 
@@ -417,6 +417,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case T_VAR:
             case T_CON:
                 L->in_block = c;
+                ast = GetComments();
                 //EstablishIndent(L, 1);
                 break;
             case T_IF:
@@ -431,6 +432,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             default:
                 break;
             }
+            *ast_ptr = ast;
             return c;
         }
         if (sym->type == SYM_HWREG) {

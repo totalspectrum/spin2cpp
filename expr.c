@@ -1133,6 +1133,10 @@ PrintExpr(FILE *f, AST *expr)
     if (!expr) {
         return;
     }
+    if (expr->kind == AST_COMMENTEDNODE) {
+        expr = expr->left;
+        if (!expr) return;
+    }
     objref = NULL;
     objsym = sym = NULL;
     switch (expr->kind) {

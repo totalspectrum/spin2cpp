@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "1.90"
+#define VERSIONSTR "1.91"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -88,6 +88,7 @@ typedef struct funcdef {
     const char *name;
     AST *type;        /* the function type, normally long */
     AST *annotations; /* any annotations for the function (section, etc.) */
+    AST *doccomment;  /* documentation comments */
     int numparams;
     AST *params;      /* parameter list */
     AST *locals;      /* local variables */
@@ -134,15 +135,13 @@ struct parserstate {
     AST *objblock;
     AST *funcblock;
     AST *topcomment;
+    AST *botcomment;
 
     /* annotations for the DAT block */
     AST *datannotations;
 
     /* list of methods */
     Function *functions;
-
-    /* AST for current token */
-    AST *ast;
 
     /* lexer state */
     LexStream L;
@@ -228,8 +227,9 @@ void DeclareFunctions(ParserState *);
  holding a list of identifiers and/or array declarations
 
  "annotate" is a list of C++ annotation strings
+ "comment" is the list of comments preceding this function
 */
-void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate);
+void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareAnnotation(AST *annotation);
 int PrintPublicFunctionDecls(FILE *f, ParserState *P);
 int PrintPrivateFunctionDecls(FILE *f, ParserState *P);
@@ -238,6 +238,7 @@ void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 void PrintAnnotationList(FILE *f, AST *ast, char terminal);
+void PrintComment(FILE *f, AST *ast);
 
 void DeclareObjects(AST *newobjs);
 
