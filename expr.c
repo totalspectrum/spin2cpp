@@ -1748,14 +1748,23 @@ memFillBuiltin(FILE *f, Builtin *b, AST *params)
     src = params->left;
     params = params->right;
     count = params->left;
-
-    idxname = NewTemporaryVariable("_fill_");
-    valname = NewTemporaryVariable("_val_");
-    ptrname = NewTemporaryVariable("_ptr_");
     /* b->numparameters is overloaded to mean the size of memory we
        are working with
     */
     typename = (b->numparameters == 2) ? "uint16_t" : "int32_t";
+
+    /* if the source is 0, use memset instead */
+    if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
+        fprintf(f, "memset( (void *)");
+        PrintAsAddr(f, dst);
+        fprintf(f, ", 0, sizeof(%s)*", typename);
+        PrintExpr(f, count);
+        fprintf(f, ")");
+        return;
+    }
+    idxname = NewTemporaryVariable("_fill_");
+    valname = NewTemporaryVariable("_val_");
+    ptrname = NewTemporaryVariable("_ptr_");
     fprintf(f, "{ int32_t %s; ", idxname);
     fprintf(f, "%s *%s = (%s *)", typename, ptrname, typename);
     PrintAsAddr(f, dst);
