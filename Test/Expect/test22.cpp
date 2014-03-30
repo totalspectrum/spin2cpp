@@ -16,7 +16,7 @@ int32_t test22::Calc(int32_t X, int32_t Y)
   // 
   //  just a comment
   // 
-  R = (X * Y);
+  R = X * Y;
   return R;
 }
 

@@ -12,7 +12,7 @@ static int32_t tmp__;
 
 int32_t test92::Inc(void)
 {
-  X = (X + 1);
+  X = X + 1;
   return 0;
 }
 

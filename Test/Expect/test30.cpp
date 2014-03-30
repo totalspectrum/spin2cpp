@@ -22,7 +22,7 @@ int32_t test30::Test(void)
       if (B == 0) {
         return 2;
       } else {
-        X = (-1);
+        X = -1;
       }
     }
   }

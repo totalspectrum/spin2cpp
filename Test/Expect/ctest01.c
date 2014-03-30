@@ -19,7 +19,7 @@ static int32_t tmp__;
 
 int32_t Ctest01_add(Ctest01 *self, int32_t x)
 {
-  self->Cntr = (self->Cntr + x);
+  self->Cntr = self->Cntr + x;
   return 0;
 }
 

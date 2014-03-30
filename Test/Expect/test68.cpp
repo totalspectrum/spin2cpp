@@ -20,7 +20,7 @@ int32_t test68::Foo(int32_t N)
     if (result >= _limit__0000) _step__0001 = -_step__0001;
     do {
       OUTA = result;
-      result = (result + _step__0001);
+      result = result + _step__0001;
     } while (((_step__0001 > 0) && (result <= _limit__0000)) || ((_step__0001 < 0) && (result >= _limit__0000)));
   }
   return result;

@@ -26,7 +26,7 @@ int32_t test40::Dec(int32_t Value)
   X = -(Value == (int32_t)0x80000000U);
   if (Value < 0) {
     // If negative, make positive; adjust for max negative
-    Value = (abs((Value + X)));
+    Value = abs((Value + X));
     // and output sign
     Tx('-');
   }
@@ -34,13 +34,13 @@ int32_t test40::Dec(int32_t Value)
   I = 1000000000;
   {
     int32_t _idx__0000;
-    for(_idx__0000 = 1; _idx__0000 <= 10; _idx__0000 = (_idx__0000 + 1)) {
+    for(_idx__0000 = 1; _idx__0000 <= 10; _idx__0000 = _idx__0000 + 1) {
       // Loop for 10 digits
       if (Value >= I) {
         // If non-zero digit, output digit; adjust for max negative
         Tx((((Value / I) + '0') + (X * -(I == 1))));
         // and digit from value
-        Value = (Value % I);
+        Value = Value % I;
         // flag non-zero found
         result = -1;
       } else {
@@ -50,7 +50,7 @@ int32_t test40::Dec(int32_t Value)
         }
       }
       // Update divisor
-      I = (I / 10);
+      I = I / 10;
     }
   }
   return result;

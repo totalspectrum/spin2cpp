@@ -12,7 +12,7 @@ static int32_t tmp__;
 
 int32_t test27::Blink(void)
 {
-  X = (-X);
+  X = -X;
   return 0;
 }
 

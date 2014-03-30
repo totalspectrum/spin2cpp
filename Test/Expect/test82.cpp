@@ -12,7 +12,7 @@ static int32_t tmp__;
 
 int32_t test82::Flip(void)
 {
-  X = (~X);
+  X = ~X;
   return 0;
 }
 

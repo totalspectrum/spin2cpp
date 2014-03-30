@@ -1018,7 +1018,15 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
         }
         PrintLHS(f, lhs, 1, 0);
         fprintf(f, " = ");
-        PrintExpr(f, rhs);
+        /*
+         * Normally we put parentheses around operators, but at
+         * the top of an assignment we should not have to.
+         */
+        if (rhs->kind == AST_OPERATOR && !isBooleanOperator(rhs)) {
+            PrintOperator(f, rhs->d.ival, rhs->left, rhs->right);
+        } else {
+            PrintExpr(f, rhs);
+        }
     }
 }
 

@@ -21,7 +21,7 @@ int32_t test31::Fun(int32_t Y)
   } else if (1) {
     OUTA ^= 0x8;
   }
-  X = (X + 5);
+  X = X + 5;
   return 0;
 }
 

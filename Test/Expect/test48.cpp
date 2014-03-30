@@ -13,8 +13,8 @@ static int32_t tmp__;
 int32_t test48::Setcolors(int32_t Colorptr)
 {
   int32_t	I, Fore, Back;
-  for(I = 0; I <= 7; I = (I + 1)) {
-    Fore = (((uint8_t *)Colorptr)[(I << 1)] << 2);
+  for(I = 0; I <= 7; I = I + 1) {
+    Fore = ((uint8_t *)Colorptr)[(I << 1)] << 2;
     OUTA = ((OUTA & 0xffffff00) | ((Fore & 0xff) << 0));
   }
   return 0;

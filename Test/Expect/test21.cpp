@@ -13,7 +13,7 @@ static int32_t tmp__;
 int32_t test21::Calc(int32_t X, int32_t Y)
 {
   int32_t R = 0;
-  R = (X * Y);
+  R = X * Y;
   return R;
 }
 

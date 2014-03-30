@@ -17,7 +17,7 @@ int32_t test11::Peek(void)
 
 int32_t test11::Donext(void)
 {
-  Count = (Peek() + 1);
+  Count = Peek() + 1;
   return Count;
 }
 
