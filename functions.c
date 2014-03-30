@@ -788,7 +788,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         needsteptest = 0;
         negstep = 0;
         fromval = AstInteger(1);
-        useForLoop = 1;
+        useForLoop= 1;
     } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
 
@@ -828,6 +828,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         if (negstep) delta = -delta;
         step = AstInteger(delta);
         deltaknown = 1;
+        if (IsConstExpr(toval) && IsConstExpr(fromval))
+            useForLoop = 1;
     } else {
         if (negstep) stepval = AstOperator(T_NEGATE, NULL, stepval);
         step = AstTempVariable("_step_");
@@ -897,7 +899,10 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
         }
         fprintf(f, "; ");
-        PrintExpr(f, stepstmt);
+        if (stepstmt->kind == AST_ASSIGN)
+            PrintAssign(f, stepstmt->left, stepstmt->right);
+        else
+            PrintExpr(f, stepstmt);
         fprintf(f, ") {\n");
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}\n", indent, ' ');
