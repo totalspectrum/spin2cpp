@@ -398,12 +398,6 @@ PrintMacros(FILE *f, ParserState *parse)
     }
     fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
 
-    // note: the lockset() and lockclr() macros really should be memory
-    // barriers, but older propgcc do not have them marked that way
-    if (parse->needsLockFuncs) {
-        fprintf(f, "#undef lockclr /* work around a bug in propgcc */\n");
-        fprintf(f, "#define lockclr(i) __asm__ volatile( \"  lockclr %%[_id]\" : : [_id] \"r\"(i) :)\n");
-    }
     fprintf(f, "#else\n");
 
     fprintf(f, "#define INLINE__ static\n");
