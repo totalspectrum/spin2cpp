@@ -85,11 +85,11 @@ do
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed
+  rm -f $j.out $j.txt $j.elf $j.cpp $j.h FullDuplexSerial.{cpp,h}
   else
     echo $j failed
     endmsg="TEST FAILURES"
   fi
-  rm -f $j.out $j.txt $j.elf $j.cpp $j.h
 done
 
 echo $endmsg
