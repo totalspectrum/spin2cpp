@@ -158,6 +158,24 @@ static int tokens7[] =
   T_RETURN, T_IDENTIFIER, T_EOLN, T_EOF
 };
 
+static const char *token8test = 
+"pub f\n"
+"   foo\n"
+"  repeat while x.y[8] < z\n"
+"\n"
+"pri f\n"
+"  return x\n";
+
+static int tokens8[] = 
+{ 
+  T_PUB, T_IDENTIFIER, T_EOLN,
+  T_IDENTIFIER, T_EOLN,
+  T_REPEAT, T_WHILE, T_IDENTIFIER, '.', T_IDENTIFIER, '[', T_NUM, ']', '<', T_IDENTIFIER, T_EOLN,
+  T_INDENT, T_OUTDENT,
+  T_PRI, T_IDENTIFIER, T_EOLN,
+  T_RETURN, T_IDENTIFIER, T_EOLN, T_EOF
+};
+
 int
 main()
 {
@@ -175,6 +193,7 @@ main()
     testTokenStream(token5test, tokens5, N_ELEM(tokens5));
     testTokenStream(token6test, tokens6, N_ELEM(tokens6));
     testTokenStream(token7test, tokens7, N_ELEM(tokens7));
+    testTokenStream(token8test, tokens8, N_ELEM(tokens8));
 
     testNumber("0", 0);
     testNumber("00", 0);
