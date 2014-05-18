@@ -6,5 +6,6 @@ PRI sub1(x)
 
 PRI sub2(x)
   if (x == 3)
+    ' weird case
     abort 99
   return x+1

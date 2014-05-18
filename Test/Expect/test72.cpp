@@ -30,6 +30,7 @@ int32_t test72::Sub1(int32_t X)
 int32_t test72::Sub2(int32_t X)
 {
   if (X == 3) {
+    // weird case
     if (!abortChain__) abort();
     abortChain__->val =  99;
     longjmp(abortChain__->jmp, 1);

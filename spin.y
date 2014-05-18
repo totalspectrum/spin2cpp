@@ -15,27 +15,11 @@
 
     extern int gl_errors;
 
-/* utility functions */
-AST *
-AstYield(void)
+/* Skip Comments */
+void
+SkipComments(void)
 {
-    current->needsYield = 1;
-    return NewAST(AST_STMTLIST, NewAST(AST_YIELD, NULL, NULL), NULL);
-}
-
-AST *
-AstAbort(AST *expr)
-{
-    current->needsAbortdef = 1;
-    current->needsStdlib = 1;
-    return NewAST(AST_ABORT, expr, NULL);
-}
-
-AST *
-AstCatch(AST *expr)
-{
-    current->needsAbortdef = 1;
-    return NewAST(AST_CATCH, expr, NULL);
+    (void)GetComments();
 }
 
 /* create an AST in a comment holder */
@@ -94,10 +78,27 @@ NewCommentedStatement(AST *stmt)
     return ast;
 }
 
-void
-SkipComments(void)
+/* utility functions */
+AST *
+AstYield(void)
 {
-    (void)GetComments();
+    current->needsYield = 1;
+    return NewStatement(NewAST(AST_YIELD, NULL, NULL));
+}
+
+AST *
+AstAbort(AST *expr, AST *comment)
+{
+    current->needsAbortdef = 1;
+    current->needsStdlib = 1;
+    return NewCommentedAST(AST_ABORT, expr, NULL, comment);
+}
+
+AST *
+AstCatch(AST *expr)
+{
+    current->needsAbortdef = 1;
+    return NewAST(AST_CATCH, expr, NULL);
 }
 
 /* determine whether a loop needs a yield, and if so, insert one */
@@ -321,15 +322,15 @@ basicstmt:
   |  T_RETURN expr T_EOLN
   { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
   | T_ABORT T_EOLN
-    { $$ = AstAbort(NULL); }
+    { $$ = AstAbort(NULL, $1); }
   |  T_ABORT expr T_EOLN
-    { $$ = AstAbort($2); }
+    { $$ = AstAbort($2, $1); }
   |  expr T_EOLN
     { $$ = $1; }
   | T_QUIT T_EOLN
-    { $$ = NewAST(AST_QUIT, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
   | T_NEXT T_EOLN
-    { $$ = NewAST(AST_NEXT, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
 
 ;
 
