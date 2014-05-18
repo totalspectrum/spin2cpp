@@ -20,7 +20,7 @@ int32_t test29::Tx(int32_t Val)
 
 int32_t test29::Str(int32_t Stringptr)
 {
-  //  Send string                    
+  // Send string                    
   while (lockset(Strlock)) {
     Yield__();
   }

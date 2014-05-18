@@ -963,13 +963,14 @@ PrintStatement(FILE *f, AST *ast, int indent)
 {
     int sawreturn = 0;
     AST *lhsast = NULL;
+    AST *comment = NULL;
 
     if (!ast) return 0;
 
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
         PrintIndentedComment(f, ast->right, indent);
-        PrintStatement(f, ast->left, indent);
+        sawreturn = PrintStatement(f, ast->left, indent);
         break;
     case AST_RETURN:
         fprintf(f, "%*creturn ", indent, ' ');
@@ -1006,13 +1007,25 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintBoolExpr(f, ast->left);
         fprintf(f, ") {\n");
         ast = ast->right;
+        // NOTE:
+        // if an AST_THENELSE has a comment attached, the comment applies
+        // to the "else" part (for the "if" part we would have wrapped the
+        // whole AST_IF in an AST_COMMENTEDNODE)
+        if (ast->kind == AST_COMMENTEDNODE) {
+            comment = ast->right;
+            ast = ast->left;
+        }
         if (ast->kind != AST_THENELSE) {
-            ERROR(ast, "error parsing if/then/else");
+            ERROR(ast, "error parsing if/then/else: got unexpected type %d", ast->kind);
             return 0;
         }
         sawreturn = PrintStatementList(f, ast->left, indent+2);
         if (ast->right) {
             fprintf(f, "%*c} else {\n", indent, ' ');
+            if (comment) {
+                PrintIndentedComment(f, comment, indent+2);
+                comment = NULL;
+            }
             sawreturn = PrintStatementList(f, ast->right, indent+2) && sawreturn;
         } else {
             sawreturn = 0;

@@ -52,7 +52,13 @@ PrintCommentString(FILE *f, const char *str, int indent)
     if (indent > 0)
         fprintf(f, "%*c", indent, ' ');
     if (numLines == 1 && lastNewLine == 1) {
-        fprintf(f, "// ");
+        fprintf(f, "//");
+        // C++ comments look much better with a space after the //; Spin
+        // comments don't matter so much, so people leave them out.
+        // optionally add the space
+        if (!isspace(*str)) {
+            fprintf(f, " ");
+        }
         fprintf(f, "%s", str);  // note the string ended in a newline
         return;
     }

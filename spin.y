@@ -73,6 +73,16 @@ AST *
 NewStatement(AST *stmt)
 {
     AST *ast;
+
+    if (!stmt) return NULL;
+    ast = NewAST(AST_STMTLIST, stmt, NULL);
+    return ast;
+}
+
+AST *
+NewCommentedStatement(AST *stmt)
+{
+    AST *ast;
     AST *comment;
 
     if (!stmt) return NULL;
@@ -285,32 +295,36 @@ funcbody:
 stmtlist:
   stmt
     {
-        $$ = NewStatement($1);
+        $$ = $1;
     }
   | stmtlist stmt
   {
-      $$ = AddToList($1, NewStatement($2)); 
+      $$ = AddToList($1, $2); 
   }
   ;
 
-nonemptystmt:
+stmt:
+  basicstmt
+    {  $$ = NewCommentedStatement($1); }
+  | compoundstmt
+    { $$ = NewStatement($1); }
+  | T_EOLN
+    { $$ = NULL; }
+  | error T_EOLN
+    { $$ = NULL; }
+  ;
+  ;
+
+basicstmt:
    T_RETURN T_EOLN
-    { $$ = NewAST(AST_RETURN, NULL, NULL); }
+   { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
   |  T_RETURN expr T_EOLN
-    { $$ = NewAST(AST_RETURN, $2, NULL); }
+  { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
   | T_ABORT T_EOLN
     { $$ = AstAbort(NULL); }
   |  T_ABORT expr T_EOLN
     { $$ = AstAbort($2); }
-  |  ifstmt
-    { $$ = $1; }
-  | repeatstmt
-    { $$ = $1; }
-  | stmtblock
-    { $$ = $1; }
   |  expr T_EOLN
-    { $$ = $1; }
-  | casestmt
     { $$ = $1; }
   | T_QUIT T_EOLN
     { $$ = NewAST(AST_QUIT, NULL, NULL); }
@@ -319,13 +333,16 @@ nonemptystmt:
 
 ;
 
-stmt:
-  nonemptystmt
-  | T_EOLN
-    { $$ = NULL; }
-  | error T_EOLN
-    { $$ = NULL; }
-  ;
+compoundstmt:
+   ifstmt
+    { $$ = $1; }
+  | repeatstmt
+    { $$ = $1; }
+  | stmtblock
+    { $$ = $1; }
+   | casestmt
+    { $$ = $1; }
+;
 
 stmtblock:
   T_INDENT stmtlist T_OUTDENT
@@ -345,11 +362,11 @@ elseblock:
   stmtblock
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
   | stmtblock T_ELSE T_EOLN stmtblock
-    { $$ = NewAST(AST_THENELSE, $1, $4); }
+  { $$ = NewCommentedAST(AST_THENELSE, $1, $4, $2); }
   | stmtblock T_ELSEIF expr T_EOLN elseblock
-    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, $3, $5), NULL)); }
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, $3, $5, $2), NULL)); }
   | stmtblock T_ELSEIFNOT expr T_EOLN elseblock
-    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewAST(AST_IF, AstOperator(T_NOT, NULL, $3), $5), NULL)); }
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, AstOperator(T_NOT, NULL, $3), $5, $2), NULL)); }
   ;
 
 casestmt:

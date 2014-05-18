@@ -1,5 +1,5 @@
 // 
-//  this is a simple test
+// this is a simple test
 // 
 #include <propeller.h>
 #include "test06.h"

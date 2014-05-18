@@ -1,8 +1,6 @@
-//
-// test for wordfill
-//
+/*  comment test  */
 #include <propeller.h>
-#include "test116.h"
+#include "test117.h"
 
 #ifdef __GNUC__
 #define INLINE__ static inline
@@ -13,9 +11,20 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test116::Fillone(int32_t X, int32_t Count)
+int32_t test117::Getit(void)
 {
-  { int32_t _fill__0000; uint16_t *_ptr__0002 = (uint16_t *)X; uint16_t _val__0001 = 1; for (_fill__0000 = Count; _fill__0000 > 0; --_fill__0000) {  *_ptr__0002++ = _val__0001; } };
+  int32_t	I;
+  // start something
+  A = 0;
+  // count up
+  for(I = 1; I <= 5; I = I + 1) {
+    // update a
+    A = A + I;
+  }
+  // now all done
   return 0;
 }
 
+/* 
+  This comment is at end of file
+ */

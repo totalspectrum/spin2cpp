@@ -1,5 +1,5 @@
 // 
-//  CON sample
+// CON sample
 // 
 // CON A = 1, B = 2
 #include <propeller.h>

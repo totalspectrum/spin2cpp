@@ -1,5 +1,5 @@
 // 
-//  another test
+// another test
 // 
 /* 
   with an inline comment

@@ -1,4 +1,4 @@
-//  test for org and label interaction
+// test for org and label interaction
 #include <propeller.h>
 #include "test112.h"
 
