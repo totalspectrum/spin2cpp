@@ -2,7 +2,7 @@ This is a very simple Spin to C/C++ converter. There still some of the
 Spin language that it does not handle, but it can deal with most
 objects and constructs that are commonly encountered. 
 
-This version (1.05) includes some more functionality. A simple "Hello,
+This version (1.91) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -140,6 +140,14 @@ Spin2cpp accepts the following options:
   and #warning. Use of the preprocessor should not normally
   cause any issues, but it is still experimental.
 
+--normalize
+  Normalize all identifiers so that the first letter is upper case and
+  the rest are lower case. This is the way older versions of spin2cpp
+  handled identifiers, and is useful for avoiding some identifier
+  conflicts. Without this flag, identifiers use the case specified in
+  their first occurence.
+
+
 -Dname=val
   Define a symbol for the preprocessor.
 
@@ -186,8 +194,12 @@ Spin is a case-insensitive language, which means that the strings
 the other hand, is case sensitive; all of those strings would be
 different variables in C++.
 
-In order to handle this in a consistent way, and to avoid any
-conflicts with C++ keywords or library identifiers, spin2cpp
+Normally spin2cpp will change all instances of an identifier to have the
+same case as the first occurence, unless that conflicts with a
+built-in C keyword or function; in that case it will change it so
+that the first letter is upper case and subsequent letters are lower case.
+
+If the --normalize (or -n) flag is given, then spin2cpp
 normalizes all Spin identifiers (variable and method names) so that
 the first letter is upper case and all others are lower case. Thus,
 for example, the spin file:
@@ -197,7 +209,7 @@ for example, the spin file:
   PUB start
     return 0
 
-will create a C++ class with variables "X"  and "Yy" and a function "Start".
+would create a C++ class with variables "X"  and "Yy" and a function "Start".
 
 The name of the class is taken from the file name. If the base part of
 the file name contains more than one capital letter, or has one
