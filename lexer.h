@@ -51,7 +51,7 @@ extern void resetLineState(LexStream *L);
 /*
  * function to initialize the lexer
  */
-void initLexer(int prop2);
+void initLexer(int flags);
 
 /*
  * function to open a lexer stream from a string

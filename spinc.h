@@ -256,7 +256,7 @@ extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
 
 extern SymbolTable reservedWords;
-extern void InitPasm(int prop2);
+extern void InitPasm(int flags);
 
 extern int IsReservedWord(const char *str);
 

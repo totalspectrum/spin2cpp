@@ -432,13 +432,13 @@ ERROR(AST *instr, const char *msg, ...)
 }
 
 static void
-init(int prop2)
+init()
 {
     ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
 
-    initLexer(prop2);
+    initLexer(0);
 }
 
 static void
@@ -457,7 +457,7 @@ Usage(void)
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
-    fprintf(stderr, "  --p2:      define the target to be the Propeller 2\n"); 
+    fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     exit(2);
 }
@@ -596,7 +596,6 @@ main(int argc, char **argv)
     int outputFiles = 0;
     int outputBin = 0;
     int compile = 0;
-    int prop2 = 0;
     ParserState *P;
     int retval = 0;
     const char *cext = ".cpp";
@@ -688,12 +687,6 @@ main(int argc, char **argv)
             free(gl_header);
             gl_header = NULL;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--p2", 4)) {
-            prop2 = 1;
-            if (compile) {
-                appendToCmd("-mp2");
-            }
-            argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    char *opt;
 	    opt = argv[0];
@@ -783,7 +776,7 @@ main(int argc, char **argv)
 
     /* initialize the parser; we do that after command line processing
        so that command line options can influence it */
-    init(prop2);
+    init();
 
     /* now actually parse the file */
     P = parseFile(argv[0]);

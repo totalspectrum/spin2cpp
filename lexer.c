@@ -18,8 +18,6 @@
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
-extern int gl_prop2;
-
 static inline int
 safe_isalpha(unsigned int x) {
     return (x < 255) ? isalpha(x) : 0;
@@ -1024,7 +1022,7 @@ struct constants {
 };
 
 void
-initLexer(int prop2)
+initLexer(int flags)
 {
     int i;
 
@@ -1049,7 +1047,7 @@ initLexer(int prop2)
     }
 
     /* add the PASM instructions */
-    InitPasm(prop2);
+    InitPasm(flags);
 }
 
 int
@@ -1177,18 +1175,6 @@ HwReg hwreg_p1[] = {
 
 };
 
-HwReg hwreg_p2[] = {
-    { "pina", 0x1f8, "PINA" },
-    { "pinb", 0x1f9, "PINB" },
-    { "pinc", 0x1fa, "PINC" },
-    { "pind", 0x1fb, "PIND" },
-    { "dira", 0x1fc, "DIRA" },
-    { "dirb", 0x1fd, "DIRB" },
-    { "dirc", 0x1fe, "DIRC" },
-    { "dird", 0x1ff, "DIRD" },
-
-};
-
 #define IF_NEVER 0xffc3ffff
 
 InstrModifier modifiers[] = {
@@ -1248,19 +1234,13 @@ InstrModifier modifiers[] = {
 };
 
 void
-InitPasm(int prop2)
+InitPasm(int flags)
 {
     HwReg *hwreg;
     int cnt, i;
 
-    if (prop2) {
-	    hwreg = hwreg_p2;
-	    cnt = N_ELEMENTS(hwreg_p2);
-    }
-    else {
-	    hwreg = hwreg_p1;
-	    cnt = N_ELEMENTS(hwreg_p1);
-    }
+    hwreg = hwreg_p1;
+    cnt = N_ELEMENTS(hwreg_p1);
 
     /* add hardware registers */
     for (i = 0; i < cnt; i++) {
