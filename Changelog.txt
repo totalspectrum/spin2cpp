@@ -1,3 +1,16 @@
+Version 1.91
+
+- Preserve comments in Spin code.
+- Recognize foo.long[N] syntax.
+- Use C for loops for more Spin repeat loops.
+- Use memset for the common case of filling memory with 0.
+- Added clksPet and clkmode.
+- Preserve original case of Spin identifiers (unless --normalize is
+  given).
+- Automatically add volatile qualifier to class variables if some
+  class members are accessed via the address operator.
+- Added --catalina option to run convert to C then run Catalina C compiler.
+
 Version 1.05
 
 - Fixed a problem with double negation or negation of boolean operators
