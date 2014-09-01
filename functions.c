@@ -743,7 +743,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     int negstep = 0;
     int needsteptest = 1;
     int deltaknown = 0;
-    int32_t delta;
+    int32_t delta = 0;
     int needindent;
     int useForLoop = 0;
 

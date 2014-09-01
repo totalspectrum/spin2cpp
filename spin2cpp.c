@@ -260,7 +260,7 @@ DeclareVariables(ParserState *P)
             break;
         case AST_COMMENT:
             /* skip */
-            break;
+            continue;
         default:
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return;
