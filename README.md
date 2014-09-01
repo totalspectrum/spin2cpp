@@ -16,7 +16,7 @@ USAGE
 spin2cpp is a command line tool. To use it, just give the name of the
 .spin file it should convert, e.g:
 
-  spin2cpp test.spin
+    spin2cpp test.spin
 
 This will produce a header file test.h and some C++ code test.cpp. It
 will also automatically translate any .spin files included as objects,
@@ -26,14 +26,14 @@ If this is a top level spin object and you plan to compile it, you may
 want spin2cpp to automatically compile the object and all
 dependencies:
 
-  spin2cpp --elf -O test.spin
+    spin2cpp --elf -O test.spin
 
 This will create an a.out file that is ready to run with
 propeller-load. You can also pass propgcc command line arguments
 through to the C++ compiler, as long as you place them after
 the --elf argument; for example:
 
-  spin2cpp --elf -o test.elf -Os -DFOO=1 test.spin
+    spin2cpp --elf -o test.elf -Os -DFOO=1 test.spin
 
 creates the output file "test.elf" instead of "a.out", and uses
 optimization level -Os instead of no optimization. It is strongly
@@ -53,36 +53,36 @@ and assume that the appropriate C compilers are in your PATH.
 (1) To compile the Count.spin demo with propeller-elf-gcc in
 C++ mode, do:
 
-  spin2cpp --elf -O -o Count.elf Count.spin
+    spin2cpp --elf -O -o Count.elf Count.spin
 
 This produces an executable file Count.elf which may be loaded with
 propeller-load.
 
 (2) To compile the Count.spin demo with Catalina, do:
 
-  spin2cpp --main --ccode --files Count.spin
+    spin2cpp --main --ccode --files Count.spin
 
 spin2cpp will print:
-  Count.c
-  FullDuplexSerial.c
+    Count.c
+    FullDuplexSerial.c
 
 showing you the files that it produced. Now you can run catalina:
 
-  catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
+    catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
 
 This produces Count.binary, which may be downloaded and run as usual.
 
 
 (3) To just convert a .spin file into a .c file:
 
-  spin2cpp --ccode F32.spin
+    spin2cpp --ccode F32.spin
 
 This produces .c and .h files which can be compiled together
 with your other C code.
 
 (4) To convert the PASM portion of a .spin file into a GAS .S file:
 
-  spin2cpp --dat --gas FullDuplexSerial.spin
+    spin2cpp --dat --gas FullDuplexSerial.spin
 
 This produces a file FullDuplexSerial.S which contains the GAS syntax
 translation of the PASM portion of FullDuplexSerial.spin. Beware that
@@ -157,11 +157,11 @@ LIMITATIONS
 There are a number of Spin features that are not supported yet,
 including:
 
-  COGINIT on a Spin method (PASM works)
-  _FREE
-  SPR
-  _STACK
-  _XINFREQ
+    COGINIT on a Spin method (PASM works)
+    _FREE
+    SPR
+    _STACK
+    _XINFREQ
 
 There are probably many other features not supported yet!
 
@@ -202,10 +202,10 @@ normalizes all Spin identifiers (variable and method names) so that
 the first letter is upper case and all others are lower case. Thus,
 for example, the spin file:
 
-  VAR
-    x, yy;
-  PUB start
-    return 0
+    VAR
+      x, yy;
+    PUB start
+      return 0
 
 would create a C++ class with variables "X"  and "Yy" and a function "Start".
 
@@ -217,11 +217,12 @@ is produced by appending "Spin" to the base of the file name.
 
 Examples:
 
-File name:             C++ Class name:
-FooBar.spin	       class FooBar
-someFile.spin	       class someFile
-foo99.spin	       class foo99
-foo.spin	       class fooSpin
+File name      |  C++ Class name
+---------------|------------------
+FooBar.spin    |  class FooBar
+someFile.spin  |  class someFile
+foo99.spin     |  class foo99
+foo.spin       |  class fooSpin
 
 In C mode, all the functions have the object name prepended. So
 for example in a file named FooBar.spin the "start"
@@ -240,15 +241,15 @@ Variable Annotations
 Annotations may appear after variable declarations to associate additional
 type specifiers with those variables; for example:
 
-  VAR
-    long {++volatile} x
+    VAR
+      long {++volatile} x
 
 makes "x" a volatile variable in C.
 
 The generated DAT block may similarly have type specifiers associated
 with it by placing those after the DAT statement:
 
-  DAT {++volatile}
+    DAT {++volatile}
 
 declares the whole DAT section to be volatile.
 
@@ -268,8 +269,8 @@ Directives
 Annotations which begin with the character '!' are special
 directives for spin2cpp. The following special directives are
 recognized:
-   {++!nospin}: do not output any Spin methods
-   {++!ccode}:  output C rather than C++ code
+     {++!nospin}: do not output any Spin methods
+     {++!ccode}:  output C rather than C++ code
 
 
 DEVELOPER NOTES
