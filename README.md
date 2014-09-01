@@ -53,36 +53,36 @@ and assume that the appropriate C compilers are in your PATH.
 (1) To compile the Count.spin demo with propeller-elf-gcc in
 C++ mode, do:
 
-spin2cpp --elf -O -o Count.elf Count.spin
+  spin2cpp --elf -O -o Count.elf Count.spin
 
 This produces an executable file Count.elf which may be loaded with
 propeller-load.
 
 (2) To compile the Count.spin demo with Catalina, do:
 
-spin2cpp --main --ccode --files Count.spin
+  spin2cpp --main --ccode --files Count.spin
 
 spin2cpp will print:
-Count.c
-FullDuplexSerial.c
+  Count.c
+  FullDuplexSerial.c
 
 showing you the files that it produced. Now you can run catalina:
 
-catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
+  catalina Count.c FullDuplexSerial.c -lc -C NO_HMI
 
 This produces Count.binary, which may be downloaded and run as usual.
 
 
 (3) To just convert a .spin file into a .c file:
 
-spin2cpp --ccode F32.spin
+  spin2cpp --ccode F32.spin
 
 This produces .c and .h files which can be compiled together
 with your other C code.
 
 (4) To convert the PASM portion of a .spin file into a GAS .S file:
 
-spin2cpp --dat --gas FullDuplexSerial.spin
+  spin2cpp --dat --gas FullDuplexSerial.spin
 
 This produces a file FullDuplexSerial.S which contains the GAS syntax
 translation of the PASM portion of FullDuplexSerial.spin. Beware that
@@ -157,13 +157,11 @@ LIMITATIONS
 There are a number of Spin features that are not supported yet,
 including:
 
-_CLKMODE
-CLKSET
-COGINIT on a Spin method (PASM works)
-_FREE
-SPR
-_STACK
-_XINFREQ
+  COGINIT on a Spin method (PASM works)
+  _FREE
+  SPR
+  _STACK
+  _XINFREQ
 
 There are probably many other features not supported yet!
 
@@ -242,15 +240,15 @@ Variable Annotations
 Annotations may appear after variable declarations to associate additional
 type specifiers with those variables; for example:
 
-VAR
-  long {++volatile} x
+  VAR
+    long {++volatile} x
 
 makes "x" a volatile variable in C.
 
 The generated DAT block may similarly have type specifiers associated
 with it by placing those after the DAT statement:
 
-DAT {++volatile}
+  DAT {++volatile}
 
 declares the whole DAT section to be volatile.
 
