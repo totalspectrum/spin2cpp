@@ -714,7 +714,7 @@ main(int argc, char **argv)
             argv++; --argc;
             // save the -D or -C
             strncpy(optchar, opt, 2);
-            optchar[3] = 0;
+            optchar[2] = 0;
             if (opt[2] == 0) {
                 if (argv[0] == NULL) {
                     fprintf(stderr, "Error: expected another argument after %s\n", optchar);
