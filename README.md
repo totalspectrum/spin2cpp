@@ -7,9 +7,11 @@ world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
 INSTALLATION
-============
-To install in Windows, just copy spin2cpp.exe to wherever your
-propeller-elf-gcc.exe file is installed.
+============ 
+To install in Windows, just unzip the release ZIP file and then copy
+spin2cpp.exe to wherever your propeller-elf-gcc.exe file is installed.
+(In fact spin2cpp.exe doesn't usually care where it is located, but
+putting it with propeller-elf-gcc is convenient.)
 
 USAGE
 =====
