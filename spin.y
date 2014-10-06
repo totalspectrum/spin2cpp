@@ -873,6 +873,18 @@ expritem:
    {
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
    }
+  | '-' integer '[' expr ']'
+   {
+       AST *op = $2;
+       op->d.ival = -op->d.ival;
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, op, $4), NULL);
+   }
+  | '-' float '[' expr ']'
+   {
+       AST *op = $2;
+       op->d.ival ^= 0x80000000U;
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, op, $4), NULL);
+   }
   | string '[' expr ']'
    {
        $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYDECL, $1, $3), NULL);
