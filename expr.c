@@ -1080,6 +1080,9 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
 {
     int len;
     AST *idx, *base;
+    AST *arrid;
+    int inExpr = 0;
+
     if (ev->kind != AST_LOOKEXPR
         || (table->kind != AST_EXPRLIST && table->kind != AST_TEMPARRAYUSE))
     {
@@ -1088,20 +1091,38 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
     }
     base = ev->left;
     idx = ev->right;
+    if (table->kind == AST_EXPRLIST) {
+        // need to convert it to a temporary array here
+        // also need to evaluate and save the index expression,
+        // in case it has side effects and is used in the array
+        // creation
+        AST *idxvar;
+
+        inExpr = 1;
+        idxvar = AstTempVariable("i_");
+        arrid = AstTempVariable("look_");
+
+        fprintf(f, "__extension__({ ");
+        fprintf(f, "int32_t %s = ", idxvar->d.string );
+        PrintExpr(f, idx);
+        fprintf(f, "; int32_t %s[] = {", arrid->d.string );
+        len = PrintLookupArray(f, table);
+        fprintf(f, "}; ");
+        idx = idxvar;
+    } else {
+        len = EvalConstExpr(table->right);
+        arrid = table->left;
+    }
     fprintf(f, "%s(", name);
     PrintExpr(f, idx);
     fprintf(f, ", ");
     PrintExpr(f, base);
     fprintf(f, ", ");
-    if (table->kind == AST_TEMPARRAYUSE) {
-        PrintExpr(f, table->left);
-        len = EvalConstExpr(table->right);
-    } else {
-        fprintf(f, "((int32_t[]){");
-        len = PrintLookupArray(f, table);
-        fprintf(f, "})");
-    }
+    PrintExpr(f, arrid);
     fprintf(f, ", %u)", len);
+    if (inExpr) {
+        fprintf(f, "; })");
+    }
 }
 
 /* print an object symbol */
