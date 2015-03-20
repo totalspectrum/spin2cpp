@@ -3,7 +3,7 @@
 if [ "$1" != "" ]; then
   PROG=$1
 else
-  PROG=../spin2cpp
+  PROG=../build/spin2cpp
 fi
 CC=propeller-elf-gcc
 ok="ok"
