@@ -3,7 +3,22 @@
 # Copyright (c) 2011-2015 Total Spectrum Software Inc.
 # Distributed under the MIT License (see COPYING for details)
 #
-BUILD=./build
+# if CROSS is defined, we are building a cross compiler
+# possible targets are: win32, rpi
+
+ifeq ($(CROSS),win32)
+  CC=i586-mingw32msvc-gcc
+  EXT=.exe
+  BUILD=./build-win32
+else ifeq ($(CROSS),rpi)
+  CC=arm-linux-gnueabihf-gcc
+  EXT=
+  BUILD=./build-rpi
+else
+  CC=gcc
+  EXT=
+  BUILD=./build
+endif
 
 INC=-I. -I$(BUILD)
 
@@ -12,14 +27,12 @@ INC=-I. -I$(BUILD)
 #
 #YACC = byacc
 YACC = bison
-CC = gcc
-#CC = clang
 CFLAGS = -g -Wall -Werror $(INC)
 #CFLAGS = -O -g -Wall -Werror $(INC)
 LIBS = -lm
 RM = rm -f
 
-PROGS = $(BUILD)/testlex $(BUILD)/spin2cpp
+PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
 LEXOBJS = $(BUILD)/lexer.o $(BUILD)/symbol.o $(BUILD)/ast.o \
 	$(BUILD)/expr.o $(BUILD)/flexbuf.o $(BUILD)/preprocess.o
 
@@ -28,7 +41,7 @@ OBJS = $(LEXOBJS) $(BUILD)/spin.tab.o $(BUILD)/functions.o \
 
 all: $(BUILD) $(PROGS)
 
-$(BUILD)/testlex: testlex.c $(LEXOBJS)
+$(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
@@ -43,7 +56,7 @@ test: $(PROGS)
 	$(BUILD)/testlex
 	(cd Test; ./runtests.sh)
 
-$(BUILD)/spin2cpp: spin2cpp.c $(OBJS)
+$(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):
