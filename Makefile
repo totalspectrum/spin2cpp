@@ -63,6 +63,7 @@ $(BUILD):
 	mkdir -p $(BUILD)
 
 $(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c
+	$(CC) $(CFLAGS) -o $@ -c $^
 
 $(BUILD)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^
