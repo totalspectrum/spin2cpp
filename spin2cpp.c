@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2014 Total Spectrum Software Inc.
+ * Copyright 2011-2015 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -552,40 +552,44 @@ ReplaceExtension(const char *basename, const char *extension)
   return ret;
 }
 
-/* calculate a checksum for a file */
-/* the checksum is the 6th byte in the file */
-#define CHKSUM_OFFSET 5
-static int
-DoBinaryChecksum(const char *fname)
+//
+// add a propeller checksum to a binary file
+//
+int
+DoPropellerChecksum(const char *fname)
 {
-    int sum = 0;
-    int c;
-    int count = 0;
-    int retval = -1;
-    FILE *f;
+    FILE *f = fopen(fname, "r+b");
+    unsigned char checksum = 0;
+    int c, r;
+    size_t len;
 
-    f = fopen(fname, "r+b");
     if (!f) {
-        fprintf(stderr, "spin2cpp binary output: ");
         perror(fname);
-	return -1;
+        return -1;
     }
+    len = 0;
     for(;;) {
-      c = fgetc(f);
-      if (c < 0) break;
-      if (count != CHKSUM_OFFSET)
-	sum += c;
-      count++;
+        c = fgetc(f);
+        if (c < 0) break;
+        checksum += (unsigned char)c;
+        len++;
     }
-    sum = (0x14 - sum) & 0xff;
-    if (fseek(f, CHKSUM_OFFSET, SEEK_SET) == -1) {
-      fprintf(stderr, "Seek error on %s\n", fname);
-    } else {
-      fputc(sum, f);
-      retval = 0;
+    fflush(f);
+    checksum = 0x14 - checksum;
+    r = fseek(f, 5L, SEEK_SET);
+    if (r != 0) {
+        perror("fseek");
+        return -1;
     }
+    //printf("writing checksum 0x%x\n", checksum);
+    r = fputc(checksum, f);
+    if (r < 0) {
+        perror("fputc");
+        return -1;
+    }
+    fflush(f);
     fclose(f);
-    return retval;
+    return 0;
 }
 
 int
@@ -813,26 +817,34 @@ main(int argc, char **argv)
                 }
             }
             if (compile && gl_errors == 0) {
+                if (!outname) {
+                    outname = argv[0];
+                    outname = ReplaceExtension(outname, ".elf");
+                    appendToCmd("-o");
+                    appendToCmd(outname);
+                }
                 retval = system(cmdline);
                 if (retval < 0) {
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
                     exit(1);
                 }
 		if (retval == 0 && outputBin) {
-		  if (!outname) outname = argv[0];
-		  outname = ReplaceExtension(outname, ".binary");
-		  initCmdline();
-		  appendToCmd("propeller-elf-objcopy");
-		  appendToCmd("-O");
-                  appendToCmd("binary");
-                  appendToCmd("a.out");
-		  appendToCmd(outname);
-                  //printf("running: [%s]\n", cmdline);
-		  retval = system(cmdline);
-		  remove("a.out");
-		  if (retval == 0) {
-		      retval = DoBinaryChecksum(outname);
-		  }
+                    char *elfname = ReplaceExtension(outname, ".elf");
+                    char *binname = ReplaceExtension(elfname, ".binary");
+
+                    initCmdline();
+                    appendToCmd("propeller-elf-objcopy");
+                    appendToCmd("-O");
+                    appendToCmd("binary");
+                    appendToCmd(elfname);
+                    appendToCmd(binname);
+                    //printf("running: [%s]\n", cmdline);
+
+                    retval = system(cmdline);
+                    remove(elfname);
+                    if (retval == 0) {
+                        retval = DoPropellerChecksum(binname);
+                    }
 		}
 		if (retval != 0)
 		  gl_errors++;

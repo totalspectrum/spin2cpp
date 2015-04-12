@@ -1,3 +1,7 @@
+Version 1.92
+
+- Fixed --binary checksum calculation
+
 Version 1.91
 
 - Preserve comments in Spin code.
