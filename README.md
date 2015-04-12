@@ -2,7 +2,7 @@ This is a very simple Spin to C/C++ converter. There still some of the
 Spin language that it does not handle, but it can deal with most
 objects and constructs that are commonly encountered. 
 
-This version (1.91) includes some more functionality. A simple "Hello,
+This version (1.92) includes some more functionality. A simple "Hello,
 world" program that compiles and runs is given in the Demo directory,
 as are some floating point samples in Demo/Float.
 
@@ -30,21 +30,30 @@ dependencies:
 
     spin2cpp --elf -O test.spin
 
-This will create an a.out file that is ready to run with
+This will create a test.elf file that is ready to run with
 propeller-load. You can also pass propgcc command line arguments
 through to the C++ compiler, as long as you place them after
 the --elf argument; for example:
 
-    spin2cpp --elf -o test.elf -Os -DFOO=1 test.spin
+    spin2cpp --elf -o my.elf -Os test.spin
 
-creates the output file "test.elf" instead of "a.out", and uses
+creates the output file "my.elf" instead of "test.elf", and uses
 optimization level -Os instead of no optimization. It is strongly
 recommended to pass some form of optimization to gcc.
+
+You can output a .binary file (like bstc and openspin do with the -b option)
+instead of .elf:
+
+    spin2cpp --binary -mcmm -Os test.spin
+
+will create "test.binary", ready to be run with propeller-load or with
+any other Spin loader.
 
 If you just want to convert a top level object to C++ (or C), you may
 want spin2cpp to automatically insert a main() function and a call to
 the first method of the object. To do this, give spin2cpp the --main
-option.
+option. --main is implied by --elf or --binary, so you do not have to
+explicitly give it in those cases.
 
 
 Examples
@@ -96,6 +105,11 @@ See Demo/Makefile for more examples.
 OPTIONS
 =======
 Spin2cpp accepts the following options:
+
+--binary
+  Run the compiler and output a loadable binary file. Note that
+  this option imples --main. Also note that after --binary you may
+  specify options to be passed to PropGCC, such as -Os or -mcmm.
 
 --ccode
   Output static C code instead of C++. Note that in C mode only a
@@ -285,7 +299,7 @@ propeller-load is on the path).
 
 Parsing is done via a yacc file (spin.y), but lexing is done with a
 hand crafted parser rather than using lex/flex. This is done to make
-state dependence a little easier.
+tracking indentation a little easier.
 
 Mostly the parser builds an Abstract Syntax Tree (AST) which we then
 walk to compile the .cpp and .h files. Each AST node contains a "kind"

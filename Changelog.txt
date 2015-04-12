@@ -1,5 +1,6 @@
 Version 1.92
 
+- Made the lookup/lookdown output code compatible with more recent gccs
 - Fixed --binary checksum calculation
 
 Version 1.91
