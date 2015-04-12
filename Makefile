@@ -14,6 +14,10 @@ else ifeq ($(CROSS),rpi)
   CC=arm-linux-gnueabihf-gcc
   EXT=
   BUILD=./build-rpi
+else ifeq ($(CROSS),linux32)
+  CC=gcc -m32
+  EXT=
+  BUILD=./build-linux32
 else
   CC=gcc
   EXT=
