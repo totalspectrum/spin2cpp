@@ -1,3 +1,9 @@
+Version 1.93
+
+- Added some debug directives
+- Made -o option more useful with --binary
+- Really fixed --binary checksum setting
+
 Version 1.92
 
 - Made the lookup/lookdown output code compatible with more recent gccs

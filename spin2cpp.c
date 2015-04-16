@@ -48,6 +48,7 @@ int gl_nospin;
 int gl_static;
 int gl_gas_dat;
 int gl_normalizeIdents;
+int gl_debug;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 struct preprocess gl_pp;
@@ -715,6 +716,12 @@ main(int argc, char **argv)
                 opt += 2;
             }
 	    outname = strdup(opt);
+        } else if (!strncmp(argv[0], "-g", 2)) {
+            if (compile) {
+                appendToCmd(argv[0]);
+            }
+            argv++; --argc;
+            gl_debug = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
             char *opt = argv[0];
             char *name;
@@ -753,7 +760,6 @@ main(int argc, char **argv)
             if (!strncmp(argv[0], "-O", 2)
                 || !strncmp(argv[0], "-f", 2)
                 || !strncmp(argv[0], "-m", 2)
-                || !strncmp(argv[0], "-g", 2)
                 || !strncmp(argv[0], "-l", 2)
                 )
             {

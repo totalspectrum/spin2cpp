@@ -587,6 +587,7 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         free(fname);
         exit(1);
     }
+    PrintDebugDirective(f, NULL);
     if (gl_ccode) {
         PrintCHeaderFile(f, P);
     } else {
@@ -610,6 +611,7 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         free(fname);
         exit(1);
     }
+    PrintDebugDirective(f, NULL);
     PrintCppFile(f, P);
     if (printMain) {
         Function *defaultMethod = P->functions;
@@ -643,4 +645,61 @@ done:
         exit(1);
     }
     current = save;
+}
+
+static const char *lastfile = 0;
+static int lastline = 0;
+
+static void
+EmitLineDirective(FILE *f, const char *name, int line)
+{
+    fprintf(f, "#line %d \"%s\"\n", line, name);
+    lastfile = name;
+    lastline = line;
+}
+
+void
+PrintDebugDirective(FILE *f, AST *ast)
+{
+    int line;
+    const char *name;
+
+    if (!gl_debug) {
+        return;
+    }
+
+    if (!ast) {
+        // reset our knowledge
+        name = NULL;
+        line = 0;
+        return;
+    }
+    line = ast->line;
+    name = ast->fileName;
+
+    if (lastfile != name) {
+        EmitLineDirective(f, name, line);
+        return;
+    }
+    if (lastline != line) {
+        if (lastline < line) {
+            int n = line - lastline;
+            // if we're close, just synchronize by outputting blank lines
+            if (n <= 5 && 0) {
+                while (n-- > 0) {
+                    fprintf(f, "\n");
+                    lastline++;
+                }
+                return;
+            }
+        }
+        EmitLineDirective(f, name, line);
+    }
+}
+
+void
+PrintNewline(FILE *f)
+{
+    fprintf(f, "\n");
+    lastline++;
 }

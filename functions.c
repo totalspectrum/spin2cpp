@@ -221,6 +221,7 @@ doDeclareFunction(AST *funcblock)
     fdef = NewFunction();
     fdef->name = src->left->d.string;
     fdef->annotations = annotation;
+    fdef->decl = funcdef;
     if (comment) {
         if (comment->kind != AST_COMMENT) {
             ERROR(comment, "Internal error: expected comment");
@@ -422,7 +423,12 @@ PrintAnnotationList(FILE *f, AST *ast, char terminal)
             ERROR(ast, "Internal error in function print: expecting annotation");
             return;
         }
-        fprintf(f, "%s%c", ast->d.string, terminal);
+        if (terminal == '\n') {
+            fprintf(f, "%s", ast->d.string);
+            PrintNewline(f);
+        } else {
+            fprintf(f, "%s%c", ast->d.string, terminal);
+        }
         ast = ast->right;
     }
 }
@@ -433,6 +439,9 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
     /* this may just be a placeholder for inline C++ code */
     if (!func->name)
         return;
+
+    /* make sure debug info (line number etc.) is up to date */
+    PrintDebugDirective(f, func->decl);
 
     if (gl_ccode && isLocal) {
         fprintf(f, "static");
@@ -449,14 +458,16 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
             fprintf(f, ", ");
         } else {
             // all done
-            fprintf(f, " );\n");
+            fprintf(f, " );");
+            PrintNewline(f);
             return;
         }
     } else {
         fprintf(f, "int32_t\t%s(", func->name);
     }
     PrintParameterList(f, func->params);
-    fprintf(f, ");\n");
+    fprintf(f, ");");
+    PrintNewline(f);
 }
 
 int
@@ -533,7 +544,8 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
         }
         ast = ast->right;
     }
-    fprintf(f, ";\n");
+    fprintf(f, ";");
+    PrintNewline(f);
     return count;
 }
 
@@ -578,7 +590,8 @@ PrintFunctionVariables(FILE *f, Function *func)
         if (func->localarray && func->localarray == func->parmarray) {
             /* nothing to do here */
         } else if (func->localarray && func->localarray_len > 0) {
-            fprintf(f, "  int32_t %s[%d];\n", func->localarray, func->localarray_len);
+            fprintf(f, "  int32_t %s[%d];", func->localarray, func->localarray_len);
+            PrintNewline(f);
         } else {
             PrintVarList(f, ast_type_long, func->locals, LOCAL);
         }
@@ -607,11 +620,14 @@ PrintFunctionVariables(FILE *f, Function *func)
             }
         }
 
-        fprintf(f, "  int32_t %s[%d];\n", func->parmarray, parmsiz);
+        fprintf(f, "  int32_t %s[%d];", func->parmarray, parmsiz);
+        PrintNewline(f);
     }
     if (!func->result_in_parmarray) {
-        if (func->resultexpr->kind == AST_IDENTIFIER)
-            fprintf(f, "  int32_t %s = 0;\n", func->resultexpr->d.string);
+        if (func->resultexpr->kind == AST_IDENTIFIER) {
+            fprintf(f, "  int32_t %s = 0;", func->resultexpr->d.string);
+            PrintNewline(f);
+        }
     }
     /* now actually assign initial values for the array */
     if (func->parmarray) {
@@ -619,12 +635,14 @@ PrintFunctionVariables(FILE *f, Function *func)
         offset = 0;
 
         if (func->result_in_parmarray) {
-            fprintf(f, "%*c%s[%d] = 0;\n", indent, ' ', func->parmarray, offset);
+            fprintf(f, "%*c%s[%d] = 0;", indent, ' ', func->parmarray, offset);
             offset++;
+            PrintNewline(f);
         }
         for (v = func->params; v; v = v->right) {
             fprintf(f, "%*c%s[%d] = ", indent, ' ', func->parmarray, offset);
-            fprintf(f, "%s;\n", v->left->d.string);
+            fprintf(f, "%s;", v->left->d.string);
+            PrintNewline(f);
             offset++;
         }
     }
@@ -684,7 +702,8 @@ PrintCaseItem(FILE *f, AST *var, AST *ast, int indent)
 
     fprintf(f, "(");
     PrintCaseExprList(f, var, ast->left);
-    fprintf(f, ") {\n");
+    fprintf(f, ") {");
+    PrintNewline(f);
     sawreturn = PrintStatementList(f, ast->right, indent);
     fprintf(f, "%*c}", indent, ' ');
     return sawreturn;
@@ -704,7 +723,7 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
         var = AstTempVariable(NULL);
         fprintf(f, "%*cint32_t %s = ", indent, ' ', var->d.string);
         PrintExpr(f, expr);
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
     }
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {
@@ -721,7 +740,7 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
         ast = ast->right;
         items++;
     }
-    fprintf(f, "\n");
+    PrintNewline(f);
     return (items > 0) && sawreturn;
 }
 
@@ -801,14 +820,16 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     needindent = !loopvar || !IsConstExpr(toval) || !(IsConstExpr(stepval) && !needsteptest);
 
     if (needindent) {
-        fprintf(f, "%*c{\n", indent, ' ');
+        fprintf(f, "%*c{", indent, ' ');
+        PrintNewline(f);
         indent += 2;
     }
 
     /* set the loop variable */
     if (!loopvar) {
         loopvar = AstTempVariable("_idx_");
-        fprintf(f, "%*cint32_t %s;\n", indent, ' ', loopvar->d.string);
+        fprintf(f, "%*cint32_t %s;", indent, ' ', loopvar->d.string);
+        PrintNewline(f);
     }
 
     /* set the limit variable */
@@ -820,7 +841,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintExpr(f, limit);
         fprintf(f, " = ");
         PrintExpr(f, toval);
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
     }
     /* set the step variable */
     if (IsConstExpr(stepval) && !needsteptest) {
@@ -837,7 +858,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintExpr(f, step);
         fprintf(f, " = ");
         PrintExpr(f, stepval);
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
     }
 
     stepstmt = AstAssign('+', loopvar, step);
@@ -848,7 +869,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintExpr(f, loopvar);
         fprintf(f, " = ");
         PrintExpr(f, fromval);
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
     }
     /* want to do:
      * if (loopvar > limit) step = -step;
@@ -865,7 +886,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         PrintExpr(f, step);
         fprintf(f, " = -");
         PrintExpr(f, step);
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
     }
 
     if (deltaknown) {
@@ -903,15 +924,15 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             PrintAssign(f, stepstmt->left, stepstmt->right);
         else
             PrintExpr(f, stepstmt);
-        fprintf(f, ") {\n");
+        fprintf(f, ") {"); PrintNewline(f);
         sawreturn = PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}\n", indent, ' ');
+        fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
     } else {
         /* use a do/while loop */
 
 
 
-        fprintf(f, "%*cdo {\n", indent, ' ');
+        fprintf(f, "%*cdo {", indent, ' '); PrintNewline(f);
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         PrintStatement(f, stepstmt, indent+2);
         fprintf(f, "%*c} while (", indent, ' ');
@@ -922,11 +943,11 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         } else {
             PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
         }
-        fprintf(f, ");\n");
+        fprintf(f, ");"); PrintNewline(f);
     }
     if (needindent) {
         indent -= 2;
-        fprintf(f, "%*c}\n", indent, ' ');
+        fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
     }
     return sawreturn;
 }
@@ -947,7 +968,7 @@ PrintOptimizeDecl(FILE *f, AST *ast, int indent)
             id = decl->left;
             fprintf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
             PrintLookupArray(f, decl->right);
-            fprintf(f, "};\n");
+            fprintf(f, "};"); PrintNewline(f);
         } else {
             ERROR(ast, "internal error in expression re-arranging");
             return;
@@ -973,39 +994,51 @@ PrintStatement(FILE *f, AST *ast, int indent)
         sawreturn = PrintStatement(f, ast->left, indent);
         break;
     case AST_RETURN:
+        PrintDebugDirective(f, ast);
         fprintf(f, "%*creturn ", indent, ' ');
         if (ast->left) {
             PrintExpr(f, ast->left);
         } else {
             PrintExpr(f, curfunc->resultexpr);
         }
-        fprintf(f, ";\n");
+        fprintf(f, ";"); PrintNewline(f);
         sawreturn = 1;
         break;
     case AST_ABORT:
-        fprintf(f, "%*cif (!abortChain__) abort();\n", indent, ' ');
+        PrintDebugDirective(f, ast);
+        fprintf(f, "%*cif (!abortChain__) abort();", indent, ' ');
+        PrintNewline(f);
         fprintf(f, "%*cabortChain__->val =  ", indent, ' ');
         if (ast->left) {
             PrintExpr(f, ast->left);
         } else {
             PrintExpr(f, curfunc->resultexpr);
         }
-        fprintf(f, ";\n");
-        fprintf(f, "%*clongjmp(abortChain__->jmp, 1);\n", indent, ' ');
+        fprintf(f, ";"); PrintNewline(f);
+        fprintf(f, "%*clongjmp(abortChain__->jmp, 1);", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_YIELD:
-        fprintf(f, "%*cYield__();\n", indent, ' ');
+        PrintDebugDirective(f, ast);
+        fprintf(f, "%*cYield__();", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_QUIT:
-        fprintf(f, "%*cbreak;\n", indent, ' ');
+        PrintDebugDirective(f, ast);
+        fprintf(f, "%*cbreak;", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_NEXT:
-        fprintf(f, "%*ccontinue;\n", indent, ' ');
+        PrintDebugDirective(f, ast);
+        fprintf(f, "%*ccontinue;", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_IF:
+        PrintDebugDirective(f, ast->left);
         fprintf(f, "%*cif (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ") {\n");
+        fprintf(f, ") {");
+        PrintNewline(f);
         ast = ast->right;
         // NOTE:
         // if an AST_THENELSE has a comment attached, the comment applies
@@ -1021,44 +1054,55 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         sawreturn = PrintStatementList(f, ast->left, indent+2);
         if (ast->right) {
-            fprintf(f, "%*c} else {\n", indent, ' ');
+            fprintf(f, "%*c} else {", indent, ' ');
+            PrintNewline(f);
             if (comment) {
                 PrintIndentedComment(f, comment, indent+2);
                 comment = NULL;
             }
+            PrintDebugDirective(f, ast->right);
             sawreturn = PrintStatementList(f, ast->right, indent+2) && sawreturn;
         } else {
             sawreturn = 0;
         }
-        fprintf(f, "%*c}\n", indent, ' ');
+        fprintf(f, "%*c}", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_WHILE:
+        PrintDebugDirective(f, ast->left);
         fprintf(f, "%*cwhile (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ") {\n");
+        fprintf(f, ") {"); PrintNewline(f);
         sawreturn = PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}\n", indent, ' ');
+        fprintf(f, "%*c}", indent, ' ');
+        PrintNewline(f);
         break;
     case AST_DOWHILE:
-        fprintf(f, "%*cdo {\n", indent, ' ');
+        fprintf(f, "%*cdo {", indent, ' ');
+        PrintNewline(f);
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c} while (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ");\n");
+        fprintf(f, ");");
+        PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
+        PrintDebugDirective(f, ast);
         sawreturn = PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
         sawreturn = PrintStatementList(f, ast, indent+2);
         break;
     case AST_CASE:
+        PrintDebugDirective(f, ast);
         sawreturn = PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
     case AST_POSTEFFECT:
+        PrintDebugDirective(f, ast);
         fprintf(f, "%*c", indent, ' ');
         PrintPostfix(f, ast, 1);
-        fprintf(f, ";\n");
+        fprintf(f, ";");
+        PrintNewline(f);
         break;
     case AST_OPERATOR:
         switch (ast->d.ival) {
@@ -1075,13 +1119,15 @@ PrintStatement(FILE *f, AST *ast, int indent)
         /* fall through */
     default:
     case AST_ASSIGN:
+        PrintDebugDirective(f, ast);
         fprintf(f, "%*c", indent, ' ');
         if (ast->kind == AST_ASSIGN) {
             PrintAssign(f, ast->left, ast->right);
         } else {
             PrintExpr(f, ast);
         }
-        fprintf(f, ";\n");
+        fprintf(f, ";");
+        PrintNewline(f);
         break;
     }
     return sawreturn;
@@ -1113,6 +1159,8 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         }
         curfunc = pf;
         PrintAnnotationList(f, curfunc->annotations, '\n');
+        /* make sure debug info (line number etc.) is up to date */
+        PrintDebugDirective(f, curfunc->decl);
         if (gl_ccode) {
             if (!pf->is_public) {
                 fprintf(f, "static ");
@@ -1127,23 +1175,29 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
             fprintf(f, "int32_t %s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf->params);
         }
-        fprintf(f, ")\n{\n");
+        fprintf(f, ")");
+        PrintNewline(f);
+        fprintf(f, "{");
+        PrintNewline(f);
         if (!pf->result_used) {
             pf->resultexpr = AstInteger(0);
         }
         PrintFunctionVariables(f, pf);
         if (optdecl) {
             PrintOptimizeDecl(f, optdecl, 2);
-            fprintf(f, "\n");
+            PrintNewline(f);
         }
         sawreturn = PrintFunctionStmts(f, pf);
 
         if (!sawreturn) {
             fprintf(f, "  return ");
             PrintExpr(f, pf->resultexpr);
-            fprintf(f, ";\n");
+            fprintf(f, ";");
+            PrintNewline(f);
         }
-        fprintf(f, "}\n\n");
+        fprintf(f, "}");
+        PrintNewline(f);
+        PrintNewline(f);
         curfunc = NULL;
     }
 }

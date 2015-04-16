@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2014 Total Spectrum Software Inc.
+ * Copyright 2011-2015 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -33,6 +33,7 @@ extern int gl_preprocess; /* if set, run the preprocessor on input */
 extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
 extern char *gl_header; /* comment to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
+extern int gl_debug;    /* flag: if set, include debugging directives */
 
 /* types */
 extern AST *ast_type_long;
@@ -86,6 +87,7 @@ typedef struct funcdef {
     struct funcdef *next;
     int is_public;
     const char *name;
+    AST *decl;        /* always filled in with the line numbers of the declaration */
     AST *type;        /* the function type, normally long */
     AST *annotations; /* any annotations for the function (section, etc.) */
     AST *doccomment;  /* documentation comments */
@@ -239,6 +241,8 @@ void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
 void PrintAnnotationList(FILE *f, AST *ast, char terminal);
 void PrintIndentedComment(FILE *f, AST *ast, int indent);
+void PrintDebugDirective(FILE *f, AST *ast);
+void PrintNewline(FILE *f);
 
 #define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
