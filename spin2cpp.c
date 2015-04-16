@@ -567,12 +567,21 @@ DoPropellerChecksum(const char *fname)
         perror(fname);
         return -1;
     }
-    len = 0;
+    fseek(f, 0L, SEEK_END);
+    len = ftell(f);  // find length of file
+    // update header fields
+    fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
+    fputc(len & 0xff, f);
+    fputc( (len >> 8) & 0xff, f);
+    // update dbase = vbase + 2 * sizeof(int)
+    fputc( (len+8) & 0xff, f);
+    fputc( ((len+8)>>8) & 0xff, f);
+
+    fseek(f, 0L, SEEK_SET);
     for(;;) {
         c = fgetc(f);
         if (c < 0) break;
         checksum += (unsigned char)c;
-        len++;
     }
     fflush(f);
     checksum = 0x14 - checksum;
