@@ -714,11 +714,6 @@ main(int argc, char **argv)
             } else {
                 opt += 2;
             }
-            /* if we are compiling, pass this on to the compiler too */
-            if (compile && !outputBin) {
-                appendToCmd("-o");
-                appendToCmd(opt);
-            }
 	    outname = strdup(opt);
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
             char *opt = argv[0];
@@ -828,10 +823,11 @@ main(int argc, char **argv)
             if (compile && gl_errors == 0) {
                 if (!outname) {
                     outname = argv[0];
-                    outname = ReplaceExtension(outname, ".elf");
-                    appendToCmd("-o");
-                    appendToCmd(outname);
                 }
+                outname = ReplaceExtension(outname, ".elf");
+                appendToCmd("-o");
+                appendToCmd(outname);
+
                 retval = system(cmdline);
                 if (retval < 0) {
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
