@@ -34,6 +34,7 @@ extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
 extern char *gl_header; /* comment to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 extern int gl_debug;    /* flag: if set, include debugging directives */
+extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 
 /* types */
 extern AST *ast_type_long;

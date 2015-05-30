@@ -7,8 +7,8 @@ class test05 {
 public:
   static const int Size = 4;
 private:
-  int32_t	X[4];
-  uint8_t	Str[4];
+  int32_t	X[Size];
+  uint8_t	Str[Size];
 };
 
 #endif

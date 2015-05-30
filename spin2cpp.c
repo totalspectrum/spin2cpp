@@ -49,6 +49,7 @@ int gl_static;
 int gl_gas_dat;
 int gl_normalizeIdents;
 int gl_debug;
+int gl_expand_constants;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 
 struct preprocess gl_pp;

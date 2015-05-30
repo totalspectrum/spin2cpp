@@ -530,8 +530,13 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
             count++;
             break;
         case AST_ARRAYDECL:
-            fprintf(f, "%s[%d]", decl->left->d.string,
-                    (int)EvalConstExpr(decl->right));
+            fprintf(f, "%s[", decl->left->d.string);
+            if (gl_expand_constants) {
+                fprintf(f, "%d", (int)EvalConstExpr(decl->right));
+            } else {
+                PrintExpr(f, decl->right);
+            }
+            fprintf(f, "]");
             count++;
             break;
         case AST_ANNOTATION:
@@ -837,7 +842,11 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 
     /* set the limit variable */
     if (IsConstExpr(toval)) {
-        limit = AstInteger(EvalConstExpr(toval));
+        if (gl_expand_constants) {
+            limit = AstInteger(EvalConstExpr(toval));
+        } else {
+            limit = toval;
+        }
     } else {
         limit = AstTempVariable("_limit_");
         fprintf(f, "%*cint32_t ", indent, ' ');
