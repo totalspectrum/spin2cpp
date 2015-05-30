@@ -1,6 +1,8 @@
 Version 1.93
 
-- Fixed spaces in file names
+- Made for loop output more idiomatic
+- Print symbolic constants rather than the values they resolve to
+- Fixed illegal characters in file names used as class names
 - Added some debug directives
 - Made -o option more useful with --binary
 - Really fixed --binary checksum setting

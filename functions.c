@@ -808,12 +808,17 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for toval; this signals that we should be counting
-       down from expr to 1
+       down from expr-1 to 0
     */
     if (fromval == NULL) {
         needsteptest = 0;
         negstep = 0;
-        fromval = AstInteger(1);
+        if (IsConstExpr(toval)) {
+            fromval = AstInteger(0);
+            toval = AstOperator('-', toval, AstInteger(1));
+        } else {
+            fromval = AstInteger(1);
+        }
         useForLoop= 1;
     } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
