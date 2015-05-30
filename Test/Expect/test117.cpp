@@ -17,7 +17,7 @@ int32_t test117::Getit(void)
   // start something
   A = 0;
   // count up
-  for(I = 1; I <= 5; I = I + 1) {
+  for(I = 1; I <= 5; I++) {
     // update a
     A = A + I;
   }

@@ -15,7 +15,7 @@ int32_t gtest02::run(void)
 {
   int32_t	i, now, elapsed, x;
 #line 8 "gtest02.spin"
-  for(i = 1; i <= 15; i = i + 1) {
+  for(i = 1; i <= 15; i++) {
 #line 4 "gtest02.spin"
     now = CNT;
     x = fibo(i);

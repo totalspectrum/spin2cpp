@@ -889,8 +889,20 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
      *   body
      * } while ( (step > 0 && loopvar <= limit) || (step < 0 && loopvar >= limit));
      */
+
     loop_ge_limit = AstOperator(T_GE, loopvar, limit);
-    loop_le_limit = AstOperator(T_LE, loopvar, limit);
+
+    /* try to make things a bit more idiomatic; if the limit is N - 1,
+       change the ge_limit to actually be "< N" rather than "<= N - 1"
+    */
+    if (!needsteptest && limit->kind == AST_OPERATOR && limit->d.ival == '-'
+        && limit->right->kind == AST_INTEGER
+        && limit->right->d.ival == 1)
+    {
+        loop_le_limit = AstOperator('<', loopvar, limit->left);
+    } else {
+        loop_le_limit = AstOperator(T_LE, loopvar, limit);
+    }
     if (needsteptest) {
         fprintf(f, "%*cif (", indent, ' ');
         PrintBoolExpr(f, loop_ge_limit);
@@ -932,10 +944,16 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
         }
         fprintf(f, "; ");
-        if (stepstmt->kind == AST_ASSIGN)
-            PrintAssign(f, stepstmt->left, stepstmt->right);
-        else
+        if (stepstmt->kind == AST_ASSIGN) {
+            if (deltaknown && delta == 1 && stepstmt->left->kind == AST_IDENTIFIER) {
+                PrintExpr(f, stepstmt->left);
+                fprintf(f, "++");
+            } else {
+                PrintAssign(f, stepstmt->left, stepstmt->right);
+            }
+        } else {
             PrintExpr(f, stepstmt);
+        }
         fprintf(f, ") {"); PrintNewline(f);
         sawreturn = PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}", indent, ' '); PrintNewline(f);

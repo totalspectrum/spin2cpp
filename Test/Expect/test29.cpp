@@ -27,7 +27,7 @@ int32_t test29::Str(int32_t Stringptr)
   {
     int32_t _idx__0000;
     int32_t _limit__0001 = strlen((char *) Stringptr);
-    for(_idx__0000 = 1; _idx__0000 <= _limit__0001; _idx__0000 = _idx__0000 + 1) {
+    for(_idx__0000 = 1; _idx__0000 <= _limit__0001; _idx__0000++) {
       Tx(((uint8_t *)(Stringptr++))[0]);
     }
   }

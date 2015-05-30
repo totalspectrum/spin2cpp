@@ -13,7 +13,7 @@ static int32_t tmp__;
 int32_t test119::Clear(void)
 {
   int32_t	I;
-  for(I = 0; I <= (Width - 1); I = I + 1) {
+  for(I = 0; I < Width; I++) {
     Array[I] = 0;
   }
   return 0;
