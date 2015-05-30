@@ -1,5 +1,6 @@
 Version 1.93
 
+- Fixed spaces in file names
 - Added some debug directives
 - Made -o option more useful with --binary
 - Really fixed --binary checksum setting

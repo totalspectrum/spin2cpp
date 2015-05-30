@@ -1263,6 +1263,7 @@ InitPasm(int flags)
 /*
  * "canonicalize" an identifier, to make sure it
  * does not conflict with any C reserved words
+ * also checks for spaces within the name
  */
 bool
 Is_C_Reserved(const char *name)
@@ -1274,8 +1275,9 @@ Is_C_Reserved(const char *name)
         return true;
     if (strlen(name) < 3)
         return false;
-    for (ptr = name; *ptr; ptr++)
-        ;
+    for (ptr = name; *ptr; ptr++) {
+        if (isspace(*ptr)) return true;
+    }
     if (ptr[-2] == '_' && ptr[-1] == 't')
         return true;
 
@@ -1291,6 +1293,8 @@ NormalizeIdentifier(char *idstr)
         if (needCap && isalpha(*ptr)) {
             *ptr = toupper(*ptr);
             needCap = 0;
+        } else if (isspace(*ptr)) {
+            *ptr = '_';
         } else {
             *ptr = tolower(*ptr);
         }

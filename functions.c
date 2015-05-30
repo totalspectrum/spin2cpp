@@ -758,6 +758,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     AST *loopvar = NULL;
     AST *loopleft, *loopright;
     AST *stepstmt;
+    AST *lineast;
     int sawreturn = 0;
     int negstep = 0;
     int needsteptest = 1;
@@ -777,6 +778,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         }
     }
     ast = ast->right;
+    lineast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
         return 0;
@@ -819,6 +821,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 
     needindent = !loopvar || !IsConstExpr(toval) || !(IsConstExpr(stepval) && !needsteptest);
 
+    PrintDebugDirective(f, lineast);
     if (needindent) {
         fprintf(f, "%*c{", indent, ' ');
         PrintNewline(f);
@@ -1087,7 +1090,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
-        PrintDebugDirective(f, ast);
         sawreturn = PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
