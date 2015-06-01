@@ -771,7 +771,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     int32_t delta = 0;
     int needindent;
     int useForLoop = 0;
-
+    int useLt = 0;
+    
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
             loopvar = ast->left;
@@ -813,12 +814,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     if (fromval == NULL) {
         needsteptest = 0;
         negstep = 0;
-        if (IsConstExpr(toval)) {
-            fromval = AstInteger(0);
-            toval = AstOperator('-', toval, AstInteger(1));
-        } else {
-            fromval = AstInteger(1);
-        }
+        useLt = 1;
+        fromval = AstInteger(0);
         useForLoop= 1;
     } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
@@ -900,11 +897,13 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     /* try to make things a bit more idiomatic; if the limit is N - 1,
        change the ge_limit to actually be "< N" rather than "<= N - 1"
     */
-    if (!needsteptest && limit->kind == AST_OPERATOR && limit->d.ival == '-'
+    if (!useLt && limit->kind == AST_OPERATOR && limit->d.ival == '-'
         && limit->right->kind == AST_INTEGER
         && limit->right->d.ival == 1)
     {
         loop_le_limit = AstOperator('<', loopvar, limit->left);
+    } else if (useLt) {
+        loop_le_limit = AstOperator('<', loopvar, limit);
     } else {
         loop_le_limit = AstOperator(T_LE, loopvar, limit);
     }
