@@ -102,11 +102,13 @@ do
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed
-  rm -f $j.out $j.txt $j.elf $j.cpp $j.h FullDuplexSerial.{cpp,h}
+    rm -f $j.out $j.txt $j.elf $j.cpp $j.h FullDuplexSerial.cpp FullDuplexSerial.h
   else
     echo $j failed
     endmsg="TEST FAILURES"
   fi
 done
 
+# clean up
+rm -f FullDuplexSerial.cpp FullDuplexSerial.h
 echo $endmsg

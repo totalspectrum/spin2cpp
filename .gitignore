@@ -1,0 +1,4 @@
+*.exe
+*.zip
+build*/
+spin2cpp.linux
