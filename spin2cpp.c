@@ -45,7 +45,6 @@ ParserState *allparse;
 int gl_errors;
 int gl_ccode;
 int gl_nospin;
-int gl_static;
 int gl_gas_dat;
 int gl_normalizeIdents;
 int gl_debug;
@@ -333,11 +332,6 @@ parseFile(const char *name)
             free(fname);
             free(P);
             fclose(f);
-            if (gl_static) {
-                /* this is bad, we can't have two copies of an object */
-                ERROR(NULL, "multiple use of object %s not allowed in C mode",
-                      P->basename);
-            }
             return Q;
         }
         LastQ = Q;
@@ -406,11 +400,6 @@ NewObject(AST *identifier, AST *string)
     AST *ast;
     const char *filename = string->d.string;
 
-    if (gl_static && identifier->kind == AST_ARRAYDECL) {
-        /* this is bad, we can't have two copies of an object */
-        ERROR(NULL, "multiple use of object %s not allowed in C mode",
-              filename);
-    }
     ast = NewAST(AST_OBJECT, identifier, NULL);
     ast->d.ptr = parseFile(filename);
     return ast;
@@ -671,7 +660,6 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_ccode = 1;
-            //gl_static = 1; // no longer necessary
             cext = ".c";
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {

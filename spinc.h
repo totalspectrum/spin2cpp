@@ -28,7 +28,6 @@
 /* compilation flags */
 extern int gl_ccode;  /* if set, we are outputting C code instead of C++*/
 extern int gl_nospin; /* if set, suppress output of Spin methods */
-extern int gl_static; /* if set, objects are static; this is the default in C mode */
 extern int gl_preprocess; /* if set, run the preprocessor on input */
 extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
 extern char *gl_header; /* comment to prepend to files */

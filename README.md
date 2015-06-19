@@ -112,16 +112,11 @@ Spin2cpp accepts the following options:
   specify options to be passed to PropGCC, such as -Os or -mcmm.
 
 --ccode
-  Output static C code instead of C++. Note that in C mode only a
-  single instance of an object may be active at a time; that is, code
-  like:
-    OBJ
-       a: "FullDuplexSerial"
-       b: "FullDuplexSerial"
-  will not work, because "a" and "b" will both be using the same
-  variables. This restriction applies only to C code, C++ code is able
-  to use multiple objects without a problem.
- 
+  Output C code instead of C++. Note that in C mode every method
+  has a first parameter "self" which points to the object's data.
+  This is similar to the way the C++ compiler implements object methods
+  internally, but in C it has to be exposed explicitly.
+  
 --dat
   Output a binary blob of the DAT section only, similar to the
   bstc -c option; or, if --gas is given, output GAS assembly for
