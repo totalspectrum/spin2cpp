@@ -1,0 +1,3 @@
+expect 1 got n=00000001
+expect 1 got n=00000001
+expect 2 got n=00000002
