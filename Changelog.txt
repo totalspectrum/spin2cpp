@@ -6,6 +6,7 @@ Version 1.93
 - Added some debug directives
 - Made -o option more useful with --binary
 - Really fixed --binary checksum setting
+- Added support for setting _clkfreq and _clkmode
 
 Version 1.92
 

@@ -165,16 +165,16 @@ Spin2cpp accepts the following options:
 LIMITATIONS
 ===========
 
-There are a number of Spin features that are not supported yet,
+There are some Spin features that are not supported yet,
 including:
 
     COGINIT on a Spin method (PASM works)
     _FREE
     SPR
     _STACK
-    _XINFREQ
 
-There are probably many other features not supported yet!
+There are probably other features that do not work; if you find any,
+please report them so they can be fixed.
 
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.

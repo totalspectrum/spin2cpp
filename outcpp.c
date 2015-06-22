@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2014 Total Spectrum Software Inc.
+// Copyright 2012-2015 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -567,6 +567,111 @@ PrintCppFile(FILE *f, ParserState *parse)
 
 }
 
+// output an assembly language statement
+void
+OutputAsmEquate(FILE *f, const char *str, unsigned int value)
+{
+    fprintf(f, "__asm__ volatile( \"    .global %s\\n\" );\n", str);
+    fprintf(f, "__asm__ volatile( \"    %s = 0x%x\\n\" );\n", str, value);
+}
+
+// output _clkmode and _clkfreq settings
+void
+OutputClkFreq(FILE *f, ParserState *P)
+{
+    // look up in P->objsyms
+    Symbol *clkmodesym = FindSymbol(&P->objsyms, "_clkmode");
+    Symbol *sym;
+    AST *ast;
+    int32_t clkmode, clkfreq, xinfreq;
+    int32_t multiplier = 1;
+    uint8_t clkreg;
+    
+    if (!clkmodesym) {
+        return;  // nothing to do
+    }
+    ast = (AST *)clkmodesym->val;
+    if (clkmodesym->type != SYM_CONSTANT) {
+        WARNING(ast, "_clkmode is not a constant");
+        return;
+    }
+    clkmode = EvalConstExpr(ast);
+    // now we need to figure out the frequency
+    clkfreq = 0;
+    sym = FindSymbol(&P->objsyms, "_clkfreq");
+    if (sym) {
+        if (sym->type == SYM_CONSTANT) {
+            clkfreq = EvalConstExpr((AST*)sym->val);
+        } else {
+            WARNING((AST*)sym->val, "_clkfreq is not a constant");
+        }
+    }
+    xinfreq = 0;
+    sym = FindSymbol(&P->objsyms, "_xinfreq");
+    if (sym) {
+        if (sym->type == SYM_CONSTANT) {
+            xinfreq = EvalConstExpr((AST*)sym->val);
+        } else {
+            WARNING((AST*)sym->val, "_xinfreq is not a constant");
+        }
+    }
+    // calculate the multiplier
+    clkreg = 0;
+    if (clkmode & RCFAST) {
+        // nothing to do here
+    } else if (clkmode & RCSLOW) {
+        clkreg |= 0x01;   // CLKSELx
+    } else if (clkmode & (XINPUT)) {
+        clkreg |= (1<<5); // OSCENA
+        clkreg |= 0x02;   // CLKSELx
+    } else {
+        clkreg |= (1<<5); // OSCENA
+        clkreg |= (1<<6); // PLLENA
+        if (clkmode & XTAL1) {
+            clkreg |= (1<<3);
+        } else if (clkmode & XTAL2) {
+            clkreg |= (2<<3);
+        } else {
+            clkreg |= (3<<3);
+        }
+        if (clkmode & PLL1X) {
+            multiplier = 1;
+            clkreg |= 0x3;  // CLKSELx
+        } else if (clkmode & PLL2X) {
+            multiplier = 2;
+            clkreg |= 0x4;  // CLKSELx
+        } else if (clkmode & PLL4X) {
+            multiplier = 4;
+            clkreg |= 0x5;  // CLKSELx
+        } else if (clkmode & PLL8X) {
+            multiplier = 8;
+            clkreg |= 0x6;  // CLKSELx
+        } else if (clkmode & PLL16X) {
+            multiplier = 16;
+            clkreg |= 0x7;  // CLKSELx
+        }
+    }
+    
+    // validate xinfreq and clkfreq
+    if (xinfreq == 0) {
+        if (clkfreq == 0) {
+            ERROR(NULL, "Must set at least one of _XINFREQ or _CLKFREQ");
+        }
+    } else {
+        int32_t calcfreq = xinfreq * multiplier;
+        if (clkfreq != 0) {
+            if (calcfreq != clkfreq) {
+                ERROR(NULL, "Inconsistent values for _XINFREQ and _CLKFREQ");
+            }
+        }
+        clkfreq = calcfreq;
+    }
+    
+    // now output the clkfreq and clkmode settings
+    OutputAsmEquate(f, "__clkfreqval", clkfreq);
+    OutputAsmEquate(f, "__clkmodeval", clkreg);
+}
+
 void
 OutputCppCode(const char *name, ParserState *P, int printMain)
 {
@@ -623,6 +728,9 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
             ERROR(NULL, "default method of %s expects parameters", P->classname);
             goto done;
         }
+
+        //check for _clkmode and _clkfreq symbols
+        OutputClkFreq(f, P);
         fprintf(f, "\n");
 
         if (gl_ccode) {
