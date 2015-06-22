@@ -1231,6 +1231,7 @@ PrintExpr(FILE *f, AST *expr)
         break;
     case AST_FUNCCALL:
         if (expr->left && expr->left->kind == AST_METHODREF) {
+            const char *thename;
             objref = expr->left->left;
             objsym = LookupAstSymbol(objref, "object reference");
             if (!objsym) return;
@@ -1238,9 +1239,10 @@ PrintExpr(FILE *f, AST *expr)
                 ERROR(expr, "%s is not an object", objsym->name);
                 return;
             }
-            sym = LookupObjSymbol(expr, objsym, expr->left->right->d.string);
+            thename = expr->left->right->d.string;
+            sym = LookupObjSymbol(expr, objsym, thename);
             if (!sym || sym->type != SYM_FUNCTION) {
-                ERROR(expr, "%s is not a method of %s", sym->name, objsym->name);
+                ERROR(expr, "%s is not a method of %s", thename, objsym->name);
                 return;
             }
             if (gl_ccode) {
