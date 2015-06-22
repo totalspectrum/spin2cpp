@@ -23,6 +23,19 @@
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
 
+/* standard Spin defines */
+#define RCFAST 0x0001
+#define RCSLOW 0x0002
+#define XINPUT 0x0004
+#define XTAL1  0x0008
+#define XTAL2  0x0010
+#define XTAL3  0x0020
+#define PLL1X  0x0040
+#define PLL2X  0x0080
+#define PLL4X  0x0100
+#define PLL8X  0x0200
+#define PLL16X  0x0400
+
 /* some globals */
 
 /* compilation flags */
@@ -258,6 +271,7 @@ int funcParameterNum(Function *func, AST *var);
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
+void WARNING(AST *, const char *msg, ...);
 
 extern SymbolTable reservedWords;
 extern void InitPasm(int flags);

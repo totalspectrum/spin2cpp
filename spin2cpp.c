@@ -298,8 +298,6 @@ DeclareObjects(AST *newobjs)
  * This is the main entry point for the compiler
  * "name" is the file name; if it has no .spin suffix
  * we'll try it with one
- * "printMain" is nonzero if we should emit a main() function
- * that calls the first method in the object
  */
 ParserState *
 parseFile(const char *name)
@@ -420,6 +418,22 @@ ERROR(AST *instr, const char *msg, ...)
     va_end(args);
     fprintf(stderr, "\n");
     gl_errors++;
+}
+
+void
+WARNING(AST *instr, const char *msg, ...)
+{
+    va_list args;
+
+    if (instr)
+        fprintf(stderr, "%s:%d: warning: ", instr->fileName, instr->line);
+    else
+        fprintf(stderr, "warning: ");
+
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
 }
 
 static void
@@ -567,6 +581,12 @@ DoPropellerChecksum(const char *fname)
     // update dbase = vbase + 2 * sizeof(int)
     fputc( (len+8) & 0xff, f);
     fputc( ((len+8)>>8) & 0xff, f);
+    // update initial program counter
+    fputc( 0x18, f );
+    fputc( 0x00, f );
+    // update dcurr = dbase + 2 * sizeof(int)
+    fputc( (len+16) & 0xff, f);
+    fputc( ((len+16)>>8) & 0xff, f);
 
     fseek(f, 0L, SEEK_SET);
     for(;;) {
