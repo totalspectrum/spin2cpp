@@ -26,7 +26,7 @@ PUB demo | n, i, b
   exit
 
 PUB exit
-  waitcnt(cnt + 40000000)
+  fds.txflush
   fds.stop
 
 PUB getvar

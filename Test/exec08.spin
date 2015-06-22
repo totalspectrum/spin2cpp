@@ -18,7 +18,7 @@ PUB demo | a, b
   fds.str(string("b="))
   fds.hex(b, 8)
   fds.str(string(13,10))
-  waitcnt(cnt + 40000000)
+  fds.txflush
   fds.stop
 
 PUB getvar1

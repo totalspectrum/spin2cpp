@@ -85,5 +85,5 @@ PUB newline
   fds.str(string(13, 10))
 
 PUB exit
-  waitcnt(cnt + 40000000)
+  fds.txflush
   fds.stop

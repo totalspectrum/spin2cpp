@@ -24,7 +24,7 @@ PUB demo | x,y
   exit
 
 PUB exit
-  waitcnt(cnt + 40000000)
+  fds.txflush
   fds.stop
 
 PUB putnum(x)

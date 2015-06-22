@@ -18,6 +18,6 @@ PUB demo
   fds.str(string("x="))
   fds.hex(x, 8)
   fds.str(string(13,10))
-  waitcnt(cnt + 40000000)
+  fds.txflush
   fds.stop
 
