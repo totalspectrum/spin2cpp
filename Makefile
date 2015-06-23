@@ -5,9 +5,15 @@
 #
 # if CROSS is defined, we are building a cross compiler
 # possible targets are: win32, rpi
+# Note that you may have to adjust your compiler names depending on
+# which Linux distribution you are using (e.g. ubuntu uses
+# "i586-mingw32msvc-gcc" for mingw, whereas Debian uses
+# "i686-w64-mingw32-gcc"
+#
 
 ifeq ($(CROSS),win32)
-  CC=i586-mingw32msvc-gcc
+#  CC=i586-mingw32msvc-gcc
+  CC=i686-w64-mingw32-gcc
   EXT=.exe
   BUILD=./build-win32
 else ifeq ($(CROSS),rpi)
