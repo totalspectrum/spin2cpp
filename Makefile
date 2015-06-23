@@ -77,3 +77,11 @@ $(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c
 
 $(BUILD)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^
+
+#
+# target to build a .zip file for a release
+#
+zip:
+	$(MAKE) CROSS=win32
+	$(MAKE) CROSS=linux32
+	zip spin2cpp_v1.xx.zip README.md COPYING Changelog.txt spin2cpp.exe spin2cpp.linux
