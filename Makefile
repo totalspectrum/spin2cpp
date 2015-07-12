@@ -42,12 +42,17 @@ CFLAGS = -g -Wall -Werror $(INC)
 LIBS = -lm
 RM = rm -f
 
-PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
-LEXOBJS = $(BUILD)/lexer.o $(BUILD)/symbol.o $(BUILD)/ast.o \
-	$(BUILD)/expr.o $(BUILD)/flexbuf.o $(BUILD)/preprocess.o
+HEADERS = $(BUILD)/spin.tab.h ast.h expr.h flexbuf.h lexer.h preprocess.h spinc.h symbol.h
 
-OBJS = $(LEXOBJS) $(BUILD)/spin.tab.o $(BUILD)/functions.o \
-	$(BUILD)/pasm.o $(BUILD)/outcpp.o $(BUILD)/outdat.o
+PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
+
+LEXSRCS = lexer.c symbol.c ast.c expr.c flexbuf.c preprocess.c
+SPINSRCS = $(LEXSRCS) functions.c pasm.c outcpp.c outdat.c
+
+LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
+SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
+
+OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o
 
 all: $(BUILD) $(PROGS)
 
@@ -57,10 +62,8 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 	$(YACC) -t -b $(BUILD)/spin -d spin.y
 
-lexer.c: $(BUILD)/spin.tab.h
-
 clean:
-	$(RM) $(PROGS) $(BUILD)/*.o $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h
+	$(RM) $(PROGS) $(BUILD)/*
 
 test: $(PROGS)
 	$(BUILD)/testlex
@@ -72,11 +75,11 @@ $(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c
-	$(CC) $(CFLAGS) -o $@ -c $^
+$(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BUILD)/%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $^
+$(BUILD)/%.o: %.c $(HEADERS)
+	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
 
 #
 # target to build a .zip file for a release
@@ -85,3 +88,5 @@ zip:
 	$(MAKE) CROSS=win32
 	$(MAKE) CROSS=linux32
 	zip spin2cpp_v1.xx.zip README.md COPYING Changelog.txt spin2cpp.exe spin2cpp.linux
+
+
