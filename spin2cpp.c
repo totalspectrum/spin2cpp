@@ -50,6 +50,7 @@ int gl_normalizeIdents;
 int gl_debug;
 int gl_expand_constants;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
+const char *gl_outname = NULL;
 
 struct preprocess gl_pp;
 
@@ -626,7 +627,7 @@ main(int argc, char **argv)
     struct flexbuf argbuf;
     time_t timep;
     int i;
-    char *outname = NULL;
+    const char *outname = NULL;
 
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor
@@ -724,7 +725,7 @@ main(int argc, char **argv)
             } else {
                 opt += 2;
             }
-	    outname = strdup(opt);
+	    gl_outname = strdup(opt);
         } else if (!strncmp(argv[0], "-g", 2)) {
             if (compile) {
                 appendToCmd(argv[0]);
@@ -812,13 +813,16 @@ main(int argc, char **argv)
 
     if (P) {
         if (outputDat) {
+            outname = gl_outname;
             if (gl_gas_dat) {
-	        if (!outname) outname = P->basename;
-	        outname = ReplaceExtension(outname, ".S");
+	        if (!outname) {
+                    outname = ReplaceExtension(P->basename, ".S");
+                }
                 OutputGasFile(outname, P);
             } else {
-	        if (!outname) outname = P->basename;
-		outname = ReplaceExtension(outname, ".dat");
+	        if (!outname) {
+                    outname = ReplaceExtension(P->basename, ".dat");
+                }
                 OutputDatFile(outname, P);
             }
         } else {
@@ -836,12 +840,21 @@ main(int argc, char **argv)
                 }
             }
             if (compile && gl_errors == 0) {
-                if (!outname) {
-                    outname = argv[0];
+                const char *binname;
+                const char *elfname;
+
+                if (gl_outname == NULL) {
+                    elfname = ReplaceExtension(argv[0], ".elf");
+                    binname = ReplaceExtension(elfname, ".binary");
+                } else if (outputBin) {
+                    elfname = ReplaceExtension(gl_outname, ".elf");
+                    binname = gl_outname;
+                } else {
+                    elfname = gl_outname;
+                    binname = NULL;
                 }
-                outname = ReplaceExtension(outname, ".elf");
                 appendToCmd("-o");
-                appendToCmd(outname);
+                appendToCmd(elfname);
 
                 retval = system(cmdline);
                 if (retval < 0) {
@@ -849,9 +862,6 @@ main(int argc, char **argv)
                     exit(1);
                 }
 		if (retval == 0 && outputBin) {
-                    char *elfname = ReplaceExtension(outname, ".elf");
-                    char *binname = ReplaceExtension(elfname, ".binary");
-
                     initCmdline();
                     appendToCmd("propeller-elf-objcopy");
                     appendToCmd("-O");

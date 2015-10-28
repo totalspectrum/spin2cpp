@@ -1,3 +1,7 @@
+Version 1.94
+
+- Cleaned up handling of -o option for .dat, .elf, and .binary
+
 Version 1.93
 
 - Made for loop output more idiomatic
