@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // is significant
 //
-// Copyright (c) 2011-2014 Total Spectrum Software Inc.
+// Copyright (c) 2011-2016 Total Spectrum Software Inc.
 //
 #include <string.h>
 #include <ctype.h>
@@ -761,6 +761,8 @@ struct reservedword {
     { "byte", T_BYTE },
 
     { "case", T_CASE },
+    { "cognew", T_COGNEW },
+    { "coginit", T_COGINIT },
     { "con", T_CON },
     { "constant", T_CONSTANT },
 
@@ -967,11 +969,8 @@ Builtin builtinfuncs[] = {
     { "clkmode", 0, defaultVariable, "CLKMODE", NULL },
     { "clkset", 2, defaultBuiltin, "clkset", NULL },
 
-    { "cognew", 2, defaultBuiltin, "cognew", NULL },
     { "cogstop", 1, defaultBuiltin, "cogstop", NULL },
     { "cogid", 0, defaultBuiltin, "cogid", NULL },
-
-    { "coginit", 3, defaultBuiltin, "coginit", NULL },
 
     { "locknew", 0, defaultBuiltin, "locknew", lockhook },
     { "lockset", 1, defaultBuiltin, "lockset", lockhook },

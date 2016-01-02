@@ -302,6 +302,23 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
     fprintf(f, ")");
 }
 
+/* code to print coginit to a file */
+void
+PrintCogInit(FILE *f, AST *params)
+{
+    const char *funcname = "coginit";
+    if (params && params->left && IsConstExpr(params->left)) {
+        int32_t cogid = EvalConstExpr(params->left);
+        if (cogid >= NUM_COGS) {
+            params = params->right;
+            funcname = "cognew";
+        }
+    }
+    fprintf(f, "%s(", funcname);
+    PrintExprList(f, params);
+    fprintf(f, ")");
+}
+
 /* code to print left operator right
  */
 static void
@@ -1266,6 +1283,9 @@ PrintExpr(FILE *f, AST *expr)
         } else {
             ERROR(expr, "%s is not a function", sym->name);
         }
+        break;
+    case AST_COGINIT:
+        PrintCogInit(f, expr->left);
         break;
     case AST_RANGEREF:
         PrintRangeUse(f, expr);

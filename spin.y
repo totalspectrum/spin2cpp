@@ -160,6 +160,8 @@ CheckYield(AST *body)
 %token T_LOOKDOWNZ
 %token T_LOOKUP
 %token T_LOOKUPZ
+%token T_COGINIT
+%token T_COGNEW
 
 %token T_CASE
 %token T_OTHER
@@ -841,6 +843,16 @@ memref:
 funccall:
   identifier '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | T_COGINIT '(' exprlist ')'
+    { $$ = NewAST(AST_COGINIT, $1, $3); }
+  | T_COGNEW '(' exprlist ')'
+    {
+        AST *elist;
+        AST *negone = AstInteger(65536);
+        elist = NewAST(AST_EXPRLIST, negone, NULL);
+        elist = AddToList(elist, $3);
+        $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
   | identifier '.' identifier '(' exprlist ')'
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);

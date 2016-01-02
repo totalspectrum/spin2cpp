@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2015 Total Spectrum Software Inc.
+ * Copyright 2011-2016 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -35,6 +35,8 @@
 #define PLL4X  0x0100
 #define PLL8X  0x0200
 #define PLL16X  0x0400
+
+#define NUM_COGS 8
 
 /* some globals */
 
