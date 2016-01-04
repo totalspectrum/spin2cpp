@@ -803,6 +803,7 @@ struct reservedword {
     { "return", T_RETURN },
     { "round", T_ROUND },
 
+    { "spr", T_SPR },
     { "step", T_STEP },
     { "string", T_STRINGPTR },
     { "to", T_TO },

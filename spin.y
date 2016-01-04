@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2014 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2016 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -101,6 +101,14 @@ AstCatch(AST *expr)
     return NewAST(AST_CATCH, expr, NULL);
 }
 
+AST *
+AstSprRef(AST *index)
+{
+    AST *expr = AstOperator('+', AstInteger(0x1f0), index);
+    current->needsCogAccess = 1;
+    return NewAST(AST_SPRREF, expr, NULL);
+}
+
 /* determine whether a loop needs a yield, and if so, insert one */
 AST *
 CheckYield(AST *body)
@@ -124,6 +132,7 @@ CheckYield(AST *body)
 %token T_NUM
 %token T_STRING
 %token T_FLOATNUM
+%token T_SPR
 
 /* various keywords */
 %token T_CON
@@ -823,6 +832,8 @@ lhs: identifier
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
+  | T_SPR '[' expr ']'
+    { $$ = AstSprRef($3); }
   ;
 
 memref:

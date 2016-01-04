@@ -512,6 +512,39 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "    return res;\n");
         fprintf(f, "}\n"); 
     }
+    if (parse->needsCogAccess) {
+        // we need to execute code that looks like:
+        //    mov r0, <addr>
+        //    jmp <retaddr>
+        // this is a bit tricky; we build it in r0,r1 and then jmp to it
+        // with a jmpret r1,#0
+        fprintf(f, "__asm__ volatile(\n");
+        fprintf(f, "\"    .text\\n\"\n");
+        fprintf(f, "\"    .balign 4\\n\"\n");
+        fprintf(f, "\"__cog_xfer\\n\"\n");
+        fprintf(f, "\"    fcache #(.Lend - .Lstart)\\n\"\n");
+        fprintf(f, "\"    .compress off\\n\"\n");
+        fprintf(f, "\".Lstart\\n\"\n");
+        fprintf(f, "\"    mov pc, lr\\n\"\n");
+        fprintf(f, "\"    mov lr, __LMM_RET\\n\"\n");
+        fprintf(f, "\"    movd (.Linstr - .Lstart) + __LMM_FCACHE_START,r0\\n\"\n");
+        fprintf(f, "\"    movs (.Linstr - .Lstart) + __LMM_FCACHE_START,r1\\n\"\n");
+        fprintf(f, "\"    mov  r0,r2\\n\"\n");
+        fprintf(f, "\".Linstr\\n\"\n");
+        fprintf(f, "\"    mov  0-0,0-0\\n\"\n");
+        fprintf(f, "\"    jmp  lr\\n\"\n");
+        fprintf(f, "\".Lend\\n\"\n");
+        fprintf(f, "\"    .compress default\\n\"\n");
+        fprintf(f, ");\n");
+        fprintf(f, "extern ");
+        if (!gl_ccode) {
+            fprintf(f, "\"C\" ");
+        }
+        fprintf(f, "int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);\n");
+        fprintf(f, "#define cogmem_get__(addr)      _cog_xfer(0, (addr), 0)\n");
+        fprintf(f, "#define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))\n");
+        fprintf(f, "\n");
+    }
 }
 
 static void

@@ -188,7 +188,8 @@ struct parserstate {
     char needsHighmult;
     char needsBitEncode;
     char needsLockFuncs;
-
+    char needsCogAccess;
+    
     /* flags for output */
     char printLabelsVerbatim;
     char fixImmediate;

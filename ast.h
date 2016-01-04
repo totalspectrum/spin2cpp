@@ -116,6 +116,8 @@ enum astkind {
     AST_COMMENT,
     AST_COMMENTEDNODE,
     AST_COGINIT,
+
+    AST_SPRREF = 80,
 };
 
 struct AST {

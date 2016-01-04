@@ -1024,6 +1024,12 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
 {
     if (lhs->kind == AST_RANGEREF) {
         PrintRangeAssign(f, lhs, rhs);
+    } else if (lhs->kind == AST_SPRREF) {
+        fprintf(f, "cogmem_put__(");
+        PrintExpr(f, lhs->left);
+        fprintf(f, ", ");
+        PrintExpr(f, rhs);
+        fprintf(f, ")");
     } else {
         /* in Spin an expression like
              arr := 1
@@ -1229,6 +1235,11 @@ PrintExpr(FILE *f, AST *expr)
     case AST_ARRAYREF:
     case AST_RESULT:
         PrintLHS(f, expr, 0, 0);
+        break;
+    case AST_SPRREF:
+        fprintf(f, "cogmem_get__(");
+        PrintExpr(f, expr->left);
+        fprintf(f, ")");
         break;
     case AST_OPERATOR:
         if (isBooleanOperator(expr)) {

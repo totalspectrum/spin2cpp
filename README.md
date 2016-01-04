@@ -1,10 +1,10 @@
-This is a very simple Spin to C/C++ converter. There still some of the
-Spin language that it does not handle, but it can deal with most
-objects and constructs that are commonly encountered. 
+This is a converter from the Spin language to C/C++. It can deal with most
+objects and constructs that are commonly encountered. In fact, it should
+be able to deal with almost any Spin program; please report any that it
+cannot convert.
 
-This version (1.92) includes some more functionality. A simple "Hello,
-world" program that compiles and runs is given in the Demo directory,
-as are some floating point samples in Demo/Float.
+A simple "Hello, world" program that compiles and runs is given in the
+Demo directory, as are some floating point samples in Demo/Float.
 
 INSTALLATION
 ============ 
@@ -168,12 +168,11 @@ LIMITATIONS
 There are some Spin features that are not supported yet,
 including:
 
-    COGINIT on a Spin method (PASM works)
+    COGINIT/COGNEW on a Spin method (PASM works)
     _FREE
-    SPR
     _STACK
 
-There are probably other features that do not work; if you find any,
+There may be other features that do not work; if you find any,
 please report them so they can be fixed.
 
 The lexer and parser are different from the Parallax ones, so they may
