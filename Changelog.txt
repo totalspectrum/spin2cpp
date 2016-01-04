@@ -1,7 +1,9 @@
 Version 1.94
 
+- Supported the bstc @@@ operator (only in --gas mode right now)
 - Implemented SPR pseudo-variable for hardware registers
 - Cleaned up handling of -o option for .dat, .elf, and .binary
+- Fixed some output problems in --gas mode
 
 Version 1.93
 

@@ -3,3 +3,6 @@ Str2 is: This is an example Str3 is: of strings in a DAT block.
 indirect with @@:
 Hello.
 This is an example of strings in a DAT block.
+indirect with @@@:
+Hello.
+This is an example of strings in a DAT block.

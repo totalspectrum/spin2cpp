@@ -1188,10 +1188,11 @@ PrintGasExpr(FILE *f, AST *expr)
     switch (expr->kind) {
     case AST_ADDROF:
         PrintLHS(f, expr->left, 0, 0);
-        fprintf(f, " - ..start");
         break;
     case AST_ABSADDROF:
+        fprintf(f, "_%s + (", current->datname);
         PrintLHS(f, expr->left, 0, 0);
+        fprintf(f, " - ..start)");
         break;
     default:
         PrintExpr(f, expr);
@@ -1246,8 +1247,6 @@ PrintExpr(FILE *f, AST *expr)
         break;      
     case AST_ADDROF:
     case AST_ABSADDROF:
-        /* FIXME: in PASM code @ should actually compute an offset into
-           the current object, not an absolute address */
         fprintf(f, "(int32_t)(&");
         PrintLHS(f, expr->left, 0, 0);
         fprintf(f, ")");
@@ -1700,7 +1699,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         } else {
             Label *lref = sym->val;
             if (kind == AST_ABSADDROF) {
-                ERROR(expr, "@@@ operator not supported yet in PASM");
+                ERROR(expr, "@@@ operator requires the --gas directive");
             }
             return intExpr(lref->asmval);
         }

@@ -94,7 +94,7 @@ echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`
-  $PROG --binary -Os -u __serial_exit -o $j.binary $i
+  $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i
   rm -f $j.out
   propeller-load $j.binary -r -t -q > $j.out
   # the --lines=+6 skips the first 6 lines that propeller-load printed
