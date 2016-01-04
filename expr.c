@@ -1174,6 +1174,31 @@ PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
     }
 }
 
+void
+PrintGasExpr(FILE *f, AST *expr)
+{
+    if (!expr) {
+        return;
+    }
+    if (expr->kind == AST_COMMENTEDNODE) {
+        expr = expr->left;
+        if (!expr) return;
+    }
+
+    switch (expr->kind) {
+    case AST_ADDROF:
+        PrintLHS(f, expr->left, 0, 0);
+        fprintf(f, " - ..start");
+        break;
+    case AST_ABSADDROF:
+        PrintLHS(f, expr->left, 0, 0);
+        break;
+    default:
+        PrintExpr(f, expr);
+        break;
+    }
+}
+
 /* code to print an expression to a file */
 void
 PrintExpr(FILE *f, AST *expr)

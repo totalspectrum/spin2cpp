@@ -509,13 +509,36 @@ PrintDataBlock(FILE *f, ParserState *P, int isBinary)
 }
 
 static void
-outputGasDataList(FILE *f, const char *prefix, AST *ast)
+startLine(FILE *f, int inlineAsm)
+{
+    if (inlineAsm) {
+        fprintf(f, "\"");
+    }
+}
+
+static void
+endLine(FILE *f, int inlineAsm)
+{
+    if (inlineAsm) {
+        fprintf(f, "\\n\"");
+    }
+    fprintf(f, "\n");
+}
+
+static void
+outputGasDataList(FILE *f, const char *prefix, AST *ast, int size, int inlineAsm)
 {
     int reps;
     AST *sub;
     char *comma = "";
     AST *origval = NULL;
 
+    if ( (datacount % size) != 0 ) {
+        fprintf(f, "\t\t.balign\t%d", size);
+        endLine(f, inlineAsm);
+        datacount = (datacount + size - 1) & ~(size-1);
+        startLine(f, inlineAsm);
+    }
     fprintf(f, "\t\t%s\t", prefix);
     while (ast) {
         sub = ast->left;
@@ -527,12 +550,13 @@ outputGasDataList(FILE *f, const char *prefix, AST *ast)
             unsigned val;
             while (*ptr) {
                 val = (*ptr++) & 0xff;
-                if (val >= ' ' && val < 0x7f) {
+                if (0 && val >= ' ' && val < 0x7f) {
                     fprintf(f, "%s'%c'", comma, val);
                 } else {
                     fprintf(f, "%s%d", comma, val);
                 }
                 comma = ", ";
+                datacount += size;
             }
             reps = 0;
         } else {
@@ -541,9 +565,10 @@ outputGasDataList(FILE *f, const char *prefix, AST *ast)
         }
         while (reps > 0) {
             fprintf(f, "%s", comma);
-            PrintExpr(f, origval);
+            PrintGasExpr(f, origval);
             comma = ", ";
             --reps;
+            datacount += size;
         }
         ast = ast->right;
     }
@@ -565,7 +590,7 @@ outputGasDirective(FILE *f, const char *prefix, AST *expr)
 #define GAS_WR 8
 
 static void
-outputGasInstruction(FILE *f, AST *ast)
+outputGasInstruction(FILE *f, AST *ast, int inlineAsm)
 {
     Instruction *instr;
     AST *operand[MAX_OPERANDS];
@@ -576,6 +601,13 @@ outputGasInstruction(FILE *f, AST *ast)
     int numoperands = 0;
     const char *opcode;
 
+    if ( (datacount % 4) != 0) {
+        fprintf(f, "\t.balign 4");
+        endLine(f, inlineAsm);
+        datacount = (datacount + 3) & ~3;
+        startLine(f, inlineAsm);
+    }
+    
     instr = (Instruction *)ast->d.ptr;
     fprintf(f, "\t");
     /* print modifiers */
@@ -613,6 +645,7 @@ outputGasInstruction(FILE *f, AST *ast)
     /* print instruction opcode */
     opcode = instr->name;
     fprintf(f, "\t%s", opcode);
+    datacount += 4;
     /* now print the operands */
     for (i = 0; i < numoperands; i++) {
         if (i == 0)
@@ -660,23 +693,6 @@ static void
 outputGasLabel(FILE *f, AST *id)
 {
     fprintf(f, "%s", id->d.string);
-}
-
-static void
-startLine(FILE *f, int inlineAsm)
-{
-    if (inlineAsm) {
-        fprintf(f, "\"");
-    }
-}
-
-static void
-endLine(FILE *f, int inlineAsm)
-{
-    if (inlineAsm) {
-        fprintf(f, "\\n\"");
-    }
-    fprintf(f, "\n");
 }
 
 static void
@@ -743,16 +759,16 @@ PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
         startLine(f, inlineAsm);
         switch (ast->kind) {
         case AST_BYTELIST:
-            outputGasDataList(f, ".byte", ast->left);
+            outputGasDataList(f, ".byte", ast->left, 1, inlineAsm);
             break;
         case AST_WORDLIST:
-            outputGasDataList(f, ".word", ast->left);
+            outputGasDataList(f, ".word", ast->left, 2, inlineAsm);
             break;
         case AST_LONGLIST:
-            outputGasDataList(f, ".long", ast->left);
+            outputGasDataList(f, ".long", ast->left, 4, inlineAsm);
             break;
         case AST_INSTRHOLDER:
-            outputGasInstruction(f, ast->left);
+            outputGasInstruction(f, ast->left, inlineAsm);
             break;
         case AST_LINEBREAK:
             break;

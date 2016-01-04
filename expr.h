@@ -34,6 +34,7 @@ void PrintPostfix(FILE *f, AST *val, int toplevel);
 void PrintInteger(FILE *f, int32_t v);
 void PrintFloat(FILE *f, int32_t v);
 int  PrintLookupArray(FILE *f, AST *arr);
+void PrintGasExpr(FILE *f, AST *expr);
 
 /* expression utility functions */
 union float_or_int {
