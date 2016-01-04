@@ -1220,6 +1220,9 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, "0x%x", EvalConstExpr(expr->left));
         break;      
     case AST_ADDROF:
+    case AST_ABSADDROF:
+        /* FIXME: in PASM code @ should actually compute an offset into
+           the current object, not an absolute address */
         fprintf(f, "(int32_t)(&");
         PrintLHS(f, expr->left, 0, 0);
         fprintf(f, ")");
@@ -1549,11 +1552,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     ExprVal lval, rval;
     int reportError = (valid == NULL);
     ExprVal ret;
-
+    int kind;
+    
     if (!expr)
         return intExpr(0);
 
-    switch (expr->kind) {
+    kind = expr->kind;
+    switch (kind) {
     case AST_INTEGER:
         return intExpr(expr->d.ival);
 
@@ -1648,6 +1653,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             *valid = 0;
         break;
     case AST_ADDROF:
+    case AST_ABSADDROF:
         /* it's OK to take the address of a label; in that case, just
            send back the offset into the dat section
         */
@@ -1668,6 +1674,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return intExpr(0);
         } else {
             Label *lref = sym->val;
+            if (kind == AST_ABSADDROF) {
+                ERROR(expr, "@@@ operator not supported yet in PASM");
+            }
             return intExpr(lref->asmval);
         }
         break;

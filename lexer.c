@@ -852,6 +852,7 @@ struct reservedword {
     { "^^", T_SQRT },
 
     { "@@", T_DOUBLEAT },
+    { "@@@", T_TRIPLEAT },
 };
 
 static char *c_words[] = {

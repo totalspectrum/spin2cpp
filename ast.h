@@ -118,6 +118,7 @@ enum astkind {
     AST_COGINIT,
 
     AST_SPRREF = 80,
+    AST_ABSADDROF,
 };
 
 struct AST {
