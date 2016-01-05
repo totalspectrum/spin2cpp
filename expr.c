@@ -405,7 +405,9 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, ">>", left, right);
         break;
     case T_SHR:
-        if (current->printLabelsVerbatim) {
+        if (current->printLabelsVerbatim
+            || (IsConstExpr(left) && EvalConstExpr(left) >= 0))
+        {
             PrintInOp(f, ">>", left, right);
         } else {
             PrintMacroExpr(f, "Shr__", left, right);
