@@ -721,6 +721,14 @@ PrintConstantsGas(FILE *f, ParserState *P, int inlineAsm)
                 PrintGasConstantDecl(f, ast->left, inlineAsm);
                 ast = NULL;
                 break;
+            case AST_ENUMSKIP:
+                PrintGasConstantDecl(f, ast->left, inlineAsm);
+                break;
+            case AST_COMMENTEDNODE:
+                // FIXME: these nodes are backwards, the rest of the list is on the left
+                // also, should we print the comment here?
+                ast = ast->left;
+                break;
             default:
                 /* do nothing */
                 ast = ast->right;
