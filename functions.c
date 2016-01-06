@@ -176,7 +176,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                 // regular one
                 Function *func = (Function *)sym->val;
                 if (func) {
-                    fdef->is_static = func->is_static;
+                    fdef->is_static = fdef->is_static && func->is_static;
                 } else {
                     fdef->is_static = 0;
                 }
