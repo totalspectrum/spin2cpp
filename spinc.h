@@ -128,6 +128,7 @@ typedef struct funcdef {
 
     /* various flags */
     unsigned result_used:1;
+    unsigned is_static:1; // nonzero if no member variables referenced
 } Function;
 
 /* structure describing a builtin function */

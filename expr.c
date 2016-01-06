@@ -287,9 +287,16 @@ PrintSymbol(FILE *f, Symbol *sym)
 void
 PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 {
+    int is_static = 0;
+    if (sym->type == SYM_FUNCTION) {
+        Function *func;
+
+        func = (Function *)sym->val;
+        is_static = func->is_static;
+    }
     /* check for object method call */
     fprintf(f, "%s(", sym->name);
-    if (gl_ccode) {
+    if (gl_ccode && !is_static) {
         if (objsym) {
             PrintObjectSym(f, objsym, objref);
         } else {

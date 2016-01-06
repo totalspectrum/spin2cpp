@@ -12,8 +12,8 @@ static int32_t tmp__;
 
 int32_t test75::Start(int32_t Code)
 {
-  int32_t _local__0000[4];
-  cognew(Code, (int32_t)(&_local__0000[0]));
+  int32_t _local__0000[5];
+  cognew(Code, (int32_t)(&_local__0000[1 + 0]));
   return 0;
 }
 

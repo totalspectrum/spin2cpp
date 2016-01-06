@@ -17,5 +17,6 @@ PUB dec
 PUB Get
   return cntr
 
-PUB ctest01
-  return 1
+PUB double(x)
+  return x * x
+

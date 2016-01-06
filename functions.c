@@ -109,6 +109,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
         return;
     switch(body->kind) {
     case AST_ADDROF:
+    case AST_ABSADDROF:
     case AST_ARRAYREF:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
@@ -148,7 +149,10 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
         break;
     case AST_IDENTIFIER:
         // convert plain foo into foo[0] if foo is an array
-        sym = LookupSymbol(body->d.string);
+        sym = FindSymbol(&fdef->localsyms,  body->d.string);
+        if (!sym) {
+            sym = LookupSymbol(body->d.string);
+        }
         if (sym && IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR)) 
         {
             if (upper && upper->kind != AST_ARRAYREF) {
@@ -161,6 +165,25 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                     ERROR(body, "failed to dereference %s", body->d.string); 
                 }
             }
+        }
+        if (sym) {
+            if (sym->type == SYM_VARIABLE || sym->type == SYM_OBJECT) {
+                fdef->is_static = 0;
+            }
+            if (sym->type == SYM_FUNCTION) {
+                // be cautious here: if we call a static member function
+                // we could still be static, but not if we call a
+                // regular one
+                Function *func = (Function *)sym->val;
+                if (func) {
+                    fdef->is_static = func->is_static;
+                } else {
+                    fdef->is_static = 0;
+                }
+            }
+        } else {
+            // assume this is an as-yet-undefined member
+            fdef->is_static = 0;
         }
     default:
         break;
@@ -252,15 +275,16 @@ doDeclareFunction(AST *funcblock)
 
     fdef->body = body;
 
+    /* define the function itself */
+    AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
+
     /* check for special conditions */
+    fdef->is_static = 1;
     ScanFunctionBody(fdef, body, NULL);
 
     /* if we put the locals into an array, record the size of that array */
     if (fdef->localarray)
         fdef->localarray_len = localcount;
-
-    /* define the function itself */
-    AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 }
 
 void
@@ -451,18 +475,23 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_ccode) {
-        fprintf(f, "int32_t %s_%s( %s *self", current->classname, 
-                func->name, current->classname);
-        if (func->params) {
-            // more parameters coming
-            fprintf(f, ", ");
-        } else {
-            // all done
-            fprintf(f, " );");
-            PrintNewline(f);
-            return;
+        fprintf(f, "int32_t %s_%s(", current->classname, 
+                func->name);
+        if (!func->is_static) {
+            fprintf(f, "%s *self", current->classname);
+            if (func->params) {
+                // more parameters coming
+                fprintf(f, ", ");
+            } else {
+                fprintf(f, ");");
+                PrintNewline(f);
+                return;
+            }
         }
     } else {
+        if (0 && func->is_static) {
+            fprintf(f, "static ");
+        }
         fprintf(f, "int32_t\t%s(", func->name);
     }
     PrintParameterList(f, func->params);
@@ -1199,9 +1228,11 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
                 fprintf(f, "static ");
             }
             fprintf(f, "int32_t %s_%s(", parse->classname, pf->name);
-            fprintf(f, "%s *self", parse->classname);
+
+            if (!pf->is_static) {
+                fprintf(f, "%s *self%s", parse->classname, pf->params ? ", " : "");
+            }
             if (pf->params) {
-                fprintf(f, ", ");
                 PrintParameterList(f, pf->params);
             }
         } else {

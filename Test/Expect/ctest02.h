@@ -5,8 +5,8 @@
 
 
 typedef struct ctest02 {
-  char dummy__;
+  int32_t	val;
 } ctest02;
 
-  int32_t	ctest02_myfunc( ctest02 *self, int32_t x);
+    int32_t ctest02_myfunc(ctest02 *self, int32_t x);
 #endif

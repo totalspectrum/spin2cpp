@@ -17,7 +17,7 @@ static int32_t tmp__;
 #define cogstop(i) _cogstop(i)
 #endif
 
-static  int32_t ctest02_implement( ctest02 *self, int32_t x);
+static  int32_t ctest02_implement(ctest02 *self, int32_t x);
 
 int32_t ctest02_myfunc(ctest02 *self, int32_t x)
 {
@@ -26,6 +26,6 @@ int32_t ctest02_myfunc(ctest02 *self, int32_t x)
 
 static int32_t ctest02_implement(ctest02 *self, int32_t x)
 {
-  return (x * x);
+  return (self->val * x);
 }
 

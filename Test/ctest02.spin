@@ -2,8 +2,11 @@
   Check for private method declarations
 }}
 
+VAR
+  long val
+  
 PUB myfunc(x)
   return implement(x)
 
 PRI implement(x)
-  return x*x
+  return val*x
