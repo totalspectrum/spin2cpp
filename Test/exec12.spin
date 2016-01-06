@@ -1,8 +1,6 @@
 ''
 '' test of address operators
 ''
-#define TRIPLEAT
-
 CON
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
@@ -23,11 +21,9 @@ PUB main | start,elapsed,idx
   fds.str(string("indirect with @@:", 13, 10))
   repeat idx from 0 to 2
     fds.str(@@strAddr[idx])
-#ifdef TRIPLEAT
   fds.str(string("indirect with @@@:", 13, 10))
   repeat idx from 0 to 2
     fds.str(strAddr2[idx])
-#endif
   exit
 
 PUB exit
@@ -41,6 +37,4 @@ DAT
 
 DAT
   StrAddr word @Str1, @Str2, @Str3
-#ifdef TRIPLEAT
   StrAddr2 long @@@Str1, @@@Str2, @@@Str3
-#endif
