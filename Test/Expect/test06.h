@@ -6,7 +6,7 @@
 class test06 {
 public:
   static const int Myval = 1;
-  int32_t	Getval(void);
+  static int32_t	Getval(void);
 private:
 };
 

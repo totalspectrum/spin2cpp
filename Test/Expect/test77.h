@@ -10,7 +10,7 @@ public:
   static const int Threef = 0x40400000;
   static const int Rootf = 0x3fb504f3;
   static uint8_t dat[];
-  int32_t	Dummy(void);
+  static int32_t	Dummy(void);
 private:
 };
 

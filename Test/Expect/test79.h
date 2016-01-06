@@ -8,7 +8,7 @@ public:
 //  i2c driver
   static const int Scl = 28;
   static const int Sda = 29;
-  int32_t	I2c_start(void);
+  static int32_t	I2c_start(void);
 private:
 };
 

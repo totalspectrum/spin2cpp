@@ -6,7 +6,7 @@
 class test78 {
 public:
   static uint8_t dat[];
-  int32_t	Geterr(int32_t N);
+  static int32_t	Geterr(int32_t N);
 private:
 };
 

@@ -7,7 +7,7 @@ class test01 {
 public:
   static const int X = 1;
   static const int Y = 2;
-  int32_t	Start(void);
+  static int32_t	Start(void);
 private:
 };
 

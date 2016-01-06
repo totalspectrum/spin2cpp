@@ -5,7 +5,7 @@
 
 class test97 {
 public:
-  int32_t	Blah(void);
+  static int32_t	Blah(void);
 private:
 };
 

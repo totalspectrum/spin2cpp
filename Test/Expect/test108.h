@@ -6,7 +6,7 @@
 class test108 {
 public:
   int32_t	Main(void);
-  int32_t	Show(int32_t X);
+  static int32_t	Show(int32_t X);
 private:
 };
 

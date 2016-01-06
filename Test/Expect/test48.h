@@ -5,8 +5,8 @@
 
 class test48 {
 public:
-  int32_t	Setcolors(int32_t Colorptr);
-  int32_t	Stop(void);
+  static int32_t	Setcolors(int32_t Colorptr);
+  static int32_t	Stop(void);
 private:
 };
 

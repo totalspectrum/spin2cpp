@@ -10,7 +10,7 @@ public:
   static const int Y = (X + 1);
   static const int Z = (subtest113::B + Y);
   subtest113	V;
-  int32_t	Foo(int32_t Aa);
+  static int32_t	Foo(int32_t Aa);
 private:
 };
 

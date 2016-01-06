@@ -5,7 +5,7 @@
 
 class test87 {
 public:
-  int32_t	Check(int32_t N);
+  static int32_t	Check(int32_t N);
 private:
 };
 

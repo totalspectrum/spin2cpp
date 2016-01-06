@@ -7,7 +7,7 @@ class test114 {
 public:
   static const int X = 4;
   static const int Theta = (X + 1);
-  int32_t	Get(void);
+  static int32_t	Get(void);
 private:
 };
 

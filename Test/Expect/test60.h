@@ -5,7 +5,7 @@
 
 class test60 {
 public:
-  int32_t	Func(int32_t A, int32_t B);
+  static int32_t	Func(int32_t A, int32_t B);
 private:
 };
 

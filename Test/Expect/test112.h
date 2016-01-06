@@ -7,7 +7,7 @@ class test112 {
 public:
   static const int Neworg = 112;
   static uint8_t dat[];
-  int32_t	Me(void);
+  static int32_t	Me(void);
 private:
 };
 

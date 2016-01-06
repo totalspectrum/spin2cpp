@@ -8,7 +8,7 @@ public:
   static const int X = 1;
   static const int Y = 2;
   static const int Negone = -1;
-  int32_t	Start(void);
+  static int32_t	Start(void);
 private:
 };
 

@@ -6,7 +6,7 @@
 class test105 {
 public:
   int32_t	Go(void);
-  int32_t	Start(void);
+  static int32_t	Start(void);
 private:
 };
 

@@ -5,7 +5,7 @@
 
 class test95 {
 public:
-  int32_t	Square(int32_t X);
+  static int32_t	Square(int32_t X);
 private:
 };
 

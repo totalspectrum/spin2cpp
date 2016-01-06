@@ -6,7 +6,7 @@
 class test75 {
 public:
   static const int _Init_size = 4;
-  int32_t	Start(int32_t Code);
+  static int32_t	Start(int32_t Code);
 private:
 };
 

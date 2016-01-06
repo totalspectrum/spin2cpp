@@ -5,7 +5,7 @@
 
 class test110 {
 public:
-  int32_t	Main(void);
+  static int32_t	Main(void);
 private:
 };
 

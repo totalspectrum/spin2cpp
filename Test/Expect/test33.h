@@ -5,8 +5,8 @@
 
 class test33 {
 public:
-  int32_t	Byteextend(int32_t X);
-  int32_t	Wordextend(int32_t X);
+  static int32_t	Byteextend(int32_t X);
+  static int32_t	Wordextend(int32_t X);
 private:
 };
 

@@ -5,7 +5,7 @@
 
 class test88 {
 public:
-  int32_t	Sum(void);
+  static int32_t	Sum(void);
 private:
 };
 

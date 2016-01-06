@@ -8,7 +8,7 @@ public:
 #line 1 "gtest02.spin"
   int32_t	run(void);
 #line 8 "gtest02.spin"
-  int32_t	fibo(int32_t x);
+  static int32_t	fibo(int32_t x);
 private:
 };
 

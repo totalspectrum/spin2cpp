@@ -5,8 +5,8 @@
 
 class test103 {
 public:
-  int32_t	Blah(int32_t X, int32_t Y);
-  int32_t	Foo(int32_t X, int32_t Y);
+  static int32_t	Blah(int32_t X, int32_t Y);
+  static int32_t	Foo(int32_t X, int32_t Y);
   int32_t	Blah2(int32_t X);
 private:
   int32_t	J;

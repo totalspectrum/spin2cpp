@@ -5,7 +5,7 @@
 
 class test91 {
 public:
-  __NATIVE int32_t	Nativefunc(int32_t I);
+  __NATIVE static int32_t	Nativefunc(int32_t I);
 private:
 };
 

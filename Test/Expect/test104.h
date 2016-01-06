@@ -9,7 +9,7 @@ public:
   static const int Bar = 257;
   static const int Baz = 385;
   static uint8_t dat[];
-  int32_t	Get(void);
+  static int32_t	Get(void);
 private:
 };
 

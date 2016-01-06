@@ -5,8 +5,8 @@
 
 class test40 {
 public:
-  int32_t	Tx(int32_t Character);
-  int32_t	Dec(int32_t Value);
+  static int32_t	Tx(int32_t Character);
+  static int32_t	Dec(int32_t Value);
 private:
 };
 

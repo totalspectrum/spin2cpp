@@ -489,7 +489,7 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
             }
         }
     } else {
-        if (0 && func->is_static) {
+        if (func->is_static) {
             fprintf(f, "static ");
         }
         fprintf(f, "int32_t\t%s(", func->name);
