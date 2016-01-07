@@ -1,3 +1,10 @@
+Version 1.95
+
+- Removed the volatile qualifier from __asm__ (the C++ parser likes it,
+  but plain C does not)
+- Added commonly used C functions like strcpy to the list of C reserved
+  words that we check for name conflicts
+
 Version 1.94
 
 - Declare methods that obviously don't use object variables as "static"

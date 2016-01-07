@@ -518,7 +518,7 @@ PrintMacros(FILE *f, ParserState *parse)
         //    jmp <retaddr>
         // this is a bit tricky; we build it in r0,r1 and then jmp to it
         // with a jmpret r1,#0
-        fprintf(f, "__asm__ volatile(\n");
+        fprintf(f, "__asm__(\n");
         fprintf(f, "\"    .text\\n\"\n");
         fprintf(f, "\"    .balign 4\\n\"\n");
         fprintf(f, "\"__cog_xfer\\n\"\n");
@@ -604,8 +604,8 @@ PrintCppFile(FILE *f, ParserState *parse)
 void
 OutputAsmEquate(FILE *f, const char *str, unsigned int value)
 {
-    fprintf(f, "__asm__ volatile( \"    .global %s\\n\" );\n", str);
-    fprintf(f, "__asm__ volatile( \"    %s = 0x%x\\n\" );\n", str, value);
+    fprintf(f, "__asm__( \"    .global %s\\n\" );\n", str);
+    fprintf(f, "__asm__( \"    %s = 0x%x\\n\" );\n", str, value);
 }
 
 // output _clkmode and _clkfreq settings

@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-__asm__ volatile(
+__asm__(
 "    .text\n"
 "    .balign 4\n"
 "__cog_xfer\n"
