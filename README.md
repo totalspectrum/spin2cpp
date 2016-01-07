@@ -38,8 +38,8 @@ the --elf argument; for example:
     spin2cpp --elf -o my.elf -Os test.spin
 
 creates the output file "my.elf" instead of "test.elf", and uses
-optimization level -Os instead of no optimization. It is strongly
-recommended to pass some form of optimization to gcc.
+optimization level -Os. (It is strongly recommended to pass some
+form of optimization to gcc).
 
 You can output a .binary file (like bstc and openspin do with the -b option)
 instead of .elf:
@@ -112,8 +112,8 @@ Spin2cpp accepts the following options:
   specify options to be passed to PropGCC, such as -Os or -mcmm.
 
 --ccode
-  Output C code instead of C++. Note that in C mode every method
-  has a first parameter "self" which points to the object's data.
+  Output C code instead of C++. Note that in C mode methods typically
+  have a first parameter "self" which points to the object's data.
   This is similar to the way the C++ compiler implements object methods
   internally, but in C it has to be exposed explicitly.
   
