@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012 Total Spectrum Software Inc.
+ * Copyright (c) 2012,2016 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -297,9 +297,10 @@ pp_push_file_struct(struct preprocess *pp, FILE *f, const char *filename)
     A->name = filename;
     pp->fil = A;
     if (A->name) {
-        char temp[128];
-        snprintf(temp, sizeof(temp), pp->linechange, A->lineno, A->name);
-        temp[127] = 0; /* make sure it is 0 terminated */
+        size_t tempsiz = 128 + strlen(A->name);
+        char *temp = alloca(tempsiz);
+        snprintf(temp, tempsiz, pp->linechange, A->lineno, A->name);
+        temp[tempsiz-1] = 0; /* make sure it is 0 terminated */
         flexbuf_addstr(&pp->whole, temp);
     }
 }
