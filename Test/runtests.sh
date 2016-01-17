@@ -94,9 +94,10 @@ echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`
-  $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i
-  rm -f $j.out
-  propeller-load $j.binary -r -t -q > $j.out
+  if $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i; then
+    rm -f $j.out
+    propeller-load $j.binary -r -t -q > $j.out
+  fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed
   tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt

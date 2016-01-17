@@ -4,6 +4,7 @@ Version 1.95
   but plain C does not)
 - Added commonly used C functions like strcpy to the list of C reserved
   words that we check for name conflicts
+- Fixed a preprocessor problem with long file names
 
 Version 1.94
 

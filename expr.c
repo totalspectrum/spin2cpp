@@ -311,7 +311,7 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 
 /* code to print coginit to a file */
 void
-PrintCogInit(FILE *f, AST *params)
+LabelCogInit(FILE *f, AST *params)
 {
     const char *funcname = "coginit";
     if (params && params->left && IsConstExpr(params->left)) {
@@ -324,6 +324,44 @@ PrintCogInit(FILE *f, AST *params)
     fprintf(f, "%s(", funcname);
     PrintExprList(f, params);
     fprintf(f, ")");
+}
+
+void
+PrintCogInit(FILE *f, AST *params)
+{
+    AST *exprlist, *func;
+    AST *func2 = NULL;
+    Symbol *sym = NULL;
+    if (!params || !params->left) {
+        ERROR(params, "coginit/cognew requires parameters");
+        return;
+    }
+    exprlist = params->right;
+    if (!exprlist || exprlist->kind != AST_EXPRLIST || !exprlist->left) {
+        ERROR(exprlist, "coginit/cognew expected expression");
+        return;
+    }
+    func = exprlist->left;
+    if (func->kind == AST_ADDROF && func->left) {
+        sym = LookupAstSymbol(func->left, "coginit/cognew");
+    } else if (func->kind == AST_IDENTIFIER) {
+        sym = LookupAstSymbol(func, "coginit/cognew");
+    }
+    if (sym) {
+        if (sym->type == SYM_LABEL) {
+            LabelCogInit(f, params);
+            return;
+        } else if (sym->type != SYM_FUNCTION) {
+            ERROR(params, "coginit requires a function");
+            return;
+        }
+        func2 = NewAST(AST_FUNCCALL, func, NULL);
+        func = func2;
+    }
+    if (func->kind != AST_FUNCCALL) {
+        ERROR(params, "coginit requires a function");
+    }
+    ERROR(params, "coginit/cognew of Spin method not supported");
 }
 
 /* code to print left operator right

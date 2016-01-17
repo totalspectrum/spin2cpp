@@ -10,10 +10,13 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
+uint8_t test75::dat[] = {
+  0x00, 0xec, 0xff, 0xa0, 
+};
 int32_t test75::Start(int32_t Code)
 {
   int32_t _local__0000[5];
-  cognew(Code, (int32_t)(&_local__0000[1 + 0]));
+  cognew((int32_t)(&(*(int32_t *)&dat[0])), (int32_t)(&_local__0000[1 + 0]));
   return 0;
 }
 
