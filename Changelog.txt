@@ -1,7 +1,8 @@
 Version 1.95
 
-- Removed the volatile qualifier from __asm__ (the C++ parser likes it,
-  but plain C does not)
+- Implemented coginit/cognew for Spin methods (still WIP)
+- Removed the volatile qualifier from __asm__ at top level (the C++
+  parser likes it, but plain C does not)
 - Added commonly used C functions like strcpy to the list of C reserved
   words that we check for name conflicts
 - Fixed a preprocessor problem with long file names

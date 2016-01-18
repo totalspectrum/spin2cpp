@@ -1,3 +1,11 @@
+/*
+ * Spin to C/C++ converter
+ * Copyright 2011-2016 Total Spectrum Software Inc.
+ * See the file COPYING for terms of use
+ *
+ * code for handling expressions
+ */
+
 #include "spinc.h"
 #include <ctype.h>
 #include <string.h>
@@ -309,14 +317,50 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
     fprintf(f, ")");
 }
 
+/* code to check if a coginit invocation is for a spin method */
+int
+IsSpinCoginit(AST *params)
+{
+    AST *exprlist, *func;
+    Symbol *sym = NULL;
+    if (!params || !params->left || params->kind != AST_COGINIT) {
+        return 0;
+    }
+    exprlist = params->left;
+    exprlist = exprlist->right; // skip over cog id
+    if (exprlist->kind != AST_EXPRLIST || !exprlist->left) {
+        ERROR(params, "coginit/cognew expected expression");
+        return 0;
+    }
+    func = exprlist->left;
+    if (func->kind == AST_IDENTIFIER) {
+        sym = LookupAstSymbol(func, "coginit/cognew");
+        if (sym && sym->type == SYM_FUNCTION) {
+            return 1;
+        }
+    }
+    if (func->kind == AST_FUNCCALL) {
+        /* FIXME should check that it's actually a local method */
+        return 1;
+    }
+    return 0;
+}
+
 /* code to print coginit to a file */
 void
-LabelCogInit(FILE *f, AST *params)
+PrintLabelCoginit(FILE *f, AST *params)
 {
     const char *funcname = "coginit";
+    if (params->kind == AST_COGINIT) {
+        params = params->left;
+    } else {
+        ERROR(params, "expected coginit");
+        return;
+    }
+
     if (params && params->left && IsConstExpr(params->left)) {
         int32_t cogid = EvalConstExpr(params->left);
-        if (cogid >= NUM_COGS) {
+        if (cogid >= NUM_COGS || cogid < 0) {
             params = params->right;
             funcname = "cognew";
         }
@@ -327,41 +371,133 @@ LabelCogInit(FILE *f, AST *params)
 }
 
 void
+PrintTopOfStack(FILE *f, AST *origstack)
+{
+    AST *stack = origstack;
+    AST *stype;
+    int stacksize;
+    
+    Symbol *sym;
+    if (stack->kind != AST_ADDROF) {
+        ERROR(stack, "non-address given for stack in coginit");
+        return;
+    }
+    stack = stack->left;
+    if (stack->kind != AST_ARRAYREF || !stack->left) {
+        ERROR(stack, "coginit stack is not part of an array");
+        return;
+    }
+    if (stack->left->kind != AST_IDENTIFIER) {
+        ERROR(stack, "coginit stack too complicated");
+        return;
+    }
+    sym = LookupAstSymbol(stack->left, "coginit/cognew");
+    if (!sym) {
+        return;
+    }
+    stype = (AST *)sym->val;
+    if (!stype || stype->kind != AST_ARRAYTYPE) {
+        ERROR(stack, "coginit stack is not array");
+        return;
+    }
+    stacksize = EvalConstExpr(stype->right);
+
+    /* now change the array reference to use the top of stack */
+    fprintf(f, "&%s[%d]", sym->name, stacksize);
+}
+
+void
+PrintSpinCoginit(FILE *f, AST *body)
+{
+    AST *cogid;
+    AST *func;
+    AST *stack;
+    AST *params = NULL;
+    int n = 0;
+    
+    Symbol *sym = NULL;
+
+    if (body->kind == AST_COGINIT) {
+        body = body->left;
+    } else {
+        ERROR(params, "expected coginit");
+        return;
+    }
+    if (!body || body->kind != AST_EXPRLIST) {
+        ERROR(body, "Expected expression list");
+        return;
+    }
+    cogid = body->left; body = body->right;
+    if (!body || body->kind != AST_EXPRLIST) {
+        ERROR(body, "Expected expression in coginit");
+        return;
+    }
+    func = body->left; stack = body->right;
+    if (!stack || !func) {
+        ERROR(body, "coginit of spin method requires function and stack");
+        return;
+    }
+    if (stack->kind != AST_EXPRLIST) {
+        ERROR(stack, "coginit: expected stack expression");
+        return;
+    }
+    if (stack->right != 0) {
+        ERROR(stack, "coginit: extra parameters after stack");
+        return;
+    }
+    stack = stack->left;
+    if (func->kind == AST_IDENTIFIER) {
+        sym = LookupAstSymbol(func, "coginit/cognew");
+    } else if (func->kind == AST_FUNCCALL) {
+        sym = LookupAstSymbol(func->left, "coginit/cognew");
+        params = func->right;
+    }
+ 
+    if (!sym || sym->type != SYM_FUNCTION) {
+        ERROR(body, "coginit expected spin method");
+        return;
+    }
+    fprintf(f, "Coginit__(");
+    PrintExpr(f, cogid);
+    fprintf(f, ", (void *)");
+    /* need to find stack size */
+    PrintTopOfStack(f, stack);
+    fprintf(f, ", (void *)");
+    PrintSymbol(f, sym);
+
+    /* print parameters, and pad with 0's */
+    while (params || n < 4) {
+        if (params && params->kind != AST_EXPRLIST) {
+            ERROR(params, "expected expression list");
+            return;
+        }
+        fprintf(f, ", ");
+        if (params) {
+            PrintExpr(f, params->left);
+            params = params->right;
+        } else {
+            fprintf(f, "0");
+        }
+        n++;
+    }
+    if (n > 4) {
+        ERROR(body, "too many arguments to spin method in coginit/cognew");
+    }
+    fprintf(f, ")");
+}
+
+void
 PrintCogInit(FILE *f, AST *params)
 {
-    AST *exprlist, *func;
-    AST *func2 = NULL;
-    Symbol *sym = NULL;
     if (!params || !params->left) {
         ERROR(params, "coginit/cognew requires parameters");
         return;
     }
-    exprlist = params->right;
-    if (!exprlist || exprlist->kind != AST_EXPRLIST || !exprlist->left) {
-        ERROR(exprlist, "coginit/cognew expected expression");
-        return;
+    if (IsSpinCoginit(params))  {
+        PrintSpinCoginit(f, params);
+    } else {
+        PrintLabelCoginit(f, params);
     }
-    func = exprlist->left;
-    if (func->kind == AST_ADDROF && func->left) {
-        sym = LookupAstSymbol(func->left, "coginit/cognew");
-    } else if (func->kind == AST_IDENTIFIER) {
-        sym = LookupAstSymbol(func, "coginit/cognew");
-    }
-    if (sym) {
-        if (sym->type == SYM_LABEL) {
-            LabelCogInit(f, params);
-            return;
-        } else if (sym->type != SYM_FUNCTION) {
-            ERROR(params, "coginit requires a function");
-            return;
-        }
-        func2 = NewAST(AST_FUNCCALL, func, NULL);
-        func = func2;
-    }
-    if (func->kind != AST_FUNCCALL) {
-        ERROR(params, "coginit requires a function");
-    }
-    ERROR(params, "coginit/cognew of Spin method not supported");
 }
 
 /* code to print left operator right
@@ -1370,7 +1506,7 @@ PrintExpr(FILE *f, AST *expr)
         }
         break;
     case AST_COGINIT:
-        PrintCogInit(f, expr->left);
+        PrintCogInit(f, expr);
         break;
     case AST_RANGEREF:
         PrintRangeUse(f, expr);

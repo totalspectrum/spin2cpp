@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2015 Total Spectrum Software Inc.
+// Copyright 2012-2016 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -544,6 +544,31 @@ PrintMacros(FILE *f, ParserState *parse)
         fprintf(f, "#define cogmem_get__(addr)      _cog_xfer(0, (addr), 0)\n");
         fprintf(f, "#define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))\n");
         fprintf(f, "\n");
+    }
+    if (parse->needsCoginit) {
+        fprintf(f, "typedef void (*Cogfunc__)(void *a, void *b, void *c, void *d);\n");
+        fprintf(f, "static void Cogstub__(void **arg) {\n");
+        fprintf(f, "  Cogfunc__ func = (Cogfunc__)(arg[0]);\n");
+        fprintf(f, "  func(arg[1], arg[2], arg[3], arg[4]);\n");
+        fprintf(f, "}\n");
+        fprintf(f, "extern \"C\" void _clone_cog(void *tmp);\n");
+        fprintf(f, "static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
+        fprintf(f, "    void *tmp = __builtin_alloca(1984);\n");
+        fprintf(f, "    unsigned int *sp = (unsigned int *)stacktop;\n");
+        fprintf(f, "    static int32_t cogargs__[5];\n");
+        fprintf(f, "    int r;\n");
+        fprintf(f, "    cogargs__[0] = (int32_t) func;\n");
+        fprintf(f, "    cogargs__[1] = arg1;\n");
+        fprintf(f, "    cogargs__[2] = arg2;\n");
+        fprintf(f, "    cogargs__[3] = arg3;\n");
+        fprintf(f, "    cogargs__[4] = arg4;\n");
+        fprintf(f, "    _clone_cog(tmp);\n");
+        fprintf(f, "    *--sp = 0;\n");
+        fprintf(f, "    *--sp = (unsigned int)cogargs__;\n");
+        fprintf(f, "    *--sp = (unsigned int)Cogstub__;\n");
+        fprintf(f, "    r = coginit(cogid, tmp, sp);\n");
+        fprintf(f, "    return r;\n");
+        fprintf(f, "}\n"); 
     }
 }
 

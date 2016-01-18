@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "1.95-beta"
+#define VERSIONSTR "1.95"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -190,6 +190,7 @@ struct parserstate {
     char needsBitEncode;
     char needsLockFuncs;
     char needsCogAccess;
+    char needsCoginit;
     
     /* flags for output */
     char printLabelsVerbatim;
@@ -296,5 +297,8 @@ void OutputGasFile(const char *name, ParserState *P);
 
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
+
+/* detect coginit/cognew calls that are for spin methods */
+int IsSpinCoginit(AST *body);
 
 #endif

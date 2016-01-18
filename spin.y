@@ -861,7 +861,7 @@ funccall:
   | T_COGNEW '(' exprlist ')'
     {
         AST *elist;
-        AST *negone = AstInteger(65536);
+        AST *negone = AstInteger(-1);
         elist = NewAST(AST_EXPRLIST, negone, NULL);
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2014 Total Spectrum Software Inc.
+ * Copyright 2011-2016 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -185,6 +185,12 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
             // assume this is an as-yet-undefined member
             fdef->is_static = 0;
         }
+        break;
+    case AST_COGINIT:
+        if (IsSpinCoginit(body)) {
+            current->needsCoginit = 1;
+        }
+        break;
     default:
         break;
     }

@@ -165,12 +165,9 @@ Spin2cpp accepts the following options:
 LIMITATIONS
 ===========
 
-There are some Spin features that are not supported yet,
-including:
-
-    COGINIT/COGNEW on a Spin method (PASM works)
-    _FREE
-    _STACK
+There are very few Spin features that are not supported yet. _FREE and
+_STACK are recognized, but do nothing. coginit/cognew of Spin methods
+may not work in all circumstances.
 
 There may be other features that do not work; if you find any,
 please report them so they can be fixed.
