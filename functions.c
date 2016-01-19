@@ -166,25 +166,6 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                 }
             }
         }
-        if (sym) {
-            if (sym->type == SYM_VARIABLE || sym->type == SYM_OBJECT) {
-                fdef->is_static = 0;
-            }
-            if (sym->type == SYM_FUNCTION) {
-                // be cautious here: if we call a static member function
-                // we could still be static, but not if we call a
-                // regular one
-                Function *func = (Function *)sym->val;
-                if (func) {
-                    fdef->is_static = fdef->is_static && func->is_static;
-                } else {
-                    fdef->is_static = 0;
-                }
-            }
-        } else {
-            // assume this is an as-yet-undefined member
-            fdef->is_static = 0;
-        }
         break;
     case AST_COGINIT:
         if (IsSpinCoginit(body)) {
@@ -285,7 +266,6 @@ doDeclareFunction(AST *funcblock)
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 
     /* check for special conditions */
-    fdef->is_static = 1;
     ScanFunctionBody(fdef, body, NULL);
 
     /* if we put the locals into an array, record the size of that array */
@@ -1308,4 +1288,65 @@ DeclareAnnotation(AST *anno)
         f = NewFunction();
         f->annotations = anno;
     }
+}
+
+/*
+ * type inference
+ */
+static void
+CheckForStatic(Function *fdef, AST *body)
+{
+    Symbol *sym;
+    if (!body || !fdef->is_static) {
+        return;
+    }
+    switch(body->kind) {
+    case AST_IDENTIFIER:
+        sym = FindSymbol(&fdef->localsyms, body->d.string);
+        if (!sym) {
+            sym = LookupSymbol(body->d.string);
+        }
+        if (sym) {
+            if (sym->type == SYM_VARIABLE || sym->type == SYM_OBJECT) {
+                fdef->is_static = 0;
+                return;
+            }
+            if (sym->type == SYM_FUNCTION) {
+                Function *func = (Function *)sym->val;
+                if (func) {
+                    fdef->is_static = fdef->is_static && func->is_static;
+                } else {
+                    fdef->is_static = 0;
+                }
+            }
+        } else {
+            // assume this is an as-yet-undefined member
+            fdef->is_static = 0;
+        }
+        break;
+    default:
+        CheckForStatic(fdef, body->left);
+        CheckForStatic(fdef, body->right);
+    }
+}
+
+int
+InferTypes(ParserState *P)
+{
+    Function *pf;
+    int changes = 0;
+
+    /* scan for static definitions */
+    current = P;
+    for (pf = P->functions; pf; pf = pf->next) {
+        if (pf->is_static) {
+            continue;
+        }
+        pf->is_static = 1;
+        CheckForStatic(pf, pf->body);
+        if (pf->is_static) {
+            changes++;
+        }
+    }
+    return changes;
 }

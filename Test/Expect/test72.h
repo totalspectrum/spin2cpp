@@ -5,9 +5,9 @@
 
 class test72 {
 public:
-  int32_t	Top(int32_t X);
+  static int32_t	Top(int32_t X);
 private:
-  int32_t	Sub1(int32_t X);
+  static int32_t	Sub1(int32_t X);
   static int32_t	Sub2(int32_t X);
 };
 

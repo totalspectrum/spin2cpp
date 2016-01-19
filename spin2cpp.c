@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2015 Total Spectrum Software Inc.
+ * Copyright 2011-2016 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -812,6 +812,18 @@ main(int argc, char **argv)
     }
 
     if (P) {
+        /* do type checking and deduction */
+        int changes;
+        ParserState *Q;
+        do {
+            changes = 0;
+            for (Q = allparse; Q; Q = Q->next) {
+                changes += InferTypes(Q);
+            }
+        } while (changes != 0);
+        if (gl_errors > 0) {
+            exit(1);
+        }
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {
@@ -826,8 +838,6 @@ main(int argc, char **argv)
                 OutputDatFile(outname, P);
             }
         } else {
-            ParserState *Q;
-
             /* compile any sub-objects needed */
             for (Q = allparse; Q; Q = Q->next) {
                 OutputCppCode(Q->basename, Q, outputMain && Q == P);

@@ -273,6 +273,10 @@ void DeclareObjects(AST *newobjs);
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);
 
+/* try to infer function, parameter, and variable types */
+/* returns number of new inferences (0 if nothing changed) */
+int InferTypes(ParserState *P);
+
 /* code for printing errors */
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
