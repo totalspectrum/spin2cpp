@@ -1,5 +1,6 @@
 Version 1.95
 
+- Improved detection of static member functions
 - Implemented coginit/cognew for Spin methods (still WIP)
 - Removed the volatile qualifier from __asm__ at top level (the C++
   parser likes it, but plain C does not)
