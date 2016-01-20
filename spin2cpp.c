@@ -49,6 +49,7 @@ int gl_gas_dat;
 int gl_normalizeIdents;
 int gl_debug;
 int gl_expand_constants;
+int gl_optimize_flags;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 const char *gl_outname = NULL;
 
@@ -683,6 +684,14 @@ main(int argc, char **argv)
             gl_ccode = 1;
             cext = ".c";
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--optimize", 5)) {
+            argv++; --argc;
+            if (argv[0] == NULL) {
+                fprintf(stderr, "Error: expected another argument after --optimize\n");
+                exit(2);
+            }
+            gl_optimize_flags = strtoul(argv[0], NULL, 0);
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
             argv++; --argc;
@@ -691,6 +700,7 @@ main(int argc, char **argv)
             outputMain = 1;
             argv++; --argc;
             appendCompiler(NULL);
+            gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
         } else if (!strncmp(argv[0], "--catalina", 10)) {
             compile = 1;
             outputMain = 1;
@@ -703,6 +713,7 @@ main(int argc, char **argv)
             outputMain = 1;
 	    outputBin = 1;
             argv++; --argc;
+            gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
             appendCompiler(NULL);
         } else if (!strncmp(argv[0], "--nopre", 7)) {
             gl_preprocess = 0;
@@ -815,6 +826,7 @@ main(int argc, char **argv)
         /* do type checking and deduction */
         int changes;
         ParserState *Q;
+        MarkUsed(P->functions);
         do {
             changes = 0;
             for (Q = allparse; Q; Q = Q->next) {

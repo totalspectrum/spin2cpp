@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "1.95"
+#define VERSIONSTR "1.96-pre"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -49,6 +49,8 @@ extern char *gl_header; /* comment to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 extern int gl_debug;    /* flag: if set, include debugging directives */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
+extern int gl_optimize_flags; /* flags for optimization */
+#define OPT_REMOVE_UNUSED_FUNCS 0x01
 
 /* types */
 extern AST *ast_type_long;
@@ -129,6 +131,7 @@ typedef struct funcdef {
     /* various flags */
     unsigned result_used:1;
     unsigned is_static:1; // nonzero if no member variables referenced
+    unsigned is_used:1;   // if 0, function is not used
 } Function;
 
 /* structure describing a builtin function */
@@ -276,6 +279,9 @@ int funcParameterNum(Function *func, AST *var);
 /* try to infer function, parameter, and variable types */
 /* returns number of new inferences (0 if nothing changed) */
 int InferTypes(ParserState *P);
+
+/* mark a function (and all functions it references) as used */
+void MarkUsed(Function *f);
 
 /* code for printing errors */
 extern int gl_errors;

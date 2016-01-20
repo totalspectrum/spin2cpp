@@ -450,6 +450,10 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
     if (!func->name)
         return;
 
+    if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !func->is_used) {
+        return;
+    }
+
     /* make sure debug info (line number etc.) is up to date */
     PrintDebugDirective(f, func->decl);
 
@@ -1196,6 +1200,10 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
 
     for (pf = parse->functions; pf; pf = pf->next) {
         AST *optdecl;
+
+        if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !pf->is_used) {
+            continue;
+        }
         optdecl = Optimize(pf->body, pf);
         PrintComment(f, pf->doccomment);
         if (pf->name == NULL) {
@@ -1349,4 +1357,54 @@ InferTypes(ParserState *P)
         }
     }
     return changes;
+}
+
+static void
+MarkUsedBody(AST *body)
+{
+    Symbol *sym, *objsym;
+    AST *objref;
+    
+    if (!body) return;
+    switch(body->kind) {
+    case AST_IDENTIFIER:
+        sym = LookupSymbol(body->d.string);
+        if (sym && sym->type == SYM_FUNCTION) {
+            Function *func = (Function *)sym->val;
+            MarkUsed(func);
+        }
+        break;
+    case AST_METHODREF:
+        objref = body->left;
+        objsym = LookupAstSymbol(objref, "object reference");
+        if (!objsym) return;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(body, "%s is not an object", objsym->name);
+            return;
+        }
+        sym = LookupObjSymbol(body, objsym, body->right->d.string);
+        if (!sym || sym->type != SYM_FUNCTION) {
+            return;
+        }
+        MarkUsed((Function *)sym->val);
+        break;
+    default:
+        MarkUsedBody(body->left);
+        MarkUsedBody(body->right);
+        break;
+    }
+}
+
+void
+MarkUsed(Function *f)
+{
+    ParserState *oldcurrent;
+    if (f->is_used) {
+        return;
+    }
+    f->is_used = 1;
+    oldcurrent = current;
+    current = f->parse;
+    MarkUsedBody(f->body);
+    current = oldcurrent;
 }
