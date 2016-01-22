@@ -701,18 +701,22 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
 /*
  * code to print out a type declaration
  */
-void
-PrintType(FILE *f, AST *typedecl)
+static void
+doPrintType(FILE *f, AST *typedecl, int fromPtr)
 {
     int size;
 
     switch (typedecl->kind) {
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
+        size = EvalConstExpr(typedecl->left);
         if (typedecl->kind == AST_UNSIGNEDTYPE) {
+            if (size == 1 && fromPtr) {
+                fprintf(f, "char");
+                return;
+            }
             fprintf(f, "u");
         }
-        size = EvalConstExpr(typedecl->left);
         switch (size) {
         case 1:
             fprintf(f, "int8_t");
@@ -724,14 +728,34 @@ PrintType(FILE *f, AST *typedecl)
             fprintf(f, "int32_t");
             break;
         default:
-            ERROR(NULL, "unsupported integer size %d", size);
+            ERROR(typedecl, "unsupported integer size %d", size);
             break;
         }
+        break;
+    case AST_FLOATTYPE:
+        size = EvalConstExpr(typedecl->left);
+        if (size == 4) {
+            fprintf(f, "float");
+        } else if (size == 8) {
+            fprintf(f, "long double");
+        } else {
+            ERROR(typedecl, "unsupported float size %d", size);
+        }
+        break;
+    case AST_PTRTYPE:
+        doPrintType(f, typedecl->left, 1);
+        fprintf(f, " *");
         break;
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;
     }
+}
+
+void
+PrintType(FILE *f, AST *typedecl)
+{
+    doPrintType(f, typedecl, 0);
 }
 
 /* code to print a source expression (could be an array reference or
