@@ -1718,7 +1718,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 static ExprVal
 EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 {
-    if (le.type == FLOAT_EXPR || re.type == FLOAT_EXPR) {
+    if (IsFloatType(le.type) || IsFloatType(re.type)) {
         return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
     }
     return intExpr(EvalIntOperator(op, le.val, re.val, valid));
@@ -1777,21 +1777,21 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
 
     case AST_TOFLOAT:
         lval = EvalExpr(expr->left, flags, valid);
-        if (lval.type != INT_EXPR) {
+        if ( !IsIntType(lval.type)) {
             ERROR(expr, "applying float to a non integer expression");
         }
         return floatExpr((float)(lval.val));
 
     case AST_TRUNC:
         lval = EvalExpr(expr->left, flags, valid);
-        if (lval.type != FLOAT_EXPR) {
+        if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying trunc to a non float expression");
         }
         return intExpr((int)intAsFloat(lval.val));
 
     case AST_ROUND:
         lval = EvalExpr(expr->left, flags, valid);
-        if (lval.type != FLOAT_EXPR) {
+        if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying trunc to a non float expression");
         }
         return intExpr((int)roundf(intAsFloat(lval.val)));
@@ -1927,7 +1927,7 @@ IsFloatConst(AST *expr)
     ExprVal eval;
     valid = 1;
     eval = EvalExpr(expr, 0, &valid);
-    if (valid && eval.type == FLOAT_EXPR)
+    if (valid && IsFloatType(eval.type))
         return 1;
     return 0;
 }
@@ -2149,7 +2149,7 @@ funcParameterNum(Function *func, AST *var)
 ExprVal intExpr(int32_t x)
 {
     ExprVal e;
-    e.type = INT_EXPR;
+    e.type = ast_type_long;
     e.val = x;
     return e;
 }
@@ -2157,7 +2157,7 @@ ExprVal intExpr(int32_t x)
 ExprVal floatExpr(float f)
 {
     ExprVal e;
-    e.type = FLOAT_EXPR;
+    e.type = ast_type_float;
     e.val = floatAsInt(f);
     return e;
 }
@@ -2247,3 +2247,18 @@ IsArraySymbol(Symbol *sym)
     return IsArrayType(type);
 }
 
+int
+IsFloatType(AST *type)
+{
+    if (type->kind == AST_FLOATTYPE)
+        return 1;
+    return 0;
+}
+
+int
+IsIntType(AST *type)
+{
+    if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE)
+        return 1;
+    return 0;
+}

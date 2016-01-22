@@ -56,6 +56,8 @@ extern int gl_optimize_flags; /* flags for optimization */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
+extern AST *ast_type_float;
+extern AST *ast_type_string;
 
 typedef enum InstrOps {
     NO_OPERANDS,

@@ -119,6 +119,8 @@ enum astkind {
 
     AST_SPRREF = 80,
     AST_ABSADDROF,
+    AST_FLOATTYPE,
+    AST_PTRTYPE,
 };
 
 struct AST {

@@ -51,6 +51,8 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
+AST *ast_type_float, *ast_type_string;
+
 const char *gl_outname = NULL;
 
 struct preprocess gl_pp;
@@ -444,7 +446,8 @@ init()
     ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
-
+    ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
+    ast_type_string = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     initLexer(0);
 }
 

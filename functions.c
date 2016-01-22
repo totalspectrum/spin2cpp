@@ -1399,7 +1399,7 @@ void
 MarkUsed(Function *f)
 {
     ParserState *oldcurrent;
-    if (f->is_used) {
+    if (!f || f->is_used) {
         return;
     }
     f->is_used = 1;

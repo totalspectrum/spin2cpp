@@ -1,13 +1,8 @@
 #ifndef EXPR_H
 #define EXPR_H
 
-typedef enum {
-    INT_EXPR,
-    FLOAT_EXPR
-} ExprDefType;
-
 typedef struct exprval {
-    ExprDefType type;
+    AST *type;
     int32_t  val;
 } ExprVal;
 
@@ -50,6 +45,9 @@ float    intAsFloat(int32_t i);
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);
 int IsArraySymbol(Symbol *);
+
+int IsFloatType(AST *typ);
+int IsIntType(AST *typ);
 
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
