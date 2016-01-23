@@ -245,7 +245,7 @@ doDeclareFunction(AST *funcblock)
         resultname = "result";
     fdef->resultexpr = AstIdentifier(resultname);
     fdef->is_public = is_public;
-    fdef->type = ast_type_long;
+    fdef->rettype = ast_type_generic;
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
@@ -465,7 +465,8 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_ccode) {
-        fprintf(f, "int32_t %s_%s(", current->classname, 
+        PrintType(f, func->rettype);
+        fprintf(f, " %s_%s(", current->classname, 
                 func->name);
         if (!func->is_static) {
             fprintf(f, "%s *self", current->classname);
@@ -482,7 +483,8 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         if (func->is_static) {
             fprintf(f, "static ");
         }
-        fprintf(f, "int32_t\t%s(", func->name);
+        PrintType(f, func->rettype);
+        fprintf(f, "\t%s(", func->name);
     }
     PrintParameterList(f, func->params);
     fprintf(f, ");");
@@ -649,7 +651,9 @@ PrintFunctionVariables(FILE *f, Function *func)
     }
     if (!func->result_in_parmarray) {
         if (func->resultexpr->kind == AST_IDENTIFIER) {
-            fprintf(f, "  int32_t %s = 0;", func->resultexpr->d.string);
+            fprintf(f, "  ");
+            PrintType(f, func->rettype);
+            fprintf(f, " %s = 0;", func->resultexpr->d.string);
             PrintNewline(f);
         }
     }

@@ -747,6 +747,9 @@ doPrintType(FILE *f, AST *typedecl, int fromPtr)
         doPrintType(f, typedecl->left, 1);
         fprintf(f, " *");
         break;
+    case AST_VOIDTYPE:
+        fprintf(f, "void");
+        break;
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;

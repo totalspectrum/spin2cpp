@@ -108,7 +108,7 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *decl;        /* always filled in with the line numbers of the declaration */
-    AST *type;        /* the function type, normally long */
+    AST *rettype;        /* the function return type, normally long */
     AST *annotations; /* any annotations for the function (section, etc.) */
     AST *doccomment;  /* documentation comments */
     int numparams;

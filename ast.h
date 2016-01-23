@@ -123,6 +123,7 @@ enum astkind {
     AST_PTRTYPE,
 
     AST_GENERICTYPE = 84,
+    AST_VOIDTYPE,
 };
 
 struct AST {
