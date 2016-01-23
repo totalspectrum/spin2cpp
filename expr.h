@@ -48,6 +48,8 @@ int IsArraySymbol(Symbol *);
 
 int IsFloatType(AST *typ);
 int IsIntType(AST *typ);
+int IsGenericType(AST *typ);
+#define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
 
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);

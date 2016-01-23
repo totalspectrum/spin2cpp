@@ -58,6 +58,7 @@ extern AST *ast_type_word;
 extern AST *ast_type_byte;
 extern AST *ast_type_float;
 extern AST *ast_type_string;
+extern AST *ast_type_generic;
 
 typedef enum InstrOps {
     NO_OPERANDS,

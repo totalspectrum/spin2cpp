@@ -52,6 +52,7 @@ int gl_expand_constants;
 int gl_optimize_flags;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
+AST *ast_type_generic;
 
 const char *gl_outname = NULL;
 
@@ -261,7 +262,7 @@ DeclareVariables(ParserState *P)
             curtype = ast_type_word;
             break;
         case AST_LONGLIST:
-            curtype = ast_type_long;
+            curtype = ast_type_generic; // was ast_type_long;
             break;
         case AST_COMMENT:
             /* skip */
@@ -448,6 +449,7 @@ init()
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
     ast_type_string = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
+    ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     initLexer(0);
 }
 

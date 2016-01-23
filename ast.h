@@ -121,6 +121,8 @@ enum astkind {
     AST_ABSADDROF,
     AST_FLOATTYPE,
     AST_PTRTYPE,
+
+    AST_GENERICTYPE = 84,
 };
 
 struct AST {

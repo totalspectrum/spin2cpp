@@ -707,6 +707,7 @@ doPrintType(FILE *f, AST *typedecl, int fromPtr)
     int size;
 
     switch (typedecl->kind) {
+    case AST_GENERICTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
         size = EvalConstExpr(typedecl->left);
@@ -1801,7 +1802,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
 
     case AST_TOFLOAT:
         lval = EvalExpr(expr->left, flags, valid);
-        if ( !IsIntType(lval.type)) {
+        if ( !IsIntOrGenericType(lval.type)) {
             ERROR(expr, "applying float to a non integer expression");
         }
         return floatExpr((float)(lval.val));
@@ -2242,6 +2243,8 @@ IsArrayType(AST *ast)
         return 1;
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
+    case AST_GENERICTYPE:
+    case AST_FLOATTYPE:
         return 0;
     default:
         ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
@@ -2277,6 +2280,12 @@ IsFloatType(AST *type)
     if (type->kind == AST_FLOATTYPE)
         return 1;
     return 0;
+}
+
+int
+IsGenericType(AST *type)
+{
+    return type->kind == AST_GENERICTYPE;
 }
 
 int
