@@ -55,4 +55,6 @@ Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 
+AST *ExprType(AST *ast);
+
 #endif

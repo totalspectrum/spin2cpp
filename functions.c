@@ -1225,7 +1225,8 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
             if (!pf->is_public) {
                 fprintf(f, "static ");
             }
-            fprintf(f, "int32_t %s_%s(", parse->classname, pf->name);
+            PrintType(f, pf->rettype);
+            fprintf(f, " %s_%s(", parse->classname, pf->name);
 
             if (!pf->is_static) {
                 fprintf(f, "%s *self%s", parse->classname, pf->params ? ", " : "");
@@ -1234,7 +1235,8 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
                 PrintParameterList(f, pf->params);
             }
         } else {
-            fprintf(f, "int32_t %s::%s(", parse->classname, pf->name);
+            PrintType(f, pf->rettype);
+            fprintf(f, " %s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf->params);
         }
         fprintf(f, ")");
@@ -1305,6 +1307,11 @@ DeclareAnnotation(AST *anno)
 /*
  * type inference
  */
+
+/* check for static member functions, i.e. ones that do not
+ * use any variables in the object, and hence can be called
+ * without the object itself as an implicit parameter
+ */
 static void
 CheckForStatic(Function *fdef, AST *body)
 {
@@ -1342,12 +1349,61 @@ CheckForStatic(Function *fdef, AST *body)
     }
 }
 
+/*
+ * Check for function return type
+ * This returns 1 if we see a return statement, 0 if not
+ */
+static int CheckStatement(Function *func, AST *ast);
+
+static int
+CheckStatementList(Function *func, AST *ast)
+{
+    int sawreturn = 0;
+    while (ast) {
+        if (ast->kind != AST_STMTLIST) {
+            ERROR(ast, "Internal error: expected statement list, got %d",
+                  ast->kind);
+            return 0;
+        }
+        sawreturn |= CheckStatement(func, ast);
+        ast = ast->right;
+    }
+    return sawreturn;
+}
+
+static int
+CheckStatement(Function *func, AST *ast)
+{
+    int sawreturn = 0;
+    switch (ast->kind) {
+    case AST_COMMENTEDNODE:
+        sawreturn = CheckStatement(func, ast->left);
+        break;
+    case AST_RETURN:
+        if (ast->left) {
+            SetFunctionType(func, ExprType(ast->left));
+        } else {
+            SetFunctionType(func, ast_type_void);
+        }
+        sawreturn = 1;
+        break;
+    default:
+        sawreturn = 0;
+        break;
+    }
+    return sawreturn;
+}
+
+/*
+ * main entry for type checking
+ */
 int
 InferTypes(ParserState *P)
 {
     Function *pf;
     int changes = 0;
-
+    int sawreturn = 0;
+    
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
@@ -1360,6 +1416,12 @@ InferTypes(ParserState *P)
             changes++;
         }
     }
+    /* now check for function types */
+    for (pf = P->functions; pf; pf = pf->next) {
+        sawreturn = CheckStatementList(pf, pf->body);
+        (void)sawreturn;
+    }
+    
     return changes;
 }
 
@@ -1411,4 +1473,10 @@ MarkUsed(Function *f)
     current = f->parse;
     MarkUsedBody(f->body);
     current = oldcurrent;
+}
+
+void
+SetFunctionType(Function *f, AST *typ)
+{
+    f->rettype = typ;
 }

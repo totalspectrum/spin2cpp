@@ -2298,3 +2298,12 @@ IsIntType(AST *type)
         return 1;
     return 0;
 }
+
+/*
+ * figure out an expression's type
+ */
+AST *
+ExprType(AST *expr)
+{
+    return ast_type_generic;
+}

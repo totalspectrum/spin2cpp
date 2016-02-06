@@ -59,6 +59,7 @@ extern AST *ast_type_byte;
 extern AST *ast_type_float;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;
+extern AST *ast_type_void;
 
 typedef enum InstrOps {
     NO_OPERANDS,
@@ -313,5 +314,8 @@ void CanonicalizeIdentifier(char *idstr);
 
 /* detect coginit/cognew calls that are for spin methods */
 int IsSpinCoginit(AST *body);
+
+/* set a function type, checking for errors */
+void SetFunctionType(Function *func, AST *type);
 
 #endif
