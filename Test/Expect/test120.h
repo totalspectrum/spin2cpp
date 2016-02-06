@@ -5,7 +5,7 @@
 
 class test120 {
 public:
-  static int32_t	Flip0(int32_t I);
+  static void	Flip0(int32_t I);
 private:
 };
 

@@ -10,15 +10,13 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test82::Flip(void)
+void test82::Flip(void)
 {
   X = ~X;
-  return 0;
 }
 
-int32_t test82::Toggle(int32_t Pin)
+void test82::Toggle(int32_t Pin)
 {
   OUTA ^= (1<<Pin);
-  return 0;
 }
 

@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test89::Catchlong(int32_t Longvar)
+void test89::Catchlong(int32_t Longvar)
 {
   int32_t _parm__0000[1];
   _parm__0000[0] = Longvar;
@@ -18,6 +18,5 @@ int32_t test89::Catchlong(int32_t Longvar)
   B1 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[1];
   B2 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[2];
   B3 = ((uint8_t *)(int32_t)(&_parm__0000[0]))[3];
-  return 0;
 }
 

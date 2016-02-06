@@ -12,9 +12,9 @@ public:
   static const int Max_obj = 3;
   FullDuplexSerial	Fds;
   objarrtest	V[3];
-  int32_t	Main(void);
+  void	Main(void);
 private:
-  int32_t	Printn(int32_t I);
+  void	Printn(int32_t I);
 };
 
 #endif

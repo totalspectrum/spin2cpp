@@ -5,7 +5,7 @@
 
 class test55 {
 public:
-  static int32_t	Emptyfunc(void);
+  static void	Emptyfunc(void);
   static int32_t	Fullfunc(void);
 private:
 };

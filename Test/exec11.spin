@@ -26,16 +26,18 @@ PUB main | start,elapsed
   elapsed := CNT
   elapsed := elapsed - start
 
-  if elapsed < 2000000
+  if elapsed < 9000000
      fds.str(string("time is short, as expected", 13, 10))
+     fds.txflush
   else
      fds.str(string("elapsed="))
      fds.dec(elapsed)
      fds.str(string(13, 10))
-
+     fds.txflush
   exit
 
 PUB exit
   fds.txflush
   fds.stop
 
+  

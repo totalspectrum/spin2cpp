@@ -12,13 +12,12 @@ static int32_t tmp__;
 #define Yield__()
 #endif
 
-int32_t test29::Tx(int32_t Val)
+void test29::Tx(int32_t Val)
 {
   ((uint8_t *)28672)[Idx] = 0;
-  return 0;
 }
 
-int32_t test29::Str(int32_t Stringptr)
+void test29::Str(int32_t Stringptr)
 {
   // Send string                    
   while (lockset(Strlock)) {
@@ -32,6 +31,5 @@ int32_t test29::Str(int32_t Stringptr)
     }
   }
   lockclr(Strlock);
-  return 0;
 }
 

@@ -32,9 +32,8 @@ extern "C" int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);
 #define cogmem_get__(addr)      _cog_xfer(0, (addr), 0)
 #define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))
 
-int32_t test120::Flip0(int32_t I)
+void test120::Flip0(int32_t I)
 {
   cogmem_put__((496 + I), (cogmem_get__((496 + I)) ^ 0x1));
-  return 0;
 }
 

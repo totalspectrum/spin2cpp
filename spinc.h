@@ -117,6 +117,8 @@ typedef struct funcdef {
     AST *locals;      /* local variables */
     AST *body;
     AST *resultexpr;
+    AST *extradecl;
+    
     /* array holding parameters, if necessary */
     const char *parmarray;
     /* true if the result should be placed in the parameter array */
@@ -136,6 +138,10 @@ typedef struct funcdef {
     unsigned result_used:1;
     unsigned is_static:1; // nonzero if no member variables referenced
     unsigned is_used:1;   // if 0, function is not used
+    unsigned is_recursive:1; // if 1, function is called recursively
+
+    /* for walking through functions and avoiding loops */
+    unsigned visitFlag;
 } Function;
 
 /* structure describing a builtin function */
@@ -284,8 +290,14 @@ int funcParameterNum(Function *func, AST *var);
 /* returns number of new inferences (0 if nothing changed) */
 int InferTypes(ParserState *P);
 
+/* process functions and perform basic transformations on them */
+void ProcessFuncs(ParserState *P);
+
 /* mark a function (and all functions it references) as used */
 void MarkUsed(Function *f);
+
+/* check to see if a function is recursive */
+void CheckRecursive(Function *f);
 
 /* code for printing errors */
 extern int gl_errors;

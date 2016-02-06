@@ -5,7 +5,7 @@
 
 class test92 {
 public:
-  int32_t	Inc(void);
+  void	Inc(void);
 private:
   int32_t	volatile X;
   int32_t	Y;

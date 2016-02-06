@@ -7,7 +7,7 @@
 class test49 {
 public:
   test09	X;
-  int32_t	Myfunc(void);
+  void	Myfunc(void);
 private:
 };
 

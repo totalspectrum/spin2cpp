@@ -10,10 +10,9 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test09::Init(void)
+void test09::Init(void)
 {
   DIRA |= (1<<2);
   OUTA = ((OUTA & 0xffffff0f) | 0xa0);
-  return 0;
 }
 

@@ -16,11 +16,10 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test110::Main(void)
+void test110::Main(void)
 {
   DIRA |= (1<<0);
   OUTA |= (1<<0);
-  return 0;
 }
 
 /* 

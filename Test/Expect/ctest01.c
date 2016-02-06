@@ -17,22 +17,19 @@ static int32_t tmp__;
 #define cogstop(i) _cogstop(i)
 #endif
 
-int32_t ctest01_add(ctest01 *self, int32_t x)
+void ctest01_add(ctest01 *self, int32_t x)
 {
   self->Cntr = self->Cntr + x;
-  return 0;
 }
 
-int32_t ctest01_inc(ctest01 *self)
+void ctest01_inc(ctest01 *self)
 {
   ctest01_add(self, 1);
-  return 0;
 }
 
-int32_t ctest01_dec(ctest01 *self)
+void ctest01_dec(ctest01 *self)
 {
   (--self->Cntr);
-  return 0;
 }
 
 int32_t ctest01_Get(ctest01 *self)

@@ -20,9 +20,8 @@ int32_t test71::Blah(void)
   return _parm__0000[0];
 }
 
-int32_t test71::Foo(int32_t M, int32_t N)
+void test71::Foo(int32_t M, int32_t N)
 {
   OUTA = OUTA | ((1<<N));
-  return 0;
 }
 

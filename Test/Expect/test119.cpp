@@ -10,12 +10,11 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test119::Clear(void)
+void test119::Clear(void)
 {
   int32_t	I;
   for(I = 0; I < Width; I++) {
     Array[I] = 0;
   }
-  return 0;
 }
 

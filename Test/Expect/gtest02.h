@@ -6,7 +6,7 @@
 class gtest02 {
 public:
 #line 1 "gtest02.spin"
-  static int32_t	run(void);
+  static void	run(void);
 #line 8 "gtest02.spin"
   static int32_t	fibo(int32_t x);
 private:

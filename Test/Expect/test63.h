@@ -5,7 +5,7 @@
 
 class test63 {
 public:
-  static int32_t	Test(int32_t Exponent);
+  static void	Test(int32_t Exponent);
 private:
 };
 

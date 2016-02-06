@@ -5,7 +5,7 @@
 
 class test65 {
 public:
-  static int32_t	Dofunc(int32_t X);
+  static void	Dofunc(int32_t X);
 private:
 };
 

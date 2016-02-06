@@ -5,8 +5,8 @@
 
 class test86 {
 public:
-  static int32_t	Set1(void);
-  static int32_t	Set(int32_t Pin);
+  static void	Set1(void);
+  static void	Set(int32_t Pin);
 private:
 };
 

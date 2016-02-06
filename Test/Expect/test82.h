@@ -5,8 +5,8 @@
 
 class test82 {
 public:
-  int32_t	Flip(void);
-  static int32_t	Toggle(int32_t Pin);
+  void	Flip(void);
+  static void	Toggle(int32_t Pin);
 private:
   int32_t	X;
 };

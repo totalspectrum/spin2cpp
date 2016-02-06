@@ -5,7 +5,7 @@
 
 class test116 {
 public:
-  static int32_t	Fillone(int32_t X, int32_t Count);
+  static void	Fillone(int32_t X, int32_t Count);
 private:
 };
 

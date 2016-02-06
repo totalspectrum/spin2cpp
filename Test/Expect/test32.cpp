@@ -12,7 +12,7 @@ static int32_t tmp__;
 
 INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }
 
-int32_t test32::Fun(int32_t Y)
+void test32::Fun(int32_t Y)
 {
   int32_t _tmp__0000 = (X + Y);
   if (_tmp__0000 == 10 || _tmp__0000 == 'C') {
@@ -26,6 +26,5 @@ int32_t test32::Fun(int32_t Y)
     OUTA ^= 0x10;
   }
   X = X + 5;
-  return 0;
 }
 

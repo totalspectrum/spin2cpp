@@ -5,7 +5,7 @@
 
 class test51 {
 public:
-  static int32_t	Run(void);
+  static void	Run(void);
   static int32_t	Len(int32_t Stringptr);
 private:
 };

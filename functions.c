@@ -11,6 +11,7 @@
 #include "spinc.h"
 
 Function *curfunc;
+static int visitPass = 1;
 
 Function *
 NewFunction(void)
@@ -346,7 +347,8 @@ ModifyLookup(AST *top)
 }
 
 /*
- * hook for optimization
+ * Normalization of function and expression structures
+ *
  * there are a number of simple optimizations we can perform on a function
  * (1) Convert lookup/lookdown into constant array references
  * (2) Eliminate unused result variables
@@ -356,7 +358,7 @@ ModifyLookup(AST *top)
  * to declare temporary arrays.
  */
 static AST *
-Optimize(AST *ast, Function *func)
+NormalizeFunc(AST *ast, Function *func)
 {
     AST *ldecl;
     AST *rdecl;
@@ -366,11 +368,10 @@ Optimize(AST *ast, Function *func)
 
     switch (ast->kind) {
     case AST_RETURN:
-        if (!ast->left) {
-            func->result_used = 1;
-            return NULL;
+        if (ast->left) {
+            return NormalizeFunc(ast->left, func);
         }
-        return Optimize(ast->left, func);
+        return NULL;
     case AST_RESULT:
         func->result_used = 1;
         return NULL;
@@ -391,8 +392,8 @@ Optimize(AST *ast, Function *func)
     case AST_LOOKDOWN:
         return ModifyLookup(ast);
     default:
-        ldecl = Optimize(ast->left, func);
-        rdecl = Optimize(ast->right, func);
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return AddToList(ldecl, rdecl);
     }
 }
@@ -649,7 +650,7 @@ PrintFunctionVariables(FILE *f, Function *func)
         fprintf(f, "  int32_t %s[%d];", func->parmarray, parmsiz);
         PrintNewline(f);
     }
-    if (!func->result_in_parmarray) {
+    if (!func->result_in_parmarray && func->resultexpr) {
         if (func->resultexpr->kind == AST_IDENTIFIER) {
             fprintf(f, "  ");
             PrintType(f, func->rettype);
@@ -676,22 +677,20 @@ PrintFunctionVariables(FILE *f, Function *func)
     }
 }
  
-static int PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
+static void PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
 
-static int
+static void
 PrintStatementList(FILE *f, AST *ast, int indent)
 {
-    int sawreturn = 0;
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
             ERROR(ast, "Internal error: expected statement list, got %d",
                   ast->kind);
-            return 0;
+            return;
         }
-        sawreturn |= PrintStatement(f, ast->left, indent);
+        PrintStatement(f, ast->left, indent);
         ast = ast->right;
     }
-    return sawreturn;
 }
 
 static void
@@ -723,24 +722,20 @@ PrintCaseExprList(FILE *f, AST *var, AST *ast)
     }
 }
 
-static int
+static void
 PrintCaseItem(FILE *f, AST *var, AST *ast, int indent)
 {
-    int sawreturn;
-
     fprintf(f, "(");
     PrintCaseExprList(f, var, ast->left);
     fprintf(f, ") {");
     PrintNewline(f);
-    sawreturn = PrintStatementList(f, ast->right, indent);
+    PrintStatementList(f, ast->right, indent);
     fprintf(f, "%*c}", indent, ' ');
-    return sawreturn;
 }
 
-static int
+static void
 PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
 {
-    int sawreturn = 1;
     int items = 0;
     int first = 1;
     AST *var;
@@ -756,7 +751,7 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Internal error in case list");
-            return 0;
+            return;
         }
         if (first) {
             fprintf(f, "%*cif ", indent, ' ');
@@ -764,18 +759,17 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
         } else {
             fprintf(f, " else if ");
         }
-        sawreturn = PrintCaseItem(f, var, ast->left, indent) && sawreturn;
+        PrintCaseItem(f, var, ast->left, indent);
         ast = ast->right;
         items++;
     }
     PrintNewline(f);
-    return (items > 0) && sawreturn;
 }
 
 /*
  * print a counting repeat loop
  */
-static int
+static void
 PrintCountRepeat(FILE *f, AST *ast, int indent)
 {
     AST *fromval, *toval;
@@ -787,7 +781,6 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     AST *loopleft, *loopright;
     AST *stepstmt;
     AST *lineast;
-    int sawreturn = 0;
     int negstep = 0;
     int needsteptest = 1;
     int deltaknown = 0;
@@ -803,26 +796,26 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             loopvar = ast->left;
         } else {
             ERROR(ast, "Need a variable name for the loop");
-            return 0;
+            return;
         }
     }
     ast = ast->right;
     lineast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
-        return 0;
+        return;
     }
     fromval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_TO) {
         ERROR(ast, "expected TO");
-        return 0;
+        return;
     }
     toval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_STEP) {
         ERROR(ast, "expected STEP");
-        return 0;
+        return;
     }
     if (ast->left) {
         stepval = ast->left;
@@ -982,7 +975,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             PrintExpr(f, stepstmt);
         }
         fprintf(f, ") {"); PrintNewline(f);
-        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
     } else {
         /* use a do/while loop */
@@ -990,7 +983,7 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
 
 
         fprintf(f, "%*cdo {", indent, ' '); PrintNewline(f);
-        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        PrintStatementList(f, ast->right, indent+2);
         PrintStatement(f, stepstmt, indent+2);
         fprintf(f, "%*c} while (", indent, ' ');
         if (IsConstExpr(loopleft)) {
@@ -1006,14 +999,13 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         indent -= 2;
         fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
     }
-    return sawreturn;
 }
 
 /*
- * print declarations for optimizer
+ * print extra declarations for function
  */
 static void
-PrintOptimizeDecl(FILE *f, AST *ast, int indent)
+PrintExtraDecl(FILE *f, AST *ast, int indent)
 {
     AST *decl;
     AST *id;
@@ -1034,32 +1026,35 @@ PrintOptimizeDecl(FILE *f, AST *ast, int indent)
 }
 
 /*
- * returns 1 if a return statement was seen
+ * print a single statement
  */
-static int
+static void
 PrintStatement(FILE *f, AST *ast, int indent)
 {
-    int sawreturn = 0;
     AST *lhsast = NULL;
     AST *comment = NULL;
-
-    if (!ast) return 0;
+    AST *retval;
+    
+    if (!ast) return;
 
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
         PrintIndentedComment(f, ast->right, indent);
-        sawreturn = PrintStatement(f, ast->left, indent);
+        PrintStatement(f, ast->left, indent);
         break;
     case AST_RETURN:
+        retval = ast->left;
+        if (!retval) {
+            retval = curfunc->resultexpr;
+        }
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*creturn ", indent, ' ');
-        if (ast->left) {
-            PrintExpr(f, ast->left);
+        if (retval) {
+            fprintf(f, "%*creturn ", indent, ' ');
+            PrintExpr(f, retval);
         } else {
-            PrintExpr(f, curfunc->resultexpr);
+            fprintf(f, "%*creturn", indent, ' ');
         }
         fprintf(f, ";"); PrintNewline(f);
-        sawreturn = 1;
         break;
     case AST_ABORT:
         PrintDebugDirective(f, ast);
@@ -1107,9 +1102,9 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         if (ast->kind != AST_THENELSE) {
             ERROR(ast, "error parsing if/then/else: got unexpected type %d", ast->kind);
-            return 0;
+            return;
         }
-        sawreturn = PrintStatementList(f, ast->left, indent+2);
+        PrintStatementList(f, ast->left, indent+2);
         if (ast->right) {
             fprintf(f, "%*c} else {", indent, ' ');
             PrintNewline(f);
@@ -1118,9 +1113,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
                 comment = NULL;
             }
             PrintDebugDirective(f, ast->right);
-            sawreturn = PrintStatementList(f, ast->right, indent+2) && sawreturn;
-        } else {
-            sawreturn = 0;
+            PrintStatementList(f, ast->right, indent+2);
         }
         fprintf(f, "%*c}", indent, ' ');
         PrintNewline(f);
@@ -1130,28 +1123,28 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, "%*cwhile (", indent, ' ');
         PrintBoolExpr(f, ast->left);
         fprintf(f, ") {"); PrintNewline(f);
-        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}", indent, ' ');
         PrintNewline(f);
         break;
     case AST_DOWHILE:
         fprintf(f, "%*cdo {", indent, ' ');
         PrintNewline(f);
-        sawreturn = PrintStatementList(f, ast->right, indent+2);
+        PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c} while (", indent, ' ');
         PrintBoolExpr(f, ast->left);
         fprintf(f, ");");
         PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
-        sawreturn = PrintCountRepeat(f, ast, indent);
+        PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
-        sawreturn = PrintStatementList(f, ast, indent+2);
+        PrintStatementList(f, ast, indent+2);
         break;
     case AST_CASE:
         PrintDebugDirective(f, ast);
-        sawreturn = PrintCaseStmt(f, ast->left, ast->right, indent);
+        PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
     case AST_POSTEFFECT:
         PrintDebugDirective(f, ast);
@@ -1186,13 +1179,12 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     }
-    return sawreturn;
 }
 
-static int
+static void
 PrintFunctionStmts(FILE *f, Function *func)
 {
-    return PrintStatementList(f, func->body, 2);
+    PrintStatementList(f, func->body, 2);
 }
 
 
@@ -1200,15 +1192,11 @@ void
 PrintFunctionBodies(FILE *f, ParserState *parse)
 {
     Function *pf;
-    int sawreturn;
 
     for (pf = parse->functions; pf; pf = pf->next) {
-        AST *optdecl;
-
         if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !pf->is_used) {
             continue;
         }
-        optdecl = Optimize(pf->body, pf);
         PrintComment(f, pf->doccomment);
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');
@@ -1243,22 +1231,13 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
         PrintNewline(f);
         fprintf(f, "{");
         PrintNewline(f);
-        if (!pf->result_used) {
-            pf->resultexpr = AstInteger(0);
-        }
         PrintFunctionVariables(f, pf);
-        if (optdecl) {
-            PrintOptimizeDecl(f, optdecl, 2);
+        if (pf->extradecl) {
+            PrintExtraDecl(f, pf->extradecl, 2);
             PrintNewline(f);
         }
-        sawreturn = PrintFunctionStmts(f, pf);
+        (void)PrintFunctionStmts(f, pf);
 
-        if (!sawreturn) {
-            fprintf(f, "  return ");
-            PrintExpr(f, pf->resultexpr);
-            fprintf(f, ";");
-            PrintNewline(f);
-        }
         fprintf(f, "}");
         PrintNewline(f);
         PrintNewline(f);
@@ -1353,10 +1332,10 @@ CheckForStatic(Function *fdef, AST *body)
  * Check for function return type
  * This returns 1 if we see a return statement, 0 if not
  */
-static int CheckStatement(Function *func, AST *ast);
+static int CheckRetStatement(Function *func, AST *ast);
 
 static int
-CheckStatementList(Function *func, AST *ast)
+CheckRetStatementList(Function *func, AST *ast)
 {
     int sawreturn = 0;
     while (ast) {
@@ -1365,33 +1344,125 @@ CheckStatementList(Function *func, AST *ast)
                   ast->kind);
             return 0;
         }
-        sawreturn |= CheckStatement(func, ast);
+        sawreturn |= CheckRetStatement(func, ast->left);
         ast = ast->right;
     }
     return sawreturn;
 }
 
+static bool
+IsResultVar(Function *func, AST *lhs)
+{
+    if (lhs->kind == AST_RESULT) {
+        return true;
+    }
+    if (lhs->kind == AST_IDENTIFIER) {
+        return AstMatch(lhs, func->resultexpr);
+    }
+    return false;
+}
+
 static int
-CheckStatement(Function *func, AST *ast)
+CheckRetStatement(Function *func, AST *ast)
 {
     int sawreturn = 0;
+    AST *lhs, *rhs;
+    
+    if (!ast) return 0;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
-        sawreturn = CheckStatement(func, ast->left);
+        sawreturn = CheckRetStatement(func, ast->left);
         break;
     case AST_RETURN:
         if (ast->left) {
             SetFunctionType(func, ExprType(ast->left));
-        } else {
-            SetFunctionType(func, ast_type_void);
         }
         sawreturn = 1;
+        break;
+    case AST_ABORT:
+        if (ast->left) {
+            SetFunctionType(func, ExprType(ast->left));
+        }
+        break;
+    case AST_IF:
+        ast = ast->right;
+        if (ast->kind == AST_COMMENTEDNODE)
+            ast = ast->left;
+        sawreturn = CheckRetStatementList(func, ast->left);
+        sawreturn = CheckRetStatementList(func, ast->right) && sawreturn;
+        break;
+    case AST_WHILE:
+    case AST_DOWHILE:
+        sawreturn = CheckRetStatementList(func, ast->right);
+        break;
+    case AST_COUNTREPEAT:
+        lhs = ast->left; // count variable
+        if (lhs) {
+            if (IsResultVar(func, lhs)) {
+                SetFunctionType(func, ast_type_long);
+            }
+        }
+        ast = ast->right; // from value
+        ast = ast->right; // to value
+        ast = ast->right; // step value
+        ast = ast->right; // body
+        sawreturn = CheckRetStatementList(func, ast);
+        break;
+    case AST_STMTLIST:
+        sawreturn = CheckRetStatementList(func, ast);
+        break;
+    case AST_ASSIGN:
+        lhs = ast->left;
+        rhs = ast->right;
+        if (IsResultVar(func, lhs)) {
+            SetFunctionType(func, ExprType(rhs));
+        }
+        sawreturn = 0;
         break;
     default:
         sawreturn = 0;
         break;
     }
     return sawreturn;
+}
+
+/*
+ * do basic processing of functions
+ */
+void
+ProcessFuncs(ParserState *P)
+{
+    Function *pf;
+    int sawreturn = 0;
+
+    current = P;
+    for (pf = P->functions; pf; pf = pf->next) {
+        CheckRecursive(pf);  /* check for recursive functions */
+        pf->extradecl = NormalizeFunc(pf->body, pf);
+
+        /* check for void functions */
+        pf->rettype = NULL;
+        sawreturn = CheckRetStatementList(pf, pf->body);
+        if (pf->rettype == NULL && pf->result_used) {
+            /* there really is a return type */
+            pf->rettype = ast_type_generic;
+        }
+        if (pf->rettype == NULL) {
+            pf->rettype = ast_type_void;
+            pf->resultexpr = NULL;
+        } else {
+            if (!pf->result_used) {
+                pf->resultexpr = AstInteger(0);
+                pf->result_used = 1;
+            }
+            if (!sawreturn) {
+                AST *retstmt;
+
+                retstmt = NewAST(AST_STMTLIST, NewAST(AST_RETURN, pf->resultexpr, NULL), NULL);
+                pf->body = AddToList(pf->body, retstmt);
+            }
+        }
+    }
 }
 
 /*
@@ -1402,7 +1473,6 @@ InferTypes(ParserState *P)
 {
     Function *pf;
     int changes = 0;
-    int sawreturn = 0;
     
     /* scan for static definitions */
     current = P;
@@ -1416,12 +1486,6 @@ InferTypes(ParserState *P)
             changes++;
         }
     }
-    /* now check for function types */
-    for (pf = P->functions; pf; pf = pf->next) {
-        sawreturn = CheckStatementList(pf, pf->body);
-        (void)sawreturn;
-    }
-    
     return changes;
 }
 
@@ -1479,4 +1543,64 @@ void
 SetFunctionType(Function *f, AST *typ)
 {
     f->rettype = typ;
+}
+
+/*
+ * check to see if function ref may be called from AST body
+ */
+bool
+IsCalledFrom(Function *ref, AST *body, int visitRef)
+{
+    Symbol *sym, *objsym;
+    AST *objref;
+    Function *func;
+    
+    if (!body) return false;
+    switch(body->kind) {
+    case AST_IDENTIFIER:
+        sym = LookupSymbol(body->d.string);
+        if (sym && sym->type == SYM_FUNCTION) {
+            func = (Function *)sym->val;
+            if (ref == func) return true;
+            if (func->visitFlag == visitRef) {
+                // we've been here before
+                return false;
+            }
+            func->visitFlag = visitRef;
+            return IsCalledFrom(ref, func->body, visitRef);
+        }
+        break;
+    case AST_METHODREF:
+        objref = body->left;
+        objsym = LookupAstSymbol(objref, "object reference");
+        if (!objsym) return false;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(body, "%s is not an object", objsym->name);
+            return false;
+        }
+        sym = LookupObjSymbol(body, objsym, body->right->d.string);
+        if (!sym || sym->type != SYM_FUNCTION) {
+            return false;
+        }
+        func = (Function *)sym->val;
+        if (ref == func) return true;
+        if (func->visitFlag == visitRef) {
+            // we've been here before
+            return false;
+        }
+        func->visitFlag = visitRef;
+        return IsCalledFrom(ref, func->body, visitRef);
+    default:
+        return IsCalledFrom(ref, body->left, visitRef)
+            || IsCalledFrom(ref, body->right, visitRef);
+        break;
+    }
+    return false;
+}
+
+void
+CheckRecursive(Function *f)
+{
+    visitPass++;
+    f->is_recursive = IsCalledFrom(f, f->body, visitPass);
 }

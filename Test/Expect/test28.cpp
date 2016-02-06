@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test28::Lock(void)
+void test28::Lock(void)
 {
   X = 0;
   while (!(X > 9)) {
@@ -22,6 +22,5 @@ int32_t test28::Lock(void)
     lockret(X);
     (X++);
   } while (X < 10);
-  return 0;
 }
 

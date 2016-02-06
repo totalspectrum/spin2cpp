@@ -7,7 +7,7 @@
 class test80 {
 public:
   FullDuplexSerial	Fds;
-  int32_t	Init(void);
+  void	Init(void);
 private:
   uint8_t	Namebuffer[14];
 };

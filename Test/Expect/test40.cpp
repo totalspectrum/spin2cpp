@@ -11,10 +11,9 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test40::Tx(int32_t Character)
+void test40::Tx(int32_t Character)
 {
   OUTA = Character;
-  return 0;
 }
 
 int32_t test40::Dec(int32_t Value)

@@ -12,7 +12,7 @@ static int32_t tmp__;
 #define Yield__()
 #endif
 
-int32_t test26::Lock(void)
+void test26::Lock(void)
 {
   while (lockset(Thelock) != 0) {
     Yield__();
@@ -22,6 +22,5 @@ int32_t test26::Lock(void)
     lockret(X);
     (X++);
   }
-  return 0;
 }
 

@@ -5,7 +5,7 @@
 
 class test08 {
 public:
-  static int32_t	Init(void);
+  static void	Init(void);
 private:
 };
 

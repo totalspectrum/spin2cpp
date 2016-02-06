@@ -11,7 +11,7 @@ static int32_t tmp__;
 #endif
 
 #line 1 "gtest02.spin"
-int32_t gtest02::run(void)
+void gtest02::run(void)
 {
   int32_t	i, now, elapsed, x;
 #line 8 "gtest02.spin"
@@ -21,7 +21,6 @@ int32_t gtest02::run(void)
     x = fibo(i);
     elapsed = CNT - now;
   }
-  return 0;
 }
 
 #line 8 "gtest02.spin"

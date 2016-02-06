@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test79::I2c_start(void)
+void test79::I2c_start(void)
 {
   OUTA = ((OUTA & 0xefffffff) | 0x10000000);
   DIRA = ((DIRA & 0xefffffff) | 0x10000000);
@@ -18,6 +18,5 @@ int32_t test79::I2c_start(void)
   DIRA = ((DIRA & 0xdfffffff) | 0x20000000);
   OUTA &= ~(1<<Sda);
   OUTA &= ~(1<<Scl);
-  return 0;
 }
 

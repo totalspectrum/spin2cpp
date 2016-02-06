@@ -14,15 +14,13 @@ uint8_t test39::dat[] = {
   0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 
   0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 
 };
-int32_t test39::Setword(int32_t X, int32_t A)
+void test39::Setword(int32_t X, int32_t A)
 {
   ((uint16_t *)&dat[0])[X] = A;
-  return 0;
 }
 
-int32_t test39::Setbyte(int32_t X, int32_t B)
+void test39::Setbyte(int32_t X, int32_t B)
 {
   ((uint8_t *)&dat[16])[X] = B;
-  return 0;
 }
 

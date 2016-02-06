@@ -10,10 +10,9 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test80::Init(void)
+void test80::Init(void)
 {
   // this really means nameBuffer[0] := '.'
   Namebuffer[0] = '.';
-  return 0;
 }
 

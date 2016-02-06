@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test44::Fun(int32_t X, int32_t Y)
+void test44::Fun(int32_t X, int32_t Y)
 {
   if (X == 10) {
     if (Y == 0) {
@@ -23,6 +23,5 @@ int32_t test44::Fun(int32_t X, int32_t Y)
   } else if (1) {
     OUTA ^= 0x8;
   }
-  return 0;
 }
 

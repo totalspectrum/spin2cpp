@@ -10,13 +10,12 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test63::Test(int32_t Exponent)
+void test63::Test(int32_t Exponent)
 {
   if (Exponent == 0) {
     (++Exponent);
   } else if (1) {
     (--Exponent);
   }
-  return 0;
 }
 

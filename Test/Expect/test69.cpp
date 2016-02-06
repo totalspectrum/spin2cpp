@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test69::Demo(void)
+void test69::Demo(void)
 {
   if (!(((INA >> 0) & 0x1))) {
     clkset(0x80, 0);
@@ -19,6 +19,5 @@ int32_t test69::Demo(void)
       OUTA &= ~(7<<0);
     }
   }
-  return 0;
 }
 

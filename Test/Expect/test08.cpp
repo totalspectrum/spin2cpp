@@ -10,9 +10,8 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test08::Init(void)
+void test08::Init(void)
 {
   OUTA = 1;
-  return 0;
 }
 

@@ -10,7 +10,7 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-int32_t test85::Main(void)
+void test85::Main(void)
 {
   Fds.Start(31, 30, 0, 115200);
   Fds.Str((int32_t)"object array test\r\n");
@@ -23,10 +23,9 @@ int32_t test85::Main(void)
   Printn(0);
   Printn(1);
   Printn(2);
-  return 0;
 }
 
-int32_t test85::Printn(int32_t I)
+void test85::Printn(int32_t I)
 {
   int32_t	R;
   Fds.Str((int32_t)"v[");
@@ -35,6 +34,5 @@ int32_t test85::Printn(int32_t I)
   R = V[I].Getn();
   Fds.Dec(R);
   Fds.Str((int32_t)"\n\r");
-  return 0;
 }
 

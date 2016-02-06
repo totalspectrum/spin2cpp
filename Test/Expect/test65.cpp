@@ -12,11 +12,10 @@ static int32_t tmp__;
 #define Yield__()
 #endif
 
-int32_t test65::Dofunc(int32_t X)
+void test65::Dofunc(int32_t X)
 {
   do {
     Yield__();
   } while (X);
-  return 0;
 }
 

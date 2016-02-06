@@ -5,8 +5,8 @@
 
 class test29 {
 public:
-  int32_t	Tx(int32_t Val);
-  int32_t	Str(int32_t Stringptr);
+  void	Tx(int32_t Val);
+  void	Str(int32_t Stringptr);
 private:
   int32_t	Strlock;
   int32_t	Idx;

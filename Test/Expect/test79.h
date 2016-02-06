@@ -5,10 +5,10 @@
 
 class test79 {
 public:
-//  i2c driver
+// i2c driver
   static const int Scl = 28;
   static const int Sda = 29;
-  static int32_t	I2c_start(void);
+  static void	I2c_start(void);
 private:
 };
 

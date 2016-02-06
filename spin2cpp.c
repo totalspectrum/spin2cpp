@@ -834,6 +834,9 @@ main(int argc, char **argv)
         int changes;
         ParserState *Q;
         MarkUsed(P->functions);
+        for (Q = allparse; Q; Q = Q->next) {
+            ProcessFuncs(Q);
+        }
         do {
             changes = 0;
             for (Q = allparse; Q; Q = Q->next) {

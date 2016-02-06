@@ -12,7 +12,7 @@ static int32_t tmp__;
 
 INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }
 
-int32_t test46::Fun(int32_t X, int32_t Y)
+void test46::Fun(int32_t X, int32_t Y)
 {
   if (X == 0) {
     if (Y == 0) {
@@ -25,6 +25,5 @@ int32_t test46::Fun(int32_t X, int32_t Y)
   } else if (1) {
     OUTA ^= 0x8;
   }
-  return 0;
 }
 

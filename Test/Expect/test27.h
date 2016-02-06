@@ -5,7 +5,7 @@
 
 class test27 {
 public:
-  int32_t	Blink(void);
+  void	Blink(void);
 private:
   int32_t	X;
 };

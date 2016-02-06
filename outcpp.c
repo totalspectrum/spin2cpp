@@ -794,12 +794,14 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         if (gl_ccode) {
             fprintf(f, "%s MainObj__;\n\n", P->classname);
             fprintf(f, "int main() {\n");
-            fprintf(f, "  return %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
+            fprintf(f, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
+            fprintf(f, "  return 0;\n");
             fprintf(f, "}\n");
         } else {
             fprintf(f, "%s MainObj__;\n\n", P->classname);
             fprintf(f, "int main() {\n");
-            fprintf(f, "  return MainObj__.%s();\n", defaultMethod->name);
+            fprintf(f, "  MainObj__.%s();\n", defaultMethod->name);
+            fprintf(f, "  return 0;\n");
             fprintf(f, "}\n");
         }
     }

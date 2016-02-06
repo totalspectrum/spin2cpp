@@ -5,7 +5,7 @@
 
 class test47 {
 public:
-  int32_t	Test(int32_t C);
+  void	Test(int32_t C);
 private:
   int32_t	Flag, Cols;
   int32_t	Screenptr;

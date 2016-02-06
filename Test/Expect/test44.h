@@ -5,7 +5,7 @@
 
 class test44 {
 public:
-  static int32_t	Fun(int32_t X, int32_t Y);
+  static void	Fun(int32_t X, int32_t Y);
 private:
 };
 
