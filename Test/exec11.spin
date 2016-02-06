@@ -26,7 +26,7 @@ PUB main | start,elapsed
   elapsed := CNT
   elapsed := elapsed - start
 
-  if elapsed < 9000000
+  if elapsed < 2000000
      fds.str(string("time is short, as expected", 13, 10))
      fds.txflush
   else
