@@ -1604,3 +1604,117 @@ CheckRecursive(Function *f)
     visitPass++;
     f->is_recursive = IsCalledFrom(f, f->body, visitPass);
 }
+
+/* find function call symbol */
+Symbol *
+FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
+{
+    AST *objref = NULL;
+    Symbol *objsym = NULL;
+    Symbol *sym = NULL;
+    
+    if (expr->left && expr->left->kind == AST_METHODREF) {
+        const char *thename;
+        objref = expr->left->left;
+        objsym = LookupAstSymbol(objref, "object reference");
+        if (!objsym) return NULL;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(expr, "%s is not an object", objsym->name);
+            return NULL;
+        }
+        thename = expr->left->right->d.string;
+        sym = LookupObjSymbol(expr, objsym, thename);
+        if (!sym || sym->type != SYM_FUNCTION) {
+            ERROR(expr, "%s is not a method of %s", thename, objsym->name);
+            return NULL;
+        }
+    } else {
+        sym = LookupAstSymbol(expr->left, "function call");
+    }
+    if (objsymPtr) *objsymPtr = objsym;
+    if (objrefPtr) *objrefPtr = objref;
+    return sym;
+}
+
+/*
+ * SpinTransform
+ * transform AST to reflect some oddities of the Spin language:
+ * (1) It's legal to call a void function, just substitute 0 for the result
+ */
+/* if level is 0, we are inside an expression
+ * level == 1 at top level
+ * level == 2 inside a coginit
+ */
+static void
+doSpinTransform(AST **astptr, int level)
+{
+    AST *ast = *astptr;
+    Symbol *sym;
+    
+    while (ast && ast->kind == AST_COMMENTEDNODE) {
+        astptr = &ast->left;
+        ast = *astptr;
+    }
+    if (!ast) return;
+    switch (ast->kind) {
+    case AST_THENELSE:
+        doSpinTransform(&ast->left, level);
+        doSpinTransform(&ast->right, level);
+        break;
+    case AST_RETURN:
+    case AST_ABORT:
+        doSpinTransform(&ast->left, 0);
+        break;
+    case AST_IF:
+    case AST_WHILE:
+    case AST_DOWHILE:
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, level);
+        break;
+    case AST_COUNTREPEAT:
+        ast = ast->right; // from value
+        doSpinTransform(&ast->left, 0);
+        ast = ast->right; // to value
+        doSpinTransform(&ast->left, 0);
+        ast = ast->right; // step value
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, level);
+        break;
+    case AST_STMTLIST:
+        doSpinTransform(&ast->left, level);
+        doSpinTransform(&ast->right, level);
+        break;
+    case AST_COGINIT:
+        doSpinTransform(&ast->right, 2);
+        break;
+    case AST_FUNCCALL:
+        if (level == 0) {
+            /* check for void functions here */
+            sym = FindFuncSymbol(ast, NULL, NULL);
+            if (sym && sym->type == SYM_FUNCTION) {
+                Function *f = (Function *)sym->val;
+                if (f->rettype == ast_type_void) {
+                    AST *seq = NewAST(AST_SEQUENCE, ast, AstInteger(0));
+                    *astptr = seq;
+                }
+            }
+        }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
+    default:
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
+    }
+}
+
+void
+SpinTransform(ParserState *Q)
+{
+    Function *func;
+    current = Q;
+    for (func = Q->functions; func; func = func->next) {
+        doSpinTransform(&func->body, 1);
+    }
+}

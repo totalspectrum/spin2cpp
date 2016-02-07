@@ -1518,6 +1518,8 @@ PrintExpr(FILE *f, AST *expr)
                 fprintf(f, ".");
             }
         } else {
+            objsym = NULL;
+            objref = NULL;
             sym = LookupAstSymbol(expr->left, "function call");
             if (gl_ccode && sym && sym->type == SYM_FUNCTION)
                 fprintf(f, "%s_", current->classname);
@@ -1569,6 +1571,13 @@ PrintExpr(FILE *f, AST *expr)
             break;
         }
         fprintf(f, "%d", EvalConstExpr(expr->left));
+        break;
+    case AST_SEQUENCE:
+        fprintf(f, "( ");
+        PrintExpr(f, expr->left);
+        fprintf(f, ", ");
+        PrintExpr(f, expr->right);
+        fprintf(f, " )");
         break;
     default:
         ERROR(expr, "Internal error, bad expression");

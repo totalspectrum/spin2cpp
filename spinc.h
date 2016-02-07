@@ -330,4 +330,7 @@ int IsSpinCoginit(AST *body);
 /* set a function type, checking for errors */
 void SetFunctionType(Function *func, AST *type);
 
+/* perform useful Spin specific transformations */
+void SpinTransform(ParserState *Q);
+
 #endif

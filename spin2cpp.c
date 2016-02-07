@@ -846,6 +846,9 @@ main(int argc, char **argv)
         if (gl_errors > 0) {
             exit(1);
         }
+        for (Q = allparse; Q; Q = Q->next) {
+            SpinTransform(Q);
+        }
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {
