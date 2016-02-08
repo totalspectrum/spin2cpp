@@ -1,3 +1,11 @@
+/*
+ * Basic preprocessor for Spin
+ *
+ * Written by Eric R. Smith
+ * Copyright (c) 2012-2016 Total Spectrum Software Inc.
+ * MIT Licensed; see preprocess.c for details
+ */
+
 #ifndef PREPROCESS_H_
 #define PREPROCESS_H_
 
@@ -65,6 +73,9 @@ struct preprocess {
        line number or file to be different
     */
     const char *linechange;
+
+    /* list of strings to use as an include path */
+    struct flexbuf inc_path;
 };
 
 #define pp_active(pp) (!((pp)->ifs && (pp)->ifs->skip))
@@ -108,7 +119,10 @@ char *pp_finish(struct preprocess *pp);
 
 /* find a file on the standard include path */
 /* "ext" is an optional extension which may be applied to the file */
+/* "relativeto" is an optional name that the file's path may be relative to */
 /* returns the full name */
-char *find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *path);
+char *find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *relativeto);
+
+void pp_add_to_path(struct preprocess *pp, const char *dir);
 
 #endif

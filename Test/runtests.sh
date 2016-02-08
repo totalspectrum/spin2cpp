@@ -1,10 +1,12 @@
 #!/bin/sh
 
 if [ "$1" != "" ]; then
-  PROG=$1
+  SPIN2CPP=$1
 else
-  PROG=../build/spin2cpp
+  SPIN2CPP=../build/spin2cpp
 fi
+
+PROG="$SPIN2CPP -I../Lib"
 CC=propeller-elf-gcc
 ok="ok"
 endmsg=$ok

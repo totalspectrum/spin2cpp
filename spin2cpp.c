@@ -783,6 +783,32 @@ main(int argc, char **argv)
                 opt = "1";
             }
             pp_define(&gl_pp, name, opt);
+        } else if (!strncmp(argv[0], "-L", 2) || !strncmp(argv[0], "-I", 2)) {
+            char *opt = argv[0];
+            char *incpath;
+            char optchar[3];
+            argv++; --argc;
+            // save the -L or -I
+            strncpy(optchar, opt, 2);
+            optchar[2] = 0;
+            if (opt[2] == 0) {
+                if (argv[0] == NULL) {
+                    fprintf(stderr, "Error: expected another argument after %s\n", optchar);
+                    exit(2);
+                }
+                opt = argv[0];
+                argv++; --argc;
+            } else {
+                opt += 2;
+            }
+            /* if we are compiling, pass this on to the compiler too */
+            if (compile) {
+                appendToCmd(optchar);
+                appendToCmd(opt);
+            }
+            opt = strdup(opt);
+            incpath = opt;
+            pp_add_to_path(&gl_pp, incpath);
         } else if (compile) {
             /* pass along arguments */
             if (!strncmp(argv[0], "-O", 2)

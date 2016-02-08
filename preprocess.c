@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012,2016 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2016 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -266,7 +266,8 @@ pp_init(struct preprocess *pp)
     memset(pp, 0, sizeof(*pp));
     flexbuf_init(&pp->line, 128);
     flexbuf_init(&pp->whole, 102400);
-
+    flexbuf_init(&pp->inc_path, 128);
+    
     pp->errfunc = default_errfunc;
     pp->warnfunc = default_errfunc;
     pp->errarg = (void *)"error";
@@ -737,24 +738,36 @@ handle_define(struct preprocess *pp, ParseState *P, int isDef)
     pp_define_internal(pp, name, def, PREDEF_FLAG_FREEDEFS);
 }
 
-char *
-find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *incpath)
+void
+pp_add_to_path(struct preprocess *pp, const char *dir)
+{
+    flexbuf_addmem(&pp->inc_path, (const char *)&dir, sizeof(const char **));
+}
+
+static char *
+find_file_relative(struct preprocess *pp, const char *name, const char *ext, const char *relpath, const char *abspath)
 {
   const char *path = NULL;
   char *ret;
   char *last;
   FILE *f;
-
+  int trimname = 1;
+  
   if (name[0] == '/' || name[0] == '\\') {
     /* absolute path */
     path = "";
-  } else if (incpath) {
-      path = incpath;
+  } else if (relpath) {
+      path = relpath;
+  } else if (abspath) {
+      path = abspath;
+      if (path[0]) trimname = 0;
   } else {
-    if (pp && pp->fil)
-      path = pp->fil->name;
-    if (!path)
-      path = "";
+      if (pp && pp->fil) {
+          path = pp->fil->name;
+          trimname = 1;
+      }
+      if (!path)
+          path = "";
   }
   if (ext) {
     ret = malloc(strlen(path) + strlen(name) + strlen(ext) + 2);
@@ -767,10 +780,16 @@ find_file_on_path(struct preprocess *pp, const char *name, const char *ext, cons
   }
   strcpy(ret, path);
   last = strrchr(ret, '/');
-  if (last) {
-    last[1] = 0;
+  if (trimname) {
+      if (last) {
+          last[1] = 0;
+      } else {
+          ret[0] = 0;
+      }
   } else {
-    ret[0] = 0;
+      if (!last || last[1] != '0') {
+          strcat(ret, "/");
+      }
   }
   strcat(ret, name);
   f = fopen(ret, "r");
@@ -786,6 +805,26 @@ find_file_on_path(struct preprocess *pp, const char *name, const char *ext, cons
   if (f)
     fclose(f);
   return ret;
+}
+
+char *
+find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *relpath)
+{
+    char *r;
+    size_t num_abs_paths;
+    size_t i;
+    const char **abs_paths;
+    
+    r = find_file_relative(pp, name, ext, relpath, NULL);
+    if (r) return r;
+    /* not found yet; look along the include path */
+    num_abs_paths = flexbuf_curlen(&pp->inc_path) / sizeof(const char **);
+    abs_paths = (const char **)flexbuf_peek(&pp->inc_path);
+    for (i = 0; i < num_abs_paths; i++) {
+        r = find_file_relative(pp, name, ext, NULL, abs_paths[i]);
+        if (r) return r;
+    }
+    return NULL;
 }
 
 static void
