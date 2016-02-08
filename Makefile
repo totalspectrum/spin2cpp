@@ -65,8 +65,18 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 clean:
 	$(RM) $(PROGS) $(BUILD)/*
 
-test: $(PROGS)
+test: lextest cpptest errtest runtest
+
+lextest: $(PROGS)
 	$(BUILD)/testlex
+
+cpptest: $(PROGS)
+	(cd Test; ./cpptests.sh)
+
+errtest: $(PROGS)
+	(cd Test; ./errtests.sh)
+
+runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
 
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
