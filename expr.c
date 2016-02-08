@@ -2018,11 +2018,6 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     int ismemcpy = !strcmp(b->cname, "memcpy") || !strcmp(b->cname, "memmove");
     AST *dst, *src, *count;
 
-    if (AstListLen(params) != 3) {
-        ERROR(params, "incorrect parameters to %s", b->name);
-        return;
-    }
-
     dst = params->left;
     params = params->right;
     src = params->left;
@@ -2039,10 +2034,10 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
         PrintExpr(f, src);
     }
 
-    /* b->numparameters is overloaded to mean the size of memory we
+    /* b->extradata is the size of memory we
        are working with
     */
-    fprintf(f, ", %d*(", b->numparameters);
+    fprintf(f, ", %d*(", b->extradata);
     PrintExpr(f, count);
     fprintf(f, "))");
 }
@@ -2057,20 +2052,15 @@ memFillBuiltin(FILE *f, Builtin *b, AST *params)
     const char *ptrname;
     AST *dst, *src, *count;
 
-    if (AstListLen(params) != 3) {
-        ERROR(params, "incorrect parameters to %s", b->name);
-        return;
-    }
-
     dst = params->left;
     params = params->right;
     src = params->left;
     params = params->right;
     count = params->left;
-    /* b->numparameters is overloaded to mean the size of memory we
+    /* b->extradata is the size of memory we
        are working with
     */
-    typename = (b->numparameters == 2) ? "uint16_t" : "int32_t";
+    typename = (b->extradata == 2) ? "uint16_t" : "int32_t";
 
     /* if the source is 0, use memset instead */
     if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
@@ -2099,10 +2089,6 @@ memFillBuiltin(FILE *f, Builtin *b, AST *params)
 void
 str1Builtin(FILE *f, Builtin *b, AST *params)
 {
-    if (AstListLen(params) != 1) {
-        ERROR(params, "incorrect parameters to %s", b->name);
-        return;
-    }
     fprintf(f, "%s((char *) ", b->cname);
     PrintExpr(f, params->left); params = params->right;
     fprintf(f, ")");
@@ -2112,10 +2098,6 @@ str1Builtin(FILE *f, Builtin *b, AST *params)
 void
 strcompBuiltin(FILE *f, Builtin *b, AST *params)
 {
-    if (AstListLen(params) != 2) {
-        ERROR(params, "incorrect parameters to %s", b->name);
-        return;
-    }
     fprintf(f, "-(0 == strcmp((char *)");
     PrintExpr(f, params->left); params = params->right;
     fprintf(f, ", (char *)");

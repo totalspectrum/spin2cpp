@@ -251,7 +251,7 @@ doDeclareFunction(AST *funcblock)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-    EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params);
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params);
     localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals);
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
@@ -1367,6 +1367,7 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     case AST_ABORT:
         if (ast->left) {
+            (void)CheckRetStatement(func, ast->left);
             SetFunctionType(func, ExprType(ast->left));
         }
         break;
@@ -1413,6 +1414,49 @@ CheckRetStatement(Function *func, AST *ast)
 }
 
 /*
+ * check function calls for correct number of arguments
+ */
+void
+CheckFunctionCalls(AST *ast)
+{
+    int expectArgs;
+    int gotArgs;
+    Symbol *sym;
+    const char *fname = "function";
+    
+    if (!ast) {
+        return;
+    }
+    if (ast->kind == AST_FUNCCALL) {
+        AST *a;
+        sym = FindFuncSymbol(ast, NULL, NULL);
+        expectArgs = 0;
+        if (sym) {
+            fname = sym->name;
+            if (sym->type == SYM_BUILTIN) {
+                Builtin *b = (Builtin *)sym->val;
+                expectArgs = b->numparameters;
+            } else if (sym->type == SYM_FUNCTION) {
+                Function *f = (Function *)sym->val;
+                expectArgs = f->numparams;
+            } else {
+                ERROR(ast, "Unexpected function type");
+                return;
+            }
+        }
+        gotArgs = 0;
+        for (a = ast->right; a; a = a->right) {
+            gotArgs++;
+        }
+        if (gotArgs != expectArgs) {
+            ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+        }
+    }
+    CheckFunctionCalls(ast->left);
+    CheckFunctionCalls(ast->right);
+}
+
+/*
  * do basic processing of functions
  */
 void
@@ -1426,6 +1470,8 @@ ProcessFuncs(ParserState *P)
         CheckRecursive(pf);  /* check for recursive functions */
         pf->extradecl = NormalizeFunc(pf->body, pf);
 
+        CheckFunctionCalls(pf->body);
+        
         /* check for void functions */
         pf->rettype = NULL;
         sawreturn = CheckRetStatementList(pf, pf->body);

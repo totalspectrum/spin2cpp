@@ -153,8 +153,12 @@ typedef struct builtin {
     void        (*printit)(FILE *, struct builtin *, AST *params);
     const char *cname;  /* c version of the name */
 
+    /* extra data */
+    int extradata;
+
     /* hook called during parsing, or NULL if none needed */
     void        (*parsehook)(struct builtin *);
+
 } Builtin;
 
 /* parser state structure */

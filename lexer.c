@@ -971,35 +971,35 @@ extern void rebootBuiltin(FILE *, Builtin *, AST *);
 static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }
 
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL },
-    { "clkmode", 0, defaultVariable, "CLKMODE", NULL },
-    { "clkset", 2, defaultBuiltin, "clkset", NULL },
+    { "clkfreq", 0, defaultVariable, "CLKFREQ", 0, NULL },
+    { "clkmode", 0, defaultVariable, "CLKMODE", 0, NULL },
+    { "clkset", 2, defaultBuiltin, "clkset", 0, NULL },
 
-    { "cogstop", 1, defaultBuiltin, "cogstop", NULL },
-    { "cogid", 0, defaultBuiltin, "cogid", NULL },
+    { "cogstop", 1, defaultBuiltin, "cogstop", 0, NULL },
+    { "cogid", 0, defaultBuiltin, "cogid", 0, NULL },
 
-    { "locknew", 0, defaultBuiltin, "locknew", lockhook },
-    { "lockset", 1, defaultBuiltin, "lockset", lockhook },
-    { "lockclr", 1, defaultBuiltin, "lockclr", lockhook },
-    { "lockret", 1, defaultBuiltin, "lockret", lockhook },
+    { "locknew", 0, defaultBuiltin, "locknew", 0, lockhook },
+    { "lockset", 1, defaultBuiltin, "lockset", 0, lockhook },
+    { "lockclr", 1, defaultBuiltin, "lockclr", 0, lockhook },
+    { "lockret", 1, defaultBuiltin, "lockret", 0, lockhook },
 
-    { "strsize", 1, str1Builtin, "strlen", NULL },
-    { "strcomp", 1, strcompBuiltin, "strcmp", NULL },
-    { "waitcnt", 1, defaultBuiltin, "waitcnt", NULL },
+    { "strsize", 1, str1Builtin, "strlen", 0, NULL },
+    { "strcomp", 1, strcompBuiltin, "strcmp", 0, NULL },
+    { "waitcnt", 1, defaultBuiltin, "waitcnt", 0, NULL },
 
-    { "waitpne", 3, waitBuiltin, "waitpne", NULL },
-    { "waitpeq", 3, waitBuiltin, "waitpeq", NULL },
+    { "waitpne", 3, waitBuiltin, "waitpne", 0, NULL },
+    { "waitpeq", 3, waitBuiltin, "waitpeq", 0, NULL },
 
-    { "reboot", 0, rebootBuiltin, "reboot", NULL },
+    { "reboot", 0, rebootBuiltin, "reboot", 0, NULL },
 
-    { "longfill", 4, memFillBuiltin, "memset", NULL },
-    { "longmove", 4, memBuiltin, "memmove", NULL },
-    { "wordfill", 2, memFillBuiltin, "memset", NULL },
-    { "wordmove", 2, memBuiltin, "memmove", NULL },
-    { "bytefill", 1, memBuiltin, "memset", NULL },
-    { "bytemove", 1, memBuiltin, "memcpy", NULL },
+    { "longfill", 3, memFillBuiltin, "memset", 4, NULL },
+    { "longmove", 3, memBuiltin, "memmove", 4, NULL },
+    { "wordfill", 3, memFillBuiltin, "memset", 2, NULL },
+    { "wordmove", 3, memBuiltin, "memmove", 2, NULL },
+    { "bytefill", 3, memBuiltin, "memset", 1, NULL },
+    { "bytemove", 3, memBuiltin, "memcpy", 1, NULL },
 
-    { "getcnt", 0, defaultBuiltin, "getcnt", NULL },
+    { "getcnt", 0, defaultBuiltin, "getcnt", 0, NULL },
 };
 
 struct constants {
