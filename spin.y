@@ -581,7 +581,7 @@ basedatline:
   | T_FIT T_EOLN
     { $$ = NewAST(AST_FIT, AstInteger(0x1f0), NULL); }
   | T_FILE string T_EOLN
-    { $$ = NewAST(AST_FILE, $2, NULL); }
+    { $$ = NewAST(AST_FILE, GetFullFileName($2), NULL); }
   ;
 
 objblock:

@@ -299,6 +299,19 @@ DeclareObjects(AST *newobjs)
     }
 }
 
+/* helper function for parsing pasm FILE directives */
+AST *
+GetFullFileName(AST *baseString)
+{
+    const char *basename = baseString->d.string;
+    char *newname;
+    AST *ret;
+    newname = find_file_on_path(&gl_pp, basename, NULL, current->fullname);
+    ret = NewAST(AST_STRING, NULL, NULL);
+    ret->d.string = newname;
+    return ret;
+}
+
 /*
  * parse a file
  * This is the main entry point for the compiler

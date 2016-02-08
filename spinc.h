@@ -337,4 +337,8 @@ void SpinTransform(ParserState *Q);
 /* find function symbol in a function call; optionally returns the object ref */
 Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
 
+/* get full name for FILE directive */
+AST *GetFullFileName(AST *baseString);
+    
+
 #endif
