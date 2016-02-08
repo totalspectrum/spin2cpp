@@ -1537,37 +1537,17 @@ SetFunctionType(Function *f, AST *typ)
 bool
 IsCalledFrom(Function *ref, AST *body, int visitRef)
 {
-    Symbol *sym, *objsym;
-    AST *objref;
+    ParserState *oldState;
+    Symbol *sym;
     Function *func;
+    bool result;
     
     if (!body) return false;
     switch(body->kind) {
-    case AST_IDENTIFIER:
-        sym = LookupSymbol(body->d.string);
-        if (sym && sym->type == SYM_FUNCTION) {
-            func = (Function *)sym->val;
-            if (ref == func) return true;
-            if (func->visitFlag == visitRef) {
-                // we've been here before
-                return false;
-            }
-            func->visitFlag = visitRef;
-            return IsCalledFrom(ref, func->body, visitRef);
-        }
-        break;
-    case AST_METHODREF:
-        objref = body->left;
-        objsym = LookupAstSymbol(objref, "object reference");
-        if (!objsym) return false;
-        if (objsym->type != SYM_OBJECT) {
-            ERROR(body, "%s is not an object", objsym->name);
-            return false;
-        }
-        sym = LookupObjSymbol(body, objsym, body->right->d.string);
-        if (!sym || sym->type != SYM_FUNCTION) {
-            return false;
-        }
+    case AST_FUNCCALL:
+        sym = FindFuncSymbol(body, NULL, NULL);
+        if (!sym) return false;
+        if (sym->type != SYM_FUNCTION) return false;
         func = (Function *)sym->val;
         if (ref == func) return true;
         if (func->visitFlag == visitRef) {
@@ -1575,7 +1555,11 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
             return false;
         }
         func->visitFlag = visitRef;
-        return IsCalledFrom(ref, func->body, visitRef);
+        oldState = current;
+        current = func->parse;
+        result = IsCalledFrom(ref, func->body, visitRef);
+        current = oldState;
+        return result;
     default:
         return IsCalledFrom(ref, body->left, visitRef)
             || IsCalledFrom(ref, body->right, visitRef);
