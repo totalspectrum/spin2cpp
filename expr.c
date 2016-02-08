@@ -1127,9 +1127,6 @@ PrintRangeUse(FILE *f, AST *src)
             reverse = 1;
             tmp = lo; lo = hi; hi = tmp;
         }
-        if (reverse) {
-            ERROR(src, "cannot currently handle reversed range");
-        }
         nbits = (hi - lo + 1);
         loexpr = AstInteger(lo);
     }
@@ -1140,6 +1137,9 @@ PrintRangeUse(FILE *f, AST *src)
     */
     val = AstOperator(T_SAR, src->left, loexpr);
     val = AstOperator('&', val, mask);
+    if (reverse) {
+        val = AstOperator(T_REV, val, AstInteger(nbits));
+    }
     PrintExpr(f, val);
 }
 
