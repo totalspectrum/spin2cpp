@@ -486,6 +486,7 @@ Usage(void)
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
+    fprintf(stderr, "  -I dir:     add dir to the object search path\n");
     exit(2);
 }
 

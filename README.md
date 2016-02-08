@@ -162,6 +162,10 @@ Spin2cpp accepts the following options:
 -Dname=val
   Define a symbol for the preprocessor.
 
+-I path
+  Define a path where .spin objects will be searched for. It's OK to use
+  this option multiple times.
+  
 LIMITATIONS
 ===========
 
