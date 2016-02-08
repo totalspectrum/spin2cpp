@@ -278,7 +278,7 @@ PrintSymbol(FILE *f, Symbol *sym)
         }
         break;
     case SYM_VARIABLE:
-        if (gl_ccode) {
+        if (gl_ccode || (curfunc && curfunc->force_static) ) {
             fprintf(f, "self->%s", sym->name);
         } else {
             fprintf(f, "%s", sym->name);
@@ -318,7 +318,8 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 }
 
 /* code to check if a coginit invocation is for a spin method */
-int
+/* if it is, returns a pointer to the spin method */
+Function *
 IsSpinCoginit(AST *params)
 {
     AST *exprlist, *func;
@@ -336,12 +337,15 @@ IsSpinCoginit(AST *params)
     if (func->kind == AST_IDENTIFIER) {
         sym = LookupAstSymbol(func, "coginit/cognew");
         if (sym && sym->type == SYM_FUNCTION) {
-            return 1;
+            return (Function *)sym->val;
         }
     }
     if (func->kind == AST_FUNCCALL) {
-        /* FIXME should check that it's actually a local method */
-        return 1;
+        /* FIXME? Spin requires that it be a local method; do we care? */
+        sym = FindFuncSymbol(func, NULL, NULL);
+        if (sym) {
+            return (Function *)sym->val;
+        }
     }
     return 0;
 }
@@ -1376,8 +1380,8 @@ PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
         }
         PrintLHS(f, expr, 0, 0);
     } else {
-        if (gl_ccode)
-            fprintf(f, "&self->");
+        if (gl_ccode || (curfunc && curfunc->force_static) )
+            fprintf(f, "self->");
         fprintf(f, "%s", objsym->name);
         if (isArray) {
             fprintf(f, "[0]");
@@ -2286,6 +2290,37 @@ IsArraySymbol(Symbol *sym)
     return IsArrayType(type);
 }
 
+/* find function symbol in a function call */
+Symbol *
+FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
+{
+    AST *objref = NULL;
+    Symbol *objsym = NULL;
+    Symbol *sym = NULL;
+    
+    if (expr->left && expr->left->kind == AST_METHODREF) {
+        const char *thename;
+        objref = expr->left->left;
+        objsym = LookupAstSymbol(objref, "object reference");
+        if (!objsym) return NULL;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(expr, "%s is not an object", objsym->name);
+            return NULL;
+        }
+        thename = expr->left->right->d.string;
+        sym = LookupObjSymbol(expr, objsym, thename);
+        if (!sym || sym->type != SYM_FUNCTION) {
+            ERROR(expr, "%s is not a method of %s", thename, objsym->name);
+            return NULL;
+        }
+    } else {
+        sym = LookupAstSymbol(expr->left, "function call");
+    }
+    if (objsymPtr) *objsymPtr = objsym;
+    if (objrefPtr) *objrefPtr = objref;
+    return sym;
+}
+
 int
 IsFloatType(AST *type)
 {
@@ -2316,3 +2351,4 @@ ExprType(AST *expr)
 {
     return ast_type_generic;
 }
+

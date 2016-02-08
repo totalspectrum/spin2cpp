@@ -2,6 +2,7 @@ Version 1.96
 
 - Added -I and -L options to search for files in a different path
 - Functions which do not return a value are now declared as void
+- Fixed coginig/cognew on Spin methods that are not static
 - Some internal clean-ups
 
 Version 1.95

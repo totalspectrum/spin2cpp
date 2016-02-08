@@ -139,7 +139,8 @@ typedef struct funcdef {
     unsigned is_static:1; // nonzero if no member variables referenced
     unsigned is_used:1;   // if 0, function is not used
     unsigned is_recursive:1; // if 1, function is called recursively
-
+    unsigned force_static:1; // 1 if the function is forced to be static
+    
     /* for walking through functions and avoiding loops */
     unsigned visitFlag;
 } Function;
@@ -324,13 +325,16 @@ void OutputGasFile(const char *name, ParserState *P);
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
 
-/* detect coginit/cognew calls that are for spin methods */
-int IsSpinCoginit(AST *body);
+/* detect coginit/cognew calls that are for spin methods, return pointer to method */
+Function *IsSpinCoginit(AST *body);
 
 /* set a function type, checking for errors */
 void SetFunctionType(Function *func, AST *type);
 
 /* perform useful Spin specific transformations */
 void SpinTransform(ParserState *Q);
+
+/* find function symbol in a function call; optionally returns the object ref */
+Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
 
 #endif

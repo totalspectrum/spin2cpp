@@ -168,11 +168,6 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
             }
         }
         break;
-    case AST_COGINIT:
-        if (IsSpinCoginit(body)) {
-            current->needsCoginit = 1;
-        }
-        break;
     default:
         break;
     }
@@ -399,14 +394,21 @@ NormalizeFunc(AST *ast, Function *func)
 }
 
 static void
-PrintParameterList(FILE *f, AST *list)
+PrintParameterList(FILE *f, Function *func)
 {
     int needcomma = 0;
+    AST *list = func->params;
     AST *ast;
+    bool needSelf = false;
 
-    if (!list) {
+    needSelf = (gl_ccode && !func->is_static) || func->force_static;
+    if (!list && !needSelf) {
         fprintf(f, "void");
         return;
+    }
+    if (needSelf) {
+        fprintf(f, "%s *self", func->parse->classname);
+        needcomma = 1;
     }
     while (list) {
         if (list->kind != AST_LISTHOLDER) {
@@ -469,17 +471,6 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintType(f, func->rettype);
         fprintf(f, " %s_%s(", current->classname, 
                 func->name);
-        if (!func->is_static) {
-            fprintf(f, "%s *self", current->classname);
-            if (func->params) {
-                // more parameters coming
-                fprintf(f, ", ");
-            } else {
-                fprintf(f, ");");
-                PrintNewline(f);
-                return;
-            }
-        }
     } else {
         if (func->is_static) {
             fprintf(f, "static ");
@@ -487,7 +478,7 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
         PrintType(f, func->rettype);
         fprintf(f, "\t%s(", func->name);
     }
-    PrintParameterList(f, func->params);
+    PrintParameterList(f, func);
     fprintf(f, ");");
     PrintNewline(f);
 }
@@ -1215,17 +1206,12 @@ PrintFunctionBodies(FILE *f, ParserState *parse)
             }
             PrintType(f, pf->rettype);
             fprintf(f, " %s_%s(", parse->classname, pf->name);
+            PrintParameterList(f, pf);
 
-            if (!pf->is_static) {
-                fprintf(f, "%s *self%s", parse->classname, pf->params ? ", " : "");
-            }
-            if (pf->params) {
-                PrintParameterList(f, pf->params);
-            }
         } else {
             PrintType(f, pf->rettype);
             fprintf(f, " %s::%s(", parse->classname, pf->name);
-            PrintParameterList(f, pf->params);
+            PrintParameterList(f, pf);
         }
         fprintf(f, ")");
         PrintNewline(f);
@@ -1605,36 +1591,6 @@ CheckRecursive(Function *f)
     f->is_recursive = IsCalledFrom(f, f->body, visitPass);
 }
 
-/* find function call symbol */
-Symbol *
-FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
-{
-    AST *objref = NULL;
-    Symbol *objsym = NULL;
-    Symbol *sym = NULL;
-    
-    if (expr->left && expr->left->kind == AST_METHODREF) {
-        const char *thename;
-        objref = expr->left->left;
-        objsym = LookupAstSymbol(objref, "object reference");
-        if (!objsym) return NULL;
-        if (objsym->type != SYM_OBJECT) {
-            ERROR(expr, "%s is not an object", objsym->name);
-            return NULL;
-        }
-        thename = expr->left->right->d.string;
-        sym = LookupObjSymbol(expr, objsym, thename);
-        if (!sym || sym->type != SYM_FUNCTION) {
-            ERROR(expr, "%s is not a method of %s", thename, objsym->name);
-            return NULL;
-        }
-    } else {
-        sym = LookupAstSymbol(expr->left, "function call");
-    }
-    if (objsymPtr) *objsymPtr = objsym;
-    if (objrefPtr) *objrefPtr = objref;
-    return sym;
-}
 
 /*
  * SpinTransform
@@ -1650,6 +1606,7 @@ doSpinTransform(AST **astptr, int level)
 {
     AST *ast = *astptr;
     Symbol *sym;
+    Function *func;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -1685,6 +1642,13 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, level);
         break;
     case AST_COGINIT:
+        if (0 != (func = IsSpinCoginit(ast))) {
+            current->needsCoginit = 1;
+            if (!func->is_static) {
+                func->force_static = 1;
+                func->is_static = 1;
+            }
+        }
         doSpinTransform(&ast->right, 2);
         break;
     case AST_FUNCCALL:
