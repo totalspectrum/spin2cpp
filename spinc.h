@@ -325,6 +325,7 @@ char *ReplaceExtension(const char *base, const char *ext);
 void OutputCppCode(const char *name, ParserState *P, int printMain);
 void OutputDatFile(const char *name, ParserState *P);
 void OutputGasFile(const char *name, ParserState *P);
+void OutputAsmCode(const char *name, ParserState *P);
 
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);

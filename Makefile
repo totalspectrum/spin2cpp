@@ -47,7 +47,7 @@ HEADERS = $(BUILD)/spin.tab.h ast.h expr.h flexbuf.h lexer.h preprocess.h spinc.
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
 
 LEXSRCS = lexer.c symbol.c ast.c expr.c flexbuf.c preprocess.c
-SPINSRCS = $(LEXSRCS) functions.c pasm.c outcpp.c outdat.c p1ir.c
+SPINSRCS = $(LEXSRCS) functions.c pasm.c outcpp.c outdat.c outasm.c p1ir.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
@@ -65,10 +65,13 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 clean:
 	$(RM) $(PROGS) $(BUILD)/*
 
-test: lextest cpptest errtest runtest
+test: lextest asmtest cpptest errtest runtest
 
 lextest: $(PROGS)
 	$(BUILD)/testlex
+
+asmtest: $(PROGS)
+	(cd Test; ./asmtests.sh)
 
 cpptest: $(PROGS)
 	(cd Test; ./cpptests.sh)

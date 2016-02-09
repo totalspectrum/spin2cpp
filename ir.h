@@ -76,4 +76,7 @@ struct Register {
     const char *name;
 };
 
+char *IRAssemble(IRList *list);
+bool CompileToIR(IRList *list, ParserState *P);
+
 #endif

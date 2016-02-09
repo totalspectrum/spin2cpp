@@ -474,6 +474,7 @@ Usage(void)
     fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
     fprintf(stderr, "Usage: %s [options] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --ccode:   output (static) C code instead of C++\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
@@ -642,6 +643,7 @@ main(int argc, char **argv)
     int outputDat = 0;
     int outputFiles = 0;
     int outputBin = 0;
+    int outputAsm = 0;
     int compile = 0;
     ParserState *P;
     int retval = 0;
@@ -694,6 +696,9 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
             outputDat = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--asm", 5) ) {
+            outputAsm = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
@@ -902,6 +907,11 @@ main(int argc, char **argv)
                 }
                 OutputDatFile(outname, P);
             }
+        } else if (outputAsm) {
+            if (!outname) {
+                outname = ReplaceExtension(P->basename, ".pasm");
+            }
+            OutputAsmCode(outname, P);
         } else {
             /* compile any sub-objects needed */
             for (Q = allparse; Q; Q = Q->next) {
