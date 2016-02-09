@@ -1,6 +1,6 @@
 #
 # Makefile for spin compiler
-# Copyright (c) 2011-2015 Total Spectrum Software Inc.
+# Copyright (c) 2011-2016 Total Spectrum Software Inc.
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
@@ -47,7 +47,7 @@ HEADERS = $(BUILD)/spin.tab.h ast.h expr.h flexbuf.h lexer.h preprocess.h spinc.
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
 
 LEXSRCS = lexer.c symbol.c ast.c expr.c flexbuf.c preprocess.c
-SPINSRCS = $(LEXSRCS) functions.c pasm.c outcpp.c outdat.c
+SPINSRCS = $(LEXSRCS) functions.c pasm.c outcpp.c outdat.c p1ir.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)

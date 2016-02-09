@@ -52,17 +52,23 @@ enum IRCond {
 struct IR {
     enum IROpcode opc;
     enum IRCond cond;
-    Register *src;
     Register *dst;
+    Register *src;
         
     IR *prev;
     IR *next;
 };
 
+typedef struct IRList {
+    IR *head;
+    IR *tail;
+} IRList;
+
 enum Regkind {
     REG_IMM,  // for an immediate value
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
+    REG_LABEL, // for a code label
 };
 
 struct Register {
