@@ -152,12 +152,35 @@ void EmitFunctionEpilog(IRList *irl, Function *f)
 }
 
 Operand *
+NewImmediate(int32_t val)
+{
+  char temp[64];
+  if (val >= 0 && val < 512) {
+    return NewOperand(REG_IMM, "", (int32_t)val);
+  }
+  sprintf(temp, "imm_%u_", (unsigned)val);
+  return GetGlobal(strdup(temp), (int32_t)val);
+}
+
+Operand *
 CompileExpression(IRList *irl, AST *expr)
 {
   Operand *r;
 
-  r = NewOperand(REG_IMM, "", 1);
-  return r;
+  while (expr && expr->kind == AST_COMMENTEDNODE) {
+    expr = expr->left;
+  }
+  if (!expr) return NULL;
+
+  switch (expr->kind) {
+  case AST_INTEGER:
+  case AST_FLOAT:
+    r = NewImmediate((int32_t)expr->d.ival);
+    return r;
+  default:
+    ERROR(expr, "Cannot handle expression yet");
+    return NewOperand(REG_IMM, "", 0);
+  }
 }
 
 static void EmitStatement(IRList *irl, AST *ast); /* forward declaration */
