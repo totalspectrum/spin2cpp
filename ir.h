@@ -19,6 +19,7 @@ enum IROpcode {
     OPC_LONG,
 
     /* various instructions */
+    OPC_MOVE,
     OPC_ADD,
     OPC_SUB,
     OPC_AND,
@@ -74,9 +75,12 @@ enum Operandkind {
     REG_STRING,
 };
 
+typedef enum Operandkind Operandkind;
+
 struct Operand {
     enum Operandkind kind;
     const char *name;
+    int val;
 };
 
 char *IRAssemble(IRList *list);

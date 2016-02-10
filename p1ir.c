@@ -29,12 +29,33 @@
 #include "ir.h"
 #include "flexbuf.h"
 
+
 void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
+    char temp[128];
     switch (reg->kind) {
+    case REG_IMM:
+        sprintf(temp, "#%d", reg->val);
+        flexbuf_addstr(fb, temp);
+        break;
     default:
         flexbuf_addstr(fb, reg->name);
+        break;
+    }
+}
+
+void
+PrintOperandDirect(struct flexbuf *fb, Operand *reg)
+{
+    char temp[128];
+    switch (reg->kind) {
+    case REG_IMM:
+        sprintf(temp, "%d", reg->val);
+        flexbuf_addstr(fb, temp);
+        break;
+    default:
+        PrintOperand(fb, reg);
         break;
     }
 }
@@ -55,6 +76,20 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addchar(fb, '\t');
         flexbuf_addstr(fb, "ret\n");
         break;
+    case OPC_LONG:
+        flexbuf_addchar(fb, '\t');
+        flexbuf_addstr(fb, "long\t");
+	PrintOperandDirect(fb, ir->dst);
+        flexbuf_addstr(fb, "\n");
+	break;
+    case OPC_MOVE:
+        flexbuf_addchar(fb, '\t');
+        flexbuf_addstr(fb, "mov\t");
+	PrintOperand(fb, ir->dst);
+	flexbuf_addstr(fb, ", ");
+	PrintOperand(fb, ir->src);
+	flexbuf_addstr(fb, "\n");
+	break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");
         break;
