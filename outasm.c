@@ -38,16 +38,17 @@ OutputAsmCode(const char *fname, ParserState *P)
     fclose(f);
 }
 
-IR *NewIR(void)
+IR *NewIR(enum IROpcode kind)
 {
     IR *ir = malloc(sizeof(*ir));
     memset(ir, 0, sizeof(*ir));
+    ir->opc = kind;
     return ir;
 }
 
-Register *NewRegister(enum Regkind k, const char *name)
+Operand *NewOperand(enum Operandkind k, const char *name)
 {
-    Register *R = malloc(sizeof(*R));
+    Operand *R = malloc(sizeof(*R));
     memset(R, 0, sizeof(*R));
     R->kind = k;
     R->name = name;
@@ -77,23 +78,18 @@ AppendIR(IRList *irl, IR *ir)
 
 void EmitFunctionProlog(IRList *irl, Function *f)
 {
-    char *name = "stest001_dummy";
-    IR *ir = NewIR();
-    ir->opc = OPC_LABEL;
-    ir->dst = NewRegister(REG_LABEL, name);
+    IR *ir = NewIR(OPC_LABEL);
+    ir->dst = f->asmname;
     AppendIR(irl, ir);
 }
 
 void EmitFunctionEpilog(IRList *irl, Function *f)
 {
-    char *name = "stest001_dummy_ret";
-    IR *ir = NewIR();
-    ir->opc = OPC_LABEL;
-    ir->dst = NewRegister(REG_LABEL, name);
+    IR *ir = NewIR(OPC_LABEL);
+    ir->dst = f->asmretname;
     AppendIR(irl, ir);
 
-    ir = NewIR();
-    ir->opc = OPC_RET;
+    ir = NewIR(OPC_RET);
     AppendIR(irl, ir);
 }
 
@@ -108,13 +104,33 @@ EmitWholeFunction(IRList *irl, Function *f)
     EmitFunctionEpilog(irl, f);
 }
 
+Operand *newlineOp;
+
 bool
 CompileToIR(IRList *irl, ParserState *P)
 {
+    Function *f;
+
     irl->head = NULL;
     irl->tail = NULL;
 
-    EmitWholeFunction(irl, NULL);
-    
+    for(f = P->functions; f; f = f->next) {
+        char *frname;
+	char *fname;
+	frname = malloc(strlen(f->name) + strlen(P->basename) + 8);
+	sprintf(frname, "%s_%s", P->basename, f->name);
+	fname = strdup(frname);
+	strcat(frname, "_ret");
+
+	f->asmname = NewOperand(REG_LABEL, fname);
+	f->asmretname = NewOperand(REG_LABEL, frname);
+	if (newlineOp) {
+	    IR *ir = NewIR(OPC_COMMENT);
+	    ir->dst = newlineOp;
+	    AppendIR(irl, ir);
+	}
+        EmitWholeFunction(irl, f);
+	newlineOp = NewOperand(REG_STRING, "\n");
+    }
     return true;
 }

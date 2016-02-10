@@ -19,6 +19,7 @@
 #include "lexer.h"
 #include "symbol.h"
 #include "expr.h"
+#include "ir.h"
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
@@ -141,8 +142,12 @@ typedef struct funcdef {
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
     
-    /* for walking through functions and avoiding loops */
+    /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;
+
+    /* assembly output name */
+    Operand *asmname;
+    Operand *asmretname;
 } Function;
 
 /* structure describing a builtin function */

@@ -30,7 +30,7 @@
 #include "flexbuf.h"
 
 void
-PrintRegister(struct flexbuf *fb, Register *reg)
+PrintOperand(struct flexbuf *fb, Operand *reg)
 {
     switch (reg->kind) {
     default:
@@ -44,8 +44,11 @@ void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
     switch(ir->opc) {
+    case OPC_COMMENT:
+        PrintOperand(fb, ir->dst);
+	break;
     case OPC_LABEL:
-        PrintRegister(fb, ir->dst);
+        PrintOperand(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
         break;
     case OPC_RET:

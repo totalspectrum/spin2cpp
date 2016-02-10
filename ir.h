@@ -8,9 +8,11 @@
 #define SPIN_IR_H
 
 typedef struct IR IR;
-typedef struct Register Register;
+typedef struct Operand Operand;
+typedef struct parserstate ParserState;
 
 enum IROpcode {
+    OPC_COMMENT,
     OPC_LABEL,
     OPC_BYTE,
     OPC_WORD,
@@ -52,8 +54,8 @@ enum IRCond {
 struct IR {
     enum IROpcode opc;
     enum IRCond cond;
-    Register *dst;
-    Register *src;
+    Operand *dst;
+    Operand *src;
         
     IR *prev;
     IR *next;
@@ -64,15 +66,16 @@ typedef struct IRList {
     IR *tail;
 } IRList;
 
-enum Regkind {
+enum Operandkind {
     REG_IMM,  // for an immediate value
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LABEL, // for a code label
+    REG_STRING,
 };
 
-struct Register {
-    enum Regkind kind;
+struct Operand {
+    enum Operandkind kind;
     const char *name;
 };
 
