@@ -132,11 +132,9 @@ void EmitLabel(IRList *irl, Operand *op)
 
 void EmitLong(IRList *irl, int val)
 {
-  char name[32];
   Operand *op;
 
-  sprintf(name, "imm%d_", val);
-  op = NewOperand(REG_IMM, strdup(name), val);
+  op = NewOperand(REG_IMM, "", val);
   EmitOp1(irl, OPC_LONG, op);
 }
 
@@ -249,6 +247,13 @@ void EmitNewline(IRList *irl)
   AppendIR(irl, ir);
 }
 
+static int gcmpfunc(const void *a, const void *b)
+{
+  const struct GlobalVariable *ga = (const struct GlobalVariable *)a;
+  const struct GlobalVariable *gb = (const struct GlobalVariable *)b;
+  return strcmp(ga->op->name, gb->op->name);
+}
+
 void EmitGlobals(IRList *irl)
 {
     size_t siz = flexbuf_curlen(&gvars) / sizeof(struct GlobalVariable);
@@ -258,6 +263,8 @@ void EmitGlobals(IRList *irl)
     if (siz > 0) {
       EmitNewline(irl);
     }
+    /* sort the global variables */
+    qsort(g, siz, sizeof(*g), gcmpfunc);
     for (i = 0; i < siz; i++) {
       EmitLabel(irl, g[i].op);
       EmitLong(irl, g[i].val);
