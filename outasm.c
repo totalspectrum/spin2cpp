@@ -13,6 +13,7 @@
 #include "flexbuf.h"
 
 Operand *NewOperand(enum Operandkind, const char *name, int val);
+Operand *CompileExpression(IRList *irl, AST *expr);
 
 struct GlobalVariable {
     Operand *op;
@@ -33,7 +34,7 @@ GetGlobal(const char *name, int value)
       return g[i].op;
     }
   }
-  tmp.op = NewOperand(REG_REG, name, value);
+  tmp.op = NewOperand(REG_REG, strdup(name), value);
   tmp.val = value;
   flexbuf_addmem(&gvars, (const char *)&tmp, sizeof(tmp));
   return tmp.op;
@@ -117,12 +118,13 @@ static void EmitOp1(IRList *irl, Operandkind code, Operand *op)
   AppendIR(irl, ir);
 }
 
-static void EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
+static Operand *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
 {
   IR *ir = NewIR(code);
   ir->dst = d;
   ir->src = s;
   AppendIR(irl, ir);
+  return d;
 }
 
 void EmitLabel(IRList *irl, Operand *op)
@@ -157,7 +159,45 @@ NewImmediate(int32_t val)
     return NewOperand(REG_IMM, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(strdup(temp), (int32_t)val);
+  return GetGlobal(temp, (int32_t)val);
+}
+
+Operand *
+NewTempRegister()
+{
+  static int regnum = 0;
+  char buf[128];
+
+  sprintf(buf, "tmp%02d_", regnum);
+  regnum++;
+  return GetGlobal(buf, 0);
+}
+
+Operand *
+CompileIdentifier(IRList *irl, AST *expr)
+{
+  ParserState *P = curfunc->parse;
+  char temp[128];
+  snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, curfunc->name, expr->d.string);
+  return GetGlobal(temp, 0);
+}
+
+Operand *
+CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
+{
+  Operand *left = CompileExpression(irl, lhs);
+  Operand *right = CompileExpression(irl, rhs);
+  Operand *temp = NewTempRegister();
+
+  switch(op) {
+  case '+':
+    EmitOp2(irl, OPC_MOVE, temp, left);
+    return EmitOp2(irl, OPC_ADD, temp, right);
+
+  case T_NEGATE:
+  default:
+    return EmitOp2(irl, OPC_NEG, temp, right);
+  }
 }
 
 Operand *
@@ -175,9 +215,13 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_FLOAT:
     r = NewImmediate((int32_t)expr->d.ival);
     return r;
+  case AST_IDENTIFIER:
+    return CompileIdentifier(irl, expr);
+  case AST_OPERATOR:
+    return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
   default:
     ERROR(expr, "Cannot handle expression yet");
-    return NewOperand(REG_IMM, "", 0);
+    return NewOperand(REG_REG, "???", 0);
   }
 }
 

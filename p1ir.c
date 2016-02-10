@@ -60,6 +60,20 @@ PrintOperandDirect(struct flexbuf *fb, Operand *reg)
     }
 }
 
+static const char *
+StringFor(int opc)
+{
+  switch(opc) {
+  case OPC_MOVE:
+    return "mov";
+  case OPC_NEG:
+    return "neg";
+  default:
+    break;
+  }
+  return "???";
+}
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
@@ -83,8 +97,14 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addstr(fb, "\n");
 	break;
     case OPC_MOVE:
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_AND:
+    case OPC_XOR:
+    case OPC_NEG:
         flexbuf_addchar(fb, '\t');
-        flexbuf_addstr(fb, "mov\t");
+	flexbuf_addstr(fb, StringFor(ir->opc));
+	flexbuf_addstr(fb, "\t");
 	PrintOperand(fb, ir->dst);
 	flexbuf_addstr(fb, ", ");
 	PrintOperand(fb, ir->src);
