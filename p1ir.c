@@ -29,7 +29,6 @@
 #include "ir.h"
 #include "flexbuf.h"
 
-
 void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
@@ -72,6 +71,12 @@ StringFor(int opc)
     return "abs";
   case OPC_ADD:
     return "add";
+  case OPC_CMP:
+    return "cmp";
+  case OPC_SUB:
+    return "sub";
+  case OPC_XOR:
+    return "xor";
   default:
     break;
   }

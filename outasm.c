@@ -220,10 +220,17 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
   case '+':
     EmitOp2(irl, OPC_MOVE, temp, left);
     return EmitOp2(irl, OPC_ADD, temp, right);
-
+  case '^':
+    EmitOp2(irl, OPC_MOVE, temp, left);
+    return EmitOp2(irl, OPC_XOR, temp, right);
+  case '-':
+    EmitOp2(irl, OPC_MOVE, temp, left);
+    return EmitOp2(irl, OPC_SUB, temp, right);
   case T_NEGATE:
-  default:
     return EmitOp2(irl, OPC_NEG, temp, right);
+  default:
+    ERROR(lhs, "Unsupported operator %d", op);
+    return left;
   }
 }
 
