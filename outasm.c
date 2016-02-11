@@ -210,6 +210,13 @@ CompileIdentifier(IRList *irl, AST *expr)
 }
 
 Operand *
+CompileHWReg(IRList *irl, AST *expr)
+{
+  HwReg *hw = (HwReg *)expr->d.ptr;
+  return GetGlobal(REG_HW, hw->cname, 0);
+}
+
+Operand *
 CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
 {
   Operand *left = CompileExpression(irl, lhs);
@@ -251,6 +258,8 @@ CompileExpression(IRList *irl, AST *expr)
     return r;
   case AST_IDENTIFIER:
     return CompileIdentifier(irl, expr);
+  case AST_HWREG:
+    return CompileHWReg(irl, expr);
   case AST_OPERATOR:
     return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
   case AST_FUNCCALL:
@@ -356,6 +365,9 @@ void EmitGlobals(IRList *irl)
     qsort(g, siz, sizeof(*g), gcmpfunc);
     for (i = 0; i < siz; i++) {
       if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
+	continue;
+      }
+      if (g[i].op->kind == REG_HW) {
 	continue;
       }
       EmitLabel(irl, g[i].op);
