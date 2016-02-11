@@ -216,6 +216,36 @@ CompileHWReg(IRList *irl, AST *expr)
   return GetGlobal(REG_HW, hw->cname, 0);
 }
 
+static int
+OpcFromOp(int op)
+{
+  switch(op) {
+  case '+':
+    return OPC_ADD;
+  case '-':
+    return OPC_SUB;
+  case '&':
+    return OPC_AND;
+  case '|':
+    return OPC_OR;
+  case '^':
+    return OPC_XOR;
+  case T_SHL:
+    return OPC_SHL;
+  case T_SAR:
+    return OPC_SAR;
+  case T_SHR:
+    return OPC_SHR;
+  case T_NEGATE:
+    return OPC_NEG;
+  case T_ABS:
+    return OPC_ABS;
+  default:
+    ERROR(NULL, "Unsupported operator %d", op);
+    return OPC_UNKNOWN;
+  }
+}
+
 Operand *
 CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
 {
@@ -225,16 +255,18 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
 
   switch(op) {
   case '+':
-    EmitOp2(irl, OPC_MOVE, temp, left);
-    return EmitOp2(irl, OPC_ADD, temp, right);
-  case '^':
-    EmitOp2(irl, OPC_MOVE, temp, left);
-    return EmitOp2(irl, OPC_XOR, temp, right);
   case '-':
+  case '^':
+  case '&':
+  case '|':
+  case T_SHL:
+  case T_SHR:
+  case T_SAR:
     EmitOp2(irl, OPC_MOVE, temp, left);
-    return EmitOp2(irl, OPC_SUB, temp, right);
+    return EmitOp2(irl, OpcFromOp(op), temp, right);
   case T_NEGATE:
-    return EmitOp2(irl, OPC_NEG, temp, right);
+  case T_ABS:
+    return EmitOp2(irl, OpcFromOp(op), temp, right);
   default:
     ERROR(lhs, "Unsupported operator %d", op);
     return left;

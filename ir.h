@@ -39,6 +39,7 @@ enum IROpcode {
     OPC_RET,
     OPC_DJNZ,
     OPC_JMP,
+    OPC_UNKNOWN,
 };
 
 /* condition for conditional execution */

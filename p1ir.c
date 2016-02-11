@@ -73,6 +73,12 @@ StringFor(int opc)
     return "add";
   case OPC_CMP:
     return "cmp";
+  case OPC_SHL:
+    return "shl";
+  case OPC_SHR:
+    return "shr";
+  case OPC_SAR:
+    return "sar";
   case OPC_SUB:
     return "sub";
   case OPC_XOR:
