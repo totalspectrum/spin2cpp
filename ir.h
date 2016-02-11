@@ -34,6 +34,7 @@ enum IROpcode {
     OPC_CMP,
     OPC_NOT,
     OPC_NEG,
+    OPC_ABS,
     OPC_CALL,
     OPC_RET,
     OPC_DJNZ,
@@ -82,6 +83,7 @@ struct Operand {
     enum Operandkind kind;
     const char *name;
     int val;
+    int used;
 };
 
 char *IRAssemble(IRList *list);

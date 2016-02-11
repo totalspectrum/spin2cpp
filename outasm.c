@@ -16,6 +16,7 @@ Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
 
 void OptimizeIR(IRList *irl);
+void EmitGlobals(IRList *irl);
 
 struct GlobalVariable {
     Operand *op;
@@ -57,6 +58,7 @@ OutputAsmCode(const char *fname, ParserState *P)
         return;
     }
     OptimizeIR(&irl);
+    EmitGlobals(&irl);
     asmcode = IRAssemble(&irl);
     
     current = save;
@@ -335,6 +337,9 @@ void EmitGlobals(IRList *irl)
     /* sort the global variables */
     qsort(g, siz, sizeof(*g), gcmpfunc);
     for (i = 0; i < siz; i++) {
+      if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
+	continue;
+      }
       EmitLabel(irl, g[i].op);
       EmitLong(irl, g[i].val);
     }
@@ -364,8 +369,6 @@ CompileToIR(IRList *irl, ParserState *P)
         EmitWholeFunction(irl, f);
 	newlineOp = NewOperand(REG_STRING, "\n", 0);
     }
-    /* now emit the global variables */
-    EmitGlobals(irl);
     return gl_errors == 0;
 }
 
@@ -401,6 +404,34 @@ IsDead(IR *instr, Operand *op)
   return false;
 }
 
+bool
+InstrReadsDest(int opc)
+{
+  switch (opc) {
+  case OPC_MOVE:
+  case OPC_NEG:
+  case OPC_NOT:
+  case OPC_ABS:
+    return false;
+  default:
+    break;
+  }
+  return true;
+}
+
+bool
+InstrSetsDest(int opc)
+{
+  switch (opc) {
+  case OPC_CMP:
+  case OPC_LABEL:
+    return false;
+  default:
+    break;
+  }
+  return true;
+}
+
 static bool
 ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
@@ -409,7 +440,7 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
     if (ir->opc == OPC_LABEL) {
       break;
     }
-    if (ir->dst == orig) {
+    if (ir->dst == orig && InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
       ir->dst = replace;
       return true;
     }
@@ -440,8 +471,25 @@ OptimizeMoves(IRList *irl)
   }
 }
 
+static void CheckOpUsage(Operand *op)
+{
+  if (op) {
+    op->used = 1;
+  }
+}
+
+void CheckUsage(IRList *irl)
+{
+  IR *ir;
+  for (ir = irl->head; ir; ir = ir->next) {
+    CheckOpUsage(ir->src);
+    CheckOpUsage(ir->dst);
+  }
+}
+
 void
 OptimizeIR(IRList *irl)
 {
   OptimizeMoves(irl);
+  CheckUsage(irl);
 }
