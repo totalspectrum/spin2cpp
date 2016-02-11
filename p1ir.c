@@ -68,6 +68,10 @@ StringFor(int opc)
     return "mov";
   case OPC_NEG:
     return "neg";
+  case OPC_ABS:
+    return "abs";
+  case OPC_ADD:
+    return "add";
   default:
     break;
   }

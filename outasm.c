@@ -433,7 +433,7 @@ InstrSetsDest(int opc)
 }
 
 static bool
-ReplaceBack(IR *instr, Operand *orig, Operand *replace)
+SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
@@ -441,14 +441,30 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
       break;
     }
     if (ir->dst == orig && InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
-      ir->dst = replace;
       return true;
     }
-    if (ir->src == orig) {
+    if (ir->src == replace || ir->dst == replace) {
       return false;
     }
   }
   return false;
+}
+
+static void
+ReplaceBack(IR *instr, Operand *orig, Operand *replace)
+{
+  IR *ir;
+  for (ir = instr; ir; ir = ir->prev) {
+    if (ir->opc == OPC_LABEL) {
+      break;
+    }
+    if (ir->dst == orig) {
+      ir->dst = replace;
+    }
+    if (ir->src == orig) {
+      ir->src = replace;
+    }
+  }
 }
 
 static void
@@ -461,10 +477,9 @@ OptimizeMoves(IRList *irl)
   while (ir != 0) {
     ir_next = ir->next;
     if (ir->opc == OPC_MOVE) {
-      if (IsDead(ir->next, ir->src)) {
-	if (ReplaceBack(ir->prev, ir->src, ir->dst)) {
-	  DeleteIR(irl, ir);
-	}
+      if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+	ReplaceBack(ir->prev, ir->src, ir->dst);
+	DeleteIR(irl, ir);
       }
     }
     ir = ir_next;
