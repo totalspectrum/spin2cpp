@@ -15,6 +15,8 @@
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
 
+void OptimizeIR(IRList *irl);
+
 struct GlobalVariable {
     Operand *op;
     int val;
@@ -23,7 +25,7 @@ struct GlobalVariable {
 static struct flexbuf gvars;
 
 Operand *
-GetGlobal(const char *name, int value)
+GetGlobal(Operandkind kind, const char *name, int value)
 {
   size_t siz = flexbuf_curlen(&gvars) / sizeof(struct GlobalVariable);
   size_t i;
@@ -34,7 +36,7 @@ GetGlobal(const char *name, int value)
       return g[i].op;
     }
   }
-  tmp.op = NewOperand(REG_REG, strdup(name), value);
+  tmp.op = NewOperand(kind, strdup(name), value);
   tmp.val = value;
   flexbuf_addmem(&gvars, (const char *)&tmp, sizeof(tmp));
   return tmp.op;
@@ -54,6 +56,7 @@ OutputAsmCode(const char *fname, ParserState *P)
     if (!CompileToIR(&irl, P)) {
         return;
     }
+    OptimizeIR(&irl);
     asmcode = IRAssemble(&irl);
     
     current = save;
@@ -103,6 +106,24 @@ AppendIR(IRList *irl, IR *ir)
         ir = ir->next;
     }
     irl->tail = ir;
+}
+
+void
+DeleteIR(IRList *irl, IR *ir)
+{
+  IR *prev = ir->prev;
+  IR *next = ir->next;
+
+  if (prev) {
+    prev->next = next;
+  } else {
+    irl->head = ir;
+  }
+  if (next) {
+    next->prev = prev;
+  } else {
+    irl->tail = prev;
+  }
 }
 
 static void EmitOp0(IRList *irl, Operandkind code)
@@ -159,18 +180,22 @@ NewImmediate(int32_t val)
     return NewOperand(REG_IMM, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(temp, (int32_t)val);
+  return GetGlobal(REG_REG, temp, (int32_t)val);
 }
 
 Operand *
-NewTempRegister()
+NewFunctionTempRegister()
 {
-  static int regnum = 0;
   char buf[128];
+  Function *f = curfunc;
+  ParserState *P = f->parse;
 
-  sprintf(buf, "tmp%02d_", regnum);
-  regnum++;
-  return GetGlobal(buf, 0);
+  f->curtempreg++;
+  if (f->curtempreg > f->maxtempreg) {
+    f->maxtempreg = f->curtempreg;
+  }
+  sprintf(buf, "%s_%s_tmp%03d_", P->basename, f->name, f->curtempreg);
+  return GetGlobal(REG_LOCAL, buf, 0);
 }
 
 Operand *
@@ -179,7 +204,7 @@ CompileIdentifier(IRList *irl, AST *expr)
   ParserState *P = curfunc->parse;
   char temp[128];
   snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, curfunc->name, expr->d.string);
-  return GetGlobal(temp, 0);
+  return GetGlobal(REG_LOCAL, temp, 0);
 }
 
 Operand *
@@ -187,7 +212,7 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
 {
   Operand *left = CompileExpression(irl, lhs);
   Operand *right = CompileExpression(irl, rhs);
-  Operand *temp = NewTempRegister();
+  Operand *temp = NewFunctionTempRegister();
 
   switch(op) {
   case '+':
@@ -260,7 +285,7 @@ static void EmitStatement(IRList *irl, AST *ast)
         }
 	if (retval) {
 	    op = CompileExpression(irl, retval);
-	    result = GetGlobal("result_", 0);
+	    result = GetGlobal(REG_REG, "result_", 0);
             EmitOp2(irl, OPC_MOVE, result, op);
 	}
 	break;
@@ -341,5 +366,80 @@ CompileToIR(IRList *irl, ParserState *P)
     }
     /* now emit the global variables */
     EmitGlobals(irl);
-    return true;
+    return gl_errors == 0;
+}
+
+/*
+ * return TRUE if the operand's value does not need to be preserved
+ * after instruction instr
+ */
+bool
+IsDead(IR *instr, Operand *op)
+{
+  IR *ir;
+
+  if (op->kind != REG_LOCAL) {
+    return false;
+  }
+  for (ir = instr->next; ir; ir = ir->next) {
+    if (ir->opc == OPC_RET) {
+      return true;
+    }
+    if (ir->src == op) {
+      return false;
+    }
+    if (ir->dst == op) {
+      /* the value is unused for certain opcodes */
+      switch(ir->opc) {
+      case OPC_NEG:
+	break;
+      default:
+	return false;
+      }
+    }
+  }
+  return false;
+}
+
+static void
+ReplaceBack(IR *instr, Operand *orig, Operand *replace)
+{
+  IR *ir;
+  for (ir = instr; ir; ir = ir->prev) {
+    if (ir->opc == OPC_LABEL) {
+      break;
+    }
+    if (ir->dst == orig) {
+      ir->dst = replace;
+      return;
+    }
+    if (ir->src == orig) {
+      ir->src = replace;
+    }
+  }
+}
+
+static void
+OptimizeMoves(IRList *irl)
+{
+  IR *ir;
+  IR *ir_next;
+
+  ir = irl->head;
+  while (ir != 0) {
+    ir_next = ir->next;
+    if (ir->opc == OPC_MOVE) {
+      if (IsDead(ir->next, ir->src)) {
+	ReplaceBack(ir->prev, ir->src, ir->dst);
+	DeleteIR(irl, ir);
+      }
+    }
+    ir = ir_next;
+  }
+}
+
+void
+OptimizeIR(IRList *irl)
+{
+  OptimizeMoves(irl);
 }

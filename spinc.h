@@ -148,6 +148,10 @@ typedef struct funcdef {
     /* assembly output name */
     Operand *asmname;
     Operand *asmretname;
+
+    /* temporary register info */
+    int curtempreg;
+    int maxtempreg;
 } Function;
 
 /* structure describing a builtin function */
