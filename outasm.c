@@ -268,6 +268,11 @@ EmitStatementList(IRList *irl, AST *ast)
     }
 }
 
+static void EmitMove(IRList *irl, Operand *dst, Operand *src)
+{
+  EmitOp2(irl, OPC_MOVE, dst, src);
+}
+
 static void EmitStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -290,6 +295,11 @@ static void EmitStatement(IRList *irl, AST *ast)
 	    result = GetGlobal(REG_REG, "result_", 0);
             EmitOp2(irl, OPC_MOVE, result, op);
 	}
+	break;
+    case AST_ASSIGN:
+        result = CompileExpression(irl, ast->left);
+	op = CompileExpression(irl, ast->right);
+	EmitMove(irl, result, op);
 	break;
     default:
         ERROR(ast, "Not yet able to handle this kind of statement");
@@ -438,13 +448,13 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
     if (ir->opc == OPC_LABEL) {
-      break;
-    }
-    if (ir->dst == orig && InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
-      return true;
+      return false;
     }
     if (ir->src == replace || ir->dst == replace) {
       return false;
+    }
+    if (ir->dst == orig && InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
+      return ir->cond == COND_TRUE;
     }
   }
   return false;
@@ -460,6 +470,9 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
     }
     if (ir->dst == orig) {
       ir->dst = replace;
+      if (InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
+	break;
+      }
     }
     if (ir->src == orig) {
       ir->src = replace;
@@ -472,18 +485,23 @@ OptimizeMoves(IRList *irl)
 {
   IR *ir;
   IR *ir_next;
+  bool change;
 
-  ir = irl->head;
-  while (ir != 0) {
-    ir_next = ir->next;
-    if (ir->opc == OPC_MOVE) {
-      if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
-	ReplaceBack(ir->prev, ir->src, ir->dst);
-	DeleteIR(irl, ir);
+  do {
+    change = false;
+    ir = irl->head;
+    while (ir != 0) {
+      ir_next = ir->next;
+      if (ir->opc == OPC_MOVE) {
+	if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+	  ReplaceBack(ir->prev, ir->src, ir->dst);
+	  DeleteIR(irl, ir);
+	  change = true;
+	}
       }
+      ir = ir_next;
     }
-    ir = ir_next;
-  }
+  } while (change);
 }
 
 static void CheckOpUsage(Operand *op)
