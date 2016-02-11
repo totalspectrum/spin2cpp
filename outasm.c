@@ -253,6 +253,7 @@ CompileExpression(IRList *irl, AST *expr)
     return CompileIdentifier(irl, expr);
   case AST_OPERATOR:
     return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
+  case AST_FUNCCALL:
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -467,6 +468,38 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   return false;
 }
 
+static bool IsBranch(int opc)
+{
+  switch (opc) {
+  case OPC_JMP:
+  case OPC_DJNZ:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool
+SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
+{
+  IR *ir;
+  for (ir = first_ir; ir; ir = ir->next) {
+    if (ir->opc == OPC_RET) {
+      return orig->kind == REG_LOCAL;
+    } else if (IsBranch(ir->opc)) {
+      return false;
+    }
+    if (ir->dst == replace) {
+      return false;
+    }
+    if (ir->src == replace && ir != first_ir) {
+      return false;
+    }
+  }
+  return orig->kind == REG_LOCAL;
+}
+
+
 static void
 ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
@@ -488,6 +521,26 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 }
 
 static void
+ReplaceForward(IR *instr, Operand *orig, Operand *replace)
+{
+  IR *ir;
+  for (ir = instr; ir; ir = ir->next) {
+    if (ir->opc == OPC_RET) {
+      return;
+    } else if (IsBranch(ir->opc)) {
+      return;
+    }
+    if (ir->src == orig) {
+      ir->src = replace;
+    }
+    if (ir->dst == orig) {
+      ir->dst = replace;
+    }
+  }
+  return true;
+}
+
+static void
 OptimizeMoves(IRList *irl)
 {
   IR *ir;
@@ -502,6 +555,11 @@ OptimizeMoves(IRList *irl)
       if (ir->opc == OPC_MOVE) {
 	if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
 	  ReplaceBack(ir->prev, ir->src, ir->dst);
+	  DeleteIR(irl, ir);
+	  change = true;
+	}
+	else if (SafeToReplaceForward(ir->next, ir->dst, ir->src)) {
+	  ReplaceForward(ir->next, ir->dst, ir->src);
 	  DeleteIR(irl, ir);
 	  change = true;
 	}
