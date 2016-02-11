@@ -401,7 +401,7 @@ IsDead(IR *instr, Operand *op)
   return false;
 }
 
-static void
+static bool
 ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
@@ -411,12 +411,13 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
     }
     if (ir->dst == orig) {
       ir->dst = replace;
-      return;
+      return true;
     }
     if (ir->src == orig) {
-      ir->src = replace;
+      return false;
     }
   }
+  return false;
 }
 
 static void
@@ -430,8 +431,9 @@ OptimizeMoves(IRList *irl)
     ir_next = ir->next;
     if (ir->opc == OPC_MOVE) {
       if (IsDead(ir->next, ir->src)) {
-	ReplaceBack(ir->prev, ir->src, ir->dst);
-	DeleteIR(irl, ir);
+	if (ReplaceBack(ir->prev, ir->src, ir->dst)) {
+	  DeleteIR(irl, ir);
+	}
       }
     }
     ir = ir_next;
