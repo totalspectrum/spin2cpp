@@ -665,7 +665,10 @@ OptimizeMoves(IRList *irl)
     while (ir != 0) {
       ir_next = ir->next;
       if (ir->opc == OPC_MOVE) {
-	if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+	if (ir->src == ir->dst) {
+	  DeleteIR(irl, ir);
+	  change = true;
+	} else if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
 	  ReplaceBack(ir->prev, ir->src, ir->dst);
 	  DeleteIR(irl, ir);
 	  change = true;
