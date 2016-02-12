@@ -17,6 +17,7 @@ Operand *CompileExpression(IRList *irl, AST *expr);
 
 void OptimizeIR(IRList *irl);
 void EmitGlobals(IRList *irl);
+static void EmitMove(IRList *irl, Operand *dst, Operand *src);
 
 struct GlobalVariable {
     Operand *op;
@@ -201,12 +202,18 @@ NewFunctionTempRegister()
 }
 
 Operand *
+CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
+{
+  ParserState *P = func->parse;
+  char temp[128];
+  snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, expr->d.string);
+  return GetGlobal(REG_LOCAL, temp, 0);
+}
+
+Operand *
 CompileIdentifier(IRList *irl, AST *expr)
 {
-  ParserState *P = curfunc->parse;
-  char temp[128];
-  snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, curfunc->name, expr->d.string);
-  return GetGlobal(REG_LOCAL, temp, 0);
+  return CompileIdentifierForFunc(irl, expr, curfunc);
 }
 
 Operand *
@@ -273,6 +280,65 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
   }
 }
 
+/* compiles a list of expressions; returns the last one
+ * tolist is a list of where to store the expressions
+ * (may be NULL if we don't care about saving them)
+ */
+Operand *
+CompileExprList(IRList *irl, AST *fromlist, Function *tofunc)
+{
+  AST *from, *to;
+  AST *tolist = tofunc->params;
+  Operand *opfrom = NULL;
+  Operand *opto = NULL;
+
+  while (fromlist) {
+    from = fromlist->left;
+    fromlist = fromlist->right;
+    if (tolist) {
+      to = tolist->left;
+      tolist = tolist->right;
+    } else {
+      to = NULL;
+    }
+    opfrom = CompileExpression(irl, from);
+    if (!opfrom) break;
+    if (to) {
+      opto = CompileIdentifierForFunc(irl, to, tofunc);
+      opto->kind = REG_REG; // supress optimization
+      EmitMove(irl, opto, opfrom);
+      opto->kind = REG_LOCAL;
+    }
+  }
+  return opfrom;
+}
+
+Operand *
+CompileFunccall(IRList *irl, AST *expr)
+{
+  Operand *result;
+  Symbol *sym;
+  Function *func;
+  AST *params;
+
+  /* compile the function operands and put them in the parameters */
+  sym = FindFuncSymbol(expr, NULL, NULL);
+  if (!sym || sym->type != SYM_FUNCTION) {
+    ERROR(expr, "expected function symbol");
+    return NULL;
+  }
+  func = (Function *)sym->val;
+  params = expr->right;
+  CompileExprList(irl, params, func);
+
+  /* emit the call */
+  EmitOp1(irl, OPC_CALL, func->asmname);
+
+  /* now get the result */
+  result = GetGlobal(REG_REG, "result_", 0);
+  return result;
+}
+
 Operand *
 CompileExpression(IRList *irl, AST *expr)
 {
@@ -295,6 +361,7 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_OPERATOR:
     return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
   case AST_FUNCCALL:
+    return CompileFunccall(irl, expr);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -517,6 +584,7 @@ static bool IsBranch(int opc)
   switch (opc) {
   case OPC_JMP:
   case OPC_DJNZ:
+  case OPC_CALL:
     return true;
   default:
     return false;
@@ -632,6 +700,7 @@ void CheckUsage(IRList *irl)
 void
 OptimizeIR(IRList *irl)
 {
+  if (gl_optimize_flags & OPT_NO_ASM) return;
   OptimizeMoves(irl);
   CheckUsage(irl);
 }

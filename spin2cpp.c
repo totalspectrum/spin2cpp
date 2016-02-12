@@ -697,6 +697,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
             outputDat = 1;
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--noopt", 5) ) {
+            gl_optimize_flags |= OPT_NO_ASM;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--asm", 5) ) {
             outputAsm = 1;
             argv++; --argc;

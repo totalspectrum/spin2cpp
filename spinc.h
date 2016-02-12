@@ -52,6 +52,7 @@ extern int gl_debug;    /* flag: if set, include debugging directives */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
+#define OPT_NO_ASM 0x100
 
 /* types */
 extern AST *ast_type_long;
