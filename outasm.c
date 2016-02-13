@@ -649,7 +649,6 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace)
       ir->dst = replace;
     }
   }
-  return true;
 }
 
 static void
