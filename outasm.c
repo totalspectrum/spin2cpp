@@ -210,8 +210,13 @@ Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   ParserState *P = func->parse;
+  Symbol *sym = FindSymbol(&func->localsyms, expr->d.string);
   char temp[128];
   snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, expr->d.string);
+
+  if (sym && sym->type == SYM_PARAMETER) {
+    return GetGlobal(REG_ARG, temp, 0);
+  }
   return GetGlobal(REG_LOCAL, temp, 0);
 }
 
@@ -541,40 +546,8 @@ CompileToIR(IRList *irl, ParserState *P)
     return gl_errors == 0;
 }
 
-/*
- * return TRUE if the operand's value does not need to be preserved
- * after instruction instr
- */
 bool
-IsDead(IR *instr, Operand *op)
-{
-  IR *ir;
-
-  if (op->kind != REG_LOCAL) {
-    return false;
-  }
-  for (ir = instr->next; ir; ir = ir->next) {
-    if (ir->opc == OPC_RET) {
-      return true;
-    }
-    if (ir->src == op) {
-      return false;
-    }
-    if (ir->dst == op) {
-      /* the value is unused for certain opcodes */
-      switch(ir->opc) {
-      case OPC_NEG:
-	break;
-      default:
-	return false;
-      }
-    }
-  }
-  return false;
-}
-
-bool
-InstrReadsDest(int opc)
+InstrReadsDst(int opc)
 {
   switch (opc) {
   case OPC_MOVE:
@@ -589,7 +562,48 @@ InstrReadsDest(int opc)
 }
 
 bool
-InstrSetsDest(int opc)
+IsLocalOrArg(Operand *op)
+{
+  return op->kind == REG_LOCAL || op->kind == REG_ARG;
+}
+
+/*
+ * return TRUE if the operand's value does not need to be preserved
+ * after instruction instr
+ */
+bool
+IsDead(IR *instr, Operand *op)
+{
+  IR *ir;
+
+  if (!IsLocalOrArg(op)) {
+    return false;
+  }
+  for (ir = instr->next; ir; ir = ir->next) {
+    if (ir->opc == OPC_RET) {
+      return true;
+    }
+    if (ir->opc == OPC_JUMP) {
+      return false;
+    }
+    if (ir->opc == OPC_CALL && op->kind == REG_ARG) {
+      return false;
+    }
+    if (ir->src == op) {
+      return false;
+    }
+    if (ir->dst == op) {
+      /* the value is unused for certain opcodes */
+      if (InstrReadsDst(ir->opc)) {
+	return false;
+      }
+    }
+  }
+  return false;
+}
+
+bool
+InstrSetsDst(int opc)
 {
   switch (opc) {
   case OPC_CMP:
@@ -612,7 +626,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
     if (ir->src == replace || ir->dst == replace) {
       return false;
     }
-    if (ir->dst == orig && InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
+    if (ir->dst == orig && InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
       return ir->cond == COND_TRUE;
     }
   }
@@ -637,7 +651,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   IR *ir;
   for (ir = first_ir; ir; ir = ir->next) {
     if (ir->opc == OPC_RET) {
-      return orig->kind == REG_LOCAL;
+      return IsLocalOrArg(orig);
     } else if (IsBranch(ir->opc)) {
       return false;
     }
@@ -648,7 +662,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return false;
     }
   }
-  return orig->kind == REG_LOCAL;
+  return IsLocalOrArg(orig);
 }
 
 
@@ -662,7 +676,7 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
     }
     if (ir->dst == orig) {
       ir->dst = replace;
-      if (InstrSetsDest(ir->opc) && !InstrReadsDest(ir->opc)) {
+      if (InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
 	break;
       }
     }
@@ -725,9 +739,10 @@ OptimizeMoves(IRList *irl)
 
 static void EliminateDeadCode(IRList *irl)
 {
-  bool change = false;
+  bool change;
   IR *ir, *ir_next;
   do {
+    change = false;
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
@@ -738,12 +753,19 @@ static void EliminateDeadCode(IRList *irl)
 	  while (x && x->opc != OPC_LABEL) {
 	    ir_next = x->next;
 	    DeleteIR(irl, x);
+	    change = true;
 	    x = ir_next;
 	  }
 	}
 	/* if the branch is to the next instruction, delete it */
 	if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
 	  DeleteIR(irl, ir);
+	  change = true;
+	}
+      } else {
+	if (ir_next && ir->dst && IsDead(ir, ir->dst)) {
+	  DeleteIR(irl, ir);
+	  change = true;
 	}
       }
       ir = ir_next;

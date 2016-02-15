@@ -74,6 +74,7 @@ enum Operandkind {
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)
+    REG_ARG,   // for an argument to a function
     REG_LABEL, // for a code label
     REG_STRING,
 };
