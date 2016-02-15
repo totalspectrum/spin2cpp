@@ -12,6 +12,11 @@
 #include "ir.h"
 #include "flexbuf.h"
 
+typedef struct OperandList {
+  struct OperandList *next;
+  Operand *op;
+} OperandList;
+
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
 
@@ -280,37 +285,65 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
   }
 }
 
+void
+AppendOperand(OperandList **listptr, Operand *op)
+{
+  OperandList *next = malloc(sizeof(OperandList));
+  OperandList *x;
+  next->op = op;
+  next->next = NULL;
+  for(;;) {
+    x = *listptr;
+    if (!x) {
+      *listptr = next;
+      return;
+    }
+    listptr = &x->next;
+  }
+}
+
 /* compiles a list of expressions; returns the last one
  * tolist is a list of where to store the expressions
  * (may be NULL if we don't care about saving them)
  */
-Operand *
-CompileExprList(IRList *irl, AST *fromlist, Function *tofunc)
+OperandList *
+CompileExprList(IRList *irl, AST *fromlist)
 {
-  AST *from, *to;
-  AST *tolist = tofunc->params;
+  AST *from;
   Operand *opfrom = NULL;
   Operand *opto = NULL;
+  OperandList *ret = NULL;
 
   while (fromlist) {
     from = fromlist->left;
     fromlist = fromlist->right;
-    if (tolist) {
-      to = tolist->left;
-      tolist = tolist->right;
-    } else {
-      to = NULL;
-    }
+
     opfrom = CompileExpression(irl, from);
+    opto = NewFunctionTempRegister();
     if (!opfrom) break;
-    if (to) {
-      opto = CompileIdentifierForFunc(irl, to, tofunc);
-      opto->kind = REG_REG; // supress optimization
-      EmitMove(irl, opto, opfrom);
-      opto->kind = REG_LOCAL;
-    }
+    EmitMove(irl, opto, opfrom);
+    AppendOperand(&ret, opto);
   }
-  return opfrom;
+  return ret;
+}
+
+static void
+EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
+{
+  AST *astlist = func->params;
+  AST *ast;
+  Operand *op;
+  Operand *dst;
+
+  while (oplist != NULL && astlist != NULL) {
+    op = oplist->op;
+    ast = astlist->left;
+    oplist = oplist->next;
+    astlist = astlist->right;
+
+    dst = CompileIdentifierForFunc(irl, ast, func);
+    EmitMove(irl, dst, op);
+  }
 }
 
 Operand *
@@ -320,8 +353,9 @@ CompileFunccall(IRList *irl, AST *expr)
   Symbol *sym;
   Function *func;
   AST *params;
+  OperandList *temp;
 
-  /* compile the function operands and put them in the parameters */
+  /* compile the function operands */
   sym = FindFuncSymbol(expr, NULL, NULL);
   if (!sym || sym->type != SYM_FUNCTION) {
     ERROR(expr, "expected function symbol");
@@ -329,7 +363,12 @@ CompileFunccall(IRList *irl, AST *expr)
   }
   func = (Function *)sym->val;
   params = expr->right;
-  CompileExprList(irl, params, func);
+  temp = CompileExprList(irl, params);
+
+  /* now copy the parameters into place (have to do this in case there are
+     function calls within the parameters)
+   */
+  EmitParameterList(irl, temp, func);
 
   /* emit the call */
   EmitOp1(irl, OPC_CALL, func->asmname);
