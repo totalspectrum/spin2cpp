@@ -43,7 +43,7 @@ enum IROpcode {
 };
 
 /* condition for conditional execution */
-enum IRCond {
+typedef enum IRCond {
     COND_TRUE,
     COND_FALSE,
     COND_LT,
@@ -52,7 +52,7 @@ enum IRCond {
     COND_NE,
     COND_LE,
     COND_GT
-};
+} IRCond;
 
 struct IR {
     enum IROpcode opc;

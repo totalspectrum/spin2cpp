@@ -161,12 +161,36 @@ void EmitLabel(IRList *irl, Operand *op)
   EmitOp1(irl, OPC_LABEL, op);
 }
 
+Operand *
+CompileTempLabel(IRList *irl)
+{
+  Operand *label;
+  static int lnum = 1;
+  char temp[128];
+  sprintf(temp, "L_%03d_", lnum);
+  lnum++;
+  label = NewOperand(REG_LABEL, strdup(temp), 0);
+  EmitLabel(irl, label);
+  return label;
+}
+
 void EmitLong(IRList *irl, int val)
 {
   Operand *op;
 
   op = NewOperand(REG_IMM, "", val);
   EmitOp1(irl, OPC_LONG, op);
+}
+
+void EmitJump(IRList *irl, IRCond cond, Operand *label)
+{
+  IR *ir;
+
+  if (cond == COND_FALSE) return;
+  ir = NewIR(OPC_JUMP);
+  ir->dst = label;
+  ir->cond = cond;
+  AppendIR(irl, ir);
 }
 
 void EmitFunctionProlog(IRList *irl, Function *f)
@@ -233,6 +257,12 @@ CompileHWReg(IRList *irl, AST *expr)
   return GetGlobal(REG_HW, hw->cname, 0);
 }
 
+IRCond
+CompileBoolExpression(IRList *irl, AST *expr)
+{
+  return COND_TRUE;
+}
+
 static int
 OpcFromOp(int op)
 {
@@ -289,6 +319,7 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
     return left;
   }
 }
+
 
 void
 AppendOperand(OperandList **listptr, Operand *op)
@@ -438,6 +469,7 @@ static void EmitStatement(IRList *irl, AST *ast)
     AST *retval;
     Operand *op;
     Operand *result;
+    IRCond cond;
 
     if (!ast) return;
 
@@ -455,7 +487,13 @@ static void EmitStatement(IRList *irl, AST *ast)
 	    result = GetGlobal(REG_REG, "result_", 0);
             EmitOp2(irl, OPC_MOVE, result, op);
 	}
-	EmitOp1(irl, OPC_JUMP, curfunc->asmretname);
+	EmitJump(irl, COND_TRUE, curfunc->asmretname);
+	break;
+    case AST_DOWHILE:
+        op = CompileTempLabel(irl);
+        cond = CompileBoolExpression(irl, ast->left);
+        EmitStatementList(irl, ast->right);
+        EmitJump(irl, cond, op);
 	break;
     case AST_ASSIGN:
         result = CompileExpression(irl, ast->left);
@@ -623,11 +661,11 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
     if (ir->opc == OPC_LABEL) {
       return false;
     }
-    if (ir->src == replace || ir->dst == replace) {
-      return false;
-    }
     if (ir->dst == orig && InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
       return ir->cond == COND_TRUE;
+    }
+    if (ir->src == replace || ir->dst == replace) {
+      return false;
     }
   }
   return false;
