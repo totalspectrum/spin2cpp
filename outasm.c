@@ -286,6 +286,23 @@ CondFromExpr(int kind)
   return COND_FALSE;
 }
 
+static IRCond
+FlipSides(IRCond cond)
+{
+  switch (cond) {
+  case COND_LT:
+    return COND_GT;
+  case COND_GT:
+    return COND_LT;
+  case COND_LE:
+    return COND_GE;
+  case COND_GE:
+    return COND_LE;
+  default:
+    return cond;
+  }
+}
+
 IRCond
 CompileBoolExpression(IRList *irl, AST *expr)
 {
@@ -319,6 +336,14 @@ CompileBoolExpression(IRList *irl, AST *expr)
     lhs = CompileExpression(irl, expr);
     rhs = NewOperand(REG_IMM, "", 0);
     break;
+  }
+  /* emit a compare operator */
+  /* note that lhs cannot be a constant */
+  if (lhs->kind == REG_IMM) {
+    Operand *tmp = lhs;
+    lhs = rhs;
+    rhs = tmp;
+    cond = FlipSides(cond);
   }
   EmitOp2(irl, OPC_CMP, lhs, rhs);
   return cond;
