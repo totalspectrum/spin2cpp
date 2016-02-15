@@ -47,6 +47,10 @@ enum IROpcode {
 };
 
 /* condition for conditional execution */
+/* NOTE: opposite conditions must go together
+ * in pairs so that InvertCond can easily
+ * find the opposite of any condition
+ */
 typedef enum IRCond {
     COND_TRUE,
     COND_FALSE,

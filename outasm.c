@@ -162,7 +162,7 @@ void EmitLabel(IRList *irl, Operand *op)
 }
 
 Operand *
-CompileTempLabel(IRList *irl)
+CreateTempLabel(IRList *irl)
 {
   Operand *label;
   static int lnum = 1;
@@ -170,7 +170,6 @@ CompileTempLabel(IRList *irl)
   sprintf(temp, "L_%03d_", lnum);
   lnum++;
   label = NewOperand(REG_LABEL, strdup(temp), 0);
-  EmitLabel(irl, label);
   return label;
 }
 
@@ -301,6 +300,17 @@ FlipSides(IRCond cond)
   default:
     return cond;
   }
+}
+/*
+ * invert a condition (e.g. EQ -> NE, LT -> GE
+ * note that the conditions are declared in a
+ * particular order to make this easier
+ */
+static IRCond
+InvertCond(IRCond v)
+{
+  v = (IRCond)(1 ^ (unsigned)v);
+  return v;
 }
 
 IRCond
@@ -504,6 +514,7 @@ Operand *
 CompileExpression(IRList *irl, AST *expr)
 {
   Operand *r;
+  Operand *val;
 
   while (expr && expr->kind == AST_COMMENTEDNODE) {
     expr = expr->left;
@@ -523,6 +534,11 @@ CompileExpression(IRList *irl, AST *expr)
     return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
   case AST_FUNCCALL:
     return CompileFunccall(irl, expr);
+  case AST_ASSIGN:
+    r = CompileExpression(irl, expr->left);
+    val = CompileExpression(irl, expr->right);
+    EmitMove(irl, r, val);
+    return r;
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -555,6 +571,7 @@ static void EmitStatement(IRList *irl, AST *ast)
     AST *retval;
     Operand *op;
     Operand *result;
+    Operand *botloop, *toploop;
     IRCond cond;
     int starttempreg, endtempreg;
 
@@ -577,11 +594,22 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	EmitJump(irl, COND_TRUE, curfunc->asmretname);
 	break;
+    case AST_WHILE:
+        toploop = CreateTempLabel(irl);
+	botloop = CreateTempLabel(irl);
+	EmitLabel(irl, toploop);
+        cond = CompileBoolExpression(irl, ast->left);
+        EmitJump(irl, InvertCond(cond), botloop);
+        EmitStatementList(irl, ast->right);
+	EmitJump(irl, COND_TRUE, toploop);
+	EmitLabel(irl, botloop);
+	break;
     case AST_DOWHILE:
-        op = CompileTempLabel(irl);
+        toploop = CreateTempLabel(irl);
+	EmitLabel(irl, toploop);
         EmitStatementList(irl, ast->right);
         cond = CompileBoolExpression(irl, ast->left);
-        EmitJump(irl, cond, op);
+        EmitJump(irl, cond, toploop);
 	break;
     case AST_ASSIGN:
         result = CompileExpression(irl, ast->left);
