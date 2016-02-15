@@ -450,6 +450,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	    result = GetGlobal(REG_REG, "result_", 0);
             EmitOp2(irl, OPC_MOVE, result, op);
 	}
+	EmitOp1(irl, OPC_JUMP, curfunc->asmretname);
 	break;
     case AST_ASSIGN:
         result = CompileExpression(irl, ast->left);
@@ -621,7 +622,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 static bool IsBranch(int opc)
 {
   switch (opc) {
-  case OPC_JMP:
+  case OPC_JUMP:
   case OPC_DJNZ:
   case OPC_CALL:
     return true;
@@ -722,6 +723,34 @@ OptimizeMoves(IRList *irl)
   } while (change);
 }
 
+static void EliminateDeadCode(IRList *irl)
+{
+  bool change = false;
+  IR *ir, *ir_next;
+  do {
+    ir = irl->head;
+    while (ir) {
+      ir_next = ir->next;
+      if (ir->opc == OPC_JUMP) {
+	if (ir->cond == COND_TRUE) {
+	  // dead code from here to next label
+	  IR *x = ir->next;
+	  while (x && x->opc != OPC_LABEL) {
+	    ir_next = x->next;
+	    DeleteIR(irl, x);
+	    x = ir_next;
+	  }
+	}
+	/* if the branch is to the next instruction, delete it */
+	if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+	  DeleteIR(irl, ir);
+	}
+      }
+      ir = ir_next;
+    }
+  } while (change);
+}
+
 static void CheckOpUsage(Operand *op)
 {
   if (op) {
@@ -742,6 +771,7 @@ void
 OptimizeIR(IRList *irl)
 {
   if (gl_optimize_flags & OPT_NO_ASM) return;
+  EliminateDeadCode(irl);
   OptimizeMoves(irl);
   CheckUsage(irl);
 }

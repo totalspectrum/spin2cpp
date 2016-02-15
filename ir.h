@@ -38,7 +38,7 @@ enum IROpcode {
     OPC_CALL,
     OPC_RET,
     OPC_DJNZ,
-    OPC_JMP,
+    OPC_JUMP,
     OPC_UNKNOWN,
 };
 
