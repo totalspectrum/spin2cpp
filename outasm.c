@@ -330,6 +330,10 @@ CompileBoolExpression(IRList *irl, AST *expr)
   } else {
     opkind = -1;
   }
+  if (opkind == T_NOT) {
+    cond = CompileBoolExpression(irl, expr->right);
+    return InvertCond(cond);
+  }
   switch(opkind) {
   case T_NE:
   case T_EQ:
@@ -349,7 +353,7 @@ CompileBoolExpression(IRList *irl, AST *expr)
   }
   /* emit a compare operator */
   /* note that lhs cannot be a constant */
-  if (lhs->kind == REG_IMM) {
+  if (lhs && lhs->kind == REG_IMM) {
     Operand *tmp = lhs;
     lhs = rhs;
     rhs = tmp;
@@ -616,6 +620,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	op = CompileExpression(irl, ast->right);
 	EmitMove(irl, result, op);
 	break;
+    case AST_YIELD:
+	/* do nothing in assembly for YIELD */
+        break;
     default:
         ERROR(ast, "Not yet able to handle this kind of statement");
 	break;
@@ -982,11 +989,77 @@ void CheckUsage(IRList *irl)
   }
 }
 
+/* checks for short forward (conditional) jumps
+ * returns the number of instructions forward
+ * or 0 if not a valid candidate for optimization
+ */
+#define MAX_JUMP_OVER 2
+static int IsShortForwardJump(IR *irbase)
+{
+  int n = 0;
+  Operand *target;
+  IR *ir;
+
+  if (irbase->opc != OPC_JUMP)
+    return 0;
+  target = irbase->dst;
+  ir = irbase->next;
+  while (ir) {
+    if (!IsDummy(ir)) {
+      if (ir->cond != COND_TRUE) return 0;
+      if (ir->opc == OPC_LABEL) {
+	if (ir->dst == target) {
+	  return n;
+	}
+	return 0;
+      }
+      n++;
+      if (n > MAX_JUMP_OVER) return 0;
+    }
+    ir = ir->next;
+  }
+  return n;
+}
+
+void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
+{
+  while (ir && n > 0) {
+    if (!IsDummy(ir)) {
+      if (ir->cond != COND_TRUE || ir->opc == OPC_LABEL) {
+	ERROR(NULL, "Internal error bad conditionalize");
+	return;
+      }
+      ir->cond = cond;
+      --n;
+    }
+    ir = ir->next;
+  }
+}
+
+void OptimizeShortBranches(IRList *irl)
+{
+  IR *ir;
+  IR *ir_next;
+  int n;
+
+  ir = irl->head;
+  while (ir) {
+    ir_next = ir->next;
+    n = IsShortForwardJump(ir);
+    if (n) {
+      ConditionalizeInstructions(ir->next, InvertCond(ir->cond), n);
+      DeleteIR(irl, ir);
+    }
+    ir = ir_next;
+  }
+}
+
 void
 OptimizeIR(IRList *irl)
 {
   if (gl_optimize_flags & OPT_NO_ASM) return;
   EliminateDeadCode(irl);
   OptimizeMoves(irl);
+  OptimizeShortBranches(irl);
   CheckUsage(irl);
 }
