@@ -93,11 +93,50 @@ StringFor(int opc)
   return "???";
 }
 
+static void
+PrintCond(struct flexbuf *fb, IRCond cond)
+{
+    switch (cond) {
+    case COND_TRUE:
+      break;
+    case COND_EQ:
+      flexbuf_addstr(fb, " if_eq");
+      break;
+    case COND_NE:
+      flexbuf_addstr(fb, " if_ne");
+      break;
+    case COND_LT:
+      flexbuf_addstr(fb, " if_lt");
+      break;
+    case COND_GE:
+      flexbuf_addstr(fb, " if_ge");
+      break;
+    case COND_GT:
+      flexbuf_addstr(fb, " if_gt");
+      break;
+    case COND_LE:
+      flexbuf_addstr(fb, " if_le");
+      break;
+    default:
+      flexbuf_addstr(fb, " if_??");
+      break;
+    }
+    flexbuf_addchar(fb, '\t');
+}
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
     switch(ir->opc) {
+    case OPC_DEAD:
+        /* no code necessary, internal opcode */
+#if 0
+        flexbuf_addstr(fb, "\t.dead\t");
+	PrintOperandDirect(fb, ir->dst);
+        flexbuf_addstr(fb, "\n");
+#endif
+        break;
     case OPC_COMMENT:
         PrintOperand(fb, ir->dst);
 	break;
@@ -111,7 +150,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         break;
     case OPC_JUMP:
     case OPC_CALL:
-        flexbuf_addchar(fb, '\t');
+        PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t#");
 	PrintOperandDirect(fb, ir->dst);
@@ -136,6 +175,15 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, ", ");
 	PrintOperand(fb, ir->src);
 	flexbuf_addstr(fb, "\n");
+	break;
+    case OPC_CMP:
+        flexbuf_addchar(fb, '\t');
+	flexbuf_addstr(fb, StringFor(ir->opc));
+	flexbuf_addstr(fb, "\t");
+	PrintOperand(fb, ir->dst);
+	flexbuf_addstr(fb, ", ");
+	PrintOperand(fb, ir->src);
+	flexbuf_addstr(fb, " wc,wz\n");
 	break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");

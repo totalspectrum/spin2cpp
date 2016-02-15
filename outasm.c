@@ -216,18 +216,24 @@ NewImmediate(int32_t val)
 }
 
 Operand *
+GetFunctionTempRegister(Function *f, int n)
+{
+  ParserState *P = f->parse;
+  char buf[128];
+  sprintf(buf, "%s_%s_tmp%03d_", P->basename, f->name, n);
+  return GetGlobal(REG_LOCAL, buf, 0);
+}
+
+Operand *
 NewFunctionTempRegister()
 {
-  char buf[128];
   Function *f = curfunc;
-  ParserState *P = f->parse;
 
   f->curtempreg++;
   if (f->curtempreg > f->maxtempreg) {
     f->maxtempreg = f->curtempreg;
   }
-  sprintf(buf, "%s_%s_tmp%03d_", P->basename, f->name, f->curtempreg);
-  return GetGlobal(REG_LOCAL, buf, 0);
+  return GetFunctionTempRegister(f, f->curtempreg);
 }
 
 Operand *
@@ -257,10 +263,65 @@ CompileHWReg(IRList *irl, AST *expr)
   return GetGlobal(REG_HW, hw->cname, 0);
 }
 
+static IRCond
+CondFromExpr(int kind)
+{
+  switch (kind) {
+  case T_NE:
+    return COND_NE;
+  case T_EQ:
+    return COND_EQ;
+  case T_GE:
+    return COND_GE;
+  case T_LE:
+    return COND_LE;
+  case '<':
+    return COND_LT;
+  case '>':
+    return COND_GT;
+  default:
+    break;
+  }
+  ERROR(NULL, "Unknown boolean operator");
+  return COND_FALSE;
+}
+
 IRCond
 CompileBoolExpression(IRList *irl, AST *expr)
 {
-  return COND_TRUE;
+  IRCond cond;
+  Operand *lhs;
+  Operand *rhs;
+  int opkind;
+
+  if (IsConstExpr(expr)) {
+    return EvalConstExpr(expr) == 0 ? COND_FALSE : COND_TRUE;
+  }
+
+  if (expr->kind == AST_OPERATOR) {
+    opkind = expr->d.ival;
+  } else {
+    opkind = -1;
+  }
+  switch(opkind) {
+  case T_NE:
+  case T_EQ:
+  case '<':
+  case '>':
+  case T_LE:
+  case T_GE:
+    cond = CondFromExpr(opkind);
+    lhs = CompileExpression(irl, expr->left);
+    rhs = CompileExpression(irl, expr->right);
+    break;
+  default:
+    cond = COND_EQ;
+    lhs = CompileExpression(irl, expr);
+    rhs = NewOperand(REG_IMM, "", 0);
+    break;
+  }
+  EmitOp2(irl, OPC_CMP, lhs, rhs);
+  return cond;
 }
 
 static int
@@ -470,9 +531,11 @@ static void EmitStatement(IRList *irl, AST *ast)
     Operand *op;
     Operand *result;
     IRCond cond;
+    int starttempreg, endtempreg;
 
     if (!ast) return;
 
+    starttempreg = curfunc->curtempreg;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
         EmitStatement(irl, ast->left);
@@ -491,8 +554,8 @@ static void EmitStatement(IRList *irl, AST *ast)
 	break;
     case AST_DOWHILE:
         op = CompileTempLabel(irl);
-        cond = CompileBoolExpression(irl, ast->left);
         EmitStatementList(irl, ast->right);
+        cond = CompileBoolExpression(irl, ast->left);
         EmitJump(irl, cond, op);
 	break;
     case AST_ASSIGN:
@@ -503,6 +566,16 @@ static void EmitStatement(IRList *irl, AST *ast)
     default:
         ERROR(ast, "Not yet able to handle this kind of statement");
 	break;
+    }
+    /* release temporaries we used */
+    endtempreg = curfunc->curtempreg;
+    curfunc->curtempreg = starttempreg;
+
+    /* and mark them as dead */
+    while (endtempreg > starttempreg) {
+      op = GetFunctionTempRegister(curfunc, endtempreg);
+      EmitOp1(irl, OPC_DEAD, op);
+      --endtempreg;
     }
 }
 
@@ -617,7 +690,13 @@ IsDead(IR *instr, Operand *op)
   if (!IsLocalOrArg(op)) {
     return false;
   }
+  if (instr->opc == OPC_DEAD && op == instr->dst) {
+    return true;
+  }
   for (ir = instr->next; ir; ir = ir->next) {
+    if (ir->opc == OPC_DEAD && op == ir->dst) {
+      return true;
+    }
     if (ir->opc == OPC_RET) {
       return true;
     }
@@ -683,11 +762,25 @@ static bool IsBranch(int opc)
   }
 }
 
+static bool IsDummy(IR *op)
+{
+  switch(op->opc) {
+  case OPC_COMMENT:
+  case OPC_DEAD:
+    return true;
+  default:
+    return false;
+  }
+}
+
 static bool
 SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = first_ir; ir; ir = ir->next) {
+    if (IsDummy(ir)) {
+	continue;
+    }
     if (ir->opc == OPC_RET) {
       return IsLocalOrArg(orig);
     } else if (IsBranch(ir->opc)) {
@@ -709,6 +802,9 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
+    if (IsDummy(ir)) {
+      continue;
+    }
     if (ir->opc == OPC_LABEL) {
       break;
     }
@@ -729,6 +825,9 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->next) {
+    if (IsDummy(ir)) {
+      continue;
+    }
     if (ir->opc == OPC_RET) {
       return;
     } else if (IsBranch(ir->opc)) {
@@ -800,7 +899,7 @@ static void EliminateDeadCode(IRList *irl)
 	  DeleteIR(irl, ir);
 	  change = true;
 	}
-      } else {
+      } else if (!IsDummy(ir)) {
 	if (ir_next && ir->dst && IsDead(ir, ir->dst)) {
 	  DeleteIR(irl, ir);
 	  change = true;
@@ -822,6 +921,9 @@ void CheckUsage(IRList *irl)
 {
   IR *ir;
   for (ir = irl->head; ir; ir = ir->next) {
+    if (IsDummy(ir)) {
+      continue;
+    }
     CheckOpUsage(ir->src);
     CheckOpUsage(ir->dst);
   }

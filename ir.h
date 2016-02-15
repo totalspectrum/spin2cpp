@@ -39,6 +39,10 @@ enum IROpcode {
     OPC_RET,
     OPC_DJNZ,
     OPC_JUMP,
+
+    /* special flag to indicate a dead register */
+    OPC_DEAD,
+
     OPC_UNKNOWN,
 };
 
