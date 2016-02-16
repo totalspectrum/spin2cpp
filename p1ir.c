@@ -65,8 +65,6 @@ StringFor(int opc)
   switch(opc) {
   case OPC_MOVE:
       return "mov";
-  case OPC_NEG:
-      return "neg";
   case OPC_ABS:
       return "abs";
   case OPC_ADD:
@@ -77,6 +75,10 @@ StringFor(int opc)
       return "cmp";
   case OPC_JUMP:
       return "jmp";
+  case OPC_NEG:
+      return "neg";
+  case OPC_NOT:
+      return "not";
   case OPC_OR:
       return "or";
   case OPC_REV:
@@ -167,10 +169,12 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addstr(fb, "\n");
 	break;
     case OPC_MOVE:
+    case OPC_ABS:
     case OPC_ADD:
     case OPC_AND:
     case OPC_SUB:
     case OPC_NEG:
+    case OPC_NOT:
     case OPC_OR:
     case OPC_REV:
     case OPC_XOR:

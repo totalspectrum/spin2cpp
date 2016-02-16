@@ -441,12 +441,15 @@ OpcFromOp(int op)
 }
 
 Operand *
-CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
+CompileOperator(IRList *irl, AST *expr)
 {
+  int op = expr->d.ival;
+  AST *lhs = expr->left;
+  AST *rhs = expr->right;
   Operand *left = CompileExpression(irl, lhs);
   Operand *right = CompileExpression(irl, rhs);
   Operand *temp = NewFunctionTempRegister();
-
+  
   switch(op) {
   case '+':
   case '-':
@@ -461,6 +464,25 @@ CompileOperator(IRList *irl, int op, AST *lhs, AST *rhs)
   case T_NEGATE:
   case T_ABS:
     return EmitOp2(irl, OpcFromOp(op), temp, right);
+  case T_NOT:
+  case T_AND:
+  case T_OR:
+  case T_EQ:
+  case T_NE:
+  case T_LE:
+  case T_GE:
+  case '<':
+  case '>':
+  {
+      Operand *zero = NewImmediate(0);
+      Operand *skiplabel = CreateTempLabel(irl);
+      EmitMove(irl, temp, zero);
+      CompileBoolBranches(irl, expr, NULL, skiplabel);
+      EmitOp2(irl, OPC_NOT, temp, temp);
+      EmitLabel(irl, skiplabel);
+      return temp;
+  }
+  
   default:
     ERROR(lhs, "Unsupported operator %d", op);
     return left;
@@ -582,7 +604,7 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_HWREG:
     return CompileHWReg(irl, expr);
   case AST_OPERATOR:
-    return CompileOperator(irl, expr->d.ival, expr->left, expr->right);
+    return CompileOperator(irl, expr);
   case AST_FUNCCALL:
     return CompileFunccall(irl, expr);
   case AST_ASSIGN:
