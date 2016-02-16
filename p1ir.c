@@ -64,31 +64,33 @@ StringFor(int opc)
 {
   switch(opc) {
   case OPC_MOVE:
-    return "mov";
+      return "mov";
   case OPC_NEG:
-    return "neg";
+      return "neg";
   case OPC_ABS:
-    return "abs";
+      return "abs";
   case OPC_ADD:
-    return "add";
+      return "add";
   case OPC_CALL:
-    return "call";
+      return "call";
   case OPC_CMP:
-    return "cmp";
+      return "cmp";
   case OPC_JUMP:
-    return "jmp";
+      return "jmp";
+  case OPC_OR:
+      return "or";
   case OPC_SHL:
-    return "shl";
+      return "shl";
   case OPC_SHR:
-    return "shr";
+      return "shr";
   case OPC_SAR:
-    return "sar";
+      return "sar";
   case OPC_SUB:
-    return "sub";
+      return "sub";
   case OPC_XOR:
-    return "xor";
+      return "xor";
   default:
-    break;
+      break;
   }
   return "???";
 }
@@ -166,6 +168,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_ADD:
     case OPC_SUB:
     case OPC_AND:
+    case OPC_OR:
     case OPC_XOR:
     case OPC_NEG:
         PrintCond(fb, ir->cond);

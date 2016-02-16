@@ -635,17 +635,20 @@ static void EmitStatement(IRList *irl, AST *ast)
 	  EmitLabel(irl, toploop);
 	}
 	break;
+#if 0
     case AST_ASSIGN:
         result = CompileExpression(irl, ast->left);
 	op = CompileExpression(irl, ast->right);
 	EmitMove(irl, result, op);
 	break;
+#endif
     case AST_YIELD:
 	/* do nothing in assembly for YIELD */
         break;
     default:
-        ERROR(ast, "Not yet able to handle this kind of statement");
-	break;
+        /* assume an expression */
+        (void)CompileExpression(irl, ast);
+        break;
     }
     /* release temporaries we used */
     endtempreg = curfunc->curtempreg;
@@ -718,9 +721,10 @@ CompileToIR(IRList *irl, ParserState *P)
     irl->head = NULL;
     irl->tail = NULL;
 
+    // assign all function names so we can do forward calls
     for(f = P->functions; f; f = f->next) {
-        char *frname;
 	char *fname;
+        char *frname;
 	frname = malloc(strlen(f->name) + strlen(P->basename) + 8);
 	sprintf(frname, "%s_%s", P->basename, f->name);
 	fname = strdup(frname);
@@ -728,6 +732,10 @@ CompileToIR(IRList *irl, ParserState *P)
 
         f->asmname = NewOperand(REG_LABEL, fname, 0);
         f->asmretname = NewOperand(REG_LABEL, frname, 0);
+    }
+    
+    // now compile the functions
+    for(f = P->functions; f; f = f->next) {
 	if (newlineOp) {
   	    EmitNewline(irl);
 	}
