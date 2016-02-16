@@ -338,7 +338,7 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     rhs = CompileExpression(irl, expr->right);
     break;
   default:
-    cond = COND_EQ;
+    cond = COND_NE;
     lhs = CompileExpression(irl, expr);
     rhs = NewOperand(REG_IMM, "", 0);
     break;
@@ -377,8 +377,19 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
             dummylabel = CreateTempLabel(irl);
             falsedest = dummylabel;
         }
-        CompileBoolBranches(irl, expr->left, falsedest, NULL);
-        CompileBoolBranches(irl, expr->right, falsedest, truedest);
+        CompileBoolBranches(irl, expr->left, NULL, falsedest);
+        CompileBoolBranches(irl, expr->right, truedest, falsedest);
+        if (dummylabel) {
+            EmitLabel(irl, dummylabel);
+        }
+        break;
+    case T_OR:
+        if (!truedest) {
+            dummylabel = CreateTempLabel(irl);
+            truedest = dummylabel;
+        }
+        CompileBoolBranches(irl, expr->left, truedest, NULL);
+        CompileBoolBranches(irl, expr->right, truedest, falsedest);
         if (dummylabel) {
             EmitLabel(irl, dummylabel);
         }
