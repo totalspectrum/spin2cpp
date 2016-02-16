@@ -313,26 +313,18 @@ InvertCond(IRCond v)
   return v;
 }
 
-IRCond
-CompileBoolExpression(IRList *irl, AST *expr)
+static IRCond
+CompileBasicBoolExpression(IRList *irl, AST *expr)
 {
   IRCond cond;
   Operand *lhs;
   Operand *rhs;
   int opkind;
 
-  if (IsConstExpr(expr)) {
-    return EvalConstExpr(expr) == 0 ? COND_FALSE : COND_TRUE;
-  }
-
   if (expr->kind == AST_OPERATOR) {
     opkind = expr->d.ival;
   } else {
     opkind = -1;
-  }
-  if (opkind == T_NOT) {
-    cond = CompileBoolExpression(irl, expr->right);
-    return InvertCond(cond);
   }
   switch(opkind) {
   case T_NE:
@@ -361,6 +353,50 @@ CompileBoolExpression(IRList *irl, AST *expr)
   }
   EmitOp2(irl, OPC_CMP, lhs, rhs);
   return cond;
+}
+
+void
+CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedest)
+{
+    IRCond cond;
+    int opkind;
+    Operand *dummylabel = NULL;
+    
+    if (expr->kind == AST_OPERATOR) {
+        opkind = expr->d.ival;
+    } else {
+        opkind = -1;
+    }
+
+    switch (opkind) {
+    case T_NOT:
+        CompileBoolBranches(irl, expr->right, falsedest, truedest);
+        break;
+    case T_AND:
+        if (!falsedest) {
+            dummylabel = CreateTempLabel(irl);
+            falsedest = dummylabel;
+        }
+        CompileBoolBranches(irl, expr->left, falsedest, NULL);
+        CompileBoolBranches(irl, expr->right, falsedest, truedest);
+        if (dummylabel) {
+            EmitLabel(irl, dummylabel);
+        }
+        break;
+    default:
+        if (IsConstExpr(expr)) {
+            cond = EvalConstExpr(expr) == 0 ? COND_FALSE : COND_TRUE;
+        } else {
+            cond = CompileBasicBoolExpression(irl, expr);
+        }
+        if (truedest) {
+            EmitJump(irl, cond, truedest);
+        }
+        if (falsedest) {
+            EmitJump(irl, InvertCond(cond), falsedest);
+        }
+        break;
+    }
 }
 
 static int
@@ -576,7 +612,6 @@ static void EmitStatement(IRList *irl, AST *ast)
     Operand *op;
     Operand *result;
     Operand *botloop, *toploop;
-    IRCond cond;
     int starttempreg, endtempreg;
 
     if (!ast) return;
@@ -602,8 +637,7 @@ static void EmitStatement(IRList *irl, AST *ast)
         toploop = CreateTempLabel(irl);
 	botloop = CreateTempLabel(irl);
 	EmitLabel(irl, toploop);
-        cond = CompileBoolExpression(irl, ast->left);
-        EmitJump(irl, InvertCond(cond), botloop);
+        CompileBoolBranches(irl, ast->left, NULL, botloop);
         EmitStatementList(irl, ast->right);
 	EmitJump(irl, COND_TRUE, toploop);
 	EmitLabel(irl, botloop);
@@ -612,13 +646,11 @@ static void EmitStatement(IRList *irl, AST *ast)
         toploop = CreateTempLabel(irl);
 	EmitLabel(irl, toploop);
         EmitStatementList(irl, ast->right);
-        cond = CompileBoolExpression(irl, ast->left);
-        EmitJump(irl, cond, toploop);
+        CompileBoolBranches(irl, ast->left, toploop, NULL);
 	break;
     case AST_IF:
         toploop = CreateTempLabel(irl);
-	cond = CompileBoolExpression(irl, ast->left);
-	EmitJump(irl, InvertCond(cond), toploop);
+        CompileBoolBranches(irl, ast->left, NULL, toploop);
 	ast = ast->right;
 	if (ast->kind == AST_COMMENTEDNODE) {
 	  ast = ast->left;
@@ -635,13 +667,6 @@ static void EmitStatement(IRList *irl, AST *ast)
 	  EmitLabel(irl, toploop);
 	}
 	break;
-#if 0
-    case AST_ASSIGN:
-        result = CompileExpression(irl, ast->left);
-	op = CompileExpression(irl, ast->right);
-	EmitMove(irl, result, op);
-	break;
-#endif
     case AST_YIELD:
 	/* do nothing in assembly for YIELD */
         break;
