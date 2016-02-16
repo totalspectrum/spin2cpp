@@ -131,11 +131,11 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     switch(ir->opc) {
     case OPC_DEAD:
         /* no code necessary, internal opcode */
-#if 0
-        flexbuf_addstr(fb, "\t.dead\t");
-	PrintOperandDirect(fb, ir->dst);
-        flexbuf_addstr(fb, "\n");
-#endif
+        if (gl_optimize_flags & OPT_NO_ASM) {
+          flexbuf_addstr(fb, "\t.dead\t");
+	  PrintOperandDirect(fb, ir->dst);
+          flexbuf_addstr(fb, "\n");
+	}
         break;
     case OPC_COMMENT:
         PrintOperand(fb, ir->dst);
@@ -168,7 +168,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_AND:
     case OPC_XOR:
     case OPC_NEG:
-        flexbuf_addchar(fb, '\t');
+        PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
 	PrintOperand(fb, ir->dst);

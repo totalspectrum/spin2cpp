@@ -4,7 +4,6 @@ stest021_waitcycles
 L_001_
 	cmp	CNT, stest021_waitcycles_end_ wc,wz
  if_lt	jmp	#L_001_
-L_002_
 stest021_waitcycles_ret
 	ret
 

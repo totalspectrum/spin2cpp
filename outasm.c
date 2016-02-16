@@ -615,6 +615,26 @@ static void EmitStatement(IRList *irl, AST *ast)
         cond = CompileBoolExpression(irl, ast->left);
         EmitJump(irl, cond, toploop);
 	break;
+    case AST_IF:
+        toploop = CreateTempLabel(irl);
+	cond = CompileBoolExpression(irl, ast->left);
+	EmitJump(irl, InvertCond(cond), toploop);
+	ast = ast->right;
+	if (ast->kind == AST_COMMENTEDNODE) {
+	  ast = ast->left;
+	}
+	/* ast should be an AST_THENELSE */
+	EmitStatementList(irl, ast->left);
+	if (ast->right) {
+	  botloop = CreateTempLabel(irl);
+	  EmitJump(irl, COND_TRUE, botloop);
+	  EmitLabel(irl, toploop);
+	  EmitStatementList(irl, ast->right);
+	  EmitLabel(irl, botloop);
+	} else {
+	  EmitLabel(irl, toploop);
+	}
+	break;
     case AST_ASSIGN:
         result = CompileExpression(irl, ast->left);
 	op = CompileExpression(irl, ast->right);
@@ -738,6 +758,29 @@ IsLocalOrArg(Operand *op)
   return op->kind == REG_LOCAL || op->kind == REG_ARG;
 }
 
+static bool IsBranch(int opc)
+{
+  switch (opc) {
+  case OPC_JUMP:
+  case OPC_DJNZ:
+  case OPC_CALL:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool IsDummy(IR *op)
+{
+  switch(op->opc) {
+  case OPC_COMMENT:
+  case OPC_DEAD:
+    return true;
+  default:
+    return false;
+  }
+}
+
 /*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
@@ -757,6 +800,7 @@ IsDead(IR *instr, Operand *op)
     if (ir->opc == OPC_DEAD && op == ir->dst) {
       return true;
     }
+    if (IsDummy(ir)) continue;
     if (ir->opc == OPC_RET) {
       return true;
     }
@@ -810,29 +854,6 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   return false;
 }
 
-static bool IsBranch(int opc)
-{
-  switch (opc) {
-  case OPC_JUMP:
-  case OPC_DJNZ:
-  case OPC_CALL:
-    return true;
-  default:
-    return false;
-  }
-}
-
-static bool IsDummy(IR *op)
-{
-  switch(op->opc) {
-  case OPC_COMMENT:
-  case OPC_DEAD:
-    return true;
-  default:
-    return false;
-  }
-}
-
 static bool
 SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
 {
@@ -844,6 +865,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     if (ir->opc == OPC_RET) {
       return IsLocalOrArg(orig);
     } else if (IsBranch(ir->opc)) {
+      return false;
+    }
+    if (ir->opc == OPC_LABEL) {
       return false;
     }
     if (ir->dst == replace) {
@@ -902,7 +926,7 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace)
   }
 }
 
-static void
+void
 OptimizeMoves(IRList *irl)
 {
   IR *ir;
@@ -934,7 +958,7 @@ OptimizeMoves(IRList *irl)
   } while (change);
 }
 
-static void EliminateDeadCode(IRList *irl)
+void EliminateDeadCode(IRList *irl)
 {
   bool change;
   IR *ir, *ir_next;
@@ -949,8 +973,10 @@ static void EliminateDeadCode(IRList *irl)
 	  IR *x = ir->next;
 	  while (x && x->opc != OPC_LABEL) {
 	    ir_next = x->next;
-	    DeleteIR(irl, x);
-	    change = true;
+	    if (!IsDummy(x)) {
+	      DeleteIR(irl, x);
+	      change = true;
+	    }
 	    x = ir_next;
 	  }
 	}
@@ -1034,6 +1060,39 @@ void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
     }
     ir = ir->next;
   }
+  while (ir && IsDummy(ir)) {
+    ir = ir->next;
+  }
+  if (ir && ir->opc == OPC_LABEL) {
+    // this is the destination label
+    // mark it to check for optimization
+    ir->cond = cond;
+  }
+}
+
+static void
+MarkLabelIfUnused(IRList *irl, Operand *label)
+{
+  IR *target = 0;
+  IR *ir;
+  for (ir = irl->head; ir; ir = ir->next) {
+    if (!IsDummy(ir)) {
+      if (ir->src == label) return;
+      if (ir->dst == label) {
+	if (ir->opc == OPC_LABEL) {
+	  target = ir; // this is the label we may want to delete
+	} else {
+	  return;
+	}
+      }
+    }
+  }
+  if (target) {
+    // we can't actually delete because the caller may hold
+    // a pointer to this label as ir_next
+    // so just mark it as a dummy
+    target->opc = OPC_DEAD;
+  }
 }
 
 void OptimizeShortBranches(IRList *irl)
@@ -1049,6 +1108,8 @@ void OptimizeShortBranches(IRList *irl)
     if (n) {
       ConditionalizeInstructions(ir->next, InvertCond(ir->cond), n);
       DeleteIR(irl, ir);
+      /* now see if the label is unused */
+      MarkLabelIfUnused(irl, ir->dst);
     }
     ir = ir_next;
   }
