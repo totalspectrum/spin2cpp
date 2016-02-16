@@ -1,6 +1,6 @@
 stest009_func1
+	add	stest009_func1_x_, stest009_func1_x_
 	mov	result_, stest009_func1_x_
-	add	result_, stest009_func1_x_
 stest009_func1_ret
 	ret
 

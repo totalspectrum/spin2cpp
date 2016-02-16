@@ -1,8 +1,8 @@
 stest010_test1
 	add	stest010_test1_x_, stest010_test1_x_
-	mov	result_, stest010_test1_x_
 	add	stest010_test1_y_, stest010_test1_y_
-	xor	result_, stest010_test1_y_
+	xor	stest010_test1_x_, stest010_test1_y_
+	mov	result_, stest010_test1_x_
 stest010_test1_ret
 	ret
 

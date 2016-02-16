@@ -1,6 +1,6 @@
 stest012_sum
+	add	stest012_sum_x_, stest012_sum_y_
 	mov	result_, stest012_sum_x_
-	add	result_, stest012_sum_y_
 stest012_sum_ret
 	ret
 

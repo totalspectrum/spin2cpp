@@ -801,6 +801,9 @@ IsDead(IR *instr, Operand *op)
       return true;
     }
     if (IsDummy(ir)) continue;
+    if (ir->opc == OPC_LABEL) {
+      continue;
+    }
     if (ir->opc == OPC_RET) {
       return true;
     }
@@ -820,7 +823,8 @@ IsDead(IR *instr, Operand *op)
       }
     }
   }
-  return false;
+  /* if we reach the end without seeing any use */
+  return true;
 }
 
 bool
@@ -841,6 +845,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
+    if (IsDummy(ir)) {
+      continue;
+    }
     if (ir->opc == OPC_LABEL) {
       return false;
     }
@@ -868,9 +875,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return false;
     }
     if (ir->opc == OPC_LABEL) {
+      if (IsDead(ir->next, orig) && IsDead(ir->next, replace)) return true;
       return false;
     }
     if (ir->dst == replace) {
+      // special case: if we have a "mov replace,orig" and orig is dead
+      // then we are good to go
+      if (ir->opc == OPC_MOVE && ir->src == orig && IsDead(ir->next, orig) && ir->cond == COND_TRUE) {
+	return true;
+      }
       return false;
     }
     if (ir->src == replace && ir != first_ir) {
@@ -912,13 +925,16 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace)
     if (IsDummy(ir)) {
       continue;
     }
-    if (ir->opc == OPC_RET) {
+    if (ir->opc == OPC_RET || ir->opc == OPC_LABEL) {
       return;
     } else if (IsBranch(ir->opc)) {
       return;
     }
     if (ir->src == orig) {
       ir->src = replace;
+      if (ir->dst == replace && ir->opc == OPC_MOVE) {
+	return;
+      }
     }
     if (ir->dst == orig) {
       ir->dst = replace;
