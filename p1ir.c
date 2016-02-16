@@ -79,6 +79,8 @@ StringFor(int opc)
       return "jmp";
   case OPC_OR:
       return "or";
+  case OPC_REV:
+      return "rev";
   case OPC_SHL:
       return "shl";
   case OPC_SHR:
@@ -166,11 +168,12 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	break;
     case OPC_MOVE:
     case OPC_ADD:
-    case OPC_SUB:
     case OPC_AND:
-    case OPC_OR:
-    case OPC_XOR:
+    case OPC_SUB:
     case OPC_NEG:
+    case OPC_OR:
+    case OPC_REV:
+    case OPC_XOR:
         PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
@@ -194,6 +197,13 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     }
 }
 
+/* add an appropriate header for the .spin file we're creating */
+static void
+AddHeader(struct flexbuf *fb)
+{
+//    flexbuf_addstr(fb, "DAT\n\t.org\t0\n");
+}
+
 /* assemble an IR list */
 char *
 IRAssemble(IRList *list)
@@ -203,6 +213,7 @@ IRAssemble(IRList *list)
     char *ret;
     
     flexbuf_init(&fb, 512);
+    AddHeader(&fb);
     for (ir = list->head; ir; ir = ir->next) {
         P1AssembleIR(&fb, ir);
     }
