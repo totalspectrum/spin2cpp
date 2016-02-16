@@ -434,6 +434,12 @@ OpcFromOp(int op)
     return OPC_NEG;
   case T_ABS:
     return OPC_ABS;
+  case T_BIT_NOT:
+    return OPC_NOT;
+  case T_ROTL:
+      return OPC_ROL;
+  case T_ROTR:
+      return OPC_ROR;
   default:
     ERROR(NULL, "Unsupported operator %d", op);
     return OPC_UNKNOWN;
@@ -459,10 +465,13 @@ CompileOperator(IRList *irl, AST *expr)
   case T_SHL:
   case T_SHR:
   case T_SAR:
+  case T_ROTL:
+  case T_ROTR:
     EmitOp2(irl, OPC_MOVE, temp, left);
     return EmitOp2(irl, OpcFromOp(op), temp, right);
   case T_NEGATE:
   case T_ABS:
+  case T_BIT_NOT:
     return EmitOp2(irl, OpcFromOp(op), temp, right);
   case T_NOT:
   case T_AND:
