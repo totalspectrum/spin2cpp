@@ -731,7 +731,7 @@ OutputClkFreq(FILE *f, ParserState *P)
 }
 
 void
-OutputCppCode(const char *name, ParserState *P, int printMain)
+OutputCppCode(const char *filename, ParserState *P, int printMain)
 {
     FILE *f = NULL;
     char *fname = NULL;
@@ -740,10 +740,8 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
     save = current;
     current = P;
 
-    fname = malloc(strlen(name) + 8);
-
     /* print out the header file */
-    sprintf(fname, "%s.h", name);
+    fname = ReplaceExtension(filename, ".h");
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
@@ -763,10 +761,11 @@ OutputCppCode(const char *name, ParserState *P, int printMain)
         exit(1);
     }
 
+    free(fname);
     if (gl_ccode) {
-        sprintf(fname, "%s.c", P->basename);
+        fname = ReplaceExtension(filename, ".c");
     } else {
-        sprintf(fname, "%s.cpp", P->basename);
+        fname = ReplaceExtension(filename, ".cpp");
     }
     f = fopen(fname, "w");
     if (!f) {
