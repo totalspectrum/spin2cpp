@@ -12,6 +12,8 @@
 #include "ir.h"
 #include "flexbuf.h"
 
+static Operand *mulfunc, *mula, *mulb;
+
 typedef struct OperandList {
   struct OperandList *next;
   Operand *op;
@@ -19,6 +21,7 @@ typedef struct OperandList {
 
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
+static Operand* CompileMul(IRList *irl, AST *expr);
 
 void OptimizeIR(IRList *irl);
 void EmitGlobals(IRList *irl);
@@ -262,6 +265,25 @@ CompileHWReg(IRList *irl, AST *expr)
   return GetGlobal(REG_HW, hw->cname, 0);
 }
 
+static Operand *
+CompileMul(IRList *irl, AST *expr)
+{
+  Operand *lhs = CompileExpression(irl, expr->left);
+  Operand *rhs = CompileExpression(irl, expr->right);
+  Operand *temp = NewFunctionTempRegister();
+
+  if (!mulfunc) {
+    mulfunc = NewOperand(REG_LABEL, "multiply_", 0);
+    mula = NewOperand(REG_ARG, "mula_", 0);
+    mulb = NewOperand(REG_ARG, "mulb_", 0);
+  }
+  EmitMove(irl, mula, lhs);
+  EmitMove(irl, mulb, rhs);
+  EmitOp1(irl, OPC_CALL, mulfunc);
+  EmitMove(irl, temp, mula);
+  return temp;
+}
+
 static IRCond
 CondFromExpr(int kind)
 {
@@ -446,8 +468,8 @@ OpcFromOp(int op)
   }
 }
 
-Operand *
-CompileOperator(IRList *irl, AST *expr)
+static Operand *
+CompileBasicOperator(IRList *irl, AST *expr)
 {
   int op = expr->d.ival;
   AST *lhs = expr->left;
@@ -498,6 +520,17 @@ CompileOperator(IRList *irl, AST *expr)
   }
 }
 
+Operand *
+CompileOperator(IRList *irl, AST *expr)
+{
+  int op = expr->d.ival;
+  switch (op) {
+  case '*':
+    return CompileMul(irl, expr);
+  default:
+    return CompileBasicOperator(irl, expr);
+  }
+}
 
 void
 AppendOperand(OperandList **listptr, Operand *op)
@@ -924,6 +957,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       continue;
     }
     if (ir->opc == OPC_LABEL) {
+      return false;
+    }
+    if (IsBranch(ir->opc)) {
       return false;
     }
     if (ir->dst == orig && InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
