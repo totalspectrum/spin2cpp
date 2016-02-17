@@ -26,6 +26,7 @@ static Operand* CompileMul(IRList *irl, AST *expr);
 void OptimizeIR(IRList *irl);
 void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
+static void EmitBuiltins(IRList *irl);
 
 struct GlobalVariable {
     Operand *op;
@@ -67,6 +68,7 @@ OutputAsmCode(const char *fname, ParserState *P)
         return;
     }
     OptimizeIR(&irl);
+    EmitBuiltins(&irl);
     EmitGlobals(&irl);
     asmcode = IRAssemble(&irl);
     
@@ -274,8 +276,8 @@ CompileMul(IRList *irl, AST *expr)
 
   if (!mulfunc) {
     mulfunc = NewOperand(REG_LABEL, "multiply_", 0);
-    mula = NewOperand(REG_ARG, "mula_", 0);
-    mulb = NewOperand(REG_ARG, "mulb_", 0);
+    mula = GetGlobal(REG_ARG, "mula_", 0);
+    mulb = GetGlobal(REG_ARG, "mulb_", 0);
   }
   EmitMove(irl, mula, lhs);
   EmitMove(irl, mulb, rhs);
@@ -1250,4 +1252,42 @@ OptimizeIR(IRList *irl)
   OptimizeMoves(irl);
   OptimizeShortBranches(irl);
   CheckUsage(irl);
+}
+
+/*
+ * emit builtin functions like mul and div
+ */
+const char *builtin_mul =
+"\nmultiply_\n"
+"\tmov\titmp2_, mula_\n"
+"\txor\titmp2_, mulb_\n"
+"\tabs\tmula_, mula_\n"
+"\tabs\tmulb_, mulb_\n"
+"\tmov\tresult_, #0\n"
+"\tmov\titmp1_, #32\n"
+"\tshr\tmula_, #1 wc\n"
+"mul_lp_\n"
+" if_c\tadd\tresult_, mulb_ wc\n"
+"\trcr\tresult_, #1 wc\n"
+"\trcr\tmula_, #1 wc\n"
+"\tdjnz\titmp1_, #mul_lp_\n"
+
+"\tshr\titmp2_, #31 wz\n"
+" if_nz\tneg\tresult_, result_\n"
+" if_nz\tneg\tmula_, mula_\n"
+" if_nz\tsub\tresult_, #1\n"
+"\tmov\tmulb_, result_\n"
+"multiply__ret\n"
+"\tret\n";
+
+static void
+EmitBuiltins(IRList *irl)
+{
+    if (mulfunc) {
+        Operand *loop = NewOperand(REG_STRING, builtin_mul, 0);
+        EmitOp1(irl, OPC_COMMENT, loop);
+        (void)GetGlobal(REG_REG, "itmp1_", 0);
+        (void)GetGlobal(REG_REG, "itmp2_", 0);
+        (void)GetGlobal(REG_REG, "result_", 0);
+    }
 }
