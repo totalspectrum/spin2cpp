@@ -13,6 +13,7 @@
 #include "flexbuf.h"
 
 static Operand *mulfunc, *mula, *mulb;
+static Operand *divfunc, *diva, *divb;
 
 typedef struct OperandList {
   struct OperandList *next;
@@ -21,7 +22,8 @@ typedef struct OperandList {
 
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
-static Operand* CompileMul(IRList *irl, AST *expr);
+static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
+static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
 
 void OptimizeIR(IRList *irl);
 void EmitGlobals(IRList *irl);
@@ -268,7 +270,7 @@ CompileHWReg(IRList *irl, AST *expr)
 }
 
 static Operand *
-CompileMul(IRList *irl, AST *expr)
+CompileMul(IRList *irl, AST *expr, int gethi)
 {
   Operand *lhs = CompileExpression(irl, expr->left);
   Operand *rhs = CompileExpression(irl, expr->right);
@@ -282,7 +284,34 @@ CompileMul(IRList *irl, AST *expr)
   EmitMove(irl, mula, lhs);
   EmitMove(irl, mulb, rhs);
   EmitOp1(irl, OPC_CALL, mulfunc);
-  EmitMove(irl, temp, mula);
+  if (gethi) {
+      EmitMove(irl, temp, mulb);
+  } else {
+      EmitMove(irl, temp, mula);
+  }
+  return temp;
+}
+
+static Operand *
+CompileDiv(IRList *irl, AST *expr, int getmod)
+{
+  Operand *lhs = CompileExpression(irl, expr->left);
+  Operand *rhs = CompileExpression(irl, expr->right);
+  Operand *temp = NewFunctionTempRegister();
+
+  if (!divfunc) {
+    divfunc = NewOperand(REG_LABEL, "divide_", 0);
+    diva = GetGlobal(REG_ARG, "mula_", 0);
+    divb = GetGlobal(REG_ARG, "mulb_", 0);
+  }
+  EmitMove(irl, diva, lhs);
+  EmitMove(irl, divb, rhs);
+  EmitOp1(irl, OPC_CALL, divfunc);
+  if (getmod) {
+      EmitMove(irl, temp, divb);
+  } else {
+      EmitMove(irl, temp, diva);
+  }
   return temp;
 }
 
@@ -525,13 +554,19 @@ CompileBasicOperator(IRList *irl, AST *expr)
 Operand *
 CompileOperator(IRList *irl, AST *expr)
 {
-  int op = expr->d.ival;
-  switch (op) {
-  case '*':
-    return CompileMul(irl, expr);
-  default:
-    return CompileBasicOperator(irl, expr);
-  }
+    int op = expr->d.ival;
+    switch (op) {
+    case '*':
+        return CompileMul(irl, expr, 0);
+    case T_HIGHMULT:
+        return CompileMul(irl, expr, 1);
+    case '/':
+        return CompileDiv(irl, expr, 0);
+    case T_MODULUS:
+        return CompileDiv(irl, expr, 1);
+    default:
+        return CompileBasicOperator(irl, expr);
+    }
 }
 
 void
@@ -1257,7 +1292,7 @@ OptimizeIR(IRList *irl)
 /*
  * emit builtin functions like mul and div
  */
-const char *builtin_mul =
+static const char *builtin_mul =
 "\nmultiply_\n"
 "\tmov\titmp2_, mula_\n"
 "\txor\titmp2_, mulb_\n"
@@ -1274,17 +1309,55 @@ const char *builtin_mul =
 
 "\tshr\titmp2_, #31 wz\n"
 " if_nz\tneg\tresult_, result_\n"
-" if_nz\tneg\tmula_, mula_\n"
+" if_nz\tneg\tmula_, mula_ wz\n"
 " if_nz\tsub\tresult_, #1\n"
 "\tmov\tmulb_, result_\n"
 "multiply__ret\n"
-"\tret\n";
+"\tret\n"
+;
+
+static const char *builtin_div =
+"\ndivide_\n"
+    "\tmov\tresult_, #0\n"
+    "\tmov\titmp2_, mula_\n"
+    "\txor\titmp2_, mulb_\n"
+    "\tabs\tmula_, mula_\n"
+    "\tabs\tmulb_, mulb_ wz,wc\n"
+    " if_z\tjmp\t#divexit_\n"
+    "\tmuxc\titmp2_, #1\n"
+    "\tmov\titmp1_, #32\n"
+
+"divlp1_\n"
+    "\tshr\tmulb_,#1 wc,wz\n"
+    "\trcr\tresult_,#1\n"
+    " if_nz\tdjnz\titmp1_,#divlp1_\n"
+
+"divlp2_\n"
+    "\tcmpsub\tmula_,result_ wc\n"
+    "\trcl\tmulb_,#1\n"
+    "\tshr\tresult_,#1\n"
+    "\tdjnz\titmp1_,#divlp2_\n"
+
+    "\tcmps\titmp2_, #0 wc,wz\n"
+    " if_b\tneg\tmula_, mula_\n"
+    "\ttest\titmp2, #1\n"
+    " if_nz\tneg\tmulb_, mulb_\n"
+"divide__ret\n"
+    "\tret\n"
+;
 
 static void
 EmitBuiltins(IRList *irl)
 {
     if (mulfunc) {
         Operand *loop = NewOperand(REG_STRING, builtin_mul, 0);
+        EmitOp1(irl, OPC_COMMENT, loop);
+        (void)GetGlobal(REG_REG, "itmp1_", 0);
+        (void)GetGlobal(REG_REG, "itmp2_", 0);
+        (void)GetGlobal(REG_REG, "result_", 0);
+    }
+    if (divfunc) {
+        Operand *loop = NewOperand(REG_STRING, builtin_div, 0);
         EmitOp1(irl, OPC_COMMENT, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);

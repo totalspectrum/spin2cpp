@@ -177,6 +177,11 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_NOT:
     case OPC_OR:
     case OPC_REV:
+    case OPC_ROL:
+    case OPC_ROR:
+    case OPC_SAR:
+    case OPC_SHL:
+    case OPC_SHR:
     case OPC_XOR:
         PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));

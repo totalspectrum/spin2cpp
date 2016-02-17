@@ -26,7 +26,7 @@ mul_lp_
 	djnz	itmp1_, #mul_lp_
 	shr	itmp2_, #31 wz
  if_nz	neg	result_, result_
- if_nz	neg	mula_, mula_
+ if_nz	neg	mula_, mula_ wz
  if_nz	sub	result_, #1
 	mov	mulb_, result_
 multiply__ret
