@@ -1110,12 +1110,12 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     }
     PrintAssign(f, newast->left, newast->right);
 }
-   
+
 /*
  * print a range use
  */
-void
-PrintRangeUse(FILE *f, AST *src)
+AST *
+TransformRangeUse(AST *src)
 {
     int reverse = 0;
     AST *mask;
@@ -1125,11 +1125,11 @@ PrintRangeUse(FILE *f, AST *src)
 
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
-        return;
+        return src;
     }
     if (src->right->kind != AST_RANGE) {
         ERROR(src, "internal error: expecting range");
-        return;
+        return src;
     }
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
@@ -1157,9 +1157,15 @@ PrintRangeUse(FILE *f, AST *src)
     if (reverse) {
         val = AstOperator(T_REV, val, AstInteger(nbits));
     }
-    PrintExpr(f, val);
+    return val;
 }
 
+void
+PrintRangeUse(FILE *f, AST *src)
+{
+    AST *expr = TransformRangeUse(src);
+    PrintExpr(f, expr);
+}
 
 static void
 PrintStringChar(FILE *f, int c)

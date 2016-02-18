@@ -1022,7 +1022,6 @@ PrintExtraDecl(FILE *f, AST *ast, int indent)
 static void
 PrintStatement(FILE *f, AST *ast, int indent)
 {
-    AST *lhsast = NULL;
     AST *comment = NULL;
     AST *retval;
     
@@ -1150,6 +1149,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     case AST_OPERATOR:
+ #if 0
+        // FIXME: now done in SpinTransforms
         switch (ast->d.ival) {
         case T_NEGATE:
         case T_ABS:
@@ -1161,6 +1162,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
             ast = AstAssign(T_ASSIGN, lhsast, ast);
             break;
         }
+ #endif
         /* fall through */
     default:
     case AST_ASSIGN:
@@ -1676,6 +1678,17 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, level);
         doSpinTransform(&ast->right, level);
         break;
+    case AST_CASE:
+    {
+        AST *list = ast->right;
+        doSpinTransform(&ast->left, 0);
+        while (list) {
+            doSpinTransform(&list->left->left, 0);
+            doSpinTransform(&list->left->right, level);
+            list = list->right;
+        }
+        break;
+    }
     case AST_COGINIT:
         if (0 != (func = IsSpinCoginit(ast))) {
             current->needsCoginit = 1;
@@ -1701,6 +1714,21 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         break;
+    case AST_OPERATOR:
+        if (level == 1) {
+            AST *lhsast;
+            switch (ast->d.ival) {
+            case T_NEGATE:
+            case T_ABS:
+            case T_SQRT:
+            case T_BIT_NOT:
+            case T_DECODE:
+            case T_ENCODE:
+                lhsast = DupAST(ast->right);
+                *astptr = ast = AstAssign(T_ASSIGN, lhsast, ast);
+            }
+        }
+        /* fall through */
     default:
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);

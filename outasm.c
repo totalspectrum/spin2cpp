@@ -717,6 +717,8 @@ CompileExpression(IRList *irl, AST *expr)
     val = CompileExpression(irl, expr->right);
     EmitMove(irl, r, val);
     return r;
+  case AST_RANGEREF:
+    return CompileExpression(irl, TransformRangeUse(expr));
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -1171,8 +1173,16 @@ OptimizeMoves(IRList *irl)
 static bool
 SetsFlags(IR *ir)
 {
-  if (ir->opc == OPC_CMP) return true;
-  return false;
+    if (ir->dst && ir->dst->kind == REG_HW) {
+        return true;
+    }
+    switch (ir->opc) {
+    case OPC_CMP:
+    case OPC_WAITCNT:
+        return true;
+    default:
+        return false;
+    }
 }
 
 void EliminateDeadCode(IRList *irl)
