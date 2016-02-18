@@ -91,6 +91,14 @@ StringFor(int opc)
       return "sar";
   case OPC_SUB:
       return "sub";
+  case OPC_WAITCNT:
+      return "waitcnt";
+  case OPC_WAITPEQ:
+      return "waitpeq";
+  case OPC_WAITPNE:
+      return "waitpne";
+  case OPC_WAITVID:
+      return "waitvid";
   case OPC_XOR:
       return "xor";
   default:
@@ -182,6 +190,10 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_SAR:
     case OPC_SHL:
     case OPC_SHR:
+    case OPC_WAITCNT:
+    case OPC_WAITPEQ:
+    case OPC_WAITPNE:
+    case OPC_WAITVID:
     case OPC_XOR:
         PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));

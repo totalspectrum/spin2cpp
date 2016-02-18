@@ -770,6 +770,15 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	EmitJump(irl, COND_TRUE, curfunc->asmretname);
 	break;
+    case AST_WAITCNT:
+        retval = ast->left;
+        if (!retval) {
+            ERROR(ast, "No expression for waitcnt");
+            return;
+        }
+        op = CompileExpression(irl, retval);
+        EmitOp2(irl, OPC_WAITCNT, op, NewImmediate(0));
+        break;
     case AST_WHILE:
         toploop = CreateTempLabel(irl);
 	botloop = CreateTempLabel(irl);

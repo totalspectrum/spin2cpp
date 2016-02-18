@@ -1047,6 +1047,11 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         fprintf(f, ";"); PrintNewline(f);
         break;
+    case AST_WAITCNT:
+        fprintf(f, "%*cwaitcnt(", indent, ' ');
+        PrintExpr(f, ast->left);
+        fprintf(f, ");"); PrintNewline(f);
+        break;
     case AST_ABORT:
         PrintDebugDirective(f, ast);
         fprintf(f, "%*cif (!abortChain__) abort();", indent, ' ');

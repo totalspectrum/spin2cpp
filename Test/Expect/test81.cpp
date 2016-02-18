@@ -12,13 +12,13 @@ static int32_t tmp__;
 
 void test81::High8(void)
 {
-  OUTA |= (1<<8);
-  DIRA |= (1<<8);
+  OUTA |= (1 << 8);
+  DIRA |= (1 << 8);
 }
 
 void test81::High(int32_t Pin)
 {
-  OUTA |= (1<<Pin);
-  DIRA |= (1<<Pin);
+  OUTA |= (1 << Pin);
+  DIRA |= (1 << Pin);
 }
 

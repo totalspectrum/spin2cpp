@@ -17,6 +17,6 @@ void test82::Flip(void)
 
 void test82::Toggle(int32_t Pin)
 {
-  OUTA ^= (1<<Pin);
+  OUTA ^= (1 << Pin);
 }
 

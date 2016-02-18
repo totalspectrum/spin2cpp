@@ -18,8 +18,8 @@ static int32_t tmp__;
 
 void test110::Main(void)
 {
-  DIRA |= (1<<0);
-  OUTA |= (1<<0);
+  DIRA |= (1 << 0);
+  OUTA |= (1 << 0);
 }
 
 /* 

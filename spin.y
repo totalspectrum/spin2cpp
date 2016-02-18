@@ -171,6 +171,7 @@ CheckYield(AST *body)
 %token T_LOOKUPZ
 %token T_COGINIT
 %token T_COGNEW
+%token T_WAITCNT
 
 %token T_CASE
 %token T_OTHER
@@ -329,9 +330,9 @@ stmt:
 
 basicstmt:
    T_RETURN T_EOLN
-   { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
+    { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
   |  T_RETURN expr T_EOLN
-  { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
   | T_ABORT T_EOLN
     { $$ = AstAbort(NULL, $1); }
   |  T_ABORT expr T_EOLN
@@ -342,9 +343,14 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
   | T_NEXT T_EOLN
     { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
-
+  | waitstmt
+    { $$ = $1; }
 ;
 
+waitstmt:
+  T_WAITCNT '(' expr ')'
+    { $$ = NewCommentedAST(AST_WAITCNT, $3, NULL, $1); }
+;
 compoundstmt:
    ifstmt
     { $$ = $1; }

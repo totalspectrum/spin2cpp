@@ -39,6 +39,10 @@ enum IROpcode {
     OPC_SHL,
     OPC_SHR,
     OPC_SUB,
+    OPC_WAITCNT,
+    OPC_WAITPEQ,
+    OPC_WAITPNE,
+    OPC_WAITVID,
     OPC_XOR,
 
     /* special flag to indicate a dead register */

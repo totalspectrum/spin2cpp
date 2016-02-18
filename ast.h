@@ -125,6 +125,7 @@ enum astkind {
     AST_GENERICTYPE = 84,
     AST_VOIDTYPE,
     AST_SEQUENCE,
+    AST_WAITCNT,
 };
 
 struct AST {

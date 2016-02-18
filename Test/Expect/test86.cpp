@@ -12,11 +12,11 @@ static int32_t tmp__;
 
 void test86::Set1(void)
 {
-  OUTA = ((OUTA & 0xfffffffd) | 0x2);
+  OUTA = (OUTA & 0xfffffffd) | 0x2;
 }
 
 void test86::Set(int32_t Pin)
 {
-  OUTA = ((OUTA & (~(1 << Pin))) | (1 << Pin));
+  OUTA = (OUTA & (~(1 << Pin))) | (1 << Pin);
 }
 

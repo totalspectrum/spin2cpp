@@ -813,6 +813,7 @@ struct reservedword {
 
     { "var", T_VAR },
 
+    { "waitcnt", T_WAITCNT },
     { "while", T_WHILE },
     { "word", T_WORD },
 

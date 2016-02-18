@@ -911,8 +911,8 @@ ReverseBits(int32_t A, int32_t N)
 /*
  * special case an assignment like outa[2..1] ^= -1
  */
-static void
-RangeXor(FILE *f, AST *dst, AST *src)
+static AST *
+RangeXor(AST *dst, AST *src)
 {
     int nbits;
     uint32_t mask;
@@ -927,13 +927,10 @@ RangeXor(FILE *f, AST *dst, AST *src)
          */
         if (IsConstExpr(src) && !IsConstExpr(loexpr)) {
             int32_t srcval = EvalConstExpr(src);
+            AST *maskexpr;
             if (srcval == -1 || srcval == 0) {
-                srcval = srcval & 1;
-                PrintLHS(f, dst->left, 1, 0);
-                fprintf(f, " ^= (1<<");
-                PrintExpr(f, loexpr);
-                fprintf(f, ")");
-                return;
+                maskexpr = AstOperator(T_SHL, AstInteger(1), loexpr);
+                return AstAssign('^', dst->left, maskexpr);
             }
         }
         lo = EvalConstExpr(loexpr);
@@ -950,8 +947,7 @@ RangeXor(FILE *f, AST *dst, AST *src)
     mask = mask & EvalConstExpr(src);
     mask = (mask << lo) | (mask >> (32-lo));
 
-    PrintLHS(f, dst->left, 1, 0);
-    fprintf(f, " ^= 0x%x", mask);
+    return AstAssign('^', dst->left, AstInteger(mask));
 }
 
 /*
@@ -967,12 +963,13 @@ RangeXor(FILE *f, AST *dst, AST *src)
 /* WARNING: mask must be a contiguous set of bits that fill
  * the desired range
  */
-static void
-RangeBitSet(FILE *f, AST *dst, uint32_t mask, int bitset)
+static AST *
+RangeBitSet(AST *dst, uint32_t mask, int bitset)
 {
     AST *loexpr;
     AST *hiexpr;
-
+    AST *maskexpr;
+    
     if (dst->right->right == NULL) {
         loexpr = dst->right->left;
     } else {
@@ -988,14 +985,13 @@ RangeBitSet(FILE *f, AST *dst, uint32_t mask, int bitset)
 	}
 
     }
-    PrintLHS(f, dst->left, 1, 0);
+    maskexpr = AstOperator(T_SHL, AstInteger(mask), loexpr);
     if (bitset) {
-        fprintf(f, " |= (%u<<", mask);
+        return AstAssign('|', dst->left, maskexpr);
     } else {
-        fprintf(f, " &= ~(%u<<", mask);
+        maskexpr = AstOperator(T_BIT_NOT, NULL, maskexpr);
+        return AstAssign('&', dst->left, maskexpr);
     }
-    PrintExpr(f, loexpr);
-    fprintf(f, ")");
 }
 
 /*
@@ -1010,8 +1006,8 @@ RangeBitSet(FILE *f, AST *dst, uint32_t mask, int bitset)
  * Note that we want to special case some common idioms:
  *  outa[2..1] := outa[2..1] ^ -1, for example
  */
-void
-PrintRangeAssign(FILE *f, AST *dst, AST *src)
+AST *
+TransformRangeAssign(AST *dst, AST *src)
 {
     int reverse = 0;
     uint32_t mask;
@@ -1020,14 +1016,13 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
 
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
-        return;
+        return 0;
     }
     /* special case logical operators */
     if (src->kind == AST_OPERATOR && src->d.ival == T_BIT_NOT
         && AstMatch(dst, src->right))
     {
-        RangeXor(f, dst, AstInteger(0xffffffff));
-        return;
+        return RangeXor(dst, AstInteger(0xffffffff));
     }
     /* now handle the ordinary case */
     /* if the "range" is just a single item it does not have to
@@ -1058,15 +1053,11 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
     if (IsConstExpr(src)) {
         int bitset = EvalConstExpr(src);
         if (bitset == 0 || bitset == mask) {
-            RangeBitSet(f, dst, mask, bitset);
-            return;
+            return RangeBitSet(dst, mask, bitset);
         }
     }
     if (nbits >= 32) {
-        PrintLHS(f, dst->left, 1, 0);
-        fprintf(f, " = ");
-        PrintExpr(f, FoldIfConst(src));
-        return;
+        return AstAssign(T_ASSIGN, dst->left, FoldIfConst(src));
     }
 
     /*
@@ -1088,12 +1079,38 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         orexpr = FoldIfConst(orexpr);
         orexpr = AstOperator('|', andexpr, orexpr);
 
-        PrintLHS(f, dst->left, 1, 0);
-        fprintf(f, " = ");
-        PrintExpr(f, orexpr);
+        return AstAssign(T_ASSIGN, dst->left, orexpr);
     }
 }
 
+void
+PrintRangeAssign(FILE *f, AST *dst, AST *src)
+{
+    AST *newast;
+    AST *lhs, *rhs;
+    int op;
+    
+    newast = TransformRangeAssign(dst, src);
+    /* try to pretty print if we can */
+    lhs = newast->left;
+    rhs = newast->right;
+    if (rhs->kind == AST_OPERATOR && AstMatch(lhs, rhs->left)) {
+        op = rhs->d.ival;
+        if (op == '&' || op == '|' || op == '^') {
+            rhs = rhs->right;
+            PrintLHS(f, lhs, 1, 0);
+            fprintf(f, " %c= ", op);
+            if (rhs->kind == AST_INTEGER) {
+                fprintf(f, "0x%x", rhs->d.ival);
+            } else {
+                PrintExpr(f, rhs);
+            }
+            return;
+        }
+    }
+    PrintAssign(f, newast->left, newast->right);
+}
+   
 /*
  * print a range use
  */

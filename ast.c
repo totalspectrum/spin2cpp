@@ -78,6 +78,8 @@ AstMatch(AST *a, AST *b)
     if (a->kind != b->kind)
         return 0;
     switch (a->kind) {
+    case AST_HWREG:
+        return a->d.ptr == b->d.ptr;
     case AST_INTEGER:
         return a->d.ival == b->d.ival;
     case AST_STRING:
@@ -87,6 +89,7 @@ AstMatch(AST *a, AST *b)
     case AST_ASSIGN:
         if (a->d.ival != b->d.ival)
             return 0;
+        break;
     default:
         break;
     }
