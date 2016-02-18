@@ -57,4 +57,6 @@ Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 
 AST *ExprType(AST *ast);
 
+AST *TransformRangeAssign(AST *dst, AST *src);
+
 #endif

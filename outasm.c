@@ -243,7 +243,7 @@ NewImmediate(int32_t val)
     return NewOperand(REG_IMM, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(REG_REG, temp, (int32_t)val);
+  return GetGlobal(REG_IMM, temp, (int32_t)val);
 }
 
 Operand *
@@ -697,7 +697,8 @@ CompileExpression(IRList *irl, AST *expr)
     expr = expr->left;
   }
   if (!expr) return NULL;
-
+  expr = FoldIfConst(expr);
+  
   switch (expr->kind) {
   case AST_INTEGER:
   case AST_FLOAT:
@@ -740,7 +741,7 @@ EmitStatementList(IRList *irl, AST *ast)
 
 static void EmitMove(IRList *irl, Operand *dst, Operand *src)
 {
-  EmitOp2(irl, OPC_MOVE, dst, src);
+    EmitOp2(irl, OPC_MOVE, dst, src);
 }
 
 static void EmitStatement(IRList *irl, AST *ast)
@@ -816,6 +817,11 @@ static void EmitStatement(IRList *irl, AST *ast)
     case AST_YIELD:
 	/* do nothing in assembly for YIELD */
         break;
+    case AST_ASSIGN:
+        if (ast->left && ast->left->kind == AST_RANGEREF) {
+            ast = TransformRangeAssign(ast->left, ast->right);
+        }
+        /* fall through */
     default:
         /* assume an expression */
         (void)CompileExpression(irl, ast);
@@ -874,6 +880,9 @@ void EmitGlobals(IRList *irl)
     qsort(g, siz, sizeof(*g), gcmpfunc);
     for (i = 0; i < siz; i++) {
       if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
+	continue;
+      }
+      if (g[i].op->kind == REG_IMM && !g[i].op->used) {
 	continue;
       }
       if (g[i].op->kind == REG_HW) {
@@ -1323,12 +1332,37 @@ void OptimizeShortBranches(IRList *irl)
   }
 }
 
+static void
+OptimizeImmediates(IRList *irl)
+{
+    IR *ir;
+    Operand *src;
+    int val;
+    
+    for (ir = irl->head; ir; ir = ir->next) {
+        src = ir->src;
+        if (! (src && src->kind == REG_IMM) ) {
+            continue;
+        }
+        if (src->name == NULL || src->name[0] == 0) {
+            /* already a small immediate */
+            continue;
+        }
+        val = src->val;
+        if (ir->opc == OPC_MOVE && val < 0 && val >= -511) {
+            ir->opc = OPC_NEG;
+            ir->src = NewImmediate(-val);
+        }
+    }  
+}
+
 void
 OptimizeIRLocal(IRList *irl)
 {
   if (gl_optimize_flags & OPT_NO_ASM) return;
   EliminateDeadCode(irl);
   OptimizeMoves(irl);
+  OptimizeImmediates(irl);
   OptimizeShortBranches(irl);
 }
 void

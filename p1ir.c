@@ -35,8 +35,13 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
     char temp[128];
     switch (reg->kind) {
     case REG_IMM:
-        sprintf(temp, "#%d", reg->val);
-        flexbuf_addstr(fb, temp);
+        if (reg->name && reg->name[0]) {
+            // the immediate actually got processed as a register
+            flexbuf_addstr(fb, reg->name);
+        } else {
+            sprintf(temp, "#%d", reg->val);
+            flexbuf_addstr(fb, temp);
+        }
         break;
     default:
         flexbuf_addstr(fb, reg->name);
@@ -69,6 +74,10 @@ StringFor(int opc)
       return "abs";
   case OPC_ADD:
       return "add";
+  case OPC_AND:
+      return "and";
+  case OPC_ANDN:
+      return "andn";
   case OPC_CALL:
       return "call";
   case OPC_CMP:
