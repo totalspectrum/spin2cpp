@@ -123,6 +123,22 @@ AppendIR(IRList *irl, IR *ir)
     irl->tail = ir;
 }
 
+/*
+ * Append a whole list
+ */
+void
+AppendIRList(IRList *irl, IRList *sub)
+{
+  IR *last = irl->tail;
+  if (!last) {
+    irl->head = sub->head;
+    irl->tail = sub->tail;
+    return;
+  }
+  AppendIR(irl, sub->head);
+}
+
+/* Delete one IR from a list */
 void
 DeleteIR(IRList *irl, IR *ir)
 {
@@ -854,6 +870,7 @@ bool
 CompileToIR(IRList *irl, ParserState *P)
 {
     Function *f;
+    IRList funcirl;
 
     irl->head = NULL;
     irl->tail = NULL;
@@ -873,11 +890,16 @@ CompileToIR(IRList *irl, ParserState *P)
     
     // now compile the functions
     for(f = P->functions; f; f = f->next) {
+        funcirl.head = NULL;
+	funcirl.tail = NULL;
+        EmitWholeFunction(&funcirl, f);
+	OptimizeIR(&funcirl);
 	if (newlineOp) {
   	    EmitNewline(irl);
+	} else {
+	  newlineOp = NewOperand(REG_STRING, "\n", 0);
 	}
-        EmitWholeFunction(irl, f);
-	newlineOp = NewOperand(REG_STRING, "\n", 0);
+	AppendIRList(irl, &funcirl);
     }
     return gl_errors == 0;
 }
@@ -1122,6 +1144,13 @@ OptimizeMoves(IRList *irl)
   } while (change);
 }
 
+static bool
+SetsFlags(IR *ir)
+{
+  if (ir->opc == OPC_CMP) return true;
+  return false;
+}
+
 void EliminateDeadCode(IRList *irl)
 {
   bool change;
@@ -1150,7 +1179,7 @@ void EliminateDeadCode(IRList *irl)
 	  change = true;
 	}
       } else if (!IsDummy(ir)) {
-	if (ir_next && ir->dst && IsDead(ir, ir->dst)) {
+	if (ir_next && ir->dst && IsDead(ir, ir->dst) && !SetsFlags(ir)) {
 	  DeleteIR(irl, ir);
 	  change = true;
 	}

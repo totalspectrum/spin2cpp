@@ -29,7 +29,7 @@
 #include "ir.h"
 #include "flexbuf.h"
 
-void
+static void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
     char temp[128];
@@ -206,13 +206,6 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     }
 }
 
-/* add an appropriate header for the .spin file we're creating */
-static void
-AddHeader(struct flexbuf *fb)
-{
-//    flexbuf_addstr(fb, "DAT\n\t.org\t0\n");
-}
-
 /* assemble an IR list */
 char *
 IRAssemble(IRList *list)
@@ -222,7 +215,6 @@ IRAssemble(IRList *list)
     char *ret;
     
     flexbuf_init(&fb, 512);
-    AddHeader(&fb);
     for (ir = list->head; ir; ir = ir->next) {
         P1AssembleIR(&fb, ir);
     }
