@@ -333,7 +333,7 @@ char *ReplaceExtension(const char *base, const char *ext);
 
 /* different kinds of output functions */
 void OutputCppCode(const char *name, ParserState *P, int printMain);
-void OutputDatFile(const char *name, ParserState *P);
+void OutputDatFile(const char *name, ParserState *P, int prefixBin);
 void OutputGasFile(const char *name, ParserState *P);
 void OutputAsmCode(const char *name, ParserState *P);
 

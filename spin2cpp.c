@@ -906,9 +906,16 @@ main(int argc, char **argv)
                 OutputGasFile(outname, P);
             } else {
 	        if (!outname) {
-                    outname = ReplaceExtension(P->basename, ".dat");
+                    if (outputBin) {
+                        outname = ReplaceExtension(P->basename, ".binary");
+                    } else {
+                        outname = ReplaceExtension(P->basename, ".dat");
+                    }
                 }
-                OutputDatFile(outname, P);
+                OutputDatFile(outname, P, outputBin);
+                if (outputBin) {
+                    DoPropellerChecksum(outname);
+                }
             }
         } else if (outputAsm) {
             if (!outname) {
