@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest007_foo
 	neg	result_, #1
 stest007_foo_ret

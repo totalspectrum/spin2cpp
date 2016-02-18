@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest005_val511
 	mov	result_, #511
 stest005_val511_ret

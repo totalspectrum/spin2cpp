@@ -25,10 +25,12 @@ Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
 
-void OptimizeIR(IRList *irl);
+void OptimizeIRLocal(IRList *irl);
+void OptimizeIRGlobal(IRList *irl);
 void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
+static void EmitOp1(IRList *irl, Operandkind code, Operand *op);
 
 struct GlobalVariable {
     Operand *op;
@@ -55,6 +57,9 @@ GetGlobal(Operandkind kind, const char *name, int value)
   return tmp.op;
 }
 
+//static const char *conheader = "CON\n";
+static const char *datheader = "DAT\n\torg\t0\n";
+
 void
 OutputAsmCode(const char *fname, ParserState *P)
 {
@@ -66,10 +71,14 @@ OutputAsmCode(const char *fname, ParserState *P)
     save = current;
     current = P;
 
+    irl.head = NULL;
+    irl.tail = NULL;
+    EmitOp1(&irl, OPC_COMMENT, NewOperand(REG_STRING, datheader, 0));
+    
     if (!CompileToIR(&irl, P)) {
         return;
     }
-    OptimizeIR(&irl);
+    OptimizeIRGlobal(&irl);
     EmitBuiltins(&irl);
     EmitGlobals(&irl);
     asmcode = IRAssemble(&irl);
@@ -872,9 +881,6 @@ CompileToIR(IRList *irl, ParserState *P)
     Function *f;
     IRList funcirl;
 
-    irl->head = NULL;
-    irl->tail = NULL;
-
     // assign all function names so we can do forward calls
     for(f = P->functions; f; f = f->next) {
 	char *fname;
@@ -893,7 +899,7 @@ CompileToIR(IRList *irl, ParserState *P)
         funcirl.head = NULL;
 	funcirl.tail = NULL;
         EmitWholeFunction(&funcirl, f);
-	OptimizeIR(&funcirl);
+	OptimizeIRLocal(&funcirl);
 	if (newlineOp) {
   	    EmitNewline(irl);
 	} else {
@@ -1309,12 +1315,16 @@ void OptimizeShortBranches(IRList *irl)
 }
 
 void
-OptimizeIR(IRList *irl)
+OptimizeIRLocal(IRList *irl)
 {
   if (gl_optimize_flags & OPT_NO_ASM) return;
   EliminateDeadCode(irl);
   OptimizeMoves(irl);
   OptimizeShortBranches(irl);
+}
+void
+OptimizeIRGlobal(IRList *irl)
+{
   CheckUsage(irl);
 }
 

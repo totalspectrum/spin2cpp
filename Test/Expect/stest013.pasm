@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest013_sum
 	add	stest013_sum_x_, stest013_sum_y_
 	mov	result_, stest013_sum_x_

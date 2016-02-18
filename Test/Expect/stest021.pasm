@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest021_waitcycles
 	mov	stest021_waitcycles_end_, CNT
 	add	stest021_waitcycles_end_, stest021_waitcycles_n_

@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest020_simplemul
 	mov	stest020_simplemul_i_, #0
 	mov	stest020_simplemul_r_, stest020_simplemul_i_

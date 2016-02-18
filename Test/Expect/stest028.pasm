@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest028_divmod16
 	mov	mula_, stest028_divmod16_x_
 	mov	mulb_, stest028_divmod16_y_

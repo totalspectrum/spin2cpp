@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest022_ismagic
 	cmp	stest022_ismagic_x_, #511 wc,wz
  if_eq	mov	stest022_ismagic_a_, #1

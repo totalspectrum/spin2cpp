@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest023_blah
 	mov	stest023_bar_x_, #2
 	call	#stest023_bar

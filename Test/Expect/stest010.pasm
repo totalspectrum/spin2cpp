@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest010_test1
 	add	stest010_test1_x_, stest010_test1_x_
 	add	stest010_test1_y_, stest010_test1_y_

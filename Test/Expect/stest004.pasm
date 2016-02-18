@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest004_dummy
 	mov	result_, imm_1024_
 stest004_dummy_ret

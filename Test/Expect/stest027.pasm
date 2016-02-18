@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest027_hyp
 	mov	mula_, stest027_hyp_x_
 	mov	mulb_, stest027_hyp_x_

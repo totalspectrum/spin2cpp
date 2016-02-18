@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest025_test1
 	cmp	stest025_test1_x_, #0 wc,wz
  if_ne	jmp	#L_002_

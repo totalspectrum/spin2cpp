@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest015_foo
 	mov	result_, #1
 stest015_foo_ret

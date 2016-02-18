@@ -1,3 +1,5 @@
+DAT
+	org	0
 stest016_count
 	mov	stest016_count_i_, #0
 L_001_
