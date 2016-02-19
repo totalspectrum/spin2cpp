@@ -757,6 +757,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     Operand *newbase;
     int idx;
     int siz;
+    int shift;
     
     if (!IsMemRef(base)) {
         ERROR(NULL, "Array does not reference memory");
@@ -765,12 +766,15 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     switch (base->kind) {
     case LONG_REF:
         siz = 4;
+        shift = 2;
         break;
     case WORD_REF:
         siz = 2;
+        shift = 1;
         break;
     case BYTE_REF:
         siz = 1;
+        shift = 0;
         break;
     default:
         ERROR(NULL, "Bad size in array reference");
@@ -787,8 +791,13 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
         return newbase;
     }
-    ERROR(NULL, "Cannot handle non-constant memory references yet");
-    return base;
+    newbase = NewFunctionTempRegister();
+    EmitMove(irl, newbase, offset);
+    if (shift) {
+        EmitOp2(irl, OPC_SHL, newbase, NewImmediate(shift));
+    }
+    EmitOp2(irl, OPC_ADD, newbase, basereg);
+    return NewOperand(base->kind, (char *)newbase, 0);
 }
 
 Operand *
