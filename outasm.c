@@ -363,6 +363,10 @@ CondFromExpr(int kind)
   return COND_FALSE;
 }
 
+/*
+ * change condition for when the two sides of a comparison
+ * are flipped (e.g. a<b becomes b>a)
+ */
 static IRCond
 FlipSides(IRCond cond)
 {
@@ -686,6 +690,15 @@ CompileFunccall(IRList *irl, AST *expr)
   result = GetGlobal(REG_REG, "result_", 0);
   return result;
 }
+static Operand *
+CompileMemread(IRList *irl, AST *expr)
+{
+  Operand *temp = NewFunctionTempRegister();
+  Operand *addr = CompileExpression(irl, expr->right);
+
+  EmitOp2(irl, OPC_RDBYTE, temp, addr);
+  return temp;
+}
 
 Operand *
 CompileExpression(IRList *irl, AST *expr)
@@ -719,6 +732,13 @@ CompileExpression(IRList *irl, AST *expr)
     return r;
   case AST_RANGEREF:
     return CompileExpression(irl, TransformRangeUse(expr));
+  case AST_ARRAYREF:
+    if (expr->right && expr->right->kind == AST_INTEGER && expr->right->d.ival == 0) {
+      expr = expr->left;
+      /* fall through */
+    }
+  case AST_MEMREF:
+    return CompileMemread(irl, expr);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
