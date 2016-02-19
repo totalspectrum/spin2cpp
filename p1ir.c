@@ -201,6 +201,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_ABS:
     case OPC_ADD:
     case OPC_AND:
+    case OPC_ANDN:
     case OPC_SUB:
     case OPC_NEG:
     case OPC_NOT:

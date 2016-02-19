@@ -549,7 +549,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_SAR:
   case T_ROTL:
   case T_ROTR:
-    EmitOp2(irl, OPC_MOVE, temp, left);
+    EmitMove(irl, temp, left);
     return EmitOp2(irl, OpcFromOp(op), temp, right);
   case T_NEGATE:
   case T_ABS:
@@ -593,6 +593,15 @@ CompileOperator(IRList *irl, AST *expr)
         return CompileDiv(irl, expr, 0);
     case T_MODULUS:
         return CompileDiv(irl, expr, 1);
+    case '&':
+        if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == T_BIT_NOT) {
+	  Operand *lhs = CompileExpression(irl, expr->left);
+	  Operand *rhs = CompileExpression(irl, expr->right->right);
+	  Operand *temp = NewFunctionTempRegister();
+	  EmitMove(irl, temp, lhs);
+	  EmitOp2(irl, OPC_ANDN, temp, rhs);
+	  return temp;
+        }
     default:
         return CompileBasicOperator(irl, expr);
     }
@@ -1390,7 +1399,10 @@ OptimizeImmediates(IRList *irl)
         if (ir->opc == OPC_MOVE && val < 0 && val >= -511) {
             ir->opc = OPC_NEG;
             ir->src = NewImmediate(-val);
-        }
+        } else if (ir->opc == OPC_AND && val < 0 && val >= -512) {
+            ir->opc = OPC_ANDN;
+            ir->src = NewImmediate(~val);
+	}
     }  
 }
 
