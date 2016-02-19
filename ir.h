@@ -31,6 +31,9 @@ enum IROpcode {
     OPC_NEG,
     OPC_NOT,
     OPC_OR,
+    OPC_RDBYTE,
+    OPC_RDLONG,
+    OPC_RDWORD,
     OPC_RET,
     OPC_REV,
     OPC_ROL,
@@ -43,6 +46,9 @@ enum IROpcode {
     OPC_WAITPEQ,
     OPC_WAITPNE,
     OPC_WAITVID,
+    OPC_WRBYTE,
+    OPC_WRLONG,
+    OPC_WRWORD,
     OPC_XOR,
 
     /* special flag to indicate a dead register */

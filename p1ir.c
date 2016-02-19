@@ -90,8 +90,18 @@ StringFor(int opc)
       return "not";
   case OPC_OR:
       return "or";
+  case OPC_RDBYTE:
+      return "rdbyte";
+  case OPC_RDLONG:
+      return "rdlong";
+  case OPC_RDWORD:
+      return "rdword";
   case OPC_REV:
       return "rev";
+  case OPC_ROL:
+      return "rol";
+  case OPC_ROR:
+      return "ror";
   case OPC_SHL:
       return "shl";
   case OPC_SHR:
@@ -193,6 +203,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_NEG:
     case OPC_NOT:
     case OPC_OR:
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
     case OPC_REV:
     case OPC_ROL:
     case OPC_ROR:

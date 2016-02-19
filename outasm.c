@@ -1171,7 +1171,7 @@ OptimizeMoves(IRList *irl)
 }
 
 static bool
-SetsFlags(IR *ir)
+HasSideEffects(IR *ir)
 {
     if (ir->dst && ir->dst->kind == REG_HW) {
         return true;
@@ -1179,6 +1179,9 @@ SetsFlags(IR *ir)
     switch (ir->opc) {
     case OPC_CMP:
     case OPC_WAITCNT:
+    case OPC_WRBYTE:
+    case OPC_WRLONG:
+    case OPC_WRWORD:
         return true;
     default:
         return false;
@@ -1213,7 +1216,7 @@ void EliminateDeadCode(IRList *irl)
 	  change = true;
 	}
       } else if (!IsDummy(ir)) {
-	if (ir_next && ir->dst && IsDead(ir, ir->dst) && !SetsFlags(ir)) {
+	if (ir_next && ir->dst && IsDead(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
 	  change = true;
 	}
