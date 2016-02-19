@@ -29,18 +29,27 @@
 #include "ir.h"
 #include "flexbuf.h"
 
+static int inDat;
+static int inCon;
+static int didOrg;
+
 static void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
     char temp[128];
     switch (reg->kind) {
     case REG_IMM:
-        if (reg->name && reg->name[0]) {
+        if (reg->val >= 0 && reg->val < 512) {
+            flexbuf_addstr(fb, "#");
+            if (reg->name && reg->name[0]) {
+                flexbuf_addstr(fb, reg->name);
+            } else {
+                sprintf(temp, "%d", reg->val);
+                flexbuf_addstr(fb, temp);
+            }
+        } else {
             // the immediate actually got processed as a register
             flexbuf_addstr(fb, reg->name);
-        } else {
-            sprintf(temp, "#%d", reg->val);
-            flexbuf_addstr(fb, temp);
         }
         break;
     default:
@@ -163,6 +172,29 @@ PrintCond(struct flexbuf *fb, IRCond cond)
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
+    if (ir->opc == OPC_CONST) {
+        // handle const declaration
+        if (!inCon) {
+            flexbuf_addstr(fb, "CON\n");
+            inCon = 1;
+            inDat = 0;
+        }
+        flexbuf_addstr(fb, "\t");
+        PrintOperandDirect(fb, ir->dst);
+        flexbuf_addstr(fb, " = ");
+        PrintOperandDirect(fb, ir->src);
+        flexbuf_addstr(fb, "\n");
+        return;
+    }
+    if (!inDat) {
+        flexbuf_addstr(fb, "DAT\n");
+        inCon = 0;
+        inDat = 1;
+        if (!didOrg) {
+            flexbuf_addstr(fb, "\torg\t0\n");
+            didOrg = 1;
+        }
+    }
     switch(ir->opc) {
     case OPC_DEAD:
         /* no code necessary, internal opcode */
@@ -251,6 +283,10 @@ IRAssemble(IRList *list)
     IR *ir;
     struct flexbuf fb;
     char *ret;
+    
+    inDat = 0;
+    inCon = 0;
+    didOrg = 0;
     
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {

@@ -13,6 +13,7 @@ typedef struct parserstate ParserState;
 
 enum IROpcode {
     OPC_COMMENT,
+    
     OPC_LABEL,
     OPC_BYTE,
     OPC_WORD,
@@ -54,7 +55,9 @@ enum IROpcode {
 
     /* special flag to indicate a dead register */
     OPC_DEAD,
-
+    /* const declaration */
+    OPC_CONST,
+    
     OPC_UNKNOWN,
 };
 

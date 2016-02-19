@@ -31,6 +31,7 @@ void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static void EmitOp1(IRList *irl, Operandkind code, Operand *op);
+static void CompileConsts(IRList *irl, AST *consts);
 
 struct GlobalVariable {
     Operand *op;
@@ -57,9 +58,6 @@ GetGlobal(Operandkind kind, const char *name, int value)
   return tmp.op;
 }
 
-//static const char *conheader = "CON\n";
-static const char *datheader = "DAT\n\torg\t0\n";
-
 void
 OutputAsmCode(const char *fname, ParserState *P)
 {
@@ -73,8 +71,8 @@ OutputAsmCode(const char *fname, ParserState *P)
 
     irl.head = NULL;
     irl.tail = NULL;
-    EmitOp1(&irl, OPC_COMMENT, NewOperand(REG_STRING, datheader, 0));
-    
+
+    CompileConsts(&irl, P->conblock);
     if (!CompileToIR(&irl, P)) {
         return;
     }
@@ -272,11 +270,13 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   ParserState *P = func->parse;
   Symbol *sym = FindSymbol(&func->localsyms, expr->d.string);
-  char temp[128];
+  char temp[256];
   snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, expr->d.string);
 
-  if (sym && sym->type == SYM_PARAMETER) {
-    return GetGlobal(REG_ARG, temp, 0);
+  if (sym) {
+      if (sym->type == SYM_PARAMETER) {
+          return GetGlobal(REG_ARG, temp, 0);
+      }
   }
   return GetGlobal(REG_LOCAL, temp, 0);
 }
@@ -284,7 +284,17 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 Operand *
 CompileIdentifier(IRList *irl, AST *expr)
 {
-  return CompileIdentifierForFunc(irl, expr, curfunc);
+    Symbol *sym = LookupSymbol(expr->d.string);
+    if (sym && sym->type == SYM_CONSTANT) {
+          AST *symexpr = (AST *)sym->val;
+          int val = EvalConstExpr(symexpr);
+          if (val >= 0 && val < 512) {
+              return NewOperand(REG_IMM, sym->name, val);
+          } else {
+              return NewImmediate(val);
+          }
+    }
+    return CompileIdentifierForFunc(irl, expr, curfunc);
 }
 
 Operand *
@@ -719,8 +729,13 @@ CompileExpression(IRList *irl, AST *expr)
     expr = expr->left;
   }
   if (!expr) return NULL;
-  expr = FoldIfConst(expr);
-  
+  if (IsConstExpr(expr)) {
+      if (expr->kind == AST_IDENTIFIER) {
+          // leave symbolic constants alone
+      } else {
+          expr = FoldIfConst(expr);
+      }
+  }
   switch (expr->kind) {
   case AST_INTEGER:
   case AST_FLOAT:
@@ -798,7 +813,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	if (retval) {
 	    op = CompileExpression(irl, retval);
 	    result = GetGlobal(REG_REG, "result_", 0);
-            EmitOp2(irl, OPC_MOVE, result, op);
+            EmitMove(irl, result, op);
 	}
 	EmitJump(irl, COND_TRUE, curfunc->asmretname);
 	break;
@@ -995,11 +1010,13 @@ static bool IsBranch(int opc)
   }
 }
 
+/* IR instructions that have no effect on the generated code */
 static bool IsDummy(IR *op)
 {
   switch(op->opc) {
   case OPC_COMMENT:
   case OPC_DEAD:
+  case OPC_CONST:
     return true;
   default:
     return false;
@@ -1494,5 +1511,57 @@ EmitBuiltins(IRList *irl)
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
         (void)GetGlobal(REG_REG, "result_", 0);
+    }
+}
+
+static void
+CompileConstant(IRList *irl, AST *ast)
+{
+    const char *name = ast->d.string;
+    Symbol *sym;
+    AST *expr;
+    int32_t val;
+    Operand *op1, *op2;
+    
+    if (!IsConstExpr(ast)) {
+        ERROR(ast, "%s is not constant", name);
+        return;
+    }
+    sym = LookupSymbol(name);
+    if (!sym) {
+        ERROR(ast, "constant symbol %s not declared??", name);
+        return;
+    }
+    expr = (AST *)sym->val;
+    val = EvalConstExpr(expr);
+    op1 = NewOperand(REG_STRING, name, val);
+    op2 = NewImmediate(val);
+    EmitOp2(irl, OPC_CONST, op1, op2);
+}
+
+static void
+CompileConsts(IRList *irl, AST *conblock)
+{
+    AST *ast, *upper;
+
+    for (upper = conblock; upper; upper = upper->right) {
+        ast = upper->left;
+        if (ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        switch (ast->kind) {
+        case AST_ENUMSKIP:
+            CompileConstant(irl, ast->left);
+            break;
+        case AST_IDENTIFIER:
+            CompileConstant(irl, ast);
+            break;
+        case AST_ASSIGN:
+            CompileConstant(irl, ast->left);
+            break;
+        default:
+            /* do nothing */
+            break;
+        }
     }
 }
