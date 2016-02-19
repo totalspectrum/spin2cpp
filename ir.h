@@ -26,6 +26,7 @@ enum IROpcode {
     OPC_ANDN,
     OPC_CALL,
     OPC_CMP,
+    OPC_CMPS,
     OPC_DJNZ,
     OPC_JUMP,
     OPC_NEG,

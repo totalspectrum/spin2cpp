@@ -433,7 +433,7 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     rhs = tmp;
     cond = FlipSides(cond);
   }
-  EmitOp2(irl, OPC_CMP, lhs, rhs);
+  EmitOp2(irl, OPC_CMPS, lhs, rhs);
   return cond;
 }
 
@@ -1048,6 +1048,7 @@ InstrSetsDst(int opc)
 {
   switch (opc) {
   case OPC_CMP:
+  case OPC_CMPS:
   case OPC_LABEL:
     return false;
   default:
@@ -1201,6 +1202,7 @@ HasSideEffects(IR *ir)
     }
     switch (ir->opc) {
     case OPC_CMP:
+    case OPC_CMPS:
     case OPC_WAITCNT:
     case OPC_WRBYTE:
     case OPC_WRLONG:

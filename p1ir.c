@@ -82,6 +82,8 @@ StringFor(int opc)
       return "call";
   case OPC_CMP:
       return "cmp";
+  case OPC_CMPS:
+      return "cmps";
   case OPC_JUMP:
       return "jmp";
   case OPC_NEG:
@@ -226,6 +228,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, "\n");
 	break;
     case OPC_CMP:
+    case OPC_CMPS:
         flexbuf_addchar(fb, '\t');
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
