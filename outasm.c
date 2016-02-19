@@ -756,13 +756,31 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     Operand *basereg;
     Operand *newbase;
     int idx;
+    int siz;
+    
     if (!IsMemRef(base)) {
         ERROR(NULL, "Array does not reference memory");
         return base;
     }
+    switch (base->kind) {
+    case LONG_REF:
+        siz = 4;
+        break;
+    case WORD_REF:
+        siz = 2;
+        break;
+    case BYTE_REF:
+        siz = 1;
+        break;
+    default:
+        ERROR(NULL, "Bad size in array reference");
+        siz = 1;
+        break;
+    }
+          
     basereg = (Operand *)base->name;
     if (offset->kind == REG_IMM) {
-        idx = offset->val;
+        idx = offset->val * siz;
         if (idx == 0) {
             return base;
         }
@@ -846,44 +864,96 @@ EmitStatementList(IRList *irl, AST *ast)
         ast = ast->right;
     }
 }
+static void EmitAddSub(IRList *irl, Operand *dst, int off)
+{
+    int opc  = OPC_ADD;
+    Operand *imm;
+    
+    if (off < 0) {
+        off = -off;
+        opc = OPC_SUB;
+    }
+    imm = NewImmediate(off);
+    EmitOp2(irl, opc, dst, imm);
+}
 
-static void EmitMove(IRList *irl, Operand *origdst, Operand *src)
+static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 {
     Operand *temp;
     Operand *dst = origdst;
+    Operand *src = origsrc;
     
     if (IsMemRef(src)) {
+        int off = src->val;
         temp = NewFunctionTempRegister();
-        switch (src->kind) {
+        src = (Operand *)src->name;
+        switch (origsrc->kind) {
         default:
             ERROR(NULL, "Illegal memory reference");
             break;
         case LONG_REF:
-            EmitOp2(irl, OPC_RDLONG, temp, (Operand *)src->name);
+            if (off) {
+                EmitAddSub(irl, src, off);
+            }
+            EmitOp2(irl, OPC_RDLONG, temp, src);
+            if (off) {
+                EmitAddSub(irl, src, -off);
+            }
             break;
         case WORD_REF:
-            EmitOp2(irl, OPC_RDWORD, temp, (Operand *)src->name);
+            if (off) {
+                EmitAddSub(irl, src, off);
+            }
+            EmitOp2(irl, OPC_RDWORD, temp, src);
+            if (off) {
+                EmitAddSub(irl, src, -off);
+            }
             break;
         case BYTE_REF:
-            EmitOp2(irl, OPC_RDBYTE, temp, (Operand *)src->name);
+            if (off) {
+                EmitAddSub(irl, src, off);
+            }
+            EmitOp2(irl, OPC_RDBYTE, temp, src);
+            if (off) {
+                EmitAddSub(irl, src, -off);
+            }
             break;
         }
         src = temp;
     }
     if (IsMemRef(origdst)) {
+        int off = dst->val;
         dst = (Operand *)dst->name;
         switch (origdst->kind) {
         default:
             ERROR(NULL, "Illegal memory reference");
             break;
         case LONG_REF:
+            if (off) {
+                EmitAddSub(irl, dst, off);
+            }
             EmitOp2(irl, OPC_WRLONG, src, dst);
+            if (off) {
+                EmitAddSub(irl, dst, -off);
+            }            
             break;
         case WORD_REF:
+            if (off) {
+                EmitAddSub(irl, dst, off);
+            }
             EmitOp2(irl, OPC_WRWORD, src, dst);
+            if (off) {
+                EmitAddSub(irl, dst, -off);
+            }
             break;
         case BYTE_REF:
+            if (off) {
+                EmitAddSub(irl, dst, off);
+            }
             EmitOp2(irl, OPC_WRBYTE, src, dst);
+            if (off) {
+                EmitAddSub(irl, dst, -off);
+            }
             break;
         }
     } else {
