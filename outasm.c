@@ -1594,14 +1594,55 @@ OptimizeImmediates(IRList *irl)
     }  
 }
 
+static int
+AddSubVal(IR *ir)
+{
+    int val = ir->src->val;
+    if (ir->opc == OPC_SUB) val = -val;
+    return val;
+}
+
+static void
+OptimizeAddSub(IRList *irl)
+{
+    IR *ir, *ir_next;
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        while (ir_next && IsDummy(ir_next)) {
+            ir_next = ir_next->next;
+        }
+        if (!ir_next) break;
+        if (ir->opc == OPC_ADD || ir->opc == OPC_SUB) {
+            if (ir_next->opc == OPC_ADD || ir_next->opc == OPC_SUB) {
+                if (ir->dst == ir_next->dst && ir->src->kind == REG_IMM && ir_next->src->kind == REG_IMM)
+                {
+                    int val = AddSubVal(ir) + AddSubVal(ir_next);
+                    if (val < 0) {
+                        val = -val;
+                        ir_next->opc = OPC_SUB;
+                    } else {
+                        ir_next->opc = OPC_ADD;
+                    }
+                    ir_next->src = NewImmediate(val);
+                    DeleteIR(irl, ir);
+                }
+            }
+        }
+        ir = ir_next;
+    }
+}
+
 void
 OptimizeIRLocal(IRList *irl)
 {
   if (gl_optimize_flags & OPT_NO_ASM) return;
+  if (!irl->head) return;
   EliminateDeadCode(irl);
   OptimizeMoves(irl);
   OptimizeImmediates(irl);
   OptimizeShortBranches(irl);
+  OptimizeAddSub(irl);
 }
 void
 OptimizeIRGlobal(IRList *irl)
