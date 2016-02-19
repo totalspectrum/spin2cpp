@@ -52,6 +52,11 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
             flexbuf_addstr(fb, reg->name);
         }
         break;
+    case BYTE_REF:
+    case WORD_REF:
+    case LONG_REF:
+        ERROR(NULL, "Internal error: tried to use memory directly");
+        break;
     default:
         flexbuf_addstr(fb, reg->name);
         break;
@@ -131,6 +136,12 @@ StringFor(int opc)
       return "waitvid";
   case OPC_XOR:
       return "xor";
+  case OPC_WRBYTE:
+      return "wrbyte";
+  case OPC_WRLONG:
+      return "wrlong";
+  case OPC_WRWORD:
+      return "wrword";
   default:
       break;
   }
@@ -251,6 +262,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_WAITPEQ:
     case OPC_WAITPNE:
     case OPC_WAITVID:
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
     case OPC_XOR:
         PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));

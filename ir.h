@@ -82,7 +82,7 @@ struct IR {
     enum IRCond cond;
     Operand *dst;
     Operand *src;
-        
+
     IR *prev;
     IR *next;
 };
@@ -100,6 +100,12 @@ enum Operandkind {
     REG_ARG,   // for an argument to a function
     REG_LABEL, // for a code label
     REG_STRING,
+
+    // all of these memory references must go together
+    LONG_REF,      // register indirect memory access; val is the offset
+    WORD_REF,
+    BYTE_REF,
+    
 };
 
 typedef enum Operandkind Operandkind;

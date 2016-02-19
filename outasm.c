@@ -40,6 +40,11 @@ struct GlobalVariable {
 
 static struct flexbuf gvars;
 
+static int IsMemRef(Operand *op)
+{
+    return (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
+}
+
 Operand *
 GetGlobal(Operandkind kind, const char *name, int value)
 {
@@ -537,6 +542,16 @@ OpcFromOp(int op)
     return OPC_UNKNOWN;
   }
 }
+static Operand *
+Dereference(IRList *irl, Operand *op)
+{
+    if (IsMemRef(op)) {
+        Operand *temp = NewFunctionTempRegister();
+        EmitMove(irl, temp, op);
+        return temp;
+    }
+    return op;
+}
 
 static Operand *
 CompileBasicOperator(IRList *irl, AST *expr)
@@ -560,11 +575,15 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_ROTL:
   case T_ROTR:
     EmitMove(irl, temp, left);
-    return EmitOp2(irl, OpcFromOp(op), temp, right);
+    right = Dereference(irl, right);
+    EmitOp2(irl, OpcFromOp(op), temp, right);
+    return temp;
   case T_NEGATE:
   case T_ABS:
   case T_BIT_NOT:
-    return EmitOp2(irl, OpcFromOp(op), temp, right);
+    right = Dereference(irl, right);
+    EmitOp2(irl, OpcFromOp(op), temp, right);
+    return temp;
   case T_NOT:
   case T_AND:
   case T_OR:
@@ -709,14 +728,49 @@ CompileFunccall(IRList *irl, AST *expr)
   result = GetGlobal(REG_REG, "result_", 0);
   return result;
 }
-static Operand *
-CompileMemread(IRList *irl, AST *expr)
-{
-  Operand *temp = NewFunctionTempRegister();
-  Operand *addr = CompileExpression(irl, expr->right);
 
-  EmitOp2(irl, OPC_RDBYTE, temp, addr);
+static Operand *
+CompileMemref(IRList *irl, AST *expr)
+{
+  Operand *addr = CompileExpression(irl, expr->right);
+  Operand *temp;
+  AST *type = expr->left;
+  int size = EvalConstExpr(type->left);
+
+  if (size == 1) {
+      temp = NewOperand(BYTE_REF, (char *)addr, 0);
+  } else if (size == 2) {
+      temp = NewOperand(WORD_REF, (char *)addr, 0);
+  } else {
+      temp = NewOperand(LONG_REF, (char *)addr, 0);
+      if (size != 4) {
+          ERROR(expr, "Illegal size for memory reference");
+      }
+  }
   return temp;
+}
+
+static Operand *
+ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
+{
+    Operand *basereg;
+    Operand *newbase;
+    int idx;
+    if (!IsMemRef(base)) {
+        ERROR(NULL, "Array does not reference memory");
+        return base;
+    }
+    basereg = (Operand *)base->name;
+    if (offset->kind == REG_IMM) {
+        idx = offset->val;
+        if (idx == 0) {
+            return base;
+        }
+        newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
+        return newbase;
+    }
+    ERROR(NULL, "Cannot handle non-constant memory references yet");
+    return base;
 }
 
 Operand *
@@ -757,12 +811,20 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_RANGEREF:
     return CompileExpression(irl, TransformRangeUse(expr));
   case AST_ARRAYREF:
-    if (expr->right && expr->right->kind == AST_INTEGER && expr->right->d.ival == 0) {
-      expr = expr->left;
-      /* fall through */
-    }
+  {
+      Operand *base;
+      Operand *offset;
+
+      if (!expr->right) {
+          ERROR(expr, "Array ref with no index?");
+          return NewOperand(REG_REG, "???", 0);
+      }
+      base = CompileExpression(irl, expr->left);
+      offset = CompileExpression(irl, expr->right);
+      return ApplyArrayIndex(irl, base, offset);
+  }
   case AST_MEMREF:
-    return CompileMemread(irl, expr);
+    return CompileMemref(irl, expr);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -785,9 +847,48 @@ EmitStatementList(IRList *irl, AST *ast)
     }
 }
 
-static void EmitMove(IRList *irl, Operand *dst, Operand *src)
+static void EmitMove(IRList *irl, Operand *origdst, Operand *src)
 {
-    EmitOp2(irl, OPC_MOVE, dst, src);
+    Operand *temp;
+    Operand *dst = origdst;
+    
+    if (IsMemRef(src)) {
+        temp = NewFunctionTempRegister();
+        switch (src->kind) {
+        default:
+            ERROR(NULL, "Illegal memory reference");
+            break;
+        case LONG_REF:
+            EmitOp2(irl, OPC_RDLONG, temp, (Operand *)src->name);
+            break;
+        case WORD_REF:
+            EmitOp2(irl, OPC_RDWORD, temp, (Operand *)src->name);
+            break;
+        case BYTE_REF:
+            EmitOp2(irl, OPC_RDBYTE, temp, (Operand *)src->name);
+            break;
+        }
+        src = temp;
+    }
+    if (IsMemRef(origdst)) {
+        dst = (Operand *)dst->name;
+        switch (origdst->kind) {
+        default:
+            ERROR(NULL, "Illegal memory reference");
+            break;
+        case LONG_REF:
+            EmitOp2(irl, OPC_WRLONG, src, dst);
+            break;
+        case WORD_REF:
+            EmitOp2(irl, OPC_WRWORD, src, dst);
+            break;
+        case BYTE_REF:
+            EmitOp2(irl, OPC_WRBYTE, src, dst);
+            break;
+        }
+    } else {
+        EmitOp2(irl, OPC_MOVE, dst, src);
+    }
 }
 
 static void EmitStatement(IRList *irl, AST *ast)
