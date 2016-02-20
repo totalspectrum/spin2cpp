@@ -1,10 +1,21 @@
 package require Tk
 
+set COMPILE ../build/spin2cpp
+
 proc loadFileToWindow { fname win } {
     set fp [open $fname r]
     set file_data [read $fp]
     close $fp
     $win replace 1.0 end $file_data
+}
+
+proc regenOutput { spinfile } {
+    global COMPILE
+    set outname [file rootname $spinfile]
+    set outname "$outname.pasm"
+    set errout [exec $COMPILE --asm $spinfile]
+    loadFileToWindow $outname .out.txt
+    .bot.txt replace 1.0 end $errout
 }
 
 proc loadNewSpinFile {} {
@@ -13,7 +24,11 @@ proc loadNewSpinFile {} {
 	{{All files}    *}
     }
     set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
+    if { [string length $filename] == 0 } {
+	return
+    }
     loadFileToWindow $filename .orig.txt
+    regenOutput $filename
 }
 
 menu .mbar
@@ -26,17 +41,17 @@ menu .mbar.file -tearoff 0
 
 wm title . "Spin Converter"
 
-frame .orig -background green
+frame .orig
 text .orig.txt -wrap none -xscroll {.orig.h set} -yscroll {.orig.v set}
 scrollbar .orig.v -orient vertical -command {.orig.txt yview}
 scrollbar .orig.h -orient horizontal -command {.orig.txt. xview}
 
-frame .out -background blue
+frame .out
 text .out.txt -wrap none -xscroll {.out.h set} -yscroll {.out.v set}
 scrollbar .out.v -orient vertical -command {.out.txt yview}
 scrollbar .out.h -orient horizontal -command {.out.txt. xview}
 
-frame .bot -background red
+frame .bot
 text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
 scrollbar .bot.v -orient vertical -command {.bot.txt yview}
 scrollbar .bot.h -orient horizontal -command {.bot.txt. xview}
