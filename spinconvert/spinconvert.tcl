@@ -1,13 +1,27 @@
 package require Tk
-set types {
-    {{Spin files}   {.spin} }
-    {{All files}    *}
+
+proc loadFileToWindow { fname win } {
+    set fp [open $fname r]
+    set file_data [read $fp]
+    close $fp
+    $win replace 1.0 end $file_data
+}
+
+proc loadNewSpinFile {} {
+    set types {
+	{{Spin files}   {.spin} }
+	{{All files}    *}
+    }
+    set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
+    loadFileToWindow $filename .orig.txt
 }
 
 menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
 .mbar add cascade -menu .mbar.file -label File -underline 0
+.mbar.file add command -label Open... -command { loadNewSpinFile }
+.mbar.file add separator
 .mbar.file add command -label Exit -command { exit }
 
 wm title . "Spin Converter"
@@ -49,11 +63,6 @@ grid .bot.h -sticky nsew
 grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
-
-#set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
-#set fp [open $filename r]
-#set file_data [read $fp]
-#close $fp
 
 .orig.txt insert 1.0 "Original text"
 .out.txt insert 1.0 "New text"
