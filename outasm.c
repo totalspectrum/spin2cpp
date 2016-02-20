@@ -15,6 +15,9 @@
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
 
+static Operand *nextlabel;
+static Operand *quitlabel;
+
 typedef struct OperandList {
   struct OperandList *next;
   Operand *op;
@@ -112,6 +115,9 @@ Operand *NewOperand(enum Operandkind k, const char *name, int value)
     R->kind = k;
     R->name = name;
     R->val = value;
+    if (k == REG_LABEL) {
+      R->used = 1;
+    }
     return R;
 }
 
@@ -205,6 +211,7 @@ CreateTempLabel(IRList *irl)
   sprintf(temp, "L_%03d_", lnum);
   lnum++;
   label = NewOperand(REG_LABEL, strdup(temp), 0);
+  label->used = 0;
   return label;
 }
 
@@ -653,6 +660,41 @@ AppendOperand(OperandList **listptr, Operand *op)
   }
 }
 
+static OperandList quitstack;
+
+static void
+PushQuitNext(Operand *q, Operand *n)
+{
+  OperandList *qholder = malloc(sizeof(OperandList));
+  OperandList *nholder = malloc(sizeof(OperandList));
+  qholder->op = quitlabel;
+  nholder->op = nextlabel;
+  qholder->next = nholder;
+  nholder->next = quitstack.next;
+  quitstack.next = qholder;
+
+  quitlabel = q;
+  nextlabel = n;
+}
+
+static void
+PopQuitNext()
+{
+  OperandList *ql, *nl;
+
+  ql = quitstack.next;
+  if (!ql || !ql->next) {
+    ERROR(NULL, "Internal error: empty loop stack");
+    return;
+  }
+  nl = ql->next;
+  quitstack.next = nl->next;
+  quitlabel = ql->op;
+  nextlabel = nl->op;
+  free(nl);
+  free(ql);
+}
+
 /* compiles a list of expressions; returns the last one
  * tolist is a list of where to store the expressions
  * (may be NULL if we don't care about saving them)
@@ -970,13 +1012,32 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     }
 }
 
+static void
+FreeTempRegisters(IRList *irl, int starttempreg)
+{
+    int endtempreg;
+    Operand *op;
+
+    /* release temporaries we used */
+    endtempreg = curfunc->curtempreg;
+    curfunc->curtempreg = starttempreg;
+
+    /* and mark them as dead */
+    while (endtempreg > starttempreg) {
+      op = GetFunctionTempRegister(curfunc, endtempreg);
+      EmitOp1(irl, OPC_DEAD, op);
+      --endtempreg;
+    }
+}
+
 static void EmitStatement(IRList *irl, AST *ast)
 {
     AST *retval;
     Operand *op;
     Operand *result;
     Operand *botloop, *toploop;
-    int starttempreg, endtempreg;
+    Operand *exitloop;
+    int starttempreg;
 
     if (!ast) return;
 
@@ -1009,21 +1070,46 @@ static void EmitStatement(IRList *irl, AST *ast)
     case AST_WHILE:
         toploop = CreateTempLabel(irl);
 	botloop = CreateTempLabel(irl);
+	PushQuitNext(botloop, toploop);
 	EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
+	FreeTempRegisters(irl, starttempreg);
         EmitStatementList(irl, ast->right);
 	EmitJump(irl, COND_TRUE, toploop);
 	EmitLabel(irl, botloop);
+	PopQuitNext();
 	break;
     case AST_DOWHILE:
         toploop = CreateTempLabel(irl);
+	botloop = CreateTempLabel(irl);
+	exitloop = CreateTempLabel(irl);
+	PushQuitNext(exitloop, botloop);
 	EmitLabel(irl, toploop);
         EmitStatementList(irl, ast->right);
+	EmitLabel(irl, botloop);
         CompileBoolBranches(irl, ast->left, toploop, NULL);
+	FreeTempRegisters(irl, starttempreg);
+	EmitLabel(irl, exitloop);
+	PopQuitNext();
+	break;
+    case AST_QUIT:
+        if (!quitlabel) {
+	    ERROR(ast, "loop exit statement outside of loop");
+	} else {
+	    EmitJump(irl, COND_TRUE, quitlabel);
+	}
+	break;
+    case AST_NEXT:
+        if (!nextlabel) {
+	    ERROR(ast, "loop continue statement outside of loop");
+	} else {
+	    EmitJump(irl, COND_TRUE, nextlabel);
+	}
 	break;
     case AST_IF:
         toploop = CreateTempLabel(irl);
         CompileBoolBranches(irl, ast->left, NULL, toploop);
+	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
 	if (ast->kind == AST_COMMENTEDNODE) {
 	  ast = ast->left;
@@ -1053,16 +1139,7 @@ static void EmitStatement(IRList *irl, AST *ast)
         (void)CompileExpression(irl, ast);
         break;
     }
-    /* release temporaries we used */
-    endtempreg = curfunc->curtempreg;
-    curfunc->curtempreg = starttempreg;
-
-    /* and mark them as dead */
-    while (endtempreg > starttempreg) {
-      op = GetFunctionTempRegister(curfunc, endtempreg);
-      EmitOp1(irl, OPC_DEAD, op);
-      --endtempreg;
-    }
+    FreeTempRegisters(irl, starttempreg);
 }
 
 /*
@@ -1072,6 +1149,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 void
 EmitWholeFunction(IRList *irl, Function *f)
 {
+    nextlabel = quitlabel = NULL;
     curfunc = f;
     EmitFunctionProlog(irl, f);
     EmitStatementList(irl, f->body);
@@ -1468,11 +1546,19 @@ void CheckUsage(IRList *irl)
 {
   IR *ir;
   for (ir = irl->head; ir; ir = ir->next) {
-    if (IsDummy(ir)) {
+    if (IsDummy(ir) || ir->opc == OPC_LABEL) {
       continue;
     }
     CheckOpUsage(ir->src);
     CheckOpUsage(ir->dst);
+  }
+  /* remove unused labels */
+  for (ir = irl->head; ir; ir = ir->next) {
+    if (ir->opc == OPC_LABEL) {
+      if (ir->dst->used == 0) {
+	ir->opc = OPC_DEAD;
+      }
+    }
   }
 }
 
@@ -1656,6 +1742,7 @@ OptimizeIRLocal(IRList *irl)
 void
 OptimizeIRGlobal(IRList *irl)
 {
+  OptimizeIRLocal(irl);
   CheckUsage(irl);
 }
 
