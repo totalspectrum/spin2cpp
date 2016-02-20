@@ -183,6 +183,7 @@ PrintCond(struct flexbuf *fb, IRCond cond)
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
+    int ccset; // condition codes set
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -245,7 +246,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_ADD:
     case OPC_AND:
     case OPC_ANDN:
-    case OPC_SUB:
+    case OPC_CMP:
+    case OPC_CMPS:
     case OPC_NEG:
     case OPC_NOT:
     case OPC_OR:
@@ -258,6 +260,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_SAR:
     case OPC_SHL:
     case OPC_SHR:
+    case OPC_SUB:
     case OPC_WAITCNT:
     case OPC_WAITPEQ:
     case OPC_WAITPNE:
@@ -272,17 +275,21 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	PrintOperand(fb, ir->dst);
 	flexbuf_addstr(fb, ", ");
 	PrintOperand(fb, ir->src);
+	ccset = ir->flags & (FLAG_WC|FLAG_WZ);
+	switch(ccset) {
+	case FLAG_WZ:
+	  flexbuf_addstr(fb, " wz");
+	  break;
+	case FLAG_WC:
+	  flexbuf_addstr(fb, " wc");
+	  break;
+	case FLAG_WC|FLAG_WZ:
+	  flexbuf_addstr(fb, " wc,wz");
+	  break;
+	default:
+	  break;
+	}
 	flexbuf_addstr(fb, "\n");
-	break;
-    case OPC_CMP:
-    case OPC_CMPS:
-        flexbuf_addchar(fb, '\t');
-	flexbuf_addstr(fb, StringFor(ir->opc));
-	flexbuf_addstr(fb, "\t");
-	PrintOperand(fb, ir->dst);
-	flexbuf_addstr(fb, ", ");
-	PrintOperand(fb, ir->src);
-	flexbuf_addstr(fb, " wc,wz\n");
 	break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");

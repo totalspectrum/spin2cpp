@@ -1,7 +1,7 @@
 DAT
 	org	0
 stest022_ismagic
-	cmps	stest022_ismagic_x_, #511 wc,wz
+	cmps	stest022_ismagic_x_, #511 wz
  if_eq	mov	stest022_ismagic_a_, #1
  if_ne	mov	stest022_ismagic_a_, #0
 	mov	result_, stest022_ismagic_a_

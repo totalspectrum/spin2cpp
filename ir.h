@@ -82,9 +82,14 @@ struct IR {
     enum IRCond cond;
     Operand *dst;
     Operand *src;
-
+    int flags;
     IR *prev;
     IR *next;
+};
+
+enum flags {
+    FLAG_WZ = 1,
+    FLAG_WC = 2
 };
 
 typedef struct IRList {

@@ -5,7 +5,7 @@ stest017_count
 L_001_
 	mov	OUTA, stest017_count_i_
 	add	stest017_count_i_, #1
-	cmps	stest017_count_i_, #4 wc,wz
+	cmps	stest017_count_i_, #4 wz
  if_ne	jmp	#L_001_
 stest017_count_ret
 	ret
