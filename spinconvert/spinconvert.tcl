@@ -36,12 +36,19 @@ grid .bot -column 0 -row 1 -columnspan 2 -sticky nsew
 
 grid .orig.txt .orig.v -sticky nsew
 grid .orig.h           -sticky nsew
+grid rowconfigure .orig .orig.txt -weight 1
+grid columnconfigure .orig .orig.txt -weight 1
 
 grid .out.txt .out.v -sticky nsew
 grid .out.h           -sticky nsew
+grid rowconfigure .out .out.txt -weight 1
+grid columnconfigure .out .out.txt -weight 1
 
 grid .bot.txt .bot.v -sticky nsew
 grid .bot.h -sticky nsew
+grid rowconfigure .bot .bot.txt -weight 1
+grid columnconfigure .bot .bot.txt -weight 1
+
 
 #set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
 #set fp [open $filename r]
