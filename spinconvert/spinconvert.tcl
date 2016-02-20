@@ -13,7 +13,7 @@ proc regenOutput { spinfile } {
     global COMPILE
     set outname [file rootname $spinfile]
     set outname "$outname.pasm"
-    set errout [exec $COMPILE --asm $spinfile]
+    set errout [exec -ignorestderr $COMPILE --asm $spinfile 2>@1]
     loadFileToWindow $outname .out.txt
     .bot.txt replace 1.0 end $errout
 }
@@ -35,9 +35,9 @@ menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
 .mbar add cascade -menu .mbar.file -label File -underline 0
-.mbar.file add command -label Open... -command { loadNewSpinFile }
+.mbar.file add command -label Open... -accelerator "^O" -command { loadNewSpinFile }
 .mbar.file add separator
-.mbar.file add command -label Exit -command { exit }
+.mbar.file add command -label Exit -accelerator "^Q" -command { exit }
 
 wm title . "Spin Converter"
 
@@ -79,5 +79,16 @@ grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
 
-.orig.txt insert 1.0 "Original text"
-.out.txt insert 1.0 "New text"
+.orig.txt insert 1.0 "Original Spin code"
+.out.txt insert 1.0 "Converted assembly"
+
+bind . <Control-o> { loadNewSpinFile }
+bind . <Control-q> { exit }
+
+if { $::argc > 0 } {
+    loadFileToWindow $argv .orig.txt
+    regenOutput $argv[1]
+} else {
+    loadNewSpinFile
+}
+
