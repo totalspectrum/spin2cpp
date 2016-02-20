@@ -614,6 +614,24 @@ CompileOperator(IRList *irl, AST *expr)
 {
     int op = expr->d.ival;
     switch (op) {
+    case T_INCREMENT:
+    case T_DECREMENT:
+    {
+        AST *addone;
+        Operand *lhs;
+        Operand *temp = NULL;
+        int opc = (op == T_INCREMENT) ? '+' : '-';
+        if (expr->left) {  /* x++ */
+            addone = AstAssign(opc, expr->left, AstInteger(1));
+            temp = NewFunctionTempRegister();
+            lhs = CompileExpression(irl, expr->left);
+            EmitMove(irl, temp, lhs);
+            CompileExpression(irl, addone);
+            return  temp;
+        }
+        addone = AstAssign(opc, expr->right, AstInteger(1));
+        return CompileExpression(irl, addone);
+    }
     case '*':
         return CompileMul(irl, expr, 0);
     case T_HIGHMULT:
@@ -631,6 +649,7 @@ CompileOperator(IRList *irl, AST *expr)
 	  EmitOp2(irl, OPC_ANDN, temp, rhs);
 	  return temp;
         }
+        return CompileBasicOperator(irl, expr);
     default:
         return CompileBasicOperator(irl, expr);
     }
@@ -933,6 +952,11 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
+        if (src->kind == REG_IMM) {
+            Operand *temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, src);
+            src = temp;
+        }
         switch (origdst->kind) {
         default:
             ERROR(NULL, "Illegal memory reference");
