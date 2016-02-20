@@ -33,7 +33,8 @@ void OptimizeIRGlobal(IRList *irl);
 void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
-static void EmitOp1(IRList *irl, Operandkind code, Operand *op);
+static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op);
+static IR *EmitOp2(IRList *irl, Operandkind code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 
 struct GlobalVariable {
@@ -175,26 +176,28 @@ DeleteIR(IRList *irl, IR *ir)
   }
 }
 
-static void EmitOp0(IRList *irl, Operandkind code)
+static IR *EmitOp0(IRList *irl, Operandkind code)
 {
   IR *ir = NewIR(code);
   AppendIR(irl, ir);
+  return ir;
 }
 
-static void EmitOp1(IRList *irl, Operandkind code, Operand *op)
+static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op)
 {
   IR *ir = NewIR(code);
   ir->dst = op;
   AppendIR(irl, ir);
+  return ir;
 }
 
-static Operand *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
+static IR *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
 {
   IR *ir = NewIR(code);
   ir->dst = d;
   ir->src = s;
   AppendIR(irl, ir);
-  return d;
+  return ir;
 }
 
 void EmitLabel(IRList *irl, Operand *op)
@@ -424,6 +427,8 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   Operand *lhs;
   Operand *rhs;
   int opkind;
+  IR *ir;
+  int flags;
 
   if (expr->kind == AST_OPERATOR) {
     opkind = expr->d.ival;
@@ -455,7 +460,17 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     rhs = tmp;
     cond = FlipSides(cond);
   }
-  EmitOp2(irl, OPC_CMPS, lhs, rhs);
+  switch (cond) {
+  case COND_NE:
+  case COND_EQ:
+    flags = FLAG_WZ;
+    break;
+  default:
+    flags = FLAG_WZ|FLAG_WC;
+    break;
+  }
+  ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
+  ir->flags |= flags;
   return cond;
 }
 
@@ -1484,9 +1499,10 @@ HasSideEffects(IR *ir)
     if (ir->dst && ir->dst->kind == REG_HW) {
         return true;
     }
+    if (ir->flags & (FLAG_WZ|FLAG_WC)) {
+        return true;
+    }
     switch (ir->opc) {
-    case OPC_CMP:
-    case OPC_CMPS:
     case OPC_WAITCNT:
     case OPC_WRBYTE:
     case OPC_WRLONG:

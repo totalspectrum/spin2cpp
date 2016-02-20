@@ -1,9 +1,9 @@
 DAT
 	org	0
 stest025_test1
-	cmps	stest025_test1_x_, #0 wc,wz
+	cmps	stest025_test1_x_, #0 wz
  if_ne	jmp	#L_002_
-	cmps	stest025_test1_y_, #0 wc,wz
+	cmps	stest025_test1_y_, #0 wz
  if_ne	jmp	#L_002_
  if_eq	jmp	#L_001_
 L_002_
