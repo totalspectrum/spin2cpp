@@ -9,6 +9,14 @@ proc loadFileToWindow { fname win } {
     $win replace 1.0 end $file_data
 }
 
+proc saveFileFromWindow { fname win } {
+    set fp [open $fname w]
+    set file_data [$win get 1.0 end]
+    puts $fp $file_data
+    close $fp
+    regenOutput $fname
+}
+
 proc regenOutput { spinfile } {
     global COMPILE
     set outname [file rootname $spinfile]
@@ -18,17 +26,50 @@ proc regenOutput { spinfile } {
     .bot.txt replace 1.0 end $errout
 }
 
+set SpinTypes {
+    {{Spin files}   {.spin} }
+    {{All files}    *}
+}
+
 proc loadNewSpinFile {} {
-    set types {
-	{{Spin files}   {.spin} }
-	{{All files}    *}
-    }
-    set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
+    global CURFILE
+    global SpinTypes
+    set filename [tk_getOpenFile -filetypes $SpinTypes -defaultextension ".spin" ]
     if { [string length $filename] == 0 } {
 	return
     }
     loadFileToWindow $filename .orig.txt
     regenOutput $filename
+    set CURFILE $filename
+    wm title . $CURFILE
+}
+
+proc saveFile {} {
+    global CURFILE
+    global SpinTypes
+    
+    if { [string length $CURFILE] == 0 } {
+	set filename [tk_getSaveFile -initialfile $CURFILE -filetypes $SpinTypes -defaultextension ".spin" ]
+	if { [string length $filename] == 0 } {
+	    return
+	}
+	set CURFILE $filename
+    }
+    
+    saveFileFromWindow $CURFILE .orig.txt
+    wm title . $CURFILE
+}
+
+proc saveAs {} {
+    global CURFILE
+    global SpinTypes
+    set filename [tk_getSaveFile -initialfile $CURFILE -filetypes $SpinTypes -defaultextension ".spin" ]
+    if { [string length $filename] == 0 } {
+	return
+    }
+    set CURFILE $filename
+    wm title . $CURFILE
+    saveFile
 }
 
 menu .mbar
@@ -36,6 +77,8 @@ menu .mbar
 menu .mbar.file -tearoff 0
 .mbar add cascade -menu .mbar.file -label File -underline 0
 .mbar.file add command -label Open... -accelerator "^O" -command { loadNewSpinFile }
+.mbar.file add command -label Save -accelerator "^S" -command { saveFile }
+.mbar.file add command -label "Save As..." -command { saveAs }
 .mbar.file add separator
 .mbar.file add command -label Exit -accelerator "^Q" -command { exit }
 
@@ -79,16 +122,17 @@ grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
 
-.orig.txt insert 1.0 "Original Spin code"
-.out.txt insert 1.0 "Converted assembly"
+.orig.txt insert 1.0 "'' Original Spin code"
+.out.txt insert 1.0 "'' Converted assembly"
 
 bind . <Control-o> { loadNewSpinFile }
+bind . <Control-s> { saveFile }
 bind . <Control-q> { exit }
 
 if { $::argc > 0 } {
     loadFileToWindow $argv .orig.txt
     regenOutput $argv[1]
 } else {
-    loadNewSpinFile
+    set CURFILE ""
 }
 
