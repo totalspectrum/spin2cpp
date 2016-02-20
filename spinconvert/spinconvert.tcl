@@ -27,10 +27,12 @@ text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
 scrollbar .bot.v -orient vertical -command {.bot.txt yview}
 scrollbar .bot.h -orient horizontal -command {.bot.txt. xview}
 
-grid .orig .out -sticky nsew
-grid .bot -columnspan 2 -sticky ew
 grid columnconfigure . {0 1} -weight 1
 grid rowconfigure . 0 -weight 1
+
+grid .orig -column 0 -row 0 -columnspan 1 -rowspan 1 -sticky nsew
+grid .out -column 1 -row 0 -columnspan 1 -rowspan 1 -sticky nsew
+grid .bot -column 0 -row 1 -columnspan 2 -sticky nsew
 
 grid .orig.txt .orig.v -sticky nsew
 grid .orig.h           -sticky nsew
@@ -38,9 +40,8 @@ grid .orig.h           -sticky nsew
 grid .out.txt .out.v -sticky nsew
 grid .out.h           -sticky nsew
 
-grid .bot.txt .bot.v -sticky nw
-grid .bot.h -sticky nw
-
+grid .bot.txt .bot.v -sticky nsew
+grid .bot.h -sticky nsew
 
 #set filename [tk_getOpenFile -filetypes $types -defaultextension ".spin" ]
 #set fp [open $filename r]
