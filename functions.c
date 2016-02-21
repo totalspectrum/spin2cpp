@@ -1051,6 +1051,21 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintExpr(f, ast->left);
         fprintf(f, ");"); PrintNewline(f);
         break;
+    case AST_WAITPEQ:
+        fprintf(f, "%*cwaitpeq(", indent, ' ');
+        PrintExprList(f, ast->left);
+        fprintf(f, ");"); PrintNewline(f);
+        break;
+    case AST_WAITPNE:
+        fprintf(f, "%*cwaitpne(", indent, ' ');
+        PrintExprList(f, ast->left);
+        fprintf(f, ");"); PrintNewline(f);
+        break;
+    case AST_WAITVID:
+        fprintf(f, "%*cwaitpvid(", indent, ' ');
+        PrintExprList(f, ast->left);
+        fprintf(f, ");"); PrintNewline(f);
+        break;        
     case AST_ABORT:
         PrintDebugDirective(f, ast);
         fprintf(f, "%*cif (!abortChain__) abort();", indent, ' ');
@@ -1148,22 +1163,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, ";");
         PrintNewline(f);
         break;
-    case AST_OPERATOR:
- #if 0
-        // FIXME: now done in SpinTransforms
-        switch (ast->d.ival) {
-        case T_NEGATE:
-        case T_ABS:
-        case T_SQRT:
-        case T_BIT_NOT:
-        case T_DECODE:
-        case T_ENCODE:
-            lhsast = DupAST(ast->right);
-            ast = AstAssign(T_ASSIGN, lhsast, ast);
-            break;
-        }
- #endif
-        /* fall through */
     default:
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);
@@ -1633,6 +1632,8 @@ CheckRecursive(Function *f)
  * SpinTransform
  * transform AST to reflect some oddities of the Spin language:
  * (1) It's legal to call a void function, just substitute 0 for the result
+ * (2) Certain operators used at top level are changed into assignments
+ * (3) Validate parameters to some builtins
  */
 /* if level is 0, we are inside an expression
  * level == 1 at top level
@@ -1714,6 +1715,38 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         break;
+    case AST_WAITPEQ:
+    case AST_WAITPNE:
+    {
+        int n;
+        const char *name = (ast->kind == AST_WAITPNE) ? "waitpne" : "waitpeq";
+        AST *args = ast->left;
+        n = AstListLen(args);
+        if (n != 3) {
+            ERROR(ast, "Bad number of parameters in call to %s: expected 3 found %d", name, n);
+        } else {
+            args = args->right->right->left;  // get 3rd parameter
+            if (!IsConstExpr(args) || EvalConstExpr(args) != 0) {
+                ERROR(args, "Final parameter to %s must be 0", name);
+            }
+        }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
+    }
+    case AST_WAITVID:
+    {
+        int n;
+        const char *name = "waitvid";
+        AST *args = ast->left;
+        n = AstListLen(args);
+        if (n != 2) {
+            ERROR(ast, "Bad number of parameters in call to %s: expected 2 found %d", name, n);
+        }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
+    }
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;

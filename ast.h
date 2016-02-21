@@ -126,6 +126,10 @@ enum astkind {
     AST_VOIDTYPE,
     AST_SEQUENCE,
     AST_WAITCNT,
+    
+    AST_WAITPEQ = 88,
+    AST_WAITPNE,
+    AST_WAITVID,
 };
 
 struct AST {
