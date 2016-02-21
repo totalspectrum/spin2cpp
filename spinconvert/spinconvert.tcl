@@ -19,9 +19,22 @@ proc saveFileFromWindow { fname win } {
 
 proc regenOutput { spinfile } {
     global COMPILE
-    set outname [file rootname $spinfile]
-    set outname "$outname.pasm"
-    set errout [exec -ignorestderr $COMPILE --asm $spinfile 2>@1]
+    global PASMFILE
+
+    set outname $PASMFILE
+    if { [string length $outname] == 0 } {
+	set outname [file rootname $spinfile]
+	set outname "$outname.pasm"
+	set PASMFILE $outname
+    }
+    set errout ""
+    set status 0
+    if {[catch {exec -ignorestderr $COMPILE --asm $spinfile 2>@1} errout options]} {
+	set status 1
+    }
+    if { $status != 0 } {
+	tk_messageBox -icon error -type ok -message "Compilation failed"
+    }
     loadFileToWindow $outname .out.txt
     .bot.txt replace 1.0 end $errout
 }
@@ -32,7 +45,7 @@ set SpinTypes {
 }
 
 proc loadNewSpinFile {} {
-    global CURFILE
+    global SPINFILE
     global SpinTypes
     set filename [tk_getOpenFile -filetypes $SpinTypes -defaultextension ".spin" ]
     if { [string length $filename] == 0 } {
@@ -40,45 +53,45 @@ proc loadNewSpinFile {} {
     }
     loadFileToWindow $filename .orig.txt
     regenOutput $filename
-    set CURFILE $filename
-    wm title . $CURFILE
+    set SPINFILE $filename
+    wm title . $SPINFILE
 }
 
-proc saveFile {} {
-    global CURFILE
+proc saveSpinFile {} {
+    global SPINFILE
     global SpinTypes
     
-    if { [string length $CURFILE] == 0 } {
-	set filename [tk_getSaveFile -initialfile $CURFILE -filetypes $SpinTypes -defaultextension ".spin" ]
+    if { [string length $SPINFILE] == 0 } {
+	set filename [tk_getSaveFile -initialfile $SPINFILE -filetypes $SpinTypes -defaultextension ".spin" ]
 	if { [string length $filename] == 0 } {
 	    return
 	}
-	set CURFILE $filename
+	set SPINFILE $filename
     }
     
-    saveFileFromWindow $CURFILE .orig.txt
-    wm title . $CURFILE
+    saveFileFromWindow $SPINFILE .orig.txt
+    wm title . $SPINFILE
 }
 
-proc saveAs {} {
-    global CURFILE
+proc saveSpinAs {} {
+    global SPINFILE
     global SpinTypes
-    set filename [tk_getSaveFile -initialfile $CURFILE -filetypes $SpinTypes -defaultextension ".spin" ]
+    set filename [tk_getSaveFile -filetypes $SpinTypes -defaultextension ".spin" ]
     if { [string length $filename] == 0 } {
 	return
     }
-    set CURFILE $filename
-    wm title . $CURFILE
-    saveFile
+    set SPINFILE $filename
+    wm title . $SPINFILE
+    saveSpinFile
 }
 
 menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
 .mbar add cascade -menu .mbar.file -label File -underline 0
-.mbar.file add command -label Open... -accelerator "^O" -command { loadNewSpinFile }
-.mbar.file add command -label Save -accelerator "^S" -command { saveFile }
-.mbar.file add command -label "Save As..." -command { saveAs }
+.mbar.file add command -label "Open Spin..." -accelerator "^O" -command { loadNewSpinFile }
+.mbar.file add command -label "Save Spin" -accelerator "^S" -command { saveSpinFile }
+.mbar.file add command -label "Save Spin As..." -command { saveSpinAs }
 .mbar.file add separator
 .mbar.file add command -label Exit -accelerator "^Q" -command { exit }
 
@@ -126,13 +139,14 @@ grid columnconfigure .bot .bot.txt -weight 1
 .out.txt insert 1.0 "'' Converted assembly"
 
 bind . <Control-o> { loadNewSpinFile }
-bind . <Control-s> { saveFile }
+bind . <Control-s> { saveSpinFile }
 bind . <Control-q> { exit }
+
+set PASMFILE ""
 
 if { $::argc > 0 } {
     loadFileToWindow $argv .orig.txt
     regenOutput $argv[1]
 } else {
-    set CURFILE ""
+    set SPINFILE ""
 }
-
