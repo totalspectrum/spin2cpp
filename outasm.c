@@ -320,8 +320,8 @@ Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   ParserState *P = func->parse;
-  Symbol *sym = FindSymbol(&func->localsyms, expr->d.string);
-
+  Symbol *sym;
+  sym = LookupSymbolInFunc(func, expr->d.string);
   if (sym) {
       if (sym->type == SYM_PARAMETER) {
           return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);

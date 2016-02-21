@@ -355,5 +355,6 @@ Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
 /* get full name for FILE directive */
 AST *GetFullFileName(AST *baseString);
     
+Symbol *LookupSymbolInFunc(Function *func, const char *name);
 
 #endif

@@ -33,13 +33,13 @@ GetObjectPtr(Symbol *sym)
 
 /* code to find a symbol */
 Symbol *
-LookupSymbol(const char *name)
+LookupSymbolInFunc(Function *func, const char *name)
 {
     Symbol *sym = NULL;
-    if (curfunc) {
-        sym = FindSymbol(&curfunc->localsyms, name);
+    if (func) {
+        sym = FindSymbol(&func->localsyms, name);
         if (!sym) {
-            sym = FindSymbol(&curfunc->parse->objsyms, name);
+            sym = FindSymbol(&func->parse->objsyms, name);
         }
     } else {
         sym = FindSymbol(&current->objsyms, name);
@@ -48,6 +48,12 @@ LookupSymbol(const char *name)
         sym = FindSymbol(&reservedWords, name);
     }
     return sym;
+}
+
+Symbol *
+LookupSymbol(const char *name)
+{
+    return LookupSymbolInFunc(curfunc, name);
 }
 
 /*
