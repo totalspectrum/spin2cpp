@@ -934,6 +934,8 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_FLOAT:
     r = NewImmediate((int32_t)expr->d.ival);
     return r;
+  case AST_RESULT:
+    return CompileExpression(irl, curfunc->resultexpr);
   case AST_IDENTIFIER:
     return CompileIdentifier(irl, expr);
   case AST_HWREG:
