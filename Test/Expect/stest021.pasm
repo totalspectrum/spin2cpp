@@ -1,15 +1,15 @@
 DAT
 	org	0
-stest021_waitcycles
-	mov	stest021_waitcycles_end_, CNT
-	add	stest021_waitcycles_end_, stest021_waitcycles_n_
+waitcycles
+	mov	waitcycles_end_, CNT
+	add	waitcycles_end_, waitcycles_n_
 L_001_
-	cmps	CNT, stest021_waitcycles_end_ wc,wz
+	cmps	CNT, waitcycles_end_ wc,wz
  if_lt	jmp	#L_001_
-stest021_waitcycles_ret
+waitcycles_ret
 	ret
 
-stest021_waitcycles_end_
+waitcycles_end_
 	long	0
-stest021_waitcycles_n_
+waitcycles_n_
 	long	0

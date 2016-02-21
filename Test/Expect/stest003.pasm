@@ -1,8 +1,8 @@
 DAT
 	org	0
-stest003_dummy
+dummy
 	mov	result_, #1
-stest003_dummy_ret
+dummy_ret
 	ret
 
 result_

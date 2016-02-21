@@ -1,24 +1,24 @@
 DAT
 	org	0
-stest025_test1
-	cmps	stest025_test1_x_, #0 wz
+test1
+	cmps	test1_x_, #0 wz
  if_ne	jmp	#L_002_
-	cmps	stest025_test1_y_, #0 wz
+	cmps	test1_y_, #0 wz
  if_ne	jmp	#L_002_
  if_eq	jmp	#L_001_
 L_002_
-	mov	result_, stest025_test1_z_
-	jmp	#stest025_test1_ret
+	mov	result_, test1_z_
+	jmp	#test1_ret
 L_001_
 	neg	result_, #1
-stest025_test1_ret
+test1_ret
 	ret
 
 result_
 	long	0
-stest025_test1_x_
+test1_x_
 	long	0
-stest025_test1_y_
+test1_y_
 	long	0
-stest025_test1_z_
+test1_z_
 	long	0

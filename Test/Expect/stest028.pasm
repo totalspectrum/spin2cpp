@@ -1,17 +1,17 @@
 DAT
 	org	0
-stest028_divmod16
-	mov	mula_, stest028_divmod16_x_
-	mov	mulb_, stest028_divmod16_y_
+divmod16
+	mov	mula_, divmod16_x_
+	mov	mulb_, divmod16_y_
 	call	#divide_
-	mov	stest028_divmod16_q_, mula_
-	mov	mula_, stest028_divmod16_x_
-	mov	mulb_, stest028_divmod16_y_
+	mov	divmod16_q_, mula_
+	mov	mula_, divmod16_x_
+	mov	mulb_, divmod16_y_
 	call	#divide_
-	shl	stest028_divmod16_q_, #16
-	or	stest028_divmod16_q_, mulb_
-	mov	result_, stest028_divmod16_q_
-stest028_divmod16_ret
+	shl	divmod16_q_, #16
+	or	divmod16_q_, mulb_
+	mov	result_, divmod16_q_
+divmod16_ret
 	ret
 
 divide_
@@ -39,6 +39,12 @@ divlp2_
 divide__ret
 	ret
 
+divmod16_q_
+	long	0
+divmod16_x_
+	long	0
+divmod16_y_
+	long	0
 itmp1_
 	long	0
 itmp2_
@@ -48,10 +54,4 @@ mula_
 mulb_
 	long	0
 result_
-	long	0
-stest028_divmod16_q_
-	long	0
-stest028_divmod16_x_
-	long	0
-stest028_divmod16_y_
 	long	0

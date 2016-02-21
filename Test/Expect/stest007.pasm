@@ -1,8 +1,8 @@
 DAT
 	org	0
-stest007_foo
+foo
 	neg	result_, #1
-stest007_foo_ret
+foo_ret
 	ret
 
 result_

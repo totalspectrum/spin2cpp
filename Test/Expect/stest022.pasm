@@ -1,16 +1,16 @@
 DAT
 	org	0
-stest022_ismagic
-	cmps	stest022_ismagic_x_, #511 wz
- if_eq	mov	stest022_ismagic_a_, #1
- if_ne	mov	stest022_ismagic_a_, #0
-	mov	result_, stest022_ismagic_a_
-stest022_ismagic_ret
+ismagic
+	cmps	ismagic_x_, #511 wz
+ if_eq	mov	ismagic_a_, #1
+ if_ne	mov	ismagic_a_, #0
+	mov	result_, ismagic_a_
+ismagic_ret
 	ret
 
+ismagic_a_
+	long	0
+ismagic_x_
+	long	0
 result_
-	long	0
-stest022_ismagic_a_
-	long	0
-stest022_ismagic_x_
 	long	0

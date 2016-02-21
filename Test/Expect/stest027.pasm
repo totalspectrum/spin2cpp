@@ -1,16 +1,16 @@
 DAT
 	org	0
-stest027_hyp
-	mov	mula_, stest027_hyp_x_
-	mov	mulb_, stest027_hyp_x_
+hyp
+	mov	mula_, hyp_x_
+	mov	mulb_, hyp_x_
 	call	#multiply_
-	mov	stest027_hyp_tmp001_, mula_
-	mov	mula_, stest027_hyp_y_
-	mov	mulb_, stest027_hyp_y_
+	mov	hyp_tmp001_, mula_
+	mov	mula_, hyp_y_
+	mov	mulb_, hyp_y_
 	call	#multiply_
-	add	stest027_hyp_tmp001_, mula_
-	mov	result_, stest027_hyp_tmp001_
-stest027_hyp_ret
+	add	hyp_tmp001_, mula_
+	mov	result_, hyp_tmp001_
+hyp_ret
 	ret
 
 multiply_
@@ -34,6 +34,12 @@ mul_lp_
 multiply__ret
 	ret
 
+hyp_tmp001_
+	long	0
+hyp_x_
+	long	0
+hyp_y_
+	long	0
 itmp1_
 	long	0
 itmp2_
@@ -43,10 +49,4 @@ mula_
 mulb_
 	long	0
 result_
-	long	0
-stest027_hyp_tmp001_
-	long	0
-stest027_hyp_x_
-	long	0
-stest027_hyp_y_
 	long	0

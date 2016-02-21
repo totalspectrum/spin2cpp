@@ -1,29 +1,29 @@
 DAT
 	org	0
-stest013_sum
-	add	stest013_sum_x_, stest013_sum_y_
-	mov	result_, stest013_sum_x_
-stest013_sum_ret
+sum
+	add	sum_x_, sum_y_
+	mov	result_, sum_x_
+sum_ret
 	ret
 
-stest013_triple
-	mov	stest013_triple_tmp001_, stest013_triple_x_
-	mov	stest013_sum_x_, stest013_triple_x_
-	mov	stest013_sum_y_, stest013_triple_x_
-	call	#stest013_sum
-	mov	stest013_sum_y_, result_
-	mov	stest013_sum_x_, stest013_triple_tmp001_
-	call	#stest013_sum
-stest013_triple_ret
+triple
+	mov	triple_tmp001_, triple_x_
+	mov	sum_x_, triple_x_
+	mov	sum_y_, triple_x_
+	call	#sum
+	mov	sum_y_, result_
+	mov	sum_x_, triple_tmp001_
+	call	#sum
+triple_ret
 	ret
 
 result_
 	long	0
-stest013_sum_x_
+sum_x_
 	long	0
-stest013_sum_y_
+sum_y_
 	long	0
-stest013_triple_tmp001_
+triple_tmp001_
 	long	0
-stest013_triple_x_
+triple_x_
 	long	0

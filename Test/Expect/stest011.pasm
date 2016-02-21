@@ -1,8 +1,8 @@
 DAT
 	org	0
-stest011_test
+test
 	mov	DIRA, #1
 	mov	OUTA, #1
-stest011_test_ret
+test_ret
 	ret
 

@@ -1,8 +1,8 @@
 DAT
 	org	0
-stest014_foo
+foo
 	mov	result_, #1
-stest014_foo_ret
+foo_ret
 	ret
 
 result_

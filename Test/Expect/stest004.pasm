@@ -1,8 +1,8 @@
 DAT
 	org	0
-stest004_dummy
+dummy
 	mov	result_, imm_1024_
-stest004_dummy_ret
+dummy_ret
 	ret
 
 imm_1024_

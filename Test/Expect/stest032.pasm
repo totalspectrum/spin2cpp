@@ -2,13 +2,13 @@ CON
 	incval = 15
 DAT
 	org	0
-stest032_inc
-	add	stest032_inc_x_, #incval
-	mov	result_, stest032_inc_x_
-stest032_inc_ret
+inc
+	add	inc_x_, #incval
+	mov	result_, inc_x_
+inc_ret
 	ret
 
-result_
+inc_x_
 	long	0
-stest032_inc_x_
+result_
 	long	0

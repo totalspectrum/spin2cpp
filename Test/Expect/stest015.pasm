@@ -1,11 +1,11 @@
 DAT
 	org	0
-stest015_foo
+foo
 	mov	result_, #1
-stest015_foo_ret
+foo_ret
 	ret
 
-result_
+foo_x_
 	long	0
-stest015_foo_x_
+result_
 	long	0

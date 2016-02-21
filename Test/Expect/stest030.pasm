@@ -1,11 +1,11 @@
 DAT
 	org	0
-stest030_peek
-	rdbyte	result_, stest030_peek_x_
-stest030_peek_ret
+peek
+	rdbyte	result_, peek_x_
+peek_ret
 	ret
 
-result_
+peek_x_
 	long	0
-stest030_peek_x_
+result_
 	long	0

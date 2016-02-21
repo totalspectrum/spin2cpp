@@ -1,12 +1,12 @@
 DAT
 	org	0
-stest029_setpin
+setpin
 	or	OUTA, #2
-stest029_setpin_ret
+setpin_ret
 	ret
 
-stest029_clrpin
+clrpin
 	andn	OUTA, #2
-stest029_clrpin_ret
+clrpin_ret
 	ret
 

@@ -1,15 +1,15 @@
 DAT
 	org	0
-stest037_fetch
-	shl	stest037_fetch_i_, #1
-	add	stest037_fetch_i_, stest037_fetch_x_
-	rdword	result_, stest037_fetch_i_
-stest037_fetch_ret
+fetch
+	shl	fetch_i_, #1
+	add	fetch_i_, fetch_x_
+	rdword	result_, fetch_i_
+fetch_ret
 	ret
 
+fetch_i_
+	long	0
+fetch_x_
+	long	0
 result_
-	long	0
-stest037_fetch_i_
-	long	0
-stest037_fetch_x_
 	long	0

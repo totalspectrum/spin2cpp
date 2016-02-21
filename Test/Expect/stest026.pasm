@@ -1,18 +1,18 @@
 DAT
 	org	0
-stest026_test1
-	mov	stest026_test1_tmp001_, #0
-	cmps	stest026_test1_x_, stest026_test1_y_ wc,wz
- if_lt	not	stest026_test1_tmp001_, stest026_test1_tmp001_
-	mov	result_, stest026_test1_tmp001_
-stest026_test1_ret
+test1
+	mov	test1_tmp001_, #0
+	cmps	test1_x_, test1_y_ wc,wz
+ if_lt	not	test1_tmp001_, test1_tmp001_
+	mov	result_, test1_tmp001_
+test1_ret
 	ret
 
 result_
 	long	0
-stest026_test1_tmp001_
+test1_tmp001_
 	long	0
-stest026_test1_x_
+test1_x_
 	long	0
-stest026_test1_y_
+test1_y_
 	long	0

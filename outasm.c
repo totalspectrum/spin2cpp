@@ -44,6 +44,38 @@ struct GlobalVariable {
 
 static struct flexbuf gvars;
 
+static int
+IsTopLevel(ParserState *P)
+{
+    return 1;
+}
+
+static const char *
+IdentifierLocalName(Function *func, const char *name)
+{
+    char temp[1024];
+    ParserState *P = func->parse;
+
+    if (IsTopLevel(P)) {
+        snprintf(temp, sizeof(temp)-1, "%s_%s_", func->name, name);
+    } else {
+        snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, name);
+    }
+    return strdup(temp);
+}
+
+static const char *
+IdentifierGlobalName(ParserState *P, const char *name)
+{
+    char temp[1024];
+    if (IsTopLevel(P)) {
+        return name;
+    } else {
+        snprintf(temp, sizeof(temp)-1, "%s_%s", P->basename, name);
+        return strdup(temp);
+    }
+}
+
 static int IsMemRef(Operand *op)
 {
     return (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
@@ -61,7 +93,7 @@ GetGlobal(Operandkind kind, const char *name, int value)
       return g[i].op;
     }
   }
-  tmp.op = NewOperand(kind, strdup(name), value);
+  tmp.op = NewOperand(kind, name, value);
   tmp.val = value;
   flexbuf_addmem(&gvars, (const char *)&tmp, sizeof(tmp));
   return tmp.op;
@@ -251,21 +283,25 @@ void EmitFunctionEpilog(IRList *irl, Function *f)
 Operand *
 NewImmediate(int32_t val)
 {
-  char temp[64];
+  char temp[1024];
   if (val >= 0 && val < 512) {
     return NewOperand(REG_IMM, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(REG_IMM, temp, (int32_t)val);
+  return GetGlobal(REG_IMM, strdup(temp), (int32_t)val);
 }
 
 Operand *
 GetFunctionTempRegister(Function *f, int n)
 {
   ParserState *P = f->parse;
-  char buf[128];
-  sprintf(buf, "%s_%s_tmp%03d_", P->basename, f->name, n);
-  return GetGlobal(REG_LOCAL, buf, 0);
+  char buf[1024];
+  if (IsTopLevel(P)) {
+      snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
+  } else {
+      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->basename, f->name, n);
+  }
+  return GetGlobal(REG_LOCAL, strdup(buf), 0);
 }
 
 Operand *
@@ -285,15 +321,15 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   ParserState *P = func->parse;
   Symbol *sym = FindSymbol(&func->localsyms, expr->d.string);
-  char temp[256];
-  snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, expr->d.string);
 
   if (sym) {
       if (sym->type == SYM_PARAMETER) {
-          return GetGlobal(REG_ARG, temp, 0);
+          return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
+      } else if (sym->type == SYM_VARIABLE) {
+          return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
       }
   }
-  return GetGlobal(REG_LOCAL, temp, 0);
+  return GetGlobal(REG_LOCAL, IdentifierLocalName(func, expr->d.string), 0);
 }
 
 Operand *
@@ -1244,12 +1280,11 @@ CompileToIR(IRList *irl, ParserState *P)
 
     // assign all function names so we can do forward calls
     for(f = P->functions; f; f = f->next) {
-	char *fname;
+	const char *fname;
         char *frname;
-	frname = malloc(strlen(f->name) + strlen(P->basename) + 8);
-	sprintf(frname, "%s_%s", P->basename, f->name);
-	fname = strdup(frname);
-	strcat(frname, "_ret");
+        fname = IdentifierGlobalName(P, f->name);
+	frname = malloc(strlen(fname) + 8);
+	sprintf(frname, "%s_ret", fname);
 
         f->asmname = NewOperand(REG_LABEL, fname, 0);
         f->asmretname = NewOperand(REG_LABEL, frname, 0);

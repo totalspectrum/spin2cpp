@@ -1,23 +1,23 @@
 DAT
 	org	0
-stest012_sum
-	add	stest012_sum_x_, stest012_sum_y_
-	mov	result_, stest012_sum_x_
-stest012_sum_ret
+sum
+	add	sum_x_, sum_y_
+	mov	result_, sum_x_
+sum_ret
 	ret
 
-stest012_inc
-	mov	stest012_sum_x_, stest012_inc_x_
-	mov	stest012_sum_y_, #1
-	call	#stest012_sum
-stest012_inc_ret
+inc
+	mov	sum_x_, inc_x_
+	mov	sum_y_, #1
+	call	#sum
+inc_ret
 	ret
 
+inc_x_
+	long	0
 result_
 	long	0
-stest012_inc_x_
+sum_x_
 	long	0
-stest012_sum_x_
-	long	0
-stest012_sum_y_
+sum_y_
 	long	0
