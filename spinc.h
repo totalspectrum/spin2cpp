@@ -284,7 +284,7 @@ int PrintPrivateFunctionDecls(FILE *f, ParserState *P);
 void PrintFunctionBodies(FILE *f, ParserState *P);
 void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
-int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist);
+int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count);
 void PrintAnnotationList(FILE *f, AST *ast, char terminal);
 void PrintIndentedComment(FILE *f, AST *ast, int indent);
 void PrintDebugDirective(FILE *f, AST *ast);

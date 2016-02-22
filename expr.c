@@ -1289,14 +1289,21 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
          * Normally we put parentheses around operators, but at
          * the top of an assignment we should not have to.
          */
-        if (rhs->kind == AST_OPERATOR && !isBooleanOperator(rhs)) {
-            PrintOperator(f, rhs->d.ival, rhs->left, rhs->right);
-        } else {
-            PrintExpr(f, rhs);
-        }
+        PrintExprToplevel(f, rhs);
     }
 }
 
+void
+PrintExprToplevel(FILE *f, AST *expr)
+{
+    if (expr->kind == AST_ASSIGN) {
+        PrintAssign(f, expr->left, expr->right);
+    } else if (expr->kind == AST_OPERATOR && !isBooleanOperator(expr)) {
+        PrintOperator(f, expr->d.ival, expr->left, expr->right);
+    } else {
+        PrintExpr(f, expr);
+    }
+}
 
 /*
  * print a lookup array; returns the number of elements in it
@@ -1499,6 +1506,14 @@ PrintExpr(FILE *f, AST *expr)
         fprintf(f, "(int32_t)((");
         PrintLHS(f, expr->left, 0, 0);
         fprintf(f, ")+%s)", current->datname);
+        break;
+    case AST_CONDRESULT:
+        fprintf(f, "(");
+        PrintBoolExpr(f, expr->left);
+        fprintf(f, ") ? ");
+        PrintExprToplevel(f, expr->right->left);
+        fprintf(f, " : ");
+        PrintExprToplevel(f, expr->right->right);
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:

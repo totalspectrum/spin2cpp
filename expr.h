@@ -21,6 +21,7 @@ AST *FoldIfConst(AST *expr);
 
 /* printing functions */
 void PrintExpr(FILE *f, AST *expr);
+void PrintExprToplevel(FILE *f, AST *expr);
 void PrintBoolExpr(FILE *f, AST *expr);
 void PrintAsAddr(FILE *f, AST *expr);
 void PrintExprList(FILE *f, AST *list);

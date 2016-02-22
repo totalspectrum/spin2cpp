@@ -130,6 +130,7 @@ enum astkind {
     AST_WAITPEQ = 88,
     AST_WAITPNE,
     AST_WAITVID,
+    AST_CONDRESULT,
 };
 
 struct AST {

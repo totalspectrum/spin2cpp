@@ -272,7 +272,7 @@ DeclareVariables(ParserState *P)
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return;
         }
-        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left);
+        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, 0);
     }
 }
 

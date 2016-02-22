@@ -47,12 +47,11 @@ EnterVariable(int kind, SymbolTable *stab, const char *name, AST *type)
 }
 
 int
-EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist)
+EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count)
 {
     AST *lower;
     AST *ast;
     Symbol *sym;
-    int count = 0;
     int size;
 
     for (lower = varlist; lower; lower = lower->right) {
@@ -205,9 +204,9 @@ doDeclareFunction(AST *funcblock)
     AST *src;
     AST *comment;
     const char *resultname;
-    int localcount;
     int is_public;
-
+    int localcount;
+    
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
     annotation = funcblock->right;
@@ -251,8 +250,8 @@ doDeclareFunction(AST *funcblock)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params);
-    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals);
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0);
+    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0);
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
@@ -265,8 +264,9 @@ doDeclareFunction(AST *funcblock)
     ScanFunctionBody(fdef, body, NULL);
 
     /* if we put the locals into an array, record the size of that array */
-    if (fdef->localarray)
-        fdef->localarray_len = localcount;
+    if (fdef->localarray) {
+        fdef->localarray_len += localcount;
+    } 
 }
 
 void
@@ -758,11 +758,26 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
 }
 
 /*
+ * add a local variable to a function
+ */
+void
+AddLocalVariable(Function *func, AST *var)
+{
+    AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
+    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->localarray_len);
+    func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
+    if (func->localarray) {
+        func->localarray_len++;
+    }
+}
+
+/*
  * print a counting repeat loop
  */
-static void
-PrintCountRepeat(FILE *f, AST *ast, int indent)
+AST *
+TransformCountRepeat(AST *ast)
 {
+    AST *origast = ast;
     AST *fromval, *toval;
     AST *stepval;
     AST *limit;
@@ -770,14 +785,15 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     AST *loop_le_limit, *loop_ge_limit;
     AST *loopvar = NULL;
     AST *loopleft, *loopright;
+    AST *initstmt;
+    AST *condtest;
     AST *stepstmt;
-    AST *lineast;
+    AST *forast;
+    
     int negstep = 0;
     int needsteptest = 1;
     int deltaknown = 0;
     int32_t delta = 0;
-    int needindent;
-    int useForLoop = 0;
     int useLt = 0;
     
     if (ast->left) {
@@ -787,26 +803,25 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
             loopvar = ast->left;
         } else {
             ERROR(ast, "Need a variable name for the loop");
-            return;
+            return origast;
         }
     }
     ast = ast->right;
-    lineast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
-        return;
+        return origast;
     }
     fromval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_TO) {
         ERROR(ast, "expected TO");
-        return;
+        return origast;
     }
     toval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_STEP) {
         ERROR(ast, "expected STEP");
-        return;
+        return origast;
     }
     if (ast->left) {
         stepval = ast->left;
@@ -823,7 +838,6 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         negstep = 0;
         useLt = 1;
         fromval = AstInteger(0);
-        useForLoop= 1;
     } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
 
@@ -833,22 +847,14 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         negstep = (fromi > toi);
     }
 
-    needindent = !loopvar || !IsConstExpr(toval) || !(IsConstExpr(stepval) && !needsteptest);
-
-    PrintDebugDirective(f, lineast);
-    if (needindent) {
-        fprintf(f, "%*c{", indent, ' ');
-        PrintNewline(f);
-        indent += 2;
-    }
-
     /* set the loop variable */
     if (!loopvar) {
         loopvar = AstTempVariable("_idx_");
-        fprintf(f, "%*cint32_t %s;", indent, ' ', loopvar->d.string);
-        PrintNewline(f);
+        AddLocalVariable(curfunc, loopvar);
     }
 
+    initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
+    
     /* set the limit variable */
     if (IsConstExpr(toval)) {
         if (gl_expand_constants) {
@@ -858,11 +864,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         }
     } else {
         limit = AstTempVariable("_limit_");
-        fprintf(f, "%*cint32_t ", indent, ' ');
-        PrintExpr(f, limit);
-        fprintf(f, " = ");
-        PrintExpr(f, toval);
-        fprintf(f, ";"); PrintNewline(f);
+        AddLocalVariable(curfunc, limit);
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, toval));
     }
     /* set the step variable */
     if (IsConstExpr(stepval) && !needsteptest) {
@@ -870,28 +873,19 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         if (negstep) delta = -delta;
         step = AstInteger(delta);
         deltaknown = 1;
-        if (IsConstExpr(toval) && IsConstExpr(fromval))
-            useForLoop = 1;
     } else {
         if (negstep) stepval = AstOperator(T_NEGATE, NULL, stepval);
         step = AstTempVariable("_step_");
-        fprintf(f, "%*cint32_t ", indent, ' ');
-        PrintExpr(f, step);
-        fprintf(f, " = ");
-        PrintExpr(f, stepval);
-        fprintf(f, ";"); PrintNewline(f);
+        AddLocalVariable(curfunc, step);
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, step, stepval));
     }
 
-    stepstmt = AstAssign('+', loopvar, step);
-
-    if (!useForLoop) {
-        /* set the loop variable */
-        fprintf(f, "%*c", indent, ' ');
-        PrintExpr(f, loopvar);
-        fprintf(f, " = ");
-        PrintExpr(f, fromval);
-        fprintf(f, ";"); PrintNewline(f);
+    if (deltaknown && delta == 1) {
+        stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
+    } else {
+        stepstmt = AstAssign('+', loopvar, step);
     }
+    
     /* want to do:
      * if (loopvar > limit) step = -step;
      * do {
@@ -915,13 +909,13 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         loop_le_limit = AstOperator(T_LE, loopvar, limit);
     }
     if (needsteptest) {
-        fprintf(f, "%*cif (", indent, ' ');
-        PrintBoolExpr(f, loop_ge_limit);
-        fprintf(f, ") ");
-        PrintExpr(f, step);
-        fprintf(f, " = -");
-        PrintExpr(f, step);
-        fprintf(f, ";"); PrintNewline(f);
+        AST *fixstep;
+        fixstep = NewAST( AST_CONDRESULT, loop_ge_limit,
+                          NewAST(AST_THENELSE,
+                                 AstOperator(T_NEGATE, NULL, step),
+                                 step) );
+        initstmt = NewAST(AST_SEQUENCE, initstmt,
+                          AstAssign(T_ASSIGN, step, fixstep));
     }
 
     if (deltaknown) {
@@ -939,53 +933,21 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         loopright = AstOperator(T_AND, AstOperator('<', step, AstInteger(0)), loop_ge_limit);
     }
 
-    if (useForLoop) {
-        fprintf(f, "%*cfor(", indent, ' ');
-        /* set the loop variable */
-        PrintExpr(f, loopvar);
-        fprintf(f, " = ");
-        PrintExpr(f, fromval);
-        fprintf(f, "; ");
-        if (IsConstExpr(loopleft)) {
-            PrintBoolExpr(f, loopright);
-        } else if (IsConstExpr(loopright)) {
-            PrintBoolExpr(f, loopleft);
-        } else {
-            PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
-        }
-        fprintf(f, "; ");
-        if (stepstmt->kind == AST_ASSIGN) {
-            if (deltaknown && delta == 1 && stepstmt->left->kind == AST_IDENTIFIER) {
-                PrintExpr(f, stepstmt->left);
-                fprintf(f, "++");
-            } else {
-                PrintAssign(f, stepstmt->left, stepstmt->right);
-            }
-        } else {
-            PrintExpr(f, stepstmt);
-        }
-        fprintf(f, ") {"); PrintNewline(f);
-        PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
+    if (IsConstExpr(loopleft)) {
+        condtest = loopright;
+    } else if (IsConstExpr(loopright)) {
+        condtest = loopleft;
     } else {
-        /* use a do/while loop */
-        fprintf(f, "%*cdo {", indent, ' '); PrintNewline(f);
-        PrintStatementList(f, ast->right, indent+2);
-        PrintStatement(f, stepstmt, indent+2);
-        fprintf(f, "%*c} while (", indent, ' ');
-        if (IsConstExpr(loopleft)) {
-            PrintBoolExpr(f, loopright);
-        } else if (IsConstExpr(loopright)) {
-            PrintBoolExpr(f, loopleft);
-        } else {
-            PrintBoolExpr(f, AstOperator(T_OR, loopleft, loopright));
-        }
-        fprintf(f, ");"); PrintNewline(f);
+        condtest = AstOperator(T_OR, loopleft, loopright);
+        /* the loop has to execute at least once */
+        condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
     }
-    if (needindent) {
-        indent -= 2;
-        fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
-    }
+    stepstmt = NewAST(AST_STEP, stepstmt, ast);
+    condtest = NewAST(AST_TO, condtest, stepstmt);
+    forast = NewAST(AST_FOR, initstmt, condtest);
+
+    forast->line = origast->line;
+    return forast;
 }
 
 /*
@@ -1133,6 +1095,22 @@ PrintStatement(FILE *f, AST *ast, int indent)
         fprintf(f, "%*c}", indent, ' ');
         PrintNewline(f);
         break;
+    case AST_FOR:
+        PrintDebugDirective(f, ast);
+        fprintf(f, "%*cfor(", indent, ' ');
+        PrintExprToplevel(f, ast->left);
+        fprintf(f, "; ");
+        ast = ast->right;
+        PrintBoolExpr(f, ast->left);
+        fprintf(f, "; ");
+        ast = ast->right;
+        PrintExprToplevel(f, ast->left);
+        fprintf(f, ") {"); PrintNewline(f);
+        ast = ast->right;
+        PrintStatementList(f, ast->right, indent+2);
+        fprintf(f, "%*c}", indent, ' ');
+        PrintNewline(f);
+        break;
     case AST_DOWHILE:
         fprintf(f, "%*cdo {", indent, ' ');
         PrintNewline(f);
@@ -1143,7 +1121,8 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
-        PrintCountRepeat(f, ast, indent);
+        ERROR(ast, "Internal error: unexpected COUNTREPEAT");
+        //PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
         PrintStatementList(f, ast, indent+2);
@@ -1630,6 +1609,7 @@ CheckRecursive(Function *f)
  * (1) It's legal to call a void function, just substitute 0 for the result
  * (2) Certain operators used at top level are changed into assignments
  * (3) Validate parameters to some builtins
+ * (4) Turn AST_COUNTREPEAT into AST_FOR
  */
 /* if level is 0, we are inside an expression
  * level == 1 at top level
@@ -1670,6 +1650,9 @@ doSpinTransform(AST **astptr, int level)
         ast = ast->right; // step value
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, level);
+
+        /* now fix it up */
+        *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_STMTLIST:
         doSpinTransform(&ast->left, level);
@@ -1769,8 +1752,11 @@ void
 SpinTransform(ParserState *Q)
 {
     Function *func;
+    Function *savefunc = curfunc;
     current = Q;
     for (func = Q->functions; func; func = func->next) {
+        curfunc = func;
         doSpinTransform(&func->body, 1);
     }
+    curfunc = savefunc;
 }
