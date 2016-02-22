@@ -815,8 +815,8 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     }
 
     /* for fixed counts (like "REPEAT expr") we get a NULL value
-       for toval; this signals that we should be counting
-       down from expr-1 to 0
+       for fromval; this signals that we should be counting
+       from 0 to toval - 1
     */
     if (fromval == NULL) {
         needsteptest = 0;
@@ -940,7 +940,6 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
     }
 
     if (useForLoop) {
-
         fprintf(f, "%*cfor(", indent, ' ');
         /* set the loop variable */
         PrintExpr(f, loopvar);
@@ -970,9 +969,6 @@ PrintCountRepeat(FILE *f, AST *ast, int indent)
         fprintf(f, "%*c}", indent, ' '); PrintNewline(f);
     } else {
         /* use a do/while loop */
-
-
-
         fprintf(f, "%*cdo {", indent, ' '); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         PrintStatement(f, stepstmt, indent+2);

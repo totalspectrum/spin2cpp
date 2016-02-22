@@ -1107,6 +1107,88 @@ FreeTempRegisters(IRList *irl, int starttempreg)
     }
 }
 
+static void EmitDjnz(IRList *irl, AST *loopvar, AST *count, AST *body)
+{
+    Operand *toploop, *botloop, *exitloop;
+    Operand *var;
+    Operand *initval;
+    int starttempreg = curfunc->curtempreg;
+
+    if (loopvar) {
+      var = CompileExpression(irl, loopvar);
+    } else {
+      var = NewFunctionTempRegister();
+    }
+    initval = CompileExpression(irl, count);
+    EmitMove(irl, var, initval);
+
+    toploop = CreateTempLabel(irl);
+    botloop = CreateTempLabel(irl);
+    exitloop = CreateTempLabel(irl);
+    PushQuitNext(exitloop, botloop);
+    EmitLabel(irl, toploop);
+    EmitStatementList(irl, body);
+    EmitLabel(irl, botloop);
+    EmitOp2(irl, OPC_DJNZ, var, toploop);
+    FreeTempRegisters(irl, starttempreg);
+    EmitLabel(irl, exitloop);
+    PopQuitNext();
+}
+
+static void EmitCountRepeat(IRList *irl, AST *ast)
+{
+    AST *loopvar = 0;
+    AST *fromval = 0;
+    AST *toval = 0;
+    AST *stepval = 0;
+    AST *body = 0;
+    AST *origast = 0;
+
+    origast = ast;
+    if (ast->left) {
+        if (ast->left->kind == AST_IDENTIFIER || ast->left->kind == AST_RESULT) {
+            loopvar = ast->left;
+        } else {
+            ERROR(ast, "Need a variable name for the loop");
+        }
+    }
+    ast = ast->right;
+    if (!ast || ast->kind != AST_FROM) {
+        ERROR(ast, "expected FROM");
+        return;
+    }
+    fromval = ast->left;
+    ast = ast->right;
+    if (ast->kind != AST_TO) {
+        ERROR(ast, "expected TO");
+        return;
+    }
+    toval = ast->left;
+    ast = ast->right;
+    if (ast->kind != AST_STEP) {
+        ERROR(ast, "expected STEP");
+        return;
+    }
+    if (ast->left) {
+        stepval = ast->left;
+    } else {
+        stepval = AstInteger(1);
+    }
+    body = ast->right;
+    /* if this is a fixed count (REPEAT expr) we get a NULL value for
+       fromval; the loop goes from 1 to toval (and for efficiency we should
+       count down
+    */
+    if (!fromval) {
+      EmitDjnz(irl, loopvar, toval, body);
+      return;
+    } else {
+      ERROR(origast, "Unable to handle loop");
+      (void)stepval;
+      return;
+    }
+}
+
 static void EmitStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -1169,6 +1251,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	EmitLabel(irl, exitloop);
 	PopQuitNext();
 	break;
+    case AST_COUNTREPEAT:
+	EmitCountRepeat(irl, ast);
+        break;
     case AST_QUIT:
         if (!quitlabel) {
 	    ERROR(ast, "loop exit statement outside of loop");
@@ -1382,11 +1467,11 @@ IsDead(IR *instr, Operand *op)
     }
     if (ir->opc == OPC_RET) {
       return true;
-    }
-    if (ir->opc == OPC_JUMP) {
-      return false;
-    }
-    if (ir->opc == OPC_CALL && op->kind == REG_ARG) {
+    } else if (ir->opc == OPC_CALL) {
+      if (op->kind == REG_ARG) {
+	return false;
+      }
+    } else if (IsBranch(ir->opc)) {
       return false;
     }
     if (ir->src == op) {
@@ -1562,6 +1647,9 @@ HasSideEffects(IR *ir)
     }
     if (ir->flags & (FLAG_WZ|FLAG_WC)) {
         return true;
+    }
+    if (IsBranch(ir->opc)) {
+      return true;
     }
     switch (ir->opc) {
     case OPC_WAITCNT:
