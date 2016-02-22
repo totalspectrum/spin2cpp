@@ -42,7 +42,7 @@
 /* some globals */
 
 /* compilation flags */
-extern int gl_ccode;  /* if set, we are outputting C code instead of C++*/
+extern int gl_outcode;  /* type of code to output */
 extern int gl_nospin; /* if set, suppress output of Spin methods */
 extern int gl_preprocess; /* if set, run the preprocessor on input */
 extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
@@ -53,6 +53,14 @@ extern int gl_expand_constants; /* flag: if set, print constant values rather th
 extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_NO_ASM 0x100
+
+// temporary hack
+#define gl_ccode (gl_outcode == OUTCODE_C)
+
+#define OUTCODE_CPP  0
+#define OUTCODE_C    1
+#define OUTCODE_DAT  2
+#define OUTCODE_ASM  3
 
 /* types */
 extern AST *ast_type_long;

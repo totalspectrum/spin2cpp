@@ -789,6 +789,7 @@ TransformCountRepeat(AST *ast)
     AST *condtest;
     AST *stepstmt;
     AST *forast;
+    AST *body;
     
     int negstep = 0;
     int needsteptest = 1;
@@ -828,16 +829,23 @@ TransformCountRepeat(AST *ast)
     } else {
         stepval = AstInteger(1);
     }
-
+    body = ast->right;
+    
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
-       from 0 to toval - 1
+       from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
     */
     if (fromval == NULL) {
         needsteptest = 0;
-        negstep = 0;
-        useLt = 1;
-        fromval = AstInteger(0);
+        if (gl_outcode == OUTCODE_C || gl_outcode == OUTCODE_CPP) {
+            useLt = 1;
+            fromval = AstInteger(0);
+            negstep = 0;
+        } else {
+            fromval = toval;
+            toval = AstInteger(1);
+            negstep = 1;
+        }
     } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
 
@@ -882,6 +890,8 @@ TransformCountRepeat(AST *ast)
 
     if (deltaknown && delta == 1) {
         stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
+    } else if (deltaknown && delta == -1) {
+        stepstmt = AstOperator(T_INCREMENT, NULL, loopvar);
     } else {
         stepstmt = AstAssign('+', loopvar, step);
     }
@@ -940,11 +950,13 @@ TransformCountRepeat(AST *ast)
     } else {
         condtest = AstOperator(T_OR, loopleft, loopright);
         /* the loop has to execute at least once */
-        condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
+        if (gl_outcode == OUTCODE_C || gl_outcode == OUTCODE_CPP) {
+            condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
+        }
     }
-    stepstmt = NewAST(AST_STEP, stepstmt, ast);
+    stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
-    forast = NewAST(AST_FOR, initstmt, condtest);
+    forast = NewAST(AST_FORATLEASTONCE, initstmt, condtest);
 
     forast->line = origast->line;
     return forast;
@@ -1096,6 +1108,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintNewline(f);
         break;
     case AST_FOR:
+    case AST_FORATLEASTONCE:
         PrintDebugDirective(f, ast);
         fprintf(f, "%*cfor(", indent, ' ');
         PrintExprToplevel(f, ast->left);
@@ -1106,7 +1119,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
         ast = ast->right;
         PrintExprToplevel(f, ast->left);
         fprintf(f, ") {"); PrintNewline(f);
-        ast = ast->right;
         PrintStatementList(f, ast->right, indent+2);
         fprintf(f, "%*c}", indent, ' ');
         PrintNewline(f);
@@ -1225,8 +1237,10 @@ ParseDirectives(const char *str)
 {
     if (match(str, "nospin"))
         gl_nospin = 1;
-    else if (match(str, "ccode"))
-        gl_ccode = 1;
+    else if (match(str, "ccode")) {
+        if (gl_outcode == OUTCODE_CPP)
+            gl_outcode = OUTCODE_C;
+    }
 }
 
 /*

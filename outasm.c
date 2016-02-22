@@ -686,8 +686,9 @@ CompileOperator(IRList *irl, AST *expr)
             EmitMove(irl, temp, lhs);
             CompileExpression(irl, addone);
             return  temp;
+        } else {
+            addone = AstAssign(opc, expr->right, AstInteger(-1));
         }
-        addone = AstAssign(opc, expr->right, AstInteger(1));
         return CompileExpression(irl, addone);
     }
     case '*':
@@ -1107,6 +1108,7 @@ FreeTempRegisters(IRList *irl, int starttempreg)
     }
 }
 
+#if 0
 static void EmitDjnz(IRList *irl, AST *loopvar, AST *count, AST *body)
 {
     Operand *toploop, *botloop, *exitloop;
@@ -1134,59 +1136,75 @@ static void EmitDjnz(IRList *irl, AST *loopvar, AST *count, AST *body)
     EmitLabel(irl, exitloop);
     PopQuitNext();
 }
+#endif
 
-static void EmitCountRepeat(IRList *irl, AST *ast)
+//
+// a for loop gets a pattern like
+//
+//   initial code
+// Ltop:
+//   if (!loopcond) goto Lexit
+//   loop body
+// Lnext:
+//   updatestmt
+//   goto Ltop
+// Lexit
+//
+// if it must execute at least once, it looks like:
+//   initial code
+// Ltop:
+//   loop body
+// Lnext
+//   updatestmt
+//   if (loopcond) goto Ltop
+// Lexit
+//
+
+static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
 {
-    AST *loopvar = 0;
-    AST *fromval = 0;
-    AST *toval = 0;
-    AST *stepval = 0;
+    AST *initstmt;
+    AST *loopcond;
+    AST *update;
     AST *body = 0;
-    AST *origast = 0;
 
-    origast = ast;
-    if (ast->left) {
-        if (ast->left->kind == AST_IDENTIFIER || ast->left->kind == AST_RESULT) {
-            loopvar = ast->left;
-        } else {
-            ERROR(ast, "Need a variable name for the loop");
-        }
-    }
+    Operand *toplabel, *nextlabel, *exitlabel;
+    initstmt = ast->left;
     ast = ast->right;
-    if (!ast || ast->kind != AST_FROM) {
-        ERROR(ast, "expected FROM");
+    if (!ast || ast->kind != AST_TO) {
+        ERROR(ast, "Internal Error: expected AST_TO in for loop");
         return;
     }
-    fromval = ast->left;
+    loopcond = ast->left;
     ast = ast->right;
-    if (ast->kind != AST_TO) {
-        ERROR(ast, "expected TO");
+    if (!ast || ast->kind != AST_STEP) {
+        ERROR(ast, "Internal Error: expected AST_TO in for loop");
         return;
     }
-    toval = ast->left;
+    update = ast->left;
     ast = ast->right;
-    if (ast->kind != AST_STEP) {
-        ERROR(ast, "expected STEP");
-        return;
+    body = ast;
+
+    CompileExpression(irl, initstmt);
+    
+    toplabel = CreateTempLabel(irl);
+    nextlabel = CreateTempLabel(irl);
+    exitlabel = CreateTempLabel(irl);
+    PushQuitNext(exitlabel, nextlabel);
+
+    EmitLabel(irl, toplabel);
+    if (!atleastonce) {
+        CompileBoolBranches(irl, loopcond, NULL, exitlabel);
     }
-    if (ast->left) {
-        stepval = ast->left;
+    EmitStatementList(irl, body);
+    EmitLabel(irl, nextlabel);
+    EmitStatement(irl, update);
+    if (atleastonce) {
+        CompileBoolBranches(irl, loopcond, toplabel, NULL);
     } else {
-        stepval = AstInteger(1);
+        EmitJump(irl, COND_TRUE, toplabel);
     }
-    body = ast->right;
-    /* if this is a fixed count (REPEAT expr) we get a NULL value for
-       fromval; the loop goes from 1 to toval (and for efficiency we should
-       count down
-    */
-    if (!fromval) {
-      EmitDjnz(irl, loopvar, toval, body);
-      return;
-    } else {
-      ERROR(origast, "Unable to handle loop");
-      (void)stepval;
-      return;
-    }
+    EmitLabel(irl, exitlabel);
+    PopQuitNext();
 }
 
 static void EmitStatement(IRList *irl, AST *ast)
@@ -1251,8 +1269,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	EmitLabel(irl, exitloop);
 	PopQuitNext();
 	break;
-    case AST_COUNTREPEAT:
-	EmitCountRepeat(irl, ast);
+    case AST_FORATLEASTONCE:
+    case AST_FOR:
+	EmitForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_QUIT:
         if (!quitlabel) {
@@ -1850,6 +1869,12 @@ OptimizeImmediates(IRList *irl)
         } else if (ir->opc == OPC_AND && val < 0 && val >= -512) {
             ir->opc = OPC_ANDN;
             ir->src = NewImmediate(~val);
+        } else if (ir->opc == OPC_ADD && val < 0 && val >= -511) {
+            ir->opc = OPC_SUB;
+            ir->src = NewImmediate(-val);
+        } else if (ir->opc == OPC_SUB && val < 0 && val >= -511) {
+            ir->opc = OPC_ADD;
+            ir->src = NewImmediate(-val);
 	}
     }  
 }

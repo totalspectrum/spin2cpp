@@ -131,6 +131,8 @@ enum astkind {
     AST_WAITPNE,
     AST_WAITVID,
     AST_CONDRESULT,
+
+    AST_FORATLEASTONCE = 92,
 };
 
 struct AST {

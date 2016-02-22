@@ -43,7 +43,7 @@ ParserState *current;
 ParserState *allparse;
 
 int gl_errors;
-int gl_ccode;
+int gl_outcode;
 int gl_nospin;
 int gl_gas_dat;
 int gl_normalizeIdents;
@@ -677,7 +677,8 @@ main(int argc, char **argv)
     flexbuf_addstr(&argbuf, "\n//\n\n");
     flexbuf_addchar(&argbuf, 0);
     gl_header = flexbuf_get(&argbuf);
-
+    gl_outcode = OUTCODE_CPP;
+    
     allparse = NULL;
 #ifdef DEBUG_YACC
     yydebug = 1;  /* turn on yacc debugging */
@@ -695,6 +696,7 @@ main(int argc, char **argv)
             outputMain = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
+            gl_outcode = OUTCODE_DAT;
             outputDat = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--noopt", 5) ) {
@@ -702,6 +704,7 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--asm", 5) ) {
             outputAsm = 1;
+            gl_outcode = OUTCODE_ASM;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
@@ -710,7 +713,7 @@ main(int argc, char **argv)
             gl_normalizeIdents = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
-            gl_ccode = 1;
+            gl_outcode = OUTCODE_C;
             cext = ".c";
             argv++; --argc;
         } else if (!strncmp(argv[0], "--optimize", 5)) {
@@ -733,7 +736,7 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--catalina", 10)) {
             compile = 1;
             outputMain = 1;
-            gl_ccode = 1;
+            gl_outcode = OUTCODE_C;
             cext = ".c";
             argv++; --argc;
             appendCompiler("catalina");
