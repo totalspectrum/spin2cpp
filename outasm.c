@@ -78,7 +78,7 @@ IdentifierGlobalName(ParserState *P, const char *name)
 
 static int IsMemRef(Operand *op)
 {
-    return (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
+    return op && (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
 }
 
 Operand *
@@ -663,7 +663,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   
   default:
     ERROR(lhs, "Unsupported operator %d", op);
-    return left;
+    return left ? left : right;
   }
 }
 
@@ -823,7 +823,7 @@ CompileFunccall(IRList *irl, AST *expr)
   sym = FindFuncSymbol(expr, NULL, NULL);
   if (!sym || sym->type != SYM_FUNCTION) {
     ERROR(expr, "expected function symbol");
-    return NULL;
+    return NewImmediate(0);
   }
   func = (Function *)sym->val;
   params = expr->right;
