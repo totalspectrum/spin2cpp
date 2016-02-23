@@ -1881,12 +1881,14 @@ OptimizeCompares(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
-        if (IsDummy(ir)) {
+        while (ir && IsDummy(ir)) {
             ir = ir_next;
-            continue;
+	    ir_next = ir->next;
         }
+	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+	    && ir->src->kind == REG_IMM && ir->src->val == 0
             && ir_prev )
         {
             if (ir_prev->cond == COND_TRUE
@@ -2008,6 +2010,8 @@ OptimizeIRGlobal(IRList *irl)
 {
   OptimizeIRLocal(irl);
   CheckUsage(irl);
+  // removing unused labels may have exposed additional optimizations
+  OptimizeIRLocal(irl);
 }
 
 /*
