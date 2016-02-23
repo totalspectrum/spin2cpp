@@ -595,6 +595,8 @@ OpcFromOp(int op)
       return OPC_ROL;
   case T_ROTR:
       return OPC_ROR;
+  case T_REV:
+      return OPC_REV;
   default:
     ERROR(NULL, "Unsupported operator %d", op);
     return OPC_UNKNOWN;
@@ -639,6 +641,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_NEGATE:
   case T_ABS:
   case T_BIT_NOT:
+  case T_REV:
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
     return temp;
