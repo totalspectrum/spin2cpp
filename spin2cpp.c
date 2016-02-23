@@ -929,7 +929,13 @@ main(int argc, char **argv)
         } else {
             /* compile any sub-objects needed */
             for (Q = allparse; Q; Q = Q->next) {
-                OutputCppCode(Q->basename, Q, outputMain && Q == P);
+                const char *outfilename;
+                if (!gl_outname || Q != P || compile) {
+                    outfilename = Q->basename;
+                } else {
+                    outfilename = gl_outname;
+                }
+                OutputCppCode(outfilename, Q, outputMain && Q == P);
                 if (outputFiles) {
                     printf("%s%s\n", Q->basename, cext);
                 }
