@@ -954,6 +954,17 @@ TransformCountRepeat(AST *ast)
             condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
         }
     }
+
+    // optimize counting down to 1; x != 0 is much faster than x >= 1
+    if (deltaknown && delta == -1) {
+        if (condtest->kind == AST_OPERATOR && condtest->d.ival == T_GE
+            && IsConstExpr(condtest->right)
+            && 1 == EvalConstExpr(condtest->right))
+        {
+            AST *lhs = condtest->left;
+            condtest = AstOperator(T_NE, lhs, AstInteger(0));
+        }
+    }
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST(AST_FORATLEASTONCE, initstmt, condtest);

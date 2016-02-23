@@ -1846,6 +1846,79 @@ void OptimizeShortBranches(IRList *irl)
   }
 }
 
+/* return 1 if the instruction can have wz appended and produce a sensible
+ * result (compares result to 0)
+ */
+static int
+CanTestZero(int opc)
+{
+    switch (opc) {
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_AND:
+    case OPC_ANDN:
+    case OPC_OR:
+    case OPC_MOVE:
+    case OPC_NEG:
+    case OPC_RDLONG:
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_XOR:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static void
+OptimizeCompares(IRList *irl)
+{
+    IR *ir;
+    IR *ir_next;
+    IR *ir_prev;
+
+    ir_prev = 0;
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        if (IsDummy(ir)) {
+            ir = ir_next;
+            continue;
+        }
+        if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
+            && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+            && ir_prev )
+        {
+            if (ir_prev->cond == COND_TRUE
+                && (0 == (ir_prev->flags & (FLAG_WZ|FLAG_WC)))
+                && CanTestZero(ir_prev->opc))
+            {
+                ir_prev->flags |= FLAG_WZ;
+                DeleteIR(irl, ir);
+                /* now we may be able to do a further optimization,
+                   if ir_prev is a sub and the next instruction is a jmp
+                */
+                if (ir_prev->opc == OPC_SUB
+                    && ir_next->opc == OPC_JUMP
+                    && ir_next->cond == COND_NE
+                    && ir_prev->src->kind == REG_IMM
+                    && ir_prev->src->val == 1)
+                {
+                    // replace jmp with djnz
+                    ir_next->opc = OPC_DJNZ;
+                    ir_next->cond = COND_TRUE;
+                    ir_next->src = ir_next->dst;
+                    ir_next->dst = ir_prev->dst;
+                    DeleteIR(irl, ir_prev);
+                }
+            }
+        }
+        ir_prev = ir;
+        ir = ir_next;
+    }
+
+}
+
 static void
 OptimizeImmediates(IRList *irl)
 {
@@ -1928,6 +2001,7 @@ OptimizeIRLocal(IRList *irl)
   OptimizeImmediates(irl);
   OptimizeShortBranches(irl);
   OptimizeAddSub(irl);
+  OptimizeCompares(irl);
 }
 void
 OptimizeIRGlobal(IRList *irl)
