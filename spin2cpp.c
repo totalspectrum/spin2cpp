@@ -768,7 +768,7 @@ main(int argc, char **argv)
             } else {
                 opt += 2;
             }
-	    gl_outname = strdup(opt);
+	    gl_outname = outname = strdup(opt);
         } else if (!strncmp(argv[0], "-g", 2)) {
             if (compile) {
                 appendToCmd(argv[0]);
@@ -904,15 +904,15 @@ main(int argc, char **argv)
             outname = gl_outname;
             if (gl_gas_dat) {
 	        if (!outname) {
-                    outname = ReplaceExtension(P->basename, ".S");
+                    outname = ReplaceExtension(P->fullname, ".S");
                 }
                 OutputGasFile(outname, P);
             } else {
 	        if (!outname) {
                     if (outputBin) {
-                        outname = ReplaceExtension(P->basename, ".binary");
+                        outname = ReplaceExtension(P->fullname, ".binary");
                     } else {
-                        outname = ReplaceExtension(P->basename, ".dat");
+                        outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
                 OutputDatFile(outname, P, outputBin);
@@ -921,8 +921,9 @@ main(int argc, char **argv)
                 }
             }
         } else if (outputAsm) {
+            outname = gl_outname;
             if (!outname) {
-                outname = ReplaceExtension(P->basename, ".pasm");
+                outname = ReplaceExtension(P->fullname, ".pasm");
             }
             OutputAsmCode(outname, P);
         } else {

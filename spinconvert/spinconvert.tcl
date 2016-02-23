@@ -53,20 +53,23 @@ proc regenOutput { spinfile } {
     
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
+	set dirname [file dirname $spinfile]
 	set outname [file rootname $spinfile]
 	set outname "$outname$EXT"
 	set PASMFILE $outname
     }
     set errout ""
     set status 0
-    if {[catch {exec -ignorestderr $COMPILE $OUTPUT $spinfile 2>@1} errout options]} {
+    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile"
+    .bot.txt replace 1.0 end $cmdline
+    if {[catch {exec -ignorestderr $COMPILE $OUTPUT -o $PASMFILE $spinfile 2>@1} errout options]} {
 	set status 1
     }
     if { $status != 0 } {
 	tk_messageBox -icon error -type ok -message "Compilation failed"
     }
     loadFileToWindow $outname .out.txt
-    .bot.txt replace 1.0 end $errout
+    .bot.txt insert 2.0 $errout
 }
 
 set SpinTypes {
