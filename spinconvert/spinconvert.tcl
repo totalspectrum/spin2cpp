@@ -1,6 +1,34 @@
 package require Tk
 
-set COMPILE ../build/spin2cpp
+set COMPILE ./bin/spin2cpp
+set OUTPUT "--asm"
+set EXT ".pasm"
+set radioOut 1
+
+proc resetOutputVars { } {
+    global OUTPUT
+    global EXT
+    global radioOut
+    global SPINFILE
+    global PASMFILE
+    
+    if { $radioOut == 1 } {
+	set OUTPUT "--asm"
+	set EXT ".pasm"
+    }
+    if { $radioOut == 2 } {
+	set OUTPUT "--ccode"
+	set EXT ".c"
+    }
+    if { $radioOut == 3 } {
+	set OUTPUT "--normalize"
+	set EXT ".cpp"
+    }
+    set PASMFILE ""
+    if { [string length $SPINFILE] != 0 } {
+	regenOutput $SPINFILE
+    }
+}
 
 proc loadFileToWindow { fname win } {
     set fp [open $fname r]
@@ -20,16 +48,18 @@ proc saveFileFromWindow { fname win } {
 proc regenOutput { spinfile } {
     global COMPILE
     global PASMFILE
-
+    global OUTPUT
+    global EXT
+    
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
 	set outname [file rootname $spinfile]
-	set outname "$outname.pasm"
+	set outname "$outname$EXT"
 	set PASMFILE $outname
     }
     set errout ""
     set status 0
-    if {[catch {exec -ignorestderr $COMPILE --asm $spinfile 2>@1} errout options]} {
+    if {[catch {exec -ignorestderr $COMPILE $OUTPUT $spinfile 2>@1} errout options]} {
 	set status 1
     }
     if { $status != 0 } {
@@ -85,15 +115,36 @@ proc saveSpinAs {} {
     saveSpinFile
 }
 
+set aboutMsg {
+    Convert .spin to PASM/C/C++
+    Copyright 2016 Total Spectrum Software
+}
+
+proc doAbout {} {
+    global aboutMsg
+    tk_messageBox -icon info -type ok -message "Spin Converter" -detail $aboutMsg
+}
+
 menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
-.mbar add cascade -menu .mbar.file -label File -underline 0
+menu .mbar.options -tearoff 0
+menu .mbar.help -tearoff 0
+
+.mbar add cascade -menu .mbar.file -label File
 .mbar.file add command -label "Open Spin..." -accelerator "^O" -command { loadNewSpinFile }
 .mbar.file add command -label "Save Spin" -accelerator "^S" -command { saveSpinFile }
 .mbar.file add command -label "Save Spin As..." -command { saveSpinAs }
 .mbar.file add separator
 .mbar.file add command -label Exit -accelerator "^Q" -command { exit }
+
+.mbar add cascade -menu .mbar.options -label Options
+.mbar.options add radiobutton -label "Pasm Output" -variable radioOut -value 1 -command { resetOutputVars }
+.mbar.options add radiobutton -label "C Output" -variable radioOut -value 2 -command { resetOutputVars }
+.mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
+
+.mbar add cascade -menu .mbar.help -label Help
+.mbar.help add command -label "About..." -command { doAbout }
 
 wm title . "Spin Converter"
 
