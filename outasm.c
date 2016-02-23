@@ -1864,6 +1864,9 @@ CanTestZero(int opc)
     case OPC_RDBYTE:
     case OPC_RDWORD:
     case OPC_XOR:
+    case OPC_SAR:
+    case OPC_SHR:
+    case OPC_SHL:
         return 1;
     default:
         return 0;
