@@ -129,6 +129,26 @@ proc doAbout {} {
     tk_messageBox -icon info -type ok -message "Spin Converter" -detail $aboutMsg
 }
 
+proc doHelp {} {
+    toplevel .help
+    frame .help.f
+    text .help.f.txt -wrap none -yscroll { .help.f.v set } -xscroll { .help.f.h set }
+    scrollbar .help.f.v -orient vertical -command { .help.f.txt yview }
+    scrollbar .help.f.h -orient horizontal -command { .help.f.txt xview }
+
+    grid columnconfigure .help {0 1} -weight 1
+    grid rowconfigure .help 0 -weight 1
+    grid .help.f -sticky nsew
+    
+    grid .help.f.txt .help.f.v -sticky nsew
+    grid .help.f.h -sticky nsew
+    grid rowconfigure .help.f .help.f.txt -weight 1
+    grid columnconfigure .help.f .help.f.txt -weight 1
+
+    loadFileToWindow README.txt .help.f.txt
+    wm title .help "Spin Converter help"
+}
+
 menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
@@ -148,6 +168,8 @@ menu .mbar.help -tearoff 0
 .mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
 
 .mbar add cascade -menu .mbar.help -label Help
+.mbar.help add command -label "Help" -command { doHelp }
+.mbar.help add separator
 .mbar.help add command -label "About..." -command { doAbout }
 
 wm title . "Spin Converter"
