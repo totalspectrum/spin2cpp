@@ -116,8 +116,12 @@ proc saveSpinAs {} {
 }
 
 set aboutMsg {
-    Convert .spin to PASM/C/C++
-    Copyright 2016 Total Spectrum Software
+Convert .spin to PASM/C/C++
+Copyright 2011-2016 Total Spectrum Software Inc.
+------
+This is an incomplete preview version!
+There is no warranty and no guarantee that
+output will be correct.    
 }
 
 proc doAbout {} {
@@ -187,7 +191,8 @@ grid columnconfigure .bot .bot.txt -weight 1
 
 
 .orig.txt insert 1.0 "'' Original Spin code"
-.out.txt insert 1.0 "'' Converted assembly"
+.out.txt insert 1.0 "'' Converted file"
+.bot.txt insert 1.0 "Compilation output goes here"
 
 bind . <Control-o> { loadNewSpinFile }
 bind . <Control-s> { saveSpinFile }
