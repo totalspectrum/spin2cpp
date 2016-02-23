@@ -60,16 +60,17 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile"
+    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile\n"
     .bot.txt replace 1.0 end $cmdline
     if {[catch {exec -ignorestderr $COMPILE $OUTPUT -o $PASMFILE $spinfile 2>@1} errout options]} {
 	set status 1
     }
+    .bot.txt insert 2.0 $errout
     if { $status != 0 } {
 	tk_messageBox -icon error -type ok -message "Compilation failed"
+    } else {
+	loadFileToWindow $outname .out.txt
     }
-    loadFileToWindow $outname .out.txt
-    .bot.txt insert 2.0 $errout
 }
 
 set SpinTypes {
@@ -190,7 +191,7 @@ scrollbar .out.h -orient horizontal -command {.out.txt. xview}
 frame .bot
 text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
 scrollbar .bot.v -orient vertical -command {.bot.txt yview}
-scrollbar .bot.h -orient horizontal -command {.bot.txt. xview}
+scrollbar .bot.h -orient horizontal -command {.bot.txt xview}
 
 grid columnconfigure . {0 1} -weight 1
 grid rowconfigure . 0 -weight 1
