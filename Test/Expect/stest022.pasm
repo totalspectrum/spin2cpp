@@ -2,7 +2,7 @@ DAT
 	org	0
 ismagic
 	cmps	ismagic_x_, #511 wz
- if_eq	mov	ismagic_a_, #1
+ if_e	mov	ismagic_a_, #1
  if_ne	mov	ismagic_a_, #0
 	mov	result_, ismagic_a_
 ismagic_ret

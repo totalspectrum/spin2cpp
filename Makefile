@@ -102,4 +102,19 @@ zip:
 	$(MAKE) CROSS=linux32
 	zip spin2cpp_v1.xx.zip README.md COPYING Changelog.txt spin2cpp.exe spin2cpp.linux
 
+#
+# target to build a windows spincvt GUI
+#
+FREEWRAP=/opt/freewrap/linux64/freewrap
+FREEWRAPEXE=/opt/freewrap/win32/freewrap.exe
 
+spincvt.zip:
+	$(MAKE) CROSS=win32
+	mkdir -p spincvt/bin
+	cp build-win32/spin2cpp.exe spincvt/bin
+	cp spinconvert/spinconvert.tcl spincvt
+	cp -rp spinconvert/examples spinconvert/README.txt spinconvert/COPYING spincvt
+	rm -rf spinconvert/examples/*.cpp spinconvert/examples/*.pasm
+	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
+	rm spincvt/spinconvert.tcl
+	zip -r spincvt.zip spincvt

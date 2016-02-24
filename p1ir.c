@@ -169,7 +169,7 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     case COND_TRUE:
       break;
     case COND_EQ:
-      flexbuf_addstr(fb, " if_eq");
+      flexbuf_addstr(fb, " if_e");
       break;
     case COND_NE:
       flexbuf_addstr(fb, " if_ne");

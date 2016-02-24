@@ -1012,6 +1012,9 @@ CompileExpression(IRList *irl, AST *expr)
   }
   case AST_MEMREF:
     return CompileMemref(irl, expr);
+  case AST_COGINIT:
+    ERROR(expr, "Cannot handle cognew/coginit yet");
+    return NewOperand(REG_REG, "???", 0);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -1375,6 +1378,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 void
 EmitWholeFunction(IRList *irl, Function *f)
 {
+    if (f->is_recursive) {
+        ERROR(f->body, "Recursive function %s not supported in PASM", f->name);
+    }
     nextlabel = quitlabel = NULL;
     curfunc = f;
     EmitFunctionProlog(irl, f);

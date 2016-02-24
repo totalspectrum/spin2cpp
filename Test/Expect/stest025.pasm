@@ -5,7 +5,7 @@ test1
  if_ne	jmp	#L_002_
 	cmps	test1_y_, #0 wz
  if_ne	jmp	#L_002_
- if_eq	jmp	#L_001_
+ if_e	jmp	#L_001_
 L_002_
 	mov	result_, test1_z_
 	jmp	#test1_ret

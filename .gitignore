@@ -1,4 +1,5 @@
 *.exe
 *.zip
 build*/
+spincvt/
 spin2cpp.linux

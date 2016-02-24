@@ -2,7 +2,7 @@ DAT
 	org	0
 test1
 	cmps	test1_x_, #0 wz
- if_eq	jmp	#L_001_
+ if_e	jmp	#L_001_
 	cmps	test1_y_, #0 wz
  if_ne	mov	result_, test1_z_
  if_ne	jmp	#test1_ret
