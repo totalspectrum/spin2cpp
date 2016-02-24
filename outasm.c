@@ -934,6 +934,10 @@ CompileExpression(IRList *irl, AST *expr)
       }
   }
   switch (expr->kind) {
+  case AST_SEQUENCE:
+      r = CompileExpression(irl, expr->left);
+      r = CompileExpression(irl, expr->right);
+      return r;
   case AST_INTEGER:
   case AST_FLOAT:
     r = NewImmediate((int32_t)expr->d.ival);
@@ -955,6 +959,14 @@ CompileExpression(IRList *irl, AST *expr)
     return r;
   case AST_RANGEREF:
     return CompileExpression(irl, TransformRangeUse(expr));
+  case AST_STRING:
+      if (strlen(expr->d.string) > 1)  {
+            ERROR(expr, "string too long, expected a single character");
+      }
+      return NewImmediate(expr->d.string[0]);
+  case AST_STRINGPTR:
+      WARNING(expr, "Strings not properly implemented yet");
+      return NewImmediate(0);
   case AST_ARRAYREF:
   {
       Operand *base;

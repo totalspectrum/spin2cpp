@@ -796,6 +796,7 @@ TransformCountRepeat(AST *ast)
     int deltaknown = 0;
     int32_t delta = 0;
     int useLt = 0;
+    int saveLineNum = 0;
     
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -831,6 +832,12 @@ TransformCountRepeat(AST *ast)
     }
     body = ast->right;
     
+    if (current) {
+        // temporarily pretend to be at a different place in the file,
+        // so that the NewAST calls get the right line number
+        saveLineNum = current->L.lineCounter;
+        current->L.lineCounter = fromval->line;
+    }
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
        from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
@@ -968,7 +975,9 @@ TransformCountRepeat(AST *ast)
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST(AST_FORATLEASTONCE, initstmt, condtest);
-
+    if (current) {
+        current->L.lineCounter = saveLineNum;
+    }
     forast->line = origast->line;
     return forast;
 }
