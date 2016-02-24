@@ -1,4 +1,5 @@
 package require Tk
+package require ctext
 
 set COMPILE ./bin/spin2cpp
 set OUTPUT "--asm"
@@ -40,7 +41,7 @@ proc loadFileToWindow { fname win } {
 proc saveFileFromWindow { fname win } {
     set fp [open $fname w]
     set file_data [$win get 1.0 end]
-    puts $fp $file_data
+    puts -nonewline $fp $file_data
     close $fp
     regenOutput $fname
 }
@@ -178,37 +179,37 @@ menu .mbar.help -tearoff 0
 
 wm title . "Spin Converter"
 
-frame .orig
-text .orig.txt -wrap none -xscroll {.orig.h set} -yscroll {.orig.v set}
-scrollbar .orig.v -orient vertical -command {.orig.txt yview}
-scrollbar .orig.h -orient horizontal -command {.orig.txt. xview}
-
-frame .out
-text .out.txt -wrap none -xscroll {.out.h set} -yscroll {.out.v set}
-scrollbar .out.v -orient vertical -command {.out.txt yview}
-scrollbar .out.h -orient horizontal -command {.out.txt. xview}
-
-frame .bot
-text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
-scrollbar .bot.v -orient vertical -command {.bot.txt yview}
-scrollbar .bot.h -orient horizontal -command {.bot.txt xview}
-
 grid columnconfigure . {0 1} -weight 1
 grid rowconfigure . 0 -weight 1
+frame .orig
+frame .out
+frame .bot
 
 grid .orig -column 0 -row 0 -columnspan 1 -rowspan 1 -sticky nsew
 grid .out -column 1 -row 0 -columnspan 1 -rowspan 1 -sticky nsew
 grid .bot -column 0 -row 1 -columnspan 2 -sticky nsew
 
+scrollbar .orig.v -orient vertical -command {.orig.txt yview}
+scrollbar .orig.h -orient horizontal -command {.orig.txt xview}
+ctext .orig.txt -wrap none -xscroll {.orig.h set} -yscrollcommand {.orig.v set}
 grid .orig.txt .orig.v -sticky nsew
 grid .orig.h           -sticky nsew
 grid rowconfigure .orig .orig.txt -weight 1
 grid columnconfigure .orig .orig.txt -weight 1
 
+
+scrollbar .out.v -orient vertical -command {.out.txt yview}
+scrollbar .out.h -orient horizontal -command {.out.txt xview}
+text .out.txt -wrap none -xscroll {.out.h set} -yscroll {.out.v set}
+
 grid .out.txt .out.v -sticky nsew
 grid .out.h           -sticky nsew
 grid rowconfigure .out .out.txt -weight 1
 grid columnconfigure .out .out.txt -weight 1
+
+scrollbar .bot.v -orient vertical -command {.bot.txt yview}
+scrollbar .bot.h -orient horizontal -command {.bot.txt xview}
+text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
 
 grid .bot.txt .bot.v -sticky nsew
 grid .bot.h -sticky nsew
