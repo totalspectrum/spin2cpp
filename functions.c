@@ -836,7 +836,7 @@ TransformCountRepeat(AST *ast)
         // temporarily pretend to be at a different place in the file,
         // so that the NewAST calls get the right line number
         saveLineNum = current->L.lineCounter;
-        current->L.lineCounter = fromval->line;
+        current->L.lineCounter = toval ? toval->line : origast->line;
     }
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
