@@ -38,7 +38,7 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
 {
     char temp[128];
     switch (reg->kind) {
-    case REG_IMM:
+    case IMM_INT:
         if (reg->val >= 0 && reg->val < 512) {
             flexbuf_addstr(fb, "#");
             if (reg->name && reg->name[0]) {
@@ -57,6 +57,9 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
     case LONG_REF:
         ERROR(NULL, "Internal error: tried to use memory directly");
         break;
+    case IMM_LABEL:
+        flexbuf_addstr(fb, "#");
+        /* fall through */
     default:
         flexbuf_addstr(fb, reg->name);
         break;
@@ -64,22 +67,18 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
 }
 
 void
-PrintOperandDirect(struct flexbuf *fb, Operand *reg)
+PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
 {
     char temp[128];
     switch (reg->kind) {
-    case REG_IMM:
+    case IMM_INT:
         sprintf(temp, "%d", (int)(int32_t)reg->val);
         flexbuf_addstr(fb, temp);
         break;
-    case REG_PTR:
-    case STRING_DEF:
-    case BYTE_DEF:
-    case WORD_DEF:
-    case LONG_DEF:
+    case IMM_LABEL:
         flexbuf_addstr(fb, reg->name);
         break;
-    case REG_STRING:
+    case IMM_STRING:
         flexbuf_addchar(fb, '"');
         flexbuf_addstr(fb, reg->name);
         flexbuf_addchar(fb, '"');
@@ -215,7 +214,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addstr(fb, "\t");
         PrintOperand(fb, ir->dst);
         flexbuf_addstr(fb, " = ");
-        PrintOperandDirect(fb, ir->src);
+        PrintOperandAsValue(fb, ir->src);
         flexbuf_addstr(fb, "\n");
         return;
     }
@@ -233,7 +232,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         /* no code necessary, internal opcode */
         if (gl_optimize_flags & OPT_NO_ASM) {
           flexbuf_addstr(fb, "\t.dead\t");
-	  PrintOperandDirect(fb, ir->dst);
+	  flexbuf_addstr(fb, ir->dst->name);
           flexbuf_addstr(fb, "\n");
 	}
         break;
@@ -241,7 +240,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         PrintOperand(fb, ir->dst);
 	break;
     case OPC_LABEL:
-        PrintOperand(fb, ir->dst);
+        flexbuf_addstr(fb, ir->dst->name);
         flexbuf_addstr(fb, "\n");
         break;
     case OPC_RET:
@@ -252,8 +251,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_CALL:
         PrintCond(fb, ir->cond);
 	flexbuf_addstr(fb, StringFor(ir->opc));
-	flexbuf_addstr(fb, "\t#");
-	PrintOperandDirect(fb, ir->dst);
+	flexbuf_addstr(fb, "\t");
+	PrintOperand(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
 	break;
     case OPC_DJNZ:
@@ -261,8 +260,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
 	PrintOperand(fb, ir->dst);
-	flexbuf_addstr(fb, ",#");
-	PrintOperandDirect(fb, ir->src);
+	flexbuf_addstr(fb, ",");
+	PrintOperand(fb, ir->src);
 	flexbuf_addstr(fb, "\n");
 	break;
     case OPC_BYTE:
@@ -272,7 +271,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addchar(fb, '\t');
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
-	PrintOperandDirect(fb, ir->dst);
+	PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
 	break;
     case OPC_MOVE:

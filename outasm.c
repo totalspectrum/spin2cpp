@@ -162,7 +162,7 @@ Operand *NewOperand(enum Operandkind k, const char *name, int value)
     R->kind = k;
     R->name = name;
     R->val = value;
-    if (k == REG_LABEL) {
+    if (k == IMM_LABEL) {
       R->used = 1;
     }
     return R;
@@ -265,7 +265,7 @@ Operand *
 NewLabel()
 {
   Operand *label;
-  label = NewOperand(REG_LABEL, NewTempLabelName(), 0);
+  label = NewOperand(IMM_LABEL, NewTempLabelName(), 0);
   label->used = 0;
   return label;
 }
@@ -274,7 +274,7 @@ void EmitLong(IRList *irl, int val)
 {
   Operand *op;
 
-  op = NewOperand(REG_IMM, "", val);
+  op = NewOperand(IMM_INT, "", val);
   EmitOp1(irl, OPC_LONG, op);
 }
 
@@ -294,7 +294,7 @@ void EmitString(IRList *irl, AST *ast)
   if (!ast) return;
   switch (ast->kind) {
   case AST_STRING:
-      op = NewOperand(REG_STRING, ast->d.string, 0);
+      op = NewOperand(IMM_STRING, ast->d.string, 0);
       EmitOp1(irl, OPC_STRING, op);
       break;
   default:
@@ -330,10 +330,10 @@ NewImmediate(int32_t val)
 {
   char temp[1024];
   if (val >= 0 && val < 512) {
-    return NewOperand(REG_IMM, "", (int32_t)val);
+    return NewOperand(IMM_INT, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(REG_IMM, strdup(temp), (int32_t)val);
+  return GetGlobal(IMM_INT, strdup(temp), (int32_t)val);
 }
 
 Operand *
@@ -341,7 +341,7 @@ NewImmediatePtr(Operand *val)
 {
     char temp[1024];
     sprintf(temp, "ptr_%s_", val->name);
-    return GetGlobal(REG_PTR, strdup(temp), (intptr_t)val);
+    return GetGlobal(IMM_LABEL, strdup(temp), (intptr_t)val);
 }
 
 Operand *
@@ -393,7 +393,7 @@ CompileIdentifier(IRList *irl, AST *expr)
           AST *symexpr = (AST *)sym->val;
           int val = EvalConstExpr(symexpr);
           if (val >= 0 && val < 512) {
-              return NewOperand(REG_IMM, sym->name, val);
+              return NewOperand(IMM_INT, sym->name, val);
           } else {
               return NewImmediate(val);
           }
@@ -416,7 +416,7 @@ CompileMul(IRList *irl, AST *expr, int gethi)
   Operand *temp = NewFunctionTempRegister();
 
   if (!mulfunc) {
-    mulfunc = NewOperand(REG_LABEL, "multiply_", 0);
+    mulfunc = NewOperand(IMM_LABEL, "multiply_", 0);
     mula = GetGlobal(REG_ARG, "mula_", 0);
     mulb = GetGlobal(REG_ARG, "mulb_", 0);
   }
@@ -439,7 +439,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
   Operand *temp = NewFunctionTempRegister();
 
   if (!divfunc) {
-    divfunc = NewOperand(REG_LABEL, "divide_", 0);
+    divfunc = NewOperand(IMM_LABEL, "divide_", 0);
     diva = GetGlobal(REG_ARG, "mula_", 0);
     divb = GetGlobal(REG_ARG, "mulb_", 0);
   }
@@ -538,12 +538,12 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   default:
     cond = COND_NE;
     lhs = CompileExpression(irl, expr);
-    rhs = NewOperand(REG_IMM, "", 0);
+    rhs = NewOperand(IMM_INT, "", 0);
     break;
   }
   /* emit a compare operator */
   /* note that lhs cannot be a constant */
-  if (lhs && lhs->kind == REG_IMM) {
+  if (lhs && lhs->kind == IMM_INT) {
     Operand *tmp = lhs;
     lhs = rhs;
     rhs = tmp;
@@ -952,7 +952,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     }
           
     basereg = (Operand *)base->name;
-    if (offset->kind == REG_IMM) {
+    if (offset->kind == IMM_INT) {
         idx = offset->val * siz;
         if (idx == 0) {
             return base;
@@ -1149,7 +1149,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
-        if (src->kind == REG_IMM) {
+        if (src->kind == IMM_INT) {
             Operand *temp = NewFunctionTempRegister();
             EmitMove(irl, temp, src);
             src = temp;
@@ -1208,36 +1208,6 @@ FreeTempRegisters(IRList *irl, int starttempreg)
       --endtempreg;
     }
 }
-
-#if 0
-static void EmitDjnz(IRList *irl, AST *loopvar, AST *count, AST *body)
-{
-    Operand *toploop, *botloop, *exitloop;
-    Operand *var;
-    Operand *initval;
-    int starttempreg = curfunc->curtempreg;
-
-    if (loopvar) {
-      var = CompileExpression(irl, loopvar);
-    } else {
-      var = NewFunctionTempRegister();
-    }
-    initval = CompileExpression(irl, count);
-    EmitMove(irl, var, initval);
-
-    toploop = NewLabel();
-    botloop = NewLabel();
-    exitloop = NewLabel();
-    PushQuitNext(exitloop, botloop);
-    EmitLabel(irl, toploop);
-    EmitStatementList(irl, body);
-    EmitLabel(irl, botloop);
-    EmitOp2(irl, OPC_DJNZ, var, toploop);
-    FreeTempRegisters(irl, starttempreg);
-    EmitLabel(irl, exitloop);
-    PopQuitNext();
-}
-#endif
 
 //
 // a for loop gets a pattern like
@@ -1473,7 +1443,7 @@ static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
 	continue;
       }
-      if (g[i].op->kind == REG_IMM && !g[i].op->used) {
+      if (g[i].op->kind == IMM_INT && !g[i].op->used) {
 	continue;
       }
       if (g[i].op->kind == REG_HW) {
@@ -1482,7 +1452,7 @@ static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       EmitLabel(irl, g[i].op);
       if (g[i].op->kind == STRING_DEF) {
           EmitString(irl, (AST *)g[i].val);
-      } else if (g[i].op->kind == REG_PTR) {
+      } else if (g[i].op->kind == IMM_LABEL) {
           EmitLongPtr(irl, (Operand *)g[i].op->val);
       } else {
           EmitLong(irl, g[i].val);
@@ -1509,8 +1479,8 @@ CompileToIR(IRList *irl, ParserState *P)
 	frname = malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
 
-        f->asmname = NewOperand(REG_LABEL, fname, 0);
-        f->asmretname = NewOperand(REG_LABEL, frname, 0);
+        f->asmname = NewOperand(IMM_LABEL, fname, 0);
+        f->asmretname = NewOperand(IMM_LABEL, frname, 0);
     }
     
     // now compile the functions
@@ -1522,7 +1492,7 @@ CompileToIR(IRList *irl, ParserState *P)
 	if (newlineOp) {
   	    EmitNewline(irl);
 	} else {
-	  newlineOp = NewOperand(REG_STRING, "\n", 0);
+	  newlineOp = NewOperand(IMM_STRING, "\n", 0);
 	}
 	AppendIRList(irl, &funcirl);
     }
@@ -2008,7 +1978,7 @@ OptimizeCompares(IRList *irl)
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
-	    && ir->src->kind == REG_IMM && ir->src->val == 0
+	    && ir->src->kind == IMM_INT && ir->src->val == 0
             && ir_prev )
         {
             if (ir_prev->cond == COND_TRUE
@@ -2023,7 +1993,7 @@ OptimizeCompares(IRList *irl)
                 if (ir_prev->opc == OPC_SUB
                     && ir_next->opc == OPC_JUMP
                     && ir_next->cond == COND_NE
-                    && ir_prev->src->kind == REG_IMM
+                    && ir_prev->src->kind == IMM_INT
                     && ir_prev->src->val == 1)
                 {
                     // replace jmp with djnz
@@ -2050,7 +2020,7 @@ OptimizeImmediates(IRList *irl)
     
     for (ir = irl->head; ir; ir = ir->next) {
         src = ir->src;
-        if (! (src && src->kind == REG_IMM) ) {
+        if (! (src && src->kind == IMM_INT) ) {
             continue;
         }
         if (src->name == NULL || src->name[0] == 0) {
@@ -2095,7 +2065,7 @@ OptimizeAddSub(IRList *irl)
         if (!ir_next) break;
         if (ir->opc == OPC_ADD || ir->opc == OPC_SUB) {
             if (ir_next->opc == OPC_ADD || ir_next->opc == OPC_SUB) {
-                if (ir->dst == ir_next->dst && ir->src->kind == REG_IMM && ir_next->src->kind == REG_IMM)
+                if (ir->dst == ir_next->dst && ir->src->kind == IMM_INT && ir_next->src->kind == IMM_INT)
                 {
                     int val = AddSubVal(ir) + AddSubVal(ir_next);
                     if (val < 0) {
@@ -2195,14 +2165,14 @@ static void
 EmitBuiltins(IRList *irl)
 {
     if (mulfunc) {
-        Operand *loop = NewOperand(REG_STRING, builtin_mul, 0);
+        Operand *loop = NewOperand(IMM_STRING, builtin_mul, 0);
         EmitOp1(irl, OPC_COMMENT, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
         (void)GetGlobal(REG_REG, "result_", 0);
     }
     if (divfunc) {
-        Operand *loop = NewOperand(REG_STRING, builtin_div, 0);
+        Operand *loop = NewOperand(IMM_STRING, builtin_div, 0);
         EmitOp1(irl, OPC_COMMENT, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
@@ -2230,7 +2200,7 @@ CompileConstant(IRList *irl, AST *ast)
     }
     expr = (AST *)sym->val;
     val = EvalConstExpr(expr);
-    op1 = NewOperand(REG_STRING, name, val);
+    op1 = NewOperand(IMM_STRING, name, val);
     op2 = NewImmediate(val);
     EmitOp2(irl, OPC_CONST, op1, op2);
 }
