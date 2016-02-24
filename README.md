@@ -106,6 +106,11 @@ OPTIONS
 =======
 Spin2cpp accepts the following options:
 
+--asm
+  Produce (somewhat) readable PASM code as output. This bypasses PropGCC
+  altogether. The result may be fed back into spin2cpp and compiled to
+  a binary by running spin2cpp --dat --binary.
+  
 --binary
   Run the compiler and output a loadable binary file. Note that
   this option imples --main. Also note that after --binary you may
@@ -120,7 +125,8 @@ Spin2cpp accepts the following options:
 --dat
   Output a binary blob of the DAT section only, similar to the
   bstc -c option; or, if --gas is given, output GAS assembly for
-  the DAT section.
+  the DAT section. If --binary is also given, prepends an appropriate
+  Spin executable header so the resulting output is executable.
 
 --elf
   Run the compiler and output a linked executable ELF file. Note that
@@ -165,13 +171,27 @@ Spin2cpp accepts the following options:
 -I path
   Define a path where .spin objects will be searched for. It's OK to use
   this option multiple times.
-  
+
+EXTENSIONS
+==========
+
+spin2cpp supports a few extensions to the Spin language:
+
+(1) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
+   r := if a then b else c
+which is the same as
+   if a then
+     r := b
+   else
+     r := c
+
+(2) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
+
 LIMITATIONS
 ===========
 
 There are very few Spin features that are not supported yet. _FREE and
-_STACK are recognized, but do nothing. coginit/cognew of Spin methods
-may not work in all circumstances.
+_STACK are recognized, but do nothing.
 
 There may be other features that do not work; if you find any,
 please report them so they can be fixed.
