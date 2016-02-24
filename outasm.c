@@ -238,7 +238,7 @@ void EmitLabel(IRList *irl, Operand *op)
 }
 
 Operand *
-CreateTempLabel(IRList *irl)
+NewLabel()
 {
   Operand *label;
   static int lnum = 1;
@@ -529,7 +529,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         break;
     case T_AND:
         if (!falsedest) {
-            dummylabel = CreateTempLabel(irl);
+            dummylabel = NewLabel();
             falsedest = dummylabel;
         }
         CompileBoolBranches(irl, expr->left, NULL, falsedest);
@@ -540,7 +540,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         break;
     case T_OR:
         if (!truedest) {
-            dummylabel = CreateTempLabel(irl);
+            dummylabel = NewLabel();
             truedest = dummylabel;
         }
         CompileBoolBranches(irl, expr->left, truedest, NULL);
@@ -656,7 +656,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case '>':
   {
       Operand *zero = NewImmediate(0);
-      Operand *skiplabel = CreateTempLabel(irl);
+      Operand *skiplabel = NewLabel();
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_NOT, temp, temp);
@@ -917,6 +917,34 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
 }
 
 Operand *
+CompileCondResult(IRList *irl, AST *expr)
+{
+    AST *cond = expr->left;
+    AST *ifpart = expr->right->left;
+    AST *elsepart = expr->right->right;
+    Operand *r = NewFunctionTempRegister();
+    Operand *tmp;
+    Operand *label1 = NewLabel();
+    Operand *label2 = NewLabel();
+
+    CompileBoolBranches(irl, cond, NULL, label1);
+    /* the default is the IF part */
+    tmp = CompileExpression(irl, ifpart);
+    EmitMove(irl, r, tmp);
+    EmitJump(irl, COND_TRUE, label2);
+
+    /* here is the ELSE part */
+    EmitLabel(irl, label1);
+    tmp = CompileExpression(irl, elsepart);
+    EmitMove(irl, r, tmp);
+
+    /* all done */
+    EmitLabel(irl, label2);
+
+    return r;
+}
+
+Operand *
 CompileExpression(IRList *irl, AST *expr)
 {
   Operand *r;
@@ -935,8 +963,7 @@ CompileExpression(IRList *irl, AST *expr)
   }
   switch (expr->kind) {
   case AST_CONDRESULT:
-      WARNING(expr, "Conditional evaluation not finished yet");
-      return NewImmediate(0);
+      return CompileCondResult(irl, expr);
   case AST_SEQUENCE:
       r = CompileExpression(irl, expr->left);
       r = CompileExpression(irl, expr->right);
@@ -1142,9 +1169,9 @@ static void EmitDjnz(IRList *irl, AST *loopvar, AST *count, AST *body)
     initval = CompileExpression(irl, count);
     EmitMove(irl, var, initval);
 
-    toploop = CreateTempLabel(irl);
-    botloop = CreateTempLabel(irl);
-    exitloop = CreateTempLabel(irl);
+    toploop = NewLabel();
+    botloop = NewLabel();
+    exitloop = NewLabel();
     PushQuitNext(exitloop, botloop);
     EmitLabel(irl, toploop);
     EmitStatementList(irl, body);
@@ -1204,9 +1231,9 @@ static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
 
     CompileExpression(irl, initstmt);
     
-    toplabel = CreateTempLabel(irl);
-    nextlabel = CreateTempLabel(irl);
-    exitlabel = CreateTempLabel(irl);
+    toplabel = NewLabel();
+    nextlabel = NewLabel();
+    exitlabel = NewLabel();
     PushQuitNext(exitlabel, nextlabel);
 
     EmitLabel(irl, toplabel);
@@ -1263,8 +1290,8 @@ static void EmitStatement(IRList *irl, AST *ast)
         EmitOp2(irl, OPC_WAITCNT, op, NewImmediate(0));
         break;
     case AST_WHILE:
-        toploop = CreateTempLabel(irl);
-	botloop = CreateTempLabel(irl);
+        toploop = NewLabel();
+	botloop = NewLabel();
 	PushQuitNext(botloop, toploop);
 	EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
@@ -1275,9 +1302,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	PopQuitNext();
 	break;
     case AST_DOWHILE:
-        toploop = CreateTempLabel(irl);
-	botloop = CreateTempLabel(irl);
-	exitloop = CreateTempLabel(irl);
+        toploop = NewLabel();
+	botloop = NewLabel();
+	exitloop = NewLabel();
 	PushQuitNext(exitloop, botloop);
 	EmitLabel(irl, toploop);
         EmitStatementList(irl, ast->right);
@@ -1306,7 +1333,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	break;
     case AST_IF:
-        toploop = CreateTempLabel(irl);
+        toploop = NewLabel();
         CompileBoolBranches(irl, ast->left, NULL, toploop);
 	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
@@ -1316,7 +1343,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	/* ast should be an AST_THENELSE */
 	EmitStatementList(irl, ast->left);
 	if (ast->right) {
-	  botloop = CreateTempLabel(irl);
+	  botloop = NewLabel();
 	  EmitJump(irl, COND_TRUE, botloop);
 	  EmitLabel(irl, toploop);
 	  EmitStatementList(irl, ast->right);
@@ -1484,7 +1511,7 @@ static bool IsDummy(IR *op)
  * after instruction instr
  */
 bool
-IsDead(IR *instr, Operand *op)
+IsDeadAfter(IR *instr, Operand *op)
 {
   IR *ir;
 
@@ -1577,13 +1604,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return false;
     }
     if (ir->opc == OPC_LABEL) {
-      if (IsDead(ir->next, orig) && IsDead(ir->next, replace)) return true;
-      return false;
+        if (IsDeadAfter(ir, orig) && IsDeadAfter(ir, replace)) {
+            return true;
+        }
+        return false;
     }
     if (ir->dst == replace) {
       // special case: if we have a "mov replace,orig" and orig is dead
       // then we are good to go
-      if (ir->opc == OPC_MOVE && ir->src == orig && IsDead(ir->next, orig) && ir->cond == COND_TRUE) {
+      if (ir->opc == OPC_MOVE && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return true;
       }
       return false;
@@ -1609,7 +1638,7 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
     }
     if (ir->dst == orig) {
       ir->dst = replace;
-      if (InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
+      if (InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc) && ir->cond == COND_TRUE) {
 	break;
       }
     }
@@ -1634,7 +1663,7 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace)
     }
     if (ir->src == orig) {
       ir->src = replace;
-      if (ir->dst == replace && ir->opc == OPC_MOVE) {
+      if (ir->dst == replace && ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
 	return;
       }
     }
@@ -1656,11 +1685,11 @@ OptimizeMoves(IRList *irl)
     ir = irl->head;
     while (ir != 0) {
       ir_next = ir->next;
-      if (ir->opc == OPC_MOVE) {
+      if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
 	if (ir->src == ir->dst) {
 	  DeleteIR(irl, ir);
 	  change = true;
-	} else if (IsDead(ir->next, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+	} else if (IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
 	  ReplaceBack(ir->prev, ir->src, ir->dst);
 	  DeleteIR(irl, ir);
 	  change = true;
@@ -1708,8 +1737,7 @@ void EliminateDeadCode(IRList *irl)
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
-      if (ir->opc == OPC_JUMP) {
-	if (ir->cond == COND_TRUE) {
+      if (ir->opc == OPC_JUMP && ir->cond == COND_TRUE) {
 	  // dead code from here to next label
 	  IR *x = ir->next;
 	  while (x && x->opc != OPC_LABEL) {
@@ -1719,15 +1747,14 @@ void EliminateDeadCode(IRList *irl)
 	      change = true;
 	    }
 	    x = ir_next;
-	  }
 	}
 	/* if the branch is to the next instruction, delete it */
-	if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+	if (ir->opc == OPC_JUMP && ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
 	  DeleteIR(irl, ir);
 	  change = true;
 	}
       } else if (!IsDummy(ir)) {
-	if (ir_next && ir->dst && IsDead(ir, ir->dst) && !HasSideEffects(ir)) {
+	if (ir_next && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
 	  change = true;
 	}
