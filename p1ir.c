@@ -44,7 +44,7 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
             if (reg->name && reg->name[0]) {
                 flexbuf_addstr(fb, reg->name);
             } else {
-                sprintf(temp, "%d", reg->val);
+                sprintf(temp, "%d", (int)(int32_t)reg->val);
                 flexbuf_addstr(fb, temp);
             }
         } else {
@@ -69,9 +69,10 @@ PrintOperandDirect(struct flexbuf *fb, Operand *reg)
     char temp[128];
     switch (reg->kind) {
     case REG_IMM:
-        sprintf(temp, "%d", reg->val);
+        sprintf(temp, "%d", (int)(int32_t)reg->val);
         flexbuf_addstr(fb, temp);
         break;
+    case REG_PTR:
     case STRING_DEF:
     case BYTE_DEF:
     case WORD_DEF:

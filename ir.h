@@ -100,6 +100,7 @@ typedef struct IRList {
 
 enum Operandkind {
     REG_IMM,  // for an immediate value (possibly stored in a register)
+    REG_PTR,  // an immediate holding a memory address
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)
@@ -124,7 +125,7 @@ typedef enum Operandkind Operandkind;
 struct Operand {
     enum Operandkind kind;
     const char *name;
-    int val;
+    intptr_t val;
     int used;
 };
 

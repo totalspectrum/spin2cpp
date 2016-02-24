@@ -278,6 +278,11 @@ void EmitLong(IRList *irl, int val)
   EmitOp1(irl, OPC_LONG, op);
 }
 
+static void EmitLongPtr(IRList *irl, Operand *op)
+{
+  EmitOp1(irl, OPC_LONG, op);
+}
+
 void EmitString(IRList *irl, AST *ast)
 {
   Operand *op;
@@ -329,6 +334,14 @@ NewImmediate(int32_t val)
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
   return GetGlobal(REG_IMM, strdup(temp), (int32_t)val);
+}
+
+Operand *
+NewImmediatePtr(Operand *val)
+{
+    char temp[1024];
+    sprintf(temp, "ptr_%s_", val->name);
+    return GetGlobal(REG_PTR, strdup(temp), (intptr_t)val);
 }
 
 Operand *
@@ -1036,7 +1049,7 @@ CompileExpression(IRList *irl, AST *expr)
       return NewImmediate(expr->d.string[0]);
   case AST_STRINGPTR:
       r = GetHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
-      return NewOperand(BYTE_REF, (char *)r, 0);
+      return NewImmediatePtr(r);
   case AST_ARRAYREF:
   {
       Operand *base;
@@ -1469,6 +1482,8 @@ static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       EmitLabel(irl, g[i].op);
       if (g[i].op->kind == STRING_DEF) {
           EmitString(irl, (AST *)g[i].val);
+      } else if (g[i].op->kind == REG_PTR) {
+          EmitLongPtr(irl, (Operand *)g[i].op->val);
       } else {
           EmitLong(irl, g[i].val);
       }
