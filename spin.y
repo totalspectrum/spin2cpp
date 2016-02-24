@@ -201,8 +201,8 @@ CheckYield(AST *body)
 
 /* operators */
 %right T_ASSIGN
-%precedence T_THEN
-%precedence T_ELSE
+%right T_THEN
+%right T_ELSE
 %left T_OR
 %left T_AND
 %left '<' '>' T_GE T_LE T_NE T_EQ
