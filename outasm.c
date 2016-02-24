@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdint.h>
 #include "spinc.h"
 #include "ir.h"
 #include "flexbuf.h"
@@ -37,12 +38,16 @@ static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op);
 static IR *EmitOp2(IRList *irl, Operandkind code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 
-struct GlobalVariable {
+typedef struct AsmVariable {
     Operand *op;
-    int val;
-};
+    intptr_t val;
+} AsmVariable;
 
-static struct flexbuf gvars;
+// global variables in register memory (really holds struct AsmVariables)
+static struct flexbuf regGlobalVars;
+
+// global variables in hub memory (really holds struct AsmVariables)
+static struct flexbuf hubGlobalVars;
 
 static int
 IsTopLevel(ParserState *P)
@@ -81,13 +86,13 @@ static int IsMemRef(Operand *op)
     return op && (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
 }
 
-Operand *
-GetGlobal(Operandkind kind, const char *name, int value)
+static Operand *
+GetVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value)
 {
-  size_t siz = flexbuf_curlen(&gvars) / sizeof(struct GlobalVariable);
+  size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
   size_t i;
-  struct GlobalVariable tmp;
-  struct GlobalVariable *g = (struct GlobalVariable *)flexbuf_peek(&gvars);
+  AsmVariable tmp;
+  AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
   for (i = 0; i < siz; i++) {
     if (strcmp(name, g[i].op->name) == 0) {
       return g[i].op;
@@ -95,8 +100,17 @@ GetGlobal(Operandkind kind, const char *name, int value)
   }
   tmp.op = NewOperand(kind, name, value);
   tmp.val = value;
-  flexbuf_addmem(&gvars, (const char *)&tmp, sizeof(tmp));
+  flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
   return tmp.op;
+}
+
+Operand *GetGlobal(Operandkind kind, const char *name, intptr_t value)
+{
+    return GetVar(&regGlobalVars, kind, name, value);
+}
+Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
+{
+    return GetVar(&hubGlobalVars, kind, name, value);
 }
 
 void
@@ -237,15 +251,21 @@ void EmitLabel(IRList *irl, Operand *op)
   EmitOp1(irl, OPC_LABEL, op);
 }
 
+char *
+NewTempLabelName()
+{
+    static int lnum = 1;
+    char *temp = malloc(32);
+    sprintf(temp, "L_%03d_", lnum);
+    lnum++;
+    return temp;
+}
+
 Operand *
 NewLabel()
 {
   Operand *label;
-  static int lnum = 1;
-  char temp[128];
-  sprintf(temp, "L_%03d_", lnum);
-  lnum++;
-  label = NewOperand(REG_LABEL, strdup(temp), 0);
+  label = NewOperand(REG_LABEL, NewTempLabelName(), 0);
   label->used = 0;
   return label;
 }
@@ -256,6 +276,26 @@ void EmitLong(IRList *irl, int val)
 
   op = NewOperand(REG_IMM, "", val);
   EmitOp1(irl, OPC_LONG, op);
+}
+
+void EmitString(IRList *irl, AST *ast)
+{
+  Operand *op;
+
+  while (ast && ast->kind == AST_EXPRLIST) {
+      EmitString(irl, ast->left);
+      ast = ast->right;
+  }
+  if (!ast) return;
+  switch (ast->kind) {
+  case AST_STRING:
+      op = NewOperand(REG_STRING, ast->d.string, 0);
+      EmitOp1(irl, OPC_STRING, op);
+      break;
+  default:
+      ERROR(ast, "Unable to emit string");
+      break;
+  }
 }
 
 void EmitJump(IRList *irl, IRCond cond, Operand *label)
@@ -995,8 +1035,8 @@ CompileExpression(IRList *irl, AST *expr)
       }
       return NewImmediate(expr->d.string[0]);
   case AST_STRINGPTR:
-      WARNING(expr, "Strings not properly implemented yet");
-      return NewImmediate(0);
+      r = GetHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
+      return NewOperand(BYTE_REF, (char *)r, 0);
   case AST_ARRAYREF:
   {
       Operand *base;
@@ -1398,22 +1438,24 @@ void EmitNewline(IRList *irl)
 
 static int gcmpfunc(const void *a, const void *b)
 {
-  const struct GlobalVariable *ga = (const struct GlobalVariable *)a;
-  const struct GlobalVariable *gb = (const struct GlobalVariable *)b;
+  const AsmVariable *ga = (const AsmVariable *)a;
+  const AsmVariable *gb = (const AsmVariable *)b;
   return strcmp(ga->op->name, gb->op->name);
 }
 
-void EmitGlobals(IRList *irl)
+static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
 {
-    size_t siz = flexbuf_curlen(&gvars) / sizeof(struct GlobalVariable);
+    size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
-    struct GlobalVariable *g = (struct GlobalVariable *)flexbuf_peek(&gvars);
+    AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
 
     if (siz > 0) {
       EmitNewline(irl);
     }
     /* sort the global variables */
-    qsort(g, siz, sizeof(*g), gcmpfunc);
+    if (alphaSort) {
+        qsort(g, siz, sizeof(*g), gcmpfunc);
+    }
     for (i = 0; i < siz; i++) {
       if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
 	continue;
@@ -1425,8 +1467,17 @@ void EmitGlobals(IRList *irl)
 	continue;
       }
       EmitLabel(irl, g[i].op);
-      EmitLong(irl, g[i].val);
+      if (g[i].op->kind == STRING_DEF) {
+          EmitString(irl, (AST *)g[i].val);
+      } else {
+          EmitLong(irl, g[i].val);
+      }
     }
+}
+void EmitGlobals(IRList *irl)
+{
+    EmitVars(&regGlobalVars, irl, 1);
+    EmitVars(&hubGlobalVars, irl, 0);
 }
 
 bool

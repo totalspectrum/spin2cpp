@@ -111,7 +111,12 @@ enum Operandkind {
     LONG_REF,      // register indirect memory access; val is the offset
     WORD_REF,
     BYTE_REF,
-    
+
+    // memory
+    STRING_DEF, // data to go in memory
+    LONG_DEF,
+    WORD_DEF,
+    BYTE_DEF,
 };
 
 typedef enum Operandkind Operandkind;

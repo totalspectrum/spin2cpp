@@ -72,6 +72,12 @@ PrintOperandDirect(struct flexbuf *fb, Operand *reg)
         sprintf(temp, "%d", reg->val);
         flexbuf_addstr(fb, temp);
         break;
+    case STRING_DEF:
+    case BYTE_DEF:
+    case WORD_DEF:
+    case LONG_DEF:
+        flexbuf_addstr(fb, reg->name);
+        break;
     case REG_STRING:
         flexbuf_addchar(fb, '"');
         flexbuf_addstr(fb, reg->name);
