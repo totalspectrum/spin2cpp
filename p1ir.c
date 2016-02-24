@@ -72,6 +72,11 @@ PrintOperandDirect(struct flexbuf *fb, Operand *reg)
         sprintf(temp, "%d", reg->val);
         flexbuf_addstr(fb, temp);
         break;
+    case REG_STRING:
+        flexbuf_addchar(fb, '"');
+        flexbuf_addstr(fb, reg->name);
+        flexbuf_addchar(fb, '"');
+        break;
     default:
         PrintOperand(fb, reg);
         break;
@@ -144,6 +149,13 @@ StringFor(int opc)
       return "wrlong";
   case OPC_WRWORD:
       return "wrword";
+  case OPC_STRING:
+  case OPC_BYTE:
+      return "byte";
+  case OPC_WORD:
+      return "word";
+  case OPC_LONG:
+      return "long";
   default:
       break;
   }
@@ -194,7 +206,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             inDat = 0;
         }
         flexbuf_addstr(fb, "\t");
-        PrintOperandDirect(fb, ir->dst);
+        PrintOperand(fb, ir->dst);
         flexbuf_addstr(fb, " = ");
         PrintOperandDirect(fb, ir->src);
         flexbuf_addstr(fb, "\n");
@@ -246,9 +258,13 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	PrintOperandDirect(fb, ir->src);
 	flexbuf_addstr(fb, "\n");
 	break;
+    case OPC_BYTE:
+    case OPC_WORD:
     case OPC_LONG:
+    case OPC_STRING:
         flexbuf_addchar(fb, '\t');
-        flexbuf_addstr(fb, "long\t");
+	flexbuf_addstr(fb, StringFor(ir->opc));
+	flexbuf_addstr(fb, "\t");
 	PrintOperandDirect(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
 	break;

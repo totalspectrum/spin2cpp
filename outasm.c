@@ -934,6 +934,9 @@ CompileExpression(IRList *irl, AST *expr)
       }
   }
   switch (expr->kind) {
+  case AST_CONDRESULT:
+      WARNING(expr, "Conditional evaluation not finished yet");
+      return NewImmediate(0);
   case AST_SEQUENCE:
       r = CompileExpression(irl, expr->left);
       r = CompileExpression(irl, expr->right);

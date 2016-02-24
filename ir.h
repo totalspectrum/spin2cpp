@@ -18,6 +18,7 @@ enum IROpcode {
     OPC_BYTE,
     OPC_WORD,
     OPC_LONG,
+    OPC_STRING,
 
     /* various instructions */
     OPC_MOVE,
@@ -104,7 +105,7 @@ enum Operandkind {
     REG_LOCAL, // for a "local" register (only live inside function)
     REG_ARG,   // for an argument to a function
     REG_LABEL, // for a code label
-    REG_STRING,
+    REG_STRING, // a string to print or store
 
     // all of these memory references must go together
     LONG_REF,      // register indirect memory access; val is the offset

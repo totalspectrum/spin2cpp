@@ -164,6 +164,8 @@ CheckYield(AST *body)
 %token T_ELSE
 %token T_ELSEIF
 %token T_ELSEIFNOT
+%token T_THEN
+%token T_ENDIF
 
 %token T_LOOKDOWN
 %token T_LOOKDOWNZ
@@ -199,6 +201,8 @@ CheckYield(AST *body)
 
 /* operators */
 %right T_ASSIGN
+%precedence T_THEN
+%precedence T_ELSE
 %left T_OR
 %left T_AND
 %left '<' '>' T_GE T_LE T_NE T_EQ
@@ -837,6 +841,8 @@ expr:
     { $$ = $1; current->needsLookup = 1; }
   | lookdownexpr
     { $$ = $1; current->needsLookdown = 1; }
+  | T_IF expr T_THEN expr T_ELSE expr
+    { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $4, $6)); }
   ;
 
 lhs: identifier

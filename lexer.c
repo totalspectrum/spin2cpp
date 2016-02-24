@@ -666,7 +666,7 @@ again:
 }
 
 
-static char operator_chars[] = "-+*/|<>=!@~#^.";
+static char operator_chars[] = "-+*/|<>=!@~#^.?";
 
 int
 getToken(LexStream *L, AST **ast_ptr)
@@ -808,6 +808,7 @@ struct reservedword {
     { "string", T_STRINGPTR },
     { "to", T_TO },
     { "trunc", T_TRUNC },
+    { "then", T_THEN },
 
     { "until", T_UNTIL },
 
@@ -825,6 +826,7 @@ struct reservedword {
     { "+", '+' },
     { "-", '-' },
     { "/", '/' },
+    { "?", '?' },
     { "//", T_MODULUS },
     { "*", '*' },
     { "**", T_HIGHMULT },
