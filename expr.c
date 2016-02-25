@@ -1535,6 +1535,11 @@ PrintExpr(FILE *f, AST *expr)
         PrintOperator(f, expr->d.ival, expr->left, expr->right);
         fprintf(f, ")");
         break;
+    case AST_ISBETWEEN:
+        fprintf(f, "-(");
+        PrintBoolExpr(f, expr);
+        fprintf(f, ")");
+        break;
     case AST_POSTEFFECT:
         PrintPostfix(f, expr, 0);
         break;
@@ -1664,6 +1669,34 @@ PrintBoolExpr(FILE *f, AST *expr)
         default:
             PrintOperator(f, op, lhs, rhs);
             break;
+        }
+    } else if (expr->kind == AST_ISBETWEEN) {
+        int onlyone = 0;
+        if (IsConstExpr(expr->right->left) && IsConstExpr(expr->right->right)) {
+            onlyone = 1;
+        } else {
+            fprintf(f, "(");
+        }
+        fprintf(f, "(");
+        PrintExpr(f, expr->right->left);
+        fprintf(f, " <= ");
+        PrintExpr(f, expr->left);
+        fprintf(f, ") && (");
+        PrintExpr(f, expr->left);
+        fprintf(f, " <= ");
+        PrintExpr(f, expr->right->right);
+        if (onlyone) {
+            fprintf(f, ")");
+        } else {
+            fprintf(f, ")) || ((");
+            PrintExpr(f, expr->right->left);
+            fprintf(f, " >= ");
+            PrintExpr(f, expr->left);
+            fprintf(f, ") && (");
+            PrintExpr(f, expr->left);
+            fprintf(f, " >= ");
+            PrintExpr(f, expr->right->right);
+            fprintf(f, "))");
         }
     } else {
         PrintExpr(f, expr);

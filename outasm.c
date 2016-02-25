@@ -650,6 +650,10 @@ OpcFromOp(int op)
       return OPC_ROR;
   case T_REV:
       return OPC_REV;
+  case T_LIMITMIN:
+      return OPC_MINS;
+  case T_LIMITMAX:
+      return OPC_MAXS;
   default:
     ERROR(NULL, "Unsupported operator %d", op);
     return OPC_UNKNOWN;
@@ -672,8 +676,8 @@ CompileBasicOperator(IRList *irl, AST *expr)
   int op = expr->d.ival;
   AST *lhs = expr->left;
   AST *rhs = expr->right;
-  Operand *left = CompileExpression(irl, lhs);
-  Operand *right = CompileExpression(irl, rhs);
+  Operand *left;
+  Operand *right;
   Operand *temp = NewFunctionTempRegister();
   
   switch(op) {
@@ -687,6 +691,10 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_SAR:
   case T_ROTL:
   case T_ROTR:
+  case T_LIMITMIN:
+  case T_LIMITMAX:
+    left = CompileExpression(irl, lhs);
+    right = CompileExpression(irl, rhs);
     EmitMove(irl, temp, left);
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
@@ -695,6 +703,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_ABS:
   case T_BIT_NOT:
   case T_REV:
+    right = CompileExpression(irl, rhs);
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
     return temp;
@@ -719,7 +728,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   
   default:
     ERROR(lhs, "Unsupported operator %d", op);
-    return left ? left : right;
+    return NewImmediate(0);
   }
 }
 

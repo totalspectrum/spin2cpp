@@ -133,7 +133,7 @@ ERROR(AST *instr, const char *msg, ...)
 static int tokens0[] = { T_NUM, '+', T_NUM, T_EOLN, T_EOF };
 static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOLN, T_EOF };
 static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOLN, T_EOF };
-static int tokens3[] = { '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
+static int tokens3[] = { T_LIMITMAX, T_LIMITMIN, '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
 
 static const char *token4test = "pub \r\n  if\n    foo\n  bar\n";
 static int tokens4[] = { T_PUB, T_EOLN, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
@@ -190,7 +190,7 @@ main()
     testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
     testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
     testTokenStream("con CON con99 Con 99", tokens2, N_ELEM(tokens2));
-    testTokenStream("< =< => > == = +<", tokens3, N_ELEM(tokens3));
+    testTokenStream("<# #> < =< => > == = +<", tokens3, N_ELEM(tokens3));
     testTokenStream(token4test, tokens4, N_ELEM(tokens4));
     testTokenStream(token5test, tokens5, N_ELEM(tokens5));
     testTokenStream(token6test, tokens6, N_ELEM(tokens6));

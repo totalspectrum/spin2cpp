@@ -694,16 +694,9 @@ PrintCaseExprList(FILE *f, AST *var, AST *ast)
             fprintf(f, "1");
         } else {
             if (ast->left->kind == AST_RANGE) {
-                AST *a, *b;
-                a = ast->left->left;
-                b = ast->left->right;
-                fprintf(f, "Between__(");
-                PrintExpr(f, var);
-                fprintf(f, ", ");
-                PrintExpr(f, a);
-                fprintf(f, ", ");
-                PrintExpr(f, b);
-                fprintf(f, ")");
+                AST *betw;
+                betw = NewAST(AST_ISBETWEEN, var, ast->left);
+                PrintBoolExpr(f, betw);
             } else {
                 PrintBoolExpr(f, AstOperator(T_EQ, var, ast->left));
             }

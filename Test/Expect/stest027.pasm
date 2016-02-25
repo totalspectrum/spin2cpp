@@ -4,12 +4,12 @@ hyp
 	mov	mula_, hyp_x_
 	mov	mulb_, hyp_x_
 	call	#multiply_
-	mov	hyp_tmp001_, mula_
+	mov	hyp_tmp002_, mula_
 	mov	mula_, hyp_y_
 	mov	mulb_, hyp_y_
 	call	#multiply_
-	add	hyp_tmp001_, mula_
-	mov	result_, hyp_tmp001_
+	add	hyp_tmp002_, mula_
+	mov	result_, hyp_tmp002_
 hyp_ret
 	ret
 
@@ -34,7 +34,7 @@ mul_lp_
 multiply__ret
 	ret
 
-hyp_tmp001_
+hyp_tmp002_
 	long	0
 hyp_x_
 	long	0

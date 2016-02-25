@@ -216,7 +216,6 @@ struct parserstate {
     char needsShr;
     char needsStdlib;
     char needsYield;
-    char needsBetween;
     char needsAbortdef;
     char needsRand;
     char needsSqrt;

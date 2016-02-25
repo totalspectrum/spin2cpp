@@ -113,6 +113,10 @@ StringFor(int opc)
       return "djnz";
   case OPC_JUMP:
       return "jmp";
+  case OPC_MAXS:
+      return "maxs";
+  case OPC_MINS:
+      return "mins";
   case OPC_NEG:
       return "neg";
   case OPC_NOT:
@@ -281,6 +285,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_ANDN:
     case OPC_CMP:
     case OPC_CMPS:
+    case OPC_MAXS:
+    case OPC_MINS:
     case OPC_NEG:
     case OPC_NOT:
     case OPC_OR:

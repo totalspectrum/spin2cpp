@@ -31,6 +31,8 @@ enum IROpcode {
     OPC_CMPS,
     OPC_DJNZ,
     OPC_JUMP,
+    OPC_MAXS,
+    OPC_MINS,
     OPC_NEG,
     OPC_NOT,
     OPC_OR,
@@ -108,6 +110,9 @@ enum Operandkind {
     REG_LOCAL, // for a "local" register (only live inside function)
     REG_ARG,   // for an argument to a function
 
+    // labels in memory
+    HUB_LABEL,
+    
     // all of these memory references must go together
     LONG_REF,      // register indirect memory access; val is the offset
     WORD_REF,

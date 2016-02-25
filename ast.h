@@ -133,6 +133,7 @@ enum astkind {
     AST_CONDRESULT,
 
     AST_FORATLEASTONCE = 92,
+    AST_ISBETWEEN,  /* left is between two values on right */
 };
 
 struct AST {

@@ -438,7 +438,7 @@ matchexpritem:
   T_OTHER
     { $$ = NewAST(AST_OTHER, NULL, NULL); }
   | expr T_DOTS expr
-    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); current->needsBetween = 1; }
+    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); }
   | expr
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   ;

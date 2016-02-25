@@ -471,9 +471,6 @@ PrintMacros(FILE *f, ParserState *parse)
     if (parse->needsShr) {
         fprintf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
-    if (parse->needsBetween) {
-        fprintf(f, "INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }\n\n");
-    }
     if (parse->needsLookup) {
         fprintf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
         fprintf(f, "\n");

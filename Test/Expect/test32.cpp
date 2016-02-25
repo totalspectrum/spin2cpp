@@ -10,8 +10,6 @@ static int32_t tmp__;
 #define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)
 #endif
 
-INLINE__ int32_t Between__(int32_t x, int32_t a, int32_t b){ if (a <= b) return x >= a && x <= b; return x >= b && x <= a; }
-
 void test32::Fun(int32_t Y)
 {
   int32_t _tmp__0000 = (X + Y);
@@ -19,7 +17,7 @@ void test32::Fun(int32_t Y)
     OUTA ^= 0x1;
   } else if (_tmp__0000 == (A * 2)) {
     OUTA ^= 0x2;
-  } else if (Between__(_tmp__0000, 30, 40)) {
+  } else if ((30 <= _tmp__0000) && (_tmp__0000 <= 40)) {
     OUTA ^= 0x4;
     OUTA ^= 0x8;
   } else if (1) {
