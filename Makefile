@@ -113,7 +113,7 @@ spincvt.zip:
 	mkdir -p spincvt/bin
 	cp build-win32/spin2cpp.exe spincvt/bin
 	cp spinconvert/spinconvert.tcl spincvt
-	cp -rp spinconvert/examples spinconvert/README.txt spinconvert/COPYING spincvt
+	cp -rp spinconvert/examples spinconvert/README.txt COPYING spincvt
 	rm -rf spinconvert/examples/*.cpp spinconvert/examples/*.pasm
 	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
 	rm spincvt/spinconvert.tcl

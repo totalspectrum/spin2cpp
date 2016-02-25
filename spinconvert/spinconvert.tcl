@@ -6,6 +6,27 @@ set OUTPUT "--asm"
 set EXT ".pasm"
 set radioOut 1
 
+#
+# read a file and return its text
+# does UCS-16 to UTF-8 conversion
+#
+proc uread {name} {
+    set encoding ""
+    set f [open $name r]
+    gets $f line
+    if {[regexp \xFE\xFF $line] || [regexp \xFF\xFE $line]} {
+	fconfigure $f -encoding unicode
+	set encoding unicode
+    }
+    seek $f 0 start ;# rewind
+    set text [read $f [file size $name]]
+    close $f
+    if {$encoding=="unicode"} {
+	regsub -all "\uFEFF|\uFFFE" $text "" text
+    }
+    return $text
+}
+
 proc resetOutputVars { } {
     global OUTPUT
     global EXT
@@ -32,9 +53,7 @@ proc resetOutputVars { } {
 }
 
 proc loadFileToWindow { fname win } {
-    set fp [open $fname r]
-    set file_data [read $fp]
-    close $fp
+    set file_data [uread $fname]
     $win replace 1.0 end $file_data
 }
 
