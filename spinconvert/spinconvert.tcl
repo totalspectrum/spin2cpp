@@ -106,6 +106,7 @@ proc loadNewSpinFile {} {
 	return
     }
     loadFileToWindow $filename .orig.txt
+    .orig.txt highlight 1.0 end
     regenOutput $filename
     set SPINFILE $filename
     wm title . $SPINFILE
@@ -171,6 +172,27 @@ proc doHelp {} {
 
     loadFileToWindow README.txt .help.f.txt
     wm title .help "Spin Converter help"
+}
+
+#
+# set up syntax highlighting for a given ctext widget
+proc setHighlightingSpin {w} {
+    set color(keywords) blue
+    set color(brackets) purple
+    set color(operators) green
+    set color(comments) DeepPink
+    set color(strings)  red
+    set keywordsbase [list con obj dat pub pri quit exit repeat while until if then else return abort long word byte]
+    foreach i $keywordsbase {
+	lappend keywordsupper [string toupper $i]
+    }
+    set keywords [concat $keywordsbase $keywordsupper]
+    
+    ctext::addHighlightClass $w keywords $color(keywords) $keywords
+    ctext::addHighlightClassForSpecialChars $w brackets $color(brackets) {[](){}}
+    ctext::addHighlightClassForSpecialChars $w operators $color(operators) {+-=><!@~\#*/&:|}
+    ctext::addHighlightClassForRegexp $w comments $color(comments) {\'[^\n\r]*}
+    ctext::addHighlightClassForRegexp $w strings $color(strings) {"(\\"||^"])*"}
 }
 
 menu .mbar
@@ -243,6 +265,8 @@ grid columnconfigure .bot .bot.txt -weight 1
 bind . <Control-o> { loadNewSpinFile }
 bind . <Control-s> { saveSpinFile }
 bind . <Control-q> { exit }
+
+setHighlightingSpin .orig.txt
 
 set PASMFILE ""
 
