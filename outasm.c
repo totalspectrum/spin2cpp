@@ -569,6 +569,32 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     IRCond cond;
     int opkind;
     Operand *dummylabel = NULL;
+    IR *ir;
+    
+    if (expr->kind == AST_ISBETWEEN) {
+        Operand *lo, *hi;
+        Operand *val;
+        Operand *tmp;
+        tmp = NewFunctionTempRegister();
+        val = CompileExpression(irl, expr->left);
+        lo = CompileExpression(irl, expr->right->left);
+        hi = CompileExpression(irl, expr->right->right);
+        EmitMove(irl, tmp, lo);
+        EmitOp2(irl, OPC_MAXS, lo, hi); // now lo really is the smallest
+        EmitOp2(irl, OPC_MINS, hi, tmp); // and hi really is highest
+        ir = EmitOp2(irl, OPC_CMPS, lo, val);
+        ir->flags |= FLAG_WZ|FLAG_WC;
+        ir = EmitOp2(irl, OPC_CMPS, val, hi);
+        ir->flags |= FLAG_WZ|FLAG_WC;
+        ir->cond = COND_LE;
+        if (truedest) {
+            EmitJump(irl, COND_LE, truedest);
+        }
+        if (falsedest) {
+            EmitJump(irl, COND_GT, falsedest);
+        }
+        return;
+    }
     
     if (expr->kind == AST_OPERATOR) {
         opkind = expr->d.ival;
@@ -1026,6 +1052,18 @@ CompileExpression(IRList *irl, AST *expr)
   switch (expr->kind) {
   case AST_CONDRESULT:
       return CompileCondResult(irl, expr);
+  case AST_ISBETWEEN:
+  {
+      Operand *zero = NewImmediate(0);
+      Operand *skiplabel = NewLabel();
+      Operand *temp = NewFunctionTempRegister();
+      
+      EmitMove(irl, temp, zero);
+      CompileBoolBranches(irl, expr, NULL, skiplabel);
+      EmitOp2(irl, OPC_NOT, temp, temp);
+      EmitLabel(irl, skiplabel);
+      return temp;
+  }
   case AST_SEQUENCE:
       r = CompileExpression(irl, expr->left);
       r = CompileExpression(irl, expr->right);
