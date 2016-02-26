@@ -33,5 +33,5 @@ PUB serchar(c) | val, waitcycles
      val >>= 1
 
 PUB serstr(s) | c
-  REPEAT WHILE ((c := byte[s]) <> 0)
+  REPEAT WHILE ((c := byte[s++]) <> 0)
     serchar(c)
