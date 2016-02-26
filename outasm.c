@@ -1596,6 +1596,29 @@ static bool IsDummy(IR *op)
 }
 
 /*
+ * true if a branch target is after a given instruction
+ */
+bool
+JumpIsAfter(IR *ir, IR *jmp)
+{
+  Operand *target;
+  switch (jmp->opc) {
+  case OPC_DJNZ:
+    target = jmp->src;
+    break;
+  default:
+    target = jmp->dst;
+    break;
+  }
+  for(; ir; ir = ir->next) {
+    if (ir->opc == OPC_LABEL && ir->dst==target) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
  */
@@ -1624,7 +1647,7 @@ IsDeadAfter(IR *instr, Operand *op)
       if (op->kind == REG_ARG) {
 	return false;
       }
-    } else if (IsBranch(ir->opc)) {
+    } else if (IsBranch(ir->opc) && !JumpIsAfter(instr, ir)) {
       return false;
     }
     if (ir->src == op) {
