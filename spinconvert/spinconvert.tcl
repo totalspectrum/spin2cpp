@@ -1,5 +1,6 @@
 package require Tk
 package require ctext
+package require autoscroll
 
 set COMPILE ./bin/spin2cpp
 set OUTPUT "--asm"
@@ -266,7 +267,14 @@ bind . <Control-o> { loadNewSpinFile }
 bind . <Control-s> { saveSpinFile }
 bind . <Control-q> { exit }
 
-setHighlightingSpin .orig.txt
+autoscroll::autoscroll .orig.v
+autoscroll::autoscroll .orig.h
+autoscroll::autoscroll .out.v
+autoscroll::autoscroll .out.h
+autoscroll::autoscroll .bot.v
+autoscroll::autoscroll .bot.h
+
+#setHighlightingSpin .orig.txt
 
 set PASMFILE ""
 
