@@ -29,6 +29,7 @@ Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
+static Operand *Dereference(IRList *irl, Operand *op);
 
 void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);
@@ -559,6 +560,8 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     flags = FLAG_WZ|FLAG_WC;
     break;
   }
+  lhs = Dereference(irl, lhs);
+  rhs = Dereference(irl, rhs);
   ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
   ir->flags |= flags;
   return cond;
@@ -1783,29 +1786,33 @@ OptimizeMoves(IRList *irl)
     IR *ir_next;
     IR *stop_ir;
     int change;
+    int everchange = 0;
 
-    change = 0;
-    ir = irl->head;
-    while (ir != 0) {
-      ir_next = ir->next;
-      if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
-	if (ir->src == ir->dst) {
-	  DeleteIR(irl, ir);
-	  change = 1;
-	} else if (IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
-	  ReplaceBack(ir->prev, ir->src, ir->dst);
-	  DeleteIR(irl, ir);
-	  change = 1;
-	}
-	else if ( 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
-            ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
-            DeleteIR(irl, ir);
-            change = 1;
-	}
-      }
-      ir = ir_next;
-    }
-    return change;
+    do {
+        change = 0;
+        ir = irl->head;
+        while (ir != 0) {
+            ir_next = ir->next;
+            if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE && 0 == (ir->flags & (FLAG_WZ|FLAG_WC))) {
+                if (ir->src == ir->dst) {
+                    DeleteIR(irl, ir);
+                    change = 1;
+                } else if (IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+                    ReplaceBack(ir->prev, ir->src, ir->dst);
+                    DeleteIR(irl, ir);
+                    change = 1;
+                }
+                else if ( 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+                    ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
+                    DeleteIR(irl, ir);
+                    change = 1;
+                }
+            }
+            ir = ir_next;
+        }
+        everchange |= change;
+    } while (change);
+    return everchange;
 }
 
 static bool
@@ -2016,7 +2023,9 @@ OptimizeCompares(IRList *irl)
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
 	    && ir->src->kind == IMM_INT && ir->src->val == 0
-            && ir_prev )
+            && ir_prev
+            && ir_prev->dst == ir->dst
+            )
         {
             if (ir_prev->cond == COND_TRUE
                 && (0 == (ir_prev->flags & (FLAG_WZ|FLAG_WC)))
