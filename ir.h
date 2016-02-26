@@ -88,11 +88,20 @@ struct IR {
     int flags;
     IR *prev;
     IR *next;
+    unsigned addr;
+    void *aux; // auxiliary data for back end
 };
 
 enum flags {
+    // first 8 bits are for various features of the instruction
     FLAG_WZ = 1,
-    FLAG_WC = 2
+    FLAG_WC = 2,
+    FLAG_NR = 4,
+
+    // rest of the bits are used by the optimizer
+
+    FLAG_LABEL_USED = 0x100,
+    FLAG_OPTIMIZER = 0xFFFF00,
 };
 
 typedef struct IRList {

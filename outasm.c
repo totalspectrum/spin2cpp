@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 #include "spinc.h"
 #include "ir.h"
 #include "flexbuf.h"
@@ -1570,9 +1571,9 @@ IsLocalOrArg(Operand *op)
   return op->kind == REG_LOCAL || op->kind == REG_ARG;
 }
 
-static bool IsBranch(int opc)
+static bool IsBranch(IR *ir)
 {
-  switch (opc) {
+  switch (ir->opc) {
   case OPC_JUMP:
   case OPC_DJNZ:
   case OPC_CALL:
@@ -1601,21 +1602,12 @@ static bool IsDummy(IR *op)
 bool
 JumpIsAfter(IR *ir, IR *jmp)
 {
-  Operand *target;
-  switch (jmp->opc) {
-  case OPC_DJNZ:
-    target = jmp->src;
-    break;
-  default:
-    target = jmp->dst;
-    break;
-  }
-  for(; ir; ir = ir->next) {
-    if (ir->opc == OPC_LABEL && ir->dst==target) {
-      return true;
+    // ptr to jump destination gest stored in aux
+    if (jmp->aux) {
+        IR *label = (IR *)jmp->aux;
+        return (label->addr > ir->addr);
     }
-  }
-  return false;
+    return false;
 }
 
 /*
@@ -1647,7 +1639,7 @@ IsDeadAfter(IR *instr, Operand *op)
       if (op->kind == REG_ARG) {
 	return false;
       }
-    } else if (IsBranch(ir->opc)) {
+    } else if (IsBranch(ir)) {
       return false;
     }
     if (ir->src == op) {
@@ -1689,7 +1681,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
     if (ir->opc == OPC_LABEL) {
       return false;
     }
-    if (IsBranch(ir->opc)) {
+    if (IsBranch(ir)) {
       return false;
     }
     if (ir->dst == orig && InstrSetsDst(ir->opc) && !InstrReadsDst(ir->opc)) {
@@ -1702,38 +1694,44 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   return false;
 }
 
-static bool
+//
+// returns the IR where we should stop scanning for replacement
+//
+static IR*
 SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
 {
   IR *ir;
+  IR *last_ir = NULL;
+
   for (ir = first_ir; ir; ir = ir->next) {
     if (IsDummy(ir)) {
 	continue;
     }
     if (ir->opc == OPC_RET) {
-      return IsLocalOrArg(orig);
-    } else if (IsBranch(ir->opc)) {
-      return false;
+        return IsLocalOrArg(orig) ? ir : NULL;
+    } else if (IsBranch(ir)) {
+      return NULL;
     }
     if (ir->opc == OPC_LABEL) {
         if (IsDeadAfter(ir, orig) && IsDeadAfter(ir, replace)) {
-            return true;
+            return ir;
         }
-        return false;
+        return NULL;
     }
     if (ir->dst == replace) {
       // special case: if we have a "mov replace,orig" and orig is dead
       // then we are good to go
       if (ir->opc == OPC_MOVE && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
-	return true;
+	return ir;
       }
-      return false;
+      return NULL;
     }
     if (ir->src == replace && ir != first_ir) {
-      return false;
+      return NULL;
     }
+    last_ir = ir;
   }
-  return IsLocalOrArg(orig);
+  return IsLocalOrArg(orig) ? last_ir : NULL;
 }
 
 
@@ -1761,60 +1759,53 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 }
 
 static void
-ReplaceForward(IR *instr, Operand *orig, Operand *replace)
+ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->next) {
     if (IsDummy(ir)) {
       continue;
     }
-    if (ir->opc == OPC_RET || ir->opc == OPC_LABEL) {
-      return;
-    } else if (IsBranch(ir->opc)) {
-      return;
-    }
     if (ir->src == orig) {
       ir->src = replace;
-      if (ir->dst == replace && ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
-	return;
-      }
     }
     if (ir->dst == orig) {
       ir->dst = replace;
     }
+    if (ir == stop_ir) break;
   }
 }
 
-void
+int
 OptimizeMoves(IRList *irl)
 {
-  IR *ir;
-  IR *ir_next;
-  bool change;
+    IR *ir;
+    IR *ir_next;
+    IR *stop_ir;
+    int change;
 
-  do {
-    change = false;
+    change = 0;
     ir = irl->head;
     while (ir != 0) {
       ir_next = ir->next;
       if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
 	if (ir->src == ir->dst) {
 	  DeleteIR(irl, ir);
-	  change = true;
+	  change = 1;
 	} else if (IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
 	  ReplaceBack(ir->prev, ir->src, ir->dst);
 	  DeleteIR(irl, ir);
-	  change = true;
+	  change = 1;
 	}
-	else if (SafeToReplaceForward(ir->next, ir->dst, ir->src)) {
-	  ReplaceForward(ir->next, ir->dst, ir->src);
-	  DeleteIR(irl, ir);
-	  change = true;
+	else if ( 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+            ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
+            DeleteIR(irl, ir);
+            change = 1;
 	}
       }
       ir = ir_next;
     }
-  } while (change);
+    return change;
 }
 
 static bool
@@ -1826,7 +1817,7 @@ HasSideEffects(IR *ir)
     if (ir->flags & (FLAG_WZ|FLAG_WC)) {
         return true;
     }
-    if (IsBranch(ir->opc)) {
+    if (IsBranch(ir)) {
       return true;
     }
     switch (ir->opc) {
@@ -1840,12 +1831,12 @@ HasSideEffects(IR *ir)
     }
 }
 
-void EliminateDeadCode(IRList *irl)
+int EliminateDeadCode(IRList *irl)
 {
-  bool change;
-  IR *ir, *ir_next;
-  do {
-    change = false;
+    int change;
+    IR *ir, *ir_next;
+
+    change = 0;
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
@@ -1856,24 +1847,24 @@ void EliminateDeadCode(IRList *irl)
 	    ir_next = x->next;
 	    if (!IsDummy(x)) {
 	      DeleteIR(irl, x);
-	      change = true;
+	      change = 1;
 	    }
 	    x = ir_next;
 	}
 	/* if the branch is to the next instruction, delete it */
 	if (ir->opc == OPC_JUMP && ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
 	  DeleteIR(irl, ir);
-	  change = true;
+	  change = 1;
 	}
       } else if (!IsDummy(ir)) {
 	if (ir_next && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
-	  change = true;
+	  change = 1;
 	}
       }
       ir = ir_next;
     }
-  } while (change);
+    return change;
 }
 
 static void CheckOpUsage(Operand *op)
@@ -1907,7 +1898,7 @@ void CheckUsage(IRList *irl)
  * returns the number of instructions forward
  * or 0 if not a valid candidate for optimization
  */
-#define MAX_JUMP_OVER 2
+#define MAX_JUMP_OVER 3
 static int IsShortForwardJump(IR *irbase)
 {
   int n = 0;
@@ -1958,49 +1949,24 @@ void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
   }
 }
 
-static void
-MarkLabelIfUnused(IRList *irl, Operand *label)
+int OptimizeShortBranches(IRList *irl)
 {
-  IR *target = 0;
-  IR *ir;
-  for (ir = irl->head; ir; ir = ir->next) {
-    if (!IsDummy(ir)) {
-      if (ir->src == label) return;
-      if (ir->dst == label) {
-	if (ir->opc == OPC_LABEL) {
-	  target = ir; // this is the label we may want to delete
-	} else {
-	  return;
-	}
-      }
+    IR *ir;
+    IR *ir_next;
+    int n;
+    int change = 0;
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        n = IsShortForwardJump(ir);
+        if (n) {
+            ConditionalizeInstructions(ir->next, InvertCond(ir->cond), n);
+            DeleteIR(irl, ir);
+            change++;
+        }
+        ir = ir_next;
     }
-  }
-  if (target) {
-    // we can't actually delete because the caller may hold
-    // a pointer to this label as ir_next
-    // so just mark it as a dummy
-    target->opc = OPC_DEAD;
-  }
-}
-
-void OptimizeShortBranches(IRList *irl)
-{
-  IR *ir;
-  IR *ir_next;
-  int n;
-
-  ir = irl->head;
-  while (ir) {
-    ir_next = ir->next;
-    n = IsShortForwardJump(ir);
-    if (n) {
-      ConditionalizeInstructions(ir->next, InvertCond(ir->cond), n);
-      DeleteIR(irl, ir);
-      /* now see if the label is unused */
-      MarkLabelIfUnused(irl, ir->dst);
-    }
-    ir = ir_next;
-  }
+    return change;
 }
 
 /* return 1 if the instruction can have wz appended and produce a sensible
@@ -2030,13 +1996,14 @@ CanTestZero(int opc)
     }
 }
 
-static void
+static int
 OptimizeCompares(IRList *irl)
 {
     IR *ir;
     IR *ir_next;
     IR *ir_prev;
-
+    int change = 0;
+    
     ir_prev = 0;
     ir = irl->head;
     while (ir) {
@@ -2057,6 +2024,7 @@ OptimizeCompares(IRList *irl)
             {
                 ir_prev->flags |= FLAG_WZ;
                 DeleteIR(irl, ir);
+                change = 1;
                 /* now we may be able to do a further optimization,
                    if ir_prev is a sub and the next instruction is a jmp
                 */
@@ -2078,10 +2046,10 @@ OptimizeCompares(IRList *irl)
         ir_prev = ir;
         ir = ir_next;
     }
-
+    return change;
 }
 
-static void
+static int
 OptimizeImmediates(IRList *irl)
 {
     IR *ir;
@@ -2111,7 +2079,8 @@ OptimizeImmediates(IRList *irl)
             ir->opc = OPC_ADD;
             ir->src = NewImmediate(-val);
 	}
-    }  
+    }
+    return 0; /* no rescan necessary */
 }
 
 static int
@@ -2122,9 +2091,10 @@ AddSubVal(IR *ir)
     return val;
 }
 
-static void
+static int
 OptimizeAddSub(IRList *irl)
 {
+    int change = 0;
     IR *ir, *ir_next;
     ir = irl->head;
     while (ir) {
@@ -2146,32 +2116,135 @@ OptimizeAddSub(IRList *irl)
                     }
                     ir_next->src = NewImmediate(val);
                     DeleteIR(irl, ir);
+                    change = 1;
                 }
             }
         }
         ir = ir_next;
     }
+    return change;
 }
 
+//
+// assign addresses to instructions
+// these do not have to be exact, just close enough that they
+// can help guide optimization, in particular whether jumps are
+// forward or backward
+//
+void
+AssignTemporaryAddresses(IRList *irl)
+{
+    IR *ir;
+    unsigned addr = 0;
+    for (ir = irl->head; ir; ir = ir->next) {
+        ir->flags &= ~FLAG_OPTIMIZER;
+        ir->addr = addr++;
+        ir->aux = NULL;
+    }
+}
+
+//
+// find out if a label is referenced (perhaps indirectly)
+// if there is a unique jump to it, return a pointer to it
+//
+void
+MarkLabelUses(IRList *irl, IR *irlabel)
+{
+    IR *ir;
+    Operand *label = irlabel->dst;
+    Operand *dst;
+    
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        if (IsBranch(ir)) {
+            if (ir->opc == OPC_DJNZ) {
+                dst = ir->src;
+            } else {
+                dst = ir->dst;
+            }
+            if (dst == label) {
+                ir->aux = irlabel; // record where the jump goes to
+                if (irlabel->flags & FLAG_LABEL_USED) {
+                    // the label has more than one use
+                    irlabel->aux = NULL;
+                } else {
+                    irlabel->flags |= FLAG_LABEL_USED;
+                    irlabel->aux = ir;
+                }
+            }
+        } else if (ir != irlabel) {
+            if (ir->src == label || ir->dst == label) {
+                irlabel->flags |= FLAG_LABEL_USED;
+                irlabel->aux = NULL;
+            }
+        }
+    }
+}
+
+static bool
+IsTemporaryLabel(Operand *op)
+{
+    const char *name = op->name;
+    if (name && (name[0] == 'L' && name[1] == '_' && isdigit(name[2]))) {
+        while (name[0] && name[1] != '_') {
+            name++;
+        }
+        return name[0]  != 0 && name[1] == '_';
+    }
+    return false;
+}
+
+//
+// check label usage
+//
+int
+CheckLabelUsage(IRList *irl)
+{
+    IR *ir, *ir_next;
+    ir = irl->head;
+    int change = 0;
+    
+    while (ir) {
+        ir_next = ir->next;
+        if (ir->opc == OPC_LABEL) {
+            MarkLabelUses(irl, ir);
+            if (IsTemporaryLabel(ir->dst) && !(ir->flags & FLAG_LABEL_USED)) {
+                DeleteIR(irl, ir);
+                change = 1;
+            }
+        }
+        ir = ir_next;
+    }
+
+    return change;
+}
+
+//
+// optimize
+//
 void
 OptimizeIRLocal(IRList *irl)
 {
-  if (gl_optimize_flags & OPT_NO_ASM) return;
-  if (!irl->head) return;
-  EliminateDeadCode(irl);
-  OptimizeMoves(irl);
-  OptimizeImmediates(irl);
-  OptimizeShortBranches(irl);
-  OptimizeAddSub(irl);
-  OptimizeCompares(irl);
+    int change;
+    
+    if (gl_optimize_flags & OPT_NO_ASM) return;
+    if (!irl->head) return;
+    do {
+        change = 0;
+        AssignTemporaryAddresses(irl);
+        change |= CheckLabelUsage(irl);
+        change |= EliminateDeadCode(irl);
+        change |= OptimizeMoves(irl);
+        change |= OptimizeImmediates(irl);
+        change |= OptimizeShortBranches(irl);
+        change |= OptimizeAddSub(irl);
+        change |= OptimizeCompares(irl);
+    } while (change != 0);
 }
 void
 OptimizeIRGlobal(IRList *irl)
 {
-  OptimizeIRLocal(irl);
   CheckUsage(irl);
-  // removing unused labels may have exposed additional optimizations
-  OptimizeIRLocal(irl);
 }
 
 /*
