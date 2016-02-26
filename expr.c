@@ -1875,6 +1875,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
 {
     Symbol *sym, *objsym;
     ExprVal lval, rval;
+    ExprVal aval;
     int reportError = (valid == NULL);
     ExprVal ret;
     int kind;
@@ -1967,6 +1968,27 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return lval;
         rval = EvalExpr(expr->right, flags, valid);
         return EvalOperator(expr->d.ival, lval, rval, valid);
+    case AST_CONDRESULT:
+        aval = EvalExpr(expr->left, flags, valid);
+        if (!expr->right || expr->right->kind != AST_THENELSE)
+            goto invalid_const_expr;
+        if (aval.val) {
+            return EvalExpr(expr->right->left, flags, valid);
+        } else {
+            return EvalExpr(expr->right->right, flags, valid);
+        }
+    case AST_ISBETWEEN:
+        if (!expr->right || expr->right->kind != AST_RANGE) {
+            goto invalid_const_expr;
+        } else {
+            ExprVal isge, isle;
+            aval = EvalExpr(expr->left, flags, valid);
+            lval = EvalExpr(expr->right->left, flags, valid);
+            rval = EvalExpr(expr->right->right, flags, valid);
+            isge = EvalOperator(T_LE, lval, aval, valid);
+            isle = EvalOperator(T_LE, aval, rval, valid);
+            return EvalOperator(T_AND, isge, isle, valid);
+        }
     case AST_HWREG:
         if (flags & PASM_FLAG) {
             HwReg *hw = expr->d.ptr;
@@ -1974,7 +1996,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
         if (reportError)
             ERROR(expr, "Used hardware register where constant is expected");
-        else
+        else if (valid)
             *valid = 0;
         break;
     case AST_ADDROF:
@@ -2006,12 +2028,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
         break;
     default:
-        if (reportError)
-            ERROR(expr, "Bad constant expression");
-        else
-            *valid = 0;
         break;
     }
+invalid_const_expr:
+    if (reportError)
+        ERROR(expr, "Bad constant expression");
+    else
+        *valid = 0;
     return intExpr(0);
 }
 

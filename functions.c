@@ -783,6 +783,7 @@ TransformCountRepeat(AST *ast)
     AST *stepstmt;
     AST *forast;
     AST *body;
+    AST *initvar = NULL;
     
     int negstep = 0;
     int needsteptest = 1;
@@ -861,8 +862,14 @@ TransformCountRepeat(AST *ast)
         AddLocalVariable(curfunc, loopvar);
     }
 
-    initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
-    
+    if (!IsConstExpr(fromval)) {
+        initvar = AstTempVariable("_start_");
+        AddLocalVariable(curfunc, initvar);
+        initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
+    } else {
+        initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
+        initvar = fromval;
+    }
     /* set the limit variable */
     if (IsConstExpr(toval)) {
         if (gl_expand_constants) {
@@ -948,7 +955,9 @@ TransformCountRepeat(AST *ast)
     } else if (IsConstExpr(loopright)) {
         condtest = loopleft;
     } else {
-        condtest = AstOperator(T_OR, loopleft, loopright);
+        // condtest = AstOperator(T_OR, loopleft, loopright);
+        // use the AST_BETWEEN operator for better code
+        condtest = NewAST(AST_ISBETWEEN, loopvar, NewAST(AST_RANGE, initvar, limit));
         /* the loop has to execute at least once */
         if (gl_outcode == OUTCODE_C || gl_outcode == OUTCODE_CPP) {
             condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
