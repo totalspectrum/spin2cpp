@@ -1647,7 +1647,7 @@ IsDeadAfter(IR *instr, Operand *op)
       if (op->kind == REG_ARG) {
 	return false;
       }
-    } else if (IsBranch(ir->opc) && !JumpIsAfter(instr, ir)) {
+    } else if (IsBranch(ir->opc)) {
       return false;
     }
     if (ir->src == op) {
