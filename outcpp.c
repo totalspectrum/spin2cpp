@@ -384,11 +384,29 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
 static void
 PrintMacros(FILE *f, ParserState *parse)
 {
+    bool needsIfdef = false;
+    bool needsInline = false;
     if (gl_nospin)
         return;
+    if (gl_ccode) {
+      needsIfdef = true;
+      needsInline = true;
+    }
+    if (parse->needsBitEncode
+	  || parse->needsMinMax
+	  || parse->needsRotate
+	  || parse->needsShr
+	  || parse->needsLookup
+	  || parse->needsLookdown)
+      {
+	needsInline = true;
+      }
 
-    fprintf(f, "#ifdef __GNUC__\n");
-    fprintf(f, "#define INLINE__ static inline\n");
+    if (needsIfdef) {
+      fprintf(f, "#ifdef __GNUC__\n");
+    }
+
+    if (needsInline) fprintf(f, "#define INLINE__ static inline\n");
     if (parse->needsYield) {
         // old way
         //fprintf(f, "#include <sys/thread.h>\n");
@@ -402,55 +420,62 @@ PrintMacros(FILE *f, ParserState *parse)
     if (parse->needsBitEncode) {
         fprintf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
     }
-    fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
-
-    fprintf(f, "#else\n");
-
-    fprintf(f, "#define INLINE__ static\n");
-    fprintf(f, "static int32_t tmp__;\n");
-    fprintf(f, "#define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)\n");
-
-    if (parse->needsYield) {
-        fprintf(f, "#define Yield__()\n");
+    if (parse->needsPosteffect) {
+        fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
     }
-    if (gl_ccode) {
-        fprintf(f, "#define waitcnt(n) _waitcnt(n)\n");
-        if (parse->needsLockFuncs) {
-            fprintf(f, "#define locknew() _locknew()\n");
-            fprintf(f, "#define lockret(i) _lockret(i)\n");
-            fprintf(f, "#define lockset(i) _lockset(i)\n");
-            fprintf(f, "#define lockclr(i) _lockclr(i)\n");
-        }
-        fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
-        fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
-        fprintf(f, "#define cogstop(i) _cogstop(i)\n");
-        if (parse->needsHighmult) {
-            fprintf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
-            fprintf(f, "  int sign = (a^b)>>31;\n");
-            fprintf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
-            fprintf(f, "  uint32_t ub = b < 0 ? -b : b;\n");
-            fprintf(f, "  uint32_t rhi = 0, rlo = 0;\n");
-            fprintf(f, "  int i;\n");
-            fprintf(f, "  for (i = 0; i < 32; i++) {\n");
-            fprintf(f, "    rhi = (rhi << 1) | (rlo >> 31);\n");
-            fprintf(f, "    rlo = rlo << 1;\n");
-            fprintf(f, "    if (ua >> 31) {rlo += ub; if (rlo < ub) rhi++;}\n");
-            fprintf(f, "    ua = ua<<1;\n");
-            fprintf(f, "  }\n");
-            fprintf(f, "  if (sign) { rhi = -rhi; rhi -= (rlo != 0); }\n");
-            fprintf(f, "  return rhi;\n");
-            fprintf(f, "}\n");
-        }
-        if (parse->needsBitEncode) {
-            fprintf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
-            fprintf(f, "  int r=0;\n");
-            fprintf(f, "  while (a != 0) { a = a>>1; r++; }\n");
-            fprintf(f, "  return r;\n");
-            fprintf(f, "}\n");
-        }
+    if (needsIfdef) 
+    {
+	fprintf(f, "#else\n");
+
+	if (needsInline) fprintf(f, "#define INLINE__ static\n");
+	if (parse->needsPosteffect) {
+	  fprintf(f, "static int32_t tmp__;\n");
+	  fprintf(f, "#define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)\n");
+	}
+
+	if (parse->needsYield) {
+	  fprintf(f, "#define Yield__()\n");
+	}
+	if (gl_ccode) {
+	  fprintf(f, "#define waitcnt(n) _waitcnt(n)\n");
+	  if (parse->needsLockFuncs) {
+              fprintf(f, "#define locknew() _locknew()\n");
+              fprintf(f, "#define lockret(i) _lockret(i)\n");
+              fprintf(f, "#define lockset(i) _lockset(i)\n");
+              fprintf(f, "#define lockclr(i) _lockclr(i)\n");
+	  }
+	  fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
+	  fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
+	  fprintf(f, "#define cogstop(i) _cogstop(i)\n");
+	  if (parse->needsHighmult) {
+              fprintf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
+	      fprintf(f, "  int sign = (a^b)>>31;\n");
+	      fprintf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
+	      fprintf(f, "  uint32_t ub = b < 0 ? -b : b;\n");
+	      fprintf(f, "  uint32_t rhi = 0, rlo = 0;\n");
+	      fprintf(f, "  int i;\n");
+	      fprintf(f, "  for (i = 0; i < 32; i++) {\n");
+	      fprintf(f, "    rhi = (rhi << 1) | (rlo >> 31);\n");
+	      fprintf(f, "    rlo = rlo << 1;\n");
+	      fprintf(f, "    if (ua >> 31) {rlo += ub; if (rlo < ub) rhi++;}\n");
+	      fprintf(f, "    ua = ua<<1;\n");
+	      fprintf(f, "  }\n");
+	      fprintf(f, "  if (sign) { rhi = -rhi; rhi -= (rlo != 0); }\n");
+	      fprintf(f, "  return rhi;\n");
+	      fprintf(f, "}\n");
+	  }
+	  if (parse->needsBitEncode) {
+              fprintf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
+	      fprintf(f, "  int r=0;\n");
+	      fprintf(f, "  while (a != 0) { a = a>>1; r++; }\n");
+	      fprintf(f, "  return r;\n");
+	      fprintf(f, "}\n");
+	  }
+	}
+	
+        fprintf(f, "#endif\n");
+        fprintf(f, "\n");
     }
-    fprintf(f, "#endif\n");
-    fprintf(f, "\n");
     if (parse->needsMinMax) {
         fprintf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
         fprintf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 

@@ -211,6 +211,7 @@ struct parserstate {
     char *datname;     /* the name of the dat section (normally "dat") */
 
     /* flags for emitting macros */
+    char needsPosteffect;
     char needsMinMax;
     char needsRotate;
     char needsShr;

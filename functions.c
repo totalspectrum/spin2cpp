@@ -1762,6 +1762,13 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, 0);
         break;
     }
+    case AST_POSTEFFECT:
+        if (level != 1 && current) {
+	    current->needsPosteffect = 1;
+	}
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+	break;
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
