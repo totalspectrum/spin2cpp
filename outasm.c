@@ -2003,6 +2003,46 @@ CanTestZero(int opc)
     }
 }
 
+//
+// find the previous instruction that sets a particular operand
+// used for compares
+// returns NULL if we cannot
+//
+static IR*
+FindPrevSetterForCompare(IR *irl, Operand *dst)
+{
+    IR *ir;
+
+    for (ir = irl->prev; ir; ir = ir->prev) {
+        if (IsDummy(ir)) {
+            continue;
+        }
+        if (ir->opc == OPC_LABEL) {
+            // we may have branched to here from somewhere
+            // else that did the set
+            return NULL;
+        }
+        if (ir->flags & FLAG_WZ) {
+            // flags are messed up here, so we can't go back any further
+            return NULL;
+        }
+        if (ir->dst == dst && InstrSetsDst(ir->opc)) {
+            if (ir->cond != COND_TRUE) {
+                // cannot be sure that we set the value here,
+                // since the set is conditional
+                return NULL;
+            }
+            return ir;
+        }
+    }
+    return NULL;
+}
+
+//
+// Optimize compares with 0by changing a previous instruction to set
+// flags instead
+//
+
 static int
 OptimizeCompares(IRList *irl)
 {
@@ -2023,11 +2063,10 @@ OptimizeCompares(IRList *irl)
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
 	    && ir->src->kind == IMM_INT && ir->src->val == 0
-            && ir_prev
-            && ir_prev->dst == ir->dst
             )
         {
-            if (ir_prev->cond == COND_TRUE
+            ir_prev = FindPrevSetterForCompare(ir, ir->dst);
+            if (ir_prev
                 && (0 == (ir_prev->flags & (FLAG_WZ|FLAG_WC)))
                 && CanTestZero(ir_prev->opc))
             {
