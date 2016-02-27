@@ -196,6 +196,12 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     case COND_LE:
       flexbuf_addstr(fb, " if_le");
       break;
+    case COND_C:
+      flexbuf_addstr(fb, " if_c");
+      break;
+    case COND_NC:
+      flexbuf_addstr(fb, " if_nc");
+      break;
     default:
       flexbuf_addstr(fb, " if_??");
       break;

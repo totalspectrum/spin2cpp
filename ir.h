@@ -77,7 +77,10 @@ typedef enum IRCond {
     COND_EQ,
     COND_NE,
     COND_LE,
-    COND_GT
+    COND_GT,
+
+    COND_C,
+    COND_NC,
 } IRCond;
 
 struct IR {
