@@ -3,9 +3,9 @@ DAT
 blah
 	mov	blah_tmp001_, #0
 	cmps	blah_x_, #0 wc,wz
- if_ge	jmp	#L_001_
+ if_ae	jmp	#L_001_
 	cmps	blah_y_, #0 wc,wz
- if_lt	not	blah_tmp001_, blah_tmp001_
+ if_b	not	blah_tmp001_, blah_tmp001_
 L_001_
 	mov	result_, blah_tmp001_
 blah_ret

@@ -5,7 +5,7 @@ waitcycles
 	add	waitcycles_end_, waitcycles_n_
 L_001_
 	cmps	CNT, waitcycles_end_ wc,wz
- if_lt	jmp	#L_001_
+ if_b	jmp	#L_001_
 waitcycles_ret
 	ret
 

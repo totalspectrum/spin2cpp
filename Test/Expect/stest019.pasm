@@ -6,7 +6,7 @@ L_001_
 	mov	OUTA, count_i_
 	add	count_i_, #1
 	cmps	count_i_, #4 wc,wz
- if_lt	jmp	#L_001_
+ if_b	jmp	#L_001_
 count_ret
 	ret
 

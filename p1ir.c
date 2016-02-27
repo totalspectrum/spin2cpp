@@ -185,16 +185,16 @@ PrintCond(struct flexbuf *fb, IRCond cond)
       flexbuf_addstr(fb, " if_ne");
       break;
     case COND_LT:
-      flexbuf_addstr(fb, " if_lt");
+      flexbuf_addstr(fb, " if_b");
       break;
     case COND_GE:
-      flexbuf_addstr(fb, " if_ge");
+      flexbuf_addstr(fb, " if_ae");
       break;
     case COND_GT:
-      flexbuf_addstr(fb, " if_gt");
+      flexbuf_addstr(fb, " if_a");
       break;
     case COND_LE:
-      flexbuf_addstr(fb, " if_le");
+      flexbuf_addstr(fb, " if_be");
       break;
     case COND_C:
       flexbuf_addstr(fb, " if_c");

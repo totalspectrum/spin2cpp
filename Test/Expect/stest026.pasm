@@ -3,7 +3,7 @@ DAT
 test1
 	mov	test1_tmp001_, #0
 	cmps	test1_x_, test1_y_ wc,wz
- if_lt	not	test1_tmp001_, test1_tmp001_
+ if_b	not	test1_tmp001_, test1_tmp001_
 	mov	result_, test1_tmp001_
 test1_ret
 	ret
