@@ -5,37 +5,37 @@ ez_pulse_in
 	shl	ez_pulse_in_r_, ez_pulse_in_pin_
 	waitpne	ez_pulse_in_r_, ez_pulse_in_r_
 	waitpeq	ez_pulse_in_r_, ez_pulse_in_r_
-	neg	mula_, CNT
+	neg	muldiva_, CNT
 	waitpne	ez_pulse_in_r_, ez_pulse_in_r_
-	add	mula_, CNT
-	mov	mulb_, imm_1000000_
+	add	muldiva_, CNT
+	mov	muldivb_, imm_1000000_
 	call	#divide_
-	mov	result_, mula_
+	mov	result_, muldiva_
 ez_pulse_in_ret
 	ret
 
 divide_
 	mov	result_, #0
-	mov	itmp2_, mula_
-	xor	itmp2_, mulb_
-	abs	mula_, mula_
-	abs	mulb_, mulb_ wz,wc
+	mov	itmp2_, muldiva_
+	xor	itmp2_, muldivb_
+	abs	muldiva_, muldiva_
+	abs	muldivb_, muldivb_ wz,wc
  if_z	jmp	#divexit_
 	muxc	itmp2_, #1
 	mov	itmp1_, #32
 divlp1_
-	shr	mulb_,#1 wc,wz
+	shr	muldivb_,#1 wc,wz
 	rcr	result_,#1
  if_nz	djnz	itmp1_,#divlp1_
 divlp2_
-	cmpsub	mula_,result_ wc
-	rcl	mulb_,#1
+	cmpsub	muldiva_,result_ wc
+	rcl	muldivb_,#1
 	shr	result_,#1
 	djnz	itmp1_,#divlp2_
 	cmps	itmp2_, #0 wc,wz
- if_b	neg	mula_, mula_
+ if_b	neg	muldiva_, muldiva_
 	test	itmp2, #1
- if_nz	neg	mulb_, mulb_
+ if_nz	neg	muldivb_, muldivb_
 divide__ret
 	ret
 
@@ -49,9 +49,9 @@ itmp1_
 	long	0
 itmp2_
 	long	0
-mula_
+muldiva_
 	long	0
-mulb_
+muldivb_
 	long	0
 result_
 	long	0

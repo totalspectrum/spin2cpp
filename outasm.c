@@ -419,8 +419,8 @@ CompileMul(IRList *irl, AST *expr, int gethi)
 
   if (!mulfunc) {
     mulfunc = NewOperand(IMM_LABEL, "multiply_", 0);
-    mula = GetGlobal(REG_ARG, "mula_", 0);
-    mulb = GetGlobal(REG_ARG, "mulb_", 0);
+    mula = GetGlobal(REG_ARG, "muldiva_", 0);
+    mulb = GetGlobal(REG_ARG, "muldivb_", 0);
   }
   EmitMove(irl, mula, lhs);
   EmitMove(irl, mulb, rhs);
@@ -442,8 +442,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
 
   if (!divfunc) {
     divfunc = NewOperand(IMM_LABEL, "divide_", 0);
-    diva = GetGlobal(REG_ARG, "mula_", 0);
-    divb = GetGlobal(REG_ARG, "mulb_", 0);
+    diva = GetGlobal(REG_ARG, "muldiva_", 0);
+    divb = GetGlobal(REG_ARG, "muldivb_", 0);
   }
   EmitMove(irl, diva, lhs);
   EmitMove(irl, divb, rhs);
@@ -2369,24 +2369,24 @@ OptimizeIRGlobal(IRList *irl)
  */
 static const char *builtin_mul =
 "\nmultiply_\n"
-"\tmov\titmp2_, mula_\n"
-"\txor\titmp2_, mulb_\n"
-"\tabs\tmula_, mula_\n"
-"\tabs\tmulb_, mulb_\n"
+"\tmov\titmp2_, muldiva_\n"
+"\txor\titmp2_, muldivb_\n"
+"\tabs\tmuldiva_, muldiva_\n"
+"\tabs\tmuldivb_, muldivb_\n"
 "\tmov\tresult_, #0\n"
 "\tmov\titmp1_, #32\n"
-"\tshr\tmula_, #1 wc\n"
+"\tshr\tmuldiva_, #1 wc\n"
 "mul_lp_\n"
-" if_c\tadd\tresult_, mulb_ wc\n"
+" if_c\tadd\tresult_, muldivb_ wc\n"
 "\trcr\tresult_, #1 wc\n"
-"\trcr\tmula_, #1 wc\n"
+"\trcr\tmuldiva_, #1 wc\n"
 "\tdjnz\titmp1_, #mul_lp_\n"
 
 "\tshr\titmp2_, #31 wz\n"
 " if_nz\tneg\tresult_, result_\n"
-" if_nz\tneg\tmula_, mula_ wz\n"
+" if_nz\tneg\tmuldiva_, muldiva_ wz\n"
 " if_nz\tsub\tresult_, #1\n"
-"\tmov\tmulb_, result_\n"
+"\tmov\tmuldivb_, result_\n"
 "multiply__ret\n"
 "\tret\n"
 ;
@@ -2394,29 +2394,29 @@ static const char *builtin_mul =
 static const char *builtin_div =
 "\ndivide_\n"
     "\tmov\tresult_, #0\n"
-    "\tmov\titmp2_, mula_\n"
-    "\txor\titmp2_, mulb_\n"
-    "\tabs\tmula_, mula_\n"
-    "\tabs\tmulb_, mulb_ wz,wc\n"
+    "\tmov\titmp2_, muldiva_\n"
+    "\txor\titmp2_, muldivb_\n"
+    "\tabs\tmuldiva_, muldiva_\n"
+    "\tabs\tmuldivb_, muldivb_ wz,wc\n"
     " if_z\tjmp\t#divexit_\n"
     "\tmuxc\titmp2_, #1\n"
     "\tmov\titmp1_, #32\n"
 
 "divlp1_\n"
-    "\tshr\tmulb_,#1 wc,wz\n"
+    "\tshr\tmuldivb_,#1 wc,wz\n"
     "\trcr\tresult_,#1\n"
     " if_nz\tdjnz\titmp1_,#divlp1_\n"
 
 "divlp2_\n"
-    "\tcmpsub\tmula_,result_ wc\n"
-    "\trcl\tmulb_,#1\n"
+    "\tcmpsub\tmuldiva_,result_ wc\n"
+    "\trcl\tmuldivb_,#1\n"
     "\tshr\tresult_,#1\n"
     "\tdjnz\titmp1_,#divlp2_\n"
 
     "\tcmps\titmp2_, #0 wc,wz\n"
-    " if_b\tneg\tmula_, mula_\n"
+    " if_b\tneg\tmuldiva_, muldiva_\n"
     "\ttest\titmp2, #1\n"
-    " if_nz\tneg\tmulb_, mulb_\n"
+    " if_nz\tneg\tmuldivb_, muldivb_\n"
 "divide__ret\n"
     "\tret\n"
 ;
