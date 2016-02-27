@@ -1643,7 +1643,18 @@ IsDeadAfter(IR *instr, Operand *op)
 	return false;
       }
     } else if (IsBranch(ir)) {
-      return false;
+        // FIXME
+        // special case: sometimes we add .dead notes right after a branch
+        // so look here in case that happened
+        IR *irdead;
+        irdead = ir->next;
+        while (irdead && irdead->opc == OPC_DEAD) {
+            if (irdead->dst == op) {
+                return true;
+            }
+            irdead = irdead->next;
+        }
+        return false;
     }
     if (ir->src == op) {
       return false;
