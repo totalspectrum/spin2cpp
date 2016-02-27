@@ -119,6 +119,7 @@ enum Operandkind {
     REG_LOCAL, // for a "local" register (only live inside function)
     REG_ARG,   // for an argument to a function
 
+#define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_ARG)
     // labels in memory
     HUB_LABEL,
     

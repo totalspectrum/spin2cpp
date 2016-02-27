@@ -1765,6 +1765,7 @@ doSpinTransform(AST **astptr, int level)
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
+            int line = ast->line;
             switch (ast->d.ival) {
             case T_NEGATE:
             case T_ABS:
@@ -1774,6 +1775,17 @@ doSpinTransform(AST **astptr, int level)
             case T_ENCODE:
                 lhsast = DupAST(ast->right);
                 *astptr = ast = AstAssign(T_ASSIGN, lhsast, ast);
+                ast->line = lhsast->line = line;
+                break;
+            }
+        } else {
+            AST *lhsast;
+            switch (ast->d.ival) {
+            case T_DECODE:
+                lhsast = AstOperator(T_SHL, AstInteger(1), ast->right);
+                lhsast->line = ast->line;
+                *astptr = ast = lhsast;
+                break;
             }
         }
         /* fall through */

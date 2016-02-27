@@ -1329,6 +1329,41 @@ static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
     PopQuitNext();
 }
 
+static void CompileWait(IRList *irl, AST *origast)
+{
+    AST *ast = origast;
+    AST *arg0, *arg1, *arg2;
+    int opc;
+    Operand *lhs, *rhs;
+    Operand *tmp;
+
+    ast = origast->left; // pick up argument list
+    arg0 = ast->left; ast = ast->right;
+    arg1 = ast->left; ast = ast->right;
+    arg2 = ast->left;
+    if (EvalConstExpr(arg2) != 0) {
+        ERROR(ast, "wait command only works on port 0");
+        return;
+    }
+    if (origast->kind == AST_WAITPEQ) {
+        opc = OPC_WAITPEQ;
+    } else if (origast->kind == AST_WAITPNE) {
+        opc = OPC_WAITPNE;
+    } else {
+        ERROR(ast, "Internal error, unexpected wait");
+        return;
+    }
+    lhs = CompileExpression(irl, arg0);
+    if (!IsRegister(lhs->kind)) {
+        tmp = NewFunctionTempRegister();
+        EmitMove(irl, tmp, lhs);
+        lhs = tmp;
+    }
+    rhs = CompileExpression(irl, arg1);
+    rhs = Dereference(irl, rhs);
+    EmitOp2(irl, opc, lhs, rhs);
+}
+
 static void EmitStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -1365,6 +1400,10 @@ static void EmitStatement(IRList *irl, AST *ast)
         }
         op = CompileExpression(irl, retval);
         EmitOp2(irl, OPC_WAITCNT, op, NewImmediate(0));
+        break;
+    case AST_WAITPEQ:
+    case AST_WAITPNE:
+        CompileWait(irl, ast);
         break;
     case AST_WHILE:
         toploop = NewLabel();
@@ -1839,6 +1878,9 @@ HasSideEffects(IR *ir)
       return true;
     }
     switch (ir->opc) {
+    case OPC_WAITPEQ:
+    case OPC_WAITPNE:
+    case OPC_WAITVID:
     case OPC_WAITCNT:
     case OPC_WRBYTE:
     case OPC_WRLONG:

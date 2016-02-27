@@ -22,6 +22,6 @@ int32_t test71::Blah(void)
 
 void test71::Foo(int32_t M, int32_t N)
 {
-  OUTA = OUTA | ((1<<N));
+  OUTA = OUTA | (1 << N);
 }
 
