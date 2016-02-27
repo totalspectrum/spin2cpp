@@ -709,7 +709,8 @@ CompileBasicOperator(IRList *irl, AST *expr)
   Operand *left;
   Operand *right;
   Operand *temp = NewFunctionTempRegister();
-  
+  IR *ir;
+
   switch(op) {
   case '+':
   case '-':
@@ -736,6 +737,18 @@ CompileBasicOperator(IRList *irl, AST *expr)
     right = CompileExpression(irl, rhs);
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
+    return temp;
+  case T_ENCODE:
+    right = CompileExpression(irl, rhs);
+    left = NewFunctionTempRegister();
+    EmitMove(irl, left, right);
+    EmitMove(irl, temp, NewImmediate(32));
+    right = NewLabel();
+    EmitLabel(irl, right);
+    ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
+    ir->flags |= FLAG_WC;
+    ir = EmitOp2(irl, OPC_DJNZ, temp, right);
+    ir->cond = COND_NC;
     return temp;
   case T_NOT:
   case T_AND:
