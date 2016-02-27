@@ -1715,6 +1715,9 @@ InstrSetsDst(int opc)
   switch (opc) {
   case OPC_CMP:
   case OPC_CMPS:
+  case OPC_WAITPEQ:
+  case OPC_WAITPNE:
+  case OPC_WAITVID:
   case OPC_LABEL:
     return false;
   default:
