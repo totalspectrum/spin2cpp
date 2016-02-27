@@ -156,6 +156,10 @@ proc doAbout {} {
 }
 
 proc doHelp {} {
+    if {[winfo exists .help]} {
+	raise .help
+	return
+    }
     toplevel .help
     frame .help.f
     text .help.f.txt -wrap none -yscroll { .help.f.v set } -xscroll { .help.f.h set }
@@ -199,6 +203,7 @@ proc setHighlightingSpin {w} {
 menu .mbar
 . configure -menu .mbar
 menu .mbar.file -tearoff 0
+menu .mbar.edit -tearoff 0
 menu .mbar.options -tearoff 0
 menu .mbar.help -tearoff 0
 
@@ -208,6 +213,11 @@ menu .mbar.help -tearoff 0
 .mbar.file add command -label "Save Spin As..." -command { saveSpinAs }
 .mbar.file add separator
 .mbar.file add command -label Exit -accelerator "^Q" -command { exit }
+
+.mbar add cascade -menu .mbar.edit -label Edit
+.mbar.edit add command -label "Cut" -accelerator "^X" -command {event generate [focus] <<Cut>>}
+.mbar.edit add command -label "Copy" -accelerator "^C" -command {event generate [focus] <<Copy>>}
+.mbar.edit add command -label "Paste" -accelerator "^V" -command {event generate [focus] <<Paste>>}
 
 .mbar add cascade -menu .mbar.options -label Options
 .mbar.options add radiobutton -label "Pasm Output" -variable radioOut -value 1 -command { resetOutputVars }
