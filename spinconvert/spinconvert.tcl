@@ -2,7 +2,7 @@ package require Tk
 package require ctext
 package require autoscroll
 
-set COMPILE ./bin/spin2cpp
+set COMPILE "./bin/spin2cpp --noheader"
 set OUTPUT "--asm"
 set EXT ".pasm"
 set radioOut 1
@@ -81,9 +81,9 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile\n"
-    .bot.txt replace 1.0 end $cmdline
-    if {[catch {exec -ignorestderr $COMPILE $OUTPUT -o $PASMFILE $spinfile 2>@1} errout options]} {
+    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile"
+    .bot.txt replace 1.0 end "$cmdline\n"
+    if {[catch {exec -ignorestderr {*}$cmdline 2>@1} errout options]} {
 	set status 1
     }
     .bot.txt insert 2.0 $errout
@@ -244,6 +244,8 @@ grid .bot -column 0 -row 1 -columnspan 2 -sticky nsew
 scrollbar .orig.v -orient vertical -command {.orig.txt yview}
 scrollbar .orig.h -orient horizontal -command {.orig.txt xview}
 ctext .orig.txt -wrap none -xscroll {.orig.h set} -yscrollcommand {.orig.v set}
+label .orig.label -background DarkGrey -foreground white -text "Original Spin"
+grid .orig.label       -sticky nsew
 grid .orig.txt .orig.v -sticky nsew
 grid .orig.h           -sticky nsew
 grid rowconfigure .orig .orig.txt -weight 1
@@ -253,8 +255,9 @@ grid columnconfigure .orig .orig.txt -weight 1
 scrollbar .out.v -orient vertical -command {.out.txt yview}
 scrollbar .out.h -orient horizontal -command {.out.txt xview}
 text .out.txt -wrap none -xscroll {.out.h set} -yscroll {.out.v set}
-
-grid .out.txt .out.v -sticky nsew
+label .out.label -background DarkGrey -foreground white -text "Converted Code"
+grid .out.label       -sticky nsew
+grid .out.txt .out.v  -sticky nsew
 grid .out.h           -sticky nsew
 grid rowconfigure .out .out.txt -weight 1
 grid columnconfigure .out .out.txt -weight 1
@@ -268,10 +271,6 @@ grid .bot.h -sticky nsew
 grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
-
-.orig.txt insert 1.0 "'' Original Spin code"
-.out.txt insert 1.0 "'' Converted file"
-.bot.txt insert 1.0 "Compilation output goes here"
 
 bind . <Control-o> { loadNewSpinFile }
 bind . <Control-s> { saveSpinFile }
