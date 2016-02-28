@@ -270,7 +270,7 @@ doDeclareFunction(AST *funcblock)
 }
 
 void
-DeclareFunctions(ParserState *P)
+DeclareFunctions(Module *P)
 {
     AST *ast;
 
@@ -484,7 +484,7 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
 }
 
 int
-PrintPublicFunctionDecls(FILE *f, ParserState *parse)
+PrintPublicFunctionDecls(FILE *f, Module *parse)
 {
     Function *pf;
     int n = 0;
@@ -499,7 +499,7 @@ PrintPublicFunctionDecls(FILE *f, ParserState *parse)
 }
 
 int
-PrintPrivateFunctionDecls(FILE *f, ParserState *parse)
+PrintPrivateFunctionDecls(FILE *f, Module *parse)
 {
     Function *pf;
     int n = 0;
@@ -1195,7 +1195,7 @@ PrintFunctionStmts(FILE *f, Function *func)
 
 
 void
-PrintFunctionBodies(FILE *f, ParserState *parse)
+PrintFunctionBodies(FILE *f, Module *parse)
 {
     Function *pf;
 
@@ -1477,7 +1477,7 @@ CheckFunctionCalls(AST *ast)
  * do basic processing of functions
  */
 void
-ProcessFuncs(ParserState *P)
+ProcessFuncs(Module *P)
 {
     Function *pf;
     int sawreturn = 0;
@@ -1518,7 +1518,7 @@ ProcessFuncs(ParserState *P)
  * main entry for type checking
  */
 int
-InferTypes(ParserState *P)
+InferTypes(Module *P)
 {
     Function *pf;
     int changes = 0;
@@ -1577,7 +1577,7 @@ MarkUsedBody(AST *body)
 void
 MarkUsed(Function *f)
 {
-    ParserState *oldcurrent;
+    Module *oldcurrent;
     if (!f || f->is_used) {
         return;
     }
@@ -1600,7 +1600,7 @@ SetFunctionType(Function *f, AST *typ)
 bool
 IsCalledFrom(Function *ref, AST *body, int visitRef)
 {
-    ParserState *oldState;
+    Module *oldState;
     Symbol *sym;
     Function *func;
     bool result;
@@ -1804,7 +1804,7 @@ doSpinTransform(AST **astptr, int level)
 }
 
 void
-SpinTransform(ParserState *Q)
+SpinTransform(Module *Q)
 {
     Function *func;
     Function *savefunc = curfunc;

@@ -19,7 +19,7 @@
  * if "classname" is TRUE, then add the class name as well
  */
 static void
-PrintDatArray(FILE *f, ParserState *parse, const char *tail, bool classname)
+PrintDatArray(FILE *f, Module *parse, const char *tail, bool classname)
 {
     char *datname = parse->datname;
 
@@ -148,7 +148,7 @@ PrintConstantDecl(FILE *f, AST *ast)
 }
 
 static int
-PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int flags)
+PrintAllVarListsOfType(FILE *f, Module *parse, AST *type, int flags)
 {
     AST *ast;
     AST *upper;
@@ -184,10 +184,10 @@ PrintAllVarListsOfType(FILE *f, ParserState *parse, AST *type, int flags)
 }
 
 static void
-PrintSubHeaders(FILE *f, ParserState *parse)
+PrintSubHeaders(FILE *f, Module *parse)
 {
     AST *ast, *sub;
-    ParserState *objstate;
+    Module *objstate;
     int already_done;
 
     /* include any needed object headers */
@@ -215,7 +215,7 @@ PrintSubHeaders(FILE *f, ParserState *parse)
 }
 
 static void
-PrintAllConstants(FILE *f, ParserState *parse)
+PrintAllConstants(FILE *f, Module *parse)
 {
     AST *ast, *upper;
 
@@ -245,13 +245,13 @@ PrintAllConstants(FILE *f, ParserState *parse)
 
 #if 0
 static void
-PrintObjectRefs(FILE *f, ParserState *parse)
+PrintObjectRefs(FILE *f, Module *parse)
 {
 }
 #endif
 
 static void
-PrintCHeaderFile(FILE *f, ParserState *parse)
+PrintCHeaderFile(FILE *f, Module *parse)
 {
     int n;
     AST *ast;
@@ -280,7 +280,7 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
-        ParserState *P = ast->d.ptr;
+        Module *P = ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
             fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
@@ -315,7 +315,7 @@ PrintCHeaderFile(FILE *f, ParserState *parse)
 }
 
 static void
-PrintCppHeaderFile(FILE *f, ParserState *parse)
+PrintCppHeaderFile(FILE *f, Module *parse)
 {
     AST *ast;
     int flags = PRIVATE;
@@ -339,7 +339,7 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
-        ParserState *P = ast->d.ptr;
+        Module *P = ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
             fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
@@ -382,7 +382,7 @@ PrintCppHeaderFile(FILE *f, ParserState *parse)
 }
 
 static void
-PrintMacros(FILE *f, ParserState *parse)
+PrintMacros(FILE *f, Module *parse)
 {
     bool needsIfdef = false;
     bool needsInline = false;
@@ -595,7 +595,7 @@ PrintMacros(FILE *f, ParserState *parse)
 }
 
 static void
-PrintCppFile(FILE *f, ParserState *parse)
+PrintCppFile(FILE *f, Module *parse)
 {
     /* things we always need */
     if (gl_header) {
@@ -657,7 +657,7 @@ OutputAsmEquate(FILE *f, const char *str, unsigned int value)
 
 // output _clkmode and _clkfreq settings
 void
-OutputClkFreq(FILE *f, ParserState *P)
+OutputClkFreq(FILE *f, Module *P)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = FindSymbol(&P->objsyms, "_clkmode");
@@ -753,11 +753,11 @@ OutputClkFreq(FILE *f, ParserState *P)
 }
 
 void
-OutputCppCode(const char *filename, ParserState *P, int printMain)
+OutputCppCode(const char *filename, Module *P, int printMain)
 {
     FILE *f = NULL;
     char *fname = NULL;
-    ParserState *save;
+    Module *save;
 
     save = current;
     current = P;

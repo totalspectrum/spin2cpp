@@ -28,7 +28,7 @@ static void putlong(FILE *f, unsigned int x)
 }
 
 static void
-OutputSpinHeader(FILE *f, ParserState *P)
+OutputSpinHeader(FILE *f, Module *P)
 {
     unsigned int clkfreq = 80000000;
     unsigned int clkmodeval = 0x6f;
@@ -59,10 +59,10 @@ OutputSpinHeader(FILE *f, ParserState *P)
 }
 
 void
-OutputDatFile(const char *fname, ParserState *P, int prefixBin)
+OutputDatFile(const char *fname, Module *P, int prefixBin)
 {
     FILE *f = NULL;
-    ParserState *save;
+    Module *save;
 
     save = current;
     current = P;
@@ -85,10 +85,10 @@ OutputDatFile(const char *fname, ParserState *P, int prefixBin)
 }
 
 void
-OutputGasFile(const char *fname, ParserState *P)
+OutputGasFile(const char *fname, Module *P)
 {
     FILE *f = NULL;
-    ParserState *save;
+    Module *save;
 
     save = current;
     current = P;

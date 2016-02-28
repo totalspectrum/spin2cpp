@@ -254,7 +254,7 @@ align(unsigned pc, int size)
  * enter a label
  */
 void
-EnterLabel(ParserState *P, AST *origLabel, long offset, long asmpc, AST *ltype)
+EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
 {
     const char *name;
     Label *labelref;
@@ -277,7 +277,7 @@ EnterLabel(ParserState *P, AST *origLabel, long offset, long asmpc, AST *ltype)
  * emit pending labels
  */
 AST *
-emitPendingLabels(ParserState *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype)
+emitPendingLabels(Module *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype)
 {
     while (label) {
         EnterLabel(P, label, pc, asmpc, ltype);
@@ -375,7 +375,7 @@ assembleFile(FILE *f, AST *ast)
 #define INCPC(size)  do { inc = size; asmpc += inc; datoff += inc; } while (0)
 
 void
-DeclareLabels(ParserState *P)
+DeclareLabels(Module *P)
 {
     unsigned asmpc = 0;
     unsigned datoff = 0;
@@ -465,7 +465,7 @@ DeclareLabels(ParserState *P)
  * print out a data block
  */
 void
-PrintDataBlock(FILE *f, ParserState *P, int isBinary)
+PrintDataBlock(FILE *f, Module *P, int isBinary)
 {
     AST *ast;
 
@@ -705,7 +705,7 @@ PrintGasConstantDecl(FILE *f, AST *ast, int inlineAsm)
 }
 
 void
-PrintConstantsGas(FILE *f, ParserState *P, int inlineAsm)
+PrintConstantsGas(FILE *f, Module *P, int inlineAsm)
 {
     AST *upper, *ast;
 
@@ -739,7 +739,7 @@ PrintConstantsGas(FILE *f, ParserState *P, int inlineAsm)
 }
 
 void
-PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm)
+PrintDataBlockForGas(FILE *f, Module *P, int inlineAsm)
 {
     AST *ast;
     int saveState;

@@ -52,7 +52,7 @@ static struct flexbuf regGlobalVars;
 static struct flexbuf hubGlobalVars;
 
 static int
-IsTopLevel(ParserState *P)
+IsTopLevel(Module *P)
 {
     return 1;
 }
@@ -61,7 +61,7 @@ static const char *
 IdentifierLocalName(Function *func, const char *name)
 {
     char temp[1024];
-    ParserState *P = func->parse;
+    Module *P = func->parse;
 
     if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "%s_%s_", func->name, name);
@@ -72,7 +72,7 @@ IdentifierLocalName(Function *func, const char *name)
 }
 
 static const char *
-IdentifierGlobalName(ParserState *P, const char *name)
+IdentifierGlobalName(Module *P, const char *name)
 {
     char temp[1024];
     if (IsTopLevel(P)) {
@@ -116,10 +116,10 @@ Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
 }
 
 void
-OutputAsmCode(const char *fname, ParserState *P)
+OutputAsmCode(const char *fname, Module *P)
 {
     FILE *f = NULL;
-    ParserState *save;
+    Module *save;
     IRList irl;
     const char *asmcode;
     
@@ -349,7 +349,7 @@ NewImmediatePtr(Operand *val)
 Operand *
 GetFunctionTempRegister(Function *f, int n)
 {
-  ParserState *P = f->parse;
+  Module *P = f->parse;
   char buf[1024];
   if (IsTopLevel(P)) {
       snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
@@ -374,7 +374,7 @@ NewFunctionTempRegister()
 Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
-  ParserState *P = func->parse;
+  Module *P = func->parse;
   Symbol *sym;
   sym = LookupSymbolInFunc(func, expr->d.string);
   if (sym) {
@@ -1569,7 +1569,7 @@ void EmitGlobals(IRList *irl)
 }
 
 bool
-CompileToIR(IRList *irl, ParserState *P)
+CompileToIR(IRList *irl, Module *P)
 {
     Function *f;
     IRList funcirl;

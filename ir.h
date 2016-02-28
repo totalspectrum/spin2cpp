@@ -9,7 +9,7 @@
 
 typedef struct IR IR;
 typedef struct Operand Operand;
-typedef struct parserstate ParserState;
+typedef struct modulestate Module;
 
 enum IROpcode {
     OPC_COMMENT,
@@ -148,6 +148,6 @@ struct Operand {
 };
 
 char *IRAssemble(IRList *list);
-bool CompileToIR(IRList *list, ParserState *P);
+bool CompileToIR(IRList *list, Module *P);
 
 #endif

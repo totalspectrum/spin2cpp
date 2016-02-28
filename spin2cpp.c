@@ -39,8 +39,8 @@ extern int yyparse(void);
 
 extern int yydebug;
 
-ParserState *current;
-ParserState *allparse;
+Module *current;
+Module *allparse;
 
 int gl_errors;
 int gl_outcode;
@@ -88,7 +88,7 @@ FindSymbolExact(SymbolTable *S, const char *name)
  * not conflict with any identifier or C keyword/function
  */
 static void
-makeClassNameSafe(ParserState *P)
+makeClassNameSafe(Module *P)
 {
     // check for conflict with C reserved word */
     if ( Is_C_Reserved(P->classname) 
@@ -111,10 +111,10 @@ makeClassNameSafe(ParserState *P)
 /*
  * allocate a new parser state
  */ 
-ParserState *
-NewParserState(const char *fullname)
+Module *
+NewModule(const char *fullname)
 {
-    ParserState *P;
+    Module *P;
     char *s;
     char *root;
 
@@ -242,7 +242,7 @@ DeclareConstants(AST **conlist_ptr)
 }
 
 static void
-DeclareVariables(ParserState *P)
+DeclareVariables(Module *P)
 {
     AST *upper;
     AST *curtype;
@@ -318,11 +318,11 @@ GetFullFileName(AST *baseString)
  * "name" is the file name; if it has no .spin suffix
  * we'll try it with one
  */
-ParserState *
+Module *
 parseFile(const char *name)
 {
     FILE *f = NULL;
-    ParserState *P, *save, *Q, *LastQ;
+    Module *P, *save, *Q, *LastQ;
     char *fname = NULL;
     char *parseString = NULL;
 
@@ -338,7 +338,7 @@ parseFile(const char *name)
         exit(1);
     }
     save = current;
-    P = NewParserState(fname);
+    P = NewModule(fname);
 
     /* if we have already visited an object with this name, skip it */
     /* also finds the last element in the list, so we can append to
@@ -645,7 +645,7 @@ main(int argc, char **argv)
     int outputBin = 0;
     int outputAsm = 0;
     int compile = 0;
-    ParserState *P;
+    Module *P;
     int retval = 0;
     const char *cext = ".cpp";
     struct flexbuf argbuf;
@@ -883,7 +883,7 @@ main(int argc, char **argv)
     if (P) {
         /* do type checking and deduction */
         int changes;
-        ParserState *Q;
+        Module *Q;
         MarkUsed(P->functions);
         for (Q = allparse; Q; Q = Q->next) {
             ProcessFuncs(Q);

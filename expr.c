@@ -15,7 +15,7 @@
 static void PrintObjectSym(FILE *f, Symbol *objsym, AST *expr);
 
 /* code to get an object pointer from an object symbol */
-ParserState *
+Module *
 GetObjectPtr(Symbol *sym)
 {
     AST *oval;
@@ -93,7 +93,7 @@ Symbol *
 LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 {
     Symbol *sym;
-    ParserState *objstate;
+    Module *objstate;
 
     if (obj->type != SYM_OBJECT) {
         ERROR(expr, "expected an object");
@@ -113,7 +113,7 @@ LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 const char *
 ObjClassName(Symbol *obj)
 {
-    ParserState *objstate;
+    Module *objstate;
 
     if (obj->type != SYM_OBJECT) {
         ERROR(NULL, "expected an object");
@@ -1610,7 +1610,7 @@ PrintExpr(FILE *f, AST *expr)
             fprintf(f, "%s", sym->name);
         } else {
             AST *objast = objsym->val;
-            ParserState *P = objast->d.ptr;
+            Module *P = objast->d.ptr;
             fprintf(f, "%s::%s", P->classname, sym->name);
         }
         break;
@@ -1853,9 +1853,9 @@ static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid);
  * evaluate an expression in a particular parser state
  */
 static ExprVal
-EvalExprInState(ParserState *P, AST *expr, unsigned flags, int *valid)
+EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid)
 {
-    ParserState *saveState;
+    Module *saveState;
     Function *saveFunc;
     ExprVal ret;
 

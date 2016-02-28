@@ -111,7 +111,7 @@ typedef struct hwreg {
 } HwReg;
 
 /* forward declaration */
-typedef struct parserstate ParserState;
+typedef struct modulestate Module;
 
 /* structure describing an object function (method) */
 typedef struct funcdef {
@@ -142,7 +142,7 @@ typedef struct funcdef {
     SymbolTable localsyms;
 
     /* parser state during compilation */
-    ParserState *parse;
+    Module *parse;
 
     /* various flags */
     unsigned result_used:1;
@@ -180,8 +180,8 @@ typedef struct builtin {
 } Builtin;
 
 /* parser state structure */
-struct parserstate {
-    struct parserstate *next;  /* to make a stack */
+struct modulestate {
+    struct modulestate *next;  /* to make a stack */
     /* top level objects */
     AST *conblock;
     AST *datblock;
@@ -236,7 +236,7 @@ struct parserstate {
 };
 
 /* the current parser state */
-extern ParserState *current;
+extern Module *current;
 extern Function *curfunc;
 
 /* defines given on the command line */
@@ -260,13 +260,13 @@ void PrintAssign(FILE *f, AST *left, AST *right);
 AST *NewLookup(AST *expr, AST *table);
 
 /* declare labels in PASM */
-void DeclareLabels(ParserState *);
+void DeclareLabels(Module *);
 
 /* declare constants */
 void DeclareConstants(AST **conlist);
 
 /* declare all functions */
-void DeclareFunctions(ParserState *);
+void DeclareFunctions(Module *);
 
 /* declare a function */
 /* "body" is the list of statements */
@@ -287,11 +287,11 @@ void DeclareFunctions(ParserState *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareAnnotation(AST *annotation);
-int PrintPublicFunctionDecls(FILE *f, ParserState *P);
-int PrintPrivateFunctionDecls(FILE *f, ParserState *P);
-void PrintFunctionBodies(FILE *f, ParserState *P);
-void PrintDataBlock(FILE *f, ParserState *P, int isBinary);
-void PrintDataBlockForGas(FILE *f, ParserState *P, int inlineAsm);
+int PrintPublicFunctionDecls(FILE *f, Module *P);
+int PrintPrivateFunctionDecls(FILE *f, Module *P);
+void PrintFunctionBodies(FILE *f, Module *P);
+void PrintDataBlock(FILE *f, Module *P, int isBinary);
+void PrintDataBlockForGas(FILE *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count);
 void PrintAnnotationList(FILE *f, AST *ast, char terminal);
 void PrintIndentedComment(FILE *f, AST *ast, int indent);
@@ -311,10 +311,10 @@ int funcParameterNum(Function *func, AST *var);
 
 /* try to infer function, parameter, and variable types */
 /* returns number of new inferences (0 if nothing changed) */
-int InferTypes(ParserState *P);
+int InferTypes(Module *P);
 
 /* process functions and perform basic transformations on them */
-void ProcessFuncs(ParserState *P);
+void ProcessFuncs(Module *P);
 
 /* mark a function (and all functions it references) as used */
 void MarkUsed(Function *f);
@@ -340,10 +340,10 @@ AST *NewObject(AST *identifier, AST *string);
 char *ReplaceExtension(const char *base, const char *ext);
 
 /* different kinds of output functions */
-void OutputCppCode(const char *name, ParserState *P, int printMain);
-void OutputDatFile(const char *name, ParserState *P, int prefixBin);
-void OutputGasFile(const char *name, ParserState *P);
-void OutputAsmCode(const char *name, ParserState *P);
+void OutputCppCode(const char *name, Module *P, int printMain);
+void OutputDatFile(const char *name, Module *P, int prefixBin);
+void OutputGasFile(const char *name, Module *P);
+void OutputAsmCode(const char *name, Module *P);
 
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
@@ -355,7 +355,7 @@ Function *IsSpinCoginit(AST *body);
 void SetFunctionType(Function *func, AST *type);
 
 /* perform useful Spin specific transformations */
-void SpinTransform(ParserState *Q);
+void SpinTransform(Module *Q);
 
 /* find function symbol in a function call; optionally returns the object ref */
 Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);

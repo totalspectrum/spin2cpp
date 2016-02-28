@@ -13,7 +13,7 @@
 //typedef enum yytokentype Token;
 typedef int Token;
 
-ParserState *current;
+Module *current;
 Function *curfunc;
 
 AST *ast_type_long, *ast_type_word, *ast_type_byte, *ast_type_float;
