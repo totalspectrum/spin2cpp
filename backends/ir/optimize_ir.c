@@ -27,7 +27,7 @@ static bool IsDummy(IR *op)
   case OPC_CONST:
     return true;
   default:
-    return false;
+    return op->cond == COND_FALSE;
   }
 }
 
@@ -87,6 +87,19 @@ static bool IsBranch(IR *ir)
   }
 }
 
+static bool
+IsLabel(IR *ir)
+{
+  return ir->opc == OPC_LABEL;
+}
+
+// true if an instruction can change flags
+static bool
+SetsFlags(IR *ir)
+{
+  return 0 != (ir->flags & (FLAG_WC|FLAG_WZ));
+}
+
 // returns TRUE if an operand represents a local register or argument
 static bool
 IsLocalOrArg(Operand *op)
@@ -94,7 +107,12 @@ IsLocalOrArg(Operand *op)
   return op->kind == REG_LOCAL || op->kind == REG_ARG;
 }
 
-#if 0
+static bool
+IsImmediate(Operand *op)
+{
+    return op->kind == IMM_INT;
+}
+
 /*
  * true if a branch target is after a given instruction
  */
@@ -108,7 +126,6 @@ JumpIsAfter(IR *ir, IR *jmp)
     }
     return false;
 }
-#endif
 
 /*
  * return TRUE if the operand's value does not need to be preserved
@@ -206,7 +223,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     }
     if (ir->opc == OPC_RET) {
         return IsLocalOrArg(orig) ? ir : NULL;
-    } else if (IsBranch(ir)) {
+    } else if (IsBranch(ir) && !JumpIsAfter(first_ir, ir)) {
       return NULL;
     }
     if (ir->opc == OPC_LABEL) {
@@ -273,6 +290,154 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
   }
 }
 
+//
+//
+//
+void
+ApplyConditionAfter(IR *instr, int val)
+{
+  IR *ir;
+  IRCond newcond;
+
+  for (ir = instr->next; ir; ir = ir->next) {
+    if (IsDummy(ir)) continue;
+    switch (ir->cond) {
+    case COND_TRUE:
+      newcond = COND_TRUE;
+      break;
+    case COND_FALSE:
+      newcond = COND_FALSE;
+      break;
+    case COND_EQ:
+      newcond = (val == 0) ? COND_TRUE : COND_FALSE;
+      break;
+    case COND_NE:
+      newcond = (val != 0) ? COND_TRUE : COND_FALSE;
+      break;
+    case COND_LT:
+      newcond = (val < 0) ? COND_TRUE : COND_FALSE;
+      break;
+    case COND_GT:
+      newcond = (val > 0) ? COND_TRUE : COND_FALSE;
+      break;
+    case COND_LE:
+      newcond = (val <= 0) ? COND_TRUE : COND_FALSE;
+      break;
+    case COND_GE:
+      newcond = (val >= 0) ? COND_TRUE : COND_FALSE;
+      break;
+    default:
+      ERROR(NULL, "Internal error, unhandled condition");
+      return;
+    }
+    ir->cond = newcond;
+    if (SetsFlags(ir))
+      return;
+  }
+}
+
+// try to transform an operation with a destination that is
+// known to be the constant "imm"
+// if the src is also constant, convert it to a move immediate
+// returns 1 if there is a change
+static int
+TransformConstDst(IR *ir, Operand *imm)
+{
+  intptr_t val1, val2;
+  int setsResult = 1;
+
+  if (ir->src->kind != IMM_INT || imm->kind != IMM_INT)
+    {
+      return 0;
+    }
+
+  if (ir->flags & FLAG_WC) {
+    // we don't know how to set the WC flag for anything other
+    // than cmps
+    if (ir->opc != OPC_CMPS) {
+      return 0;
+    }
+  }
+
+  val1 = imm->val;
+  val2 = ir->src->val;
+
+  switch (ir->opc)
+    {
+    case OPC_ADD:
+      val1 += val2;
+      break;
+    case OPC_SUB:
+      val1 -= val2;
+      break;
+    case OPC_AND:
+      val1 &= val2;
+      break;
+    case OPC_OR:
+      val1 |= val2;
+      break;
+    case OPC_XOR:
+      val1 ^= val2;
+      break;
+    case OPC_ANDN:
+      val1 &= ~val2;
+      break;
+    case OPC_SHL:
+      val1 = val1 << val2;
+      break;
+    case OPC_SAR:
+      val1 = val1 >> val2;
+      break;
+    case OPC_CMPS:
+      val1 -= val2;
+      setsResult = 0;
+      break;
+    default:
+      return 0;
+    }
+  if (SetsFlags(ir)) {
+    ApplyConditionAfter(ir, val1);
+  }
+  if (setsResult) {
+    ir->opc = OPC_MOVE;
+    ir->src = NewImmediate(val1);
+  } else {
+    ir->cond = COND_FALSE;
+  }
+  return 1;
+}
+
+//
+// if we see x:=2 then replace future uses of x with 2
+//
+static int
+PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
+{
+  IR *ir;
+  int change = 0;
+  for (ir = instr; ir; ir = ir->next) {
+    if (IsDummy(ir)) {
+        continue;
+    }
+    if (IsLabel(ir)) {
+        return change;
+    }
+    if (IsBranch(ir) && !JumpIsAfter(instr, ir)) {
+      return change;
+    }
+    if (ir->dst == orig) {
+      // we can perhaps replace the operation with a mov
+      change |= TransformConstDst(ir, imm);
+      // but our register has changed, so we must stop
+      return change;
+    } else if (ir->src == orig) {
+      ir->src = imm;
+      change = 1;
+    }
+  }
+  return change;
+}
+
 int
 OptimizeMoves(IRList *irl)
 {
@@ -287,16 +452,18 @@ OptimizeMoves(IRList *irl)
         ir = irl->head;
         while (ir != 0) {
             ir_next = ir->next;
-            if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE && 0 == (ir->flags & (FLAG_WZ|FLAG_WC))) {
-                if (ir->src == ir->dst) {
+            if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
+	      if (ir->src == ir->dst && !SetsFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-                } else if (IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+		} else if (IsImmediate(ir->src)) {
+                    change = PropagateConstForward(ir_next, ir->dst, ir->src);
+	      } else if (!SetsFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
                     change = 1;
                 }
-                else if ( 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+	      else if ( !SetsFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
                     ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
                     DeleteIR(irl, ir);
                     change = 1;
@@ -360,8 +527,11 @@ int EliminateDeadCode(IRList *irl)
 	  DeleteIR(irl, ir);
 	  change = 1;
 	}
-      } else if (!IsDummy(ir)) {
-	if (ir_next && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
+      } else {
+	if (ir->cond == COND_FALSE) {
+	  DeleteIR(irl, ir);
+	  change = 1;
+	} else if (!IsDummy(ir) && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
 	}
