@@ -7,10 +7,14 @@
 #ifndef SPIN_IR_H
 #define SPIN_IR_H
 
+// forward definitions
 typedef struct IR IR;
 typedef struct Operand Operand;
 typedef struct modulestate Module;
 
+// opcodes
+// these include pseudo-opcodes for data directives
+// and also dummy opcodes used internally by the compiler
 enum IROpcode {
     OPC_COMMENT,
     
@@ -147,7 +151,47 @@ struct Operand {
     int used;
 };
 
+//
+// functions for manipulating IR lists
+//
+void AppendIR(IRList *irl, IR *ir);
+void DeleteIR(IRList *irl, IR *ir);
+void AppendIRList(IRList *irl, IRList *sub);
+
+//
+// functions for operand manipulation
+//
+Operand *NewOperand(enum Operandkind, const char *name, int val);
+Operand *NewImmediate(int32_t val);
+
+// utility functions
+IRCond InvertCond(IRCond v);
+
+// function to convert an IR list into a text representation of the
+// assembly
 char *IRAssemble(IRList *list);
+
+// create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);
+
+// optimization functions
+void OptimizeIRLocal(IRList *irl);
+void OptimizeIRGlobal(IRList *irl);
+
+
+//
+// back end data for functions
+//
+typedef struct ir_bedata {
+    /* temporary register info */
+    int curtempreg;
+    int maxtempreg;
+
+     /* assembly output name */
+    Operand *asmname;
+    Operand *asmretname;
+} IRdata;
+
+#define FuncData(f) ((IRdata *)(f)->bedata)
 
 #endif

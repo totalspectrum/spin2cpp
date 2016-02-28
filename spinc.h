@@ -19,7 +19,6 @@
 #include "lexer.h"
 #include "symbol.h"
 #include "expr.h"
-#include "ir.h"
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
@@ -154,13 +153,9 @@ typedef struct funcdef {
     /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;
 
-    /* assembly output name */
-    Operand *asmname;
-    Operand *asmretname;
+    /* back-end specific data */
+    void *bedata;
 
-    /* temporary register info */
-    int curtempreg;
-    int maxtempreg;
 } Function;
 
 /* structure describing a builtin function */
