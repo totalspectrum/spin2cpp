@@ -1000,6 +1000,8 @@ ShouldBeInlined(Function *f)
 {
     IR *ir;
     int n = 0;
+
+    if (gl_optimize_flags & OPT_NO_ASM) return false;
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         // at present we have no way to re-label things,

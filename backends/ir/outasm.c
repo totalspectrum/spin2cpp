@@ -29,6 +29,7 @@ static Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
 static Operand *Dereference(IRList *irl, Operand *op);
+static Operand *CompileFunccall(IRList *irl, AST *expr);
 
 static void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
@@ -170,29 +171,41 @@ AppendIR(IRList *irl, IR *ir)
     InsertAfterIR(irl, last, ir);
 }
 
+/*
+ * insert a new IR element after element orig
+ * if orig == NULL then place orig in the
+ * beginning of the list
+ */
+
 void
 InsertAfterIR(IRList *irl, IR *orig, IR *ir)
 {
-    IR *o_next, *o_prev;
+    IR *o_next;
 
     if (!ir) return;
+    
     if (!orig) {
-        o_next = o_prev = NULL;
+        /* place at the beginning of the list */
+        o_next = irl->head;
         irl->head = ir;
+        ir->prev = NULL;
     } else {
+        /* place it after orig */
         o_next = orig->next;
-        o_prev = orig->prev;
         orig->next = ir;
+        ir->prev = orig;
     }
-    ir->prev = orig;
+    /* now skip to the end of the ir list */
     while (ir->next) {
         ir = ir->next;
     }
-    if (o_next) {
-        o_next->prev = ir;
-        ir->next = o_next;
-    } else {
+    /* now fix up o_next to point back to ir */
+    if (!o_next) {
         irl->tail = ir;
+        ir->next = NULL;
+    } else {
+        ir->next = o_next;
+        o_next->prev = ir;
     }
 }
 
@@ -389,6 +402,9 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
       } else if (sym->type == SYM_VARIABLE) {
           return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
+      } else if (sym->type == SYM_FUNCTION) {
+          AST *fcall = NewAST(AST_FUNCCALL, expr, NULL);
+          return CompileFunccall(irl, fcall);
       }
   }
   return GetGlobal(REG_LOCAL, IdentifierLocalName(func, expr->d.string), 0);
