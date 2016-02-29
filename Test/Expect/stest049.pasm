@@ -12,6 +12,11 @@ inc
 inc_ret
 	ret
 
+one
+	mov	result_, #1
+one_ret
+	ret
+
 inc_x_
 	long	0
 result_

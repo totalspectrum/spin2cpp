@@ -112,46 +112,39 @@ Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
     return GetVar(&hubGlobalVars, kind, name, value);
 }
 
-void
-OutputAsmCode(const char *fname, Module *P)
-{
-    FILE *f = NULL;
-    Module *save;
-    IRList irl;
-    const char *asmcode;
-    
-    save = current;
-    current = P;
-
-    irl.head = NULL;
-    irl.tail = NULL;
-
-    CompileConsts(&irl, P->conblock);
-    if (!CompileToIR(&irl, P)) {
-        return;
-    }
-    OptimizeIRGlobal(&irl);
-    EmitBuiltins(&irl);
-    EmitGlobals(&irl);
-    asmcode = IRAssemble(&irl);
-    
-    current = save;
-
-    f = fopen(fname, "wb");
-    if (!f) {
-        perror(fname);
-        exit(1);
-    }
-    fwrite(asmcode, 1, strlen(asmcode), f);
-    fclose(f);
-}
-
 IR *NewIR(enum IROpcode kind)
 {
     IR *ir = malloc(sizeof(*ir));
     memset(ir, 0, sizeof(*ir));
     ir->opc = kind;
     return ir;
+}
+
+IR *DupIR(IR *old)
+{
+    IR *ir = NewIR(0);
+    memcpy(ir, old, sizeof(*ir));
+    ir->prev = ir->next = NULL;
+    return ir;
+}
+
+//
+// replace the individual IR "ir" in list "irl" with a list of
+// instructions; used for e.g. expanding inline functions
+//
+void ReplaceIRWithDuplicateList(IRList *irl, IR *ir, IRList *insert)
+{
+    IR *newir;
+    IR *dest = ir->prev;
+
+    DeleteIR(irl, ir);
+    ir = insert->head;
+    while (ir) {
+        newir = DupIR(ir);
+        InsertAfterIR(irl, dest, newir);
+        dest = newir;
+        ir = ir->next;
+    }
 }
 
 Operand *NewOperand(enum Operandkind k, const char *name, int value)
@@ -174,17 +167,33 @@ void
 AppendIR(IRList *irl, IR *ir)
 {
     IR *last = irl->tail;
+    InsertAfterIR(irl, last, ir);
+}
+
+void
+InsertAfterIR(IRList *irl, IR *orig, IR *ir)
+{
+    IR *o_next, *o_prev;
+
     if (!ir) return;
-    if (!last) {
-        irl->head = irl->tail = ir;
-        return;
+    if (!orig) {
+        o_next = o_prev = NULL;
+        irl->head = ir;
+    } else {
+        o_next = orig->next;
+        o_prev = orig->prev;
+        orig->next = ir;
     }
-    last->next = ir;
-    ir->prev = last;
+    ir->prev = orig;
     while (ir->next) {
         ir = ir->next;
     }
-    irl->tail = ir;
+    if (o_next) {
+        o_next->prev = ir;
+        ir->next = o_next;
+    } else {
+        irl->tail = ir;
+    }
 }
 
 /*
@@ -943,7 +952,7 @@ CompileFunccall(IRList *irl, AST *expr)
 
   /* emit the call */
   ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
-  ir->aux = (void *)func;
+  ir->aux = (void *)func; // remember the function for optimization purposes
 
   /* now get the result */
   result = GetGlobal(REG_REG, "result_", 0);
@@ -1520,8 +1529,10 @@ CompileFunctionBody(Function *f)
 static void
 CompileWholeFunction(IRList *irl, Function *f)
 {
+    IRList *firl = FuncIRL(f);
+
     EmitFunctionProlog(irl, f);
-    AppendIRList(irl, FuncIRL(f));
+    AppendIRList(irl, firl);
     EmitFunctionEpilog(irl, f);
 }
 
@@ -1601,9 +1612,20 @@ CompileToIR(IRList *irl, Module *P)
     for (f = P->functions; f; f = f->next) {
       curfunc = f;
       CompileFunctionBody(f);
+      FuncData(f)->isInline = ShouldBeInlined(f);
     }
 
-    // 2nd pass, which can look for inlining
+    // 2nd pass, to expand inlines
+    for (f = P->functions; f; f = f->next) {
+        IRList *firl = FuncIRL(f);
+        curfunc = f;
+        if (ExpandInlines(firl)) {
+            // may be new opportunities for optimization
+            OptimizeIRLocal(firl);
+        }
+    }
+    
+    // finally emit output
     for(f = P->functions; f; f = f->next) {
         curfunc = f;
 	if (newlineOp) {
@@ -1743,3 +1765,38 @@ CompileConsts(IRList *irl, AST *conblock)
         }
     }
 }
+
+void
+OutputAsmCode(const char *fname, Module *P)
+{
+    FILE *f = NULL;
+    Module *save;
+    IRList irl;
+    const char *asmcode;
+    
+    save = current;
+    current = P;
+
+    irl.head = NULL;
+    irl.tail = NULL;
+
+    CompileConsts(&irl, P->conblock);
+    if (!CompileToIR(&irl, P)) {
+        return;
+    }
+    OptimizeIRGlobal(&irl);
+    EmitBuiltins(&irl);
+    EmitGlobals(&irl);
+    asmcode = IRAssemble(&irl);
+    
+    current = save;
+
+    f = fopen(fname, "wb");
+    if (!f) {
+        perror(fname);
+        exit(1);
+    }
+    fwrite(asmcode, 1, strlen(asmcode), f);
+    fclose(f);
+}
+

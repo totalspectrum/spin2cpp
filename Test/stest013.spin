@@ -1,6 +1,6 @@
-PUB sum(x,y)
-  x += y
+PUB prod(x,y)
+  x *= y
   return x
 
-PUB triple(x)
-  return sum(x, sum(x,x))
+PUB cube(x)
+  return prod(x, prod(x,x))

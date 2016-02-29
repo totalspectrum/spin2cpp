@@ -154,9 +154,14 @@ struct Operand {
 //
 // functions for manipulating IR lists
 //
+
+// append an IR at the end of a list
 void AppendIR(IRList *irl, IR *ir);
+// insert an IR after another in a list
+void InsertAfterIR(IRList *irl, IR *orig, IR *ir);
 void DeleteIR(IRList *irl, IR *ir);
 void AppendIRList(IRList *irl, IRList *sub);
+void ReplaceIRWithDuplicateList(IRList *irl, IR *ir, IRList *replace);
 
 //
 // functions for operand manipulation
@@ -177,7 +182,8 @@ bool CompileToIR(IRList *list, Module *P);
 // optimization functions
 void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);
-
+bool ShouldBeInlined(Function *f);
+int  ExpandInlines(IRList *irl);
 
 //
 // back end data for functions
@@ -193,6 +199,9 @@ typedef struct ir_bedata {
 
     /* instructions for this function */
     IRList irl;
+
+    /* flag for whether we should inline the function */
+    bool isInline;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)

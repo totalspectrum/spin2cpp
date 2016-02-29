@@ -75,16 +75,23 @@ InstrSetsDst(IR *ir)
 }
 
 // recognizes branch instructions
-static bool IsBranch(IR *ir)
+// jumps and calls are both branches, but sometimes
+// we treat them differently
+
+static bool IsJump(IR *ir)
 {
   switch (ir->opc) {
   case OPC_JUMP:
   case OPC_DJNZ:
-  case OPC_CALL:
     return true;
   default:
     return false;
   }
+}
+
+static bool IsBranch(IR *ir)
+{
+    return IsJump(ir) || ir->opc == OPC_CALL;
 }
 
 static bool
@@ -119,7 +126,7 @@ IsImmediate(Operand *op)
 static bool
 JumpIsAfter(IR *ir, IR *jmp)
 {
-    // ptr to jump destination gest stored in aux
+    // ptr to jump destination gets stored in aux
     if (jmp->aux) {
         IR *label = (IR *)jmp->aux;
         return (label->addr > ir->addr);
@@ -153,7 +160,7 @@ IsDeadAfter(IR *instr, Operand *op)
       if (op->kind == REG_ARG) {
 	return false;
       }
-    } else if (IsBranch(ir)) {
+    } else if (IsJump(ir)) {
         // FIXME
         // special case: sometimes we add .dead notes right after a branch
         // so look here in case that happened
@@ -865,7 +872,9 @@ AssignTemporaryAddresses(IRList *irl)
     for (ir = irl->head; ir; ir = ir->next) {
         ir->flags &= ~FLAG_OPTIMIZER;
         ir->addr = addr++;
-        ir->aux = NULL;
+        if (IsJump(ir) || IsLabel(ir)) {
+            ir->aux = NULL;
+        }
     }
 }
 
@@ -882,7 +891,7 @@ MarkLabelUses(IRList *irl, IR *irlabel)
     
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
-        if (IsBranch(ir)) {
+        if (IsJump(ir)) {
             if (ir->opc == OPC_DJNZ) {
                 dst = ir->src;
             } else {
@@ -948,6 +957,9 @@ CheckLabelUsage(IRList *irl)
 //
 // optimize
 //
+
+// optimize an isolated piece of IRList
+// (typically a function)
 void
 OptimizeIRLocal(IRList *irl)
 {
@@ -967,9 +979,58 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeCompares(irl);
     } while (change != 0);
 }
+
+//
+// optimize the whole program
+//
 void
 OptimizeIRGlobal(IRList *irl)
 {
   CheckUsage(irl);
 }
 
+
+//
+// check a function to see if it should be inlined
+//
+#define INLINE_THRESHOLD 3
+
+bool
+ShouldBeInlined(Function *f)
+{
+    IR *ir;
+    int n = 0;
+    for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        // at present we have no way to re-label things,
+        // so if the function has any labels it cannot be inlined
+        if (IsLabel(ir)) return false;
+        n++;
+    }
+    return (n <= INLINE_THRESHOLD);
+}
+
+//
+// expand function calls inline if appropriate
+// returns 1 if anything was expanded
+int
+ExpandInlines(IRList *irl)
+{
+    Function *f;
+    IR *ir, *ir_next;
+    int change = 0;
+    
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        if (ir->opc == OPC_CALL) {
+            f = (Function *)ir->aux;
+            if (f && FuncData(f)->isInline) {
+                ReplaceIRWithDuplicateList(irl, ir, FuncIRL(f));
+                change = 1;
+            }
+        }
+        ir = ir_next;
+    }
+    return change;
+}

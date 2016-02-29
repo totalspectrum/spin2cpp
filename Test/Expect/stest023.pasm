@@ -1,8 +1,7 @@
 DAT
 	org	0
 blah
-	mov	bar_x_, #2
-	call	#bar
+	mov	result_, #3
 blah_ret
 	ret
 
