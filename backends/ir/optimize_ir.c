@@ -136,9 +136,6 @@ IsDeadAfter(IR *instr, Operand *op)
 {
   IR *ir;
 
-  if (!IsLocalOrArg(op)) {
-    return false;
-  }
   if (instr->opc == OPC_DEAD && op == instr->dst) {
     return true;
   }
@@ -150,8 +147,8 @@ IsDeadAfter(IR *instr, Operand *op)
     if (ir->opc == OPC_LABEL) {
       continue;
     }
-    if (ir->opc == OPC_RET) {
-      return true;
+    if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
+      return IsLocalOrArg(op);
     } else if (ir->opc == OPC_CALL) {
       if (op->kind == REG_ARG) {
 	return false;
@@ -178,10 +175,13 @@ IsDeadAfter(IR *instr, Operand *op)
       if (InstrReadsDst(ir)) {
 	return false;
       }
+      if (ir->cond == COND_TRUE) {
+	return true;
+      }
     }
   }
   /* if we reach the end without seeing any use */
-  return true;
+  return IsLocalOrArg(op);
 }
 
 static bool
@@ -223,7 +223,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     }
     if (ir->opc == OPC_RET) {
         return IsLocalOrArg(orig) ? ir : NULL;
-    } else if (IsBranch(ir) && !JumpIsAfter(first_ir, ir)) {
+    } else if (IsBranch(ir)) {
       return NULL;
     }
     if (ir->opc == OPC_LABEL) {
@@ -457,7 +457,7 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
 		} else if (IsImmediate(ir->src)) {
-                    change = PropagateConstForward(ir_next, ir->dst, ir->src);
+                    change |= PropagateConstForward(ir_next, ir->dst, ir->src);
 	      } else if (!SetsFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
@@ -508,6 +508,17 @@ int EliminateDeadCode(IRList *irl)
     IR *ir, *ir_next;
 
     change = 0;
+
+    // first case: a jump at the end to the ret label
+    ir = irl->tail;
+    while (ir && IsDummy(ir)) {
+      ir = ir->prev;
+    }
+    if (ir && ir->opc == OPC_JUMP && curfunc && ir->dst == FuncData(curfunc)->asmretname) {
+      DeleteIR(irl, ir);
+      change = 1;
+    }
+    // now look for other dead code
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
@@ -548,7 +559,7 @@ static void CheckOpUsage(Operand *op)
   }
 }
 
-void CheckUsage(IRList *irl)
+static void CheckUsage(IRList *irl)
 {
   IR *ir;
   for (ir = irl->head; ir; ir = ir->next) {
@@ -597,10 +608,10 @@ static int IsShortForwardJump(IR *irbase)
     }
     ir = ir->next;
   }
-  return n;
+  return 0;
 }
 
-void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
+static void ConditionalizeInstructions(IR *ir, IRCond cond, int n)
 {
   while (ir && n > 0) {
     if (!IsDummy(ir)) {
@@ -724,7 +735,7 @@ OptimizeCompares(IRList *irl)
         ir_next = ir->next;
         while (ir && IsDummy(ir)) {
             ir = ir_next;
-	    ir_next = ir->next;
+	    if (ir) ir_next = ir->next;
         }
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE

@@ -212,7 +212,7 @@ DeleteIR(IRList *irl, IR *ir)
   if (prev) {
     prev->next = next;
   } else {
-    irl->head = ir;
+    irl->head = next;
   }
   if (next) {
     next->prev = prev;
@@ -360,7 +360,7 @@ Operand *
 NewFunctionTempRegister()
 {
     Function *f = curfunc;
-    IRdata *fdata = FuncData(f);
+    IRFuncData *fdata = FuncData(f);
 
     fdata->curtempreg++;
     if (fdata->curtempreg > fdata->maxtempreg) {
@@ -773,7 +773,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   }
 }
 
-Operand *
+static Operand *
 CompileOperator(IRList *irl, AST *expr)
 {
     int op = expr->d.ival;
@@ -820,7 +820,7 @@ CompileOperator(IRList *irl, AST *expr)
     }
 }
 
-void
+static void
 AppendOperand(OperandList **listptr, Operand *op)
 {
   OperandList *next = malloc(sizeof(OperandList));
@@ -924,6 +924,7 @@ CompileFunccall(IRList *irl, AST *expr)
   Function *func;
   AST *params;
   OperandList *temp;
+  IR *ir;
 
   /* compile the function operands */
   sym = FindFuncSymbol(expr, NULL, NULL);
@@ -941,7 +942,8 @@ CompileFunccall(IRList *irl, AST *expr)
   EmitParameterList(irl, temp, func);
 
   /* emit the call */
-  EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+  ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+  ir->aux = (void *)func;
 
   /* now get the result */
   result = GetGlobal(REG_REG, "result_", 0);
@@ -1496,19 +1498,30 @@ static void EmitStatement(IRList *irl, AST *ast)
 }
 
 /*
- * compile a function to IR and put it at the end of the IRList
+ * compile just the body of a function, and put it
+ * in an IRL for that function
  */
-
 static void
-EmitWholeFunction(IRList *irl, Function *f)
+CompileFunctionBody(Function *f)
 {
+    IRList *irl = FuncIRL(f);
     if (f->is_recursive) {
         ERROR(f->body, "Recursive function %s not supported in PASM", f->name);
     }
     nextlabel = quitlabel = NULL;
-    curfunc = f;
-    EmitFunctionProlog(irl, f);
     EmitStatementList(irl, f->body);
+    OptimizeIRLocal(irl);
+}
+
+/*
+ * compile a function to IR and put it at the end of the IRList
+ */
+
+static void
+CompileWholeFunction(IRList *irl, Function *f)
+{
+    EmitFunctionProlog(irl, f);
+    AppendIRList(irl, FuncIRL(f));
     EmitFunctionEpilog(irl, f);
 }
 
@@ -1570,7 +1583,6 @@ bool
 CompileToIR(IRList *irl, Module *P)
 {
     Function *f;
-    IRList funcirl;
 
     // assign all function names so we can do forward calls
     // this is also where we can allocate the back end data
@@ -1580,23 +1592,26 @@ CompileToIR(IRList *irl, Module *P)
         fname = IdentifierGlobalName(P, f->name);
 	frname = malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
-        f->bedata = calloc(1, sizeof(IRdata));
+        f->bedata = calloc(1, sizeof(IRFuncData));
         FuncData(f)->asmname = NewOperand(IMM_LABEL, fname, 0);
         FuncData(f)->asmretname = NewOperand(IMM_LABEL, frname, 0);
     }
     
     // now compile the functions
+    for (f = P->functions; f; f = f->next) {
+      curfunc = f;
+      CompileFunctionBody(f);
+    }
+
+    // 2nd pass, which can look for inlining
     for(f = P->functions; f; f = f->next) {
-        funcirl.head = NULL;
-	funcirl.tail = NULL;
-        EmitWholeFunction(&funcirl, f);
-	OptimizeIRLocal(&funcirl);
+        curfunc = f;
 	if (newlineOp) {
   	    EmitNewline(irl);
 	} else {
 	  newlineOp = NewOperand(IMM_STRING, "\n", 0);
 	}
-	AppendIRList(irl, &funcirl);
+        CompileWholeFunction(irl, f);
     }
     return gl_errors == 0;
 }

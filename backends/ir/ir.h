@@ -187,11 +187,15 @@ typedef struct ir_bedata {
     int curtempreg;
     int maxtempreg;
 
-     /* assembly output name */
+    /* assembly output name */
     Operand *asmname;
     Operand *asmretname;
-} IRdata;
 
-#define FuncData(f) ((IRdata *)(f)->bedata)
+    /* instructions for this function */
+    IRList irl;
+} IRFuncData;
+
+#define FuncData(f) ((IRFuncData *)(f)->bedata)
+#define FuncIRL(f)  (&FuncData(f)->irl)
 
 #endif
