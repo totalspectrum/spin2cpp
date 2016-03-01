@@ -1,5 +1,11 @@
 *.exe
 *.zip
+foo.spin
+foo.c
+foo.cpp
+foo.h
+foo.pasm
 build*/
 spincvt/
+spinconvert/bin/
 spin2cpp.linux
