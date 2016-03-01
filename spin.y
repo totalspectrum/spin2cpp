@@ -7,10 +7,11 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "spinc.h"
 
 /* Yacc functions */
-    void yyerror(char *);
+    void yyerror(const char *);
     int yylex();
 
     extern int gl_errors;
@@ -128,78 +129,116 @@ CheckYield(AST *body)
 %}
 
 %pure-parser
-%token T_IDENTIFIER
-%token T_NUM
-%token T_STRING
-%token T_FLOATNUM
-%token T_SPR
+%define parse.error verbose
+%define parse.lac full
+
+%token T_IDENTIFIER "identifier"
+%token T_NUM        "number"
+%token T_STRING     "string"
+%token T_FLOATNUM   "float"
+%token T_SPR        "SPR"
 
 /* various keywords */
-%token T_CON
-%token T_VAR
-%token T_DAT
-%token T_PUB
-%token T_PRI
-%token T_OBJ
+%token T_CON        "CON"
+%token T_VAR        "VAR"
+%token T_DAT        "DAT"
+%token T_PUB        "PUB"
+%token T_PRI        "PRI"
+%token T_OBJ        "OBJ"
 
-%token T_BYTE
-%token T_WORD
-%token T_LONG
+%token T_BYTE       "BYTE"
+%token T_WORD       "WORD"
+%token T_LONG       "LONG"
 
-%token T_INSTR
-%token T_INSTRMODIFIER
-%token T_HWREG
-%token T_ORG
-%token T_RES
-%token T_FIT
+%token T_INSTR      "instruction"
+%token T_INSTRMODIFIER "instruction modifier"
+%token T_HWREG      "hardware register"
+%token T_ORG        "ORG"
+%token T_RES        "RES"
+%token T_FIT        "FIT"
 
-%token T_REPEAT
-%token T_FROM
-%token T_TO
-%token T_STEP
-%token T_WHILE
-%token T_UNTIL
-%token T_IF
-%token T_IFNOT
-%token T_ELSE
-%token T_ELSEIF
-%token T_ELSEIFNOT
-%token T_THEN
-%token T_ENDIF
+%token T_REPEAT     "REPEAT"
+%token T_FROM       "FROM"
+%token T_TO         "TO"
+%token T_STEP       "STEP"
+%token T_WHILE      "WHILE"
+%token T_UNTIL      "UNTIL"
+%token T_IF         "IF"
+%token T_IFNOT      "IFNOT"
+%token T_ELSE       "ELSE"
+%token T_ELSEIF     "ELSEIF"
+%token T_ELSEIFNOT  "ELSEIFNOT"
+%token T_THEN       "THEN"
+%token T_ENDIF      "ENDIF"
 
-%token T_LOOKDOWN
-%token T_LOOKDOWNZ
-%token T_LOOKUP
-%token T_LOOKUPZ
-%token T_COGINIT
-%token T_COGNEW
+%token T_LOOKDOWN   "LOOKDOWN"
+%token T_LOOKDOWNZ  "LOOKDOWNZ"
+%token T_LOOKUP     "LOOKUP"
+%token T_LOOKUPZ    "LOOKUPZ"
+%token T_COGINIT    "COGINIT"
+%token T_COGNEW     "COGNEW"
 %token T_WAITCNT
 %token T_WAITPEQ
 %token T_WAITPNE
 %token T_WAITVID
 
-%token T_CASE
-%token T_OTHER
+%token T_CASE       "CASE"
+%token T_OTHER      "OTHER"
 
-%token T_QUIT
-%token T_NEXT
+%token T_QUIT       "QUIT"
+%token T_NEXT       "NEXT"
 
 /* other stuff */
-%token T_ABORT
-%token T_RESULT
-%token T_RETURN
-%token T_INDENT
-%token T_OUTDENT
-%token T_EOLN
-%token T_EOF
-%token T_DOTS
-%token T_HERE
-%token T_STRINGPTR
-%token T_FILE
+%token T_ABORT      "ABORT"
+%token T_RESULT     "RESULT"
+%token T_RETURN     "RETURN"
+%token T_INDENT     "indentation"
+%token T_OUTDENT    "lack of indentation"
+%token T_EOLN       "end of line"
+%token T_EOF        "end of file"
+%token T_DOTS       ".."
+%token T_HERE       "$"
+%token T_STRINGPTR  "STRING"
+%token T_FILE       "FILE"
 
 %token T_ANNOTATION
 
 /* operators */
+%token T_ASSIGN     ":="
+%token T_OR         "OR"
+%token T_AND        "AND"
+%token T_GE         "=>"
+%token T_LE         "=<"
+%token T_NE         "<>"
+%token T_EQ         "=="
+%token T_LIMITMIN   "#>"
+%token T_LIMITMAX   "<#"
+%token T_MODULUS    "//"
+%token T_HIGHMULT   "**"
+%token T_ROTR       "->"
+%token T_ROTL       "<-"
+%token T_SHL        "<<"
+%token T_SHR        ">>"
+%token T_SAR        "~>"
+%token T_REV        "><"
+%token T_NEGATE     "-"
+%token T_BIT_NOT    "!"
+%token T_SQRT       "^^"
+%token T_ABS        "||"
+%token T_DECODE     "|<"
+%token T_ENCODE     ">|"
+%token T_NOT        "NOT"
+%token T_DOUBLETILDE "~~"
+%token T_INCREMENT  "++"
+%token T_DECREMENT  "--"
+%token T_DOUBLEAT   "@@"
+%token T_TRIPLEAT   "@@@"
+%token T_FLOAT      "floating point number"
+%token T_TRUNC      "TRUNC"
+%token T_ROUND      "ROUND"
+%token T_CONSTANT   "constant"
+
+/* operator precedence */
 %right T_ASSIGN
 %right T_THEN
 %right T_ELSE
@@ -1017,8 +1056,8 @@ modifierlist:
 %%
 
 void
-yyerror(char *msg)
+yyerror(const char *msg)
 {
-    fprintf(stderr, "%s:%d: %s\n", current->L.fileName, current->L.lineCounter, msg);
+    fprintf(stderr, "%s:%d: error: %s\n", current->L.fileName, current->L.lineCounter, msg);
     gl_errors++;
 }
