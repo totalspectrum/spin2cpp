@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include "spinc.h"
-
+#include "outcpp.h"
 
 /*
  * print out a declaration for the dat[] array

@@ -19,18 +19,13 @@ int IsFloatConst(AST *expr);
 /* evaluate to an integer if an expression is constant */
 AST *FoldIfConst(AST *expr);
 
-/* printing functions */
-void PrintExpr(FILE *f, AST *expr);
-void PrintExprToplevel(FILE *f, AST *expr);
-void PrintBoolExpr(FILE *f, AST *expr);
-void PrintAsAddr(FILE *f, AST *expr);
-void PrintExprList(FILE *f, AST *list);
-void PrintType(FILE *f, AST *type);
-void PrintPostfix(FILE *f, AST *val, int toplevel);
-void PrintInteger(FILE *f, int32_t v);
-void PrintFloat(FILE *f, int32_t v);
-int  PrintLookupArray(FILE *f, AST *arr);
-void PrintGasExpr(FILE *f, AST *expr);
+/* look up an object constant reference */
+/* sets *objsym to the object and *sym to the symbol */
+/* returns 0/1 for fail/success */
+int GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr);
+
+/* look up the class name of an object */
+const char *ObjClassName(Symbol *obj);
 
 /* expression utility functions */
 union float_or_int {

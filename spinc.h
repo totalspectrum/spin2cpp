@@ -282,16 +282,15 @@ void DeclareFunctions(Module *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareAnnotation(AST *annotation);
-int PrintPublicFunctionDecls(FILE *f, Module *P);
-int PrintPrivateFunctionDecls(FILE *f, Module *P);
-void PrintFunctionBodies(FILE *f, Module *P);
 void PrintDataBlock(FILE *f, Module *P, int isBinary);
 void PrintDataBlockForGas(FILE *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count);
-void PrintAnnotationList(FILE *f, AST *ast, char terminal);
-void PrintIndentedComment(FILE *f, AST *ast, int indent);
-void PrintDebugDirective(FILE *f, AST *ast);
-void PrintNewline(FILE *f);
+
+// find the variable symbol for an identifier or array decl
+Symbol *VarSymbol(Function *func, AST *ast);
+
+// find the size of a type
+int TypeSize(AST *ast);
 
 #define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
@@ -359,5 +358,13 @@ Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
 AST *GetFullFileName(AST *baseString);
     
 Symbol *LookupSymbolInFunc(Function *func, const char *name);
+
+/*
+ * see if an AST refers to a parameter of this function, and return
+ * an index into the list if it is
+ * otherwise, return -1
+ */
+int FuncParameterNum(Function *func, AST *var);
+
 
 #endif
