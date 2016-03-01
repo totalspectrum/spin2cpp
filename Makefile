@@ -121,7 +121,8 @@ zip:
 FREEWRAP=/opt/freewrap/linux64/freewrap
 FREEWRAPEXE=/opt/freewrap/win32/freewrap.exe
 
-spincvt.zip:
+spincvt.zip: .PHONY
+	rm -f spincvt.zip
 	$(MAKE) CROSS=win32
 	mkdir -p spincvt/bin
 	cp build-win32/spin2cpp.exe spincvt/bin
@@ -132,3 +133,4 @@ spincvt.zip:
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt
 
+.PHONY:
