@@ -28,6 +28,9 @@ proc uread {name} {
     return $text
 }
 
+#
+# reset anything associated with the output file and configuration
+#
 proc resetOutputVars { } {
     global OUTPUT
     global EXT
@@ -53,11 +56,13 @@ proc resetOutputVars { } {
     }
 }
 
+# load a file into a text (or ctext) window
 proc loadFileToWindow { fname win } {
     set file_data [uread $fname]
     $win replace 1.0 end $file_data
 }
 
+# save contents of a window to a file
 proc saveFileFromWindow { fname win } {
     set fp [open $fname w]
     set file_data [$win get 1.0 end]
@@ -66,6 +71,27 @@ proc saveFileFromWindow { fname win } {
     regenOutput $fname
 }
 
+#
+# tag text containing "error:" in a text widget w
+#
+proc tagerrors { w } {
+    $w tag remove errtxt 0.0 end
+    # set current position at beginning of file
+    set cur 1.0
+    # search through looking for error:
+    while 1 {
+	set cur [$w search -count length "error:" $cur end]
+	if {$cur eq ""} {break}
+	$w tag add errtxt $cur "$cur lineend"
+	set cur [$w index "$cur + $length char"]
+    }
+    $w tag configure errtxt -foreground red
+}
+
+#
+# recreate the compiled output
+# spinfile is the name of the output file
+#
 proc regenOutput { spinfile } {
     global COMPILE
     global PASMFILE
@@ -87,8 +113,9 @@ proc regenOutput { spinfile } {
 	set status 1
     }
     .bot.txt insert 2.0 $errout
+    tagerrors .bot.txt
     if { $status != 0 } {
-	tk_messageBox -icon error -type ok -message "Compilation failed"
+	tk_messageBox -icon error -type ok -message "Compilation failed" -detail "see compiler output window for details"
     } else {
 	loadFileToWindow $outname .out.txt
     }
@@ -265,9 +292,11 @@ grid columnconfigure .out .out.txt -weight 1
 scrollbar .bot.v -orient vertical -command {.bot.txt yview}
 scrollbar .bot.h -orient horizontal -command {.bot.txt xview}
 text .bot.txt -wrap none -xscroll {.bot.h set} -yscroll {.bot.v set} -height 4
+label .bot.label -background DarkGrey -foreground white -text "Compiler Output"
 
+grid .bot.label      -sticky nsew
 grid .bot.txt .bot.v -sticky nsew
-grid .bot.h -sticky nsew
+grid .bot.h          -sticky nsew
 grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
