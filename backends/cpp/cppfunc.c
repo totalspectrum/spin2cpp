@@ -218,7 +218,7 @@ PrintFunctionVariables(FILE *f, Function *func)
             for (v = func->locals; v; v = v->right) {
                 sym = VarSymbol(func, v->left);
                 if (sym) {
-                    sym->count += offset;
+		    sym->offset += (offset*4);
                     n = TypeSize((AST *)sym->val);
                     while (n > 0) {
                         n -= 4;

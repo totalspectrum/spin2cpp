@@ -10,7 +10,7 @@
 /*
  * hash function
  */
-int
+static int
 hashfunc(const char *str)
 {
     unsigned hash = 987654321;
@@ -41,6 +41,8 @@ FindSymbol(SymbolTable *table, const char *name)
         }
         sym = sym->next;
     }
+    /* symbol was not found, give up */
+    /* it's up to our caller to look through a containing context */
     return NULL;
 }
 

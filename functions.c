@@ -34,6 +34,7 @@ NewFunction(void)
         pf->next = f;
     }
     f->parse = current;
+    f->localsyms.next = &current->objsyms;
     return f;
 }
 
@@ -53,6 +54,7 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count)
     AST *ast;
     Symbol *sym;
     int size;
+    int typesize = 4;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
@@ -60,12 +62,12 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count)
             switch (ast->kind) {
             case AST_IDENTIFIER:
                 sym = EnterVariable(kind, stab, ast->d.string, symval);
-                sym->count = count++;
+                sym->offset = typesize * count++;
                 break;
             case AST_ARRAYDECL:
                 sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symval, ast->right));
                 size = EvalConstExpr(ast->right);
-                sym->count = count;
+                sym->offset = typesize * count;
                 count += size;
                 break;
             case AST_ANNOTATION:

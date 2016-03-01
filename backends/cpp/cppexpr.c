@@ -122,14 +122,14 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
-            fprintf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->count);
+            fprintf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
         } else {
             fprintf(f, "%s", sym->name);
         }
         break;              
     case SYM_LOCALVAR:
         if (curfunc && curfunc->localarray) {
-            fprintf(f, "%s[%d]", curfunc->localarray, sym->count);
+            fprintf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
         } else {
             fprintf(f, "%s", sym->name);
         }
@@ -660,7 +660,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
             sym = NULL;
         }
         if (sym && sym->type == SYM_LOCALVAR && curfunc && curfunc->localarray) {
-            fprintf(f, "%s[%d + ", curfunc->localarray, sym->count);
+            fprintf(f, "%s[%d + ", curfunc->localarray, sym->offset/4);
             PrintExpr(f, expr->right);
             fprintf(f, "]");
         } else {

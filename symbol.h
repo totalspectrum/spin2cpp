@@ -30,8 +30,11 @@ typedef struct symbol {
     const char   *name;   /* name */
     Symtype       type;   /* symbol type */
     void         *val;    /* symbol value */
-    int           count;  /* extra value recording symbol order within a function */
+    int           flags;  /* various flags */
+    int           offset;  /* extra value recording symbol order within a function */
 } Symbol;
+
+#define SYMF_GLOBAL 0x01
 
 #define INTVAL(sym) ((intptr_t)((sym)->val))
 
@@ -39,6 +42,10 @@ typedef struct symbol {
 /*
  * symbol tables are basically just hash tables containing
  * all the symbols
+ * they can be linked together; the "next" pointer points at the
+ * next symbol table to search for if the symbol is not
+ * found here. typically the search would go:
+ *  function symbols -> module symbols -> global symbols
  */
 
 /* make this a power of two, please */
@@ -46,6 +53,7 @@ typedef struct symbol {
 
 typedef struct symtab {
     Symbol *hash[SYMTABLE_HASH_SIZE];
+    struct symtab *next;
 } SymbolTable;
 
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
