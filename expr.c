@@ -357,7 +357,7 @@ TransformRangeAssign(AST *dst, AST *src)
     mask = ((1U<<nbits) - 1);
     if (IsConstExpr(src)) {
         int bitset = EvalConstExpr(src);
-        if (bitset == 0 || bitset == mask) {
+        if (bitset == 0 || (bitset&mask) == mask) {
             return RangeBitSet(dst, mask, bitset);
         }
     }
