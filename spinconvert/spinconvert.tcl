@@ -2,7 +2,7 @@ package require Tk
 package require ctext
 package require autoscroll
 
-set COMPILE "./bin/spin2cpp --noheader"
+set COMPILE "./bin/spin2cpp"
 set OUTPUT "--asm"
 set EXT ".pasm"
 set radioOut 1
@@ -107,9 +107,12 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline "$COMPILE $OUTPUT -o $PASMFILE $spinfile"
+    set cmdline [list $COMPILE --noheader $OUTPUT -o $PASMFILE $spinfile]
     .bot.txt replace 1.0 end "$cmdline\n"
-    if {[catch {exec -ignorestderr {*}$cmdline 2>@1} errout options]} {
+    set runcmd [list exec -ignorestderr]
+    set runcmd [concat $runcmd $cmdline]
+    lappend runcmd 2>@1
+    if {[catch $runcmd errout options]} {
 	set status 1
     }
     .bot.txt insert 2.0 $errout
