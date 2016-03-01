@@ -1127,12 +1127,6 @@ PrintExpr(FILE *f, AST *expr)
         PrintBoolExpr(f, expr);
         fprintf(f, ")");
         break;
-    case AST_POSTEFFECT:
-        if (current) {
-	    current->needsPosteffect = 1;
-	}
-        PrintPostfix(f, expr, 0);
-        break;
     case AST_ASSIGN:
         fprintf(f, "(");
         PrintAssign(f, expr->left, expr->right);

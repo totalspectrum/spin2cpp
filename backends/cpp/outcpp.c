@@ -420,19 +420,11 @@ PrintMacros(FILE *f, Module *parse)
     if (parse->needsBitEncode) {
         fprintf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
     }
-    if (parse->needsPosteffect) {
-        fprintf(f, "#define PostEffect__(X, Y) __extension__({ int32_t tmp__ = (X); (X) = (Y); tmp__; })\n");
-    }
     if (needsIfdef) 
     {
 	fprintf(f, "#else\n");
 
 	if (needsInline) fprintf(f, "#define INLINE__ static\n");
-	if (parse->needsPosteffect) {
-	  fprintf(f, "static int32_t tmp__;\n");
-	  fprintf(f, "#define PostEffect__(X, Y) (tmp__ = (X), (X) = (Y), tmp__)\n");
-	}
-
 	if (parse->needsYield) {
 	  fprintf(f, "#define Yield__()\n");
 	}

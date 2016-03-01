@@ -1177,12 +1177,39 @@ doSpinTransform(AST **astptr, int level)
         break;
     }
     case AST_POSTEFFECT:
-        if (level != 1 && current) {
-	    current->needsPosteffect = 1;
-	}
+    {
+        /* x~ is the same as (tmp = x, x = 0, tmp) */
+        /* x~~ is (tmp = x, x = -1, tmp) */
+        AST *target;
+        AST *tmp;
+        AST *seq1, *seq2;
+        if (ast->d.ival == '~') {
+            target = AstInteger(0);
+        } else if (ast->d.ival == T_DOUBLETILDE) {
+            target = AstInteger(-1);
+        } else {
+            ERROR(ast, "bad posteffect operator %d", ast->d.ival);
+            target = AstInteger(0);
+        }
         doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        if (ast->right != NULL) {
+            ERROR(ast, "Expected NULL on right of posteffect");
+        }
+        if (level == 1) {
+            // at toplevel we can ignore the old result
+            *astptr = AstAssign(T_ASSIGN, ast->left, target);
+        } else {
+            tmp = AstTempVariable("_tmp_");
+            AddLocalVariable(curfunc, tmp);
+
+            seq1 = NewAST(AST_SEQUENCE,
+                          AstAssign(T_ASSIGN, tmp, ast->left),
+                          AstAssign(T_ASSIGN, ast->left, target));
+            seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
+            *astptr = seq2;
+        }
 	break;
+    }
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;

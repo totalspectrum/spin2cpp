@@ -521,13 +521,6 @@ PrintStatement(FILE *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
-    case AST_POSTEFFECT:
-        PrintDebugDirective(f, ast);
-        fprintf(f, "%*c", indent, ' ');
-        PrintPostfix(f, ast, 1);
-        fprintf(f, ";");
-        PrintNewline(f);
-        break;
     default:
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);
