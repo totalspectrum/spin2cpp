@@ -31,6 +31,8 @@ SymbolTable reservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
 
+static void InitPasm(int flags);
+
 /* functions for handling string streams */
 static int 
 strgetc(LexStream *L)
@@ -1241,7 +1243,7 @@ InstrModifier modifiers[] = {
 
 };
 
-void
+static void
 InitPasm(int flags)
 {
     HwReg *hwreg;

@@ -41,6 +41,7 @@ extern int yydebug;
 
 Module *current;
 Module *allparse;
+Module *globalModule;
 
 int gl_errors;
 int gl_outcode;
@@ -143,8 +144,31 @@ NewModule(const char *fullname)
     strcpy(P->classname, P->basename);
 
     /* link the global symbols */
-    P->objsyms.next = &reservedWords;
+    if (globalModule) {
+        P->objsyms.next = &globalModule->objsyms;
+    } else {
+        P->objsyms.next = &reservedWords;
+    }
     return P;
+}
+
+/*
+ * add a global variable symbols
+ */
+void
+InitGlobalModule(void)
+{
+    SymbolTable *table;
+    Symbol *sym;
+    
+    globalModule = NewModule("<system>");
+    table = &globalModule->objsyms;
+    sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = 0;
+    sym = AddSymbol(table, "CLKMODE", SYM_VARIABLE, ast_type_byte);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = 4;
 }
 
 /*
@@ -469,6 +493,9 @@ init()
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
     initLexer(0);
+
+    /* fill in the global symbol table */
+    InitGlobalModule();
 }
 
 static void

@@ -239,6 +239,9 @@ struct cmddefs {
     const char *val;
 };
 
+extern SymbolTable reservedWords;  // in the lexer
+extern Module *globalModule;       // global functions and variables
+
 /* printing functions */
 
 /* flags for PrintVarList */
@@ -319,9 +322,6 @@ void CheckRecursive(Function *f);
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
-
-extern SymbolTable reservedWords;
-extern void InitPasm(int flags);
 
 extern int IsReservedWord(const char *str);
 

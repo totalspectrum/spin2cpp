@@ -401,6 +401,10 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       if (sym->type == SYM_PARAMETER) {
           return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
       } else if (sym->type == SYM_VARIABLE) {
+          if (sym->flags & SYMF_GLOBAL) {
+              Operand *addr = NewImmediate(sym->offset);
+              return NewOperand(LONG_REF, (char *)addr, 0);
+          }
           return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
       } else if (sym->type == SYM_FUNCTION) {
           AST *fcall = NewAST(AST_FUNCCALL, expr, NULL);
