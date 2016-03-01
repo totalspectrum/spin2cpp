@@ -141,6 +141,9 @@ NewModule(const char *fullname)
     /* set up the class name */
     P->classname = calloc(1, strlen(P->basename)+1);
     strcpy(P->classname, P->basename);
+
+    /* link the global symbols */
+    P->objsyms.next = &reservedWords;
     return P;
 }
 

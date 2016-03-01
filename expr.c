@@ -31,19 +31,27 @@ GetObjectPtr(Symbol *sym)
 
 /* code to find a symbol */
 Symbol *
+LookupSymbolInTable(SymbolTable *table, const char *name)
+{
+    Symbol *sym = NULL;
+    sym = FindSymbol(table, name);
+    if (!sym) {
+        if (table->next) {
+	   return LookupSymbolInTable(table->next, name);
+	}
+    }
+    return sym;
+}
+
+Symbol *
 LookupSymbolInFunc(Function *func, const char *name)
 {
     Symbol *sym = NULL;
+
     if (func) {
-        sym = FindSymbol(&func->localsyms, name);
-        if (!sym) {
-            sym = FindSymbol(&func->parse->objsyms, name);
-        }
+        sym = LookupSymbolInTable(&func->localsyms, name);
     } else {
-        sym = FindSymbol(&current->objsyms, name);
-    }
-    if (!sym) {
-        sym = FindSymbol(&reservedWords, name);
+        sym = LookupSymbolInTable(&current->objsyms, name);
     }
     return sym;
 }
