@@ -29,6 +29,7 @@ static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
 static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileFunccall(IRList *irl, AST *expr);
+static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 
 static void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
@@ -347,15 +348,78 @@ void EmitJump(IRList *irl, IRCond cond, Operand *label)
   AppendIR(irl, ir);
 }
 
-static void EmitFunctionProlog(IRList *irl, Function *f)
+//
+// the header/footer are code that should only be emitted for
+// non-inline function invocations, at the beginning and
+// end of the function; they contain the labels and
+// ret instruction, for example
+//
+static void EmitFunctionHeader(IRList *irl, Function *f)
 {
     EmitLabel(irl, FuncData(f)->asmname);
 }
 
-static void EmitFunctionEpilog(IRList *irl, Function *f)
+static void EmitFunctionFooter(IRList *irl, Function *f)
 {
     EmitLabel(irl, FuncData(f)->asmretname);
     EmitOp0(irl, OPC_RET);
+}
+
+//
+// utility function: get a pointer to the n'th argument
+// for function f
+//
+static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
+{
+#if 0
+    char temp[1024];
+    sprintf(temp, "arg%d_", n);
+    return GetGlobal(REG_ARG, strdup(temp), 0);
+#else
+    AST *astlist = func->params;
+    AST *ast;
+
+    while (astlist != NULL) {
+        ast = astlist->left;
+        astlist = astlist->right;
+        if (n == 0) {
+            return CompileIdentifierForFunc(irl, ast, func);
+        }
+        --n;
+    }
+    ERROR(NULL, "Too many parameters to function %s", func->name);
+    return GetGlobal(REG_ARG, "dummyArg_", 0);
+#endif
+}
+
+//
+// the function Prolog and Epilog are always output, and do things
+// like stack management and variable setup
+//
+
+static void EmitFunctionProlog(IRList *irl, Function *func)
+{
+    int n = 0;
+    AST *astlist = func->params;
+    AST *ast;
+    Operand *src;
+    Operand *dst;
+
+    //
+    // move parameters into local registers
+    //
+    while (astlist != NULL) {
+        ast = astlist->left;
+        astlist = astlist->right;
+
+        src = GetFunctionParameter(irl, func, n++);
+        dst = CompileIdentifierForFunc(irl, ast, func);
+        EmitMove(irl, dst, src);
+    }
+}
+
+static void EmitFunctionEpilog(IRList *irl, Function *func)
+{
 }
 
 Operand *
@@ -403,7 +467,7 @@ NewFunctionTempRegister()
     return GetFunctionTempRegister(f, fdata->curtempreg);
 }
 
-Operand *
+static Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   Module *P = func->parse;
@@ -941,20 +1005,17 @@ CompileExprList(IRList *irl, AST *fromlist)
 static void
 EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
 {
-  AST *astlist = func->params;
-  AST *ast;
-  Operand *op;
-  Operand *dst;
+    Operand *op;
+    Operand *dst;
+    int n = 0;
+  
+    while (oplist != NULL) {
+        op = oplist->op;
+        oplist = oplist->next;
 
-  while (oplist != NULL && astlist != NULL) {
-    op = oplist->op;
-    ast = astlist->left;
-    oplist = oplist->next;
-    astlist = astlist->right;
-
-    dst = CompileIdentifierForFunc(irl, ast, func);
-    EmitMove(irl, dst, op);
-  }
+        dst = GetFunctionParameter(irl, func, n++);
+        EmitMove(irl, dst, op);
+    }
 }
 
 static Operand *
@@ -1550,7 +1611,9 @@ CompileFunctionBody(Function *f)
         ERROR(f->body, "Recursive function %s not supported in PASM", f->name);
     }
     nextlabel = quitlabel = NULL;
+    EmitFunctionProlog(irl, f);
     EmitStatementList(irl, f->body);
+    EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl);
 }
 
@@ -1563,9 +1626,9 @@ CompileWholeFunction(IRList *irl, Function *f)
 {
     IRList *firl = FuncIRL(f);
 
-    EmitFunctionProlog(irl, f);
+    EmitFunctionHeader(irl, f);
     AppendIRList(irl, firl);
-    EmitFunctionEpilog(irl, f);
+    EmitFunctionFooter(irl, f);
 }
 
 static Operand *newlineOp;
