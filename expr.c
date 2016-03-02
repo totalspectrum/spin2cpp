@@ -756,7 +756,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         } else {
             Label *lref = sym->val;
             if (kind == AST_ABSADDROF) {
-                ERROR(expr, "@@@ operator requires the --gas directive");
+                if (gl_dat_offset == -1) {
+                    ERROR(expr, "offset for the @@@ operator is not known");
+                } else {
+                    return intExpr(lref->asmval + gl_dat_offset);
+                }
             }
             return intExpr(lref->asmval);
         }

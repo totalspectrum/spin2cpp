@@ -154,7 +154,7 @@ Operand *NewOperand(enum Operandkind k, const char *name, int value)
     R->kind = k;
     R->name = name;
     R->val = value;
-    if (k == IMM_LABEL) {
+    if (k == IMM_COG_LABEL || k == IMM_HUB_LABEL) {
       R->used = 1;
     }
     return R;
@@ -282,10 +282,19 @@ NewTempLabelName()
 }
 
 Operand *
-NewLabel()
+NewCodeLabel()
 {
   Operand *label;
-  label = NewOperand(IMM_LABEL, NewTempLabelName(), 0);
+  label = NewOperand(IMM_COG_LABEL, NewTempLabelName(), 0);
+  label->used = 0;
+  return label;
+}
+
+Operand *
+NewDataLabel()
+{
+  Operand *label;
+  label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
   label->used = 0;
   return label;
 }
@@ -316,6 +325,10 @@ void EmitString(IRList *irl, AST *ast)
   case AST_STRING:
       op = NewOperand(IMM_STRING, ast->d.string, 0);
       EmitOp1(irl, OPC_STRING, op);
+      break;
+  case AST_INTEGER:
+      op = NewOperand(IMM_INT, "", ast->d.ival);
+      EmitOp1(irl, OPC_BYTE, op);
       break;
   default:
       ERROR(ast, "Unable to emit string");
@@ -361,7 +374,7 @@ NewImmediatePtr(Operand *val)
 {
     char temp[1024];
     sprintf(temp, "ptr_%s_", val->name);
-    return GetGlobal(IMM_LABEL, strdup(temp), (intptr_t)val);
+    return GetGlobal(IMM_HUB_LABEL, strdup(temp), (intptr_t)val);
 }
 
 static Operand *
@@ -444,7 +457,7 @@ CompileMul(IRList *irl, AST *expr, int gethi)
   Operand *temp = NewFunctionTempRegister();
 
   if (!mulfunc) {
-    mulfunc = NewOperand(IMM_LABEL, "multiply_", 0);
+    mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
     mula = GetGlobal(REG_ARG, "muldiva_", 0);
     mulb = GetGlobal(REG_ARG, "muldivb_", 0);
   }
@@ -467,7 +480,7 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
   Operand *temp = NewFunctionTempRegister();
 
   if (!divfunc) {
-    divfunc = NewOperand(IMM_LABEL, "divide_", 0);
+    divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
     diva = GetGlobal(REG_ARG, "muldiva_", 0);
     divb = GetGlobal(REG_ARG, "muldivb_", 0);
   }
@@ -638,7 +651,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         break;
     case T_AND:
         if (!falsedest) {
-            dummylabel = NewLabel();
+            dummylabel = NewCodeLabel();
             falsedest = dummylabel;
         }
         CompileBoolBranches(irl, expr->left, NULL, falsedest);
@@ -649,7 +662,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         break;
     case T_OR:
         if (!truedest) {
-            dummylabel = NewLabel();
+            dummylabel = NewCodeLabel();
             truedest = dummylabel;
         }
         CompileBoolBranches(irl, expr->left, truedest, NULL);
@@ -769,7 +782,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
     left = NewFunctionTempRegister();
     EmitMove(irl, left, right);
     EmitMove(irl, temp, NewImmediate(32));
-    right = NewLabel();
+    right = NewCodeLabel();
     EmitLabel(irl, right);
     ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
     ir->flags |= FLAG_WC;
@@ -787,7 +800,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case '>':
   {
       Operand *zero = NewImmediate(0);
-      Operand *skiplabel = NewLabel();
+      Operand *skiplabel = NewCodeLabel();
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_NOT, temp, temp);
@@ -1057,8 +1070,8 @@ CompileCondResult(IRList *irl, AST *expr)
     AST *elsepart = expr->right->right;
     Operand *r = NewFunctionTempRegister();
     Operand *tmp;
-    Operand *label1 = NewLabel();
-    Operand *label2 = NewLabel();
+    Operand *label1 = NewCodeLabel();
+    Operand *label2 = NewCodeLabel();
 
     CompileBoolBranches(irl, cond, NULL, label1);
     /* the default is the IF part */
@@ -1100,7 +1113,7 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_ISBETWEEN:
   {
       Operand *zero = NewImmediate(0);
-      Operand *skiplabel = NewLabel();
+      Operand *skiplabel = NewCodeLabel();
       Operand *temp = NewFunctionTempRegister();
       
       EmitMove(irl, temp, zero);
@@ -1349,9 +1362,9 @@ static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
 
     CompileExpression(irl, initstmt);
     
-    toplabel = NewLabel();
-    nextlabel = NewLabel();
-    exitlabel = NewLabel();
+    toplabel = NewCodeLabel();
+    nextlabel = NewCodeLabel();
+    exitlabel = NewCodeLabel();
     PushQuitNext(exitlabel, nextlabel);
 
     EmitLabel(irl, toplabel);
@@ -1447,8 +1460,8 @@ static void EmitStatement(IRList *irl, AST *ast)
         CompileWait(irl, ast);
         break;
     case AST_WHILE:
-        toploop = NewLabel();
-	botloop = NewLabel();
+        toploop = NewCodeLabel();
+	botloop = NewCodeLabel();
 	PushQuitNext(botloop, toploop);
 	EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
@@ -1459,9 +1472,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	PopQuitNext();
 	break;
     case AST_DOWHILE:
-        toploop = NewLabel();
-	botloop = NewLabel();
-	exitloop = NewLabel();
+        toploop = NewCodeLabel();
+	botloop = NewCodeLabel();
+	exitloop = NewCodeLabel();
 	PushQuitNext(exitloop, botloop);
 	EmitLabel(irl, toploop);
         EmitStatementList(irl, ast->right);
@@ -1490,7 +1503,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	break;
     case AST_IF:
-        toploop = NewLabel();
+        toploop = NewCodeLabel();
         CompileBoolBranches(irl, ast->left, NULL, toploop);
 	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
@@ -1500,7 +1513,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	/* ast should be an AST_THENELSE */
 	EmitStatementList(irl, ast->left);
 	if (ast->right) {
-	  botloop = NewLabel();
+	  botloop = NewCodeLabel();
 	  EmitJump(irl, COND_TRUE, botloop);
 	  EmitLabel(irl, toploop);
 	  EmitStatementList(irl, ast->right);
@@ -1596,7 +1609,7 @@ static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       EmitLabel(irl, g[i].op);
       if (g[i].op->kind == STRING_DEF) {
           EmitString(irl, (AST *)g[i].val);
-      } else if (g[i].op->kind == IMM_LABEL) {
+      } else if (g[i].op->kind == IMM_COG_LABEL || g[i].op->kind == IMM_HUB_LABEL) {
           EmitLongPtr(irl, (Operand *)g[i].op->val);
       } else {
           EmitLong(irl, g[i].val);
@@ -1623,8 +1636,8 @@ CompileToIR(IRList *irl, Module *P)
 	frname = malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
         f->bedata = calloc(1, sizeof(IRFuncData));
-        FuncData(f)->asmname = NewOperand(IMM_LABEL, fname, 0);
-        FuncData(f)->asmretname = NewOperand(IMM_LABEL, frname, 0);
+        FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
+        FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
     }
     
     // now compile the functions

@@ -11,14 +11,10 @@ CON
   bitcycles = _clkfreq / baud  
    
 PUB demo
-''   serstr(string("hello, world!", 13, 10))
+ 
   repeat
-     serchar("H")
-     serchar("I")
-     serchar("!")
-     serchar(13)
-     serchar(10)
-     
+    serstr(string("hello, world!", 13, 10))
+
 PUB serchar(c) | val, waitcycles
   OUTA |= txmask
   DIRA |= txmask
@@ -35,3 +31,5 @@ PUB serchar(c) | val, waitcycles
 PUB serstr(s) | c
   REPEAT WHILE ((c := byte[s++]) <> 0)
     serchar(c)
+
+

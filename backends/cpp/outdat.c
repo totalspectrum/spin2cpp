@@ -12,16 +12,16 @@
 #include "spinc.h"
 #include "outcpp.h"
 
-static void putbyte(FILE *f, unsigned int x)
+static void putbyte(Flexbuf *f, unsigned int x)
 {
-    fputc(x & 0xff, f);
+    flexbuf_putc(x & 0xff, f);
 }
-static void putword(FILE *f, unsigned int x)
+static void putword(Flexbuf *f, unsigned int x)
 {
     putbyte(f, x & 0xff);
     putbyte(f,  (x>>8) & 0xff);
 }
-static void putlong(FILE *f, unsigned int x)
+static void putlong(Flexbuf *f, unsigned int x)
 {
     putbyte(f, x & 0xff);
     putbyte(f,  (x>>8) & 0xff);
@@ -30,7 +30,7 @@ static void putlong(FILE *f, unsigned int x)
 }
 
 static void
-OutputSpinHeader(FILE *f, Module *P)
+OutputSpinHeader(Flexbuf *f, Module *P)
 {
     unsigned int clkfreq = 80000000;
     unsigned int clkmodeval = 0x6f;
@@ -76,11 +76,11 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         exit(1);
     }
 
+    flexbuf_init(&fb, BUFSIZ);
     if (prefixBin) {
         /* output a binary header */
-        OutputSpinHeader(f, P);
+        OutputSpinHeader(&fb, P);
     }
-    flexbuf_init(&fb, BUFSIZ);
     PrintDataBlock(&fb, P, BINARY_OUTPUT);
     fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);

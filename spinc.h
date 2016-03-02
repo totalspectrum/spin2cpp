@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define VERSIONSTR "3.00-preview-4"
+#define VERSIONSTR "3.00-preview-5"
 
 /* Yacc define */
 /* we need to put it up here because the lexer includes spin.tab.h */
@@ -54,6 +54,8 @@ extern int gl_expand_constants; /* flag: if set, print constant values rather th
 extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_NO_ASM 0x100
+
+extern int gl_dat_offset; /* offset for @@@ operator */
 
 // temporary hack
 #define gl_ccode (gl_outcode == OUTCODE_C)

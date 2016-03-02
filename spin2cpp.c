@@ -51,6 +51,7 @@ int gl_normalizeIdents;
 int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
+int gl_dat_offset;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
 AST *ast_type_generic;
@@ -621,13 +622,22 @@ DoPropellerChecksum(const char *fname)
     unsigned char checksum = 0;
     int c, r;
     size_t len;
-
+    size_t padbytes;
     if (!f) {
         perror(fname);
         return -1;
     }
     fseek(f, 0L, SEEK_END);
     len = ftell(f);  // find length of file
+    // pad file to multiple of 4, if necessary
+    padbytes = ((len + 3) & ~3) - len;
+    if (padbytes) {
+        while (padbytes > 0) {
+            fputc(0, f);
+            padbytes--;
+            len++;
+        }
+    }
     // update header fields
     fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
     fputc(len & 0xff, f);
@@ -901,6 +911,15 @@ main(int argc, char **argv)
        so that command line options can influence it */
     init();
 
+    /* set up the binary offset */
+    gl_dat_offset = -1; // by default offset is unknown
+    if (outputDat && outputBin) {
+        // a 32 byte spin header is prepended to binary output of dat
+        gl_dat_offset = 32;
+    } else if (outputDat && gl_gas_dat) {
+        // GAS output for dat uses symbols, so @@@ is OK there
+        gl_dat_offset = 0;
+    }
     /* now actually parse the file */
     P = parseFile(argv[0]);
     if (compile && argc > 1) {

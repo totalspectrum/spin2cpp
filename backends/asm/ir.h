@@ -120,18 +120,18 @@ typedef struct IRList {
 
 enum Operandkind {
     IMM_INT,  // for an immediate value (possibly stored in a register)
-    IMM_LABEL, // an immediate holding a memory address
+    IMM_COG_LABEL, // an immediate holding a memory address
+    IMM_HUB_LABEL, // ditto, but for HUB rather than COG memory
     IMM_STRING, // a string to print or store
 
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)
+    REG_HUBPTR, // a register which holds a hub address
     REG_ARG,   // for an argument to a function
 
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_ARG)
-    // labels in memory
-    HUB_LABEL,
-    
+
     // all of these memory references must go together
     LONG_REF,      // register indirect memory access; val is the offset
     WORD_REF,

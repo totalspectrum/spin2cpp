@@ -56,7 +56,7 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
     case LONG_REF:
         ERROR(NULL, "Internal error: tried to use memory directly");
         break;
-    case IMM_LABEL:
+    case IMM_COG_LABEL:
         flexbuf_addstr(fb, "#");
         /* fall through */
     default:
@@ -68,19 +68,27 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
 void
 PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
 {
-    char temp[128];
+    Operand *indirect;
+    
     switch (reg->kind) {
     case IMM_INT:
-        sprintf(temp, "%d", (int)(int32_t)reg->val);
-        flexbuf_addstr(fb, temp);
+        flexbuf_printf(fb, "%d", (int)(int32_t)reg->val);
         break;
-    case IMM_LABEL:
+    case IMM_HUB_LABEL:
+    case STRING_DEF:
+        flexbuf_addstr(fb, "@@@");
+        // fall through
+    case IMM_COG_LABEL:
         flexbuf_addstr(fb, reg->name);
         break;
     case IMM_STRING:
         flexbuf_addchar(fb, '"');
         flexbuf_addstr(fb, reg->name);
         flexbuf_addchar(fb, '"');
+        break;
+    case REG_HUBPTR:
+        indirect = (Operand *)reg->val;
+        flexbuf_addstr(fb, indirect->name);
         break;
     default:
         PrintOperand(fb, reg);
