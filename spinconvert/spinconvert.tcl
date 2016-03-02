@@ -6,6 +6,7 @@ set COMPILE "./bin/spin2cpp"
 set OUTPUT "--asm"
 set EXT ".pasm"
 set radioOut 1
+set makeBinary 0
 
 #
 # read a file and return its text
@@ -97,7 +98,8 @@ proc regenOutput { spinfile } {
     global PASMFILE
     global OUTPUT
     global EXT
-    
+    global makeBinary
+
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
 	set dirname [file dirname $spinfile]
@@ -121,6 +123,11 @@ proc regenOutput { spinfile } {
 	tk_messageBox -icon error -type ok -message "Compilation failed" -detail "see compiler output window for details"
     } else {
 	loadFileToWindow $outname .out.txt
+	if { $makeBinary != 0 && $EXT eq ".pasm" } {
+	    set binfile [file rootname $PASMFILE]
+	    set binfile "$binfile.binary"
+	    exec $COMPILE --dat --binary -o $binfile $PASMFILE
+	}
     }
 }
 
@@ -140,6 +147,7 @@ proc loadNewSpinFile {} {
     .orig.txt highlight 1.0 end
     regenOutput $filename
     set SPINFILE $filename
+    set PASMFILE ""
     wm title . $SPINFILE
 }
 
@@ -253,7 +261,8 @@ menu .mbar.help -tearoff 0
 .mbar.options add radiobutton -label "Pasm Output" -variable radioOut -value 1 -command { resetOutputVars }
 .mbar.options add radiobutton -label "C Output" -variable radioOut -value 2 -command { resetOutputVars }
 .mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
-
+.mbar.options add separator
+.mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
 .mbar add cascade -menu .mbar.help -label Help
 .mbar.help add command -label "Help" -command { doHelp }
 .mbar.help add separator
