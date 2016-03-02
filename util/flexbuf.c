@@ -3,13 +3,15 @@
  * These buffers can grow and shrink as the program progresses.
  *
  * Written by Eric R. Smith
- * Copyright (c) 2012 Total Spectrum Software Inc.
+ * Copyright (c) 2012,2016 Total Spectrum Software Inc.
  * MIT Licensed; see terms at the end of this file.
  */
 
-#include "flexbuf.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include "flexbuf.h"
+#include "util.h"
 
 #define DEFAULT_GROWSIZE BUFSIZ
 
@@ -100,6 +102,27 @@ void flexbuf_delete(struct flexbuf *fb)
     if (fb->data)
         free(fb->data);
     flexbuf_init(fb, 1);
+}
+
+/* print to a flexbuf */
+static int
+flexbuf_fputc(int c, void *v)
+{
+    struct flexbuf *fb = (struct flexbuf *)v;
+    flexbuf_addchar(fb, c);
+    return c;
+}
+
+int
+flexbuf_printf(struct flexbuf *fb, const char *fmt, ...)
+{
+    va_list args;
+    int r;
+    
+    va_start(args, fmt);
+    r = _dofmt(flexbuf_fputc, (void *)fb, fmt, &args);
+    va_end(args);
+    return r;
 }
 
 /*

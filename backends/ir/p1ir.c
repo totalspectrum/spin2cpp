@@ -27,7 +27,6 @@
  */
 #include "spinc.h"
 #include "ir.h"
-#include "flexbuf.h"
 
 static int inDat;
 static int inCon;
@@ -315,7 +314,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_WRLONG:
     case OPC_XOR:
         PrintCond(fb, ir->cond);
-	flexbuf_addstr(fb, StringFor(ir->opc));
+        flexbuf_printf(fb, "%s\t", StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
 	PrintOperand(fb, ir->dst);
 	flexbuf_addstr(fb, ", ");

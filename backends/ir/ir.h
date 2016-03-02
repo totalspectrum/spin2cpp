@@ -7,6 +7,8 @@
 #ifndef SPIN_IR_H
 #define SPIN_IR_H
 
+#include "util/flexbuf.h"
+
 // forward definitions
 typedef struct IR IR;
 typedef struct Operand Operand;

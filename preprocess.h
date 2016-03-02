@@ -10,7 +10,7 @@
 #define PREPROCESS_H_
 
 #include <string.h>
-#include "flexbuf.h"
+#include "util/flexbuf.h"
 
 struct predef {
     struct predef *next;

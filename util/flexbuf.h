@@ -48,4 +48,7 @@ void flexbuf_delete(struct flexbuf *fb);
 /* find current length of a buffer */
 size_t flexbuf_curlen(struct flexbuf *fb);
 
+/* print to a flexbuf */
+int flexbuf_printf(struct flexbuf *fb, const char *fmt, ...);
+
 #endif

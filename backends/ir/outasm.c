@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include "spinc.h"
 #include "ir.h"
-#include "flexbuf.h"
 
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;

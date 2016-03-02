@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include "spinc.h"
 #include "ir.h"
-#include "flexbuf.h"
 
 //
 // helper functions

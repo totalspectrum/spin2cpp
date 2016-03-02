@@ -13,7 +13,6 @@
 #include <math.h>
 #include "spinc.h"
 #include "preprocess.h"
-#include "flexbuf.h"
 
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;

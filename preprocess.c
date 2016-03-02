@@ -43,7 +43,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "flexbuf.h"
 #include "preprocess.h"
 
 #ifdef _MSC_VER
