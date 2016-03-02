@@ -15,6 +15,14 @@ source code will appear on the left, and the converted file on the
 right. The converted file is updated automatically whenever the Spin
 source is saved.
 
+If you select PASM output then you have the option to produce an
+executable .binary. To do this select the "Make binary" option under
+the Options menu. This only works for PASM output. The result has the
+same name as the PASM output file, but with an extension of
+".binary". To run this binary file on your Propeller hardware you will
+have to use the Propeller Tool or some similar IDE, or use the
+propeller-load command line tool from PropGCC.
+
 The filename for the output is set automatically by
 changing the extension of the Spin file. For example, if the input is
 dir\myObj.spin, then the output will be dir\myObj.pasm (or dir\myObj.c
@@ -25,13 +33,9 @@ GUI.
 
 KNOWN ISSUES
 
-Only ASCII or UTF-8 encoded documents can be read and displayed
-correctly by the GUI, although the spin2cpp back end can handle
-Unicode encoded files.
-
 PASM output cannot handle byte or word variables, or files with the
 OBJ directive. It also does notimplement lookup/lookdown, case,
-string, coginit/cognew, and some operators. It's still very much a
+coginit/cognew, and some operators. It's still very much a
 work in progress. 
 
-The C/C++ output should be pretty complete.
+The C/C++ output should be complete.
