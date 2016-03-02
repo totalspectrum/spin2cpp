@@ -18,6 +18,8 @@ struct flexbuf {
     size_t growsize; /* how much we should grow */
 };
 
+typedef struct flexbuf Flexbuf;
+
 /* initialize a buffer */
 void flexbuf_init(struct flexbuf *fb, size_t growsize);
 

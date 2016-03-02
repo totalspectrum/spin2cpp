@@ -42,14 +42,16 @@ CFLAGS = -g -Wall -Werror $(INC)
 LIBS = -lm
 RM = rm -f
 
-VPATH=.:backends:backends/ir:backends/cpp
+VPATH=.:util:backends:backends/ir:backends/cpp
 
 HEADERS = $(BUILD)/spin.tab.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
 
+UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c
+
 # FIXME lexer should not need cppexpr.c (it belongs in CPPBACK)
-LEXSRCS = lexer.c symbol.c ast.c expr.c flexbuf.c preprocess.c cppexpr.c
+LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c cppexpr.c
 PASMBACK = outasm.c p1ir.c optimize_ir.c
 CPPBACK = outcpp.c cppfunc.c # cppexpr.c
 SPINSRCS = $(LEXSRCS) functions.c pasm.c outdat.c $(PASMBACK) $(CPPBACK)
