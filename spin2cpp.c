@@ -502,7 +502,6 @@ init()
 static void
 Usage(void)
 {
-    fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
     fprintf(stderr, "Usage: %s [options] file.spin\n", gl_progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
@@ -897,13 +896,16 @@ main(int argc, char **argv)
                     appendToCmd(argv[0]); argv++; --argc;
                 }
             } else {
+                fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
                 Usage();
             }
         } else {
+            fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage();
         }
     }
     if (argv[0] == NULL || (argc != 1 && !compile)) {
+        fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
         Usage();
     }
 
