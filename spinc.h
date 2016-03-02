@@ -19,6 +19,8 @@
 #include "lexer.h"
 #include "symbol.h"
 #include "expr.h"
+#include "util/util.h"
+#include "util/flexbuf.h"
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
@@ -163,7 +165,7 @@ typedef struct builtin {
     const char *name;
     int         numparameters;
     /* function to actually print the builtin */
-    void        (*printit)(FILE *, struct builtin *, AST *params);
+    void        (*printit)(Flexbuf *, struct builtin *, AST *params);
     const char *cname;  /* c version of the name */
 
     /* extra data */
@@ -249,9 +251,9 @@ extern Module *globalModule;       // global functions and variables
 #define PRIVATE 1
 #define LOCAL 2
 #define VOLATILE 4
-int PrintVarList(FILE *f, AST *type, AST *list, int flags);
+int PrintVarList(Flexbuf *f, AST *type, AST *list, int flags);
 
-void PrintAssign(FILE *f, AST *left, AST *right);
+void PrintAssign(Flexbuf *f, AST *left, AST *right);
 
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);
@@ -284,8 +286,8 @@ void DeclareFunctions(Module *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareAnnotation(AST *annotation);
-void PrintDataBlock(FILE *f, Module *P, int isBinary);
-void PrintDataBlockForGas(FILE *f, Module *P, int inlineAsm);
+void PrintDataBlock(Flexbuf *f, Module *P, int isBinary);
+void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count);
 
 // find the variable symbol for an identifier or array decl

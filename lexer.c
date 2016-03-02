@@ -966,13 +966,13 @@ static char *c_words[] = {
     "xor_eq"
 };
 
-extern void defaultBuiltin(FILE *, Builtin *, AST *);
-extern void defaultVariable(FILE *, Builtin *, AST *);
-extern void memBuiltin(FILE *, Builtin *, AST *);
-extern void memFillBuiltin(FILE *, Builtin *, AST *);
-extern void str1Builtin(FILE *, Builtin *, AST *);
-extern void strcompBuiltin(FILE *, Builtin *, AST *);
-extern void rebootBuiltin(FILE *, Builtin *, AST *);
+extern void defaultBuiltin(Flexbuf *, Builtin *, AST *);
+extern void defaultVariable(Flexbuf *, Builtin *, AST *);
+extern void memBuiltin(Flexbuf *, Builtin *, AST *);
+extern void memFillBuiltin(Flexbuf *, Builtin *, AST *);
+extern void str1Builtin(Flexbuf *, Builtin *, AST *);
+extern void strcompBuiltin(Flexbuf *, Builtin *, AST *);
+extern void rebootBuiltin(Flexbuf *, Builtin *, AST *);
 
 /* hooks to be called when we recognize a builtin */
 static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }

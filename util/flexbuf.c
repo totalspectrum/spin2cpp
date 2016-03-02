@@ -13,7 +13,8 @@
 #include "flexbuf.h"
 #include "util.h"
 
-#define DEFAULT_GROWSIZE BUFSIZ
+//#define DEFAULT_GROWSIZE BUFSIZ
+#define DEFAULT_GROWSIZE 65536
 
 void flexbuf_init(struct flexbuf *fb, size_t growsize)
 {

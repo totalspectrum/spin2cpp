@@ -51,4 +51,6 @@ size_t flexbuf_curlen(struct flexbuf *fb);
 /* print to a flexbuf */
 int flexbuf_printf(struct flexbuf *fb, const char *fmt, ...);
 
+#define flexbuf_putc(c, f) flexbuf_addchar((f), (c))
+
 #endif

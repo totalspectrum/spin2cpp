@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include "outcpp.h"
 
-static void PrintObjectSym(FILE *f, Symbol *objsym, AST *expr);
+static void PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr);
 
 static int
 isBooleanOperator(AST *expr)
@@ -55,54 +55,54 @@ isNegateOperator(AST *expr)
  * dereference again
  */
 void
-PrintLabel(FILE *f, Symbol *sym, int ref)
+PrintLabel(Flexbuf *f, Symbol *sym, int ref)
 {
     Label *lab;
 
     if (current->printLabelsVerbatim) {
         if (current->fixImmediate) {
-            fprintf(f, "((%s-..start)/4)", sym->name);
+            flexbuf_printf(f, "((%s-..start)/4)", sym->name);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
     } else {
         lab = (Label *)sym->val;
-        fprintf(f, "(%s(", ref ? "" : "*");
+        flexbuf_printf(f, "(%s(", ref ? "" : "*");
         PrintType(f, lab->type);
-        fprintf(f, " *)&%s[%d])", current->datname, lab->offset);
+        flexbuf_printf(f, " *)&%s[%d])", current->datname, lab->offset);
     }
 }
 
 /* code to print an integer */
 void
-PrintInteger(FILE *f, int32_t v)
+PrintInteger(Flexbuf *f, int32_t v)
 {
     if (current->printLabelsVerbatim) {
         if (v > -10 && v < 10) {
-            fprintf(f, "%ld", (long)v);
+            flexbuf_printf(f, "%ld", (long)v);
         } else {
-            fprintf(f, "$%lx", (long)(uint32_t)v);
+            flexbuf_printf(f, "$%lx", (long)(uint32_t)v);
         }
     }
     else if (v == (int32_t)0x80000000)
-        fprintf(f, "(int32_t)0x%lxU", (long)(uint32_t)v);
+        flexbuf_printf(f, "(int32_t)0x%lxU", (long)(uint32_t)v);
     else
-        fprintf(f, "%ld", (long)v);
+        flexbuf_printf(f, "%ld", (long)v);
 }
 
 /* code to print a float */
 void
-PrintFloat(FILE *f, int32_t v)
+PrintFloat(Flexbuf *f, int32_t v)
 {
     if (v < 0)
-        fprintf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
+        flexbuf_printf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
     else
-        fprintf(f, "0x%lx", (long)v);
+        flexbuf_printf(f, "0x%lx", (long)v);
 }
 
 /* code to print a symbol to a file */
 void
-PrintSymbol(FILE *f, Symbol *sym)
+PrintSymbol(Flexbuf *f, Symbol *sym)
 {
     switch (sym->type) {
     case SYM_LABEL:
@@ -114,7 +114,7 @@ PrintSymbol(FILE *f, Symbol *sym)
             v = EvalConstExpr((AST *)sym->val);
             PrintInteger(f, v);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
         break;
     case SYM_FLOAT_CONSTANT:
@@ -122,42 +122,42 @@ PrintSymbol(FILE *f, Symbol *sym)
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
-            fprintf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
+            flexbuf_printf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
         break;              
     case SYM_LOCALVAR:
         if (curfunc && curfunc->localarray) {
-            fprintf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
+            flexbuf_printf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
         break;              
     case SYM_RESULT:
         if (curfunc && curfunc->result_in_parmarray) {
-            fprintf(f, "%s[0]", curfunc->parmarray);
+            flexbuf_printf(f, "%s[0]", curfunc->parmarray);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
         break;
     case SYM_VARIABLE:
         if (gl_ccode || (curfunc && curfunc->force_static) ) {
-            fprintf(f, "self->%s", sym->name);
+            flexbuf_printf(f, "self->%s", sym->name);
         } else {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         }
         break;
     case SYM_FUNCTION:
     default:
-        fprintf(f, "%s", sym->name);
+        flexbuf_printf(f, "%s", sym->name);
         break;
     }
 }
 
 /* code to print a function call to a file */
 void
-PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
+PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 {
     int is_static = 0;
     if (sym->type == SYM_FUNCTION) {
@@ -167,23 +167,23 @@ PrintFuncCall(FILE *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
         is_static = func->is_static;
     }
     /* check for object method call */
-    fprintf(f, "%s(", sym->name);
+    flexbuf_printf(f, "%s(", sym->name);
     if (gl_ccode && !is_static) {
         if (objsym) {
             PrintObjectSym(f, objsym, objref);
         } else {
-            fprintf(f, "self");
+            flexbuf_printf(f, "self");
         }
         if (params)
-            fprintf(f, ", ");
+            flexbuf_printf(f, ", ");
     }
     PrintExprList(f, params);
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 /* code to print coginit to a file */
 void
-PrintLabelCoginit(FILE *f, AST *params)
+PrintLabelCoginit(Flexbuf *f, AST *params)
 {
     const char *funcname = "coginit";
     if (params->kind == AST_COGINIT) {
@@ -200,13 +200,13 @@ PrintLabelCoginit(FILE *f, AST *params)
             funcname = "cognew";
         }
     }
-    fprintf(f, "%s(", funcname);
+    flexbuf_printf(f, "%s(", funcname);
     PrintExprList(f, params);
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 void
-PrintTopOfStack(FILE *f, AST *origstack)
+PrintTopOfStack(Flexbuf *f, AST *origstack)
 {
     AST *stack = origstack;
     AST *stype;
@@ -238,11 +238,11 @@ PrintTopOfStack(FILE *f, AST *origstack)
     stacksize = EvalConstExpr(stype->right);
 
     /* now change the array reference to use the top of stack */
-    fprintf(f, "&%s[%d]", sym->name, stacksize);
+    flexbuf_printf(f, "&%s[%d]", sym->name, stacksize);
 }
 
 void
-PrintSpinCoginit(FILE *f, AST *body)
+PrintSpinCoginit(Flexbuf *f, AST *body)
 {
     AST *cogid;
     AST *func;
@@ -292,12 +292,12 @@ PrintSpinCoginit(FILE *f, AST *body)
         ERROR(body, "coginit expected spin method");
         return;
     }
-    fprintf(f, "Coginit__(");
+    flexbuf_printf(f, "Coginit__(");
     PrintExpr(f, cogid);
-    fprintf(f, ", (void *)");
+    flexbuf_printf(f, ", (void *)");
     /* need to find stack size */
     PrintTopOfStack(f, stack);
-    fprintf(f, ", (void *)");
+    flexbuf_printf(f, ", (void *)");
     PrintSymbol(f, sym);
 
     /* print parameters, and pad with 0's */
@@ -306,23 +306,23 @@ PrintSpinCoginit(FILE *f, AST *body)
             ERROR(params, "expected expression list");
             return;
         }
-        fprintf(f, ", ");
+        flexbuf_printf(f, ", ");
         if (params) {
             PrintExpr(f, params->left);
             params = params->right;
         } else {
-            fprintf(f, "0");
+            flexbuf_printf(f, "0");
         }
         n++;
     }
     if (n > 4) {
         ERROR(body, "too many arguments to spin method in coginit/cognew");
     }
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 void
-PrintCogInit(FILE *f, AST *params)
+PrintCogInit(Flexbuf *f, AST *params)
 {
     if (!params || !params->left) {
         ERROR(params, "coginit/cognew requires parameters");
@@ -338,18 +338,18 @@ PrintCogInit(FILE *f, AST *params)
 /* code to print left operator right
  */
 static void
-PrintInOp(FILE *f, const char *op, AST *left, AST *right)
+PrintInOp(Flexbuf *f, const char *op, AST *left, AST *right)
 {
     if (left && right) {
         PrintExpr(f, left);
-        fprintf(f, " %s ", op);
+        flexbuf_printf(f, " %s ", op);
         PrintExpr(f, right);
     } else if (right) {
-        fprintf(f, "%s", op);
+        flexbuf_printf(f, "%s", op);
         PrintExpr(f, right);
     } else {
         PrintExpr(f, left);
-        fprintf(f, "%s", op);
+        flexbuf_printf(f, "%s", op);
     }
 }
 
@@ -358,43 +358,43 @@ PrintInOp(FILE *f, const char *op, AST *left, AST *right)
  * just like PrintInOp, but prints integer constants in hex
  */
 static void
-PrintHexExpr(FILE *f, AST *left)
+PrintHexExpr(Flexbuf *f, AST *left)
 {
     if (left->kind == AST_INTEGER || left->kind == AST_FLOAT) {
-        fprintf(f, "0x%x", EvalConstExpr(left));
+        flexbuf_printf(f, "0x%x", EvalConstExpr(left));
     } else {
         PrintExpr(f, left);
     }
 }
 
 static void
-PrintLogicOp(FILE *f, const char *op, AST *left, AST *right)
+PrintLogicOp(Flexbuf *f, const char *op, AST *left, AST *right)
 {
     if (left && right) {
         PrintHexExpr(f, left);
-        fprintf(f, " %s ", op);
+        flexbuf_printf(f, " %s ", op);
         PrintHexExpr(f, right);
     } else if (right) {
-        fprintf(f, "%s", op);
+        flexbuf_printf(f, "%s", op);
         PrintHexExpr(f, right);
     } else {
         PrintHexExpr(f, left);
-        fprintf(f, "%s", op);
+        flexbuf_printf(f, "%s", op);
     }
 }
 
 static void
-PrintMacroExpr(FILE *f, const char *name, AST *left, AST *right)
+PrintMacroExpr(Flexbuf *f, const char *name, AST *left, AST *right)
 {
-    fprintf(f, "%s(", name);
+    flexbuf_printf(f, "%s(", name);
     PrintExpr(f, left);
-    fprintf(f, ", ");
+    flexbuf_printf(f, ", ");
     PrintExpr(f, right);
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 void
-PrintOperator(FILE *f, int op, AST *left, AST *right)
+PrintOperator(Flexbuf *f, int op, AST *left, AST *right)
 {
     char opstring[4];
 
@@ -430,11 +430,11 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         }
         break;
     case T_REV:
-        fprintf(f, "__builtin_propeller_rev(");
+        flexbuf_printf(f, "__builtin_propeller_rev(");
         PrintExpr(f, left);
-        fprintf(f, ", 32 - ");
+        flexbuf_printf(f, ", 32 - ");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case T_MODULUS:
         PrintInOp(f, "%", left, right);
@@ -480,24 +480,24 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintMacroExpr(f, "Rotr__", left, right);
         break;
     case T_ABS:
-        fprintf(f, "abs(");
+        flexbuf_printf(f, "abs(");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case T_SQRT:
-        fprintf(f, "Sqrt__(");
+        flexbuf_printf(f, "Sqrt__(");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case '?':
         if (left) {
-            fprintf(f, "RandForw__(");
+            flexbuf_printf(f, "RandForw__(");
             PrintExpr(f, left);
-            fprintf(f, ")");
+            flexbuf_printf(f, ")");
         } else {
-            fprintf(f, "RandBack__(");
+            flexbuf_printf(f, "RandBack__(");
             PrintExpr(f, right);
-            fprintf(f, ")");
+            flexbuf_printf(f, ")");
         }
         break;
     case '&':
@@ -518,14 +518,14 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
         PrintInOp(f, opstring, left, right);
         break;
     case T_ENCODE:
-        fprintf(f, "BitEncode__(");
+        flexbuf_printf(f, "BitEncode__(");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case T_DECODE:
-        fprintf(f, "(1<<");
+        flexbuf_printf(f, "(1<<");
         PrintExpr(f, right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     default:
         ERROR(NULL, "unsupported operator %d", op);
@@ -537,7 +537,7 @@ PrintOperator(FILE *f, int op, AST *left, AST *right)
  * code to print out a type declaration
  */
 static void
-doPrintType(FILE *f, AST *typedecl, int fromPtr)
+doPrintType(Flexbuf *f, AST *typedecl, int fromPtr)
 {
     int size;
 
@@ -548,20 +548,20 @@ doPrintType(FILE *f, AST *typedecl, int fromPtr)
         size = EvalConstExpr(typedecl->left);
         if (typedecl->kind == AST_UNSIGNEDTYPE) {
             if (size == 1 && fromPtr) {
-                fprintf(f, "char");
+                flexbuf_printf(f, "char");
                 return;
             }
-            fprintf(f, "u");
+            flexbuf_printf(f, "u");
         }
         switch (size) {
         case 1:
-            fprintf(f, "int8_t");
+            flexbuf_printf(f, "int8_t");
             break;
         case 2:
-            fprintf(f, "int16_t");
+            flexbuf_printf(f, "int16_t");
             break;
         case 4:
-            fprintf(f, "int32_t");
+            flexbuf_printf(f, "int32_t");
             break;
         default:
             ERROR(typedecl, "unsupported integer size %d", size);
@@ -571,19 +571,19 @@ doPrintType(FILE *f, AST *typedecl, int fromPtr)
     case AST_FLOATTYPE:
         size = EvalConstExpr(typedecl->left);
         if (size == 4) {
-            fprintf(f, "float");
+            flexbuf_printf(f, "float");
         } else if (size == 8) {
-            fprintf(f, "long double");
+            flexbuf_printf(f, "long double");
         } else {
             ERROR(typedecl, "unsupported float size %d", size);
         }
         break;
     case AST_PTRTYPE:
         doPrintType(f, typedecl->left, 1);
-        fprintf(f, " *");
+        flexbuf_printf(f, " *");
         break;
     case AST_VOIDTYPE:
-        fprintf(f, "void");
+        flexbuf_printf(f, "void");
         break;
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
@@ -592,7 +592,7 @@ doPrintType(FILE *f, AST *typedecl, int fromPtr)
 }
 
 void
-PrintType(FILE *f, AST *typedecl)
+PrintType(Flexbuf *f, AST *typedecl)
 {
     doPrintType(f, typedecl, 0);
 }
@@ -606,7 +606,7 @@ PrintType(FILE *f, AST *typedecl)
  * e.g. labels, and plain symbols and such should be cast appropriately
  */
 void
-PrintLHS(FILE *f, AST *expr, int assignment, int ref)
+PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref)
 {
     Symbol *sym;
     HwReg *hw;
@@ -616,7 +616,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
         if (!curfunc) {
             ERROR(expr, "RESULT keyword outside of function");
         } else if (curfunc->result_in_parmarray) {
-            fprintf(f, "%s[0]", curfunc->parmarray);
+            flexbuf_printf(f, "%s[0]", curfunc->parmarray);
         } else {
             PrintLHS(f, curfunc->resultexpr, assignment, ref);
         }
@@ -635,7 +635,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
                         (*b->printit)(f, b, NULL);
                     } else {
                         if (gl_ccode) {
-                            fprintf(f, "%s_", current->classname);
+                            flexbuf_printf(f, "%s_", current->classname);
                         }
                         PrintFuncCall(f, sym, NULL, NULL, NULL);
                     }
@@ -649,7 +649,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
         break;
     case AST_ADDROF:
         if (!ref) {
-            fprintf(f, "(int32_t)");
+            flexbuf_printf(f, "(int32_t)");
         }
         PrintLHS(f, expr->left, assignment, 1);
         break;
@@ -660,33 +660,33 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
             sym = NULL;
         }
         if (sym && sym->type == SYM_LOCALVAR && curfunc && curfunc->localarray) {
-            fprintf(f, "%s[%d + ", curfunc->localarray, sym->offset/4);
+            flexbuf_printf(f, "%s[%d + ", curfunc->localarray, sym->offset/4);
             PrintExpr(f, expr->right);
-            fprintf(f, "]");
+            flexbuf_printf(f, "]");
         } else {
             if (sym && !IsArraySymbol(sym)) {
 //                ERROR(expr, "array dereference of bad symbol %s", sym->name);
-                fprintf(f, "(&");
+                flexbuf_printf(f, "(&");
                 PrintLHS(f, expr->left, assignment, 1);
-                fprintf(f, ")");
+                flexbuf_printf(f, ")");
             } else {
                 PrintLHS(f, expr->left, assignment, 1);
             }
-            fprintf(f, "[");
+            flexbuf_printf(f, "[");
             PrintExpr(f, expr->right);
-            fprintf(f, "]");
+            flexbuf_printf(f, "]");
         }
         break;
     case AST_HWREG:
         hw = (HwReg *)expr->d.ptr;
-        fprintf(f, "%s", hw->cname);
+        flexbuf_printf(f, "%s", hw->cname);
         break;
     case AST_MEMREF:
-        fprintf(f, "((");
+        flexbuf_printf(f, "((");
         PrintType(f, expr->left);
-        fprintf(f, " *)");
+        flexbuf_printf(f, " *)");
         PrintExpr(f, expr->right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     default:
         ERROR(expr, "bad target for assignment");
@@ -699,7 +699,7 @@ PrintLHS(FILE *f, AST *expr, int assignment, int ref)
  * if "toplevel" is 1 then we can skip the saving of the original value
  */
 void
-PrintPostfix(FILE *f, AST *expr, int toplevel)
+PrintPostfix(Flexbuf *f, AST *expr, int toplevel)
 {
     AST *target;
 
@@ -714,16 +714,16 @@ PrintPostfix(FILE *f, AST *expr, int toplevel)
     if (toplevel) {
         PrintAssign(f, expr->left, target);
     } else {
-        fprintf(f, "PostEffect__(");
+        flexbuf_printf(f, "PostEffect__(");
         PrintExpr(f, expr->left);
-        fprintf(f, ", ");
+        flexbuf_printf(f, ", ");
         PrintExpr(f, target);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
     }
 }
 
 void
-PrintRangeAssign(FILE *f, AST *dst, AST *src)
+PrintRangeAssign(Flexbuf *f, AST *dst, AST *src)
 {
     AST *newast;
     AST *lhs, *rhs;
@@ -738,9 +738,9 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
         if (op == '&' || op == '|' || op == '^') {
             rhs = rhs->right;
             PrintLHS(f, lhs, 1, 0);
-            fprintf(f, " %c= ", op);
+            flexbuf_printf(f, " %c= ", op);
             if (rhs->kind == AST_INTEGER) {
-                fprintf(f, "0x%x", rhs->d.ival);
+                flexbuf_printf(f, "0x%x", rhs->d.ival);
             } else {
                 PrintExpr(f, rhs);
             }
@@ -754,37 +754,37 @@ PrintRangeAssign(FILE *f, AST *dst, AST *src)
  * print a range use
  */
 void
-PrintRangeUse(FILE *f, AST *src)
+PrintRangeUse(Flexbuf *f, AST *src)
 {
     AST *expr = TransformRangeUse(src);
     PrintExpr(f, expr);
 }
 
 static void
-PrintStringChar(FILE *f, int c)
+PrintStringChar(Flexbuf *f, int c)
 {
     if (isprint(c)) {
         if (c == '\\' || c == '"' || c == '\'') {
-            fprintf(f, "\\%c", c);
+            flexbuf_printf(f, "\\%c", c);
         } else {
-            fprintf(f, "%c", c);
+            flexbuf_printf(f, "%c", c);
         }
     } else if (c == 10) {
-        fprintf(f, "\\n");
+        flexbuf_printf(f, "\\n");
     } else if (c == 13) {
-        fprintf(f, "\\r");
+        flexbuf_printf(f, "\\r");
     } else {
-        fprintf(f, "\\%03o", c);
+        flexbuf_printf(f, "\\%03o", c);
     }
 }
 
 static void
-PrintStringList(FILE *f, AST *ast)
+PrintStringList(Flexbuf *f, AST *ast)
 {
     int c;
     const char *s;
     AST *elem;
-    fprintf(f, "\"");
+    flexbuf_printf(f, "\"");
     while (ast) {
         elem = ast->left;
         if (!elem) {
@@ -803,23 +803,23 @@ PrintStringList(FILE *f, AST *ast)
         }
         ast = ast->right;
     }
-    fprintf(f, "\"");
+    flexbuf_printf(f, "\"");
 }
 
 static void
-PrintStringLiteral(FILE *f, const char *s)
+PrintStringLiteral(Flexbuf *f, const char *s)
 {
     int c;
-    fprintf(f, "\"");
+    flexbuf_printf(f, "\"");
     while ((c = *s++) != 0) {
         PrintStringChar(f, c);
     }
-    fprintf(f, "\"");
+    flexbuf_printf(f, "\"");
 }
 
 /* code to print an object, treating it as an address */
 void
-PrintAsAddr(FILE *f, AST *expr)
+PrintAsAddr(Flexbuf *f, AST *expr)
 {
     if (!expr)
         return;
@@ -828,7 +828,7 @@ PrintAsAddr(FILE *f, AST *expr)
         PrintStringLiteral(f, expr->d.string);
         break;
     case AST_ADDROF:
-        fprintf(f, "&");
+        flexbuf_printf(f, "&");
         PrintLHS(f, expr->left, 0, 0);
         break;
     case AST_IDENTIFIER:
@@ -840,9 +840,9 @@ PrintAsAddr(FILE *f, AST *expr)
         break;
     case AST_ASSIGN:
     default:
-        fprintf(f, "(void *)(");
+        flexbuf_printf(f, "(void *)(");
         PrintExpr(f, expr);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     }
 }
@@ -851,16 +851,16 @@ PrintAsAddr(FILE *f, AST *expr)
  * code to print an assignment
  */
 void
-PrintAssign(FILE *f, AST *lhs, AST *rhs)
+PrintAssign(Flexbuf *f, AST *lhs, AST *rhs)
 {
     if (lhs->kind == AST_RANGEREF) {
         PrintRangeAssign(f, lhs, rhs);
     } else if (lhs->kind == AST_SPRREF) {
-        fprintf(f, "cogmem_put__(");
+        flexbuf_printf(f, "cogmem_put__(");
         PrintExpr(f, lhs->left);
-        fprintf(f, ", ");
+        flexbuf_printf(f, ", ");
         PrintExpr(f, rhs);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
     } else {
         /* in Spin an expression like
              arr := 1
@@ -871,7 +871,7 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
             lhs = NewAST(AST_ARRAYREF, lhs, AstInteger(0));
         }
         PrintLHS(f, lhs, 1, 0);
-        fprintf(f, " = ");
+        flexbuf_printf(f, " = ");
         /*
          * Normally we put parentheses around operators, but at
          * the top of an assignment we should not have to.
@@ -881,7 +881,7 @@ PrintAssign(FILE *f, AST *lhs, AST *rhs)
 }
 
 void
-PrintExprToplevel(FILE *f, AST *expr)
+PrintExprToplevel(Flexbuf *f, AST *expr)
 {
     if (expr->kind == AST_ASSIGN) {
         PrintAssign(f, expr->left, expr->right);
@@ -896,7 +896,7 @@ PrintExprToplevel(FILE *f, AST *expr)
  * print a lookup array; returns the number of elements in it
  */
 int
-PrintLookupArray(FILE *f, AST *array)
+PrintLookupArray(Flexbuf *f, AST *array)
 {
     AST *ast;
     AST *expr;
@@ -916,12 +916,12 @@ PrintLookupArray(FILE *f, AST *array)
                 int tmp = d; d = c; c = tmp;
             }
             for (i = c; i <= d; i++) {
-                fprintf(f, "%d, ", i);
+                flexbuf_printf(f, "%d, ", i);
                 sz++;
             }
         } else {
             PrintExpr(f, expr);
-            fprintf(f, ", ");
+            flexbuf_printf(f, ", ");
             sz++;
         }
     }
@@ -937,7 +937,7 @@ PrintLookupArray(FILE *f, AST *array)
 //
 
 static void
-PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
+PrintLookExpr(Flexbuf *f, const char *name, AST *ev, AST *table)
 {
     int len;
     AST *idx, *base;
@@ -963,32 +963,32 @@ PrintLookExpr(FILE *f, const char *name, AST *ev, AST *table)
         idxvar = AstTempVariable("i_");
         arrid = AstTempVariable("look_");
 
-        fprintf(f, "__extension__({ ");
-        fprintf(f, "int32_t %s = ", idxvar->d.string );
+        flexbuf_printf(f, "__extension__({ ");
+        flexbuf_printf(f, "int32_t %s = ", idxvar->d.string );
         PrintExpr(f, idx);
-        fprintf(f, "; int32_t %s[] = {", arrid->d.string );
+        flexbuf_printf(f, "; int32_t %s[] = {", arrid->d.string );
         len = PrintLookupArray(f, table);
-        fprintf(f, "}; ");
+        flexbuf_printf(f, "}; ");
         idx = idxvar;
     } else {
         len = EvalConstExpr(table->right);
         arrid = table->left;
     }
-    fprintf(f, "%s(", name);
+    flexbuf_printf(f, "%s(", name);
     PrintExpr(f, idx);
-    fprintf(f, ", ");
+    flexbuf_printf(f, ", ");
     PrintExpr(f, base);
-    fprintf(f, ", ");
+    flexbuf_printf(f, ", ");
     PrintExpr(f, arrid);
-    fprintf(f, ", %u)", len);
+    flexbuf_printf(f, ", %u)", len);
     if (inExpr) {
-        fprintf(f, "; })");
+        flexbuf_printf(f, "; })");
     }
 }
 
 /* print an object symbol */
 static void
-PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
+PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr)
 {
     int isArray = IsArraySymbol(objsym);
 
@@ -1004,16 +1004,16 @@ PrintObjectSym(FILE *f, Symbol *objsym, AST *expr)
         PrintLHS(f, expr, 0, 0);
     } else {
         if (gl_ccode || (curfunc && curfunc->force_static) )
-            fprintf(f, "self->");
-        fprintf(f, "%s", objsym->name);
+            flexbuf_printf(f, "self->");
+        flexbuf_printf(f, "%s", objsym->name);
         if (isArray) {
-            fprintf(f, "[0]");
+            flexbuf_printf(f, "[0]");
         }
     }
 }
 
 void
-PrintGasExpr(FILE *f, AST *expr)
+PrintGasExpr(Flexbuf *f, AST *expr)
 {
     if (!expr) {
         return;
@@ -1028,9 +1028,9 @@ PrintGasExpr(FILE *f, AST *expr)
         PrintLHS(f, expr->left, 0, 0);
         break;
     case AST_ABSADDROF:
-        fprintf(f, "_%s + (", current->datname);
+        flexbuf_printf(f, "_%s + (", current->datname);
         PrintLHS(f, expr->left, 0, 0);
-        fprintf(f, " - ..start)");
+        flexbuf_printf(f, " - ..start)");
         break;
     default:
         PrintExpr(f, expr);
@@ -1040,7 +1040,7 @@ PrintGasExpr(FILE *f, AST *expr)
 
 /* code to print an expression to a file */
 void
-PrintExpr(FILE *f, AST *expr)
+PrintExpr(Flexbuf *f, AST *expr)
 {
     Symbol *sym, *objsym;
     AST *objref;
@@ -1069,37 +1069,37 @@ PrintExpr(FILE *f, AST *expr)
         c = expr->d.string[0];
         
         if (isprint(c)) {
-            fputc('\'', f);
+            flexbuf_putc('\'', f);
             PrintStringChar(f, c);
-            fputc('\'', f);
+            flexbuf_putc('\'', f);
         } else {
-            fprintf(f, "%d", c);
+            flexbuf_printf(f, "%d", c);
         }
         break;
     case AST_STRINGPTR:
-        fprintf(f, "(int32_t)");
+        flexbuf_printf(f, "(int32_t)");
         PrintStringList(f, expr->left);
         break;
     case AST_CONSTANT:
-        fprintf(f, "0x%x", EvalConstExpr(expr->left));
+        flexbuf_printf(f, "0x%x", EvalConstExpr(expr->left));
         break;      
     case AST_ADDROF:
     case AST_ABSADDROF:
-        fprintf(f, "(int32_t)(&");
+        flexbuf_printf(f, "(int32_t)(&");
         PrintLHS(f, expr->left, 0, 0);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case AST_DATADDROF:
-        fprintf(f, "(int32_t)((");
+        flexbuf_printf(f, "(int32_t)((");
         PrintLHS(f, expr->left, 0, 0);
-        fprintf(f, ")+%s)", current->datname);
+        flexbuf_printf(f, ")+%s)", current->datname);
         break;
     case AST_CONDRESULT:
-        fprintf(f, "(");
+        flexbuf_printf(f, "(");
         PrintBoolExpr(f, expr->left);
-        fprintf(f, ") ? ");
+        flexbuf_printf(f, ") ? ");
         PrintExprToplevel(f, expr->right->left);
-        fprintf(f, " : ");
+        flexbuf_printf(f, " : ");
         PrintExprToplevel(f, expr->right->right);
         break;
     case AST_IDENTIFIER:
@@ -1110,27 +1110,27 @@ PrintExpr(FILE *f, AST *expr)
         PrintLHS(f, expr, 0, 0);
         break;
     case AST_SPRREF:
-        fprintf(f, "cogmem_get__(");
+        flexbuf_printf(f, "cogmem_get__(");
         PrintExpr(f, expr->left);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case AST_OPERATOR:
         if (isBooleanOperator(expr)) {
-	    fprintf(f, "-");
+	    flexbuf_printf(f, "-");
 	}
-	fprintf(f, "(");
+	flexbuf_printf(f, "(");
         PrintOperator(f, expr->d.ival, expr->left, expr->right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case AST_ISBETWEEN:
-        fprintf(f, "-(");
+        flexbuf_printf(f, "-(");
         PrintBoolExpr(f, expr);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case AST_ASSIGN:
-        fprintf(f, "(");
+        flexbuf_printf(f, "(");
         PrintAssign(f, expr->left, expr->right);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         break;
     case AST_FUNCCALL:
         if (expr->left && expr->left->kind == AST_METHODREF) {
@@ -1149,17 +1149,17 @@ PrintExpr(FILE *f, AST *expr)
                 return;
             }
             if (gl_ccode) {
-                fprintf(f, "%s_", ObjClassName(objsym));
+                flexbuf_printf(f, "%s_", ObjClassName(objsym));
             } else {
                 PrintObjectSym(f, objsym, objref);
-                fprintf(f, ".");
+                flexbuf_printf(f, ".");
             }
         } else {
             objsym = NULL;
             objref = NULL;
             sym = LookupAstSymbol(expr->left, "function call");
             if (gl_ccode && sym && sym->type == SYM_FUNCTION)
-                fprintf(f, "%s_", current->classname);
+                flexbuf_printf(f, "%s_", current->classname);
         }
         if (!sym) {
             ; /* do nothing, printed error already */
@@ -1188,33 +1188,33 @@ PrintExpr(FILE *f, AST *expr)
         if (!GetObjConstant(expr, &objsym, &sym))
             return;
         if (gl_ccode) {
-            fprintf(f, "%s", sym->name);
+            flexbuf_printf(f, "%s", sym->name);
         } else {
             AST *objast = objsym->val;
             Module *P = objast->d.ptr;
-            fprintf(f, "%s::%s", P->classname, sym->name);
+            flexbuf_printf(f, "%s::%s", P->classname, sym->name);
         }
         break;
     case AST_CATCH:
-        fprintf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");
-        fprintf(f, "int32_t tmp__; abortChain__ = &here__; ");
-        fprintf(f, "if (setjmp(here__.jmp) == 0) tmp__ = ");
+        flexbuf_printf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");
+        flexbuf_printf(f, "int32_t tmp__; abortChain__ = &here__; ");
+        flexbuf_printf(f, "if (setjmp(here__.jmp) == 0) tmp__ = ");
         PrintExpr(f, expr->left);
-        fprintf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
+        flexbuf_printf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
         break;
     case AST_TRUNC:
         if (!IsConstExpr(expr->left)) {
             ERROR(expr, "argument to trunc is not constant");
             break;
         }
-        fprintf(f, "%d", EvalConstExpr(expr->left));
+        flexbuf_printf(f, "%d", EvalConstExpr(expr->left));
         break;
     case AST_SEQUENCE:
-        fprintf(f, "( ");
+        flexbuf_printf(f, "( ");
         PrintExpr(f, expr->left);
-        fprintf(f, ", ");
+        flexbuf_printf(f, ", ");
         PrintExpr(f, expr->right);
-        fprintf(f, " )");
+        flexbuf_printf(f, " )");
         break;
     default:
         ERROR(expr, "Internal error, bad expression");
@@ -1223,7 +1223,7 @@ PrintExpr(FILE *f, AST *expr)
 }
 
 void
-PrintBoolExpr(FILE *f, AST *expr)
+PrintBoolExpr(Flexbuf *f, AST *expr)
 {
     int op;
     if (expr->kind == AST_OPERATOR) {
@@ -1238,17 +1238,17 @@ PrintBoolExpr(FILE *f, AST *expr)
         op = expr->d.ival;
         switch (op) {
         case T_NOT:
-            fprintf(f, "!(");
+            flexbuf_printf(f, "!(");
             PrintBoolExpr(f, rhs);
-            fprintf(f, ")");
+            flexbuf_printf(f, ")");
             break;
         case T_OR:
         case T_AND:
-            fprintf(f, "(");
+            flexbuf_printf(f, "(");
             PrintBoolExpr(f, lhs);
-            fprintf(f, "%s", op == T_OR ? ") || (" : ") && (");
+            flexbuf_printf(f, "%s", op == T_OR ? ") || (" : ") && (");
             PrintBoolExpr(f, rhs);
-            fprintf(f, ")");
+            flexbuf_printf(f, ")");
             break;
         default:
             PrintOperator(f, op, lhs, rhs);
@@ -1259,28 +1259,28 @@ PrintBoolExpr(FILE *f, AST *expr)
         if (IsConstExpr(expr->right->left) && IsConstExpr(expr->right->right)) {
             onlyone = 1;
         } else {
-            fprintf(f, "(");
+            flexbuf_printf(f, "(");
         }
-        fprintf(f, "(");
+        flexbuf_printf(f, "(");
         PrintExpr(f, expr->right->left);
-        fprintf(f, " <= ");
+        flexbuf_printf(f, " <= ");
         PrintExpr(f, expr->left);
-        fprintf(f, ") && (");
+        flexbuf_printf(f, ") && (");
         PrintExpr(f, expr->left);
-        fprintf(f, " <= ");
+        flexbuf_printf(f, " <= ");
         PrintExpr(f, expr->right->right);
         if (onlyone) {
-            fprintf(f, ")");
+            flexbuf_printf(f, ")");
         } else {
-            fprintf(f, ")) || ((");
+            flexbuf_printf(f, ")) || ((");
             PrintExpr(f, expr->right->left);
-            fprintf(f, " >= ");
+            flexbuf_printf(f, " >= ");
             PrintExpr(f, expr->left);
-            fprintf(f, ") && (");
+            flexbuf_printf(f, ") && (");
             PrintExpr(f, expr->left);
-            fprintf(f, " >= ");
+            flexbuf_printf(f, " >= ");
             PrintExpr(f, expr->right->right);
-            fprintf(f, "))");
+            flexbuf_printf(f, "))");
         }
     } else {
         PrintExpr(f, expr);
@@ -1288,7 +1288,7 @@ PrintBoolExpr(FILE *f, AST *expr)
 }
 
 void
-PrintExprList(FILE *f, AST *list)
+PrintExprList(Flexbuf *f, AST *list)
 {
     int needcomma = 0;
     while (list) {
@@ -1297,7 +1297,7 @@ PrintExprList(FILE *f, AST *list)
             return;
         }
         if (needcomma) {
-            fprintf(f, ", ");
+            flexbuf_printf(f, ", ");
         }
         PrintExpr(f, list->left);
         needcomma = 1;
@@ -1308,26 +1308,26 @@ PrintExprList(FILE *f, AST *list)
 
 /* code to print a builtin function call to a file */
 void
-defaultBuiltin(FILE *f, Builtin *b, AST *params)
+defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     if (AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
-    fprintf(f, "%s(", b->cname);
+    flexbuf_printf(f, "%s(", b->cname);
     PrintExprList(f, params);
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 /* code to print a builtin variable reference call to a file */
 void
-defaultVariable(FILE *f, Builtin *b, AST *params)
+defaultVariable(Flexbuf *f, Builtin *b, AST *params)
 {
-    fprintf(f, "%s", b->cname);
+    flexbuf_printf(f, "%s", b->cname);
 }
 
 /* code to do memory copies; also does 1 byte fills */
 void
-memBuiltin(FILE *f, Builtin *b, AST *params)
+memBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     int ismemcpy = !strcmp(b->cname, "memcpy") || !strcmp(b->cname, "memmove");
     AST *dst, *src, *count;
@@ -1338,11 +1338,11 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     params = params->right;
     count = params->left;
 
-    fprintf(f, "%s( (void *)", b->cname);
+    flexbuf_printf(f, "%s( (void *)", b->cname);
     PrintAsAddr(f, dst);
-    fprintf(f, ", ");
+    flexbuf_printf(f, ", ");
     if (ismemcpy) {
-        fprintf(f, "(void *)");
+        flexbuf_printf(f, "(void *)");
         PrintAsAddr(f, src);
     } else {
         PrintExpr(f, src);
@@ -1351,14 +1351,14 @@ memBuiltin(FILE *f, Builtin *b, AST *params)
     /* b->extradata is the size of memory we
        are working with
     */
-    fprintf(f, ", %d*(", b->extradata);
+    flexbuf_printf(f, ", %d*(", b->extradata);
     PrintExpr(f, count);
-    fprintf(f, "))");
+    flexbuf_printf(f, "))");
 }
 
 /* code to do 2 and 4 byte memory fills */
 void
-memFillBuiltin(FILE *f, Builtin *b, AST *params)
+memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     const char *idxname;
     const char *valname;
@@ -1378,53 +1378,53 @@ memFillBuiltin(FILE *f, Builtin *b, AST *params)
 
     /* if the source is 0, use memset instead */
     if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
-        fprintf(f, "memset( (void *)");
+        flexbuf_printf(f, "memset( (void *)");
         PrintAsAddr(f, dst);
-        fprintf(f, ", 0, sizeof(%s)*", typename);
+        flexbuf_printf(f, ", 0, sizeof(%s)*", typename);
         PrintExpr(f, count);
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         return;
     }
     idxname = NewTemporaryVariable("_fill_");
     valname = NewTemporaryVariable("_val_");
     ptrname = NewTemporaryVariable("_ptr_");
-    fprintf(f, "{ int32_t %s; ", idxname);
-    fprintf(f, "%s *%s = (%s *)", typename, ptrname, typename);
+    flexbuf_printf(f, "{ int32_t %s; ", idxname);
+    flexbuf_printf(f, "%s *%s = (%s *)", typename, ptrname, typename);
     PrintAsAddr(f, dst);
-    fprintf(f, "; %s %s = ", typename, valname);
+    flexbuf_printf(f, "; %s %s = ", typename, valname);
     PrintExpr(f, src);
-    fprintf(f, "; for (%s = ", idxname);
+    flexbuf_printf(f, "; for (%s = ", idxname);
     PrintExpr(f, count);
-    fprintf(f, "; %s > 0; --%s) { ", idxname, idxname);
-    fprintf(f, " *%s++ = %s; } }", ptrname, valname);
+    flexbuf_printf(f, "; %s > 0; --%s) { ", idxname, idxname);
+    flexbuf_printf(f, " *%s++ = %s; } }", ptrname, valname);
 }
 
 /* code to do strsize */
 void
-str1Builtin(FILE *f, Builtin *b, AST *params)
+str1Builtin(Flexbuf *f, Builtin *b, AST *params)
 {
-    fprintf(f, "%s((char *) ", b->cname);
+    flexbuf_printf(f, "%s((char *) ", b->cname);
     PrintExpr(f, params->left); params = params->right;
-    fprintf(f, ")");
+    flexbuf_printf(f, ")");
 }
 
 /* code to do strcomp(a, b) */
 void
-strcompBuiltin(FILE *f, Builtin *b, AST *params)
+strcompBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
-    fprintf(f, "-(0 == strcmp((char *)");
+    flexbuf_printf(f, "-(0 == strcmp((char *)");
     PrintExpr(f, params->left); params = params->right;
-    fprintf(f, ", (char *)");
+    flexbuf_printf(f, ", (char *)");
     PrintExpr(f, params->left); params = params->right;
-    fprintf(f, "))");
+    flexbuf_printf(f, "))");
 }
 
 /* code to do reboot() -> clkset(0x80, 0) */
 void
-rebootBuiltin(FILE *f, Builtin *b, AST *params)
+rebootBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     if (AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
-    fprintf(f, "clkset(0x80, 0)");
+    flexbuf_printf(f, "clkset(0x80, 0)");
 }

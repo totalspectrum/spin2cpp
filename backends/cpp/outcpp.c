@@ -19,25 +19,25 @@
  * if "classname" is TRUE, then add the class name as well
  */
 static void
-PrintDatArray(FILE *f, Module *parse, const char *tail, bool classname)
+PrintDatArray(Flexbuf *f, Module *parse, const char *tail, bool classname)
 {
     char *datname = parse->datname;
 
-    fprintf(f, "uint8_t ");
+    flexbuf_printf(f, "uint8_t ");
     if (parse->datannotations) {
         PrintAnnotationList(f, parse->datannotations, ' ');
     }
     if (classname) {
-        fprintf(f, "%s::", parse->classname);
+        flexbuf_printf(f, "%s::", parse->classname);
     }
-    fprintf(f, "%s[]%s", datname, tail);
+    flexbuf_printf(f, "%s[]%s", datname, tail);
 }
 
 /*
  * print out a comment string
  */
 static void
-PrintCommentString(FILE *f, const char *str, int indent)
+PrintCommentString(Flexbuf *f, const char *str, int indent)
 {
     int numLines = 0;
     int lastNewLine = 0;
@@ -50,39 +50,39 @@ PrintCommentString(FILE *f, const char *str, int indent)
         }
     }
     if (indent > 0)
-        fprintf(f, "%*c", indent, ' ');
+        flexbuf_printf(f, "%*c", indent, ' ');
     if (numLines == 1 && lastNewLine == 1) {
-        fprintf(f, "//");
+        flexbuf_printf(f, "//");
         // C++ comments look much better with a space after the //; Spin
         // comments don't matter so much, so people leave them out.
         // optionally add the space
         if (!isspace(*str)) {
-            fprintf(f, " ");
+            flexbuf_printf(f, " ");
         }
-        fprintf(f, "%s", str);  // note the string ended in a newline
+        flexbuf_printf(f, "%s", str);  // note the string ended in a newline
         return;
     }
-    fprintf(f, "/* ");
+    flexbuf_printf(f, "/* ");
     while (str[0]) {
         if (str[0] == '*' && str[1] == '/') {
-            fputc('*', f);
-            fputc('%', f);
+            flexbuf_putc('*', f);
+            flexbuf_putc('%', f);
             str += 2;
         } else {
-            fputc(str[0], f);
+            flexbuf_putc(str[0], f);
             lastNewLine = (str[0] == '\n');
             if (lastNewLine && indent > 0) {
-                fprintf(f, "%*c", indent, ' ');
+                flexbuf_printf(f, "%*c", indent, ' ');
             }
             str++;
         }
     }
     if (numLines > 0 && !lastNewLine) {
-        fprintf(f, "\n");
+        flexbuf_printf(f, "\n");
         if (indent > 0)
-            fprintf(f, "%*c", indent, ' ');
+            flexbuf_printf(f, "%*c", indent, ' ');
     }
-    fprintf(f, " */\n");
+    flexbuf_printf(f, " */\n");
 }
 
 
@@ -90,7 +90,7 @@ PrintCommentString(FILE *f, const char *str, int indent)
  * print out a list of comments
  */
 void
-PrintIndentedComment(FILE *f, AST *ast, int indent)
+PrintIndentedComment(Flexbuf *f, AST *ast, int indent)
 {
     while (ast) {
         if (ast->kind != AST_COMMENT) {
@@ -110,7 +110,7 @@ PrintIndentedComment(FILE *f, AST *ast, int indent)
  * print constant declarations
  */
 static void
-PrintConstant(FILE *f, AST *ast)
+PrintConstant(Flexbuf *f, AST *ast)
 {
     if (IsFloatConst(ast)) {
         PrintFloat(f, EvalConstExpr(ast));
@@ -120,7 +120,7 @@ PrintConstant(FILE *f, AST *ast)
 }
 
 static void
-PrintConstantDecl(FILE *f, AST *ast)
+PrintConstantDecl(Flexbuf *f, AST *ast)
 {
     const char *name = ast->d.string;
     AST *expr = NULL;
@@ -137,18 +137,18 @@ PrintConstantDecl(FILE *f, AST *ast)
     }
     expr = (AST *)sym->val;
     if (gl_ccode) {
-        fprintf(f, "#define %s (", ast->d.string);
+        flexbuf_printf(f, "#define %s (", ast->d.string);
         PrintConstant(f, expr);
-        fprintf(f, ")\n");
+        flexbuf_printf(f, ")\n");
     } else {
-        fprintf(f, "  static const int %s = ", ast->d.string);
+        flexbuf_printf(f, "  static const int %s = ", ast->d.string);
         PrintConstant(f, expr);
-        fprintf(f, ";\n");
+        flexbuf_printf(f, ";\n");
     }
 }
 
 static int
-PrintAllVarListsOfType(FILE *f, Module *parse, AST *type, int flags)
+PrintAllVarListsOfType(Flexbuf *f, Module *parse, AST *type, int flags)
 {
     AST *ast;
     AST *upper;
@@ -184,7 +184,7 @@ PrintAllVarListsOfType(FILE *f, Module *parse, AST *type, int flags)
 }
 
 static void
-PrintSubHeaders(FILE *f, Module *parse)
+PrintSubHeaders(Flexbuf *f, Module *parse)
 {
     AST *ast, *sub;
     Module *objstate;
@@ -207,15 +207,15 @@ PrintSubHeaders(FILE *f, Module *parse)
             }
         }
         if (!already_done) {
-            fprintf(f, "#include \"%s.h\"\n", objstate->basename);
+            flexbuf_printf(f, "#include \"%s.h\"\n", objstate->basename);
         }
     }
-    fprintf(f, "\n");
+    flexbuf_printf(f, "\n");
 
 }
 
 static void
-PrintAllConstants(FILE *f, Module *parse)
+PrintAllConstants(Flexbuf *f, Module *parse)
 {
     AST *ast, *upper;
 
@@ -245,13 +245,13 @@ PrintAllConstants(FILE *f, Module *parse)
 
 #if 0
 static void
-PrintObjectRefs(FILE *f, Module *parse)
+PrintObjectRefs(Flexbuf *f, Module *parse)
 {
 }
 #endif
 
 static void
-PrintCHeaderFile(FILE *f, Module *parse)
+PrintCHeaderFile(Flexbuf *f, Module *parse)
 {
     int n;
     AST *ast;
@@ -259,12 +259,12 @@ PrintCHeaderFile(FILE *f, Module *parse)
 
     /* things we always need */
     if (gl_header) {
-        fprintf(f, "%s", gl_header);
+        flexbuf_printf(f, "%s", gl_header);
     }
-    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
-    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
+    flexbuf_printf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
+    flexbuf_printf(f, "#define %s_Class_Defined__\n\n", parse->classname);
 
-    fprintf(f, "#include <stdint.h>\n");
+    flexbuf_printf(f, "#include <stdint.h>\n");
 
     PrintSubHeaders(f, parse);
     PrintAllConstants(f, parse);
@@ -273,7 +273,7 @@ PrintCHeaderFile(FILE *f, Module *parse)
         flags |= VOLATILE;
 
     /* print the structure definition */
-    fprintf(f, "\ntypedef struct %s {\n", parse->classname);
+    flexbuf_printf(f, "\ntypedef struct %s {\n", parse->classname);
     n = PrintAllVarListsOfType(f, parse, ast_type_long, flags);
     n += PrintAllVarListsOfType(f, parse, ast_type_word, flags);
     n += PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
@@ -283,13 +283,13 @@ PrintCHeaderFile(FILE *f, Module *parse)
         Module *P = ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
-            fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
+            flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
             n++;
         } else if (objdef->kind == AST_ARRAYDECL) {
             AST *arrname = objdef->left;
             AST *arrsize = objdef->right;
             if (arrname->kind == AST_IDENTIFIER) {
-                fprintf(f, "  %s\t%s[%d];\n", P->classname,
+                flexbuf_printf(f, "  %s\t%s[%d];\n", P->classname,
                         arrname->d.string,
                         EvalConstExpr(arrsize)
                     );
@@ -302,8 +302,8 @@ PrintCHeaderFile(FILE *f, Module *parse)
 
     /* needed to avoid problems with empty structures on Catalina */
     if (n == 0)
-        fprintf(f, "  char dummy__;\n");
-    fprintf(f, "} %s;\n\n", parse->classname);
+        flexbuf_printf(f, "  char dummy__;\n");
+    flexbuf_printf(f, "} %s;\n\n", parse->classname);
 
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
@@ -311,29 +311,29 @@ PrintCHeaderFile(FILE *f, Module *parse)
     /* now the private methods */
     /* PrintPrivateFunctionDecls(f, parse); */
 
-    fprintf(f, "#endif\n");
+    flexbuf_printf(f, "#endif\n");
 }
 
 static void
-PrintCppHeaderFile(FILE *f, Module *parse)
+PrintCppHeaderFile(Flexbuf *f, Module *parse)
 {
     AST *ast;
     int flags = PRIVATE;
 
     /* things we always need */
     if (gl_header) {
-        fprintf(f, "%s", gl_header);
+        flexbuf_printf(f, "%s", gl_header);
     }
-    fprintf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
-    fprintf(f, "#define %s_Class_Defined__\n\n", parse->classname);
+    flexbuf_printf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
+    flexbuf_printf(f, "#define %s_Class_Defined__\n\n", parse->classname);
 
-    fprintf(f, "#include <stdint.h>\n");
+    flexbuf_printf(f, "#include <stdint.h>\n");
 
     /* include any needed object headers */
     PrintSubHeaders(f, parse);
 
     /* print the constant declarations */
-    fprintf(f, "class %s {\npublic:\n", parse->classname);
+    flexbuf_printf(f, "class %s {\npublic:\n", parse->classname);
 
     PrintAllConstants(f, parse);
 
@@ -342,12 +342,12 @@ PrintCppHeaderFile(FILE *f, Module *parse)
         Module *P = ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
-            fprintf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
+            flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
         } else if (objdef->kind == AST_ARRAYDECL) {
             AST *arrname = objdef->left;
             AST *arrsize = objdef->right;
             if (arrname->kind == AST_IDENTIFIER) {
-                fprintf(f, "  %s\t%s[%d];\n", P->classname,
+                flexbuf_printf(f, "  %s\t%s[%d];\n", P->classname,
                         arrname->d.string,
                         EvalConstExpr(arrsize)
                     );
@@ -358,7 +358,7 @@ PrintCppHeaderFile(FILE *f, Module *parse)
     }
     /* data block, if applicable */
     if (parse->datblock && !gl_gas_dat) {
-        fprintf(f, "  static ");
+        flexbuf_printf(f, "  static ");
         PrintDatArray(f, parse, ";\n", false);
     }
     /* now the public members */
@@ -370,19 +370,19 @@ PrintCppHeaderFile(FILE *f, Module *parse)
     */
     if (parse->volatileVariables)
         flags |= VOLATILE;
-    fprintf(f, "private:\n");
+    flexbuf_printf(f, "private:\n");
     PrintAllVarListsOfType(f, parse, ast_type_long, flags);
     PrintAllVarListsOfType(f, parse, ast_type_word, flags);
     PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
-    fprintf(f, "};\n\n");
-    fprintf(f, "#endif\n");
+    flexbuf_printf(f, "};\n\n");
+    flexbuf_printf(f, "#endif\n");
 }
 
 static void
-PrintMacros(FILE *f, Module *parse)
+PrintMacros(Flexbuf *f, Module *parse)
 {
     bool needsIfdef = false;
     bool needsInline = false;
@@ -403,128 +403,128 @@ PrintMacros(FILE *f, Module *parse)
       }
 
     if (needsIfdef) {
-      fprintf(f, "#ifdef __GNUC__\n");
+      flexbuf_printf(f, "#ifdef __GNUC__\n");
     }
 
-    if (needsInline) fprintf(f, "#define INLINE__ static inline\n");
+    if (needsInline) flexbuf_printf(f, "#define INLINE__ static inline\n");
     if (parse->needsYield) {
         // old way
-        //fprintf(f, "#include <sys/thread.h>\n");
-        //fprintf(f, "#define Yield__() (__napuntil(_CNT))\n");
+        //flexbuf_printf(f, "#include <sys/thread.h>\n");
+        //flexbuf_printf(f, "#define Yield__() (__napuntil(_CNT))\n");
         // new way -- not as thread friendly, but much faster
-        fprintf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
+        flexbuf_printf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
     }
     if (parse->needsHighmult) {
-        fprintf(f, "#define Highmult__(X, Y) ( ( (X) * (int64_t)(Y) ) >> 32 )\n");
+        flexbuf_printf(f, "#define Highmult__(X, Y) ( ( (X) * (int64_t)(Y) ) >> 32 )\n");
     }
     if (parse->needsBitEncode) {
-        fprintf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
+        flexbuf_printf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
     }
     if (needsIfdef) 
     {
-	fprintf(f, "#else\n");
+	flexbuf_printf(f, "#else\n");
 
-	if (needsInline) fprintf(f, "#define INLINE__ static\n");
+	if (needsInline) flexbuf_printf(f, "#define INLINE__ static\n");
 	if (parse->needsYield) {
-	  fprintf(f, "#define Yield__()\n");
+	  flexbuf_printf(f, "#define Yield__()\n");
 	}
 	if (gl_ccode) {
-	  fprintf(f, "#define waitcnt(n) _waitcnt(n)\n");
+	  flexbuf_printf(f, "#define waitcnt(n) _waitcnt(n)\n");
 	  if (parse->needsLockFuncs) {
-              fprintf(f, "#define locknew() _locknew()\n");
-              fprintf(f, "#define lockret(i) _lockret(i)\n");
-              fprintf(f, "#define lockset(i) _lockset(i)\n");
-              fprintf(f, "#define lockclr(i) _lockclr(i)\n");
+              flexbuf_printf(f, "#define locknew() _locknew()\n");
+              flexbuf_printf(f, "#define lockret(i) _lockret(i)\n");
+              flexbuf_printf(f, "#define lockset(i) _lockset(i)\n");
+              flexbuf_printf(f, "#define lockclr(i) _lockclr(i)\n");
 	  }
-	  fprintf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
-	  fprintf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
-	  fprintf(f, "#define cogstop(i) _cogstop(i)\n");
+	  flexbuf_printf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
+	  flexbuf_printf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
+	  flexbuf_printf(f, "#define cogstop(i) _cogstop(i)\n");
 	  if (parse->needsHighmult) {
-              fprintf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
-	      fprintf(f, "  int sign = (a^b)>>31;\n");
-	      fprintf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
-	      fprintf(f, "  uint32_t ub = b < 0 ? -b : b;\n");
-	      fprintf(f, "  uint32_t rhi = 0, rlo = 0;\n");
-	      fprintf(f, "  int i;\n");
-	      fprintf(f, "  for (i = 0; i < 32; i++) {\n");
-	      fprintf(f, "    rhi = (rhi << 1) | (rlo >> 31);\n");
-	      fprintf(f, "    rlo = rlo << 1;\n");
-	      fprintf(f, "    if (ua >> 31) {rlo += ub; if (rlo < ub) rhi++;}\n");
-	      fprintf(f, "    ua = ua<<1;\n");
-	      fprintf(f, "  }\n");
-	      fprintf(f, "  if (sign) { rhi = -rhi; rhi -= (rlo != 0); }\n");
-	      fprintf(f, "  return rhi;\n");
-	      fprintf(f, "}\n");
+              flexbuf_printf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
+	      flexbuf_printf(f, "  int sign = (a^b)>>31;\n");
+	      flexbuf_printf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
+	      flexbuf_printf(f, "  uint32_t ub = b < 0 ? -b : b;\n");
+	      flexbuf_printf(f, "  uint32_t rhi = 0, rlo = 0;\n");
+	      flexbuf_printf(f, "  int i;\n");
+	      flexbuf_printf(f, "  for (i = 0; i < 32; i++) {\n");
+	      flexbuf_printf(f, "    rhi = (rhi << 1) | (rlo >> 31);\n");
+	      flexbuf_printf(f, "    rlo = rlo << 1;\n");
+	      flexbuf_printf(f, "    if (ua >> 31) {rlo += ub; if (rlo < ub) rhi++;}\n");
+	      flexbuf_printf(f, "    ua = ua<<1;\n");
+	      flexbuf_printf(f, "  }\n");
+	      flexbuf_printf(f, "  if (sign) { rhi = -rhi; rhi -= (rlo != 0); }\n");
+	      flexbuf_printf(f, "  return rhi;\n");
+	      flexbuf_printf(f, "}\n");
 	  }
 	  if (parse->needsBitEncode) {
-              fprintf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
-	      fprintf(f, "  int r=0;\n");
-	      fprintf(f, "  while (a != 0) { a = a>>1; r++; }\n");
-	      fprintf(f, "  return r;\n");
-	      fprintf(f, "}\n");
+              flexbuf_printf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
+	      flexbuf_printf(f, "  int r=0;\n");
+	      flexbuf_printf(f, "  while (a != 0) { a = a>>1; r++; }\n");
+	      flexbuf_printf(f, "  return r;\n");
+	      flexbuf_printf(f, "}\n");
 	  }
 	}
 	
-        fprintf(f, "#endif\n");
-        fprintf(f, "\n");
+        flexbuf_printf(f, "#endif\n");
+        flexbuf_printf(f, "\n");
     }
     if (parse->needsMinMax) {
-        fprintf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
-        fprintf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
+        flexbuf_printf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
+        flexbuf_printf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsAbortdef) {
         if (!gl_ccode)
-            fprintf(f, "extern \"C\" {\n");
-        fprintf(f, "#include <setjmp.h>\n");
+            flexbuf_printf(f, "extern \"C\" {\n");
+        flexbuf_printf(f, "#include <setjmp.h>\n");
         if (!gl_ccode)
-            fprintf(f, "}\n");
-        fprintf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
-        fprintf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
+            flexbuf_printf(f, "}\n");
+        flexbuf_printf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
+        flexbuf_printf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
     }
     if (parse->needsRotate) {
-        fprintf(f, "INLINE__ int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
-        fprintf(f, "INLINE__ int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
+        flexbuf_printf(f, "INLINE__ int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
+        flexbuf_printf(f, "INLINE__ int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
     }
     if (parse->needsShr) {
-        fprintf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
+        flexbuf_printf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
     if (parse->needsLookup) {
-        fprintf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
-        fprintf(f, "\n");
+        flexbuf_printf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
+        flexbuf_printf(f, "\n");
     }
     if (parse->needsLookdown) {
-        fprintf(f, "INLINE__ int32_t Lookdown__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; return r; }\n");
-        fprintf(f, "\n");
+        flexbuf_printf(f, "INLINE__ int32_t Lookdown__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; return r; }\n");
+        flexbuf_printf(f, "\n");
     }
     if (parse->needsRand) {
-        fprintf(f, "static uint32_t LFSR__(uint32_t x, uint32_t forward) {\n");
-        fprintf(f, "    uint32_t y, c, a;\n");
-        fprintf(f, "    if (x < 1) x = 1;\n");
-        fprintf(f, "    a = forward ? 0x8000000B : 0x17;\n");
-        fprintf(f, "    for (y = 0; y < 32; y++) {\n");
-        fprintf(f, "       c = __builtin_parity(x & a);\n");
-        fprintf(f, "       if (forward) x = (x<<1) | c;\n");
-        fprintf(f, "       else         x = (x>>1) | (c<<31);\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    return x;\n");
-        fprintf(f, "}\n");
-        fprintf(f, "#define RandForw__(x) ((x) = LFSR__((x), 1))\n");
-        fprintf(f, "#define RandBack__(x) ((x) = LFSR__((x), 0))\n");
+        flexbuf_printf(f, "static uint32_t LFSR__(uint32_t x, uint32_t forward) {\n");
+        flexbuf_printf(f, "    uint32_t y, c, a;\n");
+        flexbuf_printf(f, "    if (x < 1) x = 1;\n");
+        flexbuf_printf(f, "    a = forward ? 0x8000000B : 0x17;\n");
+        flexbuf_printf(f, "    for (y = 0; y < 32; y++) {\n");
+        flexbuf_printf(f, "       c = __builtin_parity(x & a);\n");
+        flexbuf_printf(f, "       if (forward) x = (x<<1) | c;\n");
+        flexbuf_printf(f, "       else         x = (x>>1) | (c<<31);\n");
+        flexbuf_printf(f, "    }\n");
+        flexbuf_printf(f, "    return x;\n");
+        flexbuf_printf(f, "}\n");
+        flexbuf_printf(f, "#define RandForw__(x) ((x) = LFSR__((x), 1))\n");
+        flexbuf_printf(f, "#define RandBack__(x) ((x) = LFSR__((x), 0))\n");
     }
     if (parse->needsSqrt) {
-        fprintf(f, "static uint32_t Sqrt__(uint32_t a) {\n");
-        fprintf(f, "    uint32_t res = 0;\n");
-        fprintf(f, "    uint32_t bit = 1<<30;\n");
-        fprintf(f, "    while (bit > a) bit = bit>>2;\n");
-        fprintf(f, "    while (bit != 0) {\n");
-        fprintf(f, "        if (a >= res+bit) {\n");
-        fprintf(f, "            a = a - (res+bit);\n");
-        fprintf(f, "            res = (res>>1) + bit;\n");
-        fprintf(f, "        } else res = res >> 1;\n");
-        fprintf(f, "        bit = bit >> 2;\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "    return res;\n");
-        fprintf(f, "}\n"); 
+        flexbuf_printf(f, "static uint32_t Sqrt__(uint32_t a) {\n");
+        flexbuf_printf(f, "    uint32_t res = 0;\n");
+        flexbuf_printf(f, "    uint32_t bit = 1<<30;\n");
+        flexbuf_printf(f, "    while (bit > a) bit = bit>>2;\n");
+        flexbuf_printf(f, "    while (bit != 0) {\n");
+        flexbuf_printf(f, "        if (a >= res+bit) {\n");
+        flexbuf_printf(f, "            a = a - (res+bit);\n");
+        flexbuf_printf(f, "            res = (res>>1) + bit;\n");
+        flexbuf_printf(f, "        } else res = res >> 1;\n");
+        flexbuf_printf(f, "        bit = bit >> 2;\n");
+        flexbuf_printf(f, "    }\n");
+        flexbuf_printf(f, "    return res;\n");
+        flexbuf_printf(f, "}\n"); 
     }
     if (parse->needsCogAccess) {
         // we need to execute code that looks like:
@@ -532,76 +532,76 @@ PrintMacros(FILE *f, Module *parse)
         //    jmp <retaddr>
         // this is a bit tricky; we build it in r0,r1 and then jmp to it
         // with a jmpret r1,#0
-        fprintf(f, "__asm__(\n");
-        fprintf(f, "\"    .text\\n\"\n");
-        fprintf(f, "\"    .balign 4\\n\"\n");
-        fprintf(f, "\"__cog_xfer\\n\"\n");
-        fprintf(f, "\"    fcache #(.Lend - .Lstart)\\n\"\n");
-        fprintf(f, "\"    .compress off\\n\"\n");
-        fprintf(f, "\".Lstart\\n\"\n");
-        fprintf(f, "\"    mov pc, lr\\n\"\n");
-        fprintf(f, "\"    mov lr, __LMM_RET\\n\"\n");
-        fprintf(f, "\"    movd (.Linstr - .Lstart) + __LMM_FCACHE_START,r0\\n\"\n");
-        fprintf(f, "\"    movs (.Linstr - .Lstart) + __LMM_FCACHE_START,r1\\n\"\n");
-        fprintf(f, "\"    mov  r0,r2\\n\"\n");
-        fprintf(f, "\".Linstr\\n\"\n");
-        fprintf(f, "\"    mov  0-0,0-0\\n\"\n");
-        fprintf(f, "\"    jmp  lr\\n\"\n");
-        fprintf(f, "\".Lend\\n\"\n");
-        fprintf(f, "\"    .compress default\\n\"\n");
-        fprintf(f, ");\n");
-        fprintf(f, "extern ");
+        flexbuf_printf(f, "__asm__(\n");
+        flexbuf_printf(f, "\"    .text\\n\"\n");
+        flexbuf_printf(f, "\"    .balign 4\\n\"\n");
+        flexbuf_printf(f, "\"__cog_xfer\\n\"\n");
+        flexbuf_printf(f, "\"    fcache #(.Lend - .Lstart)\\n\"\n");
+        flexbuf_printf(f, "\"    .compress off\\n\"\n");
+        flexbuf_printf(f, "\".Lstart\\n\"\n");
+        flexbuf_printf(f, "\"    mov pc, lr\\n\"\n");
+        flexbuf_printf(f, "\"    mov lr, __LMM_RET\\n\"\n");
+        flexbuf_printf(f, "\"    movd (.Linstr - .Lstart) + __LMM_FCACHE_START,r0\\n\"\n");
+        flexbuf_printf(f, "\"    movs (.Linstr - .Lstart) + __LMM_FCACHE_START,r1\\n\"\n");
+        flexbuf_printf(f, "\"    mov  r0,r2\\n\"\n");
+        flexbuf_printf(f, "\".Linstr\\n\"\n");
+        flexbuf_printf(f, "\"    mov  0-0,0-0\\n\"\n");
+        flexbuf_printf(f, "\"    jmp  lr\\n\"\n");
+        flexbuf_printf(f, "\".Lend\\n\"\n");
+        flexbuf_printf(f, "\"    .compress default\\n\"\n");
+        flexbuf_printf(f, ");\n");
+        flexbuf_printf(f, "extern ");
         if (!gl_ccode) {
-            fprintf(f, "\"C\" ");
+            flexbuf_printf(f, "\"C\" ");
         }
-        fprintf(f, "int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);\n");
-        fprintf(f, "#define cogmem_get__(addr)      _cog_xfer(0, (addr), 0)\n");
-        fprintf(f, "#define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))\n");
-        fprintf(f, "\n");
+        flexbuf_printf(f, "int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);\n");
+        flexbuf_printf(f, "#define cogmem_get__(addr)      _cog_xfer(0, (addr), 0)\n");
+        flexbuf_printf(f, "#define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))\n");
+        flexbuf_printf(f, "\n");
     }
     if (parse->needsCoginit) {
-        fprintf(f, "typedef void (*Cogfunc__)(void *a, void *b, void *c, void *d);\n");
-        fprintf(f, "static void Cogstub__(void **arg) {\n");
-        fprintf(f, "  Cogfunc__ func = (Cogfunc__)(arg[0]);\n");
-        fprintf(f, "  func(arg[1], arg[2], arg[3], arg[4]);\n");
-        fprintf(f, "}\n");
-        fprintf(f, "extern \"C\" void _clone_cog(void *tmp);\n");
-        fprintf(f, "static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
-        fprintf(f, "    void *tmp = __builtin_alloca(1984);\n");
-        fprintf(f, "    unsigned int *sp = (unsigned int *)stacktop;\n");
-        fprintf(f, "    static int32_t cogargs__[5];\n");
-        fprintf(f, "    int r;\n");
-        fprintf(f, "    cogargs__[0] = (int32_t) func;\n");
-        fprintf(f, "    cogargs__[1] = arg1;\n");
-        fprintf(f, "    cogargs__[2] = arg2;\n");
-        fprintf(f, "    cogargs__[3] = arg3;\n");
-        fprintf(f, "    cogargs__[4] = arg4;\n");
-        fprintf(f, "    _clone_cog(tmp);\n");
-        fprintf(f, "    *--sp = 0;\n");
-        fprintf(f, "    *--sp = (unsigned int)cogargs__;\n");
-        fprintf(f, "    *--sp = (unsigned int)Cogstub__;\n");
-        fprintf(f, "    r = coginit(cogid, tmp, sp);\n");
-        fprintf(f, "    return r;\n");
-        fprintf(f, "}\n"); 
+        flexbuf_printf(f, "typedef void (*Cogfunc__)(void *a, void *b, void *c, void *d);\n");
+        flexbuf_printf(f, "static void Cogstub__(void **arg) {\n");
+        flexbuf_printf(f, "  Cogfunc__ func = (Cogfunc__)(arg[0]);\n");
+        flexbuf_printf(f, "  func(arg[1], arg[2], arg[3], arg[4]);\n");
+        flexbuf_printf(f, "}\n");
+        flexbuf_printf(f, "extern \"C\" void _clone_cog(void *tmp);\n");
+        flexbuf_printf(f, "static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
+        flexbuf_printf(f, "    void *tmp = __builtin_alloca(1984);\n");
+        flexbuf_printf(f, "    unsigned int *sp = (unsigned int *)stacktop;\n");
+        flexbuf_printf(f, "    static int32_t cogargs__[5];\n");
+        flexbuf_printf(f, "    int r;\n");
+        flexbuf_printf(f, "    cogargs__[0] = (int32_t) func;\n");
+        flexbuf_printf(f, "    cogargs__[1] = arg1;\n");
+        flexbuf_printf(f, "    cogargs__[2] = arg2;\n");
+        flexbuf_printf(f, "    cogargs__[3] = arg3;\n");
+        flexbuf_printf(f, "    cogargs__[4] = arg4;\n");
+        flexbuf_printf(f, "    _clone_cog(tmp);\n");
+        flexbuf_printf(f, "    *--sp = 0;\n");
+        flexbuf_printf(f, "    *--sp = (unsigned int)cogargs__;\n");
+        flexbuf_printf(f, "    *--sp = (unsigned int)Cogstub__;\n");
+        flexbuf_printf(f, "    r = coginit(cogid, tmp, sp);\n");
+        flexbuf_printf(f, "    return r;\n");
+        flexbuf_printf(f, "}\n"); 
     }
 }
 
 static void
-PrintCppFile(FILE *f, Module *parse)
+PrintCppFile(Flexbuf *f, Module *parse)
 {
     /* things we always need */
     if (gl_header) {
-        fprintf(f, "%s", gl_header);
+        flexbuf_printf(f, "%s", gl_header);
     }
     if (parse->topcomment) {
         PrintComment(f, parse->topcomment);
     }
     if (parse->needsStdlib) {
-        fprintf(f, "#include <stdlib.h>\n");
+        flexbuf_printf(f, "#include <stdlib.h>\n");
     }
-    fprintf(f, "#include <propeller.h>\n");
-    fprintf(f, "#include \"%s.h\"\n", parse->basename);
-    fprintf(f, "\n");
+    flexbuf_printf(f, "#include <propeller.h>\n");
+    flexbuf_printf(f, "#include \"%s.h\"\n", parse->basename);
+    flexbuf_printf(f, "\n");
     PrintMacros(f, parse);
 
     /* declare static functions and variables */
@@ -610,23 +610,23 @@ PrintCppFile(FILE *f, Module *parse)
 
         n = PrintPrivateFunctionDecls(f, parse);
         if (n > 0)
-            fprintf(f, "\n");
+            flexbuf_printf(f, "\n");
     }
     /* print data block, if applicable */
     if (parse->datblock) {
         if (gl_gas_dat) {
-            fprintf(f, "extern ");
+            flexbuf_printf(f, "extern ");
             PrintDatArray(f, parse, ";\n", false);
             PrintDataBlockForGas(f, parse, 1);
         } else {
             if (gl_ccode) {
-                fprintf(f, "static ");
+                flexbuf_printf(f, "static ");
                 PrintDatArray(f, parse, " = {\n", false);
             } else {
                 PrintDatArray(f, parse, " = {\n", true);
             }
             PrintDataBlock(f, parse, TEXT_OUTPUT);
-            fprintf(f, "};\n");
+            flexbuf_printf(f, "};\n");
         }
     }
     /* functions */
@@ -641,15 +641,15 @@ PrintCppFile(FILE *f, Module *parse)
 
 // output an assembly language statement
 void
-OutputAsmEquate(FILE *f, const char *str, unsigned int value)
+OutputAsmEquate(Flexbuf *f, const char *str, unsigned int value)
 {
-    fprintf(f, "__asm__( \"    .global %s\\n\" );\n", str);
-    fprintf(f, "__asm__( \"    %s = 0x%x\\n\" );\n", str, value);
+    flexbuf_printf(f, "__asm__( \"    .global %s\\n\" );\n", str);
+    flexbuf_printf(f, "__asm__( \"    %s = 0x%x\\n\" );\n", str, value);
 }
 
 // output _clkmode and _clkfreq settings
 void
-OutputClkFreq(FILE *f, Module *P)
+OutputClkFreq(Flexbuf *f, Module *P)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = FindSymbol(&P->objsyms, "_clkmode");
@@ -750,9 +750,22 @@ OutputCppCode(const char *filename, Module *P, int printMain)
     FILE *f = NULL;
     char *fname = NULL;
     Module *save;
-
+    Flexbuf fb;
+    
     save = current;
     current = P;
+
+    flexbuf_init(&fb, 0);
+    PrintDebugDirective(&fb, NULL);
+    if (gl_ccode) {
+        PrintCHeaderFile(&fb, P);
+    } else {
+        PrintCppHeaderFile(&fb, P);
+    }
+    
+    if (gl_errors > 0) {
+        exit(1);
+    }
 
     /* print out the header file */
     fname = ReplaceExtension(filename, ".h");
@@ -762,33 +775,16 @@ OutputCppCode(const char *filename, Module *P, int printMain)
         free(fname);
         exit(1);
     }
-    PrintDebugDirective(f, NULL);
-    if (gl_ccode) {
-        PrintCHeaderFile(f, P);
-    } else {
-        PrintCppHeaderFile(f, P);
-    }
+    fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);
-
-    if (gl_errors > 0) {
-        free(fname);
-        exit(1);
-    }
-
     free(fname);
-    if (gl_ccode) {
-        fname = ReplaceExtension(filename, ".c");
-    } else {
-        fname = ReplaceExtension(filename, ".cpp");
-    }
-    f = fopen(fname, "w");
-    if (!f) {
-        perror(fname);
-        free(fname);
-        exit(1);
-    }
-    PrintDebugDirective(f, NULL);
-    PrintCppFile(f, P);
+    flexbuf_delete(&fb);
+    
+    /* now do the C code */
+    flexbuf_init(&fb, 0);
+    PrintDebugDirective(&fb, NULL);
+
+    PrintCppFile(&fb, P);
     if (printMain) {
         Function *defaultMethod = P->functions;
         if (defaultMethod == NULL) {
@@ -801,25 +797,40 @@ OutputCppCode(const char *filename, Module *P, int printMain)
         }
 
         //check for _clkmode and _clkfreq symbols
-        OutputClkFreq(f, P);
-        fprintf(f, "\n");
+        OutputClkFreq(&fb, P);
+        flexbuf_printf(&fb, "\n");
 
         if (gl_ccode) {
-            fprintf(f, "%s MainObj__;\n\n", P->classname);
-            fprintf(f, "int main() {\n");
-            fprintf(f, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
-            fprintf(f, "  return 0;\n");
-            fprintf(f, "}\n");
+            flexbuf_printf(&fb, "%s MainObj__;\n\n", P->classname);
+            flexbuf_printf(&fb, "int main() {\n");
+            flexbuf_printf(&fb, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
+            flexbuf_printf(&fb, "  return 0;\n");
+            flexbuf_printf(&fb, "}\n");
         } else {
-            fprintf(f, "%s MainObj__;\n\n", P->classname);
-            fprintf(f, "int main() {\n");
-            fprintf(f, "  MainObj__.%s();\n", defaultMethod->name);
-            fprintf(f, "  return 0;\n");
-            fprintf(f, "}\n");
+            flexbuf_printf(&fb, "%s MainObj__;\n\n", P->classname);
+            flexbuf_printf(&fb, "int main() {\n");
+            flexbuf_printf(&fb, "  MainObj__.%s();\n", defaultMethod->name);
+            flexbuf_printf(&fb, "  return 0;\n");
+            flexbuf_printf(&fb, "}\n");
         }
     }
+
+    if (gl_ccode) {
+        fname = ReplaceExtension(filename, ".c");
+    } else {
+        fname = ReplaceExtension(filename, ".cpp");
+    }
+
+    f = fopen(fname, "w");
+    if (!f) {
+        perror(fname);
+        free(fname);
+        exit(1);
+    }
+    fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
+    fclose(f);
+    flexbuf_delete(&fb);
 done:
-    if (f) fclose(f);
     if (fname) free(fname);
 
     if (gl_errors > 0) {
@@ -832,15 +843,15 @@ static const char *lastfile = 0;
 static int lastline = 0;
 
 static void
-EmitLineDirective(FILE *f, const char *name, int line)
+EmitLineDirective(Flexbuf *f, const char *name, int line)
 {
-    fprintf(f, "#line %d \"%s\"\n", line, name);
+    flexbuf_printf(f, "#line %d \"%s\"\n", line, name);
     lastfile = name;
     lastline = line;
 }
 
 void
-PrintDebugDirective(FILE *f, AST *ast)
+PrintDebugDirective(Flexbuf *f, AST *ast)
 {
     int line;
     const char *name;
@@ -868,7 +879,7 @@ PrintDebugDirective(FILE *f, AST *ast)
             // if we're close, just synchronize by outputting blank lines
             if (n <= 5 && 0) {
                 while (n-- > 0) {
-                    fprintf(f, "\n");
+                    flexbuf_printf(f, "\n");
                     lastline++;
                 }
                 return;
@@ -879,8 +890,8 @@ PrintDebugDirective(FILE *f, AST *ast)
 }
 
 void
-PrintNewline(FILE *f)
+PrintNewline(Flexbuf *f)
 {
-    fprintf(f, "\n");
+    flexbuf_printf(f, "\n");
     lastline++;
 }

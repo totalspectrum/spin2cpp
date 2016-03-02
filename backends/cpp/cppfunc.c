@@ -12,7 +12,7 @@
 #include "outcpp.h"
 
 static void
-PrintParameterList(FILE *f, Function *func)
+PrintParameterList(Flexbuf *f, Function *func)
 {
     int needcomma = 0;
     AST *list = func->params;
@@ -21,11 +21,11 @@ PrintParameterList(FILE *f, Function *func)
 
     needSelf = (gl_ccode && !func->is_static) || func->force_static;
     if (!list && !needSelf) {
-        fprintf(f, "void");
+        flexbuf_printf(f, "void");
         return;
     }
     if (needSelf) {
-        fprintf(f, "%s *self", func->parse->classname);
+        flexbuf_printf(f, "%s *self", func->parse->classname);
         needcomma = 1;
     }
     while (list) {
@@ -39,15 +39,15 @@ PrintParameterList(FILE *f, Function *func)
             return;
         }
         if (needcomma)
-            fprintf(f, ", ");
-        fprintf(f, "int32_t %s", ast->d.string);
+            flexbuf_printf(f, ", ");
+        flexbuf_printf(f, "int32_t %s", ast->d.string);
         needcomma = 1;
         list = list->right;
     }
 }
 
 void
-PrintAnnotationList(FILE *f, AST *ast, char terminal)
+PrintAnnotationList(Flexbuf *f, AST *ast, char terminal)
 {
     while (ast) {
         if (ast->kind != AST_ANNOTATION) {
@@ -55,17 +55,17 @@ PrintAnnotationList(FILE *f, AST *ast, char terminal)
             return;
         }
         if (terminal == '\n') {
-            fprintf(f, "%s", ast->d.string);
+            flexbuf_printf(f, "%s", ast->d.string);
             PrintNewline(f);
         } else {
-            fprintf(f, "%s%c", ast->d.string, terminal);
+            flexbuf_printf(f, "%s%c", ast->d.string, terminal);
         }
         ast = ast->right;
     }
 }
 
 static void
-PrintFunctionDecl(FILE *f, Function *func, int isLocal)
+PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
 {
     /* this may just be a placeholder for inline C++ code */
     if (!func->name)
@@ -79,30 +79,30 @@ PrintFunctionDecl(FILE *f, Function *func, int isLocal)
     PrintDebugDirective(f, func->decl);
 
     if (gl_ccode && isLocal) {
-        fprintf(f, "static");
+        flexbuf_printf(f, "static");
     }
-    fprintf(f, "  ");
+    flexbuf_printf(f, "  ");
     if (func->annotations) {
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_ccode) {
         PrintType(f, func->rettype);
-        fprintf(f, " %s_%s(", current->classname, 
+        flexbuf_printf(f, " %s_%s(", current->classname, 
                 func->name);
     } else {
         if (func->is_static) {
-            fprintf(f, "static ");
+            flexbuf_printf(f, "static ");
         }
         PrintType(f, func->rettype);
-        fprintf(f, "\t%s(", func->name);
+        flexbuf_printf(f, "\t%s(", func->name);
     }
     PrintParameterList(f, func);
-    fprintf(f, ");");
+    flexbuf_printf(f, ");");
     PrintNewline(f);
 }
 
 int
-PrintPublicFunctionDecls(FILE *f, Module *parse)
+PrintPublicFunctionDecls(Flexbuf *f, Module *parse)
 {
     Function *pf;
     int n = 0;
@@ -117,7 +117,7 @@ PrintPublicFunctionDecls(FILE *f, Module *parse)
 }
 
 int
-PrintPrivateFunctionDecls(FILE *f, Module *parse)
+PrintPrivateFunctionDecls(Flexbuf *f, Module *parse)
 {
     Function *pf;
     int n = 0;
@@ -133,21 +133,21 @@ PrintPrivateFunctionDecls(FILE *f, Module *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
+PrintVarList(Flexbuf *f, AST *typeast, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
 
-    fprintf(f, "  ");
+    flexbuf_printf(f, "  ");
     if (flags & VOLATILE) {
-        fprintf(f, "volatile ");
+        flexbuf_printf(f, "volatile ");
     }
     PrintType(f, typeast);
-    fprintf(f, "\t");
+    flexbuf_printf(f, "\t");
     while (ast != NULL) {
         if (needcomma) {
-            fprintf(f, ", ");
+            flexbuf_printf(f, ", ");
         }
         needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
@@ -157,21 +157,21 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
         decl = ast->left;
         switch (decl->kind) {
         case AST_IDENTIFIER:
-            fprintf(f, "%s", decl->d.string);
+            flexbuf_printf(f, "%s", decl->d.string);
             count++;
             break;
         case AST_ARRAYDECL:
-            fprintf(f, "%s[", decl->left->d.string);
+            flexbuf_printf(f, "%s[", decl->left->d.string);
             if (gl_expand_constants) {
-                fprintf(f, "%d", (int)EvalConstExpr(decl->right));
+                flexbuf_printf(f, "%d", (int)EvalConstExpr(decl->right));
             } else {
                 PrintExpr(f, decl->right);
             }
-            fprintf(f, "]");
+            flexbuf_printf(f, "]");
             count++;
             break;
         case AST_ANNOTATION:
-            fprintf(f, "%s ", decl->d.string);
+            flexbuf_printf(f, "%s ", decl->d.string);
             needcomma = 0;
             break;
         default:
@@ -180,7 +180,7 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
         }
         ast = ast->right;
     }
-    fprintf(f, ";");
+    flexbuf_printf(f, ";");
     PrintNewline(f);
     return count;
 }
@@ -189,7 +189,7 @@ PrintVarList(FILE *f, AST *typeast, AST *ast, int flags)
  * print variables in a function
  */
 static void
-PrintFunctionVariables(FILE *f, Function *func)
+PrintFunctionVariables(Flexbuf *f, Function *func)
 {
     AST *v;
     int offset = 0;
@@ -198,7 +198,7 @@ PrintFunctionVariables(FILE *f, Function *func)
         if (func->localarray && func->localarray == func->parmarray) {
             /* nothing to do here */
         } else if (func->localarray && func->localarray_len > 0) {
-            fprintf(f, "  int32_t %s[%d];", func->localarray, func->localarray_len);
+            flexbuf_printf(f, "  int32_t %s[%d];", func->localarray, func->localarray_len);
             PrintNewline(f);
         } else {
             PrintVarList(f, ast_type_long, func->locals, LOCAL);
@@ -228,14 +228,14 @@ PrintFunctionVariables(FILE *f, Function *func)
             }
         }
 
-        fprintf(f, "  int32_t %s[%d];", func->parmarray, parmsiz);
+        flexbuf_printf(f, "  int32_t %s[%d];", func->parmarray, parmsiz);
         PrintNewline(f);
     }
     if (!func->result_in_parmarray && func->resultexpr) {
         if (func->resultexpr->kind == AST_IDENTIFIER) {
-            fprintf(f, "  ");
+            flexbuf_printf(f, "  ");
             PrintType(f, func->rettype);
-            fprintf(f, " %s = 0;", func->resultexpr->d.string);
+            flexbuf_printf(f, " %s = 0;", func->resultexpr->d.string);
             PrintNewline(f);
         }
     }
@@ -245,23 +245,23 @@ PrintFunctionVariables(FILE *f, Function *func)
         offset = 0;
 
         if (func->result_in_parmarray) {
-            fprintf(f, "%*c%s[%d] = 0;", indent, ' ', func->parmarray, offset);
+            flexbuf_printf(f, "%*c%s[%d] = 0;", indent, ' ', func->parmarray, offset);
             offset++;
             PrintNewline(f);
         }
         for (v = func->params; v; v = v->right) {
-            fprintf(f, "%*c%s[%d] = ", indent, ' ', func->parmarray, offset);
-            fprintf(f, "%s;", v->left->d.string);
+            flexbuf_printf(f, "%*c%s[%d] = ", indent, ' ', func->parmarray, offset);
+            flexbuf_printf(f, "%s;", v->left->d.string);
             PrintNewline(f);
             offset++;
         }
     }
 }
  
-static void PrintStatement(FILE *f, AST *ast, int indent); /* forward declaration */
+static void PrintStatement(Flexbuf *f, AST *ast, int indent); /* forward declaration */
 
 static void
-PrintStatementList(FILE *f, AST *ast, int indent)
+PrintStatementList(Flexbuf *f, AST *ast, int indent)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
@@ -275,13 +275,13 @@ PrintStatementList(FILE *f, AST *ast, int indent)
 }
 
 static void
-PrintCaseExprList(FILE *f, AST *var, AST *ast)
+PrintCaseExprList(Flexbuf *f, AST *var, AST *ast)
 {
     int needor = 0;
     while (ast) {
-        if (needor) fprintf(f, " || ");
+        if (needor) flexbuf_printf(f, " || ");
         if (ast->kind == AST_OTHER) {
-            fprintf(f, "1");
+            flexbuf_printf(f, "1");
         } else {
             if (ast->left->kind == AST_RANGE) {
                 AST *betw;
@@ -297,18 +297,18 @@ PrintCaseExprList(FILE *f, AST *var, AST *ast)
 }
 
 static void
-PrintCaseItem(FILE *f, AST *var, AST *ast, int indent)
+PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent)
 {
-    fprintf(f, "(");
+    flexbuf_printf(f, "(");
     PrintCaseExprList(f, var, ast->left);
-    fprintf(f, ") {");
+    flexbuf_printf(f, ") {");
     PrintNewline(f);
     PrintStatementList(f, ast->right, indent);
-    fprintf(f, "%*c}", indent, ' ');
+    flexbuf_printf(f, "%*c}", indent, ' ');
 }
 
 static void
-PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
+PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
 {
     int items = 0;
     int first = 1;
@@ -318,9 +318,9 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
         var = expr;
     } else {
         var = AstTempVariable(NULL);
-        fprintf(f, "%*cint32_t %s = ", indent, ' ', var->d.string);
+        flexbuf_printf(f, "%*cint32_t %s = ", indent, ' ', var->d.string);
         PrintExpr(f, expr);
-        fprintf(f, ";"); PrintNewline(f);
+        flexbuf_printf(f, ";"); PrintNewline(f);
     }
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {
@@ -328,10 +328,10 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
             return;
         }
         if (first) {
-            fprintf(f, "%*cif ", indent, ' ');
+            flexbuf_printf(f, "%*cif ", indent, ' ');
             first = 0;
         } else {
-            fprintf(f, " else if ");
+            flexbuf_printf(f, " else if ");
         }
         PrintCaseItem(f, var, ast->left, indent);
         ast = ast->right;
@@ -344,7 +344,7 @@ PrintCaseStmt(FILE *f, AST *expr, AST *ast, int indent)
  * print extra declarations for function
  */
 static void
-PrintExtraDecl(FILE *f, AST *ast, int indent)
+PrintExtraDecl(Flexbuf *f, AST *ast, int indent)
 {
     AST *decl;
     AST *id;
@@ -354,9 +354,9 @@ PrintExtraDecl(FILE *f, AST *ast, int indent)
 
         if (decl && decl->kind == AST_TEMPARRAYDECL) {
             id = decl->left;
-            fprintf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
+            flexbuf_printf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
             PrintLookupArray(f, decl->right);
-            fprintf(f, "};"); PrintNewline(f);
+            flexbuf_printf(f, "};"); PrintNewline(f);
         } else {
             ERROR(ast, "internal error in expression re-arranging");
             return;
@@ -368,7 +368,7 @@ PrintExtraDecl(FILE *f, AST *ast, int indent)
  * print a single statement
  */
 static void
-PrintStatement(FILE *f, AST *ast, int indent)
+PrintStatement(Flexbuf *f, AST *ast, int indent)
 {
     AST *comment = NULL;
     AST *retval;
@@ -387,67 +387,67 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         PrintDebugDirective(f, ast);
         if (retval) {
-            fprintf(f, "%*creturn ", indent, ' ');
+            flexbuf_printf(f, "%*creturn ", indent, ' ');
             PrintExpr(f, retval);
         } else {
-            fprintf(f, "%*creturn", indent, ' ');
+            flexbuf_printf(f, "%*creturn", indent, ' ');
         }
-        fprintf(f, ";"); PrintNewline(f);
+        flexbuf_printf(f, ";"); PrintNewline(f);
         break;
     case AST_WAITCNT:
-        fprintf(f, "%*cwaitcnt(", indent, ' ');
+        flexbuf_printf(f, "%*cwaitcnt(", indent, ' ');
         PrintExpr(f, ast->left);
-        fprintf(f, ");"); PrintNewline(f);
+        flexbuf_printf(f, ");"); PrintNewline(f);
         break;
     case AST_WAITPEQ:
-        fprintf(f, "%*cwaitpeq(", indent, ' ');
+        flexbuf_printf(f, "%*cwaitpeq(", indent, ' ');
         PrintExprList(f, ast->left);
-        fprintf(f, ");"); PrintNewline(f);
+        flexbuf_printf(f, ");"); PrintNewline(f);
         break;
     case AST_WAITPNE:
-        fprintf(f, "%*cwaitpne(", indent, ' ');
+        flexbuf_printf(f, "%*cwaitpne(", indent, ' ');
         PrintExprList(f, ast->left);
-        fprintf(f, ");"); PrintNewline(f);
+        flexbuf_printf(f, ");"); PrintNewline(f);
         break;
     case AST_WAITVID:
-        fprintf(f, "%*cwaitpvid(", indent, ' ');
+        flexbuf_printf(f, "%*cwaitpvid(", indent, ' ');
         PrintExprList(f, ast->left);
-        fprintf(f, ");"); PrintNewline(f);
+        flexbuf_printf(f, ");"); PrintNewline(f);
         break;        
     case AST_ABORT:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*cif (!abortChain__) abort();", indent, ' ');
+        flexbuf_printf(f, "%*cif (!abortChain__) abort();", indent, ' ');
         PrintNewline(f);
-        fprintf(f, "%*cabortChain__->val =  ", indent, ' ');
+        flexbuf_printf(f, "%*cabortChain__->val =  ", indent, ' ');
         if (ast->left) {
             PrintExpr(f, ast->left);
         } else {
             PrintExpr(f, curfunc->resultexpr);
         }
-        fprintf(f, ";"); PrintNewline(f);
-        fprintf(f, "%*clongjmp(abortChain__->jmp, 1);", indent, ' ');
+        flexbuf_printf(f, ";"); PrintNewline(f);
+        flexbuf_printf(f, "%*clongjmp(abortChain__->jmp, 1);", indent, ' ');
         PrintNewline(f);
         break;
     case AST_YIELD:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*cYield__();", indent, ' ');
+        flexbuf_printf(f, "%*cYield__();", indent, ' ');
         PrintNewline(f);
         break;
     case AST_QUIT:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*cbreak;", indent, ' ');
+        flexbuf_printf(f, "%*cbreak;", indent, ' ');
         PrintNewline(f);
         break;
     case AST_NEXT:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*ccontinue;", indent, ' ');
+        flexbuf_printf(f, "%*ccontinue;", indent, ' ');
         PrintNewline(f);
         break;
     case AST_IF:
         PrintDebugDirective(f, ast->left);
-        fprintf(f, "%*cif (", indent, ' ');
+        flexbuf_printf(f, "%*cif (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ") {");
+        flexbuf_printf(f, ") {");
         PrintNewline(f);
         ast = ast->right;
         // NOTE:
@@ -464,7 +464,7 @@ PrintStatement(FILE *f, AST *ast, int indent)
         }
         PrintStatementList(f, ast->left, indent+2);
         if (ast->right) {
-            fprintf(f, "%*c} else {", indent, ' ');
+            flexbuf_printf(f, "%*c} else {", indent, ' ');
             PrintNewline(f);
             if (comment) {
                 PrintIndentedComment(f, comment, indent+2);
@@ -473,41 +473,41 @@ PrintStatement(FILE *f, AST *ast, int indent)
             PrintDebugDirective(f, ast->right);
             PrintStatementList(f, ast->right, indent+2);
         }
-        fprintf(f, "%*c}", indent, ' ');
+        flexbuf_printf(f, "%*c}", indent, ' ');
         PrintNewline(f);
         break;
     case AST_WHILE:
         PrintDebugDirective(f, ast->left);
-        fprintf(f, "%*cwhile (", indent, ' ');
+        flexbuf_printf(f, "%*cwhile (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ") {"); PrintNewline(f);
+        flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}", indent, ' ');
+        flexbuf_printf(f, "%*c}", indent, ' ');
         PrintNewline(f);
         break;
     case AST_FOR:
     case AST_FORATLEASTONCE:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*cfor(", indent, ' ');
+        flexbuf_printf(f, "%*cfor(", indent, ' ');
         PrintExprToplevel(f, ast->left);
-        fprintf(f, "; ");
+        flexbuf_printf(f, "; ");
         ast = ast->right;
         PrintBoolExpr(f, ast->left);
-        fprintf(f, "; ");
+        flexbuf_printf(f, "; ");
         ast = ast->right;
         PrintExprToplevel(f, ast->left);
-        fprintf(f, ") {"); PrintNewline(f);
+        flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c}", indent, ' ');
+        flexbuf_printf(f, "%*c}", indent, ' ');
         PrintNewline(f);
         break;
     case AST_DOWHILE:
-        fprintf(f, "%*cdo {", indent, ' ');
+        flexbuf_printf(f, "%*cdo {", indent, ' ');
         PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
-        fprintf(f, "%*c} while (", indent, ' ');
+        flexbuf_printf(f, "%*c} while (", indent, ' ');
         PrintBoolExpr(f, ast->left);
-        fprintf(f, ");");
+        flexbuf_printf(f, ");");
         PrintNewline(f);
         break;
     case AST_COUNTREPEAT:
@@ -524,27 +524,27 @@ PrintStatement(FILE *f, AST *ast, int indent)
     default:
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);
-        fprintf(f, "%*c", indent, ' ');
+        flexbuf_printf(f, "%*c", indent, ' ');
         if (ast->kind == AST_ASSIGN) {
             PrintAssign(f, ast->left, ast->right);
         } else {
             PrintExpr(f, ast);
         }
-        fprintf(f, ";");
+        flexbuf_printf(f, ";");
         PrintNewline(f);
         break;
     }
 }
 
 static void
-PrintFunctionStmts(FILE *f, Function *func)
+PrintFunctionStmts(Flexbuf *f, Function *func)
 {
     PrintStatementList(f, func->body, 2);
 }
 
 
 void
-PrintFunctionBodies(FILE *f, Module *parse)
+PrintFunctionBodies(Flexbuf *f, Module *parse)
 {
     Function *pf;
 
@@ -566,20 +566,20 @@ PrintFunctionBodies(FILE *f, Module *parse)
         PrintDebugDirective(f, curfunc->decl);
         if (gl_ccode) {
             if (!pf->is_public) {
-                fprintf(f, "static ");
+                flexbuf_printf(f, "static ");
             }
             PrintType(f, pf->rettype);
-            fprintf(f, " %s_%s(", parse->classname, pf->name);
+            flexbuf_printf(f, " %s_%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
 
         } else {
             PrintType(f, pf->rettype);
-            fprintf(f, " %s::%s(", parse->classname, pf->name);
+            flexbuf_printf(f, " %s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
         }
-        fprintf(f, ")");
+        flexbuf_printf(f, ")");
         PrintNewline(f);
-        fprintf(f, "{");
+        flexbuf_printf(f, "{");
         PrintNewline(f);
         PrintFunctionVariables(f, pf);
         if (pf->extradecl) {
@@ -588,7 +588,7 @@ PrintFunctionBodies(FILE *f, Module *parse)
         }
         (void)PrintFunctionStmts(f, pf);
 
-        fprintf(f, "}");
+        flexbuf_printf(f, "}");
         PrintNewline(f);
         PrintNewline(f);
         curfunc = NULL;

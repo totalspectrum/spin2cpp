@@ -42,7 +42,7 @@ CFLAGS = -g -Wall -Werror $(INC)
 LIBS = -lm
 RM = rm -f
 
-VPATH=.:util:backends:backends/ir:backends/cpp
+VPATH=.:util:backends:backends/asm:backends/cpp
 
 HEADERS = $(BUILD)/spin.tab.h
 

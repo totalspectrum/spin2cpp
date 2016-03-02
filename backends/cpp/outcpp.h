@@ -5,26 +5,31 @@
  *
  * code for handling functions
  */
+#ifndef OUTCPP_H_
+#define OUTCPP_H_
+
+#include "util/flexbuf.h"
 #include "cppfunc.h"
 
-void PrintAnnotationList(FILE *f, AST *ast, char terminal);
-void PrintIndentedComment(FILE *f, AST *ast, int indent);
-void PrintDebugDirective(FILE *f, AST *ast);
-void PrintNewline(FILE *f);
-int PrintPublicFunctionDecls(FILE *f, Module *P);
-int PrintPrivateFunctionDecls(FILE *f, Module *P);
-void PrintFunctionBodies(FILE *f, Module *P);
+void PrintAnnotationList(Flexbuf *f, AST *ast, char terminal);
+void PrintIndentedComment(Flexbuf *f, AST *ast, int indent);
+void PrintDebugDirective(Flexbuf *f, AST *ast);
+void PrintNewline(Flexbuf *f);
+int PrintPublicFunctionDecls(Flexbuf *f, Module *P);
+int PrintPrivateFunctionDecls(Flexbuf *f, Module *P);
+void PrintFunctionBodies(Flexbuf *f, Module *P);
 
 /* printing functions */
-void PrintExpr(FILE *f, AST *expr);
-void PrintExprToplevel(FILE *f, AST *expr);
-void PrintBoolExpr(FILE *f, AST *expr);
-void PrintAsAddr(FILE *f, AST *expr);
-void PrintExprList(FILE *f, AST *list);
-void PrintType(FILE *f, AST *type);
-void PrintPostfix(FILE *f, AST *val, int toplevel);
-void PrintInteger(FILE *f, int32_t v);
-void PrintFloat(FILE *f, int32_t v);
-int  PrintLookupArray(FILE *f, AST *arr);
-void PrintGasExpr(FILE *f, AST *expr);
+void PrintExpr(Flexbuf *f, AST *expr);
+void PrintExprToplevel(Flexbuf *f, AST *expr);
+void PrintBoolExpr(Flexbuf *f, AST *expr);
+void PrintAsAddr(Flexbuf *f, AST *expr);
+void PrintExprList(Flexbuf *f, AST *list);
+void PrintType(Flexbuf *f, AST *type);
+void PrintPostfix(Flexbuf *f, AST *val, int toplevel);
+void PrintInteger(Flexbuf *f, int32_t v);
+void PrintFloat(Flexbuf *f, int32_t v);
+int  PrintLookupArray(Flexbuf *f, AST *arr);
+void PrintGasExpr(Flexbuf *f, AST *expr);
 
+#endif
