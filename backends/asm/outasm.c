@@ -46,16 +46,17 @@ typedef struct AsmVariable {
     intptr_t val;
 } AsmVariable;
 
-// global variables in register memory (really holds struct AsmVariables)
-static struct flexbuf regGlobalVars;
+// global variables in COG memory (really holds struct AsmVariables)
+static struct flexbuf cogGlobalVars;
 
 // global variables in hub memory (really holds struct AsmVariables)
 static struct flexbuf hubGlobalVars;
 
+// returns true if P is the top level module for this project
 static int
 IsTopLevel(Module *P)
 {
-    return 1;
+    return 1; // FIXME not accurate yet
 }
 
 static const char *
@@ -109,7 +110,7 @@ GetVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value)
 
 Operand *GetGlobal(Operandkind kind, const char *name, intptr_t value)
 {
-    return GetVar(&regGlobalVars, kind, name, value);
+    return GetVar(&cogGlobalVars, kind, name, value);
 }
 Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
 {
@@ -246,6 +247,7 @@ DeleteIR(IRList *irl, IR *ir)
   }
 }
 
+// emit a machine instruction with no operands
 static IR *EmitOp0(IRList *irl, Operandkind code)
 {
   IR *ir = NewIR(code);
@@ -253,6 +255,7 @@ static IR *EmitOp0(IRList *irl, Operandkind code)
   return ir;
 }
 
+// emit a machine instruction with one operand
 static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op)
 {
   IR *ir = NewIR(code);
@@ -261,6 +264,7 @@ static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op)
   return ir;
 }
 
+// emit a machine instruction with two operands
 static IR *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
 {
   IR *ir = NewIR(code);
@@ -270,11 +274,13 @@ static IR *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
   return ir;
 }
 
+// emit an assembler label
 void EmitLabel(IRList *irl, Operand *op)
 {
   EmitOp1(irl, OPC_LABEL, op);
 }
 
+// create a new temporary label name
 char *
 NewTempLabelName()
 {
@@ -875,6 +881,10 @@ CompileBasicOperator(IRList *irl, AST *expr)
     ir = EmitOp2(irl, OPC_DJNZ, temp, right);
     ir->cond = COND_NC;
     return temp;
+  case T_DECODE:
+    ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
+    return NewImmediate(0);
+
   case T_NOT:
   case T_AND:
   case T_OR:
@@ -1668,7 +1678,7 @@ static int gcmpfunc(const void *a, const void *b)
   return strcmp(ga->op->name, gb->op->name);
 }
 
-static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
+static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
 {
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
@@ -1703,8 +1713,8 @@ static void EmitVars(struct flexbuf *fb, IRList *irl, int alphaSort)
 }
 void EmitGlobals(IRList *irl)
 {
-    EmitVars(&regGlobalVars, irl, 1);
-    EmitVars(&hubGlobalVars, irl, 0);
+    EmitAsmVars(&cogGlobalVars, irl, 1);
+    EmitAsmVars(&hubGlobalVars, irl, 0);
 }
 
 bool
