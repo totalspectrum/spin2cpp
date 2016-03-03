@@ -245,13 +245,13 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         }
     }
     switch(ir->opc) {
+    case OPC_DUMMY:
+        break;
     case OPC_DEAD:
         /* no code necessary, internal opcode */
-        if (gl_optimize_flags & OPT_NO_ASM) {
-          flexbuf_addstr(fb, "\t.dead\t");
-	  flexbuf_addstr(fb, ir->dst->name);
-          flexbuf_addstr(fb, "\n");
-	}
+        flexbuf_addstr(fb, "\t.dead\t");
+        flexbuf_addstr(fb, ir->dst->name);
+        flexbuf_addstr(fb, "\n");
         break;
     case OPC_COMMENT:
         PrintOperand(fb, ir->dst);

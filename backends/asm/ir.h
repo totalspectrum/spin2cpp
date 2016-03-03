@@ -66,6 +66,8 @@ enum IROpcode {
     OPC_DEAD,
     /* const declaration */
     OPC_CONST,
+    /* indicates an instruction slated for removal */
+    OPC_DUMMY,
     
     OPC_UNKNOWN,
 };

@@ -24,6 +24,7 @@ static bool IsDummy(IR *op)
   case OPC_COMMENT:
   case OPC_DEAD:
   case OPC_CONST:
+  case OPC_DUMMY:
     return true;
   default:
     return op->cond == COND_FALSE;
@@ -170,7 +171,7 @@ IsDeadAfter(IR *instr, Operand *op)
         // that goes to LABEL then we might miss a set
         // so check
         IR *comefrom = (IR *)ir->aux;
-        if (!comefrom || comefrom->addr < ir->addr) {
+        if (!comefrom || comefrom->addr < instr->addr) {
             return false;
         }
         replaceMeansDead = false;
@@ -214,7 +215,7 @@ IsDeadAfter(IR *instr, Operand *op)
         if (!JumpIsAfter(instr, ir)) {
             return false;
         }
-          // forward jumps are a problem... we can have sets in two
+        // forward jumps are a problem... we can have sets in two
         // different branches and that won't kill the variable
         // so avoid returning "dead" if we see a set
         replaceMeansDead = false;
@@ -229,21 +230,24 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
-    if (IsDummy(ir)) {
-      continue;
-    }
-    if (ir->opc == OPC_LABEL) {
-      return false;
-    }
-    if (IsBranch(ir)) {
-      return false;
-    }
-    if (ir->dst == orig && InstrSetsDst(ir) && !InstrReadsDst(ir)) {
-      return ir->cond == COND_TRUE;
-    }
-    if (ir->src == replace || ir->dst == replace) {
-      return false;
-    }
+      if (ir->opc == OPC_DEAD && (ir->dst == orig || ir->dst == replace)) {
+          return false;
+      }
+      if (IsDummy(ir)) {
+          continue;
+      }
+      if (ir->opc == OPC_LABEL) {
+          return false;
+      }
+      if (IsBranch(ir)) {
+          return false;
+      }
+      if (ir->dst == orig && InstrSetsDst(ir) && !InstrReadsDst(ir)) {
+          return ir->cond == COND_TRUE;
+      }
+      if (ir->src == replace || ir->dst == replace) {
+          return false;
+      }
   }
   // we've reached the start
   // is orig dead here? if so we can replace it
@@ -262,7 +266,23 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   IR *last_ir = NULL;
   bool assignments_are_safe = true;
   
+  if (replace->kind == REG_HW) {
+      // some registers have no backing store, so we
+      // can't replace with them
+      if (!strcasecmp(replace->name, "CNT")
+          || !strcasecmp(replace->name, "INA"))
+      {
+          return NULL;
+      }
+  }
   for (ir = first_ir; ir; ir = ir->next) {
+    if (ir->opc == OPC_DEAD) {
+        if (ir->dst == orig) {
+            // FIXME: why is this necessary
+            //assignments_are_safe = false;
+            return ir;
+        }
+    }
     if (IsDummy(ir)) {
 	continue;
     }
@@ -277,6 +297,8 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             // replacement will fail (since arg gets changed
             // by the call)
             return IsDeadAfter(ir, orig) ? ir : NULL;
+        } else if (!IsLocal(replace)) {
+            return NULL;
         }
     } else if (IsBranch(ir)) {
         // forward branches (or branches to code we've
@@ -316,6 +338,16 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       }
       return NULL;
     }
+    if (ir->dst == orig) {
+        // we do not want to end up changing "replace" if it is still live
+        // note that IsDeadAfter(first_ir, replace) gives a more accurate
+        // view than IsDeadAfter(ir, replace), because it can look back
+        // further (and we've already verified that replace is not doing
+        // anything interesting between first_ir and here)
+        if (!IsDeadAfter(first_ir, replace)) {
+            return NULL;
+        }
+    }
     if (ir->src == replace && ir != first_ir) {
       return NULL;
     }
@@ -354,13 +386,19 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
   IR *ir;
   for (ir = instr; ir; ir = ir->next) {
     if (IsDummy(ir)) {
-      continue;
-    }
-    if (ir->src == orig) {
-      ir->src = replace;
-    }
-    if (ir->dst == orig) {
-      ir->dst = replace;
+        if (ir->opc == OPC_DEAD && ir->dst == replace) {
+            ir->opc = OPC_DUMMY;
+        }
+        if (ir->opc == OPC_DEAD && ir->dst == orig) {
+            ir->opc = OPC_DUMMY;
+        }
+    } else {
+        if (ir->src == orig) {
+            ir->src = replace;
+        }
+        if (ir->dst == orig) {
+            ir->dst = replace;
+        }
     }
     if (ir == stop_ir) break;
   }
@@ -1058,7 +1096,18 @@ OptimizeIRLocal(IRList *irl)
 void
 OptimizeIRGlobal(IRList *irl)
 {
-  CheckUsage(irl);
+    IR *ir, *ir_next;
+    // remove dummy and dead notes
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        if (ir->opc == OPC_DEAD || ir->opc == OPC_DUMMY) {
+            DeleteIR(irl, ir);
+        }
+        ir = ir_next;
+    }
+    // check for usage
+    CheckUsage(irl);
 }
 
 
