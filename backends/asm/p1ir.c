@@ -150,6 +150,8 @@ StringFor(int opc)
       return "sar";
   case OPC_SUB:
       return "sub";
+  case OPC_TEST:
+      return "test";
   case OPC_WAITCNT:
       return "waitcnt";
   case OPC_WAITPEQ:
@@ -313,6 +315,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_SHL:
     case OPC_SHR:
     case OPC_SUB:
+    case OPC_TEST:
     case OPC_WAITCNT:
     case OPC_WAITPEQ:
     case OPC_WAITPNE:

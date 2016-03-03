@@ -63,6 +63,7 @@ InstrSetsDst(IR *ir)
   switch (ir->opc) {
   case OPC_CMP:
   case OPC_CMPS:
+  case OPC_TEST:
   case OPC_WAITPEQ:
   case OPC_WAITPNE:
   case OPC_WAITVID:
@@ -145,6 +146,8 @@ JumpIsAfter(IR *ir, IR *jmp)
         IR *label = (IR *)jmp->aux;
         return (label->addr > ir->addr);
     }
+    if (curfunc && jmp->dst == FuncData(curfunc)->asmretname)
+        return true;
     return false;
 }
 
@@ -313,9 +316,6 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     }
     if (ir->opc == OPC_LABEL) {
         IR *comefrom;
-        if (IsDeadAfter(ir, orig) && IsDeadAfter(ir, replace)) {
-            return ir;
-        }
         // do we know who jumps to this label?
         comefrom = (IR *)ir->aux;
         if (comefrom) {
@@ -338,7 +338,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       }
       return NULL;
     }
-    if (ir->dst == orig) {
+    if (ir->dst == orig && InstrSetsDst(ir)) {
         // we do not want to end up changing "replace" if it is still live
         // note that IsDeadAfter(first_ir, replace) gives a more accurate
         // view than IsDeadAfter(ir, replace), because it can look back
@@ -648,6 +648,11 @@ int EliminateDeadCode(IRList *irl)
                   }
                   x = ir_next;
               }
+              /* is the branch to the next instruction? */
+              if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+                  DeleteIR(irl, ir);
+                  change = 1;
+              }
           } else if (ir->cond == COND_FALSE) {
               DeleteIR(irl, ir);
           } else {
@@ -725,6 +730,9 @@ static int IsShortForwardJump(IR *irbase)
     }
     ir = ir->next;
   }
+  // we reached the end... were we trying to jump to the end?
+  if (curfunc && target == FuncData(curfunc)->asmretname)
+      return n;
   return 0;
 }
 
@@ -834,6 +842,62 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
         }
     }
     return NULL;
+}
+
+//
+// find the previous instruction that sets a particular operand
+// used for peephole optimization
+// returns NULL if we cannot find the instruction
+//
+static IR*
+FindPrevSetterForReplace(IR *irorig, Operand *dst)
+{
+    IR *ir;
+    IR *saveir;
+    
+    for (ir = irorig->prev; ir; ir = ir->prev) {
+        if (IsDummy(ir)) {
+            continue;
+        }
+        if (ir->opc == OPC_LABEL) {
+            // we may have branched to here from somewhere
+            // else that did the set
+            return NULL;
+        }
+        if (IsBranch(ir)) {
+            return NULL;
+        }
+        if (ir->dst == dst && InstrSetsDst(ir)) {
+            if (ir->cond != COND_TRUE) {
+                // cannot be sure that we set the value here,
+                // since the set is conditional
+                return NULL;
+            }
+            break;
+        }
+        if (ir->src == dst || ir->dst == dst) {
+            // we cannot replace the setter
+            return NULL;
+        }
+    }
+    if (!ir) {
+        return NULL;
+    }
+    // OK, now go forward and make sure ir->src is not changed
+    // until irorig
+    saveir = ir;
+    ir = ir->next;
+    while (ir && ir != saveir) {
+        if (IsDummy(ir)) {
+            ir = ir->next;
+            continue;
+        }
+        if (ir->dst == saveir->src && InstrSetsDst(ir)) {
+            return NULL;
+        }
+        ir = ir->next;
+    }
+    return saveir;
 }
 
 //
@@ -1068,6 +1132,38 @@ CheckLabelUsage(IRList *irl)
 }
 
 //
+// basic peephole substitution
+//
+// mov tmp, x
+// and tmp, y wz
+//   becomes test x,y wz if tmp is dead
+int
+OptimizePeepholes(IRList *irl)
+{
+    IR *ir, *ir_next;
+    IR *previr;
+    int changed = 0;
+    
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        if (ir->opc == OPC_AND && (ir->flags&(FLAG_WZ|FLAG_WC))) {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_MOVE && IsDeadAfter(ir, ir->dst)) {
+                ir->opc = OPC_TEST;
+                ir->dst = previr->src;
+                DeleteIR(irl, previr);
+                changed = 1;
+            } else if (IsDeadAfter(ir, ir->dst)) {
+                ir->opc = OPC_TEST;
+            }
+        }
+        ir = ir_next;
+    }
+    return changed;
+}
+
+//
 // optimize
 //
 
@@ -1090,6 +1186,7 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeShortBranches(irl);
         change |= OptimizeAddSub(irl);
         change |= OptimizeCompares(irl);
+        change |= OptimizePeepholes(irl);
     } while (change != 0);
 }
 
@@ -1152,7 +1249,7 @@ ExpandInlines(IRList *irl)
         if (ir->opc == OPC_CALL) {
             f = (Function *)ir->aux;
             if (f && FuncData(f)->isInline) {
-                ReplaceIRWithDuplicateList(irl, ir, FuncIRL(f));
+                ReplaceIRWithInline(irl, ir, f);
                 change = 1;
             }
         }

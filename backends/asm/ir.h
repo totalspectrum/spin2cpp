@@ -53,6 +53,7 @@ enum IROpcode {
     OPC_SHL,
     OPC_SHR,
     OPC_SUB,
+    OPC_TEST,
     OPC_WAITCNT,
     OPC_WAITPEQ,
     OPC_WAITPNE,
@@ -165,7 +166,7 @@ void AppendIR(IRList *irl, IR *ir);
 void InsertAfterIR(IRList *irl, IR *orig, IR *ir);
 void DeleteIR(IRList *irl, IR *ir);
 void AppendIRList(IRList *irl, IRList *sub);
-void ReplaceIRWithDuplicateList(IRList *irl, IR *ir, IRList *replace);
+void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 
 //
 // functions for operand manipulation

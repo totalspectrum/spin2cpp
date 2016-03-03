@@ -17,8 +17,7 @@ serchar
 L_001_
 	add	serchar_waitcycles_, imm_694_
 	waitcnt	serchar_waitcycles_, #0
-	mov	serchar_tmp001_, arg1_
-	and	serchar_tmp001_, #1 wz
+	test	arg1_, #1 wz
  if_ne	or	OUTA, imm_1073741824_
  if_e	andn	OUTA, imm_1073741824_
 	shr	arg1_, #1
@@ -33,8 +32,6 @@ imm_1073741824_
 imm_694_
 	long	694
 serchar__idx__0000_
-	long	0
-serchar_tmp001_
 	long	0
 serchar_waitcycles_
 	long	0

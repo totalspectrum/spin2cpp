@@ -135,19 +135,26 @@ IR *DupIR(IR *old)
 
 //
 // replace the individual IR "ir" in list "irl" with a list of
-// instructions; used for e.g. expanding inline functions
+// instructions from function f; used for e.g. expanding inline functions
 //
-void ReplaceIRWithDuplicateList(IRList *irl, IR *ir, IRList *insert)
+void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func)
 {
     IR *newir;
     IR *dest = ir->prev;
-
+    IRList *insert = FuncIRL(func);
+    
     DeleteIR(irl, ir);
     ir = insert->head;
     while (ir) {
         newir = DupIR(ir);
-        InsertAfterIR(irl, dest, newir);
-        dest = newir;
+        // leave off the asm return name, if it's there
+        // FIXME: this is probably an obsolete test now
+        if (newir->opc == OPC_LABEL && newir->dst == FuncData(func)->asmretname) {
+            /* do nothing */
+        } else {
+            InsertAfterIR(irl, dest, newir);
+            dest = newir;
+        }
         ir = ir->next;
     }
 }
@@ -322,15 +329,9 @@ static void EmitLongPtr(IRList *irl, Operand *op)
   EmitOp1(irl, OPC_LONG, op);
 }
 
-void EmitString(IRList *irl, AST *ast)
+static void EmitStringNoTrailingZero(IRList *irl, AST *ast)
 {
   Operand *op;
-
-  while (ast && ast->kind == AST_EXPRLIST) {
-      EmitString(irl, ast->left);
-      ast = ast->right;
-  }
-  if (!ast) return;
   switch (ast->kind) {
   case AST_STRING:
       op = NewOperand(IMM_STRING, ast->d.string, 0);
@@ -343,6 +344,17 @@ void EmitString(IRList *irl, AST *ast)
   default:
       ERROR(ast, "Unable to emit string");
       break;
+  }
+}
+
+void EmitString(IRList *irl, AST *ast)
+{
+  while (ast && ast->kind == AST_EXPRLIST) {
+      EmitStringNoTrailingZero(irl, ast->left);
+      ast = ast->right;
+  }
+  if (ast) {
+      EmitStringNoTrailingZero(irl, ast);
   }
   // add a trailing 0
   EmitOp1(irl, OPC_BYTE, NewImmediate(0));
@@ -365,14 +377,14 @@ void EmitJump(IRList *irl, IRCond cond, Operand *label)
 // end of the function; they contain the labels and
 // ret instruction, for example
 //
-static void EmitFunctionHeader(IRList *irl, Function *f)
+static void EmitFunctionHeader(IRList *irl, Function *func)
 {
-    EmitLabel(irl, FuncData(f)->asmname);
+    EmitLabel(irl, FuncData(func)->asmname);
 }
 
-static void EmitFunctionFooter(IRList *irl, Function *f)
+static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    EmitLabel(irl, FuncData(f)->asmretname);
+    EmitLabel(irl, FuncData(func)->asmretname);
     EmitOp0(irl, OPC_RET);
 }
 

@@ -8,7 +8,7 @@ L_001_
  if_ne	jmp	#L_002_
 	mov	test_tmp001_, INA
 	sar	test_tmp001_, #2
-	and	test_tmp001_, #1 wz
+	test	test_tmp001_, #1 wz
  if_ne	jmp	#L_001_
 	xor	OUTA, #1
 	jmp	#L_001_
