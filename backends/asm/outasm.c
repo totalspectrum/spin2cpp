@@ -478,26 +478,33 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   Module *P = func->parse;
   Symbol *sym;
   const char *name = expr->d.string;
+  AST *fcall;
   
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
-      if (sym->type == SYM_PARAMETER) {
+      switch (sym->type) {
+      case SYM_PARAMETER:
  #ifdef USE_GLOBAL_ARGS
           return GetGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0);
  #else
           return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
  #endif
-      } else if (sym->type == SYM_VARIABLE) {
+      case SYM_VARIABLE:
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);
               return NewOperand(LONG_REF, (char *)addr, 0);
           }
           return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
-      } else if (sym->type == SYM_FUNCTION) {
-          AST *fcall = NewAST(AST_FUNCCALL, expr, NULL);
+      case SYM_FUNCTION:
+          fcall = NewAST(AST_FUNCCALL, expr, NULL);
           return CompileFunccall(irl, fcall);
-      } else {
+      default:
           ERROR(expr, "Symbol %s is of a type not handle by PASM output yet", name);
+          /* fall through */
+      case SYM_LOCALVAR:
+      case SYM_TEMPVAR:
+      case SYM_RESULT:
+          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
       }
   } else {
       ERROR(expr, "Unknown symbol %s", expr->d.string);
