@@ -338,6 +338,8 @@ void EmitString(IRList *irl, AST *ast)
       ERROR(ast, "Unable to emit string");
       break;
   }
+  // add a trailing 0
+  EmitOp1(irl, OPC_BYTE, NewImmediate(0));
 }
 
 void EmitJump(IRList *irl, IRCond cond, Operand *label)

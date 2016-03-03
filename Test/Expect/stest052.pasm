@@ -1,7 +1,7 @@
 DAT
 	org	0
 foo
-	mov		result_, ptr_L_001__
+	mov	result_, ptr_L_001__
 foo_ret
 	ret
 
@@ -12,3 +12,4 @@ result_
 
 L_001_
 	byte	"hello"
+	byte	0
