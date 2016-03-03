@@ -817,7 +817,7 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
             // else that did the set
             return NULL;
         }
-        if (ir->flags & FLAG_WZ) {
+        if (ir->flags & (FLAG_WZ|FLAG_WC)) {
             // flags are messed up here, so we can't go back any further
             return NULL;
         }
