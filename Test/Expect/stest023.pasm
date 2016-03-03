@@ -6,12 +6,12 @@ blah_ret
 	ret
 
 bar
-	add	bar_x_, #1
-	mov	result_, bar_x_
+	add	arg1_, #1
+	mov	result_, arg1_
 bar_ret
 	ret
 
-bar_x_
+arg1_
 	long	0
 result_
 	long	0

@@ -4,8 +4,8 @@ DAT
 	org	0
 pushData
 	andn	OUTA, #all_pin_mask
-	shl	pushData_data_, #2
-	or	OUTA, pushData_data_
+	shl	arg1_, #2
+	or	OUTA, arg1_
 pushData_ret
 	ret
 
@@ -14,7 +14,7 @@ all_pin_low
 all_pin_low_ret
 	ret
 
-pushData_data_
+arg1_
 	long	0
 result_
 	long	0

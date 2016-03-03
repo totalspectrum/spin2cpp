@@ -1,7 +1,9 @@
 DAT
 	org	0
 test1
-	cmps	test1_x_, #0 wz
+	mov	test1_x_, arg1_ wz
+	mov	test1_y_, arg2_
+	mov	test1_z_, arg3_
  if_ne	jmp	#L_002_
 	cmps	test1_y_, #0 wz
  if_ne	jmp	#L_002_
@@ -14,6 +16,12 @@ L_001_
 test1_ret
 	ret
 
+arg1_
+	long	0
+arg2_
+	long	0
+arg3_
+	long	0
 result_
 	long	0
 test1_x_

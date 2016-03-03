@@ -1,20 +1,20 @@
 DAT
 	org	0
 prod
-	mov	muldiva_, prod_x_
-	mov	muldivb_, prod_y_
+	mov	muldiva_, arg1_
+	mov	muldivb_, arg2_
 	call	#multiply_
 	mov	result_, muldiva_
 prod_ret
 	ret
 
 cube
-	mov	cube_tmp001_, cube_x_
-	mov	prod_x_, cube_x_
-	mov	prod_y_, cube_x_
+	mov	arg2_, arg1_
+	mov	cube_tmp001_, arg2_
+	mov	arg1_, arg2_
 	call	#prod
-	mov	prod_y_, result_
-	mov	prod_x_, cube_tmp001_
+	mov	arg2_, result_
+	mov	arg1_, cube_tmp001_
 	call	#prod
 cube_ret
 	ret
@@ -40,9 +40,11 @@ mul_lp_
 multiply__ret
 	ret
 
-cube_tmp001_
+arg1_
 	long	0
-cube_x_
+arg2_
+	long	0
+cube_tmp001_
 	long	0
 itmp1_
 	long	0
@@ -51,10 +53,6 @@ itmp2_
 muldiva_
 	long	0
 muldivb_
-	long	0
-prod_x_
-	long	0
-prod_y_
 	long	0
 result_
 	long	0

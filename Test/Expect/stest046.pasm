@@ -2,7 +2,7 @@ DAT
 	org	0
 ez_pulse_in
 	mov	ez_pulse_in_r_, #1
-	shl	ez_pulse_in_r_, ez_pulse_in_pin_
+	shl	ez_pulse_in_r_, arg1_
 	waitpne	ez_pulse_in_r_, ez_pulse_in_r_
 	waitpeq	ez_pulse_in_r_, ez_pulse_in_r_
 	neg	muldiva_, CNT
@@ -39,7 +39,7 @@ divlp2_
 divide__ret
 	ret
 
-ez_pulse_in_pin_
+arg1_
 	long	0
 ez_pulse_in_r_
 	long	0

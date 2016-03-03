@@ -1,12 +1,12 @@
 DAT
 	org	0
 func1
-	add	func1_x_, func1_x_
-	mov	result_, func1_x_
+	add	arg1_, arg1_
+	mov	result_, arg1_
 func1_ret
 	ret
 
-func1_x_
+arg1_
 	long	0
 result_
 	long	0

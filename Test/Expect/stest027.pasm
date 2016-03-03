@@ -1,8 +1,9 @@
 DAT
 	org	0
 hyp
-	mov	muldiva_, hyp_x_
-	mov	muldivb_, hyp_x_
+	mov	hyp_y_, arg2_
+	mov	muldiva_, arg1_
+	mov	muldivb_, arg1_
 	call	#multiply_
 	mov	hyp_tmp002_, muldiva_
 	mov	muldiva_, hyp_y_
@@ -34,9 +35,11 @@ mul_lp_
 multiply__ret
 	ret
 
-hyp_tmp002_
+arg1_
 	long	0
-hyp_x_
+arg2_
+	long	0
+hyp_tmp002_
 	long	0
 hyp_y_
 	long	0

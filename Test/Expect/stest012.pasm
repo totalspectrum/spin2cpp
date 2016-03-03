@@ -1,22 +1,20 @@
 DAT
 	org	0
 sum
-	add	sum_x_, sum_y_
-	mov	result_, sum_x_
+	add	arg1_, arg2_
+	mov	result_, arg1_
 sum_ret
 	ret
 
 inc
-	add	inc_x_, #1
-	mov	result_, inc_x_
+	add	arg1_, #1
+	mov	result_, arg1_
 inc_ret
 	ret
 
-inc_x_
+arg1_
+	long	0
+arg2_
 	long	0
 result_
-	long	0
-sum_x_
-	long	0
-sum_y_
 	long	0

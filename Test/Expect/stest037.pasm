@@ -1,15 +1,15 @@
 DAT
 	org	0
 fetch
-	shl	fetch_i_, #1
-	add	fetch_i_, fetch_x_
-	rdword	result_, fetch_i_
+	shl	arg2_, #1
+	add	arg2_, arg1_
+	rdword	result_, arg2_
 fetch_ret
 	ret
 
-fetch_i_
+arg1_
 	long	0
-fetch_x_
+arg2_
 	long	0
 result_
 	long	0

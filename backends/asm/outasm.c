@@ -13,6 +13,9 @@
 #include "spinc.h"
 #include "ir.h"
 
+/* define this to pass parameters in ARGSx_ */
+#define USE_GLOBAL_ARGS
+
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
 
@@ -371,9 +374,9 @@ static void EmitFunctionFooter(IRList *irl, Function *f)
 //
 static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
 {
-#if 0
+#ifdef USE_GLOBAL_ARGS
     char temp[1024];
-    sprintf(temp, "arg%d_", n);
+    sprintf(temp, "arg%d_", n+1);
     return GetGlobal(REG_ARG, strdup(temp), 0);
 #else
     AST *astlist = func->params;
@@ -475,7 +478,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   sym = LookupSymbolInFunc(func, expr->d.string);
   if (sym) {
       if (sym->type == SYM_PARAMETER) {
+ #ifdef USE_GLOBAL_ARGS
+          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0);
+ #else
           return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
+ #endif
       } else if (sym->type == SYM_VARIABLE) {
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);

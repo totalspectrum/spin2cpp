@@ -1,6 +1,8 @@
 DAT
 	org	0
 divmod16
+	mov	divmod16_x_, arg1_
+	mov	divmod16_y_, arg2_
 	mov	muldiva_, divmod16_x_
 	mov	muldivb_, divmod16_y_
 	call	#divide_
@@ -39,6 +41,10 @@ divlp2_
 divide__ret
 	ret
 
+arg1_
+	long	0
+arg2_
+	long	0
 divmod16_q_
 	long	0
 divmod16_x_

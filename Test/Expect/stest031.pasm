@@ -7,12 +7,12 @@ clear0_ret
 
 clearpin
 	mov	clearpin_tmp001_, #1
-	shl	clearpin_tmp001_, clearpin_pin_
+	shl	clearpin_tmp001_, arg1_
 	andn	OUTA, clearpin_tmp001_
 clearpin_ret
 	ret
 
-clearpin_pin_
+arg1_
 	long	0
 clearpin_tmp001_
 	long	0

@@ -5,7 +5,7 @@ foo
 foo_ret
 	ret
 
-foo_x_
+arg1_
 	long	0
 result_
 	long	0

@@ -108,6 +108,20 @@ SetsFlags(IR *ir)
 
 // returns TRUE if an operand represents a local register or argument
 static bool
+IsArg(Operand *op)
+{
+  return op->kind == REG_ARG;
+}
+
+// returns TRUE if an operand represents a local register
+static bool
+IsLocal(Operand *op)
+{
+  return op->kind == REG_LOCAL;
+}
+
+// returns TRUE if an operand represents a local register or argument
+static bool
 IsLocalOrArg(Operand *op)
 {
   return op->kind == REG_LOCAL || op->kind == REG_ARG;
@@ -141,7 +155,8 @@ static bool
 IsDeadAfter(IR *instr, Operand *op)
 {
   IR *ir;
-
+  bool replaceMeansDead = true;
+  
   if (instr->opc == OPC_DEAD && op == instr->dst) {
     return true;
   }
@@ -151,14 +166,37 @@ IsDeadAfter(IR *instr, Operand *op)
     }
     if (IsDummy(ir)) continue;
     if (ir->opc == OPC_LABEL) {
-      continue;
+        // potential problem: if there is a branch before instr
+        // that goes to LABEL then we might miss a set
+        // so check
+        IR *comefrom = (IR *)ir->aux;
+        if (!comefrom || comefrom->addr < ir->addr) {
+            return false;
+        }
+        replaceMeansDead = false;
+        continue;
+    }
+    if (ir->src == op) {
+        // value is used, so definitely not dead
+        return false;
+    }
+    if (ir->dst == op) {
+      /* the value is unused for certain opcodes */
+      if (InstrReadsDst(ir)) {
+	return false;
+      }
+      if (ir->cond == COND_TRUE) {
+	return replaceMeansDead;
+      } else {
+        return false;
+      }
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
       return IsLocalOrArg(op);
     } else if (ir->opc == OPC_CALL) {
-      if (op->kind == REG_ARG) {
-	return false;
-      }
+        if (!IsLocal(op)) {
+            return false;
+        }
     } else if (IsJump(ir)) {
         // FIXME
         // special case: sometimes we add .dead notes right after a branch
@@ -171,19 +209,15 @@ IsDeadAfter(IR *instr, Operand *op)
             }
             irdead = irdead->next;
         }
-        return false;
-    }
-    if (ir->src == op) {
-      return false;
-    }
-    if (ir->dst == op) {
-      /* the value is unused for certain opcodes */
-      if (InstrReadsDst(ir)) {
-	return false;
-      }
-      if (ir->cond == COND_TRUE) {
-	return true;
-      }
+        // otherwise, is the jump backwards to before instr?
+        // if it is, then we don't know if the opcode is dead
+        if (!JumpIsAfter(instr, ir)) {
+            return false;
+        }
+          // forward jumps are a problem... we can have sets in two
+        // different branches and that won't kill the variable
+        // so avoid returning "dead" if we see a set
+        replaceMeansDead = false;
     }
   }
   /* if we reach the end without seeing any use */
@@ -211,37 +245,73 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       return false;
     }
   }
-  return false;
+  // we've reached the start
+  // is orig dead here? if so we can replace it
+  // args are live, and so are globals
+  return IsLocal(orig);
 }
 
 //
-// returns the IR where we should stop scanning for replacement
+// returns the IR where we should stop scanning for replacement,
+// or NULL if replacement is unsafe
 //
 static IR*
 SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
 {
   IR *ir;
   IR *last_ir = NULL;
-
+  bool assignments_are_safe = true;
+  
   for (ir = first_ir; ir; ir = ir->next) {
     if (IsDummy(ir)) {
 	continue;
     }
     if (ir->opc == OPC_RET) {
         return IsLocalOrArg(orig) ? ir : NULL;
+    } else if (ir->opc == OPC_CALL) {
+        // it's OK to replace forward over a call as long
+        // as orig is a local register (not an ARG!)
+        if (!IsLocal(orig)) return NULL;
+        if (IsArg(replace)) {
+            // if there are any more references to orig then
+            // replacement will fail (since arg gets changed
+            // by the call)
+            return IsDeadAfter(ir, orig) ? ir : NULL;
+        }
     } else if (IsBranch(ir)) {
-      return NULL;
+        // forward branches (or branches to code we've
+        // already seen) are safe; others we should assume
+        // will cause problems
+        // Note though that if we do branch ahead then
+        // we cannot assume that assignments are safe!
+        assignments_are_safe = false;
+        if (!JumpIsAfter(first_ir, ir)) {
+            return NULL;
+        }
     }
     if (ir->opc == OPC_LABEL) {
+        IR *comefrom;
         if (IsDeadAfter(ir, orig) && IsDeadAfter(ir, replace)) {
             return ir;
         }
-        return NULL;
+        // do we know who jumps to this label?
+        comefrom = (IR *)ir->aux;
+        if (comefrom) {
+            // if the jumper is before our first instruction, that
+            // is bad
+            if (comefrom->addr < first_ir->addr) {
+                return NULL;
+            }
+            assignments_are_safe = false;
+        } else {
+            // unknown jumper, assume the worst
+            return NULL;
+        }
     }
     if (ir->dst == replace) {
       // special case: if we have a "mov replace,orig" and orig is dead
       // then we are good to go
-      if (ir->opc == OPC_MOVE && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
+      if (assignments_are_safe && ir->opc == OPC_MOVE && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
       }
       return NULL;
@@ -708,6 +778,9 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
         }
         if (ir->flags & FLAG_WZ) {
             // flags are messed up here, so we can't go back any further
+            return NULL;
+        }
+        if (IsBranch(ir)) {
             return NULL;
         }
         if (ir->dst == dst && InstrSetsDst(ir)) {

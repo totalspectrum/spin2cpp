@@ -1,11 +1,11 @@
 DAT
 	org	0
 pokeb
-	wrbyte	pokeb_y_, pokeb_x_
+	wrbyte	arg2_, arg1_
 pokeb_ret
 	ret
 
-pokeb_x_
+arg1_
 	long	0
-pokeb_y_
+arg2_
 	long	0
