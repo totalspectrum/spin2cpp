@@ -636,30 +636,33 @@ int EliminateDeadCode(IRList *irl)
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
-      if (ir->opc == OPC_JUMP && ir->cond == COND_TRUE) {
-	  // dead code from here to next label
-	  IR *x = ir->next;
-	  while (x && x->opc != OPC_LABEL) {
-	    ir_next = x->next;
-	    if (!IsDummy(x)) {
-	      DeleteIR(irl, x);
-	      change = 1;
-	    }
-	    x = ir_next;
-	}
-	/* if the branch is to the next instruction, delete it */
-	if (ir->opc == OPC_JUMP && ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+      if (ir->opc == OPC_JUMP) {
+          if (ir->cond == COND_TRUE) {
+              // dead code from here to next label
+              IR *x = ir->next;
+              while (x && x->opc != OPC_LABEL) {
+                  ir_next = x->next;
+                  if (!IsDummy(x)) {
+                      DeleteIR(irl, x);
+                      change = 1;
+                  }
+                  x = ir_next;
+              }
+          } else if (ir->cond == COND_FALSE) {
+              DeleteIR(irl, ir);
+          } else {
+              /* if the branch is to the next instruction, delete it */
+              if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+                  DeleteIR(irl, ir);
+                  change = 1;
+              }
+          }
+      } else if (ir->cond == COND_FALSE) {
 	  DeleteIR(irl, ir);
 	  change = 1;
-	}
-      } else {
-	if (ir->cond == COND_FALSE) {
+      } else if (!IsDummy(ir) && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
-	} else if (!IsDummy(ir) && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
-	  DeleteIR(irl, ir);
-	  change = 1;
-	}
       }
       ir = ir_next;
     }
