@@ -23,6 +23,7 @@ static Operand *nextlabel;
 static Operand *quitlabel;
 
 static Operand *datbase;
+static Operand *datlabel;
 
 typedef struct OperandList {
   struct OperandList *next;
@@ -497,9 +498,11 @@ LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
     Label *lab = (Label *)sym->val;
+    Module *P = current;
     
     if (!datbase) {
-        datbase = NewOperand(IMM_HUB_LABEL, "data_section_", 0);
+        datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
+        datbase = NewImmediatePtr(datlabel);
     }
     temp = NewOperand(LONG_REF, (char *)datbase, lab->offset);
     return temp;
@@ -1926,9 +1929,19 @@ void
 EmitDatSection(IRList *irl, Module *P)
 {
   Flexbuf fb;
+  Operand *op;
+  char *data;
+  int len;
 
+  if (!datbase)
+      return;
   flexbuf_init(&fb, 32768);
   PrintDataBlock(&fb, P, BINARY_OUTPUT);
+  len = flexbuf_curlen(&fb);
+  data = flexbuf_get(&fb);
+  op = NewOperand(IMM_STRING, data, len);
+  EmitLabel(irl, datlabel);
+  EmitOp1(irl, OPC_BLOB, op);
 }
 
 void

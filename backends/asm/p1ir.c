@@ -218,6 +218,33 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     flexbuf_addchar(fb, '\t');
 }
 
+static void
+OutputBlob(Flexbuf *fb, Operand *op)
+{
+    unsigned char *data;
+    int len;
+    
+    if (op->kind != IMM_STRING) {
+        ERROR(NULL, "Internal: bad binary blob");
+        return;
+    }
+    data = (unsigned char *)op->name;
+    len = op->val;
+    while (len > 8) {
+        flexbuf_printf(fb, "\tbyte\t$%02x,$%02x,$%02x,$%02x,$%02x,$%02x,$%02x,$%02x\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+        len -= 8;
+        data += 8;
+    }
+    if (len > 0) {
+        flexbuf_printf(fb, "\tbyte\t");
+        while (len > 0) {
+            flexbuf_printf(fb, "$%02x%s", data[0], len == 1 ? "\n" : ",");
+            --len;
+            ++data;
+        }
+    }
+}
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
@@ -346,7 +373,10 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, "\n");
 	break;
     case OPC_BLOB:
-      break;
+        // output a binary blob
+        // data is in a string in dst
+        OutputBlob(fb, ir->dst);
+        break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");
         break;
