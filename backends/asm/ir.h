@@ -25,7 +25,7 @@ enum IROpcode {
     OPC_WORD,
     OPC_LONG,
     OPC_STRING,
-    OPC_BLOB, // binary blob
+    OPC_LABELED_BLOB, // binary blob
 
     /* various instructions */
     OPC_MOVE,

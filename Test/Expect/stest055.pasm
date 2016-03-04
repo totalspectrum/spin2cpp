@@ -11,6 +11,7 @@ ptr_dat__
 	long	@@@dat_
 result_
 	long	0
+	long
 dat_
 	byte	$44,$33,$22,$11,$88,$77,$66,$55
 	byte	$cc,$bb,$aa,$99

@@ -10,32 +10,31 @@ ez_pulse_in
 	add	muldiva_, CNT
 	mov	muldivb_, imm_1000000_
 	call	#divide_
-	mov	result_, muldiva_
+	mov	result_, muldivb_
 ez_pulse_in_ret
 	ret
+' code originally from spin interpreter, modified slightly
 
 divide_
-	mov	result_, #0
-	mov	itmp2_, muldiva_
-	xor	itmp2_, muldivb_
-	abs	muldiva_, muldiva_
-	abs	muldivb_, muldivb_ wz,wc
- if_z	jmp	#divexit_
-	muxc	itmp2_, #1
-	mov	itmp1_, #32
-divlp1_
-	shr	muldivb_,#1 wc,wz
-	rcr	result_,#1
- if_nz	djnz	itmp1_,#divlp1_
-divlp2_
-	cmpsub	muldiva_,result_ wc
-	rcl	muldivb_,#1
-	shr	result_,#1
-	djnz	itmp1_,#divlp2_
-	cmps	itmp2_, #0 wc,wz
- if_b	neg	muldiva_, muldiva_
-	test	itmp2, #1
- if_nz	neg	muldivb_, muldivb_
+       abs     muldiva_,muldiva_     wc       'abs(x)
+       muxc    itmp2_,#%11                    'store sign of x
+       abs     muldivb_,muldivb_     wc,wz    'abs(y)
+ if_c  xor     itmp2_,#%10                    'store sign of y
+        mov     itmp1_,#0                    'unsigned divide
+        mov     CNT,#32             ' use CNT shadow register
+mdiv__
+        shr     muldivb_,#1        wc,wz
+        rcr     itmp1_,#1
+ if_nz   djnz    CNT,#mdiv__
+mdiv2__
+        cmpsub  muldiva_,itmp1_        wc
+        rcl     muldivb_,#1
+        shr     itmp1_,#1
+        djnz    CNT,#mdiv2__
+        test    itmp2_,#1        wc       'restore sign, remainder
+        negc    muldiva_,muldiva_ 
+        test    itmp2_,#%10      wc       'restore sign, division result
+        negc    muldivb_,muldivb_
 divide__ret
 	ret
 

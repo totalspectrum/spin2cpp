@@ -43,6 +43,7 @@ static void EmitBuiltins(IRList *irl);
 static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op);
 static IR *EmitOp2(IRList *irl, Operandkind code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
+static void EmitAddSub(IRList *irl, Operand *dst, int off);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -1218,6 +1219,43 @@ CompileCondResult(IRList *irl, AST *expr)
     return r;
 }
 
+//
+// emit a load effective address
+//
+static void
+EmitLea(IRList *irl, Operand *dst, Operand *src)
+{
+    if (IsMemRef(src)) {
+        int off = src->val;
+        src = (Operand *)src->name;
+        EmitMove(irl, dst, src);
+        EmitAddSub(irl, dst, off);
+    } else {
+        ERROR(NULL, "Load Effective Address on a non-memory reference");
+    }
+}
+
+//
+// get the address of an expression
+//
+static Operand *
+GetAddressOf(IRList *irl, AST *expr)
+{
+    Operand *res;
+    Operand *tmp;
+    switch (expr->kind) {
+    case AST_IDENTIFIER:
+        tmp = NewFunctionTempRegister();
+        res = CompileExpression(irl, expr);
+        EmitLea(irl, tmp, res);
+        return tmp;
+    default:
+        ERROR(expr, "Cannot take address of expression\n");
+        break;
+    }
+    return NewImmediate(-1);
+}
+
 static Operand *
 CompileExpression(IRList *irl, AST *expr)
 {
@@ -1229,10 +1267,16 @@ CompileExpression(IRList *irl, AST *expr)
   }
   if (!expr) return NULL;
   if (IsConstExpr(expr)) {
-      if (expr->kind == AST_IDENTIFIER) {
+      switch (expr->kind) {
+      case AST_IDENTIFIER:
           // leave symbolic constants alone
-      } else {
+      case AST_ADDROF:
+      case AST_ABSADDROF:
+          // similarly for address expressions
+          break;
+      default:
           expr = FoldIfConst(expr);
+          break;
       }
   }
   switch (expr->kind) {
@@ -1301,6 +1345,9 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_COGINIT:
     ERROR(expr, "Cannot handle cognew/coginit yet");
     return NewOperand(REG_REG, "???", 0);
+  case AST_ADDROF:
+  case AST_ABSADDROF:
+      return GetAddressOf(irl, expr->left);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -1946,8 +1993,7 @@ EmitDatSection(IRList *irl, Module *P)
   len = flexbuf_curlen(&fb);
   data = flexbuf_get(&fb);
   op = NewOperand(IMM_STRING, data, len);
-  EmitLabel(irl, datlabel);
-  EmitOp1(irl, OPC_BLOB, op);
+  EmitOp2(irl, OPC_LABELED_BLOB, datlabel, op);
 }
 
 void

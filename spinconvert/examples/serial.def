@@ -8,6 +8,9 @@ CON
   txmask = (1<<txpin)
   bitcycles = _clkfreq / baud  
    
+''
+'' code: largely taken from FullDuplexSerial.spin
+''
 PUB ser_tx(c) | val, waitcycles
   OUTA |= txmask
   DIRA |= txmask
@@ -45,3 +48,10 @@ PUB ser_dec(value) | i, x
       ser_tx("0")                                                                   'If zero digit (or only digit) output it
     i /= 10                                                                     'Update divisor
 
+
+''
+'' could signal back to the host with an exit code
+'' for now don't
+''
+PUB ser_exit(code)
+  repeat

@@ -217,7 +217,7 @@ PrintCond(struct flexbuf *fb, IRCond cond)
 }
 
 static void
-OutputBlob(Flexbuf *fb, Operand *op)
+OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
 {
     unsigned char *data;
     int len;
@@ -226,6 +226,9 @@ OutputBlob(Flexbuf *fb, Operand *op)
         ERROR(NULL, "Internal: bad binary blob");
         return;
     }
+    flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
+    flexbuf_printf(fb, label->name);
+    flexbuf_printf(fb, "\n");
     data = (unsigned char *)op->name;
     len = op->val;
     while (len > 8) {
@@ -369,10 +372,11 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	}
 	flexbuf_addstr(fb, "\n");
 	break;
-    case OPC_BLOB:
+    case OPC_LABELED_BLOB:
         // output a binary blob
-        // data is in a string in dst
-        OutputBlob(fb, ir->dst);
+        // dst has a label
+        // data is in a string in src
+        OutputBlob(fb, ir->dst, ir->src);
         break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");

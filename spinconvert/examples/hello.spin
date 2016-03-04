@@ -8,6 +8,6 @@ CON
 PUB demo
   repeat 4
     ser_str(string("hello, world!", 13, 10))
-  repeat
+  ser_exit(0)
   
 #include "serial.def"
