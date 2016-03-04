@@ -22,6 +22,8 @@ static Operand *divfunc, *diva, *divb;
 static Operand *nextlabel;
 static Operand *quitlabel;
 
+static Operand *datbase;
+
 typedef struct OperandList {
   struct OperandList *next;
   Operand *op;
@@ -491,6 +493,19 @@ NewFunctionTempRegister()
 }
 
 static Operand *
+LabelRef(IRList *irl, Symbol *sym)
+{
+    Operand *temp;
+    Label *lab = (Label *)sym->val;
+    
+    if (!datbase) {
+        datbase = NewOperand(IMM_HUB_LABEL, "data_section_", 0);
+    }
+    temp = NewOperand(LONG_REF, (char *)datbase, lab->offset);
+    return temp;
+}
+
+static Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   Module *P = func->parse;
@@ -523,6 +538,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       case SYM_TEMPVAR:
       case SYM_RESULT:
           return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+      case SYM_LABEL:
+          return LabelRef(irl, sym);
       }
   } else {
       ERROR(expr, "Unknown symbol %s", expr->d.string);
