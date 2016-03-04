@@ -125,12 +125,15 @@ FREEWRAPEXE=/opt/freewrap/win32/freewrap.exe
 
 spincvt.zip: .PHONY
 	rm -f spincvt.zip
+	rm -rf spincvt
 	$(MAKE) CROSS=win32
 	mkdir -p spincvt/bin
 	cp build-win32/spin2cpp.exe spincvt/bin
 	cp spinconvert/spinconvert.tcl spincvt
-	mkdir spincvt/examples
-	cp -rp spinconvert/examples/*.{def,spin} spinconvert/README.txt COPYING spincvt
+	mkdir -p spincvt/examples
+	cp -rp spinconvert/examples/*.spin spincvt/examples
+	cp -rp spinconvert/examples/*.def spincvt/examples
+	cp -rp spinconvert/README.txt COPYING spincvt
 	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt
