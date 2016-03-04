@@ -345,6 +345,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	}
 	flexbuf_addstr(fb, "\n");
 	break;
+    case OPC_BLOB:
+      break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");
         break;

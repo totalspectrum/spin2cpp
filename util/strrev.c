@@ -11,7 +11,7 @@
 //
 // reverse a string in-place
 //
-char* _strrev(char *origstr)
+char* strrev(char *origstr)
 {
     char *str = origstr;
     char *end;

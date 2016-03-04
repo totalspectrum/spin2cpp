@@ -121,7 +121,7 @@ flexbuf_printf(struct flexbuf *fb, const char *fmt, ...)
     int r;
     
     va_start(args, fmt);
-    r = _dofmt(flexbuf_fputc, (void *)fb, fmt, &args);
+    r = dofmt(flexbuf_fputc, (void *)fb, fmt, &args);
     va_end(args);
     return r;
 }

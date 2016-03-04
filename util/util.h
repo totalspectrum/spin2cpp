@@ -31,19 +31,19 @@ typedef struct _printf_info {
     int byteswritten;
     int (*putchar)(int c, void *arg);
     void *putarg;
-} _Printf_info;
+} Printf_info;
 
 typedef int (*FmtPutchar)(int, void *);
 
-int _dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args );
+int dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args );
 
 // convert an integer to a string using a specified base and precision
-int _lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec );
+int lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec );
 
 // make a string upper case (in place)
-char* _strupr(char *origstr);
+char* strupr(char *origstr);
 
 // reverse a string (in place)
-char *_strrev(char *origstr);
+char *strrev(char *origstr);
 
 #endif
