@@ -41,7 +41,6 @@ InstrReadsDst(IR *ir)
   switch (ir->opc) {
   case OPC_MOVE:
   case OPC_NEG:
-  case OPC_NOT:
   case OPC_ABS:
   case OPC_RDBYTE:
   case OPC_RDWORD:

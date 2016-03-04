@@ -41,7 +41,6 @@ enum IROpcode {
     OPC_MAXS,
     OPC_MINS,
     OPC_NEG,
-    OPC_NOT,
     OPC_OR,
     OPC_RDBYTE,
     OPC_RDLONG,

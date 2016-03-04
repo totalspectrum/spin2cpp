@@ -5,7 +5,7 @@ blah
 	cmps	arg1_, #0 wc,wz
  if_ae	jmp	#L_001_
 	cmps	arg2_, #0 wc,wz
- if_b	not	blah_tmp001_, blah_tmp001_
+ if_b	neg	blah_tmp001_, #1
 L_001_
 	mov	result_, blah_tmp001_
 blah_ret

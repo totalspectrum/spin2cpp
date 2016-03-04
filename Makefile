@@ -129,8 +129,8 @@ spincvt.zip: .PHONY
 	mkdir -p spincvt/bin
 	cp build-win32/spin2cpp.exe spincvt/bin
 	cp spinconvert/spinconvert.tcl spincvt
-	cp -rp spinconvert/examples spinconvert/README.txt COPYING spincvt
-	rm -rf spinconvert/examples/*.cpp spinconvert/examples/*.pasm
+	mkdir spincvt/examples
+	cp -rp spinconvert/examples/*.{def,spin} spinconvert/README.txt COPYING spincvt
 	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt

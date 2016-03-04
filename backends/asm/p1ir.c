@@ -126,8 +126,6 @@ StringFor(int opc)
       return "mins";
   case OPC_NEG:
       return "neg";
-  case OPC_NOT:
-      return "not";
   case OPC_OR:
       return "or";
   case OPC_RDBYTE:
@@ -330,7 +328,6 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
     case OPC_MAXS:
     case OPC_MINS:
     case OPC_NEG:
-    case OPC_NOT:
     case OPC_OR:
     case OPC_RDBYTE:
     case OPC_RDWORD:

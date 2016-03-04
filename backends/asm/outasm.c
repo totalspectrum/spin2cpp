@@ -835,8 +835,6 @@ OpcFromOp(int op)
     return OPC_NEG;
   case T_ABS:
     return OPC_ABS;
-  case T_BIT_NOT:
-    return OPC_NOT;
   case T_ROTL:
       return OPC_ROL;
   case T_ROTR:
@@ -895,11 +893,16 @@ CompileBasicOperator(IRList *irl, AST *expr)
     return temp;
   case T_NEGATE:
   case T_ABS:
-  case T_BIT_NOT:
   case T_REV:
     right = CompileExpression(irl, rhs);
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
+    return temp;
+  case T_BIT_NOT:
+    right = CompileExpression(irl, rhs);
+    EmitMove(irl, temp, right);
+    left = NewImmediate(0xFFFFFFFF);
+    EmitOp2(irl, OPC_XOR, temp, left);
     return temp;
   case T_ENCODE:
     right = CompileExpression(irl, rhs);
@@ -931,7 +934,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
       Operand *skiplabel = NewCodeLabel();
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_NOT, temp, temp);
+      EmitOp2(irl, OPC_XOR, temp, NewImmediate(0xFFFFFFFF));
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -1243,7 +1246,7 @@ CompileExpression(IRList *irl, AST *expr)
       
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_NOT, temp, temp);
+      EmitOp2(irl, OPC_XOR, temp, NewImmediate(0xFFFFFFFF));
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -1845,10 +1848,10 @@ static const char *builtin_div =
     "\trcl\tmuldivb_,#1\n"
     "\tshr\tresult_,#1\n"
     "\tdjnz\titmp1_,#divlp2_\n"
-
+"divexit_\n"
     "\tcmps\titmp2_, #0 wc,wz\n"
     " if_b\tneg\tmuldiva_, muldiva_\n"
-    "\ttest\titmp2, #1\n"
+    "\ttest\titmp2_, #1\n"
     " if_nz\tneg\tmuldivb_, muldivb_\n"
 "divide__ret\n"
     "\tret\n"
