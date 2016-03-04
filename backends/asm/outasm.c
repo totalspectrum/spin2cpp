@@ -612,9 +612,9 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
   EmitMove(irl, divb, rhs);
   EmitOp1(irl, OPC_CALL, divfunc);
   if (getmod) {
-      EmitMove(irl, temp, divb);
-  } else {
       EmitMove(irl, temp, diva);
+  } else {
+      EmitMove(irl, temp, divb);
   }
   return temp;
 }
@@ -1827,32 +1827,35 @@ static const char *builtin_mul =
 "\tret\n"
 ;
 
+/*
+ * signed divide, taken from spin interpreter
+ */
+
 static const char *builtin_div =
+"' code originally from spin interpreter, modified slightly\n"
 "\ndivide_\n"
-    "\tmov\tresult_, #0\n"
-    "\tmov\titmp2_, muldiva_\n"
-    "\txor\titmp2_, muldivb_\n"
-    "\tabs\tmuldiva_, muldiva_\n"
-    "\tabs\tmuldivb_, muldivb_ wz,wc\n"
-    " if_z\tjmp\t#divexit_\n"
-    "\tmuxc\titmp2_, #1\n"
-    "\tmov\titmp1_, #32\n"
+"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+"       muxc    itmp2_,#%11                    'store sign of x\n"
+"       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
+" if_c  xor     itmp2_,#%10                    'store sign of y\n"
 
-"divlp1_\n"
-    "\tshr\tmuldivb_,#1 wc,wz\n"
-    "\trcr\tresult_,#1\n"
-    " if_nz\tdjnz\titmp1_,#divlp1_\n"
+"        mov     itmp1_,#0                    'unsigned divide\n"
+"        mov     CNT,#32             ' use CNT shadow register\n"
+"mdiv__\n"
+"        shr     muldivb_,#1        wc,wz\n"
+"        rcr     itmp1_,#1\n"
+" if_nz   djnz    CNT,#mdiv__\n"
+"mdiv2__\n"
+"        cmpsub  muldiva_,itmp1_        wc\n"
+"        rcl     muldivb_,#1\n"
+"        shr     itmp1_,#1\n"
+"        djnz    CNT,#mdiv2__\n"
 
-"divlp2_\n"
-    "\tcmpsub\tmuldiva_,result_ wc\n"
-    "\trcl\tmuldivb_,#1\n"
-    "\tshr\tresult_,#1\n"
-    "\tdjnz\titmp1_,#divlp2_\n"
-"divexit_\n"
-    "\tcmps\titmp2_, #0 wc,wz\n"
-    " if_b\tneg\tmuldiva_, muldiva_\n"
-    "\ttest\titmp2_, #1\n"
-    " if_nz\tneg\tmuldivb_, muldivb_\n"
+"        test    itmp2_,#1        wc       'restore sign, remainder\n"
+"        negc    muldiva_,muldiva_ \n"
+"        test    itmp2_,#%10      wc       'restore sign, division result\n"
+"        negc    muldivb_,muldivb_\n"
+
 "divide__ret\n"
     "\tret\n"
 ;

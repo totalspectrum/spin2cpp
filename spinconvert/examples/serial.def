@@ -28,7 +28,7 @@ PUB ser_str(s) | c
 PUB ser_dec(value) | i, x
 
 '' Print a decimal number
-
+  result := 0
   x := value == NEGX                                                            'Check for max negative
   if value < 0
     value := ||(value+x)                                                        'If negative, make positive; adjust for max negative
