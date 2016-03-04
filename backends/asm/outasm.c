@@ -1906,6 +1906,15 @@ CompileConsts(IRList *irl, AST *conblock)
 }
 
 void
+EmitDatSection(IRList *irl, Module *P)
+{
+  Flexbuf fb;
+
+  flexbuf_init(&fb, 32768);
+  PrintDataBlock(&fb, P, BINARY_OUTPUT);
+}
+
+void
 OutputAsmCode(const char *fname, Module *P)
 {
     FILE *f = NULL;
@@ -1926,6 +1935,7 @@ OutputAsmCode(const char *fname, Module *P)
     OptimizeIRGlobal(&irl);
     EmitBuiltins(&irl);
     EmitGlobals(&irl);
+    EmitDatSection(&irl, P);
     asmcode = IRAssemble(&irl);
     
     current = save;
