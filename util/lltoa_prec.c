@@ -12,7 +12,7 @@
 //
 
 int
-_lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec )
+lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec )
 {
     int digits = 0;
     int c;
@@ -27,6 +27,6 @@ _lltoa_prec( unsigned long long x, char *buf, unsigned base, int prec )
         buf[digits++] = c;
     }
     buf[digits] = 0;
-    _strrev(buf);
+    strrev(buf);
     return digits;
 }

@@ -11,7 +11,7 @@
 //
 // make a string upper case
 //
-char* _strupr(char *origstr)
+char* strupr(char *origstr)
 {
     char *str = origstr;
     int c;

@@ -21,17 +21,23 @@
 #include <stdarg.h>
 #include <wchar.h>
 #include <math.h>
+#ifdef WIN32
+#include <malloc.h>
+#define wchar_int int
+#else
 #include <alloca.h>
+#define wchar_int wchar_t
+#endif
 #include "util.h"
 
 #ifdef SMALL_INT
 #define UITYPE uint32_t
 #define ITYPE  int32_t
-#define ITOA_PREC   _itoa_prec
+#define ITOA_PREC   itoa_prec
 #else
 #define UITYPE uint64_t
 #define ITYPE  int64_t
-#define ITOA_PREC   _lltoa_prec
+#define ITOA_PREC   lltoa_prec
 #endif
 #define BITCOUNT (8*sizeof(UITYPE))
 
@@ -72,7 +78,7 @@ fetchint( va_ptr args, int hassign, int size )
 //
 // helper functions for formatting
 //
-static int _fmtputc( int c, _Printf_info *pi )
+static int _fmtputc( int c, Printf_info *pi )
 {
     pi->byteswritten++;
     return (*pi->putchar)(c, pi->putarg);
@@ -82,7 +88,7 @@ static int _fmtputc( int c, _Printf_info *pi )
 //output any required padding to force right justification
 // "len" is the length of our content
 //
-static int _fmtpad( _Printf_info *pi, int len, int onleft )
+static int _fmtpad( Printf_info *pi, int len, int onleft )
 {
     int padchar = onleft ? pi->pad : ' ';
     int wide = pi->width;
@@ -111,7 +117,7 @@ static int _fmtpad( _Printf_info *pi, int len, int onleft )
 #define _fmtpadonright(pi, len) _fmtpad(pi, len, 0)
 
 // output a string, possibly padding and/or limiting it
-static int _fmtputstr( const char *str, _Printf_info *pi )
+static int _fmtputstr( const char *str, Printf_info *pi )
 {
     int q;
     int c;
@@ -134,7 +140,7 @@ static int _fmtputstr( const char *str, _Printf_info *pi )
 }
 
 // output a string, possibly padding and/or limiting it
-static int _fmtputwstr( const wchar_t *wstr, _Printf_info *pi )
+static int _fmtputwstr( const wchar_t *wstr, Printf_info *pi )
 {
     int q, r;
     wchar_t c;
@@ -186,7 +192,7 @@ static int _fmtputwstr( const wchar_t *wstr, _Printf_info *pi )
 //
 // return an error
 //
-static int _fmt_unsupported( _Printf_info *pi, va_ptr args )
+static int _fmt_unsupported( Printf_info *pi, va_ptr args )
 {
     (void)args;
     return _fmtputstr("unsupported printf, try linking with -lm", pi);
@@ -195,7 +201,7 @@ static int _fmt_unsupported( _Printf_info *pi, va_ptr args )
 //
 // process the %n spec
 //
-int _fmt_n( _Printf_info *pi, va_ptr args )
+int _fmt_n( Printf_info *pi, va_ptr args )
 {
     switch(pi->size) {
     case 1:
@@ -233,7 +239,7 @@ int _fmt_n( _Printf_info *pi, va_ptr args )
 //
 // helper function to format an integer 
 //
-static int _fmtinteger( _Printf_info *pi, va_ptr args, int base, int isSigned )
+static int _fmtinteger( Printf_info *pi, va_ptr args, int base, int isSigned )
 {
     char *digits;
     char *buf;
@@ -288,23 +294,23 @@ static int _fmtinteger( _Printf_info *pi, va_ptr args, int base, int isSigned )
     pi->prec = -1;
     pi->longflag = 0;
     if (needupper) {
-        _strupr(buf);
+        strupr(buf);
     }
     return _fmtputstr( buf, pi );
 }
 
-static int _fmt_decimal( _Printf_info *pi, va_ptr args )
+static int _fmt_decimal( Printf_info *pi, va_ptr args )
 {
     int isSigned = !(pi->spec == 'u');
     return _fmtinteger(pi, args, 10, isSigned);
 }
 
-static int _fmt_hex( _Printf_info *pi, va_ptr args)
+static int _fmt_hex( Printf_info *pi, va_ptr args)
 {
     return _fmtinteger(pi, args, 16, 0);
 }
 
-static int _fmt_octal( _Printf_info *pi, va_ptr args)
+static int _fmt_octal( Printf_info *pi, va_ptr args)
 {
     return _fmtinteger(pi, args, 8, 0);
 }
@@ -330,7 +336,7 @@ static int parseint( const char **fmt_p, va_ptr args )
 
 // parse the printf flags (like 0, -, etc)
 // also initializes the width and prec fields
-static const char *parseflags(const char *fmt, _Printf_info *pi)
+static const char *parseflags(const char *fmt, Printf_info *pi)
 {
     int c;
     pi->width = 0;
@@ -364,7 +370,7 @@ static const char *parseflags(const char *fmt, _Printf_info *pi)
 }
 
 // parse the flag indicators ('l', 'j', etc.
-static const char *parsesize(const char *fmt, _Printf_info *pi)
+static const char *parsesize(const char *fmt, Printf_info *pi)
 {
     int c;
     pi->size = sizeof(int);
@@ -407,19 +413,19 @@ static const char *parsesize(const char *fmt, _Printf_info *pi)
     return fmt;
 }
 
-static int _fmt_percent(_Printf_info *pi, va_ptr args)
+static int _fmt_percent(Printf_info *pi, va_ptr args)
 {
     return _fmtputc('%', pi);
 }
 
-static int _fmt_ptr(_Printf_info *pi, va_ptr args)
+static int _fmt_ptr(Printf_info *pi, va_ptr args)
 {
     pi->size = sizeof(void *);
     pi->alt = 1; // force 0x prefix
     return _fmt_hex(pi, args);
 }
 
-static int _fmt_wstring(_Printf_info *pi, va_ptr args)
+static int _fmt_wstring(Printf_info *pi, va_ptr args)
 {
     wchar_t *ptr;
     pi->pad = ' ';
@@ -427,16 +433,16 @@ static int _fmt_wstring(_Printf_info *pi, va_ptr args)
     return _fmtputwstr(ptr, pi);
 }
 
-static int _fmt_wchar(_Printf_info *pi, va_ptr args)
+static int _fmt_wchar(Printf_info *pi, va_ptr args)
 {
     wchar_t ptr[2];
     pi->pad = ' ';
-    ptr[0] = va_ptrarg(args, wchar_t);
+    ptr[0] = va_ptrarg(args, wchar_int);
     ptr[1] = 0;
     return _fmtputwstr(ptr, pi);
 }
 
-static int _fmt_char(_Printf_info *pi, va_ptr args)
+static int _fmt_char(Printf_info *pi, va_ptr args)
 {
     char buf[2];
     if (pi->longflag)
@@ -447,7 +453,7 @@ static int _fmt_char(_Printf_info *pi, va_ptr args)
     return _fmtputstr(buf, pi);
 }
 
-static int _fmt_string(_Printf_info *pi, va_ptr args)
+static int _fmt_string(Printf_info *pi, va_ptr args)
 {
     char *ptr;
     if (pi->longflag)
@@ -624,7 +630,7 @@ done:
 // returns number of bytes output, or -1 if an error happens
 //
 static int
-emitsign(_Printf_info *pi, char *buf, int sign, int hex)
+emitsign(Printf_info *pi, char *buf, int sign, int hex)
 {
     int r = 0;
     if (sign) {
@@ -654,7 +660,7 @@ emitsign(_Printf_info *pi, char *buf, int sign, int hex)
 // we will output "prec" digits after the decimal point
 //
 static int
-_fmt_float(_Printf_info *pi, va_ptr args)
+_fmt_float(Printf_info *pi, va_ptr args)
 {
     double x;
     uint64_t ai;
@@ -876,7 +882,7 @@ _fmt_float(_Printf_info *pi, va_ptr args)
 done:
     // convert to upper case if required
     if (needUpper) {
-        _strupr(origbuf);
+        strupr(origbuf);
     }
     // now output the string
     return _fmtputstr(origbuf, pi);
@@ -888,7 +894,7 @@ done:
  * table of supported formats
  */
 /* function passed to format */
-typedef int (*_Fmt_func)(_Printf_info *, va_list *);
+typedef int (*_Fmt_func)(Printf_info *, va_list *);
 
 struct fmtspecs {
     char spec;      // character after %
@@ -925,11 +931,11 @@ static struct fmtspecs fmtspecs[] = {
 };
 
 int
-_dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args )
+dofmt( FmtPutchar func, void *funcarg, const char *fmt, va_ptr args )
 {
     int c;
     int q;
-    _Printf_info pi;
+    Printf_info pi;
     int i;
 
     memset(&pi, 0, sizeof(pi));
