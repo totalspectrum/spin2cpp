@@ -40,8 +40,8 @@ static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 static void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
-static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op);
-static IR *EmitOp2(IRList *irl, Operandkind code, Operand *op, Operand *op2);
+static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
+static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 
 typedef struct AsmVariable {
@@ -122,7 +122,7 @@ Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
 
 IR *NewIR(enum IROpcode kind)
 {
-    IR *ir = malloc(sizeof(*ir));
+    IR *ir = (IR *)malloc(sizeof(*ir));
     memset(ir, 0, sizeof(*ir));
     ir->opc = kind;
     return ir;
@@ -130,7 +130,7 @@ IR *NewIR(enum IROpcode kind)
 
 IR *DupIR(IR *old)
 {
-    IR *ir = NewIR(0);
+    IR *ir = NewIR(OPC_DUMMY);
     memcpy(ir, old, sizeof(*ir));
     ir->prev = ir->next = NULL;
     return ir;
@@ -164,7 +164,7 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func)
 
 Operand *NewOperand(enum Operandkind k, const char *name, int value)
 {
-    Operand *R = malloc(sizeof(*R));
+  Operand *R = (Operand *)malloc(sizeof(*R));
     memset(R, 0, sizeof(*R));
     R->kind = k;
     R->name = name;
@@ -258,7 +258,7 @@ DeleteIR(IRList *irl, IR *ir)
 }
 
 // emit a machine instruction with no operands
-static IR *EmitOp0(IRList *irl, Operandkind code)
+static IR *EmitOp0(IRList *irl, IROpcode code)
 {
   IR *ir = NewIR(code);
   AppendIR(irl, ir);
@@ -266,7 +266,7 @@ static IR *EmitOp0(IRList *irl, Operandkind code)
 }
 
 // emit a machine instruction with one operand
-static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op)
+static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op)
 {
   IR *ir = NewIR(code);
   ir->dst = op;
@@ -275,7 +275,7 @@ static IR *EmitOp1(IRList *irl, Operandkind code, Operand *op)
 }
 
 // emit a machine instruction with two operands
-static IR *EmitOp2(IRList *irl, Operandkind code, Operand *d, Operand *s)
+static IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 {
   IR *ir = NewIR(code);
   ir->dst = d;
@@ -295,7 +295,7 @@ char *
 NewTempLabelName()
 {
     static int lnum = 1;
-    char *temp = malloc(32);
+    char *temp = (char *)malloc(32);
     sprintf(temp, "L_%03d_", lnum);
     lnum++;
     return temp;
@@ -341,7 +341,7 @@ static void EmitStringNoTrailingZero(IRList *irl, AST *ast)
       EmitOp1(irl, OPC_STRING, op);
       break;
   case AST_INTEGER:
-      op = NewOperand(IMM_INT, "", ast->d.ival);
+    op = NewOperand(IMM_INT, "", (int)ast->d.ival);
       EmitOp1(irl, OPC_BYTE, op);
       break;
   default:
@@ -504,7 +504,7 @@ LabelRef(IRList *irl, Symbol *sym)
         datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
         datbase = NewImmediatePtr(datlabel);
     }
-    temp = NewOperand(LONG_REF, (char *)datbase, lab->offset);
+    temp = NewOperand(LONG_REF, (char *)datbase, (int)lab->offset);
     return temp;
 }
 
@@ -685,7 +685,7 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   int flags;
 
   if (expr->kind == AST_OPERATOR) {
-    opkind = expr->d.ival;
+    opkind = (int)expr->d.ival;
   } else {
     opkind = -1;
   }
@@ -764,7 +764,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     }
     
     if (expr->kind == AST_OPERATOR) {
-        opkind = expr->d.ival;
+      opkind = (int)expr->d.ival;
     } else {
         opkind = -1;
     }
@@ -811,7 +811,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     }
 }
 
-static int
+static IROpcode
 OpcFromOp(int op)
 {
   switch(op) {
@@ -864,7 +864,7 @@ Dereference(IRList *irl, Operand *op)
 static Operand *
 CompileBasicOperator(IRList *irl, AST *expr)
 {
-  int op = expr->d.ival;
+  int op = (int)expr->d.ival;
   AST *lhs = expr->left;
   AST *rhs = expr->right;
   Operand *left;
@@ -901,7 +901,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_BIT_NOT:
     right = CompileExpression(irl, rhs);
     EmitMove(irl, temp, right);
-    left = NewImmediate(0xFFFFFFFF);
+    left = NewImmediate(-1);
     EmitOp2(irl, OPC_XOR, temp, left);
     return temp;
   case T_ENCODE:
@@ -934,7 +934,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
       Operand *skiplabel = NewCodeLabel();
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, NewImmediate(0xFFFFFFFF));
+      EmitOp2(irl, OPC_XOR, temp, NewImmediate(-1));
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -948,7 +948,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
 static Operand *
 CompileOperator(IRList *irl, AST *expr)
 {
-    int op = expr->d.ival;
+  int op = (int)expr->d.ival;
     switch (op) {
     case T_INCREMENT:
     case T_DECREMENT:
@@ -995,7 +995,7 @@ CompileOperator(IRList *irl, AST *expr)
 static void
 AppendOperand(OperandList **listptr, Operand *op)
 {
-  OperandList *next = malloc(sizeof(OperandList));
+  OperandList *next = (OperandList *)malloc(sizeof(OperandList));
   OperandList *x;
   next->op = op;
   next->next = NULL;
@@ -1014,8 +1014,8 @@ static OperandList quitstack;
 static void
 PushQuitNext(Operand *q, Operand *n)
 {
-  OperandList *qholder = malloc(sizeof(OperandList));
-  OperandList *nholder = malloc(sizeof(OperandList));
+  OperandList *qholder = (OperandList *)malloc(sizeof(OperandList));
+  OperandList *nholder = (OperandList *)malloc(sizeof(OperandList));
   qholder->op = quitlabel;
   nholder->op = nextlabel;
   qholder->next = nholder;
@@ -1169,6 +1169,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     default:
         ERROR(NULL, "Bad size in array reference");
         siz = 1;
+	shift = 0;
         break;
     }
           
@@ -1246,7 +1247,7 @@ CompileExpression(IRList *irl, AST *expr)
       
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, NewImmediate(0xFFFFFFFF));
+      EmitOp2(irl, OPC_XOR, temp, NewImmediate(-1));
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -1324,7 +1325,7 @@ EmitStatementList(IRList *irl, AST *ast)
 }
 static void EmitAddSub(IRList *irl, Operand *dst, int off)
 {
-    int opc  = OPC_ADD;
+    IROpcode opc  = OPC_ADD;
     Operand *imm;
     
     if (off < 0) {
@@ -1515,7 +1516,7 @@ static void CompileWait(IRList *irl, AST *origast)
 {
     AST *ast = origast;
     AST *arg0, *arg1, *arg2;
-    int opc;
+    IROpcode opc;
     Operand *lhs, *rhs;
     Operand *tmp;
 
@@ -1763,7 +1764,7 @@ CompileToIR(IRList *irl, Module *P)
 	const char *fname;
         char *frname;
         fname = IdentifierGlobalName(P, f->name);
-	frname = malloc(strlen(fname) + 8);
+	frname = (char *)malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
         f->bedata = calloc(1, sizeof(IRFuncData));
         FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
@@ -1943,7 +1944,7 @@ EmitDatSection(IRList *irl, Module *P)
       return;
   flexbuf_init(&fb, 32768);
   PrintDataBlock(&fb, P, BINARY_OUTPUT);
-  len = flexbuf_curlen(&fb);
+  len = (int)flexbuf_curlen(&fb);
   data = flexbuf_get(&fb);
   op = NewOperand(IMM_STRING, data, len);
   EmitLabel(irl, datlabel);

@@ -161,6 +161,7 @@ outputDataList(Flexbuf *f, int size, AST *ast)
     int i, reps;
     AST *sub;
 
+    origval = 0;
     while (ast) {
         sub = ast->left;
         if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
