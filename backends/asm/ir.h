@@ -17,7 +17,7 @@ typedef struct modulestate Module;
 // opcodes
 // these include pseudo-opcodes for data directives
 // and also dummy opcodes used internally by the compiler
-enum IROpcode {
+typedef enum IROpcode {
     OPC_COMMENT,
     
     OPC_LABEL,
@@ -71,7 +71,7 @@ enum IROpcode {
     OPC_DUMMY,
     
     OPC_UNKNOWN,
-};
+} IROpcode;
 
 /* condition for conditional execution */
 /* NOTE: opposite conditions must go together
