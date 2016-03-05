@@ -6,3 +6,6 @@ build*/
 spincvt/
 spinconvert/bin/
 spin2cpp.linux
+
+.idea/
+bin/
