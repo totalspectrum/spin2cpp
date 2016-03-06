@@ -538,7 +538,7 @@ repeatstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
   | T_ASM datblock T_ENDASM
-    {  $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+    {  $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1); }
 ;
 
 lookupexpr:

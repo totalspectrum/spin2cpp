@@ -12,6 +12,7 @@
 //
 // functions for manipulating IR lists
 //
+IR *NewIR(IROpcode kind);
 
 // append an IR at the end of a list
 void AppendIR(IRList *irl, IR *ir);
@@ -67,5 +68,8 @@ typedef struct ir_bedata {
 
 // find a PASM instruction description for a generic optimizer instruction
 Instruction *FindInstrForOpc(IROpcode kind);
+
+// compile inline assembly
+void CompileInlineAsm(IRList *irl, AST *ast);
 
 #endif

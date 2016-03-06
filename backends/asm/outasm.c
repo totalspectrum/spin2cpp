@@ -1688,6 +1688,9 @@ static void EmitStatement(IRList *irl, AST *ast)
     case AST_FOR:
 	EmitForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
+    case AST_INLINEASM:
+        CompileInlineAsm(irl, ast->left);
+        break;
     case AST_QUIT:
         if (!quitlabel) {
 	    ERROR(ast, "loop exit statement outside of loop");
