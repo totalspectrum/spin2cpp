@@ -21,7 +21,7 @@ L_001_
  if_ne	or	OUTA, imm_1073741824_
  if_e	andn	OUTA, imm_1073741824_
 	shr	arg1_, #1
-	djnz	serchar__idx__0000_,#L_001_
+	djnz	serchar__idx__0000_, #L_001_
 serchar_ret
 	ret
 

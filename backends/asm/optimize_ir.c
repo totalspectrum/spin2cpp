@@ -38,6 +38,7 @@ static void
 ReplaceOpcode(IR *ir, IROpcode op)
 {
   ir->opc = op;
+  ir->instr = FindInstrForOpc(op);
 }
 
 //

@@ -65,4 +65,7 @@ typedef struct ir_bedata {
 #define FuncData(f) ((IRFuncData *)(f)->bedata)
 #define FuncIRL(f)  (&FuncData(f)->irl)
 
+// find a PASM instruction description for a generic optimizer instruction
+Instruction *FindInstrForOpc(IROpcode kind);
+
 #endif

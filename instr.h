@@ -24,6 +24,7 @@ typedef struct modulestate Module;
 // and also dummy opcodes used internally by the compiler
 typedef enum IROpcode {
     /* various instructions */
+    /* note that actual machine instructions must come first */
     OPC_ABS,
     OPC_ADD,
     OPC_AND,
@@ -41,6 +42,7 @@ typedef enum IROpcode {
     OPC_MINS,
     OPC_MOV,
     OPC_NEG,
+    OPC_NOP,
     OPC_OR,
     OPC_RDBYTE,
     OPC_RDLONG,
@@ -64,8 +66,11 @@ typedef enum IROpcode {
     OPC_XOR,
 
     /* an instruction unknown to the optimizer */
+    /* this must immediately follow the actual instructions */
     OPC_GENERIC,
 
+    /* place non-instructions below here */
+    
     /* a literal string to place in the output */
     OPC_COMMENT,
     
@@ -105,18 +110,6 @@ typedef enum IRCond {
     COND_C,
     COND_NC,
 } IRCond;
-
-struct IR {
-    enum IROpcode opc;
-    enum IRCond cond;
-    Operand *dst;
-    Operand *src;
-    int flags;
-    IR *prev;
-    IR *next;
-    unsigned addr;
-    void *aux; // auxiliary data for back end
-};
 
 enum flags {
     // first 8 bits are for various features of the instruction
@@ -173,7 +166,6 @@ struct Operand {
 
 typedef enum InstrOps {
     NO_OPERANDS,
-    NOP_OPERANDS,
     SRC_OPERAND_ONLY,
     DST_OPERAND_ONLY,
     TWO_OPERANDS,
@@ -196,6 +188,21 @@ typedef struct instrmodifier {
 } InstrModifier;
 
 #define IMMEDIATE_INSTR (1<<22)
+
+
+/* optimizer friendly form of instructions */
+struct IR {
+    enum IROpcode opc;
+    enum IRCond cond;
+    Operand *dst;
+    Operand *src;
+    int flags;
+    IR *prev;
+    IR *next;
+    unsigned addr;
+    void *aux; // auxiliary data for back end
+    Instruction *instr; // PASM assembler data for instruction
+};
 
 
 #endif

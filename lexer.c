@@ -1136,7 +1136,7 @@ instr[] = {
   { "negnc",  0xb4800000, TWO_OPERANDS, OPC_GENERIC },
   { "negnz",  0xbc800000, TWO_OPERANDS, OPC_GENERIC },
   { "negz",   0xb8800000, TWO_OPERANDS, OPC_GENERIC },
-  { "nop",    0x00000000, NOP_OPERANDS, OPC_GENERIC },
+  { "nop",    0x00000000, NO_OPERANDS, OPC_NOP },
 
   { "or",     0x68800000, TWO_OPERANDS, OPC_OR },
 
@@ -1168,16 +1168,18 @@ instr[] = {
   { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC },
   { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC },
 
-  { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_GENERIC },
-  { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_GENERIC },
-  { "waitpne", 0xf4000000, TWO_OPERANDS, OPC_GENERIC },
-  { "waitvid", 0xfc000000, TWO_OPERANDS, OPC_GENERIC },
+  { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_WAITCNT },
+  { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_WAITPEQ },
+  { "waitpne", 0xf4000000, TWO_OPERANDS, OPC_WAITPNE },
+  { "waitvid", 0xfc000000, TWO_OPERANDS, OPC_WAITVID },
 
   { "wrbyte", 0x00000000, TWO_OPERANDS, OPC_WRBYTE },
   { "wrlong", 0x08000000, TWO_OPERANDS, OPC_WRLONG },
   { "wrword", 0x04000000, TWO_OPERANDS, OPC_WRWORD },
 
   { "xor",    0x6c800000, TWO_OPERANDS, OPC_XOR },
+
+  { NULL, 0, 0, 0},
 };
 
 HwReg hwreg_p1[] = {
@@ -1275,7 +1277,7 @@ InitPasm(int flags)
     }
 
     /* add instructions */
-    for (i = 0; i < N_ELEMENTS(instr); i++) {
+    for (i = 0; instr[i].name != NULL; i++) {
         AddSymbol(&pasmWords, instr[i].name, SYM_INSTR, (void *)&instr[i]);
     }
 

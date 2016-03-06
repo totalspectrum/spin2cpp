@@ -211,7 +211,7 @@ assembleInstruction(Flexbuf *f, AST *ast)
 
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
-    if (instr->ops != NOP_OPERANDS) {
+    if (instr->opc != OPC_NOP) {
         /* for anything except NOP set the condition to "always" */
         val |= 0xf << 18;
     }
@@ -243,7 +243,6 @@ assembleInstruction(Flexbuf *f, AST *ast)
     /* parse operands and put them in place */
     switch (instr->ops) {
     case NO_OPERANDS:
-    case NOP_OPERANDS:
         expectops = 0;
         break;
     case TWO_OPERANDS:
@@ -261,7 +260,6 @@ assembleInstruction(Flexbuf *f, AST *ast)
     src = dst = 0;
     switch (instr->ops) {
     case NO_OPERANDS:
-    case NOP_OPERANDS:
         break;
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:

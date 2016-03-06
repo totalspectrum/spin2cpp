@@ -96,89 +96,6 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
     }
 }
 
-static const char *
-StringFor(int opc)
-{
-  switch(opc) {
-  case OPC_MOV:
-      return "mov";
-  case OPC_ABS:
-      return "abs";
-  case OPC_ADD:
-      return "add";
-  case OPC_AND:
-      return "and";
-  case OPC_ANDN:
-      return "andn";
-  case OPC_CALL:
-      return "call";
-  case OPC_CMP:
-      return "cmp";
-  case OPC_CMPS:
-      return "cmps";
-  case OPC_DJNZ:
-      return "djnz";
-  case OPC_JUMP:
-      return "jmp";
-  case OPC_MAXS:
-      return "maxs";
-  case OPC_MINS:
-      return "mins";
-  case OPC_NEG:
-      return "neg";
-  case OPC_OR:
-      return "or";
-  case OPC_RDBYTE:
-      return "rdbyte";
-  case OPC_RDLONG:
-      return "rdlong";
-  case OPC_RDWORD:
-      return "rdword";
-  case OPC_REV:
-      return "rev";
-  case OPC_ROL:
-      return "rol";
-  case OPC_ROR:
-      return "ror";
-  case OPC_SHL:
-      return "shl";
-  case OPC_SHR:
-      return "shr";
-  case OPC_SAR:
-      return "sar";
-  case OPC_SUB:
-      return "sub";
-  case OPC_TEST:
-      return "test";
-  case OPC_WAITCNT:
-      return "waitcnt";
-  case OPC_WAITPEQ:
-      return "waitpeq";
-  case OPC_WAITPNE:
-      return "waitpne";
-  case OPC_WAITVID:
-      return "waitvid";
-  case OPC_XOR:
-      return "xor";
-  case OPC_WRBYTE:
-      return "wrbyte";
-  case OPC_WRLONG:
-      return "wrlong";
-  case OPC_WRWORD:
-      return "wrword";
-  case OPC_STRING:
-  case OPC_BYTE:
-      return "byte";
-  case OPC_WORD:
-      return "word";
-  case OPC_LONG:
-      return "long";
-  default:
-      break;
-  }
-  return "???";
-}
-
 static void
 PrintCond(struct flexbuf *fb, IRCond cond)
 {
@@ -246,11 +163,28 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
     }
 }
 
+/* find string for opcode */
+static const char *
+StringFor(IROpcode opc)
+{
+    switch(opc) {
+    case OPC_STRING:
+    case OPC_BYTE:
+        return "byte";
+    case OPC_LONG:
+        return "long";
+    case OPC_WORD:
+        return "word";
+    default:
+        ERROR(NULL, "internal error, bad StringFor call");
+        return "???";
+    }
+}
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
-    int ccset; // condition codes set
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -274,6 +208,46 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             didOrg = 1;
         }
     }
+    if (ir->instr) {
+        int ccset;
+        
+        PrintCond(fb, ir->cond);
+        flexbuf_addstr(fb, ir->instr->name);
+        switch (ir->instr->ops) {
+        case NO_OPERANDS:
+            break;
+        case SRC_OPERAND_ONLY:
+        case DST_OPERAND_ONLY:
+        case CALL_OPERAND:
+            flexbuf_addstr(fb, "\t");
+            PrintOperand(fb, ir->dst);
+            break;
+        default:
+            flexbuf_addstr(fb, "\t");
+            PrintOperand(fb, ir->dst);
+            flexbuf_addstr(fb, ", ");
+            PrintOperand(fb, ir->src);
+            break;
+        }
+        ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR);
+        if (ccset) {
+            const char *sepstring = " ";
+            if (ccset & FLAG_WC) {
+                flexbuf_printf(fb, "%swc", sepstring);
+                sepstring = ",";
+            }
+            if (ccset & FLAG_WZ) {
+                flexbuf_printf(fb, "%swz", sepstring);
+                sepstring = ",";
+            }
+            if (ccset & FLAG_NR) {
+                flexbuf_printf(fb, "%snr", sepstring);
+            }
+        }
+        flexbuf_addstr(fb, "\n");
+        return;
+    }
+    
     switch(ir->opc) {
     case OPC_DUMMY:
         break;
@@ -294,23 +268,6 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addchar(fb, '\t');
         flexbuf_addstr(fb, "ret\n");
         break;
-    case OPC_JUMP:
-    case OPC_CALL:
-        PrintCond(fb, ir->cond);
-	flexbuf_addstr(fb, StringFor(ir->opc));
-	flexbuf_addstr(fb, "\t");
-	PrintOperand(fb, ir->dst);
-        flexbuf_addstr(fb, "\n");
-	break;
-    case OPC_DJNZ:
-        PrintCond(fb, ir->cond);
-	flexbuf_addstr(fb, StringFor(ir->opc));
-	flexbuf_addstr(fb, "\t");
-	PrintOperand(fb, ir->dst);
-	flexbuf_addstr(fb, ",");
-	PrintOperand(fb, ir->src);
-	flexbuf_addstr(fb, "\n");
-	break;
     case OPC_BYTE:
     case OPC_WORD:
     case OPC_LONG:
@@ -320,57 +277,6 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, "\t");
 	PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
-	break;
-    case OPC_MOV:
-    case OPC_ABS:
-    case OPC_ADD:
-    case OPC_AND:
-    case OPC_ANDN:
-    case OPC_CMP:
-    case OPC_CMPS:
-    case OPC_MAXS:
-    case OPC_MINS:
-    case OPC_NEG:
-    case OPC_OR:
-    case OPC_RDBYTE:
-    case OPC_RDWORD:
-    case OPC_RDLONG:
-    case OPC_REV:
-    case OPC_ROL:
-    case OPC_ROR:
-    case OPC_SAR:
-    case OPC_SHL:
-    case OPC_SHR:
-    case OPC_SUB:
-    case OPC_TEST:
-    case OPC_WAITCNT:
-    case OPC_WAITPEQ:
-    case OPC_WAITPNE:
-    case OPC_WAITVID:
-    case OPC_WRBYTE:
-    case OPC_WRWORD:
-    case OPC_WRLONG:
-    case OPC_XOR:
-        PrintCond(fb, ir->cond);
-        flexbuf_printf(fb, "%s\t", StringFor(ir->opc));
-	PrintOperand(fb, ir->dst);
-	flexbuf_addstr(fb, ", ");
-	PrintOperand(fb, ir->src);
-	ccset = ir->flags & (FLAG_WC|FLAG_WZ);
-	switch(ccset) {
-	case FLAG_WZ:
-	  flexbuf_addstr(fb, " wz");
-	  break;
-	case FLAG_WC:
-	  flexbuf_addstr(fb, " wc");
-	  break;
-	case FLAG_WC|FLAG_WZ:
-	  flexbuf_addstr(fb, " wc,wz");
-	  break;
-	default:
-	  break;
-	}
-	flexbuf_addstr(fb, "\n");
 	break;
     case OPC_LABELED_BLOB:
         // output a binary blob

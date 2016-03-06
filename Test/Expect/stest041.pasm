@@ -4,7 +4,7 @@ count1
 	mov	count1_i_, #5
 L_001_
 	xor	OUTA, #2
-	djnz	count1_i_,#L_001_
+	djnz	count1_i_, #L_001_
 count1_ret
 	ret
 

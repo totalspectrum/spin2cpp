@@ -121,11 +121,35 @@ Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
     return GetVar(&hubGlobalVars, kind, name, value);
 }
 
-IR *NewIR(enum IROpcode kind)
+Instruction *
+FindInstrForOpc(IROpcode kind)
+{
+    static Instruction **lookup_table;
+    extern Instruction instr[]; // in lexer.c
+
+    if ((unsigned int)kind >= OPC_GENERIC) {
+        return NULL;
+    }
+    if (!lookup_table) {
+        // set up the lookup table
+        int i = 0;
+        lookup_table = calloc(1, sizeof(Instruction *) * (unsigned int)OPC_GENERIC);
+        do {
+            if ((unsigned int)instr[i].opc < OPC_GENERIC) {
+                lookup_table[(unsigned int)instr[i].opc] = &instr[i];
+            }
+            i++;
+        } while (instr[i].name != 0);
+    }
+    return lookup_table[(unsigned int)kind];
+}
+
+IR *NewIR(IROpcode kind)
 {
     IR *ir = (IR *)malloc(sizeof(*ir));
     memset(ir, 0, sizeof(*ir));
     ir->opc = kind;
+    ir->instr = FindInstrForOpc(kind);
     return ir;
 }
 
