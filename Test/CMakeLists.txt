@@ -30,6 +30,7 @@ function(add_test_script name)
     add_test_target(${name} ${ARGN})
 endfunction()
 
+
 function(add_runtime_test spin_file)
     add_test(NAME ${spin_file}
         COMMAND "${CMAKE_COMMAND}"
@@ -39,18 +40,25 @@ function(add_runtime_test spin_file)
             -D "PROPGCC_BIN_PATH=${PROPGCC_BIN_PATH}"
             -D "SPIN_LIB_DIR=${PROJECT_SOURCE_DIR}/Lib"
             -P "${CMAKE_CURRENT_LIST_DIR}/CMakeRuntimeTester.cmake")
-    set(GENERATED_FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.out
-        ${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.binary
-        ${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.h
-        ${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.h
-        ${CMAKE_CURRENT_BINARY_DIR}/dattest.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/dattest.h
-    )
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${GENERATED_FILES}")
+    set(NEWLY_GENERATED_FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.out"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.txt"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.binary"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/dattest.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/dattest.h")
+    # Only save new files in the "output list" variable and add to the clean target
+    foreach (file_path IN LISTS NEWLY_GENERATED_FILES)
+        list(FIND FILES_GENERATED_IN_DIRECTORY ${file_path} INDEX)
+        if ("-1" STREQUAL INDEX)
+            list(APPEND FILES_GENERATED_IN_DIRECTORY "${file_path}")
+        endif ()
+    endforeach ()
+    set(FILES_GENERATED_IN_DIRECTORY ${FILES_GENERATED_IN_DIRECTORY} PARENT_SCOPE)
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_GENERATED_IN_DIRECTORY}")
     add_test_target(${spin_file} spin2cpp)
 endfunction()
 
