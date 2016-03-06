@@ -22,13 +22,6 @@ function(add_test_target target)
         DEPENDS ${ARGN})
 endfunction()
 
-function(add_test_script name)
-    add_test(NAME ${name}
-        COMMAND "${CMAKE_CURRENT_LIST_DIR}/${name}.sh" $<TARGET_FILE:spin2cpp>
-        WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}")
-    add_test_target(${name} ${ARGN})
-endfunction()
-
 macro(add_files_to_clean)
     set(TEMP_LIST ${ARGN})  # Not sure why this is needed, but using ARGN directly in foreach doesn't work
     # Only save new files in the "output list" variable and add to the clean target
@@ -41,6 +34,39 @@ macro(add_files_to_clean)
     set(FILES_GENERATED_IN_DIRECTORY ${FILES_GENERATED_IN_DIRECTORY} PARENT_SCOPE)
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${FILES_GENERATED_IN_DIRECTORY}")
 endmacro()
+
+function(add_scripted_test script spin_file label source_ext)
+    add_test(NAME ${spin_file}
+        COMMAND "${CMAKE_COMMAND}"
+            -D "spin_file=${spin_file}"
+            -D "spin2cpp=$<TARGET_FILE:spin2cpp>"
+            -D "SPIN_LIB_DIR=${PROJECT_SOURCE_DIR}/Lib"
+            -D "extra_args=${ARGN}"
+            -D "source_ext=${source_ext}"
+            -P "${script}")
+    add_files_to_clean("${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.${source_ext}"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.h")
+    add_test_target("${spin_file}" spin2cpp)
+    set_tests_properties(${spin_file} PROPERTIES LABELS "${label}")
+endfunction()
+
+function(add_integration_test spin_file label source_ext)
+    add_scripted_test("${CMAKE_CURRENT_LIST_DIR}/CMakeIntegrationTester.cmake"
+        "${spin_file}"
+        "${label}"
+        "${source_ext}"
+        ${ARGN})
+endfunction()
+
+function(add_error_test spin_file label source_ext)
+    add_scripted_test("${CMAKE_CURRENT_LIST_DIR}/CMakeErrorTester.cmake"
+        "${spin_file}"
+        "${label}"
+        "${source_ext}"
+        ${ARGN})
+endfunction()
 
 function(add_runtime_test spin_file)
     add_test(NAME ${spin_file}
@@ -61,23 +87,7 @@ function(add_runtime_test spin_file)
         "${CMAKE_CURRENT_BINARY_DIR}/dattest.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/dattest.h")
     add_test_target(${spin_file} spin2cpp)
-endfunction()
-
-function(add_integration_test spin_file label source_ext extra_args)
-    add_test(NAME ${spin_file}
-        COMMAND "${CMAKE_COMMAND}"
-            -D "spin_file=${spin_file}"
-            -D "spin2cpp=$<TARGET_FILE:spin2cpp>"
-            -D "SPIN_LIB_DIR=${PROJECT_SOURCE_DIR}/Lib"
-            -D "extra_args=${extra_args}"
-            -D "source_ext=${source_ext}"
-            -P "${CMAKE_CURRENT_LIST_DIR}/CMakeIntegrationTester.cmake")
-    add_files_to_clean("${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.${source_ext}"
-        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.h"
-        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.cpp"
-        "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.h")
-    add_test_target("${spin_file}" spin2cpp)
-    set_tests_properties(${spin_file} PROPERTIES LABELS "${label}")
+    set_tests_properties(${spin_file} PROPERTIES LABELS runtimetests)
 endfunction()
 
 function(c_test file)
@@ -215,6 +225,7 @@ cpp_test(test123)
 cpp_test(test124)
 cpp_test(test125)
 
+# Debug tests
 # FIXME: These tests fail because the actual filename is absolute but relative is expected
 function(debug_test file)
     add_integration_test("${file}" debugtests cpp -g)
@@ -223,7 +234,16 @@ debug_test(gtest01)
 debug_test(gtest02)
 
 # Error tests
-add_test_script(errtests spin2cpp)
+# FIXME: These tests fail because the actual filename is absolute but relative is expected
+function(error_test file)
+    add_error_test("${file}" errortests cpp)
+endfunction()
+error_test(error01)
+error_test(error02)
+error_test(error03)
+error_test(error04)
+error_test(error05)
+error_test(error06)
 
 # Lexer tests
 add_executable(testlex "${PROJECT_SOURCE_DIR}/testlex")
