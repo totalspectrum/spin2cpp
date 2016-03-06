@@ -16,25 +16,21 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-set(SPIN_SOURCES functions pasm outcpp outdat spin.tab.c)
-
+# Set source files
+set(SPIN_SOURCES spin2cpp functions pasm outcpp outdat spin.tab.c)
 set(LEX_SOURCES lexer symbol ast expr flexbuf preprocess)
-
-add_library(spin_common ${SPIN_SOURCES})
-add_library(lex_common ${LEX_SOURCES})
-
 add_custom_command(OUTPUT spin.tab.c spin.tab.h
     COMMAND ${BISON_EXECUTABLE} -t -b spin -d "${CMAKE_CURRENT_LIST_DIR}/spin.y"
     DEPENDS "${CMAKE_CURRENT_LIST_DIR}/spin.y")
 
-# Make sure spin.tab.h is build prior to compiling any other sources
+# Make sure spin.tab.h is generated prior to compiling any other sources
 add_custom_target(spin_tab
     DEPENDS spin.tab.h spin.tab.c)
-add_dependencies(spin_common spin_tab)
-add_dependencies(lex_common spin_tab)
+add_library(lex ${LEX_SOURCES})
+add_dependencies(lex spin_tab)
 
-add_executable(spin2cpp spin2cpp)
-target_link_libraries(spin2cpp spin_common lex_common m)
+add_executable(spin2cpp ${SPIN_SOURCES})
+target_link_libraries(spin2cpp lex m)
 
 # Installation rules
 install(TARGETS spin2cpp
@@ -43,7 +39,7 @@ install(FILES
         README.md
         COPYING
         Changelog.txt
-    DESTINATION docs)
+    DESTINATION share/doc/${PROJECT_NAME})
 
 # Add unit tests
 add_subdirectory(Test)
