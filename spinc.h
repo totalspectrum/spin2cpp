@@ -21,6 +21,7 @@
 #include "expr.h"
 #include "util/util.h"
 #include "util/flexbuf.h"
+#include "instr.h"
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
@@ -73,31 +74,6 @@ extern AST *ast_type_float;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;
 extern AST *ast_type_void;
-
-typedef enum InstrOps {
-    NO_OPERANDS,
-    NOP_OPERANDS,
-    SRC_OPERAND_ONLY,
-    DST_OPERAND_ONLY,
-    TWO_OPERANDS,
-    CALL_OPERAND,
-    JMPRET_OPERANDS,
-} InstrOps;
-
-/* structure describing a PASM instruction */
-typedef struct Instruction {
-    const char *name;      /* instruction mnemonic */
-    uint32_t    binary;    /* binary form of instruction */
-    InstrOps    ops;       /* operand forms */
-} Instruction;
-
-/* instruction modifiers */
-typedef struct instrmodifier {
-    const char *name;
-    uint32_t modifier;
-} InstrModifier;
-
-#define IMMEDIATE_INSTR (1<<22)
 
 /* structure describing a dat block label */
 typedef struct label {

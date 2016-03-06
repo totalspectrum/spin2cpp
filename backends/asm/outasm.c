@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include "spinc.h"
-#include "ir.h"
+#include "outasm.h"
 
 /* define this to pass parameters in ARGSx_ */
 #define USE_GLOBAL_ARGS

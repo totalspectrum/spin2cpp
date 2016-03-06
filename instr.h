@@ -14,6 +14,11 @@ typedef struct IR IR;
 typedef struct Operand Operand;
 typedef struct modulestate Module;
 
+////////////////////////////////////////////////////////////
+// "IR" is intermediate represenation used by the optimizer
+// most instructions are just passed straight through, but
+// some commonly used ones are recognized specially
+///////////////////////////////////////////////////////////
 // opcodes
 // these include pseudo-opcodes for data directives
 // and also dummy opcodes used internally by the compiler
@@ -165,60 +170,32 @@ struct Operand {
     int used;
 };
 
-//
-// functions for manipulating IR lists
-//
 
-// append an IR at the end of a list
-void AppendIR(IRList *irl, IR *ir);
-// insert an IR after another in a list
-void InsertAfterIR(IRList *irl, IR *orig, IR *ir);
-void DeleteIR(IRList *irl, IR *ir);
-void AppendIRList(IRList *irl, IRList *sub);
-void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
+typedef enum InstrOps {
+    NO_OPERANDS,
+    NOP_OPERANDS,
+    SRC_OPERAND_ONLY,
+    DST_OPERAND_ONLY,
+    TWO_OPERANDS,
+    CALL_OPERAND,
+    JMPRET_OPERANDS,
+} InstrOps;
 
-//
-// functions for operand manipulation
-//
-Operand *NewOperand(enum Operandkind, const char *name, int val);
-Operand *NewImmediate(int32_t val);
+/* structure describing a PASM instruction */
+typedef struct Instruction {
+    const char *name;      /* instruction mnemonic */
+    uint32_t    binary;    /* binary form of instruction */
+    InstrOps    ops;       /* operand forms */
+    IROpcode    opc;       /* information for optimizer */
+} Instruction;
 
-// utility functions
-IRCond InvertCond(IRCond v);
+/* instruction modifiers */
+typedef struct instrmodifier {
+    const char *name;
+    uint32_t modifier;
+} InstrModifier;
 
-// function to convert an IR list into a text representation of the
-// assembly
-char *IRAssemble(IRList *list);
+#define IMMEDIATE_INSTR (1<<22)
 
-// create an IR list from a module definition
-bool CompileToIR(IRList *list, Module *P);
-
-// optimization functions
-void OptimizeIRLocal(IRList *irl);
-void OptimizeIRGlobal(IRList *irl);
-bool ShouldBeInlined(Function *f);
-int  ExpandInlines(IRList *irl);
-
-//
-// back end data for functions
-//
-typedef struct ir_bedata {
-    /* temporary register info */
-    int curtempreg;
-    int maxtempreg;
-
-    /* assembly output name */
-    Operand *asmname;
-    Operand *asmretname;
-
-    /* instructions for this function */
-    IRList irl;
-
-    /* flag for whether we should inline the function */
-    bool isInline;
-} IRFuncData;
-
-#define FuncData(f) ((IRFuncData *)(f)->bedata)
-#define FuncIRL(f)  (&FuncData(f)->irl)
 
 #endif

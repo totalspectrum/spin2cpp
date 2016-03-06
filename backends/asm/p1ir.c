@@ -26,7 +26,7 @@
  * +--------------------------------------------------------------------
  */
 #include "spinc.h"
-#include "ir.h"
+#include "outasm.h"
 
 static int inDat;
 static int inCon;

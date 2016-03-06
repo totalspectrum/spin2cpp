@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include "spinc.h"
-#include "ir.h"
+#include "outasm.h"
 
 //
 // helper functions
