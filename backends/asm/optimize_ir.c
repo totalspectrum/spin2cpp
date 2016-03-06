@@ -32,6 +32,15 @@ static bool IsDummy(IR *op)
 }
 
 //
+// replace an opcode
+//
+static void
+ReplaceOpcode(IR *ir, IROpcode op)
+{
+  ir->opc = op;
+}
+
+//
 // return TRUE if an instruction uses its destination
 // (most do)
 // 
@@ -39,7 +48,7 @@ static bool
 InstrReadsDst(IR *ir)
 {
   switch (ir->opc) {
-  case OPC_MOVE:
+  case OPC_MOV:
   case OPC_NEG:
   case OPC_ABS:
   case OPC_RDBYTE:
@@ -332,7 +341,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     if (ir->dst == replace) {
       // special case: if we have a "mov replace,orig" and orig is dead
       // then we are good to go
-      if (assignments_are_safe && ir->opc == OPC_MOVE && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
+      if (assignments_are_safe && ir->opc == OPC_MOV && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
       }
       return NULL;
@@ -512,7 +521,7 @@ TransformConstDst(IR *ir, Operand *imm)
     ApplyConditionAfter(ir, val1);
   }
   if (setsResult) {
-    ir->opc = OPC_MOVE;
+    ReplaceOpcode(ir, OPC_MOV);
     ir->src = NewImmediate(val1);
   } else {
     ir->cond = COND_FALSE;
@@ -565,7 +574,7 @@ OptimizeMoves(IRList *irl)
         ir = irl->head;
         while (ir != 0) {
             ir_next = ir->next;
-            if (ir->opc == OPC_MOVE && ir->cond == COND_TRUE) {
+            if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
 	      if (ir->src == ir->dst && !SetsFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
@@ -602,6 +611,7 @@ HasSideEffects(IR *ir)
       return true;
     }
     switch (ir->opc) {
+    case OPC_GENERIC:
     case OPC_WAITPEQ:
     case OPC_WAITPNE:
     case OPC_WAITVID:
@@ -694,7 +704,7 @@ static void CheckUsage(IRList *irl)
   for (ir = irl->head; ir; ir = ir->next) {
     if (ir->opc == OPC_LABEL) {
       if (ir->dst->used == 0) {
-	ir->opc = OPC_DEAD;
+	ir->opc = OPC_DUMMY;
       }
     }
   }
@@ -790,7 +800,7 @@ CanTestZero(int opc)
     case OPC_AND:
     case OPC_ANDN:
     case OPC_OR:
-    case OPC_MOVE:
+    case OPC_MOV:
     case OPC_NEG:
     case OPC_RDLONG:
     case OPC_RDBYTE:
@@ -944,7 +954,7 @@ OptimizeCompares(IRList *irl)
                     && ir_prev->src->val == 1)
                 {
                     // replace jmp with djnz
-                    ir_next->opc = OPC_DJNZ;
+		    ReplaceOpcode(ir_next, OPC_DJNZ);
                     ir_next->cond = COND_TRUE;
                     ir_next->src = ir_next->dst;
                     ir_next->dst = ir_prev->dst;
@@ -975,17 +985,17 @@ OptimizeImmediates(IRList *irl)
             continue;
         }
         val = src->val;
-        if (ir->opc == OPC_MOVE && val < 0 && val >= -511) {
-            ir->opc = OPC_NEG;
+        if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
+	    ReplaceOpcode(ir, OPC_NEG);
             ir->src = NewImmediate(-val);
         } else if (ir->opc == OPC_AND && val < 0 && val >= -512) {
-            ir->opc = OPC_ANDN;
+	    ReplaceOpcode(ir, OPC_ANDN);
             ir->src = NewImmediate(~val);
         } else if (ir->opc == OPC_ADD && val < 0 && val >= -511) {
-            ir->opc = OPC_SUB;
+	    ReplaceOpcode(ir, OPC_SUB);
             ir->src = NewImmediate(-val);
         } else if (ir->opc == OPC_SUB && val < 0 && val >= -511) {
-            ir->opc = OPC_ADD;
+	    ReplaceOpcode(ir, OPC_ADD);
             ir->src = NewImmediate(-val);
 	}
     }
@@ -1019,9 +1029,9 @@ OptimizeAddSub(IRList *irl)
                     int val = AddSubVal(ir) + AddSubVal(ir_next);
                     if (val < 0) {
                         val = -val;
-                        ir_next->opc = OPC_SUB;
+                        ReplaceOpcode(ir_next, OPC_SUB);
                     } else {
-                        ir_next->opc = OPC_ADD;
+		        ReplaceOpcode(ir_next, OPC_ADD);
                     }
                     ir_next->src = NewImmediate(val);
                     DeleteIR(irl, ir);
@@ -1148,13 +1158,13 @@ OptimizePeepholes(IRList *irl)
         ir_next = ir->next;
         if (ir->opc == OPC_AND && (ir->flags&(FLAG_WZ|FLAG_WC))) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
-            if (previr && previr->opc == OPC_MOVE && IsDeadAfter(ir, ir->dst)) {
-                ir->opc = OPC_TEST;
+            if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst)) {
+	        ReplaceOpcode(ir, OPC_TEST);
                 ir->dst = previr->src;
                 DeleteIR(irl, previr);
                 changed = 1;
             } else if (IsDeadAfter(ir, ir->dst)) {
-                ir->opc = OPC_TEST;
+		ReplaceOpcode(ir, OPC_TEST);
             }
         }
         ir = ir_next;

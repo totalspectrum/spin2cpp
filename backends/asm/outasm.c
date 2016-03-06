@@ -1468,7 +1468,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             break;
         }
     } else {
-        EmitOp2(irl, OPC_MOVE, dst, src);
+        EmitOp2(irl, OPC_MOV, dst, src);
     }
 }
 

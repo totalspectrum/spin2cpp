@@ -100,7 +100,7 @@ static const char *
 StringFor(int opc)
 {
   switch(opc) {
-  case OPC_MOVE:
+  case OPC_MOV:
       return "mov";
   case OPC_ABS:
       return "abs";
@@ -321,7 +321,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
 	break;
-    case OPC_MOVE:
+    case OPC_MOV:
     case OPC_ABS:
     case OPC_ADD:
     case OPC_AND:

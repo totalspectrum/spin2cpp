@@ -18,17 +18,7 @@ typedef struct modulestate Module;
 // these include pseudo-opcodes for data directives
 // and also dummy opcodes used internally by the compiler
 typedef enum IROpcode {
-    OPC_COMMENT,
-    
-    OPC_LABEL,
-    OPC_BYTE,
-    OPC_WORD,
-    OPC_LONG,
-    OPC_STRING,
-    OPC_LABELED_BLOB, // binary blob
-
     /* various instructions */
-    OPC_MOVE,
     OPC_ABS,
     OPC_ADD,
     OPC_AND,
@@ -38,8 +28,13 @@ typedef enum IROpcode {
     OPC_CMPS,
     OPC_DJNZ,
     OPC_JUMP,
+    OPC_LOCKCLR,
+    OPC_LOCKNEW,
+    OPC_LOCKRET,
+    OPC_LOCKSET,
     OPC_MAXS,
     OPC_MINS,
+    OPC_MOV,
     OPC_NEG,
     OPC_OR,
     OPC_RDBYTE,
@@ -62,6 +57,20 @@ typedef enum IROpcode {
     OPC_WRLONG,
     OPC_WRWORD,
     OPC_XOR,
+
+    /* an instruction unknown to the optimizer */
+    OPC_GENERIC,
+
+    /* a literal string to place in the output */
+    OPC_COMMENT,
+    
+    /* various assembler declarations */
+    OPC_LABEL,
+    OPC_BYTE,
+    OPC_WORD,
+    OPC_LONG,
+    OPC_STRING,
+    OPC_LABELED_BLOB, // binary blob
 
     /* special flag to indicate a dead register */
     OPC_DEAD,
