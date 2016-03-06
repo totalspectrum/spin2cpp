@@ -71,5 +71,6 @@ Instruction *FindInstrForOpc(IROpcode kind);
 
 // compile inline assembly
 void CompileInlineAsm(IRList *irl, AST *ast);
+Operand *CompileIdentifier(IRList *irl, AST *expr);
 
 #endif

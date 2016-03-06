@@ -61,6 +61,9 @@ const char *gl_outname = NULL;
 
 struct preprocess gl_pp;
 
+// process a module after parsing it
+static void ProcessModule(Module *P);
+
 int
 yylex(YYSTYPE *yval)
 {
@@ -156,13 +159,21 @@ NewModule(const char *fullname)
 /*
  * add a global variable symbols
  */
+const char system_spincode[] = 
+"pub sys_waitcnt(x)\n"
+"  asm\n"
+"    waitcnt x,#0\n"
+"  endasm\n"
+;
+
 void
 InitGlobalModule(void)
 {
     SymbolTable *table;
     Symbol *sym;
-    
-    globalModule = NewModule("<system>");
+    static IRList globalIR;
+
+    current = globalModule = NewModule("<system>");
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
@@ -170,6 +181,14 @@ InitGlobalModule(void)
     sym = AddSymbol(table, "CLKMODE", SYM_VARIABLE, ast_type_byte);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = 4;
+
+    /* compile inline assembly */
+    if (gl_outcode == OUTCODE_ASM) {
+      strToLex(&globalModule->L, system_spincode, "<system>");
+      yyparse();
+      ProcessModule(globalModule);
+      CompileToIR(&globalIR, globalModule);
+    }
 }
 
 /*
@@ -341,6 +360,21 @@ GetFullFileName(AST *baseString)
 }
 
 /*
+ * process a parsed module
+ */
+static void
+ProcessModule(Module *P)
+{
+    P->botcomment = GetComments();
+
+    /* now declare all the symbols that weren't already declared */
+    DeclareConstants(&P->conblock);
+    DeclareVariables(P);
+    DeclareLabels(P);
+    DeclareFunctions(P);
+}
+
+/*
  * parse a file
  * This is the main entry point for the compiler
  * "name" is the file name; if it has no .spin suffix
@@ -418,13 +452,8 @@ parseFile(const char *name)
         free(fname);
         exit(1);
     }
-    P->botcomment = GetComments();
 
-    /* now declare all the symbols that weren't already declared */
-    DeclareConstants(&P->conblock);
-    DeclareVariables(P);
-    DeclareLabels(P);
-    DeclareFunctions(P);
+    ProcessModule(P);
 
     /* work to avoid conflicts with variables and constants */
     makeClassNameSafe(P);
@@ -433,7 +462,6 @@ parseFile(const char *name)
         free(fname);
         exit(1);
     }
-
 
     current = save;
     return P;
@@ -909,10 +937,6 @@ main(int argc, char **argv)
         Usage();
     }
 
-    /* initialize the parser; we do that after command line processing
-       so that command line options can influence it */
-    init();
-
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if (outputDat && outputBin) {
@@ -922,6 +946,11 @@ main(int argc, char **argv)
         // GAS output for dat uses symbols, so @@@ is OK there
         gl_dat_offset = 0;
     }
+
+    /* initialize the parser; we do that after command line processing
+       so that command line options can influence it */
+    init();
+
     /* now actually parse the file */
     P = parseFile(argv[0]);
     if (compile && argc > 1) {
