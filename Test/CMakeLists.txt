@@ -45,6 +45,7 @@ function(add_scripted_test script spin_file label source_ext)
             -D "source_ext=${source_ext}"
             -P "${script}")
     add_files_to_clean("${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.${source_ext}"
+        "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.spin"
         "${CMAKE_CURRENT_BINARY_DIR}/${spin_file}.h"
         "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.cpp"
         "${CMAKE_CURRENT_BINARY_DIR}/FullDuplexSerial.h")
@@ -226,7 +227,6 @@ cpp_test(test124)
 cpp_test(test125)
 
 # Debug tests
-# FIXME: These tests fail because the actual filename is absolute but relative is expected
 function(debug_test file)
     add_integration_test("${file}" debugtests cpp -g)
 endfunction()
@@ -234,13 +234,12 @@ debug_test(gtest01)
 debug_test(gtest02)
 
 # Error tests
-# FIXME: These tests fail because the actual filename is absolute but relative is expected
 function(error_test file)
     add_error_test("${file}" errortests cpp)
 endfunction()
 error_test(error01)
 error_test(error02)
-error_test(error03)
+error_test(error03)  # FIXME: Included file still fails with absolute vs relative path difference
 error_test(error04)
 error_test(error05)
 error_test(error06)

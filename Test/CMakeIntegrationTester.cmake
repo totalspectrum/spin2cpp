@@ -12,7 +12,9 @@ macro(check_and_print_exit_code exit_code stdout)
     check_exit_code(${exit_code} ${ARGN})
 endmacro()
 
-set(CMD "${spin2cpp}" -I "${SPIN_LIB_DIR}" ${extra_args} --noheader -D COUNT=4 "${CMAKE_CURRENT_LIST_DIR}/${spin_file}.spin")
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_LIST_DIR}/${spin_file}.spin" "${spin_file}.spin")
+
+set(CMD "${spin2cpp}" -I "${SPIN_LIB_DIR}" -I "${CMAKE_CURRENT_LIST_DIR}" ${extra_args} --noheader -D COUNT=4 "${spin_file}.spin")
 execute_process(COMMAND ${CMD}
     ERROR_VARIABLE STDERR
     RESULT_VARIABLE exit_code)
