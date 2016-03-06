@@ -42,6 +42,7 @@ install(FILES
     DESTINATION share/doc/${PROJECT_NAME})
 
 # Add unit tests
+enable_testing()
 add_subdirectory(Test)
 
 # Packaging rules
