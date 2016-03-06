@@ -521,6 +521,9 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
+    case AST_INLINEASM:
+        ERROR(ast, "C/C++ output cannot handle inline assembly yet");
+        break;
     default:
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);

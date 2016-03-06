@@ -334,6 +334,11 @@ donefloat:
     return sawdigit ? kind : ((base == 16) ? T_HERE : '%');
 }
 
+/* check for DAT or ASM blocks */
+static int InDatBlock(LexStream *L)
+{
+    return L->in_block == T_DAT || L->in_block == T_ASM;
+}
 
 /* parse an identifier */
 static int
@@ -369,7 +374,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     lexungetc(L, c);
 
     /* check for reserved words */
-    if (L->in_block == T_DAT) {
+    if (InDatBlock(L)) {
         sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
             free(idstr);
@@ -418,6 +423,17 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->in_block = c;
                 //EstablishIndent(L, 1);
                 break;
+	    case T_ASM:
+	        if (L->in_block == T_ASM) {
+		    fprintf(stderr, "WARNING: ignoring nested asm\n");
+		} else {
+		    L->save_block = L->in_block;
+		}
+		L->in_block = c;
+		break;
+	    case T_ENDASM:
+	        L->in_block = L->save_block;
+	        break;
             case T_IF:
             case T_IFNOT:
             case T_ELSE:
@@ -705,14 +721,14 @@ getToken(LexStream *L, AST **ast_ptr)
         c = parseIdentifier(L, &ast, NULL);
         /* if in pasm, and at start of line, restart temporary
            labels */
-        if (c == T_IDENTIFIER && L->in_block == T_DAT && at_startofline) {
+        if (c == T_IDENTIFIER && InDatBlock(L) && at_startofline) {
             L->lastGlobal = ast->d.string;
         }
     } else if (c == ':') {
         int peekc = lexgetc(L);
         if (peekc == '=') {
             c = T_ASSIGN;
-        } else if (isIdentifierStart(peekc) && L->in_block == T_DAT && L->lastGlobal) {
+        } else if (isIdentifierStart(peekc) && InDatBlock(L) && L->lastGlobal) {
             lexungetc(L, peekc);
             c = parseIdentifier(L, &ast, L->lastGlobal);
         } else {
@@ -759,6 +775,7 @@ struct reservedword {
 } init_words[] = {
     { "abort", T_ABORT },
     { "and", T_AND },
+    { "asm", T_ASM },
     { "byte", T_BYTE },
 
     { "case", T_CASE },
@@ -772,6 +789,7 @@ struct reservedword {
     { "else", T_ELSE },
     { "elseif", T_ELSEIF },
     { "elseifnot", T_ELSEIFNOT },
+    { "endasm", T_ENDASM },
 
     { "file", T_FILE },
     { "fit", T_FIT },

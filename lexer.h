@@ -21,6 +21,7 @@ struct lexstream {
 #define MAX_INDENTS 64
     /* input state */
     int in_block;  /* T_DAT, T_PUB, or T_CON */
+    int save_block; /* so we can nest T_ASM inside others */
     int indent[MAX_INDENTS];    /* current indentation level */
     int indentsp;               /* pointer into stack of indentation level */
     int pending_indent;

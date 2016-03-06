@@ -145,7 +145,8 @@ CheckYield(AST *body)
 %token T_PUB        "PUB"
 %token T_PRI        "PRI"
 %token T_OBJ        "OBJ"
-
+%token T_ASM        "ASM"
+%token T_ENDASM     "ENDASM"
 %token T_BYTE       "BYTE"
 %token T_WORD       "WORD"
 %token T_LONG       "LONG"
@@ -536,7 +537,8 @@ repeatstmt:
       from = NewAST(AST_FROM, NULL, to);
       $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
-
+  | T_ASM datblock T_ENDASM
+    {  $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
 ;
 
 lookupexpr:
