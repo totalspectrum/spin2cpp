@@ -1831,6 +1831,8 @@ bool
 CompileToIR(IRList *irl, Module *P)
 {
     Function *f;
+    if (!newlineOp)
+      newlineOp = NewOperand(IMM_STRING, "\n", 0);
 
     // assign all function names so we can do forward calls
     // this is also where we can allocate the back end data
@@ -1865,11 +1867,7 @@ CompileToIR(IRList *irl, Module *P)
     // finally emit output
     for(f = P->functions; f; f = f->next) {
         curfunc = f;
-	if (newlineOp) {
-  	    EmitNewline(irl);
-	} else {
-	  newlineOp = NewOperand(IMM_STRING, "\n", 0);
-	}
+	EmitNewline(irl);
         CompileWholeFunction(irl, f);
     }
     return gl_errors == 0;

@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 foo
 	mov	result_, ptr_L_001__
 foo_ret

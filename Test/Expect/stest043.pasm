@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 blah
 	mov	blah_tmp001_, #0
 	cmps	arg1_, #0 wc,wz

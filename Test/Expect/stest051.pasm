@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 foo
 	rdlong	result_, #0
 	add	result_, #2

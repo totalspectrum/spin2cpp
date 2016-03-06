@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 strlen
 	neg	strlen_r_, #1
 L_001_

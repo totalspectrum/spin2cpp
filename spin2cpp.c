@@ -183,7 +183,7 @@ InitGlobalModule(void)
     sym->offset = 4;
 
     /* compile inline assembly */
-    if (gl_outcode == OUTCODE_ASM) {
+    if (gl_outcode == OUTCODE_ASM && 0) {
       strToLex(&globalModule->L, system_spincode, "<system>");
       yyparse();
       ProcessModule(globalModule);

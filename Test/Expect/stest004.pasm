@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 dummy
 	mov	result_, imm_1024_
 dummy_ret

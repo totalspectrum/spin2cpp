@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 simplemul
 	mov	simplemul_i_, #0
 	mov	simplemul_r_, #0

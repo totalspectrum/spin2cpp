@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 strlen2
 	mov	strlen2_r_, #0
 L_001_

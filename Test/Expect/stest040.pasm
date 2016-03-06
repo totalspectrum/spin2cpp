@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 foo
 	mov	foo__idx__0000_, #5
 L_001_

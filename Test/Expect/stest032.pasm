@@ -2,6 +2,7 @@ CON
 	incval = 15
 DAT
 	org	0
+
 inc
 	add	arg1_, #incval
 	mov	result_, arg1_

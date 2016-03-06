@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 blah
 	mov	result_, #3
 blah_ret

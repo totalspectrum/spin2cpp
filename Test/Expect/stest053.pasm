@@ -7,6 +7,7 @@ CON
 	bitcycles = 694
 DAT
 	org	0
+
 serchar
 	or	OUTA, imm_1073741824_
 	or	DIRA, imm_1073741824_

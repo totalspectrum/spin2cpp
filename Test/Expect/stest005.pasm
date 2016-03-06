@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 val511
 	mov	result_, #511
 val511_ret

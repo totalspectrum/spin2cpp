@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 setpin
 	or	OUTA, #2
 setpin_ret

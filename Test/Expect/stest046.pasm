@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 ez_pulse_in
 	mov	ez_pulse_in_r_, #1
 	shl	ez_pulse_in_r_, arg1_

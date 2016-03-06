@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 addone
 	add	arg1_, #1
 	mov	result_, arg1_

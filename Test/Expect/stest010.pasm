@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 test1
 	add	arg1_, arg1_
 	add	arg2_, arg2_

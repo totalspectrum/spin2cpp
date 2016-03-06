@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 clear0
 	andn	OUTA, #1
 clear0_ret

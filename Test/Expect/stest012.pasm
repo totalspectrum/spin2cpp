@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 sum
 	add	arg1_, arg2_
 	mov	result_, arg1_

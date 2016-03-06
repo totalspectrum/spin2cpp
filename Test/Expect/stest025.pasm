@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 test1
 	mov	test1_x_, arg1_ wz
 	mov	test1_y_, arg2_

@@ -2,6 +2,7 @@ CON
 	all_pin_mask = 252
 DAT
 	org	0
+
 pushData
 	andn	OUTA, #all_pin_mask
 	shl	arg1_, #2

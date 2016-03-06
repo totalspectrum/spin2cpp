@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 prod
 	mov	muldiva_, arg1_
 	mov	muldivb_, arg2_

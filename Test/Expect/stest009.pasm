@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 func1
 	add	arg1_, arg1_
 	mov	result_, arg1_

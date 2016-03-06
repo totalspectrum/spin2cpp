@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 fetch
 	shl	arg2_, #1
 	add	arg2_, arg1_

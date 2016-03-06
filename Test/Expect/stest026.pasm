@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 test1
 	mov	test1_tmp001_, #0
 	cmps	arg1_, arg2_ wc,wz

@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 hyp
 	mov	hyp_y_, arg2_
 	mov	muldiva_, arg1_

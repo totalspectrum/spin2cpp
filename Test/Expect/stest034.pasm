@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 indsum
 	rdlong	result_, arg1_
 	rdlong	indsum_tmp003_, arg2_

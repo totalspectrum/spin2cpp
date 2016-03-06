@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 waitcycles
 	mov	waitcycles_end_, CNT
 	add	waitcycles_end_, arg1_

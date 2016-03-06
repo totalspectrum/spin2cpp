@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 foo
 	mov	result_, #1
 foo_ret

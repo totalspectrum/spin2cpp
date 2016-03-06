@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 test
 L_001_
 	mov	test_x_, INA

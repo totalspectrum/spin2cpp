@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 ismagic
 	cmps	arg1_, #511 wz
  if_e	mov	ismagic_a_, #1

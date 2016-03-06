@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 id
 	mov	result_, arg1_
 id_ret

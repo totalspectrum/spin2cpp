@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 select
 	cmps	arg1_, #0 wz
  if_ne	mov	select_tmp001_, arg2_

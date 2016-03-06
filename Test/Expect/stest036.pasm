@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 sum2
 	add	arg1_, #8
 	rdlong	result_, arg1_

@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 testit
 	test	arg1_, #4 wz
  if_ne	mov	result_, arg2_

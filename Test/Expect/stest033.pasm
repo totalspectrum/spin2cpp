@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 pokeb
 	wrbyte	arg2_, arg1_
 pokeb_ret

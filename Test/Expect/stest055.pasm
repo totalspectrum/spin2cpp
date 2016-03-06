@@ -1,5 +1,6 @@
 DAT
 	org	0
+
 fetchx
 	add	ptr_dat__, #4
 	rdlong	result_, ptr_dat__
