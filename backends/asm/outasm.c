@@ -1838,6 +1838,14 @@ CompileToIR(IRList *irl, Module *P)
     CompileIntermediate(irl, P);
     // finally emit output
     for(f = P->functions; f; f = f->next) {
+        // if the function was private and has
+        // been inlined, skip it
+        if (!f->is_public) {
+            // private function
+            if (FuncData(f)->isInline) {
+                continue;
+            }
+        }
         curfunc = f;
 	EmitNewline(irl);
         CompileWholeFunction(irl, f);

@@ -18,3 +18,5 @@ arg3_
 	long	0
 count_i_
 	long	0
+result_
+	long	0

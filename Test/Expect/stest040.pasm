@@ -17,3 +17,5 @@ arg3_
 	long	0
 foo__idx__0000_
 	long	0
+result_
+	long	0

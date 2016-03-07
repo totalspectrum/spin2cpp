@@ -7,12 +7,6 @@ sum
 sum_ret
 	ret
 
-inc
-	add	arg1_, #1
-	mov	result_, arg1_
-inc_ret
-	ret
-
 one
 	mov	result_, #1
 one_ret

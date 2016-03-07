@@ -23,6 +23,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+result_
+	long	0
 test_tmp001_
 	long	0
 test_x_

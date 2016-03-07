@@ -1,7 +1,7 @@
 PUB sum(x,y)
   return x+y
 
-PUB inc(x)
+PRI inc(x)
   return sum(x,1)
 
 PUB one

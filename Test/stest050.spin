@@ -5,5 +5,5 @@ PUB pushData(data)
   all_pin_low
   outa |= (data << 2)
 
-PRI all_pin_low
+PUB all_pin_low
   outa &= !all_pin_mask
