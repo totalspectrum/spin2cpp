@@ -1118,7 +1118,9 @@ CompileFunccall(IRList *irl, AST *expr)
   Function *func;
   AST *params;
   OperandList *temp;
+  Operand *reg;
   IR *ir;
+  int n;
 
   /* compile the function operands */
   sym = FindFuncSymbol(expr, NULL, NULL);
@@ -1138,6 +1140,14 @@ CompileFunccall(IRList *irl, AST *expr)
   /* emit the call */
   ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
   ir->aux = (void *)func; // remember the function for optimization purposes
+
+  /* mark parameters as dead */
+  n = AstListLen(params);
+  while (n > 0) {
+    --n;
+    reg = GetFunctionParameter(irl, func, n);
+    EmitOp1(irl, OPC_DEAD, reg);
+  }
 
   /* now get the result */
   result = GetGlobal(REG_REG, "result_", 0);
