@@ -11,6 +11,8 @@ val512
 val512_ret
 	ret
 
+arg1_
+	long	0
 imm_512_
 	long	512
 result_

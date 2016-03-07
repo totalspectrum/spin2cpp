@@ -6,6 +6,8 @@ dummy
 dummy_ret
 	ret
 
+arg1_
+	long	0
 imm_1024_
 	long	1024
 result_

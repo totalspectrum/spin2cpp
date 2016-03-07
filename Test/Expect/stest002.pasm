@@ -8,3 +8,6 @@ foo_ret
 bar
 bar_ret
 	ret
+
+arg1_
+	long	0

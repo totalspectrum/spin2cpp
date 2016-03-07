@@ -160,9 +160,17 @@ NewModule(const char *fullname)
  * add a global variable symbols
  */
 const char system_spincode[] = 
-"pub sys_waitcnt(x)\n"
+"pri waitcnt(x)\n"
 "  asm\n"
 "    waitcnt x,#0\n"
+"  endasm\n"
+"pri waitpeq(pin, mask, c)\n"
+"  asm\n"
+"    waitpeq pin,mask\n"
+"  endasm\n"
+"pri waitpne(pin, mask, c)\n"
+"  asm\n"
+"    waitpne pin,mask\n"
 "  endasm\n"
 ;
 
@@ -183,11 +191,12 @@ InitGlobalModule(void)
     sym->offset = 4;
 
     /* compile inline assembly */
-    if (gl_outcode == OUTCODE_ASM && 0) {
+    if (gl_outcode == OUTCODE_ASM) {
       strToLex(&globalModule->L, system_spincode, "<system>");
       yyparse();
       ProcessModule(globalModule);
-      CompileToIR(&globalIR, globalModule);
+      CompileIntermediate(&globalIR, globalModule);
+      curfunc = NULL;
     }
 }
 

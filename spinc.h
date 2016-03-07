@@ -345,5 +345,6 @@ Symbol *LookupSymbolInFunc(Function *func, const char *name);
  */
 int FuncParameterNum(Function *func, AST *var);
 
+void CompileIntermediate(IRList *irl, Module *P);
 
 #endif

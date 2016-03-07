@@ -34,6 +34,7 @@ Symbol *
 LookupSymbolInTable(SymbolTable *table, const char *name)
 {
     Symbol *sym = NULL;
+    if (!table) return NULL;
     sym = FindSymbol(table, name);
     if (!sym) {
         if (table->next) {

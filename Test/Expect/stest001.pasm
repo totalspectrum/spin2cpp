@@ -4,3 +4,6 @@ DAT
 dummy
 dummy_ret
 	ret
+
+arg1_
+	long	0

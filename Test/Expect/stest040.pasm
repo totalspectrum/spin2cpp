@@ -9,5 +9,7 @@ L_001_
 foo_ret
 	ret
 
+arg1_
+	long	0
 foo__idx__0000_
 	long	0

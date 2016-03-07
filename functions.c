@@ -1144,38 +1144,6 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         break;
-    case AST_WAITPEQ:
-    case AST_WAITPNE:
-    {
-        int n;
-        const char *name = (ast->kind == AST_WAITPNE) ? "waitpne" : "waitpeq";
-        AST *args = ast->left;
-        n = AstListLen(args);
-        if (n != 3) {
-            ERROR(ast, "Bad number of parameters in call to %s: expected 3 found %d", name, n);
-        } else {
-            args = args->right->right->left;  // get 3rd parameter
-            if (!IsConstExpr(args) || EvalConstExpr(args) != 0) {
-                ERROR(args, "Final parameter to %s must be 0", name);
-            }
-        }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
-        break;
-    }
-    case AST_WAITVID:
-    {
-        int n;
-        const char *name = "waitvid";
-        AST *args = ast->left;
-        n = AstListLen(args);
-        if (n != 2) {
-            ERROR(ast, "Bad number of parameters in call to %s: expected 2 found %d", name, n);
-        }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
-        break;
-    }
     case AST_POSTEFFECT:
     {
         /* x~ is the same as (tmp = x, x = 0, tmp) */

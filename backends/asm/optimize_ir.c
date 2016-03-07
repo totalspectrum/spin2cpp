@@ -73,9 +73,6 @@ InstrSetsDst(IR *ir)
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
-  case OPC_WAITPEQ:
-  case OPC_WAITPNE:
-  case OPC_WAITVID:
   case OPC_LABEL:
     return false;
   default:
@@ -613,10 +610,6 @@ HasSideEffects(IR *ir)
     }
     switch (ir->opc) {
     case OPC_GENERIC:
-    case OPC_WAITPEQ:
-    case OPC_WAITPNE:
-    case OPC_WAITVID:
-    case OPC_WAITCNT:
     case OPC_WRBYTE:
     case OPC_WRLONG:
     case OPC_WRWORD:

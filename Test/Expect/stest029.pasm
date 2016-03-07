@@ -11,3 +11,5 @@ clrpin
 clrpin_ret
 	ret
 
+arg1_
+	long	0

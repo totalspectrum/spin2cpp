@@ -1583,41 +1583,6 @@ static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
     PopQuitNext();
 }
 
-static void CompileWait(IRList *irl, AST *origast)
-{
-    AST *ast = origast;
-    AST *arg0, *arg1, *arg2;
-    IROpcode opc;
-    Operand *lhs, *rhs;
-    Operand *tmp;
-
-    ast = origast->left; // pick up argument list
-    arg0 = ast->left; ast = ast->right;
-    arg1 = ast->left; ast = ast->right;
-    arg2 = ast->left;
-    if (EvalConstExpr(arg2) != 0) {
-        ERROR(ast, "wait command only works on port 0");
-        return;
-    }
-    if (origast->kind == AST_WAITPEQ) {
-        opc = OPC_WAITPEQ;
-    } else if (origast->kind == AST_WAITPNE) {
-        opc = OPC_WAITPNE;
-    } else {
-        ERROR(ast, "Internal error, unexpected wait");
-        return;
-    }
-    lhs = CompileExpression(irl, arg0);
-    if (!IsRegister(lhs->kind)) {
-        tmp = NewFunctionTempRegister();
-        EmitMove(irl, tmp, lhs);
-        lhs = tmp;
-    }
-    rhs = CompileExpression(irl, arg1);
-    rhs = Dereference(irl, rhs);
-    EmitOp2(irl, opc, lhs, rhs);
-}
-
 static void EmitStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -1646,19 +1611,6 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmretname);
 	break;
-    case AST_WAITCNT:
-        retval = ast->left;
-        if (!retval) {
-            ERROR(ast, "No expression for waitcnt");
-            return;
-        }
-        op = CompileExpression(irl, retval);
-        EmitOp2(irl, OPC_WAITCNT, op, NewImmediate(0));
-        break;
-    case AST_WAITPEQ:
-    case AST_WAITPNE:
-        CompileWait(irl, ast);
-        break;
     case AST_WHILE:
         toploop = NewCodeLabel();
 	botloop = NewCodeLabel();
@@ -1827,10 +1779,12 @@ void EmitGlobals(IRList *irl)
     EmitAsmVars(&hubGlobalVars, irl, 0);
 }
 
-bool
-CompileToIR(IRList *irl, Module *P)
+void
+CompileIntermediate(IRList *irl, Module *P)
 {
     Function *f;
+
+    current = P;
     if (!newlineOp)
       newlineOp = NewOperand(IMM_STRING, "\n", 0);
 
@@ -1863,7 +1817,15 @@ CompileToIR(IRList *irl, Module *P)
             OptimizeIRLocal(firl);
         }
     }
-    
+}
+
+bool
+CompileToIR(IRList *irl, Module *P)
+{
+    Function *f;
+
+    // generate code for inlining
+    CompileIntermediate(irl, P);
     // finally emit output
     for(f = P->functions; f; f = f->next) {
         curfunc = f;

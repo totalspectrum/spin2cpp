@@ -833,11 +833,6 @@ struct reservedword {
 
     { "var", T_VAR },
 
-    { "waitcnt", T_WAITCNT },
-    { "waitpeq", T_WAITPEQ },
-    { "waitpne", T_WAITPNE },
-    { "waitvid", T_WAITVID },
-    
     { "while", T_WHILE },
     { "word", T_WORD },
 
@@ -1011,6 +1006,8 @@ Builtin builtinfuncs[] = {
     { "strsize", 1, str1Builtin, "strlen", 0, NULL },
     { "strcomp", 1, strcompBuiltin, "strcmp", 0, NULL },
     { "waitcnt", 1, defaultBuiltin, "waitcnt", 0, NULL },
+    { "waitpeq", 3, defaultBuiltin, "waitpeq", 0, NULL },
+    { "waitpne", 3, defaultBuiltin, "waitpne", 0, NULL },
 
     { "reboot", 0, rebootBuiltin, "reboot", 0, NULL },
 
@@ -1168,10 +1165,10 @@ instr[] = {
   { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC },
   { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC },
 
-  { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_WAITCNT },
-  { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_WAITPEQ },
-  { "waitpne", 0xf4000000, TWO_OPERANDS, OPC_WAITPNE },
-  { "waitvid", 0xfc000000, TWO_OPERANDS, OPC_WAITVID },
+  { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_GENERIC },
+  { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_GENERIC },
+  { "waitpne", 0xf4000000, TWO_OPERANDS, OPC_GENERIC },
+  { "waitvid", 0xfc000000, TWO_OPERANDS, OPC_GENERIC },
 
   { "wrbyte", 0x00000000, TWO_OPERANDS, OPC_WRBYTE },
   { "wrlong", 0x08000000, TWO_OPERANDS, OPC_WRLONG },

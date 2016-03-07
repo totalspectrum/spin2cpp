@@ -9,5 +9,7 @@ L_001_
 count1_ret
 	ret
 
+arg1_
+	long	0
 count1_i_
 	long	0

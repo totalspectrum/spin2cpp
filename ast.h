@@ -125,14 +125,9 @@ enum astkind {
     AST_GENERICTYPE = 84,
     AST_VOIDTYPE,
     AST_SEQUENCE,
-    AST_WAITCNT,
-    
-    AST_WAITPEQ = 88,
-    AST_WAITPNE,
-    AST_WAITVID,
     AST_CONDRESULT,
 
-    AST_FORATLEASTONCE = 92,
+    AST_FORATLEASTONCE = 88,
     AST_ISBETWEEN,  /* left is between two values on right */
     AST_INLINEASM,
 };

@@ -11,5 +11,7 @@ L_001_
 count_ret
 	ret
 
+arg1_
+	long	0
 count_i_
 	long	0

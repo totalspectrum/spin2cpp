@@ -8,6 +8,8 @@ fetchx
 fetchx_ret
 	ret
 
+arg1_
+	long	0
 ptr_dat__
 	long	@@@dat_
 result_

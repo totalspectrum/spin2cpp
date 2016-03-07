@@ -394,26 +394,6 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         }
         flexbuf_printf(f, ";"); PrintNewline(f);
         break;
-    case AST_WAITCNT:
-        flexbuf_printf(f, "%*cwaitcnt(", indent, ' ');
-        PrintExpr(f, ast->left);
-        flexbuf_printf(f, ");"); PrintNewline(f);
-        break;
-    case AST_WAITPEQ:
-        flexbuf_printf(f, "%*cwaitpeq(", indent, ' ');
-        PrintExprList(f, ast->left);
-        flexbuf_printf(f, ");"); PrintNewline(f);
-        break;
-    case AST_WAITPNE:
-        flexbuf_printf(f, "%*cwaitpne(", indent, ' ');
-        PrintExprList(f, ast->left);
-        flexbuf_printf(f, ");"); PrintNewline(f);
-        break;
-    case AST_WAITVID:
-        flexbuf_printf(f, "%*cwaitpvid(", indent, ' ');
-        PrintExprList(f, ast->left);
-        flexbuf_printf(f, ");"); PrintNewline(f);
-        break;        
     case AST_ABORT:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cif (!abortChain__) abort();", indent, ' ');

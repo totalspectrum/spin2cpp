@@ -7,3 +7,5 @@ test
 test_ret
 	ret
 
+arg1_
+	long	0

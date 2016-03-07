@@ -6,6 +6,8 @@ foo
 foo_ret
 	ret
 
+arg1_
+	long	0
 ptr_L_001__
 	long	@@@L_001_
 result_

@@ -17,6 +17,8 @@ L_002_
 test_ret
 	ret
 
+arg1_
+	long	0
 test_tmp001_
 	long	0
 test_x_
