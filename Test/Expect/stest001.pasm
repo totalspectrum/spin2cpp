@@ -1,8 +1,8 @@
 DAT
 	org	0
 
-dummy
-dummy_ret
+_dummy
+_dummy_ret
 	ret
 
 arg1_

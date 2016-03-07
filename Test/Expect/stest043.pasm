@@ -1,7 +1,7 @@
 DAT
 	org	0
 
-blah
+_blah
 	mov	blah_tmp001_, #0
 	cmps	arg1_, #0 wc,wz
  if_ae	jmp	#L_001_
@@ -9,7 +9,7 @@ blah
  if_b	neg	blah_tmp001_, #1
 L_001_
 	mov	result_, blah_tmp001_
-blah_ret
+_blah_ret
 	ret
 
 arg1_

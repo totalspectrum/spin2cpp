@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-dummy
+_dummy
 	mov	result_, imm_1024_
-dummy_ret
+_dummy_ret
 	ret
 
 arg1_

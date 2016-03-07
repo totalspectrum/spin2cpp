@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-pokeb
+_pokeb
 	wrbyte	arg2_, arg1_
-pokeb_ret
+_pokeb_ret
 	ret
 
 arg1_

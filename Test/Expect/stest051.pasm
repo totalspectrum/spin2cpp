@@ -1,10 +1,10 @@
 DAT
 	org	0
 
-foo
+_foo
 	rdlong	result_, #0
 	add	result_, #2
-foo_ret
+_foo_ret
 	ret
 
 arg1_

@@ -1,10 +1,10 @@
 DAT
 	org	0
 
-test
+_test
 	mov	DIRA, #1
 	mov	OUTA, #1
-test_ret
+_test_ret
 	ret
 
 arg1_

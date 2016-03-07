@@ -1,14 +1,14 @@
 DAT
 	org	0
 
-setpin
+_setpin
 	or	OUTA, #2
-setpin_ret
+_setpin_ret
 	ret
 
-clrpin
+_clrpin
 	andn	OUTA, #2
-clrpin_ret
+_clrpin_ret
 	ret
 
 arg1_

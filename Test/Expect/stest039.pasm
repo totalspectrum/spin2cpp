@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-blah
+_blah
 	mov	result_, #1
-blah_ret
+_blah_ret
 	ret
 
 arg1_

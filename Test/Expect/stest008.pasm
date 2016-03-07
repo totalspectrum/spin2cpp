@@ -1,10 +1,10 @@
 DAT
 	org	0
 
-sum
+_sum
 	add	arg1_, arg2_
 	mov	result_, arg1_
-sum_ret
+_sum_ret
 	ret
 
 arg1_

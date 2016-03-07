@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-foo
+_foo
 	neg	result_, #1
-foo_ret
+_foo_ret
 	ret
 
 arg1_

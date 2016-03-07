@@ -1,20 +1,20 @@
 DAT
 	org	0
 
-divmod16
-	mov	divmod16_x_, arg1_
-	mov	divmod16_y_, arg2_
-	mov	muldiva_, divmod16_x_
-	mov	muldivb_, divmod16_y_
+_divmod16
+	mov	_divmod16_x, arg1_
+	mov	_divmod16_y, arg2_
+	mov	muldiva_, _divmod16_x
+	mov	muldivb_, _divmod16_y
 	call	#divide_
-	mov	divmod16_q_, muldivb_
-	mov	muldiva_, divmod16_x_
-	mov	muldivb_, divmod16_y_
+	mov	_divmod16_q, muldivb_
+	mov	muldiva_, _divmod16_x
+	mov	muldivb_, _divmod16_y
 	call	#divide_
-	shl	divmod16_q_, #16
-	or	divmod16_q_, muldiva_
-	mov	result_, divmod16_q_
-divmod16_ret
+	shl	_divmod16_q, #16
+	or	_divmod16_q, muldiva_
+	mov	result_, _divmod16_q
+_divmod16_ret
 	ret
 ' code originally from spin interpreter, modified slightly
 
@@ -41,17 +41,17 @@ mdiv2__
 divide__ret
 	ret
 
+_divmod16_q
+	long	0
+_divmod16_x
+	long	0
+_divmod16_y
+	long	0
 arg1_
 	long	0
 arg2_
 	long	0
 arg3_
-	long	0
-divmod16_q_
-	long	0
-divmod16_x_
-	long	0
-divmod16_y_
 	long	0
 itmp1_
 	long	0

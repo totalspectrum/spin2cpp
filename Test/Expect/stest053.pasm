@@ -8,26 +8,32 @@ CON
 DAT
 	org	0
 
-serchar
-	mov	serchar_val_, arg1_
+_serchar
+	mov	_serchar_val, arg1_
 	or	OUTA, imm_1073741824_
 	or	DIRA, imm_1073741824_
-	or	serchar_val_, #256
-	shl	serchar_val_, #1
-	mov	serchar_waitcycles_, CNT
-	mov	serchar__idx__0000_, #10
+	or	_serchar_val, #256
+	shl	_serchar_val, #1
+	mov	_serchar_waitcycles, CNT
+	mov	_serchar__idx__0000, #10
 L_001_
-	add	serchar_waitcycles_, imm_694_
-	mov	arg1_, serchar_waitcycles_
+	add	_serchar_waitcycles, imm_694_
+	mov	arg1_, _serchar_waitcycles
 	waitcnt	arg1_, #0
-	test	serchar_val_, #1 wz
+	test	_serchar_val, #1 wz
  if_ne	or	OUTA, imm_1073741824_
  if_e	andn	OUTA, imm_1073741824_
-	shr	serchar_val_, #1
-	djnz	serchar__idx__0000_, #L_001_
-serchar_ret
+	shr	_serchar_val, #1
+	djnz	_serchar__idx__0000, #L_001_
+_serchar_ret
 	ret
 
+_serchar__idx__0000
+	long	0
+_serchar_val
+	long	0
+_serchar_waitcycles
+	long	0
 arg1_
 	long	0
 arg2_
@@ -39,10 +45,4 @@ imm_1073741824_
 imm_694_
 	long	694
 result_
-	long	0
-serchar__idx__0000_
-	long	0
-serchar_val_
-	long	0
-serchar_waitcycles_
 	long	0

@@ -1,17 +1,21 @@
 DAT
 	org	0
 
-strlen
-	neg	strlen_r_, #1
+_strlen
+	neg	_strlen_r, #1
 L_001_
-	rdbyte	strlen_c_, arg1_ wz
+	rdbyte	_strlen_c, arg1_ wz
 	add	arg1_, #1
-	add	strlen_r_, #1
+	add	_strlen_r, #1
  if_ne	jmp	#L_001_
-	mov	result_, strlen_r_
-strlen_ret
+	mov	result_, _strlen_r
+_strlen_ret
 	ret
 
+_strlen_c
+	long	0
+_strlen_r
+	long	0
 arg1_
 	long	0
 arg2_
@@ -19,8 +23,4 @@ arg2_
 arg3_
 	long	0
 result_
-	long	0
-strlen_c_
-	long	0
-strlen_r_
 	long	0

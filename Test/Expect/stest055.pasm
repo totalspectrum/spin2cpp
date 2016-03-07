@@ -1,11 +1,11 @@
 DAT
 	org	0
 
-fetchx
-	add	ptr_dat__, #4
-	rdlong	result_, ptr_dat__
-	sub	ptr_dat__, #4
-fetchx_ret
+_fetchx
+	add	ptr__dat__, #4
+	rdlong	result_, ptr__dat__
+	sub	ptr__dat__, #4
+_fetchx_ret
 	ret
 
 arg1_
@@ -14,11 +14,11 @@ arg2_
 	long	0
 arg3_
 	long	0
-ptr_dat__
-	long	@@@dat_
+ptr__dat__
+	long	@@@_dat_
 result_
 	long	0
 	long
-dat_
+_dat_
 	byte	$44,$33,$22,$11,$88,$77,$66,$55
 	byte	$cc,$bb,$aa,$99

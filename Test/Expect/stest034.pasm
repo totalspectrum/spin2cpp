@@ -1,11 +1,11 @@
 DAT
 	org	0
 
-indsum
+_indsum
 	rdlong	result_, arg1_
 	rdlong	indsum_tmp003_, arg2_
 	add	result_, indsum_tmp003_
-indsum_ret
+_indsum_ret
 	ret
 
 arg1_

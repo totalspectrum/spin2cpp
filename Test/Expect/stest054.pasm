@@ -1,11 +1,11 @@
 DAT
 	org	0
 
-testit
+_testit
 	test	arg1_, #4 wz
  if_ne	mov	result_, arg2_
  if_e	mov	result_, #0
-testit_ret
+_testit_ret
 	ret
 
 arg1_

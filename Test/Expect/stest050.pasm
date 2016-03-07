@@ -3,16 +3,16 @@ CON
 DAT
 	org	0
 
-pushData
+_pushData
 	andn	OUTA, #all_pin_mask
 	shl	arg1_, #2
 	or	OUTA, arg1_
-pushData_ret
+_pushData_ret
 	ret
 
-all_pin_low
+_all_pin_low
 	andn	OUTA, #all_pin_mask
-all_pin_low_ret
+_all_pin_low_ret
 	ret
 
 arg1_

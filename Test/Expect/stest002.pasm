@@ -1,12 +1,12 @@
 DAT
 	org	0
 
-foo
-foo_ret
+_foo
+_foo_ret
 	ret
 
-bar
-bar_ret
+_bar
+_bar_ret
 	ret
 
 arg1_

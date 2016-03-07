@@ -3,10 +3,10 @@ CON
 DAT
 	org	0
 
-inc
+_inc
 	add	arg1_, #incval
 	mov	result_, arg1_
-inc_ret
+_inc_ret
 	ret
 
 arg1_

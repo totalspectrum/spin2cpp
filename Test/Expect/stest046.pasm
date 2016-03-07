@@ -1,18 +1,18 @@
 DAT
 	org	0
 
-ez_pulse_in
-	mov	ez_pulse_in_r_, #1
-	shl	ez_pulse_in_r_, arg1_
-	waitpne	ez_pulse_in_r_, ez_pulse_in_r_
-	waitpeq	ez_pulse_in_r_, ez_pulse_in_r_
+_ez_pulse_in
+	mov	_ez_pulse_in_r, #1
+	shl	_ez_pulse_in_r, arg1_
+	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
+	waitpeq	_ez_pulse_in_r, _ez_pulse_in_r
 	neg	muldiva_, CNT
-	waitpne	ez_pulse_in_r_, ez_pulse_in_r_
+	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
 	add	muldiva_, CNT
 	mov	muldivb_, imm_1000000_
 	call	#divide_
 	mov	result_, muldivb_
-ez_pulse_in_ret
+_ez_pulse_in_ret
 	ret
 ' code originally from spin interpreter, modified slightly
 
@@ -39,13 +39,13 @@ mdiv2__
 divide__ret
 	ret
 
+_ez_pulse_in_r
+	long	0
 arg1_
 	long	0
 arg2_
 	long	0
 arg3_
-	long	0
-ez_pulse_in_r_
 	long	0
 imm_1000000_
 	long	1000000

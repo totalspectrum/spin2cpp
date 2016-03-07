@@ -1,22 +1,28 @@
 DAT
 	org	0
 
-test1
-	mov	test1_x_, arg1_ wz
-	mov	test1_y_, arg2_
-	mov	test1_z_, arg3_
+_test1
+	mov	_test1_x, arg1_ wz
+	mov	_test1_y, arg2_
+	mov	_test1_z, arg3_
  if_ne	jmp	#L_002_
-	cmps	test1_y_, #0 wz
+	cmps	_test1_y, #0 wz
  if_ne	jmp	#L_002_
  if_e	jmp	#L_001_
 L_002_
-	mov	result_, test1_z_
-	jmp	#test1_ret
+	mov	result_, _test1_z
+	jmp	#_test1_ret
 L_001_
 	neg	result_, #1
-test1_ret
+_test1_ret
 	ret
 
+_test1_x
+	long	0
+_test1_y
+	long	0
+_test1_z
+	long	0
 arg1_
 	long	0
 arg2_
@@ -24,10 +30,4 @@ arg2_
 arg3_
 	long	0
 result_
-	long	0
-test1_x_
-	long	0
-test1_y_
-	long	0
-test1_z_
 	long	0

@@ -1,15 +1,15 @@
 DAT
 	org	0
 
-sum
+_sum
 	add	arg1_, arg2_
 	mov	result_, arg1_
-sum_ret
+_sum_ret
 	ret
 
-one
+_one
 	mov	result_, #1
-one_ret
+_one_ret
 	ret
 
 arg1_

@@ -1,14 +1,14 @@
 DAT
 	org	0
 
-select
+_select
 	cmps	arg1_, #0 wz
  if_ne	mov	select_tmp001_, arg2_
  if_e	mov	select_tmp002_, arg3_
  if_e	add	select_tmp002_, #2
  if_e	mov	select_tmp001_, select_tmp002_
 	mov	result_, select_tmp001_
-select_ret
+_select_ret
 	ret
 
 arg1_

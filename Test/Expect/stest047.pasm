@@ -1,10 +1,10 @@
 DAT
 	org	0
 
-addone
+_addone
 	add	arg1_, #1
 	mov	result_, arg1_
-addone_ret
+_addone_ret
 	ret
 
 arg1_

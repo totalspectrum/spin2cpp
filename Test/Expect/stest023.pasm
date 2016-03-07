@@ -1,15 +1,15 @@
 DAT
 	org	0
 
-blah
+_blah
 	mov	result_, #3
-blah_ret
+_blah_ret
 	ret
 
-bar
+_bar
 	add	arg1_, #1
 	mov	result_, arg1_
-bar_ret
+_bar_ret
 	ret
 
 arg1_

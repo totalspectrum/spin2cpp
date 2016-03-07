@@ -1,15 +1,17 @@
 DAT
 	org	0
 
-waitcycles
-	mov	waitcycles_end_, CNT
-	add	waitcycles_end_, arg1_
+_waitcycles
+	mov	_waitcycles_end, CNT
+	add	_waitcycles_end, arg1_
 L_001_
-	cmps	CNT, waitcycles_end_ wc,wz
+	cmps	CNT, _waitcycles_end wc,wz
  if_b	jmp	#L_001_
-waitcycles_ret
+_waitcycles_ret
 	ret
 
+_waitcycles_end
+	long	0
 arg1_
 	long	0
 arg2_
@@ -17,6 +19,4 @@ arg2_
 arg3_
 	long	0
 result_
-	long	0
-waitcycles_end_
 	long	0

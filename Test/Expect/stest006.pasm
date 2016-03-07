@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-id
+_id
 	mov	result_, arg1_
-id_ret
+_id_ret
 	ret
 
 arg1_

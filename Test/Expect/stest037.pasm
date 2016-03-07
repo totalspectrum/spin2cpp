@@ -1,11 +1,11 @@
 DAT
 	org	0
 
-fetch
+_fetch
 	shl	arg2_, #1
 	add	arg2_, arg1_
 	rdword	result_, arg2_
-fetch_ret
+_fetch_ret
 	ret
 
 arg1_

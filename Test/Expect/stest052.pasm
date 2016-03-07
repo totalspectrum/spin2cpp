@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-foo
+_foo
 	mov	result_, ptr_L_001__
-foo_ret
+_foo_ret
 	ret
 
 arg1_

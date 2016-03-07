@@ -1,14 +1,14 @@
 DAT
 	org	0
 
-val511
+_val511
 	mov	result_, #511
-val511_ret
+_val511_ret
 	ret
 
-val512
+_val512
 	mov	result_, imm_512_
-val512_ret
+_val512_ret
 	ret
 
 arg1_

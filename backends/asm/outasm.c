@@ -70,9 +70,9 @@ IdentifierLocalName(Function *func, const char *name)
     Module *P = func->parse;
 
     if (IsTopLevel(P)) {
-        snprintf(temp, sizeof(temp)-1, "%s_%s_", func->name, name);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
     } else {
-        snprintf(temp, sizeof(temp)-1, "%s_%s_%s_", P->basename, func->name, name);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s", P->basename, func->name, name);
     }
     return strdup(temp);
 }
@@ -82,11 +82,12 @@ IdentifierGlobalName(Module *P, const char *name)
 {
     char temp[1024];
     if (IsTopLevel(P)) {
-        return name;
+        // avoid conflict with built-in assembler names by prepending "_"
+        snprintf(temp, sizeof(temp)-1, "_%s", name);
     } else {
-        snprintf(temp, sizeof(temp)-1, "%s_%s", P->basename, name);
-        return strdup(temp);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s", P->basename, name);
     }
+    return strdup(temp);
 }
 
 static int IsMemRef(Operand *op)

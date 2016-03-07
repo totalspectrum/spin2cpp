@@ -1,9 +1,9 @@
 DAT
 	org	0
 
-peek
+_peek
 	rdbyte	result_, arg1_
-peek_ret
+_peek_ret
 	ret
 
 arg1_

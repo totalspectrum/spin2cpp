@@ -1,21 +1,21 @@
 DAT
 	org	0
 
-ismagic
+_ismagic
 	cmps	arg1_, #511 wz
- if_e	mov	ismagic_a_, #1
- if_ne	mov	ismagic_a_, #0
-	mov	result_, ismagic_a_
-ismagic_ret
+ if_e	mov	_ismagic_a, #1
+ if_ne	mov	_ismagic_a, #0
+	mov	result_, _ismagic_a
+_ismagic_ret
 	ret
 
+_ismagic_a
+	long	0
 arg1_
 	long	0
 arg2_
 	long	0
 arg3_
-	long	0
-ismagic_a_
 	long	0
 result_
 	long	0

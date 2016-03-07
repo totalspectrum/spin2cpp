@@ -1,23 +1,23 @@
 DAT
 	org	0
 
-prod
+_prod
 	mov	muldiva_, arg1_
 	mov	muldivb_, arg2_
 	call	#multiply_
 	mov	result_, muldiva_
-prod_ret
+_prod_ret
 	ret
 
-cube
+_cube
 	mov	arg2_, arg1_
 	mov	cube_tmp001_, arg2_
 	mov	arg1_, arg2_
-	call	#prod
+	call	#_prod
 	mov	arg2_, result_
 	mov	arg1_, cube_tmp001_
-	call	#prod
-cube_ret
+	call	#_prod
+_cube_ret
 	ret
 
 multiply_
