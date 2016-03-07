@@ -41,6 +41,10 @@ divide__ret
 
 arg1_
 	long	0
+arg2_
+	long	0
+arg3_
+	long	0
 ez_pulse_in_r_
 	long	0
 imm_1000000_

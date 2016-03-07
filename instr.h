@@ -56,6 +56,8 @@ typedef enum IROpcode {
     OPC_SHR,
     OPC_SUB,
     OPC_TEST,
+    OPC_TESTN,
+    OPC_WAITCNT,
     OPC_WRBYTE,
     OPC_WRLONG,
     OPC_WRWORD,
@@ -65,6 +67,9 @@ typedef enum IROpcode {
     /* this must immediately follow the actual instructions */
     OPC_GENERIC,
 
+    /* like OPC_GENERIC, but is guaranteed not to write its destination */
+    OPC_GENERIC_NR,
+    
     /* place non-instructions below here */
     
     /* a literal string to place in the output */

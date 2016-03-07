@@ -73,12 +73,14 @@ InstrSetsDst(IR *ir)
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
+  case OPC_TESTN:
+  case OPC_GENERIC_NR:
   case OPC_LABEL:
     return false;
   default:
     break;
   }
-  return true;
+  return !(ir->flags & FLAG_NR);
 }
 
 // recognizes branch instructions
@@ -610,6 +612,8 @@ HasSideEffects(IR *ir)
     }
     switch (ir->opc) {
     case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+    case OPC_WAITCNT:
     case OPC_WRBYTE:
     case OPC_WRLONG:
     case OPC_WRWORD:

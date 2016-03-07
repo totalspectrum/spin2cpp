@@ -40,6 +40,8 @@ arg1_
 	long	0
 arg2_
 	long	0
+arg3_
+	long	0
 hyp_tmp002_
 	long	0
 hyp_y_

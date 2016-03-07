@@ -1,10 +1,7 @@
 *.exe
 *.zip
-foo.spin
-foo.c
-foo.cpp
-foo.h
-foo.pasm
+*~
+foo.*
 build*/
 spincvt/
 spinconvert/bin/

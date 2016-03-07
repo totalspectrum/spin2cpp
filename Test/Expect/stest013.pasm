@@ -45,6 +45,8 @@ arg1_
 	long	0
 arg2_
 	long	0
+arg3_
+	long	0
 cube_tmp001_
 	long	0
 itmp1_
