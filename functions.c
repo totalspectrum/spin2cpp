@@ -48,27 +48,28 @@ EnterVariable(int kind, SymbolTable *stab, const char *name, AST *type)
 }
 
 int
-EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count)
+EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
 {
     AST *lower;
     AST *ast;
     Symbol *sym;
     int size;
-    int typesize = 4;
+    int typesize = EvalConstExpr(symtype->left);
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
             switch (ast->kind) {
             case AST_IDENTIFIER:
-                sym = EnterVariable(kind, stab, ast->d.string, symval);
-                sym->offset = typesize * count++;
+                sym = EnterVariable(kind, stab, ast->d.string, symtype);
+                sym->offset = offset;
+                offset += typesize;
                 break;
             case AST_ARRAYDECL:
-                sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symval, ast->right));
+                sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symtype, ast->right));
                 size = EvalConstExpr(ast->right);
-                sym->offset = typesize * count;
-                count += size;
+                sym->offset = offset;
+                offset += size * typesize;
                 break;
             case AST_ANNOTATION:
                 /* just ignore it */
@@ -79,10 +80,10 @@ EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count)
             }
         } else {
             ERROR(lower, "Expected list of variables, found %d instead", lower->kind);
-            return 0;
+            return offset;
         }
     }
-    return count;
+    return offset;
 }
 
 /*
@@ -252,8 +253,9 @@ doDeclareFunction(AST *funcblock)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0);
-    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0);
+
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0) / LONG_SIZE;
+    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0) / LONG_SIZE;
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
@@ -433,7 +435,7 @@ void
 AddLocalVariable(Function *func, AST *var)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->localarray_len);
+    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->localarray_len * LONG_SIZE);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     if (func->localarray) {
         func->localarray_len++;

@@ -24,6 +24,8 @@ static Operand *quitlabel;
 
 static Operand *datbase;
 static Operand *datlabel;
+static Operand *objbase;
+static Operand *objlabel;
 
 typedef struct OperandList {
   struct OperandList *next;
@@ -561,6 +563,30 @@ NewFunctionTempRegister()
 }
 
 static Operand *
+SizedMemRef(int size, Operand *addr, int offset)
+{
+    Operand *temp;
+    if (size == 1) {
+        temp = NewOperand(BYTE_REF, (char *)addr, offset);
+    } else if (size == 2) {
+        temp = NewOperand(WORD_REF, (char *)addr, offset);
+    } else {
+        temp = NewOperand(LONG_REF, (char *)addr, offset);
+        if (size != 4) {
+            ERROR(NULL, "Illegal size for memory reference");
+        }
+    }
+    return temp;
+}
+
+static Operand *
+TypedMemRef(AST *type, Operand *addr, int offset)
+{
+    int size = EvalConstExpr(type->left);
+    return SizedMemRef(size, addr, offset);
+}
+
+static Operand *
 LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
@@ -571,7 +597,7 @@ LabelRef(IRList *irl, Symbol *sym)
         datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
         datbase = NewImmediatePtr(datlabel);
     }
-    temp = NewOperand(LONG_REF, (char *)datbase, (int)lab->offset);
+    temp = TypedMemRef(lab->type, datbase, (int)lab->offset);
     return temp;
 }
 
@@ -597,7 +623,17 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               Operand *addr = NewImmediate(sym->offset);
               return NewOperand(LONG_REF, (char *)addr, 0);
           }
-          return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
+          if (0) {
+              // COG memory
+              return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
+          } else {
+              // HUB memory
+              if (!objbase) {
+                  objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
+                  objbase = NewImmediatePtr(objlabel);
+              }
+              return TypedMemRef((AST *)sym->val, objbase, (int)sym->offset);
+          }
       case SYM_FUNCTION:
           fcall = NewAST(AST_FUNCCALL, expr, NULL);
           return CompileFunccall(irl, fcall);
@@ -1200,21 +1236,9 @@ static Operand *
 CompileMemref(IRList *irl, AST *expr)
 {
   Operand *addr = CompileExpression(irl, expr->right);
-  Operand *temp;
   AST *type = expr->left;
-  int size = EvalConstExpr(type->left);
 
-  if (size == 1) {
-      temp = NewOperand(BYTE_REF, (char *)addr, 0);
-  } else if (size == 2) {
-      temp = NewOperand(WORD_REF, (char *)addr, 0);
-  } else {
-      temp = NewOperand(LONG_REF, (char *)addr, 0);
-      if (size != 4) {
-          ERROR(expr, "Illegal size for memory reference");
-      }
-  }
-  return temp;
+  return TypedMemRef(type, addr, 0);
 }
 
 static Operand *
@@ -1832,7 +1856,7 @@ void EmitGlobals(IRList *irl)
 }
 
 void
-CompileIntermediate(IRList *irl, Module *P)
+CompileIntermediate(Module *P)
 {
     Function *f;
 
@@ -1877,7 +1901,7 @@ CompileToIR(IRList *irl, Module *P)
     Function *f;
 
     // generate code for inlining
-    CompileIntermediate(irl, P);
+    CompileIntermediate(P);
     // finally emit output
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has

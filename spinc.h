@@ -41,6 +41,8 @@
 
 #define NUM_COGS 8
 
+#define LONG_SIZE 4
+
 /* some globals */
 
 /* compilation flags */
@@ -266,7 +268,7 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST 
 void DeclareAnnotation(AST *annotation);
 void PrintDataBlock(Flexbuf *f, Module *P, int isBinary);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
-int  EnterVars(int kind, SymbolTable *stab, void *symval, AST *varlist, int count);
+int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
 
 // find the variable symbol for an identifier or array decl
 Symbol *VarSymbol(Function *func, AST *ast);
@@ -345,6 +347,9 @@ Symbol *LookupSymbolInFunc(Function *func, const char *name);
  */
 int FuncParameterNum(Function *func, AST *var);
 
-void CompileIntermediate(IRList *irl, Module *P);
+//
+// compile IR code for the functions within a module
+//
+void CompileIntermediate(Module *P);
 
 #endif

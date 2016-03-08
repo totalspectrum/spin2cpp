@@ -225,7 +225,6 @@ InitGlobalModule(void)
 {
     SymbolTable *table;
     Symbol *sym;
-    static IRList globalIR;
 
     current = globalModule = NewModule("<system>");
     table = &globalModule->objsyms;
@@ -244,7 +243,7 @@ InitGlobalModule(void)
       InferTypes(globalModule);
       ProcessFuncs(globalModule);
       SpinTransform(globalModule);
-      CompileIntermediate(&globalIR, globalModule);
+      CompileIntermediate(globalModule);
       curfunc = NULL;
     }
 }
@@ -352,7 +351,8 @@ DeclareVariables(Module *P)
     AST *upper;
     AST *curtype;
     AST *ast;
-
+    int offset;
+    
     for (upper = P->varblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
             ERROR(upper, "Expected list holder\n");
@@ -377,7 +377,7 @@ DeclareVariables(Module *P)
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return;
         }
-        EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, 0);
+        offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
     }
 }
 
