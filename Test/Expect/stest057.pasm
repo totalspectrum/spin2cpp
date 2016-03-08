@@ -2,30 +2,30 @@ DAT
 	org	0
 
 _myfill
-L_005_
+L_014_
 	wrlong	arg2_, arg1_
 	add	arg1_, #4
-	djnz	arg3_, #L_005_
+	djnz	arg3_, #L_014_
 _myfill_ret
 	ret
 
 _fillzero
 	mov	arg3_, arg2_
 	mov	arg2_, #0
-L_004_
+L_013_
 	wrlong	arg2_, arg1_
 	add	arg1_, #4
-	djnz	arg3_, #L_004_
+	djnz	arg3_, #L_013_
 _fillzero_ret
 	ret
 
 _fillone
 	mov	arg3_, arg2_
 	neg	arg2_, #1
-L_005_
+L_014_
 	wrlong	arg2_, arg1_
 	add	arg1_, #4
-	djnz	arg3_, #L_005_
+	djnz	arg3_, #L_014_
 _fillone_ret
 	ret
 

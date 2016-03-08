@@ -15,8 +15,8 @@ _serchar
 	or	_serchar_val, #256
 	shl	_serchar_val, #1
 	mov	_serchar_waitcycles, CNT
-	mov	_serchar__idx__0000, #10
-L_001_
+	mov	_serchar__idx__0006, #10
+L_010_
 	add	_serchar_waitcycles, imm_694_
 	mov	arg1_, _serchar_waitcycles
 	waitcnt	arg1_, #0
@@ -24,11 +24,11 @@ L_001_
  if_ne	or	OUTA, imm_1073741824_
  if_e	andn	OUTA, imm_1073741824_
 	shr	_serchar_val, #1
-	djnz	_serchar__idx__0000, #L_001_
+	djnz	_serchar__idx__0006, #L_010_
 _serchar_ret
 	ret
 
-_serchar__idx__0000
+_serchar__idx__0006
 	long	0
 _serchar_val
 	long	0

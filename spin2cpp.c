@@ -206,6 +206,18 @@ const char system_spincode[] =
 "    lockret id\n"
 "  endasm\n"
 "  return 0\n"
+"pri longfill(ptr, val, count)\n"
+"  repeat count\n"
+"    long[ptr] := val\n"
+"    ptr += 4\n"
+"pri wordfill(ptr, val, count)\n"
+"  repeat count\n"
+"    word[ptr] := val\n"
+"    ptr += 2\n"
+"pri bytefill(ptr, val, count)\n"
+"  repeat count\n"
+"    byte[ptr] := val\n"
+"    ptr += 1\n"
 ;
 
 void
@@ -229,6 +241,9 @@ InitGlobalModule(void)
       strToLex(&globalModule->L, system_spincode, "<system>");
       yyparse();
       ProcessModule(globalModule);
+      InferTypes(globalModule);
+      ProcessFuncs(globalModule);
+      SpinTransform(globalModule);
       CompileIntermediate(&globalIR, globalModule);
       curfunc = NULL;
     }

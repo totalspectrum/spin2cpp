@@ -2,7 +2,7 @@ DAT
 	org	0
 
 _foo
-	mov	result_, ptr_L_001__
+	mov	result_, ptr_L_010__
 _foo_ret
 	ret
 
@@ -12,11 +12,11 @@ arg2_
 	long	0
 arg3_
 	long	0
-ptr_L_001__
-	long	@@@L_001_
+ptr_L_010__
+	long	@@@L_010_
 result_
 	long	0
 
-L_001_
+L_010_
 	byte	"hello"
 	byte	0
