@@ -121,6 +121,7 @@ enum flags {
     // rest of the bits are used by the optimizer
 
     FLAG_LABEL_USED = 0x100,
+    FLAG_INSTR_NEW  = 0x200,
     FLAG_OPTIMIZER = 0xFFFF00,
 };
 

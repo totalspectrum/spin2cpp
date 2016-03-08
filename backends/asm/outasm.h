@@ -27,6 +27,7 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 //
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *NewImmediate(int32_t val);
+Operand *NewCodeLabel();
 
 // utility functions
 IRCond InvertCond(IRCond v);
@@ -43,6 +44,8 @@ void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);
 bool ShouldBeInlined(Function *f);
 int  ExpandInlines(IRList *irl);
+
+bool IsDummy(IR *ir);
 
 //
 // back end data for functions

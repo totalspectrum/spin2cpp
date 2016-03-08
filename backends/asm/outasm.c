@@ -162,24 +162,65 @@ IR *DupIR(IR *old)
     return ir;
 }
 
+static void
+ReplaceJumpTarget(IR *jmpir, Operand *dst)
+{
+    switch(jmpir->opc) {
+    case OPC_JUMP:
+        jmpir->dst = dst;
+        break;
+    case OPC_DJNZ:
+        jmpir->src = dst;
+        break;
+    default:
+        ERROR(NULL, "Unable to replace jump target");
+    }
+}
+
 //
 // replace the individual IR "ir" in list "irl" with a list of
 // instructions from function f; used for e.g. expanding inline functions
 //
-void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func)
+void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
 {
     IR *newir;
-    IR *dest = ir->prev;
+    IR *dest = origir->prev;
     IRList *insert = FuncIRL(func);
+    IR *ir;
     
-    DeleteIR(irl, ir);
+    // replace all labels in the original inline code
+    for (ir = insert->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_LABEL) {
+            if (ir->dst == FuncData(func)->asmretname) {
+                // do nothing
+            } else {
+                IR *jmpir;
+                ir->dst = NewCodeLabel();
+                jmpir = ir->aux;
+                if (!jmpir) {
+                    ERROR(NULL, "internal error: unable to find jump target");
+                    return;
+                }
+                ReplaceJumpTarget(jmpir, ir->dst);
+            }
+        }
+    }
+    
+    DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
+        if (ir->opc == OPC_DEAD) {
+            // remove all dead notes, etc. from the original inline
+            ir = ir->next;
+            continue;
+        }
         newir = DupIR(ir);
+        newir->flags |= FLAG_INSTR_NEW;
         // leave off the asm return name, if it's there
         // FIXME: this is probably an obsolete test now
-        if (newir->opc == OPC_LABEL && newir->dst == FuncData(func)->asmretname) {
-            /* do nothing */
+        if (newir->opc == OPC_LABEL &&
+            newir->dst == FuncData(func)->asmretname) {
+                /* do nothing */
         } else {
             InsertAfterIR(irl, dest, newir);
             dest = newir;
@@ -561,7 +602,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           fcall = NewAST(AST_FUNCCALL, expr, NULL);
           return CompileFunccall(irl, fcall);
       default:
-          ERROR(expr, "Symbol %s is of a type not handle by PASM output yet", name);
+          ERROR(expr, "Symbol %s is of a type not handled by PASM output yet", name);
           /* fall through */
       case SYM_LOCALVAR:
       case SYM_TEMPVAR:

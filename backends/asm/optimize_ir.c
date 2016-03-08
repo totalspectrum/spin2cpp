@@ -18,7 +18,7 @@
 //
 
 /* IR instructions that have no effect on the generated code */
-static bool IsDummy(IR *op)
+bool IsDummy(IR *op)
 {
   switch(op->opc) {
   case OPC_COMMENT:
@@ -143,20 +143,38 @@ IsImmediate(Operand *op)
     return op->kind == IMM_INT;
 }
 
+static Operand *
+JumpDest(IR *jmp)
+{
+    switch (jmp->opc) {
+    case OPC_DJNZ:
+        return jmp->src;
+    default:
+        return jmp->dst;
+    }
+}
+
 /*
  * true if a branch target is after a given instruction
+ * (or equal to that instruction)
  */
 static bool
-JumpIsAfter(IR *ir, IR *jmp)
+JumpIsAfterOrEqual(IR *ir, IR *jmp)
 {
     // ptr to jump destination gets stored in aux
     if (jmp->aux) {
         IR *label = (IR *)jmp->aux;
-        return (label->addr > ir->addr);
+        return (label->addr >= ir->addr);
     }
-    if (curfunc && jmp->dst == FuncData(curfunc)->asmretname)
+    if (curfunc && JumpDest(jmp) == FuncData(curfunc)->asmretname)
         return true;
     return false;
+}
+
+static bool
+IsForwardJump(IR *jmp)
+{
+    return JumpIsAfterOrEqual(jmp, jmp);
 }
 
 /*
@@ -210,20 +228,22 @@ IsDeadAfter(IR *instr, Operand *op)
             return false;
         }
     } else if (IsJump(ir)) {
-        // FIXME
-        // special case: sometimes we add .dead notes right after a branch
-        // so look here in case that happened
-        IR *irdead;
-        irdead = ir->next;
-        while (irdead && irdead->opc == OPC_DEAD) {
-            if (irdead->dst == op) {
-                return true;
+        if (IsForwardJump(ir)) {
+            // FIXME
+            // special case: sometimes we add .dead notes right after a branch
+            // so look here in case that happened
+            IR *irdead;
+            irdead = ir->next;
+            while (irdead && irdead->opc == OPC_DEAD) {
+                if (irdead->dst == op) {
+                    return true;
+                }
+                irdead = irdead->next;
             }
-            irdead = irdead->next;
         }
         // otherwise, is the jump backwards to before instr?
         // if it is, then we don't know if the opcode is dead
-        if (!JumpIsAfter(instr, ir)) {
+        if (!JumpIsAfterOrEqual(instr, ir)) {
             return false;
         }
         // forward jumps are a problem... we can have sets in two
@@ -318,7 +338,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         // Note though that if we do branch ahead then
         // we cannot assume that assignments are safe!
         assignments_are_safe = false;
-        if (!JumpIsAfter(first_ir, ir)) {
+        if (!JumpIsAfterOrEqual(first_ir, ir)) {
             return NULL;
         }
     }
@@ -544,7 +564,7 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
     if (IsLabel(ir)) {
         return change;
     }
-    if (IsBranch(ir) && !JumpIsAfter(instr, ir)) {
+    if (IsBranch(ir) && !JumpIsAfterOrEqual(instr, ir)) {
       return change;
     }
     if (ir->dst == orig) {
@@ -1232,9 +1252,26 @@ ShouldBeInlined(Function *f)
     if (gl_optimize_flags & OPT_NO_ASM) return false;
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
-        // at present we have no way to re-label things,
-        // so if the function has any labels it cannot be inlined
-        if (IsLabel(ir)) return false;
+        // we have to re-label any labels and branches
+        if (IsLabel(ir)) {
+            if (!ir->aux) {
+                // cannot find a unique jump going to this label
+                return false;
+            }
+            if (!IsTemporaryLabel(ir->dst)) {
+                return false;
+            }
+            continue; // do not count labels against the cost
+        } else if (IsJump(ir)) {
+            if (!ir->aux) {
+                // cannot find where this jump goes
+                return false;
+            }
+            if (!IsTemporaryLabel( ((IR *)ir->aux)->dst )) {
+                return false;
+            }
+        }
+        
         n++;
     }
     return (n <= INLINE_THRESHOLD);
