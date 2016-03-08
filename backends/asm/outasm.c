@@ -2069,6 +2069,23 @@ EmitDatSection(IRList *irl, Module *P)
 }
 
 void
+EmitVarSection(IRList *irl, Module *P)
+{
+  Operand *op;
+  char *data;
+  int len;
+
+  if (!objlabel)
+      return;
+  len = P->varsize;
+  // round up to long boundary
+  len = (len + 3) & ~3;
+  data = calloc(len, 1);
+  op = NewOperand(IMM_STRING, data, len);
+  EmitOp2(irl, OPC_LABELED_BLOB, objlabel, op);
+}
+
+void
 OutputAsmCode(const char *fname, Module *P)
 {
     FILE *f = NULL;
@@ -2090,6 +2107,8 @@ OutputAsmCode(const char *fname, Module *P)
     EmitBuiltins(&irl);
     EmitGlobals(&irl);
     EmitDatSection(&irl, P);
+    EmitVarSection(&irl, P);
+    
     asmcode = IRAssemble(&irl);
     
     current = save;

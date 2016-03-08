@@ -180,6 +180,9 @@ struct modulestate {
     /* the symbol table */
     SymbolTable objsyms;
 
+    /* size of variables & objects used */
+    int varsize;
+    
     /* various file name related strings */
     const char *fullname;    /* full name and path of the file */
     char *basename;    /* the file name without ".spin" */

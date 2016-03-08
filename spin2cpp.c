@@ -351,7 +351,7 @@ DeclareVariables(Module *P)
     AST *upper;
     AST *curtype;
     AST *ast;
-    int offset;
+    int offset = 0;
     
     for (upper = P->varblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
@@ -379,6 +379,7 @@ DeclareVariables(Module *P)
         }
         offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
     }
+    P->varsize = offset;
 }
 
 void
