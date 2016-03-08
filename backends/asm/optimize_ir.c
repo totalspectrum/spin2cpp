@@ -1033,6 +1033,8 @@ OptimizeAddSub(IRList *irl)
 {
     int change = 0;
     IR *ir, *ir_next;
+    IR *prev;
+    
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
@@ -1041,18 +1043,19 @@ OptimizeAddSub(IRList *irl)
         }
         if (!ir_next) break;
         if (ir->opc == OPC_ADD || ir->opc == OPC_SUB) {
-            if (ir_next->opc == OPC_ADD || ir_next->opc == OPC_SUB) {
-                if (ir->dst == ir_next->dst && ir->src->kind == IMM_INT && ir_next->src->kind == IMM_INT)
+            prev = FindPrevSetterForReplace(ir, ir->dst);
+            if (prev && (prev->opc == OPC_ADD || prev->opc == OPC_SUB) ) {
+                if (ir->src->kind == IMM_INT && prev->src->kind == IMM_INT)
                 {
-                    int val = AddSubVal(ir) + AddSubVal(ir_next);
+                    int val = AddSubVal(ir) + AddSubVal(prev);
                     if (val < 0) {
                         val = -val;
-                        ReplaceOpcode(ir_next, OPC_SUB);
+                        ReplaceOpcode(ir, OPC_SUB);
                     } else {
-		        ReplaceOpcode(ir_next, OPC_ADD);
+		        ReplaceOpcode(ir, OPC_ADD);
                     }
-                    ir_next->src = NewImmediate(val);
-                    DeleteIR(irl, ir);
+                    ir->src = NewImmediate(val);
+                    DeleteIR(irl, prev);
                     change = 1;
                 }
             }

@@ -582,7 +582,11 @@ SizedMemRef(int size, Operand *addr, int offset)
 static Operand *
 TypedMemRef(AST *type, Operand *addr, int offset)
 {
-    int size = EvalConstExpr(type->left);
+    int size;
+    while (type->kind == AST_ARRAYTYPE) {
+        type = type->left;
+    }
+    size = EvalConstExpr(type->left);
     return SizedMemRef(size, addr, offset);
 }
 
