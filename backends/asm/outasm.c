@@ -62,7 +62,8 @@ static struct flexbuf hubGlobalVars;
 static int
 IsTopLevel(Module *P)
 {
-    return 1; // FIXME not accurate yet
+    extern Module *allparse;
+    return P == allparse;
 }
 
 static const char *
@@ -562,6 +563,15 @@ NewFunctionTempRegister()
     return GetFunctionTempRegister(f, fdata->curtempreg);
 }
 
+static void
+ValidateObjbase(void)
+{
+    if (!objbase) {
+        objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
+        objbase = NewImmediatePtr(objlabel);
+    }
+}
+
 static Operand *
 SizedMemRef(int size, Operand *addr, int offset)
 {
@@ -632,10 +642,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
           } else {
               // HUB memory
-              if (!objbase) {
-                  objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
-                  objbase = NewImmediatePtr(objlabel);
-              }
+              ValidateObjbase();
               return TypedMemRef((AST *)sym->val, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
@@ -1199,13 +1206,15 @@ CompileFunccall(IRList *irl, AST *expr)
   Symbol *sym;
   Function *func;
   AST *params;
+  Symbol *objsym;
   OperandList *temp;
   Operand *reg;
   IR *ir;
   int n;
 
   /* compile the function operands */
-  sym = FindFuncSymbol(expr, NULL, NULL);
+  objsym = NULL;
+  sym = FindFuncSymbol(expr, NULL, &objsym);
   if (!sym || sym->type != SYM_FUNCTION) {
     ERROR(expr, "expected function symbol");
     return NewImmediate(0);
@@ -1220,7 +1229,14 @@ CompileFunccall(IRList *irl, AST *expr)
   EmitParameterList(irl, temp, func);
 
   /* emit the call */
-  ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+  if (objsym) {
+      ValidateObjbase();
+      EmitOp2(irl, OPC_ADD, objbase, NewImmediate(objsym->offset));
+      ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+      EmitOp2(irl, OPC_SUB, objbase, NewImmediate(objsym->offset));
+  } else {
+      ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+  }
   ir->aux = (void *)func; // remember the function for optimization purposes
 
   /* mark parameters as dead */
