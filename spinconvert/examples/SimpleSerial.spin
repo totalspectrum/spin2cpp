@@ -62,6 +62,17 @@ PUB dec(value) | i, x
       tx("0")                                                                   'If zero digit (or only digit) output it
     i /= 10                                                                     'Update divisor
 
+PUB hex(val, digits) | shft, x
+  shft := (digits - 1) << 2
+  repeat digits
+    x := (val >> shft) & $F
+    shft -= 4
+    if (x => 10)
+      x := (x - 10) + "A"
+    else
+      x := x + "0"
+    tx(x)
+
 
 ''
 '' could signal back to the host with an exit code
