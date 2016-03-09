@@ -191,24 +191,6 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IRList *insert = FuncIRL(func);
     IR *ir;
     
-    // replace all labels in the original inline code
-    for (ir = insert->head; ir; ir = ir->next) {
-        if (ir->opc == OPC_LABEL) {
-            if (ir->dst == FuncData(func)->asmretname) {
-                // do nothing
-            } else {
-                IR *jmpir;
-                ir->dst = NewCodeLabel();
-                jmpir = ir->aux;
-                if (!jmpir) {
-                    ERROR(NULL, "internal error: unable to find jump target");
-                    return;
-                }
-                ReplaceJumpTarget(jmpir, ir->dst);
-            }
-        }
-    }
-    
     DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
@@ -229,6 +211,24 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
             dest = newir;
         }
         ir = ir->next;
+    }
+
+    // replace all labels in the original inline code
+    for (ir = insert->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_LABEL) {
+            if (ir->dst == FuncData(func)->asmretname) {
+                // do nothing
+            } else {
+                IR *jmpir;
+                ir->dst = NewCodeLabel();
+                jmpir = ir->aux;
+                if (!jmpir) {
+                    ERROR(NULL, "internal error: unable to find jump target");
+                    return;
+                }
+                ReplaceJumpTarget(jmpir, ir->dst);
+            }
+        }
     }
 }
 
@@ -1097,6 +1097,7 @@ CompileOperator(IRList *irl, AST *expr)
 	  Operand *rhs = CompileExpression(irl, expr->right->right);
 	  Operand *temp = NewFunctionTempRegister();
 	  EmitMove(irl, temp, lhs);
+          rhs = Dereference(irl, rhs);
 	  EmitOp2(irl, OPC_ANDN, temp, rhs);
 	  return temp;
         }

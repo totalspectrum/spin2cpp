@@ -2,8 +2,8 @@ VAR
   long x
   
 OBJ
-  i: "stestinc"
-  j: "stestinc"
+  i: "substest01"
+  j: "substest01"
   
 pub demo
   i.add(4)

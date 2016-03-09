@@ -12,20 +12,20 @@ _myfill_ret
 _fillzero
 	mov	arg3_, arg2_
 	mov	arg2_, #0
-L_013_
+L_010_
 	wrlong	arg2_, arg1_
 	add	arg1_, #4
-	djnz	arg3_, #L_013_
+	djnz	arg3_, #L_010_
 _fillzero_ret
 	ret
 
 _fillone
 	mov	arg3_, arg2_
 	neg	arg2_, #1
-L_014_
+L_013_
 	wrlong	arg2_, arg1_
 	add	arg1_, #4
-	djnz	arg3_, #L_014_
+	djnz	arg3_, #L_013_
 _fillone_ret
 	ret
 
