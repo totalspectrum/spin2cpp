@@ -379,6 +379,9 @@ DeclareVariables(Module *P)
         }
         offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
     }
+
+    // round up to next LONG boundary
+    offset = (offset + 3) & ~3;
     P->varsize = offset;
 }
 
@@ -395,7 +398,7 @@ DeclareObjects(AST *newobjs)
         }
         obj = ast->left;
         if (obj->kind == AST_IDENTIFIER) {
-            AddSymbol(&current->objsyms, ast->left->d.string, SYM_OBJECT, ast);
+            AddSymbol(&current->objsyms, obj->d.string, SYM_OBJECT, ast);
         } else if (obj->kind == AST_ARRAYDECL) {
             AST *id = obj->left;
             AddSymbol(&current->objsyms, id->d.string, SYM_OBJECT, ast);
@@ -416,6 +419,45 @@ GetFullFileName(AST *baseString)
     ret = NewAST(AST_STRING, NULL, NULL);
     ret->d.string = newname;
     return ret;
+}
+
+/*
+ * recursively assign offsets to all objects in modules
+ */
+static void
+AssignObjectOffsets(Module *P)
+{
+    Module *Q;
+    AST *ast, *obj;
+    Symbol *sym = NULL;
+    int offset;
+    int count;
+
+    offset = P->varsize;
+    for (ast = P->objblock; ast; ast = ast->right) {
+        if (ast->kind != AST_OBJECT) {
+            ERROR(ast, "Internal error: expected an OBJECT");
+            return;
+        }
+        obj = ast->left;
+        if (obj->kind == AST_IDENTIFIER) {
+            sym = FindSymbol(&P->objsyms, obj->d.string);
+            count = 1;
+        } else if (obj->kind == AST_ARRAYDECL) {
+            sym = FindSymbol(&P->objsyms, obj->left->d.string);
+            count = EvalConstExpr(obj->right);
+        }
+        if (sym == NULL) {
+            ERROR(ast, "Internal error, cannot find object symbol");
+            return;
+        }
+        Q = GetObjectPtr(sym);
+        AssignObjectOffsets(Q);
+        sym->offset = offset;
+        offset += count * Q->varsize;
+    }
+    offset = (offset+3) & ~3;
+    P->varsize = offset;
 }
 
 /*
@@ -1039,6 +1081,7 @@ main(int argc, char **argv)
         for (Q = allparse; Q; Q = Q->next) {
             SpinTransform(Q);
         }
+        AssignObjectOffsets(P);
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {

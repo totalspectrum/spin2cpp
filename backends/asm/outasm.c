@@ -1859,17 +1859,47 @@ void EmitGlobals(IRList *irl)
     EmitAsmVars(&hubGlobalVars, irl, 0);
 }
 
-void
-CompileIntermediate(Module *P)
+#define VISITFLAG_COMPILEIR     0x01230001
+#define VISITFLAG_FUNCNAMES     0x01230002
+#define VISITFLAG_COMPILEFUNCS  0x01230003
+#define VISITFLAG_EXPANDINLINE  0x01230004
+
+typedef void (*VisitorFunc)(IRList *irl, Module *P);
+
+static void
+VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 {
-    Function *f;
+    Module *Q;
+    AST *subobj;
+    Module *save = current;
+    
+    if (P->visitflag == visitval)
+        return;
 
     current = P;
-    if (!newlineOp)
-      newlineOp = NewOperand(IMM_STRING, "\n", 0);
 
-    // assign all function names so we can do forward calls
-    // this is also where we can allocate the back end data
+    P->visitflag = visitval;
+    (*func)(irl, P);
+
+    // compile intermediate code for submodules
+    for (subobj = P->objblock; subobj; subobj = subobj->right) {
+        if (subobj->kind != AST_OBJECT) {
+            ERROR(subobj, "Internal Error: Expecting object AST");
+            break;
+        }
+        Q = subobj->d.ptr;
+        VisitRecursive(irl, Q, func, visitval);
+    }
+    current = save;
+}
+
+// assign all function names so we can do forward calls
+// this is also where we can allocate the back end data
+static void
+AssignFuncNames(IRList *irl, Module *P)
+{
+    Function *f;
+    (void)irl; // not used
     for(f = P->functions; f; f = f->next) {
 	const char *fname;
         char *frname;
@@ -1881,14 +1911,24 @@ CompileIntermediate(Module *P)
         FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
     }
     
-    // now compile the functions
-    for (f = P->functions; f; f = f->next) {
+}
+
+static void
+CompileFunc_internal(IRList *irl, Module *P)
+{
+    Function *f;
+    (void)irl; // not used
+    for(f = P->functions; f; f = f->next) {
       curfunc = f;
       CompileFunctionBody(f);
       FuncData(f)->isInline = ShouldBeInlined(f);
     }
+}
 
-    // 2nd pass, to expand inlines
+static void
+ExpandInline_internal(IRList *irl, Module *P)
+{
+    Function *f;
     for (f = P->functions; f; f = f->next) {
         IRList *firl = FuncIRL(f);
         curfunc = f;
@@ -1899,14 +1939,23 @@ CompileIntermediate(Module *P)
     }
 }
 
-bool
-CompileToIR(IRList *irl, Module *P)
+void
+CompileIntermediate(Module *P)
+{
+    if (!newlineOp)
+      newlineOp = NewOperand(IMM_STRING, "\n", 0);
+
+    VisitRecursive(NULL, P, AssignFuncNames, VISITFLAG_FUNCNAMES);
+    VisitRecursive(NULL, P, CompileFunc_internal, VISITFLAG_COMPILEFUNCS);
+    VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
+}
+
+static void
+CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
-
-    // generate code for inlining
-    CompileIntermediate(P);
-    // finally emit output
+    
+    // emit output for P
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has
         // been inlined, skip it
@@ -1920,9 +1969,18 @@ CompileToIR(IRList *irl, Module *P)
 	EmitNewline(irl);
         CompileWholeFunction(irl, f);
     }
-    return gl_errors == 0;
 }
 
+bool
+CompileToIR(IRList *irl, Module *P)
+{
+    // generate code for inlining
+    CompileIntermediate(P);
+    // and generate real output
+    VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR);
+    
+    return gl_errors == 0;
+}
 /*
  * emit builtin functions like mul and div
  */

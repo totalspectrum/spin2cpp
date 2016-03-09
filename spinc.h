@@ -190,6 +190,9 @@ struct modulestate {
 
     char *datname;     /* the name of the dat section (normally "dat") */
 
+    /* for walking through modules and avoiding visiting the same one multiple times */
+    unsigned visitflag;
+
     /* flags for emitting macros */
     char needsMinMax;
     char needsRotate;
@@ -342,6 +345,9 @@ Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
 AST *GetFullFileName(AST *baseString);
     
 Symbol *LookupSymbolInFunc(Function *func, const char *name);
+
+// find an object pointer given an object symbol
+Module *GetObjectPtr(Symbol *sym);
 
 /*
  * see if an AST refers to a parameter of this function, and return
