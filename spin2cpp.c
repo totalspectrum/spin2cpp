@@ -432,7 +432,9 @@ AssignObjectOffsets(Module *P)
     Symbol *sym = NULL;
     int offset;
     int count;
-
+    Module *save=current;
+    
+    current = P;
     offset = P->varsize;
     for (ast = P->objblock; ast; ast = ast->right) {
         if (ast->kind != AST_OBJECT) {
@@ -458,6 +460,7 @@ AssignObjectOffsets(Module *P)
     }
     offset = (offset+3) & ~3;
     P->varsize = offset;
+    current = save;
 }
 
 /*
