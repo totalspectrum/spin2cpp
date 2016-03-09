@@ -1551,7 +1551,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
-        if (src->kind == IMM_INT) {
+        if (src->kind == IMM_INT || SrcOnlyHwReg(src)) {
             Operand *temp = NewFunctionTempRegister();
             EmitMove(irl, temp, src);
             src = temp;

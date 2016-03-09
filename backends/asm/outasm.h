@@ -47,6 +47,8 @@ int  ExpandInlines(IRList *irl);
 
 bool IsDummy(IR *ir);
 
+bool SrcOnlyHwReg(Operand *reg);
+
 //
 // back end data for functions
 //

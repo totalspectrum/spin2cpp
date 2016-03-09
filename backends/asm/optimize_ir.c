@@ -287,6 +287,24 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 }
 
 //
+// returns true if orig is a source only
+// hardware register (CNT, INA, INB)
+//
+bool
+SrcOnlyHwReg(Operand *orig)
+{
+    if (orig->kind != REG_HW)
+        return false;
+    if (!strcasecmp(orig->name, "CNT")
+        || !strcasecmp(orig->name, "INA")
+        || !strcasecmp(orig->name, "INB"))
+    {
+        return true;
+    }
+    return false;
+}
+
+//
 // returns the IR where we should stop scanning for replacement,
 // or NULL if replacement is unsafe
 //
@@ -296,15 +314,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   IR *ir;
   IR *last_ir = NULL;
   bool assignments_are_safe = true;
-  
-  if (replace->kind == REG_HW) {
-      // some registers have no backing store, so we
-      // can't replace with them
-      if (!strcasecmp(replace->name, "CNT")
-          || !strcasecmp(replace->name, "INA"))
-      {
-          return NULL;
-      }
+
+  if (SrcOnlyHwReg(replace)) {
+      return NULL;
   }
   for (ir = first_ir; ir; ir = ir->next) {
     if (ir->opc == OPC_DEAD) {
@@ -643,6 +655,30 @@ HasSideEffects(IR *ir)
     }
 }
 
+static bool
+MeaninglessMath(IR *ir)
+{
+    int val;
+    if (0 != (ir->flags & (FLAG_WC|FLAG_WZ))) {
+        return false;
+    }
+    if (!ir->src || ir->src->kind != IMM_INT) {
+        return false;
+    }
+    val = ir->src->val;
+    switch (ir->opc) {
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_SHL:
+    case OPC_SHR:
+    case OPC_SAR:
+    case OPC_OR:
+        return (val == 0);
+    default:
+        return false;
+    }
+}
+
 int EliminateDeadCode(IRList *irl)
 {
     int change;
@@ -695,6 +731,9 @@ int EliminateDeadCode(IRList *irl)
       } else if (!IsDummy(ir) && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
+      } else if (MeaninglessMath(ir)) {
+          DeleteIR(irl, ir);
+          change = 1;
       }
       ir = ir_next;
     }
