@@ -687,13 +687,90 @@ CompileHWReg(IRList *irl, AST *expr)
   return GetGlobal(REG_HW, hw->cname, 0);
 }
 
+static int isPowerOf2(unsigned x)
+{
+    return (x & (x-1)) == 0;
+}
+
+//
+// Decompose val into a sequence of a shift, add/sub
+// returns 0 if failure, 1 if success
+// sets shifts[0] to final shift
+// shifts[1] to +1 for add, -1 for sub, 0 if done
+// shifts[2] to initial shift
+//
+static int DecomposeBits(unsigned val, int *shifts)
+{
+    int shift = 0;
+    
+    while (val != 0) {
+        if (val & 1) {
+            break;
+        }
+        shift++;
+        val = val >> 1;
+    }
+    shifts[0] = shift;
+    if (val == 1) {
+        // we had a power of 2
+        shifts[1] = 0;
+        return 1;
+    }
+    // OK, can the new val itself be decomposed?
+    if (isPowerOf2(val-1)) {
+        shifts[1] = +1;
+        return DecomposeBits(val-1, &shifts[2]);
+    } else if (isPowerOf2(val+1)) {
+        shifts[1] = -1;
+        return DecomposeBits(val+1, &shifts[2]);
+    } else {
+        return 0;
+    }
+}
+
 static Operand *
 CompileMul(IRList *irl, AST *expr, int gethi)
 {
   Operand *lhs = CompileExpression(irl, expr->left);
   Operand *rhs = CompileExpression(irl, expr->right);
   Operand *temp = NewFunctionTempRegister();
+  // if lhs is constant, swap left and right
+  if (lhs->kind == IMM_INT) {
+      Operand *swap = lhs;
+      lhs = rhs;
+      rhs = swap;
+  }
+  // check for multiply by constants
+  if (rhs->kind == IMM_INT && rhs->val >= 0 && gethi == 0) {
+      int shifts[4];
+      int val = rhs->val;
 
+      if (val == 0) {
+          EmitMove(irl, temp, rhs); // rhs == 0
+          return temp;
+      }
+      if (val == 1) {
+          EmitMove(irl, temp, lhs);
+          return temp;
+      }
+      // see if we can emit a sequence of shift and add/sub
+      if (DecomposeBits(val, shifts)) {
+          EmitMove(irl, temp, lhs);
+          if (shifts[1] == 0) {
+              EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
+              return temp;
+          } else {
+              EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[2]));
+          }
+          if (shifts[1] > 0) {              
+              EmitOp2(irl, OPC_ADD, temp, lhs);
+          } else {
+              EmitOp2(irl, OPC_SUB, temp, lhs);
+          }
+          EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
+          return temp;
+      }
+  }
   if (!mulfunc) {
     mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
     mula = GetGlobal(REG_ARG, "muldiva_", 0);
