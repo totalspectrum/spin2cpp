@@ -987,6 +987,11 @@ CompileBasicOperator(IRList *irl, AST *expr)
   IR *ir;
 
   switch(op) {
+  case T_REV:
+      // this one is a bit odd
+      // we actually want rev lhs, 32 - rhs
+      rhs = AstOperator('-', AstInteger(32), rhs);
+      // fall through
   case '+':
   case '-':
   case '^':
@@ -1007,7 +1012,6 @@ CompileBasicOperator(IRList *irl, AST *expr)
     return temp;
   case T_NEGATE:
   case T_ABS:
-  case T_REV:
     right = CompileExpression(irl, rhs);
     right = Dereference(irl, right);
     EmitOp2(irl, OpcFromOp(op), temp, right);
