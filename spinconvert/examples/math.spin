@@ -6,8 +6,8 @@ CON
   _clkmode = xtal1 + pll16x
 
 OBJ
-''  ser: "SimpleSerial"
-  ser: "FullDuplexSerial"
+  ser: "SimpleSerial"
+''  ser: "FullDuplexSerial" '' use this with openspin
   
 PUB demo | ptr, x, y
     ser.start(31, 30, 0, 115200)
