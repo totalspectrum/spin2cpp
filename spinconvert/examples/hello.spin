@@ -5,9 +5,12 @@ CON
   _clkfreq = 80_000_000
   _clkmode = xtal1 + pll16x
    
-PUB demo
-  repeat 4
-    ser_str(string("hello, world!", 13, 10))
-  ser_exit(0)
+OBJ
+  ser: "SimpleSerial"
   
-#include "serial.def"
+PUB demo
+  ser.start(31, 30, 0, 115200)
+  repeat 4
+    ser.str(string("hello, world!", 13, 10))
+  ser.exit(0)
+  
