@@ -58,7 +58,7 @@ EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
-    name = origLabel->left->d.string;
+    name = origLabel->d.string;
     labelref->offset = offset;
     labelref->asmval = asmpc;
     labelref->type = ltype;
@@ -74,7 +74,7 @@ AST *
 emitPendingLabels(Module *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype)
 {
     while (label) {
-        EnterLabel(P, label, pc, asmpc, ltype);
+        EnterLabel(P, label->left, pc, asmpc, ltype);
         label = label->right;
     }
     return NULL;
