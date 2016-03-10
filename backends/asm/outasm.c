@@ -1439,6 +1439,22 @@ EmitLea(IRList *irl, Operand *dst, Operand *src)
 }
 
 //
+// compile a coginit expression
+//
+static Operand *
+CompileCoginit(IRList *irl, AST *expr)
+{
+    AST *funccall;
+    if (IsSpinCoginit(expr)) {
+        ERROR(expr, "Cannot handle cognew/coginit with spin methods yet");
+        return NewImmediate(0);
+    }
+    funccall = AstIdentifier("_coginit");
+    funccall = NewAST(AST_FUNCCALL, funccall, expr->left);
+    return CompileFunccall(irl, funccall);
+}
+
+//
 // get the address of an expression
 //
 static Operand *
@@ -1452,6 +1468,22 @@ GetAddressOf(IRList *irl, AST *expr)
         res = CompileExpression(irl, expr);
         EmitLea(irl, tmp, res);
         return tmp;
+    case AST_ARRAYREF:
+    {
+      Operand *base;
+      Operand *offset;
+
+      if (!expr->right) {
+          ERROR(expr, "Array ref with no index?");
+          return NewOperand(REG_REG, "???", 0);
+      }
+      base = CompileExpression(irl, expr->left);
+      offset = CompileExpression(irl, expr->right);
+      res = ApplyArrayIndex(irl, base, offset);
+      tmp = NewFunctionTempRegister();
+      EmitLea(irl, tmp, res);
+      return tmp;
+    }    
     default:
         ERROR(expr, "Cannot take address of expression\n");
         break;
@@ -1546,8 +1578,7 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_MEMREF:
     return CompileMemref(irl, expr);
   case AST_COGINIT:
-    ERROR(expr, "Cannot handle cognew/coginit yet");
-    return NewOperand(REG_REG, "???", 0);
+    return CompileCoginit(irl, expr);
   case AST_ADDROF:
   case AST_ABSADDROF:
       return GetAddressOf(irl, expr->left);
@@ -2052,6 +2083,7 @@ static void
 CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
+    Function *save = curfunc;
     
     // emit output for P
     for(f = P->functions; f; f = f->next) {
@@ -2070,6 +2102,7 @@ CompileToIR_internal(IRList *irl, Module *P)
 	EmitNewline(irl);
         CompileWholeFunction(irl, f);
     }
+    curfunc = save;
 }
 
 bool

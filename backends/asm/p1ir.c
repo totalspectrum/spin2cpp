@@ -229,7 +229,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             PrintOperand(fb, ir->src);
             break;
         }
-        ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR);
+        ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);
         if (ccset) {
             const char *sepstring = " ";
             if (ccset & FLAG_WC) {
@@ -242,6 +242,8 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             }
             if (ccset & FLAG_NR) {
                 flexbuf_printf(fb, "%snr", sepstring);
+            } else if (ccset & FLAG_WR) {
+                flexbuf_printf(fb, "%swr", sepstring);
             }
         }
         flexbuf_addstr(fb, "\n");

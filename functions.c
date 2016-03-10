@@ -160,6 +160,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
         {
             if (upper && upper->kind != AST_ARRAYREF) {
                 AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
+                deref->line = upper->line;
                 if (body == upper->left) {
                     upper->left = deref;
                 } else if (body == upper->right) {

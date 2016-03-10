@@ -246,6 +246,14 @@ const char system_spincode[] =
     "      return 0\n"
     "  until (c1 == 0)\n"
     "  return -1\n"
+    "pri _coginit(id, code, param) | parm\n"
+    "  parm := (param & $fffc) << 16\n"
+    "  parm |= (code & $fffc) << 2\n"
+    "  parm | = id & $f\n"
+    "  asm\n"
+    "    coginit parm wr\n"
+    "  endasm\n"
+    "  return parm\n"
 ;
 
 void

@@ -117,7 +117,8 @@ enum flags {
     FLAG_WZ = 1,
     FLAG_WC = 2,
     FLAG_NR = 4,
-
+    FLAG_WR = 8,
+    
     // rest of the bits are used by the optimizer
 
     FLAG_LABEL_USED = 0x100,

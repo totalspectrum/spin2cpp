@@ -70,17 +70,17 @@ static bool
 InstrSetsDst(IR *ir)
 {
   switch (ir->opc) {
+  case OPC_LABEL:
+      return false;
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
   case OPC_TESTN:
   case OPC_GENERIC_NR:
-  case OPC_LABEL:
-    return false;
+      return (ir->flags & FLAG_WR) != 0;
   default:
-    break;
+      return (ir->flags & FLAG_NR) == 0;
   }
-  return !(ir->flags & FLAG_NR);
 }
 
 // recognizes branch instructions

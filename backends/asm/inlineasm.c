@@ -56,6 +56,8 @@ CompileInlineInstr(IRList *irl, AST *ast)
 		 ir->flags |= FLAG_WZ;
 	    } else if (!strcmp(mod->name, "nr")) {
 		 ir->flags |= FLAG_NR;
+	    } else if (!strcmp(mod->name, "wr")) {
+		 ir->flags |= FLAG_WR;
 	    } else if (!strcmp(mod->name, "#")) {
 		 immflag = 1;
 	    } else {
