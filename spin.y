@@ -903,7 +903,7 @@ funccall:
   identifier '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
   | T_COGINIT '(' exprlist ')'
-    { $$ = NewAST(AST_COGINIT, $1, $3); }
+    { $$ = NewAST(AST_COGINIT, $3, NULL); }
   | T_COGNEW '(' exprlist ')'
     {
         AST *elist;
