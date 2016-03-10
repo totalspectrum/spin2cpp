@@ -1992,6 +1992,7 @@ void EmitGlobals(IRList *irl)
 #define VISITFLAG_FUNCNAMES     0x01230002
 #define VISITFLAG_COMPILEFUNCS  0x01230003
 #define VISITFLAG_EXPANDINLINE  0x01230004
+#define VISITFLAG_EMITDAT       0x01230005
 
 typedef void (*VisitorFunc)(IRList *irl, Module *P);
 
@@ -2309,7 +2310,10 @@ OutputAsmCode(const char *fname, Module *P)
     
     EmitBuiltins(&irl);
     EmitGlobals(&irl);
-    EmitDatSection(&irl, P);
+
+    // we need to emit all dat sections
+    //EmitDatSection(&irl, P);
+    VisitRecursive(&irl, P, EmitDatSection, VISITFLAG_EMITDAT);
     EmitVarSection(&irl, P);
     
     asmcode = IRAssemble(&irl);
