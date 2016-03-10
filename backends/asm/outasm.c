@@ -1320,7 +1320,7 @@ CompileFunccall(IRList *irl, AST *expr)
       ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
   }
   ir->aux = (void *)func; // remember the function for optimization purposes
-
+  func->is_used = 1;      // internal functions may not have been marked earlier
   /* mark parameters as dead */
   n = AstListLen(params);
   while (n > 0) {
@@ -2062,6 +2062,9 @@ CompileToIR_internal(IRList *irl, Module *P)
             if (FuncData(f)->isInline) {
                 continue;
             }
+            if (!f->is_used) {
+                continue;
+            }
         }
         curfunc = f;
 	EmitNewline(irl);
@@ -2245,6 +2248,8 @@ EmitVarSection(IRList *irl, Module *P)
   EmitOp2(irl, OPC_LABELED_BLOB, objlabel, op);
 }
 
+extern Module *globalModule;
+
 void
 OutputAsmCode(const char *fname, Module *P)
 {
@@ -2263,7 +2268,12 @@ OutputAsmCode(const char *fname, Module *P)
     if (!CompileToIR(&irl, P)) {
         return;
     }
+
+    // we compiled builtin functions into IR form earlier, now
+    // output them
+    CompileToIR_internal(&irl, globalModule);
     OptimizeIRGlobal(&irl);
+    
     EmitBuiltins(&irl);
     EmitGlobals(&irl);
     EmitDatSection(&irl, P);

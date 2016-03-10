@@ -239,7 +239,7 @@ InitGlobalModule(void)
     SymbolTable *table;
     Symbol *sym;
 
-    current = globalModule = NewModule("<system>");
+    current = globalModule = NewModule("_system_");
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
@@ -250,7 +250,7 @@ InitGlobalModule(void)
 
     /* compile inline assembly */
     if (gl_outcode == OUTCODE_ASM) {
-      strToLex(&globalModule->L, system_spincode, "<system>");
+      strToLex(&globalModule->L, system_spincode, "_system_");
       yyparse();
       ProcessModule(globalModule);
       InferTypes(globalModule);
