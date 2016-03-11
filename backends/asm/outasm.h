@@ -27,7 +27,10 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 //
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *NewImmediate(int32_t val);
+Operand *NewImmediatePtr(Operand *val);
 Operand *NewCodeLabel();
+
+void FreeTempRegisters(IRList *irl, int starttempreg);
 
 // utility functions
 IRCond InvertCond(IRCond v);
@@ -46,8 +49,9 @@ bool ShouldBeInlined(Function *f);
 int  ExpandInlines(IRList *irl);
 
 bool IsDummy(IR *ir);
-
+bool IsValidDstReg(Operand *reg);
 bool SrcOnlyHwReg(Operand *reg);
+bool IsLocal(Operand *reg);
 
 //
 // back end data for functions
@@ -61,9 +65,19 @@ typedef struct ir_bedata {
     Operand *asmname;
     Operand *asmretname;
 
+    /* label to go to for "return" instruction; this may simply
+       be asmretname, but may be something else if there is a need
+       for function cleanup
+    */
+    Operand *asmreturnlabel;
+    
     /* instructions for this function */
     IRList irl;
 
+    /* list of registers that need preserving (for
+       recursive functions) */
+    OperandList *saveregs;
+    
     /* flag for whether we should inline the function */
     bool isInline;
 } IRFuncData;

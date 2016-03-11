@@ -3,8 +3,8 @@ DAT
 
 _indsum
 	rdlong	result_, arg1_
-	rdlong	indsum_tmp003_, arg2_
-	add	result_, indsum_tmp003_
+	rdlong	indsum_tmp002_, arg2_
+	add	result_, indsum_tmp002_
 _indsum_ret
 	ret
 
@@ -16,7 +16,7 @@ arg3_
 	long	0
 arg4_
 	long	0
-indsum_tmp003_
+indsum_tmp002_
 	long	0
 result_
 	long	0

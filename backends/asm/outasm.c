@@ -25,10 +25,9 @@ static Operand *quitlabel;
 static Operand *objbase;
 static Operand *objlabel;
 
-typedef struct OperandList {
-  struct OperandList *next;
-  Operand *op;
-} OperandList;
+static Operand *stackptr;
+static Operand *stacklabel;
+static Operand *stacktop;  // indirect reference through stackptr
 
 static Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
@@ -45,6 +44,7 @@ static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
+static Operand *SizedMemRef(int size, Operand *addr, int offset);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -90,6 +90,25 @@ IdentifierGlobalName(Module *P, const char *name)
         snprintf(temp, sizeof(temp)-1, "_%s_%s", P->basename, name);
     }
     return strdup(temp);
+}
+
+static void
+ValidateObjbase(void)
+{
+    if (!objbase) {
+        objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
+        objbase = NewImmediatePtr(objlabel);
+    }
+}
+
+static void
+ValidateStackptr(void)
+{
+    if (!stackptr) {
+        stacklabel = NewOperand(IMM_HUB_LABEL, "_stackspace", 0);
+        stackptr = NewImmediatePtr(stacklabel);
+        stacktop = SizedMemRef(LONG_SIZE, stackptr, 0);
+    }
 }
 
 static int IsMemRef(Operand *op)
@@ -189,7 +208,10 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IR *dest = origir->prev;
     IRList *insert = FuncIRL(func);
     IR *ir;
-    
+
+    if (FuncData(func)->asmretname != FuncData(func)->asmreturnlabel) {
+        ERROR(func->body, "Internal error, illegal inline");
+    }
     DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
@@ -242,6 +264,44 @@ Operand *NewOperand(enum Operandkind k, const char *name, int value)
       R->used = 1;
     }
     return R;
+}
+
+void
+AppendOperand(OperandList **listptr, Operand *op)
+{
+  OperandList *next = (OperandList *)malloc(sizeof(OperandList));
+  OperandList *x;
+  next->op = op;
+  next->next = NULL;
+  for(;;) {
+    x = *listptr;
+    if (!x) {
+      *listptr = next;
+      return;
+    }
+    listptr = &x->next;
+  }
+}
+
+void
+AppendOperandUnique(OperandList **listptr, Operand *op)
+{
+  OperandList *next;
+  OperandList *x;
+  for(;;) {
+    x = *listptr;
+    if (!x) {
+        next = (OperandList *)malloc(sizeof(OperandList));
+        next->op = op;
+        next->next = NULL;
+        *listptr = next;
+        return;
+    }
+    if (x->op == op) {
+        return;
+    }
+    listptr = &x->next;
+  }
 }
 
 /*
@@ -443,80 +503,6 @@ void EmitJump(IRList *irl, IRCond cond, Operand *label)
   AppendIR(irl, ir);
 }
 
-//
-// the header/footer are code that should only be emitted for
-// non-inline function invocations, at the beginning and
-// end of the function; they contain the labels and
-// ret instruction, for example
-//
-static void EmitFunctionHeader(IRList *irl, Function *func)
-{
-    EmitLabel(irl, FuncData(func)->asmname);
-}
-
-static void EmitFunctionFooter(IRList *irl, Function *func)
-{
-    EmitLabel(irl, FuncData(func)->asmretname);
-    EmitOp0(irl, OPC_RET);
-}
-
-//
-// utility function: get a pointer to the n'th argument
-// for function f
-//
-static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
-{
-#ifdef USE_GLOBAL_ARGS
-    char temp[1024];
-    sprintf(temp, "arg%d_", n+1);
-    return GetGlobal(REG_ARG, strdup(temp), 0);
-#else
-    AST *astlist = func->params;
-    AST *ast;
-
-    while (astlist != NULL) {
-        ast = astlist->left;
-        astlist = astlist->right;
-        if (n == 0) {
-            return CompileIdentifierForFunc(irl, ast, func);
-        }
-        --n;
-    }
-    ERROR(NULL, "Too many parameters to function %s", func->name);
-    return GetGlobal(REG_ARG, "dummyArg_", 0);
-#endif
-}
-
-//
-// the function Prolog and Epilog are always output, and do things
-// like stack management and variable setup
-//
-
-static void EmitFunctionProlog(IRList *irl, Function *func)
-{
-    int n = 0;
-    AST *astlist = func->params;
-    AST *ast;
-    Operand *src;
-    Operand *dst;
-
-    //
-    // move parameters into local registers
-    //
-    while (astlist != NULL) {
-        ast = astlist->left;
-        astlist = astlist->right;
-
-        src = GetFunctionParameter(irl, func, n++);
-        dst = CompileIdentifierForFunc(irl, ast, func);
-        EmitMove(irl, dst, src);
-    }
-}
-
-static void EmitFunctionEpilog(IRList *irl, Function *func)
-{
-}
-
 Operand *
 NewImmediate(int32_t val)
 {
@@ -560,15 +546,6 @@ NewFunctionTempRegister()
         fdata->maxtempreg = fdata->curtempreg;
     }
     return GetFunctionTempRegister(f, fdata->curtempreg);
-}
-
-static void
-ValidateObjbase(void)
-{
-    if (!objbase) {
-        objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
-        objbase = NewImmediatePtr(objlabel);
-    }
 }
 
 static Operand *
@@ -662,6 +639,167 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       ERROR(expr, "Unknown symbol %s", expr->d.string);
   }
   return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+}
+
+//
+// utility function: get a pointer to the n'th argument
+// for function f
+//
+static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
+{
+#ifdef USE_GLOBAL_ARGS
+    char temp[1024];
+    sprintf(temp, "arg%d_", n+1);
+    return GetGlobal(REG_ARG, strdup(temp), 0);
+#else
+    AST *astlist = func->params;
+    AST *ast;
+
+    while (astlist != NULL) {
+        ast = astlist->left;
+        astlist = astlist->right;
+        if (n == 0) {
+            return CompileIdentifierForFunc(irl, ast, func);
+        }
+        --n;
+    }
+    ERROR(NULL, "Too many parameters to function %s", func->name);
+    return GetGlobal(REG_ARG, "dummyArg_", 0);
+#endif
+}
+
+static void EmitPush(IRList *irl, Operand *src)
+{
+    ValidateStackptr();
+    EmitMove(irl, stacktop, src);
+    EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(4));
+}
+static void EmitPop(IRList *irl, Operand *src)
+{
+    ValidateStackptr();
+    EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
+    EmitMove(irl, src, stacktop);
+}
+//
+// the function Prolog and Epilog are always output, and do things
+// like stack management and variable setup
+//
+
+static void EmitFunctionProlog(IRList *irl, Function *func)
+{
+    int n = 0;
+    AST *astlist;
+    AST *ast;
+    Operand *src;
+    Operand *dst;
+
+    //
+    // move parameters into local registers
+    //
+    astlist = func->params;
+    while (astlist != NULL) {
+        ast = astlist->left;
+        astlist = astlist->right;
+
+        src = GetFunctionParameter(irl, func, n++);
+        dst = CompileIdentifierForFunc(irl, ast, func);
+        EmitMove(irl, dst, src);
+    }
+}
+
+//
+// pop a list of variables, in reverse order
+// the lists are one way, so we make a local copy in revstack and
+// pop backwards from there
+//
+#define MAX_LOCAL_STACK 1024
+static void PopList(IRList *irl, OperandList *list, Function *func)
+{
+    Operand *revstack[MAX_LOCAL_STACK];
+    Operand *dst;
+    int n = 0;
+
+    for (; list; list = list->next) {
+        dst = list->op;
+        revstack[n++] = dst;
+        if (n == MAX_LOCAL_STACK) {
+            ERROR(func->locals, "Stack needed for function %s is too big", func->name);
+            return;
+        }
+    }
+    // now pop in reverse order
+    while (n > 0) {
+        --n;
+        dst = revstack[n];
+        EmitPop(irl, dst);
+    }
+}
+
+static void EmitFunctionEpilog(IRList *irl, Function *func)
+{
+    FreeTempRegisters(irl, 0);
+}
+
+static void
+GetLocalRegsUsed(OperandList **list, IRList *irl)
+{
+    IR *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        if (ir->dst && IsLocal(ir->dst)) {
+            AppendOperandUnique(list, ir->dst);
+        }
+        if (ir->src && IsLocal(ir->src)) {
+            AppendOperandUnique(list, ir->src);
+        }
+    }
+}
+
+//
+// the header/footer are code that should only be emitted for
+// non-inline function invocations, at the beginning and
+// end of the function; they contain the labels and
+// ret instruction, for example
+//
+static void EmitFunctionHeader(IRList *irl, Function *func)
+{
+    OperandList *oplist;
+    
+    EmitLabel(irl, FuncData(func)->asmname);
+    //
+    // if recursive function, push all local registers
+    // we also have to push any local temporary registers that
+    // are used in the body
+    // FIXME: can probably optimize this to skip temporaries that
+    // are used only after the first call
+    //
+    
+    if (func->is_recursive) {
+        GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
+        // push scratch registers that need preserving
+        for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
+            EmitPush(irl, oplist->op);
+        }
+        // push return address
+        EmitPush(irl, FuncData(func)->asmretname);
+    }
+}
+
+static void EmitFunctionFooter(IRList *irl, Function *func)
+{
+    if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname)
+        EmitLabel(irl, FuncData(func)->asmreturnlabel);
+    if (func->is_recursive) {
+        // pop return address
+        // do this here to avoid a hardware pipeline hazard:
+        // we need at least 1 instruction between the pop
+        // and the actual return
+        EmitPop(irl, FuncData(func)->asmretname);
+        // pop off all local variables
+        PopList(irl, FuncData(func)->saveregs, func);
+    }
+    EmitLabel(irl, FuncData(func)->asmretname);
+    EmitOp0(irl, OPC_RET);
 }
 
 Operand *
@@ -1188,23 +1326,6 @@ CompileOperator(IRList *irl, AST *expr)
     }
 }
 
-static void
-AppendOperand(OperandList **listptr, Operand *op)
-{
-  OperandList *next = (OperandList *)malloc(sizeof(OperandList));
-  OperandList *x;
-  next->op = op;
-  next->next = NULL;
-  for(;;) {
-    x = *listptr;
-    if (!x) {
-      *listptr = next;
-      return;
-    }
-    listptr = &x->next;
-  }
-}
-
 static OperandList quitstack;
 
 static void
@@ -1330,8 +1451,13 @@ CompileFunccall(IRList *irl, AST *expr)
   }
 
   /* now get the result */
+  /* NOTE: we cannot assume this is unchanged over future calls,
+     so save it in a temp register
+  */
   result = GetGlobal(REG_REG, "result_", 0);
-  return result;
+  reg = NewFunctionTempRegister();
+  EmitMove(irl, reg, result);
+  return reg;
 }
 
 static Operand *
@@ -1669,13 +1795,22 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
 
 static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 {
-    Operand *temp;
+    Operand *temp = NULL;
+    Operand *temp2 = NULL;
     Operand *dst = origdst;
     Operand *src = origsrc;
     
     if (IsMemRef(src)) {
         int off = src->val;
-        temp = NewFunctionTempRegister();
+        Operand *where;
+        
+        // if we are reading into a register, no need for
+        // a temp
+        if (IsValidDstReg(origdst)) {
+            where = origdst;
+        } else {
+            where = temp = NewFunctionTempRegister();
+        }
         src = (Operand *)src->name;
         switch (origsrc->kind) {
         default:
@@ -1685,7 +1820,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDLONG, temp, src);
+            EmitOp2(irl, OPC_RDLONG, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
@@ -1694,7 +1829,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDWORD, temp, src);
+            EmitOp2(irl, OPC_RDWORD, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
@@ -1703,20 +1838,22 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDBYTE, temp, src);
+            EmitOp2(irl, OPC_RDBYTE, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
             break;
         }
+        if (where == origdst)
+            return;
         src = temp;
     }
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
         if (src->kind == IMM_INT || SrcOnlyHwReg(src)) {
-            Operand *temp = NewFunctionTempRegister();
-            EmitMove(irl, temp, src);
+            temp2 = NewFunctionTempRegister();
+            EmitMove(irl, temp2, src);
             src = temp;
         }
         switch (origdst->kind) {
@@ -1754,9 +1891,15 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     } else {
         EmitOp2(irl, OPC_MOV, dst, src);
     }
+    if (temp) {
+        EmitOp1(irl, OPC_DEAD, temp);
+    }
+    if (temp2) {
+        EmitOp1(irl, OPC_DEAD, temp2);
+    }
 }
 
-static void
+void
 FreeTempRegisters(IRList *irl, int starttempreg)
 {
     int endtempreg;
@@ -1869,7 +2012,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	    result = GetGlobal(REG_REG, "result_", 0);
             EmitMove(irl, result, op);
 	}
-	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmretname);
+	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
 	break;
     case AST_WHILE:
         toploop = NewCodeLabel();
@@ -1961,9 +2104,6 @@ static void
 CompileFunctionBody(Function *f)
 {
     IRList *irl = FuncIRL(f);
-    if (f->is_recursive) {
-        ERROR(f->body, "Recursive function %s not supported in PASM", f->name);
-    }
     nextlabel = quitlabel = NULL;
     EmitFunctionProlog(irl, f);
     EmitStatementList(irl, f->body);
@@ -2110,7 +2250,11 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
         FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
         FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
-
+        if (f->is_recursive) {
+            FuncData(f)->asmreturnlabel = NewCodeLabel();
+        } else {
+            FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
+        }
         // also fix up any extra declarations
         if (f->extradecl) {
             AST *ast = f->extradecl;
@@ -2442,10 +2586,17 @@ OutputAsmCode(const char *fname, Module *P)
     EmitGlobals(&irl);
 
     // we need to emit all dat sections
-    //EmitDatSection(&irl, P);
     VisitRecursive(&irl, P, EmitDatSection, VISITFLAG_EMITDAT);
+
+    // only the top level variable space is needed
     EmitVarSection(&irl, P);
     
+    // finally the stack, if we need it
+    if (stacklabel) {
+        EmitLabel(&irl, stacklabel);
+        EmitLong(&irl, 0);
+    }
+    // and assemble the result
     asmcode = IRAssemble(&irl);
     
     current = save;

@@ -166,6 +166,11 @@ struct Operand {
     int used;
 };
 
+typedef struct OperandList {
+  struct OperandList *next;
+  Operand *op;
+} OperandList;
+
 
 typedef enum InstrOps {
     NO_OPERANDS,
@@ -207,5 +212,6 @@ struct IR {
     Instruction *instr; // PASM assembler data for instruction
 };
 
+void AppendOperand(OperandList **listptr, Operand *op);
 
 #endif

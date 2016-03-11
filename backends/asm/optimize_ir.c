@@ -124,7 +124,7 @@ IsArg(Operand *op)
 }
 
 // returns TRUE if an operand represents a local register
-static bool
+bool
 IsLocal(Operand *op)
 {
   return op->kind == REG_LOCAL;
@@ -141,6 +141,20 @@ static bool
 IsImmediate(Operand *op)
 {
     return op->kind == IMM_INT;
+}
+
+bool
+IsValidDstReg(Operand *op)
+{
+    switch(op->kind) {
+    case REG_LOCAL:
+    case REG_ARG:
+    case REG_REG:
+    case IMM_COG_LABEL:  // for popping ret addresses and such
+        return true;
+    default:
+        return false;
+    }
 }
 
 static Operand *
@@ -166,7 +180,9 @@ JumpIsAfterOrEqual(IR *ir, IR *jmp)
         IR *label = (IR *)jmp->aux;
         return (label->addr >= ir->addr);
     }
-    if (curfunc && JumpDest(jmp) == FuncData(curfunc)->asmretname)
+    if (curfunc && (
+           JumpDest(jmp) == FuncData(curfunc)->asmretname
+           || JumpDest(jmp) == FuncData(curfunc)->asmreturnlabel) )
         return true;
     return false;
 }
@@ -261,9 +277,11 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
+#if 0
       if (ir->opc == OPC_DEAD && (ir->dst == orig || ir->dst == replace)) {
           return false;
       }
+#endif
       if (IsDummy(ir)) {
           continue;
       }
@@ -371,9 +389,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         }
     }
     if (ir->dst == replace) {
-      // special case: if we have a "mov replace,orig" and orig is dead
-      // then we are good to go
-      if (assignments_are_safe && ir->opc == OPC_MOV && ir->src == orig && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
+      // special case: if we have a "mov replace,x" and orig is dead
+      // then we are good to go; at that point we know it is safe to replace
+      // orig with replace because:
+      //  (a) orig is dead after this, so not used
+      //  (b) whatever we did to replace up til now it doesn't matter, a fresh
+      //      value is being put into it
+      //  if "assignments_are_safe" is false then we don't know if another
+      //  branch might still use "replace", so punt and give up
+      if (assignments_are_safe && ir->opc == OPC_MOV && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
       }
       return NULL;
@@ -691,7 +715,7 @@ int EliminateDeadCode(IRList *irl)
     while (ir && IsDummy(ir)) {
       ir = ir->prev;
     }
-    if (ir && ir->opc == OPC_JUMP && curfunc && ir->dst == FuncData(curfunc)->asmretname) {
+    if (ir && ir->opc == OPC_JUMP && curfunc && ir->dst == FuncData(curfunc)->asmreturnlabel) {
       DeleteIR(irl, ir);
       change = 1;
     }
@@ -797,7 +821,7 @@ static int IsShortForwardJump(IR *irbase)
     ir = ir->next;
   }
   // we reached the end... were we trying to jump to the end?
-  if (curfunc && target == FuncData(curfunc)->asmretname)
+  if (curfunc && target == FuncData(curfunc)->asmreturnlabel)
       return n;
   return 0;
 }

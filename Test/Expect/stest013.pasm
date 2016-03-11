@@ -10,9 +10,8 @@ _prod_ret
 	ret
 
 _cube
+	mov	cube_tmp001_, arg1_
 	mov	arg2_, arg1_
-	mov	cube_tmp001_, arg2_
-	mov	arg1_, arg2_
 	call	#_prod
 	mov	arg2_, result_
 	mov	arg1_, cube_tmp001_

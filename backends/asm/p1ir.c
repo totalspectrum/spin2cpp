@@ -33,7 +33,7 @@ static int inCon;
 static int didOrg;
 
 static void
-PrintOperand(struct flexbuf *fb, Operand *reg)
+doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
 {
     char temp[128];
     switch (reg->kind) {
@@ -57,12 +57,26 @@ PrintOperand(struct flexbuf *fb, Operand *reg)
         ERROR(NULL, "Internal error: tried to use memory directly");
         break;
     case IMM_COG_LABEL:
-        flexbuf_addstr(fb, "#");
+        if (useimm) {
+            flexbuf_addstr(fb, "#");
+        }
         /* fall through */
     default:
         flexbuf_addstr(fb, reg->name);
         break;
     }
+}
+
+static void
+PrintOperandSrc(struct flexbuf *fb, Operand *reg)
+{
+    doPrintOperand(fb, reg, 1);
+}
+
+static void
+PrintOperand(struct flexbuf *fb, Operand *reg)
+{
+    doPrintOperand(fb, reg, 0);
 }
 
 void
@@ -220,13 +234,13 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:
             flexbuf_addstr(fb, "\t");
-            PrintOperand(fb, ir->dst);
+            PrintOperandSrc(fb, ir->dst);
             break;
         default:
             flexbuf_addstr(fb, "\t");
             PrintOperand(fb, ir->dst);
             flexbuf_addstr(fb, ", ");
-            PrintOperand(fb, ir->src);
+            PrintOperandSrc(fb, ir->src);
             break;
         }
         ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);

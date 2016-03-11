@@ -5,9 +5,9 @@ _func
 	add	ptr__objmem_, #8
 	rdlong	result_, ptr__objmem_
 	add	ptr__objmem_, #4
-	rdbyte	func_tmp003_, ptr__objmem_
+	rdbyte	func_tmp002_, ptr__objmem_
 	sub	ptr__objmem_, #12
-	add	result_, func_tmp003_
+	add	result_, func_tmp002_
 _func_ret
 	ret
 
@@ -19,7 +19,7 @@ arg3_
 	long	0
 arg4_
 	long	0
-func_tmp003_
+func_tmp002_
 	long	0
 ptr__objmem_
 	long	@@@_objmem
