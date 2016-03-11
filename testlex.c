@@ -19,7 +19,7 @@ Function *curfunc;
 AST *ast_type_long, *ast_type_word, *ast_type_byte, *ast_type_float;
 AST *ast_type_string, *ast_type_generic;
 
-int gl_outcode = 0;
+int gl_output = 0;
 int gl_gas_dat = 0;
 int gl_normalizeIdents = 1;  /* for compatibility with ident tests */
 int gl_dat_offset = 0;

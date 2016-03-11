@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include "outcpp.h"
 
+#define gl_ccode (gl_output == OUTPUT_C)
+
 static void PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr);
 
 static int

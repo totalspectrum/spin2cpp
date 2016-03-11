@@ -136,7 +136,7 @@ PrintConstantDecl(Flexbuf *f, AST *ast)
         return;
     }
     expr = (AST *)sym->val;
-    if (gl_ccode) {
+    if (gl_output == OUTPUT_C) {
         flexbuf_printf(f, "#define %s (", ast->d.string);
         PrintConstant(f, expr);
         flexbuf_printf(f, ")\n");
@@ -388,7 +388,7 @@ PrintMacros(Flexbuf *f, Module *parse)
     bool needsInline = false;
     if (gl_nospin)
         return;
-    if (gl_ccode) {
+    if (gl_output == OUTPUT_C) {
       needsIfdef = true;
       needsInline = true;
     }
@@ -428,7 +428,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	if (parse->needsYield) {
 	  flexbuf_printf(f, "#define Yield__()\n");
 	}
-	if (gl_ccode) {
+	if (gl_output == OUTPUT_C) {
 	  flexbuf_printf(f, "#define waitcnt(n) _waitcnt(n)\n");
 	  if (parse->needsLockFuncs) {
               flexbuf_printf(f, "#define locknew() _locknew()\n");
@@ -473,10 +473,10 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
     if (parse->needsAbortdef) {
-        if (!gl_ccode)
+        if (gl_output == OUTPUT_CPP)
             flexbuf_printf(f, "extern \"C\" {\n");
         flexbuf_printf(f, "#include <setjmp.h>\n");
-        if (!gl_ccode)
+        if (gl_output == OUTPUT_CPP)
             flexbuf_printf(f, "}\n");
         flexbuf_printf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
         flexbuf_printf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
@@ -551,7 +551,7 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "\"    .compress default\\n\"\n");
         flexbuf_printf(f, ");\n");
         flexbuf_printf(f, "extern ");
-        if (!gl_ccode) {
+        if (gl_output == OUTPUT_CPP) {
             flexbuf_printf(f, "\"C\" ");
         }
         flexbuf_printf(f, "int32_t _cog_xfer(int32_t dst, int32_t src, int32_t retval);\n");
@@ -605,7 +605,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
     PrintMacros(f, parse);
 
     /* declare static functions and variables */
-    if (gl_ccode && !gl_nospin) {
+    if (gl_output == OUTPUT_C && !gl_nospin) {
         int n;
 
         n = PrintPrivateFunctionDecls(f, parse);
@@ -619,7 +619,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
             PrintDatArray(f, parse, ";\n", false);
             PrintDataBlockForGas(f, parse, 1);
         } else {
-            if (gl_ccode) {
+            if (gl_output == OUTPUT_C) {
                 flexbuf_printf(f, "static ");
                 PrintDatArray(f, parse, " = {\n", false);
             } else {
@@ -757,7 +757,7 @@ OutputCppCode(const char *filename, Module *P, int printMain)
 
     flexbuf_init(&fb, 0);
     PrintDebugDirective(&fb, NULL);
-    if (gl_ccode) {
+    if (gl_output == OUTPUT_C) {
         PrintCHeaderFile(&fb, P);
     } else {
         PrintCppHeaderFile(&fb, P);
@@ -800,7 +800,7 @@ OutputCppCode(const char *filename, Module *P, int printMain)
         OutputClkFreq(&fb, P);
         flexbuf_printf(&fb, "\n");
 
-        if (gl_ccode) {
+        if (gl_output == OUTPUT_C) {
             flexbuf_printf(&fb, "%s MainObj__;\n\n", P->classname);
             flexbuf_printf(&fb, "int main() {\n");
             flexbuf_printf(&fb, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
@@ -815,7 +815,7 @@ OutputCppCode(const char *filename, Module *P, int printMain)
         }
     }
 
-    if (gl_ccode) {
+    if (gl_output == OUTPUT_C) {
         fname = ReplaceExtension(filename, ".c");
     } else {
         fname = ReplaceExtension(filename, ".cpp");

@@ -517,7 +517,7 @@ TransformCountRepeat(AST *ast)
     */
     if (fromval == NULL) {
         needsteptest = 0;
-        if (gl_outcode == OUTCODE_C || gl_outcode == OUTCODE_CPP) {
+        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
             useLt = 1;
             fromval = AstInteger(0);
             negstep = 0;
@@ -638,7 +638,7 @@ TransformCountRepeat(AST *ast)
         // use the AST_BETWEEN operator for better code
         condtest = NewAST(AST_ISBETWEEN, loopvar, NewAST(AST_RANGE, initvar, limit));
         /* the loop has to execute at least once */
-        if (gl_outcode == OUTCODE_C || gl_outcode == OUTCODE_CPP) {
+        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
             condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
         }
     }
@@ -677,8 +677,8 @@ ParseDirectives(const char *str)
     if (match(str, "nospin"))
         gl_nospin = 1;
     else if (match(str, "ccode")) {
-        if (gl_outcode == OUTCODE_CPP)
-            gl_outcode = OUTCODE_C;
+        if (gl_output == OUTPUT_CPP)
+            gl_output = OUTPUT_C;
     }
 }
 

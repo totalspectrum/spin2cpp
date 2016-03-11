@@ -19,7 +19,7 @@ PrintParameterList(Flexbuf *f, Function *func)
     AST *ast;
     bool needSelf = false;
 
-    needSelf = (gl_ccode && !func->is_static) || func->force_static;
+    needSelf = (gl_output == OUTPUT_C && !func->is_static) || func->force_static;
     if (!list && !needSelf) {
         flexbuf_printf(f, "void");
         return;
@@ -78,14 +78,14 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
     /* make sure debug info (line number etc.) is up to date */
     PrintDebugDirective(f, func->decl);
 
-    if (gl_ccode && isLocal) {
+    if (gl_output == OUTPUT_C && isLocal) {
         flexbuf_printf(f, "static");
     }
     flexbuf_printf(f, "  ");
     if (func->annotations) {
         PrintAnnotationList(f, func->annotations, ' ');
     }
-    if (gl_ccode) {
+    if (gl_output == OUTPUT_C) {
         PrintType(f, func->rettype);
         flexbuf_printf(f, " %s_%s(", current->classname, 
                 func->name);
@@ -548,7 +548,7 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
         PrintAnnotationList(f, curfunc->annotations, '\n');
         /* make sure debug info (line number etc.) is up to date */
         PrintDebugDirective(f, curfunc->decl);
-        if (gl_ccode) {
+        if (gl_output == OUTPUT_C) {
             if (!pf->is_public) {
                 flexbuf_printf(f, "static ");
             }

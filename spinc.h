@@ -46,7 +46,8 @@
 /* some globals */
 
 /* compilation flags */
-extern int gl_outcode;  /* type of code to output */
+extern int gl_output;  /* type of output to produce */
+extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */
 extern int gl_nospin; /* if set, suppress output of Spin methods */
 extern int gl_preprocess; /* if set, run the preprocessor on input */
 extern int gl_gas_dat;    /* if set, output GAS assembly code inline */
@@ -60,13 +61,15 @@ extern int gl_optimize_flags; /* flags for optimization */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
 
-// temporary hack
-#define gl_ccode (gl_outcode == OUTCODE_C)
+/* types of output */
+#define OUTPUT_CPP  0
+#define OUTPUT_C    1
+#define OUTPUT_DAT  2
+#define OUTPUT_ASM  3
 
-#define OUTCODE_CPP  0
-#define OUTCODE_C    1
-#define OUTCODE_DAT  2
-#define OUTCODE_ASM  3
+/* flags for output */
+#define OUTFLAG_HUB_CODE 0x01
+#define OUTFLAG_HUB_DATA 0x02
 
 /* types */
 extern AST *ast_type_long;
