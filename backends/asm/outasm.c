@@ -39,6 +39,7 @@ static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 
 static void EmitGlobals(IRList *irl);
 static void EmitMove(IRList *irl, Operand *dst, Operand *src);
+static void EmitLea(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
@@ -1347,6 +1348,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
 {
     Operand *basereg;
     Operand *newbase;
+    Operand *temp;
     int idx;
     int siz;
     int shift;
@@ -1385,11 +1387,13 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         return newbase;
     }
     newbase = NewFunctionTempRegister();
+    temp = NewFunctionTempRegister();
     EmitMove(irl, newbase, offset);
     if (shift) {
         EmitOp2(irl, OPC_SHL, newbase, NewImmediate(shift));
     }
-    EmitOp2(irl, OPC_ADD, newbase, basereg);
+    EmitLea(irl, temp, base);
+    EmitOp2(irl, OPC_ADD, newbase, temp);
     return NewOperand(base->kind, (char *)newbase, 0);
 }
 
