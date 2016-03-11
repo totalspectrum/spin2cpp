@@ -33,9 +33,9 @@ GUI.
 
 KNOWN ISSUES
 
-PASM output cannot handle byte or word variables, or files with the
-OBJ directive. It also does notimplement lookup/lookdown, case,
-coginit/cognew, and some operators. It's still very much a
-work in progress. 
+PASM output cannot handle taking the address of function variables.
+It also does not implement lookup/lookdown with non-constant values,
+case, and some operators (sqrt, the random operators, and perhaps a
+few others). It's still very much a work in progress.
 
 The C/C++ output should be complete.
