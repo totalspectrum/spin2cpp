@@ -3,8 +3,8 @@ DAT
 
 _fetch
 	shl	arg2_, #1
-	add	arg2_, arg1_
-	rdword	result_, arg2_
+	add	arg1_, arg2_
+	rdword	result_, arg1_
 _fetch_ret
 	ret
 

@@ -1388,11 +1388,11 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     }
     newbase = NewFunctionTempRegister();
     temp = NewFunctionTempRegister();
-    EmitMove(irl, newbase, offset);
+    EmitLea(irl, newbase, base);
+    EmitMove(irl, temp, offset);
     if (shift) {
-        EmitOp2(irl, OPC_SHL, newbase, NewImmediate(shift));
+        EmitOp2(irl, OPC_SHL, temp, NewImmediate(shift));
     }
-    EmitLea(irl, temp, base);
     EmitOp2(irl, OPC_ADD, newbase, temp);
     return NewOperand(base->kind, (char *)newbase, 0);
 }
@@ -1434,8 +1434,13 @@ EmitLea(IRList *irl, Operand *dst, Operand *src)
     if (IsMemRef(src)) {
         int off = src->val;
         src = (Operand *)src->name;
+        if (off) {
+            EmitAddSub(irl, src, off);
+        }
         EmitMove(irl, dst, src);
-        EmitAddSub(irl, dst, off);
+        if (off) {
+            EmitAddSub(irl, src, -off);
+        }
     } else {
         ERROR(NULL, "Load Effective Address on a non-memory reference");
     }

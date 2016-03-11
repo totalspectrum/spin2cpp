@@ -2,8 +2,9 @@ DAT
 	org	0
 
 _getptr
+	add	ptr__objmem_, #16
 	mov	result_, ptr__objmem_
-	add	result_, #16
+	sub	ptr__objmem_, #16
 _getptr_ret
 	ret
 
