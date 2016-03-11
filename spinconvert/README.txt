@@ -39,3 +39,39 @@ case, and some operators (sqrt, the random operators, and perhaps a
 few others). It's still very much a work in progress.
 
 The C/C++ output should be complete.
+
+EXTENSIONS TO THE SPIN LANGUAGE
+
+The Spin Converter can actually accept a few extensions to Spin, at
+least in some circumstances:
+
+(1) The @@@ operator for absolute hub address is accepted in DAT
+sections if they are being compiled to binary (--dat --binary) or if
+GAS output is given (--gas). There are technical issues that make
+supporting it in other circumstances more difficult, but I hope to
+be able to do so eventually,
+
+(2) IF/THEN/ELSE expressions are supported, for example:
+
+    x := if a<b then 0 else 1
+
+will assign x the value of 0 if a is less than b, 1 otherwise. This is
+very much like C's (? :) ternary operator. The compiler uses this
+internally for some things, and for testing purposes it was useful to
+change the syntax to make it available.
+
+(3) Inline assembly in Spin functions is supported in Spin functions,
+between lines starting "asm" and "endasm". The assembly is very
+limited; only local variable names (including parameters) and
+immediate constants are legal operands for instructions. Still, it can
+be useful, and is in fact heavily used internally for built in
+operators. For example, the lockclr Spin function is implemented as:
+
+pub lockclr(id) | mask, rval
+  mask := -1
+  asm
+    lockclr id wc
+    muxc rval, mask
+  endasm
+  return rval
+
