@@ -6,11 +6,12 @@ CON
   _clkmode = xtal1 + pll16x
    
 OBJ
-  ser: "SimpleSerial"
+'' ser: "SimpleSerial"
+ ser: "FullDuplexSerialModified"
   
 PUB demo
   ser.start(31, 30, 0, 115200)
   repeat 4
     ser.str(string("hello, world!", 13, 10))
-  ser.exit(0)
+  repeat
   

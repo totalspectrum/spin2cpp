@@ -22,8 +22,6 @@ static Operand *divfunc, *diva, *divb;
 static Operand *nextlabel;
 static Operand *quitlabel;
 
-static Operand *datbase;
-static Operand *datlabel;
 static Operand *objbase;
 static Operand *objlabel;
 
@@ -606,12 +604,13 @@ LabelRef(IRList *irl, Symbol *sym)
     Operand *temp;
     Label *lab = (Label *)sym->val;
     Module *P = current;
+    AsmModData *PD = ModData(P);
     
-    if (!datbase) {
-        datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
-        datbase = NewImmediatePtr(datlabel);
+    if (!PD->datbase) {
+        PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
+        PD->datbase = NewImmediatePtr(PD->datlabel);
     }
-    temp = TypedMemRef(lab->type, datbase, (int)lab->offset);
+    temp = TypedMemRef(lab->type, PD->datbase, (int)lab->offset);
     return temp;
 }
 
@@ -2073,6 +2072,10 @@ AssignFuncNames(IRList *irl, Module *P)
 {
     Function *f;
     (void)irl; // not used
+
+    if (!P->bedata) {
+        P->bedata = calloc(sizeof(AsmModData), 1);
+    }
     for(f = P->functions; f; f = f->next) {
 	const char *fname;
         char *frname;
@@ -2348,14 +2351,14 @@ EmitDatSection(IRList *irl, Module *P)
   char *data;
   int len;
 
-  if (!datbase)
+  if (!ModData(P)->datbase)
       return;
   flexbuf_init(&fb, 32768);
   PrintDataBlock(&fb, P, BINARY_OUTPUT);
   len = (int)flexbuf_curlen(&fb);
   data = flexbuf_get(&fb);
   op = NewOperand(IMM_STRING, data, len);
-  EmitOp2(irl, OPC_LABELED_BLOB, datlabel, op);
+  EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
 }
 
 void

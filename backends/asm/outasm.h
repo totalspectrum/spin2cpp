@@ -71,6 +71,16 @@ typedef struct ir_bedata {
 #define FuncData(f) ((IRFuncData *)(f)->bedata)
 #define FuncIRL(f)  (&FuncData(f)->irl)
 
+//
+// back end data for modules
+//
+typedef struct asmmoddata {
+    Operand *datbase;
+    Operand *datlabel;
+} AsmModData;
+
+#define ModData(P) ((AsmModData *)(P)->bedata)
+
 // find a PASM instruction description for a generic optimizer instruction
 Instruction *FindInstrForOpc(IROpcode kind);
 

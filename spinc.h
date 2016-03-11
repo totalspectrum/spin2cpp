@@ -218,6 +218,9 @@ struct modulestate {
     char fixImmediate;
     char volatileVariables;
     char sawToken;
+
+    /* back end specific flags */
+    void *bedata;
 };
 
 /* the current parser state */
