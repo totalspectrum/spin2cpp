@@ -984,7 +984,13 @@ main(int argc, char **argv)
 	    outputBin = 1;
             argv++; --argc;
             gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
-            appendCompiler(NULL);
+            if (gl_output == OUTPUT_ASM) {
+                appendCompiler(gl_progname);
+                appendToCmd("--dat");
+                appendToCmd("--binary");
+            } else {
+                appendCompiler(NULL);
+            }
         } else if (!strncmp(argv[0], "--nopre", 7)) {
             gl_preprocess = 0;
             argv++; --argc;
@@ -1110,10 +1116,10 @@ main(int argc, char **argv)
 
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
-    if (outputDat && outputBin) {
+    if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
         // a 32 byte spin header is prepended to binary output of dat
         gl_dat_offset = 32;
-    } else if (outputDat && gl_gas_dat) {
+    } else if (gl_output == OUTPUT_DAT && gl_gas_dat) {
         // GAS output for dat uses symbols, so @@@ is OK there
         gl_dat_offset = 0;
     }
@@ -1173,11 +1179,32 @@ main(int argc, char **argv)
                 }
             }
         } else if (outputAsm) {
-            outname = gl_outname;
-            if (!outname) {
-                outname = ReplaceExtension(P->fullname, ".pasm");
+            const char *binname = NULL;
+            const char *asmname = NULL;
+            if (compile) {
+                binname = gl_outname;
+                if (binname) {
+                    asmname = ReplaceExtension(binname, ".pasm");
+                } else {
+                    binname = ReplaceExtension(P->fullname, ".binary");
+                }
+            } else {
+                asmname = gl_outname;
             }
-            OutputAsmCode(outname, P);
+            if (!asmname) {
+                asmname = ReplaceExtension(P->fullname, ".pasm");
+            }
+            OutputAsmCode(asmname, P);
+            if (compile) {
+                appendToCmd("-o");
+                appendToCmd(binname);
+                appendToCmd(asmname);
+                retval = system(cmdline);
+                if (retval < 0) {
+                    fprintf(stderr, "Unable to run command: %s\n", cmdline);
+                    exit(1);
+                }
+            }
         } else {
             /* compile any sub-objects needed */
             for (Q = allparse; Q; Q = Q->next) {

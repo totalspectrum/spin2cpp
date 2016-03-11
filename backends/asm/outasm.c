@@ -2074,6 +2074,19 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
     current = save;
 }
 
+static bool
+ShouldSkipFunction(Function *f)
+{
+    if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
+        return false;
+    if (f->is_used)
+        return false;
+    // do not skip global functions, we handle those separately
+    if (!strcmp(f->parse->fullname, "_system_"))
+        return false;
+    return true;
+}
+    
 // assign all function names so we can do forward calls
 // this is also where we can allocate the back end data
 static void
@@ -2088,6 +2101,9 @@ AssignFuncNames(IRList *irl, Module *P)
     for(f = P->functions; f; f = f->next) {
 	const char *fname;
         char *frname;
+
+        if (ShouldSkipFunction(f))
+            continue;
         fname = IdentifierGlobalName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
@@ -2154,6 +2170,8 @@ CompileFunc_internal(IRList *irl, Module *P)
     Function *f;
     (void)irl; // not used
     for(f = P->functions; f; f = f->next) {
+      if (ShouldSkipFunction(f))
+          continue;
       curfunc = f;
       CompileFunctionBody(f);
       FuncData(f)->isInline = ShouldBeInlined(f);
@@ -2166,6 +2184,8 @@ ExpandInline_internal(IRList *irl, Module *P)
     Function *f;
     for (f = P->functions; f; f = f->next) {
         IRList *firl = FuncIRL(f);
+        if (ShouldSkipFunction(f))
+            continue;
         curfunc = f;
         if (ExpandInlines(firl)) {
             // may be new opportunities for optimization
@@ -2195,12 +2215,17 @@ CompileToIR_internal(IRList *irl, Module *P)
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has
         // been inlined, skip it
-        if (!f->is_public) {
-            // private function
+        if (ShouldSkipFunction(f)) {
+            continue;
+        }
+        if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS)) {
+            // also skip inlined private functions
             if (FuncData(f)->isInline) {
                 continue;
             }
             if (!f->is_used) {
+                // system functions were not skipped in ShouldSkipFunction,
+                // so skip them here if they are not used
                 continue;
             }
         }
