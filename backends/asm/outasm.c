@@ -2125,7 +2125,7 @@ AssignFuncNames(IRList *irl, Module *P)
                 }
                 P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
                 label = calloc(sizeof(*label), 1);
-                label->offset = P->datsize;
+                sym->offset = label->offset = P->datsize;
                 label->type = ast_type_long;
                 sym->type = SYM_LABEL;
                 sym->val = (void *)label;

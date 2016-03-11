@@ -8,5 +8,8 @@ default: hello.binary math.binary led.binary
 %.binary: %.pasm
 	$(SPIN2CPP) --dat --binary $<
 
+%.elf: %.spin
+	$(SPIN2CPP) --elf -Os $<
+
 clean:
-	rm -f *.pasm *.binary *.cpp *.c *.h
+	rm -f *.elf *.pasm *.binary *.cpp *.c *.h

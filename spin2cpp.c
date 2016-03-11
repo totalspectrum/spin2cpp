@@ -392,13 +392,16 @@ DeclareConstants(AST **conlist_ptr)
     }
 }
 
-static void
-DeclareVariables(Module *P)
+static int
+DeclareVariablesOfType(Module *P, AST *basetype, int offset)
 {
     AST *upper;
-    AST *curtype;
     AST *ast;
-    int offset = 0;
+    AST *curtype;
+    int curtypesize;
+    int basetypesize;
+    
+    basetypesize = TypeSize(basetype);
     
     for (upper = P->varblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
@@ -410,22 +413,39 @@ DeclareVariables(Module *P)
         switch (ast->kind) {
         case AST_BYTELIST:
             curtype = ast_type_byte;
+            curtypesize = 1;
             break;
         case AST_WORDLIST:
             curtype = ast_type_word;
+            curtypesize = 2;
             break;
         case AST_LONGLIST:
-            curtype = ast_type_generic; // was ast_type_long;
+            curtype = ast_type_generic;
+            curtypesize = 4;
             break;
         case AST_COMMENT:
             /* skip */
             continue;
         default:
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
-            return;
+            return offset;
         }
-        offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
+        if (basetypesize == curtypesize) {
+            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
+        }
     }
+    return offset;
+    
+}
+
+void
+DeclareVariables(Module *P)
+{
+    int offset = 0;
+    
+    offset = DeclareVariablesOfType(P, ast_type_long, offset);
+    offset = DeclareVariablesOfType(P, ast_type_word, offset);
+    offset = DeclareVariablesOfType(P, ast_type_byte, offset);
 
     // round up to next LONG boundary
     offset = (offset + 3) & ~3;
