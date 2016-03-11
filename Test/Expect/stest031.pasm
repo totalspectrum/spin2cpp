@@ -19,6 +19,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 clearpin_tmp001_
 	long	0
 result_

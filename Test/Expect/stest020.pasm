@@ -4,11 +4,11 @@ DAT
 _simplemul
 	mov	_simplemul_i, #0
 	mov	_simplemul_r, #0
-L_025_
+L_032_
 	cmps	_simplemul_i, arg1_ wc,wz
  if_b	add	_simplemul_r, arg2_
  if_b	add	_simplemul_i, #1
- if_b	jmp	#L_025_
+ if_b	jmp	#L_032_
 	mov	result_, _simplemul_r
 _simplemul_ret
 	ret
@@ -22,6 +22,8 @@ arg1_
 arg2_
 	long	0
 arg3_
+	long	0
+arg4_
 	long	0
 result_
 	long	0

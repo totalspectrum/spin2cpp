@@ -14,6 +14,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 indsum_tmp003_
 	long	0
 result_

@@ -177,6 +177,18 @@ outputDataList(Flexbuf *f, int size, AST *ast)
                 }
             }
             reps = 0;
+        } else if (sub->kind == AST_RANGE) {
+            int start = EvalPasmExpr(sub->left);
+            int end = EvalPasmExpr(sub->right);
+            while (start <= end) {
+                val = start;
+                for (i = 0; i < size; i++) {
+                    outputByte(f, val & 0xff);
+                    val = val >> 8;
+                }
+                start++;
+            }
+            reps = 0;
         } else {
             origval = EvalPasmExpr(ast->left);
             reps = 1;

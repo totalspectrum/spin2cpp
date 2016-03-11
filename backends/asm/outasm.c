@@ -1455,6 +1455,46 @@ CompileCoginit(IRList *irl, AST *expr)
 }
 
 //
+// compile a lookup/lookdown
+//
+static Operand *
+CompileLookupDown(IRList *irl, AST *expr)
+{
+    AST *funccall;
+    AST *idx, *base;
+    AST *params;
+    AST *ev, *table;
+    AST *len;
+    AST *arrid;
+    if (expr->kind == AST_LOOKDOWN) {
+        funccall = AstIdentifier("_lookdown");
+    } else {
+        funccall = AstIdentifier("_lookup");
+    }
+    ev = expr->left;
+    if (ev->kind != AST_LOOKEXPR) {
+        ERROR(ev, "Internal error in lookup");
+        return NewImmediate(0);
+    }
+    base = ev->left;
+    idx = ev->right;
+    table = expr->right;
+    if (table->kind != AST_TEMPARRAYUSE) {
+        ERROR(table, "Cannot handle non-constant lookups");
+        return NewImmediate(0);
+    }
+    len = table->right;
+    arrid = NewAST(AST_ADDROF, table->left, NULL);
+
+    params = NewAST(AST_EXPRLIST, idx,
+                    NewAST(AST_EXPRLIST, base,
+                           NewAST(AST_EXPRLIST, arrid,
+                                  NewAST(AST_EXPRLIST, len, NULL))));
+    funccall = NewAST(AST_FUNCCALL, funccall, params);
+    return CompileFunccall(irl, funccall);
+}
+
+//
 // get the address of an expression
 //
 static Operand *
@@ -1582,6 +1622,9 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_ADDROF:
   case AST_ABSADDROF:
       return GetAddressOf(irl, expr->left);
+  case AST_LOOKUP:
+  case AST_LOOKDOWN:
+      return CompileLookupDown(irl, expr);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -2039,6 +2082,56 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
         FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
         FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
+
+        // also fix up any extra declarations
+        if (f->extradecl) {
+            AST *ast = f->extradecl;
+            AST *decl;
+            AST *table;
+            AST *name;
+            Symbol *sym;
+            int tablelen;
+            Label *label;
+            while (ast) {
+                if (ast->kind != AST_LISTHOLDER) {
+                    ERROR(ast, "Internal error: expected list holder");
+                    break;
+                }
+                decl = ast->left;
+                if (decl->kind != AST_TEMPARRAYDECL) {
+                    ERROR(ast, "Internal error: expected temp array decl");
+                    break;
+                }
+                name = decl->left;  // this is the array def
+                tablelen = EvalConstExpr(name->right);
+                name = name->left;
+                if (name->kind != AST_IDENTIFIER) {
+                    ERROR(ast, "Internal error: expected identifier");
+                    break;
+                }
+                sym = FindSymbol(&P->objsyms, name->d.string);
+                if (!sym || sym->type != SYM_TEMPVAR) {
+                    ERROR(name, "Internal error: unable to find symbol");
+                    break;
+                }
+                
+                table = decl->right;
+                if (table->kind != AST_EXPRLIST) {
+                    ERROR(table, "Internal error: expected expression list");
+                    break;
+                }
+                P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
+                label = calloc(sizeof(*label), 1);
+                label->offset = P->datsize;
+                label->type = ast_type_long;
+                sym->type = SYM_LABEL;
+                sym->val = (void *)label;
+                table = NewAST(AST_LONGLIST, table, NULL);
+                P->datblock = AddToList(P->datblock, table);
+                P->datsize += tablelen * LONG_SIZE;
+                ast = ast->right;
+            }
+        }
     }
     
 }

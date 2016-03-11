@@ -17,6 +17,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 imm_512_
 	long	512
 result_

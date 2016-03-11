@@ -44,6 +44,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 hyp_tmp002_
 	long	0
 itmp1_

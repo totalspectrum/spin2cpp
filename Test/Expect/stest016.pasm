@@ -3,10 +3,10 @@ DAT
 
 _count
 	mov	_count_i, #0
-L_025_
+L_032_
 	mov	OUTA, _count_i
 	add	_count_i, #1
-	jmp	#L_025_
+	jmp	#L_032_
 _count_ret
 	ret
 
@@ -17,6 +17,8 @@ arg1_
 arg2_
 	long	0
 arg3_
+	long	0
+arg4_
 	long	0
 result_
 	long	0

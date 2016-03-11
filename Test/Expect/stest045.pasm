@@ -3,11 +3,11 @@ DAT
 
 _strlen2
 	mov	_strlen2_r, #0
-L_025_
+L_032_
 	rdbyte	strlen2_tmp001_, arg1_ wz
  if_ne	add	arg1_, #1
  if_ne	add	_strlen2_r, #1
- if_ne	jmp	#L_025_
+ if_ne	jmp	#L_032_
 	mov	result_, _strlen2_r
 _strlen2_ret
 	ret
@@ -19,6 +19,8 @@ arg1_
 arg2_
 	long	0
 arg3_
+	long	0
+arg4_
 	long	0
 result_
 	long	0

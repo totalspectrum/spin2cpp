@@ -13,6 +13,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 ptr__objmem_
 	long	@@@_objmem
 result_

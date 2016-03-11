@@ -28,6 +28,8 @@ arg2_
 	long	0
 arg3_
 	long	0
+arg4_
+	long	0
 imm_65532_
 	long	65532
 ptr__dat__

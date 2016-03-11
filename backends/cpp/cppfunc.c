@@ -353,7 +353,8 @@ PrintExtraDecl(Flexbuf *f, AST *ast, int indent)
         ast = ast->right;
 
         if (decl && decl->kind == AST_TEMPARRAYDECL) {
-            id = decl->left;
+            AST *arraydef = decl->left;
+            id = arraydef->left;
             flexbuf_printf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
             PrintLookupArray(f, decl->right);
             flexbuf_printf(f, "};"); PrintNewline(f);

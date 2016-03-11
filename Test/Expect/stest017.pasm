@@ -3,11 +3,11 @@ DAT
 
 _count
 	mov	_count_i, #0
-L_025_
+L_032_
 	mov	OUTA, _count_i
 	add	_count_i, #1
 	cmps	_count_i, #4 wz
- if_ne	jmp	#L_025_
+ if_ne	jmp	#L_032_
 _count_ret
 	ret
 
@@ -18,6 +18,8 @@ arg1_
 arg2_
 	long	0
 arg3_
+	long	0
+arg4_
 	long	0
 result_
 	long	0

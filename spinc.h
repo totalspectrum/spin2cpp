@@ -182,6 +182,9 @@ struct modulestate {
 
     /* size of variables & objects used */
     int varsize;
+
+    /* size of the data section */
+    int datsize;
     
     /* various file name related strings */
     const char *fullname;    /* full name and path of the file */

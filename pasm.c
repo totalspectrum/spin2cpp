@@ -24,6 +24,13 @@ dataListLen(AST *ast, int elemsize)
                 numelems = EvalPasmExpr(ast->left->right);
             } else if (sub->kind == AST_STRING) {
                 numelems = strlen(sub->d.string);
+            } else if (sub->kind == AST_RANGE) {
+                int start = EvalPasmExpr(sub->left);
+                numelems = (EvalPasmExpr(sub->right) - start) + 1;
+                if (numelems < 0) {
+                    ERROR(sub, "Backwards range not supported");
+                    numelems = 0;
+                }
             } else {
                 numelems = 1;
             }
@@ -232,5 +239,7 @@ DeclareLabels(Module *P)
             break;
         }
     }
+
+    P->datsize = datoff;
 }
 

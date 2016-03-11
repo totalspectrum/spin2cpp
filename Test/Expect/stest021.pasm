@@ -4,9 +4,9 @@ DAT
 _waitcycles
 	mov	_waitcycles_end, CNT
 	add	_waitcycles_end, arg1_
-L_025_
+L_032_
 	cmps	CNT, _waitcycles_end wc,wz
- if_b	jmp	#L_025_
+ if_b	jmp	#L_032_
 _waitcycles_ret
 	ret
 
@@ -17,6 +17,8 @@ arg1_
 arg2_
 	long	0
 arg3_
+	long	0
+arg4_
 	long	0
 result_
 	long	0

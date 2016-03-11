@@ -254,6 +254,17 @@ const char system_spincode[] =
     "    coginit parm wr\n"
     "  endasm\n"
     "  return parm\n"
+    "pri _lookup(x, b, arr, n) | i\n"
+    "  i := x - b\n"
+    "  if (i => 0 and i < n)\n"
+    "    return long[arr][i]\n"
+    "  return 0\n"
+    "pri _lookdown(x, b, arr, n) | i\n"
+    "  repeat i from 0 to n-1\n"
+    "    if (long[arr] == x)\n"
+    "      return i+b\n"
+    "    arr += 4\n"
+    "  return 0\n"
 ;
 
 void

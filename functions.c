@@ -338,7 +338,7 @@ ModifyLookup(AST *top)
     top->right = NewAST(AST_TEMPARRAYUSE, id, AstInteger(len));
 
     /* create a declaration */
-    decl = NewAST(AST_TEMPARRAYDECL, id, table);
+    decl = NewAST(AST_TEMPARRAYDECL, NewAST(AST_ARRAYDECL, id, AstInteger(len)), table);
 
     /* put it in a list holder */
     decl = NewAST(AST_LISTHOLDER, decl, NULL);
