@@ -68,8 +68,9 @@ extern int gl_dat_offset; /* offset for @@@ operator */
 #define OUTPUT_ASM  3
 
 /* flags for output */
-#define OUTFLAG_HUB_CODE 0x01
-#define OUTFLAG_HUB_DATA 0x02
+#define OUTFLAG_COG_CODE 0x01
+#define OUTFLAG_COG_DATA 0x02
+#define OUTFLAGS_DEFAULT (OUTFLAG_COG_CODE)
 
 /* types */
 extern AST *ast_type_long;

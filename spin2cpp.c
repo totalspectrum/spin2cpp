@@ -45,6 +45,7 @@ Module *globalModule;
 
 int gl_errors;
 int gl_output;
+int gl_outputflags;
 int gl_nospin;
 int gl_gas_dat;
 int gl_normalizeIdents;
@@ -916,6 +917,7 @@ main(int argc, char **argv)
     flexbuf_addchar(&argbuf, 0);
     gl_header = flexbuf_get(&argbuf);
     gl_output = OUTPUT_CPP;
+    gl_outputflags = OUTFLAGS_DEFAULT;
     
     allparse = NULL;
 #ifdef DEBUG_YACC
@@ -932,6 +934,26 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--main", 6) || !strcmp(argv[0], "-main")) {
             outputMain = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--data=", 7)) {
+            if (!strcmp(argv[0]+7, "cog")) {
+                gl_outputflags |= OUTFLAG_COG_DATA;
+            } else if (!strcmp(argv[0]+7, "hub")) {
+                gl_outputflags &= ~OUTFLAG_COG_DATA;
+            } else {
+                fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
+                Usage();
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--code=", 7)) {
+            if (!strcmp(argv[0]+7, "cog")) {
+                gl_outputflags |= OUTFLAG_COG_CODE;
+            } else if (!strcmp(argv[0]+7, "hub")) {
+                gl_outputflags &= ~OUTFLAG_COG_CODE;
+            } else {
+                fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
+                Usage();
+            }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
             gl_output = OUTPUT_DAT;
