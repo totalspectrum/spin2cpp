@@ -1,6 +1,6 @@
-SPIN2CPP = ../../spin2cpp
+SPIN2CPP = ../../build/spin2cpp
 CC = propeller-elf-gcc
-CFLAGS = -O2 -mfcache
+CFLAGS = -O -mfcache
 
 default: time.elf demo_F32.elf
 

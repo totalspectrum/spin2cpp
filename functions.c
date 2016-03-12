@@ -1054,7 +1054,7 @@ CheckRecursive(Function *f)
  * change a small longmove call into a series of assignments
  * returns true if transform done
  */
-#define LONGMOVE_THRESHOLD 1
+#define LONGMOVE_THRESHOLD 4
 
 static bool
 TransformLongMove(AST **astptr, AST *ast)
@@ -1135,6 +1135,9 @@ TransformLongMove(AST **astptr, AST *ast)
         }
     }
     *astptr = sequence;
+    /* the longmove probably indicates a COG will be reading these
+       variables */
+    current->volatileVariables = 1;
     return true;
 }
 

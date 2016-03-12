@@ -7,9 +7,9 @@ CON
   _clkfreq = 80_000_000
 
 OBJ
-  fp: "F32.spin"
+  ''fp: "F32.spin"
   ''fp: "Float32Full"
-  ''fp: "FloatMath"
+  fp: "FloatMath"
   fds: "FullDuplexSerial"
   fstr: "FloatString"
 
