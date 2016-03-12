@@ -108,6 +108,7 @@ typedef struct funcdef {
     AST *doccomment;  /* documentation comments */
     int numparams;
     AST *params;      /* parameter list */
+    int numlocals;
     AST *locals;      /* local variables */
     AST *body;
     AST *resultexpr;

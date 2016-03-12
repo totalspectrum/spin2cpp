@@ -209,7 +209,6 @@ doDeclareFunction(AST *funcblock)
     AST *comment;
     const char *resultname;
     int is_public;
-    int localcount;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
@@ -256,7 +255,7 @@ doDeclareFunction(AST *funcblock)
     fdef->locals = vars->right;
 
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0) / LONG_SIZE;
-    localcount = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0) / LONG_SIZE;
+    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0) / LONG_SIZE;
 
     AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
 
@@ -265,13 +264,15 @@ doDeclareFunction(AST *funcblock)
     /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 
+#if 0
     /* check for special conditions */
-    ScanFunctionBody(fdef, body, NULL);
+    ScanFunctionBody(fdef, fdef->body, NULL);
 
     /* if we put the locals into an array, record the size of that array */
     if (fdef->localarray) {
-        fdef->localarray_len += localcount;
-    } 
+        fdef->localarray_len += fdef->numlocals;
+    }
+#endif
 }
 
 void
@@ -436,8 +437,9 @@ void
 AddLocalVariable(Function *func, AST *var)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->localarray_len * LONG_SIZE);
+    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
+    func->numlocals++;
     if (func->localarray) {
         func->localarray_len++;
     }
@@ -1052,6 +1054,8 @@ CheckRecursive(Function *f)
  * change a small longmove call into a series of assignments
  * returns true if transform done
  */
+#define LONGMOVE_THRESHOLD 1
+
 static bool
 TransformLongMove(AST **astptr, AST *ast)
 {
@@ -1074,7 +1078,7 @@ TransformLongMove(AST **astptr, AST *ast)
     if (ast || !count) return false;
     if (!IsConstExpr(count)) return false;
     n = EvalConstExpr(count);
-    if (n > 4 || n <= 0) return false;
+    if (n > LONGMOVE_THRESHOLD || n <= 0) return false;
 
     // check src and dst
     if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;
@@ -1311,6 +1315,16 @@ SpinTransform(Module *Q)
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
         doSpinTransform(&func->body, 1);
+
+        // ScanFunctionBody is left over from older code
+        // it should probably be merged in with doSpinTransform
+        /* check for special conditions */
+        ScanFunctionBody(func, func->body, NULL);
+
+        /* if we put the locals into an array, record the size of that array */
+        if (func->localarray) {
+            func->localarray_len += func->numlocals;
+        }
     }
     curfunc = savefunc;
     current = savecur;
