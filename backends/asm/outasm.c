@@ -2106,6 +2106,13 @@ CompileFunctionBody(Function *f)
     IRList *irl = FuncIRL(f);
     nextlabel = quitlabel = NULL;
     EmitFunctionProlog(irl, f);
+    // emit initializations if any required
+    if (!f->result_in_parmarray && f->resultexpr && f->resultexpr->kind == AST_IDENTIFIER)
+    {
+        AST *resinit = AstAssign(T_ASSIGN, f->resultexpr, AstInteger(0));
+        EmitStatement(irl, resinit);
+    }
+    //
     EmitStatementList(irl, f->body);
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl);
