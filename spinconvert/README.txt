@@ -75,3 +75,5 @@ pub lockclr(id) | mask, rval
   endasm
   return rval
 
+At the moment inline assembly only works for PASM output, it is not
+yet supported in C or C++.
