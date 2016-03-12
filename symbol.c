@@ -46,6 +46,29 @@ FindSymbol(SymbolTable *table, const char *name)
     return NULL;
 }
 
+/*
+ * find a symbol by offset
+ * this is slow (we have to search the whole table) and
+ * not guaranteed by us to be unique
+ */
+Symbol *
+FindSymbolByOffset(SymbolTable *table, int offset)
+{
+    Symbol *sym;
+    int hash;
+    for (hash = 0; hash < SYMTABLE_HASH_SIZE; hash++) {
+        sym = table->hash[hash];
+        while (sym) {
+            if (sym->offset == offset)
+                return sym;
+            sym = sym->next;
+        }
+    }
+    return NULL;
+}
+/*
+ * create a new symbol
+ */
 Symbol *
 NewSymbol(void)
 {

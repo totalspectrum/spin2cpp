@@ -36,6 +36,11 @@ static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
 {
     char temp[128];
+    if (!reg) {
+        ERROR(NULL, "internal error bad operand");
+        flexbuf_addstr(fb, "???");
+        return;
+    }
     switch (reg->kind) {
     case IMM_INT:
         if (reg->val >= 0 && reg->val < 512) {

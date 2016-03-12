@@ -219,3 +219,11 @@ RemoveFromList(AST **listptr, AST *elem)
         next = cur->right;
     }
 }
+
+void AstReportAs(AST *old)
+{
+    if (current && old) {
+        current->L.fileName = old->fileName;
+        current->L.lineCounter = old->line;
+    }
+}

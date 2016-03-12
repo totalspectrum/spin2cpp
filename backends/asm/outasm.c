@@ -1854,7 +1854,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         if (src->kind == IMM_INT || SrcOnlyHwReg(src)) {
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src);
-            src = temp;
+            src = temp2;
         }
         switch (origdst->kind) {
         default:

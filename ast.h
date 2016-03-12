@@ -160,4 +160,8 @@ int AstMatch(AST *a, AST *b);
 /* length of an AST list */
 int AstListLen(AST *a);
 
+/* mark new ASTs to be created to have the same line as AST old */
+/* used when we're transforming ASTs */
+void AstReportAs(AST *old);
+
 #endif

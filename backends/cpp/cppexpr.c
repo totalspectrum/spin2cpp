@@ -885,6 +885,7 @@ PrintAssign(Flexbuf *f, AST *lhs, AST *rhs)
 void
 PrintExprToplevel(Flexbuf *f, AST *expr)
 {
+    if (!expr) return;
     if (expr->kind == AST_ASSIGN) {
         PrintAssign(f, expr->left, expr->right);
     } else if (expr->kind == AST_OPERATOR && !isBooleanOperator(expr)) {
@@ -1214,8 +1215,10 @@ PrintExpr(Flexbuf *f, AST *expr)
     case AST_SEQUENCE:
         flexbuf_printf(f, "( ");
         PrintExpr(f, expr->left);
-        flexbuf_printf(f, ", ");
-        PrintExpr(f, expr->right);
+        if (expr->right) {
+            flexbuf_printf(f, ", ");
+            PrintExpr(f, expr->right);
+        }
         flexbuf_printf(f, " )");
         break;
     default:

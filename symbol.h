@@ -58,6 +58,7 @@ typedef struct symtab {
 
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
+Symbol *FindSymbolByOffset(SymbolTable *table, int offset);
 
 char *NewTemporaryVariable(const char *prefix);
 

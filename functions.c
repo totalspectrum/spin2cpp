@@ -469,7 +469,6 @@ TransformCountRepeat(AST *ast)
     int deltaknown = 0;
     int32_t delta = 0;
     int useLt = 0;
-    int saveLineNum = 0;
     
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -504,13 +503,10 @@ TransformCountRepeat(AST *ast)
         stepval = AstInteger(1);
     }
     body = ast->right;
-    
-    if (current) {
-        // temporarily pretend to be at a different place in the file,
-        // so that the NewAST calls get the right line number
-        saveLineNum = current->L.lineCounter;
-        current->L.lineCounter = toval ? toval->line : origast->line;
-    }
+
+    /* create new ast elements using this ast's line info */
+    AstReportAs(toval ? toval : origast);
+
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
        from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
@@ -656,9 +652,6 @@ TransformCountRepeat(AST *ast)
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST(AST_FORATLEASTONCE, initstmt, condtest);
-    if (current) {
-        current->L.lineCounter = saveLineNum;
-    }
     forast->line = origast->line;
     return forast;
 }
@@ -1055,6 +1048,91 @@ CheckRecursive(Function *f)
     f->is_recursive = IsCalledFrom(f, f->body, visitPass);
 }
 
+/*
+ * change a small longmove call into a series of assignments
+ * returns true if transform done
+ */
+static bool
+TransformLongMove(AST **astptr, AST *ast)
+{
+    AST *dst;
+    AST *src;
+    AST *count;
+    AST *sequence;
+    AST *assign;
+    Symbol *syms, *symd;
+    int srcoff, dstoff;
+    int n;
+    SymbolTable *srctab, *dsttab;
+    
+    ast = ast->right; // ast->left is the longmove function
+    dst = ast->left; ast = ast->right;
+    if (!ast || !dst) return false;
+    src = ast->left; ast = ast->right;
+    if (!ast || !src) return false;
+    count = ast->left; ast = ast->right;
+    if (ast || !count) return false;
+    if (!IsConstExpr(count)) return false;
+    n = EvalConstExpr(count);
+    if (n > 4 || n <= 0) return false;
+
+    // check src and dst
+    if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;
+    src = src->left;
+    if (src->kind != AST_IDENTIFIER) return false;
+    if (dst->kind != AST_ADDROF && dst->kind != AST_ABSADDROF) return false;
+    dst = dst->left;
+    if (dst->kind != AST_IDENTIFIER) return false;
+
+    // ok, we have the pattern we like
+    syms = LookupSymbol(src->d.string);
+    symd = LookupSymbol(dst->d.string);
+    if (!syms || !symd) return false;
+
+    switch(syms->type) {
+    case SYM_VARIABLE:
+        srctab = &current->objsyms;
+        break;
+    case SYM_PARAMETER:
+    case SYM_LOCALVAR:
+        srctab = &curfunc->localsyms;
+        break;
+    default:
+        return false;
+    }
+    switch(symd->type) {
+    case SYM_VARIABLE:
+        dsttab = &current->objsyms;
+        break;
+    case SYM_PARAMETER:
+    case SYM_LOCALVAR:
+        dsttab = &curfunc->localsyms;
+        break;
+    default:
+        return false;
+    }
+    AstReportAs(dst);
+    srcoff = syms->offset;
+    dstoff = symd->offset;
+    sequence = NULL;
+    for(;;) {
+        assign = AstAssign(T_ASSIGN,
+                           AstIdentifier(symd->name),
+                           AstIdentifier(syms->name));
+        sequence = AddToList(sequence, NewAST(AST_SEQUENCE, assign, NULL));
+        --n;
+        if (n == 0) break;
+        srcoff += 4;
+        dstoff += 4;
+        symd = FindSymbolByOffset(dsttab, dstoff);
+        syms = FindSymbolByOffset(srctab, srcoff);
+        if (!symd || !syms) {
+            return false;
+        }
+    }
+    *astptr = sequence;
+    return true;
+}
 
 /*
  * SpinTransform
@@ -1133,8 +1211,11 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, 2);
         break;
     case AST_FUNCCALL:
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
         if (level == 0) {
-            /* check for void functions here */
+            /* check for void functions here; if one is called,
+               pretend it returned 0 */
             sym = FindFuncSymbol(ast, NULL, NULL);
             if (sym && sym->type == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
@@ -1144,8 +1225,13 @@ doSpinTransform(AST **astptr, int level)
                 }
             }
         }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        /* check for longmove(@x, @y, n) where n is a small
+           number */
+        if (level == 1 && ast->left && ast->left->kind == AST_IDENTIFIER
+            && !strcasecmp(ast->left->d.string, "longmove"))
+        {
+            TransformLongMove(astptr, ast);
+        }
         break;
     case AST_POSTEFFECT:
     {
@@ -1218,6 +1304,7 @@ doSpinTransform(AST **astptr, int level)
 void
 SpinTransform(Module *Q)
 {
+    Module *savecur = current;
     Function *func;
     Function *savefunc = curfunc;
     current = Q;
@@ -1226,4 +1313,5 @@ SpinTransform(Module *Q)
         doSpinTransform(&func->body, 1);
     }
     curfunc = savefunc;
+    current = savecur;
 }
