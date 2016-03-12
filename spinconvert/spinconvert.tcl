@@ -109,7 +109,14 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline [list $COMPILE --noheader $OUTPUT -o $PASMFILE $spinfile]
+    set cmdline [list $COMPILE --noheader $OUTPUT]
+    if { $makeBinary == 1 } {
+	set binfile [file rootname $PASMFILE]
+	set binfile "$binfile.binary"
+	set cmdline [concat $cmdline [list --binary -o $binfile $spinfile]]
+    } else {
+	set cmdline [concat $cmdline [list -o $PASMFILE $spinfile]]
+    }
     .bot.txt replace 1.0 end "$cmdline\n"
     set runcmd [list exec -ignorestderr]
     set runcmd [concat $runcmd $cmdline]
@@ -123,11 +130,6 @@ proc regenOutput { spinfile } {
 	tk_messageBox -icon error -type ok -message "Compilation failed" -detail "see compiler output window for details"
     } else {
 	loadFileToWindow $outname .out.txt
-	if { $makeBinary != 0 && $EXT eq ".pasm" } {
-	    set binfile [file rootname $PASMFILE]
-	    set binfile "$binfile.binary"
-	    exec $COMPILE --dat --binary -o $binfile $PASMFILE
-	}
     }
 }
 
