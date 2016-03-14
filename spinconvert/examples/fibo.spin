@@ -8,6 +8,7 @@ CON
 
 OBJ
   fds : "SimpleSerial.spin"
+''  fds : "FullDuplexSerial.spin"
 
 PUB run | i,x,now,elapsed
 

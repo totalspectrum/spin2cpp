@@ -807,8 +807,10 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
             EmitPush(irl, oplist->op);
         }
-        // push return address
-        EmitPush(irl, FuncData(func)->asmretname);
+        // push return address, if we are in cog mode
+        if (func->cog_code) {
+            EmitPush(irl, FuncData(func)->asmretname);
+        }
     }
 }
 
@@ -821,7 +823,9 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
         // and the actual return
-        EmitPop(irl, FuncData(func)->asmretname);
+        if (func->cog_code) {
+            EmitPop(irl, FuncData(func)->asmretname);
+        }
         // pop off all local variables
         PopList(irl, FuncData(func)->saveregs, func);
     }
@@ -2278,6 +2282,8 @@ static void
 AssignFuncNames(IRList *irl, Module *P)
 {
     Function *f;
+    Function *savecur = curfunc;
+    
     (void)irl; // not used
 
     if (!P->bedata) {
@@ -2289,6 +2295,7 @@ AssignFuncNames(IRList *irl, Module *P)
 
         if (ShouldSkipFunction(f))
             continue;
+        curfunc = f;
         f->cog_code = (COG_CODE || IsGlobalModule(P)) ? 1 : 0;
         fname = IdentifierGlobalName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 8);
@@ -2356,7 +2363,7 @@ AssignFuncNames(IRList *irl, Module *P)
             }
         }
     }
-    
+    curfunc = savecur;
 }
 
 static void
