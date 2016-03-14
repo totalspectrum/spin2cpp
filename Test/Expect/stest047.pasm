@@ -2,19 +2,19 @@ DAT
 	org	0
 
 _addone
-	add	arg1_, #1
-	mov	result_, arg1_
+	add	arg1, #1
+	mov	result1, arg1
 _addone_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

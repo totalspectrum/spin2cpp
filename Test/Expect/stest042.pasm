@@ -2,24 +2,24 @@ DAT
 	org	0
 
 _select
-	cmps	arg1_, #0 wz
- if_ne	mov	select_tmp001_, arg2_
- if_e	mov	select_tmp002_, arg3_
+	cmps	arg1, #0 wz
+ if_ne	mov	select_tmp001_, arg2
+ if_e	mov	select_tmp002_, arg3
  if_e	add	select_tmp002_, #2
  if_e	mov	select_tmp001_, select_tmp002_
-	mov	result_, select_tmp001_
+	mov	result1, select_tmp001_
 _select_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 select_tmp001_
 	long	0

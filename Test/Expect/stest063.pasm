@@ -2,39 +2,39 @@ DAT
 	org	0
 
 _blinky
-	mov	arg2_, ptr__dat__
-	mov	arg1_, #8
-	mov	arg3_, #240
+	mov	arg2, ptr__dat__
+	mov	arg1, #8
+	mov	arg3, #240
 	call	#__system___coginit
 _blinky_ret
 	ret
 
 __system___coginit
-	and	arg3_, imm_65532_
-	shl	arg3_, #16
-	and	arg2_, imm_65532_
-	shl	arg2_, #2
-	or	arg3_, arg2_
-	and	arg1_, #15
-	or	arg3_, arg1_
-	coginit	arg3_ wr
-	mov	result_, arg3_
+	and	arg3, imm_65532_
+	shl	arg3, #16
+	and	arg2, imm_65532_
+	shl	arg2, #2
+	or	arg3, arg2
+	and	arg1, #15
+	or	arg3, arg1
+	coginit	arg3 wr
+	mov	result1, arg3
 __system___coginit_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 imm_65532_
 	long	65532
 ptr__dat__
 	long	@@@_dat_
-result_
+result1
 	long	0
 	fit	496
 	long

@@ -2,19 +2,19 @@ DAT
 	org	0
 
 _foo
-	rdlong	result_, #0
-	add	result_, #2
+	rdlong	result1, #0
+	add	result1, #2
 _foo_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

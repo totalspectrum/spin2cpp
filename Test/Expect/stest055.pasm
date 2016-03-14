@@ -3,22 +3,22 @@ DAT
 
 _fetchx
 	add	ptr__dat__, #4
-	rdlong	result_, ptr__dat__
+	rdlong	result1, ptr__dat__
 	sub	ptr__dat__, #4
 _fetchx_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 ptr__dat__
 	long	@@@_dat_
-result_
+result1
 	long	0
 	fit	496
 	long

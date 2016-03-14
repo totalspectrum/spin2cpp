@@ -9,7 +9,7 @@ DAT
 	org	0
 
 _serchar
-	mov	_serchar_val, arg1_
+	mov	_serchar_val, arg1
 	or	OUTA, imm_1073741824_
 	or	DIRA, imm_1073741824_
 	or	_serchar_val, #256
@@ -18,8 +18,8 @@ _serchar
 	mov	_serchar__idx__0014, #10
 L_032_
 	add	_serchar_waitcycles, imm_694_
-	mov	arg1_, _serchar_waitcycles
-	waitcnt	arg1_, #0
+	mov	arg1, _serchar_waitcycles
+	waitcnt	arg1, #0
 	test	_serchar_val, #1 wz
  if_ne	or	OUTA, imm_1073741824_
  if_e	andn	OUTA, imm_1073741824_
@@ -34,18 +34,18 @@ _serchar_val
 	long	0
 _serchar_waitcycles
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 imm_1073741824_
 	long	1073741824
 imm_694_
 	long	694
-result_
+result1
 	long	0
 	fit	496

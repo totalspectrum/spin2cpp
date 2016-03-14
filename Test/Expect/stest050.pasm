@@ -5,8 +5,8 @@ DAT
 
 _pushData
 	andn	OUTA, #all_pin_mask
-	shl	arg1_, #2
-	or	OUTA, arg1_
+	shl	arg1, #2
+	or	OUTA, arg1
 _pushData_ret
 	ret
 
@@ -15,14 +15,14 @@ _all_pin_low
 _all_pin_low_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

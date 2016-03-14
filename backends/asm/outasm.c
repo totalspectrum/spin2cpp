@@ -105,8 +105,8 @@ static void
 ValidateObjbase(void)
 {
     if (!objbase) {
-        objlabel = NewOperand(IMM_HUB_LABEL, "_objmem", 0);
-        objbase = NewImmediatePtr(objlabel);
+        objlabel = NewOperand(IMM_HUB_LABEL, "objmem", 0);
+        objbase = NewImmediatePtr("objptr", objlabel);
     }
 }
 
@@ -114,8 +114,8 @@ static void
 ValidateStackptr(void)
 {
     if (!stackptr) {
-        stacklabel = NewOperand(IMM_HUB_LABEL, "_stackspace", 0);
-        stackptr = NewImmediatePtr(stacklabel);
+        stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
+        stackptr = NewImmediatePtr("sp", stacklabel);
         stacktop = SizedMemRef(LONG_SIZE, stackptr, 0);
     }
 }
@@ -528,11 +528,14 @@ NewImmediate(int32_t val)
 }
 
 Operand *
-NewImmediatePtr(Operand *val)
+NewImmediatePtr(const char *name, Operand *val)
 {
     char temp[1024];
-    sprintf(temp, "ptr_%s_", val->name);
-    return GetGlobal(IMM_HUB_LABEL, strdup(temp), (intptr_t)val);
+    if (!name) {
+        sprintf(temp, "ptr_%s_", val->name);
+        name = strdup(temp);
+    }
+    return GetGlobal(IMM_HUB_LABEL, name, (intptr_t)val);
 }
 
 static Operand *
@@ -599,7 +602,7 @@ LabelRef(IRList *irl, Symbol *sym)
     
     if (!PD->datbase) {
         PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
-        PD->datbase = NewImmediatePtr(PD->datlabel);
+        PD->datbase = NewImmediatePtr(NULL, PD->datlabel);
     }
     temp = TypedMemRef(lab->type, PD->datbase, (int)lab->offset);
     return temp;
@@ -662,7 +665,7 @@ static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
 {
 #ifdef USE_GLOBAL_ARGS
     char temp[1024];
-    sprintf(temp, "arg%d_", n+1);
+    sprintf(temp, "arg%d", n+1);
     return GetGlobal(REG_ARG, strdup(temp), 0);
 #else
     AST *astlist = func->params;
@@ -677,7 +680,7 @@ static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
         --n;
     }
     ERROR(NULL, "Too many parameters to function %s", func->name);
-    return GetGlobal(REG_ARG, "dummyArg_", 0);
+    return GetGlobal(REG_ARG, "dummyArg", 0);
 #endif
 }
 
@@ -1467,7 +1470,7 @@ CompileFunccall(IRList *irl, AST *expr)
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  result = GetGlobal(REG_REG, "result_", 0);
+  result = GetGlobal(REG_REG, "result1", 0);
   reg = NewFunctionTempRegister();
   EmitMove(irl, reg, result);
   return reg;
@@ -1748,7 +1751,7 @@ CompileExpression(IRList *irl, AST *expr)
       return NewImmediate(expr->d.string[0]);
   case AST_STRINGPTR:
       r = GetHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
-      return NewImmediatePtr(r);
+      return NewImmediatePtr(NULL, r);
   case AST_ARRAYREF:
   {
       Operand *base;
@@ -2022,7 +2025,7 @@ static void EmitStatement(IRList *irl, AST *ast)
         }
 	if (retval) {
 	    op = CompileExpression(irl, retval);
-	    result = GetGlobal(REG_REG, "result_", 0);
+	    result = GetGlobal(REG_REG, "result1", 0);
             EmitMove(irl, result, op);
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
@@ -2431,20 +2434,20 @@ static const char *builtin_mul =
 "\txor\titmp2_, muldivb_\n"
 "\tabs\tmuldiva_, muldiva_\n"
 "\tabs\tmuldivb_, muldivb_\n"
-"\tmov\tresult_, #0\n"
+"\tmov\tresult1, #0\n"
 "\tmov\titmp1_, #32\n"
 "\tshr\tmuldiva_, #1 wc\n"
 "mul_lp_\n"
-" if_c\tadd\tresult_, muldivb_ wc\n"
-"\trcr\tresult_, #1 wc\n"
+" if_c\tadd\tresult1, muldivb_ wc\n"
+"\trcr\tresult1, #1 wc\n"
 "\trcr\tmuldiva_, #1 wc\n"
 "\tdjnz\titmp1_, #mul_lp_\n"
 
 "\tshr\titmp2_, #31 wz\n"
-" if_nz\tneg\tresult_, result_\n"
+" if_nz\tneg\tresult1, result1\n"
 " if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-" if_nz\tsub\tresult_, #1\n"
-"\tmov\tmuldivb_, result_\n"
+" if_nz\tsub\tresult1, #1\n"
+"\tmov\tmuldivb_, result1\n"
 "multiply__ret\n"
 "\tret\n"
 ;
@@ -2490,14 +2493,14 @@ EmitBuiltins(IRList *irl)
         EmitOp1(irl, OPC_COMMENT, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
-        (void)GetGlobal(REG_REG, "result_", 0);
+        (void)GetGlobal(REG_REG, "result1", 0);
     }
     if (divfunc) {
         Operand *loop = NewOperand(IMM_STRING, builtin_div, 0);
         EmitOp1(irl, OPC_COMMENT, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
-        (void)GetGlobal(REG_REG, "result_", 0);
+        (void)GetGlobal(REG_REG, "result1", 0);
     }
 }
 

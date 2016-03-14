@@ -3,7 +3,7 @@ DAT
 
 _ez_pulse_in
 	mov	_ez_pulse_in_r, #1
-	shl	_ez_pulse_in_r, arg1_
+	shl	_ez_pulse_in_r, arg1
 	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
 	waitpeq	_ez_pulse_in_r, _ez_pulse_in_r
 	neg	muldiva_, CNT
@@ -11,7 +11,7 @@ _ez_pulse_in
 	add	muldiva_, CNT
 	mov	muldivb_, imm_1000000_
 	call	#divide_
-	mov	result_, muldivb_
+	mov	result1, muldivb_
 _ez_pulse_in_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -41,13 +41,13 @@ divide__ret
 
 _ez_pulse_in_r
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 imm_1000000_
 	long	1000000
@@ -59,6 +59,6 @@ muldiva_
 	long	0
 muldivb_
 	long	0
-result_
+result1
 	long	0
 	fit	496

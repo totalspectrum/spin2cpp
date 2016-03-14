@@ -2,8 +2,8 @@ DAT
 	org	0
 
 _divmod16
-	mov	_divmod16_x, arg1_
-	mov	_divmod16_y, arg2_
+	mov	_divmod16_x, arg1
+	mov	_divmod16_y, arg2
 	mov	muldiva_, _divmod16_x
 	mov	muldivb_, _divmod16_y
 	call	#divide_
@@ -13,7 +13,7 @@ _divmod16
 	call	#divide_
 	shl	_divmod16_q, #16
 	or	_divmod16_q, muldiva_
-	mov	result_, _divmod16_q
+	mov	result1, _divmod16_q
 _divmod16_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -47,13 +47,13 @@ _divmod16_x
 	long	0
 _divmod16_y
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 itmp1_
 	long	0
@@ -63,6 +63,6 @@ muldiva_
 	long	0
 muldivb_
 	long	0
-result_
+result1
 	long	0
 	fit	496

@@ -2,20 +2,20 @@ DAT
 	org	0
 
 _fetch
-	shl	arg2_, #1
-	add	arg1_, arg2_
-	rdword	result_, arg1_
+	shl	arg2, #1
+	add	arg1, arg2
+	rdword	result1, arg1
 _fetch_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

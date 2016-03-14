@@ -2,31 +2,31 @@ DAT
 	org	0
 
 _func
-	add	ptr__objmem_, #8
-	rdlong	result_, ptr__objmem_
-	add	ptr__objmem_, #4
-	rdbyte	func_tmp002_, ptr__objmem_
-	sub	ptr__objmem_, #12
-	add	result_, func_tmp002_
+	add	objptr, #8
+	rdlong	result1, objptr
+	add	objptr, #4
+	rdbyte	func_tmp002_, objptr
+	sub	objptr, #12
+	add	result1, func_tmp002_
 _func_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 func_tmp002_
 	long	0
-ptr__objmem_
-	long	@@@_objmem
-result_
+objptr
+	long	@@@objmem
+result1
 	long	0
 	fit	496
 	long
-_objmem
+objmem
 	byte	$00,$00,$00,$00,$00,$00,$00,$00
 	byte	$00,$00,$00,$00,$00,$00,$00,$00

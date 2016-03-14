@@ -19,15 +19,15 @@ _test_ret
 
 _test_x
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 test_tmp001_
 	long	0

@@ -2,26 +2,26 @@ DAT
 	org	0
 
 _test1
-	mov	_test1_x, arg1_ wz
+	mov	_test1_x, arg1 wz
  if_e	jmp	#L_032_
-	cmps	arg2_, #0 wz
- if_ne	mov	result_, arg3_
+	cmps	arg2, #0 wz
+ if_ne	mov	result1, arg3
  if_ne	jmp	#_test1_ret
 L_032_
-	neg	result_, #1
+	neg	result1, #1
 _test1_ret
 	ret
 
 _test1_x
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

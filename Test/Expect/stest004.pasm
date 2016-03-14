@@ -2,20 +2,20 @@ DAT
 	org	0
 
 _dummy
-	mov	result_, imm_1024_
+	mov	result1, imm_1024_
 _dummy_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
 imm_1024_
 	long	1024
-result_
+result1
 	long	0
 	fit	496

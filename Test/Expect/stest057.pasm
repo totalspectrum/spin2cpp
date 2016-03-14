@@ -3,40 +3,40 @@ DAT
 
 _myfill
 L_036_
-	wrlong	arg2_, arg1_
-	add	arg1_, #4
-	djnz	arg3_, #L_036_
+	wrlong	arg2, arg1
+	add	arg1, #4
+	djnz	arg3, #L_036_
 _myfill_ret
 	ret
 
 _fillzero
-	mov	arg3_, arg2_
-	mov	arg2_, #0
+	mov	arg3, arg2
+	mov	arg2, #0
 L_032_
-	wrlong	arg2_, arg1_
-	add	arg1_, #4
-	djnz	arg3_, #L_032_
+	wrlong	arg2, arg1
+	add	arg1, #4
+	djnz	arg3, #L_032_
 _fillzero_ret
 	ret
 
 _fillone
-	mov	arg3_, arg2_
-	neg	arg2_, #1
+	mov	arg3, arg2
+	neg	arg2, #1
 L_035_
-	wrlong	arg2_, arg1_
-	add	arg1_, #4
-	djnz	arg3_, #L_035_
+	wrlong	arg2, arg1
+	add	arg1, #4
+	djnz	arg3, #L_035_
 _fillone_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

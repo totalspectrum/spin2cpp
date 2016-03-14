@@ -1,9 +1,9 @@
 DAT
 	org	0
 lockset
-	lockset	arg1_
+	lockset	arg1
 lockset_ret
 	ret
 
-arg1_
+arg1
 	long	0

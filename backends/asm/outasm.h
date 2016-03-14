@@ -27,7 +27,7 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 //
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *NewImmediate(int32_t val);
-Operand *NewImmediatePtr(Operand *val);
+Operand *NewImmediatePtr(const char *name, Operand *val);
 Operand *NewCodeLabel();
 
 void FreeTempRegisters(IRList *irl, int starttempreg);

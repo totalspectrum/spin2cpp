@@ -245,7 +245,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         case OPC_CALL:
             if (IsHubDest(ir->dst)) {
                 PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "jmp\t#__LMM_CALL\n");
+                flexbuf_addstr(fb, "jmp\t#LMM_CALL\n");
                 flexbuf_addstr(fb, "\tlong\t");
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
@@ -256,7 +256,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             PrintCond(fb, ir->cond);
             flexbuf_addstr(fb, "djnz\t");
             PrintOperand(fb, ir->dst);
-            flexbuf_addstr(fb, ", #__LMM_JUMP\n");
+            flexbuf_addstr(fb, ", #LMM_JUMP\n");
             flexbuf_addstr(fb, "\tlong\t");
             PrintOperandAsValue(fb, ir->src);
             flexbuf_addstr(fb, "\n");
@@ -264,7 +264,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         case OPC_JUMP:
             if (IsHubDest(ir->dst)) {
                 PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "rdlong\t__pc,__pc\n");
+                flexbuf_addstr(fb, "rdlong\tpc,pc\n");
                 flexbuf_addstr(fb, "\tlong\t");
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
@@ -273,7 +273,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             break;
         case OPC_RET:
             PrintCond(fb, ir->cond);
-            flexbuf_addstr(fb, "mov\t__pc,__lr\n");
+            flexbuf_addstr(fb, "sub\tsp, #4\n");
+            PrintCond(fb, ir->cond);
+            flexbuf_addstr(fb, "rdlong\tpc, sp\n");
             return;
         default:
             break;

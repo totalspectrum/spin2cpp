@@ -4,11 +4,11 @@ DAT
 _strlen
 	neg	_strlen_r, #1
 L_032_
-	rdbyte	_strlen_c, arg1_ wz
-	add	arg1_, #1
+	rdbyte	_strlen_c, arg1 wz
+	add	arg1, #1
 	add	_strlen_r, #1
  if_ne	jmp	#L_032_
-	mov	result_, _strlen_r
+	mov	result1, _strlen_r
 _strlen_ret
 	ret
 
@@ -16,14 +16,14 @@ _strlen_c
 	long	0
 _strlen_r
 	long	0
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-result_
+result1
 	long	0
 	fit	496

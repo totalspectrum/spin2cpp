@@ -2,27 +2,27 @@ DAT
 	org	0
 
 _getptr
-	add	ptr__objmem_, #16
-	mov	result_, ptr__objmem_
-	sub	ptr__objmem_, #16
+	add	objptr, #16
+	mov	result1, objptr
+	sub	objptr, #16
 _getptr_ret
 	ret
 
-arg1_
+arg1
 	long	0
-arg2_
+arg2
 	long	0
-arg3_
+arg3
 	long	0
-arg4_
+arg4
 	long	0
-ptr__objmem_
-	long	@@@_objmem
-result_
+objptr
+	long	@@@objmem
+result1
 	long	0
 	fit	496
 	long
-_objmem
+objmem
 	byte	$00,$00,$00,$00,$00,$00,$00,$00
 	byte	$00,$00,$00,$00,$00,$00,$00,$00
 	byte	$00,$00,$00,$00,$00,$00,$00,$00
