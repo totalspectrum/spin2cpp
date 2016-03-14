@@ -780,6 +780,27 @@ IsResultVar(Function *func, AST *lhs)
 }
 
 static int
+CheckRetCaseMatchList(Function *func, AST *ast)
+{
+    AST *item;
+    int sawReturn = 1;
+    while (ast) {
+        if (ast->kind != AST_LISTHOLDER) {
+            ERROR(ast, "Internal error, expected list holder");
+            return sawReturn;
+        }
+        item = ast->left;
+        ast = ast->right;
+        if (item->kind != AST_CASEITEM) {
+            ERROR(item, "Internal error, expected case item");
+            return sawReturn;
+        }
+        sawReturn = CheckRetStatementList(func, item->right) && sawReturn;
+    }
+    return sawReturn;
+}
+
+static int
 CheckRetStatement(Function *func, AST *ast)
 {
     int sawreturn = 0;
@@ -808,6 +829,9 @@ CheckRetStatement(Function *func, AST *ast)
             ast = ast->left;
         sawreturn = CheckRetStatementList(func, ast->left);
         sawreturn = CheckRetStatementList(func, ast->right) && sawreturn;
+        break;
+    case AST_CASE:
+        sawreturn = CheckRetCaseMatchList(func, ast->right);
         break;
     case AST_WHILE:
     case AST_DOWHILE:
