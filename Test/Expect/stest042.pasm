@@ -25,3 +25,4 @@ select_tmp001_
 	long	0
 select_tmp002_
 	long	0
+	fit	496

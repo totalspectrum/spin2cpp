@@ -71,7 +71,10 @@ typedef enum IROpcode {
     OPC_GENERIC_NR,
     
     /* place non-instructions below here */
-    
+
+    /* switch to hub mode */
+    OPC_ORGH,
+
     /* a literal string to place in the output */
     OPC_COMMENT,
     
@@ -129,16 +132,7 @@ enum flags {
 typedef struct IRList {
     IR *head;
     IR *tail;
-    // info about this list, e.g. whether code is going in cog or hub mem
-    unsigned flags;
 } IRList;
-
-#define IR_COG_CODE(irl) ( (irl->flags & OUTFLAG_COG_CODE) == OUTFLAG_COG_CODE )
-#define IR_HUB_CODE(irl) ( (irl->flags & OUTFLAG_COG_CODE) == 0 )
-#define IR_COG_DATA(irl) ( (irl->flags & OUTFLAG_COG_DATA) == OUTFLAG_COG_DATA )
-#define IR_HUB_DATA(irl) ( (irl->flags & OUTFLAG_COG_DATA) == 0 )
-#define IR_SET_COG_CODE(irl) ( irl->flags |= OUTFLAG_COG_CODE )
-#define IR_SET_HUB_CODE(irl) ( irl->flags &= ~OUTFLAG_COG_CODE )
 
 enum Operandkind {
     IMM_INT,  // for an immediate value (possibly stored in a register)

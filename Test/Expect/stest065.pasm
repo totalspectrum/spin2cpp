@@ -24,6 +24,7 @@ result_
 	long	0
 set_tmp001_
 	long	0
+	fit	496
 	long
 _objmem
 	byte	$00,$00,$00,$00,$00,$00,$00,$00

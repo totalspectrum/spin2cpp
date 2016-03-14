@@ -47,5 +47,6 @@ ptr__stackspace_
 	long	@@@_stackspace
 result_
 	long	0
+	fit	496
 _stackspace
 	long	0

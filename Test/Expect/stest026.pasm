@@ -21,3 +21,4 @@ result_
 	long	0
 test1_tmp001_
 	long	0
+	fit	496

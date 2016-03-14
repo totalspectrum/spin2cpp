@@ -23,3 +23,4 @@ imm_512_
 	long	512
 result_
 	long	0
+	fit	496

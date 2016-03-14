@@ -18,3 +18,4 @@ imm_1024_
 	long	1024
 result_
 	long	0
+	fit	496

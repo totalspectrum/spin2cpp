@@ -22,3 +22,4 @@ result_
 L_032_
 	byte	"hello"
 	byte	0
+	fit	496

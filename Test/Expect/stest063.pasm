@@ -36,6 +36,7 @@ ptr__dat__
 	long	@@@_dat_
 result_
 	long	0
+	fit	496
 	long
 _dat_
 	byte	$f0,$19,$bc,$a0,$04,$18,$fc,$28

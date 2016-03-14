@@ -136,6 +136,7 @@ typedef struct funcdef {
     unsigned is_used:1;   // if 0, function is not used
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
+    unsigned cog_code:1;     // 1 if function should always be placed in cog
     
     /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;
@@ -223,7 +224,8 @@ struct modulestate {
     char fixImmediate;
     char volatileVariables;
     char sawToken;
-
+    char codeCog; // if 1, module should be placed in COG memory
+    
     /* back end specific flags */
     void *bedata;
 };

@@ -118,3 +118,4 @@ muldivb_
 	long	0
 result_
 	long	0
+	fit	496

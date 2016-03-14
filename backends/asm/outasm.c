@@ -13,6 +13,15 @@
 #include "spinc.h"
 #include "outasm.h"
 
+#define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
+#define HUB_CODE (!COG_CODE)
+
+/* lists of instructions in hub and cog */
+static IRList cogcode;
+static IRList hubcode;
+static IRList cogdata;
+static IRList hubdata;
+
 /* define this to pass parameters in ARGSx_ */
 #define USE_GLOBAL_ARGS
 
@@ -434,7 +443,11 @@ Operand *
 NewCodeLabel()
 {
   Operand *label;
-  label = NewOperand(IMM_COG_LABEL, NewTempLabelName(), 0);
+  if (curfunc && !curfunc->cog_code) {
+      label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
+  } else {
+      label = NewOperand(IMM_COG_LABEL, NewTempLabelName(), 0);
+  }
   label->used = 0;
   return label;
 }
@@ -2222,6 +2235,12 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 }
 
 static bool
+IsGlobalModule(Module *P)
+{
+    return P == globalModule;
+}
+
+static bool
 ShouldSkipFunction(Function *f)
 {
     if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
@@ -2229,7 +2248,7 @@ ShouldSkipFunction(Function *f)
     if (f->is_used)
         return false;
     // do not skip global functions, we handle those separately
-    if (!strcmp(f->parse->fullname, "_system_"))
+    if (IsGlobalModule(f->parse))
         return false;
     return true;
 }
@@ -2251,12 +2270,18 @@ AssignFuncNames(IRList *irl, Module *P)
 
         if (ShouldSkipFunction(f))
             continue;
+        f->cog_code = (COG_CODE || IsGlobalModule(P)) ? 1 : 0;
         fname = IdentifierGlobalName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
         f->bedata = calloc(1, sizeof(IRFuncData));
-        FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
-        FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
+        if (f->cog_code) {
+            FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
+            FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
+        } else {
+            FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
+            FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
+        }
         if (f->is_recursive) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
         } else {
@@ -2570,41 +2595,66 @@ OutputAsmCode(const char *fname, Module *P)
 {
     FILE *f = NULL;
     Module *save;
-    IRList irl;
+    IR *orgh;
+    
     const char *asmcode;
     
     save = current;
     current = P;
 
-    irl.head = NULL;
-    irl.tail = NULL;
+    memset(&cogcode, 0, sizeof(cogcode));
+    memset(&hubcode, 0, sizeof(hubcode));
+    memset(&cogdata, 0, sizeof(cogdata));
+    memset(&hubdata, 0, sizeof(hubdata));
+    
+    CompileConsts(&cogcode, P->conblock);
 
-    CompileConsts(&irl, P->conblock);
-    if (!CompileToIR(&irl, P)) {
-        return;
+    // compile COG functions
+    if (COG_CODE) {
+        if (!CompileToIR(&cogcode, P)) {
+            return;
+        }
     }
-
+    EmitBuiltins(&cogcode);
     // we compiled builtin functions into IR form earlier, now
     // output them
-    CompileToIR_internal(&irl, globalModule);
-    OptimizeIRGlobal(&irl);
+    // these always go in COG memory
+    CompileToIR_internal(&cogcode, globalModule);
     
-    EmitBuiltins(&irl);
-    EmitGlobals(&irl);
+    // NOW THE HUB CODE
+    orgh = EmitOp0(&cogcode, OPC_ORGH);
+    
+    if (HUB_CODE) {
+        if (!CompileToIR(&cogcode, P)) {
+            return;
+        }
+    }
+
+    // we have to optimize all code before emitting any variables
+    OptimizeIRGlobal(&cogcode);
+
+    // cog data
+    EmitGlobals(&cogdata);
 
     // we need to emit all dat sections
-    VisitRecursive(&irl, P, EmitDatSection, VISITFLAG_EMITDAT);
+    VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
 
     // only the top level variable space is needed
-    EmitVarSection(&irl, P);
+    EmitVarSection(&hubdata, P);
     
     // finally the stack, if we need it
     if (stacklabel) {
-        EmitLabel(&irl, stacklabel);
-        EmitLong(&irl, 0);
+        EmitLabel(&hubdata, stacklabel);
+        EmitLong(&hubdata, 0);
     }
+
+    // now insert the cog data after the cog code, before the orgh
+    InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
+    // and the hub data at the end
+    AppendIR(&cogcode, hubdata.head);
+    
     // and assemble the result
-    asmcode = IRAssemble(&irl);
+    asmcode = IRAssemble(&cogcode);
     
     current = save;
 

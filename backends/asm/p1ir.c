@@ -31,6 +31,7 @@
 static int inDat;
 static int inCon;
 static int didOrg;
+static int lmmMode;
 
 static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
@@ -200,6 +201,17 @@ StringFor(IROpcode opc)
     }
 }
 
+bool IsHubDest(Operand *dst)
+{
+    switch (dst->kind) {
+    case IMM_HUB_LABEL:
+    case REG_HUBPTR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
@@ -227,6 +239,47 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             didOrg = 1;
         }
     }
+    if (lmmMode) {
+        // handle certain instructions specially
+        switch (ir->opc) {
+        case OPC_CALL:
+            if (IsHubDest(ir->dst)) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "jmp\t#__LMM_CALL\n");
+                flexbuf_addstr(fb, "\tlong\t");
+                PrintOperandAsValue(fb, ir->dst);
+                flexbuf_addstr(fb, "\n");
+                return;
+            }
+            break;
+        case OPC_DJNZ:
+            PrintCond(fb, ir->cond);
+            flexbuf_addstr(fb, "djnz\t");
+            PrintOperand(fb, ir->dst);
+            flexbuf_addstr(fb, ", #__LMM_JUMP\n");
+            flexbuf_addstr(fb, "\tlong\t");
+            PrintOperandAsValue(fb, ir->src);
+            flexbuf_addstr(fb, "\n");
+            return;
+        case OPC_JUMP:
+            if (IsHubDest(ir->dst)) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "rdlong\t__pc,__pc\n");
+                flexbuf_addstr(fb, "\tlong\t");
+                PrintOperandAsValue(fb, ir->dst);
+                flexbuf_addstr(fb, "\n");
+                return;
+            }
+            break;
+        case OPC_RET:
+            PrintCond(fb, ir->cond);
+            flexbuf_addstr(fb, "mov\t__pc,__lr\n");
+            return;
+        default:
+            break;
+        }
+    }
+    
     if (ir->instr) {
         int ccset;
         
@@ -305,6 +358,10 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         // data is in a string in src
         OutputBlob(fb, ir->dst, ir->src);
         break;
+    case OPC_ORGH:
+        flexbuf_addstr(fb, "\tfit\t496\n");
+        lmmMode = 1;
+        break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");
         break;
@@ -322,6 +379,7 @@ IRAssemble(IRList *list)
     inDat = 0;
     inCon = 0;
     didOrg = 0;
+    lmmMode = 0;
     
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {

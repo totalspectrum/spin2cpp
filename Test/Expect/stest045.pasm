@@ -26,3 +26,4 @@ result_
 	long	0
 strlen2_tmp001_
 	long	0
+	fit	496

@@ -20,6 +20,7 @@ ptr__dat__
 	long	@@@_dat_
 result_
 	long	0
+	fit	496
 	long
 _dat_
 	byte	$44,$33,$22,$11,$88,$77,$66,$55

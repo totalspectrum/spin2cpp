@@ -20,6 +20,7 @@ ptr__objmem_
 	long	@@@_objmem
 result_
 	long	0
+	fit	496
 	long
 _objmem
 	byte	$00,$00,$00,$00,$00,$00,$00,$00

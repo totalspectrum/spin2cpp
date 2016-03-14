@@ -22,3 +22,4 @@ result_
 	long	0
 sum2_tmp002_
 	long	0
+	fit	496
