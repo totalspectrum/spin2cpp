@@ -231,11 +231,21 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
         }
         newir = DupIR(ir);
         newir->flags |= FLAG_INSTR_NEW;
+        if (newir->opc == OPC_LABEL) {
         // leave off the asm return name, if it's there
         // FIXME: this is probably an obsolete test now
-        if (newir->opc == OPC_LABEL &&
-            newir->dst == FuncData(func)->asmretname) {
+            if (newir->dst == FuncData(func)->asmretname) {
                 /* do nothing */
+            } else {
+                // make the label kind match the appropriate type
+                // of label for this function
+                if (curfunc->cog_code) {
+                    newir->dst->kind = IMM_COG_LABEL;
+                } else {
+                    newir->dst->kind = IMM_HUB_LABEL;
+                }
+                InsertAfterIR(irl, dest, newir);
+            }
         } else {
             InsertAfterIR(irl, dest, newir);
             dest = newir;
@@ -2485,9 +2495,48 @@ static const char *builtin_div =
     "\tret\n"
 ;
 
+static const char *builtin_lmm =
+    "LMM_LOOP\n"
+    "    rdlong LMM_i1, pc\n"
+    "    add    pc, #4\n"
+    "LMM_i1\n"
+    "    nop\n"
+    "    rdlong LMM_i2, pc\n"
+    "    add    pc, #4\n"
+    "LMM_i2\n"
+    "    nop\n"
+    "    rdlong LMM_i3, pc\n"
+    "    add    pc, #4\n"
+    "LMM_i3\n"
+    "    nop\n"
+    "    rdlong LMM_i4, pc\n"
+    "    add    pc, #4\n"
+    "LMM_i4\n"
+    "    nop\n"
+    "    jmp    #LMM_LOOP\n"
+    "pc\n"
+    "    long @@@hubentry\n"
+    "lr\n"
+    "    long 0\n"
+    "LMM_CALL\n"
+    "    mov    lr, pc\n"
+    "    add    lr, #4\n"
+    "    wrlong lr, sp\n"
+    "    add    sp, #4\n"
+    "    rdlong pc, pc\n"
+    "    jmp    #LMM_LOOP\n"
+    "LMM_JUMP\n"
+    "    rdlong pc, pc\n"
+    "    jmp    #LMM_LOOP\n"
+    ;
+
 static void
 EmitBuiltins(IRList *irl)
 {
+    if (HUB_CODE) {
+        Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
+        EmitOp1(irl, OPC_COMMENT, loop);
+    }
     if (mulfunc) {
         Operand *loop = NewOperand(IMM_STRING, builtin_mul, 0);
         EmitOp1(irl, OPC_COMMENT, loop);
@@ -2618,20 +2667,22 @@ OutputAsmCode(const char *fname, Module *P)
             return;
         }
     }
+    if (HUB_CODE) {
+        ValidateStackptr();
+        EmitOp1(&hubcode, OPC_LABEL, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
+        if (!CompileToIR(&hubcode, P)) {
+            return;
+        }
+    }
     EmitBuiltins(&cogcode);
     // we compiled builtin functions into IR form earlier, now
     // output them
     // these always go in COG memory
     CompileToIR_internal(&cogcode, globalModule);
     
-    // NOW THE HUB CODE
+    // now copy the hub code into place
     orgh = EmitOp0(&cogcode, OPC_ORGH);
-    
-    if (HUB_CODE) {
-        if (!CompileToIR(&cogcode, P)) {
-            return;
-        }
-    }
+    AppendIR(&cogcode, hubcode.head);
 
     // we have to optimize all code before emitting any variables
     OptimizeIRGlobal(&cogcode);

@@ -247,6 +247,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "jmp\t#LMM_CALL\n");
                 flexbuf_addstr(fb, "\tlong\t");
+                if (ir->dst->kind != IMM_HUB_LABEL) {
+                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                }
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;
@@ -258,6 +261,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             PrintOperand(fb, ir->dst);
             flexbuf_addstr(fb, ", #LMM_JUMP\n");
             flexbuf_addstr(fb, "\tlong\t");
+            if (ir->src->kind != IMM_HUB_LABEL) {
+                ERROR(NULL, "internal error: non-hub label in LMM jump");
+            }
             PrintOperandAsValue(fb, ir->src);
             flexbuf_addstr(fb, "\n");
             return;
@@ -266,6 +272,9 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "rdlong\tpc,pc\n");
                 flexbuf_addstr(fb, "\tlong\t");
+                if (ir->dst->kind != IMM_HUB_LABEL) {
+                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                }
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;
