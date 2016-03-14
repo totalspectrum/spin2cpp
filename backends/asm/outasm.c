@@ -245,6 +245,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                     newir->dst->kind = IMM_HUB_LABEL;
                 }
                 InsertAfterIR(irl, dest, newir);
+                dest = newir;
             }
         } else {
             InsertAfterIR(irl, dest, newir);
@@ -1297,7 +1298,12 @@ CompileBasicOperator(IRList *irl, AST *expr)
       EmitLabel(irl, skiplabel);
       return temp;
   }
-  
+  case T_SQRT:
+  {
+      AST *fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
+                          NewAST(AST_EXPRLIST, expr->right, NULL));
+      return CompileFunccall(irl, fcall);
+  }
   default:
     ERROR(lhs, "Unsupported operator %d", op);
     return NewImmediate(0);

@@ -266,6 +266,21 @@ const char system_spincode[] =
     "      return i+b\n"
     "    arr += 4\n"
     "  return 0\n"
+    "pri _sqrt(a) | r, bit, tmp\n"
+    "  if (a =< 0)\n"
+    "    return 0\n"
+    "  r := 0\n"
+    "  bit := (1<<30)\n"
+    "  repeat while (bit > a)\n"
+    "    bit := bit >> 2\n"
+    "  repeat while (bit <> 0)\n"
+    "    tmp := r+bit\n"
+    "    if (a => tmp)\n"
+    "      a := a - tmp\n"
+    "      r := (r >> 1) + bit\n"
+    "    else\n"
+    "      r := r >> 1\n"
+    "  return r\n"
 ;
 
 void
