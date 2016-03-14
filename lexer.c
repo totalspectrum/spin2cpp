@@ -1004,7 +1004,7 @@ Builtin builtinfuncs[] = {
     { "lockret", 1, defaultBuiltin, "lockret", 0, lockhook },
 
     { "strsize", 1, str1Builtin, "strlen", 0, NULL },
-    { "strcomp", 1, strcompBuiltin, "strcmp", 0, NULL },
+    { "strcomp", 2, strcompBuiltin, "strcmp", 0, NULL },
     { "waitcnt", 1, defaultBuiltin, "waitcnt", 0, NULL },
     { "waitpeq", 3, defaultBuiltin, "waitpeq", 0, NULL },
     { "waitpne", 3, defaultBuiltin, "waitpne", 0, NULL },
