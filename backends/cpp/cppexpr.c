@@ -922,6 +922,12 @@ PrintLookupArray(Flexbuf *f, AST *array)
                 flexbuf_printf(f, "%d, ", i);
                 sz++;
             }
+        } else if (expr->kind == AST_STRING) {
+            const char *s = expr->d.string;
+            while (*s) {
+                flexbuf_printf(f, "%d, ", *s);
+                s++;
+            }
         } else {
             PrintExpr(f, expr);
             flexbuf_printf(f, ", ");

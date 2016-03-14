@@ -4,9 +4,9 @@ DAT
 _waitcycles
 	mov	_waitcycles_end, CNT
 	add	_waitcycles_end, arg1
-L_032_
+L_039_
 	cmps	CNT, _waitcycles_end wc,wz
- if_b	jmp	#L_032_
+ if_b	jmp	#L_039_
 _waitcycles_ret
 	ret
 

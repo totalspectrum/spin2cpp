@@ -324,6 +324,8 @@ ModifyLookup(AST *top)
             c = EvalConstExpr(expr->left);
             d = EvalConstExpr(expr->right);
             len += abs(d - c) + 1;
+        } else if (expr->kind == AST_STRING) {
+            len += strlen(expr->d.string);
         } else {
             if (IsConstExpr(expr))
                 len++;

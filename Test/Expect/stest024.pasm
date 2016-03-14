@@ -3,11 +3,11 @@ DAT
 
 _test1
 	mov	_test1_x, arg1 wz
- if_e	jmp	#L_032_
+ if_e	jmp	#L_039_
 	cmps	arg2, #0 wz
  if_ne	mov	result1, arg3
  if_ne	jmp	#_test1_ret
-L_032_
+L_039_
 	neg	result1, #1
 _test1_ret
 	ret

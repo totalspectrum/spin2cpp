@@ -3,9 +3,9 @@ DAT
 
 _foo
 	mov	_foo__idx__0014, #5
-L_032_
+L_039_
 	add	OUTA, #1
-	djnz	_foo__idx__0014, #L_032_
+	djnz	_foo__idx__0014, #L_039_
 _foo_ret
 	ret
 
