@@ -34,8 +34,8 @@ GUI.
 KNOWN ISSUES
 
 PASM output cannot handle taking the address of function variables.
-It also does not implement lookup/lookdown with non-constant values,
-case, and some operators (sqrt, the random operators, and perhaps a
+It also does not implement lookup/lookdown with non-constant values
+and some operators (the random operators, and perhaps a
 few others). It's still very much a work in progress.
 
 The C/C++ output should be complete.
