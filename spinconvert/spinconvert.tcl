@@ -7,6 +7,8 @@ set OUTPUT "--asm"
 set EXT ".pasm"
 set radioOut 1
 set makeBinary 0
+set codemem cog
+set datamem hub
 
 #
 # read a file and return its text
@@ -109,7 +111,7 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline [list $COMPILE --noheader $OUTPUT]
+    set cmdline [list $COMPILE --noheader $OUTPUT --code=$codemem --data=$datamem]
     if { $makeBinary == 1 } {
 	set binfile [file rootname $PASMFILE]
 	set binfile "$binfile.binary"
@@ -219,6 +221,25 @@ proc doHelp {} {
     wm title .help "Spin Converter help"
 }
 
+proc doPasmOptions {} {
+    if {[winfo exists .asmopt]} {
+	raise .asmopt
+	return
+    }
+    toplevel .asmopt
+    ttk::labelframe .asmopt.c -text "Code goes in:"
+    radiobutton .asmopt.c.cogcode -value cog -text "Cog memory" -variable codemem
+    radiobutton .asmopt.c.hubcode -value hub -text "Hub memory" -variable codemem
+    ttk::labelframe .asmopt.d -text "Data goes in:"
+    radiobutton .asmopt.d.cogdata -value cog -text "Cog memory" -variable datamem
+    radiobutton .asmopt.d.hubdata -value hub -text "Hub memory" -variable datamem
+    grid .asmopt.c
+    grid .asmopt.d
+    grid .asmopt.c.cogcode .asmopt.c.hubcode
+    grid .asmopt.d.cogdata .asmopt.d.hubdata
+    wm title .asmopt "PASM Options"
+}
+
 #
 # set up syntax highlighting for a given ctext widget
 proc setHighlightingSpin {w} {
@@ -265,6 +286,8 @@ menu .mbar.help -tearoff 0
 .mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
 .mbar.options add separator
 .mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
+.mbar.options add command -label "PASM Options..." -command { doPasmOptions }
+
 .mbar add cascade -menu .mbar.help -label Help
 .mbar.help add command -label "Help" -command { doHelp }
 .mbar.help add separator
