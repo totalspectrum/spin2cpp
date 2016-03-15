@@ -55,5 +55,6 @@ AST *ExprType(AST *ast);
 
 AST *TransformRangeAssign(AST *dst, AST *src);
 AST *TransformRangeUse(AST *src);
+AST *TransformCaseExprList(AST *var, AST *list);
 
 #endif

@@ -3,7 +3,8 @@
 
 void test31::Fun(int32_t Y)
 {
-  int32_t _tmp__0000 = (X + Y);
+  int32_t	_tmp__0000;
+  _tmp__0000 = X + Y;
   if (_tmp__0000 == 10) {
     OUTA ^= 0x1;
   } else if (_tmp__0000 == (A * 2)) {

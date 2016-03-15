@@ -1129,7 +1129,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     }
     
     if (expr->kind == AST_OPERATOR) {
-      opkind = (int)expr->d.ival;
+        opkind = (int)expr->d.ival;
     } else {
         opkind = -1;
     }
@@ -1980,7 +1980,7 @@ FreeTempRegisters(IRList *irl, int starttempreg)
 // Lexit
 //
 
-static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
+static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
 {
     AST *initstmt;
     AST *loopcond;
@@ -2025,6 +2025,47 @@ static void EmitForLoop(IRList *irl, AST *ast, int atleastonce)
     }
     EmitLabel(irl, exitlabel);
     PopQuitNext();
+}
+
+static void CompileCaseStmt(IRList *irl, AST *ast)
+{
+    Operand *labeldone = NewCodeLabel();
+    Operand *labelnext = NULL;
+    AST *var;
+    AST *item;
+    AST *booltest;
+    AST *stmts;
+
+    var = ast->left;
+    if (var->kind == AST_ASSIGN) {
+        CompileExpression(irl, var);
+        var = var->left;
+    } else if (var->kind != AST_IDENTIFIER) {
+        ERROR(var, "Internal error, expected identifier in case");
+        return;
+    }
+    ast = ast->right;
+    while (ast) {
+        if (ast->kind != AST_LISTHOLDER) {
+            ERROR(ast, "Internal error in case list");
+            return;
+        }
+        item = ast->left;
+        ast = ast->right;
+        booltest = TransformCaseExprList(var, item->left);
+        stmts = item->right;
+        if (labelnext) {
+            EmitJump(irl, COND_TRUE, labeldone);
+            EmitLabel(irl, labelnext);
+        }
+        labelnext = NewCodeLabel();
+        CompileBoolBranches(irl, booltest, NULL, labelnext);
+        EmitStatementList(irl, stmts);
+    }
+    if (labelnext) {
+        EmitLabel(irl, labelnext);
+    }
+    EmitLabel(irl, labeldone);
 }
 
 static void EmitStatement(IRList *irl, AST *ast)
@@ -2082,10 +2123,13 @@ static void EmitStatement(IRList *irl, AST *ast)
 	break;
     case AST_FORATLEASTONCE:
     case AST_FOR:
-	EmitForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
+	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
         CompileInlineAsm(irl, ast->left);
+        break;
+    case AST_CASE:
+        CompileCaseStmt(irl, ast);
         break;
     case AST_QUIT:
         if (!quitlabel) {
@@ -2123,6 +2167,9 @@ static void EmitStatement(IRList *irl, AST *ast)
 	break;
     case AST_YIELD:
 	/* do nothing in assembly for YIELD */
+        break;
+    case AST_STMTLIST:
+        EmitStatementList(irl, ast);
         break;
     case AST_ASSIGN:
         if (ast->left && ast->left->kind == AST_RANGEREF) {

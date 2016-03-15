@@ -275,32 +275,12 @@ PrintStatementList(Flexbuf *f, AST *ast, int indent)
 }
 
 static void
-PrintCaseExprList(Flexbuf *f, AST *var, AST *ast)
-{
-    int needor = 0;
-    while (ast) {
-        if (needor) flexbuf_printf(f, " || ");
-        if (ast->kind == AST_OTHER) {
-            flexbuf_printf(f, "1");
-        } else {
-            if (ast->left->kind == AST_RANGE) {
-                AST *betw;
-                betw = NewAST(AST_ISBETWEEN, var, ast->left);
-                PrintBoolExpr(f, betw);
-            } else {
-                PrintBoolExpr(f, AstOperator(T_EQ, var, ast->left));
-            }
-        }
-        needor = 1;
-        ast = ast->right;
-    }
-}
-
-static void
 PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent)
 {
+    AST *expr;
     flexbuf_printf(f, "(");
-    PrintCaseExprList(f, var, ast->left);
+    expr = TransformCaseExprList(var, ast->left);
+    PrintBoolExpr(f, expr);
     flexbuf_printf(f, ") {");
     PrintNewline(f);
     PrintStatementList(f, ast->right, indent);
@@ -316,11 +296,13 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
 
     if (expr->kind == AST_IDENTIFIER) {
         var = expr;
-    } else {
-        var = AstTempVariable(NULL);
-        flexbuf_printf(f, "%*cint32_t %s = ", indent, ' ', var->d.string);
-        PrintExpr(f, expr);
+    } else if (expr->kind == AST_ASSIGN) {
+        var = expr->left;
+        flexbuf_printf(f, "%*c", indent, ' ');
+        PrintAssign(f, var, expr->right);
         flexbuf_printf(f, ";"); PrintNewline(f);
+    } else {
+        ERROR(expr, "Internal error: expected identifier or assignment in case");
     }
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {

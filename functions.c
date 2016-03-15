@@ -448,6 +448,36 @@ AddLocalVariable(Function *func, AST *var)
 }
 
 /*
+ * transform a case expression list into a single boolean test
+ * "var" is the variable the case is testing against (may be
+ * a temporary)
+ */
+AST *
+TransformCaseExprList(AST *var, AST *ast)
+{
+    AST *listexpr = NULL;
+    AST *node;
+    while (ast) {
+        if (ast->kind == AST_OTHER) {
+            return AstInteger(1);
+        } else {
+            if (ast->left->kind == AST_RANGE) {
+                node = NewAST(AST_ISBETWEEN, var, ast->left);
+            } else {
+                node = AstOperator(T_EQ, var, ast->left);
+            }
+        }
+        if (listexpr) {
+            listexpr = AstOperator(T_OR, listexpr, node);
+        } else {
+            listexpr = node;
+        }
+        ast = ast->right;
+    }
+    return listexpr;
+}
+
+/*
  * print a counting repeat loop
  */
 AST *
@@ -1174,7 +1204,7 @@ TransformLongMove(AST **astptr, AST *ast)
  * (2) Certain operators used at top level are changed into assignments
  * (3) Validate parameters to some builtins
  * (4) Turn AST_COUNTREPEAT into AST_FOR
- * (5) Turn case into if/else 
+ * (5) make sure expression in a case statement is a variable
  */
 /* if level is 0, we are inside an expression
  * level == 1 at top level
@@ -1227,6 +1257,11 @@ doSpinTransform(AST **astptr, int level)
     {
         AST *list = ast->right;
         doSpinTransform(&ast->left, 0);
+        if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
+            AST *var = AstTempVariable("_tmp_");
+            AddLocalVariable(curfunc, var);
+            ast->left = AstAssign(T_ASSIGN, var, ast->left);
+        }
         while (list) {
             doSpinTransform(&list->left->left, 0);
             doSpinTransform(&list->left->right, level);
