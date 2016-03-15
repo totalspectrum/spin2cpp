@@ -280,6 +280,7 @@ const char system_spincode[] =
     "      r := (r >> 1) + bit\n"
     "    else\n"
     "      r := r >> 1\n"
+    "    bit := bit >> 2\n"
     "  return r\n"
 ;
 
