@@ -7,10 +7,11 @@ CON
    
 OBJ
  ser: "FullDuplexSerial"
-  
+
 PUB demo
   ser.start(31, 30, 0, 115200)
   repeat 4
     ser.str(string("hello, world!", 13, 10))
   repeat
   
+

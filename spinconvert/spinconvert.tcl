@@ -101,7 +101,9 @@ proc regenOutput { spinfile } {
     global OUTPUT
     global EXT
     global makeBinary
-
+    global codemem
+    global datamem
+    
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
 	set dirname [file dirname $spinfile]
@@ -286,7 +288,8 @@ menu .mbar.help -tearoff 0
 .mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
 .mbar.options add separator
 .mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
-.mbar.options add command -label "PASM Options..." -command { doPasmOptions }
+.mbar.options add checkbutton -label "LMM Mode" -variable codemem -onvalue hub -offvalue cog
+# .mbar.options add command -label "PASM Options..." -command { doPasmOptions }
 
 .mbar add cascade -menu .mbar.help -label Help
 .mbar.help add command -label "Help" -command { doHelp }
