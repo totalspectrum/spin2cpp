@@ -1104,17 +1104,19 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     if (expr->kind == AST_ISBETWEEN) {
         Operand *lo, *hi;
         Operand *val;
-        Operand *tmp;
-        tmp = NewFunctionTempRegister();
+        Operand *tmplo, *tmphi;
         val = CompileExpression(irl, expr->left);
         lo = CompileExpression(irl, expr->right->left);
         hi = CompileExpression(irl, expr->right->right);
-        EmitMove(irl, tmp, lo);
-        EmitOp2(irl, OPC_MAXS, lo, hi); // now lo really is the smallest
-        EmitOp2(irl, OPC_MINS, hi, tmp); // and hi really is highest
-        ir = EmitOp2(irl, OPC_CMPS, lo, val);
+        tmplo = NewFunctionTempRegister();
+        tmphi = NewFunctionTempRegister();
+        EmitMove(irl, tmplo, lo);
+        EmitMove(irl, tmphi, hi);
+        EmitOp2(irl, OPC_MAXS, tmplo, hi); // now tmplo really is the smallest
+        EmitOp2(irl, OPC_MINS, tmphi, lo); // and tmphi really is highest
+        ir = EmitOp2(irl, OPC_CMPS, tmplo, val);
         ir->flags |= FLAG_WZ|FLAG_WC;
-        ir = EmitOp2(irl, OPC_CMPS, val, hi);
+        ir = EmitOp2(irl, OPC_CMPS, val, tmphi);
         ir->flags |= FLAG_WZ|FLAG_WC;
         ir->cond = COND_LE;
         if (truedest) {
