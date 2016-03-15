@@ -4,7 +4,7 @@ DAT
 	org	0
 
 _inc
-	add	arg1, #incval
+	add	arg1, #15
 	mov	result1, arg1
 _inc_ret
 	ret

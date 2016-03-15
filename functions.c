@@ -577,7 +577,7 @@ TransformCountRepeat(AST *ast)
     if (deltaknown && delta == 1) {
         stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
     } else if (deltaknown && delta == -1) {
-        stepstmt = AstOperator(T_INCREMENT, NULL, loopvar);
+        stepstmt = AstOperator(T_DECREMENT, NULL, loopvar);
     } else {
         stepstmt = AstAssign('+', loopvar, step);
     }
@@ -1174,6 +1174,7 @@ TransformLongMove(AST **astptr, AST *ast)
  * (2) Certain operators used at top level are changed into assignments
  * (3) Validate parameters to some builtins
  * (4) Turn AST_COUNTREPEAT into AST_FOR
+ * (5) Turn case into if/else 
  */
 /* if level is 0, we are inside an expression
  * level == 1 at top level

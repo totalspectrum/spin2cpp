@@ -841,7 +841,10 @@ CompileIdentifier(IRList *irl, AST *expr)
           AST *symexpr = (AST *)sym->val;
           int val = EvalConstExpr(symexpr);
           if (val >= 0 && val < 512) {
-              return NewOperand(IMM_INT, sym->name, val);
+              // FIXME: it would be nice to use sym->name as a symbolic
+              // name for the constant, but this causes problems
+              // with visibility in subobjects
+              return NewOperand(IMM_INT, "" /*sym->name*/, val);
           } else {
               return NewImmediate(val);
           }
@@ -1334,7 +1337,7 @@ CompileOperator(IRList *irl, AST *expr)
             CompileExpression(irl, addone);
             return  temp;
         } else {
-            addone = AstAssign(opc, expr->right, AstInteger(-1));
+            addone = AstAssign(opc, expr->right, AstInteger(1));
         }
         return CompileExpression(irl, addone);
     }
