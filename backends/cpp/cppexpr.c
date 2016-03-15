@@ -144,7 +144,9 @@ PrintSymbol(Flexbuf *f, Symbol *sym)
         }
         break;
     case SYM_VARIABLE:
-        if (gl_ccode || (curfunc && curfunc->force_static) ) {
+        if ( (gl_ccode || (curfunc && curfunc->force_static))
+             && !(sym->flags & SYMF_GLOBAL) )
+        {
             flexbuf_printf(f, "self->%s", sym->name);
         } else {
             flexbuf_printf(f, "%s", sym->name);
@@ -172,6 +174,7 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
     flexbuf_printf(f, "%s(", sym->name);
     if (gl_ccode && !is_static) {
         if (objsym) {
+            flexbuf_printf(f, "&");
             PrintObjectSym(f, objsym, objref);
         } else {
             flexbuf_printf(f, "self");
