@@ -624,9 +624,17 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   Module *P = func->parse;
   Symbol *sym;
-  const char *name = expr->d.string;
+  const char *name;
   AST *fcall;
-  
+
+  if (expr->kind == AST_RESULT) {
+      name = "result";
+  } else if (expr->kind == AST_IDENTIFIER) {
+      name = expr->d.string;
+  } else {
+      ERROR(expr, "Internal error, unexpected expression type for identifier");
+      return NewImmediate(0);
+  }
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
       switch (sym->type) {
@@ -653,7 +661,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           fcall = NewAST(AST_FUNCCALL, expr, NULL);
           return CompileFunccall(irl, fcall);
       default:
-          ERROR(expr, "Symbol %s is of a type not handled by PASM output yet", name);
+          if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
+              /* do nothing, this is OK */
+          } else {
+              ERROR(expr, "Symbol %s is of a type not handled by PASM output yet", name);
+          }
           /* fall through */
       case SYM_LOCALVAR:
       case SYM_TEMPVAR:
@@ -836,18 +848,22 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
 Operand *
 CompileIdentifier(IRList *irl, AST *expr)
 {
-    Symbol *sym = LookupSymbol(expr->d.string);
-    if (sym && sym->type == SYM_CONSTANT) {
-          AST *symexpr = (AST *)sym->val;
-          int val = EvalConstExpr(symexpr);
-          if (val >= 0 && val < 512) {
-              // FIXME: it would be nice to use sym->name as a symbolic
-              // name for the constant, but this causes problems
-              // with visibility in subobjects
-              return NewOperand(IMM_INT, "" /*sym->name*/, val);
-          } else {
-              return NewImmediate(val);
-          }
+    Symbol *sym;
+
+    if (expr->kind == AST_IDENTIFIER) {
+        sym = LookupSymbol(expr->d.string);
+        if (sym && sym->type == SYM_CONSTANT) {
+            AST *symexpr = (AST *)sym->val;
+            int val = EvalConstExpr(symexpr);
+            if (val >= 0 && val < 512) {
+                // FIXME: it would be nice to use sym->name as a symbolic
+                // name for the constant, but this causes problems
+                // with visibility in subobjects
+                return NewOperand(IMM_INT, "" /*sym->name*/, val);
+            } else {
+                return NewImmediate(val);
+            }
+        }
     }
     return CompileIdentifierForFunc(irl, expr, curfunc);
 }
@@ -1753,7 +1769,6 @@ CompileExpression(IRList *irl, AST *expr)
     r = NewImmediate((int32_t)expr->d.ival);
     return r;
   case AST_RESULT:
-    return CompileExpression(irl, curfunc->resultexpr);
   case AST_IDENTIFIER:
     return CompileIdentifier(irl, expr);
   case AST_HWREG:

@@ -292,6 +292,9 @@ int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int star
 // find the variable symbol for an identifier or array decl
 Symbol *VarSymbol(Function *func, AST *ast);
 
+// add a local variable to a function
+void AddLocalVariable(Function *func, AST *var);
+
 // find the size of a type
 int TypeSize(AST *ast);
 

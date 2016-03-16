@@ -659,6 +659,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         /* while we're evaluating, use the object context */
         ret = EvalExprInState(GetObjectPtr(objsym), sym->val, flags, valid);
         return ret;
+    case AST_RESULT:
+        *valid = 0;
+        return intExpr(0); 
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
