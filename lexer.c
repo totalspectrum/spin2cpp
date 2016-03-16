@@ -986,6 +986,7 @@ extern void memFillBuiltin(Flexbuf *, Builtin *, AST *);
 extern void str1Builtin(Flexbuf *, Builtin *, AST *);
 extern void strcompBuiltin(Flexbuf *, Builtin *, AST *);
 extern void rebootBuiltin(Flexbuf *, Builtin *, AST *);
+extern void waitpeqBuiltin(Flexbuf *, Builtin *, AST *);
 
 /* hooks to be called when we recognize a builtin */
 static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }
@@ -1006,8 +1007,8 @@ Builtin builtinfuncs[] = {
     { "strsize", 1, str1Builtin, "strlen", 0, NULL },
     { "strcomp", 2, strcompBuiltin, "strcmp", 0, NULL },
     { "waitcnt", 1, defaultBuiltin, "waitcnt", 0, NULL },
-    { "waitpeq", 3, defaultBuiltin, "waitpeq", 0, NULL },
-    { "waitpne", 3, defaultBuiltin, "waitpne", 0, NULL },
+    { "waitpeq", 3, waitpeqBuiltin, "waitpeq", 0, NULL },
+    { "waitpne", 3, waitpeqBuiltin, "waitpne", 0, NULL },
 
     { "reboot", 0, rebootBuiltin, "reboot", 0, NULL },
 
@@ -1123,10 +1124,10 @@ instr[] = {
   { "movi",   0x58800000, TWO_OPERANDS, OPC_GENERIC },
   { "movs",   0x50800000, TWO_OPERANDS, OPC_GENERIC },
 
-  { "muxc",   0x70800000, TWO_OPERANDS, OPC_GENERIC },
-  { "muxnc",  0x74800000, TWO_OPERANDS, OPC_GENERIC },
-  { "muxz",   0x78800000, TWO_OPERANDS, OPC_GENERIC },
-  { "muxnz",  0x7c800000, TWO_OPERANDS, OPC_GENERIC },
+  { "muxc",   0x70800000, TWO_OPERANDS, OPC_MUXC },
+  { "muxnc",  0x74800000, TWO_OPERANDS, OPC_MUXNC },
+  { "muxz",   0x78800000, TWO_OPERANDS, OPC_MUXZ },
+  { "muxnz",  0x7c800000, TWO_OPERANDS, OPC_MUXNZ },
 
   { "neg",    0xa4800000, TWO_OPERANDS, OPC_NEG },
   { "negc",   0xb0800000, TWO_OPERANDS, OPC_GENERIC },

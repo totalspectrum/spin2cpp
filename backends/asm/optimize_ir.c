@@ -143,6 +143,12 @@ IsImmediate(Operand *op)
     return op->kind == IMM_INT;
 }
 
+static bool
+IsImmediateVal(Operand *op, int val)
+{
+    return op->kind == IMM_INT && op->val == val;
+}
+
 bool
 IsValidDstReg(Operand *op)
 {
@@ -152,6 +158,44 @@ IsValidDstReg(Operand *op)
     case REG_REG:
     case IMM_COG_LABEL:  // for popping ret addresses and such
         return true;
+    default:
+        return false;
+    }
+}
+
+static bool
+InstrSetsFlags(IR *ir)
+{
+    if ( 0 != (ir->flags & (FLAG_WZ|FLAG_WC)) )
+        return true;
+    return false;
+}
+
+static bool
+InstrUsesFlags(IR *ir, unsigned flags)
+{
+    if (ir->cond != COND_TRUE && ir->cond != COND_FALSE) {
+        if ( (flags & FLAG_WC) ) {
+            /* the E and NE flags do not require C */
+            if (ir->cond != COND_EQ && ir->cond != COND_NE)
+                return true;
+        }
+        if (flags & FLAG_WZ) {
+            if (ir->cond != COND_C && ir->cond != COND_NC)
+                return true;
+        }
+    }
+    switch (ir->opc) {
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+        /* it might use flags, we don't know (e.g. addx) */
+        return true;
+    case OPC_MUXC:
+    case OPC_MUXNC:
+        return (flags & FLAG_WC) != 0;
+    case OPC_MUXZ:
+    case OPC_MUXNZ:
+        return (flags & FLAG_WZ) != 0;
     default:
         return false;
     }
@@ -660,7 +704,7 @@ HasSideEffects(IR *ir)
     if (ir->dst && ir->dst->kind == REG_HW) {
         return true;
     }
-    if (ir->flags & (FLAG_WZ|FLAG_WC)) {
+    if (InstrSetsFlags(ir)) {
         return true;
     }
     if (IsBranch(ir)) {
@@ -915,7 +959,7 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
             // else that did the set
             return NULL;
         }
-        if (ir->flags & (FLAG_WZ|FLAG_WC)) {
+        if (InstrSetsFlags(ir)) {
             // flags are messed up here, so we can't go back any further
             return NULL;
         }
@@ -935,7 +979,9 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
 }
 
 //
-// find the previous instruction that sets a particular operand
+// find the previous instruction that changes a particular operand
+// also will return if it's in the dst field of a TEST
+//
 // used for peephole optimization
 // returns NULL if we cannot find the instruction
 //
@@ -957,7 +1003,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         if (IsBranch(ir)) {
             return NULL;
         }
-        if (ir->dst == dst && InstrSetsDst(ir)) {
+        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST)) {
             if (ir->cond != COND_TRUE) {
                 // cannot be sure that we set the value here,
                 // since the set is conditional
@@ -966,7 +1012,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
             break;
         }
         if (ir->src == dst || ir->dst == dst) {
-            // we cannot replace the setter
+            // we cannot replace the setter, it's in use
             return NULL;
         }
     }
@@ -1013,13 +1059,13 @@ OptimizeCompares(IRList *irl)
         }
 	if (!ir) break;
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
-            && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
-	    && ir->src->kind == IMM_INT && ir->src->val == 0
+             && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
+             && IsImmediateVal(ir->src, 0)
             )
         {
             ir_prev = FindPrevSetterForCompare(ir, ir->dst);
             if (ir_prev
-                && (0 == (ir_prev->flags & (FLAG_WZ|FLAG_WC)))
+                && !InstrSetsFlags(ir_prev)
                 && CanTestZero(ir_prev->opc))
             {
                 ir_prev->flags |= FLAG_WZ;
@@ -1031,8 +1077,7 @@ OptimizeCompares(IRList *irl)
                 if (ir_prev->opc == OPC_SUB
                     && ir_next->opc == OPC_JUMP
                     && ir_next->cond == COND_NE
-                    && ir_prev->src->kind == IMM_INT
-                    && ir_prev->src->val == 1)
+                    && IsImmediateVal(ir_prev->src, 1) )
                 {
                     // replace jmp with djnz
 		    ReplaceOpcode(ir_next, OPC_DJNZ);
@@ -1225,11 +1270,57 @@ CheckLabelUsage(IRList *irl)
 }
 
 //
+// replace use of NZ with C and Z with NC
+//
+static void
+ReplaceZWithNC(IR *ir)
+{
+    switch (ir->cond) {
+    case COND_EQ:
+        ir->cond = COND_NC;
+        break;
+    case COND_NE:
+        ir->cond = COND_C;
+        break;
+    case COND_TRUE:
+    case COND_FALSE:
+        break;
+    default:
+        ERROR(NULL, "Internal error, unexpected condition");
+    }
+    switch (ir->opc) {
+    case OPC_MUXZ:
+        ReplaceOpcode(ir, OPC_MUXNC);
+        break;
+    case OPC_MUXNZ:
+        ReplaceOpcode(ir, OPC_MUXC);
+        break;
+    case OPC_MUXC:
+    case OPC_MUXNC:
+    case OPC_GENERIC:
+    case OPC_GENERIC_NR:
+        ERROR(NULL, "Internal error, unexpected use of C");
+        break;
+    default:
+        break;
+    }
+}
+//
 // basic peephole substitution
 //
 // mov tmp, x
 // and tmp, y wz
 //   becomes test x,y wz if tmp is dead
+//
+// test tmp, #1 wz
+// shr  tmp, #1
+//    becomes shr tmp, #1 wc if we can replace NZ with C
+//
+// if_c  or a, b
+// if_nc andn a, b
+//    becomes muxc a, b
+//
+
 int
 OptimizePeepholes(IRList *irl)
 {
@@ -1240,7 +1331,10 @@ OptimizePeepholes(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
-        if (ir->opc == OPC_AND && (ir->flags&(FLAG_WZ|FLAG_WC))) {
+        while (ir_next && IsDummy(ir_next))
+            ir_next = ir_next->next;
+        
+        if (ir->opc == OPC_AND && InstrSetsFlags(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst)) {
 	        ReplaceOpcode(ir, OPC_TEST);
@@ -1250,6 +1344,78 @@ OptimizePeepholes(IRList *irl)
             } else if (IsDeadAfter(ir, ir->dst)) {
 		ReplaceOpcode(ir, OPC_TEST);
             }
+        } else if (ir->opc == OPC_SHR && !InstrSetsFlags(ir)
+                   && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
+                   && IsImmediateVal(ir->src, 1))
+        {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_TEST
+                && IsImmediateVal(previr->src, 1)
+                && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
+            {
+                /* maybe we can replace the test with the shr */
+                /* we already know the result isn't used between previr
+                   and ir; check the instructions in between for use
+                   of C, and also verify that the flags aren't used
+                   in subsequent instructions
+                */
+                IR *testir;
+                IR *lastir = NULL;
+                bool sawir = false;
+                bool changeok = true;
+                for (testir = previr->next; testir && changeok; testir = testir->next) {
+                    if (testir == ir) {
+                        sawir = true;
+                    }
+                    if (IsBranch(testir)) {
+                        /* we assume flags do not have to be preserved  across branches*/
+                        lastir = testir;
+                        break;
+                    }
+                    if (InstrUsesFlags(testir, FLAG_WC)) {
+                        changeok = false;
+                    } else if (InstrSetsFlags(testir)) {
+                        changeok = sawir;
+                        lastir = testir;
+                        break;
+                    }
+                }
+                if (changeok) {
+                    /* ok, let's go ahead and change it */
+                    ReplaceOpcode(previr, OPC_SHR);
+                    previr->flags &= ~FLAG_WZ;
+                    previr->flags |= FLAG_WC;
+                    for (testir = previr->next; testir && testir != lastir;
+                         testir = testir->next)
+                    {
+                        ReplaceZWithNC(testir);
+                    }
+                    DeleteIR(irl, ir);
+                    changed = 1;
+                }
+            }
+        }
+        else if (ir->opc == OPC_OR && ir->cond == COND_C && !InstrSetsFlags(ir)
+                 && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
+                 && !InstrSetsFlags(ir_next)
+                 && ir->src == ir_next->src
+                 && ir->dst == ir_next->dst)
+        {
+            ir_next->cond = COND_TRUE;
+            ReplaceOpcode(ir_next, OPC_MUXC);
+            DeleteIR(irl, ir);
+            changed = 1;
+        }
+        else if (ir->opc == OPC_OR && ir->cond == COND_NE && !InstrSetsFlags(ir)
+                 && ir_next->opc == OPC_ANDN && ir_next->cond == COND_EQ
+                 && !InstrSetsFlags(ir_next)
+                 && ir->src == ir_next->src
+                 && ir->dst == ir_next->dst)
+        {
+            ir_next->cond = COND_TRUE;
+            ReplaceOpcode(ir_next, OPC_MUXNZ);
+            DeleteIR(irl, ir);
+            changed = 1;
         }
         ir = ir_next;
     }

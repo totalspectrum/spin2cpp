@@ -1332,6 +1332,31 @@ defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
     flexbuf_printf(f, ")");
 }
 
+/* code to print a waitpeq or waitpne function call to a file */
+void
+waitpeqBuiltin(Flexbuf *f, Builtin *b, AST *origparams)
+{
+    AST *a1;
+    AST *a2;
+    AST *a3;
+    AST *params = origparams;
+    if (AstListLen(params) != 3) {
+        ERROR(params, "wrong number of parameters to %s", b->name);
+    }
+    a1 = params->left; params = params->right;
+    a2 = params->left; params = params->right;
+    a3 = params->left; params = params->right;
+    if (!IsConstExpr(a3) || EvalConstExpr(a3) != 0) {
+        ERROR(params, "Third parameter to %s must be 0", b->name);
+        return;
+    }
+    flexbuf_printf(f, "%s(", b->cname);
+    PrintExpr(f, a1);
+    flexbuf_printf(f, ", ");
+    PrintExpr(f, a2);
+    flexbuf_printf(f, ")");
+}
+
 /* code to print a builtin variable reference call to a file */
 void
 defaultVariable(Flexbuf *f, Builtin *b, AST *params)

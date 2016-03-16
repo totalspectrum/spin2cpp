@@ -20,10 +20,8 @@ L_039_
 	add	_serchar_waitcycles, imm_694_
 	mov	arg1, _serchar_waitcycles
 	waitcnt	arg1, #0
-	test	_serchar_val, #1 wz
- if_ne	or	OUTA, imm_1073741824_
- if_e	andn	OUTA, imm_1073741824_
-	shr	_serchar_val, #1
+	shr	_serchar_val, #1 wc
+	muxc	OUTA, imm_1073741824_
 	djnz	_serchar__idx__0014, #L_039_
 _serchar_ret
 	ret
