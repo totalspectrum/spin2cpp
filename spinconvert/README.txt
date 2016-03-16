@@ -17,11 +17,19 @@ source is saved.
 
 If you select PASM output then you have the option to produce an
 executable .binary. To do this select the "Make binary" option under
-the Options menu. This only works for PASM output. The result has the
+the Options menu. This always works for PASM output, and will work
+for C/C++ output only if you have PropGCC installed. The result has the
 same name as the PASM output file, but with an extension of
 ".binary". To run this binary file on your Propeller hardware you will
 have to use the Propeller Tool or some similar IDE, or use the
 propeller-load command line tool from PropGCC.
+
+Also under the Options menu is a selection for "LMM mode". If "LMM mode"
+is on, then the PASM output is run in "Large Memory Model", which
+means that the code is actually placed in Hub memory. This means you
+can run larger Spin programs (the output doesn't have to fit in the
+tiny Cog memory!) but comes at a cost: reading instructions from Hub
+memory slows the program down by about 4x.
 
 The filename for the output is set automatically by
 changing the extension of the Spin file. For example, if the input is
