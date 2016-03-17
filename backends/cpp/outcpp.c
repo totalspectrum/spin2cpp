@@ -648,8 +648,8 @@ OutputAsmEquate(Flexbuf *f, const char *str, unsigned int value)
 }
 
 // output _clkmode and _clkfreq settings
-void
-OutputClkFreq(Flexbuf *f, Module *P)
+int
+GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = FindSymbol(&P->objsyms, "_clkmode");
@@ -660,12 +660,12 @@ OutputClkFreq(Flexbuf *f, Module *P)
     uint8_t clkreg;
     
     if (!clkmodesym) {
-        return;  // nothing to do
+        return 0;  // nothing to do
     }
     ast = (AST *)clkmodesym->val;
     if (clkmodesym->type != SYM_CONSTANT) {
         WARNING(ast, "_clkmode is not a constant");
-        return;
+        return 0;
     }
     clkmode = EvalConstExpr(ast);
     // now we need to figure out the frequency
@@ -728,20 +728,35 @@ OutputClkFreq(Flexbuf *f, Module *P)
     if (xinfreq == 0) {
         if (clkfreq == 0) {
             ERROR(NULL, "Must set at least one of _XINFREQ or _CLKFREQ");
+            return 0;
         }
     } else {
         int32_t calcfreq = xinfreq * multiplier;
         if (clkfreq != 0) {
             if (calcfreq != clkfreq) {
                 ERROR(NULL, "Inconsistent values for _XINFREQ and _CLKFREQ");
+                return 0;
             }
         }
         clkfreq = calcfreq;
     }
-    
-    // now output the clkfreq and clkmode settings
-    OutputAsmEquate(f, "__clkfreqval", clkfreq);
-    OutputAsmEquate(f, "__clkmodeval", clkreg);
+
+    *clkfreqptr = clkfreq;
+    *clkregptr = clkreg;
+    return 1;
+}
+
+void
+OutputClkFreq(Flexbuf *f, Module *P)
+{
+    unsigned int clkfreq;
+    unsigned int clkreg;
+
+    if (GetClkFreq(P, &clkfreq, &clkreg)) {
+        // now output the clkfreq and clkmode settings
+        OutputAsmEquate(f, "__clkfreqval", clkfreq);
+        OutputAsmEquate(f, "__clkmodeval", clkreg);
+    }
 }
 
 void

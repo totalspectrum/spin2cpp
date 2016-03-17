@@ -32,8 +32,14 @@ static void putlong(Flexbuf *f, unsigned int x)
 static void
 OutputSpinHeader(Flexbuf *f, Module *P)
 {
-    unsigned int clkfreq = 80000000;
-    unsigned int clkmodeval = 0x6f;
+    unsigned int clkfreq;
+    unsigned int clkmodeval;
+
+    if (!GetClkFreq(P, &clkfreq, &clkmodeval)) {
+        // use defaults
+        clkfreq = 80000000;
+        clkmodeval = 0x6f;
+    }
     
     putlong(f, clkfreq);
     putbyte(f, clkmodeval);
@@ -47,7 +53,7 @@ OutputSpinHeader(Flexbuf *f, Module *P)
     putbyte(f, 0x02);
     putbyte(f, 0x00);
     putword(f, 0x0008);
-    putword(f, 0x8000); // stack end
+    putword(f, 0x0000); // initial stack: 0 == first run of program
 
     // simple spin program
     putbyte(f, 0x3f);
