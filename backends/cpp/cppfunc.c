@@ -478,7 +478,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         //PrintCountRepeat(f, ast, indent);
         break;
     case AST_STMTLIST:
-        PrintStatementList(f, ast, indent+2);
+        PrintStatementList(f, ast, indent);
         break;
     case AST_CASE:
         PrintDebugDirective(f, ast);

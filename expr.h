@@ -53,7 +53,7 @@ Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 
 AST *ExprType(AST *ast);
 
-AST *TransformRangeAssign(AST *dst, AST *src);
+AST *TransformRangeAssign(AST *dst, AST *src, int toplevel);
 AST *TransformRangeUse(AST *src);
 AST *TransformCaseExprList(AST *var, AST *list);
 

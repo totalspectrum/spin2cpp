@@ -311,9 +311,11 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
  *
  * Note that we want to special case some common idioms:
  *  outa[2..1] := outa[2..1] ^ -1, for example
+ *
+ * toplevel is "1" if we are at top level and can emit if statements
  */
 AST *
-TransformRangeAssign(AST *dst, AST *src)
+TransformRangeAssign(AST *dst, AST *src, int toplevel)
 {
     int reverse = 0;
     uint32_t mask;
@@ -324,6 +326,8 @@ TransformRangeAssign(AST *dst, AST *src)
         ERROR(dst, "internal error: expecting range");
         return 0;
     }
+    AstReportAs(dst);  // set up error messages as if coming from "dst"
+    
     /* special case logical operators */
     if (src->kind == AST_OPERATOR && src->d.ival == T_BIT_NOT
         && AstMatch(dst, src->right))
@@ -366,6 +370,45 @@ TransformRangeAssign(AST *dst, AST *src)
         return AstAssign(T_ASSIGN, dst->left, FoldIfConst(src));
     }
 
+    /*
+     * special case: if we have just one bit, then most code
+     * generators actually do better on
+     *  if (src & 1)
+     *    outa |= mask
+     *  else
+     *    outa &= ~mask
+     */
+    if (nbits == 1 && toplevel) {
+        AST *ifcond;
+        AST *ifpart;
+        AST *elsepart;
+        AST *shift;
+        AST *stmt;
+        AST *ifstmt;
+        AST *maskvar;
+        AST *maskassign;
+
+        maskvar = AstTempLocalVariable("_mask");
+        shift = AstOperator(T_SHL, AstInteger(1), loexpr);
+        shift = FoldIfConst(shift);
+        maskassign = AstAssign(T_ASSIGN, maskvar, shift);
+        ifcond = AstOperator('&', src, AstInteger(1));
+        ifpart = AstOperator('|', dst->left, maskvar);
+        ifpart = AstAssign(T_ASSIGN, dst->left, ifpart);
+        ifpart = NewAST(AST_STMTLIST, ifpart, NULL);
+        
+        elsepart = AstOperator('&', dst->left,
+                               AstOperator(T_BIT_NOT, NULL, maskvar));
+        elsepart = AstAssign(T_ASSIGN, dst->left, elsepart);
+        elsepart = NewAST(AST_STMTLIST, elsepart, NULL);
+        
+        stmt = NewAST(AST_THENELSE, ifpart, elsepart);
+        ifstmt = NewAST(AST_IF, ifcond, stmt);
+        ifstmt = NewAST(AST_STMTLIST, maskassign,
+                        NewAST(AST_STMTLIST, ifstmt, NULL));
+        return ifstmt;
+    }
+                             
     /*
      * outa[lo] := src
      * can translate to:

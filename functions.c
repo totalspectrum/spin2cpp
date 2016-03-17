@@ -447,6 +447,18 @@ AddLocalVariable(Function *func, AST *var)
     }
 }
 
+AST *
+AstTempLocalVariable(const char *prefix)
+{
+    char *name;
+    AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+
+    name = NewTemporaryVariable(prefix);
+    ast->d.string = name;
+    AddLocalVariable(curfunc, ast);
+    return ast;
+}
+
 /*
  * transform a case expression list into a single boolean test
  * "var" is the variable the case is testing against (may be
@@ -567,13 +579,11 @@ TransformCountRepeat(AST *ast)
 
     /* set the loop variable */
     if (!loopvar) {
-        loopvar = AstTempVariable("_idx_");
-        AddLocalVariable(curfunc, loopvar);
+        loopvar = AstTempLocalVariable("_idx_");
     }
 
     if (!IsConstExpr(fromval)) {
-        initvar = AstTempVariable("_start_");
-        AddLocalVariable(curfunc, initvar);
+        initvar = AstTempLocalVariable("_start_");
         initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
     } else {
         initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
@@ -587,8 +597,7 @@ TransformCountRepeat(AST *ast)
             limit = toval;
         }
     } else {
-        limit = AstTempVariable("_limit_");
-        AddLocalVariable(curfunc, limit);
+        limit = AstTempLocalVariable("_limit_");
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, toval));
     }
     /* set the step variable */
@@ -599,8 +608,7 @@ TransformCountRepeat(AST *ast)
         deltaknown = 1;
     } else {
         if (negstep) stepval = AstOperator(T_NEGATE, NULL, stepval);
-        step = AstTempVariable("_step_");
-        AddLocalVariable(curfunc, step);
+        step = AstTempLocalVariable("_step_");
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, step, stepval));
     }
 
@@ -1258,8 +1266,7 @@ doSpinTransform(AST **astptr, int level)
         AST *list = ast->right;
         doSpinTransform(&ast->left, 0);
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
-            AST *var = AstTempVariable("_tmp_");
-            AddLocalVariable(curfunc, var);
+            AST *var = AstTempLocalVariable("_tmp_");
             ast->left = AstAssign(T_ASSIGN, var, ast->left);
         }
         while (list) {
@@ -1317,16 +1324,14 @@ doSpinTransform(AST **astptr, int level)
             ERROR(ast, "bad posteffect operator %d", ast->d.ival);
             target = AstInteger(0);
         }
-        doSpinTransform(&ast->left, 0);
-        if (ast->right != NULL) {
+         if (ast->right != NULL) {
             ERROR(ast, "Expected NULL on right of posteffect");
         }
         if (level == 1) {
             // at toplevel we can ignore the old result
             *astptr = AstAssign(T_ASSIGN, ast->left, target);
         } else {
-            tmp = AstTempVariable("_tmp_");
-            AddLocalVariable(curfunc, tmp);
+            tmp = AstTempLocalVariable("_tmp_");
 
             seq1 = NewAST(AST_SEQUENCE,
                           AstAssign(T_ASSIGN, tmp, ast->left),
@@ -1334,8 +1339,18 @@ doSpinTransform(AST **astptr, int level)
             seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
             *astptr = seq2;
         }
+        // we may have a range reference in here, so do the
+        // transform on the result
+        doSpinTransform(astptr, level);
 	break;
     }
+    case AST_ASSIGN:
+        if (level == 1 && ast->left && ast->left->kind == AST_RANGEREF) {
+            *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+        }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
@@ -1350,6 +1365,7 @@ doSpinTransform(AST **astptr, int level)
                 lhsast = DupAST(ast->right);
                 *astptr = ast = AstAssign(T_ASSIGN, lhsast, ast);
                 ast->line = lhsast->line = line;
+                doSpinTransform(astptr, level);
                 break;
             }
         } else {

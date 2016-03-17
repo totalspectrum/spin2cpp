@@ -32,6 +32,13 @@ static void EXPECTEQfn(long x, long val, int line) {
     }
 }
 
+//
+// dummy definition
+//
+AST *AstTempLocalVariable(const char *prefix)
+{
+    return NULL;
+}
 
 #define EXPECTEQ(x, y) EXPECTEQfn((x), (y), __LINE__)
 

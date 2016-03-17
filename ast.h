@@ -152,6 +152,7 @@ AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);
 AST *AstAssign(int32_t intval, AST *left, AST *right);
 AST *AstTempVariable(const char *prefix);
+AST *AstTempLocalVariable(const char *prefix);
 AST *AstLookup(enum astkind kind, int index, AST *expr, AST *table);
 
 /* check to see if two trees are identical */

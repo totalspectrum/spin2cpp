@@ -734,7 +734,7 @@ PrintRangeAssign(Flexbuf *f, AST *dst, AST *src)
     AST *lhs, *rhs;
     int op;
     
-    newast = TransformRangeAssign(dst, src);
+    newast = TransformRangeAssign(dst, src, 0);
     /* try to pretty print if we can */
     lhs = newast->left;
     rhs = newast->right;
@@ -874,6 +874,23 @@ PrintAssign(Flexbuf *f, AST *lhs, AST *rhs)
         */
         if (IsArray(lhs)) {
             lhs = NewAST(AST_ARRAYREF, lhs, AstInteger(0));
+        }
+
+        /* shortcut certain expressions */
+        if (rhs->kind == AST_OPERATOR &&
+            (rhs->d.ival == '|'
+             || rhs->d.ival == '&'
+             || rhs->d.ival == '^')
+            && AstMatch(lhs, rhs->left))
+        {
+            PrintLHS(f, lhs, 1, 0);
+            flexbuf_printf(f, " %c= ", rhs->d.ival);
+            if (rhs->right->kind == AST_INTEGER) {
+                flexbuf_printf(f, "0x%x", rhs->right->d.ival);
+            } else {
+                PrintExpr(f, rhs->right);
+            }
+            return;
         }
         PrintLHS(f, lhs, 1, 0);
         flexbuf_printf(f, " = ");

@@ -172,6 +172,7 @@ AstTempVariable(const char *prefix)
     return ast;
 }
 
+
 /*
  * create a lookup expression for LOOKUP, LOOKUPZ, etc.
  * "kind" is either AST_LOOKUP or AST_LOOKDOWN, "base"

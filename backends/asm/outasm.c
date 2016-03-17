@@ -2187,9 +2187,6 @@ static void EmitStatement(IRList *irl, AST *ast)
         EmitStatementList(irl, ast);
         break;
     case AST_ASSIGN:
-        if (ast->left && ast->left->kind == AST_RANGEREF) {
-            ast = TransformRangeAssign(ast->left, ast->right);
-        }
         /* fall through */
     default:
         /* assume an expression */
