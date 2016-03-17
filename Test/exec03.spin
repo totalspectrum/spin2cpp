@@ -32,5 +32,11 @@ PUB newline
   fds.str(string(13, 10))
 
 PUB exit
+'' send an exit sequence which propeller-load recognizes:
+'' FF 00 xx, where xx is the exit status
+''
+  fds.tx($ff)
+  fds.tx($00)
+  fds.tx($00) '' the exit status
   fds.txflush
-  fds.stop
+  repeat

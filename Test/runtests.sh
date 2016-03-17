@@ -19,7 +19,8 @@ echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`
-  if $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i; then
+##  if $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i; then
+  if $PROG --binary --gas -Os -o $j.binary $i; then
     rm -f $j.out
     propeller-load $j.binary -r -t -q > $j.out
   fi
