@@ -604,18 +604,25 @@ TypedMemRef(AST *type, Operand *addr, int offset)
 }
 
 static Operand *
+ValidateDatBase(Module *P)
+{
+    AsmModData *PD = ModData(P);
+    if (!PD->datbase) {
+        PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
+        PD->datbase = NewImmediatePtr(NULL, PD->datlabel);
+    }
+    return PD->datbase;
+}
+
+static Operand *
 LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
     Label *lab = (Label *)sym->val;
     Module *P = current;
-    AsmModData *PD = ModData(P);
+    Operand *datbase = ValidateDatBase(P);
     
-    if (!PD->datbase) {
-        PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
-        PD->datbase = NewImmediatePtr(NULL, PD->datlabel);
-    }
-    temp = TypedMemRef(lab->type, PD->datbase, (int)lab->offset);
+    temp = TypedMemRef(lab->type, datbase, (int)lab->offset);
     return temp;
 }
 
@@ -1832,6 +1839,17 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_ADDROF:
   case AST_ABSADDROF:
       return GetAddressOf(irl, expr->left);
+  case AST_DATADDROF:
+      /* this requires that we add an offset to the value we get */
+  {
+      Operand *temp = NewFunctionTempRegister();
+      Operand *val = CompileExpression(irl, expr->left);
+      Operand *datbase = ValidateDatBase(current);
+      
+      EmitMove(irl, temp, val);
+      EmitOp2(irl, OPC_ADD, temp, datbase);
+      return temp;
+  }
   case AST_LOOKUP:
   case AST_LOOKDOWN:
       return CompileLookupDown(irl, expr);
