@@ -2320,6 +2320,7 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
     Module *Q;
     AST *subobj;
     Module *save = current;
+    Function *savecurf = curfunc;
     
     if (P->visitflag == visitval)
         return;
@@ -2339,6 +2340,7 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
         VisitRecursive(irl, Q, func, visitval);
     }
     current = save;
+    curfunc = savecurf;
 }
 
 static bool
@@ -2453,6 +2455,8 @@ AssignFuncNames(IRList *irl, Module *P)
 static void
 CompileFunc_internal(IRList *irl, Module *P)
 {
+    Function *savecurf = curfunc;
+    
     Function *f;
     (void)irl; // not used
     for(f = P->functions; f; f = f->next) {
@@ -2462,6 +2466,7 @@ CompileFunc_internal(IRList *irl, Module *P)
       CompileFunctionBody(f);
       FuncData(f)->isInline = ShouldBeInlined(f);
     }
+    curfunc = savecurf;
 }
 
 static void
