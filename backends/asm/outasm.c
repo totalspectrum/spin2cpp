@@ -1684,6 +1684,9 @@ CompileLookupDown(IRList *irl, AST *expr)
     AST *ev, *table;
     AST *len;
     AST *arrid;
+    Operand *value;
+    
+    int popsize = 0;
     if (expr->kind == AST_LOOKDOWN) {
         funccall = AstIdentifier("_lookdown");
     } else {
@@ -1697,19 +1700,51 @@ CompileLookupDown(IRList *irl, AST *expr)
     base = ev->left;
     idx = ev->right;
     table = expr->right;
-    if (table->kind != AST_TEMPARRAYUSE) {
-        ERROR(table, "Cannot handle non-constant lookups");
+
+    if (table->kind == AST_TEMPARRAYUSE) {
+        len = table->right;
+        arrid = NewAST(AST_ADDROF, table->left, NULL);
+    } else if (table->kind == AST_EXPRLIST) {
+        // FIXME?? ASSUMES STACK GROWS UP!!!
+        int n;
+        Operand *basereg = NewFunctionTempRegister();
+        Operand *finalidx;
+        
+        /* NOTE!
+           we have to evaluate the index before evaluating array elements
+        */
+        finalidx = CompileExpression(irl, idx);
+        idx = NewAST(AST_OPERAND, NULL, NULL);
+        idx->d.ptr = (void *)finalidx;
+        
+        ValidateStackptr();
+        arrid = NewAST(AST_OPERAND, NULL, NULL);
+        arrid->d.ptr = (void *)basereg;
+        EmitMove(irl, basereg, stackptr);
+        n = 0;
+        while (table) {
+            Operand *src = CompileExpression(irl, table->left);
+            EmitPush(irl, src);
+            n++;
+            table = table->right;
+        }
+        len = AstInteger(n);
+        popsize = n*LONG_SIZE;
+    } else {
+        ERROR(table, "Internal error in lookup code");
         return NewImmediate(0);
     }
-    len = table->right;
-    arrid = NewAST(AST_ADDROF, table->left, NULL);
 
     params = NewAST(AST_EXPRLIST, idx,
                     NewAST(AST_EXPRLIST, base,
                            NewAST(AST_EXPRLIST, arrid,
                                   NewAST(AST_EXPRLIST, len, NULL))));
     funccall = NewAST(AST_FUNCCALL, funccall, params);
-    return CompileFunccall(irl, funccall);
+    value = CompileFunccall(irl, funccall);
+    if (popsize) {
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(popsize));
+    }
+    return value;
 }
 
 //
@@ -1853,6 +1888,9 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_LOOKUP:
   case AST_LOOKDOWN:
       return CompileLookupDown(irl, expr);
+  case AST_OPERAND:
+      /* stashed away by other code */
+      return (Operand *)expr->d.ptr;
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
