@@ -5,14 +5,14 @@ _test1
 	mov	_test1_x, arg1 wz
 	mov	_test1_y, arg2
 	mov	_test1_z, arg3
- if_ne	jmp	#L_040_
+ if_ne	jmp	#L_048_
 	cmps	_test1_y, #0 wz
- if_ne	jmp	#L_040_
- if_e	jmp	#L_039_
-L_040_
+ if_ne	jmp	#L_048_
+ if_e	jmp	#L_047_
+L_048_
 	mov	result1, _test1_z
 	jmp	#_test1_ret
-L_039_
+L_047_
 	neg	result1, #1
 _test1_ret
 	ret

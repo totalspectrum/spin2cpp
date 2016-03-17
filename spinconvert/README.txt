@@ -43,8 +43,9 @@ KNOWN ISSUES
 
 PASM output cannot handle taking the address of function variables.
 It also does not implement lookup/lookdown with non-constant values
-and some operators (the random operators, and perhaps a
-few others). It's still very much a work in progress.
+and calling coginit/cognew on Spin functions (using coginit on PASM
+code in the DAT section does work). It's still very much a work in
+progress.
 
 The C/C++ output should be complete.
 

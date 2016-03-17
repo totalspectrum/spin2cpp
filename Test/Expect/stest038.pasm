@@ -2,18 +2,18 @@ DAT
 	org	0
 
 _test
-L_039_
+L_047_
 	mov	_test_x, INA
 	sar	_test_x, #1
 	and	_test_x, #1 wz
- if_ne	jmp	#L_040_
+ if_ne	jmp	#L_048_
 	mov	test_tmp001_, INA
 	sar	test_tmp001_, #2
 	test	test_tmp001_, #1 wz
- if_ne	jmp	#L_039_
+ if_ne	jmp	#L_047_
 	xor	OUTA, #1
-	jmp	#L_039_
-L_040_
+	jmp	#L_047_
+L_048_
 _test_ret
 	ret
 

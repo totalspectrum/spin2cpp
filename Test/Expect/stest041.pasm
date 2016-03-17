@@ -3,9 +3,9 @@ DAT
 
 _count1
 	mov	_count1_i, #5
-L_039_
+L_047_
 	xor	OUTA, #2
-	djnz	_count1_i, #L_039_
+	djnz	_count1_i, #L_047_
 _count1_ret
 	ret
 

@@ -852,7 +852,7 @@ CompileIdentifier(IRList *irl, AST *expr)
 
     if (expr->kind == AST_IDENTIFIER) {
         sym = LookupSymbol(expr->d.string);
-        if (sym && sym->type == SYM_CONSTANT) {
+        if (sym && (sym->type == SYM_CONSTANT || sym->type == SYM_FLOAT_CONSTANT)) {
             AST *symexpr = (AST *)sym->val;
             int val = EvalConstExpr(symexpr);
             if (val >= 0 && val < 512) {
@@ -1325,9 +1325,29 @@ CompileBasicOperator(IRList *irl, AST *expr)
   }
   case T_SQRT:
   {
-      AST *fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
-                          NewAST(AST_EXPRLIST, expr->right, NULL));
+      AST *fcall;
+      AstReportAs(expr);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
       return CompileFunccall(irl, fcall);
+  }
+  case '?':
+  {
+      AST *fcall;
+      AST *var;
+      const char *fname;
+      AstReportAs(expr);
+      if (expr->left) {
+          fname = "_lfsr_forward";
+          var = expr->left;
+      } else {
+          fname = "_lfsr_backward";
+          var = expr->right;
+      }
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier(fname),
+                     NewAST(AST_EXPRLIST, var, NULL));
+      fcall = AstAssign(T_ASSIGN, var, fcall);
+      return CompileExpression(irl, fcall);
   }
   default:
     ERROR(lhs, "Unsupported operator %d", op);

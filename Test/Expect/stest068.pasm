@@ -2,19 +2,19 @@ DAT
 	org	0
 
 _shiftout
-	mov	_shiftout__idx__0015, #32
-L_039_
-	mov	_shiftout__mask_0014, #1
-	shl	_shiftout__mask_0014, arg2
+	mov	_shiftout__idx__0017, #32
+L_047_
+	mov	_shiftout__mask_0016, #1
+	shl	_shiftout__mask_0016, arg2
 	shr	arg1, #1 wc
-	muxc	OUTA, _shiftout__mask_0014
-	djnz	_shiftout__idx__0015, #L_039_
+	muxc	OUTA, _shiftout__mask_0016
+	djnz	_shiftout__idx__0017, #L_047_
 _shiftout_ret
 	ret
 
-_shiftout__idx__0015
+_shiftout__idx__0017
 	long	0
-_shiftout__mask_0014
+_shiftout__mask_0016
 	long	0
 arg1
 	long	0

@@ -15,18 +15,18 @@ _serchar
 	or	_serchar_val, #256
 	shl	_serchar_val, #1
 	mov	_serchar_waitcycles, CNT
-	mov	_serchar__idx__0014, #10
-L_039_
+	mov	_serchar__idx__0016, #10
+L_047_
 	add	_serchar_waitcycles, imm_694_
 	mov	arg1, _serchar_waitcycles
 	waitcnt	arg1, #0
 	shr	_serchar_val, #1 wc
 	muxc	OUTA, imm_1073741824_
-	djnz	_serchar__idx__0014, #L_039_
+	djnz	_serchar__idx__0016, #L_047_
 _serchar_ret
 	ret
 
-_serchar__idx__0014
+_serchar__idx__0016
 	long	0
 _serchar_val
 	long	0
