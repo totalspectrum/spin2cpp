@@ -515,6 +515,7 @@ TransformCountRepeat(AST *ast)
     int deltaknown = 0;
     int32_t delta = 0;
     int useLt = 0;
+    int loopkind = AST_FOR;
     
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -678,6 +679,8 @@ TransformCountRepeat(AST *ast)
         /* the loop has to execute at least once */
         if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
             condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
+        } else {
+            loopkind = AST_FORATLEASTONCE;
         }
     }
 
@@ -689,11 +692,15 @@ TransformCountRepeat(AST *ast)
         {
             AST *lhs = condtest->left;
             condtest = AstOperator(T_NE, lhs, AstInteger(0));
+            /* if we know we will execute at least once, optimize */
+            if (IsConstExpr(fromval) && EvalConstExpr(fromval) >= 1) {
+                loopkind = AST_FORATLEASTONCE;
+            }
         }
     }
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
-    forast = NewAST(AST_FORATLEASTONCE, initstmt, condtest);
+    forast = NewAST(loopkind, initstmt, condtest);
     forast->line = origast->line;
     return forast;
 }

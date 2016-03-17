@@ -2,30 +2,28 @@ DAT
 	org	0
 
 _myfill
-L_051_
+L_047_
+	cmps	arg3, #0 wz
+ if_e	jmp	#L_049_
 	wrlong	arg2, arg1
 	add	arg1, #4
-	djnz	arg3, #L_051_
+	sub	arg3, #1
+	jmp	#L_047_
+L_049_
 _myfill_ret
 	ret
 
 _fillzero
 	mov	arg3, arg2
 	mov	arg2, #0
-L_047_
-	wrlong	arg2, arg1
-	add	arg1, #4
-	djnz	arg3, #L_047_
+	call	#_myfill
 _fillzero_ret
 	ret
 
 _fillone
 	mov	arg3, arg2
 	neg	arg2, #1
-L_050_
-	wrlong	arg2, arg1
-	add	arg1, #4
-	djnz	arg3, #L_050_
+	call	#_myfill
 _fillone_ret
 	ret
 
