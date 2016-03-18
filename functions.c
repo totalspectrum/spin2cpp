@@ -33,7 +33,7 @@ NewFunction(void)
             pf = pf->next;
         pf->next = f;
     }
-    f->parse = current;
+    f->module = current;
     f->localsyms.next = &current->objsyms;
     return f;
 }
@@ -1066,7 +1066,7 @@ MarkUsed(Function *f)
     }
     f->is_used = 1;
     oldcurrent = current;
-    current = f->parse;
+    current = f->module;
     MarkUsedBody(f->body);
     current = oldcurrent;
 }
@@ -1102,7 +1102,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         }
         func->visitFlag = visitRef;
         oldState = current;
-        current = func->parse;
+        current = func->module;
         result = IsCalledFrom(ref, func->body, visitRef);
         current = oldState;
         return result;

@@ -1101,9 +1101,9 @@ instr[] = {
   { "cmpsx",  0xc4000000, TWO_OPERANDS, OPC_GENERIC },
   { "cmpx",   0xcc000000, TWO_OPERANDS, OPC_GENERIC },
 
-  { "cogid",   0x0cc00001, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "cogid",   0x0cc00001, DST_OPERAND_ONLY, OPC_COGID },
   { "coginit", 0x0c400002, DST_OPERAND_ONLY, OPC_GENERIC },
-  { "cogstop", 0x0c400003, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "cogstop", 0x0c400003, DST_OPERAND_ONLY, OPC_COGSTOP },
 
   { "djnz",   0xe4800000, JMPRET_OPERANDS, OPC_DJNZ },
   { "hubop",  0x0c000000, TWO_OPERANDS, OPC_GENERIC },

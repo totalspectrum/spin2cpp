@@ -25,7 +25,7 @@ PrintParameterList(Flexbuf *f, Function *func)
         return;
     }
     if (needSelf) {
-        flexbuf_printf(f, "%s *self", func->parse->classname);
+        flexbuf_printf(f, "%s *self", func->module->classname);
         needcomma = 1;
     }
     while (list) {

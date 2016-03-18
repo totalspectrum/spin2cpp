@@ -1252,7 +1252,7 @@ main(int argc, char **argv)
             if (!asmname) {
                 asmname = ReplaceExtension(P->fullname, ".pasm");
             }
-            OutputAsmCode(asmname, P);
+            OutputAsmCode(asmname, P, outputMain);
             if (compile) {
                 appendToCmd("-o");
                 appendToCmd(binname);

@@ -127,8 +127,8 @@ typedef struct funcdef {
     /* local symbols */
     SymbolTable localsyms;
 
-    /* parser state during compilation */
-    Module *parse;
+    /* containing module/object */
+    Module *module;
 
     /* various flags */
     unsigned result_used:1;
@@ -342,7 +342,7 @@ char *ReplaceExtension(const char *base, const char *ext);
 void OutputCppCode(const char *name, Module *P, int printMain);
 void OutputDatFile(const char *name, Module *P, int prefixBin);
 void OutputGasFile(const char *name, Module *P);
-void OutputAsmCode(const char *name, Module *P);
+void OutputAsmCode(const char *name, Module *P, int printMain);
 
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);

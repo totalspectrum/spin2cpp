@@ -717,6 +717,8 @@ HasSideEffects(IR *ir)
     case OPC_WRBYTE:
     case OPC_WRLONG:
     case OPC_WRWORD:
+    case OPC_COGSTOP:
+    case OPC_COGID:
         return true;
     default:
         return false;

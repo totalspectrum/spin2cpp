@@ -13,6 +13,7 @@
 #include "spinc.h"
 #include "outasm.h"
 
+#define ENTRYNAME "entry"
 #define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
 #define HUB_CODE (!COG_CODE)
 
@@ -39,6 +40,9 @@ static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
 
+static Operand *hubexit;
+static Operand *cogexit;
+
 static Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
@@ -46,8 +50,9 @@ static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileFunccall(IRList *irl, AST *expr);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 
+static Operand *GetAddressOf(IRList *irl, AST *expr);
 static void EmitGlobals(IRList *irl);
-static void EmitMove(IRList *irl, Operand *dst, Operand *src);
+static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitLea(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
@@ -79,7 +84,7 @@ static const char *
 IdentifierLocalName(Function *func, const char *name)
 {
     char temp[1024];
-    Module *P = func->parse;
+    Module *P = func->module;
 
     if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
@@ -553,7 +558,7 @@ NewImmediatePtr(const char *name, Operand *val)
 static Operand *
 GetFunctionTempRegister(Function *f, int n)
 {
-  Module *P = f->parse;
+  Module *P = f->module;
   char buf[1024];
   if (IsTopLevel(P)) {
       snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
@@ -644,7 +649,7 @@ LabelRef(IRList *irl, Symbol *sym)
 static Operand *
 CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
-  Module *P = func->parse;
+  Module *P = func->module;
   Symbol *sym;
   const char *name;
   AST *fcall;
@@ -1735,11 +1740,82 @@ static Operand *
 CompileCoginit(IRList *irl, AST *expr)
 {
     AST *funccall;
-    if (IsSpinCoginit(expr)) {
-        WARNING(expr, "Cannot handle cognew/coginit with spin methods yet");
+    AST *params = expr->left;
+    Function *remote;
+    
+    if ( (remote = IsSpinCoginit(expr)) != NULL) {
+        AST *exprlist;
+        AST *func;
+        AST *stack;
+        AST *cogid;
+        AST *kernel;
+        Operand *newstackptr;
+        Operand *newstacktop;
+        Operand *const4 = NewImmediate(4);
+        OperandList *plist;
+        Operand *funcptr;
+        
+        kernel = NewAST(AST_OPERAND, NULL, NULL);
+        kernel->d.ptr = (void *)NewImmediatePtr("entryptr",
+                                                NewOperand(IMM_HUB_LABEL, ENTRYNAME, 0));
+        
+        if (!IS_STACK_CALL(remote)) {
+            ERROR(expr, "Internal error: wrong calling convention for coginit");
+            return NewImmediate(0);
+        }
+        if (remote->cog_code) {
+            ERROR(expr, "Coginit target must be in hub memory");
+        }
+        if (remote->module != curfunc->module) {
+            ERROR(expr, "Coginit/cognew across objects is not supported");
+            return NewImmediate(0);
+        }
+        exprlist = expr->left;
+        cogid = exprlist->left;
+        exprlist = exprlist->right;
+        func = exprlist->left;
+        exprlist = exprlist->right;
+        stack = exprlist->left;
+        if (exprlist->right != NULL) {
+            ERROR(expr, "Too many parameters to coginit/cognew");
+        }
+        
+        // we have to build the call into the new stack
+        if (func->kind == AST_IDENTIFIER) {
+            params = NULL;
+        } else if (func->kind == AST_FUNCCALL) {
+            params = func->right;
+        } else {
+            ERROR(expr, "Internal error, expected function call");
+            return NewImmediate(0);
+        }
+        ValidateObjbase();
+        newstackptr = CompileExpression(irl, stack);
+        newstacktop = SizedMemRef(LONG_SIZE, newstackptr, 0);
+        EmitMove(irl, newstacktop, objbase);
+        EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        // push the function to call
+        funcptr = NewImmediatePtr(NULL, FuncData(remote)->asmname);
+        EmitMove(irl, newstacktop, funcptr);
+        EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        // provide space for result
+        EmitMove(irl, newstacktop, NewImmediate(0));
+        EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        // now the parameters
+        plist = CompileExprList(irl, params);
+        while (plist) {
+            EmitMove(irl, newstacktop, plist->op);
+            EmitOp2(irl, OPC_ADD, newstackptr, const4);
+            plist = plist->next;
+        }
+        // OK, new stack is all set up
+        // now we need to call coginit(cogid, @entry, stack)
+        params = NewAST( AST_EXPRLIST, cogid,
+                         NewAST(AST_EXPRLIST, kernel,
+                                NewAST(AST_EXPRLIST, stack, NULL)) );
     }
     funccall = AstIdentifier("_coginit");
-    funccall = NewAST(AST_FUNCCALL, funccall, expr->left);
+    funccall = NewAST(AST_FUNCCALL, funccall, params);
     return CompileFunccall(irl, funccall);
 }
 
@@ -1996,12 +2072,13 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
     EmitOp2(irl, opc, dst, imm);
 }
 
-static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
+static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 {
     Operand *temp = NULL;
     Operand *temp2 = NULL;
     Operand *dst = origdst;
     Operand *src = origsrc;
+    IR *ir = NULL;
     
     if (IsMemRef(src)) {
         int off = src->val;
@@ -2023,7 +2100,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDLONG, where, src);
+            ir = EmitOp2(irl, OPC_RDLONG, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
@@ -2032,7 +2109,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDWORD, where, src);
+            ir = EmitOp2(irl, OPC_RDWORD, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
@@ -2041,14 +2118,14 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, src, off);
             }
-            EmitOp2(irl, OPC_RDBYTE, where, src);
+            ir = EmitOp2(irl, OPC_RDBYTE, where, src);
             if (off) {
                 EmitAddSub(irl, src, -off);
             }
             break;
         }
         if (where == origdst)
-            return;
+            return ir;
         src = temp;
     }
     if (IsMemRef(origdst)) {
@@ -2067,7 +2144,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, dst, off);
             }
-            EmitOp2(irl, OPC_WRLONG, src, dst);
+            ir = EmitOp2(irl, OPC_WRLONG, src, dst);
             if (off) {
                 EmitAddSub(irl, dst, -off);
             }            
@@ -2076,7 +2153,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, dst, off);
             }
-            EmitOp2(irl, OPC_WRWORD, src, dst);
+            ir = EmitOp2(irl, OPC_WRWORD, src, dst);
             if (off) {
                 EmitAddSub(irl, dst, -off);
             }
@@ -2085,14 +2162,14 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             if (off) {
                 EmitAddSub(irl, dst, off);
             }
-            EmitOp2(irl, OPC_WRBYTE, src, dst);
+            ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
             if (off) {
                 EmitAddSub(irl, dst, -off);
             }
             break;
         }
     } else {
-        EmitOp2(irl, OPC_MOV, dst, src);
+        ir = EmitOp2(irl, OPC_MOV, dst, src);
     }
     if (temp) {
         EmitOp1(irl, OPC_DEAD, temp);
@@ -2100,6 +2177,7 @@ static void EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (temp2) {
         EmitOp1(irl, OPC_DEAD, temp2);
     }
+    return ir;
 }
 
 void
@@ -2484,7 +2562,7 @@ ShouldSkipFunction(Function *f)
     if (f->is_used)
         return false;
     // do not skip global functions, we handle those separately
-    if (IsGlobalModule(f->parse))
+    if (IsGlobalModule(f->module))
         return false;
     return true;
 }
@@ -2881,8 +2959,77 @@ EmitVarSection(IRList *irl, Module *P)
 
 extern Module *globalModule;
 
+/*
+ * emit a small main program
+ * it looks something like:
+ *
+ * entry:
+ *         mov arg1, par wz
+ *   if_nz jmp spininit
+ *         call P->firstfunc using stackcall
+ * exit:
+ *         cogstop(cogid)
+ * spininit:
+ *         mov sp, arg1
+ *         mov objbase, (sp)
+ *         add sp, #4
+ *         mov pc, sp
+ *         add sp, #4
+ *         call result1 using stackcall
+ *         jmp  #exit
+ */
+static void
+EmitMain(IRList *irl, Module *P)
+{
+    IR *ir;
+    Function *firstfunc;
+    const char *firstfuncname;
+    Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
+    Operand *spinlabel;
+    Operand *const4 = NewImmediate(4);
+    Operand *arg1;
+    Operand *pc = NewOperand(REG_REG, "pc", 0);
+    Operand *objptr = NewOperand(REG_REG, "objptr", 0);
+    
+    arg1 = GetGlobal(REG_ARG, "arg1", 0);
+    firstfunc = P->functions;
+    if (!firstfunc) {
+        return;  // no functions at all
+    }
+    firstfuncname = IdentifierGlobalName(P, firstfunc->name);
+    
+    spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
+    cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
+    hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
+
+    EmitLabel(irl, entrylabel);
+    ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
+    ir->flags |= FLAG_WZ;
+    EmitJump(irl, COND_NE, spinlabel);
+
+    if (firstfunc->cog_code || COG_CODE) {
+        EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
+    } else {
+        EmitOp1(irl, OPC_CALL, NewOperand(IMM_HUB_LABEL, firstfuncname, 0));
+    }
+    EmitLabel(irl, cogexit);
+    EmitOp1(irl, OPC_COGID, arg1);
+    EmitOp1(irl, OPC_COGSTOP, arg1);
+
+    ValidateStackptr();
+    ValidateObjbase();
+    EmitLabel(irl, spinlabel);
+    EmitMove(irl, stackptr, arg1);
+    EmitMove(irl, objptr, stacktop);
+    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    EmitMove(irl, pc, stacktop);      // get address of function
+    EmitMove(irl, stacktop, hubexit); // set return address
+    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    EmitJump(irl, COND_TRUE, NewOperand(IMM_COG_LABEL, "LMM_LOOP", 0));
+}
+
 void
-OutputAsmCode(const char *fname, Module *P)
+OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
     FILE *f = NULL;
     Module *save;
@@ -2900,6 +3047,10 @@ OutputAsmCode(const char *fname, Module *P)
     
     CompileConsts(&cogcode, P->conblock);
 
+    // output the main stub
+    if (outputMain) {
+        EmitMain(&cogcode, P);
+    }
     // compile COG functions
     if (COG_CODE) {
         if (!CompileToIR(&cogcode, P)) {
@@ -2912,6 +3063,10 @@ OutputAsmCode(const char *fname, Module *P)
         if (!CompileToIR(&hubcode, P)) {
             return;
         }
+    }
+    if (hubexit) {
+        EmitLabel(&hubcode, hubexit);
+        EmitJump(&hubcode, COND_TRUE, cogexit);
     }
     EmitBuiltins(&cogcode);
     // we compiled builtin functions into IR form earlier, now
