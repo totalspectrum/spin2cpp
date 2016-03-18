@@ -860,25 +860,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     OperandList *oplist;
     
     EmitLabel(irl, FuncData(func)->asmname);
-    //
-    // if recursive function, push all local registers
-    // we also have to push any local temporary registers that
-    // are used in the body
-    // FIXME: can probably optimize this to skip temporaries that
-    // are used only after the first call
-    //
-    
-    if (func->is_recursive && IS_FAST_CALL(func)) {
-        GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
-        // push scratch registers that need preserving
-        for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
-            EmitPush(irl, oplist->op);
-        }
-        // push return address, if we are in cog mode
-        if (func->cog_code) {
-            EmitPush(irl, FuncData(func)->asmretname);
-        }
-    } else if (IS_STACK_CALL(func)) {
+
+    // set up frame pointer for stack call functions
+    if (IS_STACK_CALL(func)) {
         int localsize;
         //
         // adjust stack as necessary
@@ -891,6 +875,26 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         localsize = LocalSize(func);
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
     }
+
+    //
+    // if recursive function, push all local registers
+    // we also have to push any local temporary registers that
+    // are used in the body
+    // FIXME: can probably optimize this to skip temporaries that
+    // are used only after the first call
+    //
+    
+    if (func->is_recursive) {
+        GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
+        // push scratch registers that need preserving
+        for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
+            EmitPush(irl, oplist->op);
+        }
+        // push return address, if we are in cog mode
+        if (func->cog_code) {
+            EmitPush(irl, FuncData(func)->asmretname);
+        }
+    }
 }
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
@@ -898,11 +902,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname) {
         EmitLabel(irl, FuncData(func)->asmreturnlabel);
     }
-    if (IS_STACK_CALL(func)) {
-        EmitMove(irl, stackptr, frameptr);
-        EmitPop(irl, frameptr);
-    }
-    if (func->is_recursive && IS_FAST_CALL(func)) {
+    if (func->is_recursive) {
         // pop return address
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
@@ -912,6 +912,10 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         }
         // pop off all local variables
         PopList(irl, FuncData(func)->saveregs, func);
+    }
+    if (IS_STACK_CALL(func)) {
+        EmitMove(irl, stackptr, frameptr);
+        EmitPop(irl, frameptr);
     }
     EmitLabel(irl, FuncData(func)->asmretname);
     EmitOp0(irl, OPC_RET);
