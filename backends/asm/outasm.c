@@ -16,14 +16,14 @@
 #define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
 #define HUB_CODE (!COG_CODE)
 
+#define IS_FAST_CALL(f) (FuncData(f)->convention == FAST_CALL)
+#define IS_STACK_CALL(f) (FuncData(f)->convention == STACK_CALL)
+
 /* lists of instructions in hub and cog */
 static IRList cogcode;
 static IRList hubcode;
 static IRList cogdata;
 static IRList hubdata;
-
-/* define this to pass parameters in ARGSx_ */
-#define USE_GLOBAL_ARGS
 
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
@@ -37,6 +37,7 @@ static Operand *objlabel;
 static Operand *stackptr;
 static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
+static Operand *frameptr;
 
 static Operand *CompileExpression(IRList *irl, AST *expr);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
@@ -602,6 +603,20 @@ TypedMemRef(AST *type, Operand *addr, int offset)
     size = EvalConstExpr(type->left);
     return SizedMemRef(size, addr, offset);
 }
+static Operand *
+FrameRef(int offset)
+{
+    if (!frameptr) {
+        frameptr = GetGlobal(REG_REG, "fp", 0);
+    }
+    return SizedMemRef(LONG_SIZE, frameptr, offset);
+}
+static Operand *
+StackRef(int offset)
+{
+    ValidateStackptr();
+    return SizedMemRef(LONG_SIZE, stackptr, offset);
+}
 
 static Operand *
 ValidateDatBase(Module *P)
@@ -633,7 +648,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   Symbol *sym;
   const char *name;
   AST *fcall;
-
+  int stype;
+  
   if (expr->kind == AST_RESULT) {
       name = "result";
   } else if (expr->kind == AST_IDENTIFIER) {
@@ -644,13 +660,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   }
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
-      switch (sym->type) {
-      case SYM_PARAMETER:
- #ifdef USE_GLOBAL_ARGS
-          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0);
- #else
-          return GetGlobal(REG_ARG, IdentifierLocalName(func, sym->name), 0);
- #endif
+      stype = sym->type;
+      switch (stype) {
       case SYM_VARIABLE:
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);
@@ -670,6 +681,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
               /* do nothing, this is OK */
+              stype = SYM_RESULT;
           } else {
               ERROR(expr, "Symbol %s is of a type not handled by PASM output yet", name);
           }
@@ -677,6 +689,18 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       case SYM_LOCALVAR:
       case SYM_TEMPVAR:
       case SYM_RESULT:
+      case SYM_PARAMETER:
+          if (IS_STACK_CALL(func)) {
+              if (stype == SYM_RESULT) {
+                  return FrameRef(0);
+              }
+              if (stype == SYM_PARAMETER) {
+                  return FrameRef(LONG_SIZE + sym->offset);
+              }
+              if (stype == SYM_LOCALVAR) {
+                  return FrameRef(LONG_SIZE * (1+func->numparams) + sym->offset);
+              }
+          }
           return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
       case SYM_LABEL:
           return LabelRef(irl, sym);
@@ -688,30 +712,36 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 }
 
 //
-// utility function: get a pointer to the n'th argument
-// for function f
+// utility function: get a pointer to where we should put the n'th argument
+// for function f when we call it
 //
-static Operand *GetFunctionParameter(IRList *irl, Function *func, int n)
+static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
 {
-#ifdef USE_GLOBAL_ARGS
-    char temp[1024];
-    sprintf(temp, "arg%d", n+1);
-    return GetGlobal(REG_ARG, strdup(temp), 0);
-#else
-    AST *astlist = func->params;
-    AST *ast;
+    if (IS_FAST_CALL(func)) {
+        char temp[20];
+        sprintf(temp, "arg%d", n+1);
+        return GetGlobal(REG_ARG, strdup(temp), 0);
+    } else {
+        AST *astlist = func->params;
+        AST *ast;
 
-    while (astlist != NULL) {
-        ast = astlist->left;
-        astlist = astlist->right;
-        if (n == 0) {
-            return CompileIdentifierForFunc(irl, ast, func);
+        while (astlist != NULL) {
+            ast = astlist->left;
+            astlist = astlist->right;
+            if (n == 0) {
+                Symbol *sym = FindSymbol(&func->localsyms, ast->d.string);
+                if (!sym) {
+                    ERROR(NULL, "Internal error: symbol %s not found", ast->d.string);
+                    return NewImmediate(0);
+                }
+                // we have to leave space for the frame pointer and return val
+                return StackRef(2*LONG_SIZE + sym->offset);
+            }
+            --n;
         }
-        --n;
+        ERROR(NULL, "Too many parameters to function %s", func->name);
+        return GetGlobal(REG_ARG, "dummyArg", 0);
     }
-    ERROR(NULL, "Too many parameters to function %s", func->name);
-    return GetGlobal(REG_ARG, "dummyArg", 0);
-#endif
 }
 
 static void EmitPush(IRList *irl, Operand *src)
@@ -726,6 +756,15 @@ static void EmitPop(IRList *irl, Operand *src)
     EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
     EmitMove(irl, src, stacktop);
 }
+
+//
+// the size of local variables
+//
+static int LocalSize(Function *func)
+{
+    return LONG_SIZE * (func->numlocals + func->numparams + 1);
+}
+
 //
 // the function Prolog and Epilog are always output, and do things
 // like stack management and variable setup
@@ -739,17 +778,31 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
     Operand *src;
     Operand *dst;
 
-    //
-    // move parameters into local registers
-    //
-    astlist = func->params;
-    while (astlist != NULL) {
-        ast = astlist->left;
-        astlist = astlist->right;
+    if (IS_FAST_CALL(func)) {
+        //
+        // move parameters into local registers
+        //
+        astlist = func->params;
+        while (astlist != NULL) {
+            ast = astlist->left;
+            astlist = astlist->right;
 
-        src = GetFunctionParameter(irl, func, n++);
-        dst = CompileIdentifierForFunc(irl, ast, func);
-        EmitMove(irl, dst, src);
+            src = GetFunctionParameterForCall(irl, func, n++);
+            dst = CompileIdentifierForFunc(irl, ast, func);
+            EmitMove(irl, dst, src);
+        }
+    } else if (IS_STACK_CALL(func)) {
+        int localsize;
+        //
+        // adjust stack as necessary
+        //
+        if (!frameptr) {
+            frameptr = GetGlobal(REG_REG, "fp", 0);
+        }
+        EmitPush(irl, frameptr);
+        EmitMove(irl, frameptr, stackptr);
+        localsize = LocalSize(func);
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
     }
 }
 
@@ -784,6 +837,10 @@ static void PopList(IRList *irl, OperandList *list, Function *func)
 static void EmitFunctionEpilog(IRList *irl, Function *func)
 {
     FreeTempRegisters(irl, 0);
+    if (IS_STACK_CALL(func)) {
+        EmitMove(irl, stackptr, frameptr);
+        EmitPop(irl, frameptr);
+    }
 }
 
 static void
@@ -820,7 +877,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // are used only after the first call
     //
     
-    if (func->is_recursive) {
+    if (func->is_recursive && IS_FAST_CALL(func)) {
         GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
         // push scratch registers that need preserving
         for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
@@ -837,7 +894,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
 {
     if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname)
         EmitLabel(irl, FuncData(func)->asmreturnlabel);
-    if (func->is_recursive) {
+    if (func->is_recursive && IS_FAST_CALL(func)) {
         // pop return address
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
@@ -1481,7 +1538,7 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
         op = oplist->op;
         oplist = oplist->next;
 
-        dst = GetFunctionParameter(irl, func, n++);
+        dst = GetFunctionParameterForCall(irl, func, n++);
         EmitMove(irl, dst, op);
     }
 }
@@ -1526,12 +1583,14 @@ CompileFunccall(IRList *irl, AST *expr)
   }
   ir->aux = (void *)func; // remember the function for optimization purposes
   func->is_used = 1;      // internal functions may not have been marked earlier
-  /* mark parameters as dead */
-  n = AstListLen(params);
-  while (n > 0) {
-    --n;
-    reg = GetFunctionParameter(irl, func, n);
-    EmitOp1(irl, OPC_DEAD, reg);
+  if (IS_FAST_CALL(func)) {
+      /* mark parameters as dead */
+      n = AstListLen(params);
+      while (n > 0) {
+          --n;
+          reg = GetFunctionParameterForCall(irl, func, n);
+          EmitOp1(irl, OPC_DEAD, reg);
+      }
   }
 
   /* now get the result */
@@ -1550,6 +1609,7 @@ CompileMemref(IRList *irl, AST *expr)
   Operand *addr = CompileExpression(irl, expr->right);
   AST *type = expr->left;
 
+  addr = Dereference(irl, addr);
   return TypedMemRef(type, addr, 0);
 }
 
@@ -1664,8 +1724,7 @@ CompileCoginit(IRList *irl, AST *expr)
 {
     AST *funccall;
     if (IsSpinCoginit(expr)) {
-        ERROR(expr, "Cannot handle cognew/coginit with spin methods yet");
-        return NewImmediate(0);
+        WARNING(expr, "Cannot handle cognew/coginit with spin methods yet");
     }
     funccall = AstIdentifier("_coginit");
     funccall = NewAST(AST_FUNCCALL, funccall, expr->left);
@@ -2454,6 +2513,12 @@ AssignFuncNames(IRList *irl, Module *P)
             FuncData(f)->asmreturnlabel = NewCodeLabel();
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
+        }
+        // figure out calling convention
+        if (f->local_address_taken || f->cog_task) {
+            FuncData(f)->convention = STACK_CALL;
+        } else {
+            FuncData(f)->convention = FAST_CALL;
         }
         // also fix up any extra declarations
         if (f->extradecl) {

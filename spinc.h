@@ -137,6 +137,8 @@ typedef struct funcdef {
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
     unsigned cog_code:1;     // 1 if function should always be placed in cog
+    unsigned cog_task:1;     // 1 if function is started in another cog
+    unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
     
     /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;

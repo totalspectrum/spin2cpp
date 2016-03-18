@@ -53,6 +53,11 @@ bool IsValidDstReg(Operand *reg);
 bool SrcOnlyHwReg(Operand *reg);
 bool IsLocal(Operand *reg);
 
+typedef enum callconvention {
+    FAST_CALL,   // arguments & return in registers, native call
+    STACK_CALL,  // arguments & return on stack
+} CallConvention;
+
 //
 // back end data for functions
 //
@@ -80,6 +85,9 @@ typedef struct ir_bedata {
     
     /* flag for whether we should inline the function */
     bool isInline;
+
+    /* type of calling convention */
+    CallConvention convention;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)

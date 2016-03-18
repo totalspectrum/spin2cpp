@@ -1212,6 +1212,29 @@ TransformLongMove(AST **astptr, AST *ast)
     return true;
 }
 
+static bool
+IsLocalVariable(AST *ast) {
+    Symbol *sym;
+    switch (ast->kind) {
+    case AST_IDENTIFIER:
+        sym = LookupSymbol(ast->d.string);
+        if (!sym) return false;
+        switch (sym->type) {
+        case SYM_RESULT:
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
+            return true;
+        default:
+            return false;
+        }
+        break;
+    case AST_ARRAYREF:
+        return IsLocalVariable(ast->left);
+    default:
+        return false;
+    }
+}
+
 /*
  * SpinTransform
  * transform AST to reflect some oddities of the Spin language:
@@ -1286,6 +1309,7 @@ doSpinTransform(AST **astptr, int level)
     case AST_COGINIT:
         if (0 != (func = IsSpinCoginit(ast))) {
             current->needsCoginit = 1;
+            func->cog_task = 1;
             if (!func->is_static) {
                 func->force_static = 1;
                 func->is_static = 1;
@@ -1294,8 +1318,6 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, 2);
         break;
     case AST_FUNCCALL:
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
         if (level == 0) {
             /* check for void functions here; if one is called,
                pretend it returned 0 */
@@ -1314,7 +1336,10 @@ doSpinTransform(AST **astptr, int level)
             && !strcasecmp(ast->left->d.string, "longmove"))
         {
             TransformLongMove(astptr, ast);
+            ast = *astptr;
         }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
         break;
     case AST_POSTEFFECT:
     {
@@ -1357,6 +1382,13 @@ doSpinTransform(AST **astptr, int level)
         }
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
+        break;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        doSpinTransform(&ast->left, 0);
+        if (IsLocalVariable(ast->left)) {
+            curfunc->local_address_taken = 1;
+        }
         break;
     case AST_OPERATOR:
         if (level == 1) {
