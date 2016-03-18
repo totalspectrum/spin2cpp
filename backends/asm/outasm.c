@@ -734,8 +734,11 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
                     ERROR(NULL, "Internal error: symbol %s not found", ast->d.string);
                     return NewImmediate(0);
                 }
-                // we have to leave space for the frame pointer and return val
-                return StackRef(2*LONG_SIZE + sym->offset);
+                // we have to leave space for:
+                // return address
+                // old frame pointer
+                // result value
+                return StackRef(3*LONG_SIZE + sym->offset);
             }
             --n;
         }
@@ -791,18 +794,6 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             dst = CompileIdentifierForFunc(irl, ast, func);
             EmitMove(irl, dst, src);
         }
-    } else if (IS_STACK_CALL(func)) {
-        int localsize;
-        //
-        // adjust stack as necessary
-        //
-        if (!frameptr) {
-            frameptr = GetGlobal(REG_REG, "fp", 0);
-        }
-        EmitPush(irl, frameptr);
-        EmitMove(irl, frameptr, stackptr);
-        localsize = LocalSize(func);
-        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
     }
 }
 
@@ -834,13 +825,13 @@ static void PopList(IRList *irl, OperandList *list, Function *func)
     }
 }
 
+//
+// WARNING: most of the stuff placed here will be skipped over
+// by any return statement!!
+//
 static void EmitFunctionEpilog(IRList *irl, Function *func)
 {
     FreeTempRegisters(irl, 0);
-    if (IS_STACK_CALL(func)) {
-        EmitMove(irl, stackptr, frameptr);
-        EmitPop(irl, frameptr);
-    }
 }
 
 static void
@@ -887,13 +878,30 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         if (func->cog_code) {
             EmitPush(irl, FuncData(func)->asmretname);
         }
+    } else if (IS_STACK_CALL(func)) {
+        int localsize;
+        //
+        // adjust stack as necessary
+        //
+        if (!frameptr) {
+            frameptr = GetGlobal(REG_REG, "fp", 0);
+        }
+        EmitPush(irl, frameptr);
+        EmitMove(irl, frameptr, stackptr);
+        localsize = LocalSize(func);
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
     }
 }
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname)
+    if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname) {
         EmitLabel(irl, FuncData(func)->asmreturnlabel);
+    }
+    if (IS_STACK_CALL(func)) {
+        EmitMove(irl, stackptr, frameptr);
+        EmitPop(irl, frameptr);
+    }
     if (func->is_recursive && IS_FAST_CALL(func)) {
         // pop return address
         // do this here to avoid a hardware pipeline hazard:
@@ -2502,6 +2510,16 @@ AssignFuncNames(IRList *irl, Module *P)
 	frname = (char *)malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
         f->bedata = calloc(1, sizeof(IRFuncData));
+
+        // figure out calling convention
+        if (f->local_address_taken || f->cog_task) {
+            FuncData(f)->convention = STACK_CALL;
+        } else if (f->cog_code) {
+            FuncData(f)->convention = FAST_CALL;
+        } else {
+            FuncData(f)->convention = FAST_CALL; // default
+        }
+
         if (f->cog_code) {
             FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
@@ -2509,16 +2527,10 @@ AssignFuncNames(IRList *irl, Module *P)
             FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
         }
-        if (f->is_recursive) {
+        if (f->is_recursive || IS_STACK_CALL(f)) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
-        }
-        // figure out calling convention
-        if (f->local_address_taken || f->cog_task) {
-            FuncData(f)->convention = STACK_CALL;
-        } else {
-            FuncData(f)->convention = FAST_CALL;
         }
         // also fix up any extra declarations
         if (f->extradecl) {
