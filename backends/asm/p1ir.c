@@ -239,13 +239,21 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             didOrg = 1;
         }
     }
-    if (lmmMode) {
+    if (1) {
         // handle certain instructions specially
         switch (ir->opc) {
         case OPC_CALL:
             if (IsHubDest(ir->dst)) {
-                PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "jmp\t#LMM_CALL\n");
+                if (!lmmMode) {
+                    // call of hub function from COG
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "mov\tpc, $+2\n");
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "call\t#LMM_CALL_FROM_COG\n");
+                } else {
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "jmp\t#LMM_CALL\n");
+                }
                 flexbuf_addstr(fb, "\tlong\t");
                 if (ir->dst->kind != IMM_HUB_LABEL) {
                     ERROR(NULL, "internal error: non-hub label in LMM jump");
@@ -256,17 +264,20 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             }
             break;
         case OPC_DJNZ:
-            PrintCond(fb, ir->cond);
-            flexbuf_addstr(fb, "djnz\t");
-            PrintOperand(fb, ir->dst);
-            flexbuf_addstr(fb, ", #LMM_JUMP\n");
-            flexbuf_addstr(fb, "\tlong\t");
-            if (ir->src->kind != IMM_HUB_LABEL) {
-                ERROR(NULL, "internal error: non-hub label in LMM jump");
+            if (IsHubDest(ir->src)) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "djnz\t");
+                PrintOperand(fb, ir->dst);
+                flexbuf_addstr(fb, ", #LMM_JUMP\n");
+                flexbuf_addstr(fb, "\tlong\t");
+                if (ir->src->kind != IMM_HUB_LABEL) {
+                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                }
+                PrintOperandAsValue(fb, ir->src);
+                flexbuf_addstr(fb, "\n");
+                return;
             }
-            PrintOperandAsValue(fb, ir->src);
-            flexbuf_addstr(fb, "\n");
-            return;
+            break;
         case OPC_JUMP:
             if (IsHubDest(ir->dst)) {
                 PrintCond(fb, ir->cond);
@@ -281,11 +292,13 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             }
             break;
         case OPC_RET:
-            PrintCond(fb, ir->cond);
-            flexbuf_addstr(fb, "sub\tsp, #4\n");
-            PrintCond(fb, ir->cond);
-            flexbuf_addstr(fb, "rdlong\tpc, sp\n");
-            return;
+            if (lmmMode) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "sub\tsp, #4\n");
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "rdlong\tpc, sp\n");
+                return;
+            }
         default:
             break;
         }

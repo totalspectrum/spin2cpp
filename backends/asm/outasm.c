@@ -552,7 +552,7 @@ NewImmediatePtr(const char *name, Operand *val)
         sprintf(temp, "ptr_%s_", val->name);
         name = strdup(temp);
     }
-    return GetGlobal(IMM_HUB_LABEL, name, (intptr_t)val);
+    return GetGlobal(REG_HUBPTR, name, (intptr_t)val);
 }
 
 static Operand *
@@ -1752,8 +1752,8 @@ CompileCoginit(IRList *irl, AST *expr)
         Operand *newstackptr;
         Operand *newstacktop;
         Operand *const4 = NewImmediate(4);
-        OperandList *plist;
         Operand *funcptr;
+        OperandList *plist;
         
         kernel = NewAST(AST_OPERAND, NULL, NULL);
         kernel->d.ptr = (void *)NewImmediatePtr("entryptr",
@@ -1795,7 +1795,7 @@ CompileCoginit(IRList *irl, AST *expr)
         EmitMove(irl, newstacktop, objbase);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // push the function to call
-        funcptr = NewImmediatePtr(NULL, FuncData(remote)->asmname);
+        funcptr = FuncData(remote)->asmname;
         EmitMove(irl, newstacktop, funcptr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // provide space for result
@@ -2079,7 +2079,10 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     Operand *dst = origdst;
     Operand *src = origsrc;
     IR *ir = NULL;
-    
+
+    if (src->kind == IMM_HUB_LABEL) {
+        src = NewImmediatePtr(NULL, src);
+    }
     if (IsMemRef(src)) {
         int off = src->val;
         Operand *where;
@@ -2496,12 +2499,18 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
 	continue;
       }
       EmitLabel(irl, g[i].op);
-      if (g[i].op->kind == STRING_DEF) {
+      switch(g[i].op->kind) {
+      case STRING_DEF:
           EmitString(irl, (AST *)g[i].val);
-      } else if (g[i].op->kind == IMM_COG_LABEL || g[i].op->kind == IMM_HUB_LABEL) {
+          break;
+      case IMM_COG_LABEL:
+      case IMM_HUB_LABEL:
+      case REG_HUBPTR:
           EmitLongPtr(irl, (Operand *)g[i].op->val);
-      } else {
+          break;
+      default:
           EmitLong(irl, g[i].val);
+          break;
       }
     }
 }
@@ -2835,16 +2844,23 @@ static const char *builtin_lmm =
     "    long @@@hubentry\n"
     "lr\n"
     "    long 0\n"
+    "hubretptr\n"
+    "    long @@@hub_ret_to_cog\n"
     "LMM_CALL\n"
     "    mov    lr, pc\n"
     "    add    lr, #4\n"
     "    wrlong lr, sp\n"
     "    add    sp, #4\n"
-    "    rdlong pc, pc\n"
-    "    jmp    #LMM_LOOP\n"
+    "    ' fall through\n"
     "LMM_JUMP\n"
     "    rdlong pc, pc\n"
     "    jmp    #LMM_LOOP\n"
+    "LMM_CALL_FROM_COG\n"
+    "    wrlong  hubretptr, sp\n"
+    "    add     sp, #4\n"
+    "    jmp  #LMM_LOOP\n"
+    "LMM_CALL_FROM_COG_ret\n"
+    "    ret\n"
     ;
 
 static void
@@ -3005,7 +3021,7 @@ EmitMain(IRList *irl, Module *P)
     EmitLabel(irl, entrylabel);
     ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
-    EmitJump(irl, COND_NE, spinlabel);
+//    EmitJump(irl, COND_NE, spinlabel); // FIXME
 
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
@@ -3016,16 +3032,18 @@ EmitMain(IRList *irl, Module *P)
     EmitOp1(irl, OPC_COGID, arg1);
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
-    ValidateStackptr();
-    ValidateObjbase();
-    EmitLabel(irl, spinlabel);
-    EmitMove(irl, stackptr, arg1);
-    EmitMove(irl, objptr, stacktop);
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
-    EmitMove(irl, pc, stacktop);      // get address of function
-    EmitMove(irl, stacktop, hubexit); // set return address
-    EmitOp2(irl, OPC_ADD, stackptr, const4);
-    EmitJump(irl, COND_TRUE, NewOperand(IMM_COG_LABEL, "LMM_LOOP", 0));
+    if (HUB_CODE) {
+        ValidateStackptr();
+        ValidateObjbase();
+        EmitLabel(irl, spinlabel);
+        EmitMove(irl, stackptr, arg1);
+        EmitMove(irl, objptr, stacktop);
+        EmitOp2(irl, OPC_ADD, stackptr, const4);
+        EmitMove(irl, pc, stacktop);      // get address of function
+        EmitMove(irl, stacktop, hubexit); // set return address
+        EmitOp2(irl, OPC_ADD, stackptr, const4);
+        EmitJump(irl, COND_TRUE, NewOperand(IMM_COG_LABEL, "LMM_LOOP", 0));
+    }
 }
 
 void
@@ -3059,7 +3077,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
     if (HUB_CODE) {
         ValidateStackptr();
-        EmitOp1(&hubcode, OPC_LABEL, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
+        EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hub_ret_to_cog", 0));
+        EmitJump(&hubcode, COND_TRUE,
+                 NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
+        EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
         if (!CompileToIR(&hubcode, P)) {
             return;
         }

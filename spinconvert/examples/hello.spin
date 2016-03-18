@@ -6,7 +6,7 @@ CON
   _clkmode = xtal1 + pll16x
    
 OBJ
- ser: "FullDuplexSerial"
+ ser: "SimpleSerial"
 
 PUB demo
   ser.start(31, 30, 0, 115200)
