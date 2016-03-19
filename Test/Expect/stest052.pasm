@@ -18,8 +18,8 @@ ptr_L_047__
 	long	@@@L_047_
 result1
 	long	0
+	fit	496
 
 L_047_
 	byte	"hello"
 	byte	0
-	fit	496

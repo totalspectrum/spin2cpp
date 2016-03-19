@@ -51,7 +51,6 @@ static Operand *CompileFunccall(IRList *irl, AST *expr);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
-static void EmitGlobals(IRList *irl);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitLea(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
@@ -2514,10 +2513,10 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       }
     }
 }
-void EmitGlobals(IRList *irl)
+static void EmitGlobals(IRList *cogirl, IRList *hubirl)
 {
-    EmitAsmVars(&cogGlobalVars, irl, 1);
-    EmitAsmVars(&hubGlobalVars, irl, 0);
+    EmitAsmVars(&cogGlobalVars, cogirl, 1);
+    EmitAsmVars(&hubGlobalVars, hubirl, 0);
 }
 
 #define VISITFLAG_COMPILEIR     0x01230001
@@ -3107,7 +3106,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     OptimizeIRGlobal(&cogcode);
 
     // cog data
-    EmitGlobals(&cogdata);
+    EmitGlobals(&cogdata, &hubdata);
 
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
