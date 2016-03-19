@@ -1789,6 +1789,11 @@ CompileCoginit(IRList *irl, AST *expr)
             return NewImmediate(0);
         }
         ValidateObjbase();
+        if (stack->kind != AST_ADDROF && stack->kind != AST_DATADDROF
+            && stack->kind != AST_ABSADDROF)
+        {
+            WARNING(stack, "Normally the coginit stack parameter should be an address");
+        }
         newstackptr = CompileExpression(irl, stack);
         newstacktop = SizedMemRef(LONG_SIZE, newstackptr, 0);
         EmitMove(irl, newstacktop, objbase);
@@ -1796,6 +1801,9 @@ CompileCoginit(IRList *irl, AST *expr)
         // push the function to call
         funcptr = FuncData(remote)->asmname;
         EmitMove(irl, newstacktop, funcptr);
+        EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        // provide space for frame pointer
+        EmitMove(irl, newstacktop, NewImmediate(0));
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // provide space for result
         EmitMove(irl, newstacktop, NewImmediate(0));
@@ -2993,7 +3001,7 @@ extern Module *globalModule;
  *         mov objbase, (sp)
  *         add sp, #4
  *         mov pc, sp
- *         add sp, #4
+ *         add sp #4
  *         call result1 using stackcall
  *         jmp  #exit
  */
