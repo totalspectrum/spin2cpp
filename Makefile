@@ -134,6 +134,7 @@ spincvt.zip: .PHONY
 	cp -rp spinconvert/examples/*.spin spincvt/examples
 	cp -rp spinconvert/examples/*.def spincvt/examples
 	cp -rp spinconvert/README.txt COPYING spincvt
+	cp -rp docs spincvt
 	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt
