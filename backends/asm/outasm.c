@@ -1202,6 +1202,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         Operand *val;
         Operand *tmplo, *tmphi;
         val = CompileExpression(irl, expr->left);
+        val = Dereference(irl, val);
         lo = CompileExpression(irl, expr->right->left);
         hi = CompileExpression(irl, expr->right->right);
         tmplo = NewFunctionTempRegister();
