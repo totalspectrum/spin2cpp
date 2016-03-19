@@ -1315,7 +1315,8 @@ doSpinTransform(AST **astptr, int level)
                 func->is_static = 1;
             }
         }
-        doSpinTransform(&ast->right, 2);
+        doSpinTransform(&ast->left, 2);
+        doSpinTransform(&ast->right, 0);
         break;
     case AST_FUNCCALL:
         if (level == 0) {

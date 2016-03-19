@@ -2697,12 +2697,16 @@ static void
 ExpandInline_internal(IRList *irl, Module *P)
 {
     Function *f;
+    int change;
+    
     for (f = P->functions; f; f = f->next) {
         IRList *firl = FuncIRL(f);
         if (ShouldSkipFunction(f))
             continue;
         curfunc = f;
-        if (ExpandInlines(firl)) {
+        for(;;) {
+            change = ExpandInlines(firl);
+            if (!change) break;
             // may be new opportunities for optimization
             OptimizeIRLocal(firl);
         }
