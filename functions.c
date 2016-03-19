@@ -1261,6 +1261,7 @@ doSpinTransform(AST **astptr, int level)
     }
     if (!ast) return;
     switch (ast->kind) {
+    case AST_EXPRLIST:
     case AST_THENELSE:
         doSpinTransform(&ast->left, level);
         doSpinTransform(&ast->right, level);
@@ -1316,7 +1317,7 @@ doSpinTransform(AST **astptr, int level)
             }
         }
         doSpinTransform(&ast->left, 2);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->right, 2);
         break;
     case AST_FUNCCALL:
         if (level == 0) {
