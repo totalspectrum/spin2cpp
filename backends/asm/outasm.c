@@ -1021,6 +1021,7 @@ CompileMul(IRList *irl, AST *expr, int gethi)
           EmitMove(irl, temp, lhs);
           return temp;
       }
+      lhs = Dereference(irl, lhs);
       // see if we can emit a sequence of shift and add/sub
       if (DecomposeBits(val, shifts)) {
           EmitMove(irl, temp, lhs);
