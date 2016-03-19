@@ -3024,7 +3024,7 @@ EmitMain(IRList *irl, Module *P)
     EmitLabel(irl, entrylabel);
     ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
-//    EmitJump(irl, COND_NE, spinlabel); // FIXME
+    EmitJump(irl, COND_NE, spinlabel);
 
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
