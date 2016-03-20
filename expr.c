@@ -329,6 +329,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AstReportAs(dst);  // set up error messages as if coming from "dst"
     
     /* special case logical operators */
+
+    /* doing a NOT on the whole thing */
     if (src->kind == AST_OPERATOR && src->d.ival == T_BIT_NOT
         && AstMatch(dst, src->right))
     {
@@ -341,6 +343,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     if (dst->right->right == NULL) {
         nbits = 1;
         loexpr = dst->right->left;
+        /* special case flipping a bit */
+        if (src->kind == AST_OPERATOR && src->d.ival == '^'
+            && AstMatch(dst, src->left)
+            && IsConstExpr(src->right)
+            && EvalConstExpr(src->right) == 1)
+        {
+            return RangeXor(dst, AstInteger(0xffffffff));
+        }
     } else {
         int hi = EvalConstExpr(dst->right->left);
         int lo = EvalConstExpr(dst->right->right);
