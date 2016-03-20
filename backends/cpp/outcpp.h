@@ -32,7 +32,4 @@ void PrintFloat(Flexbuf *f, int32_t v);
 int  PrintLookupArray(Flexbuf *f, AST *arr);
 void PrintGasExpr(Flexbuf *f, AST *expr);
 
-/* fetch clock frequency settings */
-int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
-
 #endif
