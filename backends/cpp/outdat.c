@@ -87,7 +87,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         /* output a binary header */
         OutputSpinHeader(&fb, P);
     }
-    PrintDataBlock(&fb, P, BINARY_OUTPUT);
+    PrintDataBlock(&fb, P, NULL);
     fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);
     flexbuf_delete(&fb);
@@ -112,7 +112,7 @@ OutputGasFile(const char *fname, Module *P)
     }
 
     flexbuf_init(&fb, BUFSIZ);
-    PrintDataBlockForGas(&fb, P, BINARY_OUTPUT);
+    PrintDataBlockForGas(&fb, P, 1 /* inline asm */);
     fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);
     flexbuf_delete(&fb);
@@ -127,36 +127,31 @@ OutputGasFile(const char *fname, Module *P)
  * data block printing functions
  */
 #define BYTES_PER_LINE 16  /* must be at least 4 */
-int datacount = 0;
-int totaldata = 0;
+static int datacount = 0;
 
-static int binFlag = 0;
+static DataBlockOutFunc outc;
 
 static void
-initDataOutput(int isBinary)
+outputByteBinary(Flexbuf *f, int c)
 {
-    totaldata = datacount = 0;
-    binFlag = isBinary;
+    flexbuf_putc(c, f);
 }
 
 static void
 outputByte(Flexbuf *f, int c)
 {
-    if (binFlag) {
-        flexbuf_putc(c, f);
-        datacount++;
-        totaldata++;
-        return;
-    }
-    if (datacount == 0) {
-        flexbuf_printf(f, "  ");
-    }
-    flexbuf_printf(f, "0x%02x, ", c);
+    (*outc)(f, c);
     datacount++;
-    totaldata++;
-    if (datacount == BYTES_PER_LINE) {
-        flexbuf_printf(f, "\n");
-        datacount = 0;
+}
+
+static void
+initDataOutput(DataBlockOutFunc func)
+{
+    datacount = 0;
+    if (func) {
+        outc = func;
+    } else {
+        outc = outputByteBinary;
     }
 }
 
@@ -365,11 +360,11 @@ assembleFile(Flexbuf *f, AST *ast)
  * print out a data block
  */
 void
-PrintDataBlock(Flexbuf *f, Module *P, int isBinary)
+PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func)
 {
     AST *ast;
 
-    initDataOutput(isBinary);
+    initDataOutput(func);
     if (gl_errors != 0)
         return;
     for (ast = P->datblock; ast; ast = ast->right) {
@@ -402,10 +397,11 @@ PrintDataBlock(Flexbuf *f, Module *P, int isBinary)
             break;
         }
     }
-
+#if 0
     if (datacount != 0 && !isBinary) {
         flexbuf_printf(f, "\n");
     }
+#endif
 }
 
 static void

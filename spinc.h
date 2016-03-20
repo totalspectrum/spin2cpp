@@ -287,7 +287,9 @@ void DeclareFunctions(Module *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareAnnotation(AST *annotation);
-void PrintDataBlock(Flexbuf *f, Module *P, int isBinary);
+typedef void (*DataBlockOutFunc)(Flexbuf *f, int c);
+
+void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc putc);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
 
@@ -303,10 +305,6 @@ int TypeSize(AST *ast);
 #define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
 void DeclareObjects(AST *newobjs);
-
-/* defines for isBinary flag of PrintDataBlock */
-#define TEXT_OUTPUT 0
-#define BINARY_OUTPUT 1
 
 /* checks to see whether an AST is a function parameter */
 int funcParameterNum(Function *func, AST *var);

@@ -586,6 +586,23 @@ PrintMacros(Flexbuf *f, Module *parse)
     }
 }
 
+#define BYTES_PER_LINE 16  /* must be at least 4 */
+static int datacount;
+
+static void
+outputByteHex(Flexbuf *f, int c)
+{
+    if (datacount == 0) {
+        flexbuf_printf(f, "  ");
+    }
+    flexbuf_printf(f, "0x%02x, ", c);
+    datacount++;
+    if (datacount == BYTES_PER_LINE) {
+        flexbuf_printf(f, "\n");
+        datacount = 0;
+    }
+}
+
 static void
 PrintCppFile(Flexbuf *f, Module *parse)
 {
@@ -625,7 +642,11 @@ PrintCppFile(Flexbuf *f, Module *parse)
             } else {
                 PrintDatArray(f, parse, " = {\n", true);
             }
-            PrintDataBlock(f, parse, TEXT_OUTPUT);
+            datacount = 0;
+            PrintDataBlock(f, parse, outputByteHex);
+            if (datacount != 0) {
+                flexbuf_printf(f, "\n");
+            }
             flexbuf_printf(f, "};\n");
         }
     }
