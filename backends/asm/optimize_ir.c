@@ -131,7 +131,7 @@ IsLocal(Operand *op)
 }
 
 // returns TRUE if an operand represents a local register or argument
-static bool
+bool
 IsLocalOrArg(Operand *op)
 {
   return op->kind == REG_LOCAL || op->kind == REG_ARG;
@@ -348,6 +348,11 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   return IsLocal(orig);
 }
 
+bool
+IsHwReg(Operand *reg)
+{
+    return reg->kind == REG_HW;
+}
 //
 // returns true if orig is a source only
 // hardware register (CNT, INA, INB)

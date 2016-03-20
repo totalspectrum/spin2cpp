@@ -52,6 +52,8 @@ bool IsDummy(IR *ir);
 bool IsValidDstReg(Operand *reg);
 bool SrcOnlyHwReg(Operand *reg);
 bool IsLocal(Operand *reg);
+bool IsLocalOrArg(Operand *reg);
+bool IsHwReg(Operand *reg);
 
 typedef enum callconvention {
     FAST_CALL,   // arguments & return in registers, native call

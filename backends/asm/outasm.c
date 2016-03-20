@@ -1341,11 +1341,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
       // we actually want rev lhs, 32 - rhs
       rhs = AstOperator('-', AstInteger(32), rhs);
       // fall through
-  case '+':
   case '-':
-  case '^':
-  case '&':
-  case '|':
   case T_SHL:
   case T_SHR:
   case T_SAR:
@@ -1353,6 +1349,19 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_ROTR:
   case T_LIMITMIN:
   case T_LIMITMAX:
+    left = CompileExpression(irl, lhs);
+    right = CompileExpression(irl, rhs);
+    EmitMove(irl, temp, left);
+    right = Dereference(irl, right);
+    EmitOp2(irl, OpcFromOp(op), temp, right);
+    return temp;
+    // commutative ops 
+  case '+':
+  case '^':
+  case '&':
+  case '|':
+      // there might be something different we could do about
+      // commutative operations, but for now handle them the same
     left = CompileExpression(irl, lhs);
     right = CompileExpression(irl, rhs);
     EmitMove(irl, temp, left);
