@@ -34,6 +34,8 @@ Loop strength reduction, particularly for address calculations.
 
 Common subexpression elimination.
 
+Take advantage of commutative operators to improve optimization.
+
 Long Term
 ---------
 
