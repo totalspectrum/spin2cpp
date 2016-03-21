@@ -629,7 +629,7 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref)
     case AST_IDENTIFIER:
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
-            ERROR(expr, "Unknown symbol %s", expr->d.string);
+            ERROR_UNKNOWN_SYMBOL(expr);
         } else {
             if (sym->type == SYM_FUNCTION || sym->type == SYM_BUILTIN) {
                 if (assignment) {

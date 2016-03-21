@@ -723,7 +723,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         sym = LookupSymbol(expr->d.string);
         if (!sym) {
             if (reportError)
-                ERROR(expr, "Unknown symbol %s", expr->d.string);
+                ERROR_UNKNOWN_SYMBOL(expr);
             else
                 *valid = 0;
             return intExpr(0);

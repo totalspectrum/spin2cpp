@@ -137,6 +137,12 @@ ERROR(AST *instr, const char *msg, ...)
     fprintf(stderr, "\n");
 }
 
+void
+ERROR_UNKNOWN_SYMBOL(AST *ast)
+{
+    ERROR(ast, "Unknown symbol %s", ast->d.string);
+}
+
 #define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
 static int tokens0[] = { T_NUM, '+', T_NUM, T_EOLN, T_EOF };
 static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOLN, T_EOF };

@@ -345,6 +345,7 @@ void CheckRecursive(Function *f);
 extern int gl_errors;
 void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
+void ERROR_UNKNOWN_SYMBOL(AST *);
 
 extern int IsReservedWord(const char *str);
 

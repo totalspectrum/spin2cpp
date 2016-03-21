@@ -710,7 +710,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           return LabelRef(irl, sym);
       }
   } else {
-      ERROR(expr, "Unknown symbol %s", expr->d.string);
+      ERROR_UNKNOWN_SYMBOL(expr);
   }
   return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
 }

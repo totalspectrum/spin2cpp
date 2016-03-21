@@ -5,8 +5,6 @@ Short Term Misc
 ---------------
 Support for `_FREE` and `_STACK` (these are read, but ignored at present).
 
-Support @@@ in --asm mode.
-
 Support inline assembly in C/C++ output.
 
 Add original Spin code as comments in PASM output.
@@ -22,6 +20,8 @@ Better error messages.
 Add some spin2cpp specific defines.
 
 Add an openspin compatible front-end.
+
+Support @@@foo + offset in --asm mode.
 
 Optimization
 ------------

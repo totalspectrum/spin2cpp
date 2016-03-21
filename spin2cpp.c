@@ -719,6 +719,16 @@ WARNING(AST *instr, const char *msg, ...)
     fprintf(stderr, "\n");
 }
 
+void
+ERROR_UNKNOWN_SYMBOL(AST *ast)
+{
+    ERROR(ast, "Unknown symbol %s", ast->d.string);
+    // add a definition for this symbol so we don't get this error again
+    if (curfunc) {
+        AddLocalVariable(curfunc, ast);
+    }
+}
+
 static void
 init()
 {
