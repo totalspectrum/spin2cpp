@@ -23,5 +23,6 @@ result1
 	fit	496
 	long
 _dat_
-	byte	$44,$33,$22,$11,$88,$77,$66,$55
-	byte	$cc,$bb,$aa,$99
+	long	$11223344
+	long	$55667788
+	long	$99aabbcc

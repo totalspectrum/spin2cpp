@@ -129,13 +129,37 @@ initDataOutput(DataBlockOutFunc func)
     }
 }
 
+static int
+GetAddrOffset(AST *ast)
+{
+    Symbol *sym;
+    Label *label;
+    
+    if (ast->kind != AST_IDENTIFIER) {
+        ERROR(ast, "@@@ supported only on identifiers");
+        return 0;
+    }
+    sym = LookupSymbol(ast->d.string);
+    if (!sym) {
+        ERROR(ast, "Unknown symbol %s", ast->d.string);
+        return 0;
+    }
+    if (sym->type != SYM_LABEL) {
+        ERROR(ast, "@@@ supported only on labels");
+        return 0;
+    }
+    label = (Label *)sym->val;
+    return label->offset;
+}
+        
 void
 outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     unsigned val, origval;
     int i, reps;
     AST *sub;
-
+    Reloc r;
+    
     origval = 0;
     while (ast) {
         sub = ast->left;
@@ -164,8 +188,24 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 start++;
             }
             reps = 0;
+        } else if (sub->kind == AST_ABSADDROF) {
+            if (relocs) {
+                int addr = flexbuf_curlen(f);
+                if (size != LONG_SIZE) {
+                    ERROR(ast, "@@@ supported only on long values");
+                }
+                if ( (addr & 3) != 0 ) {
+                    ERROR(ast, "@@@ supported only on long boundary");
+                }
+                r.addr = addr;
+                r.value = origval = GetAddrOffset(sub->left);
+                reps = 1;
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            } else {
+                origval = EvalPasmExpr(sub);
+            }
         } else {
-            origval = EvalPasmExpr(ast->left);
+            origval = EvalPasmExpr(sub);
             reps = 1;
         }
         while (reps > 0) {

@@ -145,7 +145,8 @@ enum Operandkind {
     IMM_COG_LABEL, // an immediate holding a memory address
     IMM_HUB_LABEL, // ditto, but for HUB rather than COG memory
     IMM_STRING, // a string to print or store
-
+    IMM_BINARY, // a dat section, including relocations
+    
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)

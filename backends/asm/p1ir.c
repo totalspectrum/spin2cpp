@@ -156,30 +156,56 @@ PrintCond(struct flexbuf *fb, IRCond cond)
 static void
 OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
 {
-    unsigned char *data;
+    Flexbuf *databuf;
+    Flexbuf *relocbuf;
+    uint32_t *data;
     int len;
+    int addr;
+    Reloc *nextreloc;
+    int relocs;
     
-    if (op->kind != IMM_STRING) {
+    if (op->kind != IMM_BINARY) {
         ERROR(NULL, "Internal: bad binary blob");
         return;
     }
     flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
     flexbuf_printf(fb, label->name);
     flexbuf_printf(fb, "\n");
-    data = (unsigned char *)op->name;
-    len = op->val;
-    while (len > 8) {
-        flexbuf_printf(fb, "\tbyte\t$%02x,$%02x,$%02x,$%02x,$%02x,$%02x,$%02x,$%02x\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-        len -= 8;
-        data += 8;
+    databuf = (Flexbuf *)op->name;
+    relocbuf = (Flexbuf *)op->val;
+    if (relocbuf) {
+        relocs = flexbuf_curlen(relocbuf) / sizeof(Reloc);
+        nextreloc = (Reloc *)flexbuf_peek(relocbuf);
+    } else {
+        relocs = 0;
+        nextreloc = NULL;
     }
-    if (len > 0) {
-        flexbuf_printf(fb, "\tbyte\t");
-        while (len > 0) {
-            flexbuf_printf(fb, "$%02x%s", data[0], len == 1 ? "\n" : ",");
-            --len;
-            ++data;
+    data = (uint32_t *)flexbuf_peek(databuf);
+    len = flexbuf_curlen(databuf);
+    for (addr = 0; addr < len; addr += 4) {
+        flexbuf_printf(fb, "\tlong\t");
+        if (relocs > 0) {
+            // see if this particular long needs a reloc
+            if (nextreloc->addr == addr) {
+                int offset = nextreloc->value;
+                if (offset == 0) {
+                    flexbuf_printf(fb, "@@@%s\n", label->name);
+                } else if (offset > 0) {
+                    flexbuf_printf(fb, "@@@%s + %d\n", label->name, offset);
+                } else {
+                    flexbuf_printf(fb, "@@@%s - %d\n", label->name, -offset);
+                }
+                data++;
+                nextreloc++;
+                --relocs;
+                continue;
+            }
         }
+        flexbuf_printf(fb, "$%08x\n", data[0]);
+        data ++;
+    }
+    if (addr != len) {
+        ERROR(NULL, "binary blob is not a multiple of 4 bytes long");
     }
 }
 

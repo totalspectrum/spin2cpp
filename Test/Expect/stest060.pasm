@@ -42,5 +42,6 @@ substest01_add_tmp001_
 	fit	496
 	long
 objmem
-	byte	$00,$00,$00,$00,$00,$00,$00,$00
-	byte	$00,$00,$00,$00
+	long	$00000000
+	long	$00000000
+	long	$00000000

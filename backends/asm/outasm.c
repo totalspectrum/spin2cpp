@@ -2963,18 +2963,18 @@ CompileConsts(IRList *irl, AST *conblock)
 void
 EmitDatSection(IRList *irl, Module *P)
 {
-  Flexbuf fb;
+  Flexbuf *fb;
+  Flexbuf *relocs;
   Operand *op;
-  char *data;
-  int len;
 
   if (!ModData(P)->datbase)
       return;
-  flexbuf_init(&fb, 32768);
-  PrintDataBlock(&fb, P, NULL, NULL);
-  len = (int)flexbuf_curlen(&fb);
-  data = flexbuf_get(&fb);
-  op = NewOperand(IMM_STRING, data, len);
+  fb = calloc(1, sizeof(*fb));
+  relocs = calloc(1, sizeof(*relocs));
+  flexbuf_init(fb, 32768);
+  flexbuf_init(relocs, 512);
+  PrintDataBlock(fb, P, NULL,relocs);
+  op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
   EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
 }
 
@@ -2984,14 +2984,20 @@ EmitVarSection(IRList *irl, Module *P)
   Operand *op;
   char *data;
   int len;
+  Flexbuf *fb;
 
   if (!objlabel)
       return;
+  fb = calloc(1, sizeof(*fb));
+  flexbuf_init(fb, 32768);
+  
   len = P->varsize;
   // round up to long boundary
   len = (len + 3) & ~3;
   data = calloc(len, 1);
-  op = NewOperand(IMM_STRING, data, len);
+
+  flexbuf_addmem(fb, data, len);
+  op = NewOperand(IMM_BINARY, (const char *)fb, 0);
   EmitOp2(irl, OPC_LABELED_BLOB, objlabel, op);
 }
 
@@ -3043,8 +3049,11 @@ EmitMain(IRList *irl, Module *P)
     EmitLabel(irl, entrylabel);
     ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
-    EmitJump(irl, COND_NE, spinlabel);
 
+    if (HUB_CODE) {
+        EmitJump(irl, COND_NE, spinlabel);
+    }
+    
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {

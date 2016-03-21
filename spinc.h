@@ -289,6 +289,25 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST 
 void DeclareAnnotation(AST *annotation);
 typedef void (*DataBlockOutFunc)(Flexbuf *f, int c);
 
+/*
+ * information about relocations:
+ * data blocks are normally just binary blobs; but if an absolute address
+ * (like @@@foo) is requested, we need a way to specify that address
+ * Note that a normal @foo in a dat section is a relative address;
+ * @@@foo requires that we add the base of the dat to @foo.
+ * For now, the relocation system works only on longs, and only in some
+ * modes. For each long that needs the base of dat added to it we emit
+ * a relocation r, which contains (a) the offset of the relocatable long
+ * in bytes from the start of the dat, and (b) the value to add to the base
+ * of the dat section at that long.
+ * The relocs should be sorted in order of increasing offset, so we can
+ * easily process them in order along with the output.
+ */
+typedef struct Reloc {
+    int  addr;    // the address of the long to relocate (offset from dat base)
+    int  value;   // the value to add to dat base at that location
+} Reloc;
+
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc putc, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
