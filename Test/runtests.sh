@@ -28,12 +28,27 @@ do
   tail --lines=+6 $j.out >$j.txt
   if diff -ub Expect/$j.txt $j.txt
   then
-    echo $j passed
+    echo $j passed for C++
     rm -f $j.out $j.txt $j.binary $j.cpp $j.h FullDuplexSerial.cpp FullDuplexSerial.h dattest.cpp dattest.h
   else
     echo $j failed
     endmsg="TEST FAILURES"
   fi
+
+  # now compile with asm
+  if $PROG --code=hub --asm --binary -o $j.binary $i; then
+    propeller-load $j.binary -r -t -q > $j.out
+  fi
+  # the --lines=+6 skips the first 6 lines that propeller-load printed
+  tail --lines=+6 $j.out >$j.txt
+  if diff -ub Expect/$j.txt $j.txt
+  then
+    echo $j passed for ASM
+    rm -f $j.out $j.txt $j.binary $j.pasm
+  else
+    echo $j failed
+    endmsg="TEST FAILURES"
+  fi  
 done
 
 # clean up

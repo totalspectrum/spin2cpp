@@ -199,11 +199,11 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 }
                 r.addr = addr;
                 r.value = origval = GetAddrOffset(sub->left);
-                reps = 1;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             } else {
                 origval = EvalPasmExpr(sub);
             }
+            reps = 1;
         } else {
             origval = EvalPasmExpr(sub);
             reps = 1;
