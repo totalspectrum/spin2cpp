@@ -402,6 +402,11 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         shift = AstOperator(T_SHL, AstInteger(1), loexpr);
         shift = FoldIfConst(shift);
         maskassign = AstAssign(T_ASSIGN, maskvar, shift);
+        maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
+        // insert the mask assignment at the beginning of the function
+        maskassign->right = curfunc->body;
+        curfunc->body = maskassign;
+            
         ifcond = AstOperator('&', src, AstInteger(1));
         ifpart = AstOperator('|', dst->left, maskvar);
         ifpart = AstAssign(T_ASSIGN, dst->left, ifpart);
@@ -414,8 +419,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         
         stmt = NewAST(AST_THENELSE, ifpart, elsepart);
         ifstmt = NewAST(AST_IF, ifcond, stmt);
-        ifstmt = NewAST(AST_STMTLIST, maskassign,
-                        NewAST(AST_STMTLIST, ifstmt, NULL));
+        ifstmt = NewAST(AST_STMTLIST, ifstmt, NULL);
         return ifstmt;
     }
                              

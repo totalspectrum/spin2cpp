@@ -2,10 +2,10 @@ DAT
 	org	0
 
 _shiftout
-	mov	_shiftout__idx__0017, #32
-L_047_
 	mov	_shiftout__mask_0016, #1
 	shl	_shiftout__mask_0016, arg2
+	mov	_shiftout__idx__0017, #32
+L_047_
 	shr	arg1, #1 wc
 	muxc	OUTA, _shiftout__mask_0016
 	djnz	_shiftout__idx__0017, #L_047_
