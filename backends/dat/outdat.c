@@ -86,7 +86,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         /* output a binary header */
         OutputSpinHeader(&fb, P);
     }
-    PrintDataBlock(&fb, P, NULL);
+    PrintDataBlock(&fb, P, NULL, NULL);
     fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);
     flexbuf_delete(&fb);
@@ -130,7 +130,7 @@ initDataOutput(DataBlockOutFunc func)
 }
 
 void
-outputDataList(Flexbuf *f, int size, AST *ast)
+outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     unsigned val, origval;
     int i, reps;
@@ -299,14 +299,14 @@ assembleInstruction(Flexbuf *f, AST *ast)
 }
 
 void
-outputAlignedDataList(Flexbuf *f, int size, AST *ast)
+outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     if (size > 1) {
         while ((datacount % size) != 0) {
             outputByte(f, 0);
         }
     }
-    outputDataList(f, size, ast);
+    outputDataList(f, size, ast, relocs);
 }
 
 /*
@@ -334,7 +334,7 @@ assembleFile(Flexbuf *f, AST *ast)
  * print out a data block
  */
 void
-PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func)
+PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
 {
     AST *ast;
 
@@ -344,13 +344,13 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func)
     for (ast = P->datblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
-            outputAlignedDataList(f, 1, ast->left);
+            outputAlignedDataList(f, 1, ast->left, relocs);
             break;
         case AST_WORDLIST:
-            outputAlignedDataList(f, 2, ast->left);
+            outputAlignedDataList(f, 2, ast->left, relocs);
             break;
         case AST_LONGLIST:
-            outputAlignedDataList(f, 4, ast->left);
+            outputAlignedDataList(f, 4, ast->left, relocs);
             break;
         case AST_INSTRHOLDER:
             assembleInstruction(f, ast->left);

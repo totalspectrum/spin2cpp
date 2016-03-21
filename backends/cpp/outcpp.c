@@ -643,7 +643,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
                 PrintDatArray(f, parse, " = {\n", true);
             }
             datacount = 0;
-            PrintDataBlock(f, parse, outputByteHex);
+            PrintDataBlock(f, parse, outputByteHex, NULL);
             if (datacount != 0) {
                 flexbuf_printf(f, "\n");
             }

@@ -2971,7 +2971,7 @@ EmitDatSection(IRList *irl, Module *P)
   if (!ModData(P)->datbase)
       return;
   flexbuf_init(&fb, 32768);
-  PrintDataBlock(&fb, P, NULL);
+  PrintDataBlock(&fb, P, NULL, NULL);
   len = (int)flexbuf_curlen(&fb);
   data = flexbuf_get(&fb);
   op = NewOperand(IMM_STRING, data, len);

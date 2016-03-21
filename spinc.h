@@ -289,7 +289,7 @@ void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST 
 void DeclareAnnotation(AST *annotation);
 typedef void (*DataBlockOutFunc)(Flexbuf *f, int c);
 
-void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc putc);
+void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc putc, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
 
