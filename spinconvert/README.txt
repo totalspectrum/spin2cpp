@@ -13,7 +13,9 @@ Select the type of output you wish to get from the Options menu (the
 default is PASM), then use File>Open to open your Spin file. The Spin
 source code will appear on the left, and the converted file on the
 right. The converted file is updated automatically whenever the Spin
-source is saved.
+source is saved. The original Spin source code should appear as
+comments within the converted PASM code (this is only for PASM; C is
+close enough to Spin that the conversion should be pretty obvious).
 
 If you select PASM output then you have the option to produce an
 executable .binary. To do this select the "Make binary" option under
@@ -41,25 +43,28 @@ GUI.
 
 KNOWN ISSUES
 
-PASM output cannot handle taking the address of function variables.
-It also does not implement calling coginit/cognew on Spin functions
-(using coginit on PASM code in the DAT section does work). It's still
-very much a work in progress.
-
 The C/C++ output should be complete.
+
+The PASM output also seems to be complete, but is not as thoroughly
+tested, so it is likely to have some bugs.
 
 EXTENSIONS TO THE SPIN LANGUAGE
 
 The Spin Converter can actually accept a few extensions to Spin, at
 least in some circumstances:
 
-(1) The @@@ operator for absolute hub address is accepted in DAT
+(1) spin2cpp supports #ifdef / #ifndef / #else / #endif and
+#include. These preprocessor defines have been widely implemented in
+other Spin compilers such as bstc, homespun, and openspin, but are not
+present in the original Propeller Tool.
+
+(2) The @@@ operator for absolute hub address is accepted in DAT
 sections if they are being compiled to binary (--dat --binary) or if
 GAS output is given (--gas). There are technical issues that make
 supporting it in other circumstances more difficult, but I hope to
 be able to do so eventually,
 
-(2) IF/THEN/ELSE expressions are supported, for example:
+(3) IF/THEN/ELSE expressions are supported, for example:
 
     x := if a<b then 0 else 1
 
@@ -68,7 +73,7 @@ very much like C's (? :) ternary operator. The compiler uses this
 internally for some things, and for testing purposes it was useful to
 change the syntax to make it available.
 
-(3) Inline assembly in Spin functions is supported in Spin functions,
+(4) Inline assembly in Spin functions is supported in Spin functions,
 between lines starting "asm" and "endasm". The assembly is very
 limited; only local variable names (including parameters) and
 immediate constants are legal operands for instructions. Still, it can
@@ -85,3 +90,4 @@ pub lockclr(id) | mask, rval
 
 At the moment inline assembly only works for PASM output, it is not
 yet supported in C or C++.
+

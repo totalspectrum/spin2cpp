@@ -2224,6 +2224,39 @@ FreeTempRegisters(IRList *irl, int starttempreg)
 //
 // emit debug directives
 //
+static LexStream *current_lex = NULL;
+
+void
+ResetDebugComment(Module *P)
+{
+    current_lex = &P->L;
+    current_lex->lineCounter = 0;
+}
+
+static void
+EmitOneComment(IRList *irl, int line, LexStream *L)
+{
+    const char **srclines;
+    const char *theline;
+    int maxline;
+    Operand *c;
+    
+    srclines = (const char **)flexbuf_peek(&L->lines);
+    maxline = flexbuf_curlen(&L->lines) / sizeof(char **);
+    theline = srclines[line];
+    if (!theline) return;
+    if (line < 0 || line >= maxline) return;
+    
+    // skip over preprocessor comments
+    if (theline[0] == '{' && theline[1] == '#') {
+        theline += 2;
+        while (*theline && *theline != '}') theline++;
+        if (*theline) theline++;
+    }
+    c = NewOperand(IMM_STRING, theline, 0);
+    EmitOp1(irl, OPC_COMMENT, c);
+}
+
 void
 EmitDebugComment(IRList *irl, AST *ast)
 {
@@ -2236,24 +2269,12 @@ EmitDebugComment(IRList *irl, AST *ast)
     L = &current->L;
     if (!strcmp(L->fileName, ast->fileName)) {
         int line = ast->line;
-        Operand *c;
-        const char **srclines;
-        int maxline;
-        
-        srclines = (const char **)flexbuf_peek(&L->lines);
-        maxline = flexbuf_curlen(&L->lines) / sizeof(char **);
-        if (line > 0 && line < maxline) {
-            const char *theline = srclines[line];
-            if (!theline) return;
-            // skip over preprocessor comments
-            if (theline[0] == '{' && theline[1] == '#') {
-                theline += 2;
-                while (*theline && *theline != '}') theline++;
-                if (*theline) theline++;
-            }
-            c = NewOperand(IMM_STRING, theline, 0);
-            EmitOp1(irl, OPC_COMMENT, c);
+        int i = L->lineCounter;
+        while (i <= line) {
+            EmitOneComment(irl, i, L);
+            i++;
         }
+        L->lineCounter = i;
     }
 }
 
@@ -2657,6 +2678,7 @@ AssignFuncNames(IRList *irl, Module *P)
     
     (void)irl; // not used
 
+    ResetDebugComment(P);
     if (!P->bedata) {
         P->bedata = calloc(sizeof(AsmModData), 1);
     }
@@ -2800,7 +2822,7 @@ CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
     Function *save = curfunc;
-    
+
     // emit output for P
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has

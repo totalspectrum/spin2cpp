@@ -42,6 +42,7 @@ PrintCommentString(Flexbuf *f, const char *str, int indent)
     int numLines = 0;
     int lastNewLine = 0;
     const char *p;
+    if (!str) return;
     for (p = str; *p; p++) {
         if (*p =='\n') {
             numLines++; lastNewLine = 1;

@@ -279,7 +279,7 @@ topelement:
   | T_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
   | T_DAT annotation datblock
-  { 
+  {
       current->datannotations = AddToList(current->datannotations, $2);
       $$ = current->datblock = AddToList(current->datblock, $3); 
   }
@@ -289,15 +289,15 @@ topelement:
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
   | T_PUB funcdef funcbody
-  { DeclareFunction(1, $2, $3, NULL, $1); }
+    { DeclareFunction(1, $2, $3, NULL, $1); }
   | T_PRI funcdef funcbody
-  { DeclareFunction(0, $2, $3, NULL, $1); }
+    { DeclareFunction(0, $2, $3, NULL, $1); }
   | T_PUB annotation funcdef funcbody
-  { DeclareFunction(1, $3, $4, $2, $1); }
+    { DeclareFunction(1, $3, $4, $2, $1); }
   | T_PRI annotation funcdef funcbody
-  { DeclareFunction(0, $3, $4, $2, $1); }
+    { DeclareFunction(0, $3, $4, $2, $1); }
   | annotation emptylines
-  { DeclareAnnotation($1); }
+    { DeclareAnnotation($1); }
 ;
 
 funcdef:
@@ -483,18 +483,29 @@ rangeexprlist:
 
 repeatstmt:
     T_REPEAT T_EOLN stmtblock
-    {   AST *body = $3; body = CheckYield(body); 
-        $$ = NewCommentedAST(AST_WHILE, AstInteger(1), body, $1); }
+    {   AST *body = $3; body = CheckYield(body);
+        AST *one = AstInteger(1);
+        one->line = $1->line;
+        $$ = NewCommentedAST(AST_WHILE, one, body, $1);
+        $$->line = $1->line;
+    }
   | T_REPEAT T_EOLN stmtblock T_WHILE expr T_EOLN
     { $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($3), $1); }
   | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
     { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), CheckYield($3), $1); }
   | T_REPEAT T_WHILE expr T_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
-        $$ = NewCommentedAST(AST_WHILE, $3, body, $1); }
+        $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
+        $$->line = $1->line;
+    }
   | T_REPEAT T_UNTIL expr T_EOLN stmtblock
-    {   AST *body = $5; body = CheckYield(body); 
-        $$ = NewCommentedAST(AST_WHILE, AstOperator(T_NOT, NULL, $3), body, $1); }
+    {   AST *body = $5;
+        AST *expr = AstOperator(T_NOT, NULL, $3);
+        expr->line = $3->line;
+        body = CheckYield(body); 
+        $$ = NewCommentedAST(AST_WHILE, expr, body, $1);
+        $$->line = $1->line;
+    }
   | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
     {
       AST *from, *to, *step; 

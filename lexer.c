@@ -519,6 +519,10 @@ GetComments(void)
 {
     AST *ret = comment_chain;
     comment_chain = NULL;
+    if (!ret) {
+        ret = NewAST(AST_COMMENT, NULL, NULL); // just for holding error lines
+        ret->d.string = NULL;
+    }
     return ret;
 }
 

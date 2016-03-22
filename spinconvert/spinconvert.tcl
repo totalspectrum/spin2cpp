@@ -113,7 +113,7 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline [list $COMPILE --noheader $OUTPUT --code=$codemem --data=$datamem]
+    set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
     if { $makeBinary == 1 } {
 	set binfile [file rootname $PASMFILE]
 	set binfile "$binfile.binary"
@@ -189,7 +189,7 @@ set aboutMsg {
 Convert .spin to PASM/C/C++
 Copyright 2011-2016 Total Spectrum Software Inc.
 ------
-This is an incomplete preview version!
+This is a beta version!
 There is no warranty and no guarantee that
 output will be correct.    
 }
