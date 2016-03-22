@@ -180,8 +180,13 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         relocs = 0;
         nextreloc = NULL;
     }
-    data = (uint32_t *)flexbuf_peek(databuf);
     len = flexbuf_curlen(databuf);
+    // make sure it is a multiple of 4
+    while ( 0 != (len & 3) ) {
+        flexbuf_addchar(databuf, 0);
+        len = flexbuf_curlen(databuf);
+    }
+    data = (uint32_t *)flexbuf_peek(databuf);
     for (addr = 0; addr < len; addr += 4) {
         flexbuf_printf(fb, "\tlong\t");
         if (relocs > 0) {
@@ -203,9 +208,6 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         }
         flexbuf_printf(fb, "$%08x\n", data[0]);
         data ++;
-    }
-    if (addr != len) {
-        ERROR(NULL, "binary blob is not a multiple of 4 bytes long");
     }
 }
 
