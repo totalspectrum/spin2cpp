@@ -864,7 +864,10 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 {
     OperandList *oplist;
 
-    EmitDebugComment(irl, func->decl);
+    // earlier we put the appropriate comments into func->irheader
+    // copy them out now
+    //EmitDebugComment(irl, func->decl);
+    AppendIRList(irl, &FuncData(func)->irheader);
     EmitLabel(irl, FuncData(func)->asmname);
 
     // set up frame pointer for stack call functions
@@ -2524,7 +2527,11 @@ static void
 CompileFunctionBody(Function *f)
 {
     IRList *irl = FuncIRL(f);
+    IRList *irheader = &FuncData(f)->irheader;
+    
     nextlabel = quitlabel = NULL;
+    EmitDebugComment(irheader, f->decl);
+    
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
     if (!f->result_in_parmarray && f->resultexpr && f->resultexpr->kind == AST_IDENTIFIER)

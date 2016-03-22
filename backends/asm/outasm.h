@@ -78,7 +78,13 @@ typedef struct ir_bedata {
     */
     Operand *asmreturnlabel;
     
+    /* function header (mostly to make sure we collect comments
+       at the right time */
+    IRList irheader;
+    
     /* instructions for this function */
+    /* leaves off initial label and final ret, so it's
+       suitable for inlining */
     IRList irl;
 
     /* list of registers that need preserving (for
