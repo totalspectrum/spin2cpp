@@ -240,6 +240,11 @@ bool IsHubDest(Operand *dst)
     }
 }
 
+// LMM jumps +- this amount are turned into add/sub of the pc
+// pick a conservative value
+// 127 would be the absolute maximum here
+#define MAX_REL_JUMP_OFFSET 100
+
 /* convert IR list into p1 assembly language */
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
@@ -308,12 +313,35 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             break;
         case OPC_JUMP:
             if (IsHubDest(ir->dst)) {
-                PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "rdlong\tpc,pc\n");
-                flexbuf_addstr(fb, "\tlong\t");
+                IR *dest;
+                if (!lmmMode) {
+                    ERROR(NULL, "jump from COG to LMM not supported yet");
+                }
                 if (ir->dst->kind != IMM_HUB_LABEL) {
                     ERROR(NULL, "internal error: non-hub label in LMM jump");
                 }
+                PrintCond(fb, ir->cond);
+                // if we know the destination we may be able to optimize
+                // the branch
+                if (ir->aux) {
+                    int offset;
+                    dest = (IR *)ir->aux;
+                    offset = dest->addr - ir->addr;
+                    if ( offset > 0 && offset < MAX_REL_JUMP_OFFSET) {
+                        flexbuf_printf(fb, "add\tpc, #4*(");
+                        PrintOperand(fb, ir->dst);
+                        flexbuf_printf(fb, " - ($+1))\n");
+                        return;
+                    }
+                    if ( offset < 0 && offset > -MAX_REL_JUMP_OFFSET) {
+                        flexbuf_printf(fb, "sub\tpc, #4*(($+1) - ");
+                        PrintOperand(fb, ir->dst);
+                        flexbuf_printf(fb, ")\n");
+                        return;
+                    }
+                }
+                flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                flexbuf_addstr(fb, "\tlong\t");
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;

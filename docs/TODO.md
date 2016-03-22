@@ -36,8 +36,12 @@ Common subexpression elimination.
 
 Take advantage of commutative operators to improve optimization.
 
+Add FCACHE mode for LMM.
+
 Long Term
 ---------
+
+Implement P2 support.
 
 Implement a spin bytecode back end.
 
