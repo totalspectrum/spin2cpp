@@ -249,6 +249,7 @@ bool IsHubDest(Operand *dst)
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
+    const char *str;
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -412,6 +413,20 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         flexbuf_addstr(fb, "\n");
         break;
     case OPC_COMMENT:
+        if (ir->dst->kind != IMM_STRING) {
+            ERROR(NULL, "COMMENT is not a string");
+            return;
+        }
+        flexbuf_addstr(fb, "'' ");
+        str = ir->dst->name;
+        while (*str && *str != '\n') {
+            flexbuf_addchar(fb, *str);
+            str++;
+        }
+        flexbuf_addchar(fb, '\n');
+        break;
+        /* fall through */
+    case OPC_LITERAL:
         PrintOperand(fb, ir->dst);
 	break;
     case OPC_LABEL:

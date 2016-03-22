@@ -61,6 +61,8 @@ void strToLex(LexStream *L, const char *s, const char *name)
     L->getcf = strgetc;
     L->pendingLine = 1;
     L->fileName = name ? name : "<string>";
+    flexbuf_init(&L->curLine, 1024);
+    flexbuf_init(&L->lines, 1024);
 }
 
 /* functions for handling FILE streams */
@@ -136,6 +138,8 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     L->arg = NULL;
     L->getcf = filegetc;
     L->pendingLine = 1;
+    flexbuf_init(&L->curLine, 1024);
+    flexbuf_init(&L->lines, 1024);
     /* check for Unicode */
     c1 = fgetc(f);
     c2 = fgetc(f);
@@ -156,11 +160,15 @@ int
 lexgetc(LexStream *L)
 {
     int c;
+    char *linedata;
     if (L->ungot_ptr) {
         --L->ungot_ptr;
         return L->ungot[L->ungot_ptr];
     }
     if (L->pendingLine) {
+      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
+      linedata = flexbuf_get(&L->curLine);
+      flexbuf_addmem(&L->lines, (char *)&linedata, sizeof(linedata));
       L->lineCounter ++;
       L->pendingLine = 0;
       L->colCounter = 0;
@@ -174,6 +182,13 @@ lexgetc(LexStream *L)
         L->colCounter = TAB_STOP * (L->colCounter/TAB_STOP);
     } else {
         L->colCounter++;
+    }
+    if (c == T_EOF) {
+      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
+      linedata = flexbuf_get(&L->curLine);
+      flexbuf_addmem(&L->lines, (char *)&linedata, sizeof(linedata));
+    } else {
+        flexbuf_addchar(&L->curLine, c);
     }
     return c;
 }

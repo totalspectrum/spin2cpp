@@ -22,6 +22,7 @@ bool IsDummy(IR *op)
 {
   switch(op->opc) {
   case OPC_COMMENT:
+  case OPC_LITERAL:
   case OPC_DEAD:
   case OPC_CONST:
   case OPC_DUMMY:

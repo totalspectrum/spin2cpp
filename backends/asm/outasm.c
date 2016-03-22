@@ -59,6 +59,7 @@ static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedMemRef(int size, Operand *addr, int offset);
+static void EmitDebugComment(IRList *irl, AST *ast);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -862,7 +863,8 @@ GetLocalRegsUsed(OperandList **list, IRList *irl)
 static void EmitFunctionHeader(IRList *irl, Function *func)
 {
     OperandList *oplist;
-    
+
+    EmitDebugComment(irl, func->decl);
     EmitLabel(irl, FuncData(func)->asmname);
 
     // set up frame pointer for stack call functions
@@ -2062,10 +2064,10 @@ CompileExpression(IRList *irl, AST *expr)
   }
 }
 
-static void EmitStatement(IRList *irl, AST *ast); /* forward declaration */
+static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static void
-EmitStatementList(IRList *irl, AST *ast)
+CompileStatementList(IRList *irl, AST *ast)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
@@ -2073,7 +2075,7 @@ EmitStatementList(IRList *irl, AST *ast)
                   ast->kind);
             return;
         }
-        EmitStatement(irl, ast->left);
+        CompileStatement(irl, ast->left);
         ast = ast->right;
     }
 }
@@ -2220,6 +2222,42 @@ FreeTempRegisters(IRList *irl, int starttempreg)
 }
 
 //
+// emit debug directives
+//
+void
+EmitDebugComment(IRList *irl, AST *ast)
+{
+    LexStream *L;
+
+    if (!gl_debug) return;
+    if (!ast) return;
+    if (!current) return;
+    
+    L = &current->L;
+    if (!strcmp(L->fileName, ast->fileName)) {
+        int line = ast->line;
+        Operand *c;
+        const char **srclines;
+        int maxline;
+        
+        srclines = (const char **)flexbuf_peek(&L->lines);
+        maxline = flexbuf_curlen(&L->lines) / sizeof(char **);
+        if (line > 0 && line < maxline) {
+            const char *theline = srclines[line];
+            if (!theline) return;
+            // skip over preprocessor comments
+            if (theline[0] == '{' && theline[1] == '#') {
+                theline += 2;
+                while (*theline && *theline != '}') theline++;
+                if (*theline) theline++;
+            }
+            c = NewOperand(IMM_STRING, theline, 0);
+            EmitOp1(irl, OPC_COMMENT, c);
+        }
+    }
+}
+
+//
 // a for loop gets a pattern like
 //
 //   initial code
@@ -2265,6 +2303,13 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     ast = ast->right;
     body = ast;
 
+    if (initstmt) {
+        EmitDebugComment(irl, initstmt);
+    } else if (loopcond) {
+        EmitDebugComment(irl, loopcond);
+    } else if (body) {
+        EmitDebugComment(irl, body);
+    }
     CompileExpression(irl, initstmt);
     
     toplabel = NewCodeLabel();
@@ -2276,9 +2321,9 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     if (!atleastonce) {
         CompileBoolBranches(irl, loopcond, NULL, exitlabel);
     }
-    EmitStatementList(irl, body);
+    CompileStatementList(irl, body);
     EmitLabel(irl, nextlabel);
-    EmitStatement(irl, update);
+    CompileStatement(irl, update);
     if (atleastonce) {
         CompileBoolBranches(irl, loopcond, toplabel, NULL);
     } else {
@@ -2321,7 +2366,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
         }
         labelnext = NewCodeLabel();
         CompileBoolBranches(irl, booltest, NULL, labelnext);
-        EmitStatementList(irl, stmts);
+        CompileStatementList(irl, stmts);
     }
     if (labelnext) {
         EmitLabel(irl, labelnext);
@@ -2329,7 +2374,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     EmitLabel(irl, labeldone);
 }
 
-static void EmitStatement(IRList *irl, AST *ast)
+static void CompileStatement(IRList *irl, AST *ast)
 {
     AST *retval;
     Operand *op;
@@ -2343,9 +2388,10 @@ static void EmitStatement(IRList *irl, AST *ast)
     starttempreg = FuncData(curfunc)->curtempreg;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
-        EmitStatement(irl, ast->left);
+        CompileStatement(irl, ast->left);
         break;
     case AST_RETURN:
+        EmitDebugComment(irl, ast);
         retval = ast->left;
         if (!retval) {
             retval = curfunc->resultexpr;
@@ -2358,13 +2404,14 @@ static void EmitStatement(IRList *irl, AST *ast)
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
 	break;
     case AST_WHILE:
+        EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
 	botloop = NewCodeLabel();
 	PushQuitNext(botloop, toploop);
 	EmitLabel(irl, toploop);
         CompileBoolBranches(irl, ast->left, NULL, botloop);
 	FreeTempRegisters(irl, starttempreg);
-        EmitStatementList(irl, ast->right);
+        CompileStatementList(irl, ast->right);
 	EmitJump(irl, COND_TRUE, toploop);
 	EmitLabel(irl, botloop);
 	PopQuitNext();
@@ -2375,7 +2422,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	exitloop = NewCodeLabel();
 	PushQuitNext(exitloop, botloop);
 	EmitLabel(irl, toploop);
-        EmitStatementList(irl, ast->right);
+        CompileStatementList(irl, ast->right);
 	EmitLabel(irl, botloop);
         CompileBoolBranches(irl, ast->left, toploop, NULL);
 	FreeTempRegisters(irl, starttempreg);
@@ -2387,12 +2434,14 @@ static void EmitStatement(IRList *irl, AST *ast)
 	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
+        //EmitDebugComment(irl, ast);
         CompileInlineAsm(irl, ast->left);
         break;
     case AST_CASE:
         CompileCaseStmt(irl, ast);
         break;
     case AST_QUIT:
+        EmitDebugComment(irl, ast);
         if (!quitlabel) {
 	    ERROR(ast, "loop exit statement outside of loop");
 	} else {
@@ -2400,6 +2449,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	break;
     case AST_NEXT:
+        EmitDebugComment(irl, ast);
         if (!nextlabel) {
 	    ERROR(ast, "loop continue statement outside of loop");
 	} else {
@@ -2407,6 +2457,7 @@ static void EmitStatement(IRList *irl, AST *ast)
 	}
 	break;
     case AST_IF:
+        EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
         CompileBoolBranches(irl, ast->left, NULL, toploop);
 	FreeTempRegisters(irl, starttempreg);
@@ -2415,12 +2466,13 @@ static void EmitStatement(IRList *irl, AST *ast)
 	  ast = ast->left;
 	}
 	/* ast should be an AST_THENELSE */
-	EmitStatementList(irl, ast->left);
+        //EmitDebugComment(irl, ast);
+	CompileStatementList(irl, ast->left);
 	if (ast->right) {
 	  botloop = NewCodeLabel();
 	  EmitJump(irl, COND_TRUE, botloop);
 	  EmitLabel(irl, toploop);
-	  EmitStatementList(irl, ast->right);
+	  CompileStatementList(irl, ast->right);
 	  EmitLabel(irl, botloop);
 	} else {
 	  EmitLabel(irl, toploop);
@@ -2430,12 +2482,13 @@ static void EmitStatement(IRList *irl, AST *ast)
 	/* do nothing in assembly for YIELD */
         break;
     case AST_STMTLIST:
-        EmitStatementList(irl, ast);
+        CompileStatementList(irl, ast);
         break;
     case AST_ASSIGN:
         /* fall through */
     default:
         /* assume an expression */
+        EmitDebugComment(irl, ast);
         (void)CompileExpression(irl, ast);
         break;
     }
@@ -2456,10 +2509,10 @@ CompileFunctionBody(Function *f)
     if (!f->result_in_parmarray && f->resultexpr && f->resultexpr->kind == AST_IDENTIFIER)
     {
         AST *resinit = AstAssign(T_ASSIGN, f->resultexpr, AstInteger(0));
-        EmitStatement(irl, resinit);
+        CompileStatement(irl, resinit);
     }
     //
-    EmitStatementList(irl, f->body);
+    CompileStatementList(irl, f->body);
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl);
 }
@@ -2481,7 +2534,7 @@ CompileWholeFunction(IRList *irl, Function *f)
 static Operand *newlineOp;
 static void EmitNewline(IRList *irl)
 {
-  IR *ir = NewIR(OPC_COMMENT);
+  IR *ir = NewIR(OPC_LITERAL);
   ir->dst = newlineOp;
   AppendIR(irl, ir);
 }
@@ -2890,18 +2943,18 @@ EmitBuiltins(IRList *irl)
 {
     if (HUB_CODE) {
         Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
-        EmitOp1(irl, OPC_COMMENT, loop);
+        EmitOp1(irl, OPC_LITERAL, loop);
     }
     if (mulfunc) {
         Operand *loop = NewOperand(IMM_STRING, builtin_mul, 0);
-        EmitOp1(irl, OPC_COMMENT, loop);
+        EmitOp1(irl, OPC_LITERAL, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
         (void)GetGlobal(REG_REG, "result1", 0);
     }
     if (divfunc) {
         Operand *loop = NewOperand(IMM_STRING, builtin_div, 0);
-        EmitOp1(irl, OPC_COMMENT, loop);
+        EmitOp1(irl, OPC_LITERAL, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
         (void)GetGlobal(REG_REG, "result1", 0);

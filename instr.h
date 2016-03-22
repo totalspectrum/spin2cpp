@@ -82,6 +82,9 @@ typedef enum IROpcode {
     OPC_ORGH,
 
     /* a literal string to place in the output */
+    OPC_LITERAL,
+
+    /* a comment to output */
     OPC_COMMENT,
     
     /* various assembler declarations */

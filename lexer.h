@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "spin.tab.h"
+#include "util/flexbuf.h"
 
 /*
  * input stream; could be either a string or a file
@@ -42,6 +43,8 @@ struct lexstream {
 
     int pendingLine;  /* 1 if lineCounter needs incrementing */
 
+    Flexbuf curLine;  /* string of current line */
+    Flexbuf lines;    /* pointers to all lines in the file */
 };
 
 extern int lexgetc(LexStream *L);
