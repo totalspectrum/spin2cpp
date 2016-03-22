@@ -116,6 +116,15 @@ SetsFlags(IR *ir)
   return 0 != (ir->flags & (FLAG_WC|FLAG_WZ));
 }
 
+// return TRUE if an instruction modifies a register
+bool
+InstrModifies(IR *ir, Operand *reg)
+{
+    if (ir->dst == reg)
+        return InstrSetsDst(ir);
+    return false;
+}
+
 // returns TRUE if an operand represents a local register or argument
 static bool
 IsArg(Operand *op)
@@ -335,7 +344,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       if (IsBranch(ir)) {
           return false;
       }
-      if (ir->dst == orig && InstrSetsDst(ir) && !InstrReadsDst(ir)) {
+      if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
           return ir->cond == COND_TRUE;
       }
       if (ir->src == replace || ir->dst == replace) {
@@ -451,7 +460,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       }
       return NULL;
     }
-    if (ir->dst == orig && InstrSetsDst(ir)) {
+    if (InstrModifies(ir, orig)) {
         // we do not want to end up changing "replace" if it is still live
         // note that IsDeadAfter(first_ir, replace) gives a more accurate
         // view than IsDeadAfter(ir, replace), because it can look back
@@ -1430,6 +1439,66 @@ OptimizePeepholes(IRList *irl)
 }
 
 //
+// find the next rdlong that uses src
+// returns NULL if we spot anything that changes src, dest,
+// or a branch
+//
+static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
+{
+    IR *ir;
+    for ( ir = irorig->next; ir; ir = ir->next) {
+        if (IsDummy(ir)) continue;
+        if (ir->opc == OPC_LABEL) {
+            return NULL;
+        }
+        if (IsBranch(ir)) {
+            return NULL;
+        }
+        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+            return NULL;
+        }
+        if (ir->cond != irorig->cond) {
+            return NULL;
+        }
+        if (ir->opc == OPC_RDLONG && ir->src == src) {
+            return ir;
+        }
+    }
+    return NULL;
+}
+
+
+//
+// optimize read/write calls
+//   rdlong a,b
+//   rdlong c,b
+// can become
+//   rdlong a, b
+//   mov    c, a
+
+static int
+OptimizeReadWrite(IRList *irl)
+{
+    Operand *base;
+    Operand *dst1;
+    IR *ir;
+    IR *nextir;
+    int change = 0;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
+            dst1 = ir->dst;
+            base = ir->src;
+            nextir = FindNextRead(ir, dst1, base);
+            if (!nextir) continue;
+            nextir->src = dst1;
+            ReplaceOpcode(nextir, OPC_MOV);
+            change = 1;
+        }
+    }
+    return change;
+}
+
+//
 // optimize
 //
 
@@ -1447,6 +1516,7 @@ OptimizeIRLocal(IRList *irl)
         AssignTemporaryAddresses(irl);
         change |= CheckLabelUsage(irl);
         change |= EliminateDeadCode(irl);
+        change |= OptimizeReadWrite(irl);
         change |= OptimizeMoves(irl);
         change |= OptimizeImmediates(irl);
         change |= OptimizeShortBranches(irl);

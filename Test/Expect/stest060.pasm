@@ -2,12 +2,14 @@ DAT
 	org	0
 
 _demo
-	mov	arg1, #4
 	add	objptr, #4
-	call	#_substest01_add
-	mov	arg1, #3
+	rdlong	result1, objptr
+	add	result1, #4
+	wrlong	result1, objptr
 	add	objptr, #4
-	call	#_substest01_add
+	rdlong	result1, objptr
+	add	result1, #3
+	wrlong	result1, objptr
 	sub	objptr, #8
 _demo_ret
 	ret
@@ -18,10 +20,9 @@ _substest01_get_ret
 	ret
 
 _substest01_add
-	rdlong	substest01_add_tmp001_, objptr
-	add	substest01_add_tmp001_, arg1
-	wrlong	substest01_add_tmp001_, objptr
 	rdlong	result1, objptr
+	add	result1, arg1
+	wrlong	result1, objptr
 _substest01_add_ret
 	ret
 
@@ -36,8 +37,6 @@ arg4
 objptr
 	long	@@@objmem
 result1
-	long	0
-substest01_add_tmp001_
 	long	0
 	fit	496
 	long

@@ -26,9 +26,9 @@ Support @@@foo + offset in --asm mode.
 Optimization
 ------------
 
-Hoist loop invariant assignments out of loops.
+Use djnz for more loops.
 
-Optimize rdlong/rdlong wrlong/rdlong sequences.
+Hoist loop invariant assignments out of loops.
 
 Loop strength reduction, particularly for address calculations.
 

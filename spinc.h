@@ -182,7 +182,7 @@ struct modulestate {
     /* list of methods */
     Function *functions;
 
-    /* lexer state */
+    /* lexer state during input */
     LexStream L;
 
     /* the symbol table */
@@ -204,7 +204,9 @@ struct modulestate {
     /* for walking through modules and avoiding visiting the same one multiple times */
     unsigned visitflag;
 
-    /* flags for emitting macros */
+    /* flags for emitting macros; these should really be part of the
+       CPP backend struct
+     */
     char needsMinMax;
     char needsRotate;
     char needsShr;
