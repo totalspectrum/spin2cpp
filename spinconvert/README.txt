@@ -1,4 +1,5 @@
 Spin Converter
+==============
 Copyright 2011-2016 Total Spectrum Software Inc.
 See COPYING for terms of redistribution
 
@@ -8,6 +9,7 @@ buggy. It won't handle all Spin programs correctly. Please check the
 output and be prepared to fix problems.
 
 USAGE
+-----
 
 Select the type of output you wish to get from the Options menu (the
 default is PASM), then use File>Open to open your Spin file. The Spin
@@ -42,6 +44,7 @@ GUI.
 
 
 KNOWN ISSUES
+------------
 
 The C/C++ output should be complete.
 
@@ -49,22 +52,38 @@ The PASM output also seems to be complete, but is not as thoroughly
 tested, so it is likely to have some bugs.
 
 EXTENSIONS TO THE SPIN LANGUAGE
+-------------------------------
 
 The Spin Converter can actually accept a few extensions to Spin, at
-least in some circumstances:
+least in some circumstances.
 
-(1) spin2cpp supports #ifdef / #ifndef / #else / #endif and
+### Preprocessor
+
+spin2cpp supports #ifdef / #ifndef / #else / #endif and
 #include. These preprocessor defines have been widely implemented in
 other Spin compilers such as bstc, homespun, and openspin, but are not
 present in the original Propeller Tool.
 
-(2) The @@@ operator for absolute hub address is accepted in DAT
+#### Predefined Symbols
+
+The preprocessor always defines the symbol `__SPIN2X__`.
+
+If the PASM output is selected, it defines `__SPIN2PASM__`.
+
+If C or C++ output is selected, it defines `__SPIN2CPP__`. For C++
+output it also defines `__cplusplus`.
+
+### Absolute Addresses
+
+The @@@ operator for absolute hub address is accepted in DAT
 sections if they are being compiled to binary (--dat --binary) or if
 GAS output is given (--gas). There are technical issues that make
 supporting it in other circumstances more difficult, but I hope to
 be able to do so eventually,
 
-(3) IF/THEN/ELSE expressions are supported, for example:
+### Conditional Expressions
+
+IF/THEN/ELSE expressions are supported, for example:
 
     x := if a<b then 0 else 1
 
@@ -73,13 +92,16 @@ very much like C's (? :) ternary operator. The compiler uses this
 internally for some things, and for testing purposes it was useful to
 change the syntax to make it available.
 
-(4) Inline assembly in Spin functions is supported in Spin functions,
+### Inline Assembly
+
+Inline assembly in Spin functions is supported in Spin functions,
 between lines starting "asm" and "endasm". The assembly is very
 limited; only local variable names (including parameters) and
 immediate constants are legal operands for instructions. Still, it can
 be useful, and is in fact heavily used internally for built in
 operators. For example, the lockclr Spin function is implemented as:
 
+```
 pub lockclr(id) | mask, rval
   mask := -1
   asm
@@ -87,6 +109,7 @@ pub lockclr(id) | mask, rval
     muxc rval, mask
   endasm
   return rval
+```
 
 At the moment inline assembly only works for PASM output, it is not
 yet supported in C or C++.

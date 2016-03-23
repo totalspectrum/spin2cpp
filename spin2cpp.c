@@ -946,7 +946,7 @@ main(int argc, char **argv)
     pp_init(&gl_pp);
     pp_setcomments(&gl_pp, "\'", "{", "}");
     pp_setlinedirective(&gl_pp, "{#line %d %s}");
-
+    
     /* save our command line arguments and comments describing
        how we were run
     */
@@ -1182,6 +1182,18 @@ main(int argc, char **argv)
         Usage();
     }
 
+    /* add some predefined symbols */
+    
+    pp_define(&gl_pp, "__SPIN2X__", str_(VERSION_MAJOR));
+    if (gl_output == OUTPUT_ASM) {
+        pp_define(&gl_pp, "__SPIN2PASM__", "1");
+    }
+    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        pp_define(&gl_pp, "__SPIN2CPP__", "1");
+        if (gl_output == OUTPUT_CPP) {
+            pp_define(&gl_pp, "__cplusplus", "1");
+        }
+    }
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
