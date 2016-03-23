@@ -752,18 +752,24 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
-    fprintf(stderr, "  --ccode:   output (static) C code instead of C++\n");
+    fprintf(stderr, "  --catalina: convert to C and run Catalina on result\n");
+    fprintf(stderr, "  --ccode:   output C code instead of C++\n");
+    fprintf(stderr, "  --code=hub: use LMM mode (PASM output ony)\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
-    fprintf(stderr, "  --catalina: convert to C and run Catalina on result\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
+    fprintf(stderr, "  --noheader: skip the normal comment about spin2cpp version\n");
+    fprintf(stderr, "  --noopt:   turn off all optimization in PASM output\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
+    fprintf(stderr, "  -g:         add debug info to output (original source for PASM output)\n");
     fprintf(stderr, "  -I dir:     add dir to the object search path\n");
+    fprintf(stderr, "  -L dir:     same as -L\n");
+    fprintf(stderr, "  -o file:    place final output in file\n");
     exit(2);
 }
 
