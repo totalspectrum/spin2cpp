@@ -255,9 +255,7 @@ CheckYield(AST *body)
 
 %%
 input:
-  emptyline
-  | emptyline input
-  | rest
+  rest
   | conblock rest
 ;
 
