@@ -13,6 +13,8 @@
 #include "spinc.h"
 #include "outasm.h"
 
+#define SETJMP_BUF_SIZE (8*LONG_SIZE)
+
 #define ENTRYNAME "entry"
 #define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
 #define HUB_CODE (!COG_CODE)
@@ -28,6 +30,13 @@ static IRList hubdata;
 
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
+
+
+static Operand *abortfunc;
+static Operand *catchfunc;
+static Operand *arg1;
+static Operand *result1;
+static Operand *abortcalled;
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -123,6 +132,20 @@ ValidateStackptr(void)
         stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
         stackptr = NewImmediatePtr("sp", stacklabel);
         stacktop = SizedMemRef(LONG_SIZE, stackptr, 0);
+    }
+}
+
+static void
+ValidateAbortFuncs(void)
+{
+    if (!abortfunc) {
+        abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
+        catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
+        abortcalled = GetGlobal(REG_REG, "result2", 0);
+        result1 = GetGlobal(REG_REG, "result1", 0);
+        arg1 = GetGlobal(REG_ARG, "arg1", 0);
+        ValidateStackptr();
+        ValidateObjbase();
     }
 }
 
@@ -1976,6 +1999,37 @@ CompileExpression(IRList *irl, AST *expr)
   switch (expr->kind) {
   case AST_CONDRESULT:
       return CompileCondResult(irl, expr);
+  case AST_CATCH:
+  {
+      Operand *tmp;
+      Operand *labelskip, *labelend;
+      IR *ir;
+      
+      ValidateAbortFuncs();
+      // save current state on the stack
+      tmp = NewFunctionTempRegister();
+      labelskip = NewCodeLabel();
+      labelend = NewCodeLabel();
+      EmitMove(irl, arg1, stackptr);
+      EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+      EmitOp1(irl, OPC_CALL, catchfunc);
+      ir = EmitOp2(irl, OPC_CMPS, abortcalled, NewImmediate(0));
+      ir->flags |= FLAG_WZ;
+      // if (abortcalled) {
+      //   result := result1
+      // } else {
+      //   result := compile(expr->left)
+      // }
+      EmitJump(irl, COND_EQ, labelskip);
+      EmitMove(irl, tmp, result1);
+      EmitJump(irl, COND_TRUE, labelend);
+      EmitLabel(irl, labelskip);
+      EmitMove(irl, tmp, CompileExpression(irl, expr->left));
+      EmitLabel(irl, labelend);
+      EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+      return tmp;
+      break;
+  }
   case AST_ISBETWEEN:
   {
       Operand *zero = NewImmediate(0);
@@ -2423,6 +2477,20 @@ static void CompileStatement(IRList *irl, AST *ast)
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
 	break;
+    case AST_ABORT:
+        EmitDebugComment(irl, ast);
+        retval = ast->left;
+        if (!retval) {
+            retval = curfunc->resultexpr;
+        }
+	if (!retval) {
+            retval = AstInteger(0);
+        }
+        ValidateAbortFuncs();
+        op = CompileExpression(irl, retval);
+        EmitMove(irl, arg1, op);
+        EmitOp1(irl, OPC_CALL, abortfunc);
+        break;
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();
@@ -2963,6 +3031,42 @@ static const char *builtin_lmm =
     "    ret\n"
     ;
 
+/* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
+ * more things to be saved in abort/catch
+ */
+static const char *builtin_abortcode =
+    "abortchain long 0\n"
+    "__setjmp\n"
+    "    wrlong abortchain, arg1\n"
+    "    mov abortchain, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong pc, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong sp, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong objptr, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong __setjmp_ret, arg1\n"
+    "    mov result2, #0\n"
+    "__setjmp_ret\n"
+    "    ret\n"
+    "__abort\n"
+    "    mov  result1, arg1\n"
+    "    mov  arg1, abortchain\n"
+    "    rdlong abortchain, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong pc, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong sp, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong objptr, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong __abort_ret, arg1\n"
+    "    mov result2, #1\n"
+    "__abort_ret\n"
+    "    ret\n"
+    ;
+
 static void
 EmitBuiltins(IRList *irl)
 {
@@ -2984,6 +3088,15 @@ EmitBuiltins(IRList *irl)
         (void)GetGlobal(REG_REG, "itmp2_", 0);
         (void)GetGlobal(REG_REG, "result1", 0);
     }
+    if (abortfunc) {
+        Operand *loop = NewOperand(IMM_STRING, builtin_abortcode, 0);
+        EmitOp1(irl, OPC_LITERAL, loop);
+        if (COG_CODE) {
+            // abort saves the pc, which we don't have in COG mode, so
+            // add a dummy pc register
+            (void)GetGlobal(REG_REG, "pc", 0);
+        }
+    }    
 }
 
 static void

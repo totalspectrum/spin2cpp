@@ -118,4 +118,10 @@ Instruction *FindInstrForOpc(IROpcode kind);
 void CompileInlineAsm(IRList *irl, AST *ast);
 Operand *CompileIdentifier(IRList *irl, AST *expr);
 
+/* assign variable space in COG memory */
+Operand *GetGlobal(Operandkind kind, const char *name, intptr_t value);
+
+/* assign variable space in HUB memory */
+Operand *GetHub(Operandkind kind, const char *name, intptr_t value);
+
 #endif

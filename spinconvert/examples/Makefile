@@ -1,6 +1,6 @@
 SPIN2CPP = ../../build/spin2cpp
 
-default: hello.binary math.binary led.binary fibo.binary
+default: hello.binary math.binary led.binary fibo.binary abort.binary
 
 %.pasm: %.spin
 	$(SPIN2CPP) -g --asm $<
