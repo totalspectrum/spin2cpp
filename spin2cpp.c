@@ -160,7 +160,7 @@ NewModule(const char *fullname)
 /*
  * add a global variable symbols
  */
-const char system_spincode[] = 
+const char system_spincode[] =
     "pri waitcnt(x)\n"
     "  asm\n"
     "    waitcnt x,#0\n"
@@ -183,6 +183,14 @@ const char system_spincode[] =
     "    cogstop id\n"
     "  endasm\n"
     "  return 0\n"
+    "pri clkset(mode, freq)\n"
+    "  CLKFREQ := freq\n"
+    "  CLKMODE := mode\n"
+    "  asm\n"
+    "    clkset mode\n"
+    "  endasm\n"
+    "pri reboot\n"
+    "  clkset($80, 0)\n"
     "pri lockclr(id) | mask, rval\n"
     "  mask := -1\n"
     "  asm\n"

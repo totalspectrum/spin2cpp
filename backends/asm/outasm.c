@@ -142,8 +142,15 @@ ValidateAbortFuncs(void)
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
         abortcalled = GetGlobal(REG_REG, "result2", 0);
-        result1 = GetGlobal(REG_REG, "result1", 0);
-        arg1 = GetGlobal(REG_ARG, "arg1", 0);
+        if (!result1) {
+            result1 = GetGlobal(REG_REG, "result1", 0);
+        }
+        if (!arg1) {
+            arg1 = GetGlobal(REG_ARG, "arg1", 0);
+        }
+        if (!frameptr) {
+            frameptr = GetGlobal(REG_REG, "fp", 0);
+        }
         ValidateStackptr();
         ValidateObjbase();
     }
@@ -3044,6 +3051,8 @@ static const char *builtin_abortcode =
     "    add arg1, #4\n"
     "    wrlong sp, arg1\n"
     "    add arg1, #4\n"
+    "    wrlong fp, arg1\n"
+    "    add arg1, #4\n"
     "    wrlong objptr, arg1\n"
     "    add arg1, #4\n"
     "    wrlong __setjmp_ret, arg1\n"
@@ -3058,6 +3067,8 @@ static const char *builtin_abortcode =
     "    rdlong pc, arg1\n"
     "    add arg1, #4\n"
     "    rdlong sp, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong fp, arg1\n"
     "    add arg1, #4\n"
     "    rdlong objptr, arg1\n"
     "    add arg1, #4\n"
