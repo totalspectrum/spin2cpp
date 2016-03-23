@@ -2,14 +2,14 @@ DAT
 	org	0
 
 _myfill
-L_047_
+L__0003
 	cmps	arg3, #0 wz
- if_e	jmp	#L_049_
+ if_e	jmp	#L__0005
 	wrlong	arg2, arg1
 	add	arg1, #4
 	sub	arg3, #1
-	jmp	#L_047_
-L_049_
+	jmp	#L__0003
+L__0005
 _myfill_ret
 	ret
 

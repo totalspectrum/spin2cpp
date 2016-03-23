@@ -2,15 +2,15 @@ DAT
 	org	0
 
 _blink
-L_047_
+L__0003
 	cmps	arg2, #0 wz
- if_e	jmp	#L_049_
+ if_e	jmp	#L__0005
 	mov	blink_tmp002_, #1
 	shl	blink_tmp002_, arg1
 	xor	OUTA, blink_tmp002_
 	sub	arg2, #1
-	jmp	#L_047_
-L_049_
+	jmp	#L__0003
+L__0005
 	rdlong	result1, ptr__dat__
 _blink_ret
 	ret

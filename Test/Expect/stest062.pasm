@@ -8,11 +8,11 @@ _mylen_ret
 
 __system__strsize
 	mov	__system__strsize_r, #0
-L_019_
+L__90034
 	rdbyte	_system__strsize_tmp001_, arg1 wz
  if_ne	add	__system__strsize_r, #1
  if_ne	add	arg1, #1
- if_ne	jmp	#L_019_
+ if_ne	jmp	#L__90034
 	mov	result1, __system__strsize_r
 __system__strsize_ret
 	ret

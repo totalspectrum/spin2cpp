@@ -2,14 +2,14 @@ DAT
 	org	0
 
 _foo
-	mov	_foo__idx__0016, #5
-L_047_
+	mov	_foo__idx__0001, #5
+L__0002
 	add	OUTA, #1
-	djnz	_foo__idx__0016, #L_047_
+	djnz	_foo__idx__0001, #L__0002
 _foo_ret
 	ret
 
-_foo__idx__0016
+_foo__idx__0001
 	long	0
 arg1
 	long	0

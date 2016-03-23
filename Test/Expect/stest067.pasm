@@ -11,7 +11,7 @@ _fibo
 	mov	_fibo_x, arg1
 	cmps	_fibo_x, #2 wc,wz
  if_b	mov	result1, _fibo_x
- if_b	jmp	#L_047_
+ if_b	jmp	#L__0001
 	mov	arg1, _fibo_x
 	sub	arg1, #1
 	call	#_fibo
@@ -21,7 +21,7 @@ _fibo
 	call	#_fibo
 	add	fibo_tmp004_, result1
 	mov	result1, fibo_tmp004_
-L_047_
+L__0001
 	sub	sp, #4
 	rdlong	_fibo_ret, sp
 	sub	sp, #4

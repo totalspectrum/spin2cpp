@@ -309,7 +309,8 @@ InitGlobalModule(void)
 {
     SymbolTable *table;
     Symbol *sym;
-
+    int oldtmpnum;
+    
     current = globalModule = NewModule("_system_");
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
@@ -321,15 +322,21 @@ InitGlobalModule(void)
 
     /* compile inline assembly */
     if (gl_output == OUTPUT_ASM) {
-      strToLex(&globalModule->L, system_spincode, "_system_");
-      yyparse();
-      ProcessModule(globalModule);
-      InferTypes(globalModule);
-      ProcessFuncs(globalModule);
-      SpinTransform(globalModule);
-      CompileIntermediate(globalModule);
-      curfunc = NULL;
+        /* set up temporary variable processing */
+        oldtmpnum = SetTempVariableBase(90000, 0);
+    
+        strToLex(&globalModule->L, system_spincode, "_system_");
+        yyparse();
+        ProcessModule(globalModule);
+        InferTypes(globalModule);
+        ProcessFuncs(globalModule);
+        SpinTransform(globalModule);
+        CompileIntermediate(globalModule);
+        curfunc = NULL;
+        /* restore temp variable base */
+        (void)SetTempVariableBase(oldtmpnum, 89999);
     }
+
 }
 
 /*

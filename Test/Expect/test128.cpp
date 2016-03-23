@@ -26,9 +26,9 @@ static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, in
 }
 void test128::Demo(void)
 {
-  int32_t _local__0000[2];
-  _local__0000[0] = 2;
-  Coginit__(-1, (void *)&Sqstack[6], (void *)Square, (int32_t)(&_local__0000[0]), 0, 0, 0);
+  int32_t _local__0001[2];
+  _local__0001[0] = 2;
+  Coginit__(-1, (void *)&Sqstack[6], (void *)Square, (int32_t)(&_local__0001[0]), 0, 0, 0);
 }
 
 void test128::Square(int32_t Xaddr)

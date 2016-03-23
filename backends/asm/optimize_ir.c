@@ -1252,11 +1252,8 @@ static bool
 IsTemporaryLabel(Operand *op)
 {
     const char *name = op->name;
-    if (name && (name[0] == 'L' && name[1] == '_' && isdigit(name[2]))) {
-        while (name[0] && name[1] != '_') {
-            name++;
-        }
-        return name[0]  != 0 && name[1] == '_';
+    if (name && (name[0] == 'L' && name[1] == '_' && name[2] == '_' && isdigit(name[3]))) {
+        return true;
     }
     return false;
 }

@@ -6,7 +6,7 @@ uint8_t test75::dat[] = {
 };
 void test75::Start(int32_t Code)
 {
-  int32_t _local__0000[5];
-  cognew((int32_t)(&(*(int32_t *)&dat[0])), (int32_t)(&_local__0000[1 + 0]));
+  int32_t _local__0001[5];
+  cognew((int32_t)(&(*(int32_t *)&dat[0])), (int32_t)(&_local__0001[1 + 0]));
 }
 

@@ -6,6 +6,6 @@
 
 void test116::Fillone(int32_t X, int32_t Count)
 {
-  { int32_t _fill__0000; uint16_t *_ptr__0002 = (uint16_t *)X; uint16_t _val__0001 = 1; for (_fill__0000 = Count; _fill__0000 > 0; --_fill__0000) {  *_ptr__0002++ = _val__0001; } };
+  { int32_t _fill__0001; uint16_t *_ptr__0003 = (uint16_t *)X; uint16_t _val__0002 = 1; for (_fill__0001 = Count; _fill__0001 > 0; --_fill__0001) {  *_ptr__0003++ = _val__0002; } };
 }
 

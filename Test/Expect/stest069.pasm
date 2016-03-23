@@ -2,20 +2,20 @@ DAT
 	org	0
 
 _demo
-	mov	_demo__idx__0016, #7
-L_047_
+	mov	_demo__idx__0001, #7
+L__0002
 	mov	arg1, imm_40000000_
 	add	arg1, CNT
 	waitcnt	arg1, #0
-	djnz	_demo__idx__0016, #L_047_
-L_050_
-	jmp	#L_050_
+	djnz	_demo__idx__0001, #L__0002
+L__0005
+	jmp	#L__0005
 _demo_ret
 	ret
 
 _Exit
-L_052_
-	jmp	#L_052_
+L__0007
+	jmp	#L__0007
 _Exit_ret
 	ret
 
@@ -26,7 +26,7 @@ _PauseABit
 _PauseABit_ret
 	ret
 
-_demo__idx__0016
+_demo__idx__0001
 	long	0
 arg1
 	long	0

@@ -60,6 +60,12 @@ Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
 Symbol *FindSymbolByOffset(SymbolTable *table, int offset);
 
+/* create a new temporary variable */
 char *NewTemporaryVariable(const char *prefix);
+
+/* set the number to use in temporary variables, and the max allowed */
+/* if max <= 0 then the max is left alone */
+/* returns the old base */
+int SetTempVariableBase(int base, int max);
 
 #endif

@@ -449,11 +449,7 @@ void EmitLabel(IRList *irl, Operand *op)
 char *
 NewTempLabelName()
 {
-    static int lnum = 1;
-    char *temp = (char *)malloc(32);
-    sprintf(temp, "L_%03d_", lnum);
-    lnum++;
-    return temp;
+    return NewTemporaryVariable("L_");
 }
 
 Operand *

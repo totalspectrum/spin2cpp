@@ -4,10 +4,10 @@ DAT
 _blah
 	mov	blah_tmp001_, #0
 	cmps	arg1, #0 wc,wz
- if_ae	jmp	#L_047_
+ if_ae	jmp	#L__0001
 	cmps	arg2, #0 wc,wz
  if_b	neg	blah_tmp001_, #1
-L_047_
+L__0001
 	mov	result1, blah_tmp001_
 _blah_ret
 	ret

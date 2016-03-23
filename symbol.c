@@ -104,6 +104,25 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
     return sym;
 }
 
+static int tmpvarnum = 1;
+static int tmpvarmax = 99999;
+
+/*
+ * set the base and max for temporary variable names
+ * returns the old base
+ */
+int
+SetTempVariableBase(int base, int max)
+{
+    int oldbase = tmpvarnum;
+
+    tmpvarnum = base;
+    if (max > 0) {
+        tmpvarmax = max;
+    }
+    return oldbase;
+}
+
 /*
  * create a temporary variable name
  */
@@ -112,7 +131,6 @@ NewTemporaryVariable(const char *prefix)
 {
     char *str;
     char *s;
-    static int tmpvarnum = 0;
 
     if (!prefix)
         prefix = "_tmp_";
@@ -124,6 +142,11 @@ NewTemporaryVariable(const char *prefix)
     while (*prefix)
         *s++ = *prefix++;
     *s++ = '_';
-    sprintf(s, "%04d", tmpvarnum++);
+    sprintf(s, "%04d", tmpvarnum);
+    tmpvarnum++;
+    if (tmpvarnum > tmpvarmax) {
+        fprintf(stderr, "Temporary variable limit of %d exceeded", tmpvarmax);
+        abort();
+    }
     return str;
 }
