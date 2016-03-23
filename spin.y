@@ -258,6 +258,7 @@ input:
   emptyline
   | emptyline input
   | rest
+  | conblock rest
 ;
 
 rest:
