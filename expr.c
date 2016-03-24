@@ -220,13 +220,14 @@ ReverseBits(int32_t A, int32_t N)
 static AST *
 RangeXor(AST *dst, AST *src)
 {
-    int nbits;
-    uint32_t mask;
-    int lo;
-
+    AST *nbits;
+    AST *maskexpr;
+    AST *loexpr;
+    AST *hiexpr = NULL;
+    
     if (dst->right->right == NULL) {
-        AST *loexpr = dst->right->left;
-        nbits = 1;
+        loexpr = FoldIfConst(dst->right->left);
+        nbits = AstInteger(1);
         /* special case: if src is -1 or 0
          * then we don't have to construct a mask,
          * a single bit is enough
@@ -239,21 +240,28 @@ RangeXor(AST *dst, AST *src)
                 return AstAssign('^', dst->left, maskexpr);
             }
         }
-        lo = EvalConstExpr(loexpr);
     } else {
-        int hi = EvalConstExpr(dst->right->left);
-        lo = EvalConstExpr(dst->right->right);
-        if (hi < lo) {
-            int tmp;
-            tmp = lo; lo = hi; hi = tmp;
-        }
-        nbits = (hi - lo + 1);
+        hiexpr = FoldIfConst(dst->right->left);
+        loexpr = FoldIfConst(dst->right->right);
+        //nbits = (hi - lo + 1);
+        nbits = AstOperator('+',
+                            AstOperator(T_ABS, NULL,
+                                        AstOperator('-', hiexpr, loexpr)),
+                            AstInteger(1));
+        nbits = FoldIfConst(nbits);
+        loexpr = AstOperator(T_LIMITMAX, loexpr, hiexpr);
     }
-    mask = ((1U<<nbits) - 1);
-    mask = mask & EvalConstExpr(src);
-    mask = (mask << lo) | (mask >> (32-lo));
-
-    return AstAssign('^', dst->left, AstInteger(mask));
+    //mask = ((1U<<nbits) - 1);
+    //mask = mask & EvalConstExpr(src);
+    //mask = (mask << lo) | (mask >> (32-lo));
+    maskexpr = AstOperator('-',
+                           AstOperator(T_SHL, AstInteger(1), nbits),
+                           AstInteger(1));
+    maskexpr = FoldIfConst(maskexpr);
+    maskexpr = AstOperator('&', maskexpr, src);
+    maskexpr = AstOperator(T_ROTL, maskexpr, loexpr);
+    maskexpr = FoldIfConst(maskexpr);
+    return AstAssign('^', dst->left, maskexpr);
 }
 
 /*
@@ -273,23 +281,16 @@ static AST *
 RangeBitSet(AST *dst, uint32_t mask, int bitset)
 {
     AST *loexpr;
-    AST *hiexpr;
     AST *maskexpr;
     
     if (dst->right->right == NULL) {
         loexpr = dst->right->left;
     } else {
-        int hi, lo;
+        AST *hiexpr;
         loexpr = dst->right->right;
 	hiexpr = dst->right->left;
-	lo = EvalConstExpr(loexpr);
-	hi = EvalConstExpr(hiexpr);
-	if (hi < lo) {
-	  AST *tmp = loexpr;
-	  loexpr = hiexpr;
-	  hiexpr = tmp;
-	}
-
+        loexpr = AstOperator(T_LIMITMAX, loexpr, hiexpr);
+        loexpr = FoldIfConst(loexpr);
     }
     maskexpr = AstOperator(T_SHL, AstInteger(mask), loexpr);
     if (bitset) {
@@ -317,11 +318,11 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
 AST *
 TransformRangeAssign(AST *dst, AST *src, int toplevel)
 {
-    int reverse = 0;
-    uint32_t mask;
-    int nbits;
+    AST *nbits;
     AST *loexpr;
-
+    AST *revsrc;
+    AST *maskexpr;
+    
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
         return 0;
@@ -341,7 +342,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
        be constant, but for a real range we need constants on each end
     */
     if (dst->right->right == NULL) {
-        nbits = 1;
+        nbits = AstInteger(1);
         loexpr = dst->right->left;
         /* special case flipping a bit */
         if (src->kind == AST_OPERATOR && src->d.ival == '^'
@@ -352,31 +353,44 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
             return RangeXor(dst, AstInteger(0xffffffff));
         }
     } else {
-        int hi = EvalConstExpr(dst->right->left);
-        int lo = EvalConstExpr(dst->right->right);
+        AST *hiexpr;
+        AST *needrev;
+        hiexpr = FoldIfConst(dst->right->left);
+        loexpr = FoldIfConst(dst->right->right);
 
-        if (hi < lo) {
-            int tmp;
-            reverse = 1;
-            tmp = lo; lo = hi; hi = tmp;
-        }
-        nbits = (hi - lo + 1);
-        if (reverse) {
-            src = AstOperator(T_REV, src, AstInteger(nbits));
-            if (IsConstExpr(src)) {
-                src = AstInteger(EvalConstExpr(src));
+        //nbits = (hi - lo + 1);
+        nbits = AstOperator('+',
+                            AstOperator(T_ABS, NULL,
+                                        AstOperator('-', hiexpr, loexpr)),
+                            AstInteger(1));
+        nbits = FoldIfConst(nbits);
+        needrev = FoldIfConst(AstOperator('<', hiexpr, loexpr));
+        loexpr = FoldIfConst(AstOperator(T_LIMITMAX, loexpr, hiexpr));
+        revsrc = AstOperator(T_REV, src, nbits);
+        if (IsConstExpr(needrev)) {
+            if (EvalConstExpr(needrev)) {
+                src = revsrc;
             }
+        } else {
+            src = NewAST(AST_CONDRESULT,
+                         needrev,
+                         NewAST(AST_THENELSE, revsrc, src));
         }
-        loexpr = AstInteger(lo);
+        src = FoldIfConst(src);
     }
-    mask = ((1U<<nbits) - 1);
-    if (IsConstExpr(src)) {
+    //mask = ((1U<<nbits) - 1);
+    maskexpr = AstOperator('-',
+                           AstOperator(T_SHL, AstInteger(1), nbits),
+                           AstInteger(1));
+    maskexpr = FoldIfConst(maskexpr);
+    if (IsConstExpr(src) && IsConstExpr(maskexpr)) {
         int bitset = EvalConstExpr(src);
+        int mask = EvalConstExpr(maskexpr);
         if (bitset == 0 || (bitset&mask) == mask) {
             return RangeBitSet(dst, mask, bitset);
         }
     }
-    if (nbits >= 32) {
+    if (IsConstExpr(nbits) && EvalConstExpr(nbits) >= 32) {
         return AstAssign(T_ASSIGN, dst->left, FoldIfConst(src));
     }
 
@@ -388,20 +402,17 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
      *  else
      *    outa &= ~mask
      */
-    if (nbits == 1 && toplevel) {
+    if (toplevel && IsConstExpr(nbits) && EvalConstExpr(nbits) == 1) {
         AST *ifcond;
         AST *ifpart;
         AST *elsepart;
-        AST *shift;
         AST *stmt;
         AST *ifstmt;
         AST *maskvar;
         AST *maskassign;
 
         maskvar = AstTempLocalVariable("_mask");
-        shift = AstOperator(T_SHL, AstInteger(1), loexpr);
-        shift = FoldIfConst(shift);
-        maskassign = AstAssign(T_ASSIGN, maskvar, shift);
+        maskassign = AstAssign(T_ASSIGN, maskvar, maskexpr);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
         // insert the mask assignment at the beginning of the function
         maskassign->right = curfunc->body;
@@ -431,7 +442,6 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     {
         AST *andexpr;
         AST *orexpr;
-        AST *maskexpr = AstInteger(mask);
         andexpr = AstOperator(T_SHL, maskexpr, loexpr);
         andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
@@ -458,15 +468,21 @@ TransformRangeUse(AST *src)
     AST *test;
     AST *hi;
     AST *lo;
-    
+    AST *init = NULL;
+
+    if (!curfunc) {
+        ERROR(src, "Internal error, could not find function");
+        return AstInteger(0);
+    }
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
-        return src;
+        return AstInteger(0);
     }
     if (src->right->kind != AST_RANGE) {
         ERROR(src, "internal error: expecting range");
         return src;
     }
+
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
         hi = lo = src->right->left;
@@ -487,16 +503,40 @@ TransformRangeUse(AST *src)
         nbits = AstOperator('+', AstInteger(1),
                             AstOperator(T_ABS, NULL,
                                         AstOperator('-', hi, lo)));
-        nbits = FoldIfConst(nbits);
+        if (IsConstExpr(nbits)) {
+            nbits = FoldIfConst(nbits);
+        } else {
+            AST *nbitsvar = AstTempLocalVariable("_bits_");
+            init = NewAST(AST_STMTLIST,
+                          AstAssign(T_ASSIGN, nbitsvar, nbits),
+                          init);
+            nbits = nbitsvar;
+        }
         lo = NewAST(AST_CONDRESULT,
                         test,
                         NewAST(AST_THENELSE, hi, lo));
-        lo = FoldIfConst(lo);
+        if (IsConstExpr(lo)) {
+            lo = AstInteger(EvalConstExpr(lo));
+        } else {
+            AST *lovar = AstTempLocalVariable("_lo_");
+            init = AddToList(init, NewAST(AST_STMTLIST,
+                                          AstAssign(T_ASSIGN, lovar, lo),
+                                          NULL));
+            lo = lovar;
+        }
     }
     //mask = AstInteger((1U<<nbits) - 1);
     mask = AstOperator(T_SHL, AstInteger(1), nbits);
     mask = AstOperator('-', mask, AstInteger(1));
-    mask = FoldIfConst(mask);
+    if (IsConstExpr(mask)) {
+        mask = FoldIfConst(mask);
+    } else {
+        AST *maskvar = AstTempLocalVariable("_mask_");
+        init = AddToList(init, NewAST(AST_STMTLIST,
+                                      AstAssign(T_ASSIGN, maskvar, mask),
+                                      NULL));
+        mask = maskvar;
+    }
     
     /* we want to end up with:
        ((src->left >> lo) & mask)
@@ -514,6 +554,9 @@ TransformRangeUse(AST *src)
                      NewAST(AST_THENELSE,
                             revval,
                             val));
+    }
+    if (init) {
+        curfunc->body = AddToList(init, curfunc->body);
     }
     return val;
 }

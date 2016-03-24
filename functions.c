@@ -1379,11 +1379,14 @@ doSpinTransform(AST **astptr, int level)
 	break;
     }
     case AST_ASSIGN:
-        if (level == 1 && ast->left && ast->left->kind == AST_RANGEREF) {
-            *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+        if (ast->left && ast->left->kind == AST_RANGEREF) {
+            *astptr = ast = TransformRangeAssign(ast->left, ast->right, level == 1);
         }
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
+        break;
+    case AST_RANGEREF:
+        *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
