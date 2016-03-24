@@ -120,47 +120,47 @@ OPTIONS
 
 Spin2cpp accepts the following options:
 
---asm
+`--asm`
   Produce (somewhat) readable PASM code as output. This bypasses PropGCC
   altogether. The result may be fed back into spin2cpp and compiled to
   a binary by adding the --binary flag after --asm, or by running
   `spin2cpp --dat --binary`.
   
---binary
+`--binary`
   Run the compiler and output a loadable binary file. Note that
   this option imples --main. Also note that after --binary you may
   specify options to be passed to PropGCC, such as -Os or -mcmm.
-
   If --binary appears after --dat or --asm, then the binary is produced
   by spin2cpp itself directly, and PropGCC is not invoked.
   
---ccode
+`--ccode`
   Output C code instead of C++. Note that in C mode methods typically
   have a first parameter "self" which points to the object's data.
   This is similar to the way the C++ compiler implements object methods
   internally, but in C it has to be exposed explicitly.
 
---code=xxx
+`--code=cog`
+`--code=hub`
   Only for PASM output (--asm option); specify whether code is to be
-  placed in COG memory (xxx=cog) or HUB memory (xxx=hub). The default
+  placed in COG or HUB memory. The default
   is to use COG memory.
   
---dat
+`--dat`
   Output a binary blob of the DAT section only, similar to the
   bstc -c option; or, if --gas is given, output GAS assembly for
   the DAT section. If --binary is also given, prepends an appropriate
   Spin executable header so the resulting output is executable.
 
---elf
+`--elf`
   Run PropGCC and output a linked executable ELF file. Note that
   this option imples --main. Also note that after --elf you may
   specify options to be passed to PropGCC, such as -Os or -mxmmc.
 
---files
+`--files`
   Print a list of the .cpp (or .c) files that were produced by
   spin2cpp. Useful for tracking object dependencies.
 
---gas
+`--gas`
   Output inline GAS assembly code instead of binary constants. If
   given with the --dat option, produces a .S file containing the
   translation of the PASM code in the file. In other cases, causes
@@ -168,11 +168,11 @@ Spin2cpp accepts the following options:
   containing inline GAS code. This option is still experimental and
   may not always work correctly.
 
---main
+`--main`
   Automatically add a C or C++ main() function that will invoke the default
   Spin method. Use this on top level objects only. 
 
---nopre
+`--nopre`
   Skip the preprocessor. Normally spin2cpp runs a very simple
   preprocessor on the input.  The pre-processor understands
   #define (of simple macros, no parameters), #undef, #ifdef, #ifndef,
@@ -180,18 +180,25 @@ Spin2cpp accepts the following options:
   and #warning. Use of the preprocessor should not normally
   cause any issues, but it is still experimental.
 
---normalize
+`--normalize`
   Normalize all identifiers so that the first letter is upper case and
   the rest are lower case. This is the way older versions of spin2cpp
   handled identifiers, and is useful for avoiding some identifier
   conflicts. Without this flag, identifiers use the case specified in
   their first occurence.
 
-
--Dname=val
+`-g`
+  Include debug information. For C and C++, this is in the form of `#line`
+  directives which instruct the compiler to put references to the original
+  Spin source, so gdb and similar tools will use the .spin file for debugging.
+  For PASM, this just includes the original Spin source as comments in the
+  PASM output.
+  
+`-Dname=val`
   Define a symbol for the preprocessor.
 
--I path
+`-I path`
+`-L path`
   Define a path where .spin objects will be searched for. It's OK to use
   this option multiple times.
 
@@ -200,23 +207,27 @@ EXTENSIONS
 
 spin2cpp supports a few extensions to the Spin language:
 
-(1) spin2cpp has a pre-processor that understands #include, #define, and
-#ifdef / #ifndef / #else / #endif. There are several predefined symbols:
+(1) spin2cpp has a pre-processor that understands `#include`, `#define`, and
+`#ifdef / #ifndef / #else / #endif`. There are several predefined symbols:
 
-Symbol         | When Defined
----------------|-------------
-__SPIN2X__     |  always defined
-__SPIN2PASM__  | if --asm is given (PASM output)
-__SPIN2CPP__   | if C++ or C is being output
-__cplusplus    | if C++ is being output
+Symbol           | When Defined
+-----------------|-------------
+`__SPIN2X__`     |  always defined
+`__SPIN2PASM__`  | if --asm is given (PASM output)
+`__SPIN2CPP__`   | if C++ or C is being output
+`__cplusplus`    | if C++ is being output
 
 (2) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
-   r := if a then b else c
+```
+r := if a then b else c
+````
 which is the same as
+```
    if a then
      r := b
    else
      r := c
+```
 
 (3) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
 
@@ -251,7 +262,6 @@ unless all the arguments are constant.
 
 (2) The reverse operator will not work in Catalina.
 
-I'm still working on fixing these issues.
 
 C INTEROPERATION
 ===============
