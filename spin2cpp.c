@@ -769,7 +769,10 @@ Usage(void)
     fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --catalina: convert to C and run Catalina on result\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
-    fprintf(stderr, "  --code=hub: use LMM mode (PASM output ony)\n");
+    fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
+    fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
+    fprintf(stderr, "  --data=x : PASM output only: control placement of data\n");
+    fprintf(stderr, "             x can be cog or hub; only --data=hub works for now\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
@@ -783,8 +786,9 @@ Usage(void)
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     fprintf(stderr, "  -g:         add debug info to output (original source for PASM output)\n");
     fprintf(stderr, "  -I dir:     add dir to the object search path\n");
-    fprintf(stderr, "  -L dir:     same as -L\n");
+    fprintf(stderr, "  -L dir:     same as -I\n");
     fprintf(stderr, "  -o file:    place final output in file\n");
+    fprintf(stderr, "  -y:         debug parser\n");
     exit(2);
 }
 
@@ -1005,6 +1009,7 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
                 gl_outputflags |= OUTFLAG_COG_DATA;
+                fprintf(stderr, "WARNING: --data=cog does not work properly\n");
             } else if (!strcmp(argv[0]+7, "hub")) {
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
@@ -1044,6 +1049,7 @@ main(int argc, char **argv)
             cext = ".c";
             argv++; --argc;
         } else if (!strncmp(argv[0], "--optimize", 5)) {
+            /* for debug purpose only: override optimize flags with hex */
             argv++; --argc;
             if (argv[0] == NULL) {
                 fprintf(stderr, "Error: expected another argument after --optimize\n");
