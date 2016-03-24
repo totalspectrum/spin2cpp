@@ -322,7 +322,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AST *loexpr;
     AST *revsrc;
     AST *maskexpr;
-    
+    AST *init = NULL;
+
     if (dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
         return 0;
@@ -355,6 +356,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     } else {
         AST *hiexpr;
         AST *needrev;
+        AST *nbitsvar = NULL;
+        
         hiexpr = FoldIfConst(dst->right->left);
         loexpr = FoldIfConst(dst->right->right);
 
@@ -363,9 +366,29 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
                             AstOperator(T_ABS, NULL,
                                         AstOperator('-', hiexpr, loexpr)),
                             AstInteger(1));
-        nbits = FoldIfConst(nbits);
+        if (IsConstExpr(nbits)) {
+            nbits = FoldIfConst(nbits);
+        } else {
+            nbitsvar = AstTempLocalVariable(NULL);
+            init = AddToList(init,
+                             NewAST(AST_STMTLIST,
+                                    AstAssign(T_ASSIGN, nbitsvar, nbits),
+                                    NULL));
+            nbits = nbitsvar;
+        }
         needrev = FoldIfConst(AstOperator('<', hiexpr, loexpr));
-        loexpr = FoldIfConst(AstOperator(T_LIMITMAX, loexpr, hiexpr));
+        if (IsConstExpr(loexpr)) {
+            loexpr = FoldIfConst(AstOperator(T_LIMITMAX, loexpr, hiexpr));
+        } else if (loexpr->kind != AST_IDENTIFIER) {
+            AST *lovar;
+            current->needsMinMax = 1;
+            lovar = AstTempLocalVariable("_bit");
+            init = AddToList(init,
+                             NewAST(AST_STMTLIST,
+                                    AstAssign(T_ASSIGN, lovar, loexpr),
+                                    NULL));
+            loexpr = lovar;
+        }
         revsrc = AstOperator(T_REV, src, nbits);
         if (IsConstExpr(needrev)) {
             if (EvalConstExpr(needrev)) {
@@ -444,6 +467,22 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     {
         AST *andexpr;
         AST *orexpr;
+        if (!IsConstExpr(loexpr)) {
+            AST *lovar;
+            lovar = AstTempLocalVariable(NULL);
+            init = AddToList(init, NewAST(AST_STMTLIST,
+                                          AstAssign(T_ASSIGN, lovar, loexpr),
+                                          NULL));
+            loexpr = lovar;
+        }
+        if (!IsConstExpr(maskexpr)) {
+            AST *maskvar;
+            maskvar = AstTempLocalVariable("_mask_");
+            init = AddToList(init, NewAST(AST_STMTLIST,
+                                          AstAssign(T_ASSIGN, maskvar, maskexpr),
+                                          NULL));
+            maskexpr = maskvar;
+        }
         andexpr = AstOperator(T_SHL, maskexpr, loexpr);
         andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
@@ -454,6 +493,9 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = FoldIfConst(orexpr);
         orexpr = AstOperator('|', andexpr, orexpr);
 
+        if (init) {
+            curfunc->body = AddToList(init, curfunc->body);
+        }
         return AstAssign(T_ASSIGN, dst->left, orexpr);
     }
 }

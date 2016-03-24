@@ -1126,12 +1126,13 @@ PrintExpr(Flexbuf *f, AST *expr)
         flexbuf_printf(f, ")+%s)", current->datname);
         break;
     case AST_CONDRESULT:
-        flexbuf_printf(f, "(");
+        flexbuf_printf(f, "((");
         PrintBoolExpr(f, expr->left);
         flexbuf_printf(f, ") ? ");
         PrintExprToplevel(f, expr->right->left);
         flexbuf_printf(f, " : ");
         PrintExprToplevel(f, expr->right->right);
+        flexbuf_printf(f, ")");
         break;
     case AST_IDENTIFIER:
     case AST_HWREG:
