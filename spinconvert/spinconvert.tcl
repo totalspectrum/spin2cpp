@@ -59,10 +59,17 @@ proc resetOutputVars { } {
     }
 }
 
+# exit the program
+proc exitProgram { } {
+    checkChanges
+    exit
+}
+
 # load a file into a text (or ctext) window
 proc loadFileToWindow { fname win } {
     set file_data [uread $fname]
     $win replace 1.0 end $file_data
+    $win edit modified false
 }
 
 # save contents of a window to a file
@@ -71,6 +78,7 @@ proc saveFileFromWindow { fname win } {
     set file_data [$win get 1.0 end]
     puts -nonewline $fp $file_data
     close $fp
+    $win edit modified false
     regenOutput $fname
 }
 
@@ -142,9 +150,30 @@ set SpinTypes {
     {{All files}    *}
 }
 
-proc loadNewSpinFile {} {
+proc checkChanges {} {
+    if {[.orig.txt edit modified]==1} {
+	set answer [tk_messageBox -icon question -type yesno -message "Save old spin file?" -default yes]
+	if { $answer eq yes } {
+	    saveSpinFile
+	}
+    }
+}
+
+proc newSpinFile {} {
+    global SPINFILE
+    set SPINFILE ""
+    set PASMFILE ""
+    checkChanges
+    wm title . "New File"
+    .orig.txt delete 1.0 end
+    .out.txt delete 1.0 end
+    .bot.txt delete 1.0 end
+}
+
+proc loadSpinFile {} {
     global SPINFILE
     global SpinTypes
+    checkChanges
     set filename [tk_getOpenFile -filetypes $SpinTypes -defaultextension ".spin" ]
     if { [string length $filename] == 0 } {
 	return
@@ -271,11 +300,12 @@ menu .mbar.options -tearoff 0
 menu .mbar.help -tearoff 0
 
 .mbar add cascade -menu .mbar.file -label File
-.mbar.file add command -label "Open Spin..." -accelerator "^O" -command { loadNewSpinFile }
+.mbar.file add command -label "New Spin File" -accelerator "^N" -command { newSpinFile }
+.mbar.file add command -label "Open Spin..." -accelerator "^O" -command { loadSpinFile }
 .mbar.file add command -label "Save Spin" -accelerator "^S" -command { saveSpinFile }
 .mbar.file add command -label "Save Spin As..." -command { saveSpinAs }
 .mbar.file add separator
-.mbar.file add command -label Exit -accelerator "^Q" -command { exit }
+.mbar.file add command -label Exit -accelerator "^Q" -command { exitProgram }
 
 .mbar add cascade -menu .mbar.edit -label Edit
 .mbar.edit add command -label "Cut" -accelerator "^X" -command {event generate [focus] <<Cut>>}
@@ -341,9 +371,10 @@ grid rowconfigure .bot .bot.txt -weight 1
 grid columnconfigure .bot .bot.txt -weight 1
 
 
-bind . <Control-o> { loadNewSpinFile }
+bind . <Control-n> { newSpinFile }
+bind . <Control-o> { loadSpinFile }
 bind . <Control-s> { saveSpinFile }
-bind . <Control-q> { exit }
+bind . <Control-q> { exitProgram }
 
 autoscroll::autoscroll .orig.v
 autoscroll::autoscroll .orig.h
