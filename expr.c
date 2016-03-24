@@ -452,12 +452,13 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
 AST *
 TransformRangeUse(AST *src)
 {
-    int reverse = 0;
     AST *mask;
-    int nbits;
-    AST *loexpr;
-    AST *val;
-
+    AST *nbits;
+    AST *val, *revval;
+    AST *test;
+    AST *hi;
+    AST *lo;
+    
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
         return src;
@@ -468,29 +469,51 @@ TransformRangeUse(AST *src)
     }
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
-        loexpr = src->right->left;
-        nbits = 1;
+        hi = lo = src->right->left;
+        nbits = AstInteger(1);
+        test = AstInteger(0); // hi < lo is always false
     } else {
-        int hi = EvalConstExpr(src->right->left);
-        int lo = EvalConstExpr(src->right->right);
-
+        hi = src->right->left;
+        lo = src->right->right;
+        test = FoldIfConst(AstOperator('<', hi, lo));
+        /*
         if (hi < lo) {
             int tmp;
             reverse = 1;
             tmp = lo; lo = hi; hi = tmp;
         }
-        nbits = (hi - lo + 1);
-        loexpr = AstInteger(lo);
+        */
+        //nbits = (hi - lo + 1);
+        nbits = AstOperator('+', AstInteger(1),
+                            AstOperator(T_ABS, NULL,
+                                        AstOperator('-', hi, lo)));
+        nbits = FoldIfConst(nbits);
+        lo = NewAST(AST_CONDRESULT,
+                        test,
+                        NewAST(AST_THENELSE, hi, lo));
+        lo = FoldIfConst(lo);
     }
-    mask = AstInteger((1U<<nbits) - 1);
-
+    //mask = AstInteger((1U<<nbits) - 1);
+    mask = AstOperator(T_SHL, AstInteger(1), nbits);
+    mask = AstOperator('-', mask, AstInteger(1));
+    mask = FoldIfConst(mask);
+    
     /* we want to end up with:
        ((src->left >> lo) & mask)
     */
-    val = AstOperator(T_SAR, src->left, loexpr);
-    val = AstOperator('&', val, mask);
-    if (reverse) {
-        val = AstOperator(T_REV, val, AstInteger(nbits));
+    val = FoldIfConst(AstOperator(T_SAR, src->left, lo));
+    val = FoldIfConst(AstOperator('&', val, mask));
+    revval = FoldIfConst(AstOperator(T_REV, val, nbits));
+    
+    if (IsConstExpr(test)) {
+        int tval = EvalConstExpr(test);
+        val = tval ? revval : val;
+    } else {
+        val = NewAST(AST_CONDRESULT,
+                     test,
+                     NewAST(AST_THENELSE,
+                            revval,
+                            val));
     }
     return val;
 }
