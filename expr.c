@@ -407,12 +407,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         AST *ifpart;
         AST *elsepart;
         AST *stmt;
+        AST *shift;
         AST *ifstmt;
         AST *maskvar;
         AST *maskassign;
 
         maskvar = AstTempLocalVariable("_mask");
-        maskassign = AstAssign(T_ASSIGN, maskvar, maskexpr);
+        shift = AstOperator(T_SHL, AstInteger(1), loexpr);
+        maskassign = AstAssign(T_ASSIGN, maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
         // insert the mask assignment at the beginning of the function
         maskassign->right = curfunc->body;
