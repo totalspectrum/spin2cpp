@@ -8,6 +8,7 @@ Demo directory, as are some floating point samples in Demo/Float.
 
 INSTALLATION
 ============ 
+
 To install in Windows, just unzip the release ZIP file and then copy
 spin2cpp.exe to wherever your propeller-elf-gcc.exe file is installed.
 (In fact spin2cpp.exe doesn't usually care where it is located, but
@@ -15,6 +16,7 @@ putting it with propeller-elf-gcc is convenient.)
 
 USAGE
 =====
+
 spin2cpp is a command line tool. To use it, just give the name of the
 .spin file it should convert, e.g:
 
@@ -58,6 +60,7 @@ explicitly give it in those cases.
 
 Examples
 --------
+
 spin2cpp is a command line tool, so the examples below are for a CLI
 and assume that the appropriate C compilers are in your PATH.
 
@@ -102,25 +105,45 @@ manual tweaking to make it correct.
 
 See Demo/Makefile for more examples.
 
+(5) spin2cpp also includes a simple compiler, so it can produce PASM and
+binary output without PropGCC. To use this, use the --asm switch. For example,
+to produce a binary with code in HUB (LMM mode) do:
+
+    spin2cpp --asm --binary demo.spin
+
+This will produce demo.pasm (the converted assembly code) and demo.binary (the
+compiled binary suitable for download to the device).
+
+
 OPTIONS
 =======
+
 Spin2cpp accepts the following options:
 
 --asm
   Produce (somewhat) readable PASM code as output. This bypasses PropGCC
   altogether. The result may be fed back into spin2cpp and compiled to
-  a binary by running spin2cpp --dat --binary.
+  a binary by adding the --binary flag after --asm, or by running
+  `spin2cpp --dat --binary`.
   
 --binary
   Run the compiler and output a loadable binary file. Note that
   this option imples --main. Also note that after --binary you may
   specify options to be passed to PropGCC, such as -Os or -mcmm.
 
+  If --binary appears after --dat or --asm, then the binary is produced
+  by spin2cpp itself directly, and PropGCC is not invoked.
+  
 --ccode
   Output C code instead of C++. Note that in C mode methods typically
   have a first parameter "self" which points to the object's data.
   This is similar to the way the C++ compiler implements object methods
   internally, but in C it has to be exposed explicitly.
+
+--code=xxx
+  Only for PASM output (--asm option); specify whether code is to be
+  placed in COG memory (xxx=cog) or HUB memory (xxx=hub). The default
+  is to use COG memory.
   
 --dat
   Output a binary blob of the DAT section only, similar to the
@@ -129,7 +152,7 @@ Spin2cpp accepts the following options:
   Spin executable header so the resulting output is executable.
 
 --elf
-  Run the compiler and output a linked executable ELF file. Note that
+  Run PropGCC and output a linked executable ELF file. Note that
   this option imples --main. Also note that after --elf you may
   specify options to be passed to PropGCC, such as -Os or -mxmmc.
 
@@ -177,7 +200,17 @@ EXTENSIONS
 
 spin2cpp supports a few extensions to the Spin language:
 
-(1) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
+(1) spin2cpp has a pre-processor that understands #include, #define, and
+#ifdef / #ifndef / #else / #endif. There are several predefined symbols:
+
+Symbol         | When Defined
+---------------|-------------
+__SPIN2X__     |  always defined
+__SPIN2PASM__  | if --asm is given (PASM output)
+__SPIN2CPP__   | if C++ or C is being output
+__cplusplus    | if C++ is being output
+
+(2) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
    r := if a then b else c
 which is the same as
    if a then
@@ -185,13 +218,20 @@ which is the same as
    else
      r := c
 
-(2) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
+(3) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
+
+(4) In PASM mode (--asm), spin2cpp accepts inline assembly in PUB and PRI sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly
+is still somewhat limited; the only operands permitted are local variables of
+the containing function.
+
+(5) There are various special comments ("annotations") which can control
+how spin2cpp behaves. See below for details.
 
 LIMITATIONS
 ===========
 
-There are very few Spin features that are not supported yet. _FREE and
-_STACK are recognized, but do nothing.
+There are very few Spin features that are not supported yet. `_FREE` and
+`_STACK` are recognized, but do nothing.
 
 There may be other features that do not work; if you find any,
 please report them so they can be fixed.
