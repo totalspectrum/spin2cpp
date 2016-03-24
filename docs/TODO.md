@@ -15,8 +15,6 @@ Code cleanup
 
 Better error messages.
 
-Add some spin2cpp specific defines.
-
 Add an openspin compatible front-end.
 
 Support @@@foo + offset in --asm mode.

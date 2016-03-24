@@ -130,6 +130,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym)
         }
         break;              
     case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
         if (curfunc && curfunc->localarray) {
             flexbuf_printf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
         } else {

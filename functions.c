@@ -436,10 +436,10 @@ int TypeSize(AST *ast)
  * add a local variable to a function
  */
 void
-AddLocalVariable(Function *func, AST *var)
+AddLocalVariable(Function *func, AST *var, int type)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-    EnterVars(SYM_LOCALVAR, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
+    EnterVars(type, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     func->numlocals++;
     if (func->localarray) {
@@ -455,7 +455,7 @@ AstTempLocalVariable(const char *prefix)
 
     name = NewTemporaryVariable(prefix);
     ast->d.string = name;
-    AddLocalVariable(curfunc, ast);
+    AddLocalVariable(curfunc, ast, SYM_TEMPVAR);
     return ast;
 }
 

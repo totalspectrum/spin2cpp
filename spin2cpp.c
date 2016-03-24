@@ -740,7 +740,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     ERROR(ast, "Unknown symbol %s", ast->d.string);
     // add a definition for this symbol so we don't get this error again
     if (curfunc) {
-        AddLocalVariable(curfunc, ast);
+        AddLocalVariable(curfunc, ast, SYM_LOCALVAR);
     }
 }
 
