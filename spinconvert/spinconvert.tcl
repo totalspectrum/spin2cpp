@@ -123,14 +123,22 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
+    if { $EXT eq ".pasm" } {
+	set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
+    } else {
+	set cmdline [list $COMPILE --noheader $OUTPUT]
+    }
     if { $LIBRARY ne "" } {
 	set cmdline [concat $cmdline [list -L $LIBRARY]]
     }
     if { $makeBinary == 1 } {
 	set binfile [file rootname $PASMFILE]
 	set binfile "$binfile.binary"
-	set cmdline [concat $cmdline [list --binary -o $binfile $spinfile]]
+	if { $EXT eq ".pasm" } {
+	    set cmdline [concat $cmdline [list --binary -o $binfile $spinfile]]
+	} else {
+	    set cmdline [concat $cmdline [list --binary -O -o $binfile $spinfile]]
+	}
     } else {
 	set cmdline [concat $cmdline [list -o $PASMFILE $spinfile]]
     }
@@ -198,6 +206,7 @@ proc loadSpinFile {} {
 
 proc saveSpinFile {} {
     global SPINFILE
+    global PASMFILE
     global SpinTypes
     
     if { [string length $SPINFILE] == 0 } {
@@ -206,6 +215,7 @@ proc saveSpinFile {} {
 	    return
 	}
 	set SPINFILE $filename
+	set PASMFILE ""
     }
     
     saveFileFromWindow $SPINFILE .orig.txt
@@ -220,6 +230,7 @@ proc saveSpinAs {} {
 	return
     }
     set SPINFILE $filename
+    set PASMFILE ""
     wm title . $SPINFILE
     saveSpinFile
 }

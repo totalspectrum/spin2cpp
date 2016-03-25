@@ -3,10 +3,9 @@ Spin Converter
 Copyright 2011-2016 Total Spectrum Software Inc.
 See COPYING for terms of redistribution
 
-This is a simple Spin to PASM (or C/C++) converter. This particular
-release is a "beta", which means it is likely still buggy. It won't
-handle all Spin programs correctly. Please check the output and be
-prepared to fix problems.
+This is a simple Spin to PASM (or C/C++) converter. It should be able
+to translate all Spin programs, but obviously we cannot guarantee
+that. Please check the output and be prepared to fix problems.
 
 USAGE
 -----
@@ -42,11 +41,71 @@ if C output is selected, dir\myObj.cpp for C++). C/C++ code will also
 create a header file (.h) automatically; that isn't displayed by the
 GUI.
 
-### Library directory
+Menus
+-----
+
+### File
+
+#### New Spin file
+
+Creates a new empty Spin file for you to edit.
+
+#### Open Spin
+
+Brings up a file selector so you can open an existing Spin file.
+
+#### Save Spin
+
+Saves the current Spin file, and compiles it automatically (so the
+"Converted Code" and "Compiler Output" windows are updated).
+
+#### Save Spin As
+
+Like "Save Spin", but also allows you to change the name of the Spin
+file. This option also triggers recompilation of the Spin file and
+update of all windows.
+
+#### Exit
+
+Quits the Spinconvert program.
+
+### Edit
+
+This menu has the usual Cut/Copy/Paste options. These apply to the
+current window (the last one that was clicked on).
+
+### Options
+
+#### Output options
+
+The "PASM Output", "C output", and "C++ Output" entries select what
+kind of output will be produced. They are mutually exclusive. When the
+output type is changed, the "Converted Code" window will automatically
+be updated, but only if the "Original Spin" has been saved to disk.
+
+#### Make Biinary
+
+This is a toggle; if a checkmark appears in the menu entry then it is
+enabled. If the option is enabled then the compiler is run to produce a
+binary file from the converted code (PASM, C, or C++). PASM code may
+always be converted to binary, since spinconvert comes with a
+compiler for PASM. C and C++ code use propeller-elf-gcc as a compiler,
+so PropGCC must be installed and its bin directory must be in the
+Windows PATH environment variable.
+
+#### LMM Mode
+
+This applies only to PASM output (C and C++ is always compiled in LMM
+mode). If enabled, the PASM code is placed in HUB memory and loaded
+into COG memory by a tiny interpreter (the "LMM kernel"). This causes
+the code to run more slowly, but allows for much larger programs to
+run.
+
+#### Library directory
 
 The Library directory is a place where the converter looks for Spin
-objects if they cannot be found in the current directory. It may be
-set using the options menu.
+objects if they cannot be found in the current directory.
+
 
 KNOWN ISSUES
 ------------
