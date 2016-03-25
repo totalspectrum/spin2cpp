@@ -4,9 +4,9 @@ Copyright 2011-2016 Total Spectrum Software Inc.
 See COPYING for terms of redistribution
 
 This is a simple Spin to PASM (or C/C++) converter. This particular
-release is a "preview", which means it is incomplete and still
-buggy. It won't handle all Spin programs correctly. Please check the
-output and be prepared to fix problems.
+release is a "beta", which means it is likely still buggy. It won't
+handle all Spin programs correctly. Please check the output and be
+prepared to fix problems.
 
 USAGE
 -----
@@ -42,6 +42,11 @@ if C output is selected, dir\myObj.cpp for C++). C/C++ code will also
 create a header file (.h) automatically; that isn't displayed by the
 GUI.
 
+### Library directory
+
+The Library directory is a place where the converter looks for Spin
+objects if they cannot be found in the current directory. It may be
+set using the options menu.
 
 KNOWN ISSUES
 ------------
