@@ -741,7 +741,11 @@ OutputCppCode(const char *filename, Module *P, int printMain)
         if (gl_output == OUTPUT_C) {
             flexbuf_printf(&fb, "%s MainObj__;\n\n", P->classname);
             flexbuf_printf(&fb, "int main() {\n");
-            flexbuf_printf(&fb, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
+            if (defaultMethod->is_static) {
+                flexbuf_printf(&fb, "  %s_%s();\n", P->classname, defaultMethod->name);
+            } else {
+                flexbuf_printf(&fb, "  %s_%s(&MainObj__);\n", P->classname, defaultMethod->name);
+            }
             flexbuf_printf(&fb, "  return 0;\n");
             flexbuf_printf(&fb, "}\n");
         } else {

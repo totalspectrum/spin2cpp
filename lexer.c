@@ -1100,8 +1100,10 @@ IsReservedWord(const char *name)
     return FindSymbol(&reservedWords, name) != 0;
 }
 
+Instruction *instr;
+
 Instruction
-instr[] = {
+p1instr[] = {
   { "abs",    0xa8800000, TWO_OPERANDS, OPC_ABS },
   { "absneg", 0xac800000, TWO_OPERANDS, OPC_GENERIC },
   { "add",    0x80800000, TWO_OPERANDS, OPC_ADD },
@@ -1275,8 +1277,9 @@ InstrModifier modifiers[] = {
     { "wz", (1<<25) },
     { "wc", (1<<24) },
     { "wr", (1<<23) },
-    { "nr", ~(1<<23) }
+    { "nr", ~(1<<23) },
 
+    { NULL, 0 }
 };
 
 static void
@@ -1285,6 +1288,7 @@ InitPasm(int flags)
     HwReg *hwreg;
     int cnt, i;
 
+    instr = p1instr;
     hwreg = hwreg_p1;
     cnt = N_ELEMENTS(hwreg_p1);
 
@@ -1299,7 +1303,7 @@ InitPasm(int flags)
     }
 
     /* instruction modifiers */
-    for (i = 0; i < N_ELEMENTS(modifiers); i++) {
+    for (i = 0; modifiers[i].name != NULL; i++) {
         AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)&modifiers[i]);
     }
 

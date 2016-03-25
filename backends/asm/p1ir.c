@@ -417,7 +417,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
             ERROR(NULL, "COMMENT is not a string");
             return;
         }
-        flexbuf_addstr(fb, "'' ");
+        flexbuf_addstr(fb, "' ");
         str = ir->dst->name;
         while (*str && *str != '\n') {
             flexbuf_addchar(fb, *str);

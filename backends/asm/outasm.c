@@ -192,7 +192,7 @@ Instruction *
 FindInstrForOpc(IROpcode kind)
 {
     static Instruction **lookup_table;
-    extern Instruction instr[]; // in lexer.c
+    extern Instruction *instr; // in lexer.c
 
     if ((unsigned int)kind >= OPC_GENERIC) {
         return NULL;
