@@ -865,8 +865,8 @@ appendCompiler(const char *ccompiler)
 }
 
 //
-// take the directory portion of "directory" (if any) and replace
-// it with the basename
+// use the directory portion of "directory" (if any) and then add
+// on the basename
 //
 char *
 ReplaceDirectory(const char *basename, const char *directory)
@@ -884,10 +884,11 @@ ReplaceDirectory(const char *basename, const char *directory)
       dot = strrchr(ret, '\\');
   }
 #endif
-  if (!dot) {
-      dot = ret + strlen(ret);
+  if (dot) {
+      *dot++ = '/';
+  } else {
+      dot = ret;
   }
-  *dot++ = '/';
   strcpy(dot, basename);
   return ret;
 }
