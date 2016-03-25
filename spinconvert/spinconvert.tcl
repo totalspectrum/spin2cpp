@@ -9,6 +9,7 @@ set radioOut 1
 set makeBinary 0
 set codemem cog
 set datamem hub
+set LIBRARY ""
 
 #
 # read a file and return its text
@@ -108,6 +109,7 @@ proc regenOutput { spinfile } {
     global PASMFILE
     global OUTPUT
     global EXT
+    global LIBRARY
     global makeBinary
     global codemem
     global datamem
@@ -122,6 +124,9 @@ proc regenOutput { spinfile } {
     set errout ""
     set status 0
     set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
+    if { $LIBRARY ne "" } {
+	set cmdline [concat $cmdline [list -L $LIBRARY]]
+    }
     if { $makeBinary == 1 } {
 	set binfile [file rootname $PASMFILE]
 	set binfile "$binfile.binary"
@@ -157,6 +162,11 @@ proc checkChanges {} {
 	    saveSpinFile
 	}
     }
+}
+
+proc getLibrary {} {
+    global LIBRARY
+    set LIBRARY [tk_chooseDirectory -title "Choose Spin library directory"]
 }
 
 proc newSpinFile {} {
@@ -216,9 +226,9 @@ proc saveSpinAs {} {
 
 set aboutMsg {
 Convert .spin to PASM/C/C++
+Version 3.0    
 Copyright 2011-2016 Total Spectrum Software Inc.
 ------
-This is a beta version!
 There is no warranty and no guarantee that
 output will be correct.    
 }
@@ -319,6 +329,8 @@ menu .mbar.help -tearoff 0
 .mbar.options add separator
 .mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
 .mbar.options add checkbutton -label "LMM Mode" -variable codemem -onvalue hub -offvalue cog
+.mbar.options add separator
+.mbar.options add command -label "Library directory..." -command { getLibrary }
 # .mbar.options add command -label "PASM Options..." -command { doPasmOptions }
 
 .mbar add cascade -menu .mbar.help -label Help
