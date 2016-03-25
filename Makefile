@@ -115,7 +115,7 @@ $(BUILD)/%.o: %.c $(HEADERS)
 zip:
 	$(MAKE) CROSS=win32
 	$(MAKE) CROSS=linux32
-	zip spin2cpp_v1.xx.zip README.md COPYING Changelog.txt spin2cpp.exe spin2cpp.linux
+	zip spin2cpp_v3.0.0.zip README.md COPYING Changelog.txt spin2cpp.exe spin2cpp.linux
 
 #
 # target to build a windows spincvt GUI
