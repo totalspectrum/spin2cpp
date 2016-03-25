@@ -15,7 +15,7 @@
 #define VERSION_MAJOR 3
 #define VERSION_MINOR 0
 #define VERSION_REV   0
-#define BETA "-beta2"
+#define BETA ""
 
 //#define VERSIONSTR "3.00 beta"
 #define VERSIONSTR str_(VERSION_MAJOR) "." str_(VERSION_MINOR) "." str_(VERSION_REV) BETA
@@ -205,9 +205,9 @@ struct modulestate {
     
     /* various file name related strings */
     const char *fullname;    /* full name and path of the file */
-    char *basename;    /* the file name without ".spin" */
+    char *basename;    /* the file name without ".spin" and without a directory */
     char *classname;   /* the class name */
-
+    const char *outfilename; /* file name for output */
     char *datname;     /* the name of the dat section (normally "dat") */
 
     /* for walking through modules and avoiding visiting the same one multiple times */

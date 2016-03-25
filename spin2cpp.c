@@ -864,6 +864,34 @@ appendCompiler(const char *ccompiler)
     appendToCmd(ccompiler);
 }
 
+//
+// take the directory portion of "directory" (if any) and replace
+// it with the basename
+//
+char *
+ReplaceDirectory(const char *basename, const char *directory)
+{
+  char *ret = malloc(strlen(basename) + strlen(directory) + 2);
+  char *dot;
+  if (!ret) {
+    fprintf(stderr, "FATAL: out of memory\n");
+    exit(2);
+  }
+  strcpy(ret, directory);
+  dot = strrchr(ret, '/');
+#ifdef WIN32
+  if (!dot) {
+      dot = strrchr(ret, '\\');
+  }
+#endif
+  if (!dot) {
+      dot = ret + strlen(ret);
+  }
+  *dot++ = '/';
+  strcpy(dot, basename);
+  return ret;
+}
+
 char *
 ReplaceExtension(const char *basename, const char *extension)
 {
@@ -1316,17 +1344,22 @@ main(int argc, char **argv)
             /* compile any sub-objects needed */
             for (Q = allparse; Q; Q = Q->next) {
                 const char *outfilename;
-                if (!gl_outname || Q != P || compile) {
-                    outfilename = Q->basename;
+                if (gl_outname) {
+                    if (Q != P || compile) {
+                        outfilename = ReplaceDirectory(Q->basename, gl_outname);
+                    } else {
+                        outfilename = gl_outname;
+                    }
                 } else {
-                    outfilename = gl_outname;
+                    outfilename = Q->basename;
                 }
+                Q->outfilename = outfilename;
                 OutputCppCode(outfilename, Q, outputMain && Q == P);
                 if (outputFiles) {
                     printf("%s%s\n", Q->basename, cext);
                 }
                 if (compile) {
-                    appendToCmd(Q->basename);
+                    appendToCmd(outfilename);
                     appendWithoutSpace(cext, 1);
                 }
             }
