@@ -1,3 +1,19 @@
+Version 3.0.0
+
+- Added a code generator to allow for PASM output. spin2cpp --asm can
+  function as a compiler independent of PropGCC. With --code=hub it
+  will produce LMM code, otherwise it produces COG code. Using
+  --binary after --asm will cause a final binary to be produced. Using
+  -g after --asm will cause the original Spin code to be inserted in
+  the .pasm output.
+- Added a simple GUI (spinconvert). See the Help option in spinconvert
+  for details
+- Added predefined symbols: __SPIN2CPP__ for C/C++ output,
+  __SPIN2PASM__ for assembler output
+- Added IF/THEN/ELSE expressions, e.g. x := IF x>0 then 0 ELSE x-1
+- Extensive internal changes
+
+==========================================================================
 Version 1.96
 
 - Made the PASM file directive search the same way we look for Spin files
