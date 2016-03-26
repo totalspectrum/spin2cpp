@@ -193,7 +193,8 @@ FindInstrForOpc(IROpcode kind)
 {
     static Instruction **lookup_table;
     extern Instruction *instr; // in lexer.c
-
+    Instruction *r;
+    
     if ((unsigned int)kind >= OPC_GENERIC) {
         return NULL;
     }
@@ -208,7 +209,11 @@ FindInstrForOpc(IROpcode kind)
             i++;
         } while (instr[i].name != 0);
     }
-    return lookup_table[(unsigned int)kind];
+    r = lookup_table[(unsigned int)kind];
+    if (!r) {
+        ERROR(NULL, "internal error: unknown instruction");
+    }
+    return r;
 }
 
 IR *NewIR(IROpcode kind)
@@ -1805,7 +1810,7 @@ CompileCoginit(IRList *irl, AST *expr)
             return NewImmediate(0);
         }
         if (remote->cog_code) {
-            ERROR(expr, "Coginit target must be in hub memory");
+            ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
         }
         if (remote->module != curfunc->module) {
             ERROR(expr, "Coginit/cognew across objects is not supported");
