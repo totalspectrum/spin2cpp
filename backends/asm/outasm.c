@@ -531,11 +531,16 @@ static void EmitStringNoTrailingZero(IRList *irl, AST *ast)
       EmitOp1(irl, OPC_STRING, op);
       break;
   case AST_INTEGER:
-    op = NewOperand(IMM_INT, "", (int)ast->d.ival);
+      op = NewOperand(IMM_INT, "", (int)ast->d.ival);
       EmitOp1(irl, OPC_BYTE, op);
       break;
   default:
-      ERROR(ast, "Unable to emit string");
+      if (IsConstExpr(ast)) {
+          op = NewOperand(IMM_INT, "", EvalConstExpr(ast));
+          EmitOp1(irl, OPC_BYTE, op);
+      } else {
+          ERROR(ast, "Unable to emit string");
+      }
       break;
   }
 }

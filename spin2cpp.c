@@ -32,6 +32,7 @@
 #include <time.h>
 #include "spinc.h"
 #include "preprocess.h"
+#include "version.h"
 
 //#define DEBUG_YACC
 
