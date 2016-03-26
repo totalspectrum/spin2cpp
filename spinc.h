@@ -55,6 +55,7 @@
 /* some globals */
 
 /* compilation flags */
+extern int gl_p2;      /* set for P2 output */
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */
 extern int gl_nospin; /* if set, suppress output of Spin methods */

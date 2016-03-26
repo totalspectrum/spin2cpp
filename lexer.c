@@ -1103,7 +1103,7 @@ IsReservedWord(const char *name)
 Instruction *instr;
 
 Instruction
-p1instr[] = {
+instr_p1[] = {
   { "abs",    0xa8800000, TWO_OPERANDS, OPC_ABS },
   { "absneg", 0xac800000, TWO_OPERANDS, OPC_GENERIC },
   { "add",    0x80800000, TWO_OPERANDS, OPC_ADD },
@@ -1129,7 +1129,7 @@ p1instr[] = {
   { "djnz",   0xe4800000, JMPRET_OPERANDS, OPC_DJNZ },
   { "hubop",  0x0c000000, TWO_OPERANDS, OPC_GENERIC },
   { "jmp",    0x5c000000, SRC_OPERAND_ONLY, OPC_JUMP },
-  { "jmpret", 0x5c800000, JMPRET_OPERANDS, OPC_GENERIC },
+  { "jmpret", 0x5c800000, JMPRET_OPERANDS, OPC_GENERIC_BRANCH },
 
   { "lockclr",0x0c400007, DST_OPERAND_ONLY, OPC_GENERIC_NR },
   { "locknew",0x0cc00004, DST_OPERAND_ONLY, OPC_GENERIC },
@@ -1184,8 +1184,8 @@ p1instr[] = {
 
   { "test",   0x60000000, TWO_OPERANDS, OPC_TEST },
   { "testn",  0x64000000, TWO_OPERANDS, OPC_TESTN },
-  { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC },
-  { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC },
+  { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC_BRANCH },
+  { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC_BRANCH },
 
   { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_WAITCNT },
   { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_GENERIC_NR },
@@ -1197,6 +1197,94 @@ p1instr[] = {
   { "wrword", 0x04000000, TWO_OPERANDS, OPC_WRWORD },
 
   { "xor",    0x6c800000, TWO_OPERANDS, OPC_XOR },
+
+  { NULL, 0, 0, 0},
+};
+
+Instruction
+instr_p2[] = {
+  { "ror",    0x0000000, TWO_OPERANDS, OPC_ROR },
+  { "rol",    0x0020000, TWO_OPERANDS, OPC_ROL },
+  { "shr",    0x0040000, TWO_OPERANDS, OPC_SHR },
+  { "shl",    0x0060000, TWO_OPERANDS, OPC_SHL },
+  { "rcr",    0x0080000, TWO_OPERANDS, OPC_GENERIC },
+  { "rcl",    0x00a0000, TWO_OPERANDS, OPC_GENERIC },
+  { "sar",    0x00c0000, TWO_OPERANDS, OPC_SAR },
+  { "sal",    0x00e0000, TWO_OPERANDS, OPC_GENERIC },
+  { "add",    0x0100000, TWO_OPERANDS, OPC_ADD },
+  { "adds",   0x0140000, TWO_OPERANDS, OPC_GENERIC },
+  { "addx",   0x0120000, TWO_OPERANDS, OPC_GENERIC },
+  { "addsx",  0x0160000, TWO_OPERANDS, OPC_GENERIC },
+  { "sub",    0x0180000, TWO_OPERANDS, OPC_SUB },
+  { "subx",   0x01a0000, TWO_OPERANDS, OPC_GENERIC },
+  { "subs",   0x01c0000, TWO_OPERANDS, OPC_GENERIC },
+  { "subsx",  0x01e0000, TWO_OPERANDS, OPC_GENERIC },
+  { "cmp",    0x0200000, TWO_OPERANDS, OPC_CMP },
+  { "cmpx",   0x0220000, TWO_OPERANDS, OPC_GENERIC },
+  { "cmps",   0x0240000, TWO_OPERANDS, OPC_CMPS },
+  { "cmpsx",  0x0260000, TWO_OPERANDS, OPC_GENERIC },
+  { "cmpr",   0x0280000, TWO_OPERANDS, OPC_GENERIC },
+  { "cmpm",   0x02a0000, TWO_OPERANDS, OPC_GENERIC },
+  { "subr",   0x02c0000, TWO_OPERANDS, OPC_GENERIC },
+  { "cmpsub", 0x02e0000, TWO_OPERANDS, OPC_GENERIC },
+
+  { "min",    0x0300000, TWO_OPERANDS, OPC_GENERIC },
+  { "max",    0x0320000, TWO_OPERANDS, OPC_GENERIC },
+  { "mins",   0x0340000, TWO_OPERANDS, OPC_MINS },
+  { "maxs",   0x0360000, TWO_OPERANDS, OPC_MAXS },
+  { "sumc",   0x0380000, TWO_OPERANDS, OPC_GENERIC },
+  { "sumnc",  0x03a0000, TWO_OPERANDS, OPC_GENERIC },
+  { "sumz",   0x03c0000, TWO_OPERANDS, OPC_GENERIC },
+  { "sumnz",  0x03e0000, TWO_OPERANDS, OPC_GENERIC },
+
+  { "isob",   0x0400000, TWO_OPERANDS, OPC_GENERIC },
+  { "notb",   0x0420000, TWO_OPERANDS, OPC_GENERIC },
+  { "clrb",   0x0440000, TWO_OPERANDS, OPC_GENERIC },
+  { "setb",   0x0460000, TWO_OPERANDS, OPC_GENERIC },
+  { "setbc",  0x0480000, TWO_OPERANDS, OPC_GENERIC },
+  { "setbnc", 0x04a0000, TWO_OPERANDS, OPC_GENERIC },
+  { "setbz",  0x04c0000, TWO_OPERANDS, OPC_GENERIC },
+  { "setbnz", 0x04e0000, TWO_OPERANDS, OPC_GENERIC },
+
+  { "andn",   0x0500000, TWO_OPERANDS, OPC_ANDN },
+  { "and",    0x0520000, TWO_OPERANDS, OPC_AND },
+  { "or",     0x0540000, TWO_OPERANDS, OPC_OR },
+  { "xor",    0x0560000, TWO_OPERANDS, OPC_XOR },
+  { "muxc",   0x0580000, TWO_OPERANDS, OPC_MUXC },
+  { "muxnc",  0x05a0000, TWO_OPERANDS, OPC_MUXNC },
+  { "muxz",   0x05c0000, TWO_OPERANDS, OPC_MUXZ },
+  { "muxnz",  0x05e0000, TWO_OPERANDS, OPC_MUXNZ },
+
+  { "mov",    0x0600000, TWO_OPERANDS, OPC_MOV },
+  { "not",    0x0620000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC },
+  { "abs",    0x0640000, TWO_OPERANDS_OPTIONAL, OPC_ABS },
+  { "neg",    0x0660000, TWO_OPERANDS_OPTIONAL, OPC_NEG },
+  { "negc",   0x0680000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC },
+  { "negnc",  0x06a0000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC },
+  { "negz",   0x06c0000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC },
+  { "negnz",  0x06e0000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC },
+
+  { "rev",    0x09a0000, TWO_OPERANDS_OPTIONAL, OPC_REV },
+  
+  { "djz",    0x09c0000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "djnz",   0x09c8000, P2_TJZ_OPERANDS, OPC_DJNZ },
+  { "djs",    0x09d0000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "djns",   0x09d8000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "tjz",    0x09e0000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "tjnz",   0x09e8000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "tjs",    0x09f0000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "tjns",   0x09f8000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+
+  { "testn",  0x0a00000, TWO_OPERANDS, OPC_GENERIC_NR },
+  { "test",   0x0a20000, TWO_OPERANDS, OPC_TEST },
+  
+  { "rdbyte", 0x0b00000, P2_RDWR_OPERANDS, OPC_RDBYTE },
+  { "rdword", 0x0b20000, P2_RDWR_OPERANDS, OPC_RDWORD },
+  { "rdlong", 0x0b40000, P2_RDWR_OPERANDS, OPC_RDLONG },
+
+  { "wrbyte", 0x0c40000, P2_RDWR_OPERANDS, OPC_WRBYTE },
+  { "wrword", 0x0c50000, P2_RDWR_OPERANDS, OPC_WRWORD },
+  { "wrlong", 0x0c60000, P2_RDWR_OPERANDS, OPC_WRLONG },
 
   { NULL, 0, 0, 0},
 };
@@ -1221,57 +1309,81 @@ HwReg hwreg_p1[] = {
     { "vcfg", 0x1fe, "VCFG" },
     { "vscl", 0x1ff, "VSCL" },
 
+    { NULL, 0, NULL },
 };
 
-#define IF_NEVER 0xffc3ffff
+HwReg hwreg_p2[] = {
+    { "ijmp3", 0x1f0, "IJMP3" },
+    { "iret3", 0x1f1, "IRET3" },
+    { "ijmp2", 0x1f2, "IJMP2" },
+    { "iret2", 0x1f3, "IRET2" },
+    { "ijmp1", 0x1f4, "IJMP1" },
+    { "iret1", 0x1f5, "IRET1" },
+    { "adra", 0x1f6, "ADRA" },
+    { "adrb", 0x1f7, "ADRB" },
+    { "ptra", 0x1f8, "PTRA" },
+    { "ptrb", 0x1f9, "PTRB" },
 
-InstrModifier modifiers[] = {
-    { "if_always", IF_NEVER | (0xf<<18) },
-    { "if_never",  IF_NEVER },
+    { "dira", 0x1fa, "DIRA" },
+    { "dirb", 0x1fb, "DIRB" },
+    { "outa", 0x1fc, "OUTA" },
+    { "outb", 0x1fd, "OUTB" },
 
-    { "if_a",           IF_NEVER | (0x1<<18) },
-    { "if_nc_and_nz",   IF_NEVER | (0x1<<18) },
-    { "if_nz_and_nc",   IF_NEVER | (0x1<<18) },
+    { "ina", 0x1fe, "INA" },
+    { "inb", 0x1ff, "INB" },
 
-    { "if_nc_and_z",    IF_NEVER | (0x2<<18) },
-    { "if_z_and_nc",    IF_NEVER | (0x2<<18) },
+    { NULL, 0, NULL },
+};
 
-    { "if_ae",     IF_NEVER | (0x3<<18) },
-    { "if_nc",     IF_NEVER | (0x3<<18) },
+#define IF_NEVER_P1 0xffc3ffff
 
-    { "if_c_and_nz",    IF_NEVER | (0x4<<18) },
-    { "if_nz_and_c",    IF_NEVER | (0x4<<18) },
+InstrModifier modifiers_p1[] = {
+    { "if_always", IF_NEVER_P1 | (0xf<<18) },
+    { "if_never",  IF_NEVER_P1 },
 
-    { "if_ne",     IF_NEVER | (0x5<<18) },
-    { "if_nz",     IF_NEVER | (0x5<<18) },
+    { "if_a",           IF_NEVER_P1 | (0x1<<18) },
+    { "if_nc_and_nz",   IF_NEVER_P1 | (0x1<<18) },
+    { "if_nz_and_nc",   IF_NEVER_P1 | (0x1<<18) },
 
-    { "if_c_ne_z", IF_NEVER | (0x6<<18) },
-    { "if_z_ne_c", IF_NEVER | (0x6<<18) },
+    { "if_nc_and_z",    IF_NEVER_P1 | (0x2<<18) },
+    { "if_z_and_nc",    IF_NEVER_P1 | (0x2<<18) },
 
-    { "if_nc_or_nz", IF_NEVER | (0x7<<18) },
-    { "if_nz_or_nc", IF_NEVER | (0x7<<18) },
+    { "if_ae",     IF_NEVER_P1 | (0x3<<18) },
+    { "if_nc",     IF_NEVER_P1 | (0x3<<18) },
 
-    { "if_c_and_z", IF_NEVER | (0x8<<18) },
-    { "if_z_and_c", IF_NEVER | (0x8<<18) },
+    { "if_c_and_nz",    IF_NEVER_P1 | (0x4<<18) },
+    { "if_nz_and_c",    IF_NEVER_P1 | (0x4<<18) },
 
-    { "if_c_eq_z", IF_NEVER | (0x9<<18) },
-    { "if_z_eq_c", IF_NEVER | (0x9<<18) },
+    { "if_ne",     IF_NEVER_P1 | (0x5<<18) },
+    { "if_nz",     IF_NEVER_P1 | (0x5<<18) },
 
-    { "if_e",      IF_NEVER | (0xa<<18) },
-    { "if_z",      IF_NEVER | (0xa<<18) },
+    { "if_c_ne_z", IF_NEVER_P1 | (0x6<<18) },
+    { "if_z_ne_c", IF_NEVER_P1 | (0x6<<18) },
 
-    { "if_nc_or_z", IF_NEVER | (0xb<<18) },
-    { "if_z_or_nc", IF_NEVER | (0xb<<18) },
+    { "if_nc_or_nz", IF_NEVER_P1 | (0x7<<18) },
+    { "if_nz_or_nc", IF_NEVER_P1 | (0x7<<18) },
 
-    { "if_b",      IF_NEVER | (0xc<<18) },
-    { "if_c",      IF_NEVER | (0xc<<18) },
+    { "if_c_and_z", IF_NEVER_P1 | (0x8<<18) },
+    { "if_z_and_c", IF_NEVER_P1 | (0x8<<18) },
 
-    { "if_c_or_nz", IF_NEVER | (0xd<<18) },
-    { "if_nz_or_c", IF_NEVER | (0xd<<18) },
+    { "if_c_eq_z", IF_NEVER_P1 | (0x9<<18) },
+    { "if_z_eq_c", IF_NEVER_P1 | (0x9<<18) },
 
-    { "if_be",     IF_NEVER | (0xe<<18) },
-    { "if_c_or_z", IF_NEVER | (0xe<<18) },
-    { "if_z_or_c", IF_NEVER | (0xe<<18) },
+    { "if_e",      IF_NEVER_P1 | (0xa<<18) },
+    { "if_z",      IF_NEVER_P1 | (0xa<<18) },
+
+    { "if_nc_or_z", IF_NEVER_P1 | (0xb<<18) },
+    { "if_z_or_nc", IF_NEVER_P1 | (0xb<<18) },
+
+    { "if_b",      IF_NEVER_P1 | (0xc<<18) },
+    { "if_c",      IF_NEVER_P1 | (0xc<<18) },
+
+    { "if_c_or_nz", IF_NEVER_P1 | (0xd<<18) },
+    { "if_nz_or_c", IF_NEVER_P1 | (0xd<<18) },
+
+    { "if_be",     IF_NEVER_P1 | (0xe<<18) },
+    { "if_c_or_z", IF_NEVER_P1 | (0xe<<18) },
+    { "if_z_or_c", IF_NEVER_P1 | (0xe<<18) },
 
 
     { "wz", (1<<25) },
@@ -1286,14 +1398,16 @@ static void
 InitPasm(int flags)
 {
     HwReg *hwreg;
-    int cnt, i;
+    InstrModifier *modifiers;
+    int i;
 
-    instr = p1instr;
+    instr = instr_p1;
     hwreg = hwreg_p1;
-    cnt = N_ELEMENTS(hwreg_p1);
+    modifiers = modifiers_p1;
+    
 
     /* add hardware registers */
-    for (i = 0; i < cnt; i++) {
+    for (i = 0; hwreg[i].name != NULL; i++) {
         AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
     }
 

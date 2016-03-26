@@ -93,6 +93,7 @@ static bool IsJump(IR *ir)
   switch (ir->opc) {
   case OPC_JUMP:
   case OPC_DJNZ:
+  case OPC_GENERIC_BRANCH:
     return true;
   default:
     return false;
@@ -198,6 +199,7 @@ InstrUsesFlags(IR *ir, unsigned flags)
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_GENERIC_BRANCH:
         /* it might use flags, we don't know (e.g. addx) */
         return true;
     case OPC_MUXC:

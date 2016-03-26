@@ -75,6 +75,9 @@ typedef enum IROpcode {
 
     /* like OPC_GENERIC, but is guaranteed not to write its destination */
     OPC_GENERIC_NR,
+
+    /* a branch that the optimizer does not know about */
+    OPC_GENERIC_BRANCH,
     
     /* place non-instructions below here */
 
@@ -192,6 +195,12 @@ typedef enum InstrOps {
     TWO_OPERANDS,
     CALL_OPERAND,
     JMPRET_OPERANDS,
+
+    /* P2 extensions */
+    TWO_OPERANDS_OPTIONAL,
+    P2_TJZ_OPERANDS,
+    P2_RDWR_OPERANDS,
+    
 } InstrOps;
 
 /* structure describing a PASM instruction */

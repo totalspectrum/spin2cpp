@@ -43,6 +43,7 @@ Module *current;
 Module *allparse;
 Module *globalModule;
 
+int gl_p2;
 int gl_errors;
 int gl_output;
 int gl_outputflags;
