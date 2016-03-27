@@ -1,5 +1,8 @@
+PUB main
+  coginit(0, @entry, 0)
 DAT
 	org	0
+entry
 
 _test1
 	mov	_test1_x, arg1 wz

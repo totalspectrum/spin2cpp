@@ -246,6 +246,8 @@ bool IsHubDest(Operand *dst)
 #define MAX_REL_JUMP_OFFSET 100
 
 /* convert IR list into p1 assembly language */
+static int didPub = 0;
+
 void
 P1AssembleIR(struct flexbuf *fb, IR *ir)
 {
@@ -265,6 +267,11 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         return;
     }
     if (!inDat) {
+        if (!didPub) {
+            flexbuf_addstr(fb, "PUB main\n");
+            flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
+            didPub = 1;
+        }
         flexbuf_addstr(fb, "DAT\n");
         inCon = 0;
         inDat = 1;
@@ -474,6 +481,7 @@ IRAssemble(IRList *list)
     inDat = 0;
     inCon = 0;
     didOrg = 0;
+    didPub = 0;
     lmmMode = 0;
     
     flexbuf_init(&fb, 512);

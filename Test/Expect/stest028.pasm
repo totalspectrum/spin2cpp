@@ -1,5 +1,8 @@
+PUB main
+  coginit(0, @entry, 0)
 DAT
 	org	0
+entry
 
 _divmod16
 	mov	_divmod16_x, arg1

@@ -3240,7 +3240,6 @@ EmitMain(IRList *irl, Module *P)
     IR *ir;
     Function *firstfunc;
     const char *firstfuncname;
-    Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
     Operand *spinlabel;
     Operand *const4 = NewImmediate(4);
     Operand *arg1;
@@ -3258,7 +3257,6 @@ EmitMain(IRList *irl, Module *P)
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
-    EmitLabel(irl, entrylabel);
     ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
 
@@ -3295,6 +3293,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     FILE *f = NULL;
     Module *save;
     IR *orgh;
+    Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
     
     const char *asmcode;
     
@@ -3309,6 +3308,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     CompileConsts(&cogcode, P->conblock);
 
     // output the main stub
+    EmitLabel(&cogcode, entrylabel);
     if (outputMain) {
         EmitMain(&cogcode, P);
     }

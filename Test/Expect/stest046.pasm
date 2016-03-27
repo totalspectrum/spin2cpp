@@ -1,5 +1,8 @@
+PUB main
+  coginit(0, @entry, 0)
 DAT
 	org	0
+entry
 
 _ez_pulse_in
 	mov	_ez_pulse_in_r, #1

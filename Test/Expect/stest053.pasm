@@ -5,8 +5,11 @@ CON
 	baud = 115200
 	txmask = 1073741824
 	bitcycles = 694
+PUB main
+  coginit(0, @entry, 0)
 DAT
 	org	0
+entry
 
 _serchar
 	mov	_serchar_val, arg1
