@@ -1,3 +1,5 @@
+#!/usr/bin/wish
+
 package require Tk
 package require ctext
 package require autoscroll
@@ -5,6 +7,7 @@ package require autoscroll
 set COMPILE "./bin/spin2cpp"
 set OUTPUT "--asm"
 set EXT ".pasm"
+set PORT ""
 set radioOut 1
 set makeBinary 0
 set codemem cog
@@ -318,6 +321,7 @@ menu .mbar
 menu .mbar.file -tearoff 0
 menu .mbar.edit -tearoff 0
 menu .mbar.options -tearoff 0
+menu .mbar.run -tearoff 0
 menu .mbar.help -tearoff 0
 
 .mbar add cascade -menu .mbar.file -label File
@@ -343,6 +347,9 @@ menu .mbar.help -tearoff 0
 .mbar.options add separator
 .mbar.options add command -label "Library directory..." -command { getLibrary }
 # .mbar.options add command -label "PASM Options..." -command { doPasmOptions }
+
+.mbar add cascade -menu .mbar.run -label Run
+.mbar.run add command -label "Run on device" -accelerator "^R" -command { doRun }
 
 .mbar add cascade -menu .mbar.help -label Help
 .mbar.help add command -label "Help" -command { doHelp }
@@ -398,6 +405,7 @@ bind . <Control-n> { newSpinFile }
 bind . <Control-o> { loadSpinFile }
 bind . <Control-s> { saveSpinFile }
 bind . <Control-q> { exitProgram }
+bind . <Control-r> { doRun }
 
 autoscroll::autoscroll .orig.v
 autoscroll::autoscroll .orig.h
@@ -406,9 +414,110 @@ autoscroll::autoscroll .out.h
 autoscroll::autoscroll .bot.v
 autoscroll::autoscroll .bot.h
 
+
+
+###############################################################################
+# Term for a simple terminal interface
+###############################################################################
+# The terminal bindings are implemented by defining a new bindtag 'Term'
+###############################################################################
+
+##################### Terminal In/Out events ############################
+proc term_out { chan key } {
+    switch -regexp -- $key {
+	[\x07-\x08] -
+	\x0D        -
+	[\x20-\x7E] { puts -nonewline $chan $key; return -code break }
+	[\x01-\x06] -
+	[\x09-\x0C] -
+	[\x0E-\x1F] -
+	\x7F        { return }
+	default     { return }
+    } ;# switch
+}
+
+proc term_in { ch } {
+    upvar #0 Term(Text) txt
+    
+    switch -regexp -- $ch {
+	\x07    { bell }
+	\x0A    {  } # ignore
+	\x0D    { $txt insert end "\n" }
+	default { $txt insert end $ch }
+    }
+    $txt see end
+}
+
+proc receiver {chan} {
+    foreach ch [ split [read $chan] {}] {
+	term_in $ch
+    }
+}
+
+##################### Windows ############################
+proc scrolled_text { f args } {
+    toplevel $f
+    eval {text $f.text \
+	      -xscrollcommand [list $f.xscroll set] \
+	      -yscrollcommand [list $f.yscroll set]} $args
+    scrollbar $f.xscroll -orient horizontal \
+	-command [list $f.text xview]
+    scrollbar $f.yscroll -orient vertical \
+	-command [list $f.text yview]
+    grid $f.text $f.yscroll -sticky news
+    grid $f.xscroll -sticky news
+    grid rowconfigure    $f 0 -weight 1
+    grid columnconfigure $f 0 -weight 1
+    return $f.text
+}
+
+##### main #######
+
+proc doRun {} {
+    global PORT
+    global makeBinary
+    global PASMFILE
+    global SPINFILE
+    global Term
+
+    if {[winfo exists .term]} {
+	raise .term
+    } else {
+	set Term(Text) [scrolled_text .term -width 80 -height 25 -font $Term(Font) ]
+    }
+    set makeBinary 1
+    regenOutput $SPINFILE
+    set binfile [file rootname $PASMFILE]
+    set binfile "$binfile.binary"
+
+    set PORT [exec bin/propeller-load -Q]
+    exec bin/propeller-load -r $binfile
+    
+    set Term(Port) $PORT
+    set chan [open $Term(Port) r+]
+    fconfigure $chan -mode $Term(Mode) -translation binary -buffering none -blocking 0
+    fileevent $chan readable [list receiver $chan]
+
+    bind $Term(Text) <Any-Key> [list term_out $chan %A]
+
+    wm title .term "Terminal Output"
+    catch {console hide}
+}
+
+
 #setHighlightingSpin .orig.txt
 
 set PASMFILE ""
+# Configure your serial port here
+#
+set Term(Port) com1
+set Term(Mode) "115200,n,8,1"
+set Term(Font) Courier
+
+# Global variables
+#
+set Term(Text) {}
+
 
 if { $::argc > 0 } {
     loadFileToWindow $argv .orig.txt

@@ -145,4 +145,22 @@ spincvt.zip: .PHONY
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt
 
+spincvt_linux.zip: .PHONY
+	rm -f spincvt_linux.zip
+	rm -rf spincvt
+	$(MAKE) CROSS=linux32
+	mkdir -p spincvt/bin
+	cp build-linux32/spin2cpp spincvt/bin
+	cp propeller-load/propeller-load spincvt/
+	cp spinconvert/spinconvert.tcl spincvt
+	chmod +x spincvt/spinconvert.tcl
+	mkdir -p spincvt/examples
+	cp -rp spinconvert/examples/*.spin spincvt/examples
+	cp -rp spinconvert/examples/*.def spincvt/examples
+	cp -rp spinconvert/README.txt COPYING spincvt
+	cp -rp docs spincvt
+#	(cd spincvt; $(FREEWRAP) spinconvert.tcl)
+#	rm spincvt/spinconvert.tcl
+	zip -r spincvt_linux.zip spincvt
+
 .PHONY:

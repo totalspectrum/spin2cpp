@@ -83,7 +83,7 @@ kind of output will be produced. They are mutually exclusive. When the
 output type is changed, the "Converted Code" window will automatically
 be updated, but only if the "Original Spin" has been saved to disk.
 
-#### Make Biinary
+#### Make Binary
 
 This is a toggle; if a checkmark appears in the menu entry then it is
 enabled. If the option is enabled then the compiler is run to produce a
@@ -107,6 +107,17 @@ The Library directory is a place where the converter looks for Spin
 objects if they cannot be found in the current directory.
 
 
+### Run
+
+#### Run on device
+
+Compiles to binary (so it forces the "Make Binary" selection to true)
+and then runs the resulting program on a Propeller device plugged in
+to the computer. If more than one Propeller is plugged in then results
+are very unpredictable (i.e. it will probably fail). A terminal
+program is opened up at 115200 baud to display output from the
+program. The baud rate and other settings are not currently changable.
+
 KNOWN ISSUES
 ------------
 
@@ -114,6 +125,11 @@ The C/C++ output should be complete.
 
 The PASM output also seems to be complete, but is not as thoroughly
 tested, so it is likely to have some bugs.
+
+The "Run on device" option is very limited; it will fail if more than
+one device is plugged in, and it will only display output at 115200
+baud. Someday it would be nice to be able to customize this.
+
 
 EXTENSIONS TO THE SPIN LANGUAGE
 -------------------------------
