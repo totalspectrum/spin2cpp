@@ -1,3 +1,7 @@
+Version 3.0.2
+
+- Added support for SPR and for arrays in cog memory generally.
+
 Version 3.0.1
 
 - Fixed the distributed .zip file to have the correct spin2cpp

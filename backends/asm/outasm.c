@@ -1742,6 +1742,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         case REG_LOCAL:
         case REG_ARG:
         case REG_HW:
+            base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             base = CogMemRef(addr, 0);
             break;
