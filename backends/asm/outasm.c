@@ -1698,6 +1698,9 @@ IsCogMem(Operand *addr)
     switch (addr->kind) {
     case IMM_COG_LABEL:
     case COG_REF:
+    case REG_HW:
+    case REG_REG:
+    case REG_LOCAL:
         return true;
     case IMM_HUB_LABEL:
     case IMM_STRING:
@@ -1712,23 +1715,12 @@ IsCogMem(Operand *addr)
 }
 
 static Operand *
-CompileMemref(IRList *irl, AST *expr)
+CompileHubref(IRList *irl, AST *expr)
 {
   Operand *addr = CompileExpression(irl, expr->right);
   AST *type = expr->left;
 
   addr = Dereference(irl, addr);
-  if (IsCogMem(addr)) {
-      int size;
-      while (type->kind == AST_ARRAYTYPE) {
-          type = type->left;
-      }
-      size = EvalConstExpr(type->left);
-      if (size != LONG_SIZE) {
-          ERROR(expr, "Only long memory references allowed in COG memory");
-      }
-      return CogMemRef(addr, 0);
-  }
   return TypedHubMemRef(type, addr, 0);
 }
 
@@ -1741,7 +1733,22 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     int idx;
     int siz;
     int shift;
-    
+
+    // check for COG memory references
+    if (!IsMemRef(base) && IsCogMem(base)) {
+        Operand *addr;
+        switch(base->kind) {
+        case REG_REG:
+        case REG_LOCAL:
+        case REG_ARG:
+        case REG_HW:
+            addr = NewOperand(IMM_COG_LABEL, base->name, 0);
+            base = CogMemRef(addr, 0);
+            break;
+        default:
+            break;
+        }
+    }
     if (!IsMemRef(base)) {
         ERROR(NULL, "Array does not reference memory");
         return base;
@@ -2165,8 +2172,19 @@ CompileExpression(IRList *irl, AST *expr)
       offset = CompileExpression(irl, expr->right);
       return ApplyArrayIndex(irl, base, offset);
   }
+  case AST_SPRREF:
+  {
+      Operand *base;
+
+      if (!expr->left) {
+          ERROR(expr, "SPR ref with no index?");
+          return NewOperand(REG_REG, "???", 0);
+      }
+      base = CompileExpression(irl, expr->left);
+      return CogMemRef(base, 0);
+  }
   case AST_MEMREF:
-    return CompileMemref(irl, expr);
+    return CompileHubref(irl, expr);
   case AST_COGINIT:
     return CompileCoginit(irl, expr);
   case AST_ADDROF:
@@ -2223,6 +2241,32 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
     EmitOp2(irl, opc, dst, imm);
 }
 
+static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
+{
+    if (!getcogreg) {
+        getcogreg = NewOperand(IMM_COG_LABEL, "rdcog", 0);
+        if (!result1) {
+            result1 = GetGlobal(REG_REG, "result1", 0);
+        }
+    }
+    EmitOp2(irl, OPC_MOVS, getcogreg, src);
+    EmitOp1(irl, OPC_CALL, getcogreg);
+    return EmitOp2(irl, OPC_MOV, dst, result1);
+}
+
+static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
+{
+    if (!putcogreg) {
+        putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
+        if (!arg1) {
+            arg1 = GetGlobal(REG_REG, "arg1", 0);
+        }
+    }
+    EmitMove(irl, arg1, src);
+    EmitOp2(irl, OPC_MOVD, putcogreg, dst);
+    return EmitOp1(irl, OPC_CALL, putcogreg);
+}
+
 static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 {
     Operand *temp = NULL;
@@ -2246,37 +2290,28 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             where = temp = NewFunctionTempRegister();
         }
         src = (Operand *)src->name;
+        if (off) {
+            EmitAddSub(irl, src, off);
+        }
         switch (origsrc->kind) {
         default:
             ERROR(NULL, "Illegal memory reference");
             break;
+        case COG_REF:
+            ir = EmitCogread(irl, where, src);
+            break;
         case LONG_REF:
-            if (off) {
-                EmitAddSub(irl, src, off);
-            }
             ir = EmitOp2(irl, OPC_RDLONG, where, src);
-            if (off) {
-                EmitAddSub(irl, src, -off);
-            }
             break;
         case WORD_REF:
-            if (off) {
-                EmitAddSub(irl, src, off);
-            }
             ir = EmitOp2(irl, OPC_RDWORD, where, src);
-            if (off) {
-                EmitAddSub(irl, src, -off);
-            }
             break;
         case BYTE_REF:
-            if (off) {
-                EmitAddSub(irl, src, off);
-            }
             ir = EmitOp2(irl, OPC_RDBYTE, where, src);
-            if (off) {
-                EmitAddSub(irl, src, -off);
-            }
             break;
+        }
+        if (off) {
+            EmitAddSub(irl, src, -off);
         }
         if (where == origdst)
             return ir;
@@ -2290,38 +2325,29 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             EmitMove(irl, temp2, src);
             src = temp2;
         }
+        if (off) {
+            EmitAddSub(irl, dst, off);
+        }
         switch (origdst->kind) {
         default:
             ERROR(NULL, "Illegal memory reference");
             break;
+        case COG_REF:
+            ir = EmitCogwrite(irl, src, dst);
+            break;
         case LONG_REF:
-            if (off) {
-                EmitAddSub(irl, dst, off);
-            }
             ir = EmitOp2(irl, OPC_WRLONG, src, dst);
-            if (off) {
-                EmitAddSub(irl, dst, -off);
-            }            
             break;
         case WORD_REF:
-            if (off) {
-                EmitAddSub(irl, dst, off);
-            }
             ir = EmitOp2(irl, OPC_WRWORD, src, dst);
-            if (off) {
-                EmitAddSub(irl, dst, -off);
-            }
             break;
         case BYTE_REF:
-            if (off) {
-                EmitAddSub(irl, dst, off);
-            }
             ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
-            if (off) {
-                EmitAddSub(irl, dst, -off);
-            }
             break;
         }
+        if (off) {
+            EmitAddSub(irl, dst, -off);
+        }            
     } else {
         ir = EmitOp2(irl, OPC_MOV, dst, src);
     }
@@ -3149,6 +3175,19 @@ static const char *builtin_abortcode =
     "    ret\n"
     ;
 
+const char *builtin_rdcog =
+    "rdcog\n"
+    "    mov    result1, 0-0\n"
+    "rdcog_ret\n"
+    "    ret\n"
+    ;
+const char *builtin_wrcog =
+    "wrcog\n"
+    "    mov    0-0, arg1\n"
+    "wrcog_ret\n"
+    "    ret\n"
+    ;
+
 static void
 EmitBuiltins(IRList *irl)
 {
@@ -3178,7 +3217,15 @@ EmitBuiltins(IRList *irl)
             // add a dummy pc register
             (void)GetGlobal(REG_REG, "pc", 0);
         }
-    }    
+    }
+    if (getcogreg) {
+        Operand *func = NewOperand(IMM_STRING, builtin_rdcog, 0);
+        EmitOp1(irl, OPC_LITERAL, func);
+    }
+    if (putcogreg) {
+        Operand *func = NewOperand(IMM_STRING, builtin_wrcog, 0);
+        EmitOp1(irl, OPC_LITERAL, func);
+    }
 }
 
 static void

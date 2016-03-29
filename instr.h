@@ -43,6 +43,8 @@ typedef enum IROpcode {
     OPC_MAXS,
     OPC_MINS,
     OPC_MOV,
+    OPC_MOVD,
+    OPC_MOVS,
     OPC_MUXC,
     OPC_MUXNC,
     OPC_MUXNZ,

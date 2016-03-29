@@ -774,7 +774,7 @@ Usage(void)
     fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
     fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
     fprintf(stderr, "  --data=x : PASM output only: control placement of data\n");
-    fprintf(stderr, "             x can be cog or hub; only --data=hub works for now\n");
+    fprintf(stderr, "             x can be cog or hub (default is hub)\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
