@@ -151,9 +151,9 @@ spincvt_linux.zip: .PHONY
 	$(MAKE) CROSS=linux32
 	mkdir -p spincvt/bin
 	cp build-linux32/spin2cpp spincvt/bin
-	cp propeller-load/propeller-load spincvt/
-	cp spinconvert/spinconvert.tcl spincvt
-	chmod +x spincvt/spinconvert.tcl
+	cp propeller-load/propeller-load spincvt/bin
+	cp spinconvert/spinconvert.tcl spincvt/spinconvert
+	chmod +x spincvt/spinconvert
 	mkdir -p spincvt/examples
 	cp -rp spinconvert/examples/*.spin spincvt/examples
 	cp -rp spinconvert/examples/*.def spincvt/examples
