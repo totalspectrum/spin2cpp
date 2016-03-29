@@ -3,11 +3,6 @@ PUB main
 DAT
 	org	0
 entry
-	mov	arg1, par wz
-	call	#_get
-cogexit
-	cogid	arg1
-	cogstop	arg1
 
 _get
 	mov	_get_sum, #0
@@ -72,8 +67,6 @@ objptr
 result1
 	long	0
 	fit	496
-hubexit
-	jmp	#cogexit
 	long
 objmem
 	long	$00000000
