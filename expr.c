@@ -1121,6 +1121,27 @@ IsArrayType(AST *ast)
     return 0;
 }
 
+/* find size of an array type */
+/* returns size of 1 item for non-array types */
+int ArrayTypeSize(AST *typ)
+{
+    int size;
+    switch (typ->kind) {
+    case AST_ARRAYTYPE:
+        size = EvalConstExpr(typ->right);
+        return size * ArrayTypeSize(typ->left);
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_GENERICTYPE:
+    case AST_FLOATTYPE:
+        return EvalConstExpr(typ->left);
+    default:
+        ERROR(typ, "Internal error: unknown type %d passed to ArrayTypeSize",
+              typ->kind);
+        return 1;
+    }
+}
+    
 int
 IsArraySymbol(Symbol *sym)
 {

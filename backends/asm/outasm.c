@@ -711,6 +711,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   const char *name;
   AST *fcall;
   int stype;
+  int size;
   
   if (expr->kind == AST_RESULT) {
       name = "result";
@@ -732,7 +733,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           ValidateObjbase();
           if (COG_DATA) {
               // COG memory
-              return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
+              size = ArrayTypeSize((AST *)sym->val);
+              return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), size);
           } else {
               // HUB memory
               return TypedHubMemRef((AST *)sym->val, objbase, (int)sym->offset);
@@ -763,7 +765,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
                   return FrameRef(LONG_SIZE * (1+func->numparams) + sym->offset);
               }
           }
-          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+          size = ArrayTypeSize((AST *)sym->val);
+          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       }
@@ -2748,7 +2751,8 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
     AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
-
+    int varsize;
+    
     if (siz > 0) {
       EmitNewline(irl);
     }
@@ -2776,8 +2780,19 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       case REG_HUBPTR:
           EmitLongPtr(irl, (Operand *)g[i].op->val);
           break;
-      default:
+      case IMM_INT:
           EmitLong(irl, g[i].val);
+          break;
+      default:
+          varsize = g[i].val / LONG_SIZE;
+          if (varsize <= 1) {
+              EmitLong(irl, 0);
+          } else {
+              /* normally ir->src is NULL for OPC_LONG, but in this
+                 case (an array definition) it is a count */
+              EmitOp2(irl, OPC_LONG, NewOperand(IMM_INT, "", 0),
+                      NewOperand(IMM_INT, "", varsize));
+          }
           break;
       }
     }

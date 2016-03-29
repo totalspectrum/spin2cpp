@@ -452,6 +452,12 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
 	flexbuf_addstr(fb, StringFor(ir->opc));
 	flexbuf_addstr(fb, "\t");
 	PrintOperandAsValue(fb, ir->dst);
+        if (ir->src) {
+            // repeat count
+            flexbuf_addstr(fb, "[");
+            PrintOperandAsValue(fb, ir->src);
+            flexbuf_addstr(fb, "]");
+        }
         flexbuf_addstr(fb, "\n");
 	break;
     case OPC_LABELED_BLOB:
