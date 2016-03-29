@@ -1,3 +1,11 @@
+Version 3.0.1
+
+- Fixed the distributed .zip file to have the correct spin2cpp
+  versions.
+- Added a Spin prefix function for --asm output (so other Spin
+  compiler may be used)
+
+
 Version 3.0.0
 
 - Added a code generator to allow for PASM output. spin2cpp --asm can

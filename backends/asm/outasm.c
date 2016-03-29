@@ -18,6 +18,8 @@
 #define ENTRYNAME "entry"
 #define COG_CODE (gl_outputflags & OUTFLAG_COG_CODE)
 #define HUB_CODE (!COG_CODE)
+#define COG_DATA (gl_outputflags & OUTFLAG_COG_DATA)
+#define HUB_DATA (!COG_DATA)
 
 #define IS_FAST_CALL(f) (FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) (FuncData(f)->convention == STACK_CALL)
@@ -31,6 +33,7 @@ static IRList hubdata;
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
 
+static Operand *putcogreg, *getcogreg;
 
 static Operand *abortfunc;
 static Operand *catchfunc;
@@ -67,7 +70,8 @@ static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
-static Operand *SizedMemRef(int size, Operand *addr, int offset);
+static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
+static Operand *CogMemRef(Operand *addr, int offset);
 static void EmitDebugComment(IRList *irl, AST *ast);
 
 typedef struct AsmVariable {
@@ -131,7 +135,11 @@ ValidateStackptr(void)
     if (!stackptr) {
         stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
         stackptr = NewImmediatePtr("sp", stacklabel);
-        stacktop = SizedMemRef(LONG_SIZE, stackptr, 0);
+        if (COG_DATA) {
+            stacktop = CogMemRef(stackptr, 0);
+        } else {
+            stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
+        }
     }
 }
 
@@ -158,7 +166,7 @@ ValidateAbortFuncs(void)
 
 static int IsMemRef(Operand *op)
 {
-    return op && (op->kind >= LONG_REF) && (op->kind <= BYTE_REF);
+    return op && (op->kind >= LONG_REF) && (op->kind <= COG_REF);
 }
 
 static Operand *
@@ -618,9 +626,10 @@ NewFunctionTempRegister()
 }
 
 static Operand *
-SizedMemRef(int size, Operand *addr, int offset)
+SizedHubMemRef(int size, Operand *addr, int offset)
 {
     Operand *temp;
+
     if (size == 1) {
         temp = NewOperand(BYTE_REF, (char *)addr, offset);
     } else if (size == 2) {
@@ -635,28 +644,40 @@ SizedMemRef(int size, Operand *addr, int offset)
 }
 
 static Operand *
-TypedMemRef(AST *type, Operand *addr, int offset)
+TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
     while (type->kind == AST_ARRAYTYPE) {
         type = type->left;
     }
     size = EvalConstExpr(type->left);
-    return SizedMemRef(size, addr, offset);
+    return SizedHubMemRef(size, addr, offset);
 }
+
+static Operand *
+CogMemRef(Operand *addr, int offset)
+{
+    return NewOperand(COG_REF, (char *)addr, offset);
+}
+
 static Operand *
 FrameRef(int offset)
 {
     if (!frameptr) {
         frameptr = GetGlobal(REG_REG, "fp", 0);
     }
-    return SizedMemRef(LONG_SIZE, frameptr, offset);
+    if (COG_DATA)
+        return CogMemRef(frameptr, offset);
+    return SizedHubMemRef(LONG_SIZE, frameptr, offset);
 }
 static Operand *
 StackRef(int offset)
 {
     ValidateStackptr();
-    return SizedMemRef(LONG_SIZE, stackptr, offset);
+    if (COG_DATA) {
+        return CogMemRef(stackptr, offset);
+    }
+    return SizedHubMemRef(LONG_SIZE, stackptr, offset);
 }
 
 static Operand *
@@ -678,7 +699,7 @@ LabelRef(IRList *irl, Symbol *sym)
     Module *P = current;
     Operand *datbase = ValidateDatBase(P);
     
-    temp = TypedMemRef(lab->type, datbase, (int)lab->offset);
+    temp = TypedHubMemRef(lab->type, datbase, (int)lab->offset);
     return temp;
 }
 
@@ -708,13 +729,13 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               Operand *addr = NewImmediate(sym->offset);
               return NewOperand(LONG_REF, (char *)addr, 0);
           }
-          if (0) {
+          ValidateObjbase();
+          if (COG_DATA) {
               // COG memory
               return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0);
           } else {
               // HUB memory
-              ValidateObjbase();
-              return TypedMemRef((AST *)sym->val, objbase, (int)sym->offset);
+              return TypedHubMemRef((AST *)sym->val, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
           fcall = NewAST(AST_FUNCCALL, expr, NULL);
@@ -1671,6 +1692,25 @@ CompileFunccall(IRList *irl, AST *expr)
   return reg;
 }
 
+static bool
+IsCogMem(Operand *addr)
+{
+    switch (addr->kind) {
+    case IMM_COG_LABEL:
+    case COG_REF:
+        return true;
+    case IMM_HUB_LABEL:
+    case IMM_STRING:
+    case IMM_INT:
+    case LONG_REF:
+    case WORD_REF:
+    case BYTE_REF:
+        return false;
+    default:
+        return COG_DATA;
+    }
+}
+
 static Operand *
 CompileMemref(IRList *irl, AST *expr)
 {
@@ -1678,7 +1718,18 @@ CompileMemref(IRList *irl, AST *expr)
   AST *type = expr->left;
 
   addr = Dereference(irl, addr);
-  return TypedMemRef(type, addr, 0);
+  if (IsCogMem(addr)) {
+      int size;
+      while (type->kind == AST_ARRAYTYPE) {
+          type = type->left;
+      }
+      size = EvalConstExpr(type->left);
+      if (size != LONG_SIZE) {
+          ERROR(expr, "Only long memory references allowed in COG memory");
+      }
+      return CogMemRef(addr, 0);
+  }
+  return TypedHubMemRef(type, addr, 0);
 }
 
 static Operand *
@@ -1705,6 +1756,10 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         shift = 1;
         break;
     case BYTE_REF:
+        siz = 1;
+        shift = 0;
+        break;
+    case COG_REF:
         siz = 1;
         shift = 0;
         break;
@@ -1802,7 +1857,7 @@ CompileCoginit(IRList *irl, AST *expr)
         AST *kernel;
         Operand *newstackptr;
         Operand *newstacktop;
-        Operand *const4 = NewImmediate(4);
+        Operand *const4;
         Operand *funcptr;
         OperandList *plist;
         
@@ -1847,7 +1902,13 @@ CompileCoginit(IRList *irl, AST *expr)
             WARNING(stack, "Normally the coginit stack parameter should be an address");
         }
         newstackptr = CompileExpression(irl, stack);
-        newstacktop = SizedMemRef(LONG_SIZE, newstackptr, 0);
+        if (COG_DATA) {
+            newstacktop = CogMemRef(newstackptr, 0);
+            const4 = NewImmediate(1);
+        } else {
+            newstacktop = SizedHubMemRef(LONG_SIZE, newstackptr, 0);
+            const4 = NewImmediate(4);
+        }
         EmitMove(irl, newstacktop, objbase);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // push the function to call

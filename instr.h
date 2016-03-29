@@ -165,7 +165,8 @@ enum Operandkind {
     LONG_REF,      // register indirect memory access; val is the offset
     WORD_REF,
     BYTE_REF,
-
+    COG_REF,       // like LONG_REF but is in COG memory
+    
     // memory
     STRING_DEF, // data to go in memory
     LONG_DEF,
