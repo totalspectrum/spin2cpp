@@ -1040,7 +1040,6 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
                 gl_outputflags |= OUTFLAG_COG_DATA;
-                fprintf(stderr, "WARNING: --data=cog does not work properly\n");
             } else if (!strcmp(argv[0]+7, "hub")) {
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
