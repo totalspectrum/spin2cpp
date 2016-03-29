@@ -110,13 +110,17 @@ $(BUILD)/%.o: %.c $(HEADERS)
 -include $(SPINOBJS:.o=.d)
 
 #
-# target to build a .zip file for a release
+# targets to build a .zip file for a release
 #
-zip:
+spin2cpp.exe: .PHONY
 	$(MAKE) CROSS=win32
-	$(MAKE) CROSS=linux32
 	cp build-win32/spin2cpp.exe .
-	cp build-linux32/spin2cpp .
+
+spin2cpp.linux: .PHONY
+	$(MAKE) CROSS=linux32
+	cp build-linux32/spin2cpp ./spin2cpp.linux
+
+zip: spin2cpp.exe spin2cpp.linux
 	zip -r spin2cpp_v3.0.1.zip README.md COPYING Changelog.txt docs spin2cpp.exe spin2cpp.linux
 
 #
