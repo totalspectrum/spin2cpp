@@ -107,6 +107,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         flexbuf_addchar(fb, '"');
         break;
     case REG_HUBPTR:
+    case REG_COGPTR:
         indirect = (Operand *)reg->val;
         flexbuf_addstr(fb, indirect->name);
         break;

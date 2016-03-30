@@ -159,6 +159,7 @@ enum Operandkind {
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)
     REG_HUBPTR, // a register which holds a hub address
+    REG_COGPTR, // a register which holds a cog address
     REG_ARG,   // for an argument to a function
 
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_ARG)

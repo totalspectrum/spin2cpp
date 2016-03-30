@@ -33,7 +33,7 @@ static IRList hubdata;
 static Operand *mulfunc, *mula, *mulb;
 static Operand *divfunc, *diva, *divb;
 
-static Operand *putcogreg, *getcogreg;
+static Operand *putcogreg;
 
 static Operand *abortfunc;
 static Operand *catchfunc;
@@ -133,11 +133,13 @@ static void
 ValidateStackptr(void)
 {
     if (!stackptr) {
-        stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
-        stackptr = NewImmediatePtr("sp", stacklabel);
         if (COG_DATA) {
-            stacktop = CogMemRef(stackptr, 0);
+            stacklabel = NewOperand(IMM_COG_LABEL, "stackspace", 0);
+            stackptr = NewImmediatePtr("sp", stacklabel);
+            stacktop = CogMemRef(stackptr, 0);            
         } else {
+            stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
+            stackptr = NewImmediatePtr("sp", stacklabel);
             stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
         }
     }
@@ -596,7 +598,11 @@ NewImmediatePtr(const char *name, Operand *val)
         sprintf(temp, "ptr_%s_", val->name);
         name = strdup(temp);
     }
-    return GetGlobal(REG_HUBPTR, name, (intptr_t)val);
+    if (val->kind == IMM_COG_LABEL) {
+        return GetGlobal(REG_COGPTR, name, (intptr_t)val);
+    } else {
+        return GetGlobal(REG_HUBPTR, name, (intptr_t)val);
+    }
 }
 
 static Operand *
@@ -666,8 +672,9 @@ FrameRef(int offset)
     if (!frameptr) {
         frameptr = GetGlobal(REG_REG, "fp", 0);
     }
-    if (COG_DATA)
-        return CogMemRef(frameptr, offset);
+    if (COG_DATA) {
+        return CogMemRef(frameptr, offset / LONG_SIZE);
+    }
     return SizedHubMemRef(LONG_SIZE, frameptr, offset);
 }
 static Operand *
@@ -675,7 +682,7 @@ StackRef(int offset)
 {
     ValidateStackptr();
     if (COG_DATA) {
-        return CogMemRef(stackptr, offset);
+        return CogMemRef(stackptr, offset / LONG_SIZE);
     }
     return SizedHubMemRef(LONG_SIZE, stackptr, offset);
 }
@@ -816,12 +823,20 @@ static void EmitPush(IRList *irl, Operand *src)
 {
     ValidateStackptr();
     EmitMove(irl, stacktop, src);
-    EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(4));
+    if (COG_DATA) {
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(1));
+    } else {
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(4));
+    }
 }
 static void EmitPop(IRList *irl, Operand *src)
 {
     ValidateStackptr();
-    EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
+    if (COG_DATA) {
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(1));
+    } else {
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
+    }
     EmitMove(irl, src, stacktop);
 }
 
@@ -942,7 +957,11 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         EmitPush(irl, frameptr);
         EmitMove(irl, frameptr, stackptr);
         localsize = LocalSize(func);
-        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
+        if (COG_DATA) {
+            EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize / LONG_SIZE));
+        } else {
+            EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize));
+        }
     }
 
     //
@@ -1835,6 +1854,25 @@ CompileCondResult(IRList *irl, AST *expr)
 static void
 EmitLea(IRList *irl, Operand *dst, Operand *src)
 {
+    // check for COG memory references
+    if (!IsMemRef(src) && IsCogMem(src)) {
+        Operand *addr;
+        switch(src->kind) {
+        case IMM_COG_LABEL:
+            src = CogMemRef(src, 0);
+            break;
+        case REG_REG:
+        case REG_LOCAL:
+        case REG_ARG:
+        case REG_HW:
+            src->used = 1;
+            addr = NewOperand(IMM_COG_LABEL, src->name, 0);
+            src = CogMemRef(addr, 0);
+            break;
+        default:
+            break;
+        }
+    }
     if (IsMemRef(src)) {
         int off = src->val;
         src = (Operand *)src->name;
@@ -2247,26 +2285,24 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
 
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 {
-    if (!getcogreg) {
-        getcogreg = NewOperand(IMM_COG_LABEL, "rdcog", 0);
-        if (!result1) {
-            result1 = GetGlobal(REG_REG, "result1", 0);
-        }
+    Operand *dstimm = NewFunctionTempRegister();
+    if (!putcogreg) {
+        putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
-    EmitOp2(irl, OPC_MOVS, getcogreg, src);
-    EmitOp1(irl, OPC_CALL, getcogreg);
-    return EmitOp2(irl, OPC_MOV, dst, result1);
+    EmitLea(irl, dstimm, dst);
+    EmitOp2(irl, OPC_MOVS, putcogreg, src);
+    EmitOp2(irl, OPC_MOVD, putcogreg, dstimm);
+    return EmitOp1(irl, OPC_CALL, putcogreg);
 }
 
 static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 {
+    Operand *srcimm = NewFunctionTempRegister();
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
-        if (!arg1) {
-            arg1 = GetGlobal(REG_REG, "arg1", 0);
-        }
     }
-    EmitMove(irl, arg1, src);
+    EmitLea(irl, srcimm, src);
+    EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
     EmitOp2(irl, OPC_MOVD, putcogreg, dst);
     return EmitOp1(irl, OPC_CALL, putcogreg);
 }
@@ -2778,6 +2814,7 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       case IMM_COG_LABEL:
       case IMM_HUB_LABEL:
       case REG_HUBPTR:
+      case REG_COGPTR:
           EmitLongPtr(irl, (Operand *)g[i].op->val);
           break;
       case IMM_INT:
@@ -3191,15 +3228,9 @@ static const char *builtin_abortcode =
     "    ret\n"
     ;
 
-const char *builtin_rdcog =
-    "rdcog\n"
-    "    mov    result1, 0-0\n"
-    "rdcog_ret\n"
-    "    ret\n"
-    ;
 const char *builtin_wrcog =
     "wrcog\n"
-    "    mov    0-0, arg1\n"
+    "    mov    0-0, 0-0\n"
     "wrcog_ret\n"
     "    ret\n"
     ;
@@ -3233,10 +3264,6 @@ EmitBuiltins(IRList *irl)
             // add a dummy pc register
             (void)GetGlobal(REG_REG, "pc", 0);
         }
-    }
-    if (getcogreg) {
-        Operand *func = NewOperand(IMM_STRING, builtin_rdcog, 0);
-        EmitOp1(irl, OPC_LITERAL, func);
     }
     if (putcogreg) {
         Operand *func = NewOperand(IMM_STRING, builtin_wrcog, 0);
@@ -3480,8 +3507,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     
     // finally the stack, if we need it
     if (stacklabel) {
-        EmitLabel(&hubdata, stacklabel);
-        EmitLong(&hubdata, 0);
+        if (HUB_DATA) {
+            EmitLabel(&hubdata, stacklabel);
+            EmitLong(&hubdata, 0);
+        } else {
+            EmitLabel(&cogdata, stacklabel);
+            EmitLong(&cogdata, 0);
+        }
     }
 
     // now insert the cog data after the cog code, before the orgh
