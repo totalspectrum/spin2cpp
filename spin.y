@@ -155,6 +155,7 @@ CheckYield(AST *body)
 %token T_INSTRMODIFIER "instruction modifier"
 %token T_HWREG      "hardware register"
 %token T_ORG        "ORG"
+%token T_ORGH       "ORGH"
 %token T_RES        "RES"
 %token T_FIT        "FIT"
 
@@ -628,6 +629,10 @@ basedatline:
     { $$ = NewAST(AST_ORG, NULL, NULL); }
   | T_ORG expr T_EOLN
     { $$ = NewAST(AST_ORG, $2, NULL); }
+  | T_ORGH T_EOLN
+    { $$ = NewAST(AST_ORGH, NULL, NULL); }
+  | T_ORGH expr T_EOLN
+    { $$ = NewAST(AST_ORGH, $2, NULL); }
   | T_RES expr T_EOLN
     { $$ = NewAST(AST_RES, $2, NULL); }
   | T_FIT expr T_EOLN

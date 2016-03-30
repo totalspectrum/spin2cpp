@@ -204,6 +204,7 @@ typedef enum InstrOps {
     TWO_OPERANDS_OPTIONAL,
     P2_TJZ_OPERANDS,
     P2_RDWR_OPERANDS,
+    P2_DST_CONST_OK,
     
 } InstrOps;
 

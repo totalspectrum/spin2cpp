@@ -131,6 +131,8 @@ enum astkind {
     AST_ISBETWEEN,  /* left is between two values on right */
     AST_INLINEASM,
     AST_OPERAND,    /* used in ASM backend, ptr is operand */
+
+    AST_ORGH = 92,
 };
 
 struct AST {
