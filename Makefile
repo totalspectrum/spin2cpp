@@ -135,6 +135,7 @@ spincvt.zip: .PHONY
 	$(MAKE) CROSS=win32
 	mkdir -p spincvt/bin
 	cp build-win32/spin2cpp.exe spincvt/bin
+	cp propeller-load/propeller-load.exe spincvt/bin
 	cp spinconvert/spinconvert.tcl spincvt
 	mkdir -p spincvt/examples
 	cp -rp spinconvert/examples/*.spin spincvt/examples
