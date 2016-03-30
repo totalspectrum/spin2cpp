@@ -122,8 +122,31 @@ SetsFlags(IR *ir)
 bool
 InstrModifies(IR *ir, Operand *reg)
 {
-    if (ir->dst == reg)
+    Operand *dst = ir->dst;
+    if (dst == reg) {
         return InstrSetsDst(ir);
+    }
+    return false;
+}
+
+// return TRUE if an instruction uses a register
+bool
+InstrUses(IR *ir, Operand *reg)
+{
+    Operand *dst = ir->dst;
+    Operand *src = ir->src;
+
+    if (src == reg) {
+        return true;
+    }
+    if (dst == reg && InstrReadsDst(ir)) {
+        return true;
+    }
+    if (src && src->kind == IMM_COG_LABEL) {
+        if (!strcmp(reg->name, src->name)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -151,7 +174,7 @@ IsLocalOrArg(Operand *op)
 static bool
 IsImmediate(Operand *op)
 {
-    return op->kind == IMM_INT;
+    return op->kind == IMM_INT || op->kind == IMM_COG_LABEL;
 }
 
 static bool
@@ -278,15 +301,11 @@ IsDeadAfter(IR *instr, Operand *op)
         replaceMeansDead = false;
         continue;
     }
-    if (ir->src == op) {
+    if (InstrUses(ir, op)) {
         // value is used, so definitely not dead
         return false;
     }
     if (ir->dst == op) {
-      /* the value is unused for certain opcodes */
-      if (InstrReadsDst(ir)) {
-	return false;
-      }
       if (ir->cond == COND_TRUE) {
 	return replaceMeansDead;
       } else {
@@ -333,11 +352,6 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
-#if 0
-      if (ir->opc == OPC_DEAD && (ir->dst == orig || ir->dst == replace)) {
-          return false;
-      }
-#endif
       if (IsDummy(ir)) {
           continue;
       }
@@ -350,7 +364,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
           return ir->cond == COND_TRUE;
       }
-      if (ir->src == replace || ir->dst == replace) {
+      if (InstrUses(ir, replace) || ir->dst == replace) {
           return false;
       }
   }
@@ -473,7 +487,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             return NULL;
         }
     }
-    if (ir->src == replace && ir != first_ir) {
+    if (InstrUses(ir, replace) && ir != first_ir) {
       return NULL;
     }
     last_ir = ir;

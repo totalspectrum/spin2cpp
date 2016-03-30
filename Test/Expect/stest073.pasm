@@ -12,9 +12,10 @@ L__0001
  if_a	jmp	#L__0003
 	mov	get_tmp002_, #496
 	add	get_tmp002_, _get_i
-	movs	rdcog, get_tmp002_
-	call	#rdcog
-	add	_get_sum, result1
+	movs	wrcog, get_tmp002_
+	movd	wrcog, #get_tmp003_
+	call	#wrcog
+	add	_get_sum, get_tmp003_
 	add	_get_i, #1
 	jmp	#L__0001
 L__0003
@@ -29,7 +30,7 @@ L__0004
  if_a	jmp	#L__0006
 	mov	put_tmp001_, #496
 	add	put_tmp001_, _put_i
-	mov	arg1, _put_i
+	movs	wrcog, #_put_i
 	movd	wrcog, put_tmp001_
 	call	#wrcog
 	add	_put_i, #1
@@ -37,12 +38,8 @@ L__0004
 L__0006
 _put_ret
 	ret
-rdcog
-    mov    result1, 0-0
-rdcog_ret
-    ret
 wrcog
-    mov    0-0, arg1
+    mov    0-0, 0-0
 wrcog_ret
     ret
 
@@ -61,6 +58,8 @@ arg3
 arg4
 	long	0
 get_tmp002_
+	long	0
+get_tmp003_
 	long	0
 put_tmp001_
 	long	0

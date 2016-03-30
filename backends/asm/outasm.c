@@ -2301,6 +2301,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
+    src = Dereference(irl, src);
     EmitLea(irl, srcimm, src);
     EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
     EmitOp2(irl, OPC_MOVD, putcogreg, dst);
