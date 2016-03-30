@@ -93,13 +93,21 @@ compiler for PASM. C and C++ code use propeller-elf-gcc as a compiler,
 so PropGCC must be installed and its bin directory must be in the
 Windows PATH environment variable.
 
-#### LMM Mode
+#### PASM options...
 
-This applies only to PASM output (C and C++ is always compiled in LMM
-mode). If enabled, the PASM code is placed in HUB memory and loaded
+This brings up a dialog giving options for PASM output.
+With PASM output, code may be placed in COG memory or in HUB memory.
+If the PASM code is placed in HUB memory it must be loaded
 into COG memory by a tiny interpreter (the "LMM kernel"). This causes
 the code to run more slowly, but allows for much larger programs to
 run.
+
+Similarly, data may be placed either in COG or HUB memory. By "data"
+we mean variables and the run time stack. The DAT section is always
+placed in HUB memory, as are any strings.
+
+The default for both code and data is to be placed in HUB memory,
+since that is much larger.
 
 #### Library directory
 

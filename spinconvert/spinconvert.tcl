@@ -10,7 +10,7 @@ set EXT ".pasm"
 set PORT ""
 set radioOut 1
 set makeBinary 0
-set codemem cog
+set codemem hub
 set datamem hub
 set LIBRARY ""
 
@@ -343,10 +343,10 @@ menu .mbar.help -tearoff 0
 .mbar.options add radiobutton -label "C++ Output" -variable radioOut -value 3 -command { resetOutputVars }
 .mbar.options add separator
 .mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
-.mbar.options add checkbutton -label "LMM Mode" -variable codemem -onvalue hub -offvalue cog
+.mbar.options add command -label "PASM Options..." -command { doPasmOptions }
+#.mbar.options add checkbutton -label "LMM Mode" -variable codemem -onvalue hub -offvalue cog
 .mbar.options add separator
 .mbar.options add command -label "Library directory..." -command { getLibrary }
-# .mbar.options add command -label "PASM Options..." -command { doPasmOptions }
 
 .mbar add cascade -menu .mbar.run -label Run
 .mbar.run add command -label "Run on device" -accelerator "^R" -command { doRun }
