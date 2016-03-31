@@ -1,7 +1,7 @@
 Version 3.0.3
 
 - Fixed a problem with the round() function not being recognized in
-  C/C++ code.
+  C/C++ code, and with round() and trunc() output.
 - Fixed abort with no explicit expression in C/C++
 
 Version 3.0.2

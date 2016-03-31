@@ -1238,10 +1238,10 @@ PrintExpr(Flexbuf *f, AST *expr)
     case AST_TRUNC:
     case AST_ROUND:
         if (!IsConstExpr(expr->left)) {
-            ERROR(expr, "argument to trunc is not constant");
+            ERROR(expr, "argument to trunc/float is not constant");
             break;
         }
-        flexbuf_printf(f, "%d", EvalConstExpr(expr->left));
+        flexbuf_printf(f, "%d", EvalConstExpr(expr));
         break;
     case AST_SEQUENCE:
         flexbuf_printf(f, "( ");

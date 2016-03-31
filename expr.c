@@ -840,7 +840,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     case AST_ROUND:
         lval = EvalExpr(expr->left, flags, valid);
         if (!IsFloatType(lval.type)) {
-            ERROR(expr, "applying trunc to a non float expression");
+            ERROR(expr, "applying round to a non float expression");
         }
         return intExpr((int)roundf(intAsFloat(lval.val)));
 

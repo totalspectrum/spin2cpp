@@ -3426,6 +3426,11 @@ EmitMain(IRList *irl, Module *P)
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
     if (HUB_CODE) {
+        if (COG_DATA) {
+            // the stack code below will fail to compile if --data=cog
+            ERROR(NULL, "The combination --code=hub --data=cog is not supported");
+            return;
+        }
         ValidateStackptr();
         ValidateObjbase();
         EmitLabel(irl, spinlabel);
