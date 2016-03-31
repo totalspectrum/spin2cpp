@@ -7,8 +7,6 @@ Support for `_FREE` and `_STACK` (these are read, but ignored at present).
 
 Support inline assembly in C/C++ output.
 
-Implement --data=cog mode (array dereference, mostly).
-
 More documentation.
 
 Code cleanup

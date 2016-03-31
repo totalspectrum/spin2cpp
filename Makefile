@@ -69,7 +69,7 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 	$(YACC) -t -b $(BUILD)/spin -d spin.y
 
 clean:
-	$(RM) $(PROGS) $(BUILD)/*
+	$(RM) $(PROGS) $(BUILD)/* *.zip
 
 test: lextest asmtest cpptest errtest runtest
 
