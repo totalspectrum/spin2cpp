@@ -384,8 +384,10 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         flexbuf_printf(f, "%*cabortChain__->val =  ", indent, ' ');
         if (ast->left) {
             PrintExpr(f, ast->left);
-        } else {
+        } else if (curfunc->resultexpr) {
             PrintExpr(f, curfunc->resultexpr);
+        } else {
+            PrintExpr(f, AstInteger(0));
         }
         flexbuf_printf(f, ";"); PrintNewline(f);
         flexbuf_printf(f, "%*clongjmp(abortChain__->jmp, 1);", indent, ' ');
