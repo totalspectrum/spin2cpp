@@ -1236,6 +1236,7 @@ PrintExpr(Flexbuf *f, AST *expr)
         flexbuf_printf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
         break;
     case AST_TRUNC:
+    case AST_ROUND:
         if (!IsConstExpr(expr->left)) {
             ERROR(expr, "argument to trunc is not constant");
             break;

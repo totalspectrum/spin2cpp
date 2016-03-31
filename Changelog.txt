@@ -1,6 +1,12 @@
+Version 3.0.3
+
+- Fixed a problem with the round() function not being recognized in
+  C/C++ code.
+
 Version 3.0.2
 
 - Added support for SPR and for arrays in cog memory generally.
+- Allowed --data=cog
 
 Version 3.0.1
 
