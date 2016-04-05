@@ -1070,7 +1070,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
 }
 
 //
-// Optimize compares with 0by changing a previous instruction to set
+// Optimize compares with 0 by changing a previous instruction to set
 // flags instead
 //
 
@@ -1097,7 +1097,51 @@ OptimizeCompares(IRList *irl)
             )
         {
             ir_prev = FindPrevSetterForCompare(ir, ir->dst);
-            if (ir_prev
+            if (!ir_prev) {
+                // we can't find where that register was set? maybe it will be
+                // set inside a loop
+                IR *loopend;
+                IR *jmpend;
+                Operand *newlabel;
+                IR *ircmp;
+                IR *irlabel;
+                ir_prev = ir->prev;
+                while (ir_prev && IsDummy(ir_prev)) {
+                    ir_prev = ir_prev->prev;
+                }
+                jmpend = ir_next;
+                while (jmpend && IsDummy(jmpend)) {
+                    jmpend = jmpend->next;
+                }
+                if (ir_prev && ir_prev->opc == OPC_LABEL
+                    && jmpend && jmpend->opc == OPC_JUMP && jmpend->cond == COND_EQ && jmpend->aux)
+                {
+                    loopend = (IR *)jmpend->aux;
+                    loopend = loopend->prev;
+                    while (loopend && IsDummy(loopend)) {
+                        loopend = loopend->prev;
+                    }
+                    if (loopend->opc == OPC_JUMP && loopend->cond == COND_TRUE && loopend->aux && ir_prev == (IR *)loopend->aux) {
+                        // OK, we've found the jump to loop end
+                        // insert a new label after jmpend, copy the compare, and
+                        // change the loopend jmp to jump to the new label
+                        newlabel = NewCodeLabel();
+                        irlabel = NewIR(OPC_LABEL);
+                        irlabel->dst = newlabel;
+                        ircmp = NewIR(ir->opc);
+                        ircmp->cond = COND_TRUE;
+                        ircmp->flags = ir->flags;
+                        ircmp->dst = ir->dst;
+                        ircmp->src = ir->src;
+                        InsertAfterIR(irl, jmpend, irlabel);
+                        InsertAfterIR(irl, loopend->prev, ircmp);
+                        loopend->aux = irlabel;
+                        loopend->dst = newlabel;
+                        loopend->cond = COND_NE;
+                    }
+                }
+            }
+            else if (ir_prev
                 && !InstrSetsFlags(ir_prev)
                 && CanTestZero(ir_prev->opc))
             {

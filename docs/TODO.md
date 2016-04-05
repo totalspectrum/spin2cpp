@@ -22,8 +22,6 @@ Improve the way original Spin code is placed as comments in PASM output.
 Optimization
 ------------
 
-Use djnz for more loops.
-
 Hoist loop invariant assignments out of loops.
 
 Loop strength reduction, particularly for address calculations.

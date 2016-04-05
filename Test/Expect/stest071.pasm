@@ -5,14 +5,13 @@ DAT
 entry
 
 _blink
-L__0003
 	cmps	arg2, #0 wz
  if_e	jmp	#L__0005
+L__0006
 	mov	blink_tmp002_, #1
 	shl	blink_tmp002_, arg1
 	xor	OUTA, blink_tmp002_
-	sub	arg2, #1
-	jmp	#L__0003
+	djnz	arg2, #L__0006
 L__0005
 	rdlong	result1, ptr__dat__
 _blink_ret
