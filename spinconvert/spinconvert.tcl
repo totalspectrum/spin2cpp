@@ -485,6 +485,10 @@ proc doRun {} {
     } else {
 	set Term(Text) [scrolled_text .term -width 80 -height 25 -font $Term(Font) ]
     }
+    if {$Term(Chan) ne ""} {
+	close $Term(Chan)
+	set Term(Chan) ""
+    }
     set makeBinary 1
     regenOutput $SPINFILE
     set binfile [file rootname $PASMFILE]
@@ -497,6 +501,7 @@ proc doRun {} {
     set chan [open $Term(Port) r+]
     fconfigure $chan -mode $Term(Mode) -translation binary -buffering none -blocking 0
     fileevent $chan readable [list receiver $chan]
+    set Term(Chan) $chan
 
     bind $Term(Text) <Any-Key> [list term_out $chan %A]
 
@@ -513,6 +518,7 @@ set PASMFILE ""
 set Term(Port) com1
 set Term(Mode) "115200,n,8,1"
 set Term(Font) Courier
+set Term(Chan) ""
 
 # Global variables
 #
