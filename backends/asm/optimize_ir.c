@@ -198,11 +198,17 @@ IsValidDstReg(Operand *op)
 }
 
 static bool
-InstrSetsFlags(IR *ir)
+InstrSetsFlags(IR *ir, int flags)
 {
-    if ( 0 != (ir->flags & (FLAG_WZ|FLAG_WC)) )
+    if ( 0 != (ir->flags & flags) )
         return true;
     return false;
+}
+
+static bool
+InstrSetsAnyFlags(IR *ir)
+{
+    return InstrSetsFlags(ir, FLAG_WZ|FLAG_WC);
 }
 
 static bool
@@ -735,7 +741,7 @@ HasSideEffects(IR *ir)
     if (ir->dst && ir->dst->kind == REG_HW) {
         return true;
     }
-    if (InstrSetsFlags(ir)) {
+    if (InstrSetsAnyFlags(ir)) {
         return true;
     }
     if (IsBranch(ir)) {
@@ -992,7 +998,7 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
             // else that did the set
             return NULL;
         }
-        if (InstrSetsFlags(ir)) {
+        if (InstrSetsAnyFlags(ir)) {
             // flags are messed up here, so we can't go back any further
             return NULL;
         }
@@ -1142,7 +1148,7 @@ OptimizeCompares(IRList *irl)
                 }
             }
             else if (ir_prev
-                && !InstrSetsFlags(ir_prev)
+                && !InstrSetsAnyFlags(ir_prev)
                 && CanTestZero(ir_prev->opc))
             {
                 ir_prev->flags |= FLAG_WZ;
@@ -1408,7 +1414,7 @@ OptimizePeepholes(IRList *irl)
         while (ir_next && IsDummy(ir_next))
             ir_next = ir_next->next;
         
-        if (ir->opc == OPC_AND && InstrSetsFlags(ir)) {
+        if (ir->opc == OPC_AND && InstrSetsAnyFlags(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst)) {
 	        ReplaceOpcode(ir, OPC_TEST);
@@ -1418,7 +1424,7 @@ OptimizePeepholes(IRList *irl)
             } else if (IsDeadAfter(ir, ir->dst)) {
 		ReplaceOpcode(ir, OPC_TEST);
             }
-        } else if (ir->opc == OPC_SHR && !InstrSetsFlags(ir)
+        } else if (ir->opc == OPC_SHR && !InstrSetsFlags(ir, FLAG_WC)
                    && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
                    && IsImmediateVal(ir->src, 1))
         {
@@ -1437,6 +1443,7 @@ OptimizePeepholes(IRList *irl)
                 IR *lastir = NULL;
                 bool sawir = false;
                 bool changeok = true;
+                int irflags = (ir->flags & FLAG_WZ) | FLAG_WC;
                 for (testir = previr->next; testir && changeok; testir = testir->next) {
                     if (testir == ir) {
                         sawir = true;
@@ -1448,7 +1455,7 @@ OptimizePeepholes(IRList *irl)
                     }
                     if (InstrUsesFlags(testir, FLAG_WC)) {
                         changeok = false;
-                    } else if (InstrSetsFlags(testir)) {
+                    } else if (InstrSetsAnyFlags(testir)) {
                         changeok = sawir;
                         lastir = testir;
                         break;
@@ -1457,8 +1464,8 @@ OptimizePeepholes(IRList *irl)
                 if (changeok) {
                     /* ok, let's go ahead and change it */
                     ReplaceOpcode(previr, OPC_SHR);
-                    previr->flags &= ~FLAG_WZ;
-                    previr->flags |= FLAG_WC;
+                    previr->flags &= ~(FLAG_WZ|FLAG_WC);
+                    previr->flags |= irflags;
                     for (testir = previr->next; testir && testir != lastir;
                          testir = testir->next)
                     {
@@ -1469,9 +1476,9 @@ OptimizePeepholes(IRList *irl)
                 }
             }
         }
-        else if (ir->opc == OPC_OR && ir->cond == COND_C && !InstrSetsFlags(ir)
+        else if (ir->opc == OPC_OR && ir->cond == COND_C && !InstrSetsAnyFlags(ir)
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
-                 && !InstrSetsFlags(ir_next)
+                 && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
                  && ir->dst == ir_next->dst)
         {
@@ -1480,9 +1487,9 @@ OptimizePeepholes(IRList *irl)
             DeleteIR(irl, ir);
             changed = 1;
         }
-        else if (ir->opc == OPC_OR && ir->cond == COND_NE && !InstrSetsFlags(ir)
+        else if (ir->opc == OPC_OR && ir->cond == COND_NE && !InstrSetsAnyFlags(ir)
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_EQ
-                 && !InstrSetsFlags(ir_next)
+                 && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
                  && ir->dst == ir_next->dst)
         {
