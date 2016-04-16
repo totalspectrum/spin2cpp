@@ -13,7 +13,7 @@
 
 
 /* internal structures and defines for printf */
-typedef struct _printf_info {
+typedef struct printf_info {
     // per argument state
     int width;
     int prec;

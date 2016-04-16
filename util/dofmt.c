@@ -194,8 +194,9 @@ static int _fmtputwstr( const wchar_t *wstr, Printf_info *pi )
 //
 static int _fmt_unsupported( Printf_info *pi, va_ptr args )
 {
-    (void)args;
-    return _fmtputstr("unsupported printf, try linking with -lm", pi);
+    (void)fetchint(args, 0, sizeof(int));
+    pi->prec = -1;
+    return _fmtputstr("unknown format specifier", pi);
 }
 
 //
