@@ -728,7 +728,7 @@ ParseDirectives(const char *str)
  * an annotation just looks like a function with no name or body
  */
 void
-DeclareAnnotation(AST *anno)
+DeclareToplevelAnnotation(AST *anno)
 {
     Function *f;
     const char *str;

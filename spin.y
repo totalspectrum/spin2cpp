@@ -147,6 +147,7 @@ CheckYield(AST *body)
 %token T_OBJ        "OBJ"
 %token T_ASM        "ASM"
 %token T_ENDASM     "ENDASM"
+%token T_INLINECCODE "CCODE"
 %token T_BYTE       "BYTE"
 %token T_WORD       "WORD"
 %token T_LONG       "LONG"
@@ -297,7 +298,7 @@ topelement:
   | T_PRI annotation funcdef funcbody
     { DeclareFunction(0, $3, $4, $2, $1); }
   | annotation emptylines
-    { DeclareAnnotation($1); }
+    { DeclareToplevelAnnotation($1); }
 ;
 
 funcdef:
@@ -368,7 +369,6 @@ stmt:
     { $$ = NULL; }
   | error T_EOLN
     { $$ = NULL; }
-  ;
   ;
 
 basicstmt:
@@ -534,6 +534,8 @@ repeatstmt:
     }
   | T_ASM datblock T_ENDASM
     {  $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1); }
+  | T_INLINECCODE
+    {  $$ = $1; }
 ;
 
 lookupexpr:

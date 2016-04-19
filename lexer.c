@@ -200,6 +200,7 @@ lexungetc(LexStream *L, int c)
         fprintf(stderr, "ERROR: unget limit exceeded\n");
     }
     L->ungot[L->ungot_ptr++] = c;
+    if (c == 10) L->eoln = 0;
 }
 
 
@@ -436,6 +437,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case T_VAR:
             case T_CON:
                 L->in_block = c;
+                L->block_firstline = L->lineCounter;
                 //EstablishIndent(L, 1);
                 break;
 	    case T_ASM:
@@ -542,7 +544,9 @@ skipSpace(LexStream *L, AST **ast_ptr)
     int start_indent;
     struct flexbuf cb;
     AST *ast;
-
+    int startcol = 0;
+    int startline = 0;
+    
     flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
 again:
@@ -568,11 +572,13 @@ again:
         int annotate = 0;
         int directive = 0;
 	int doccomment = 0;
-
+        
+        startcol = L->colCounter;
+        startline = L->lineCounter;
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
         /* check for special comments {++... } which indicate 
-           C++ annotations
+           inline C code
            We also set up the preprocessor to emit {#line xx} directives when
            doing #include
         */
@@ -627,6 +633,11 @@ again:
             flexbuf_addchar(&anno, '\0');
             ast->d.string = flexbuf_get(&anno);
             *ast_ptr = ast;
+            // if this is indented and inside a PUB or PRI,
+            // then treat it as inline C code
+            if (startcol > 1 && startline > L->block_firstline && (L->in_block == T_PUB || L->in_block == T_PRI)) {
+                return T_INLINECCODE;
+            }
             return T_ANNOTATION;
         } else if (directive) {
             char *dir;

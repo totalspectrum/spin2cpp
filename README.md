@@ -236,7 +236,7 @@ is still somewhat limited; the only operands permitted are local variables of
 the containing function.
 
 (5) There are various special comments ("annotations") which can control
-how spin2cpp behaves. See below for details.
+how spin2cpp behaves or insert C code into the output. See below for details.
 
 LIMITATIONS
 ===========
@@ -325,7 +325,7 @@ type specifiers with those variables; for example:
     VAR
       long {++volatile} x
 
-makes "x" a volatile variable in C.
+makes `x` a volatile variable in C.
 
 The generated DAT block may similarly have type specifiers associated
 with it by placing those after the DAT statement:
@@ -336,13 +336,19 @@ declares the whole DAT section to be volatile.
 
 Code Annotations
 ----------------
-Whole blocks of C/C++ code may be embedded between {++ and }. Make
+Whole blocks of C/C++ code may be embedded between `{++` and `}`. Make
 sure the '{' and '}' characters are balanced in such code! This
 feature is useful for adding additional methods that appear only in C,
-or for overriding Spin versions of methods. At present, it is not
-possible to override individual Spin methods; one has to disable all
-Spin methods with the {++!nospin} directive (see below) and then write
-replacements for all of them in the code annotations.
+or for overriding Spin versions of methods.
+
+If the `{++` appears inside a `PUB` or `PRI` declaration, and it has
+been indented, then everything until the next `}` is treated as inline
+C code to be inserted directly into the output C or C++. This can be
+useful when combined with `#ifdef` to provide C alternatives to Spin
+code, or for allowing Spin code to be compiled for another platform.
+
+Code annotations are ignored (treated as comments) if the `--asm` switch
+is given.
 
 
 Directives
@@ -356,7 +362,7 @@ recognized:
 
 DEVELOPER NOTES
 ===============
-There is a test suite in Test/; to run it do "make test" (this also
+There is a test suite in Test/; to run it do `make test` (this also
 builds and runs a simple test program for the lexer). Some of the
 tests need to run on the propeller board, so make sure one is plugged
 in to a serial port and works with propeller-load (and that

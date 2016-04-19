@@ -363,6 +363,10 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintIndentedComment(f, ast->right, indent);
         PrintStatement(f, ast->left, indent);
         break;
+    case AST_ANNOTATION:
+        // pure C code to emit inline
+        flexbuf_printf(f, "%s\n", ast->d.string);
+        break;
     case AST_RETURN:
         retval = ast->left;
         if (!retval) {

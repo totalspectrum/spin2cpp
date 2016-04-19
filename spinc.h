@@ -287,7 +287,7 @@ void DeclareFunctions(Module *);
  "comment" is the list of comments preceding this function
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
-void DeclareAnnotation(AST *annotation);
+void DeclareToplevelAnnotation(AST *annotation);
 typedef void (*DataBlockOutFunc)(Flexbuf *f, int c);
 
 /*
