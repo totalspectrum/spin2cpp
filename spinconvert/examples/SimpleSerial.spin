@@ -1,6 +1,11 @@
 ''
 '' serial port definitions
 ''
+'' this is for a very simple serial port
+'' also note: if PC is defined then we
+'' substitute some C code instead
+''
+
 {{CON
   txpin = 30
   rxpin = 31
@@ -18,14 +23,32 @@ VAR
 ''
 '' code: largely taken from FullDuplexSerial.spin
 ''
+
+#ifdef PC
+'' we will be using stdio, so force it to
+'' be included
+{++
+#include <stdio.h>
+ }
+#endif
+
 PUB start(rx_pin, tx_pin, mode, baudrate)
+#ifndef PC
   baud := baudrate
   bitcycles := clkfreq / baudrate
   txpin := tx_pin
   txmask := (1<<txpin)
   rxpin := rx_pin
+#endif
+  return 1
   
 PUB tx(c) | val, waitcycles
+#ifdef PC
+  '' just emit direct C code here
+  {++
+  putchar(c);
+  }
+#else
   OUTA |= txmask
   DIRA |= txmask
   val := (c | 256) << 1
@@ -37,6 +60,7 @@ PUB tx(c) | val, waitcycles
      else
        OUTA &= !txmask
      val >>= 1
+#endif
 
 PUB str(s) | c
   REPEAT WHILE ((c := byte[s++]) <> 0)
