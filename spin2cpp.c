@@ -1241,7 +1241,8 @@ main(int argc, char **argv)
 
     /* add some predefined symbols */
     
-    pp_define(&gl_pp, "__SPIN2X__", str_(VERSION_MAJOR));
+    pp_define(&gl_pp, "__SPIN2X__", str_(VERSION_MAJOR)); // deprecated
+    pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
     if (gl_output == OUTPUT_ASM) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
     }

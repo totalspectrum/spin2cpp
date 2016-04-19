@@ -212,7 +212,7 @@ spin2cpp supports a few extensions to the Spin language:
 
 Symbol           | When Defined
 -----------------|-------------
-`__SPIN2X__`     |  always defined
+`__SPINCVT__`     |  always defined
 `__SPIN2PASM__`  | if --asm is given (PASM output)
 `__SPIN2CPP__`   | if C++ or C is being output
 `__cplusplus`    | if C++ is being output

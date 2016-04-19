@@ -1,3 +1,9 @@
+Version 3.0.4
+
+- Changed the __SPIN2X__ define to __SPINCVT__. The old __SPIN2X__
+  symbol is still defined in the preprocessor for now, but is deprecated.
+- Allow {++ ... } to insert C++/C code inside PUB or PRI.
+
 Version 3.0.3
 
 - Fixed a problem with the round() function not being recognized in
