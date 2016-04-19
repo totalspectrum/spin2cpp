@@ -160,7 +160,7 @@ NewModule(const char *fullname)
 }
 
 /*
- * add a global variable symbols
+ * add global variable functions
  */
 const char system_spincode[] =
     "pri waitcnt(x)\n"
@@ -334,14 +334,18 @@ InitGlobalModule(void)
     if (gl_output == OUTPUT_ASM) {
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
-    
-        strToLex(&globalModule->L, system_spincode, "_system_");
-        yyparse();
-        ProcessModule(globalModule);
-        InferTypes(globalModule);
-        ProcessFuncs(globalModule);
-        SpinTransform(globalModule);
-        CompileIntermediate(globalModule);
+
+        if (gl_p2) {
+            /* need to set up Prop2 versions of the system funcs here */
+        } else {
+            strToLex(&globalModule->L, system_spincode, "_system_");
+            yyparse();
+            ProcessModule(globalModule);
+            InferTypes(globalModule);
+            ProcessFuncs(globalModule);
+            SpinTransform(globalModule);
+            CompileIntermediate(globalModule);
+        }
         curfunc = NULL;
         /* restore temp variable base */
         (void)SetTempVariableBase(oldtmpnum, 89999);
@@ -756,7 +760,7 @@ init()
     ast_type_string = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
-    initLexer(0);
+    initLexer(gl_p2);
 
     /* fill in the global symbol table */
     InitGlobalModule();
@@ -785,6 +789,7 @@ Usage(void)
     fprintf(stderr, "  --noopt:   turn off all optimization in PASM output\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
+    fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     fprintf(stderr, "  -g:         add debug info to output (original source for PASM output)\n");
     fprintf(stderr, "  -I dir:     add dir to the object search path\n");
@@ -1073,6 +1078,9 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--normalize", 8) || !strcmp(argv[0], "-n")) {
             gl_normalizeIdents = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--p2", 4)) {
+            gl_p2 = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_output = OUTPUT_C;

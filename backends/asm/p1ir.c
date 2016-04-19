@@ -380,6 +380,7 @@ P1AssembleIR(struct flexbuf *fb, IR *ir)
         case SRC_OPERAND_ONLY:
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:
+        case P2_JUMP:
             flexbuf_addstr(fb, "\t");
             PrintOperandSrc(fb, ir->dst);
             break;

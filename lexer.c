@@ -1340,6 +1340,24 @@ instr_p2[] = {
   { "lockclr",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR },
   { "lockset",0x0d600007, P2_DST_CONST_OK, OPC_GENERIC_NR },
 
+  // indirect jumps via register
+  // normally the user will write "jmp x" and the assembler
+  // will recognize x is a register and rewrite it as "jmp.i x"
+  { "jmp.i" , 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "call.i", 0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "calla.i",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "callb.i",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC },
+
+  { "ret",    0x0d600031, NO_OPERANDS, OPC_GENERIC_BRANCH },
+  { "reta",   0x0d600032, NO_OPERANDS, OPC_RET },
+  { "retb",   0x0d600033, NO_OPERANDS, OPC_GENERIC_BRANCH },
+
+  // long jumps
+  { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP },
+  { "call",   0x0da0002d, P2_JUMP, OPC_GENERIC_BRANCH },
+  { "calla",  0x0dc0002e, P2_JUMP, OPC_CALL },
+  { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH },
+  
   { NULL, 0, 0, 0},
 };
 
@@ -1392,8 +1410,8 @@ HwReg hwreg_p2[] = {
 #define IF_NEVER_P1 0xffc3ffff
 
 InstrModifier modifiers_p1[] = {
-    { "if_always", IF_NEVER_P1 | (0xf<<18) },
     { "if_never",  IF_NEVER_P1 },
+    { "if_always", IF_NEVER_P1 | (0xf<<18) },
 
     { "if_a",           IF_NEVER_P1 | (0x1<<18) },
     { "if_nc_and_nz",   IF_NEVER_P1 | (0x1<<18) },
@@ -1455,8 +1473,13 @@ InitPasm(int flags)
     InstrModifier *modifiers;
     int i;
 
-    instr = instr_p1;
-    hwreg = hwreg_p1;
+    if (flags) {
+        instr = instr_p2;
+        hwreg = hwreg_p2;
+    } else {
+        instr = instr_p1;
+        hwreg = hwreg_p1;
+    }
     modifiers = modifiers_p1;
     
 
