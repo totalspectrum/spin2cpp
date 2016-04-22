@@ -9,13 +9,31 @@ Demo directory, as are some floating point samples in Demo/Float.
 INSTALLATION
 ============ 
 
-To install in Windows, just unzip the release ZIP file and then copy
-spin2cpp.exe to wherever your propeller-elf-gcc.exe file is installed.
-(In fact spin2cpp.exe doesn't usually care where it is located, but
-putting it with propeller-elf-gcc is convenient.)
+To install in Windows, just unzip the release ZIP file. If you want to
+use the command line version of spin2cpp, you should copy spin2cpp.exe
+to wherever your propeller-elf-gcc.exe file is installed.  (In fact
+spin2cpp.exe doesn't usually care where it is located, but putting it
+with propeller-elf-gcc is convenient.)
 
-USAGE
-=====
+If you only want to use the `--asm` option of spin2cpp to generate
+PASM, then you do not need propeller-elf-gcc or anything else from
+PropGCC.
+
+The GUI tool spincvt also doesn't require anything from PropGCC,
+unless you want to convert some code to C and then compile it
+(compiling from PASM can all be done within the GUI, no external tool
+necessary).
+
+GUI USAGE
+=========
+
+Run the spincvt.exe program and then use File>Open to load a Spin file. You
+should see the converted PASM appear on the right. You can use the Options
+menu to change the output type to C or C++. See the Help menu for more
+details.
+
+COMMAND LINE USAGE
+==================
 
 spin2cpp is a command line tool. To use it, just give the name of the
 .spin file it should convert, e.g:
