@@ -1,6 +1,12 @@
 OVERVIEW
 ========
 
+Spin is a language that is the "native" language of the Parallax
+Propeller chip (a very cool multi-core microprocessor).  Spin is
+normally compiled to a bytecode which is interpreted by a program in
+ROM. This results in space efficient but slow code.  In contrast, C
+compilers can produce direct machine language.
+
 spin2cpp started off as a program to convert Spin language programs to C++.
 It has grown considerably past that now, and can perform conversions like:
 
