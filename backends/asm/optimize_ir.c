@@ -111,13 +111,6 @@ IsLabel(IR *ir)
   return ir->opc == OPC_LABEL;
 }
 
-// true if an instruction can change flags
-static bool
-SetsFlags(IR *ir)
-{
-  return 0 != (ir->flags & (FLAG_WC|FLAG_WZ));
-}
-
 // return TRUE if an instruction modifies a register
 bool
 InstrModifies(IR *ir, Operand *reg)
@@ -590,7 +583,7 @@ ApplyConditionAfter(IR *instr, int val)
       return;
     }
     ir->cond = newcond;
-    if (SetsFlags(ir))
+    if (InstrSetsAnyFlags(ir))
       return;
   }
 }
@@ -654,7 +647,7 @@ TransformConstDst(IR *ir, Operand *imm)
     default:
       return 0;
     }
-  if (SetsFlags(ir)) {
+  if (InstrSetsAnyFlags(ir)) {
     ApplyConditionAfter(ir, val1);
   }
   if (setsResult) {
@@ -712,17 +705,17 @@ OptimizeMoves(IRList *irl)
         while (ir != 0) {
             ir_next = ir->next;
             if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
-	      if (ir->src == ir->dst && !SetsFlags(ir)) {
+	      if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
 		} else if (IsImmediate(ir->src)) {
                     change |= PropagateConstForward(ir_next, ir->dst, ir->src);
-	      } else if (!SetsFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+	      } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
                     change = 1;
                 }
-	      else if ( !SetsFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+	      else if ( !InstrSetsAnyFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
                     ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
                     DeleteIR(irl, ir);
                     change = 1;
@@ -1400,6 +1393,12 @@ ReplaceZWithNC(IR *ir)
 // if_nc andn a, b
 //    becomes muxc a, b
 //
+// and x, #0xf
+// mov y, x
+// and y #0xff
+//
+// can remove the last and, it is redundant
+//
 
 int
 OptimizePeepholes(IRList *irl)
@@ -1407,14 +1406,50 @@ OptimizePeepholes(IRList *irl)
     IR *ir, *ir_next;
     IR *previr;
     int changed = 0;
+    int opc;
     
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
-        while (ir_next && IsDummy(ir_next))
+        while (ir_next && IsDummy(ir_next)) {
             ir_next = ir_next->next;
-        
-        if (ir->opc == OPC_AND && InstrSetsAnyFlags(ir)) {
+        }
+        opc = ir->opc;
+        if ( (opc == OPC_AND || opc == OPC_OR)
+             && IsImmediate(ir->src)
+             && !InstrSetsFlags(ir, FLAG_WC)
+            )
+        {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_MOV && !IsImmediate(previr->src)) {
+                previr = FindPrevSetterForReplace(previr, previr->src);
+            }
+            if (previr && previr->opc == opc && IsImmediate(previr->src)) {
+                unsigned oldmask = previr->src->val;
+                unsigned newmask = ir->src->val;
+                // check to see if ir is redundant
+                if (opc == OPC_AND && ((oldmask & newmask) == oldmask)) {
+                    if (InstrSetsFlags(ir, FLAG_WZ)) {
+                        ReplaceOpcode(ir, OPC_CMP);
+                        ir->src->val = 0;
+                    } else {
+                        DeleteIR(irl, ir);
+                    }
+                    changed = 1;
+                    goto done;
+                } else if (opc == OPC_OR && ((oldmask | newmask) == oldmask)) {
+                    if (InstrSetsFlags(ir, FLAG_WZ)) {
+                        ReplaceOpcode(ir, OPC_CMP);
+                        ir->src->val = 0;
+                    } else {
+                        DeleteIR(irl, ir);
+                    }
+                    changed = 1;
+                    goto done;
+                }
+            }
+        }
+        if (opc == OPC_AND && InstrSetsAnyFlags(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst)) {
 	        ReplaceOpcode(ir, OPC_TEST);
@@ -1424,7 +1459,7 @@ OptimizePeepholes(IRList *irl)
             } else if (IsDeadAfter(ir, ir->dst)) {
 		ReplaceOpcode(ir, OPC_TEST);
             }
-        } else if (ir->opc == OPC_SHR && !InstrSetsFlags(ir, FLAG_WC)
+        } else if (opc == OPC_SHR && !InstrSetsFlags(ir, FLAG_WC)
                    && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
                    && IsImmediateVal(ir->src, 1))
         {
@@ -1473,10 +1508,11 @@ OptimizePeepholes(IRList *irl)
                     }
                     DeleteIR(irl, ir);
                     changed = 1;
+                    goto done;
                 }
             }
         }
-        else if (ir->opc == OPC_OR && ir->cond == COND_C && !InstrSetsAnyFlags(ir)
+        else if (opc == OPC_OR && ir->cond == COND_C && !InstrSetsAnyFlags(ir)
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
@@ -1486,8 +1522,9 @@ OptimizePeepholes(IRList *irl)
             ReplaceOpcode(ir_next, OPC_MUXC);
             DeleteIR(irl, ir);
             changed = 1;
+            goto done;
         }
-        else if (ir->opc == OPC_OR && ir->cond == COND_NE && !InstrSetsAnyFlags(ir)
+        else if (opc == OPC_OR && ir->cond == COND_NE && !InstrSetsAnyFlags(ir)
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_EQ
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
@@ -1497,7 +1534,9 @@ OptimizePeepholes(IRList *irl)
             ReplaceOpcode(ir_next, OPC_MUXNZ);
             DeleteIR(irl, ir);
             changed = 1;
+            goto done;
         }
+    done:
         ir = ir_next;
     }
     return changed;
