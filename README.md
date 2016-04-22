@@ -1,10 +1,21 @@
-This is a converter from the Spin language to C/C++. It can deal with most
-objects and constructs that are commonly encountered. In fact, it should
-be able to deal with almost any Spin program; please report any that it
-cannot convert.
+OVERVIEW
+========
 
-A simple "Hello, world" program that compiles and runs is given in the
-Demo directory, as are some floating point samples in Demo/Float.
+spin2cpp started off as a program to convert Spin language programs to C++.
+It has grown considerably past that now, and can perform conversions like:
+
+  * Converting Spin code to directly to PASM
+  * Compiling a Spin program to executable binary (using PASM instructions,
+    so *much* faster than ordinary Spin bytecodes, but also larger)
+  * Converting Spin to C++ or to plain C
+  * Extracting the binary portion of a DAT section
+  * Converting PASM style assembly in a DAT section to a GAS style .s file
+
+spin2cpp should be able to deal with any Spin program; please report
+any that it cannot convert.
+
+Along with spin2cpp there is a GUI program (spincvt) which many users
+will find more comfortable.
 
 INSTALLATION
 ============ 
@@ -35,7 +46,7 @@ details.
 COMMAND LINE USAGE
 ==================
 
-spin2cpp is a command line tool. To use it, just give the name of the
+spin2cpp is the command line tool. To use it, just give the name of the
 .spin file it should convert, e.g:
 
     spin2cpp test.spin
@@ -79,8 +90,8 @@ explicitly give it in those cases.
 Examples
 --------
 
-spin2cpp is a command line tool, so the examples below are for a CLI
-and assume that the appropriate C compilers are in your PATH.
+The examples below use spin2cpp in a CLI and assume that the
+appropriate C compilers are in your PATH.
 
 (1) To compile the Count.spin demo with propeller-elf-gcc in
 C++ mode, do:
