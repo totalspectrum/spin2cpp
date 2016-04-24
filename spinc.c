@@ -852,9 +852,11 @@ ReplaceExtension(const char *basename, const char *extension)
 
 //
 // add a propeller checksum to a binary file
+// may also pad the image out to form a .eeprom
+// image, if eepromSize is non-zero
 //
 int
-DoPropellerChecksum(const char *fname)
+DoPropellerChecksum(const char *fname, size_t eepromSize)
 {
     FILE *f = fopen(fname, "r+b");
     unsigned char checksum = 0;
@@ -910,6 +912,18 @@ DoPropellerChecksum(const char *fname)
         return -1;
     }
     fflush(f);
+    if (eepromSize && eepromSize >= len + 8) {
+        fseek(f, 0L, SEEK_END);
+        fputc(0xff, f); fputc(0xff, f);
+        fputc(0xf9, f); fputc(0xff, f);
+        fputc(0xff, f); fputc(0xff, f);
+        fputc(0xf9, f); fputc(0xff, f);
+        len += 8;
+        while (len < eepromSize) {
+            fputc(0, f);
+            len++;
+        }
+    }
     fclose(f);
     return 0;
 }

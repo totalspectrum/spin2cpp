@@ -54,6 +54,7 @@ Usage(void)
     fprintf(stderr, "  --data=x : PASM output only: control placement of data\n");
     fprintf(stderr, "             x can be cog or hub (default is hub)\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
+    fprintf(stderr, "  --eeprom:  create EEPROM binary file for download\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
@@ -157,6 +158,7 @@ main(int argc, char **argv)
     int outputBin = 0;
     int outputAsm = 0;
     int compile = 0;
+    size_t eepromSize = 0;
     Module *P;
     int retval = 0;
     const char *cext = ".cpp";
@@ -279,19 +281,26 @@ main(int argc, char **argv)
             cext = ".c";
             argv++; --argc;
             appendCompiler("catalina");
-        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")) {
+        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
+                   || !strncmp(argv[0], "--eep", 5) )
+        {
             compile = 1;
             outputMain = 1;
 	    outputBin = 1;
-            argv++; --argc;
             if (gl_output == OUTPUT_ASM) {
                 gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
                 appendCompiler(gl_progname);
                 appendToCmd("--dat");
-                appendToCmd("--binary");
+                appendToCmd(argv[0]);
             } else {
                 appendCompiler(NULL);
             }
+            if (!strncmp(argv[0], "--eep", 5)) {
+                eepromSize = 32768;
+            } else {
+                eepromSize = 0;
+            }
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--nopre", 7)) {
             gl_preprocess = 0;
             argv++; --argc;
@@ -482,14 +491,18 @@ main(int argc, char **argv)
             } else {
 	        if (!outname) {
                     if (outputBin) {
-                        outname = ReplaceExtension(P->fullname, ".binary");
+                        if (eepromSize) {
+                            outname = ReplaceExtension(P->fullname, ".eeprom");
+                        } else {
+                            outname = ReplaceExtension(P->fullname, ".binary");
+                        }
                     } else {
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
-                    DoPropellerChecksum(outname);
+                    DoPropellerChecksum(outname, eepromSize);
                 }
             }
         } else if (outputAsm) {
@@ -500,7 +513,11 @@ main(int argc, char **argv)
                 if (binname) {
                     asmname = ReplaceExtension(binname, ".pasm");
                 } else {
-                    binname = ReplaceExtension(P->fullname, ".binary");
+                    if (eepromSize) {
+                        binname = ReplaceExtension(P->fullname, ".eeprom");
+                    } else {
+                        binname = ReplaceExtension(P->fullname, ".binary");
+                    }
                 }
             } else {
                 asmname = gl_outname;
@@ -548,7 +565,11 @@ main(int argc, char **argv)
 
                 if (gl_outname == NULL) {
                     elfname = ReplaceExtension(argv[0], ".elf");
-                    binname = ReplaceExtension(elfname, ".binary");
+                    if (eepromSize) {
+                        binname = ReplaceExtension(elfname, ".eeprom");
+                    } else {
+                        binname = ReplaceExtension(elfname, ".binary");
+                    }
                 } else if (outputBin) {
                     elfname = ReplaceExtension(gl_outname, ".elf");
                     binname = gl_outname;
@@ -576,7 +597,7 @@ main(int argc, char **argv)
                     retval = system(cmdline);
                     remove(elfname);
                     if (retval == 0) {
-                        retval = DoPropellerChecksum(binname);
+                        retval = DoPropellerChecksum(binname, eepromSize);
                     }
 		}
 		if (retval != 0)

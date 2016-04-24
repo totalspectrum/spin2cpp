@@ -1,5 +1,6 @@
 Version 3.0.5
 
+- Added --eeprom option to produce an EEPROM file
 - Added --cc= option to change C compiler
 - Improved optimization of pin masks in some cases
 - Allow {++ ... } to insert C++/C code inside PUB or PRI.

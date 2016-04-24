@@ -72,7 +72,7 @@ static void
 PrintInfo(void)
 {
     fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2016 Total Spectrum Software Inc.\n");
-    fprintf(stderr, "Compiled on: " __DATE__ "\n");
+    fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
 }
 
 static void
@@ -83,6 +83,7 @@ Usage(void)
     fprintf(stderr, "  [ -L or -I <path> ] add a directory to the include path\n");
     fprintf(stderr, "  [ -o ]             output filename\n");
     fprintf(stderr, "  [ -b ]             output binary file format\n");
+    fprintf(stderr, "  [ -e ]             output eeprom file format\n");
     fprintf(stderr, "  [ -c ]             output only DAT sections\n");
     fprintf(stderr, "  [ -f ]             output list of file names\n");
     fprintf(stderr, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
@@ -188,7 +189,9 @@ main(int argc, char **argv)
     time_t timep;
     int i;
     const char *outname = NULL;
-
+    size_t eepromSize = 32768;
+    int useEeprom = 0;
+    
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor
        symbols. The rest of initialization happens after command line
@@ -282,20 +285,25 @@ main(int argc, char **argv)
             PrintInfo();
             Usage();
             exit(0);
-        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")) {
+        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
+                   || !strcmp(argv[0], "-e"))
+        {
             compile = 1;
             outputMain = 1;
 	    outputBin = 1;
-            argv++; --argc;
+            if (!strcmp(argv[0], "-e")) {
+                useEeprom = 1;
+            }
             gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
             if (gl_output == OUTPUT_ASM) {
                 appendCompiler(gl_progname);
                 appendToCmd("--dat");
-                appendToCmd("--binary");
+                appendToCmd(argv[0]);
                 appendToCmd("-q");
             } else {
                 appendCompiler(NULL);
             }
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
             gl_preprocess = 0;
             argv++; --argc;
@@ -470,14 +478,18 @@ main(int argc, char **argv)
             } else {
 	        if (!outname) {
                     if (outputBin) {
-                        outname = ReplaceExtension(P->fullname, ".binary");
+                        if (useEeprom) {
+                            outname = ReplaceExtension(P->fullname, ".eeprom");
+                        } else {
+                            outname = ReplaceExtension(P->fullname, ".binary");
+                        }
                     } else {
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
-                    DoPropellerChecksum(outname);
+                    DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
                 }
             }
         } else if (outputAsm) {
@@ -488,7 +500,11 @@ main(int argc, char **argv)
                 if (binname) {
                     asmname = ReplaceExtension(binname, ".pasm");
                 } else {
-                    binname = ReplaceExtension(P->fullname, ".binary");
+                    if (useEeprom) {
+                        binname = ReplaceExtension(P->fullname, ".eeprom");
+                    } else {
+                        binname = ReplaceExtension(P->fullname, ".binary");
+                    }
                 }
             } else {
                 asmname = gl_outname;

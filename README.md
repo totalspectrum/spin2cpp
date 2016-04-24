@@ -207,6 +207,9 @@ Spin2cpp accepts the following options:
   the DAT section. If --binary is also given, prepends an appropriate
   Spin executable header so the resulting output is executable.
 
+`--eeprom`
+  Like `--binary`, but pads the file out to fill a 32768 byte EEPROM.
+  
 `--elf`
   Run PropGCC and output a linked executable ELF file. Note that
   this option imples --main. Also note that after --elf you may

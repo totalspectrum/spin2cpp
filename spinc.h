@@ -416,7 +416,9 @@ char *ReplaceExtension(const char *base, const char *ext);
 char *ReplaceDirectory(const char *basename, const char *directory);
 
 // add a propeller checksum to a binary file
-int DoPropellerChecksum(const char *fname);
+// if eepromSize is non-zero, create an EEPROM compatible file
+// of the given size
+int DoPropellerChecksum(const char *fname, size_t eepromSize);
 
 // initialization functions
 void Init();
