@@ -16,7 +16,8 @@ It has grown considerably past that now, and can perform conversions like:
   * Converting Spin to C++ or to plain C
   * Extracting the binary portion of a DAT section
   * Converting PASM style assembly in a DAT section to a GAS style .s file
-
+  * Compiling Spin programs on a PC or other platform (with some programmer help)
+  
 spin2cpp should be able to deal with any Spin program; please report
 any that it cannot convert.
 
@@ -412,6 +413,56 @@ recognized:
      {++!nospin}: do not output any Spin methods
      {++!ccode}:  output C rather than C++ code
 
+
+COMPILING ON ANOTHER PLATFORM
+=============================
+It's possible to use spin2cpp together with the `--cc=` option to compile
+simple Spin code on a PC. This might make debugging easier. To do this,
+it is necessary to `#ifdef` any Propeller specific code and provide generic
+C replacements in annotations marked with `{++` and `}`. For example,
+a simple serial object that will work on both Propeller and PC could look
+like:
+```
+#ifdef PC
+'' we will be using stdio, so force it to
+'' be included
+{++
+#include <stdio.h>
+ }
+#endif
+
+PUB start(rx_pin, tx_pin, mode, baudrate)
+#ifndef PC
+  baud := baudrate
+  bitcycles := clkfreq / baudrate
+  txpin := tx_pin
+  txmask := (1<<txpin)
+  rxpin := rx_pin
+#endif
+  return 1
+  
+PUB tx(c) | val, waitcycles
+#ifdef PC
+  '' just emit direct C code here
+  {++
+  putchar(c);
+  }
+#else
+  OUTA |= txmask
+  DIRA |= txmask
+  val := (c | 256) << 1
+  waitcycles := CNT
+  repeat 10
+     waitcnt(waitcycles += bitcycles)
+     if (val & 1)
+       OUTA |= txmask
+     else
+       OUTA &= !txmask
+     val >>= 1
+#endif
+```
+The final program would be compiled on e.g. a Linux machine with
+the spin2cpp options `--cc=gcc -DPC=1`.
 
 DEVELOPER NOTES
 ===============
