@@ -186,6 +186,8 @@ Spin2cpp accepts the following options:
   functions are avoided. If used in conjunction with some code
   annotations and ifdefs it may be possible to run simple Spin programs
   on a PC or Arduino.
+  The `--cc=` option must come before any other options that set the output
+  type (e.g. `--elf`).
   
 `--ccode`
   Output C code instead of C++. Note that in C mode methods typically
