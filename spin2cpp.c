@@ -271,7 +271,7 @@ main(int argc, char **argv)
             outputMain = 1;
             argv++; --argc;
             appendCompiler(NULL);
-            gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
+            // gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS; this can cause issues
         } else if (!strncmp(argv[0], "--catalina", 10)) {
             compile = 1;
             outputMain = 1;
@@ -284,8 +284,8 @@ main(int argc, char **argv)
             outputMain = 1;
 	    outputBin = 1;
             argv++; --argc;
-            gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
             if (gl_output == OUTPUT_ASM) {
+                gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
                 appendCompiler(gl_progname);
                 appendToCmd("--dat");
                 appendToCmd("--binary");

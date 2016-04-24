@@ -742,6 +742,10 @@ OutputCppCode(const char *filename, Module *P, int printMain)
     PrintCppFile(&fb, P);
     if (printMain) {
         Function *defaultMethod = P->functions;
+        while (defaultMethod && defaultMethod->name == NULL) {
+            // skip over any dummy methods for annotations
+            defaultMethod = defaultMethod->next;
+        }
         if (defaultMethod == NULL) {
             ERROR(NULL, "unable to find default method for %s", P->classname);
             goto done;
