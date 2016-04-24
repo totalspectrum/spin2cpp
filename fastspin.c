@@ -276,6 +276,10 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[0], "-q")) {
             quiet = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-h")) {
+            PrintInfo();
+            Usage();
+            exit(0);
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")) {
             compile = 1;
             outputMain = 1;
