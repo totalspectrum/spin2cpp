@@ -46,7 +46,7 @@ VPATH=.:util:backends:backends/asm:backends/cpp:backends/dat
 
 HEADERS = $(BUILD)/spin.tab.h
 
-PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT)
+PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
 
 UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c
 
@@ -89,6 +89,9 @@ runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
 
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+$(BUILD)/fastspin$(EXT): fastspin.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):

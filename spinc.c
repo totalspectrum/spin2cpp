@@ -55,6 +55,8 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
+int gl_printprogress = 0;
+int gl_depth = 0;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
 AST *ast_type_generic;
@@ -606,6 +608,7 @@ ProcessModule(Module *P)
  * This is the main entry point for the compiler
  * "name" is the file name; if it has no .spin suffix
  * we'll try it with one
+ * if "gl_depth" is >= 0 then print the file name
  */
 Module *
 ParseFile(const char *name)
@@ -629,6 +632,23 @@ ParseFile(const char *name)
     save = current;
     P = NewModule(fname);
 
+    if (gl_printprogress) {
+        int n = gl_depth;
+        const char *tail;
+        while (n > 0) {
+            printf("|-");
+            --n;
+        }
+        tail = FindLastDirectoryChar(fname);
+        if (tail) {
+            tail++;
+        } else {
+            tail = fname;
+        }
+        printf("%s\n", tail);
+        gl_depth++;
+    }
+    
     /* if we have already visited an object with this name, skip it */
     /* also finds the last element in the list, so we can append to
        the list easily */
@@ -638,6 +658,9 @@ ParseFile(const char *name)
             free(fname);
             free(P);
             fclose(f);
+            if (gl_printprogress) {
+                gl_depth--;
+            }
             return Q;
         }
         LastQ = Q;
@@ -679,7 +702,9 @@ ParseFile(const char *name)
         free(fname);
         exit(1);
     }
-
+    if (gl_printprogress) {
+        gl_depth--;
+    }
     ProcessModule(P);
 
     /* work to avoid conflicts with variables and constants */
@@ -764,6 +789,25 @@ Init()
     InitGlobalModule();
 }
 
+const char *
+FindLastDirectoryChar(const char *fname)
+{
+    const char *found = NULL;
+    if (!fname) return NULL;
+    while (*fname) {
+        if (*fname == '/'
+#ifdef WIN32
+            || *fname == '\\'
+#endif
+            )
+        {
+            found = fname;
+        }
+        fname++;
+    }
+    return found;
+}
+
 //
 // use the directory portion of "directory" (if any) and then add
 // on the basename
@@ -778,12 +822,7 @@ ReplaceDirectory(const char *basename, const char *directory)
     exit(2);
   }
   strcpy(ret, directory);
-  dot = strrchr(ret, '/');
-#ifdef WIN32
-  if (!dot) {
-      dot = strrchr(ret, '\\');
-  }
-#endif
+  dot = (char *)FindLastDirectoryChar(ret);
   if (dot) {
       *dot++ = '/';
   } else {

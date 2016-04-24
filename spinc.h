@@ -55,6 +55,7 @@ extern int gl_normalizeIdents; /* if set, change case of all identifiers to all 
 extern int gl_debug;    /* flag: if set, include debugging directives */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_optimize_flags; /* flags for optimization */
+extern int gl_printprogress;  /* print files as we process them */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_NO_ASM 0x100
 
@@ -355,10 +356,6 @@ extern int IsReservedWord(const char *str);
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);
 
-/* utility to create a new string by adding an extension to a base file name */
-/* if the base string has an extension already, we remove it */
-char *ReplaceExtension(const char *base, const char *ext);
-
 /* different kinds of output functions */
 void OutputCppCode(const char *name, Module *P, int printMain);
 void OutputDatFile(const char *name, Module *P, int prefixBin);
@@ -404,7 +401,15 @@ void CompileIntermediate(Module *P);
 int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
 
 // some string utilities
-char *ReplaceExtension(const char *basename, const char *extension);
+
+// find the last directory separator (/ or, for windows, \)
+const char *FindLastDirectoryChar(const char *name);
+
+/* utility to create a new string by adding an extension to a base file name */
+/* if the base string has an extension already, we remove it */
+char *ReplaceExtension(const char *base, const char *ext);
+
+/* add "basename" to the path portion of  "directory" to make a complete file name */
 char *ReplaceDirectory(const char *basename, const char *directory);
 
 // add a propeller checksum to a binary file
