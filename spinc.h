@@ -80,6 +80,8 @@ extern AST *ast_type_string;
 extern AST *ast_type_generic;
 extern AST *ast_type_void;
 
+extern struct preprocess gl_pp;
+
 /* structure describing a dat block label */
 typedef struct label {
     uint32_t offset;
@@ -400,5 +402,23 @@ void CompileIntermediate(Module *P);
 
 /* fetch clock frequency settings */
 int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
+
+// some string utilities
+char *ReplaceExtension(const char *basename, const char *extension);
+char *ReplaceDirectory(const char *basename, const char *directory);
+
+// add a propeller checksum to a binary file
+int DoPropellerChecksum(const char *fname);
+
+// initialization functions
+void Init();
+void InitPreprocessor();
+
+// top level functions
+// parse a spin file
+Module *ParseFile(const char *name);
+
+// recursively assign offsets to all objects in modules
+void AssignObjectOffsets(Module *P);
 
 #endif
