@@ -4,7 +4,7 @@ Version 3.0.5
 - Allow {++ ... } to insert C++/C code inside PUB or PRI.
 - Changed the __SPIN2X__ define to __SPINCVT__. The old __SPIN2X__
   symbol is still defined in the preprocessor for now, but is deprecated.
-
+- Added a fastspin front end that mimics the openspin arguments.
 
 Version 3.0.4
 

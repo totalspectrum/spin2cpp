@@ -23,6 +23,11 @@ any that it cannot convert.
 Along with spin2cpp there is a GUI program (spincvt) which many users
 will find more comfortable.
 
+There is also an alternate front end `fastspin` which mimics the command
+line of the `openspin` compiler, but which produces LMM binaries instead
+of spin bytecode binaries. `fastspin` compiled programs will typically be
+about 4 times faster than `openspin` ones, but will be 2-3 times as large.
+
 INSTALLATION
 ============ 
 
@@ -32,9 +37,13 @@ to wherever your propeller-elf-gcc.exe file is installed.  (In fact
 spin2cpp.exe doesn't usually care where it is located, but putting it
 with propeller-elf-gcc is convenient.)
 
-If you only want to use the `--asm` option of spin2cpp to generate
-PASM, then you do not need propeller-elf-gcc or anything else from
-PropGCC.
+If you only want to use the Openspin compatible fastspin frontend, you
+only need fastspin.exe, and can ignore the other executables. In this
+case you do not need a C compiler.
+
+Similarly, if you only want to use the `--asm` option of spin2cpp to
+generate PASM, then you do not need propeller-elf-gcc or anything else
+from PropGCC.
 
 The GUI tool spincvt also doesn't require anything from PropGCC,
 unless you want to convert some code to C and then compile it
@@ -352,8 +361,8 @@ are Spin comments that start with {++ and end with }. The text between
 annotations is passed through to the C++ compiler. This provides a way
 to give extra semantic information beyond that available in Spin.
 
-Variable Annotations
---------------------
+### Variable Annotations
+
 Annotations may appear after variable declarations to associate additional
 type specifiers with those variables; for example:
 
@@ -369,8 +378,8 @@ with it by placing those after the DAT statement:
 
 declares the whole DAT section to be volatile.
 
-Code Annotations
-----------------
+### Code Annotations
+
 Whole blocks of C/C++ code may be embedded between `{++` and `}`. Make
 sure the '{' and '}' characters are balanced in such code! This
 feature is useful for adding additional methods that appear only in C,
@@ -386,8 +395,8 @@ Code annotations are ignored (treated as comments) if the `--asm` switch
 is given.
 
 
-Directives
-----------
+### Directives
+
 Annotations which begin with the character '!' are special
 directives for spin2cpp. The following special directives are
 recognized:
@@ -408,11 +417,10 @@ hand crafted parser rather than using lex/flex. This is done to make
 tracking indentation a little easier.
 
 Mostly the parser builds an Abstract Syntax Tree (AST) which we then
-walk to compile the .cpp and .h files. Each AST node contains a "kind"
-(telling what type of node it is), some immediate data (such as an
-integer or string), and left and right pointers. The left and right
-pointers are NULL for leaf nodes. Lists are generally represented by
-a series of nodes with kind=AST_LISTHOLDER (or similar), with the data
-pointed to by ast->left and the rest of the list pointed to by
-ast->right.
+walk to compile the output. Each AST node contains a "kind" (telling
+what type of node it is), some immediate data (such as an integer or
+string), and left and right pointers. The left and right pointers are
+NULL for leaf nodes. Lists are generally represented by a series of
+nodes with kind=AST_LISTHOLDER (or similar), with the data pointed to
+by ast->left and the rest of the list pointed to by ast->right.
 
