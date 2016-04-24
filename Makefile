@@ -119,12 +119,19 @@ spin2cpp.exe: .PHONY
 	$(MAKE) CROSS=win32
 	cp build-win32/spin2cpp.exe .
 
+fastspin.exe: .PHONY
+	$(MAKE) CROSS=win32
+	cp build-win32/fastspin.exe .
+
 spin2cpp.linux: .PHONY
 	$(MAKE) CROSS=linux32
 	cp build-linux32/spin2cpp ./spin2cpp.linux
 
-zip: spin2cpp.exe spin2cpp.linux
-	zip -r spin2cpp_v3.0.1.zip README.md COPYING Changelog.txt docs spin2cpp.exe spin2cpp.linux
+DOCS=README.md COPYING Changelog.txt docs
+
+zip: fastspin.exe spin2cpp.exe spin2cpp.linux
+	zip -r spin2cpp.zip $(DOCS) spin2cpp.exe spin2cpp.linux fastspin.exe
+	zip -r fastspin.zip fastspin.exe $(DOCS)
 
 #
 # target to build a windows spincvt GUI

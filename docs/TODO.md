@@ -13,11 +13,9 @@ Code cleanup
 
 Better error messages.
 
-Add an openspin compatible front-end.
+Add in the missing openspin options to fastspin.
 
 Support @@@foo + offset in --asm mode.
-
-Improve the way original Spin code is placed as comments in PASM output.
 
 Optimization
 ------------
