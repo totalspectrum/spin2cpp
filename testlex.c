@@ -24,6 +24,7 @@ int gl_output = 0;
 int gl_gas_dat = 0;
 int gl_normalizeIdents = 1;  /* for compatibility with ident tests */
 int gl_dat_offset = 0;
+const char *gl_intstring = "int32_t";
 
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {

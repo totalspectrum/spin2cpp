@@ -5,14 +5,6 @@
 '' also note: if PC is defined then we
 '' substitute some C code instead
 ''
-
-{{CON
-  txpin = 30
-  rxpin = 31
-  baud = 115200
-  txmask = (1<<txpin)
-  bitcycles = _clkfreq / baud
-  }}
 VAR
   byte txpin
   byte rxpin
@@ -20,17 +12,17 @@ VAR
   long txmask
   long bitcycles
    
-''
-'' code: largely taken from FullDuplexSerial.spin
-''
-
-#ifdef PC
+#ifdef __SPIN2CPP__
 '' we will be using stdio, so force it to
 '' be included
 {++
 #include <stdio.h>
- }
+}
 #endif
+
+''
+'' code: largely taken from FullDuplexSerial.spin
+''
 
 PUB start(rx_pin, tx_pin, mode, baudrate)
 #ifndef PC

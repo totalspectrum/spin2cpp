@@ -60,6 +60,7 @@ extern int gl_printprogress;  /* print files as we process them */
 #define OPT_NO_ASM 0x100
 
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
+extern const char *gl_intstring; /* int string to use */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
 

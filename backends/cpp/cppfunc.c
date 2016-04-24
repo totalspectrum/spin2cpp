@@ -40,7 +40,7 @@ PrintParameterList(Flexbuf *f, Function *func)
         }
         if (needcomma)
             flexbuf_printf(f, ", ");
-        flexbuf_printf(f, "int32_t %s", ast->d.string);
+        flexbuf_printf(f, "%s %s", gl_intstring, ast->d.string);
         needcomma = 1;
         list = list->right;
     }
@@ -198,7 +198,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
         if (func->localarray && func->localarray == func->parmarray) {
             /* nothing to do here */
         } else if (func->localarray && func->localarray_len > 0) {
-            flexbuf_printf(f, "  int32_t %s[%d];", func->localarray, func->localarray_len);
+            flexbuf_printf(f, "  %s %s[%d];", gl_intstring, func->localarray, func->localarray_len);
             PrintNewline(f);
         } else {
             PrintVarList(f, ast_type_long, func->locals, LOCAL);
@@ -228,7 +228,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             }
         }
 
-        flexbuf_printf(f, "  int32_t %s[%d];", func->parmarray, parmsiz);
+        flexbuf_printf(f, "  %s %s[%d];", gl_intstring, func->parmarray, parmsiz);
         PrintNewline(f);
     }
     if (!func->result_in_parmarray && func->resultexpr) {
@@ -337,7 +337,7 @@ PrintExtraDecl(Flexbuf *f, AST *ast, int indent)
         if (decl && decl->kind == AST_TEMPARRAYDECL) {
             AST *arraydef = decl->left;
             id = arraydef->left;
-            flexbuf_printf(f, "%*cstatic int32_t %s[] = {", indent, ' ', id->d.string);
+            flexbuf_printf(f, "%*cstatic %s %s[] = {", indent, ' ', gl_intstring, id->d.string);
             PrintLookupArray(f, decl->right);
             flexbuf_printf(f, "};"); PrintNewline(f);
         } else {
@@ -526,15 +526,16 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
     Function *pf;
 
     for (pf = parse->functions; pf; pf = pf->next) {
-        if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !pf->is_used) {
-            continue;
-        }
         PrintComment(f, pf->doccomment);
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');
             continue;
         } else if (gl_nospin) {
             /* skip all Spin methods */
+            continue;
+        }
+        if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !pf->is_used) {
+            flexbuf_printf(f, "// (function is not used)\n");
             continue;
         }
         curfunc = pf;

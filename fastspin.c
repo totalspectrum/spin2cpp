@@ -44,6 +44,7 @@ extern int yydebug;
 
 const char *gl_progname;
 const char *gl_cc = NULL;
+const char *gl_intstring = "int32_t";
 
 Module *current;
 Module *allparse;

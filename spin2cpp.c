@@ -37,6 +37,7 @@
 const char *gl_outname = NULL;
 const char *gl_progname;
 const char *gl_cc = NULL;
+const char *gl_intstring = "int32_t";
 Module *allparse = NULL;
 
 static void
@@ -251,6 +252,7 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--cc=", 5)) {
             gl_cc = argv[0] + 5;
+            gl_intstring = "intptr_t"; // for 64 bit targets
             argv++; --argc;
         } else if (!strncmp(argv[0], "--optimize", 5)) {
             /* for debug purpose only: override optimize flags with hex */

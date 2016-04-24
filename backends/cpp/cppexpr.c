@@ -87,7 +87,7 @@ PrintInteger(Flexbuf *f, int32_t v)
         }
     }
     else if (v == (int32_t)0x80000000)
-        flexbuf_printf(f, "(int32_t)0x%lxU", (long)(uint32_t)v);
+        flexbuf_printf(f, "(%s)0x%lxU", gl_intstring, (long)(uint32_t)v);
     else
         flexbuf_printf(f, "%ld", (long)v);
 }
@@ -97,7 +97,7 @@ void
 PrintFloat(Flexbuf *f, int32_t v)
 {
     if (v < 0)
-        flexbuf_printf(f, "(int32_t)0x%lx", (long)(uint32_t)v);
+        flexbuf_printf(f, "(%s)0x%lx", gl_intstring, (long)(uint32_t)v);
     else
         flexbuf_printf(f, "0x%lx", (long)v);
 }
@@ -567,7 +567,8 @@ doPrintType(Flexbuf *f, AST *typedecl, int fromPtr)
             flexbuf_printf(f, "int16_t");
             break;
         case 4:
-            flexbuf_printf(f, "int32_t");
+            //flexbuf_printf(f, "int32_t");
+            flexbuf_printf(f, "%s", gl_intstring);
             break;
         default:
             ERROR(typedecl, "unsupported integer size %d", size);
@@ -655,7 +656,7 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref)
         break;
     case AST_ADDROF:
         if (!ref) {
-            flexbuf_printf(f, "(int32_t)");
+            flexbuf_printf(f, "(%s)", gl_intstring);
         }
         PrintLHS(f, expr->left, assignment, 1);
         break;
@@ -996,9 +997,9 @@ PrintLookExpr(Flexbuf *f, const char *name, AST *ev, AST *table)
         arrid = AstTempVariable("look_");
 
         flexbuf_printf(f, "__extension__({ ");
-        flexbuf_printf(f, "int32_t %s = ", idxvar->d.string );
+        flexbuf_printf(f, "%s %s = ", gl_intstring, idxvar->d.string );
         PrintExpr(f, idx);
-        flexbuf_printf(f, "; int32_t %s[] = {", arrid->d.string );
+        flexbuf_printf(f, "; %s %s[] = {", gl_intstring, arrid->d.string );
         len = PrintLookupArray(f, table);
         flexbuf_printf(f, "}; ");
         idx = idxvar;
@@ -1109,7 +1110,7 @@ PrintExpr(Flexbuf *f, AST *expr)
         }
         break;
     case AST_STRINGPTR:
-        flexbuf_printf(f, "(int32_t)");
+        flexbuf_printf(f, "(%s)", gl_intstring);
         PrintStringList(f, expr->left);
         break;
     case AST_CONSTANT:
@@ -1117,12 +1118,12 @@ PrintExpr(Flexbuf *f, AST *expr)
         break;      
     case AST_ADDROF:
     case AST_ABSADDROF:
-        flexbuf_printf(f, "(int32_t)(&");
+        flexbuf_printf(f, "(%s)(&", gl_intstring);
         PrintLHS(f, expr->left, 0, 0);
         flexbuf_printf(f, ")");
         break;
     case AST_DATADDROF:
-        flexbuf_printf(f, "(int32_t)((");
+        flexbuf_printf(f, "(%s)((", gl_intstring);
         PrintLHS(f, expr->left, 0, 0);
         flexbuf_printf(f, ")+%s)", current->datname);
         break;
@@ -1230,7 +1231,7 @@ PrintExpr(Flexbuf *f, AST *expr)
         break;
     case AST_CATCH:
         flexbuf_printf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");
-        flexbuf_printf(f, "int32_t tmp__; abortChain__ = &here__; ");
+        flexbuf_printf(f, "%s tmp__; abortChain__ = &here__; ", gl_intstring);
         flexbuf_printf(f, "if (setjmp(here__.jmp) == 0) tmp__ = ");
         PrintExpr(f, expr->left);
         flexbuf_printf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
@@ -1435,7 +1436,7 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
     /* b->extradata is the size of memory we
        are working with
     */
-    typename = (b->extradata == 2) ? "uint16_t" : "int32_t";
+    typename = (b->extradata == 2) ? "uint16_t" : gl_intstring;
 
     /* if the source is 0, use memset instead */
     if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
@@ -1449,7 +1450,7 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
     idxname = NewTemporaryVariable("_fill_");
     valname = NewTemporaryVariable("_val_");
     ptrname = NewTemporaryVariable("_ptr_");
-    flexbuf_printf(f, "{ int32_t %s; ", idxname);
+    flexbuf_printf(f, "{ %s %s; ", gl_intstring, idxname);
     flexbuf_printf(f, "%s *%s = (%s *)", typename, ptrname, typename);
     PrintAsAddr(f, dst);
     flexbuf_printf(f, "; %s %s = ", typename, valname);
