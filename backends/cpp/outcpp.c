@@ -604,6 +604,19 @@ outputByteHex(Flexbuf *f, int c)
     }
 }
 
+static void IfdefPropeller(Flexbuf *f)
+{
+    if (gl_cc) {
+        flexbuf_printf(f, "#ifdef __propeller__\n");
+    }
+}
+static void EndIfdefPropeller(Flexbuf *f)
+{
+    if (gl_cc) {
+        flexbuf_printf(f, "#endif\n");
+    }
+}
+
 static void
 PrintCppFile(Flexbuf *f, Module *parse)
 {
@@ -617,7 +630,9 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (parse->needsStdlib) {
         flexbuf_printf(f, "#include <stdlib.h>\n");
     }
+    IfdefPropeller(f);
     flexbuf_printf(f, "#include <propeller.h>\n");
+    EndIfdefPropeller(f);
     flexbuf_printf(f, "#include \"%s.h\"\n", parse->basename);
     flexbuf_printf(f, "\n");
     PrintMacros(f, parse);
@@ -676,9 +691,11 @@ OutputClkFreq(Flexbuf *f, Module *P)
     unsigned int clkreg;
 
     if (GetClkFreq(P, &clkfreq, &clkreg)) {
+        IfdefPropeller(f);
         // now output the clkfreq and clkmode settings
         OutputAsmEquate(f, "__clkfreqval", clkfreq);
         OutputAsmEquate(f, "__clkmodeval", clkreg);
+        EndIfdefPropeller(f);
     }
 }
 

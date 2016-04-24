@@ -36,6 +36,7 @@
 
 const char *gl_outname = NULL;
 const char *gl_progname;
+const char *gl_cc = NULL;
 Module *allparse = NULL;
 
 static void
@@ -45,8 +46,8 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
-    fprintf(stderr, "  --catalina: convert to C and run Catalina on result\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
+    fprintf(stderr, "  --cc=CC:   use CC as the C++ compiler instead of PropGCC\n");
     fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
     fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
     fprintf(stderr, "  --data=x : PASM output only: control placement of data\n");
@@ -134,6 +135,9 @@ appendToCmd(const char *s)
 static void
 appendCompiler(const char *ccompiler)
 {
+    if (!ccompiler) {
+        ccompiler = gl_cc;
+    }
     if (!ccompiler) {
         ccompiler = getenv("CC");
     }
@@ -244,6 +248,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_output = OUTPUT_C;
             cext = ".c";
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--cc=", 5)) {
+            gl_cc = argv[0] + 5;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--optimize", 5)) {
             /* for debug purpose only: override optimize flags with hex */

@@ -59,6 +59,8 @@ extern int gl_printprogress;  /* print files as we process them */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_NO_ASM 0x100
 
+extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
+
 extern int gl_dat_offset; /* offset for @@@ operator */
 
 /* types of output */

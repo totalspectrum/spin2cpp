@@ -177,6 +177,15 @@ Spin2cpp accepts the following options:
   If --binary appears after --dat or --asm, then the binary is produced
   by spin2cpp itself directly, and PropGCC is not invoked.
   
+`--cc=<compiler>`
+  Use `<compiler>` as the C/C++ compiler instead of `propeller-elf-gcc`.
+  This also causes some Propeller specific contents to be protected by
+  `#ifdef __propeller__`, so the output may be more suitable for
+  compilation on other platforms if Propeller specific registers or
+  functions are avoided. If used in conjunction with some code
+  annotations and ifdefs it may be possible to run simple Spin programs
+  on a PC or Arduino.
+  
 `--ccode`
   Output C code instead of C++. Note that in C mode methods typically
   have a first parameter "self" which points to the object's data.

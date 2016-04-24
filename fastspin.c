@@ -43,6 +43,7 @@ extern int yyparse(void);
 extern int yydebug;
 
 const char *gl_progname;
+const char *gl_cc = NULL;
 
 Module *current;
 Module *allparse;

@@ -1,5 +1,6 @@
 Version 3.0.5
 
+- Added --cc= option to change C compiler
 - Improved optimization of pin masks in some cases
 - Allow {++ ... } to insert C++/C code inside PUB or PRI.
 - Changed the __SPIN2X__ define to __SPINCVT__. The old __SPIN2X__
