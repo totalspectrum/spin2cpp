@@ -221,6 +221,37 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 }
 
 /*
+ * check immediates
+ */
+static int
+isImmediate(InstrModifier *im)
+{
+    return im->name[0] == '#';
+}
+
+static unsigned
+ImmMask(Instruction *instr, int numoperands, AST *ast)
+{
+    unsigned mask = IMMEDIATE_INSTR;
+    
+    switch(instr->ops) {
+    case SRC_OPERAND_ONLY:
+    case CALL_OPERAND:
+        return mask;
+    case TWO_OPERANDS:
+    case JMPRET_OPERANDS:
+        if (numoperands < 2) {
+            ERROR(ast, "bad immediate operand to %s", instr->name);
+            return 0;
+        }
+        return mask;
+    default:
+        ERROR(ast, "immediate not supported for %s instruction", instr->name);
+        return 0;
+    }
+}
+
+/*
  * assemble an instruction, along with its modifiers
  */
 #define MAX_OPERANDS 2
@@ -254,7 +285,13 @@ assembleInstruction(Flexbuf *f, AST *ast)
             operand[numoperands++] = ast->left;
         } else if (ast->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)ast->d.ptr;
-            mask = mod->modifier;
+            if (isImmediate(mod)) {
+                // sanity check that the immediate
+                // is on the correct operand
+                mask = ImmMask(instr, numoperands, ast);
+            } else {
+                mask = mod->modifier;
+            }
             if (mask & 0x80000000) {
                 val = val & mask;
             } else {
