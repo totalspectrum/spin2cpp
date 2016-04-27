@@ -162,7 +162,9 @@ NewModule(const char *fullname)
 /*
  * add global variable functions
  */
-const char system_spincode[] =
+
+/* code for P1 */
+const char p1_system_spincode[] =
     "pri waitcnt(x)\n"
     "  asm\n"
     "    waitcnt x,#0\n"
@@ -314,12 +316,157 @@ const char system_spincode[] =
     "  return x\n"
 ;
 
+// code for P2
+// FIXME: there's a lot of duplication with P1
+const char p2_system_spincode[] =
+    "pri cnt | r\n"
+    "  asm\n"
+    "    getct r\n"
+    "  endasm\n"
+    "  return r\n"
+    "pri waitcnt(x)\n"
+    "  asm\n"
+    "    addct1  x, #0\n"
+    "    waitct1 x\n"
+    "  endasm\n"
+    "pri cogid | rval\n"
+    "  asm\n"
+    "    cogid rval\n"
+    "  endasm\n"
+    "  return rval\n"
+    "pri cogstop(id)\n"
+    "  asm\n"
+    "    cogstop id\n"
+    "  endasm\n"
+    "  return 0\n"
+    "pri lockclr(id) | mask, rval\n"
+    "  mask := -1\n"
+    "  asm\n"
+    "    lockclr id wc\n"
+    "    muxc   rval,mask\n"
+    "  endasm\n"
+    "  return rval\n"
+    "pri lockset(id) | mask, rval\n"
+    "  mask := -1\n"
+    "  asm\n"
+    "    lockset id wc\n"
+    "    muxc   rval,mask\n"
+    "  endasm\n"
+    "  return rval\n"
+    "pri locknew | rval\n"
+    "  asm\n"
+    "    locknew rval\n"
+    "  endasm\n"
+    "  return rval\n"
+    "pri lockret(id)\n"
+    "  asm\n"
+    "    lockret id\n"
+    "  endasm\n"
+    "  return 0\n"
+    "pri longfill(ptr, val, count)\n"
+    "  repeat count\n"
+    "    long[ptr] := val\n"
+    "    ptr += 4\n"
+    "pri longmove(dst, src, count)\n"
+    "  repeat count\n"
+    "    long[dst] := long[src]\n"
+    "    dst += 4\n"
+    "    src += 4\n"
+    "pri wordfill(ptr, val, count)\n"
+    "  repeat count\n"
+    "    word[ptr] := val\n"
+    "    ptr += 2\n"
+    "pri wordmove(dst, src, count)\n"
+    "  repeat count\n"
+    "    word[dst] := word[src]\n"
+    "    dst += 2\n"
+    "    src += 2\n"
+    "pri bytefill(ptr, val, count)\n"
+    "  repeat count\n"
+    "    byte[ptr] := val\n"
+    "    ptr += 1\n"
+    "pri bytemove(dst, src, count)\n"
+    "  repeat count\n"
+    "    byte[dst] := byte[src]\n"
+    "    dst += 1\n"
+    "    src += 1\n"
+    "pri strsize(str) : r\n"
+    "  r := 0\n"
+    "  repeat while byte[str] <> 0\n"
+    "    r++\n"
+    "    str++\n"
+    "pri strcomp(s1, s2) | c1, c2\n"
+    "  repeat\n"
+    "    c1 := byte[s1++]\n"
+    "    c2 := byte[s2++]\n"
+    "    if (c1 <> c2)\n"
+    "      return 0\n"
+    "  until (c1 == 0)\n"
+    "  return -1\n"
+    "pri _coginit(id, code, param) | parm\n"
+    "  parm := (param & $fffc) << 16\n"
+    "  parm |= (code & $fffc) << 2\n"
+    "  parm | = id & $f\n"
+    "  asm\n"
+    "    coginit parm wr\n"
+    "  endasm\n"
+    "  return parm\n"
+    "pri _lookup(x, b, arr, n) | i\n"
+    "  i := x - b\n"
+    "  if (i => 0 and i < n)\n"
+    "    return long[arr][i]\n"
+    "  return 0\n"
+    "pri _lookdown(x, b, arr, n) | i\n"
+    "  repeat i from 0 to n-1\n"
+    "    if (long[arr] == x)\n"
+    "      return i+b\n"
+    "    arr += 4\n"
+    "  return 0\n"
+    "pri _sqrt(a) | r, bit, tmp\n"
+    "  if (a =< 0)\n"
+    "    return 0\n"
+    "  r := 0\n"
+    "  bit := (1<<30)\n"
+    "  repeat while (bit > a)\n"
+    "    bit := bit >> 2\n"
+    "  repeat while (bit <> 0)\n"
+    "    tmp := r+bit\n"
+    "    if (a => tmp)\n"
+    "      a := a - tmp\n"
+    "      r := (r >> 1) + bit\n"
+    "    else\n"
+    "      r := r >> 1\n"
+    "    bit := bit >> 2\n"
+    "  return r\n"
+    "pri _lfsr_forward(x) | a\n"
+    "  if (x == 0)\n"
+    "    x := 1\n"
+    "  a := $8000000b\n"
+    "  repeat 32\n"
+    "    asm\n"
+    "      test x, a wc\n"
+    "      rcl  x, #1\n"
+    "    endasm\n"
+    "  return x\n"
+    "pri _lfsr_backward(x) | a\n"
+    "  if (x == 0)\n"
+    "    x := 1\n"
+    "  a := $17\n"
+    "  repeat 32\n"
+    "    asm\n"
+    "      test x, a wc\n"
+    "      rcr  x, #1\n"
+    "    endasm\n"
+    "  return x\n"
+;
+
 void
 InitGlobalModule(void)
 {
     SymbolTable *table;
     Symbol *sym;
     int oldtmpnum;
+    const char *syscode;
     
     current = globalModule = NewModule("_system_");
     table = &globalModule->objsyms;
@@ -336,16 +483,18 @@ InitGlobalModule(void)
         oldtmpnum = SetTempVariableBase(90000, 0);
 
         if (gl_p2) {
-            /* need to set up Prop2 versions of the system funcs here */
+            syscode = p2_system_spincode;
         } else {
-            strToLex(&globalModule->L, system_spincode, "_system_");
-            yyparse();
-            ProcessModule(globalModule);
-            InferTypes(globalModule);
-            ProcessFuncs(globalModule);
-            SpinTransform(globalModule);
-            CompileIntermediate(globalModule);
+            syscode = p1_system_spincode;
         }
+        strToLex(&globalModule->L, syscode, "_system_");
+        yyparse();
+        ProcessModule(globalModule);
+        InferTypes(globalModule);
+        ProcessFuncs(globalModule);
+        SpinTransform(globalModule);
+        CompileIntermediate(globalModule);
+
         curfunc = NULL;
         /* restore temp variable base */
         (void)SetTempVariableBase(oldtmpnum, 89999);

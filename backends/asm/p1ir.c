@@ -246,11 +246,11 @@ bool IsHubDest(Operand *dst)
 // 127 would be the absolute maximum here
 #define MAX_REL_JUMP_OFFSET 100
 
-/* convert IR list into p1 assembly language */
+/* convert IR list into assembly language */
 static int didPub = 0;
 
 void
-P1AssembleIR(struct flexbuf *fb, IR *ir)
+DoAssembleIR(struct flexbuf *fb, IR *ir)
 {
     const char *str;
     if (ir->opc == OPC_CONST) {
@@ -492,9 +492,12 @@ IRAssemble(IRList *list)
     didPub = 0;
     lmmMode = 0;
     
+    if (gl_p2) {
+        didPub = 1; // we do not want PUB declaration in P2 code
+    }
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {
-        P1AssembleIR(&fb, ir);
+        DoAssembleIR(&fb, ir);
     }
     flexbuf_addchar(&fb, 0);
     ret = flexbuf_get(&fb);

@@ -201,11 +201,12 @@ typedef enum InstrOps {
     JMPRET_OPERANDS,
 
     /* P2 extensions */
-    TWO_OPERANDS_OPTIONAL,
-    P2_TJZ_OPERANDS,
-    P2_RDWR_OPERANDS,
-    P2_DST_CONST_OK,
-    P2_JUMP,
+    TWO_OPERANDS_OPTIONAL,  /* one of the 2 operands is optional */
+    P2_TJZ_OPERANDS,        /* like TJZ */
+    P2_RDWR_OPERANDS,       /* like rdlong/wrlong, accepts postinc and such */
+    P2_DST_CONST_OK,        /* dst only, but immediate is OK */
+    P2_JUMP,                /* jump and call, opcode may change based on dest */
+    P2_TWO_OPERANDS,        /* two operands, both may be imm */
     
 } InstrOps;
 

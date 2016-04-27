@@ -1332,6 +1332,8 @@ instr_p2[] = {
   { "wrword", 0x0c500000, P2_RDWR_OPERANDS, OPC_WRWORD },
   { "wrlong", 0x0c600000, P2_RDWR_OPERANDS, OPC_WRLONG },
 
+  { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC },
+
   { "clkset", 0x0d600000, P2_DST_CONST_OK,  OPC_GENERIC },
   { "cogid",  0x0d600001, DST_OPERAND_ONLY, OPC_GENERIC },
   { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_GENERIC },
@@ -1339,6 +1341,12 @@ instr_p2[] = {
   { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_GENERIC_NR },
   { "lockclr",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR },
   { "lockset",0x0d600007, P2_DST_CONST_OK, OPC_GENERIC_NR },
+
+  { "setq",   0x0d600016, P2_DST_CONST_OK, OPC_GENERIC_NR },
+  { "setq2",  0x0d600017, P2_DST_CONST_OK, OPC_GENERIC_NR },
+  { "getqx",  0x0d600018, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "getqy",  0x0d600019, DST_OPERAND_ONLY, OPC_GENERIC },
+  { "getct",  0x0d60001a, DST_OPERAND_ONLY, OPC_GENERIC },
 
   // indirect jumps via register
   // normally the user will write "jmp x" and the assembler
@@ -1351,6 +1359,11 @@ instr_p2[] = {
   { "ret",    0x0d600031, NO_OPERANDS, OPC_GENERIC_BRANCH },
   { "reta",   0x0d600032, NO_OPERANDS, OPC_RET },
   { "retb",   0x0d600033, NO_OPERANDS, OPC_GENERIC_BRANCH },
+
+  { "waitint",0x0d602024, NO_OPERANDS, OPC_GENERIC },
+  { "waitct1",0x0d602224, NO_OPERANDS, OPC_GENERIC },
+  { "waitct2",0x0d602424, NO_OPERANDS, OPC_GENERIC },
+  { "waitct3",0x0d602624, NO_OPERANDS, OPC_GENERIC },
 
   // long jumps
   { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP },
@@ -1473,7 +1486,7 @@ InitPasm(int flags)
     InstrModifier *modifiers;
     int i;
 
-    if (flags) {
+    if (gl_p2) {
         instr = instr_p2;
         hwreg = hwreg_p2;
     } else {
