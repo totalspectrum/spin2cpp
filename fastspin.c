@@ -88,6 +88,7 @@ Usage(void)
     fprintf(stderr, "  [ -f ]             output list of file names\n");
     fprintf(stderr, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
     fprintf(stderr, "  [ -p ]             disable the preprocessor\n");
+    fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
     fprintf(stderr, "  [ -D <define> ]    add a define\n");
     exit(2);
 }
@@ -280,6 +281,9 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "-q")) {
             quiet = 1;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-2")) {
+            gl_p2 = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
             PrintInfo();
@@ -498,7 +502,7 @@ main(int argc, char **argv)
             if (compile) {
                 binname = gl_outname;
                 if (binname) {
-                    asmname = ReplaceExtension(binname, ".pasm");
+                    asmname = ReplaceExtension(binname, gl_p2 ? ".p2asm" : ".pasm");
                 } else {
                     if (useEeprom) {
                         binname = ReplaceExtension(P->fullname, ".eeprom");
@@ -510,7 +514,7 @@ main(int argc, char **argv)
                 asmname = gl_outname;
             }
             if (!asmname) {
-                asmname = ReplaceExtension(P->fullname, ".pasm");
+                asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile) {

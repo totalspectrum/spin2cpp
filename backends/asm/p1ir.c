@@ -489,6 +489,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         break;
     case OPC_ORGH:
         flexbuf_addstr(fb, "\tfit\t496\n");
+        if (gl_p2) {
+            flexbuf_addstr(fb, "\torgh\t$400\n");
+        }
         lmmMode = 1;
         break;
     default:

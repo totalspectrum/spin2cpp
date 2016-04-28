@@ -511,7 +511,7 @@ main(int argc, char **argv)
             if (compile) {
                 binname = gl_outname;
                 if (binname) {
-                    asmname = ReplaceExtension(binname, ".pasm");
+                    asmname = ReplaceExtension(binname, gl_p2 ? ".p2asm" : ".pasm");
                 } else {
                     if (eepromSize) {
                         binname = ReplaceExtension(P->fullname, ".eeprom");
@@ -523,7 +523,7 @@ main(int argc, char **argv)
                 asmname = gl_outname;
             }
             if (!asmname) {
-                asmname = ReplaceExtension(P->fullname, ".pasm");
+                asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile) {
