@@ -3122,7 +3122,7 @@ static const char *builtin_mul =
  * signed divide, taken from spin interpreter
  */
 
-static const char *builtin_div =
+static const char *builtin_div_p1 =
 "' code originally from spin interpreter, modified slightly\n"
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
@@ -3149,6 +3149,22 @@ static const char *builtin_div =
 
 "divide__ret\n"
     "\tret\n"
+;
+static const char *builtin_div_p2 =
+"\ndivide_\n"
+"       abs     muldiva_,muldiva_     wc       'abs(x)\n"
+"       muxc    itmp2_,#%11                    'store sign of x\n"
+"       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
+" if_c  xor     itmp2_,#%10                    'store sign of y\n"
+"       setq    #0\n"
+"       qdiv    muldiva_, muldivb_\n"
+"       getqx   muldivb_\n"  // get quotient
+"       getqy   muldiva_\n"  // get remainder
+"       test    itmp2_,#1        wc       'restore sign, remainder\n"
+"       negc    muldiva_,muldiva_ \n"
+"       test    itmp2_,#%10      wc       'restore sign, division result\n"
+"       negc    muldivb_,muldivb_\n"
+"       reta\n"
 ;
 
 static const char *builtin_lmm_p1 =
@@ -3261,7 +3277,13 @@ EmitBuiltins(IRList *irl)
         (void)GetGlobal(REG_REG, "result1", 0);
     }
     if (divfunc) {
-        Operand *loop = NewOperand(IMM_STRING, builtin_div, 0);
+        Operand *loop;
+
+        if (gl_p2) {
+            loop = NewOperand(IMM_STRING, builtin_div_p2, 0);
+        } else {
+            loop = NewOperand(IMM_STRING, builtin_div_p1, 0);
+        }
         EmitOp1(irl, OPC_LITERAL, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
