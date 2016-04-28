@@ -271,10 +271,12 @@ spin2cpp supports a few extensions to the Spin language:
 
 Symbol           | When Defined
 -----------------|-------------
-`__SPINCVT__`     |  always defined
+`__FASTSPIN__`   | if the `fastspin` front end is used
+`__SPINCVT__`    | always defined
 `__SPIN2PASM__`  | if --asm is given (PASM output)
 `__SPIN2CPP__`   | if C++ or C is being output
 `__cplusplus`    | if C++ is being output
+`__P2__`         | if compiling for Propeller 2
 
 (2) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
 ```
