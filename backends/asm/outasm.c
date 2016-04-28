@@ -583,7 +583,7 @@ Operand *
 NewImmediate(int32_t val)
 {
   char temp[1024];
-  if (val >= 0 && val < 512) {
+  if ( gl_p2 || (val >= 0 && val < 512) ) {
     return NewOperand(IMM_INT, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
@@ -3147,7 +3147,7 @@ static const char *builtin_div =
     "\tret\n"
 ;
 
-static const char *builtin_lmm =
+static const char *builtin_lmm_p1 =
     "LMM_LOOP\n"
     "    rdlong LMM_i1, pc\n"
     "    add    pc, #4\n"
@@ -3187,6 +3187,10 @@ static const char *builtin_lmm =
     "    jmp  #LMM_LOOP\n"
     "LMM_CALL_FROM_COG_ret\n"
     "    ret\n"
+    ;
+
+static const char *builtin_lmm_p2 =
+    "    jmp #@hubentry\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
@@ -3240,6 +3244,7 @@ static void
 EmitBuiltins(IRList *irl)
 {
     if (HUB_CODE) {
+        const char *builtin_lmm = gl_p2 ? builtin_lmm_p2 : builtin_lmm_p1;
         Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
         EmitOp1(irl, OPC_LITERAL, loop);
     }
@@ -3477,9 +3482,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
     if (HUB_CODE) {
         ValidateStackptr();
-        EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hub_ret_to_cog", 0));
-        EmitJump(&hubcode, COND_TRUE,
-                 NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
+        if (!gl_p2) {
+            EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hub_ret_to_cog", 0));
+            EmitJump(&hubcode, COND_TRUE,
+                     NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
+        }
         EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
         if (!CompileToIR(&hubcode, P)) {
             return;

@@ -749,6 +749,7 @@ HasSideEffects(IR *ir)
     case OPC_WRWORD:
     case OPC_COGSTOP:
     case OPC_COGID:
+    case OPC_ADDCT1:
         return true;
     default:
         return false;
@@ -1542,6 +1543,36 @@ OptimizePeepholes(IRList *irl)
     return changed;
 }
 
+/* perform P2 specific optimizations */
+int
+OptimizeP2(IRList *irl)
+{
+    IR *ir, *ir_next;
+    IR *previr;
+    int changed = 0;
+    int opc;
+    
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        while (ir_next && IsDummy(ir_next)) {
+            ir_next = ir_next->next;
+        }
+        opc = ir->opc;
+        if (opc == OPC_ADDCT1 && IsImmediateVal(ir->src, 0)) {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_ADD && !InstrSetsAnyFlags(previr)) {
+                // add foo, val / addct1 foo, #0 -> addct1 foo, val
+                ir->src = previr->src;
+                DeleteIR(irl, previr);
+                changed = 1;
+            }
+        }
+        ir = ir_next;
+    }
+    return changed;
+}
+
 //
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
@@ -1627,6 +1658,9 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeAddSub(irl);
         change |= OptimizeCompares(irl);
         change |= OptimizePeepholes(irl);
+        if (gl_p2) {
+            change |= OptimizeP2(irl);
+        }
     } while (change != 0);
 }
 

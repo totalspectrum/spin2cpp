@@ -71,6 +71,9 @@ typedef enum IROpcode {
     OPC_WRWORD,
     OPC_XOR,
 
+    /* p2 instructions */
+    OPC_ADDCT1,
+    
     /* an instruction unknown to the optimizer */
     /* this must immediately follow the actual instructions */
     OPC_GENERIC,

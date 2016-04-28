@@ -52,6 +52,14 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
                 sprintf(temp, "%d", (int)(int32_t)reg->val);
                 flexbuf_addstr(fb, temp);
             }
+        } else if (gl_p2) {
+            flexbuf_addstr(fb, "##");
+            if (reg->name && reg->name[0]) {
+                flexbuf_addstr(fb, reg->name);
+            } else {
+                sprintf(temp, "%d", (int)(int32_t)reg->val);
+                flexbuf_addstr(fb, temp);
+            }            
         } else {
             // the immediate actually got processed as a register
             flexbuf_addstr(fb, reg->name);
@@ -61,6 +69,12 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
     case WORD_REF:
     case LONG_REF:
         ERROR(NULL, "Internal error: tried to use memory directly");
+        break;
+    case IMM_HUB_LABEL:
+        if (gl_p2 && useimm) {
+            flexbuf_addstr(fb, "#@");
+        }
+        flexbuf_addstr(fb, reg->name);
         break;
     case IMM_COG_LABEL:
         if (useimm) {
@@ -96,7 +110,11 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         break;
     case IMM_HUB_LABEL:
     case STRING_DEF:
-        flexbuf_addstr(fb, "@@@");
+        if (gl_p2) {
+            flexbuf_addstr(fb, "@");
+        } else {
+            flexbuf_addstr(fb, "@@@");
+        }
         // fall through
     case IMM_COG_LABEL:
         flexbuf_addstr(fb, reg->name);
@@ -281,8 +299,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
             didOrg = 1;
         }
     }
-    if (1) {
-        // handle certain instructions specially
+    if (!gl_p2) {
+        // handle jumps in LMM mode
         switch (ir->opc) {
         case OPC_CALL:
             if (IsHubDest(ir->dst)) {
@@ -381,6 +399,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:
         case P2_JUMP:
+        case P2_DST_CONST_OK:
             flexbuf_addstr(fb, "\t");
             PrintOperandSrc(fb, ir->dst);
             break;
