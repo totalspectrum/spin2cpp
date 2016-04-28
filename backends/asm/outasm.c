@@ -133,14 +133,18 @@ static void
 ValidateStackptr(void)
 {
     if (!stackptr) {
-        if (COG_DATA) {
+        if (HUB_DATA || gl_p2) {
+            stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
+            if (gl_p2) {
+                stackptr = GetGlobal(REG_HW, "ptra", 0);
+            } else {
+                stackptr = NewImmediatePtr("sp", stacklabel);
+            }
+            stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
+        } else {
             stacklabel = NewOperand(IMM_COG_LABEL, "stackspace", 0);
             stackptr = NewImmediatePtr("sp", stacklabel);
             stacktop = CogMemRef(stackptr, 0);            
-        } else {
-            stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
-            stackptr = NewImmediatePtr("sp", stacklabel);
-            stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
         }
     }
 }
@@ -3190,7 +3194,8 @@ static const char *builtin_lmm_p1 =
     ;
 
 static const char *builtin_lmm_p2 =
-    "    jmp #@hubentry\n"
+    "\tmov ptra, ##@stackspace\n"
+    "\tjmp #@hubentry\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
