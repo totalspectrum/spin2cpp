@@ -1344,6 +1344,7 @@ instr_p2[] = {
   { "mixpix", 0x0b780000, TWO_OPERANDS, OPC_GENERIC },
 
   { "pinsetm",0x0b800000, P2_TWO_OPERANDS, OPC_GENERIC },
+  { "pinack", 0x0b880000, SRC_OPERAND_ONLY, OPC_GENERIC }, // alias for pinsetm #0,d
   { "pinsetx",0x0b900000, P2_TWO_OPERANDS, OPC_GENERIC },
   { "pinsety",0x0ba00000, P2_TWO_OPERANDS, OPC_GENERIC },
   { "wrlut",  0x0bb00000, P2_TWO_OPERANDS, OPC_GENERIC },
