@@ -203,6 +203,13 @@ lexungetc(LexStream *L, int c)
     if (c == 10) L->eoln = 0;
 }
 
+int
+lexpeekc(LexStream *L)
+{
+    int c = lexgetc(L);
+    lexungetc(L, c);
+    return c;
+}
 
 //
 // establish an indent level
@@ -722,7 +729,7 @@ getToken(LexStream *L, AST **ast_ptr)
     int c;
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
-    int temp_label_char = gl_p2 ? '.' : ':';
+    int peekc;
     c = skipSpace(L, &ast);
 
     if (c >= 127) {
@@ -754,16 +761,18 @@ getToken(LexStream *L, AST **ast_ptr)
         if (c == T_IDENTIFIER && InDatBlock(L) && at_startofline) {
             L->lastGlobal = ast->d.string;
         }
-    } else if (c == temp_label_char) {
-        int peekc = lexgetc(L);
+    } else if (c == ':') {
+        peekc = lexgetc(L);
         if (peekc == '=') {
             c = T_ASSIGN;
-        } else if (isIdentifierStart(peekc) && InDatBlock(L)) {
+        } else if (!gl_p2 && isIdentifierStart(peekc) && InDatBlock(L)) {
             lexungetc(L, peekc);
             c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
         }
+    } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
+            c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
     } else if (strchr(operator_chars, c) != NULL) {
         char op[6];
         int i;

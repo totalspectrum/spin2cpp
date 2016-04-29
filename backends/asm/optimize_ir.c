@@ -873,7 +873,7 @@ static void CheckUsage(IRList *irl)
  * or 0 if not a valid candidate for optimization
  */
 #define MAX_JUMP_OVER 3
-static int IsShortForwardJump(IR *irbase)
+static int IsSafeShortForwardJump(IR *irbase)
 {
   int n = 0;
   Operand *target;
@@ -891,6 +891,10 @@ static int IsShortForwardJump(IR *irbase)
 	  return n;
 	}
 	return 0;
+      }
+      if (ir->opc == OPC_CALL) {
+          // calls do not preserve condition codes
+          return 0;
       }
       n++;
       if (n > MAX_JUMP_OVER) return 0;
@@ -935,7 +939,7 @@ int OptimizeShortBranches(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
-        n = IsShortForwardJump(ir);
+        n = IsSafeShortForwardJump(ir);
         if (n) {
             ConditionalizeInstructions(ir->next, InvertCond(ir->cond), n);
             DeleteIR(irl, ir);

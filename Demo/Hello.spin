@@ -4,9 +4,9 @@
 '' to compile for PC:
 ''   spin2cpp --cc=gcc -DPC --elf -o Hello HelloWorld.spin
 '' to compile for Propeller
-''   spin2cpp --binary -Os -o hello.binary HelloWorld.spin
-'' or
-''   spin2cpp --asm --binary -o hello_pasm.binary HelloWorld.spin
+''   spin2cpp --asm --binary -Os -o hello.binary HelloWorld.spin
+'' to compiler for Prop2:
+''   spin2cpp --p2 --asm -o hello.p2asm --code=hub HelloWorld.spin
 ''
 CON
   _clkmode = xtal1 + pll16x
@@ -35,7 +35,6 @@ PUB hello
   start(31, 30, 0, 115200)
   repeat
     str(string("hello, world!", 13, 10))
-    waitcnt(CNT + _clkfreq*10)
   
 ''
 '' code: largely taken from FullDuplexSerial.spin
@@ -51,19 +50,20 @@ PUB start(rx_pin, tx_pin, mode, baudrate)
 #endif
   return 1
   
-PUB tx(c) | val, waitcycles
+PUB tx(c) | val, waitcycles, mask
 #ifdef PC
   '' just emit direct C code here
   {++
   putchar(c);
   }
 #else
+  mask := txmask
 # ifdef __P2__
-  OUTB |= txmask
-  DIRB |= txmask
+  OUTB |= mask
+  DIRB |= mask
 # else
-  OUTA |= txmask
-  DIRA |= txmask
+  OUTA |= mask
+  DIRA |= mask
 #endif
   val := (c | 256) << 1
   waitcycles := CNT
@@ -71,15 +71,15 @@ PUB tx(c) | val, waitcycles
      waitcnt(waitcycles += bitcycles)
 #ifdef __P2__
      if (val & 1)
-       OUTB |= txmask
+       OUTB |= mask
      else
-       OUTB &= !txmask
+       OUTB &= !mask
      val >>= 1
 #else
      if (val & 1)
-       OUTA |= txmask
+       OUTA |= mask
      else
-       OUTA &= !txmask
+       OUTA &= !mask
      val >>= 1
 #endif
 #endif
