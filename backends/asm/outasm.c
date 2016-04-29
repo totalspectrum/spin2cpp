@@ -3120,6 +3120,8 @@ static const char *builtin_mul =
 
 /*
  * signed divide, taken from spin interpreter
+ * calculates muldiva_ / muldivb_
+ * quotient in muldivb_, remainder in muldiva_
  */
 
 static const char *builtin_div_p1 =

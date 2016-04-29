@@ -990,6 +990,8 @@ operand:
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
  | '#' expr
    { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(IMMEDIATE_INSTR)); }
+ | '#' '#' expr
+   { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(BIGIMM_INSTR)); }
 
 operandlist:
    operand

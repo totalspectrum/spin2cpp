@@ -122,10 +122,15 @@ AstInstrModifier(int32_t ival)
     static InstrModifier Imm = {
         "#", IMMEDIATE_INSTR
     };
+    static InstrModifier BigImm = {
+        "\\##", BIGIMM_INSTR
+    };
     AST *ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
 
     if (ival == Imm.modifier) {
         ast->d.ptr = (void *)&Imm;
+    } else if (ival == BigImm.modifier) {
+        ast->d.ptr = (void *)&BigImm;
     } else {
         ERROR(NULL, "Unknown instruction modifier");
         return NULL;

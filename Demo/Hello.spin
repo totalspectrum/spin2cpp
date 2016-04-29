@@ -11,7 +11,7 @@
 CON
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
-
+  
 VAR
   byte txpin
   byte rxpin
@@ -35,7 +35,7 @@ PUB hello
   start(31, 30, 0, 115200)
   repeat
     str(string("hello, world!", 13, 10))
-
+    waitcnt(CNT + _clkfreq*10)
   
 ''
 '' code: largely taken from FullDuplexSerial.spin
@@ -69,11 +69,19 @@ PUB tx(c) | val, waitcycles
   waitcycles := CNT
   repeat 10
      waitcnt(waitcycles += bitcycles)
+#ifdef __P2__
+     if (val & 1)
+       OUTB |= txmask
+     else
+       OUTB &= !txmask
+     val >>= 1
+#else
      if (val & 1)
        OUTA |= txmask
      else
        OUTA &= !txmask
      val >>= 1
+#endif
 #endif
 
 PUB str(s) | c

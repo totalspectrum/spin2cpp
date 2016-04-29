@@ -228,7 +228,7 @@ typedef struct instrmodifier {
 } InstrModifier;
 
 #define IMMEDIATE_INSTR (1<<22)
-
+#define BIGIMM_INSTR    (-1)
 
 /* optimizer friendly form of instructions */
 struct IR {

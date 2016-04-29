@@ -7,7 +7,8 @@ CON
   _clkfreq = 80_000_000
 
 OBJ
-  fds : "FullDuplexSerial.spin"
+''  fds : "FullDuplexSerial.spin"
+  fds : "SimpleSerial.spin"
 
 PUB run | i,x,now,elapsed
 

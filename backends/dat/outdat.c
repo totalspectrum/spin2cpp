@@ -310,12 +310,20 @@ assembleInstruction(Flexbuf *f, AST *ast)
         expectops = 0;
         break;
     case TWO_OPERANDS:
+    case TWO_OPERANDS_OPTIONAL:
     case JMPRET_OPERANDS:
+    case P2_TJZ_OPERANDS:
+    case P2_TWO_OPERANDS:
         expectops = 2;
         break;
     default:
         expectops = 1;
         break;
+    }
+    if (instr->ops == TWO_OPERANDS_OPTIONAL && numoperands == 1) {
+        // duplicate the operand
+        // so neg r0 -> neg r0,r0
+        operand[numoperands++] = operand[0];
     }
     if (expectops != numoperands) {
         ERROR(line, "Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
@@ -327,6 +335,8 @@ assembleInstruction(Flexbuf *f, AST *ast)
         break;
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:
+    case TWO_OPERANDS_OPTIONAL:
+    case P2_TWO_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
@@ -335,6 +345,7 @@ assembleInstruction(Flexbuf *f, AST *ast)
         src = EvalPasmExpr(operand[0]);
         break;
     case DST_OPERAND_ONLY:
+    case P2_DST_CONST_OK:
         dst = EvalPasmExpr(operand[0]);
         src = 0;
         break;
