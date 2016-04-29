@@ -232,9 +232,16 @@ isImmediate(InstrModifier *im)
 static unsigned
 ImmMask(Instruction *instr, int numoperands, AST *ast)
 {
-    unsigned mask = IMMEDIATE_INSTR;
-    
+    unsigned mask;
+
+    if (gl_p2) {
+        mask = P2_IMM_SRC;
+    } else {
+        mask = IMMEDIATE_INSTR;
+    }
     switch(instr->ops) {
+    case P2_JUMP:
+    case P2_TJZ_OPERANDS:
     case SRC_OPERAND_ONLY:
     case CALL_OPERAND:
         return mask;
@@ -245,6 +252,13 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
             return 0;
         }
         return mask;
+    case P2_TWO_OPERANDS:
+        if (numoperands < 2) {
+            return P2_IMM_DST;
+        }
+        return P2_IMM_SRC;
+    case P2_DST_CONST_OK:
+        return P2_IMM_DST;
     default:
         ERROR(ast, "immediate not supported for %s instruction", instr->name);
         return 0;
@@ -257,21 +271,28 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
 #define MAX_OPERANDS 2
 
 void
-assembleInstruction(Flexbuf *f, AST *ast)
+assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
 {
     uint32_t val, mask, src, dst;
+    int32_t isrc;
     Instruction *instr;
     int i, numoperands, expectops;
     AST *operand[MAX_OPERANDS];
     AST *line = ast;
     char *callname;
     AST *retast;
-
+    int immSrc = 0;
+    int isRelJmp = 0;
+    
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
     if (instr->opc != OPC_NOP) {
         /* for anything except NOP set the condition to "always" */
-        val |= 0xf << 18;
+        if (gl_p2) {
+            val |= 0xf << 28;
+        } else {
+            val |= 0xf << 18;
+        }
     }
     /* check for modifiers and operands */
     numoperands = 0;
@@ -289,6 +310,12 @@ assembleInstruction(Flexbuf *f, AST *ast)
                 // sanity check that the immediate
                 // is on the correct operand
                 mask = ImmMask(instr, numoperands, ast);
+                if (gl_p2) {
+                    immSrc = mask & P2_IMM_SRC;
+                    //immDst = mask & P2_IMM_DST;
+                } else {
+                    immSrc = mask & IMMEDIATE_INSTR;
+                }
             } else {
                 mask = mod->modifier;
             }
@@ -340,10 +367,39 @@ assembleInstruction(Flexbuf *f, AST *ast)
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
+    case P2_TJZ_OPERANDS:
+        dst = EvalPasmExpr(operand[0]);
+        if (immSrc) {
+            isrc = EvalPasmExpr(operand[1]) - (asmpc+4);
+            isrc /= 4;
+            if ( (isrc < -256) || (isrc > 255) ) {
+                ERROR(line, "Source out of range for relative branch %s", instr->name);
+                isrc = 0;
+            }
+            src = isrc & 0x1ff;
+        } else {
+            src = EvalPasmExpr(operand[1]);
+        }
+        break;
     case SRC_OPERAND_ONLY:
         dst = 0;
         src = EvalPasmExpr(operand[0]);
         break;
+    case P2_JUMP:
+        // indirect jump needs to be handled
+        if (!immSrc) {
+            ERROR(line, "indirect jumps via %s not implemented yet", instr->name);
+            return;
+        }
+        dst = 0;
+        isRelJmp = 1;
+        if (isRelJmp) {
+            isrc = EvalPasmExpr(operand[1]) - (asmpc+4);
+            isrc /= 4;
+            src = isrc & 0xfffff;
+            val = val | (1<<20);
+        }
+        goto instr_ok;
     case DST_OPERAND_ONLY:
     case P2_DST_CONST_OK:
         dst = EvalPasmExpr(operand[0]);
@@ -374,6 +430,7 @@ assembleInstruction(Flexbuf *f, AST *ast)
         ERROR(line, "Destination operand too big for %s", instr->name);
         return;
     }
+instr_ok:
     val = val | (dst << 9) | src;
     /* output the instruction */
     /* make sure it is aligned */
@@ -441,7 +498,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
             outputAlignedDataList(f, 4, ast->left, relocs);
             break;
         case AST_INSTRHOLDER:
-            assembleInstruction(f, ast->left);
+            assembleInstruction(f, ast->left, ast->d.ival);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
@@ -449,6 +506,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
         case AST_FILE:
             assembleFile(f, ast->left);
             break;
+        case AST_ORGH:
         case AST_ORG:
         case AST_RES:
         case AST_FIT:

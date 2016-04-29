@@ -953,14 +953,17 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return intExpr(0);
         } else {
             Label *lref = sym->val;
+            if (gl_p2) {
+                return intExpr(lref->offset);
+            }
             if (kind == AST_ABSADDROF) {
                 if (gl_dat_offset == -1) {
                     ERROR(expr, "offset for the @@@ operator is not known");
                 } else {
-                    return intExpr(lref->asmval + gl_dat_offset);
+                    return intExpr(lref->offset + gl_dat_offset);
                 }
             }
-            return intExpr(lref->asmval);
+            return intExpr(lref->offset);
         }
         break;
     default:

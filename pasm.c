@@ -151,13 +151,14 @@ filelen(AST *ast)
  * declare labels for a data block
  */
 
-#define ALIGNPC(size)  do { inc = size; asmpc = align(asmpc, inc); datoff = align(datoff, inc); } while (0)
-#define INCPC(size)  do { inc = size; asmpc += inc; datoff += inc; } while (0)
+#define ALIGNPC(size)  do { inc = size; asmpc = align(asmpc, inc); datoff = align(datoff, inc); hubpc = align(hubpc, inc); } while (0)
+#define INCPC(size)  do { inc = size; asmpc += inc; datoff += inc; hubpc += inc; } while (0)
 
 void
 DeclareLabels(Module *P)
 {
     unsigned asmpc = 0;
+    unsigned hubpc = 0;
     unsigned datoff = 0;
     unsigned inc = 0;
     unsigned delta;
@@ -169,29 +170,30 @@ DeclareLabels(Module *P)
     for (ast = P->datblock; ast; ast = ast->right) {
         switch (ast->kind) {
         case AST_BYTELIST:
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte);
             replaceHereDataList(ast->left, asmpc, 1);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
             ALIGNPC(2);
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_word);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_word);
             replaceHereDataList(ast->left, asmpc, 2);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
             ALIGNPC(4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             replaceHereDataList(ast->left, asmpc, 4);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
             break;
         case AST_INSTRHOLDER:
             ALIGNPC(4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
+            ast->d.ival = asmpc;
             INCPC(4);
             lasttype = ast_type_long;
             break;
@@ -199,7 +201,7 @@ DeclareLabels(Module *P)
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             if (ast->left) {
                 replaceHeres(ast->left, asmpc/4);
                 asmpc = 4*EvalPasmExpr(ast->left);
@@ -208,16 +210,28 @@ DeclareLabels(Module *P)
             }
             lasttype = ast_type_long;
             break;
+        case AST_ORGH:
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            if (ast->left) {
+                replaceHeres(ast->left, hubpc);
+                hubpc = EvalPasmExpr(ast->left);
+            } else {
+                hubpc = 0;
+            }
+            asmpc = hubpc;
+            lasttype = ast_type_long;
+            break;
         case AST_RES:
             asmpc = align(asmpc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             delta = EvalPasmExpr(ast->left);
             asmpc += 4*delta;
+//            hubpc += 4*delta;
             lasttype = ast_type_long;
             break;
         case AST_FIT:
             asmpc = align(asmpc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             if (ast->left) {
                 int32_t max = EvalPasmExpr(ast->left);
                 int32_t cur = (asmpc) / 4;
@@ -228,11 +242,11 @@ DeclareLabels(Module *P)
             lasttype = ast_type_long;
             break;
         case AST_FILE:
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, ast_type_byte);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte);
             INCPC(filelen(ast->left));
             break;
         case AST_LINEBREAK:
-            pendingLabels = emitPendingLabels(P, pendingLabels, datoff, asmpc, lasttype);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, lasttype);
             break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);

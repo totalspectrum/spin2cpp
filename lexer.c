@@ -722,7 +722,7 @@ getToken(LexStream *L, AST **ast_ptr)
     int c;
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
-
+    int temp_label_char = gl_p2 ? '.' : ':';
     c = skipSpace(L, &ast);
 
     if (c >= 127) {
@@ -754,13 +754,13 @@ getToken(LexStream *L, AST **ast_ptr)
         if (c == T_IDENTIFIER && InDatBlock(L) && at_startofline) {
             L->lastGlobal = ast->d.string;
         }
-    } else if (c == ':') {
+    } else if (c == temp_label_char) {
         int peekc = lexgetc(L);
         if (peekc == '=') {
             c = T_ASSIGN;
-        } else if (isIdentifierStart(peekc) && InDatBlock(L) && L->lastGlobal) {
+        } else if (isIdentifierStart(peekc) && InDatBlock(L)) {
             lexungetc(L, peekc);
-            c = parseIdentifier(L, &ast, L->lastGlobal);
+            c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
         }
@@ -1364,7 +1364,28 @@ instr_p2[] = {
   { "waitct1",0x0d602224, NO_OPERANDS, OPC_GENERIC },
   { "waitct2",0x0d602424, NO_OPERANDS, OPC_GENERIC },
   { "waitct3",0x0d602624, NO_OPERANDS, OPC_GENERIC },
+  { "waitpat",0x0d602824, NO_OPERANDS, OPC_GENERIC },
+  { "waitedg",0x0d602a24, NO_OPERANDS, OPC_GENERIC },
+  { "waitrdl",0x0d602c24, NO_OPERANDS, OPC_GENERIC },
+  { "waitwrl",0x0d602e24, NO_OPERANDS, OPC_GENERIC },
+  { "waithlk",0x0d603024, NO_OPERANDS, OPC_GENERIC },
+  { "waitxmt",0x0d603224, NO_OPERANDS, OPC_GENERIC },
+  { "waitxfi",0x0d603424, NO_OPERANDS, OPC_GENERIC },
+  { "waitxro",0x0d603624, NO_OPERANDS, OPC_GENERIC },
+  { "waitfbw",0x0d603824, NO_OPERANDS, OPC_GENERIC },
+  { "waitrle",0x0d603a24, NO_OPERANDS, OPC_GENERIC },
 
+  { "allowi", 0x0d604024, NO_OPERANDS, OPC_GENERIC },
+  { "stalli", 0x0d604224, NO_OPERANDS, OPC_GENERIC },
+
+  { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC },
+  { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC },
+  { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC },
+  { "waitx",  0x0d600028, P2_DST_CONST_OK, OPC_GENERIC },
+  { "setcz",  0x0d600029, P2_DST_CONST_OK, OPC_GENERIC },
+  { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC },
+  { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC },
+  
   // long jumps
   { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP },
   { "call",   0x0da0002d, P2_JUMP, OPC_GENERIC_BRANCH },

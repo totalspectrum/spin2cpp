@@ -230,6 +230,9 @@ typedef struct instrmodifier {
 #define IMMEDIATE_INSTR (1<<22)
 #define BIGIMM_INSTR    (-1)
 
+#define P2_IMM_DST (1<<19)
+#define P2_IMM_SRC (1<<18)
+
 /* optimizer friendly form of instructions */
 struct IR {
     enum IROpcode opc;
