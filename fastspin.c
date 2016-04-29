@@ -440,6 +440,9 @@ main(int argc, char **argv)
     }
     P = ParseFile(argv[0]);
     if (compile && argc > 1) {
+        if (gl_p2) {
+            appendToCmd("-2");
+        }
         /* append the remaining arguments to the command line */
         for (i = 1; i < argc; i++) {
             appendToCmd(argv[i]);
@@ -520,7 +523,7 @@ main(int argc, char **argv)
                 asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
             }
             OutputAsmCode(asmname, P, outputMain);
-            if (compile) {
+            if (compile && !gl_p2)  {
                 appendToCmd("-o");
                 appendToCmd(binname);
                 appendToCmd(asmname);

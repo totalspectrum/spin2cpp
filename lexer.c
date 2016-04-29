@@ -1344,8 +1344,8 @@ instr_p2[] = {
   { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC },
 
   { "clkset", 0x0d600000, P2_DST_CONST_OK,  OPC_GENERIC },
-  { "cogid",  0x0d600001, DST_OPERAND_ONLY, OPC_GENERIC },
-  { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_GENERIC },
+  { "cogid",  0x0d600001, DST_OPERAND_ONLY, OPC_COGID },
+  { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP },
   { "locknew",0x0d600004, DST_OPERAND_ONLY, OPC_GENERIC },
   { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_GENERIC_NR },
   { "lockclr",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR },
