@@ -3421,7 +3421,7 @@ extern Module *globalModule;
  *         jmp  #exit
  */
 static void
-EmitMain(IRList *irl, Module *P)
+EmitMain_P1(IRList *irl, Module *P)
 {
     IR *ir;
     Function *firstfunc;
@@ -3478,6 +3478,31 @@ EmitMain(IRList *irl, Module *P)
     }
 }
 
+static void
+EmitMain_P2(IRList *irl, Module *P)
+{
+    Function *firstfunc;
+    const char *firstfuncname;
+    
+    firstfunc = P->functions;
+    if (!firstfunc) {
+        return;  // no functions at all
+    }
+    firstfuncname = IdentifierGlobalName(P, firstfunc->name);
+    
+    cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
+    hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
+
+    if (firstfunc->cog_code || COG_CODE) {
+        EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
+    } else {
+        EmitOp1(irl, OPC_CALL, NewOperand(IMM_HUB_LABEL, firstfuncname, 0));
+    }
+    EmitLabel(irl, cogexit);
+    EmitOp1(irl, OPC_COGID, arg1);
+    EmitOp1(irl, OPC_COGSTOP, arg1);
+}
+
 void
 OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
@@ -3501,7 +3526,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // output the main stub
     EmitLabel(&cogcode, entrylabel);
     if (outputMain) {
-        EmitMain(&cogcode, P);
+        if (gl_p2) {
+            EmitMain_P2(&cogcode, P);
+        } else {
+            EmitMain_P1(&cogcode, P);
+        }
     }
     // compile COG functions
     if (COG_CODE) {
