@@ -1589,14 +1589,14 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
         if (IsBranch(ir)) {
             return NULL;
         }
-        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
-            return NULL;
-        }
         if (ir->cond != irorig->cond) {
             return NULL;
         }
         if (ir->opc == OPC_RDLONG && ir->src == src) {
             return ir;
+        }
+        if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+            return NULL;
         }
     }
     return NULL;
