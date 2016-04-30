@@ -444,7 +444,8 @@ main(int argc, char **argv)
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
         // a 32 byte spin header is prepended to binary output of dat
-        gl_dat_offset = 32;
+        // (but not in P2)
+        gl_dat_offset = gl_p2 ? 0 : 32;
     } else if (gl_output == OUTPUT_DAT && gl_gas_dat) {
         // GAS output for dat uses symbols, so @@@ is OK there
         gl_dat_offset = 0;

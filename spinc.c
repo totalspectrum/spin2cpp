@@ -1012,6 +1012,9 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     int c, r;
     size_t len;
     size_t padbytes;
+
+    if (gl_p2) return 0; // no checksum required
+    
     if (!f) {
         perror(fname);
         return -1;

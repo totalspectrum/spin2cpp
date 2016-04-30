@@ -7,6 +7,25 @@
 #include <errno.h>
 #include "spinc.h"
 
+unsigned
+InstrSize(AST *instr)
+{
+    AST *ast;
+    unsigned size = 4;
+    InstrModifier *im;
+    while(instr) {
+        ast = instr->left;
+        instr = instr->right;
+        if (ast && ast->kind == AST_INSTRMODIFIER) {
+            im = (InstrModifier *)ast->d.ptr;
+            if (!strcmp(im->name, "##")) {
+                size += 4;
+            }
+        }
+    }
+    return size;
+}
+
 /*
  * find the length of a data list, in bytes
  */
@@ -194,7 +213,7 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
             ast->d.ival = asmpc;
-            INCPC(4);
+            INCPC(InstrSize(ast->left));
             lasttype = ast_type_long;
             break;
         case AST_IDENTIFIER:

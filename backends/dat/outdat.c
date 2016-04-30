@@ -82,7 +82,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     }
 
     flexbuf_init(&fb, BUFSIZ);
-    if (prefixBin) {
+    if (prefixBin && !gl_p2) {
         /* output a binary header */
         OutputSpinHeader(&fb, P);
     }

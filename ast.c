@@ -123,7 +123,7 @@ AstInstrModifier(int32_t ival)
         "#", IMMEDIATE_INSTR
     };
     static InstrModifier BigImm = {
-        "\\##", BIGIMM_INSTR
+        "##", BIGIMM_INSTR
     };
     AST *ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
 
