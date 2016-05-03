@@ -272,6 +272,7 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
         }
         return mask;
     case P2_TWO_OPERANDS:
+    case P2_RDWR_OPERANDS:
         return mask;
     case P2_DST_CONST_OK:
         mask = P2_IMM_DST;
@@ -338,10 +339,10 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
                 // is on the correct operand
                 immmask = ImmMask(instr, numoperands, ast);
                 if (gl_p2) {
-                    immSrc = mask & P2_IMM_SRC;
+                    immSrc = immmask & P2_IMM_SRC;
                     //immDst = mask & P2_IMM_DST;
                 } else {
-                    immSrc = mask & IMMEDIATE_INSTR;
+                    immSrc = immmask & IMMEDIATE_INSTR;
                 }
                 mask = 0;
             } else {
@@ -369,6 +370,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case JMPRET_OPERANDS:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
+    case P2_RDWR_OPERANDS:
         expectops = 2;
         break;
     default:
@@ -392,6 +394,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
     case P2_TWO_OPERANDS:
+    case P2_RDWR_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
@@ -458,7 +461,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     if (immmask & BIG_IMM_SRC) {
         uint32_t augval = val & 0xf0000000; // preserve condition
         augval |= (src >> 9) & 0x007fffff;
-        augval |= 0x0f800000; // AUGS
+        augval |= 0x0f000000; // AUGS
         src &= 0x1ff;
         outputLong(f, augval);
         immmask &= ~BIG_IMM_SRC;
@@ -466,7 +469,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     if (immmask & BIG_IMM_DST) {
         uint32_t augval = val & 0xf0000000; // preserve condition
         augval |= (dst >> 9) & 0x007fffff;
-        augval |= 0x0fc00000; // AUGS
+        augval |= 0x0f800000; // AUGD
         dst &= 0x1ff;
         outputLong(f, augval);
         immmask &= ~BIG_IMM_DST;
