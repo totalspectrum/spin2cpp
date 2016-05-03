@@ -991,7 +991,7 @@ operand:
  | '#' expr
    { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(IMMEDIATE_INSTR)); }
  | '#' '#' expr
-   { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(BIGIMM_INSTR)); }
+   { $$ = AddToList(NewAST(AST_EXPRLIST, $3, NULL), AstInstrModifier(BIGIMM_INSTR)); }
 
 operandlist:
    operand

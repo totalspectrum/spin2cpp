@@ -119,6 +119,16 @@ outputByte(Flexbuf *f, int c)
 }
 
 static void
+outputLong(Flexbuf *f, uint32_t c)
+{
+    int i;
+    for (i = 0; i < 4; i++) {
+        outputByte(f, (c & 0xff));
+        c = c>>8;
+    }
+}
+
+static void
 initDataOutput(DataBlockOutFunc func)
 {
     datacount = 0;
@@ -229,13 +239,22 @@ isImmediate(InstrModifier *im)
     return im->name[0] == '#';
 }
 
+#define BIG_IMM_SRC 0x01
+#define BIG_IMM_DST 0x02
+#define ANY_BIG_IMM (BIG_IMM_SRC|BIG_IMM_DST)
+
 static unsigned
 ImmMask(Instruction *instr, int numoperands, AST *ast)
 {
     unsigned mask;
-
+    InstrModifier *mod = (InstrModifier *)ast->d.ptr;
+    bool bigImm = strcmp(mod->name, "##") == 0;
+    
     if (gl_p2) {
         mask = P2_IMM_SRC;
+        if (bigImm) {
+            mask |= BIG_IMM_SRC;
+        }
     } else {
         mask = IMMEDIATE_INSTR;
     }
@@ -253,12 +272,13 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
         }
         return mask;
     case P2_TWO_OPERANDS:
-        if (numoperands < 2) {
-            return P2_IMM_DST;
-        }
-        return P2_IMM_SRC;
+        return mask;
     case P2_DST_CONST_OK:
-        return P2_IMM_DST;
+        mask = P2_IMM_DST;
+        if (bigImm) {
+            mask |= BIG_IMM_DST;
+        }
+        return mask;
     default:
         ERROR(ast, "immediate not supported for %s instruction", instr->name);
         return 0;
@@ -274,9 +294,10 @@ void
 assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
 {
     uint32_t val, mask, src, dst;
+    uint32_t immmask;
     int32_t isrc;
     Instruction *instr;
-    int i, numoperands, expectops;
+    int numoperands, expectops;
     AST *operand[MAX_OPERANDS];
     AST *line = ast;
     char *callname;
@@ -284,8 +305,14 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     int immSrc = 0;
     int isRelJmp = 0;
     
+    /* make sure it is aligned */
+    while ((datacount % 4) != 0) {
+        outputByte(f, 0);
+    }
+
     instr = (Instruction *)ast->d.ptr;
     val = instr->binary;
+    immmask = 0;
     if (instr->opc != OPC_NOP) {
         /* for anything except NOP set the condition to "always" */
         if (gl_p2) {
@@ -309,17 +336,18 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             if (isImmediate(mod)) {
                 // sanity check that the immediate
                 // is on the correct operand
-                mask = ImmMask(instr, numoperands, ast);
+                immmask = ImmMask(instr, numoperands, ast);
                 if (gl_p2) {
                     immSrc = mask & P2_IMM_SRC;
                     //immDst = mask & P2_IMM_DST;
                 } else {
                     immSrc = mask & IMMEDIATE_INSTR;
                 }
+                mask = 0;
             } else {
                 mask = mod->modifier;
             }
-            if (mask & 0x80000000) {
+            if (mask & 0x0003ffff) {
                 val = val & mask;
             } else {
                 val = val | mask;
@@ -399,6 +427,10 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             src = isrc & 0xfffff;
             val = val | (1<<20);
         }
+        if (immmask & ANY_BIG_IMM) {
+            ERROR(line, "big immediates not yet supported for %s", instr->name);
+            immmask &= ~ANY_BIG_IMM;
+        }
         goto instr_ok;
     case DST_OPERAND_ONLY:
     case P2_DST_CONST_OK:
@@ -422,6 +454,23 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
         ERROR(line, "Unsupported instruction `%s'", instr->name);
         return;
     }
+
+    if (immmask & BIG_IMM_SRC) {
+        uint32_t augval = val & 0xf0000000; // preserve condition
+        augval |= (src >> 9) & 0x007fffff;
+        augval |= 0x0f800000; // AUGS
+        src &= 0x1ff;
+        outputLong(f, augval);
+        immmask &= ~BIG_IMM_SRC;
+    }
+    if (immmask & BIG_IMM_DST) {
+        uint32_t augval = val & 0xf0000000; // preserve condition
+        augval |= (dst >> 9) & 0x007fffff;
+        augval |= 0x0fc00000; // AUGS
+        dst &= 0x1ff;
+        outputLong(f, augval);
+        immmask &= ~BIG_IMM_DST;
+    }
     if (src > 511) {
         ERROR(line, "Source operand too big for %s", instr->name);
         return;
@@ -431,16 +480,9 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
         return;
     }
 instr_ok:
-    val = val | (dst << 9) | src;
+    val = val | (dst << 9) | src | immmask;
     /* output the instruction */
-    /* make sure it is aligned */
-    while ((datacount % 4) != 0) {
-        outputByte(f, 0);
-    }
-    for (i = 0; i < 4; i++) {
-        outputByte(f, val & 0xff);
-        val = val >> 8;
-    }
+    outputLong(f, val);
 }
 
 void

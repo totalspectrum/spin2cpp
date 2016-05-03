@@ -1463,6 +1463,7 @@ HwReg hwreg_p2[] = {
 };
 
 #define IF_NEVER_P1 0xffc3ffff
+#define IF_NEVER_P2 0x0fffffff
 
 InstrModifier modifiers_p1[] = {
     { "if_never",  IF_NEVER_P1 },
@@ -1521,6 +1522,62 @@ InstrModifier modifiers_p1[] = {
     { NULL, 0 }
 };
 
+InstrModifier modifiers_p2[] = {
+    { "if_never",  IF_NEVER_P2 },
+    { "if_always", IF_NEVER_P2 | (0xf<<28) },
+
+    { "if_a",           IF_NEVER_P2 | (0x1<<28) },
+    { "if_nc_and_nz",   IF_NEVER_P2 | (0x1<<28) },
+    { "if_nz_and_nc",   IF_NEVER_P2 | (0x1<<28) },
+
+    { "if_nc_and_z",    IF_NEVER_P2 | (0x2<<28) },
+    { "if_z_and_nc",    IF_NEVER_P2 | (0x2<<28) },
+
+    { "if_ae",     IF_NEVER_P2 | (0x3<<28) },
+    { "if_nc",     IF_NEVER_P2 | (0x3<<28) },
+
+    { "if_c_and_nz",    IF_NEVER_P2 | (0x4<<28) },
+    { "if_nz_and_c",    IF_NEVER_P2 | (0x4<<28) },
+
+    { "if_ne",     IF_NEVER_P2 | (0x5<<28) },
+    { "if_nz",     IF_NEVER_P2 | (0x5<<28) },
+
+    { "if_c_ne_z", IF_NEVER_P2 | (0x6<<28) },
+    { "if_z_ne_c", IF_NEVER_P2 | (0x6<<28) },
+
+    { "if_nc_or_nz", IF_NEVER_P2 | (0x7<<28) },
+    { "if_nz_or_nc", IF_NEVER_P2 | (0x7<<28) },
+
+    { "if_c_and_z", IF_NEVER_P2 | (0x8<<28) },
+    { "if_z_and_c", IF_NEVER_P2 | (0x8<<28) },
+
+    { "if_c_eq_z", IF_NEVER_P2 | (0x9<<28) },
+    { "if_z_eq_c", IF_NEVER_P2 | (0x9<<28) },
+
+    { "if_e",      IF_NEVER_P2 | (0xa<<28) },
+    { "if_z",      IF_NEVER_P2 | (0xa<<28) },
+
+    { "if_nc_or_z", IF_NEVER_P2 | (0xb<<28) },
+    { "if_z_or_nc", IF_NEVER_P2 | (0xb<<28) },
+
+    { "if_b",      IF_NEVER_P2 | (0xc<<28) },
+    { "if_c",      IF_NEVER_P2 | (0xc<<28) },
+
+    { "if_c_or_nz", IF_NEVER_P2 | (0xd<<28) },
+    { "if_nz_or_c", IF_NEVER_P2 | (0xd<<28) },
+
+    { "if_be",     IF_NEVER_P2 | (0xe<<28) },
+    { "if_c_or_z", IF_NEVER_P2 | (0xe<<28) },
+    { "if_z_or_c", IF_NEVER_P2 | (0xe<<28) },
+
+
+    { "wz", (1<<19) },
+    { "wc", (1<<20) },
+
+    { NULL, 0 }
+};
+
+
 static void
 InitPasm(int flags)
 {
@@ -1531,11 +1588,12 @@ InitPasm(int flags)
     if (gl_p2) {
         instr = instr_p2;
         hwreg = hwreg_p2;
+        modifiers = modifiers_p2;
     } else {
         instr = instr_p1;
         hwreg = hwreg_p1;
+        modifiers = modifiers_p1;
     }
-    modifiers = modifiers_p1;
     
 
     /* add hardware registers */
