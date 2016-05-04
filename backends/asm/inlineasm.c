@@ -7,6 +7,7 @@
 static Operand *
 CompileInlineOperand(IRList *irl, AST *expr)
 {
+    Operand *r;
     if (expr->kind == AST_IDENTIFIER) {
 	 Symbol *sym = LookupSymbol(expr->d.string);
 	 if (!sym) {
@@ -18,7 +19,11 @@ CompileInlineOperand(IRList *irl, AST *expr)
 	 case SYM_RESULT:
 	 case SYM_LOCALVAR:
 	 case SYM_TEMPVAR:
-	      return CompileIdentifier(irl, expr);
+	      r = CompileIdentifier(irl, expr);
+              if (!r) {
+                  ERROR(expr, "Bad identifier expression %s", sym->name);
+              }
+              return r;
 	 default:
 	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
 	      return NULL;

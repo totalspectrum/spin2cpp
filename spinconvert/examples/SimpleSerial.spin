@@ -5,6 +5,10 @@
 '' also note: if PC is defined then we
 '' substitute some C code instead
 ''
+#ifdef __P2__
+CON
+  clkfreq = 80_000_000
+#endif
 VAR
   byte txpin
   byte rxpin
@@ -34,23 +38,36 @@ PUB start(rx_pin, tx_pin, mode, baudrate)
 #endif
   return 1
   
-PUB tx(c) | val, waitcycles
+PUB tx(c) | val, waitcycles, mask
 #ifdef PC
   '' just emit direct C code here
   {++
   putchar(c);
   }
 #else
-  OUTA |= txmask
-  DIRA |= txmask
+  mask := txmask
+# ifdef __P2__
+  DIRB |= mask
+  OUTB |= mask
+# else
+  DIRA |= mask
+  OUTA |= mask
+#endif
   val := (c | 256) << 1
   waitcycles := CNT
   repeat 10
      waitcnt(waitcycles += bitcycles)
+# ifdef __P2__
      if (val & 1)
-       OUTA |= txmask
+       OUTB |= mask
      else
-       OUTA &= !txmask
+       OUTB &= !mask
+# else
+     if (val & 1)
+       OUTA |= mask
+     else
+       OUTA &= !mask
+# endif
      val >>= 1
 #endif
 

@@ -275,9 +275,9 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
     case P2_RDWR_OPERANDS:
         return mask;
     case P2_DST_CONST_OK:
-        mask = P2_IMM_DST;
+        mask = P2_IMM_SRC;
         if (bigImm) {
-            mask |= BIG_IMM_DST;
+            mask |= BIG_IMM_SRC;
         }
         return mask;
     default:
@@ -296,6 +296,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
 {
     uint32_t val, mask, src, dst;
     uint32_t immmask;
+    uint32_t curpc;
     int32_t isrc;
     Instruction *instr;
     int numoperands, expectops;
@@ -305,6 +306,9 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     AST *retast;
     int immSrc = 0;
     int isRelJmp = 0;
+    
+    curpc = ast->d.ival;
+    ast = ast->left;
     
     /* make sure it is aligned */
     while ((datacount % 4) != 0) {
@@ -422,13 +426,30 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             ERROR(line, "indirect jumps via %s not implemented yet", instr->name);
             return;
         }
+        immmask = 0;
         dst = 0;
-        isRelJmp = 1;
+        // figure out if absolute or relative
+        // if  crossing from COG to HUB or vice-versa,
+        // make it absolute
+        isrc = EvalPasmExpr(operand[0]);
+        if ( (curpc < 0x200 && isrc >= 0x200)
+             || (curpc < 0x400 && isrc >= 0x400)
+             || (curpc >= 0x400 && isrc < 0x200)
+            )
+        {
+            isRelJmp = 0;
+        } else {
+            isRelJmp = 1;
+        }
         if (isRelJmp) {
-            isrc = EvalPasmExpr(operand[1]) - (asmpc+4);
-            isrc /= 4;
+            isrc = isrc - asmpc;
+            if (curpc < 0x400) {
+                isrc /= 4;
+            }
             src = isrc & 0xfffff;
             val = val | (1<<20);
+        } else {
+            src = isrc & 0xfffff;
         }
         if (immmask & ANY_BIG_IMM) {
             ERROR(line, "big immediates not yet supported for %s", instr->name);
@@ -521,6 +542,21 @@ assembleFile(Flexbuf *f, AST *ast)
 }
 
 /*
+ * output padding bytes
+ */
+static void
+padTo(Flexbuf *f, AST *ast)
+{
+    uint32_t dest = EvalPasmExpr(ast->left);
+    uint32_t cur = ast->d.ival;
+
+    while (cur < dest) {
+        outputByte(f, 0);
+        cur++;
+    }
+}
+
+/*
  * print out a data block
  */
 void
@@ -543,7 +579,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
             outputAlignedDataList(f, 4, ast->left, relocs);
             break;
         case AST_INSTRHOLDER:
-            assembleInstruction(f, ast->left, ast->d.ival);
+            assembleInstruction(f, ast, ast->d.ival);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
@@ -552,6 +588,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
             assembleFile(f, ast->left);
             break;
         case AST_ORGH:
+            /* need to skip ahead to PC */
+            padTo(f, ast);
+            break;
         case AST_ORG:
         case AST_RES:
         case AST_FIT:

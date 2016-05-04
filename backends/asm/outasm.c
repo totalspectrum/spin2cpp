@@ -3484,6 +3484,7 @@ EmitMain_P2(IRList *irl, Module *P)
     Function *firstfunc;
     const char *firstfuncname;
     
+    arg1 = GetGlobal(REG_ARG, "arg1", 0);
     firstfunc = P->functions;
     if (!firstfunc) {
         return;  // no functions at all

@@ -14,8 +14,11 @@ InstrSize(AST *instr)
     unsigned size = 4;
     InstrModifier *im;
     while(instr) {
-        ast = instr->left;
+        ast = instr;
         instr = instr->right;
+        if (ast && ast->kind == AST_EXPRLIST) {
+            ast = ast->left;
+        }
         if (ast && ast->kind == AST_INSTRMODIFIER) {
             im = (InstrModifier *)ast->d.ptr;
             if (!strcmp(im->name, "##")) {
@@ -231,6 +234,7 @@ DeclareLabels(Module *P)
             break;
         case AST_ORGH:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            ast->d.ival = asmpc;
             if (ast->left) {
                 replaceHeres(ast->left, hubpc);
                 hubpc = EvalPasmExpr(ast->left);

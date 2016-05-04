@@ -7,8 +7,11 @@ CON
   _clkfreq = 80_000_000
 
 OBJ
-''  fds : "SimpleSerial.spin"
+#ifdef __P2__
+  fds : "SimpleSerial.spin"
+#else
   fds : "FullDuplexSerial.spin"
+#endif
 
 PUB run | i,x,now,elapsed
 
@@ -16,7 +19,7 @@ PUB run | i,x,now,elapsed
   fds.start(31, 30, 0, 115200)
 
   '' and say hello
-  repeat i from 1 to 20
+  repeat i from 1 to 28
     now := cnt
     x := fibo(i)
     elapsed := cnt - now
