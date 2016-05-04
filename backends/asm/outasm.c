@@ -3598,7 +3598,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     
     current = save;
 
-    f = fopen(fname, "wb");
+    f = fopen(fname, "w");
     if (!f) {
         perror(fname);
         exit(1);
