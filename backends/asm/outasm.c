@@ -3094,7 +3094,7 @@ CompileToIR(IRList *irl, Module *P)
 /*
  * emit builtin functions like mul and div
  */
-static const char *builtin_mul =
+static const char *builtin_mul_p1 =
 "\nmultiply_\n"
 "\tmov\titmp2_, muldiva_\n"
 "\txor\titmp2_, muldivb_\n"
@@ -3116,6 +3116,22 @@ static const char *builtin_mul =
 "\tmov\tmuldivb_, result1\n"
 "multiply__ret\n"
 "\tret\n"
+;
+
+static const char *builtin_mul_p2 =
+"\nmultiply_\n"
+"\tmov\titmp2_, muldiva_\n"
+"\txor\titmp2_, muldivb_\n"
+"\tabs\tmuldiva_, muldiva_\n"
+"\tabs\tmuldivb_, muldivb_\n"
+"\tqmul\tmuldiva_, muldivb_\n"
+"\tgetqx\tmuldiva_\n"
+"\tgetqy\tmuldivb_\n"
+"\tshr\titmp2_, #31 wz\n"
+" if_nz\tneg\tmuldivb_, muldivb_\n"
+" if_nz\tneg\tmuldiva_, muldiva_ wz\n"
+" if_nz\tsub\tmuldivb_, #1\n"
+"\treta\n"
 ;
 
 /*
@@ -3272,7 +3288,13 @@ EmitBuiltins(IRList *irl)
         EmitOp1(irl, OPC_LITERAL, loop);
     }
     if (mulfunc) {
-        Operand *loop = NewOperand(IMM_STRING, builtin_mul, 0);
+        Operand *loop;
+
+        if (gl_p2) {
+            loop = NewOperand(IMM_STRING, builtin_mul_p2, 0);
+        } else {
+            loop = NewOperand(IMM_STRING, builtin_mul_p1, 0);
+        }
         EmitOp1(irl, OPC_LITERAL, loop);
         (void)GetGlobal(REG_REG, "itmp1_", 0);
         (void)GetGlobal(REG_REG, "itmp2_", 0);
@@ -3491,9 +3513,12 @@ EmitMain_P2(IRList *irl, Module *P)
     }
     firstfuncname = IdentifierGlobalName(P, firstfunc->name);
     
+    ValidateStackptr();
+    ValidateObjbase();
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
+    EmitMove(irl, stackptr, stacklabel);
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {
