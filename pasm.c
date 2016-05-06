@@ -174,6 +174,7 @@ filelen(AST *ast)
  */
 
 #define ALIGNPC(size)  do { inc = size; asmpc = align(asmpc, inc); datoff = align(datoff, inc); hubpc = align(hubpc, inc); } while (0)
+#define MAYBEALIGNPC(size) if (!gl_p2) { ALIGNPC(size); }
 #define INCPC(size)  do { inc = size; asmpc += inc; datoff += inc; hubpc += inc; } while (0)
 
 void
@@ -198,21 +199,21 @@ DeclareLabels(Module *P)
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
-            ALIGNPC(2);
+            MAYBEALIGNPC(2);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_word);
             replaceHereDataList(ast->left, asmpc, 2);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
-            ALIGNPC(4);
+            MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             replaceHereDataList(ast->left, asmpc, 4);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
             break;
         case AST_INSTRHOLDER:
-            ALIGNPC(4);
+            MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             replaceHeres(ast->left, asmpc/4);
             ast->d.ival = asmpc;

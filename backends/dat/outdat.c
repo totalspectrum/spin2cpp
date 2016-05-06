@@ -287,6 +287,30 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
 }
 
 /*
+ * assemble a special read operand
+ */
+unsigned
+SpecialRdOperand(AST *ast)
+{
+    HwReg *hwreg;
+    uint32_t val = 0;
+    
+    if (ast->kind == AST_HWREG) {
+        hwreg = (HwReg *)ast->d.ptr;
+        if (hwreg->addr == 0x1f8) {
+            // ptra
+            val = 0x100;
+        } else if (hwreg->addr == 0x1f9) {
+            // ptrb
+            val = 0x180;
+        } else {
+            return 0;
+        }
+    }
+    return val;
+}
+
+/*
  * assemble an instruction, along with its modifiers
  */
 #define MAX_OPERANDS 2
@@ -311,8 +335,10 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     ast = ast->left;
     
     /* make sure it is aligned */
-    while ((datacount % 4) != 0) {
-        outputByte(f, 0);
+    if (!gl_p2) {
+        while ((datacount % 4) != 0) {
+            outputByte(f, 0);
+        }
     }
 
     instr = (Instruction *)ast->d.ptr;
@@ -398,9 +424,17 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
     case P2_TWO_OPERANDS:
-    case P2_RDWR_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
+        break;
+    case P2_RDWR_OPERANDS:
+        dst = EvalPasmExpr(operand[0]);
+        src = SpecialRdOperand(operand[1]);
+        if (src == 0) {
+            src = EvalPasmExpr(operand[1]);
+        } else {
+            immmask |= P2_IMM_SRC;
+        }
         break;
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
@@ -442,7 +476,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             isRelJmp = 1;
         }
         if (isRelJmp) {
-            isrc = isrc - asmpc;
+            isrc = isrc - (asmpc+4);
             if (curpc < 0x400) {
                 isrc /= 4;
             }
@@ -512,7 +546,7 @@ instr_ok:
 void
 outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
-    if (size > 1) {
+    if (size > 1 && !gl_p2) {
         while ((datacount % size) != 0) {
             outputByte(f, 0);
         }
