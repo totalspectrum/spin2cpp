@@ -1415,8 +1415,8 @@ instr_p2[] = {
   
   // long jumps
   { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP },
-  { "call",   0x0da0002d, P2_JUMP, OPC_GENERIC_BRANCH },
-  { "calla",  0x0dc0002e, P2_JUMP, OPC_CALL },
+  { "call",   0x0da00000, P2_JUMP, OPC_GENERIC_BRANCH },
+  { "calla",  0x0dc00000, P2_JUMP, OPC_CALL },
   { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH },
   
   { NULL, 0, 0, 0},
