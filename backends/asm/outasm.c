@@ -983,7 +983,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitPush(irl, oplist->op);
         }
         // push return address, if we are in cog mode
-        if (func->cog_code) {
+        if (func->cog_code && !gl_p2) {
             EmitPush(irl, FuncData(func)->asmretname);
         }
     }
@@ -999,7 +999,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
         // and the actual return
-        if (func->cog_code) {
+        if (func->cog_code && !gl_p2) {
             EmitPop(irl, FuncData(func)->asmretname);
         }
         // pop off all local variables
