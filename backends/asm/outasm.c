@@ -1390,8 +1390,8 @@ OpcFromOp(int op)
       return OPC_ROL;
   case T_ROTR:
       return OPC_ROR;
-  case T_REV:
-      return OPC_REV;
+//  case T_REV:
+//      return gl_p2 ? OPC_REV_P2 : OPC_REV_P1;
   case T_LIMITMIN:
       return OPC_MINS;
   case T_LIMITMAX:
@@ -1425,10 +1425,23 @@ CompileBasicOperator(IRList *irl, AST *expr)
 
   switch(op) {
   case T_REV:
-      // this one is a bit odd
       // we actually want rev lhs, 32 - rhs
       rhs = AstOperator('-', AstInteger(32), rhs);
-      // fall through
+      if (gl_p2) {
+          // reverse, then shift right
+          left = CompileExpression(irl, lhs);
+          right = CompileExpression(irl, rhs);
+          EmitOp2(irl, OPC_REV_P2, temp, left); // reverse the bits
+          EmitOp2(irl, OPC_SHR, temp, right);
+          return temp;
+      } else {
+          left = CompileExpression(irl, lhs);
+          right = CompileExpression(irl, rhs);
+          EmitMove(irl, temp, left);
+          right = Dereference(irl, right);
+          EmitOp2(irl, OPC_REV_P1, temp, right);
+          return temp;
+      }
   case '-':
   case T_SHL:
   case T_SHR:
