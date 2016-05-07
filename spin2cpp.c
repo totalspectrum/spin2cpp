@@ -531,6 +531,9 @@ main(int argc, char **argv)
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile) {
+                if (gl_p2) {
+                    appendToCmd("--p2");
+                }
                 appendToCmd("-o");
                 appendToCmd(binname);
                 appendToCmd(asmname);
