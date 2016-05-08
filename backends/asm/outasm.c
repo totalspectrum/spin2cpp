@@ -825,9 +825,12 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
 
 static void EmitPush(IRList *irl, Operand *src)
 {
+    IR *ir;
     ValidateStackptr();
-    EmitMove(irl, stacktop, src);
-    if (COG_DATA) {
+    ir = EmitMove(irl, stacktop, src);
+    if (gl_p2) {
+        ir->srceffect = OPEFFECT_POSTINC;
+    } else if (COG_DATA) {
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(1));
     } else {
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(4));
@@ -836,12 +839,18 @@ static void EmitPush(IRList *irl, Operand *src)
 static void EmitPop(IRList *irl, Operand *src)
 {
     ValidateStackptr();
-    if (COG_DATA) {
-        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(1));
-    } else {
-        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
+    IR *ir;
+    if (!gl_p2) {
+        if (COG_DATA) {
+            EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(1));
+        } else {
+            EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
+        }
     }
-    EmitMove(irl, src, stacktop);
+    ir = EmitMove(irl, src, stacktop);
+    if (gl_p2) {
+        ir->srceffect = OPEFFECT_PREDEC;
+    }
 }
 
 //

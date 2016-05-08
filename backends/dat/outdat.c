@@ -295,17 +295,49 @@ SpecialRdOperand(AST *ast)
     HwReg *hwreg;
     uint32_t val = 0;
     
+    if (ast->kind == AST_OPERATOR && (ast->d.ival == T_INCREMENT
+                                      || ast->d.ival == T_DECREMENT))
+    {
+        if (ast->d.ival == T_INCREMENT) {
+            if (ast->left) {
+                ast = ast->left;
+                // a++: x110 0001
+                val = 0x61;
+            } else {
+                // ++a: x100 0001
+                ast = ast->right;
+                val = 0x41;
+            }
+        } else {
+            if (ast->left) {
+                ast = ast->left;
+                // a--
+                val = 0x7f;
+            } else {
+                // --a: x101 1111
+                ast = ast->right;
+                val = 0x5f;
+            }
+        }
+    }
+    
     if (ast->kind == AST_HWREG) {
         hwreg = (HwReg *)ast->d.ptr;
         if (hwreg->addr == 0x1f8) {
             // ptra
-            val = 0x100;
+            val |= 0x100;
         } else if (hwreg->addr == 0x1f9) {
             // ptrb
-            val = 0x180;
+            val |= 0x180;
         } else {
+            if (val) {
+                ERROR(ast, "bad increment/decrement");
+            }
             return 0;
         }
+    } else if (val) {
+        ERROR(ast, "bad increment/decrement");
+        return 0;
     }
     return val;
 }
@@ -439,7 +471,11 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         if (immSrc) {
-            isrc = EvalPasmExpr(operand[1]) - (asmpc+4);
+            isrc = EvalPasmExpr(operand[1]);
+            if (isrc < 0x400) {
+                isrc *= 4;
+            }
+            isrc = isrc - (asmpc+4);
             isrc /= 4;
             if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
@@ -476,10 +512,10 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             isRelJmp = 1;
         }
         if (isRelJmp) {
-            isrc = isrc - (asmpc+4);
             if (curpc < 0x400) {
-                isrc /= 4;
+                isrc *= 4;
             }
+            isrc = isrc - (asmpc+4);
             src = isrc & 0xfffff;
             val = val | (1<<20);
         } else {

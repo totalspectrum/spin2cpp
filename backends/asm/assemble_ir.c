@@ -34,13 +34,23 @@ static int didOrg;
 static int lmmMode;
 
 static void
-doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
+doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect)
 {
     char temp[128];
+    
     if (!reg) {
         ERROR(NULL, "internal error bad operand");
         flexbuf_addstr(fb, "???");
         return;
+    }
+    if (effect != OPEFFECT_NONE) {
+        if (gl_p2) {
+            if (reg->kind != REG_HW) {
+                ERROR(NULL, "operand effect on wrong register");
+            }
+        } else {
+            ERROR(NULL, "illegal operand effect");
+        }
     }
     switch (reg->kind) {
     case IMM_INT:
@@ -82,21 +92,31 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm)
         }
         /* fall through */
     default:
+        if (effect == OPEFFECT_PREINC) {
+            flexbuf_printf(fb, "++");
+        } else if (effect == OPEFFECT_PREDEC) {
+            flexbuf_printf(fb, "--");
+        }
         flexbuf_addstr(fb, reg->name);
+        if (effect == OPEFFECT_POSTINC) {
+            flexbuf_printf(fb, "++");
+        } else if (effect == OPEFFECT_POSTDEC) {
+            flexbuf_printf(fb, "--");
+        }
         break;
     }
 }
 
 static void
-PrintOperandSrc(struct flexbuf *fb, Operand *reg)
+PrintOperandSrc(struct flexbuf *fb, Operand *reg, enum OperandEffect effect)
 {
-    doPrintOperand(fb, reg, 1);
+    doPrintOperand(fb, reg, 1, effect);
 }
 
 static void
 PrintOperand(struct flexbuf *fb, Operand *reg)
 {
-    doPrintOperand(fb, reg, 0);
+    doPrintOperand(fb, reg, 0, OPEFFECT_NONE);
 }
 
 void
@@ -401,13 +421,13 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         case P2_JUMP:
         case P2_DST_CONST_OK:
             flexbuf_addstr(fb, "\t");
-            PrintOperandSrc(fb, ir->dst);
+            PrintOperandSrc(fb, ir->dst, OPEFFECT_NONE);
             break;
         default:
             flexbuf_addstr(fb, "\t");
             PrintOperand(fb, ir->dst);
             flexbuf_addstr(fb, ", ");
-            PrintOperandSrc(fb, ir->src);
+            PrintOperandSrc(fb, ir->src, ir->srceffect);
             break;
         }
         ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);

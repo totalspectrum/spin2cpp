@@ -165,7 +165,7 @@ enum Operandkind {
     REG_HUBPTR, // a register which holds a hub address
     REG_COGPTR, // a register which holds a cog address
     REG_ARG,   // for an argument to a function
-
+    
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_ARG)
 
     // all of these memory references must go together
@@ -182,6 +182,14 @@ enum Operandkind {
 };
 
 typedef enum Operandkind Operandkind;
+
+enum OperandEffect {
+    OPEFFECT_NONE,
+    OPEFFECT_PREDEC,
+    OPEFFECT_POSTDEC,
+    OPEFFECT_PREINC,
+    OPEFFECT_POSTINC,
+};
 
 struct Operand {
     enum Operandkind kind;
@@ -246,6 +254,7 @@ struct IR {
     unsigned addr;
     void *aux; // auxiliary data for back end
     Instruction *instr; // PASM assembler data for instruction
+    enum OperandEffect srceffect; // special effect (e.g. postinc) for source
 };
 
 void AppendOperand(OperandList **listptr, Operand *op);
