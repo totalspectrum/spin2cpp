@@ -265,6 +265,7 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
     case CALL_OPERAND:
         return mask;
     case TWO_OPERANDS:
+    case TWO_OPERANDS_OPTIONAL:
     case JMPRET_OPERANDS:
         if (numoperands < 2) {
             ERROR(ast, "bad immediate operand to %s", instr->name);
@@ -281,7 +282,7 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
         }
         return mask;
     default:
-        ERROR(ast, "immediate not supported for %s instruction", instr->name);
+        ERROR(ast, "immediate value not supported for %s instruction", instr->name);
         return 0;
     }
 }
