@@ -126,11 +126,12 @@ CheckYield(AST *body)
     return AddToList(body, AstYield());
 }
 
+#define YYERROR_VERBOSE 1
 %}
 
 %pure-parser
-%define parse.error verbose
-%define parse.lac full
+ //%define parse.error verbose
+ //%define parse.lac full
 
 %token T_IDENTIFIER "identifier"
 %token T_NUM        "number"
