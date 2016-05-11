@@ -199,7 +199,7 @@ PrintSubHeaders(Flexbuf *f, Module *parse)
         }
 
         /* see if we've already printed this header */
-        objstate = ast->d.ptr;
+        objstate = (Module *)ast->d.ptr;
         already_done = 0;
         for (sub = parse->objblock; sub && sub != ast; sub = sub->right) {
             if (sub->d.ptr == objstate) {
@@ -281,7 +281,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
-        Module *P = ast->d.ptr;
+        Module *P = (Module *)ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
@@ -340,7 +340,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
-        Module *P = ast->d.ptr;
+        Module *P = (Module *)ast->d.ptr;
         AST *objdef = ast->left;
         if (objdef->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);

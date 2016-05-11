@@ -638,7 +638,7 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref)
                     ERROR(expr, "symbol %s on left hand side of assignment", sym->name);
                 } else {
                     if (sym->type == SYM_BUILTIN) {
-                        Builtin *b = sym->val;
+                        Builtin *b = (Builtin *)sym->val;
                         (*b->printit)(f, b, NULL);
                     } else {
                         if (gl_ccode) {
@@ -1198,7 +1198,7 @@ PrintExpr(Flexbuf *f, AST *expr)
         if (!sym) {
             ; /* do nothing, printed error already */
         } else if (sym->type == SYM_BUILTIN) {
-            Builtin *b = sym->val;
+            Builtin *b = (Builtin *)sym->val;
             (*b->printit)(f, b, expr->right);
         } else if (sym->type == SYM_FUNCTION) {
             PrintFuncCall(f, sym, expr->right, objsym, objref);
@@ -1224,8 +1224,8 @@ PrintExpr(Flexbuf *f, AST *expr)
         if (gl_ccode) {
             flexbuf_printf(f, "%s", sym->name);
         } else {
-            AST *objast = objsym->val;
-            Module *P = objast->d.ptr;
+            AST *objast = (AST *)objsym->val;
+            Module *P = (Module *)objast->d.ptr;
             flexbuf_printf(f, "%s::%s", P->classname, sym->name);
         }
         break;
@@ -1424,7 +1424,7 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     const char *idxname;
     const char *valname;
-    const char *typename;
+    const char *type_name;
     const char *ptrname;
     AST *dst, *src, *count;
 
@@ -1436,13 +1436,13 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
     /* b->extradata is the size of memory we
        are working with
     */
-    typename = (b->extradata == 2) ? "uint16_t" : gl_intstring;
+    type_name = (b->extradata == 2) ? "uint16_t" : gl_intstring;
 
     /* if the source is 0, use memset instead */
     if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
         flexbuf_printf(f, "memset( (void *)");
         PrintAsAddr(f, dst);
-        flexbuf_printf(f, ", 0, sizeof(%s)*", typename);
+        flexbuf_printf(f, ", 0, sizeof(%s)*", type_name);
         PrintExpr(f, count);
         flexbuf_printf(f, ")");
         return;
@@ -1451,9 +1451,9 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
     valname = NewTemporaryVariable("_val_");
     ptrname = NewTemporaryVariable("_ptr_");
     flexbuf_printf(f, "{ %s %s; ", gl_intstring, idxname);
-    flexbuf_printf(f, "%s *%s = (%s *)", typename, ptrname, typename);
+    flexbuf_printf(f, "%s *%s = (%s *)", type_name, ptrname, type_name);
     PrintAsAddr(f, dst);
-    flexbuf_printf(f, "; %s %s = ", typename, valname);
+    flexbuf_printf(f, "; %s %s = ", type_name, valname);
     PrintExpr(f, src);
     flexbuf_printf(f, "; for (%s = ", idxname);
     PrintExpr(f, count);

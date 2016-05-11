@@ -72,7 +72,7 @@ FindSymbolByOffset(SymbolTable *table, int offset)
 Symbol *
 NewSymbol(void)
 {
-    Symbol *sym = calloc(1, sizeof(*sym));
+    Symbol *sym = (Symbol *)calloc(1, sizeof(*sym));
     return sym;
 }
 
@@ -97,7 +97,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
 
     sym = NewSymbol();
     sym->name = name;
-    sym->type = type;
+    sym->type = (Symtype)type;
     sym->val = val;
     sym->next = table->hash[hash];
     table->hash[hash] = sym;
@@ -134,7 +134,7 @@ NewTemporaryVariable(const char *prefix)
 
     if (!prefix)
         prefix = "_tmp_";
-    s = str = malloc(strlen(prefix)+16);
+    s = str = (char *)malloc(strlen(prefix)+16);
     if (!s) {
         fprintf(stderr, "Out of memory!\n");
         exit(1);

@@ -54,7 +54,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
     sub = ast->right;
     while (sub != NULL) {
         if (sub->kind == AST_INSTRMODIFIER) {
-            InstrModifier *mod = sub->d.ptr;
+            InstrModifier *mod = (InstrModifier *)sub->d.ptr;
 	    if (!strcmp(mod->name, "wc")) {
 		 ir->flags |= FLAG_WC;
 	    } else if (!strcmp(mod->name, "wz")) {

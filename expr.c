@@ -26,7 +26,7 @@ GetObjectPtr(Symbol *sym)
         fprintf(stderr, "internal error, not an object AST\n");
         abort();
     }
-    return oval->d.ptr;
+    return (Module *)oval->d.ptr;
 }
 
 /* code to find a symbol */
@@ -851,7 +851,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             return intExpr(0);
         }
         /* while we're evaluating, use the object context */
-        ret = EvalExprInState(GetObjectPtr(objsym), sym->val, flags, valid);
+        ret = EvalExprInState(GetObjectPtr(objsym), (AST *)sym->val, flags, valid);
         return ret;
     case AST_RESULT:
         *valid = 0;
@@ -872,7 +872,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                 return floatExpr(intAsFloat(EvalConstExpr((AST *)sym->val)));
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
-                    Label *lref = sym->val;
+                    Label *lref = (Label *)sym->val;
                     if (lref->asmval & 0x03) {
                         if (reportError)
                             ERROR(expr, "label %s not on longword boundary", sym->name);
@@ -923,7 +923,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
     case AST_HWREG:
         if (flags & PASM_FLAG) {
-            HwReg *hw = expr->d.ptr;
+            HwReg *hw = (HwReg *)expr->d.ptr;
             return intExpr(hw->addr);
         }
         if (reportError)
@@ -952,7 +952,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                 *valid = 0;
             return intExpr(0);
         } else {
-            Label *lref = sym->val;
+            Label *lref = (Label *)sym->val;
             if (gl_p2) {
                 return intExpr(lref->offset);
             }
@@ -1153,7 +1153,7 @@ IsArraySymbol(Symbol *sym)
     switch (sym->type) {
     case SYM_LOCALVAR:
     case SYM_VARIABLE:
-        type = sym->val;
+        type = (AST *)sym->val;
         break;
     case SYM_OBJECT:
         type = (AST *)sym->val;

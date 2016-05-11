@@ -215,7 +215,7 @@ FindInstrForOpc(IROpcode kind)
     if (!lookup_table) {
         // set up the lookup table
         int i = 0;
-        lookup_table = calloc(1, sizeof(Instruction *) * (unsigned int)OPC_GENERIC);
+        lookup_table = (Instruction **)calloc(1, sizeof(Instruction *) * (unsigned int)OPC_GENERIC);
         do {
             if ((unsigned int)instr[i].opc < OPC_GENERIC) {
                 lookup_table[(unsigned int)instr[i].opc] = &instr[i];
@@ -317,7 +317,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
             } else {
                 IR *jmpir;
                 ir->dst = NewCodeLabel();
-                jmpir = ir->aux;
+                jmpir = (IR *)ir->aux;
                 if (!jmpir) {
                     ERROR(NULL, "internal error: unable to find jump target");
                     return;
@@ -330,7 +330,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
 
 Operand *NewOperand(enum Operandkind k, const char *name, int value)
 {
-  Operand *R = (Operand *)malloc(sizeof(*R));
+    Operand *R = (Operand *)malloc(sizeof(*R));
     memset(R, 0, sizeof(*R));
     R->kind = k;
     R->name = name;
@@ -2897,7 +2897,7 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
             ERROR(subobj, "Internal Error: Expecting object AST");
             break;
         }
-        Q = subobj->d.ptr;
+        Q = (Module *)subobj->d.ptr;
         VisitRecursive(irl, Q, func, visitval);
     }
     current = save;
@@ -3009,7 +3009,7 @@ AssignFuncNames(IRList *irl, Module *P)
                     break;
                 }
                 P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
-                label = calloc(sizeof(*label), 1);
+                label = (Label *)calloc(sizeof(*label), 1);
                 sym->offset = label->offset = P->datsize;
                 label->type = ast_type_long;
                 sym->type = SYM_LABEL;
@@ -3411,8 +3411,8 @@ EmitDatSection(IRList *irl, Module *P)
 
   if (!ModData(P)->datbase)
       return;
-  fb = calloc(1, sizeof(*fb));
-  relocs = calloc(1, sizeof(*relocs));
+  fb = (Flexbuf *)calloc(1, sizeof(*fb));
+  relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
   flexbuf_init(fb, 32768);
   flexbuf_init(relocs, 512);
   PrintDataBlock(fb, P, NULL,relocs);
@@ -3430,13 +3430,13 @@ EmitVarSection(IRList *irl, Module *P)
 
   if (!objlabel)
       return;
-  fb = calloc(1, sizeof(*fb));
+  fb = (Flexbuf *)calloc(1, sizeof(*fb));
   flexbuf_init(fb, 32768);
   
   len = P->varsize;
   // round up to long boundary
   len = (len + 3) & ~3;
-  data = calloc(len, 1);
+  data = (char *)calloc(len, 1);
 
   flexbuf_addmem(fb, data, len);
   op = NewOperand(IMM_BINARY, (const char *)fb, 0);

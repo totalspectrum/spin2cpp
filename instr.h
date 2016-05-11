@@ -12,7 +12,6 @@
 // forward definitions
 typedef struct IR IR;
 typedef struct Operand Operand;
-typedef struct modulestate Module;
 
 ////////////////////////////////////////////////////////////
 // "IR" is intermediate represenation used by the optimizer

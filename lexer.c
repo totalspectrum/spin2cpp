@@ -219,7 +219,7 @@ lexpeekc(LexStream *L)
 void
 EstablishIndent(LexStream *L, int level)
 {
-    AST *dummy = NewAST(0, NULL, NULL);
+    AST *dummy = NewAST(AST_UNKNOWN, NULL, NULL);
     if (L->indentsp >= MAX_INDENTS-1) {
         ERROR(dummy, "too many nested indentation levels");
         return;
@@ -1219,7 +1219,7 @@ instr_p1[] = {
 
   { "xor",    0x6c800000, TWO_OPERANDS, OPC_XOR },
 
-  { NULL, 0, 0, 0},
+  { NULL, 0, NO_OPERANDS, OPC_GENERIC},
 };
 
 Instruction
@@ -1419,7 +1419,7 @@ instr_p2[] = {
   { "calla",  0x0dc00000, P2_JUMP, OPC_CALL },
   { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH },
   
-  { NULL, 0, 0, 0},
+  { NULL, 0, NO_OPERANDS, OPC_GENERIC},
 };
 
 HwReg hwreg_p1[] = {

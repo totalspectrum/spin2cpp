@@ -153,7 +153,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     sub = ast->right;
     while (sub != NULL) {
         if (sub->kind == AST_INSTRMODIFIER) {
-            InstrModifier *mod = sub->d.ptr;
+            InstrModifier *mod = (InstrModifier *)sub->d.ptr;
             if (!strncmp(mod->name, "if_", 3)) {
                 flexbuf_printf(f, "%s ", mod->name);
             } else if (!strcmp(mod->name, "wz")) {

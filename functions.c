@@ -19,7 +19,7 @@ NewFunction(void)
     Function *f;
     Function *pf;
 
-    f = calloc(1, sizeof(*f));
+    f = (Function *)calloc(1, sizeof(*f));
     if (!f) {
         fprintf(stderr, "FATAL ERROR: Out of memory!\n");
         exit(1);
@@ -700,7 +700,7 @@ TransformCountRepeat(AST *ast)
     }
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
-    forast = NewAST(loopkind, initstmt, condtest);
+    forast = NewAST((enum astkind)loopkind, initstmt, condtest);
     forast->line = origast->line;
     return forast;
 }

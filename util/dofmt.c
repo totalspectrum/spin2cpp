@@ -257,7 +257,7 @@ static int _fmtinteger( Printf_info *pi, va_ptr args, int base, int isSigned )
     if (pi->prec > bufsize)
         bufsize = pi->prec;
 
-    digits = buf = alloca(bufsize+3);
+    digits = buf = (char *)alloca(bufsize+3);
 
     //
     // the C standard explicitly says that for octal a precision
@@ -749,13 +749,13 @@ _fmt_float(Printf_info *pi, va_ptr args)
 
     // handle special cases
     if (isinf(x)) {
-        origbuf = buf = alloca(16);
+        origbuf = buf = (char *)alloca(16);
         // emit sign
         if (sign) *buf++ = sign;
         strcpy(buf, "inf");
         goto done;
     } else if (isnan(x)) {
-        origbuf = buf = alloca(6);
+        origbuf = buf = (char *)alloca(6);
         if (sign) *buf++ = sign;
         strcpy(buf, "nan");
         goto done;
@@ -826,7 +826,7 @@ _fmt_float(Printf_info *pi, va_ptr args)
         totalWidth += 2 + expdigits; // (for e+1024)
     }
 
-    origbuf = buf = alloca(totalWidth + 1);
+    origbuf = buf = (char *)alloca(totalWidth + 1);
 
     // emit sign
     if (needPrefix) {

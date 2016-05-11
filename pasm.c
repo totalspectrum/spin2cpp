@@ -82,7 +82,7 @@ EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
     const char *name;
     Label *labelref;
 
-    labelref = calloc(1, sizeof(*labelref));
+    labelref = (Label *)calloc(1, sizeof(*labelref));
     if (!labelref) {
         fprintf(stderr, "out of memory\n");
         exit(1);

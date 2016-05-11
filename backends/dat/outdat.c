@@ -538,7 +538,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             return;
         }
         src = EvalPasmExpr(operand[0]);
-        callname = malloc(strlen(operand[0]->d.string) + 8);
+        callname = (char *)malloc(strlen(operand[0]->d.string) + 8);
         strcpy(callname, operand[0]->d.string);
         strcat(callname, "_ret");
         retast = NewAST(AST_IDENTIFIER, NULL, NULL);

@@ -11,7 +11,7 @@ NewAST(enum astkind kind, AST *left, AST *right)
 {
     AST *ast;
 
-    ast = malloc(sizeof(*ast));
+    ast = (AST *)malloc(sizeof(*ast));
     if (!ast) {
         fprintf(stderr, "FATAL ERROR: out of memory\n");
         abort();

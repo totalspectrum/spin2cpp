@@ -108,7 +108,7 @@ makeClassNameSafe(Module *P)
 
     // now check for conflicts within the class
     while (0 != FindSymbolExact(&P->objsyms, P->classname)) {
-        char *newname = calloc(1, strlen(P->classname)+8);
+        char *newname = (char *)calloc(1, strlen(P->classname)+8);
         strcpy(newname, P->classname);
         free(P->classname);
         P->classname = newname;
@@ -126,7 +126,7 @@ NewModule(const char *fullname)
     char *s;
     char *root;
 
-    P = calloc(1, sizeof(*P));
+    P = (Module *)calloc(1, sizeof(*P));
     if (!P) {
         fprintf(stderr, "out of memory\n");
         exit(1);
@@ -147,7 +147,7 @@ NewModule(const char *fullname)
     else
       P->basename = root+1;
     /* set up the class name */
-    P->classname = calloc(1, strlen(P->basename)+1);
+    P->classname = (char *)calloc(1, strlen(P->basename)+1);
     strcpy(P->classname, P->basename);
 
     /* link the global symbols */
@@ -813,7 +813,7 @@ ParseFile(const char *name)
     current = P;
 
     if (gl_gas_dat) {
-        current->datname = malloc(strlen(P->basename) + 40);
+        current->datname = (char *)malloc(strlen(P->basename) + 40);
         if (!current->datname) {
             fprintf(stderr, "Out of memory!\n");
             exit(2);
@@ -956,7 +956,7 @@ FindLastDirectoryChar(const char *fname)
 char *
 ReplaceDirectory(const char *basename, const char *directory)
 {
-  char *ret = malloc(strlen(basename) + strlen(directory) + 2);
+  char *ret = (char *)malloc(strlen(basename) + strlen(directory) + 2);
   char *dot;
   if (!ret) {
     fprintf(stderr, "FATAL: out of memory\n");
@@ -976,7 +976,7 @@ ReplaceDirectory(const char *basename, const char *directory)
 char *
 ReplaceExtension(const char *basename, const char *extension)
 {
-  char *ret = malloc(strlen(basename) + strlen(extension) + 1);
+  char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
   char *dot;
   if (!ret) {
     fprintf(stderr, "FATAL: out of memory\n");

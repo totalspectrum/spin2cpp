@@ -303,6 +303,7 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
         flexbuf_printf(f, ";"); PrintNewline(f);
     } else {
         ERROR(expr, "Internal error: expected identifier or assignment in case");
+        var = NULL;
     }
     while (ast) {
         if (ast->kind != AST_LISTHOLDER) {

@@ -769,9 +769,9 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
           path = "";
   }
   if (ext) {
-    ret = malloc(strlen(path) + strlen(name) + strlen(ext) + 2);
+      ret = (char *)malloc(strlen(path) + strlen(name) + strlen(ext) + 2);
   } else {
-    ret = malloc(strlen(path) + strlen(name) + 2);
+      ret = (char *)malloc(strlen(path) + strlen(name) + 2);
   }
   if (!ret) {
     fprintf(stderr, "FATAL ERROR: out of memory\n");
