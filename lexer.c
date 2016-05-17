@@ -1227,6 +1227,7 @@ instr_p1[] = {
 
 Instruction
 instr_p2[] = {
+  { "nop",    0x00000000, NO_OPERANDS,  OPC_NOP },
   { "ror",    0x00000000, TWO_OPERANDS, OPC_ROR },
   { "rol",    0x00200000, TWO_OPERANDS, OPC_ROL },
   { "shr",    0x00400000, TWO_OPERANDS, OPC_SHR },
