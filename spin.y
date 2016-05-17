@@ -1076,6 +1076,6 @@ yyerror(const char *msg)
             msg++;
         }
     }
-            
+    fprintf(stderr, "\n");     
     gl_errors++;
 }
