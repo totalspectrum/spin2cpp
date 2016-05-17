@@ -14,6 +14,9 @@
 #include "spinc.h"
 #include "preprocess.h"
 
+// used for error messages
+AST *last_ast;
+
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
@@ -505,7 +508,7 @@ parseString(LexStream *L, AST **ast_ptr)
 
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
-    while (c != '"') {
+    while (c != '"' && c > 0 && c < 256) {
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
@@ -733,7 +736,7 @@ getToken(LexStream *L, AST **ast_ptr)
     c = skipSpace(L, &ast);
 
     if (c >= 127) {
-        *ast_ptr = ast;
+        *ast_ptr = last_ast = ast;
         return c;
     } else if (safe_isdigit(c)) {
         lexungetc(L,c);
@@ -800,7 +803,7 @@ getToken(LexStream *L, AST **ast_ptr)
     } else if (c == '"') {
         c = parseString(L, &ast);
     }
-    *ast_ptr = ast;
+    *ast_ptr = last_ast = ast;
     return c;
 }
 

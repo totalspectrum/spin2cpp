@@ -16,6 +16,8 @@
 
     extern int gl_errors;
 
+    extern AST *last_ast;
+    
 /* Skip Comments */
 void
 SkipComments(void)
@@ -1064,6 +1066,16 @@ modifierlist:
 void
 yyerror(const char *msg)
 {
-    fprintf(stderr, "%s:%d: error: %s\n", current->L.fileName, current->L.lineCounter, msg);
+    fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+    while (*msg) {
+        if (!strncmp(msg, "unexpected identifier", strlen("unexpected identifier")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
+            fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
+            msg += strlen("unexpected identifier");
+        } else {
+            fprintf(stderr, "%c", *msg);
+            msg++;
+        }
+    }
+            
     gl_errors++;
 }
