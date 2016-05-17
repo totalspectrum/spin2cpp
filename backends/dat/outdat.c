@@ -71,6 +71,8 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     FILE *f = NULL;
     Module *save;
     Flexbuf fb;
+    size_t curlen;
+    size_t desiredlen;
     
     save = current;
     current = P;
@@ -87,7 +89,17 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
         OutputSpinHeader(&fb, P);
     }
     PrintDataBlock(&fb, P, NULL, NULL);
-    fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
+    curlen = flexbuf_curlen(&fb);
+    fwrite(flexbuf_peek(&fb), curlen, 1, f);
+    if (gl_p2) {
+        desiredlen = (curlen + 31) & ~31;
+    } else {
+        desiredlen = (curlen + 3) & ~3;
+    }
+    while (curlen < desiredlen) {
+        fputc(0, f);
+        curlen++;
+    }
     fclose(f);
     flexbuf_delete(&fb);
     

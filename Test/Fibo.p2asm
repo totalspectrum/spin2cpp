@@ -1,0 +1,403 @@
+CON
+	_clkmode = 1032
+	_clkfreq = 80000000
+DAT
+	org	0
+entry
+	calla	#@_run
+cogexit
+	cogid	arg1
+	cogstop	arg1
+	mov ptra, ##@stackspace
+	jmp #@hubentry
+
+multiply_
+	mov	itmp2_, muldiva_
+	xor	itmp2_, muldivb_
+	abs	muldiva_, muldiva_
+	abs	muldivb_, muldivb_
+	mov	result1, #0
+	mov	itmp1_, #32
+	shr	muldiva_, #1 wc
+mul_lp_
+ if_c	add	result1, muldivb_ wc
+	rcr	result1, #1 wc
+	rcr	muldiva_, #1 wc
+	djnz	itmp1_, #mul_lp_
+	shr	itmp2_, #31 wz
+ if_nz	neg	result1, result1
+ if_nz	neg	muldiva_, muldiva_ wz
+ if_nz	sub	result1, #1
+	mov	muldivb_, result1
+multiply__ret
+	ret
+
+divide_
+       abs     muldiva_,muldiva_     wc       'abs(x)
+       muxc    itmp2_,#%11                    'store sign of x
+       abs     muldivb_,muldivb_     wc,wz    'abs(y)
+ if_c  xor     itmp2_,#%10                    'store sign of y
+       setq    #0
+       qdiv    muldiva_, muldivb_
+       getqx   muldivb_
+       getqy   muldiva_
+       test    itmp2_,#1        wc       'restore sign, remainder
+       negc    muldiva_,muldiva_ 
+       test    itmp2_,#%10      wc       'restore sign, division result
+       negc    muldivb_,muldivb_
+       reta
+
+SimpleSerial_dec_tmp001_
+	long	0
+SimpleSerial_dec_tmp002_
+	long	0
+SimpleSerial_dec_tmp004_
+	long	0
+SimpleSerial_start_tmp001_
+	long	0
+SimpleSerial_start_tmp002_
+	long	0
+SimpleSerial_str_tmp001_
+	long	0
+SimpleSerial_tx_tmp002_
+	long	0
+_SimpleSerial_dec__idx__0002
+	long	0
+_SimpleSerial_dec_i
+	long	0
+_SimpleSerial_dec_result
+	long	0
+_SimpleSerial_dec_value
+	long	0
+_SimpleSerial_dec_x
+	long	0
+_SimpleSerial_hex__idx__0003
+	long	0
+_SimpleSerial_hex_shft
+	long	0
+_SimpleSerial_hex_val
+	long	0
+_SimpleSerial_hex_x
+	long	0
+_SimpleSerial_start_rx_pin
+	long	0
+_SimpleSerial_start_tx_pin
+	long	0
+_SimpleSerial_str_c
+	long	0
+_SimpleSerial_str_s
+	long	0
+_SimpleSerial_tx__idx__0001
+	long	0
+_SimpleSerial_tx_mask
+	long	0
+_SimpleSerial_tx_val
+	long	0
+_SimpleSerial_tx_waitcycles
+	long	0
+_fibo_x
+	long	0
+_run_elapsed
+	long	0
+_run_i
+	long	0
+_run_now
+	long	0
+_run_x
+	long	0
+arg1
+	long	0
+arg2
+	long	0
+arg3
+	long	0
+arg4
+	long	0
+fibo_tmp004_
+	long	0
+itmp1_
+	long	0
+itmp2_
+	long	0
+muldiva_
+	long	0
+muldivb_
+	long	0
+objptr
+	long	@objmem
+ptr_L__0009_
+	long	@L__0009
+ptr_L__0010_
+	long	@L__0010
+ptr_L__0011_
+	long	@L__0011
+ptr_L__0012_
+	long	@L__0012
+ptr_L__0013_
+	long	@L__0013
+ptr_L__0014_
+	long	@L__0014
+result1
+	long	0
+	fit	496
+	orgh	$400
+hubentry
+
+_run
+	mov	arg1, #31
+	mov	arg2, #30
+	mov	arg3, #0
+	mov	arg4, ##115200
+	calla	#@_SimpleSerial_start
+	mov	_run_i, #1
+L__0006
+	cmps	_run_i, #28 wc,wz
+ if_a	jmp	#@L__0008
+	getct	result1
+	mov	_run_now, result1
+	mov	arg1, _run_i
+	calla	#@_fibo
+	mov	_run_x, result1
+	getct	result1
+	mov	_run_elapsed, result1
+	sub	_run_elapsed, _run_now
+	mov	arg1, ptr_L__0009_
+	calla	#@_SimpleSerial_str
+	mov	arg1, _run_i
+	calla	#@_SimpleSerial_dec
+	mov	arg1, ptr_L__0010_
+	calla	#@_SimpleSerial_str
+	mov	arg1, _run_x
+	calla	#@_SimpleSerial_dec
+	mov	arg1, ptr_L__0011_
+	calla	#@_SimpleSerial_str
+	mov	arg1, _run_elapsed
+	calla	#@_SimpleSerial_dec
+	mov	arg1, ptr_L__0012_
+	calla	#@_SimpleSerial_str
+	mov	muldiva_, _run_elapsed
+	mov	muldivb_, ##80000
+	calla	#divide_
+	mov	arg1, muldivb_
+	calla	#@_SimpleSerial_dec
+	mov	arg1, ptr_L__0013_
+	calla	#@_SimpleSerial_str
+	add	_run_i, #1
+	jmp	#@L__0006
+L__0008
+	mov	arg1, ptr_L__0014_
+	calla	#@_SimpleSerial_str
+L__0015
+	jmp	#@L__0015
+_run_ret
+	reta
+
+_fibo
+	wrlong	_fibo_x, ptra
+	add	ptra, #4
+	wrlong	fibo_tmp004_, ptra
+	add	ptra, #4
+	mov	_fibo_x, arg1
+	cmps	_fibo_x, #2 wc,wz
+ if_b	mov	result1, _fibo_x
+ if_b	jmp	#@L__0005
+	mov	arg1, _fibo_x
+	sub	arg1, #1
+	calla	#@_fibo
+	mov	fibo_tmp004_, result1
+	sub	_fibo_x, #2
+	mov	arg1, _fibo_x
+	calla	#@_fibo
+	add	fibo_tmp004_, result1
+	mov	result1, fibo_tmp004_
+L__0005
+	sub	ptra, #4
+	rdlong	fibo_tmp004_, ptra
+	sub	ptra, #4
+	rdlong	_fibo_x, ptra
+_fibo_ret
+	reta
+
+_SimpleSerial_start
+	mov	_SimpleSerial_start_rx_pin, arg1
+	mov	_SimpleSerial_start_tx_pin, arg2
+	mov	muldivb_, arg4
+	wrlong	muldivb_, objptr
+	mov	muldiva_, ##80000000
+	calla	#divide_
+	add	objptr, #8
+	wrlong	muldivb_, objptr
+	add	objptr, #4
+	wrbyte	_SimpleSerial_start_tx_pin, objptr
+	mov	SimpleSerial_start_tmp001_, #1
+	rdbyte	SimpleSerial_start_tmp002_, objptr
+	shl	SimpleSerial_start_tmp001_, SimpleSerial_start_tmp002_
+	sub	objptr, #8
+	wrlong	SimpleSerial_start_tmp001_, objptr
+	add	objptr, #9
+	wrbyte	_SimpleSerial_start_rx_pin, objptr
+	sub	objptr, #13
+	mov	result1, #1
+_SimpleSerial_start_ret
+	reta
+
+_SimpleSerial_tx
+	add	objptr, #4
+	rdlong	_SimpleSerial_tx_mask, objptr
+	sub	objptr, #4
+	or	DIRB, _SimpleSerial_tx_mask
+	or	OUTB, _SimpleSerial_tx_mask
+	mov	_SimpleSerial_tx_val, arg1
+	or	_SimpleSerial_tx_val, #256
+	shl	_SimpleSerial_tx_val, #1
+	getct	result1
+	mov	_SimpleSerial_tx_waitcycles, result1
+	mov	_SimpleSerial_tx__idx__0001, #10
+L__0018
+	add	objptr, #8
+	rdlong	SimpleSerial_tx_tmp002_, objptr
+	sub	objptr, #8
+	add	_SimpleSerial_tx_waitcycles, SimpleSerial_tx_tmp002_
+	mov	arg1, _SimpleSerial_tx_waitcycles
+	addct1	arg1, #0
+	waitct1
+	shr	_SimpleSerial_tx_val, #1 wc
+	muxc	OUTB, _SimpleSerial_tx_mask
+	djnz	_SimpleSerial_tx__idx__0001, #@L__0018
+_SimpleSerial_tx_ret
+	reta
+
+_SimpleSerial_str
+	mov	_SimpleSerial_str_s, arg1
+L__0023
+	mov	SimpleSerial_str_tmp001_, _SimpleSerial_str_s
+	add	_SimpleSerial_str_s, #1
+	rdbyte	_SimpleSerial_str_c, SimpleSerial_str_tmp001_ wz
+ if_e	jmp	#@L__0024
+	mov	arg1, _SimpleSerial_str_c
+	calla	#@_SimpleSerial_tx
+	jmp	#@L__0023
+L__0024
+_SimpleSerial_str_ret
+	reta
+
+_SimpleSerial_dec
+	mov	_SimpleSerial_dec_value, arg1
+	mov	_SimpleSerial_dec_result, #0
+	mov	SimpleSerial_dec_tmp001_, #0
+	cmps	_SimpleSerial_dec_value, ##-2147483648 wz
+ if_e	mov	SimpleSerial_dec_tmp001_, ##-1
+	mov	_SimpleSerial_dec_x, SimpleSerial_dec_tmp001_
+	cmps	_SimpleSerial_dec_value, #0 wc,wz
+ if_ae	jmp	#@L__0026
+	add	_SimpleSerial_dec_value, _SimpleSerial_dec_x
+	abs	_SimpleSerial_dec_value, _SimpleSerial_dec_value
+	mov	arg1, #45
+	calla	#@_SimpleSerial_tx
+L__0026
+	mov	_SimpleSerial_dec_i, ##1000000000
+	mov	_SimpleSerial_dec__idx__0002, #10
+L__0027
+	cmps	_SimpleSerial_dec_value, _SimpleSerial_dec_i wc,wz
+ if_b	jmp	#@L__0030
+	mov	muldiva_, _SimpleSerial_dec_value
+	mov	muldivb_, _SimpleSerial_dec_i
+	calla	#divide_
+	mov	SimpleSerial_dec_tmp002_, muldivb_
+	add	SimpleSerial_dec_tmp002_, #48
+	mov	SimpleSerial_dec_tmp004_, #0
+	cmps	_SimpleSerial_dec_i, #1 wz
+ if_e	mov	SimpleSerial_dec_tmp004_, ##-1
+	mov	muldiva_, _SimpleSerial_dec_x
+	mov	muldivb_, SimpleSerial_dec_tmp004_
+	calla	#multiply_
+	add	SimpleSerial_dec_tmp002_, muldiva_
+	mov	arg1, SimpleSerial_dec_tmp002_
+	calla	#@_SimpleSerial_tx
+	mov	muldiva_, _SimpleSerial_dec_value
+	mov	muldivb_, _SimpleSerial_dec_i
+	calla	#divide_
+	mov	_SimpleSerial_dec_value, muldiva_
+	mov	_SimpleSerial_dec_result, ##-1
+	jmp	#@L__0032
+L__0030
+	cmps	_SimpleSerial_dec_result, #0 wz
+ if_ne	jmp	#@L__0034
+	cmps	_SimpleSerial_dec_i, #1 wz
+ if_e	jmp	#@L__0034
+ if_ne	jmp	#@L__0033
+L__0034
+	mov	arg1, #48
+	calla	#@_SimpleSerial_tx
+L__0033
+L__0032
+	mov	muldiva_, _SimpleSerial_dec_i
+	mov	muldivb_, #10
+	calla	#divide_
+	mov	_SimpleSerial_dec_i, muldivb_
+	djnz	_SimpleSerial_dec__idx__0002, #@L__0027
+	mov	result1, _SimpleSerial_dec_result
+_SimpleSerial_dec_ret
+	reta
+
+_SimpleSerial_hex
+	mov	_SimpleSerial_hex_val, arg1
+	mov	_SimpleSerial_hex__idx__0003, arg2 wz
+	mov	_SimpleSerial_hex_shft, _SimpleSerial_hex__idx__0003
+	sub	_SimpleSerial_hex_shft, #1
+	shl	_SimpleSerial_hex_shft, #2
+ if_e	jmp	#@L__0037
+L__0040
+	mov	_SimpleSerial_hex_x, _SimpleSerial_hex_val
+	shr	_SimpleSerial_hex_x, _SimpleSerial_hex_shft
+	and	_SimpleSerial_hex_x, #15
+	sub	_SimpleSerial_hex_shft, #4
+	cmps	_SimpleSerial_hex_x, #10 wc,wz
+ if_ae	sub	_SimpleSerial_hex_x, #10
+ if_ae	add	_SimpleSerial_hex_x, #65
+ if_b	add	_SimpleSerial_hex_x, #48
+	mov	arg1, _SimpleSerial_hex_x
+	calla	#@_SimpleSerial_tx
+	djnz	_SimpleSerial_hex__idx__0003, #@L__0040
+L__0037
+_SimpleSerial_hex_ret
+	reta
+
+_SimpleSerial_Exit
+L__0041
+	jmp	#@L__0041
+_SimpleSerial_Exit_ret
+	reta
+hubexit
+	jmp	#cogexit
+
+L__0009
+	byte	"fibo("
+	byte	0
+L__0010
+	byte	") = "
+	byte	0
+L__0011
+	byte	"  time taken: "
+	byte	0
+L__0012
+	byte	" cycles ("
+	byte	0
+L__0013
+	byte	" ms)"
+	byte	13
+	byte	10
+	byte	0
+L__0014
+	byte	"done"
+	byte	13
+	byte	10
+	byte	0
+	long
+objmem
+	long	$00000000
+	long	$00000000
+	long	$00000000
+	long	$00000000
+stackspace
+	long	0

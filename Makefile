@@ -71,7 +71,7 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
-test: lextest asmtest cpptest errtest runtest
+test: lextest asmtest cpptest errtest p2test runtest
 
 lextest: $(PROGS)
 	$(BUILD)/testlex
@@ -84,6 +84,9 @@ cpptest: $(PROGS)
 
 errtest: $(PROGS)
 	(cd Test; ./errtests.sh)
+
+p2test: $(PROGS)
+	(cd Test; ./p2bin.sh)
 
 runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
