@@ -3558,7 +3558,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     Module *save;
     IR *orgh;
     Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
-    
+    unsigned int clkfreq, clkreg;
     const char *asmcode;
     
     save = current;
@@ -3610,6 +3610,16 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     
     // now copy the hub code into place
     orgh = EmitOp0(&cogcode, OPC_ORGH);
+    if (gl_p2) {
+        // on P2, make room for CLKFREQ and CLKMODE
+        if (!GetClkFreq(P, &clkfreq, &clkreg)) {
+            clkfreq = 80000000;
+            clkreg = 0x64;
+        }
+        EmitLong(&cogcode, clkfreq);
+        EmitLong(&cogcode, clkreg);
+    }
+
     AppendIR(&cogcode, hubcode.head);
 
     // we have to optimize all code before emitting any variables

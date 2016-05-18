@@ -74,3 +74,14 @@ CODE
 The output code and data are always placed in HUB memory, and the code is
 interpreted with a simple LMM interpreter. The spin2cpp front end has
 additional options (for example to place code in COG memory).
+
+In P2 the code is still placed in HUB memory, but no LMM interpreter is
+needed (we use the P2 hubexec feature).
+
+LIMITATIONS
+===========
+
+Not all P2 assembly instructions and addressing modes are supported yet.
+
+Beware when compiling P1 objects that contain PASM for P2: some
+instructions have changed in subtle ways.

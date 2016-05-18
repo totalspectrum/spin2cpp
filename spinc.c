@@ -403,6 +403,14 @@ const char p2_system_spincode[] =
     "      return 0\n"
     "  until (c1 == 0)\n"
     "  return -1\n"
+    "pri clkset(mode, freq)\n"
+    "  CLKFREQ := freq\n"
+    "  CLKMODE := mode\n"
+    "  asm\n"
+    "    clkset mode\n"
+    "  endasm\n"
+    "pri reboot\n"
+    "  clkset($80, 0)\n"
     "pri _lookup(x, b, arr, n) | i\n"
     "  i := x - b\n"
     "  if (i => 0 and i < n)\n"
@@ -464,10 +472,10 @@ InitGlobalModule(void)
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = 0;
+    sym->offset = gl_p2 ? 0x800 : 0;
     sym = AddSymbol(table, "CLKMODE", SYM_VARIABLE, ast_type_byte);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = 4;
+    sym->offset = gl_p2 ? 0x804 : 4;
 
     /* compile inline assembly */
     if (gl_output == OUTPUT_ASM) {
