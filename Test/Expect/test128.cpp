@@ -28,7 +28,7 @@ void test128::Demo(void)
 {
   int32_t _local__0001[2];
   _local__0001[0] = 2;
-  Coginit__(-1, (void *)&Sqstack[6], (void *)Square, (int32_t)(&_local__0001[0]), 0, 0, 0);
+  Coginit__(30, (void *)&Sqstack[6], (void *)Square, (int32_t)(&_local__0001[0]), 0, 0, 0);
 }
 
 void test128::Square(int32_t Xaddr)

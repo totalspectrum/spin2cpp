@@ -3257,7 +3257,7 @@ static const char *builtin_lmm_p2 =
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
  * more things to be saved in abort/catch
  */
-static const char *builtin_abortcode =
+static const char *builtin_abortcode_p1 =
     "abortchain long 0\n"
     "__setjmp\n"
     "    wrlong abortchain, arg1\n"
@@ -3283,6 +3283,43 @@ static const char *builtin_abortcode =
     "    rdlong pc, arg1\n"
     "    add arg1, #4\n"
     "    rdlong sp, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong fp, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong objptr, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong __abort_ret, arg1\n"
+    "    mov result2, #1\n"
+    "__abort_ret\n"
+    "    ret\n"
+    ;
+
+static const char *builtin_abortcode_p2 =
+    "abortchain long 0\n"
+    "__setjmp\n"
+    "    wrlong abortchain, arg1\n"
+    "    mov abortchain, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong pc, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong ptra, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong fp, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong objptr, arg1\n"
+    "    add arg1, #4\n"
+    "    wrlong __setjmp_ret, arg1\n"
+    "    mov result2, #0\n"
+    "__setjmp_ret\n"
+    "    ret\n"
+    "__abort\n"
+    "    mov  result1, arg1\n"
+    "    mov  arg1, abortchain\n"
+    "    rdlong abortchain, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong pc, arg1\n"
+    "    add arg1, #4\n"
+    "    rdlong ptra, arg1\n"
     "    add arg1, #4\n"
     "    rdlong fp, arg1\n"
     "    add arg1, #4\n"
@@ -3336,7 +3373,13 @@ EmitBuiltins(IRList *irl)
         (void)GetGlobal(REG_REG, "result1", 0);
     }
     if (abortfunc) {
-        Operand *loop = NewOperand(IMM_STRING, builtin_abortcode, 0);
+        Operand *loop;
+
+        if (gl_p2) {
+            loop = NewOperand(IMM_STRING, builtin_abortcode_p2, 0);
+        } else {
+            loop = NewOperand(IMM_STRING, builtin_abortcode_p1, 0);
+        }
         EmitOp1(irl, OPC_LITERAL, loop);
         if (COG_CODE) {
             // abort saves the pc, which we don't have in COG mode, so

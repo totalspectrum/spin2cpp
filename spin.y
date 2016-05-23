@@ -927,8 +927,8 @@ funccall:
   | T_COGNEW '(' exprlist ')'
     {
         AST *elist;
-        AST *negone = AstInteger(-1);
-        elist = NewAST(AST_EXPRLIST, negone, NULL);
+        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
+        elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
     }

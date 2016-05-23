@@ -26,7 +26,7 @@ static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, in
 }
 void test123::Demo(void)
 {
-  Coginit__(-1, (void *)&Stack[64], (void *)Hello, 0, 0, 0, 0);
+  Coginit__(30, (void *)&Stack[64], (void *)Hello, 0, 0, 0, 0);
   Pauseabit();
   Pauseabit();
   Exit();
