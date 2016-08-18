@@ -239,6 +239,11 @@ Spin2cpp accepts the following options:
   and #warning. Use of the preprocessor should not normally
   cause any issues, but it is still experimental.
 
+`--nofcache`
+  Disable FCACHE. On the P1 when code is placed in HUB, some small loops
+  are compiled to be loaded into a region of COG memory (the FCACHE)
+  to improve performance. This option disables that optimization.
+  
 `--normalize`
   Normalize all identifiers so that the first letter is upper case and
   the rest are lower case. This is the way older versions of spin2cpp

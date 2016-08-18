@@ -63,7 +63,8 @@ Usage(void)
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --noheader: skip the normal comment about spin2cpp version\n");
     fprintf(stderr, "  --noopt:   turn off all optimization in PASM output\n");
-    fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n"); 
+    fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n");
+    fprintf(stderr, "  --nofcache: disable FCACHE (only applies in code=hub)\n");
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
@@ -308,6 +309,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--noheader", 9)) {
             free(gl_header);
             gl_header = NULL;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--nofcache", 9)) {
+            gl_fcache_size = 0;
             argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    char *opt;
