@@ -502,6 +502,15 @@ NewTempLabelName()
 }
 
 Operand *
+NewHubLabel()
+{
+  Operand *label;
+  label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
+  label->used = 0;
+  return label;
+}
+
+Operand *
 NewCodeLabel()
 {
   Operand *label;
@@ -3247,6 +3256,47 @@ static const char *builtin_lmm_p1 =
     "    jmp  #LMM_LOOP\n"
     "LMM_CALL_FROM_COG_ret\n"
     "    ret\n"
+    "LMM_FCACHE_LOAD\n"
+    "    rdlong COUNT, pc\n"
+    "    add    pc, #4\n"
+    "    mov    ADDR, pc\n"
+    "    sub    LMM_ADDR, pc\n"
+    "    tjz    LMM_ADDR, #a_fcachegoaddpc\n"
+    "    movd   a_fcacheldlp, #LMM_FCACHE_START\n"
+    "    shr    COUNT, #2\n"
+    "a_fcacheldlp\n"
+    "    rdlong 0-0, pc\n"
+    "    add    pc, #4\n"
+    "    add    a_fcacheldlp,inc_dest1\n"
+    "    djnz   COUNT,#a_fcacheldlp\n"
+    // add in a JMP back out of LMM
+    "    ror    a_fcacheldlp, #9\n"
+    "    movd   a_fcachecopyjmp, a_fcacheldlp\n"
+    "    rol    a_fcacheldlp, #9\n"
+    "a_fcachecopyjmp\n"
+    "    mov    0-0, LMM_FCACHE_LOAD_ret\n"
+    "a_fcachego\n"
+    "    mov    LMM_ADDR, ADDR\n"
+    "    jmpret LMM_RET,#LMM_FCACHE_START\n"
+    "a_fcachegoaddpc\n"
+    "    add    pc, COUNT\n"
+    "    jmp    a_fcachego\n"
+    "LMM_FCACHE_LOAD_ret\n"
+    "    ret\n"
+    "inc_dest1\n"
+    "    long (1<<9)\n"
+    "LMM_LEAVE_CODE\n"
+    "    jmp LMM_RET\n"
+    "LMM_ADDR\n"
+    "    long 0\n"
+    "LMM_RET\n"
+    "    long 0\n"
+    "ADDR\n"
+    "    long 0\n"
+    "COUNT\n"
+    "    long 0\n"
+    "LMM_FCACHE_START\n"
+    "    long 65[0]\n"
     ;
 
 static const char *builtin_lmm_p2 =

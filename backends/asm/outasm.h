@@ -28,7 +28,8 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 Operand *NewOperand(enum Operandkind, const char *name, int val);
 Operand *NewImmediate(int32_t val);
 Operand *NewImmediatePtr(const char *name, Operand *val);
-Operand *NewCodeLabel();
+Operand *NewCodeLabel();  // use only while compiling a function
+Operand *NewHubLabel();
 
 void FreeTempRegisters(IRList *irl, int starttempreg);
 
@@ -45,6 +46,7 @@ bool CompileToIR(IRList *list, Module *P);
 // optimization functions
 void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);
+void OptimizeFcache(IRList *irl);
 bool ShouldBeInlined(Function *f);
 int  ExpandInlines(IRList *irl);
 
@@ -54,6 +56,9 @@ bool SrcOnlyHwReg(Operand *reg);
 bool IsLocal(Operand *reg);
 bool IsLocalOrArg(Operand *reg);
 bool IsHwReg(Operand *reg);
+
+bool IsHubDest(Operand *dst);
+Operand *JumpDest(IR *ir);
 
 typedef enum callconvention {
     FAST_CALL,   // arguments & return in registers, native call

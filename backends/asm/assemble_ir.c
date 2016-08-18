@@ -268,17 +268,6 @@ StringFor(IROpcode opc)
     }
 }
 
-bool IsHubDest(Operand *dst)
-{
-    switch (dst->kind) {
-    case IMM_HUB_LABEL:
-    case REG_HUBPTR:
-        return true;
-    default:
-        return false;
-    }
-}
-
 // LMM jumps +- this amount are turned into add/sub of the pc
 // pick a conservative value
 // 127 would be the absolute maximum here
@@ -344,7 +333,17 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
             }
             break;
         case OPC_DJNZ:
-            if (IsHubDest(ir->src)) {
+            if (ir->fcache) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "djnz\t");
+                PrintOperand(fb, ir->dst);
+                flexbuf_addstr(fb, ", #LMM_FCACHE_START + (");
+                PrintOperand(fb, ir->src);
+                flexbuf_addstr(fb, " - ");
+                PrintOperand(fb, ir->fcache);
+                flexbuf_addstr(fb, ")\n");
+                return;
+            } else if (IsHubDest(ir->src)) {
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "djnz\t");
                 PrintOperand(fb, ir->dst);
@@ -359,7 +358,15 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
             }
             break;
         case OPC_JUMP:
-            if (IsHubDest(ir->dst)) {
+            if (ir->fcache) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "jmp\t#LMM_FCACHE_START + (");
+                PrintOperand(fb, ir->dst);
+                flexbuf_addstr(fb, " - ");
+                PrintOperand(fb, ir->fcache);
+                flexbuf_addstr(fb, ")\n");
+                return;
+            } else if (IsHubDest(ir->dst)) {
                 IR *dest;
                 if (!lmmMode) {
                     ERROR(NULL, "jump from COG to LMM not supported yet");
@@ -395,7 +402,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
             }
             break;
         case OPC_RET:
-            if (lmmMode) {
+            if (ir->fcache) {
+                ERROR(NULL, "return from fcached code not supported");
+                return;
+            } else if (lmmMode) {
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "sub\tsp, #4\n");
                 PrintCond(fb, ir->cond);
@@ -501,6 +511,14 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         }
         flexbuf_addstr(fb, "\n");
 	break;
+    case OPC_FCACHE:
+        flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
+        flexbuf_printf(fb, "\tlong\t(");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_printf(fb, "-");
+        PrintOperandAsValue(fb, ir->src);
+        flexbuf_printf(fb, ")\n");
+        break;
     case OPC_LABELED_BLOB:
         // output a binary blob
         // dst has a label

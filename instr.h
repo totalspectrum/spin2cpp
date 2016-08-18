@@ -103,6 +103,9 @@ typedef enum IROpcode {
     OPC_STRING,
     OPC_LABELED_BLOB, // binary blob
 
+    /* pseudo-instruction to load FCACHE */
+    OPC_FCACHE,
+    
     /* special flag to indicate a dead register */
     OPC_DEAD,
     /* const declaration */
@@ -254,6 +257,7 @@ struct IR {
     void *aux; // auxiliary data for back end
     Instruction *instr; // PASM assembler data for instruction
     enum OperandEffect srceffect; // special effect (e.g. postinc) for source
+    Operand *fcache;   // if non-NULL, fcache root
 };
 
 void AppendOperand(OperandList **listptr, Operand *op);

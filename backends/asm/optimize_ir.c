@@ -13,6 +13,8 @@
 #include "spinc.h"
 #include "outasm.h"
 
+int gl_fcache_size = 64; // 256 bytes of FCACHE
+
 //
 // helper functions
 //
@@ -235,7 +237,18 @@ InstrUsesFlags(IR *ir, unsigned flags)
     }
 }
 
-static Operand *
+bool IsHubDest(Operand *dst)
+{
+    switch (dst->kind) {
+    case IMM_HUB_LABEL:
+    case REG_HUBPTR:
+        return true;
+    default:
+        return false;
+    }
+}
+
+Operand *
 JumpDest(IR *jmp)
 {
     switch (jmp->opc) {
@@ -1684,6 +1697,9 @@ OptimizeIRGlobal(IRList *irl)
         }
         ir = ir_next;
     }
+    // check for fcache
+    OptimizeFcache(irl);
+    
     // check for usage
     CheckUsage(irl);
 }
@@ -1751,4 +1767,87 @@ ExpandInlines(IRList *irl)
         ir = ir_next;
     }
     return change;
+}
+
+//
+// convert loops to FCACHE when we can
+//
+
+static bool
+LoopCanBeFcached(IRList *irl, IR *root)
+{
+    IR *endjmp;
+    IR *endlabel;
+    IR *ir = root;
+    int size = 0;
+    
+    if (!IsHubDest(ir->dst)) {
+        // this loop is not in HUB memory
+        return false;
+    }
+    endjmp = ir->aux;
+    if (!endjmp || !IsJump(endjmp)) {
+        // we don't know who jumps here
+        return false;
+    }
+    endlabel = endjmp;
+    while (endlabel->next && endlabel->next->opc == OPC_LABEL) {
+        endlabel = endlabel->next;
+    }
+    if (IsForwardJump(endjmp)) {
+        return false;
+    }
+    {
+        ir = ir->next;
+        while (ir != endjmp) {
+            if (ir->opc == OPC_CALL)
+                return false;
+            if (IsJump(ir)) {
+                if (!JumpIsAfterOrEqual(root, ir))
+                    return false;
+                if (JumpIsAfterOrEqual(endlabel, ir))
+                    return false;
+            }
+            if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
+                size++;
+                if (size >= gl_fcache_size) {
+                    return false;
+                }
+            }
+            ir = ir->next;
+        }
+    }
+    return true;
+}
+
+void
+OptimizeFcache(IRList *irl)
+{
+    IR *ir;
+
+    if (gl_p2)
+        return;
+    
+    ir = irl->head;
+    while (ir) {
+        if (IsLabel(ir)) {
+            if (LoopCanBeFcached(irl, ir)) {
+                Operand *src = ir->dst;
+                Operand *dst = NewHubLabel();
+                IR *endlabel = NewIR(OPC_LABEL);
+                IR *fcache = NewIR(OPC_FCACHE);
+                IR *jmp = (IR *)ir->aux;
+                fcache->src = src;
+                fcache->dst = dst;
+                endlabel->dst = dst;
+                InsertAfterIR(irl, jmp, endlabel);
+                InsertAfterIR(irl, ir->prev, fcache);
+                while (ir != endlabel) {
+                    ir->fcache = src;
+                    ir = ir->next;
+                }
+            }
+        }
+        ir = ir->next;
+    }
 }
