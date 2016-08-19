@@ -1,6 +1,7 @@
 Version 3.1.0
 
 - Added --p2 support for Propeller 2.
+- Added fcache support for Propeller 1.
 
 Version 3.0.6
 
