@@ -2926,6 +2926,8 @@ ShouldSkipFunction(Function *f)
         return false;
     if (0 != f->callSites)
         return false;
+    if (f->cog_task)
+        return false; // used in another cog
     // do not skip global functions, we handle those separately
     if (IsGlobalModule(f->module))
         return false;
@@ -3094,15 +3096,17 @@ CompileToIR_internal(IRList *irl, Module *P)
         if (ShouldSkipFunction(f)) {
             continue;
         }
-        if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS)) {
-            // also skip inlined private functions
-            if (FuncData(f)->isInline) {
-                continue;
-            }
-            if (!f->callSites) {
-                // system functions were not skipped in ShouldSkipFunction,
-                // so skip them here if they are not used
-                continue;
+        if (!f->cog_task) {
+            if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS)) {
+                // also skip inlined private functions
+                if (FuncData(f)->isInline) {
+                    continue;
+                }
+                if (!f->callSites) {
+                    // system functions were not skipped in ShouldSkipFunction,
+                    // so skip them here if they are not used
+                    continue;
+                }
             }
         }
         curfunc = f;
@@ -3577,7 +3581,7 @@ EmitMain_P1(IRList *irl, Module *P)
     if (!firstfunc) {
         return;  // no functions at all
     }
-    firstfunc->callSites = 99; // make sure it is never inlined or removed
+    firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfuncname = IdentifierGlobalName(P, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
@@ -3630,7 +3634,7 @@ EmitMain_P2(IRList *irl, Module *P)
     if (!firstfunc) {
         return;  // no functions at all
     }
-    firstfunc->callSites = 99; // make sure it is never inlined or removed
+    firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfuncname = IdentifierGlobalName(P, firstfunc->name);
     
     ValidateStackptr();

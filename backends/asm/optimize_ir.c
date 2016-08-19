@@ -1717,6 +1717,7 @@ ShouldBeInlined(Function *f)
     int n = 0;
 
     if (gl_optimize_flags & OPT_NO_ASM) return false;
+    if (f->no_inline) return false;
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         // we have to re-label any labels and branches
@@ -1741,13 +1742,14 @@ ShouldBeInlined(Function *f)
         
         n++;
     }
-#if 0
     // a function called from only 1 place should be inlined
     // if it means that the function definition can be eliminated
     if (f->callSites == 1) {
         return true;
+    } else if (f->callSites == 2) {
+        return (n <= 2*INLINE_THRESHOLD);
     }
-#endif
+
     // otherwise only inline small functions
     return (n <= INLINE_THRESHOLD);
 }
@@ -1813,7 +1815,7 @@ LoopCanBeFcached(IRList *irl, IR *root)
             if (IsJump(ir)) {
                 if (!JumpIsAfterOrEqual(root, ir))
                     return false;
-                if (JumpIsAfterOrEqual(endlabel, ir))
+                if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
                     return false;
             }
             if (!IsDummy(ir) && ir->opc != OPC_LABEL) {

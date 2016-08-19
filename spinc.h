@@ -143,7 +143,8 @@ typedef struct funcdef {
     unsigned cog_code:1;     // 1 if function should always be placed in cog
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
-
+    unsigned no_inline:1;    // 1 if function cannot be inlined
+    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;
