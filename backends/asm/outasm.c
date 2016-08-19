@@ -3180,16 +3180,16 @@ static const char *builtin_div_p1 =
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
 
 "        mov     itmp1_,#0                    'unsigned divide\n"
-"        mov     CNT,#32             ' use CNT shadow register\n"
+"        mov     DIVCNT,#32\n"
 "mdiv__\n"
 "        shr     muldivb_,#1        wc,wz\n"
 "        rcr     itmp1_,#1\n"
-" if_nz   djnz    CNT,#mdiv__\n"
+" if_nz   djnz    DIVCNT,#mdiv__\n"
 "mdiv2__\n"
 "        cmpsub  muldiva_,itmp1_        wc\n"
 "        rcl     muldivb_,#1\n"
 "        shr     itmp1_,#1\n"
-"        djnz    CNT,#mdiv2__\n"
+"        djnz    DIVCNT,#mdiv2__\n"
 
 "        test    itmp2_,#1        wc       'restore sign, remainder\n"
 "        negc    muldiva_,muldiva_ \n"
@@ -3198,6 +3198,8 @@ static const char *builtin_div_p1 =
 
 "divide__ret\n"
     "\tret\n"
+"DIVCNT\n"
+"\tlong\t0\n"
 ;
 static const char *builtin_div_p2 =
 "\ndivide_\n"
@@ -3234,6 +3236,7 @@ static const char *builtin_lmm_p1 =
     "    add    pc, #4\n"
     "LMM_i4\n"
     "    nop\n"
+    "LMM_jmptop\n"
     "    jmp    #LMM_LOOP\n"
     "pc\n"
     "    long @@@hubentry\n"
@@ -3274,7 +3277,7 @@ static const char *builtin_lmm_p1 =
     "    movd   a_fcachecopyjmp, a_fcacheldlp\n"
     "    rol    a_fcacheldlp, #9\n"
     "a_fcachecopyjmp\n"
-    "    mov    0-0, LMM_FCACHE_LOAD_ret\n"
+    "    mov    0-0, LMM_jmptop\n"
     "a_fcachego\n"
     "    mov    LMM_ADDR, ADDR\n"
     "    jmpret LMM_RET,#LMM_FCACHE_START\n"
@@ -3296,7 +3299,7 @@ static const char *builtin_lmm_p1 =
     "COUNT\n"
     "    long 0\n"
     "LMM_FCACHE_START\n"
-    "    long 65[0]\n"
+    "    long 0[65]\n"
     ;
 
 static const char *builtin_lmm_p2 =

@@ -25,22 +25,24 @@ divide_
        abs     muldivb_,muldivb_     wc,wz    'abs(y)
  if_c  xor     itmp2_,#%10                    'store sign of y
         mov     itmp1_,#0                    'unsigned divide
-        mov     CNT,#32             ' use CNT shadow register
+        mov     DIVCNT,#32
 mdiv__
         shr     muldivb_,#1        wc,wz
         rcr     itmp1_,#1
- if_nz   djnz    CNT,#mdiv__
+ if_nz   djnz    DIVCNT,#mdiv__
 mdiv2__
         cmpsub  muldiva_,itmp1_        wc
         rcl     muldivb_,#1
         shr     itmp1_,#1
-        djnz    CNT,#mdiv2__
+        djnz    DIVCNT,#mdiv2__
         test    itmp2_,#1        wc       'restore sign, remainder
         negc    muldiva_,muldiva_ 
         test    itmp2_,#%10      wc       'restore sign, division result
         negc    muldivb_,muldivb_
 divide__ret
 	ret
+DIVCNT
+	long	0
 
 _ez_pulse_in_r
 	long	0
