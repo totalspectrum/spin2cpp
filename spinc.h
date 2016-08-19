@@ -138,12 +138,15 @@ typedef struct funcdef {
     /* various flags */
     unsigned result_used:1;
     unsigned is_static:1; // nonzero if no member variables referenced
-    unsigned is_used:1;   // if 0, function is not used
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
     unsigned cog_code:1;     // 1 if function should always be placed in cog
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
+
+    /* number of places this function is called from */
+    /* 0 == unused function, 1== ripe for inlining */
+    unsigned callSites;
     
     /* for walking through functions and avoiding visiting the same one multiple times */
     unsigned visitFlag;

@@ -1741,6 +1741,14 @@ ShouldBeInlined(Function *f)
         
         n++;
     }
+#if 0
+    // a function called from only 1 place should be inlined
+    // if it means that the function definition can be eliminated
+    if (f->callSites == 1) {
+        return true;
+    }
+#endif
+    // otherwise only inline small functions
     return (n <= INLINE_THRESHOLD);
 }
 

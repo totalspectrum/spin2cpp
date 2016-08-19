@@ -1728,7 +1728,7 @@ CompileFunccall(IRList *irl, AST *expr)
       ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
   }
   ir->aux = (void *)func; // remember the function for optimization purposes
-  func->is_used = 1;      // internal functions may not have been marked earlier
+  func->callSites |= 1;      // internal functions may not have been marked earlier
   if (IS_FAST_CALL(func)) {
       /* mark parameters as dead */
       n = AstListLen(params);
@@ -2924,7 +2924,7 @@ ShouldSkipFunction(Function *f)
 {
     if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return false;
-    if (f->is_used)
+    if (0 != f->callSites)
         return false;
     // do not skip global functions, we handle those separately
     if (IsGlobalModule(f->module))
@@ -3099,7 +3099,7 @@ CompileToIR_internal(IRList *irl, Module *P)
             if (FuncData(f)->isInline) {
                 continue;
             }
-            if (!f->is_used) {
+            if (!f->callSites) {
                 // system functions were not skipped in ShouldSkipFunction,
                 // so skip them here if they are not used
                 continue;
@@ -3577,6 +3577,7 @@ EmitMain_P1(IRList *irl, Module *P)
     if (!firstfunc) {
         return;  // no functions at all
     }
+    firstfunc->callSites = 99; // make sure it is never inlined or removed
     firstfuncname = IdentifierGlobalName(P, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
@@ -3629,6 +3630,7 @@ EmitMain_P2(IRList *irl, Module *P)
     if (!firstfunc) {
         return;  // no functions at all
     }
+    firstfunc->callSites = 99; // make sure it is never inlined or removed
     firstfuncname = IdentifierGlobalName(P, firstfunc->name);
     
     ValidateStackptr();

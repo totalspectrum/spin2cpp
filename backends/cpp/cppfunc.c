@@ -71,7 +71,7 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
     if (!func->name)
         return;
 
-    if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !func->is_used) {
+    if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && 0 == func->callSites) {
         return;
     }
 
@@ -535,7 +535,7 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
             /* skip all Spin methods */
             continue;
         }
-        if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && !pf->is_used) {
+        if ((gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS) && 0 == pf->callSites) {
             flexbuf_printf(f, "// (function is not used)\n");
             continue;
         }

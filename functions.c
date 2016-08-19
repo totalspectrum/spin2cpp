@@ -1057,14 +1057,16 @@ MarkUsedBody(AST *body)
     }
 }
 
+#define CALLSITES_MANY 10
+
 void
 MarkUsed(Function *f)
 {
     Module *oldcurrent;
-    if (!f || f->is_used) {
+    if (!f || f->callSites > CALLSITES_MANY) {
         return;
     }
-    f->is_used = 1;
+    f->callSites++;
     oldcurrent = current;
     current = f->module;
     MarkUsedBody(f->body);

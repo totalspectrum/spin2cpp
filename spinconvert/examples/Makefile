@@ -1,4 +1,4 @@
-SPIN2CPP = ../../build/spin2cpp
+SPIN2CPP = ../../build/spin2cpp --code=hub
 
 default: hello.binary math.binary led.binary fibo.binary abort.binary
 
