@@ -1744,10 +1744,12 @@ ShouldBeInlined(Function *f)
     }
     // a function called from only 1 place should be inlined
     // if it means that the function definition can be eliminated
-    if (f->callSites == 1) {
-        return true;
-    } else if (f->callSites == 2) {
-        return (n <= 2*INLINE_THRESHOLD);
+    if (RemoveIfInlined(f)) {
+        if (f->callSites == 1) {
+            return true;
+        } else if (f->callSites == 2) {
+            return (n <= 2*INLINE_THRESHOLD);
+        }
     }
 
     // otherwise only inline small functions
@@ -1810,8 +1812,12 @@ LoopCanBeFcached(IRList *irl, IR *root)
     {
         ir = ir->next;
         while (ir != endjmp) {
-            if (ir->opc == OPC_CALL)
-                return false;
+            if (ir->opc == OPC_CALL) {
+                // no calls to hub memory!
+                if (IsHubDest(ir->dst)) {
+                    return false;
+                }
+            }
             if (IsJump(ir)) {
                 if (!JumpIsAfterOrEqual(root, ir))
                     return false;

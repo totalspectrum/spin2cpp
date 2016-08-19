@@ -1,8 +1,10 @@
 Version 3.1.0
 
-- Added --p2 support for Propeller 2.
+- Added (preliminary) --p2 support for Propeller 2.
 - Added fcache support for Propeller 1.
-
+- If a function is called only once, and we can eliminate it by
+  inlining it, do so.
+  
 Version 3.0.6
 
 - Added a check to make sure the immediate is on the right operand

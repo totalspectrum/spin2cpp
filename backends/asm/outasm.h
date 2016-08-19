@@ -48,6 +48,7 @@ void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);
 void OptimizeFcache(IRList *irl);
 bool ShouldBeInlined(Function *f);
+bool RemoveIfInlined(Function *f);
 int  ExpandInlines(IRList *irl);
 
 bool IsDummy(IR *ir);

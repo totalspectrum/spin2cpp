@@ -2919,6 +2919,9 @@ IsGlobalModule(Module *P)
     return P == globalModule;
 }
 
+//
+// return true if a function should be removed
+//
 static bool
 ShouldSkipFunction(Function *f)
 {
@@ -2933,7 +2936,22 @@ ShouldSkipFunction(Function *f)
         return false;
     return true;
 }
-    
+
+//
+// return true if a function will be removed if inlined
+//
+bool
+RemoveIfInlined(Function *f)
+{
+    if (f->cog_task)
+        return false;
+    if (ShouldSkipFunction(f))
+        return true;
+    if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
+        return true;
+    return false;
+}
+
 // assign all function names so we can do forward calls
 // this is also where we can allocate the back end data
 static void
@@ -3096,17 +3114,15 @@ CompileToIR_internal(IRList *irl, Module *P)
         if (ShouldSkipFunction(f)) {
             continue;
         }
-        if (!f->cog_task) {
-            if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS)) {
-                // also skip inlined private functions
-                if (FuncData(f)->isInline) {
-                    continue;
-                }
-                if (!f->callSites) {
-                    // system functions were not skipped in ShouldSkipFunction,
-                    // so skip them here if they are not used
-                    continue;
-                }
+        if (RemoveIfInlined(f)) {
+            // also skip inlined private functions
+            if (FuncData(f)->isInline) {
+                continue;
+            }
+            if (!f->callSites) {
+                // system functions were not skipped in ShouldSkipFunction,
+                // so skip them here if they are not used
+                continue;
             }
         }
         curfunc = f;

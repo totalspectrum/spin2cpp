@@ -28,12 +28,19 @@ Common subexpression elimination.
 
 Take advantage of commutative operators to improve optimization.
 
-Add FCACHE mode for LMM.
+Reduce register usage (e.g. all leaf functions can use the same temporaries).
+
+Put more commonly used functions in COG RAM, and/or FCACHE whole functions
+if they are called a lot.
+
+Better fcache loading code.
+
+Faster multiply / divide.
 
 Long Term
 ---------
 
-Implement P2 support.
+Finish P2 support.
 
 Implement a spin bytecode back end.
 
