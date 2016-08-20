@@ -3000,6 +3000,7 @@ AssignFuncNames(IRList *irl, Module *P)
         }
         if (f->is_recursive || IS_STACK_CALL(f)) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
+            f->no_inline = 1; // cannot inline these, they need special setup/shutdown
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
         }
