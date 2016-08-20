@@ -5,14 +5,14 @@ DAT
 entry
 
 _foo
-	mov	_foo__idx__0001, #5
+	mov	_var__idx__0001, #5
 L__0002
 	add	OUTA, #1
-	djnz	_foo__idx__0001, #L__0002
+	djnz	_var__idx__0001, #L__0002
 _foo_ret
 	ret
 
-_foo__idx__0001
+_var__idx__0001
 	long	0
 arg1
 	long	0

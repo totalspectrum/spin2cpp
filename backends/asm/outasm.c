@@ -98,8 +98,10 @@ IdentifierLocalName(Function *func, const char *name)
 {
     char temp[1024];
     Module *P = func->module;
-
-    if (IsTopLevel(P)) {
+    if (func->is_leaf) {
+        // leaf functions can share a set of local variables
+        snprintf(temp, sizeof(temp)-1, "_var_%s", name);
+    } else if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
     } else {
         snprintf(temp, sizeof(temp)-1, "_%s_%s_%s", P->basename, func->name, name);

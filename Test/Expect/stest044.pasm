@@ -5,19 +5,19 @@ DAT
 entry
 
 _strlen
-	neg	_strlen_r, #1
+	neg	_var_r, #1
 L__0001
-	rdbyte	_strlen_c, arg1 wz
+	rdbyte	_var_c, arg1 wz
 	add	arg1, #1
-	add	_strlen_r, #1
+	add	_var_r, #1
  if_ne	jmp	#L__0001
-	mov	result1, _strlen_r
+	mov	result1, _var_r
 _strlen_ret
 	ret
 
-_strlen_c
+_var_c
 	long	0
-_strlen_r
+_var_r
 	long	0
 arg1
 	long	0

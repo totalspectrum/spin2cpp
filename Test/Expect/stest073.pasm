@@ -5,35 +5,35 @@ DAT
 entry
 
 _get
-	mov	_get_sum, #0
-	mov	_get_i, #0
+	mov	_var_sum, #0
+	mov	_var_i, #0
 L__0001
-	cmps	_get_i, #9 wc,wz
+	cmps	_var_i, #9 wc,wz
  if_a	jmp	#L__0003
 	mov	_tmp002_, #496
-	add	_tmp002_, _get_i
+	add	_tmp002_, _var_i
 	movs	wrcog, _tmp002_
 	movd	wrcog, #_tmp003_
 	call	#wrcog
-	add	_get_sum, _tmp003_
-	add	_get_i, #1
+	add	_var_sum, _tmp003_
+	add	_var_i, #1
 	jmp	#L__0001
 L__0003
-	mov	result1, _get_sum
+	mov	result1, _var_sum
 _get_ret
 	ret
 
 _put
-	mov	_put_i, #0
+	mov	_var_i, #0
 L__0004
-	cmps	_put_i, #9 wc,wz
+	cmps	_var_i, #9 wc,wz
  if_a	jmp	#L__0006
 	mov	_tmp001_, #496
-	add	_tmp001_, _put_i
-	movs	wrcog, #_put_i
+	add	_tmp001_, _var_i
+	movs	wrcog, #_var_i
 	movd	wrcog, _tmp001_
 	call	#wrcog
-	add	_put_i, #1
+	add	_var_i, #1
 	jmp	#L__0004
 L__0006
 _put_ret
@@ -43,17 +43,15 @@ wrcog
 wrcog_ret
     ret
 
-_get_i
-	long	0
-_get_sum
-	long	0
-_put_i
-	long	0
 _tmp001_
 	long	0
 _tmp002_
 	long	0
 _tmp003_
+	long	0
+_var_i
+	long	0
+_var_sum
 	long	0
 arg1
 	long	0

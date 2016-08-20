@@ -5,16 +5,16 @@ DAT
 entry
 
 _count
-	mov	_count_i, #0
+	mov	_var_i, #0
 L__0001
-	mov	OUTA, _count_i
-	add	_count_i, #1
-	cmps	_count_i, #4 wc,wz
+	mov	OUTA, _var_i
+	add	_var_i, #1
+	cmps	_var_i, #4 wc,wz
  if_b	jmp	#L__0001
 _count_ret
 	ret
 
-_count_i
+_var_i
 	long	0
 arg1
 	long	0
