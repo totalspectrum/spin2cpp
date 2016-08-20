@@ -28,10 +28,10 @@ Common subexpression elimination.
 
 Take advantage of commutative operators to improve optimization.
 
-Reduce register usage (e.g. all leaf functions can use the same temporaries).
-
 Put more commonly used functions in COG RAM, and/or FCACHE whole functions
 if they are called a lot.
+
+Allow system functions to go into HUB RAM to free up COG space.
 
 Better fcache loading code.
 

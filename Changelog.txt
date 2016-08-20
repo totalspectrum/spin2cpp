@@ -1,6 +1,8 @@
 Version 3.1.1
 
-- Make leaf functions share temporary registers
+- Make leaf functions share temporary registers and local variables
+- Do not inline functions whose calling conventions
+  require stack manipulation
 
 Version 3.1.0
 
