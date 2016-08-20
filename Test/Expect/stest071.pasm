@@ -8,15 +8,17 @@ _blink
 	cmps	arg2, #0 wz
  if_e	jmp	#L__0005
 L__0006
-	mov	blink_tmp002_, #1
-	shl	blink_tmp002_, arg1
-	xor	OUTA, blink_tmp002_
+	mov	_tmp002_, #1
+	shl	_tmp002_, arg1
+	xor	OUTA, _tmp002_
 	djnz	arg2, #L__0006
 L__0005
 	rdlong	result1, ptr__dat__
 _blink_ret
 	ret
 
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -24,8 +26,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-blink_tmp002_
 	long	0
 ptr__dat__
 	long	@@@_dat_

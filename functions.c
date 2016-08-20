@@ -1081,6 +1081,8 @@ SetFunctionType(Function *f, AST *typ)
 
 /*
  * check to see if function ref may be called from AST body
+ * also clears the is_leaf flag on the function if we see any
+ * calls within it
  */
 bool
 IsCalledFrom(Function *ref, AST *body, int visitRef)
@@ -1093,6 +1095,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
     if (!body) return false;
     switch(body->kind) {
     case AST_FUNCCALL:
+        ref->is_leaf = 0;
         sym = FindFuncSymbol(body, NULL, NULL);
         if (!sym) return false;
         if (sym->type != SYM_FUNCTION) return false;
@@ -1120,6 +1123,7 @@ void
 CheckRecursive(Function *f)
 {
     visitPass++;
+    f->is_leaf = 1; // possibly a leaf function
     f->is_recursive = IsCalledFrom(f, f->body, visitPass);
 }
 

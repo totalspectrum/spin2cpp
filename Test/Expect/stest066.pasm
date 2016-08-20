@@ -6,15 +6,19 @@ entry
 
 _set
 	add	objptr, #8
-	mov	set_tmp001_, objptr
+	mov	_tmp001_, objptr
 	sub	objptr, #4
-	rdlong	set_tmp002_, objptr
+	rdlong	_tmp002_, objptr
 	sub	objptr, #4
-	add	set_tmp001_, set_tmp002_
-	wrbyte	arg1, set_tmp001_
+	add	_tmp001_, _tmp002_
+	wrbyte	arg1, _tmp001_
 _set_ret
 	ret
 
+_tmp001_
+	long	0
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -26,10 +30,6 @@ arg4
 objptr
 	long	@@@objmem
 result1
-	long	0
-set_tmp001_
-	long	0
-set_tmp002_
 	long	0
 	fit	496
 	long

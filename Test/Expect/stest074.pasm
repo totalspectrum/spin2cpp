@@ -10,23 +10,23 @@ _get
 L__0001
 	cmps	_get_i, #9 wc,wz
  if_a	jmp	#L__0003
-	mov	get_tmp001_, #_get_a
-	mov	get_tmp002_, _get_i
-	add	get_tmp001_, get_tmp002_
-	mov	get_tmp003_, objptr
-	mov	get_tmp004_, _get_i
-	shl	get_tmp004_, #2
-	add	get_tmp003_, get_tmp004_
-	rdlong	get_tmp005_, get_tmp003_
-	movs	wrcog, #get_tmp005_
-	movd	wrcog, get_tmp001_
+	mov	_tmp001_, #_get_a
+	mov	_tmp002_, _get_i
+	add	_tmp001_, _tmp002_
+	mov	_tmp003_, objptr
+	mov	_tmp004_, _get_i
+	shl	_tmp004_, #2
+	add	_tmp003_, _tmp004_
+	rdlong	_tmp005_, _tmp003_
+	movs	wrcog, #_tmp005_
+	movd	wrcog, _tmp001_
 	call	#wrcog
-	mov	get_tmp002_, #_get_a
-	add	get_tmp002_, _get_i
-	movs	wrcog, get_tmp002_
-	movd	wrcog, #get_tmp004_
+	mov	_tmp002_, #_get_a
+	add	_tmp002_, _get_i
+	movs	wrcog, _tmp002_
+	movd	wrcog, #_tmp004_
 	call	#wrcog
-	add	_get_sum, get_tmp004_
+	add	_get_sum, _tmp004_
 	add	_get_i, #1
 	jmp	#L__0001
 L__0003
@@ -44,6 +44,16 @@ _get_i
 	long	0
 _get_sum
 	long	0
+_tmp001_
+	long	0
+_tmp002_
+	long	0
+_tmp003_
+	long	0
+_tmp004_
+	long	0
+_tmp005_
+	long	0
 arg1
 	long	0
 arg2
@@ -51,16 +61,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-get_tmp001_
-	long	0
-get_tmp002_
-	long	0
-get_tmp003_
-	long	0
-get_tmp004_
-	long	0
-get_tmp005_
 	long	0
 objptr
 	long	@@@objmem

@@ -1,3 +1,7 @@
+Version 3.1.1
+
+- Make leaf functions share temporary registers
+
 Version 3.1.0
 
 - Added (preliminary) --p2 support for Propeller 2.

@@ -7,11 +7,13 @@ entry
 _sum2
 	rdlong	result1, arg1
 	add	arg1, #4
-	rdlong	sum2_tmp002_, arg1
-	add	result1, sum2_tmp002_
+	rdlong	_tmp002_, arg1
+	add	result1, _tmp002_
 _sum2_ret
 	ret
 
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -21,7 +23,5 @@ arg3
 arg4
 	long	0
 result1
-	long	0
-sum2_tmp002_
 	long	0
 	fit	496

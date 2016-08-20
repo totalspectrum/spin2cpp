@@ -10,12 +10,14 @@ _clear0_ret
 	ret
 
 _clearpin
-	mov	clearpin_tmp001_, #1
-	shl	clearpin_tmp001_, arg1
-	andn	OUTA, clearpin_tmp001_
+	mov	_tmp001_, #1
+	shl	_tmp001_, arg1
+	andn	OUTA, _tmp001_
 _clearpin_ret
 	ret
 
+_tmp001_
+	long	0
 arg1
 	long	0
 arg2
@@ -23,8 +25,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-clearpin_tmp001_
 	long	0
 result1
 	long	0

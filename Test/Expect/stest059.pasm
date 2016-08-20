@@ -6,16 +6,20 @@ entry
 
 _func
 	add	objptr, #8
-	rdlong	func_tmp001_, objptr
+	rdlong	_tmp001_, objptr
 	add	objptr, #4
-	rdbyte	func_tmp002_, objptr
-	add	func_tmp001_, func_tmp002_
+	rdbyte	_tmp002_, objptr
+	add	_tmp001_, _tmp002_
 	sub	objptr, #8
-	wrlong	func_tmp001_, objptr
+	wrlong	_tmp001_, objptr
 	sub	objptr, #4
 _func_ret
 	ret
 
+_tmp001_
+	long	0
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -23,10 +27,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-func_tmp001_
-	long	0
-func_tmp002_
 	long	0
 objptr
 	long	@@@objmem

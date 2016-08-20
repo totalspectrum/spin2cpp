@@ -623,7 +623,10 @@ GetFunctionTempRegister(Function *f, int n)
 {
   Module *P = f->module;
   char buf[1024];
-  if (IsTopLevel(P)) {
+  if (f->is_leaf) {
+      // leaf functions can share a set of temporary registers
+      snprintf(buf, sizeof(buf)-1, "_tmp%03d_", n);
+  } else if (IsTopLevel(P)) {
       snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
   } else {
       snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->basename, f->name, n);

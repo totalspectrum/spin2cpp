@@ -8,12 +8,14 @@ _func
 	add	objptr, #8
 	rdlong	result1, objptr
 	add	objptr, #4
-	rdbyte	func_tmp002_, objptr
+	rdbyte	_tmp002_, objptr
 	sub	objptr, #12
-	add	result1, func_tmp002_
+	add	result1, _tmp002_
 _func_ret
 	ret
 
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -21,8 +23,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-func_tmp002_
 	long	0
 objptr
 	long	@@@objmem

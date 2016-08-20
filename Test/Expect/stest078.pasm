@@ -5,12 +5,14 @@ DAT
 entry
 
 _setout
-	rdlong	setout_tmp002_, objptr
-	or	DIRA, setout_tmp002_
-	or	OUTA, setout_tmp002_
+	rdlong	_tmp002_, objptr
+	or	DIRA, _tmp002_
+	or	OUTA, _tmp002_
 _setout_ret
 	ret
 
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -22,8 +24,6 @@ arg4
 objptr
 	long	@@@objmem
 result1
-	long	0
-setout_tmp002_
 	long	0
 	fit	496
 	long

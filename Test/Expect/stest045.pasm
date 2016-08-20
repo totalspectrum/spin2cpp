@@ -7,7 +7,7 @@ entry
 _strlen2
 	mov	_strlen2_r, #0
 L__0001
-	rdbyte	strlen2_tmp001_, arg1 wz
+	rdbyte	_tmp001_, arg1 wz
  if_ne	add	arg1, #1
  if_ne	add	_strlen2_r, #1
  if_ne	jmp	#L__0001
@@ -16,6 +16,8 @@ _strlen2_ret
 	ret
 
 _strlen2_r
+	long	0
+_tmp001_
 	long	0
 arg1
 	long	0
@@ -26,7 +28,5 @@ arg3
 arg4
 	long	0
 result1
-	long	0
-strlen2_tmp001_
 	long	0
 	fit	496

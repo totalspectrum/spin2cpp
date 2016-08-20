@@ -9,12 +9,12 @@ _hyp
 	mov	muldiva_, arg1
 	mov	muldivb_, arg1
 	call	#multiply_
-	mov	hyp_tmp002_, muldiva_
+	mov	_tmp002_, muldiva_
 	mov	muldiva_, _hyp_y
 	mov	muldivb_, _hyp_y
 	call	#multiply_
-	add	hyp_tmp002_, muldiva_
-	mov	result1, hyp_tmp002_
+	add	_tmp002_, muldiva_
+	mov	result1, _tmp002_
 _hyp_ret
 	ret
 
@@ -41,6 +41,8 @@ multiply__ret
 
 _hyp_y
 	long	0
+_tmp002_
+	long	0
 arg1
 	long	0
 arg2
@@ -48,8 +50,6 @@ arg2
 arg3
 	long	0
 arg4
-	long	0
-hyp_tmp002_
 	long	0
 itmp1_
 	long	0
