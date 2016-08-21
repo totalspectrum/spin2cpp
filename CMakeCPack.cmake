@@ -44,9 +44,11 @@ set(CPACK_DEBIAN_PACKAGE_HOMEPAGE               "${CPACK_PROJECT_URL}")
 set(CPACK_DEBIAN_PACKAGE_SECTION                devel)
 set(CPACK_DEBIAN_PACKAGE_PRIORITY               optional)
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS              ON)
+set(CPACK_DEBIAN_FILE_NAME                      DEB-DEFAULT)
 
 # RPM Specific
 set(CPACK_RPM_PACKAGE_URL                       "${CPACK_PROJECT_URL}")
 set(CPACK_PACKAGE_RELOCATABLE                   ON)
+set(CPACK_RPM_FILE_NAME                         RPM-DEFAULT)
 
 include(CPack)

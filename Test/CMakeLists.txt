@@ -245,8 +245,8 @@ error_test(error05)
 error_test(error06)
 
 # Lexer tests
-add_executable(testlex "${PROJECT_SOURCE_DIR}/testlex")
-target_link_libraries(testlex lex m)
+add_executable(testlex "${PROJECT_SOURCE_DIR}/testlex.c")
+target_link_libraries(testlex lex)
 add_dependencies(test-all testlex)
 add_test(NAME lextest
     COMMAND testlex)
