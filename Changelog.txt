@@ -1,3 +1,7 @@
+Version 3.1.2
+
+- Slightly improve loop optimization by re-arranging optimize passes
+
 Version 3.1.1
 
 - Make leaf functions share temporary registers and local variables

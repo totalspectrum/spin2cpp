@@ -1301,11 +1301,7 @@ MarkLabelUses(IRList *irl, IR *irlabel)
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (IsJump(ir)) {
-            if (ir->opc == OPC_DJNZ) {
-                dst = ir->src;
-            } else {
-                dst = ir->dst;
-            }
+            dst = JumpDest(ir);
             if (dst == label) {
                 ir->aux = irlabel; // record where the jump goes to
                 if (irlabel->flags & FLAG_LABEL_USED) {
@@ -1671,9 +1667,9 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeReadWrite(irl);
         change |= OptimizeMoves(irl);
         change |= OptimizeImmediates(irl);
+        change |= OptimizeCompares(irl);
         change |= OptimizeShortBranches(irl);
         change |= OptimizeAddSub(irl);
-        change |= OptimizeCompares(irl);
         change |= OptimizePeepholes(irl);
         if (gl_p2) {
             change |= OptimizeP2(irl);
