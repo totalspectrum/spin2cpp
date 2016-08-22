@@ -72,12 +72,12 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     AST *origval = NULL;
 
     if ( (datacount % size) != 0 ) {
-        flexbuf_printf(f, "\t\t.balign\t%d", size);
+        flexbuf_printf(f, "        %-7s %d", ".balign", size);
         endLine(f, inlineAsm);
         datacount = (datacount + size - 1) & ~(size-1);
         startLine(f, inlineAsm);
     }
-    flexbuf_printf(f, "\t\t%s\t", prefix);
+    flexbuf_printf(f, "        %-7s ", prefix);
     while (ast) {
         sub = ast->left;
         if (sub->kind == AST_ARRAYDECL) {
@@ -115,7 +115,7 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
 static void
 outputGasDirective(Flexbuf *f, const char *prefix, AST *expr)
 {
-    flexbuf_printf(f, "\t\t%s\t", prefix);
+    flexbuf_printf(f, "        %-7s", prefix);
     if (expr)
         PrintExpr(f, expr);
     else
@@ -138,24 +138,26 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     int effects = 0;
     int i;
     int numoperands = 0;
+    int printed_if = 0;
     const char *opcode;
 
     if ( (datacount % 4) != 0) {
-        flexbuf_printf(f, "\t.balign 4");
+        flexbuf_printf(f, "        .balign 4");
         endLine(f, inlineAsm);
         datacount = (datacount + 3) & ~3;
         startLine(f, inlineAsm);
     }
     
     instr = (Instruction *)ast->d.ptr;
-    flexbuf_printf(f, "\t");
+    flexbuf_printf(f, "  ");
     /* print modifiers */
     sub = ast->right;
     while (sub != NULL) {
         if (sub->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)sub->d.ptr;
             if (!strncmp(mod->name, "if_", 3)) {
-                flexbuf_printf(f, "%s ", mod->name);
+                flexbuf_printf(f, "%-5s ", mod->name);
+                printed_if = 1;
             } else if (!strcmp(mod->name, "wz")) {
                 effects |= GAS_WZ;
             } else if (!strcmp(mod->name, "wc")) {
@@ -183,12 +185,15 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
 
     /* print instruction opcode */
     opcode = instr->name;
-    flexbuf_printf(f, "\t%s", opcode);
+    if (!printed_if) {
+        flexbuf_printf(f, "      ");
+    }
+    flexbuf_printf(f, "%-7s", opcode);
     datacount += 4;
     /* now print the operands */
     for (i = 0; i < numoperands; i++) {
         if (i == 0)
-            flexbuf_printf(f, "\t");
+            flexbuf_printf(f, " ");
         else
             flexbuf_printf(f, ", ");
         if (immflag) {
@@ -238,7 +243,7 @@ static void
 PrintGasConstantDecl(Flexbuf *f, AST *ast, int inlineAsm)
 {
     startLine(f, inlineAsm);
-    flexbuf_printf(f, "\t\t.equ\t%s, ", ast->d.string);
+    flexbuf_printf(f, "        .equ    %s, ", ast->d.string);
     PrintInteger(f, EvalConstExpr(ast));
     endLine(f, inlineAsm);
 }
@@ -290,13 +295,13 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 
     if (inlineAsm) {
         flexbuf_printf(f, "__asm__(\n");
-        flexbuf_printf(f, "\"\t\t.section .%s.cog, \\\"ax\\\"\\n\"\n",
+        flexbuf_printf(f, "\"        .section .%s.cog, \\\"ax\\\"\\n\"\n",
                 P->basename);
     }
     /* print constant declarations */
     PrintConstantsGas(f, P, inlineAsm);
     if (inlineAsm) {
-        flexbuf_printf(f, "\"\t\t.compress off\\n\"\n");
+        flexbuf_printf(f, "\"        .compress off\\n\"\n");
     }
     startLine(f, inlineAsm);
     flexbuf_printf(f, "..start");
@@ -344,8 +349,8 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     }
 
     if (inlineAsm) {
-        flexbuf_printf(f, "\"\t\t.compress default\\n\"\n");
-        flexbuf_printf(f, "\"\t\t.text\\n\"\n");
+        flexbuf_printf(f, "\"    .compress default\\n\"\n");
+        flexbuf_printf(f, "\"    .text\\n\"\n");
         flexbuf_printf(f, "\n);\n");
     }
     P->printLabelsVerbatim = saveState;
