@@ -102,7 +102,8 @@ typedef enum IROpcode {
     OPC_LONG,
     OPC_STRING,
     OPC_LABELED_BLOB, // binary blob
-
+    OPC_RESERVE,   // reserve space
+    
     /* pseudo-instruction to load FCACHE */
     OPC_FCACHE,
     

@@ -52,4 +52,4 @@ sp
 	long	@@@stackspace
 	fit	496
 stackspace
-	long	0
+	res	1

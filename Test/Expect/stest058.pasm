@@ -29,9 +29,5 @@ objptr
 result1
 	long	0
 	fit	496
-	long
 objmem
-	long	$00000000
-	long	$00000000
-	long	$00000000
-	long	$00000000
+	res	4

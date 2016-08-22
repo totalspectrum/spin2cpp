@@ -250,7 +250,7 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
             delta = EvalPasmExpr(ast->left);
             asmpc += 4*delta;
-//            hubpc += 4*delta;
+            hubpc += 4*delta;
             lasttype = ast_type_long;
             break;
         case AST_FIT:

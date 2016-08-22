@@ -542,6 +542,14 @@ void EmitLong(IRList *irl, int val)
   EmitOp1(irl, OPC_LONG, op);
 }
 
+void EmitReserve(IRList *irl, int val)
+{
+  Operand *op;
+
+  op = NewOperand(IMM_INT, "", val);
+  EmitOp1(irl, OPC_RESERVE, op);
+}
+
 static void EmitLongPtr(IRList *irl, Operand *op)
 {
   EmitOp1(irl, OPC_LONG, op);
@@ -3121,13 +3129,13 @@ CompileToIR_internal(IRList *irl, Module *P)
             continue;
         }
         if (RemoveIfInlined(f)) {
-            // also skip inlined private functions
+            // system functions were not skipped in ShouldSkipFunction,
+            // so skip them here if they are not used
+            // also skip inlined private and single-use functions
             if (FuncData(f)->isInline) {
                 continue;
             }
             if (!f->callSites) {
-                // system functions were not skipped in ShouldSkipFunction,
-                // so skip them here if they are not used
                 continue;
             }
         }
@@ -3545,10 +3553,21 @@ EmitDatSection(IRList *irl, Module *P)
 void
 EmitVarSection(IRList *irl, Module *P)
 {
-  Operand *op;
+#if 1
+    int len;
+    if (!objlabel)
+        return;
+    len = P->varsize;
+    len = (len+3) & ~3; // round up to long boundary
+    if (!len)
+        return;
+    EmitLabel(irl, objlabel);
+    EmitReserve(irl, len / 4);
+#else
   char *data;
   int len;
   Flexbuf *fb;
+  Operand *op;
 
   if (!objlabel)
       return;
@@ -3563,6 +3582,7 @@ EmitVarSection(IRList *irl, Module *P)
   flexbuf_addmem(fb, data, len);
   op = NewOperand(IMM_BINARY, (const char *)fb, 0);
   EmitOp2(irl, OPC_LABELED_BLOB, objlabel, op);
+#endif
 }
 
 extern Module *globalModule;
@@ -3762,10 +3782,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     if (stacklabel) {
         if (HUB_DATA) {
             EmitLabel(&hubdata, stacklabel);
-            EmitLong(&hubdata, 0);
+            EmitReserve(&hubdata, 1);
         } else {
             EmitLabel(&cogdata, stacklabel);
-            EmitLong(&cogdata, 0);
+            EmitReserve(&cogdata, 1);
         }
     }
 
