@@ -41,6 +41,11 @@ OutputGasFile(const char *fname, Module *P)
  * functions for output of DAT sections
  */
 /*
+ * some defines for inline asm
+ */
+#define INLINE_ASM_LINELEN 70
+
+/*
  * data block printing functions
  */
 #define BYTES_PER_LINE 16  /* must be at least 4 */
@@ -58,6 +63,21 @@ static void
 endLine(Flexbuf *f, int inlineAsm)
 {
     if (inlineAsm) {
+        // look back and see how many spaces we need to include to line everything up
+        const char *here;
+        size_t count;
+        size_t linelen = 0;
+        count = flexbuf_curlen(f);
+        here = flexbuf_peek(f);
+        while (count > 0) {
+            --count;
+            if (here[count] == '\n') break;
+            linelen++;
+        }
+        if (linelen < INLINE_ASM_LINELEN) {
+            linelen = INLINE_ASM_LINELEN - linelen;
+            flexbuf_printf(f, "%*s", linelen, " ");
+        }
         flexbuf_printf(f, "\\n\"");
     }
     flexbuf_printf(f, "\n");
@@ -155,7 +175,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
         if (sub->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)sub->d.ptr;
             if (!strncmp(mod->name, "if_", 3)) {
-                flexbuf_printf(f, "  %-8s  ", mod->name);
+                flexbuf_printf(f, "  %-9s ", mod->name);
                 printed_if = 1;
             } else if (!strcmp(mod->name, "wz")) {
                 effects |= GAS_WZ;
@@ -222,7 +242,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     if (effects) {
         const char *comma = "";
         const char *effnames[] = { "wz", "wc", "nr", "wr" };
-        flexbuf_printf(f, "\t");
+        flexbuf_printf(f, "    ");
         for (i = 0; i < 4; i++) {
             if (effects & (1<<i)) {
                 flexbuf_printf(f, "%s%s", comma, effnames[i]);
@@ -294,13 +314,15 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 
     if (inlineAsm) {
         flexbuf_printf(f, "__asm__(\n");
-        flexbuf_printf(f, "\"%11s .section .%s.cog, \\\"ax\\\"\\n\"\n",
+        flexbuf_printf(f, "\"%11s .section .%s.cog, \\\"ax\\\"",
                        " ", P->basename);
+        endLine(f, inlineAsm);
     }
     /* print constant declarations */
     PrintConstantsGas(f, P, inlineAsm);
     if (inlineAsm) {
-        flexbuf_printf(f, "\"%11s .compress off\\n\"\n", " ");
+        flexbuf_printf(f, "\"%11s .compress off", " ");
+        endLine(f, inlineAsm);
     }
     startLine(f, inlineAsm);
     flexbuf_printf(f, "..start");
@@ -348,9 +370,11 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     }
 
     if (inlineAsm) {
-        flexbuf_printf(f, "\"%11s .compress default\\n\"\n", " ");
-        flexbuf_printf(f, "\"%11s .text\\n\"\n", " ");
-        flexbuf_printf(f, "\n);\n");
+        flexbuf_printf(f, "\"%11s .compress default", " ");
+        endLine(f, inlineAsm);
+        flexbuf_printf(f, "\"%11s .text", " ");
+        endLine(f, inlineAsm);
+        flexbuf_printf(f, ");\n");
     }
     P->printLabelsVerbatim = saveState;
 }
