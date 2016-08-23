@@ -3602,9 +3602,9 @@ EmitVarSection(IRList *irl, Module *P)
         return;
     len = P->varsize;
     len = (len+3) & ~3; // round up to long boundary
-    if (!len)
-        return;
     EmitLabel(irl, objlabel);
+    if (!len)
+        len = 1;
     EmitReserve(irl, len / 4);
 #else
   char *data;
