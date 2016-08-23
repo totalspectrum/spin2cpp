@@ -3,6 +3,8 @@ Version 3.1.2
 - Use "res" instead of "long" to define the object block
 - Slightly improve loop optimization by re-arranging optimize passes
 - Fix multi-pin assignments to be atomic
+- If fastspin.exe is invoked as bstc.exe, it tries to mimic bstc's
+  output.
 
 Version 3.1.1
 

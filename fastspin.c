@@ -68,6 +68,8 @@ AST *ast_type_void;
 
 const char *gl_outname = NULL;
 
+double gl_start_time;
+
 static void
 PrintInfo(void)
 {
@@ -174,6 +176,13 @@ PrintFileSize(const char *fname)
     }
 }
 
+double
+getCurTime()
+{
+    clock_t tick = clock();
+    return (double)tick / (double)CLOCKS_PER_SEC;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -184,6 +193,7 @@ main(int argc, char **argv)
     int outputAsm = 0;
     int compile = 0;
     int quiet = 0;
+    int bstcMode = 0;
     Module *P;
     int retval = 0;
     struct flexbuf argbuf;
@@ -192,6 +202,8 @@ main(int argc, char **argv)
     const char *outname = NULL;
     size_t eepromSize = 32768;
     int useEeprom = 0;
+    
+    gl_start_time = getCurTime();
     
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor
@@ -227,6 +239,7 @@ main(int argc, char **argv)
         gl_progname = argv[0];
         argv++; --argc;
     }
+    bstcMode = (strstr(gl_progname, "bstc") != 0);
     gl_normalizeIdents = 1;
     compile = 1;
     outputMain = 1;
@@ -391,6 +404,9 @@ main(int argc, char **argv)
             opt = strdup(opt);
             incpath = opt;
             pp_add_to_path(&gl_pp, incpath);
+        } else if (bstcMode && !strncmp(argv[0], "-O", 2)) {
+            // ignore bstc optimization options
+            argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage();
@@ -537,6 +553,14 @@ main(int argc, char **argv)
                     printf("Done.\n");
                     if (retval == 0) {
                         PrintFileSize(binname);
+                    }
+                    if (bstcMode) {
+                        int loc = 0;
+                        double now = getCurTime();
+                        for (Q = allparse; Q; Q = Q->next) {
+                            loc += Q->L.lineCounter;
+                        }
+                        printf("Compiled %d Lines of Code in %.3f Seconds\n", loc, now - gl_start_time);
                     }
                 }
             }

@@ -2517,7 +2517,9 @@ void
 ResetDebugComment(Module *P)
 {
     current_lex = &P->L;
-    current_lex->lineCounter = 0;
+    if (gl_debug) {
+        current_lex->lineCounter = 0;
+    }
 }
 
 static void

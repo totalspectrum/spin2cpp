@@ -735,6 +735,7 @@ getToken(LexStream *L, AST **ast_ptr)
     int peekc;
     c = skipSpace(L, &ast);
 
+//    printf("L->linecounter=%d\n", L->lineCounter);
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
         return c;

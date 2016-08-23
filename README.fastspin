@@ -30,6 +30,10 @@ version).  Note that for Prop2 output we only generate the PASM code,
 in a file with a ".p2asm" extension. This is because PNut for the P2
 does not have any way to load a binary file yet.
 
+fastspin.exe checks the name it was invoked by. If the name contains the
+string "bstc" (case matters) then its output messages mimic that of the
+bstc compiler; otherwise it tries to match openspin's messages.
+
 EXTENSIONS
 ==========
 
