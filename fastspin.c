@@ -527,6 +527,9 @@ main(int argc, char **argv)
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
+                if (bstcMode) {
+                    outname = ReplaceExtension(outname, ".binary");
+                }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
                     DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
