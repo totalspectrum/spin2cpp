@@ -778,7 +778,21 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
     exit(2);
   }
   strcpy(ret, path);
+#ifdef WIN32
+  {
+      char *test = ret;
+      int c;
+      last = 0;
+      while ( (c = *test) != 0 ) {
+          if (c == '/' || c == '\\') {
+              last = test;
+          }
+          test++;
+      }
+  }
+#else
   last = strrchr(ret, '/');
+#endif
   if (trimname) {
       if (last) {
           last[1] = 0;

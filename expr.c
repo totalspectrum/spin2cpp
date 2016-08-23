@@ -960,10 +960,15 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
         sym = LookupSymbol(expr->d.string);
         if (!sym || sym->type != SYM_LABEL) {
-            if (reportError)
-                ERROR(expr, "Only addresses of labels allowed");
-            else
+            if (reportError) {
+                if (!sym) {
+                    ERROR(expr, "Unknown symbol %s", expr->d.string);
+                } else {
+                    ERROR(expr, "Only addresses of labels allowed");
+                }
+            } else {
                 *valid = 0;
+            }
             return intExpr(0);
         } else {
             Label *lref = (Label *)sym->val;

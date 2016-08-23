@@ -772,6 +772,7 @@ ParseFile(const char *name)
 
     f = fopen(fname, "r");
     if (!f) {
+        fprintf(stderr, "ParseFile: ");
         perror(name);
         free(fname);
         exit(1);
@@ -1014,6 +1015,7 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     if (gl_p2) return 0; // no checksum required
     
     if (!f) {
+        fprintf(stderr, "checksum: ");
         perror(fname);
         return -1;
     }

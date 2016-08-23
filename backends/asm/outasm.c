@@ -3844,6 +3844,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     f = fopen(fname, "w");
     if (!f) {
+        fprintf(stderr, "Unable to open pasm output: ");
         perror(fname);
         exit(1);
     }

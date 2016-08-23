@@ -79,6 +79,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
 
     f = fopen(fname, "wb");
     if (!f) {
+        fprintf(stderr, "Unable to open output file: ");
         perror(fname);
         exit(1);
     }

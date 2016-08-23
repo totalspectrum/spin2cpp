@@ -75,6 +75,7 @@ PrintInfo(void)
 {
     fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2016 Total Spectrum Software Inc.\n");
     fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
+    fflush(stderr);
 }
 
 static void
@@ -92,6 +93,7 @@ Usage(void)
     fprintf(stderr, "  [ -p ]             disable the preprocessor\n");
     fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
     fprintf(stderr, "  [ -D <define> ]    add a define\n");
+    fflush(stderr);
     exit(2);
 }
 
@@ -118,7 +120,7 @@ appendWithoutSpace(const char *s, int needEscape)
     // check to see if "s" contains any spaces; if so,
     // we will have to escape those
     while (*s) {
-      if (needsquote(*s))
+      if (needEscape && needsquote(*s))
 	addquote = 1;
       s++;
       len++;
@@ -146,6 +148,10 @@ appendToCmd(const char *s)
 {
     if (cmdline[0] != 0)
       appendWithoutSpace(" ", 0);
+#ifdef WIN32
+    else
+        appendWithoutSpace("\"", 0);
+#endif
     appendWithoutSpace(s, 1);
 }
 
@@ -202,7 +208,15 @@ main(int argc, char **argv)
     const char *outname = NULL;
     size_t eepromSize = 32768;
     int useEeprom = 0;
-    
+    const char *target = NULL;
+
+#if 0
+    printf("fastspin: arguments are:\n");
+    for (i = 0; i < argc; i++) {
+        printf("[%s]\n", argv[i]);
+    }
+    fflush(stdout);
+#endif    
     gl_start_time = getCurTime();
     
     /* Initialize the global preprocessor; we need to do this here
@@ -255,7 +269,15 @@ main(int argc, char **argv)
     gl_outputflags &= ~OUTFLAG_COG_DATA;
     gl_outputflags &= ~OUTFLAG_COG_CODE;
     
-    while (argv[0] && argv[0][0] == '-') {
+    while (argv[0] && argv[0][0] != 0) {
+        if (argv[0][0] != '-') {
+            if (target) {
+                Usage();
+            }
+            target = argv[0];
+            argv++; argc--;
+            continue;
+        }
         if (!strcmp(argv[0], "-y")) {
             yydebug = 1;
             argv++; --argc;
@@ -416,7 +438,7 @@ main(int argc, char **argv)
     if (!quiet) {
         PrintInfo();
     }
-    if (argv[0] == NULL || (argc != 1 && !compile)) {
+    if (target == NULL) {
         Usage();
     }
 
@@ -455,16 +477,7 @@ main(int argc, char **argv)
     if (!quiet) {
         gl_printprogress = 1;
     }
-    P = ParseFile(argv[0]);
-    if (compile && argc > 1) {
-        if (gl_p2) {
-            appendToCmd("-2");
-        }
-        /* append the remaining arguments to the command line */
-        for (i = 1; i < argc; i++) {
-            appendToCmd(argv[i]);
-        }
-    }
+    P = ParseFile(target);
 
     if (outputFiles) {
         Module *Q;
@@ -544,6 +557,10 @@ main(int argc, char **argv)
                 appendToCmd("-o");
                 appendToCmd(binname);
                 appendToCmd(asmname);
+#ifdef WIN32
+                appendWithoutSpace("\"", 0);
+#endif                
+//DEBUG                fprintf(stderr, "running: [%s]\n", cmdline); fflush(stderr);
                 retval = system(cmdline);
                 if (retval < 0) {
                     fprintf(stderr, "Unable to run command: %s\n", cmdline);
