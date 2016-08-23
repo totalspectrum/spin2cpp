@@ -457,6 +457,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
                 flexbuf_printf(fb, "%swr", sepstring);
             }
         }
+#if 0        
+        if (ir->flags & FLAG_KEEP_INSTR) {
+            flexbuf_printf(fb, " '' (volatile)");
+        }
+#endif
         flexbuf_addstr(fb, "\n");
         return;
     }

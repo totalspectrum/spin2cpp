@@ -207,6 +207,12 @@ InstrSetsAnyFlags(IR *ir)
 }
 
 static bool
+InstrIsVolatile(IR *ir)
+{
+    return 0 != (ir->flags & FLAG_KEEP_INSTR);
+}
+
+static bool
 InstrUsesFlags(IR *ir, unsigned flags)
 {
     if (ir->cond != COND_TRUE && ir->cond != COND_FALSE) {
@@ -374,6 +380,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           return false;
       }
       if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
+          if (InstrIsVolatile(ir)) return false;
           return ir->cond == COND_TRUE;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
@@ -426,8 +433,6 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   for (ir = first_ir; ir; ir = ir->next) {
     if (ir->opc == OPC_DEAD) {
         if (ir->dst == orig) {
-            // FIXME: why is this necessary
-            //assignments_are_safe = false;
             return ir;
         }
     }
@@ -717,7 +722,7 @@ OptimizeMoves(IRList *irl)
         ir = irl->head;
         while (ir != 0) {
             ir_next = ir->next;
-            if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
+            if (ir->opc == OPC_MOV && ir->cond == COND_TRUE && !InstrIsVolatile(ir)) {
 	      if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
@@ -751,6 +756,9 @@ HasSideEffects(IR *ir)
         return true;
     }
     if (IsBranch(ir)) {
+      return true;
+    }
+    if (InstrIsVolatile(ir)) {
       return true;
     }
     switch (ir->opc) {
@@ -1160,6 +1168,7 @@ OptimizeCompares(IRList *irl)
             }
             else if (ir_prev
                 && !InstrSetsAnyFlags(ir_prev)
+                && !InstrIsVolatile(ir_prev)
                 && CanTestZero(ir_prev->opc))
             {
                 ir_prev->flags |= FLAG_WZ;

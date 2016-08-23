@@ -1897,6 +1897,45 @@ CompileCondResult(IRList *irl, AST *expr)
 }
 
 //
+// compile a masked fetch:
+//   (a & mask) | val
+// here a is expr->left, mask = expr->right->left, val = expr->right->right
+// note that this is marked volatile to prevent later optimization
+// useful for maniuplating groups of bits in OUTA and DIRA
+//
+static Operand *
+CompileMaskMove(IRList *irl, AST *expr)
+{
+    AST *destast = expr->left;
+    AST *maskast = expr->right->left;
+    AST *valast = expr->right->right;
+    Operand *tmp = NewFunctionTempRegister();
+    Operand *dest;
+    Operand *val = CompileExpression(irl, valast);
+    Operand *mask = CompileExpression(irl, maskast);
+    IR *ir;
+
+    switch(destast->kind) {
+    case AST_IDENTIFIER:
+        dest = CompileIdentifier(irl, destast);
+        break;
+    case AST_HWREG:
+        dest = CompileHWReg(irl, destast);
+        break;
+    default:
+        ERROR(expr, "Internal error, bad value  in MaskMove");
+        return tmp;
+    }
+    ir = EmitMove(irl, tmp, dest);
+    ir->flags |= FLAG_KEEP_INSTR;
+    ir = EmitOp2(irl, OPC_AND, tmp, mask);
+    ir->flags |= FLAG_KEEP_INSTR;
+    ir = EmitOp2(irl, OPC_OR, tmp, val);
+    ir->flags |= FLAG_KEEP_INSTR;
+    return tmp;
+}
+
+//
 // emit a load effective address
 //
 static void
@@ -2174,6 +2213,8 @@ CompileExpression(IRList *irl, AST *expr)
   switch (expr->kind) {
   case AST_CONDRESULT:
       return CompileCondResult(irl, expr);
+  case AST_MASKMOVE:
+      return CompileMaskMove(irl, expr);
   case AST_CATCH:
   {
       Operand *tmp;

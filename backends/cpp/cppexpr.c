@@ -1136,6 +1136,14 @@ PrintExpr(Flexbuf *f, AST *expr)
         PrintExprToplevel(f, expr->right->right);
         flexbuf_printf(f, ")");
         break;
+    case AST_MASKMOVE:
+        flexbuf_printf(f, "(");
+        PrintExprToplevel(f, expr->left);
+        flexbuf_printf(f, " & ");
+        PrintHexExpr(f, expr->right->left);
+        flexbuf_printf(f, ") | ");
+        PrintHexExpr(f, expr->right->right);
+        break;
     case AST_IDENTIFIER:
     case AST_HWREG:
     case AST_MEMREF:

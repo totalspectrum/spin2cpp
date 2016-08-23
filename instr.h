@@ -142,7 +142,11 @@ enum flags {
     FLAG_WC = 2,
     FLAG_NR = 4,
     FLAG_WR = 8,
-    
+
+    // not exactly an assembler feature, but should not
+    // be touched by the optimizer
+    FLAG_KEEP_INSTR = 0x80,
+
     // rest of the bits are used by the optimizer
 
     FLAG_LABEL_USED = 0x100,

@@ -133,6 +133,7 @@ enum astkind {
     AST_OPERAND,    /* used in ASM backend, ptr is operand */
 
     AST_ORGH = 92,
+    AST_MASKMOVE,
 };
 
 struct AST {

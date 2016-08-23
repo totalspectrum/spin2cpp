@@ -529,6 +529,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         if (!IsConstExpr(maskexpr)) {
             maskexpr = ReplaceExprWithVariable("mask_", maskexpr);
         }
+
+#if 0
         andexpr = AstOperator(T_SHL, maskexpr, loexpr);
         andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
@@ -539,6 +541,18 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = FoldIfConst(orexpr);
         orexpr = AstOperator('|', andexpr, orexpr);
 
+#else
+        andexpr = AstOperator(T_SHL, maskexpr, loexpr);
+        andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
+        andexpr = FoldIfConst(andexpr);
+
+        orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
+        orexpr = AstOperator(T_SHL, orexpr, loexpr);
+        orexpr = FoldIfConst(orexpr);
+        
+        orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
+      
+#endif        
         return AstAssign(T_ASSIGN, dst->left, orexpr);
     }
 }
