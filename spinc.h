@@ -63,6 +63,7 @@ extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
+extern int gl_compressed; /* if instructions should be compressed */
 
 /* types of output */
 #define OUTPUT_CPP  0

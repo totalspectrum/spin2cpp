@@ -3851,4 +3851,3 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     fwrite(asmcode, 1, strlen(asmcode), f);
     fclose(f);
 }
-

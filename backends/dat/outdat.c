@@ -11,6 +11,8 @@
 #include <errno.h>
 #include "spinc.h"
 
+int gl_compressed = 0;
+
 static void putbyte(Flexbuf *f, unsigned int x)
 {
     flexbuf_putc(x & 0xff, f);
@@ -139,6 +141,12 @@ outputLong(Flexbuf *f, uint32_t c)
         outputByte(f, (c & 0xff));
         c = c>>8;
     }
+}
+
+static void
+outputInstrLong(Flexbuf *f, uint32_t c)
+{
+    outputLong(f, c);
 }
 
 static void
@@ -381,7 +389,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     ast = ast->left;
     
     /* make sure it is aligned */
-    if (!gl_p2) {
+    if (!gl_p2 && !gl_compressed) {
         while ((datacount % 4) != 0) {
             outputByte(f, 0);
         }
@@ -568,7 +576,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
         augval |= (src >> 9) & 0x007fffff;
         augval |= 0x0f000000; // AUGS
         src &= 0x1ff;
-        outputLong(f, augval);
+        outputInstrLong(f, augval);
         immmask &= ~BIG_IMM_SRC;
     }
     if (immmask & BIG_IMM_DST) {
@@ -576,7 +584,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
         augval |= (dst >> 9) & 0x007fffff;
         augval |= 0x0f800000; // AUGD
         dst &= 0x1ff;
-        outputLong(f, augval);
+        outputInstrLong(f, augval);
         immmask &= ~BIG_IMM_DST;
     }
     if (src > 511) {
@@ -590,7 +598,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
 instr_ok:
     val = val | (dst << 9) | src | immmask;
     /* output the instruction */
-    outputLong(f, val);
+    outputInstrLong(f, val);
 }
 
 void
