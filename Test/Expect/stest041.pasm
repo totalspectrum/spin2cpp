@@ -5,14 +5,14 @@ DAT
 entry
 
 _count1
-	mov	_var_00, #5
+	mov	_var_01, #5
 L__0001
 	xor	OUTA, #2
-	djnz	_var_00, #L__0001
+	djnz	_var_01, #L__0001
 _count1_ret
 	ret
 
-_var_00
+_var_01
 	long	0
 arg1
 	long	0

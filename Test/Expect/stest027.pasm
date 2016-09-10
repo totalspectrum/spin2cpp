@@ -5,13 +5,13 @@ DAT
 entry
 
 _hyp
-	mov	_var_y, arg2
+	mov	_var_02, arg2
 	mov	muldiva_, arg1
 	mov	muldivb_, arg1
 	call	#multiply_
 	mov	_tmp002_, muldiva_
-	mov	muldiva_, _var_y
-	mov	muldivb_, _var_y
+	mov	muldiva_, _var_02
+	mov	muldivb_, _var_02
 	call	#multiply_
 	add	_tmp002_, muldiva_
 	mov	result1, _tmp002_
@@ -41,7 +41,7 @@ multiply__ret
 
 _tmp002_
 	long	0
-_var_y
+_var_02
 	long	0
 arg1
 	long	0

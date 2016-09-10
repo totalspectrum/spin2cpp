@@ -616,7 +616,7 @@ TransformConstDst(IR *ir, Operand *imm)
   intptr_t val1, val2;
   int setsResult = 1;
 
-  if (ir->src->kind != IMM_INT || imm->kind != IMM_INT)
+  if (ir->src == NULL || ir->src->kind != IMM_INT || imm->kind != IMM_INT)
     {
       return 0;
     }

@@ -5,18 +5,18 @@ DAT
 entry
 
 _divmod16
-	mov	_var_x, arg1
-	mov	_var_y, arg2
-	mov	muldiva_, _var_x
-	mov	muldivb_, _var_y
+	mov	_var_01, arg1
+	mov	_var_02, arg2
+	mov	muldiva_, _var_01
+	mov	muldivb_, _var_02
 	call	#divide_
-	mov	_var_00, muldivb_
-	mov	muldiva_, _var_x
-	mov	muldivb_, _var_y
+	mov	_var_03, muldivb_
+	mov	muldiva_, _var_01
+	mov	muldivb_, _var_02
 	call	#divide_
-	shl	_var_00, #16
-	or	_var_00, muldiva_
-	mov	result1, _var_00
+	shl	_var_03, #16
+	or	_var_03, muldiva_
+	mov	result1, _var_03
 _divmod16_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -46,11 +46,11 @@ divide__ret
 DIVCNT
 	long	0
 
-_var_00
+_var_01
 	long	0
-_var_x
+_var_02
 	long	0
-_var_y
+_var_03
 	long	0
 arg1
 	long	0

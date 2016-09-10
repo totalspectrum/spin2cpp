@@ -6,9 +6,9 @@ entry
 
 _test
 L__0001
-	mov	_var_00, INA
-	sar	_var_00, #1
-	and	_var_00, #1 wz
+	mov	_var_01, INA
+	sar	_var_01, #1
+	and	_var_01, #1 wz
  if_ne	jmp	#L__0002
 	mov	_tmp001_, INA
 	sar	_tmp001_, #2
@@ -22,7 +22,7 @@ _test_ret
 
 _tmp001_
 	long	0
-_var_00
+_var_01
 	long	0
 arg1
 	long	0
