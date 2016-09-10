@@ -77,6 +77,7 @@ static void EmitDebugComment(IRList *irl, AST *ast);
 typedef struct AsmVariable {
     Operand *op;
     intptr_t val;
+    size_t count; // number of reps of "value"
 } AsmVariable;
 
 // global variables in COG memory (really holds struct AsmVariables)
@@ -144,7 +145,7 @@ ValidateStackptr(void)
         if (HUB_DATA || gl_p2) {
             stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
             if (gl_p2) {
-                stackptr = GetGlobal(REG_HW, "ptra", 0);
+                stackptr = GetOneGlobal(REG_HW, "ptra", 0);
             } else {
                 stackptr = NewImmediatePtr("sp", stacklabel);
             }
@@ -163,15 +164,15 @@ ValidateAbortFuncs(void)
     if (!abortfunc) {
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
-        abortcalled = GetGlobal(REG_REG, "result2", 0);
+        abortcalled = GetOneGlobal(REG_REG, "result2", 0);
         if (!result1) {
-            result1 = GetGlobal(REG_REG, "result1", 0);
+            result1 = GetOneGlobal(REG_REG, "result1", 0);
         }
         if (!arg1) {
-            arg1 = GetGlobal(REG_ARG, "arg1", 0);
+            arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
         }
         if (!frameptr) {
-            frameptr = GetGlobal(REG_REG, "fp", 0);
+            frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
         ValidateStackptr();
         ValidateObjbase();
@@ -184,7 +185,7 @@ static int IsMemRef(Operand *op)
 }
 
 static Operand *
-GetVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value)
+GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value, int count)
 {
   size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
   size_t i;
@@ -192,22 +193,34 @@ GetVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t value)
   AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
   for (i = 0; i < siz; i++) {
     if (strcmp(name, g[i].op->name) == 0) {
+        if (g[i].val != value) {
+            ERROR(NULL, "Internal error, redefining value of %s", name);
+        }
+        if (g[i].count < count) {
+            g[i].count = count;
+        }
       return g[i].op;
     }
   }
   tmp.op = NewOperand(kind, name, value);
   tmp.val = value;
+  tmp.count = count;
   flexbuf_addmem(fb, (const char *)&tmp, sizeof(tmp));
   return tmp.op;
 }
 
-Operand *GetGlobal(Operandkind kind, const char *name, intptr_t value)
+Operand *GetOneGlobal(Operandkind kind, const char *name, intptr_t value)
 {
-    return GetVar(&cogGlobalVars, kind, name, value);
+    return GetSizedVar(&cogGlobalVars, kind, name, value, 1);
 }
-Operand *GetHub(Operandkind kind, const char *name, intptr_t value)
+Operand *GetSizedGlobal(Operandkind kind, const char *name, intptr_t value, int size)
 {
-    return GetVar(&hubGlobalVars, kind, name, value);
+    return GetSizedVar(&cogGlobalVars, kind, name, value, size);
+}
+
+Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value)
+{
+    return GetSizedVar(&hubGlobalVars, kind, name, value, 1);
 }
 
 Instruction *
@@ -616,7 +629,7 @@ NewImmediate(int32_t val)
     return NewOperand(IMM_INT, "", (int32_t)val);
   }
   sprintf(temp, "imm_%u_", (unsigned)val);
-  return GetGlobal(IMM_INT, strdup(temp), (int32_t)val);
+  return GetOneGlobal(IMM_INT, strdup(temp), (int32_t)val);
 }
 
 Operand *
@@ -628,9 +641,9 @@ NewImmediatePtr(const char *name, Operand *val)
         name = strdup(temp);
     }
     if (val->kind == IMM_COG_LABEL) {
-        return GetGlobal(REG_COGPTR, name, (intptr_t)val);
+        return GetOneGlobal(REG_COGPTR, name, (intptr_t)val);
     } else {
-        return GetGlobal(REG_HUBPTR, name, (intptr_t)val);
+        return GetOneGlobal(REG_HUBPTR, name, (intptr_t)val);
     }
 }
 
@@ -647,7 +660,7 @@ GetFunctionTempRegister(Function *f, int n)
   } else {
       snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->basename, f->name, n);
   }
-  return GetGlobal(REG_LOCAL, strdup(buf), 0);
+  return GetOneGlobal(REG_LOCAL, strdup(buf), 0);
 }
 
 Operand *
@@ -702,7 +715,7 @@ static Operand *
 FrameRef(int offset)
 {
     if (!frameptr) {
-        frameptr = GetGlobal(REG_REG, "fp", 0);
+        frameptr = GetOneGlobal(REG_REG, "fp", 0);
     }
     if (COG_DATA) {
         return CogMemRef(frameptr, offset / LONG_SIZE);
@@ -773,7 +786,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           if (COG_DATA) {
               // COG memory
               size = ArrayTypeSize((AST *)sym->val);
-              return GetGlobal(REG_REG, IdentifierGlobalName(P, sym->name), size);
+              return GetSizedGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0, size);
           } else {
               // HUB memory
               return TypedHubMemRef((AST *)sym->val, objbase, (int)sym->offset);
@@ -805,14 +818,14 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               }
           }
           size = ArrayTypeSize((AST *)sym->val);
-          return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), size);
+          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       }
   } else {
       ERROR_UNKNOWN_SYMBOL(expr);
   }
-  return GetGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+  return GetOneGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
 }
 
 //
@@ -824,7 +837,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
     if (IS_FAST_CALL(func)) {
         char temp[20];
         sprintf(temp, "arg%d", n+1);
-        return GetGlobal(REG_ARG, strdup(temp), 0);
+        return GetOneGlobal(REG_ARG, strdup(temp), 0);
     } else {
         AST *astlist = func->params;
         AST *ast;
@@ -847,7 +860,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
             --n;
         }
         ERROR(NULL, "Too many parameters to function %s", func->name);
-        return GetGlobal(REG_ARG, "dummyArg", 0);
+        return GetOneGlobal(REG_ARG, "dummyArg", 0);
     }
 }
 
@@ -993,7 +1006,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         // adjust stack as necessary
         //
         if (!frameptr) {
-            frameptr = GetGlobal(REG_REG, "fp", 0);
+            frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
         EmitPush(irl, frameptr);
         EmitMove(irl, frameptr, stackptr);
@@ -1077,7 +1090,7 @@ Operand *
 CompileHWReg(IRList *irl, AST *expr)
 {
   HwReg *hw = (HwReg *)expr->d.ptr;
-  return GetGlobal(REG_HW, hw->cname, 0);
+  return GetOneGlobal(REG_HW, hw->cname, 0);
 }
 
 static int isPowerOf2(unsigned x)
@@ -1167,8 +1180,8 @@ CompileMul(IRList *irl, AST *expr, int gethi)
   }
   if (!mulfunc) {
     mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
-    mula = GetGlobal(REG_ARG, "muldiva_", 0);
-    mulb = GetGlobal(REG_ARG, "muldivb_", 0);
+    mula = GetOneGlobal(REG_ARG, "muldiva_", 0);
+    mulb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
   EmitMove(irl, mula, lhs);
   EmitMove(irl, mulb, rhs);
@@ -1190,8 +1203,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
 
   if (!divfunc) {
     divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
-    diva = GetGlobal(REG_ARG, "muldiva_", 0);
-    divb = GetGlobal(REG_ARG, "muldivb_", 0);
+    diva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+    divb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
   EmitMove(irl, diva, lhs);
   EmitMove(irl, divb, rhs);
@@ -1762,7 +1775,7 @@ CompileFunccall(IRList *irl, AST *expr)
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  result = GetGlobal(REG_REG, "result1", 0);
+  result = GetOneGlobal(REG_REG, "result1", 0);
   reg = NewFunctionTempRegister();
   EmitMove(irl, reg, result);
   return reg;
@@ -2294,7 +2307,7 @@ CompileExpression(IRList *irl, AST *expr)
       }
       return NewImmediate(expr->d.string[0]);
   case AST_STRINGPTR:
-      r = GetHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
+      r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
       return NewImmediatePtr(NULL, r);
   case AST_ARRAYREF:
   {
@@ -2714,7 +2727,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
 	if (retval) {
 	    op = CompileExpression(irl, retval);
-	    result = GetGlobal(REG_REG, "result1", 0);
+	    result = GetOneGlobal(REG_REG, "result1", 0);
             EmitMove(irl, result, op);
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
@@ -2919,9 +2932,9 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
           EmitLong(irl, g[i].val);
           break;
       default:
-          varsize = g[i].val / LONG_SIZE;
+          varsize = g[i].count / LONG_SIZE;
           if (varsize <= 1) {
-              EmitLong(irl, 0);
+              EmitLong(irl, g[i].val);
           } else {
               /* normally ir->src is NULL for OPC_LONG, but in this
                  case (an array definition) it is a count */
@@ -3491,9 +3504,9 @@ EmitBuiltins(IRList *irl)
             loop = NewOperand(IMM_STRING, builtin_mul_p1, 0);
         }
         EmitOp1(irl, OPC_LITERAL, loop);
-        (void)GetGlobal(REG_REG, "itmp1_", 0);
-        (void)GetGlobal(REG_REG, "itmp2_", 0);
-        (void)GetGlobal(REG_REG, "result1", 0);
+        (void)GetOneGlobal(REG_REG, "itmp1_", 0);
+        (void)GetOneGlobal(REG_REG, "itmp2_", 0);
+        (void)GetOneGlobal(REG_REG, "result1", 0);
     }
     if (divfunc) {
         Operand *loop;
@@ -3504,9 +3517,9 @@ EmitBuiltins(IRList *irl)
             loop = NewOperand(IMM_STRING, builtin_div_p1, 0);
         }
         EmitOp1(irl, OPC_LITERAL, loop);
-        (void)GetGlobal(REG_REG, "itmp1_", 0);
-        (void)GetGlobal(REG_REG, "itmp2_", 0);
-        (void)GetGlobal(REG_REG, "result1", 0);
+        (void)GetOneGlobal(REG_REG, "itmp1_", 0);
+        (void)GetOneGlobal(REG_REG, "itmp2_", 0);
+        (void)GetOneGlobal(REG_REG, "result1", 0);
     }
     if (abortfunc) {
         Operand *loop;
@@ -3520,7 +3533,7 @@ EmitBuiltins(IRList *irl)
         if (COG_CODE) {
             // abort saves the pc, which we don't have in COG mode, so
             // add a dummy pc register
-            (void)GetGlobal(REG_REG, "pc", 0);
+            (void)GetOneGlobal(REG_REG, "pc", 0);
         }
     }
     if (putcogreg) {
@@ -3667,7 +3680,7 @@ EmitMain_P1(IRList *irl, Module *P)
     Operand *pc = NewOperand(REG_REG, "pc", 0);
     Operand *objptr = NewOperand(REG_REG, "objptr", 0);
     
-    arg1 = GetGlobal(REG_ARG, "arg1", 0);
+    arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
     firstfunc = P->functions;
     if (!firstfunc) {
         return;  // no functions at all
@@ -3679,7 +3692,7 @@ EmitMain_P1(IRList *irl, Module *P)
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
-    ir = EmitMove(irl, arg1, GetGlobal(REG_HW, "par", 0));
+    ir = EmitMove(irl, arg1, GetOneGlobal(REG_HW, "par", 0));
     ir->flags |= FLAG_WZ;
 
     if (HUB_CODE) {
@@ -3720,7 +3733,7 @@ EmitMain_P2(IRList *irl, Module *P)
     Function *firstfunc;
     const char *firstfuncname;
     
-    arg1 = GetGlobal(REG_ARG, "arg1", 0);
+    arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
     firstfunc = P->functions;
     if (!firstfunc) {
         return;  // no functions at all

@@ -49,7 +49,7 @@ _tmp004_
 _tmp005_
 	long	0
 _var_a
-	long	0
+	long	0[10]
 _var_i
 	long	0
 _var_sum
