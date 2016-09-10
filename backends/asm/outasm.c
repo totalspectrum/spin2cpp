@@ -102,9 +102,9 @@ IdentifierLocalName(Function *func, const char *name)
     if (func->is_leaf) {
         // leaf functions can share a set of local variables
         Symbol *s = FindSymbol(&func->localsyms, name);
-        if (s && 0 &&
+        if (s &&
             (s->type == SYM_LOCALVAR || s->type == SYM_RESULT || s->type == SYM_TEMPVAR)) {
-            snprintf(temp, sizeof(temp)-1, "_var_%02d", s->offset);
+            snprintf(temp, sizeof(temp)-1, "_var_%02d", s->offset / 4);
         } else {
             snprintf(temp, sizeof(temp)-1, "_var_%s", name);
         }

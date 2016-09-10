@@ -6,13 +6,13 @@ entry
 
 _ismagic
 	cmps	arg1, #511 wz
- if_e	mov	_var_a, #1
- if_ne	mov	_var_a, #0
-	mov	result1, _var_a
+ if_e	mov	_var_00, #1
+ if_ne	mov	_var_00, #0
+	mov	result1, _var_00
 _ismagic_ret
 	ret
 
-_var_a
+_var_00
 	long	0
 arg1
 	long	0

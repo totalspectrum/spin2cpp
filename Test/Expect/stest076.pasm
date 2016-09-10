@@ -5,19 +5,19 @@ DAT
 entry
 
 _shiftout
-	mov	_var__mask_0001, #1
-	shl	_var__mask_0001, arg2
-	mov	_var__idx__0002, #8
+	mov	_var_00, #1
+	shl	_var_00, arg2
+	mov	_var_01, #8
 L__0003
 	shr	arg1, #1 wc
-	muxc	OUTA, _var__mask_0001
-	djnz	_var__idx__0002, #L__0003
+	muxc	OUTA, _var_00
+	djnz	_var_01, #L__0003
 _shiftout_ret
 	ret
 
-_var__idx__0002
+_var_00
 	long	0
-_var__mask_0001
+_var_01
 	long	0
 arg1
 	long	0

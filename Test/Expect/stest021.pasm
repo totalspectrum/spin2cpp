@@ -5,15 +5,15 @@ DAT
 entry
 
 _waitcycles
-	mov	_var_end, CNT
-	add	_var_end, arg1
+	mov	_var_00, CNT
+	add	_var_00, arg1
 L__0001
-	cmps	CNT, _var_end wc,wz
+	cmps	CNT, _var_00 wc,wz
  if_b	jmp	#L__0001
 _waitcycles_ret
 	ret
 
-_var_end
+_var_00
 	long	0
 arg1
 	long	0

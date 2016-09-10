@@ -5,12 +5,12 @@ DAT
 entry
 
 _demo
-	mov	_var__idx__0001, #7
+	mov	_var_00, #7
 L__0002
 	mov	arg1, imm_40000000_
 	add	arg1, CNT
 	waitcnt	arg1, #0
-	djnz	_var__idx__0001, #L__0002
+	djnz	_var_00, #L__0002
 L__0005
 	jmp	#L__0005
 _demo_ret
@@ -29,7 +29,7 @@ _PauseABit
 _PauseABit_ret
 	ret
 
-_var__idx__0001
+_var_00
 	long	0
 arg1
 	long	0

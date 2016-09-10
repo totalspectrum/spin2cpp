@@ -10,13 +10,13 @@ _divmod16
 	mov	muldiva_, _var_x
 	mov	muldivb_, _var_y
 	call	#divide_
-	mov	_var_q, muldivb_
+	mov	_var_00, muldivb_
 	mov	muldiva_, _var_x
 	mov	muldivb_, _var_y
 	call	#divide_
-	shl	_var_q, #16
-	or	_var_q, muldiva_
-	mov	result1, _var_q
+	shl	_var_00, #16
+	or	_var_00, muldiva_
+	mov	result1, _var_00
 _divmod16_ret
 	ret
 ' code originally from spin interpreter, modified slightly
@@ -46,7 +46,7 @@ divide__ret
 DIVCNT
 	long	0
 
-_var_q
+_var_00
 	long	0
 _var_x
 	long	0

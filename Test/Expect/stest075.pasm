@@ -5,17 +5,17 @@ DAT
 entry
 
 _mul
-	mov	_var_r1, #0
+	mov	_var_00, #0
 L__0001
 	shr	arg2, #1 wc,wz
- if_c	add	_var_r1, arg1
+ if_c	add	_var_00, arg1
 	shl	arg1, #1
  if_ne	jmp	#L__0001
-	mov	result1, _var_r1
+	mov	result1, _var_00
 _mul_ret
 	ret
 
-_var_r1
+_var_00
 	long	0
 arg1
 	long	0

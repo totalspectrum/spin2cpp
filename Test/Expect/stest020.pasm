@@ -5,20 +5,17 @@ DAT
 entry
 
 _simplemul
-	mov	_var_i, #0
-	mov	_var_r, #0
+	mov	_var_00, #0
 L__0001
-	cmps	_var_i, arg1 wc,wz
- if_b	add	_var_r, arg2
- if_b	add	_var_i, #1
+	cmps	_var_00, arg1 wc,wz
+ if_b	add	_var_00, arg2
+ if_b	add	_var_00, #1
  if_b	jmp	#L__0001
-	mov	result1, _var_r
+	mov	result1, _var_00
 _simplemul_ret
 	ret
 
-_var_i
-	long	0
-_var_r
+_var_00
 	long	0
 arg1
 	long	0
