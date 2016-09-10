@@ -100,7 +100,13 @@ IdentifierLocalName(Function *func, const char *name)
     Module *P = func->module;
     if (func->is_leaf) {
         // leaf functions can share a set of local variables
-        snprintf(temp, sizeof(temp)-1, "_var_%s", name);
+        Symbol *s = FindSymbol(&func->localsyms, name);
+        if (s && 0 &&
+            (s->type == SYM_LOCALVAR || s->type == SYM_RESULT || s->type == SYM_TEMPVAR)) {
+            snprintf(temp, sizeof(temp)-1, "_var_%02d", s->offset);
+        } else {
+            snprintf(temp, sizeof(temp)-1, "_var_%s", name);
+        }
     } else if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
     } else {
