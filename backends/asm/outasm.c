@@ -2957,7 +2957,6 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
           if (varsize <= 1) {
               EmitLong(irl, g[i].val);
           } else {
-              ERROR(NULL, "internal error, bad count for OPC_LONG");
               /* normally ir->src is NULL for OPC_LONG, but in this
                  case (an array definition) it is a count */
               EmitOp2(irl, OPC_LONG, NewOperand(IMM_INT, "", 0),
