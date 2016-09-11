@@ -17,16 +17,6 @@ L__0005
 _blink_ret
 	ret
 
-_tmp002_
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 ptr__dat__
 	long	@@@_dat_
 result1
@@ -38,4 +28,14 @@ _dat_
 	long	$11223344
 	long	@@@_dat_ + 4
 	org	COG_BSS_START
+_tmp002_
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496

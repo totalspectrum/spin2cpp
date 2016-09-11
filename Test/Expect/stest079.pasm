@@ -27,25 +27,25 @@ L__0006
 _str_ret
 	ret
 
-_str_c
-	long	0
-_str_s
-	long	0
-_var_02
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 result1
-	long	0
-str_tmp001_
 	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
+_str_c
+	res	1
+_str_s
+	res	1
+_var_02
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
+str_tmp001_
+	res	1
 	fit	496

@@ -29,14 +29,6 @@ _substest01_add
 _substest01_add_ret
 	ret
 
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 objptr
 	long	@@@objmem
 result1
@@ -46,4 +38,12 @@ COG_BSS_START
 objmem
 	res	3
 	org	COG_BSS_START
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496

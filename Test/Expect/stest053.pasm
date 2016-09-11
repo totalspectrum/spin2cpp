@@ -29,20 +29,6 @@ L__0002
 _serchar_ret
 	ret
 
-_serchar__idx__0001
-	long	0
-_serchar_val
-	long	0
-_serchar_waitcycles
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 imm_1073741824_
 	long	1073741824
 imm_694_
@@ -52,4 +38,18 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
+_serchar__idx__0001
+	res	1
+_serchar_val
+	res	1
+_serchar_waitcycles
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496

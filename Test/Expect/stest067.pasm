@@ -34,18 +34,6 @@ L__0001
 _fibo_ret
 	ret
 
-_fibo_x
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
-fibo_tmp004_
-	long	0
 result1
 	long	0
 sp
@@ -55,4 +43,16 @@ COG_BSS_START
 stackspace
 	res	1
 	org	COG_BSS_START
+_fibo_x
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
+fibo_tmp004_
+	res	1
 	fit	496

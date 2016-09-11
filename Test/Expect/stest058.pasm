@@ -14,16 +14,6 @@ _func
 _func_ret
 	ret
 
-_tmp002_
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 objptr
 	long	@@@objmem
 result1
@@ -33,4 +23,14 @@ COG_BSS_START
 objmem
 	res	4
 	org	COG_BSS_START
+_tmp002_
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496

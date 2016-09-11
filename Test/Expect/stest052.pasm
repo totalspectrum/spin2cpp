@@ -9,14 +9,6 @@ _foo
 _foo_ret
 	ret
 
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 ptr_L__0001_
 	long	@@@L__0001
 result1
@@ -28,4 +20,12 @@ L__0001
 	byte	"hello"
 	byte	0
 	org	COG_BSS_START
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496

@@ -103,25 +103,25 @@ mul_lp_
 multiply__ret
 	ret
 
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 itmp1_
 	long	0
 itmp2_
-	long	0
-muldiva_
-	long	0
-muldivb_
 	long	0
 result1
 	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
+muldiva_
+	res	1
+muldivb_
+	res	1
 	fit	496

@@ -2911,15 +2911,16 @@ static int gcmpfunc(const void *a, const void *b)
 #define SORT_ALPHABETICALLY 1
 #define NO_SORT 0
 
-static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
+static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int flags)
 {
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
     AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
     int varsize;
-    
+    int alphaSort = flags & SORT_ALPHABETICALLY;
+
     if (siz > 0) {
-      EmitNewline(irl);
+      EmitNewline(datairl);
     }
     /* sort the global variables */
     if (alphaSort) {
@@ -2937,39 +2938,49 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       }
       switch(g[i].op->kind) {
       case STRING_DEF:
-          EmitLabel(irl, g[i].op);
-          EmitString(irl, (AST *)g[i].val);
+          EmitLabel(datairl, g[i].op);
+          EmitString(datairl, (AST *)g[i].val);
           break;
       case IMM_COG_LABEL:
       case IMM_HUB_LABEL:
       case REG_HUBPTR:
       case REG_COGPTR:
-          EmitLabel(irl, g[i].op);
-          EmitLongPtr(irl, (Operand *)g[i].op->val);
+          EmitLabel(datairl, g[i].op);
+          EmitLongPtr(datairl, (Operand *)g[i].op->val);
           break;
       case IMM_INT:
-          EmitLabel(irl, g[i].op);
-          EmitLong(irl, g[i].val);
+          EmitLabel(datairl, g[i].op);
+          EmitLong(datairl, g[i].val);
           break;
+      case REG_ARG:
+      case REG_LOCAL:
+	  if (bssirl != NULL) {
+   	      EmitLabel(bssirl, g[i].op);
+	      varsize = g[i].count / LONG_SIZE;
+	      if (varsize == 0) varsize = 1;
+	      EmitReserve(bssirl, varsize);
+	      break;
+	  }
+	  // otherwise fall through
       default:
-          EmitLabel(irl, g[i].op);
+          EmitLabel(datairl, g[i].op);
           varsize = g[i].count / LONG_SIZE;
           if (varsize <= 1) {
-              EmitLong(irl, g[i].val);
+              EmitLong(datairl, g[i].val);
           } else {
               /* normally ir->src is NULL for OPC_LONG, but in this
                  case (an array definition) it is a count */
-              EmitOp2(irl, OPC_LONG, NewOperand(IMM_INT, "", 0),
+              EmitOp2(datairl, OPC_LONG, NewOperand(IMM_INT, "", 0),
                       NewOperand(IMM_INT, "", varsize));
           }
           break;
       }
     }
 }
-static void EmitGlobals(IRList *cogdata, IRList *hubdata)
+static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 {
-    EmitAsmVars(&cogGlobalVars, cogdata, SORT_ALPHABETICALLY);
-    EmitAsmVars(&hubGlobalVars, hubdata, NO_SORT);
+    EmitAsmVars(&cogGlobalVars, cogdata, cogbss, SORT_ALPHABETICALLY);
+    EmitAsmVars(&hubGlobalVars, hubdata, NULL, NO_SORT);
 }
 
 #define VISITFLAG_COMPILEIR     0x01230001
@@ -3795,6 +3806,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     memset(&hubdata, 0, sizeof(hubdata));
     memset(&cogbss, 0, sizeof(cogbss));
     
+    EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
     CompileConsts(&cogcode, P->conblock);
 
     // output the main stub
@@ -3852,10 +3864,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     OptimizeIRGlobal(&cogcode);
 
     // cog data
-    EmitGlobals(&cogdata, &hubdata);
+    EmitGlobals(&cogdata, &cogbss, &hubdata);
 
     // COG bss
-    EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
     // FCACHE space
     if (HUB_CODE) {
         EmitNamedCogLabel(&cogbss, "LMM_RET");

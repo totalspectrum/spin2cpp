@@ -44,29 +44,29 @@ divide__ret
 DIVCNT
 	long	0
 
-_ez_pulse_in_r
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 imm_1000000_
 	long	1000000
 itmp1_
 	long	0
 itmp2_
 	long	0
-muldiva_
-	long	0
-muldivb_
-	long	0
 result1
 	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
+_ez_pulse_in_r
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
+muldiva_
+	res	1
+muldivb_
+	res	1
 	fit	496

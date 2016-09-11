@@ -38,30 +38,6 @@ wrcog
 wrcog_ret
     ret
 
-_tmp001_
-	long	0
-_tmp002_
-	long	0
-_tmp003_
-	long	0
-_tmp004_
-	long	0
-_tmp005_
-	long	0
-_var_01
-	long	0[10]
-_var_11
-	long	0
-_var_12
-	long	0
-arg1
-	long	0
-arg2
-	long	0
-arg3
-	long	0
-arg4
-	long	0
 objptr
 	long	@@@objmem
 result1
@@ -71,4 +47,28 @@ COG_BSS_START
 objmem
 	res	10
 	org	COG_BSS_START
+_tmp001_
+	res	1
+_tmp002_
+	res	1
+_tmp003_
+	res	1
+_tmp004_
+	res	1
+_tmp005_
+	res	1
+_var_01
+	res	10
+_var_11
+	res	1
+_var_12
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
 	fit	496
