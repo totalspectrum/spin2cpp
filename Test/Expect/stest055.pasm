@@ -23,9 +23,12 @@ ptr__dat__
 	long	@@@_dat_
 result1
 	long	0
+COG_BSS_START
 	fit	496
 	long
 _dat_
 	long	$11223344
 	long	$55667788
 	long	$99aabbcc
+	org	COG_BSS_START
+	fit	496

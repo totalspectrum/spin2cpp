@@ -29,4 +29,7 @@ start_tmp002_
 	long	0
 start_tmp003_
 	long	0
+COG_BSS_START
+	fit	496
+	org	COG_BSS_START
 	fit	496

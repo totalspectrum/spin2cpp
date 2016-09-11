@@ -28,6 +28,7 @@
 static IRList cogcode;
 static IRList hubcode;
 static IRList cogdata;
+static IRList cogbss;
 static IRList hubdata;
 
 static Operand *mulfunc, *mula, *mulb;
@@ -522,6 +523,11 @@ static IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 void EmitLabel(IRList *irl, Operand *op)
 {
   EmitOp1(irl, OPC_LABEL, op);
+}
+
+void EmitNamedCogLabel(IRList *irl, const char *name)
+{
+    EmitLabel(irl, NewOperand(IMM_COG_LABEL, name, 0));
 }
 
 // create a new temporary label name
@@ -3397,14 +3403,10 @@ static const char *builtin_lmm_p1 =
     "    jmp LMM_RET\n"
     "LMM_ADDR\n"
     "    long 0\n"
-    "LMM_RET\n"
-    "    long 0\n"
     "ADDR\n"
     "    long 0\n"
     "COUNT\n"
     "    long 0\n"
-    "LMM_FCACHE_START\n"
-    "    long 0[65]\n"
     ;
 
 static const char *builtin_lmm_p2 =
@@ -3773,6 +3775,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     Module *save;
     IR *orgh;
     Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
+    Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
+
     unsigned int clkfreq, clkreg;
     const char *asmcode;
     
@@ -3783,6 +3787,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     memset(&hubcode, 0, sizeof(hubcode));
     memset(&cogdata, 0, sizeof(cogdata));
     memset(&hubdata, 0, sizeof(hubdata));
+    memset(&cogbss, 0, sizeof(cogbss));
     
     CompileConsts(&cogcode, P->conblock);
 
@@ -3824,7 +3829,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     CompileToIR_internal(&cogcode, globalModule);
     
     // now copy the hub code into place
-    orgh = EmitOp0(&cogcode, OPC_ORGH);
+    orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     if (gl_p2) {
         // on P2, make room for CLKFREQ and CLKMODE
         if (!GetClkFreq(P, &clkfreq, &clkreg)) {
@@ -3843,6 +3848,16 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // cog data
     EmitGlobals(&cogdata, &hubdata);
 
+    // COG bss
+    EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
+    // FCACHE space
+    if (HUB_CODE) {
+        EmitNamedCogLabel(&cogbss, "LMM_RET");
+        EmitReserve(&cogbss, 1);
+        EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
+        EmitReserve(&cogbss, gl_fcache_size+1);
+    }
+              
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
 
@@ -3861,10 +3876,17 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
 
     // now insert the cog data after the cog code, before the orgh
+    EmitLabel(&cogdata, cog_bss_start);
+    EmitOp0(&cogdata, OPC_FIT);
+    
+    EmitOp0(&cogbss, OPC_FIT);
     InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
+    
     // and the hub data at the end
     AppendIR(&cogcode, hubdata.head);
-    
+    // now the cog bss (which doesn't need any actual space
+    AppendIR(&cogcode, cogbss.head);
+
     // and assemble the result
     asmcode = IRAssemble(&cogcode);
     

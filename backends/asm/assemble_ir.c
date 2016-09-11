@@ -535,8 +535,15 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         // data is in a string in src
         OutputBlob(fb, ir->dst, ir->src);
         break;
-    case OPC_ORGH:
+    case OPC_FIT:
         flexbuf_addstr(fb, "\tfit\t496\n");
+        break;
+    case OPC_ORG:
+        flexbuf_printf(fb, "\torg\t");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_printf(fb, "\n");
+        break;
+    case OPC_HUBMODE:
         if (gl_p2) {
             flexbuf_addstr(fb, "\torgh\t$800\n");
         }

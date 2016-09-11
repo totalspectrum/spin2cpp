@@ -39,6 +39,7 @@ ptr__dat__
 	long	@@@_dat_
 result1
 	long	0
+COG_BSS_START
 	fit	496
 	long
 _dat_
@@ -58,3 +59,5 @@ _dat_
 	long	$00000000
 	long	$00000000
 	long	$00000000
+	org	COG_BSS_START
+	fit	496

@@ -1,3 +1,9 @@
+Version 3.1.3
+
+- Use "res" for FCACHE space
+- Fix bug involving local variables that are arrays
+- Improve re-use of variable memory
+
 Version 3.1.2
 
 - Use "res" instead of "long" to define the object block

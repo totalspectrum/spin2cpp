@@ -23,6 +23,9 @@ objptr
 	long	@@@objmem
 result1
 	long	0
+COG_BSS_START
 	fit	496
 objmem
 	res	8
+	org	COG_BSS_START
+	fit	496

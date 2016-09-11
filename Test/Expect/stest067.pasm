@@ -50,6 +50,9 @@ result1
 	long	0
 sp
 	long	@@@stackspace
+COG_BSS_START
 	fit	496
 stackspace
 	res	1
+	org	COG_BSS_START
+	fit	496

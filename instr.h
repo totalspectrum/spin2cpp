@@ -87,8 +87,16 @@ typedef enum IROpcode {
     /* place non-instructions below here */
 
     /* switch to hub mode */
-    OPC_ORGH,
+    OPC_HUBMODE,
 
+    /* reset assembler ORG counter; this will only work properly in
+       restricted circumstances
+    */
+    OPC_ORG,
+
+    /* make sure code fits in a specific size */
+    OPC_FIT,
+    
     /* a literal string to place in the output */
     OPC_LITERAL,
 
