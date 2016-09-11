@@ -2908,6 +2908,9 @@ static int gcmpfunc(const void *a, const void *b)
   return strcmp(ga->op->name, gb->op->name);
 }
 
+#define SORT_ALPHABETICALLY 1
+#define NO_SORT 0
+
 static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
 {
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
@@ -2932,25 +2935,29 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       if (g[i].op->kind == REG_HW) {
 	continue;
       }
-      EmitLabel(irl, g[i].op);
       switch(g[i].op->kind) {
       case STRING_DEF:
+          EmitLabel(irl, g[i].op);
           EmitString(irl, (AST *)g[i].val);
           break;
       case IMM_COG_LABEL:
       case IMM_HUB_LABEL:
       case REG_HUBPTR:
       case REG_COGPTR:
+          EmitLabel(irl, g[i].op);
           EmitLongPtr(irl, (Operand *)g[i].op->val);
           break;
       case IMM_INT:
+          EmitLabel(irl, g[i].op);
           EmitLong(irl, g[i].val);
           break;
       default:
+          EmitLabel(irl, g[i].op);
           varsize = g[i].count / LONG_SIZE;
           if (varsize <= 1) {
               EmitLong(irl, g[i].val);
           } else {
+              ERROR(NULL, "internal error, bad count for OPC_LONG");
               /* normally ir->src is NULL for OPC_LONG, but in this
                  case (an array definition) it is a count */
               EmitOp2(irl, OPC_LONG, NewOperand(IMM_INT, "", 0),
@@ -2960,10 +2967,10 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *irl, int alphaSort)
       }
     }
 }
-static void EmitGlobals(IRList *cogirl, IRList *hubirl)
+static void EmitGlobals(IRList *cogdata, IRList *hubdata)
 {
-    EmitAsmVars(&cogGlobalVars, cogirl, 1);
-    EmitAsmVars(&hubGlobalVars, hubirl, 0);
+    EmitAsmVars(&cogGlobalVars, cogdata, SORT_ALPHABETICALLY);
+    EmitAsmVars(&hubGlobalVars, hubdata, NO_SORT);
 }
 
 #define VISITFLAG_COMPILEIR     0x01230001
