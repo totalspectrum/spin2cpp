@@ -801,6 +801,35 @@ MeaninglessMath(IR *ir)
     }
 }
 
+//
+// see if all instructions between ir and the label "lab" are
+// conditional, and have condition "cond"
+//
+static bool
+AllInstructionsConditional(IRCond cond, IR *ir, Operand *lab)
+{
+    while (ir) {
+        if (ir->opc == OPC_LABEL) {
+            if (ir->dst == lab) {
+                return true;
+            }
+            return false; // some other jump may go in here
+        } else if (!IsDummy(ir)) {
+            if (InstrSetsAnyFlags(ir)) {
+                return false;
+            }
+            if (ir->cond != cond) {
+                return false;
+            }
+        }
+        ir = ir->next;
+    }
+    return false;
+}
+
+//
+// eliminate code that is unnecessary
+//
 int EliminateDeadCode(IRList *irl)
 {
     int change;
@@ -841,8 +870,11 @@ int EliminateDeadCode(IRList *irl)
           } else if (ir->cond == COND_FALSE) {
               DeleteIR(irl, ir);
           } else {
-              /* if the branch is to the next instruction, delete it */
-              if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+              /* if the branch skips over things that already have the right
+                 condition, delete it
+              */
+              if (ir->dst && ir_next && AllInstructionsConditional(InvertCond(ir->cond), ir_next, ir->dst))
+              {
                   DeleteIR(irl, ir);
                   change = 1;
               }
