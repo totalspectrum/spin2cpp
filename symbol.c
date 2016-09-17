@@ -10,8 +10,8 @@
 /*
  * hash function
  */
-static int
-hashfunc(const char *str)
+unsigned
+SymbolHash(const char *str)
 {
     unsigned hash = 987654321;
     unsigned c;
@@ -30,10 +30,10 @@ hashfunc(const char *str)
 Symbol *
 FindSymbol(SymbolTable *table, const char *name)
 {
-    int hash;
+    unsigned hash;
     Symbol *sym;
 
-    hash = hashfunc(name);
+    hash = SymbolHash(name);
     sym = table->hash[hash];
     while (sym) {
         if (!STRCMP(sym->name, name)) {
@@ -83,10 +83,10 @@ NewSymbol(void)
 Symbol *
 AddSymbol(SymbolTable *table, const char *name, int type, void *val)
 {
-    int hash;
+    unsigned hash;
     Symbol *sym;
 
-    hash = hashfunc(name);
+    hash = SymbolHash(name);
     sym = table->hash[hash];
     while (sym) {
         if (!STRCMP(sym->name, name)) {
