@@ -488,6 +488,7 @@ main(int argc, char **argv)
         }
         for (Q = allparse; Q; Q = Q->next) {
             SpinTransform(Q);
+            PerformCSE(Q);
         }
         AssignObjectOffsets(P);
         if (outputDat) {

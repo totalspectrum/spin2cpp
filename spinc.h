@@ -437,4 +437,7 @@ Module *ParseFile(const char *name);
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);
 
+// perform common sub-expression elimination on a function
+void PerformCSE(Module *P);
+
 #endif

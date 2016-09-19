@@ -3,3 +3,5 @@
 now int sqrt:
 00000011
 00000004
+expr eval: x=0001 y=0002 z=0003
+func eval: x=0065 y=0066

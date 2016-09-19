@@ -7,7 +7,7 @@ CON
 OBJ
   fds: "FullDuplexSerial"
 
-PUB demo | x,y
+PUB demo | x,y,z,i
 
   fds.start(31, 30, 0, 115200)
 
@@ -26,7 +26,27 @@ PUB demo | x,y
   ^^y
   fds.hex(y, 8)
   newline
+
+  i := 1
+  z := (x:=i++) + (y:=i++)
+  fds.str(string("expr eval: x="))
+  fds.hex(x,4)
+  fds.str(string(" y="))
+  fds.hex(y,4)
+  fds.str(string(" z="))
+  fds.hex(z,4)
+  newline
+
+  i := 100
+  info(++i, ++i)
   exit
+
+PUB info(x,y)
+  fds.str(string("func eval: x="))
+  fds.hex(x,4)
+  fds.str(string(" y="))
+  fds.hex(y,4)
+  newline
 
 PUB newline
   fds.str(string(13, 10))
