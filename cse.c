@@ -178,6 +178,7 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 // flags:
 //
 #define CSE_NO_REPLACE 0x01 // do not perform CSE replacement
+#define CSE_NO_ADD     0x02 // re-using old expressions in this one is OK, but do not add it
 
 static unsigned
 doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
@@ -185,6 +186,7 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     AST *ast = *astptr;
     CSEEntry *entry;
     unsigned hash;
+    unsigned newflags = flags;
     
     if (!ast) return true;
     switch(ast->kind) {
@@ -193,21 +195,49 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
             (void)doPerformCSE(&ast->left, cse, flags);
             ast = ast->right;
         }
-        return flags;
+        return newflags;
     case AST_ASSIGN:
-        (void)doPerformCSE(&ast->right, cse, flags);
-        (void)doPerformCSE(&ast->left, cse, flags);
+        newflags |= doPerformCSE(&ast->right, cse, flags);
+        newflags |= doPerformCSE(&ast->left, cse, flags);
         // now we have to invalidate any CSE involving the right hand side
         RemoveCSEUsing(cse, ast->left);
-        return flags;
+        return newflags;
     case AST_OPERATOR:
-        flags |= doPerformCSE(&ast->left, cse, flags);
-        flags |= doPerformCSE(&ast->right, cse, flags);
-        if (!(flags & CSE_NO_REPLACE)) {
+        // handle various special cases
+        switch(ast->d.ival) {
+        case T_OR:
+        case T_AND:
+            // may not actually execute both sides of this, so
+            // do not add any new entries on the second half
+            flags |= CSE_NO_ADD;
+            break;
+        case '?':
+            // random number operator; cannot CSE this
+            newflags |= CSE_NO_REPLACE;
+            break;
+        case T_INCREMENT:
+        case T_DECREMENT:
+            if (ast->left) {
+                doPerformCSE(&ast->left, cse, flags);
+                RemoveCSEUsing(cse, ast->left);
+            }
+            if (ast->right) {
+                doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+                RemoveCSEUsing(cse, ast->right);
+            }
+            newflags |= CSE_NO_REPLACE;
+            return newflags;;
+                
+        default:
+            break;
+        }
+        newflags |= doPerformCSE(&ast->left, cse, flags);
+        newflags |= doPerformCSE(&ast->right, cse, flags);
+        if (!(newflags & CSE_NO_REPLACE)) {
             hash = ASTHash(ast);
             if ( 0 != (entry = FindCSE(cse, ast, hash))) {
                 ReplaceCSE(astptr, entry);
-            } else {
+            } else if (!(newflags & CSE_NO_ADD)) {
                 AddToCSESet(cse, astptr, ast, hash);
             }
         }
@@ -218,7 +248,7 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_STRING:
     case AST_RESULT:
     case AST_IDENTIFIER:
-        return flags;
+        return newflags;
     case AST_HWREG:
         return CSE_NO_REPLACE; // do not CSE expressions involving hardware
     case AST_CONSTREF:
@@ -229,14 +259,14 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_ISBETWEEN:
     case AST_ADDROF:
     case AST_ABSADDROF:
-        flags |= doPerformCSE(&ast->right, cse, flags);
-        flags |= doPerformCSE(&ast->left, cse, flags);
-        return flags;
+        newflags |= doPerformCSE(&ast->right, cse, flags);
+        newflags |= doPerformCSE(&ast->left, cse, flags);
+        return newflags;
     case AST_COMMENTEDNODE:
     case AST_RETURN:
         (void) doPerformCSE(&ast->right, cse, flags);
         (void) doPerformCSE(&ast->left, cse, flags);
-        return flags;
+        return newflags;
     case AST_IF:
     case AST_CASE:
         // do CSE on the expression
