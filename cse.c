@@ -118,6 +118,9 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     CSEEntry *cur;
     const char *name;
 
+    if (modified->kind == AST_ARRAYREF) {
+        modified = modified->left;
+    }
     switch(modified->kind) {
     case AST_IDENTIFIER:
         name = modified->d.string;
@@ -140,6 +143,24 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     }
 }
 
+AST *
+ArrayBaseType(AST *var)
+{
+    Symbol *sym;
+    AST *stype;
+    if (var->kind != AST_IDENTIFIER) {
+        return NULL;
+    }
+    sym = LookupAstSymbol(var, "array reference");
+    if (!sym) return NULL;
+    stype = (AST *)sym->val;
+    if (!stype || stype->kind != AST_ARRAYTYPE) {
+        ERROR(var, "array reference to non-array");
+        return NULL;
+    }
+    return stype->left;
+}
+
 // create a new CSESet entry for an expression
 // "point" is where to add a new assignment
 static void
@@ -147,7 +168,11 @@ AddToCSESet(CSESet *set, AST **point, AST *expr, unsigned exprHash)
 {
     CSEEntry *entry = malloc(sizeof(*entry));
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
-    
+
+    if (expr->kind == AST_ARRAYREF && !ArrayBaseType(expr->left)) {
+        // cannot figure out type of array
+        return;
+    }
     entry->expr = expr;
     entry->replace = NULL;
     entry->first = point;
@@ -165,20 +190,50 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 {
     if (!entry->replace) {
         AST *assign;
+        AST *origexpr = entry->expr;
         entry->replace = AstTempLocalVariable("_cse_");
-        assign = AstAssign(T_ASSIGN, entry->replace, entry->expr);
+        if (origexpr->kind == AST_ARRAYREF) {
+            AST *reftype = ArrayBaseType(origexpr->left);
+            if (!reftype) {
+                ERROR(origexpr, "Internal error, array expression too complicated");
+                return;
+            }
+            origexpr = NewAST(AST_ADDROF, origexpr, NULL);
+            assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
+            assign = NewAST(AST_MEMREF, reftype, assign);
+            entry->replace = NewAST(AST_MEMREF, reftype, entry->replace);
+        } else {
+            assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
+        }
         *entry->first = assign;
     }
     *astptr = entry->replace;
 }
 
-//
-// walk through an AST and replace any
-// common subexpressions
 // flags:
 //
 #define CSE_NO_REPLACE 0x01 // do not perform CSE replacement
 #define CSE_NO_ADD     0x02 // re-using old expressions in this one is OK, but do not add it
+
+//
+// perform CSE on a loop body
+//
+static unsigned doPerformCSE(AST **ptr, CSESet *cse, unsigned flags);
+
+static unsigned
+loopCSE(AST **astptr, AST *body, CSESet *cse, unsigned flags)
+{
+    // remove any CSE expressions modified inside the loop
+    doPerformCSE(&body, cse, flags | CSE_NO_REPLACE);
+    // now do any CSE replacements still valid
+    doPerformCSE(&body, cse, flags | CSE_NO_ADD);
+    
+    return flags;
+}
+
+//
+// walk through an AST and replace any
+// common subexpressions
 
 static unsigned
 doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
@@ -199,7 +254,7 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_ASSIGN:
         newflags |= doPerformCSE(&ast->right, cse, flags);
         newflags |= doPerformCSE(&ast->left, cse, flags);
-        // now we have to invalidate any CSE involving the right hand side
+        // now we have to invalidate any CSE involving the destination
         RemoveCSEUsing(cse, ast->left);
         return newflags;
     case AST_OPERATOR:
@@ -242,6 +297,20 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
             }
         }
         return flags;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+    case AST_ARRAYREF:
+        newflags |= doPerformCSE(&ast->right, cse, flags);
+        newflags |= doPerformCSE(&ast->left, cse, flags);
+        if (!(newflags & CSE_NO_REPLACE)) {
+            hash = ASTHash(ast);
+            if ( 0 != (entry = FindCSE(cse, ast, hash))) {
+                ReplaceCSE(astptr, entry);
+            } else if (!(newflags & CSE_NO_ADD)) {
+                AddToCSESet(cse, astptr, ast, hash);
+            }
+        }
+        return newflags;
     case AST_INTEGER:
     case AST_FLOAT:
     case AST_CONSTANT:
@@ -257,11 +326,6 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_TOFLOAT:
     case AST_CONDRESULT:
     case AST_ISBETWEEN:
-    case AST_ADDROF:
-    case AST_ABSADDROF:
-        newflags |= doPerformCSE(&ast->right, cse, flags);
-        newflags |= doPerformCSE(&ast->left, cse, flags);
-        return newflags;
     case AST_COMMENTEDNODE:
     case AST_RETURN:
         (void) doPerformCSE(&ast->right, cse, flags);
@@ -277,9 +341,10 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         return flags;
     case AST_WHILE:
     case AST_DOWHILE:
-        (void)doPerformCSE(&ast->left, cse, flags);
         // invalidate CSE entries that are inside the loop
-        doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        loopCSE(astptr, ast->right, cse, flags);
+        // now do CSE on the control expression
+        (void)doPerformCSE(&ast->left, cse, flags);
         return flags;
     default:
         doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
@@ -308,3 +373,4 @@ PerformCSE(Module *Q)
     curfunc = savefunc;
     current = savecur;
 }
+
