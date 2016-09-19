@@ -176,27 +176,34 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 // walk through an AST and replace any
 // common subexpressions
 // flags:
-// 
-static bool
+//
+#define CSE_NO_REPLACE 0x01 // do not perform CSE replacement
+
+static unsigned
 doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
 {
     AST *ast = *astptr;
     CSEEntry *entry;
     unsigned hash;
-    bool replaceOK = true;
     
     if (!ast) return true;
     switch(ast->kind) {
+    case AST_STMTLIST:
+        while (ast) {
+            (void)doPerformCSE(&ast->left, cse, flags);
+            ast = ast->right;
+        }
+        return flags;
     case AST_ASSIGN:
         (void)doPerformCSE(&ast->right, cse, flags);
         (void)doPerformCSE(&ast->left, cse, flags);
         // now we have to invalidate any CSE involving the right hand side
         RemoveCSEUsing(cse, ast->left);
-        return false;
+        return flags;
     case AST_OPERATOR:
-        replaceOK = doPerformCSE(&ast->left, cse, flags);
-        replaceOK = doPerformCSE(&ast->right, cse, flags) && replaceOK;
-        if (replaceOK) {
+        flags |= doPerformCSE(&ast->left, cse, flags);
+        flags |= doPerformCSE(&ast->right, cse, flags);
+        if (!(flags & CSE_NO_REPLACE)) {
             hash = ASTHash(ast);
             if ( 0 != (entry = FindCSE(cse, ast, hash))) {
                 ReplaceCSE(astptr, entry);
@@ -204,13 +211,50 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
                 AddToCSESet(cse, astptr, ast, hash);
             }
         }
-        return replaceOK;
+        return flags;
+    case AST_INTEGER:
+    case AST_FLOAT:
+    case AST_CONSTANT:
+    case AST_STRING:
+    case AST_RESULT:
+    case AST_IDENTIFIER:
+        return flags;
     case AST_HWREG:
-        return false; // do not CSE expressions involving hardware
+        return CSE_NO_REPLACE; // do not CSE expressions involving hardware
+    case AST_CONSTREF:
+    case AST_ROUND:
+    case AST_TRUNC:
+    case AST_TOFLOAT:
+    case AST_CONDRESULT:
+    case AST_ISBETWEEN:
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        flags |= doPerformCSE(&ast->right, cse, flags);
+        flags |= doPerformCSE(&ast->left, cse, flags);
+        return flags;
+    case AST_COMMENTEDNODE:
+    case AST_RETURN:
+        (void) doPerformCSE(&ast->right, cse, flags);
+        (void) doPerformCSE(&ast->left, cse, flags);
+        return flags;
+    case AST_IF:
+    case AST_CASE:
+        // do CSE on the expression
+        (void) doPerformCSE(&ast->left, cse, flags);
+        // invalidate CSE entries resulting from assignments, but do
+        // not otherwise perform CSE
+        doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        return flags;
+    case AST_WHILE:
+    case AST_DOWHILE:
+        (void)doPerformCSE(&ast->left, cse, flags);
+        // invalidate CSE entries that are inside the loop
+        doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        return flags;
     default:
-        replaceOK = doPerformCSE(&ast->left, cse, flags);
-        replaceOK = doPerformCSE(&ast->right, cse, flags) && replaceOK;
-        return replaceOK;
+        doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
+        doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        return CSE_NO_REPLACE; // AST not set up for processing yet
     }
 }
 
