@@ -223,11 +223,19 @@ static unsigned doPerformCSE(AST **ptr, CSESet *cse, unsigned flags);
 static unsigned
 loopCSE(AST **astptr, AST *body, CSESet *cse, unsigned flags)
 {
+    CSESet bodycse;
+    
     // remove any CSE expressions modified inside the loop
     doPerformCSE(&body, cse, flags | CSE_NO_REPLACE);
     // now do any CSE replacements still valid
     doPerformCSE(&body, cse, flags | CSE_NO_ADD);
-    
+
+    // OK, now CSE the body for repeats during each individual iteration
+    // only bother doing this if we would be able to do unlimited CSE
+    if (flags == 0) {
+        InitCSESet(&bodycse);
+        doPerformCSE(&body, &bodycse, flags);
+    }
     return flags;
 }
 
