@@ -55,9 +55,11 @@ extern int gl_normalizeIdents; /* if set, change case of all identifiers to all 
 extern int gl_debug;    /* flag: if set, include debugging directives */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_optimize_flags; /* flags for optimization */
-extern int gl_printprogress;  /* print files as we process them */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
+#define OPT_PERFORM_CSE         0x02
 #define OPT_NO_ASM 0x100
+
+extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */

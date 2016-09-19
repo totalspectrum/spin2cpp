@@ -259,7 +259,7 @@ main(int argc, char **argv)
     outputMain = 1;
     outputBin = 1;
     outputAsm = 1;
-    gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
+    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|OPT_PERFORM_CSE);
     appendCompiler(gl_progname);
     appendToCmd("-q");
     appendToCmd("--dat");

@@ -241,6 +241,7 @@ main(int argc, char **argv)
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
+            gl_optimize_flags |= OPT_PERFORM_CSE;
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
             argv++; --argc;
@@ -290,7 +291,7 @@ main(int argc, char **argv)
             outputMain = 1;
 	    outputBin = 1;
             if (gl_output == OUTPUT_ASM) {
-                gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
+                gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|OPT_PERFORM_CSE);
                 appendCompiler(gl_progname);
                 appendToCmd("--dat");
                 appendToCmd(argv[0]);
