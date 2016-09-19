@@ -3411,7 +3411,7 @@ static const char *builtin_lmm_p1 =
     "    jmpret LMM_RET,#LMM_FCACHE_START\n"
     "a_fcachegoaddpc\n"
     "    add    pc, COUNT\n"
-    "    jmp    a_fcachego\n"
+    "    jmp    #a_fcachego\n"
     "LMM_FCACHE_LOAD_ret\n"
     "    ret\n"
     "inc_dest1\n"
