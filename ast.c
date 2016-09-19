@@ -233,3 +233,125 @@ void AstReportAs(AST *old)
         current->L.lineCounter = old->line;
     }
 }
+
+static const char *astnames[] = {
+    "unknown",
+    "listholder",
+    "integer",
+    "string",
+    
+    "identifier",
+    "operator",
+    "float",
+    "assign",
+    
+    "enumset",
+    "arraydecl",
+    "bytelist",
+    "wordlist",
+    
+    "longlist",
+    "inttype",
+    "unsignedtype",
+    "arraytype",
+
+    "funcdecl",
+    "funcdef",
+    "funcvars",
+    "stmtlist",
+
+    "instr",
+    "hwreg",
+    "return",
+    "if"
+    
+    "thenelse",
+    "range",
+    "rangeref",
+    "funccall",
+
+    "exprlist",
+    "instrholder",
+    "instrmodifier",
+    "org",
+
+    "here",
+    "posteffect",
+    "while",
+    "dowhile",
+
+    "for",
+    "memref",
+    "arrayref",
+    "countrepeat",
+
+    "case",
+    "caseitem",
+    "other",
+    "res",
+
+    "from",
+    "to",
+    "step",
+    "fit",
+
+    "addrof",
+    "lookup",
+    "lookdown",
+    "object",
+};
+
+//
+// AST debug
+//
+static void doASTDump(AST *ast, int indent)
+{
+    char buf[128];
+    int leaf = 0;
+    unsigned idx;
+    
+    if (!ast) return;
+    switch (ast->kind) {
+    case AST_IDENTIFIER:
+        sprintf(buf, "<identifier %s/>", ast->d.string);
+        leaf = 1;
+        break;
+    case AST_INTEGER:
+        sprintf(buf, "<integer %d/>", ast->d.ival);
+        leaf = 1;
+        break;
+    case AST_OPERATOR:
+        if (ast->d.ival >= 32 && ast->d.ival <= 126) {
+            sprintf(buf, "<operator '%c'>", ast->d.ival);
+        } else {
+            sprintf(buf, "<operator #%d>", ast->d.ival);
+        }
+        break;
+    case AST_ASSIGN:
+        sprintf(buf, "<assign>");
+        break;
+    case AST_ARRAYREF:
+        sprintf(buf, "<arrayref>");
+        break;
+    default:
+        idx = (unsigned int)ast->kind;
+        if (idx < sizeof(astnames) / sizeof(astnames[0])) {
+            sprintf(buf, "<%s>", astnames[idx]);
+        } else {
+            sprintf(buf, "<ast #%d>", ast->kind);
+        }
+        break;
+    }
+    printf("%*c", indent, ' ');
+    printf("%s\n", buf);
+    if (!leaf) {
+        doASTDump(ast->left, indent+2);
+        doASTDump(ast->right, indent+2);
+        printf("%*c%s", indent, ' ', "</ast>\n");
+    }
+}
+
+void ASTDump(AST *ast)
+{
+    doASTDump(ast, 0);
+}
