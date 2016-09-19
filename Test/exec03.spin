@@ -28,7 +28,14 @@ PUB demo | x,y,z,i
   newline
 
   i := 1
+#ifdef __SPIN2PASM__
   z := (x:=i++) + (y:=i++)
+#else
+  ' C++ handles  assignment inside expressions differently than Spin
+  x := i++
+  y := i++
+  z := x+y
+#endif
   fds.str(string("expr eval: x="))
   fds.hex(x,4)
   fds.str(string(" y="))
@@ -38,7 +45,11 @@ PUB demo | x,y,z,i
   newline
 
   i := 100
+#ifdef __SPIN2PASM__
   info(++i, ++i)
+#else
+  info(i+1, i+2)
+#endif
   exit
 
 PUB info(x,y)
