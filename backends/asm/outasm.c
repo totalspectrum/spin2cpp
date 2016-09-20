@@ -2215,7 +2215,7 @@ GetAddressOf(IRList *irl, AST *expr)
       return tmp;
     }    
     default:
-        ERROR(expr, "Cannot take address of expression\n");
+        ERROR(expr, "Cannot take address of expression");
         break;
     }
     return NewImmediate(-1);
