@@ -1455,6 +1455,12 @@ ReplaceZWithNC(IR *ir)
 // can remove the last and, it is redundant
 //
 
+// add objptr, x
+// mov tmp, objptr
+// sub objptr, x
+//   becomes mov tmp,objptr
+//           add tmp,objptr
+//
 int
 OptimizePeepholes(IRList *irl)
 {
@@ -1588,6 +1594,31 @@ OptimizePeepholes(IRList *irl)
             ir_next->cond = COND_TRUE;
             ReplaceOpcode(ir_next, OPC_MUXNZ);
             DeleteIR(irl, ir);
+            changed = 1;
+            goto done;
+        }
+        else if (opc == OPC_MOV && !InstrSetsAnyFlags(ir)
+                 && ir_next
+                 && ir_next->opc == OPC_SUB
+                 && ir_next->cond == ir->cond
+                 && ir_next->dst == ir->src
+                 && !InstrSetsAnyFlags(ir_next)
+                 && 0 != (previr = FindPrevSetterForReplace(ir, ir->src))
+                 && previr->cond == ir->cond
+                 && previr->opc == OPC_ADD
+                 && previr->src == ir_next->src
+                 && previr->dst == ir_next->dst
+                 && !InstrSetsAnyFlags(ir_next)
+            )
+        {
+            // add x, y   '' previr
+            // mov a, x   '' ir
+            // sub x, y   '' ir_next
+            // => mov a, x
+            //    add a, y
+            ReplaceOpcode(ir_next, OPC_ADD);
+            ir_next->dst = ir->dst;
+            DeleteIR(irl, previr);
             changed = 1;
             goto done;
         }
