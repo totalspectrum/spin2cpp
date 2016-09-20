@@ -148,17 +148,36 @@ ArrayBaseType(AST *var)
 {
     Symbol *sym;
     AST *stype;
+    if (var->kind == AST_MEMREF) {
+        return var->left;
+    }
     if (var->kind != AST_IDENTIFIER) {
         return NULL;
     }
     sym = LookupAstSymbol(var, "array reference");
     if (!sym) return NULL;
-    stype = (AST *)sym->val;
-    if (!stype || stype->kind != AST_ARRAYTYPE) {
-        ERROR(var, "array reference to non-array");
+    switch(sym->type) {
+    case SYM_LABEL:
+        {
+            Label *label = (Label *)sym->val;
+            return label->type;
+        }
+    case SYM_VARIABLE:
+    case SYM_LOCALVAR:
+    case SYM_PARAMETER:
+        stype = (AST *)sym->val;
+        if (!stype) {
+            ERROR(var, "illegal array reference");
+            return NULL;
+        }
+        if (stype->kind != AST_ARRAYTYPE) {
+            ERROR(var, "array reference to non-array");
+            return NULL;
+        }
+        return stype->left;
+    default:
         return NULL;
     }
-    return stype->left;
 }
 
 // create a new CSESet entry for an expression
@@ -353,7 +372,28 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         loopCSE(astptr, ast->right, cse, flags);
         // now do CSE on the control expression
         (void)doPerformCSE(&ast->left, cse, flags);
-        return flags;
+        return newflags;
+    case AST_FOR:
+    case AST_FORATLEASTONCE:
+        {
+            AST *condtest;
+            AST *stepstmt;
+            AST *body;
+            
+            condtest = ast->right;
+            // process the initial statement
+            doPerformCSE(&ast->left, cse, flags);
+
+            stepstmt = condtest->right;
+            // invalidate any assignments in the loop condition
+            doPerformCSE(&condtest->left, cse, flags | CSE_NO_REPLACE);
+            // and in the step statement
+            doPerformCSE(&stepstmt->left, cse, flags | CSE_NO_REPLACE);
+            body = stepstmt->right;
+            // handle the body of the loop
+            loopCSE(astptr, body, cse, flags);
+        }
+        return newflags;
     default:
         doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
         doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
