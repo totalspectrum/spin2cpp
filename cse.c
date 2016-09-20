@@ -55,11 +55,11 @@ ASTHash(AST *ast)
 
 // initialize a CSESet to empty
 static void
-InitCSESet(CSESet *set)
+InitCSESet(CSESet *cse)
 {
     int i;
     for (i = 0; i < CSE_HASH_SIZE; i++) {
-        set->list[i] = NULL;
+        cse->list[i] = NULL;
     }
 }
 
@@ -79,6 +79,13 @@ ClearCSESet(CSESet *set)
             free(old);
         }
     }
+}
+
+// clear out all memory entries in a CSE set
+static void
+ClearMemoryCSESet(CSESet *cse)
+{
+    ClearCSESet(cse); // FIXME: we can be more liberal than this!
 }
 
 // find a CSESet entry for an expression, if one exists
@@ -247,6 +254,7 @@ loopCSE(AST **astptr, AST *body, CSESet *cse, unsigned flags)
     // remove any CSE expressions modified inside the loop
     doPerformCSE(&body, cse, flags | CSE_NO_REPLACE);
     // now do any CSE replacements still valid
+    // (CSE_NO_ADD says not to create new ones inside the loop)
     doPerformCSE(&body, cse, flags | CSE_NO_ADD);
 
     // OK, now CSE the body for repeats during each individual iteration
@@ -394,6 +402,18 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
             loopCSE(astptr, body, cse, flags);
         }
         return newflags;
+    case AST_FUNCCALL:
+    case AST_COGINIT:
+        {
+            AST *exprlist = ast->right;
+            while (exprlist) {
+                doPerformCSE(&exprlist->left, cse, flags);
+                exprlist = exprlist->right;
+            }
+            // after the function call memory may be modified
+            ClearMemoryCSESet(cse);
+        }
+        return newflags;
     default:
         doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
         doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
@@ -422,3 +442,29 @@ PerformCSE(Module *Q)
     current = savecur;
 }
 
+//
+// debug code
+//
+void
+DumpCSEEntry(CSEEntry *entry)
+{
+    printf("Expr:\n");
+    DumpAST(entry->expr);
+    printf("Replace with:\n");
+    DumpAST(entry->replace);
+    printf("\n");
+}
+
+void
+DumpCSE(CSESet *cse)
+{
+    int i;
+    CSEEntry *entry;
+    for (i = 0; i < CSE_HASH_SIZE; i++) {
+        entry = cse->list[i];
+        while (entry) {
+            DumpCSEEntry(entry);
+            entry = entry->next;
+        }
+    }
+}

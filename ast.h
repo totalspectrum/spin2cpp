@@ -169,4 +169,7 @@ int AstListLen(AST *a);
 /* used when we're transforming ASTs */
 void AstReportAs(AST *old);
 
+/* print out an AST */
+void DumpAST(AST *);
+
 #endif

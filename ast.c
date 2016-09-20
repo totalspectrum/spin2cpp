@@ -351,7 +351,8 @@ static void doASTDump(AST *ast, int indent)
     }
 }
 
-void ASTDump(AST *ast)
+void
+DumpAST(AST *ast)
 {
     doASTDump(ast, 0);
 }
