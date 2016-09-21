@@ -26,6 +26,8 @@ typedef struct CSESet {
     CSEEntry *list[CSE_HASH_SIZE];
 } CSESet;
 
+void DumpCSE(CSESet *cse); // forward declaration
+
 //
 // hash an AST tree
 //
@@ -246,22 +248,51 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 //
 static unsigned doPerformCSE(AST **ptr, CSESet *cse, unsigned flags);
 
+//
+// "astptr" points to the loop statement itself
+// "body" is the loop body
+// "condition" is the loop test condition
+// "update" is an optional loop update statement (like in a for loop)
+//
 static unsigned
-loopCSE(AST **astptr, AST *body, CSESet *cse, unsigned flags)
+loopCSE(AST **astptr, AST **body, AST **condition, AST **update, CSESet *cse, unsigned flags)
 {
     CSESet bodycse;
     
     // remove any CSE expressions modified inside the loop
-    doPerformCSE(&body, cse, flags | CSE_NO_REPLACE);
+    doPerformCSE(body, cse, flags | CSE_NO_REPLACE);
+    if (update) {
+        doPerformCSE(update, cse, flags | CSE_NO_REPLACE);
+    }
     // now do any CSE replacements still valid
     // (CSE_NO_ADD says not to create new ones inside the loop)
-    doPerformCSE(&body, cse, flags | CSE_NO_ADD);
+    doPerformCSE(condition, cse, flags | CSE_NO_ADD);
+    doPerformCSE(body, cse, flags | CSE_NO_ADD);
 
     // OK, now CSE the body for repeats during each individual iteration
     // only bother doing this if we would be able to do unlimited CSE
     if (flags == 0) {
         InitCSESet(&bodycse);
-        doPerformCSE(&body, &bodycse, flags);
+        doPerformCSE(body, &bodycse, flags);
+
+#if 0
+        // now perhaps allow for hoisting loop invariants out
+        // do this by running through the body again removing
+        // modified expressions
+        doPerformCSE(body, &bodycse, flags | CSE_NO_REPLACE);
+        doPerformCSE(condition, &bodycse, flags | CSE_NO_REPLACE);
+
+        // here's where we would hoist
+        // make sure all items have a replacement (but add no new ones)
+        // kind of clunky, probably want to do this differently
+        doPerformCSE(body, &bodycse, flags | CSE_NO_ADD);
+        doPerformCSE(condition, &bodycse, flags | CSE_NO_ADD);
+
+        // bodycse contains the expressions that should be hoisted
+        // to the start of the loop
+        printf("bodycse=\n");
+        DumpCSE(&bodycse);
+#endif
     }
     return flags;
 }
@@ -337,7 +368,7 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
                 AddToCSESet(cse, astptr, ast, hash);
             }
         }
-        return flags;
+        return newflags;
     case AST_ARRAYREF:
         newflags |= doPerformCSE(&ast->right, cse, flags);
         newflags |= doPerformCSE(&ast->left, cse, flags);
@@ -402,29 +433,26 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_WHILE:
     case AST_DOWHILE:
         // invalidate CSE entries that are inside the loop
-        loopCSE(astptr, ast->right, cse, flags);
-        // now do CSE on the control expression
-        (void)doPerformCSE(&ast->left, cse, flags);
+        // (ast->right is the body, ast->left is the condition)
+        loopCSE(astptr, &ast->right, &ast->left, NULL, cse, flags);
         return newflags;
     case AST_FOR:
     case AST_FORATLEASTONCE:
         {
-            AST *condtest;
-            AST *stepstmt;
-            AST *body;
+            AST **condtestptr;
+            AST **stepstmtptr;
+            AST **bodyptr;
             
-            condtest = ast->right;
+            condtestptr = &ast->right;
             // process the initial statement
             doPerformCSE(&ast->left, cse, flags);
 
-            stepstmt = condtest->right;
-            // invalidate any assignments in the loop condition
-            doPerformCSE(&condtest->left, cse, flags | CSE_NO_REPLACE);
-            // and in the step statement
-            doPerformCSE(&stepstmt->left, cse, flags | CSE_NO_REPLACE);
-            body = stepstmt->right;
+            stepstmtptr = &(*condtestptr)->right;
+            bodyptr = &(*stepstmtptr)->right;
+            condtestptr = &(*condtestptr)->left;
+            stepstmtptr = &(*stepstmtptr)->left;
             // handle the body of the loop
-            loopCSE(astptr, body, cse, flags);
+            loopCSE(astptr, bodyptr, condtestptr, stepstmtptr, cse, flags);
         }
         return newflags;
     case AST_FUNCCALL:
