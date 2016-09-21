@@ -246,7 +246,7 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 //
 // perform CSE on a loop body
 //
-static unsigned doPerformCSE(AST **ptr, CSESet *cse, unsigned flags);
+static unsigned doPerformCSE(AST **stmtptr, AST **ast, CSESet *cse, unsigned flags);
 
 //
 // "astptr" points to the loop statement itself
@@ -255,38 +255,38 @@ static unsigned doPerformCSE(AST **ptr, CSESet *cse, unsigned flags);
 // "update" is an optional loop update statement (like in a for loop)
 //
 static unsigned
-loopCSE(AST **astptr, AST **body, AST **condition, AST **update, CSESet *cse, unsigned flags)
+loopCSE(AST **stmtptr, AST **astptr, AST **body, AST **condition, AST **update, CSESet *cse, unsigned flags)
 {
     CSESet bodycse;
     
     // remove any CSE expressions modified inside the loop
-    doPerformCSE(body, cse, flags | CSE_NO_REPLACE);
+    doPerformCSE(stmtptr, body, cse, flags | CSE_NO_REPLACE);
     if (update) {
-        doPerformCSE(update, cse, flags | CSE_NO_REPLACE);
+        doPerformCSE(stmtptr, update, cse, flags | CSE_NO_REPLACE);
     }
     // now do any CSE replacements still valid
     // (CSE_NO_ADD says not to create new ones inside the loop)
-    doPerformCSE(condition, cse, flags | CSE_NO_ADD);
-    doPerformCSE(body, cse, flags | CSE_NO_ADD);
+    doPerformCSE(stmtptr, condition, cse, flags | CSE_NO_ADD);
+    doPerformCSE(stmtptr, body, cse, flags | CSE_NO_ADD);
 
     // OK, now CSE the body for repeats during each individual iteration
     // only bother doing this if we would be able to do unlimited CSE
     if (flags == 0) {
         InitCSESet(&bodycse);
-        doPerformCSE(body, &bodycse, flags);
+        doPerformCSE(stmtptr, body, &bodycse, flags);
 
 #if 0
         // now perhaps allow for hoisting loop invariants out
         // do this by running through the body again removing
         // modified expressions
-        doPerformCSE(body, &bodycse, flags | CSE_NO_REPLACE);
-        doPerformCSE(condition, &bodycse, flags | CSE_NO_REPLACE);
+        doPerformCSE(stmtptr, body, &bodycse, flags | CSE_NO_REPLACE);
+        doPerformCSE(stmtptr, condition, &bodycse, flags | CSE_NO_REPLACE);
 
         // here's where we would hoist
         // make sure all items have a replacement (but add no new ones)
         // kind of clunky, probably want to do this differently
-        doPerformCSE(body, &bodycse, flags | CSE_NO_ADD);
-        doPerformCSE(condition, &bodycse, flags | CSE_NO_ADD);
+        doPerformCSE(stmtptr, body, &bodycse, flags | CSE_NO_ADD);
+        doPerformCSE(stmtptr, condition, &bodycse, flags | CSE_NO_ADD);
 
         // bodycse contains the expressions that should be hoisted
         // to the start of the loop
@@ -300,9 +300,11 @@ loopCSE(AST **astptr, AST **body, AST **condition, AST **update, CSESet *cse, un
 //
 // walk through an AST and replace any
 // common subexpressions
-
+// "stmtptr" contains a pointer to the current
+// statement being processed
+//
 static unsigned
-doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
+doPerformCSE(AST **stmtptr, AST **astptr, CSESet *cse, unsigned flags)
 {
     AST *ast = *astptr;
     CSEEntry *entry;
@@ -313,19 +315,20 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     switch(ast->kind) {
     case AST_STMTLIST:
         while (ast) {
-            (void)doPerformCSE(&ast->left, cse, flags);
+            (void)doPerformCSE(stmtptr, &ast->left, cse, flags);
+            stmtptr = &ast->right;
             ast = ast->right;
         }
         return newflags;
     case AST_EXPRLIST:
         while (ast) {
-            newflags |= doPerformCSE(&ast->left, cse, flags);
+            newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
             ast = ast->right;
         }
         return newflags;
     case AST_ASSIGN:
-        newflags |= doPerformCSE(&ast->right, cse, flags);
-        newflags |= doPerformCSE(&ast->left, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
         // now we have to invalidate any CSE involving the destination
         RemoveCSEUsing(cse, ast->left);
         return newflags;
@@ -345,11 +348,11 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         case T_INCREMENT:
         case T_DECREMENT:
             if (ast->left) {
-                doPerformCSE(&ast->left, cse, flags);
+                doPerformCSE(stmtptr, &ast->left, cse, flags);
                 RemoveCSEUsing(cse, ast->left);
             }
             if (ast->right) {
-                doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+                doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_REPLACE);
                 RemoveCSEUsing(cse, ast->right);
             }
             newflags |= CSE_NO_REPLACE;
@@ -358,8 +361,8 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         default:
             break;
         }
-        newflags |= doPerformCSE(&ast->left, cse, flags);
-        newflags |= doPerformCSE(&ast->right, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags);
         if (!(newflags & CSE_NO_REPLACE)) {
             hash = ASTHash(ast);
             if ( 0 != (entry = FindCSE(cse, ast, hash))) {
@@ -370,8 +373,8 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         }
         return newflags;
     case AST_ARRAYREF:
-        newflags |= doPerformCSE(&ast->right, cse, flags);
-        newflags |= doPerformCSE(&ast->left, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
         if (!(newflags & CSE_NO_REPLACE)) {
             hash = ASTHash(ast);
             if ( 0 != (entry = FindCSE(cse, ast, hash))) {
@@ -384,8 +387,8 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_ADDROF:
     case AST_ABSADDROF:
         // for addressof, we cannot do CSE inside
-        (void) doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
-        (void) doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_REPLACE);
+        (void) doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_REPLACE);
         if (!(newflags & CSE_NO_REPLACE)) {
             hash = ASTHash(ast);
             if ( 0 != (entry = FindCSE(cse, ast, hash))) {
@@ -404,37 +407,38 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         return newflags;
     case AST_HWREG:
         return CSE_NO_REPLACE; // do not CSE expressions involving hardware
+    case AST_COMMENT:
     case AST_COMMENTEDNODE:
     case AST_RETURN:
     case AST_THENELSE:
     case AST_CASEITEM:
     case AST_OTHER:
-        (void) doPerformCSE(&ast->right, cse, flags);
-        (void) doPerformCSE(&ast->left, cse, flags);
+        (void) doPerformCSE(stmtptr, &ast->right, cse, flags);
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags);
         return newflags;
     case AST_CONDRESULT:
         // do CSE on the expression
-        (void) doPerformCSE(&ast->left, cse, flags);
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags);
         // invalidate CSE entries resulting from assignments, and
         // allow replacements using existing entries, but do not
         // create any new entries
-        (void)doPerformCSE(&ast->right, cse, flags | CSE_NO_ADD);
+        (void)doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_ADD);
         newflags |= CSE_NO_REPLACE; // this expression should not be CSE'd
         return newflags;
     case AST_IF:
     case AST_CASE:
         // do CSE on the expression
-        (void) doPerformCSE(&ast->left, cse, flags);
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags);
         // invalidate CSE entries resulting from assignments, and
         // allow replacements using existing entries, but do not
         // create any new entries
-        doPerformCSE(&ast->right, cse, flags | CSE_NO_ADD);
+        doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_ADD);
         return newflags;
     case AST_WHILE:
     case AST_DOWHILE:
         // invalidate CSE entries that are inside the loop
         // (ast->right is the body, ast->left is the condition)
-        loopCSE(astptr, &ast->right, &ast->left, NULL, cse, flags);
+        loopCSE(stmtptr, astptr, &ast->right, &ast->left, NULL, cse, flags);
         return newflags;
     case AST_FOR:
     case AST_FORATLEASTONCE:
@@ -445,14 +449,14 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
             
             condtestptr = &ast->right;
             // process the initial statement
-            doPerformCSE(&ast->left, cse, flags);
+            doPerformCSE(stmtptr, &ast->left, cse, flags);
 
             stepstmtptr = &(*condtestptr)->right;
             bodyptr = &(*stepstmtptr)->right;
             condtestptr = &(*condtestptr)->left;
             stepstmtptr = &(*stepstmtptr)->left;
             // handle the body of the loop
-            loopCSE(astptr, bodyptr, condtestptr, stepstmtptr, cse, flags);
+            loopCSE(stmtptr, astptr, bodyptr, condtestptr, stepstmtptr, cse, flags);
         }
         return newflags;
     case AST_FUNCCALL:
@@ -460,7 +464,7 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
         {
             AST *exprlist = ast->right;
             while (exprlist) {
-                doPerformCSE(&exprlist->left, cse, flags);
+                doPerformCSE(stmtptr, &exprlist->left, cse, flags);
                 exprlist = exprlist->right;
             }
             // after the function call memory may be modified
@@ -473,12 +477,13 @@ doPerformCSE(AST **astptr, CSESet *cse, unsigned flags)
     case AST_TOFLOAT:
     case AST_SEQUENCE:
     case AST_ISBETWEEN:
-        newflags |= doPerformCSE(&ast->left, cse, flags);
-        newflags |= doPerformCSE(&ast->right, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags);
         return newflags;
     default:
-        doPerformCSE(&ast->left, cse, flags | CSE_NO_REPLACE);
-        doPerformCSE(&ast->right, cse, flags | CSE_NO_REPLACE);
+        doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_REPLACE);
+        doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_REPLACE);
+        ClearMemoryCSESet(cse);
         return CSE_NO_REPLACE; // AST not set up for processing yet
     }
 }
@@ -497,7 +502,7 @@ PerformCSE(Module *Q)
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
-        doPerformCSE(&func->body, &cse, 0);
+        doPerformCSE(NULL, &func->body, &cse, 0);
         ClearCSESet(&cse);
     }
     curfunc = savefunc;
