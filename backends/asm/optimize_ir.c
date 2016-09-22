@@ -519,7 +519,13 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
     if (IsDummy(ir)) {
-      continue;
+        if (ir->opc == OPC_DEAD && ir->dst == replace) {
+            ir->opc = OPC_DUMMY;
+        }
+        if (ir->opc == OPC_DEAD && ir->dst == orig) {
+            ir->opc = OPC_DUMMY;
+        }
+        continue;
     }
     if (ir->opc == OPC_LABEL) {
       break;
