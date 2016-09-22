@@ -1467,6 +1467,10 @@ ReplaceZWithNC(IR *ir)
 //   becomes mov tmp,objptr
 //           add tmp,objptr
 //
+
+// mov a,b
+// mov b,a
+// we can delete the second mov
 int
 OptimizePeepholes(IRList *irl)
 {
@@ -1625,6 +1629,21 @@ OptimizePeepholes(IRList *irl)
             ReplaceOpcode(ir_next, OPC_ADD);
             ir_next->dst = ir->dst;
             DeleteIR(irl, previr);
+            changed = 1;
+            goto done;
+        }
+        // check for mov a,b ;; mov b,a
+        
+        if (opc == OPC_MOV && ir_next && ir_next->opc == OPC_MOV
+            && ir->dst == ir_next->src
+            && ir->src == ir_next->dst
+            && !InstrSetsAnyFlags(ir)
+            && !InstrSetsAnyFlags(ir_next)
+            && ir->cond == ir_next->cond)
+        {
+            ir_next->dst = ir->dst;
+            ir_next->src = ir->src;
+            DeleteIR(irl, ir);
             changed = 1;
             goto done;
         }
