@@ -274,25 +274,6 @@ loopCSE(AST **stmtptr, AST **astptr, AST **body, AST **condition, AST **update, 
     if (flags == 0) {
         InitCSESet(&bodycse);
         doPerformCSE(stmtptr, body, &bodycse, flags);
-
-#if 0
-        // now perhaps allow for hoisting loop invariants out
-        // do this by running through the body again removing
-        // modified expressions
-        doPerformCSE(stmtptr, body, &bodycse, flags | CSE_NO_REPLACE);
-        doPerformCSE(stmtptr, condition, &bodycse, flags | CSE_NO_REPLACE);
-
-        // here's where we would hoist
-        // make sure all items have a replacement (but add no new ones)
-        // kind of clunky, probably want to do this differently
-        doPerformCSE(stmtptr, body, &bodycse, flags | CSE_NO_ADD);
-        doPerformCSE(stmtptr, condition, &bodycse, flags | CSE_NO_ADD);
-
-        // bodycse contains the expressions that should be hoisted
-        // to the start of the loop
-        printf("bodycse=\n");
-        DumpCSE(&bodycse);
-#endif
     }
     return flags;
 }
@@ -331,6 +312,21 @@ doPerformCSE(AST **stmtptr, AST **astptr, CSESet *cse, unsigned flags)
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags);
         // now we have to invalidate any CSE involving the destination
         RemoveCSEUsing(cse, ast->left);
+	// if the right hand side is a CSE-able expression, and the left
+	// hand side is a local variable, use that as the CSE replacement
+	// instead of creating a new variable
+	hash = ASTHash(ast->right);
+	entry = FindCSE(cse, ast->right, hash);
+	if (entry && !entry->replace && ast->left->kind == AST_IDENTIFIER) {
+	  Symbol *sym = LookupSymbol(ast->left->d.string);
+	  if (sym &&
+	      (sym->type == SYM_PARAMETER || sym->type == SYM_LOCALVAR
+	       || sym->type == SYM_RESULT || sym->type == SYM_TEMPVAR)
+	      )
+	    {
+	      entry->replace = ast->left;
+	    }
+	}
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
