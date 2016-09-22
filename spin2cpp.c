@@ -237,6 +237,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--noopt", 5) ) {
             gl_optimize_flags |= OPT_NO_ASM;
             argv++; --argc;
+        } else if (!strncmp(argv[0], "--cse", 5) ) {
+            gl_optimize_flags |= OPT_PERFORM_CSE;
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--asm", 5) ) {
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
