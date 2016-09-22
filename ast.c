@@ -263,7 +263,7 @@ static const char *astnames[] = {
     "instr",
     "hwreg",
     "return",
-    "if"
+    "if",
     
     "thenelse",
     "range",
@@ -299,6 +299,51 @@ static const char *astnames[] = {
     "lookup",
     "lookdown",
     "object",
+
+    "methodref",
+    "constref",
+    "objdecl",
+    "stringptr",
+
+    "yield",
+    "constant",
+    "quit",
+    "next",
+
+    "result",
+    "round",
+    "trunc",
+    "tofloat",
+
+    "file",
+    "abort",
+    "catch",
+    "lookexpr",
+
+    "dataddrof",
+    "annotation",
+    "temparraydecl",
+    "temparrayuse",
+
+    "pubfunc",
+    "prifunc",
+    "funcholder",
+    "enumskip",
+
+    "linebreak",
+    "comment",
+    "commentednode",
+    "coginit",
+
+    "sprref",
+    "absaddrof",
+    "floattype",
+    "ptrtype",
+
+    "generictype",
+    "voidtype",
+    "sequence",
+    "condresult",
 };
 
 //
@@ -309,6 +354,7 @@ static void doASTDump(AST *ast, int indent)
     char buf[128];
     int leaf = 0;
     unsigned idx;
+    const char *astname = "ast";
     
     if (!ast) return;
     switch (ast->kind) {
@@ -326,17 +372,13 @@ static void doASTDump(AST *ast, int indent)
         } else {
             sprintf(buf, "<operator #%d>", ast->d.ival);
         }
-        break;
-    case AST_ASSIGN:
-        sprintf(buf, "<assign>");
-        break;
-    case AST_ARRAYREF:
-        sprintf(buf, "<arrayref>");
+        astname = "operator";
         break;
     default:
         idx = (unsigned int)ast->kind;
         if (idx < sizeof(astnames) / sizeof(astnames[0])) {
-            sprintf(buf, "<%s>", astnames[idx]);
+            astname = astnames[idx];
+            sprintf(buf, "<%s>", astname);
         } else {
             sprintf(buf, "<ast #%d>", ast->kind);
         }
@@ -347,7 +389,7 @@ static void doASTDump(AST *ast, int indent)
     if (!leaf) {
         doASTDump(ast->left, indent+2);
         doASTDump(ast->right, indent+2);
-        printf("%*c%s", indent, ' ', "</ast>\n");
+        printf("%*c</%s>\n", indent, ' ', astname);
     }
 }
 
