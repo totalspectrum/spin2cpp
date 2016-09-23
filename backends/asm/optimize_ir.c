@@ -291,6 +291,34 @@ IsForwardJump(IR *jmp)
 }
 
 /*
+ * return the next instruction after (or including) ir
+ * that uses op, or NULL if we can't determine it
+ */
+static IR *
+NextUseAfter(IR *ir, Operand *op)
+{
+    while (ir) {
+        while (IsDummy(ir)) {
+            ir = ir->next;
+        }
+        if (!ir) return NULL;
+        if (IsJump(ir)) {
+            // we could try to thread through the jumps,
+            // but for now punt
+            return NULL;
+        }
+        if (InstrUses(ir, op) || InstrModifies(ir, op)) {
+            if (ir->cond != COND_TRUE) {
+                return NULL;
+            }
+            return ir;
+        }
+        ir = ir->next;
+    }
+    return NULL;
+}
+
+/*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
  */
@@ -302,6 +330,10 @@ IsDeadAfter(IR *instr, Operand *op)
   
   if (instr->opc == OPC_DEAD && op == instr->dst) {
     return true;
+  }
+  if (op->kind == REG_HW) {
+      // hardware registers are never dead
+      return false;
   }
   for (ir = instr->next; ir; ir = ir->next) {
     if (ir->opc == OPC_DEAD && op == ir->dst) {
@@ -351,9 +383,30 @@ IsDeadAfter(IR *instr, Operand *op)
             }
         }
         // otherwise, is the jump backwards to before instr?
-        // if it is, then we don't know if the opcode is dead
+        // if it is, then we may not know if the opcode is dead
         if (!JumpIsAfterOrEqual(instr, ir)) {
-            return false;
+            IR *nextuse;
+            // if the jump is to an unknown place give up
+            if (!ir->aux) {
+                return false;
+            }
+            nextuse = NextUseAfter((IR *)ir->aux, op);
+            if (!nextuse) {
+                return false;
+            }
+            // if the instruction unconditionally sets the value,
+            // then we can either continue or (for an unconditional branch)
+            // know its dead
+            if (InstrUses(nextuse, op)) {
+                return false;
+            }
+            if (InstrModifies(nextuse, op)) {
+                if (ir->cond == COND_TRUE) {
+                    return replaceMeansDead;
+                }
+            } else {
+                return false;
+            }
         }
         // forward jumps are a problem... we can have sets in two
         // different branches and that won't kill the variable
@@ -426,7 +479,8 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   IR *ir;
   IR *last_ir = NULL;
   bool assignments_are_safe = true;
-
+  bool orig_modified = false;
+  
   if (SrcOnlyHwReg(replace)) {
       return NULL;
   }
@@ -480,7 +534,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             return NULL;
         }
     }
-    if (ir->dst == replace) {
+    if (InstrModifies(ir,replace)) {
       // special case: if we have a "mov replace,x" and orig is dead
       // then we are good to go; at that point we know it is safe to replace
       // orig with replace because:
@@ -491,6 +545,11 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       //  branch might still use "replace", so punt and give up
       if (assignments_are_safe && ir->opc == OPC_MOV && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
+      }
+      if (!orig_modified && last_ir && IsDeadAfter(last_ir, orig)) {
+          // orig never actually got changed, and neither did replace (up
+          // until now) so we can do the replacement
+          return last_ir;
       }
       return NULL;
     }
@@ -503,6 +562,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         if (!IsDeadAfter(first_ir, replace)) {
             return NULL;
         }
+        orig_modified = true;
     }
     if (InstrUses(ir, replace) && ir != first_ir) {
       return NULL;
@@ -1529,6 +1589,7 @@ OptimizePeepholes(IRList *irl)
                 changed = 1;
             } else if (IsDeadAfter(ir, ir->dst)) {
 		ReplaceOpcode(ir, OPC_TEST);
+                changed = 1;
             }
         } else if (opc == OPC_SHR && !InstrSetsFlags(ir, FLAG_WC)
                    && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
