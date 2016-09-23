@@ -56,9 +56,9 @@ static Operand *frameptr;
 static Operand *hubexit;
 static Operand *cogexit;
 
-static Operand *CompileExpression(IRList *irl, AST *expr);
-static Operand* CompileMul(IRList *irl, AST *expr, int gethi);
-static Operand* CompileDiv(IRList *irl, AST *expr, int getmod);
+static Operand *CompileExpression(IRList *irl, AST *expr, Operand *dest);
+static Operand* CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest);
+static Operand* CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest);
 static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileFunccall(IRList *irl, AST *expr);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
@@ -1152,73 +1152,73 @@ static int DecomposeBits(unsigned val, int *shifts)
 }
 
 static Operand *
-CompileMul(IRList *irl, AST *expr, int gethi)
+CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
-  Operand *lhs = CompileExpression(irl, expr->left);
-  Operand *rhs = CompileExpression(irl, expr->right);
-  Operand *temp = NewFunctionTempRegister();
-  // if lhs is constant, swap left and right
-  if (lhs->kind == IMM_INT) {
-      Operand *swap = lhs;
-      lhs = rhs;
-      rhs = swap;
-  }
-  // check for multiply by constants
-  if (rhs->kind == IMM_INT && rhs->val >= 0 && gethi == 0) {
-      int shifts[4];
-      int val = rhs->val;
+    Operand *lhs = CompileExpression(irl, expr->left, NULL);
+    Operand *rhs = CompileExpression(irl, expr->right, NULL);
+    Operand *temp = dest ? dest : NewFunctionTempRegister();
+    // if lhs is constant, swap left and right
+    if (lhs->kind == IMM_INT) {
+        Operand *swap = lhs;
+        lhs = rhs;
+        rhs = swap;
+    }
+    // check for multiply by constants
+    if (rhs->kind == IMM_INT && rhs->val >= 0 && gethi == 0) {
+        int shifts[4];
+        int val = rhs->val;
 
-      if (val == 0) {
-          EmitMove(irl, temp, rhs); // rhs == 0
-          return temp;
-      }
-      if (val == 1) {
-          EmitMove(irl, temp, lhs);
-          return temp;
-      }
-      lhs = Dereference(irl, lhs);
-      // see if we can emit a sequence of shift and add/sub
-      if (DecomposeBits(val, shifts)) {
-          EmitMove(irl, temp, lhs);
-          if (shifts[1] == 0) {
-              EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
-              return temp;
-          } else {
-              EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[2]));
-          }
-          if (shifts[1] > 0) {              
-              EmitOp2(irl, OPC_ADD, temp, lhs);
-          } else {
-              EmitOp2(irl, OPC_SUB, temp, lhs);
-          }
-          EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
-          return temp;
-      }
-  }
-  if (!mulfunc) {
-    mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
-    mula = GetOneGlobal(REG_ARG, "muldiva_", 0);
-    mulb = GetOneGlobal(REG_ARG, "muldivb_", 0);
-  }
-  EmitMove(irl, mula, lhs);
-  EmitMove(irl, mulb, rhs);
-  EmitOp1(irl, OPC_CALL, mulfunc);
-  if (gethi) {
-      EmitMove(irl, temp, mulb);
-  } else {
-      EmitMove(irl, temp, mula);
-  }
-  return temp;
+        if (val == 0) {
+            EmitMove(irl, temp, rhs); // rhs == 0
+            return temp;
+        }
+        if (val == 1) {
+            EmitMove(irl, temp, lhs);
+            return temp;
+        }
+        lhs = Dereference(irl, lhs);
+        // see if we can emit a sequence of shift and add/sub
+        if (DecomposeBits(val, shifts)) {
+            EmitMove(irl, temp, lhs);
+            if (shifts[1] == 0) {
+                EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
+                return temp;
+            } else {
+                EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[2]));
+            }
+            if (shifts[1] > 0) {              
+                EmitOp2(irl, OPC_ADD, temp, lhs);
+            } else {
+                EmitOp2(irl, OPC_SUB, temp, lhs);
+            }
+            EmitOp2(irl, OPC_SHL, temp, NewImmediate(shifts[0]));
+            return temp;
+        }
+    }
+    if (!mulfunc) {
+        mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
+        mula = GetOneGlobal(REG_ARG, "muldiva_", 0);
+        mulb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+    }
+    EmitMove(irl, mula, lhs);
+    EmitMove(irl, mulb, rhs);
+    EmitOp1(irl, OPC_CALL, mulfunc);
+    if (gethi) {
+        EmitMove(irl, temp, mulb);
+    } else {
+        EmitMove(irl, temp, mula);
+    }
+    return temp;
 }
 
 #define FAST_IMMEDIATE_DIVIDES
 
 static Operand *
-CompileDiv(IRList *irl, AST *expr, int getmod)
+CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
 {
-  Operand *lhs = CompileExpression(irl, expr->left);
-  Operand *rhs = CompileExpression(irl, expr->right);
-  Operand *temp = NewFunctionTempRegister();
+  Operand *lhs = CompileExpression(irl, expr->left, NULL);
+  Operand *rhs = CompileExpression(irl, expr->right, NULL);
+  Operand *temp = dest ? dest : NewFunctionTempRegister();
 
 #ifdef FAST_IMMEDIATE_DIVIDES
   if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val)) {
@@ -1344,12 +1344,12 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   case T_LE:
   case T_GE:
     cond = CondFromExpr(opkind);
-    lhs = CompileExpression(irl, expr->left);
-    rhs = CompileExpression(irl, expr->right);
+    lhs = CompileExpression(irl, expr->left, NULL);
+    rhs = CompileExpression(irl, expr->right, NULL);
     break;
   default:
     cond = COND_NE;
-    lhs = CompileExpression(irl, expr);
+    lhs = CompileExpression(irl, expr, NULL);
     rhs = NewOperand(IMM_INT, "", 0);
     break;
   }
@@ -1389,10 +1389,10 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         Operand *lo, *hi;
         Operand *val;
         Operand *tmplo, *tmphi;
-        val = CompileExpression(irl, expr->left);
+        val = CompileExpression(irl, expr->left, NULL);
         val = Dereference(irl, val);
-        lo = CompileExpression(irl, expr->right->left);
-        hi = CompileExpression(irl, expr->right->right);
+        lo = CompileExpression(irl, expr->right->left, NULL);
+        hi = CompileExpression(irl, expr->right->right, NULL);
         tmplo = NewFunctionTempRegister();
         tmphi = NewFunctionTempRegister();
         EmitMove(irl, tmplo, lo);
@@ -1512,14 +1512,14 @@ Dereference(IRList *irl, Operand *op)
 }
 
 static Operand *
-CompileBasicOperator(IRList *irl, AST *expr)
+CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
 {
   int op = (int)expr->d.ival;
   AST *lhs = expr->left;
   AST *rhs = expr->right;
   Operand *left;
   Operand *right;
-  Operand *temp = NewFunctionTempRegister();
+  Operand *temp = dest ? dest : NewFunctionTempRegister();
   IR *ir;
 
   switch(op) {
@@ -1528,14 +1528,14 @@ CompileBasicOperator(IRList *irl, AST *expr)
       rhs = AstOperator('-', AstInteger(32), rhs);
       if (gl_p2) {
           // reverse, then shift right
-          left = CompileExpression(irl, lhs);
-          right = CompileExpression(irl, rhs);
+          left = CompileExpression(irl, lhs, NULL);
+          right = CompileExpression(irl, rhs, NULL);
           EmitOp2(irl, OPC_REV_P2, temp, left); // reverse the bits
           EmitOp2(irl, OPC_SHR, temp, right);
           return temp;
       } else {
-          left = CompileExpression(irl, lhs);
-          right = CompileExpression(irl, rhs);
+          left = CompileExpression(irl, lhs, temp);
+          right = CompileExpression(irl, rhs, NULL);
           EmitMove(irl, temp, left);
           right = Dereference(irl, right);
           EmitOp2(irl, OPC_REV_P1, temp, right);
@@ -1549,12 +1549,12 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case T_ROTR:
   case T_LIMITMIN:
   case T_LIMITMAX:
-    left = CompileExpression(irl, lhs);
-    right = CompileExpression(irl, rhs);
-    EmitMove(irl, temp, left);
-    right = Dereference(irl, right);
-    EmitOp2(irl, OpcFromOp(op), temp, right);
-    return temp;
+      left = CompileExpression(irl, lhs, temp);
+      right = CompileExpression(irl, rhs, NULL);
+      EmitMove(irl, temp, left);
+      right = Dereference(irl, right);
+      EmitOp2(irl, OpcFromOp(op), temp, right);
+      return temp;
     // commutative ops 
   case '+':
   case '^':
@@ -1562,39 +1562,39 @@ CompileBasicOperator(IRList *irl, AST *expr)
   case '|':
       // there might be something different we could do about
       // commutative operations, but for now handle them the same
-    left = CompileExpression(irl, lhs);
-    right = CompileExpression(irl, rhs);
-    EmitMove(irl, temp, left);
-    right = Dereference(irl, right);
-    EmitOp2(irl, OpcFromOp(op), temp, right);
-    return temp;
+      left = CompileExpression(irl, lhs, temp);
+      right = CompileExpression(irl, rhs, NULL);
+      EmitMove(irl, temp, left);
+      right = Dereference(irl, right);
+      EmitOp2(irl, OpcFromOp(op), temp, right);
+      return temp;
   case T_NEGATE:
   case T_ABS:
-    right = CompileExpression(irl, rhs);
-    right = Dereference(irl, right);
-    EmitOp2(irl, OpcFromOp(op), temp, right);
-    return temp;
+      right = CompileExpression(irl, rhs, temp);
+      right = Dereference(irl, right);
+      EmitOp2(irl, OpcFromOp(op), temp, right);
+      return temp;
   case T_BIT_NOT:
-    right = CompileExpression(irl, rhs);
-    EmitMove(irl, temp, right);
-    left = NewImmediate(-1);
-    EmitOp2(irl, OPC_XOR, temp, left);
-    return temp;
+      right = CompileExpression(irl, rhs, temp);
+      EmitMove(irl, temp, right);
+      left = NewImmediate(-1);
+      EmitOp2(irl, OPC_XOR, temp, left);
+      return temp;
   case T_ENCODE:
-    right = CompileExpression(irl, rhs);
-    left = NewFunctionTempRegister();
-    EmitMove(irl, left, right);
-    EmitMove(irl, temp, NewImmediate(32));
-    right = NewCodeLabel();
-    EmitLabel(irl, right);
-    ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
-    ir->flags |= FLAG_WC;
-    ir = EmitOp2(irl, OPC_DJNZ, temp, right);
-    ir->cond = COND_NC;
-    return temp;
+      right = CompileExpression(irl, rhs, temp);
+      left = NewFunctionTempRegister();
+      EmitMove(irl, left, right);
+      EmitMove(irl, temp, NewImmediate(32));
+      right = NewCodeLabel();
+      EmitLabel(irl, right);
+      ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
+      ir->flags |= FLAG_WC;
+      ir = EmitOp2(irl, OPC_DJNZ, temp, right);
+      ir->cond = COND_NC;
+      return temp;
   case T_DECODE:
-    ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
-    return NewImmediate(0);
+      ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
+      return NewImmediate(0);
 
   case T_NOT:
   case T_AND:
@@ -1638,7 +1638,7 @@ CompileBasicOperator(IRList *irl, AST *expr)
       fcall = NewAST(AST_FUNCCALL, AstIdentifier(fname),
                      NewAST(AST_EXPRLIST, var, NULL));
       fcall = AstAssign(T_ASSIGN, var, fcall);
-      return CompileExpression(irl, fcall);
+      return CompileExpression(irl, fcall, NULL);
   }
   default:
     ERROR(lhs, "Unsupported operator %d", op);
@@ -1647,9 +1647,9 @@ CompileBasicOperator(IRList *irl, AST *expr)
 }
 
 static Operand *
-CompileOperator(IRList *irl, AST *expr)
+CompileOperator(IRList *irl, AST *expr, Operand *dest)
 {
-  int op = (int)expr->d.ival;
+    int op = (int)expr->d.ival;
     switch (op) {
     case T_INCREMENT:
     case T_DECREMENT:
@@ -1661,36 +1661,36 @@ CompileOperator(IRList *irl, AST *expr)
         if (expr->left) {  /* x++ */
             addone = AstAssign(opc, expr->left, AstInteger(1));
             temp = NewFunctionTempRegister();
-            lhs = CompileExpression(irl, expr->left);
+            lhs = CompileExpression(irl, expr->left, NULL);
             EmitMove(irl, temp, lhs);
-            CompileExpression(irl, addone);
-            return  temp;
+            CompileExpression(irl, addone, NULL);
+            return temp;
         } else {
             addone = AstAssign(opc, expr->right, AstInteger(1));
         }
-        return CompileExpression(irl, addone);
+        return CompileExpression(irl, addone, NULL);
     }
     case '*':
-        return CompileMul(irl, expr, 0);
+        return CompileMul(irl, expr, 0, dest);
     case T_HIGHMULT:
-        return CompileMul(irl, expr, 1);
+        return CompileMul(irl, expr, 1, dest);
     case '/':
-        return CompileDiv(irl, expr, 0);
+        return CompileDiv(irl, expr, 0, dest);
     case T_MODULUS:
-        return CompileDiv(irl, expr, 1);
+        return CompileDiv(irl, expr, 1, dest);
     case '&':
         if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == T_BIT_NOT) {
-	  Operand *lhs = CompileExpression(irl, expr->left);
-	  Operand *rhs = CompileExpression(irl, expr->right->right);
-	  Operand *temp = NewFunctionTempRegister();
-	  EmitMove(irl, temp, lhs);
-          rhs = Dereference(irl, rhs);
-	  EmitOp2(irl, OPC_ANDN, temp, rhs);
-	  return temp;
+            Operand *temp = dest ? dest : NewFunctionTempRegister();
+            Operand *lhs = CompileExpression(irl, expr->left, temp);
+            Operand *rhs = CompileExpression(irl, expr->right->right, NULL);
+            EmitMove(irl, temp, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_ANDN, temp, rhs);
+            return temp;
         }
-        return CompileBasicOperator(irl, expr);
+        return CompileBasicOperator(irl, expr, dest);
     default:
-        return CompileBasicOperator(irl, expr);
+        return CompileBasicOperator(irl, expr, dest);
     }
 }
 
@@ -1745,7 +1745,7 @@ CompileExprList(IRList *irl, AST *fromlist)
     from = fromlist->left;
     fromlist = fromlist->right;
 
-    opfrom = CompileExpression(irl, from);
+    opfrom = CompileExpression(irl, from, NULL);
     opto = NewFunctionTempRegister();
     if (!opfrom) break;
     EmitMove(irl, opto, opfrom);
@@ -1855,11 +1855,11 @@ IsCogMem(Operand *addr)
 static Operand *
 CompileHubref(IRList *irl, AST *expr)
 {
-  Operand *addr = CompileExpression(irl, expr->right);
-  AST *type = expr->left;
+    Operand *addr = CompileExpression(irl, expr->right, NULL);
+    AST *type = expr->left;
 
-  addr = Dereference(irl, addr);
-  return TypedHubMemRef(type, addr, 0);
+    addr = Dereference(irl, addr);
+    return TypedHubMemRef(type, addr, 0);
 }
 
 static Operand *
@@ -1949,13 +1949,13 @@ CompileCondResult(IRList *irl, AST *expr)
 
     CompileBoolBranches(irl, cond, NULL, label1);
     /* the default is the IF part */
-    tmp = CompileExpression(irl, ifpart);
+    tmp = CompileExpression(irl, ifpart, NULL);
     EmitMove(irl, r, tmp);
     EmitJump(irl, COND_TRUE, label2);
 
     /* here is the ELSE part */
     EmitLabel(irl, label1);
-    tmp = CompileExpression(irl, elsepart);
+    tmp = CompileExpression(irl, elsepart, NULL);
     EmitMove(irl, r, tmp);
 
     /* all done */
@@ -1979,8 +1979,8 @@ CompileMaskMove(IRList *irl, AST *expr)
     AST *valast = expr->right->right;
     Operand *tmp = NewFunctionTempRegister();
     Operand *dest;
-    Operand *val = CompileExpression(irl, valast);
-    Operand *mask = CompileExpression(irl, maskast);
+    Operand *val = CompileExpression(irl, valast, NULL);
+    Operand *mask = CompileExpression(irl, maskast, NULL);
     IR *ir;
 
     switch(destast->kind) {
@@ -2105,7 +2105,7 @@ CompileCoginit(IRList *irl, AST *expr)
         {
             WARNING(stack, "Normally the coginit stack parameter should be an address");
         }
-        newstackptr = CompileExpression(irl, stack);
+        newstackptr = CompileExpression(irl, stack, NULL);
         if (COG_DATA) {
             newstacktop = CogMemRef(newstackptr, 0);
             const4 = NewImmediate(1);
@@ -2184,7 +2184,7 @@ CompileLookupDown(IRList *irl, AST *expr)
         /* NOTE!
            we have to evaluate the index before evaluating array elements
         */
-        finalidx = CompileExpression(irl, idx);
+        finalidx = CompileExpression(irl, idx, NULL);
         idx = NewAST(AST_OPERAND, NULL, NULL);
         idx->d.ptr = (void *)finalidx;
         
@@ -2194,7 +2194,7 @@ CompileLookupDown(IRList *irl, AST *expr)
         EmitMove(irl, basereg, stackptr);
         n = 0;
         while (table) {
-            Operand *src = CompileExpression(irl, table->left);
+            Operand *src = CompileExpression(irl, table->left, NULL);
             EmitPush(irl, src);
             n++;
             table = table->right;
@@ -2229,7 +2229,7 @@ GetAddressOf(IRList *irl, AST *expr)
     switch (expr->kind) {
     case AST_IDENTIFIER:
         tmp = NewFunctionTempRegister();
-        res = CompileExpression(irl, expr);
+        res = CompileExpression(irl, expr, NULL);
         EmitLea(irl, tmp, res);
         return tmp;
     case AST_ARRAYREF:
@@ -2241,8 +2241,8 @@ GetAddressOf(IRList *irl, AST *expr)
           ERROR(expr, "Array ref with no index?");
           return NewOperand(REG_REG, "???", 0);
       }
-      base = CompileExpression(irl, expr->left);
-      offset = CompileExpression(irl, expr->right);
+      base = CompileExpression(irl, expr->left, NULL);
+      offset = CompileExpression(irl, expr->right, NULL);
       res = ApplyArrayIndex(irl, base, offset);
       tmp = NewFunctionTempRegister();
       EmitLea(irl, tmp, res);
@@ -2256,7 +2256,7 @@ GetAddressOf(IRList *irl, AST *expr)
 }
 
 static Operand *
-CompileExpression(IRList *irl, AST *expr)
+CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
   Operand *r;
   Operand *val;
@@ -2308,7 +2308,7 @@ CompileExpression(IRList *irl, AST *expr)
       EmitMove(irl, tmp, result1);
       EmitJump(irl, COND_TRUE, labelend);
       EmitLabel(irl, labelskip);
-      EmitMove(irl, tmp, CompileExpression(irl, expr->left));
+      EmitMove(irl, tmp, CompileExpression(irl, expr->left, NULL));
       EmitLabel(irl, labelend);
       EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
       return tmp;
@@ -2327,8 +2327,8 @@ CompileExpression(IRList *irl, AST *expr)
       return temp;
   }
   case AST_SEQUENCE:
-      r = CompileExpression(irl, expr->left);
-      r = CompileExpression(irl, expr->right);
+      r = CompileExpression(irl, expr->left, NULL);
+      r = CompileExpression(irl, expr->right, NULL);
       return r;
   case AST_INTEGER:
   case AST_FLOAT:
@@ -2340,16 +2340,20 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_HWREG:
     return CompileHWReg(irl, expr);
   case AST_OPERATOR:
-    return CompileOperator(irl, expr);
+      return CompileOperator(irl, expr, dest);
   case AST_FUNCCALL:
-    return CompileFunccall(irl, expr);
+      return CompileFunccall(irl, expr);
   case AST_ASSIGN:
-    r = CompileExpression(irl, expr->left);
-    val = CompileExpression(irl, expr->right);
-    EmitMove(irl, r, val);
-    return r;
+      r = CompileExpression(irl, expr->left, NULL);
+      if (IsRegister(r->kind)) {
+          val = CompileExpression(irl, expr->right, r);
+      } else {
+          val = CompileExpression(irl, expr->right, NULL);
+      }
+      EmitMove(irl, r, val);
+      return r;
   case AST_RANGEREF:
-    return CompileExpression(irl, TransformRangeUse(expr));
+      return CompileExpression(irl, TransformRangeUse(expr), dest);
   case AST_STRING:
       if (strlen(expr->d.string) > 1)  {
             ERROR(expr, "string too long, expected a single character");
@@ -2367,8 +2371,8 @@ CompileExpression(IRList *irl, AST *expr)
           ERROR(expr, "Array ref with no index?");
           return NewOperand(REG_REG, "???", 0);
       }
-      base = CompileExpression(irl, expr->left);
-      offset = CompileExpression(irl, expr->right);
+      base = CompileExpression(irl, expr->left, NULL);
+      offset = CompileExpression(irl, expr->right, NULL);
       return ApplyArrayIndex(irl, base, offset);
   }
   case AST_SPRREF:
@@ -2379,7 +2383,7 @@ CompileExpression(IRList *irl, AST *expr)
           ERROR(expr, "SPR ref with no index?");
           return NewOperand(REG_REG, "???", 0);
       }
-      base = CompileExpression(irl, expr->left);
+      base = CompileExpression(irl, expr->left, NULL);
       return CogMemRef(base, 0);
   }
   case AST_MEMREF:
@@ -2392,8 +2396,8 @@ CompileExpression(IRList *irl, AST *expr)
   case AST_DATADDROF:
       /* this requires that we add an offset to the value we get */
   {
-      Operand *temp = NewFunctionTempRegister();
-      Operand *val = CompileExpression(irl, expr->left);
+      Operand *temp = dest ? dest : NewFunctionTempRegister();
+      Operand *val = CompileExpression(irl, expr->left, dest);
       Operand *datbase = ValidateDatBase(current);
       
       EmitMove(irl, temp, val);
@@ -2547,7 +2551,9 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             EmitAddSub(irl, dst, -off);
         }            
     } else {
-        ir = EmitOp2(irl, OPC_MOV, dst, src);
+        if (dst != src) {
+            ir = EmitOp2(irl, OPC_MOV, dst, src);
+        }
     }
     if (temp) {
         EmitOp1(irl, OPC_DEAD, temp);
@@ -2688,7 +2694,7 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     } else if (body) {
         EmitDebugComment(irl, body);
     }
-    CompileExpression(irl, initstmt);
+    CompileExpression(irl, initstmt, NULL);
     
     toplabel = NewCodeLabel();
     nextlabel = NewCodeLabel();
@@ -2722,7 +2728,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
 
     var = ast->left;
     if (var->kind == AST_ASSIGN) {
-        CompileExpression(irl, var);
+        CompileExpression(irl, var, NULL);
         var = var->left;
     } else if (var->kind != AST_IDENTIFIER) {
         ERROR(var, "Internal error, expected identifier in case");
@@ -2775,7 +2781,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             retval = curfunc->resultexpr;
         }
 	if (retval) {
-	    op = CompileExpression(irl, retval);
+	    op = CompileExpression(irl, retval, NULL);
 	    result = GetOneGlobal(REG_REG, "result1", 0);
             EmitMove(irl, result, op);
 	}
@@ -2791,7 +2797,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             retval = AstInteger(0);
         }
         ValidateAbortFuncs();
-        op = CompileExpression(irl, retval);
+        op = CompileExpression(irl, retval, NULL);
         EmitMove(irl, arg1, op);
         EmitOp1(irl, OPC_CALL, abortfunc);
         break;
@@ -2881,7 +2887,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     default:
         /* assume an expression */
         EmitDebugComment(irl, ast);
-        (void)CompileExpression(irl, ast);
+        (void)CompileExpression(irl, ast, NULL);
         break;
     }
     FreeTempRegisters(irl, starttempreg);
