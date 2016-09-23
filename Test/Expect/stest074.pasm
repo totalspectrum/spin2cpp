@@ -7,29 +7,28 @@ entry
 _get
 	mov	_var_12, #0
 	mov	_var_11, #0
-L__0001
+L__0002
 	cmps	_var_11, #9 wc,wz
- if_a	jmp	#L__0003
-	mov	_tmp001_, #_var_01
+ if_a	jmp	#L__0004
+	mov	_var_13, objptr
 	mov	_tmp002_, _var_11
-	add	_tmp001_, _tmp002_
-	mov	_tmp003_, objptr
-	mov	_tmp004_, _var_11
-	shl	_tmp004_, #2
-	add	_tmp003_, _tmp004_
-	rdlong	_tmp005_, _tmp003_
-	movs	wrcog, #_tmp005_
+	shl	_tmp002_, #2
+	add	_var_13, _tmp002_
+	mov	_tmp001_, #_var_01
+	add	_tmp001_, _var_11
+	rdlong	_tmp003_, _var_13
+	movs	wrcog, #_tmp003_
 	movd	wrcog, _tmp001_
 	call	#wrcog
-	mov	_tmp002_, #_var_01
-	add	_tmp002_, _var_11
-	movs	wrcog, _tmp002_
-	movd	wrcog, #_tmp004_
+	mov	_tmp001_, #_var_01
+	add	_tmp001_, _var_11
+	movs	wrcog, _tmp001_
+	movd	wrcog, #_tmp003_
 	call	#wrcog
-	add	_var_12, _tmp004_
+	add	_var_12, _tmp003_
 	add	_var_11, #1
-	jmp	#L__0001
-L__0003
+	jmp	#L__0002
+L__0004
 	mov	result1, _var_12
 _get_ret
 	ret
@@ -53,15 +52,13 @@ _tmp002_
 	res	1
 _tmp003_
 	res	1
-_tmp004_
-	res	1
-_tmp005_
-	res	1
 _var_01
 	res	10
 _var_11
 	res	1
 _var_12
+	res	1
+_var_13
 	res	1
 arg1
 	res	1

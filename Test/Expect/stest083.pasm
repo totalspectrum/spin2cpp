@@ -6,19 +6,19 @@ entry
 
 _inc
 	mov	_var_02, #0
-L__0002
+L__0003
 	cmps	_var_02, #9 wc,wz
- if_a	jmp	#L__0004
+ if_a	jmp	#L__0005
 	mov	_var_03, objptr
-	mov	_tmp003_, _var_02
-	shl	_tmp003_, #2
-	add	_var_03, _tmp003_
-	rdlong	_tmp001_, _var_03
-	add	_tmp001_, arg1
-	wrlong	_tmp001_, _var_03
+	mov	_tmp002_, _var_02
+	shl	_tmp002_, #2
+	add	_var_03, _tmp002_
+	rdlong	_var_04, _var_03
+	add	_var_04, arg1
+	wrlong	_var_04, _var_03
 	add	_var_02, #1
-	jmp	#L__0002
-L__0004
+	jmp	#L__0003
+L__0005
 _inc_ret
 	ret
 
@@ -31,13 +31,13 @@ COG_BSS_START
 objmem
 	res	10
 	org	COG_BSS_START
-_tmp001_
-	res	1
-_tmp003_
+_tmp002_
 	res	1
 _var_02
 	res	1
 _var_03
+	res	1
+_var_04
 	res	1
 arg1
 	res	1

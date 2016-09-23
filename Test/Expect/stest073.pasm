@@ -10,12 +10,12 @@ _get
 L__0001
 	cmps	_var_01, #9 wc,wz
  if_a	jmp	#L__0003
-	mov	_tmp002_, #496
-	add	_tmp002_, _var_01
-	movs	wrcog, _tmp002_
-	movd	wrcog, #_tmp003_
+	mov	_tmp001_, #496
+	add	_tmp001_, _var_01
+	movs	wrcog, _tmp001_
+	movd	wrcog, #_tmp002_
 	call	#wrcog
-	add	_var_sum, _tmp003_
+	add	_var_sum, _tmp002_
 	add	_var_01, #1
 	jmp	#L__0001
 L__0003
@@ -51,8 +51,6 @@ COG_BSS_START
 _tmp001_
 	res	1
 _tmp002_
-	res	1
-_tmp003_
 	res	1
 _var_01
 	res	1

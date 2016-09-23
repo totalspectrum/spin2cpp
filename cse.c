@@ -192,9 +192,15 @@ ArrayBaseType(AST *var)
             Label *label = (Label *)sym->val;
             return label->type;
         }
-    case SYM_VARIABLE:
     case SYM_LOCALVAR:
     case SYM_PARAMETER:
+        // if this function uses registers for arrays,
+        // give up
+        if (!curfunc->localarray) {
+            return NULL;
+        }
+        /* fall through */
+    case SYM_VARIABLE:
         stype = (AST *)sym->val;
         if (!stype) {
             ERROR(var, "illegal array reference");
@@ -245,7 +251,9 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
             origexpr = NewAST(AST_ADDROF, origexpr, NULL);
             assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
             assign = NewAST(AST_MEMREF, reftype, assign);
-            entry->replace = NewAST(AST_MEMREF, reftype, entry->replace);
+            entry->replace = NewAST(AST_ARRAYREF,
+                                    NewAST(AST_MEMREF, reftype, entry->replace),
+                                    AstInteger(0));
         } else {
             assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
         }
@@ -373,6 +381,17 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         case T_AND:
             // may not actually execute both sides of this, so
             // do not add any new entries on the second half
+            flags |= CSE_NO_ADD;
+            break;
+        case '<':
+        case '>':
+        case T_LE:
+        case T_GE:
+        case T_EQ:
+        case T_NE:
+            // do not add CSE entries for boolean operators,
+            // it generally won't help code generation and
+            // actually hurts it a lot of times
             flags |= CSE_NO_ADD;
             break;
         case '?':
@@ -510,10 +529,18 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
     case AST_ROUND:
     case AST_TRUNC:
     case AST_TOFLOAT:
-    case AST_SEQUENCE:
     case AST_ISBETWEEN:
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, NULL);
+        return newflags;
+    case AST_SEQUENCE:
+        // processing an AST_SEQUENCE is problematic because it might have multiple
+        // assignments within it, and we want to place the created CSE assignments
+        // at the beginning of the statement
+        // we can re-use any existing CSE statements within the sequence, but
+        // do not create any new ones
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_ADD, NULL);
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags | CSE_NO_ADD, NULL);
         return newflags;
     default:
         doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_REPLACE, NULL);
