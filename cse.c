@@ -481,7 +481,10 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
     case AST_IF:
     case AST_CASE:
         // do CSE on the expression
-        (void) doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
+        // NOTE: pulling expressions out can make it harder for
+        // later optimizations to eliminate compares, so don't
+        // do that; but do re-use any existing CSE entries
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_ADD, NULL);
         PlacePendingAssignments(stmtptr, cse);
         // invalidate CSE entries resulting from assignments, and
         // allow replacements using existing entries, but do not
@@ -569,6 +572,8 @@ PerformCSE(Module *Q)
     }
     curfunc = savefunc;
     current = savecur;
+
+    PerformLoopOptimization(Q);
 }
 
 //

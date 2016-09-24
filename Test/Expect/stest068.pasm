@@ -8,10 +8,10 @@ _shiftout
 	mov	_var_03, #1
 	shl	_var_03, arg2
 	mov	_var_04, #32
-L__0004
+L__0003
 	shr	arg1, #1 wc
 	muxc	OUTA, _var_03
-	djnz	_var_04, #L__0004
+	djnz	_var_04, #L__0003
 _shiftout_ret
 	ret
 

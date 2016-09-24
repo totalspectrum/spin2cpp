@@ -444,5 +444,6 @@ void AssignObjectOffsets(Module *P);
 
 // perform common sub-expression elimination on a function
 void PerformCSE(Module *P);
+void PerformLoopOptimization(Module *P);
 
 #endif

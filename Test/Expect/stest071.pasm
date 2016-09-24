@@ -5,11 +5,11 @@ DAT
 entry
 
 _blink
+	mov	_var_05, #1
+	shl	_var_05, arg1
 	cmps	arg2, #0 wz
  if_e	jmp	#L__0006
 L__0007
-	mov	_var_05, #1
-	shl	_var_05, arg1
 	xor	OUTA, _var_05
 	djnz	arg2, #L__0007
 L__0006
