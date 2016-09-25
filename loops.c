@@ -196,10 +196,15 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         case SYM_LOCALVAR:
         case SYM_TEMPVAR:
             entry = FindName(lvs, expr);
-            if (entry && (0 != (entry->flags & LVFLAG_VARYMASK))) {
-                return entry->hits == 1;
+            if (!entry) {
+                // never assigned in the loop
+                return false;
             }
-            return false;
+            if ((0 == (entry->flags & LVFLAG_VARYMASK))) {
+                // if entry->hits > 1 then variable is loop dependent
+                return entry->hits > 1;
+            }
+            return true;
         default:
             return true;
         }
@@ -213,6 +218,27 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
             break;
         }
         return IsLoopDependent(lvs, expr->left) || IsLoopDependent(lvs, expr->right);
+    case AST_ARRAYREF:
+        return IsLoopDependent(lvs, expr->left) || IsLoopDependent(lvs, expr->right);
+        
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        // addr of a variable is loop independent, even if the variable
+        // isn't
+    {
+        AST *ast = expr->left;
+        if (!ast) return false;
+        if (ast->kind == AST_IDENTIFIER) return false;
+        if (ast->kind == AST_ARRAYREF) {
+            if (ast->left && ast->left->kind == AST_IDENTIFIER) {
+                return IsLoopDependent(lvs, ast->right);
+            }
+        }
+        return IsLoopDependent(lvs, ast);
+    }
+    case AST_MEMREF:
+        // left side is type, so definitely not loop dependent
+        return IsLoopDependent(lvs, expr->right);
     default:
         return true;
     }
@@ -249,6 +275,8 @@ doLoopStrengthReduction(AST *initial, AST *body, AST *condition, AST *update)
     LoopValueEntry *entry;
     AST *stmtlist = NULL;
     AST *stmt;
+    AST *replace;
+    bool replaceLeft = true;
     
     InitLoopValueSet(&lv);
     FindAllAssignments(&lv, NULL, body, 0);
@@ -262,14 +290,24 @@ doLoopStrengthReduction(AST *initial, AST *body, AST *condition, AST *update)
         if (entry->flags & (LVFLAG_VARYMASK)) {
             continue;
         }
-        if (!entry->parent || entry->parent->kind != AST_STMTLIST) {
+        if (!entry->parent) continue;
+        if (entry->parent->kind == AST_STMTLIST) {
+            replace = NULL;
+        } else if (entry->parent->kind == AST_MEMREF) {
+            replace = entry->name;
+            replaceLeft = false;
+        } else {
             continue;
         }
         // this statement can be pulled out
         stmt = AstAssign(T_ASSIGN, entry->name, entry->value);
         stmt = NewAST(AST_STMTLIST, stmt, NULL);
         stmtlist = AddToList(stmtlist, stmt);
-        entry->parent->left = NULL; // null out original statement
+        if (replaceLeft) {
+            entry->parent->left = replace; // null out original statement
+        } else {
+            entry->parent->right = replace;
+        }
     }
     FreeLoopValueSet(&lv);
     return stmtlist;
