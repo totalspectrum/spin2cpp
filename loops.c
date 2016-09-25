@@ -79,6 +79,35 @@ FindName(LoopValueSet *lvs, AST *name)
 }
 
 /*
+ * Merge loop value set "l2" into "lvs", updating assignments as
+ * applicable and freeing duplicate entries
+ */
+static void
+MergeAndFreeLoopValueSets(LoopValueSet *lvs, LoopValueSet *l2)
+{
+    LoopValueEntry *e2;
+    LoopValueEntry *old;
+    LoopValueEntry *orig;
+    e2 = l2->list;
+    while(e2) {
+        old = e2;
+        e2 = e2->next;
+        orig = FindName(lvs, old->name);
+        if (orig) {
+            orig->value = old->value;
+            orig->parent = old->parent;
+            orig->flags |= old->flags;
+            orig->hits += old->hits;
+            free(old);
+        } else {
+            old->next = lvs->list;
+            lvs->list = old;
+        }
+    }
+    l2->list = NULL;
+}
+
+/*
  * Add a new assignment "name = val" to a LoopValueSet
  */
 static LoopValueEntry *
@@ -265,11 +294,13 @@ MarkDependencies(LoopValueSet *lvs)
 
 /*
  * actually perform loop strength reduction on a single loop body
- * return a statement list of assignments which can be performed
+ * return a statement list of assignments which should be performed
  * before the loop
+ * "initial" is a loop value set holding potential initial values for
+ * loop variables
  */
 static AST *
-doLoopStrengthReduction(AST *initial, AST *body, AST *condition, AST *update)
+doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *update)
 {
     LoopValueSet lv;
     LoopValueEntry *entry;
@@ -288,6 +319,9 @@ doLoopStrengthReduction(AST *initial, AST *body, AST *condition, AST *update)
             continue;
         }
         if (entry->flags & (LVFLAG_VARYMASK)) {
+            // if the new value is sufficiently simple,
+            // and we know the initial value
+            // maybe we can apply loop strength reduction
             continue;
         }
         if (!entry->parent) continue;
@@ -309,15 +343,18 @@ doLoopStrengthReduction(AST *initial, AST *body, AST *condition, AST *update)
             entry->parent->right = replace;
         }
     }
-    FreeLoopValueSet(&lv);
+    MergeAndFreeLoopValueSets(initial, &lv);
     return stmtlist;
 }
 
 //
 // optimize a statement list
+// "lvs" keeps track of current variable assignments
+// so we (may) know some of the initial values of
+// loop control variables
 //
 static void
-doLoopOptimizeList(AST *list)
+doLoopOptimizeList(LoopValueSet *lvs, AST *list)
 {
     AST *stmt, *stmtptr;
     while (list != NULL) {
@@ -333,7 +370,7 @@ doLoopOptimizeList(AST *list)
         if (!stmt) goto loop_next;
         switch (stmt->kind) {
         case AST_STMTLIST:
-            doLoopOptimizeList(stmt);
+            doLoopOptimizeList(lvs, stmt);
             break;
         case AST_FOR:
         case AST_FORATLEASTONCE:
@@ -349,10 +386,12 @@ doLoopOptimizeList(AST *list)
             condtest = condtest->left;
             body = update->right;
             update = update->left;
+            // find initial assignments
+            FindAllAssignments(lvs, NULL, initial, 0);
             // optimize sub-loops
-            doLoopOptimizeList(body);
+            doLoopOptimizeList(lvs, body);
             // now pull out loop invariants
-            pull = doLoopStrengthReduction(initial, body, condtest, update);
+            pull = doLoopStrengthReduction(lvs, body, condtest, update);
             if (pull) {
                 stmt = NewAST(AST_STMTLIST, stmt, NULL);
                 pull = AddToList(pull, stmt);
@@ -361,6 +400,7 @@ doLoopOptimizeList(AST *list)
             break;
         }
         default:
+            FindAllAssignments(lvs, NULL, stmt, 0);
             break;
         }
     loop_next:
@@ -374,14 +414,17 @@ PerformLoopOptimization(Module *Q)
     Module *savecur = current;
     Function *func;
     Function *savefunc = curfunc;
-
+    LoopValueSet lv;
+    
     if ((gl_optimize_flags & OPT_PERFORM_CSE) == 0)
         return;
 
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
-        doLoopOptimizeList(func->body);
+        InitLoopValueSet(&lv);
+        doLoopOptimizeList(&lv, func->body);
+        FreeLoopValueSet(&lv);
     }
     curfunc = savefunc;
     current = savecur;
