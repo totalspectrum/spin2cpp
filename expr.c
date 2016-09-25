@@ -149,7 +149,7 @@ GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr)
         return 0;
     }
     if (expr->right->kind != AST_IDENTIFIER) {
-        ERROR(expr, "expected identifier after '.'");
+        ERROR(expr, "expected identifier after '#'");
         return 0;
     }
     sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
