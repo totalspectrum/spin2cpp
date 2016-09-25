@@ -358,6 +358,19 @@ static void doASTDump(AST *ast, int indent)
     
     if (!ast) return;
     switch (ast->kind) {
+    case AST_STMTLIST:
+        printf("%*c<stmtlist>\n", indent, ' ');
+        while (ast && ast->kind == AST_STMTLIST) {
+            doASTDump(ast->left, indent+2);
+            ast = ast->right;
+        }
+        if (ast) {
+            printf("%*c<MALFORMED>\n", indent, ' ');
+            doASTDump(ast, indent+2);
+            printf("%*c</MALFORMED>\n", indent, ' ');
+        }
+        printf("%*c</stmtlist>\n", indent, ' ');
+        return;
     case AST_IDENTIFIER:
         sprintf(buf, "<identifier %s/>", ast->d.string);
         leaf = 1;
