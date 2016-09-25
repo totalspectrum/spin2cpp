@@ -304,6 +304,9 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
     /* need to find stack size */
     PrintTopOfStack(f, stack);
     flexbuf_printf(f, ", (void *)");
+    if (gl_ccode && sym && sym->type == SYM_FUNCTION) {
+        flexbuf_printf(f, "%s_", current->classname);
+    }
     PrintSymbol(f, sym);
 
     /* print parameters, and pad with 0's */
