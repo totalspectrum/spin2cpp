@@ -283,7 +283,7 @@ PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent)
     PrintBoolExpr(f, expr);
     flexbuf_printf(f, ") {");
     PrintNewline(f);
-    PrintStatementList(f, ast->right, indent);
+    PrintStatementList(f, ast->right, indent+2);
     flexbuf_printf(f, "%*c}", indent, ' ');
 }
 
