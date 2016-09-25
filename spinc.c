@@ -522,7 +522,8 @@ DeclareConstants(AST **conlist_ptr)
     AST *conlist;
     AST *upper, *ast, *id;
     AST *next;
-    int default_val = 0;
+    int default_val;
+    int default_val_ok = 0;
     int n;
 
     conlist = *conlist_ptr;
@@ -533,6 +534,8 @@ DeclareConstants(AST **conlist_ptr)
 
     do {
         n = 0; // no assignments yet
+        default_val = 0;
+        default_val_ok = 1;
         upper = conlist;
         while (upper) {
             next = upper->right;
@@ -540,7 +543,9 @@ DeclareConstants(AST **conlist_ptr)
                 ast = upper->left;
                 if (ast->kind == AST_COMMENTEDNODE)
                     ast = ast->left;
-                if (ast->kind == AST_ASSIGN) {
+
+                switch (ast->kind) {
+                case AST_ASSIGN:
                     if (IsConstExpr(ast->right)) {
                         EnterConstant(ast->left->d.string, ast->right);
                         n++;
@@ -551,6 +556,49 @@ DeclareConstants(AST **conlist_ptr)
                         conlist_ptr = &upper->right;
                         conlist = *conlist_ptr;
                     }
+                    break;
+                case AST_ENUMSET:
+                    if (IsConstExpr(ast->left)) {
+                        default_val = EvalConstExpr(ast->left);
+                        default_val_ok = 1;
+                    } else {
+                        default_val_ok = 0;
+                    }
+                    break;
+                case AST_ENUMSKIP:
+                    if (default_val_ok) {
+                        id = ast->left;
+                        if (id->kind != AST_IDENTIFIER) {
+                            ERROR(ast, "Internal error, expected identifier in constant list");
+                        } else {
+                            EnterConstant(id->d.string, AstInteger(default_val));
+                            default_val += EvalConstExpr(ast->right);
+                        }
+                        n++;
+                        // now pull the assignment out so we don't see it again
+                        RemoveFromList(conlist_ptr, upper);
+                        upper->right = *conlist_ptr;
+                        *conlist_ptr = upper;
+                        conlist_ptr = &upper->right;
+                        conlist = *conlist_ptr;
+                    }
+                    break;
+                case AST_IDENTIFIER:
+                    if (default_val_ok) {
+                        EnterConstant(ast->d.string, AstInteger(default_val));
+                        default_val++;
+                        n++;
+                        // now pull the assignment out so we don't see it again
+                        RemoveFromList(conlist_ptr, upper);
+                        upper->right = *conlist_ptr;
+                        *conlist_ptr = upper;
+                        conlist_ptr = &upper->right;
+                        conlist = *conlist_ptr;
+                    }
+                    break;
+                default:
+                    /* do nothing */
+                    break;
                 }
             }
             upper = next;
@@ -558,6 +606,8 @@ DeclareConstants(AST **conlist_ptr)
 
     } while (n > 0);
 
+    default_val = 0;
+    default_val_ok = 1;
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
