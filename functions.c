@@ -111,6 +111,11 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
     if (!body)
         return;
     switch(body->kind) {
+        // note that below we are making assumptions that we're still in the original function
+        // these assumptions fail if we encounter a methodref or constref
+    case AST_CONSTREF:
+    case AST_METHODREF:
+        return;
     case AST_ADDROF:
     case AST_ABSADDROF:
     case AST_ARRAYREF:
