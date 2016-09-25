@@ -80,6 +80,7 @@ fetchint( va_ptr args, int hassign, int size )
 //
 static int _fmtputc( int c, Printf_info *pi )
 {
+    c &= 0xff;
     pi->byteswritten++;
     return (*pi->putchar)(c, pi->putarg);
 }
