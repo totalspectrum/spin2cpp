@@ -328,6 +328,54 @@ unless all the arguments are constant.
 
 (2) The reverse operator will not work in Catalina.
 
+Quality of Produced C and C++Code
+---------------------------------
+
+The C/C++ code produced by spin2cpp is primarily intended to be correct, and
+only secondarily to be easy to read. spin2cpp does preserve the original
+comments (in most cases) and tries to produce code with a similar structure
+to the original Spin, but its output is not as clean as would be produced
+by a human programmer. Some of the things to watch out for:
+
+(1) Without `--gas`, DAT sections are turned into binary blobs
+    (which are not maintainable)
+
+(2) With `--gas`:
+    (a) Comments in PASM code are lost
+    (b) Only one `.org` is allowed per DAT, in general (in some
+        cases `gas` will accept more than one, but only if the
+	program counter advances).
+    (c) CON defines are repeated in the assembly code rather
+        than being re-used from the header
+
+(3) Code only uses one type (`int32_t`) cast to pointer as necessary;
+    idiomatic C would use pointer types from the start.
+
+(4) Some code (e.g. for starting a cog with a Spin method) relies on
+    features of more recent GCC + libraries, and will have to be ported
+    to SimpleIDE's older versions if that platform is desired.
+
+(5) `case` statements should be translated to switch/case if all labels
+    are constant, instead of if/then/else as spin2cpp does.
+
+(6) Access to labelled data in DAT section is awkward from C (lots of
+    weird casts). It would be better if the DAT came out as a struct.
+
+(7) Local variable names get lost when spin2cpp decides it has to
+    force the variables into a local array (for example if the address
+    of a local variable is taken)
+
+There are probably many more.
+
+Quality of Produced PASM Code
+-----------------------------
+
+When the `--asm` switch is used, the compiler is more concerned with
+producing fast, compact code than readable code. So the output may not
+be very user friendly. For example, local variables are often renamed
+to things like `arg1` or `_var_01`. The compiler may also inline or
+eliminate functions entirely if it thinks the resulting code will be
+smaller.
 
 C INTEROPERATION
 ===============
