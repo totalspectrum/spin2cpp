@@ -6,14 +6,11 @@ entry
 
 _get
 	mov	_var_12, #0
+	mov	_var_13, objptr
 	mov	_var_11, #0
 L__0002
 	cmps	_var_11, #9 wc,wz
  if_a	jmp	#L__0004
-	mov	_var_13, objptr
-	mov	_tmp002_, _var_11
-	shl	_tmp002_, #2
-	add	_var_13, _tmp002_
 	mov	_tmp001_, #_var_01
 	add	_tmp001_, _var_11
 	rdlong	_tmp003_, _var_13
@@ -27,6 +24,7 @@ L__0002
 	call	#wrcog
 	add	_var_12, _tmp003_
 	add	_var_11, #1
+	add	_var_13, #4
 	jmp	#L__0002
 L__0004
 	mov	result1, _var_12
@@ -47,8 +45,6 @@ objmem
 	res	10
 	org	COG_BSS_START
 _tmp001_
-	res	1
-_tmp002_
 	res	1
 _tmp003_
 	res	1

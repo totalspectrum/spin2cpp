@@ -250,7 +250,6 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
             }
             origexpr = NewAST(AST_ADDROF, origexpr, NULL);
             assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
-            assign = NewAST(AST_MEMREF, reftype, assign);
             entry->replace = NewAST(AST_ARRAYREF,
                                     NewAST(AST_MEMREF, reftype, entry->replace),
                                     AstInteger(0));
