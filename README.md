@@ -316,18 +316,6 @@ please report them so they can be fixed.
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
 
-Catalina Issues
----------------
-The C code support in spin2cpp is still in very early stages, and so
-there are some spin features which are not supported in Catalina (they
-do work in PropGCC because the latter supports some C++ extensions
-even in C mode).
-
-(1) The LOOKUP and LOOKDOWN functions in Spin do not work in Catalina
-unless all the arguments are constant.
-
-(2) The reverse operator will not work in Catalina.
-
 Quality of Produced C and C++Code
 ---------------------------------
 
@@ -376,6 +364,18 @@ be very user friendly. For example, local variables are often renamed
 to things like `arg1` or `_var_01`. The compiler may also inline or
 eliminate functions entirely if it thinks the resulting code will be
 smaller.
+
+Catalina Issues
+---------------
+The C code support in spin2cpp is still in very early stages, and so
+there are some spin features which are not supported in Catalina (they
+do work in PropGCC because the latter supports some C++ extensions
+even in C mode).
+
+(1) The LOOKUP and LOOKDOWN functions in Spin do not work in Catalina
+unless all the arguments are constant.
+
+(2) The reverse operator will not work in Catalina.
 
 C INTEROPERATION
 ===============
