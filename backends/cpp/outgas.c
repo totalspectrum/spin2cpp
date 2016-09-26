@@ -100,7 +100,7 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
     while (ast) {
         sub = ast->left;
-        if (sub->kind == AST_ARRAYDECL) {
+        if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
             origval = ast->left->left;
             reps = EvalPasmExpr(ast->left->right);
         } else if (sub->kind == AST_STRING) {
