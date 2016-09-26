@@ -122,6 +122,16 @@ AstMatch(AST *a, AST *b)
     return AstMatch(a->left, b->left) && AstMatch(a->right, b->right);
 }
 
+/* see if b is a subtree of a */
+int
+AstUses(AST *a, AST *b)
+{
+    if (!b) return 1;
+    if (!a) return 0;
+    if (AstMatch(a, b)) return 1;
+    return AstMatch(a->left, b) || AstMatch(a->right, b);
+}
+
 /* create an integer */
 AST *
 AstInteger(long ival)
@@ -437,3 +447,4 @@ DumpAST(AST *ast)
 {
     doASTDump(ast, 0);
 }
+

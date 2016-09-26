@@ -276,7 +276,7 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
     }
     case AST_MEMREF:
         // left side is type, we don't need to check that
-        return IsLoopDependent(lvs, expr->right);
+        return true || IsLoopDependent(lvs, expr->right);
     default:
         return true;
     }
@@ -289,7 +289,6 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
 // Sets *baseName to point to the bottom level name
 // that changes between loop updates
 //
-extern bool ASTUsesName(AST *expr, const char *name);
 
 static int
 ElementSize(AST *typ)
@@ -315,7 +314,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
         if (entry->hits != 1) return NULL;
         newval = entry->value;
         if (!newval) return NULL;
-        if (ASTUsesName(newval, val->d.string)) {
+        if (AstUses(newval, val)) {
             AST *increment = NULL;
             if (newval->kind == AST_OPERATOR && newval->d.ival == '+') {
                 if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
@@ -386,6 +385,13 @@ MarkDependencies(LoopValueSet *lvs)
     LoopValueEntry *entry;
     int change = 1;
 
+    // mark any self-dependent entries
+    for (entry = lvs->list; entry; entry = entry->next) {
+        if (AstUses(entry->value, entry->name)) {
+            entry->flags |= LVFLAG_LOOPDEPEND;
+        }
+    }
+    
     while (change != 0) {
         change = 0;
         for (entry = lvs->list; entry; entry = entry->next) {
@@ -487,6 +493,31 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
     return stmtlist;
 }
 
+static void doLoopOptimizeList(LoopValueSet *lvs, AST *list);
+
+//
+// helper for doLoopOptimizeList()
+//
+static AST *
+doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
+             AST *body)
+{
+    LoopValueSet sub;
+    AST *pull;
+    
+    // initial loop assignments take place before the loop
+    if (initial) {
+        FindAllAssignments(lvs, NULL, initial, 0);
+    }
+    // optimize sub-loops
+    InitLoopValueSet(&sub);
+    doLoopOptimizeList(&sub, body);
+    FreeLoopValueSet(&sub);
+    // pull out loop invariants
+    pull = doLoopStrengthReduction(lvs, body, condtest, update);
+    return pull;
+}
+
 //
 // optimize a statement list
 // "lvs" keeps track of current variable assignments
@@ -497,7 +528,10 @@ static void
 doLoopOptimizeList(LoopValueSet *lvs, AST *list)
 {
     AST *stmt, *stmtptr;
+    AST *pull;
+    
     while (list != NULL) {
+        pull = NULL;
         if (list->kind != AST_STMTLIST) {
             ERROR(list, "expected statement list");
         }
@@ -512,6 +546,16 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
         case AST_STMTLIST:
             doLoopOptimizeList(lvs, stmt);
             break;
+        case AST_WHILE:
+        case AST_DOWHILE:
+        {
+            AST *condtest = stmt->left;
+            AST *body = stmt->right;
+            AST *initial = NULL;
+            AST *update = NULL;
+            pull = doLoopHelper(lvs, initial, condtest, update, body);
+            break;
+        }
         case AST_FOR:
         case AST_FORATLEASTONCE:
         {
@@ -519,24 +563,14 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             AST *update;
             AST *body;
             AST *initial;
-            AST *pull;
             initial = stmt->left;
             condtest = stmt->right;
             update = condtest->right;
             condtest = condtest->left;
             body = update->right;
             update = update->left;
-            // find initial assignments
-            FindAllAssignments(lvs, NULL, initial, 0);
-            // optimize sub-loops
-            doLoopOptimizeList(lvs, body);
-            // now pull out loop invariants
-            pull = doLoopStrengthReduction(lvs, body, condtest, update);
-            if (pull) {
-                stmt = NewAST(AST_STMTLIST, stmt, NULL);
-                pull = AddToList(pull, stmt);
-                stmtptr->left = pull;
-            }
+
+            pull = doLoopHelper(lvs, initial, condtest, update, body);
             break;
         }
         default:
@@ -545,6 +579,11 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
         }
     loop_next:
         list = list->right;
+        if (pull) {
+            stmt = NewAST(AST_STMTLIST, stmt, NULL);
+            pull = AddToList(pull, stmt);
+            stmtptr->left = pull;
+        }
     }
 }
 
@@ -568,4 +607,20 @@ PerformLoopOptimization(Module *Q)
     }
     curfunc = savefunc;
     current = savecur;
+}
+
+//
+// debug code
+//
+void
+DumpLVS(LoopValueSet *lvs)
+{
+    LoopValueEntry *e;
+    for (e = lvs->list; e; e = e->next) {
+        printf("entry for: ");
+        DumpAST(e->name);
+        printf("value: ");
+        DumpAST(e->value);
+        printf("\n");
+    }
 }

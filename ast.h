@@ -163,6 +163,9 @@ AST *AstLookup(enum astkind kind, int index, AST *expr, AST *table);
 /* check to see if two trees are identical */
 int AstMatch(AST *a, AST *b);
 
+/* check to see if a tree is a subtree of another */
+int AstUses(AST *big, AST *sub);
+
 /* length of an AST list */
 int AstListLen(AST *a);
 
