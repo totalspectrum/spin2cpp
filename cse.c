@@ -109,7 +109,7 @@ FindCSE(CSESet *set, AST *expr, unsigned exprHash)
 }
 
 // check to see if an AST involves a particular name
-static bool
+bool
 ASTUsesName(AST *expr, const char *name)
 {
     if (!expr) return false;

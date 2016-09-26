@@ -150,6 +150,7 @@ AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
 void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
+AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);
 AST *AstInteger(long intval);
 AST *AstIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);

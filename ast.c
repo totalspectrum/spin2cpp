@@ -67,6 +67,32 @@ DupAST(AST *orig)
     return dup;
 }
 
+/*
+ * duplicate an AST replacing "orig" with "replace"
+ */
+AST *
+DupASTWithReplace(AST *ast, AST *orig, AST *replace)
+{
+    AST *dup;
+
+    if (!ast)
+        return NULL;
+
+    dup = NewAST(ast->kind, NULL, NULL);
+    memcpy(dup, ast, sizeof(*dup));
+    if (AstMatch(ast->left, orig)) {
+        dup->left = DupAST(replace);
+    } else {
+        dup->left = DupASTWithReplace(ast->left, orig, replace);
+    }
+    if (AstMatch(ast->right, orig)) {
+        dup->right = DupAST(replace);
+    } else {
+        dup->right = DupASTWithReplace(ast->right, orig, replace);
+    }
+    return dup;
+}
+
 /* see if two trees match */
 int
 AstMatch(AST *a, AST *b)

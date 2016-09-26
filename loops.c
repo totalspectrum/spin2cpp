@@ -31,6 +31,8 @@ typedef struct LoopValueEntry {
     AST *parent; // parent of the last assignment statement
     unsigned flags; // info about the assignment
     int hits;   // number of times we see assignments to this variable
+    AST *loopstep; // if strength reduction is possible, do this each time through
+    AST *basename; // base loop induction variable that "loopstep" depends on
 } LoopValueEntry;
 
 typedef struct LoopValueSet {
@@ -195,6 +197,10 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     case AST_FORATLEASTONCE:
         flags |= LVFLAG_NESTED;
         break;
+    case AST_METHODREF:
+    case AST_CONSTREF:
+        // don't recurse inside these
+        return;
     default:
         break;
     }
@@ -205,7 +211,7 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
 //
 // return true if an expression is loop dependent
 // be conservative about this!
-//
+// 
 static bool
 IsLoopDependent(LoopValueSet *lvs, AST *expr)
 {
@@ -219,6 +225,9 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
     {
         Symbol *sym = LookupSymbol(expr->d.string);
         LoopValueEntry *entry;
+        if (!sym) {
+            return true;
+        }
         switch (sym->type) {
         case SYM_PARAMETER:
         case SYM_RESULT:
@@ -266,10 +275,108 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         return IsLoopDependent(lvs, ast);
     }
     case AST_MEMREF:
-        // left side is type, so definitely not loop dependent
+        // left side is type, we don't need to check that
         return IsLoopDependent(lvs, expr->right);
     default:
         return true;
+    }
+}
+
+//
+// given an expression "val"
+// find an expression for the difference in values
+// between this loop step and the next
+// Sets *baseName to point to the bottom level name
+// that changes between loop updates
+//
+extern bool ASTUsesName(AST *expr, const char *name);
+
+static int
+ElementSize(AST *typ)
+{
+    while (typ->kind == AST_ARRAYTYPE) {
+        typ = typ->left;
+    }
+    return EvalConstExpr(typ->left);
+}
+
+static AST *
+FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
+{
+    AST *loopstep;
+    LoopValueEntry *entry;
+    AST *newval;
+    
+    if (!val) return NULL;
+    switch(val->kind) {
+    case AST_IDENTIFIER:
+        entry = FindName(lvs, val);
+        if (!entry) return NULL;
+        if (entry->hits != 1) return NULL;
+        newval = entry->value;
+        if (!newval) return NULL;
+        if (ASTUsesName(newval, val->d.string)) {
+            AST *increment = NULL;
+            if (newval->kind == AST_OPERATOR && newval->d.ival == '+') {
+                if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
+                    increment = newval->right;
+                }
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == T_INCREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+                increment = AstInteger(1);
+            }
+            if (increment) {
+                if (*basename == NULL) {
+                    *basename = val;
+                } else {
+                    if (!AstMatch(val, *basename)) {
+                        return NULL;
+                    }
+                }
+                return increment;
+            }
+            return NULL;
+        }
+        return FindLoopStep(lvs, newval, basename);
+    case AST_ADDROF:
+        val = val->left;
+        if (val && val->kind == AST_ARRAYREF) {
+            int elementsize = 4;
+            AST *arrayname = val->left;
+            Symbol *sym;
+            if (arrayname->kind != AST_IDENTIFIER) {
+                return NULL;
+            }
+            sym = LookupSymbol(arrayname->d.string);
+            if (!sym) {
+                return NULL;
+            }
+            switch (sym->type) {
+            case SYM_VARIABLE:
+            case SYM_TEMPVAR:
+            case SYM_LOCALVAR:
+            case SYM_PARAMETER:
+                elementsize = ElementSize((AST *)sym->val);
+                break;
+            case SYM_LABEL:
+            {
+                Label *lab = (Label *)sym->val;
+                elementsize = ElementSize(lab->type);
+                break;
+            }
+            default:
+                return NULL;
+            }
+            val = val->right;
+            if (!val) return NULL;
+            loopstep = FindLoopStep(lvs, val, basename);
+            if (!loopstep) return NULL;
+            if (!IsConstExpr(loopstep)) return NULL;
+            if (!*basename) return NULL;
+            return AstInteger(elementsize*EvalConstExpr(loopstep));
+        }
+        return NULL;
+    default:
+        return NULL;
     }
 }
 
@@ -290,6 +397,14 @@ MarkDependencies(LoopValueSet *lvs)
             }
         }
     }
+
+    // now look here for expressions that can be strength reduced
+    for (entry = lvs->list; entry; entry = entry->next) {
+        if (entry->hits == 1 && (entry->flags & LVFLAG_VARYMASK)) {
+            entry->basename = NULL;
+            entry->loopstep = FindLoopStep(lvs, entry->value, &entry->basename);
+        }
+    }
 }
 
 /*
@@ -304,9 +419,11 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
 {
     LoopValueSet lv;
     LoopValueEntry *entry;
+    LoopValueEntry *initEntry;
     AST *stmtlist = NULL;
     AST *stmt;
     AST *replace;
+    AST *pullvalue; // initial value for pulled out code
     bool replaceLeft = true;
     
     InitLoopValueSet(&lv);
@@ -318,23 +435,46 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
         if (entry->hits > 1) {
             continue;
         }
+        if (!entry->parent) continue;
         if (entry->flags & (LVFLAG_VARYMASK)) {
             // if the new value is sufficiently simple,
             // and we know the initial value
             // maybe we can apply loop strength reduction
-            continue;
-        }
-        if (!entry->parent) continue;
-        if (entry->parent->kind == AST_STMTLIST) {
-            replace = NULL;
-        } else if (entry->parent->kind == AST_MEMREF) {
-            replace = entry->name;
-            replaceLeft = false;
+            if (!entry->loopstep || !entry->basename) {
+                continue;
+            }
+            if (entry->basename->kind != AST_IDENTIFIER) {
+                continue;
+            }
+            initEntry = FindName(initial, entry->basename);
+            if (!initEntry) {
+                continue;
+            }
+            pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
+            /* compensate for initial loop step */
+            pullvalue = AstOperator('-', pullvalue, entry->loopstep);
+            replace = AstAssign('+', entry->name, entry->loopstep);
+            if (entry->parent->kind == AST_STMTLIST) {
+                /* nothing special to do here */
+            } else if (entry->parent->kind == AST_MEMREF) {
+                replaceLeft = false;
+            } else {
+                // do not know how to replace
+                continue;
+            }
         } else {
-            continue;
+            if (entry->parent->kind == AST_STMTLIST) {
+                replace = NULL;
+            } else if (entry->parent->kind == AST_MEMREF) {
+                replace = entry->name;
+                replaceLeft = false;
+            } else {
+                continue;
+            }
+            pullvalue = entry->value;
         }
         // this statement can be pulled out
-        stmt = AstAssign(T_ASSIGN, entry->name, entry->value);
+        stmt = AstAssign(T_ASSIGN, entry->name, pullvalue);
         stmt = NewAST(AST_STMTLIST, stmt, NULL);
         stmtlist = AddToList(stmtlist, stmt);
         if (replaceLeft) {
