@@ -6,11 +6,11 @@ entry
 
 _strlen
 	neg	_var_02, #1
-L__0001
+L__0002
 	rdbyte	_var_03, arg1 wz
 	add	arg1, #1
 	add	_var_02, #1
- if_ne	jmp	#L__0001
+ if_ne	jmp	#L__0002
 	mov	result1, _var_02
 _strlen_ret
 	ret

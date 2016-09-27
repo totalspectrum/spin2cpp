@@ -36,7 +36,8 @@ typedef struct LoopValueEntry {
 } LoopValueEntry;
 
 typedef struct LoopValueSet {
-    LoopValueEntry *list;
+    LoopValueEntry *head;
+    LoopValueEntry *tail;
 } LoopValueSet;
 
 /*
@@ -45,7 +46,7 @@ typedef struct LoopValueSet {
 static void
 InitLoopValueSet(LoopValueSet *lvs)
 {
-    lvs->list = NULL;
+    lvs->head = lvs->tail = NULL;
 }
 
 /*
@@ -56,14 +57,30 @@ FreeLoopValueSet(LoopValueSet *lvs)
 {
     LoopValueEntry *entry;
     LoopValueEntry *old;
-    entry = lvs->list;
+    entry = lvs->head;
     while (entry) {
         old = entry;
         entry = entry->next;
         free(old);
     }
+    lvs->head = lvs->tail = NULL;
 }
 
+/*
+ * add a name to an LVSet
+ */
+static void
+AddToLVS(LoopValueSet *lvs, LoopValueEntry *entry)
+{
+    entry->next = NULL;
+    if (!lvs->tail) {
+        lvs->head = lvs->tail = entry;
+        return;
+    }
+    lvs->tail->next = entry;
+    lvs->tail = entry;
+}
+    
 /*
  * find a name in an LVSet
  */
@@ -72,7 +89,7 @@ FindName(LoopValueSet *lvs, AST *name)
 {
     LoopValueEntry *entry;
 
-    for (entry = lvs->list; entry; entry = entry->next) {
+    for (entry = lvs->head; entry; entry = entry->next) {
         if (AstMatch(entry->name, name)) {
             return entry;
         }
@@ -90,7 +107,7 @@ MergeAndFreeLoopValueSets(LoopValueSet *lvs, LoopValueSet *l2)
     LoopValueEntry *e2;
     LoopValueEntry *old;
     LoopValueEntry *orig;
-    e2 = l2->list;
+    e2 = l2->head;
     while(e2) {
         old = e2;
         e2 = e2->next;
@@ -102,11 +119,10 @@ MergeAndFreeLoopValueSets(LoopValueSet *lvs, LoopValueSet *l2)
             orig->hits += old->hits;
             free(old);
         } else {
-            old->next = lvs->list;
-            lvs->list = old;
+            AddToLVS(lvs, old);
         }
     }
-    l2->list = NULL;
+    l2->head = NULL;
 }
 
 /*
@@ -134,8 +150,7 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
     entry->value = value;
     entry->parent = parent;
     entry->flags = flags;
-    entry->next = lvs->list;
-    lvs->list = entry;
+    AddToLVS(lvs, entry);
     return entry;
 }
 
@@ -309,6 +324,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
     AST *loopstep;
     LoopValueEntry *entry;
     AST *newval;
+    int stepval;
     
     if (!val) return NULL;
     switch(val->kind) {
@@ -324,8 +340,14 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
                 if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
                     increment = newval->right;
                 }
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == '-') {
+                if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
+                    increment = AstOperator(T_NEGATE, NULL, newval->right);
+                }
             } else if (newval->kind == AST_OPERATOR && newval->d.ival == T_INCREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
                 increment = AstInteger(1);
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == T_DECREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+                increment = AstOperator(T_NEGATE, NULL, AstInteger(1));
             }
             if (increment) {
                 if (*basename == NULL) {
@@ -379,7 +401,12 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             if (!loopstep) return NULL;
             if (!IsConstExpr(loopstep)) return NULL;
             if (!*basename) return NULL;
-            return AstInteger(elementsize*EvalConstExpr(loopstep));
+            stepval = elementsize * EvalConstExpr(loopstep);
+            if (stepval >= 0) {
+                return AstInteger(stepval);
+            } else {
+                return AstOperator(T_NEGATE, NULL, AstInteger(-stepval));
+            }
         }
         return NULL;
     default:
@@ -394,7 +421,7 @@ MarkDependencies(LoopValueSet *lvs)
     int change = 1;
 
     // mark any self-dependent entries
-    for (entry = lvs->list; entry; entry = entry->next) {
+    for (entry = lvs->head; entry; entry = entry->next) {
         if (AstUses(entry->value, entry->name)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
@@ -402,7 +429,7 @@ MarkDependencies(LoopValueSet *lvs)
     
     while (change != 0) {
         change = 0;
-        for (entry = lvs->list; entry; entry = entry->next) {
+        for (entry = lvs->head; entry; entry = entry->next) {
             if (0 == (entry->flags & LVFLAG_VARYMASK)) {
                 if (IsLoopDependent(lvs, entry->value)) {
                     entry->flags |= LVFLAG_LOOPDEPEND;
@@ -413,7 +440,7 @@ MarkDependencies(LoopValueSet *lvs)
     }
 
     // now look here for expressions that can be strength reduced
-    for (entry = lvs->list; entry; entry = entry->next) {
+    for (entry = lvs->head; entry; entry = entry->next) {
         if (entry->hits == 1 && (entry->flags & LVFLAG_VARYMASK)) {
             entry->basename = NULL;
             entry->loopstep = FindLoopStep(lvs, entry->value, &entry->basename);
@@ -450,7 +477,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST **
     FindAllAssignments(&lv, NULL, update, 0);
     FindAllAssignments(&lv, NULL, condition, 0);
     MarkDependencies(&lv);
-    for (entry = lv.list; entry; entry = entry->next) {
+    for (entry = lv.head; entry; entry = entry->next) {
         if (entry->hits > 1) {
             continue;
         }
@@ -476,7 +503,11 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST **
                 continue;
             }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
-            replace = AstAssign('+', entry->name, entry->loopstep);
+            if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == T_NEGATE) {
+                replace = AstAssign('-', entry->name, entry->loopstep->right);
+            } else {
+                replace = AstAssign('+', entry->name, entry->loopstep);
+            }
             replaceUpdate = true; // do the update at end of loop
         } else {
             pullvalue = entry->value;
@@ -629,7 +660,7 @@ void
 DumpLVS(LoopValueSet *lvs)
 {
     LoopValueEntry *e;
-    for (e = lvs->list; e; e = e->next) {
+    for (e = lvs->head; e; e = e->next) {
         printf("entry for: ");
         DumpAST(e->name);
         printf("value: ");
