@@ -436,6 +436,11 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             }
         }
         return newflags;
+    case AST_MEMREF:
+        // left side of ast is just the type, no need to do CSE on it
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, NULL);
+        /* do not try to add this to CSE, but we can use the memref in a CSE */
+        return newflags;
     case AST_ADDROF:
     case AST_ABSADDROF:
         // for addressof, we cannot do CSE inside

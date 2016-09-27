@@ -268,15 +268,19 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         if (!ast) return false;
         if (ast->kind == AST_IDENTIFIER) return false;
         if (ast->kind == AST_ARRAYREF) {
-            if (ast->left && ast->left->kind == AST_IDENTIFIER) {
-                return IsLoopDependent(lvs, ast->right);
+            if (ast->left) {
+                if (ast->left->kind == AST_IDENTIFIER) {
+                    return IsLoopDependent(lvs, ast->right);
+                } else if (ast->left->kind == AST_MEMREF) {
+                    return IsLoopDependent(lvs, ast->right) || IsLoopDependent(lvs, ast->left);
+                }
             }
         }
         return IsLoopDependent(lvs, ast);
     }
     case AST_MEMREF:
         // left side is type, we don't need to check that
-        return true || IsLoopDependent(lvs, expr->right);
+        return IsLoopDependent(lvs, expr->right);
     default:
         return true;
     }
@@ -342,27 +346,31 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             int elementsize = 4;
             AST *arrayname = val->left;
             Symbol *sym;
-            if (arrayname->kind != AST_IDENTIFIER) {
-                return NULL;
+            if (arrayname->kind == AST_MEMREF) {
+                elementsize = ElementSize(arrayname->left);
             }
-            sym = LookupSymbol(arrayname->d.string);
-            if (!sym) {
-                return NULL;
-            }
-            switch (sym->type) {
-            case SYM_VARIABLE:
-            case SYM_TEMPVAR:
-            case SYM_LOCALVAR:
-            case SYM_PARAMETER:
-                elementsize = ElementSize((AST *)sym->val);
-                break;
-            case SYM_LABEL:
-            {
-                Label *lab = (Label *)sym->val;
-                elementsize = ElementSize(lab->type);
-                break;
-            }
-            default:
+            else if (arrayname->kind == AST_IDENTIFIER) {
+                sym = LookupSymbol(arrayname->d.string);
+                if (!sym) {
+                    return NULL;
+                }
+                switch (sym->type) {
+                case SYM_VARIABLE:
+                case SYM_TEMPVAR:
+                case SYM_LOCALVAR:
+                case SYM_PARAMETER:
+                    elementsize = ElementSize((AST *)sym->val);
+                    break;
+                case SYM_LABEL:
+                {
+                    Label *lab = (Label *)sym->val;
+                    elementsize = ElementSize(lab->type);
+                    break;
+                }
+                default:
+                    return NULL;
+                }
+            } else {
                 return NULL;
             }
             val = val->right;
