@@ -3,10 +3,13 @@
 
 void test63::Test(int32_t Exponent)
 {
-  if (Exponent == 0) {
+  switch(Exponent) {
+  case 0:
     (++Exponent);
-  } else if (1) {
+    break;
+  default:
     (--Exponent);
+    break;
   }
 }
 

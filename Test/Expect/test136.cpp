@@ -3,12 +3,16 @@
 
 void test136::Doone(int32_t X)
 {
-  if (X == 0) {
+  switch(X) {
+  case 0:
     Dotwo(1);
-  } else if (X == 1) {
+    break;
+  case 1:
     Dotwo(2);
-  } else if (1) {
+    break;
+  default:
     Dotwo(3);
+    break;
   }
 }
 

@@ -343,13 +343,10 @@ by a human programmer. Some of the things to watch out for:
     features of more recent GCC + libraries, and will have to be ported
     to SimpleIDE's older versions if that platform is desired.
 
-(5) `case` statements should be translated to switch/case if all labels
-    are constant, instead of if/then/else as spin2cpp does.
-
-(6) Access to labelled data in DAT section is awkward from C (lots of
+(5) Access to labelled data in DAT section is awkward from C (lots of
     weird casts). It would be better if the DAT came out as a struct.
 
-(7) Local variable names get lost when spin2cpp decides it has to
+(6) Local variable names get lost when spin2cpp decides it has to
     force the variables into a local array (for example if the address
     of a local variable is taken)
 

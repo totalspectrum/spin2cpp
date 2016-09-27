@@ -274,17 +274,48 @@ PrintStatementList(Flexbuf *f, AST *ast, int indent)
     }
 }
 
+#define USE_CASE 1
+#define USE_IF 0
+
 static void
-PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent)
+PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent, int how)
 {
     AST *expr;
-    flexbuf_printf(f, "(");
-    expr = TransformCaseExprList(var, ast->left);
-    PrintBoolExpr(f, expr);
-    flexbuf_printf(f, ") {");
-    PrintNewline(f);
-    PrintStatementList(f, ast->right, indent+2);
-    flexbuf_printf(f, "%*c}", indent, ' ');
+    AST *exprlist;
+    
+    if (how == USE_CASE) {
+        exprlist = ast->left;
+        while (exprlist) {
+            if (exprlist->kind == AST_OTHER) {
+                flexbuf_printf(f, "%*cdefault:", indent, ' ');
+                PrintNewline(f);
+            } else if (exprlist->kind == AST_EXPRLIST) {
+                expr = exprlist->left;
+                if (expr->kind == AST_OTHER) {
+                    flexbuf_printf(f, "%*cdefault", indent, ' ');
+                } else {
+                    flexbuf_printf(f, "%*ccase ", indent, ' ');
+                    PrintExpr(f, expr);
+                }
+                flexbuf_printf(f, ":");
+                PrintNewline(f);
+            } else {
+                ERROR(ast, "Unexpected value in case item expression list");
+            }
+            exprlist = exprlist->right;
+        }
+        PrintStatementList(f, ast->right, indent+2);
+        flexbuf_printf(f, "%*cbreak;", indent+2, ' ');
+        PrintNewline(f);
+    } else {
+        flexbuf_printf(f, "if (");
+        expr = TransformCaseExprList(var, ast->left);
+        PrintBoolExpr(f, expr);
+        flexbuf_printf(f, ") {");
+        PrintNewline(f);
+        PrintStatementList(f, ast->right, indent+2);
+        flexbuf_printf(f, "%*c}", indent, ' ');
+    }
 }
 
 static void
@@ -292,8 +323,55 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
 {
     int items = 0;
     int first = 1;
+    int otherIsLast = 1;
+    int noOther = 1;
+    int allConst = 1;  /* true if all case item expressions are constant */
     AST *var;
+    AST *ptr;
+    AST *item;
+    AST *itemexpr;
+    AST *itemexprlist;
+    
+    // scan the case statement for special cases
+    for (ptr = ast; ptr; ptr = ptr->right) {
+        if (ptr->kind != AST_LISTHOLDER) {
+            ERROR(ast, "Internal error in case list");
+            return;
+        }
+        item = ptr->left;
+        itemexprlist = item->left;
+        while (itemexprlist) {
+            itemexpr = itemexprlist->left;
+            if (itemexprlist->kind == AST_OTHER) {
+                otherIsLast = 1;
+                noOther = 0;
+            } else {
+                otherIsLast = 0;
+                if (!IsConstExpr(itemexpr)) {
+                    allConst = 0;
+                }
+            }
+            itemexprlist = itemexprlist->right;
+        }
+    }
 
+    if (allConst && (otherIsLast || noOther)) {
+        // use switch/case for this
+        flexbuf_printf(f, "%*c", indent, ' ');
+        flexbuf_printf(f, "switch(");
+        PrintExpr(f, expr);
+        flexbuf_printf(f, ") {");
+        PrintNewline(f);
+        while (ast) {
+            item = ast->left;
+            PrintCaseItem(f, NULL, item, indent, USE_CASE);
+            ast = ast->right;
+        }
+        flexbuf_printf(f, "%*c}", indent, ' ');
+        PrintNewline(f);
+        return;
+    }
+    
     if (expr->kind == AST_IDENTIFIER) {
         var = expr;
     } else if (expr->kind == AST_ASSIGN) {
@@ -306,17 +384,13 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
         var = NULL;
     }
     while (ast) {
-        if (ast->kind != AST_LISTHOLDER) {
-            ERROR(ast, "Internal error in case list");
-            return;
-        }
         if (first) {
-            flexbuf_printf(f, "%*cif ", indent, ' ');
+            flexbuf_printf(f, "%*c ", indent, ' ');
             first = 0;
         } else {
-            flexbuf_printf(f, " else if ");
+            flexbuf_printf(f, " else ");
         }
-        PrintCaseItem(f, var, ast->left, indent);
+        PrintCaseItem(f, var, ast->left, indent, USE_IF);
         ast = ast->right;
         items++;
     }
