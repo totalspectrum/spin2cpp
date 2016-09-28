@@ -284,6 +284,29 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 static unsigned doPerformCSE(AST *stmtptr, AST **ast, CSESet *cse, unsigned flags, AST *name);
 
 //
+// perform CSE on a block which may be conditinally executed
+// we can re-use any existing CSE definitions from the main set
+// but new ones can be created only in a local set that doesn't
+// get saved
+//
+static unsigned
+blockCSE(AST *stmtptr, AST **block, CSESet *cse, unsigned flags)
+{
+    CSESet bodycse;
+    unsigned newflags = flags;
+    
+    // use the existing set to do any replacements
+    doPerformCSE(stmtptr, block, cse, flags | CSE_NO_ADD, NULL);
+
+    if (flags == 0) {
+        InitCSESet(&bodycse);
+        doPerformCSE(NULL, block, &bodycse, flags, NULL);
+        ClearCSESet(&bodycse);
+    }
+    return newflags;
+}
+
+//
 // "astptr" points to the loop statement itself
 // "body" is the loop body
 // "condition" is the loop test condition
@@ -310,6 +333,7 @@ loopCSE(AST *stmtptr, AST **astptr, AST **body, AST **condition, AST **update, C
     if (flags == 0) {
         InitCSESet(&bodycse);
         doPerformCSE(NULL, body, &bodycse, flags, NULL);
+        ClearCSESet(&bodycse);
     }
     return flags;
 }
@@ -483,6 +507,26 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         newflags |= CSE_NO_REPLACE; // this expression should not be CSE'd
         return newflags;
     case AST_IF:
+    {
+        // do CSE on the expression
+        // NOTE: pulling expressions out can make it harder for
+        // later optimizations to eliminate compares, so don't
+        // do that; but do re-use any existing CSE entries
+        (void) doPerformCSE(stmtptr, &ast->left, cse, flags | CSE_NO_ADD, NULL);
+        PlacePendingAssignments(stmtptr, cse);
+        // ast->right should be a THENELSE
+        ast = ast->right;
+        while (ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (ast->kind != AST_THENELSE) {
+            ERROR(ast, "Expecting THENELSE block");
+            return newflags;
+        }
+        blockCSE(stmtptr, &ast->left, cse, flags);
+        blockCSE(stmtptr, &ast->right, cse, flags);
+        return newflags;
+    }
     case AST_CASE:
         // do CSE on the expression
         // NOTE: pulling expressions out can make it harder for
