@@ -201,6 +201,12 @@ Spin2cpp accepts the following options:
   placed in COG or HUB memory. The default
   is to use COG memory.
   
+`--cse`
+  Enable common subexpression elimination. This optimization may be
+  useful for ASM output, but it is still experimental and does not always
+  help performance. It's not really useful for C output, since GCC already
+  can do this.
+
 `--dat`
   Output a binary blob of the DAT section only, similar to the
   bstc -c option; or, if --gas is given, output GAS assembly for

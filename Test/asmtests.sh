@@ -15,7 +15,7 @@ endmsg=$ok
 for i in stest*.spin
 do
   j=`basename $i .spin`
-  $PROG --asm --noheader $i
+  $PROG --asm --cse --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm

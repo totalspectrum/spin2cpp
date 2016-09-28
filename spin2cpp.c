@@ -49,6 +49,7 @@ Usage(void)
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
+    fprintf(stderr, "  --cse:     perform common subexpression optimization (experimental)\n");
     fprintf(stderr, "  --cc=CC:   use CC as the C++ compiler instead of PropGCC\n");
     fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
     fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
@@ -244,7 +245,7 @@ main(int argc, char **argv)
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
-            gl_optimize_flags |= OPT_PERFORM_CSE;
+            gl_optimize_flags |= DEFAULT_ASM_OPTS;
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
             argv++; --argc;
@@ -294,7 +295,7 @@ main(int argc, char **argv)
             outputMain = 1;
 	    outputBin = 1;
             if (gl_output == OUTPUT_ASM) {
-                gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|OPT_PERFORM_CSE);
+                gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
                 appendCompiler(gl_progname);
                 appendToCmd("--dat");
                 appendToCmd(argv[0]);

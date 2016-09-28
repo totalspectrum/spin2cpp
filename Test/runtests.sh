@@ -19,7 +19,6 @@ echo "running tests on propeller..."
 for i in exec*.spin
 do
   j=`basename $i .spin`
-##  if $PROG --binary --gas -Os -u __serial_exit -o $j.binary $i; then
   if $PROG --binary --gas -Os -o $j.binary $i; then
     rm -f $j.out
     propeller-load $j.binary -r -t -q > $j.out
@@ -36,7 +35,8 @@ do
   fi
 
   # now compile with asm
-  if $PROG --code=hub --asm --binary -o $j.binary $i; then
+  # --cse forces the common subexpression optimization code
+  if $PROG --code=hub --asm --cse --binary -o $j.binary $i; then
     propeller-load $j.binary -r -t -q > $j.out
   fi
   # the --lines=+6 skips the first 6 lines that propeller-load printed

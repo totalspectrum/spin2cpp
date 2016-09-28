@@ -59,6 +59,9 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_PERFORM_CSE         0x02
 #define OPT_NO_ASM 0x100
 
+//#define DEFAULT_ASM_OPTS        OPT_PERFORM_CSE
+#define DEFAULT_ASM_OPTS        0x00
+
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
