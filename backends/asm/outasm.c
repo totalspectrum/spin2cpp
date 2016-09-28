@@ -1209,6 +1209,8 @@ CompileMul(IRList *irl, AST *expr, int gethi)
   return temp;
 }
 
+#define FAST_IMMEDIATE_DIVIDES
+
 static Operand *
 CompileDiv(IRList *irl, AST *expr, int getmod)
 {
@@ -1216,6 +1218,36 @@ CompileDiv(IRList *irl, AST *expr, int getmod)
   Operand *rhs = CompileExpression(irl, expr->right);
   Operand *temp = NewFunctionTempRegister();
 
+#ifdef FAST_IMMEDIATE_DIVIDES
+  if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val)) {
+      IR *ir;
+      int val = rhs->val;
+      
+      if (val == 1) {
+          EmitMove(irl, temp, lhs);
+          return temp;
+      }
+
+      lhs = Dereference(irl, lhs);
+      ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+      ir->flags |= FLAG_WC; // carry will have the original sign bit
+      if (getmod) {
+          EmitOp2(irl, OPC_AND, temp, NewImmediate(val-1));
+      } else {
+          int shift = 0;
+          val = val >>1;
+          while (val != 0) {
+              shift++;
+              val = val >> 1;
+          }
+          EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
+      }
+      ir = EmitOp2(irl, OPC_NEG, temp, temp);
+      ir->cond = COND_LT; // only do the negate if x < 0
+      return temp;
+  }
+#endif
+  
   if (!divfunc) {
     divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
     diva = GetOneGlobal(REG_ARG, "muldiva_", 0);

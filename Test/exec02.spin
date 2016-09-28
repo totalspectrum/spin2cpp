@@ -26,6 +26,13 @@ PUB demo | x,y
   ||y
   fds.dec(y)
   newline
+
+  testdiv(1)
+  testdiv(12345)
+  testdiv(-1)
+  testdiv(-999)
+  testdiv($80000000)
+  testdiv($80001234)
   exit
 
 PUB newline
@@ -38,3 +45,26 @@ PUB exit
   fds.txflush
   repeat
 
+PRI printdec(x)
+#ifdef __SPIN2CPP__
+  '' the PropGCC compiler optimizer cannot
+  '' handle 0x80000000 as we expect in fds.dec()
+  if x == NEGX
+    fds.str(string("-2147483648"))
+  else
+    fds.dec(x)
+#else
+  '' the SPIN2PASM processor should be able to handle it though
+  fds.dec(x)
+#endif
+
+PUB testdiv(x)
+  printdec(x)
+  fds.str(string("/8 = "))
+  fds.dec(x/8)
+  newline
+  printdec(x)
+  fds.str(string("//16 = "))
+  fds.dec(x//16)
+  newline
+  
