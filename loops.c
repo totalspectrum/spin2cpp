@@ -261,8 +261,18 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
                 return false;
             }
             if ((0 == (entry->flags & LVFLAG_VARYMASK))) {
+                unsigned saveflag;
+                bool r;
                 // if entry->hits > 1 then variable is loop dependent
-                return entry->hits > 1;
+                if (entry->hits > 1) return true;
+                // temporarily pretend the variable is dependent
+                // and see if that makes its assigned value dependent
+                // (this detects inter-variable circular dependencies)
+                saveflag = entry->flags;
+                entry->flags |= LVFLAG_LOOPDEPEND;
+                r = IsLoopDependent(lvs, entry->value);
+                entry->flags = saveflag;
+                return r;
             }
             return true;
         default:
