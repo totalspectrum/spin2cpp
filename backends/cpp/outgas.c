@@ -29,7 +29,7 @@ OutputGasFile(const char *fname, Module *P)
     }
 
     flexbuf_init(&fb, BUFSIZ);
-    PrintDataBlockForGas(&fb, P, 1 /* inline asm */);
+    PrintDataBlockForGas(&fb, P, 0 /* inline asm */);
     fwrite(flexbuf_peek(&fb), flexbuf_curlen(&fb), 1, f);
     fclose(f);
     flexbuf_delete(&fb);
