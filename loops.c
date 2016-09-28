@@ -421,6 +421,38 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
     }
 }
 
+static bool
+AstUsesMemory(AST *ast)
+{
+    if (!ast) return false;
+    switch (ast->kind) {
+    case AST_MEMREF:
+        return true;
+    case AST_CONSTREF:
+        return false;
+    case AST_FUNCCALL:
+        return true;
+    case AST_IDENTIFIER:
+    {
+        Symbol *sym = LookupSymbol(ast->d.string);
+        if (!sym) {
+            return true;
+        }
+        switch (sym->type) {
+        case SYM_PARAMETER:
+        case SYM_RESULT:
+        case SYM_LOCALVAR:
+        case SYM_TEMPVAR:
+            return false;
+        default:
+            return true;
+        }
+    }
+    default:
+        return AstUsesMemory(ast->left) || AstUsesMemory(ast->right);
+    }
+}
+
 static void
 MarkDependencies(LoopValueSet *lvs)
 {
@@ -430,6 +462,9 @@ MarkDependencies(LoopValueSet *lvs)
     // mark any self-dependent entries
     for (entry = lvs->head; entry; entry = entry->next) {
         if (AstUses(entry->value, entry->name)) {
+            entry->flags |= LVFLAG_LOOPDEPEND;
+        }
+        if (AstUsesMemory(entry->value)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
     }

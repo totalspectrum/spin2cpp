@@ -543,7 +543,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       //      value is being put into it
       //  if "assignments_are_safe" is false then we don't know if another
       //  branch might still use "replace", so punt and give up
-      if (assignments_are_safe && ir->opc == OPC_MOV && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
+      if (assignments_are_safe && !InstrUses(ir, replace) && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
       }
       if (!orig_modified && last_ir && IsDeadAfter(last_ir, orig)) {
@@ -1773,7 +1773,58 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
     return NULL;
 }
 
+static bool
+IsReadWrite(IR *ir)
+{
+    if (!ir) {
+        return false;
+    }
+    switch (ir->opc) {
+    case OPC_RDBYTE:
+    case OPC_RDWORD:
+    case OPC_RDLONG:
+    case OPC_WRBYTE:
+    case OPC_WRWORD:
+    case OPC_WRLONG:
+        return true;
+    default:
+        return false;
+    }
+}
 
+// true if ir represents a real instruction which does not
+// read/write memory
+static bool
+IsNonReadWriteOpcode(IR *ir)
+{
+    int opc;
+
+    if (!ir) {
+        return false;
+    }
+    opc = (int)ir->opc;
+    if (opc < OPC_GENERIC && !IsReadWrite(ir)) {
+        return true;
+    }
+    return false;
+}
+
+//
+// return true if it's OK to swap IR a and b
+// if a changes b's src, then no
+//
+static bool
+CanSwap(IR *a, IR *b)
+{
+    if (InstrSetsAnyFlags(a)) return false;
+    if (IsBranch(a) || IsBranch(b)) return false;
+    if (InstrModifies(a, b->src)) return false;
+    if (InstrUses(b, a->dst)) return false;
+    if (InstrModifies(b, a->src)) return false;
+    if (InstrUses(a, b->dst)) return false;
+    return true;
+}
+    
 //
 // optimize read/write calls
 //   rdlong a,b
@@ -1788,18 +1839,50 @@ OptimizeReadWrite(IRList *irl)
     Operand *base;
     Operand *dst1;
     IR *ir;
-    IR *nextir;
+    IR *nextread;
+    IR *next_ir, *prev_ir;
     int change = 0;
-    for (ir = irl->head; ir; ir = ir->next) {
+
+restart_check:
+    prev_ir = next_ir = NULL;
+    ir = irl->head;
+    while (ir) {
+        next_ir = ir->next;
+        while (next_ir && IsDummy(next_ir)) {
+            next_ir = next_ir->next;
+        }
         if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
             dst1 = ir->dst;
             base = ir->src;
-            nextir = FindNextRead(ir, dst1, base);
-            if (!nextir) continue;
-            nextir->src = dst1;
-            ReplaceOpcode(nextir, OPC_MOV);
-            change = 1;
+            nextread = FindNextRead(ir, dst1, base);
+            if (nextread) {
+                nextread->src = dst1;
+                ReplaceOpcode(nextread, OPC_MOV);
+                change = 1;
+                goto get_next;
+            }
         }
+        // try to avoid having two read/write ops in a row
+        if (IsReadWrite(ir) && IsReadWrite(next_ir) && IsNonReadWriteOpcode(prev_ir) && CanSwap(ir, prev_ir)) {
+            // want to swap prev_ir and ir here
+            IR *tail = prev_ir->next;
+            DeleteIR(irl, prev_ir);  // remove prev_ir from list
+            prev_ir->next = NULL;
+            InsertAfterIR(irl, ir, prev_ir); // move it to later
+            ir = prev_ir;
+            change = 1;
+            // get rid of any .dead notes
+            while (tail && tail != ir) {
+                if (tail->opc == OPC_DEAD) {
+                    tail->opc = OPC_DUMMY;
+                }
+                tail = tail->next;
+            }
+            goto restart_check;
+        }
+    get_next:        
+        prev_ir = ir;
+        ir = next_ir;
     }
     return change;
 }
