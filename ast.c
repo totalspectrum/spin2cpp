@@ -101,6 +101,9 @@ AstMatch(AST *a, AST *b)
         return b == NULL;
     if (b == NULL)
         return 0;
+    if (a == b) {
+        return 1;
+    }
     if (a->kind != b->kind)
         return 0;
     switch (a->kind) {

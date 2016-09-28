@@ -140,7 +140,7 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
     if (entry) {
         entry->hits++;
         entry->value = value;
-        entry->parent = NULL; // multiple assignments, bad news
+        entry->parent = parent; // keep track of last assignment
         entry->flags |= flags;
         return entry;
     }
@@ -216,11 +216,18 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     case AST_CONSTREF:
         // don't recurse inside these
         return;
+    case AST_COMMENTEDNODE:
+        // don't update parent here
+        break;
+    case AST_STMTLIST:
+        parent = ast;
+        break;
     default:
+        parent = ast; // do we really want this?
         break;
     }
-    FindAllAssignments(lvs, ast, ast->left, flags);
-    FindAllAssignments(lvs, ast, ast->right, flags);
+    FindAllAssignments(lvs, parent, ast->left, flags);
+    FindAllAssignments(lvs, parent, ast->right, flags);
 }
 
 //
@@ -449,6 +456,29 @@ MarkDependencies(LoopValueSet *lvs)
 }
 
 /*
+ * place an assignment statement after a parent
+ */
+static bool
+PlaceAssignAfter(AST *parent, AST *assign)
+{
+    AST *stmt;
+    if (!parent) {
+        return false;
+    }
+    if (parent->kind == AST_STMTLIST) {
+        stmt = NewAST(AST_STMTLIST, assign, NULL);
+        parent->left = NewAST(AST_STMTLIST, parent->left, stmt);
+        return true;
+    }
+    if (parent->kind == AST_SEQUENCE) {
+        stmt = NewAST(AST_SEQUENCE, assign, NULL);
+        parent->left = NewAST(AST_SEQUENCE, parent->left, stmt);
+        return true;
+    }
+    return false;
+}
+
+/*
  * actually perform loop strength reduction on a single loop body
  * "initial" is a loop value set holding potential initial values for
  * loop variables
@@ -458,23 +488,21 @@ MarkDependencies(LoopValueSet *lvs)
  * iteration
  */
 static AST *
-doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST **updateptr)
+doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *update)
 {
     LoopValueSet lv;
     LoopValueEntry *entry;
     LoopValueEntry *initEntry;
+    LoopValueEntry *lastAssign;
     AST *stmtlist = NULL;
     AST *stmt;
     AST *replace;
     AST *pullvalue; // initial value for pulled out code
     AST *parent;
-    AST *update = *updateptr;
-    
-    bool replaceUpdate = false;
     
     InitLoopValueSet(&lv);
-    FindAllAssignments(&lv, NULL, body, 0);
-    FindAllAssignments(&lv, NULL, update, 0);
+    FindAllAssignments(&lv, body, body, 0);
+    FindAllAssignments(&lv, update, update, 0);
     FindAllAssignments(&lv, NULL, condition, 0);
     MarkDependencies(&lv);
     for (entry = lv.head; entry; entry = entry->next) {
@@ -502,27 +530,34 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST **
             if (!initEntry) {
                 continue;
             }
+            lastAssign = FindName(&lv, entry->basename);
+            if (!lastAssign) {
+                continue;
+            }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
             if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == T_NEGATE) {
                 replace = AstAssign('-', entry->name, entry->loopstep->right);
             } else {
                 replace = AstAssign('+', entry->name, entry->loopstep);
             }
-            replaceUpdate = true; // do the update at end of loop
+
+            // we have to place the "replace" after the last
+            // update to "basename" (the loop variable this value
+            // ultimately depends on)
+
+            if (!PlaceAssignAfter(lastAssign->parent, replace)) {
+                continue;
+            }
+            parent->left = NULL;
         } else {
             pullvalue = entry->value;
+            parent->left = NULL; // null out original statement
         }
         // this statement can be pulled out
         stmt = AstAssign(T_ASSIGN, entry->name, pullvalue);
         stmt = NewAST(AST_STMTLIST, stmt, NULL);
 
         stmtlist = AddToList(stmtlist, stmt);
-        if (replaceUpdate) {
-            // the replace goes in the "update" list
-            update = NewAST(AST_SEQUENCE, update, replace);
-            *updateptr = update;
-        }
-        parent->left = NULL; // null out original statement
     }
     MergeAndFreeLoopValueSets(initial, &lv);
     return stmtlist;
@@ -534,7 +569,7 @@ static void doLoopOptimizeList(LoopValueSet *lvs, AST *list);
 // helper for doLoopOptimizeList()
 //
 static AST *
-doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST **updateptr,
+doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
              AST *body)
 {
     LoopValueSet sub;
@@ -549,7 +584,7 @@ doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST **updateptr,
     doLoopOptimizeList(&sub, body);
     FreeLoopValueSet(&sub);
     // pull out loop invariants
-    pull = doLoopStrengthReduction(lvs, body, condtest, updateptr);
+    pull = doLoopStrengthReduction(lvs, body, condtest, update);
     return pull;
 }
 
@@ -573,8 +608,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
         stmtptr = list;
         stmt = stmtptr->left;
         while (stmt && stmt->kind == AST_COMMENTEDNODE) {
-            stmtptr = stmt;
-            stmt = stmtptr->left;
+            stmt = stmt->left;
         }
         if (!stmt) goto loop_next;
         switch (stmt->kind) {
@@ -588,14 +622,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             AST *body = stmt->right;
             AST *initial = NULL;
             AST *update = NULL;
-            pull = doLoopHelper(lvs, initial, condtest, &update, body);
-            // now we have to add the updates to the end of the body
-            if (update) {
-                update = NewAST(AST_STMTLIST, update, NULL);
-                for (body = stmt->right; body->right; body = body->right)
-                    ;
-                body->left = NewAST(AST_STMTLIST, body->left, update);
-            }
+            pull = doLoopHelper(lvs, initial, condtest, update, body);
             break;
         }
         case AST_FOR:
@@ -612,13 +639,15 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             condtest = condtest->left;
             body = updateparent->right;
             update = updateparent->left;
-
-            pull = doLoopHelper(lvs, initial, condtest, &update, body);
-            updateparent->left = update;
+            if (update && update->kind != AST_SEQUENCE) {
+                update = NewAST(AST_SEQUENCE, update, NULL);
+                updateparent->left = update;
+            }
+            pull = doLoopHelper(lvs, initial, condtest, update, body);
             break;
         }
         default:
-            FindAllAssignments(lvs, NULL, stmt, 0);
+            FindAllAssignments(lvs, stmtptr, stmt, 0);
             break;
         }
     loop_next:
