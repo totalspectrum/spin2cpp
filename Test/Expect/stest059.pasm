@@ -11,9 +11,8 @@ _func
 	rdbyte	_tmp001_, objptr
 	add	_var_01, _tmp001_
 	sub	objptr, #8
-	mov	_var_02, objptr
+	wrlong	_var_01, objptr
 	sub	objptr, #4
-	wrlong	_var_01, _var_02
 _func_ret
 	ret
 
@@ -29,8 +28,6 @@ objmem
 _tmp001_
 	res	1
 _var_01
-	res	1
-_var_02
 	res	1
 arg1
 	res	1

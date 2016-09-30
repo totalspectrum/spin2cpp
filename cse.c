@@ -70,27 +70,90 @@ InitCSESet(CSESet *cse)
 
 // clear out everything in a CSESet
 static void
-ClearCSESet(CSESet *cse)
+ClearCSESetFiltered(CSESet *cse, bool (*filter)(AST *expr))
 {
     int i;
     CSEEntry *old, *cur;
-    // free the old stuff
+    CSEEntry **curptr;
+    // free the old stuff that matches "filter"
+    
     for (i = 0; i < CSE_HASH_SIZE; i++) {
+        curptr = &cse->list[i];
         cur = cse->list[i];
-        cse->list[i] = NULL;
         while (cur) {
-            old = cur;
-            cur = cur->next;
-            free(old);
+            if (filter(cur->expr)) {
+                old = cur;
+                cur = cur->next;
+                *curptr = cur;
+                free(old);
+            } else {
+                curptr = &cur->next;
+                cur = cur->next;
+            }
         }
     }
+}
+
+static bool
+Always(AST *ast)
+{
+    return true;
+}
+
+static bool
+UsesMemory(AST *ast) {
+    if (ast == NULL)
+        return false;
+    switch(ast->kind) {
+    case AST_OPERATOR:
+        return UsesMemory(ast->left) || UsesMemory(ast->right);
+        break;
+    case AST_ARRAYREF:
+    case AST_MEMREF:
+        return true;
+    case AST_IDENTIFIER:
+    {
+        Symbol *sym = LookupAstSymbol(ast, "memory reference check");
+        if (!sym) return true; // assume it uses memory
+        switch (sym->type) {
+        case SYM_PARAMETER:
+        case SYM_RESULT:
+        case SYM_LOCALVAR:
+            // whether these use memory depends on the
+            // function configuration
+            // for now punt and assume not
+            return false;
+        case SYM_TEMPVAR:
+        case SYM_CONSTANT:
+        case SYM_FUNCTION:
+        case SYM_FLOAT_CONSTANT:
+            return false;
+        default:
+            return true;
+        }
+    }
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        return false;
+    case AST_CONSTREF:
+    case AST_INTEGER:
+        return false;
+    default:
+        return true;
+    }
+}
+
+static void
+ClearCSESet(CSESet *cse)
+{
+    ClearCSESetFiltered(cse, Always);
 }
 
 // clear out all memory entries in a CSE set
 static void
 ClearMemoryCSESet(CSESet *cse)
 {
-    ClearCSESet(cse); // FIXME: we can be more liberal than this!
+    ClearCSESetFiltered(cse, UsesMemory);
 }
 
 // find a CSESet entry for an expression, if one exists
@@ -128,7 +191,7 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     int i;
     CSEEntry **pCur;
     CSEEntry *cur;
-    const char *name;
+    const char *name = NULL;
 
     if (modified->kind == AST_ARRAYREF) {
         modified = modified->left;
@@ -137,6 +200,9 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     case AST_IDENTIFIER:
         name = modified->d.string;
         break;
+    case AST_MEMREF:
+        ClearMemoryCSESet(set);
+        return;
     default:
         ClearCSESet(set);
         return;
@@ -146,7 +212,7 @@ RemoveCSEUsing(CSESet *set, AST *modified)
         for(;;) {
             cur = *pCur;
             if (!cur) break;
-            if (ASTUsesName(cur->expr, name)) {
+            if (name && ASTUsesName(cur->expr, name)) {
                 *pCur = cur->next;
             } else {
                 pCur = &cur->next;
@@ -194,6 +260,7 @@ ArrayBaseType(AST *var)
         }
     case SYM_LOCALVAR:
     case SYM_PARAMETER:
+    case SYM_TEMPVAR:
         // if this function uses registers for arrays,
         // give up
         if (!curfunc->localarray) {
@@ -232,6 +299,13 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         // cannot figure out type of array
         return NULL;
     }
+    // do not add entries for some simple expressions
+    if (expr->kind == AST_ARRAYREF &&
+        IsConstExpr(expr->right))
+    {
+        return NULL;
+    }
+    
     entry->expr = expr;
     entry->replace = name;
     entry->flags = 0;

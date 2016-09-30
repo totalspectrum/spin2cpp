@@ -290,6 +290,7 @@ IsForwardJump(IR *jmp)
     return JumpIsAfterOrEqual(jmp, jmp);
 }
 
+#if 0
 /*
  * return the next instruction after (or including) ir
  * that uses op, or NULL if we can't determine it
@@ -317,19 +318,28 @@ NextUseAfter(IR *ir, Operand *op)
     }
     return NULL;
 }
+#endif
 
 /*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
+ * follows branches, but gives up after MAX_FOLLOWED_JUMPS to prevent
+ * inifinite loops
  */
+#define MAX_FOLLOWED_JUMPS 8
+
 static bool
-IsDeadAfter(IR *instr, Operand *op)
+doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
 {
   IR *ir;
-  bool replaceMeansDead = true;
+  int i;
   
   if (instr->opc == OPC_DEAD && op == instr->dst) {
     return true;
+  }
+  if (level >= MAX_FOLLOWED_JUMPS) {
+      // give up!
+      return false;
   }
   if (op->kind == REG_HW) {
       // hardware registers are never dead
@@ -338,6 +348,12 @@ IsDeadAfter(IR *instr, Operand *op)
   for (ir = instr->next; ir; ir = ir->next) {
     if (ir->opc == OPC_DEAD && op == ir->dst) {
       return true;
+    }
+    for (i = 0; i < level; i++) {
+        if (ir == stack[i]) {
+            // we've come around a loop
+            return IsLocalOrArg(op);
+        }
     }
     if (IsDummy(ir)) continue;
     if (ir->opc == OPC_LABEL) {
@@ -348,16 +364,15 @@ IsDeadAfter(IR *instr, Operand *op)
         if (!comefrom || comefrom->addr < instr->addr) {
             return false;
         }
-        replaceMeansDead = false;
         continue;
     }
     if (InstrUses(ir, op)) {
         // value is used, so definitely not dead
         return false;
     }
-    if (ir->dst == op) {
+    if (InstrModifies(ir, op)) {
       if (ir->cond == COND_TRUE) {
-	return replaceMeansDead;
+	return true;
       } else {
         return false;
       }
@@ -382,36 +397,17 @@ IsDeadAfter(IR *instr, Operand *op)
                 irdead = irdead->next;
             }
         }
-        // otherwise, is the jump backwards to before instr?
-        // if it is, then we may not know if the opcode is dead
-        if (!JumpIsAfterOrEqual(instr, ir)) {
-            IR *nextuse;
-            // if the jump is to an unknown place give up
-            if (!ir->aux) {
-                return false;
-            }
-            nextuse = NextUseAfter((IR *)ir->aux, op);
-            if (!nextuse) {
-                return false;
-            }
-            // if the instruction unconditionally sets the value,
-            // then we can either continue or (for an unconditional branch)
-            // know its dead
-            if (InstrUses(nextuse, op)) {
-                return false;
-            }
-            if (InstrModifies(nextuse, op)) {
-                if (ir->cond == COND_TRUE) {
-                    return replaceMeansDead;
-                }
-            } else {
-                return false;
-            }
+        // if the jump is to an unknown place give up
+        if (!ir->aux) {
+            return false;
         }
-        // forward jumps are a problem... we can have sets in two
-        // different branches and that won't kill the variable
-        // so avoid returning "dead" if we see a set
-        replaceMeansDead = false;
+        stack[level] = ir; // remember where we were
+        if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
+            return false;
+        }
+        if (ir->cond == COND_TRUE && ir->opc == OPC_JUMP) {
+            return true;
+        }
     }
   }
   /* if we reach the end without seeing any use */
@@ -419,9 +415,18 @@ IsDeadAfter(IR *instr, Operand *op)
 }
 
 static bool
+IsDeadAfter(IR *instr, Operand *op)
+{
+    IR *stack[MAX_FOLLOWED_JUMPS];
+    return doIsDeadAfter(instr, op, 0, stack);
+}
+
+static bool
 SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
+  if (SrcOnlyHwReg(replace))
+      return false;
   for (ir = instr; ir; ir = ir->prev) {
       if (IsDummy(ir)) {
           continue;
@@ -792,7 +797,7 @@ OptimizeMoves(IRList *irl)
 	      if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-		} else if (IsImmediate(ir->src)) {
+              } else if (IsImmediate(ir->src)) {
                     change |= PropagateConstForward(ir_next, ir->dst, ir->src);
 	      } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
@@ -815,7 +820,7 @@ OptimizeMoves(IRList *irl)
 static bool
 HasSideEffects(IR *ir)
 {
-    if (ir->dst && ir->dst->kind == REG_HW) {
+    if (ir->dst && !IsLocalOrArg(ir->dst) /*ir->dst->kind == REG_HW*/) {
         return true;
     }
     if (InstrSetsAnyFlags(ir)) {
@@ -1862,24 +1867,28 @@ restart_check:
                 goto get_next;
             }
         }
+#if 1
         // try to avoid having two read/write ops in a row
-        if (IsReadWrite(ir) && IsReadWrite(next_ir) && IsNonReadWriteOpcode(prev_ir) && CanSwap(ir, prev_ir)) {
-            // want to swap prev_ir and ir here
-            IR *tail = prev_ir->next;
-            DeleteIR(irl, prev_ir);  // remove prev_ir from list
-            prev_ir->next = NULL;
-            InsertAfterIR(irl, ir, prev_ir); // move it to later
-            ir = prev_ir;
-            change = 1;
-            // get rid of any .dead notes
-            while (tail && tail != ir) {
-                if (tail->opc == OPC_DEAD) {
-                    tail->opc = OPC_DUMMY;
+        if (IsReadWrite(ir) && IsReadWrite(next_ir) && IsNonReadWriteOpcode(prev_ir)) {
+            if (CanSwap(ir, prev_ir)) {
+                // want to swap prev_ir and ir here
+                IR *tail = prev_ir->next;
+                DeleteIR(irl, prev_ir);  // remove prev_ir from list
+                prev_ir->next = NULL;
+                InsertAfterIR(irl, ir, prev_ir); // move it to later
+                ir = prev_ir;
+                change = 1;
+                // get rid of any .dead notes
+                while (tail && tail != ir) {
+                    if (tail->opc == OPC_DEAD) {
+                        tail->opc = OPC_DUMMY;
+                    }
+                    tail = tail->next;
                 }
-                tail = tail->next;
+                goto restart_check;
             }
-            goto restart_check;
         }
+#endif
     get_next:        
         prev_ir = ir;
         ir = next_ir;

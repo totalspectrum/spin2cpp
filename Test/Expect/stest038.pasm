@@ -8,7 +8,7 @@ _test
 L__0001
 	mov	_var_01, INA
 	sar	_var_01, #1
-	and	_var_01, #1 wz
+	test	_var_01, #1 wz
  if_ne	jmp	#L__0002
 	mov	_tmp001_, INA
 	sar	_tmp001_, #2
