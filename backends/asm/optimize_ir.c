@@ -439,6 +439,10 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       }
       if (InstrModifies(ir, orig) && !InstrReadsDst(ir)) {
           if (InstrIsVolatile(ir)) return false;
+          if (IsHwReg(replace) && ir->src && IsHwReg(ir->src) && ir->src != replace)
+          {
+              return false;
+          }
           return ir->cond == COND_TRUE;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
