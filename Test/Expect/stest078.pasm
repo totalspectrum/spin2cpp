@@ -5,9 +5,9 @@ DAT
 entry
 
 _setout
-	rdlong	_tmp001_, objptr
-	or	DIRA, _tmp001_
-	or	OUTA, _tmp001_
+	rdlong	_tmp002_, objptr
+	or	DIRA, _tmp002_
+	or	OUTA, _tmp002_
 _setout_ret
 	ret
 
@@ -20,7 +20,7 @@ COG_BSS_START
 objmem
 	res	1
 	org	COG_BSS_START
-_tmp001_
+_tmp002_
 	res	1
 arg1
 	res	1

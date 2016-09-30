@@ -6,8 +6,8 @@ entry
 
 _indsum
 	rdlong	result1, arg1
-	rdlong	arg2, arg2
-	add	result1, arg2
+	rdlong	_tmp002_, arg2
+	add	result1, _tmp002_
 _indsum_ret
 	ret
 
@@ -16,6 +16,8 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
+_tmp002_
+	res	1
 arg1
 	res	1
 arg2

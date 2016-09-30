@@ -1519,7 +1519,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   AST *rhs = expr->right;
   Operand *left;
   Operand *right;
-  Operand *temp = dest ? dest : NewFunctionTempRegister();
+  Operand *temp = NewFunctionTempRegister(); // FIXME? was dest ? dest : NewFunctionTempRegister(), but that fails for a = b - a
   IR *ir;
 
   switch(op) {
