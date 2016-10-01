@@ -60,7 +60,8 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_NO_ASM 0x100
 
 //#define DEFAULT_ASM_OPTS        OPT_PERFORM_CSE
-#define DEFAULT_ASM_OPTS        0x00
+#define DEFAULT_ASM_OPTS        0x00   /* default opts for fastspin */
+#define EXTRA_ASM_OPTS          OPT_PERFORM_CSE /* extras added with -O */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */

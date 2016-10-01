@@ -92,6 +92,7 @@ Usage(void)
     fprintf(stderr, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
     fprintf(stderr, "  [ -p ]             disable the preprocessor\n");
     fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
+    fprintf(stderr, "  [ -O ]             enable extra optimizations\n");
     fprintf(stderr, "  [ -D <define> ]    add a define\n");
     fflush(stderr);
     exit(2);
@@ -426,8 +427,10 @@ main(int argc, char **argv)
             opt = strdup(opt);
             incpath = opt;
             pp_add_to_path(&gl_pp, incpath);
-        } else if (bstcMode && !strncmp(argv[0], "-O", 2)) {
+        } else if (!strncmp(argv[0], "-O", 2)) {
             // ignore bstc optimization options
+            // substitute our own
+            gl_optimize_flags |= EXTRA_ASM_OPTS;
             argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
