@@ -6,11 +6,11 @@ entry
 
 _count
 	mov	_var_01, #0
-L__0001
+L__0002
 	mov	OUTA, _var_01
 	add	_var_01, #1
 	cmps	_var_01, #4 wz
- if_ne	jmp	#L__0001
+ if_ne	jmp	#L__0002
 _count_ret
 	ret
 

@@ -373,8 +373,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     if (InstrModifies(ir, op)) {
       if (ir->cond == COND_TRUE) {
 	return true;
-      } else {
-        return false;
+//      } else {
+//        return false;
       }
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {

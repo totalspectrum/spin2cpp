@@ -171,19 +171,6 @@ FindCSE(CSESet *set, AST *expr, unsigned exprHash)
     return NULL;
 }
 
-// check to see if an AST involves a particular name
-bool
-ASTUsesName(AST *expr, const char *name)
-{
-    if (!expr) return false;
-    switch(expr->kind) {
-    case AST_IDENTIFIER:
-        return strcasecmp(expr->d.string, name) == 0;
-    default:
-        return ASTUsesName(expr->left, name) || ASTUsesName(expr->right, name);
-    }
-}
-
 // remove any CSEEntries that depend upon "modified"
 static void
 RemoveCSEUsing(CSESet *set, AST *modified)
@@ -307,7 +294,7 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     }
     
     entry->expr = expr;
-    entry->replace = name;
+    entry->replace = NULL; // FIXME: was name;, but make sure name does not change later
     entry->flags = 0;
     entry->exprHash = exprHash;
     entry->next = cse->list[idx];

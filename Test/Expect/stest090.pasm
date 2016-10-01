@@ -1,0 +1,50 @@
+PUB main
+  coginit(0, @entry, 0)
+DAT
+	org	0
+entry
+
+_proc1
+	sub	arg2, #1
+	mov	_var_03, arg2
+	mov	_var_05, #0
+	mov	_var_07, arg1
+	mov	_tmp002_, arg2
+	shl	_tmp002_, #2
+	add	_var_07, _tmp002_
+L__0005
+	cmps	_var_03, #0 wc,wz
+ if_be	jmp	#L__0006
+	rdlong	_tmp002_, _var_07
+	add	_var_05, _tmp002_
+	sub	_var_03, #1
+	sub	_var_07, #4
+	jmp	#L__0005
+L__0006
+	add	_var_05, arg2
+	wrlong	_var_05, arg1
+_proc1_ret
+	ret
+
+result1
+	long	0
+COG_BSS_START
+	fit	496
+	org	COG_BSS_START
+_tmp002_
+	res	1
+_var_03
+	res	1
+_var_05
+	res	1
+_var_07
+	res	1
+arg1
+	res	1
+arg2
+	res	1
+arg3
+	res	1
+arg4
+	res	1
+	fit	496

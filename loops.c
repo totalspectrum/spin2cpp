@@ -346,11 +346,15 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
     if (!val) return NULL;
     switch(val->kind) {
     case AST_IDENTIFIER:
-        entry = FindName(lvs, val);
-        if (!entry) return NULL;
-        if (entry->hits != 1) return NULL;
-        newval = entry->value;
-        if (!newval) return NULL;
+        newval = val;
+        for(;;) {
+            entry = FindName(lvs, newval);
+            if (!entry) return NULL;
+            if (entry->hits != 1) return NULL;
+            newval = entry->value;
+            if (!newval) return NULL;
+            if (newval->kind != AST_IDENTIFIER) break;
+        }
         if (AstUses(newval, val)) {
             AST *increment = NULL;
             if (newval->kind == AST_OPERATOR && newval->d.ival == '+') {

@@ -5,13 +5,13 @@ DAT
 entry
 
 _setup
-	mov	_tmp001_, objptr
+	mov	_var_02, objptr
 	shl	arg1, #2
-	add	_tmp001_, arg1
+	add	_var_02, arg1
 	add	objptr, #40
-	wrlong	_tmp001_, objptr
+	wrlong	_var_02, objptr
 	add	objptr, #4
-	wrlong	_tmp001_, objptr
+	wrlong	_var_02, objptr
 	sub	objptr, #44
 _setup_ret
 	ret
@@ -25,7 +25,7 @@ COG_BSS_START
 objmem
 	res	12
 	org	COG_BSS_START
-_tmp001_
+_var_02
 	res	1
 arg1
 	res	1
