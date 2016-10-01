@@ -191,14 +191,13 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     int i;
     CSEEntry **pCur;
     CSEEntry *cur;
-    const char *name = NULL;
 
     if (modified->kind == AST_ARRAYREF) {
         modified = modified->left;
     }
     switch(modified->kind) {
     case AST_IDENTIFIER:
-        name = modified->d.string;
+        // it's all good here
         break;
     case AST_MEMREF:
         ClearMemoryCSESet(set);
@@ -207,12 +206,13 @@ RemoveCSEUsing(CSESet *set, AST *modified)
         ClearCSESet(set);
         return;
     }
+    if (!modified) return;
     for (i = 0; i < CSE_HASH_SIZE; i++) {
         pCur = &set->list[i];
         for(;;) {
             cur = *pCur;
             if (!cur) break;
-            if (name && ASTUsesName(cur->expr, name)) {
+            if (AstUses(cur->expr, modified) || AstUses(cur->replace, modified)) {
                 *pCur = cur->next;
             } else {
                 pCur = &cur->next;
@@ -451,25 +451,10 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         if (!name && ast->left->kind == AST_IDENTIFIER) {
             name = ast->left;
         }
-        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
-        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
         // now we have to invalidate any CSE involving the destination
         RemoveCSEUsing(cse, ast->left);
-	// if the right hand side is a CSE-able expression, and the left
-	// hand side is a local variable, use that as the CSE replacement
-	// instead of creating a new variable
-	hash = ASTHash(ast->right);
-	entry = FindCSE(cse, ast->right, hash);
-	if (entry && !entry->replace && ast->left->kind == AST_IDENTIFIER) {
-	  Symbol *sym = LookupSymbol(ast->left->d.string);
-	  if (sym &&
-	      (sym->type == SYM_PARAMETER || sym->type == SYM_LOCALVAR
-	       || sym->type == SYM_RESULT || sym->type == SYM_TEMPVAR)
-	      )
-	    {
-	      entry->replace = ast->left;
-	    }
-	}
+        newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
+        newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
