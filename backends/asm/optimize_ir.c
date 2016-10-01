@@ -361,7 +361,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         // that goes to LABEL then we might miss a set
         // so check
         IR *comefrom = (IR *)ir->aux;
-        if (!comefrom || comefrom->addr < instr->addr) {
+        if (!comefrom || (level == 0 && comefrom->addr < instr->addr)) {
             return false;
         }
         continue;
