@@ -1151,12 +1151,17 @@ static int DecomposeBits(unsigned val, int *shifts)
     }
 }
 
+static int g_NeedMulHi = 0;
+
 static Operand *
 CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
     Operand *lhs = CompileExpression(irl, expr->left, NULL);
     Operand *rhs = CompileExpression(irl, expr->right, NULL);
     Operand *temp = dest ? dest : NewFunctionTempRegister();
+
+    g_NeedMulHi |= gethi;
+    
     // if lhs is constant, swap left and right
     if (lhs->kind == IMM_INT) {
         Operand *swap = lhs;
@@ -3317,6 +3322,25 @@ static const char *builtin_mul_p1 =
 "\tret\n"
 ;
 
+static const char *builtin_mul_p1_fast =
+"\nmultiply_\n"
+"       mov    itmp2_, muldiva_\n"
+"       xor    itmp2_, muldivb_\n"
+"       abs    muldiva_, muldiva_\n"
+"       abs    muldivb_, muldivb_\n"
+"	mov    result1, #0\n"
+"mul_lp_\n"
+"	shr    muldivb_, #1 wc,wz\n"
+" if_c	add    result1, muldiva_\n"
+"	shl    muldiva_, #1\n"
+" if_ne	jmp    #mul_lp_\n"
+"       shr    itmp2_, #31 wz\n"
+" if_nz neg    result1, result1\n"
+"	mov    muldiva_, result1\n"
+"multiply__ret\n"
+"	ret\n"
+;
+
 static const char *builtin_mul_p2 =
 "\nmultiply_\n"
 "\tmov\titmp2_, muldiva_\n"
@@ -3568,8 +3592,10 @@ EmitBuiltins(IRList *irl)
 
         if (gl_p2) {
             loop = NewOperand(IMM_STRING, builtin_mul_p2, 0);
-        } else {
+        } else if (g_NeedMulHi) {
             loop = NewOperand(IMM_STRING, builtin_mul_p1, 0);
+        } else {
+            loop = NewOperand(IMM_STRING, builtin_mul_p1_fast, 0);
         }
         EmitOp1(irl, OPC_LITERAL, loop);
         (void)GetOneGlobal(REG_REG, "itmp1_", 0);

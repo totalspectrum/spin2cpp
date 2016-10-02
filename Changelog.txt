@@ -1,5 +1,7 @@
 Version 3.2.0
 
+- Use a simpler, faster multiply routine if the program never needs
+  the upper 32 bits of the result.
 - Added code for optimizing divides by integer powers of 2
 - Fixed a bug printing non-ASCII characters
 - Fixed several issues preventing the S3 source code from converting

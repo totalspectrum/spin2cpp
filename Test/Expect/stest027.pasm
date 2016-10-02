@@ -19,23 +19,19 @@ _hyp_ret
 	ret
 
 multiply_
-	mov	itmp2_, muldiva_
-	xor	itmp2_, muldivb_
-	abs	muldiva_, muldiva_
-	abs	muldivb_, muldivb_
-	mov	result1, #0
-	mov	itmp1_, #32
-	shr	muldiva_, #1 wc
+       mov    itmp2_, muldiva_
+       xor    itmp2_, muldivb_
+       abs    muldiva_, muldiva_
+       abs    muldivb_, muldivb_
+	mov    result1, #0
 mul_lp_
- if_c	add	result1, muldivb_ wc
-	rcr	result1, #1 wc
-	rcr	muldiva_, #1 wc
-	djnz	itmp1_, #mul_lp_
-	shr	itmp2_, #31 wz
- if_nz	neg	result1, result1
- if_nz	neg	muldiva_, muldiva_ wz
- if_nz	sub	result1, #1
-	mov	muldivb_, result1
+	shr    muldivb_, #1 wc,wz
+ if_c	add    result1, muldiva_
+	shl    muldiva_, #1
+ if_ne	jmp    #mul_lp_
+       shr    itmp2_, #31 wz
+ if_nz neg    result1, result1
+	mov    muldiva_, result1
 multiply__ret
 	ret
 
