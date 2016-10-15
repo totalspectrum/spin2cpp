@@ -142,6 +142,36 @@ outputGasDirective(Flexbuf *f, const char *prefix, AST *expr)
         flexbuf_printf(f, "0");
 }
 
+static void
+outputGasComment(Flexbuf *f, AST *ast, int inlineAsm)
+{
+    bool needLineStart = false;
+    bool needIndent = true;
+    int c;
+    const char *string;
+    if (!ast || ast->kind != AST_COMMENT) return;
+    string = ast->d.string;
+    if (!string) return;
+
+    do {
+        c = *string++;
+        if (needLineStart) {
+            startLine(f, inlineAsm);
+            needLineStart = false;
+        }
+        if (c == '\n') {
+            endLine(f, inlineAsm);
+            needLineStart = needIndent = true;
+        } else if (c != 0) {
+            if (needIndent) {
+                flexbuf_printf(f, "%11s'", " ");
+                needIndent = false;
+            }
+            flexbuf_printf(f, "%c", c);
+        }
+    } while (c);
+}
+
 #define GAS_WZ 1
 #define GAS_WC 2
 #define GAS_NR 4
@@ -304,7 +334,7 @@ PrintConstantsGas(Flexbuf *f, Module *P, int inlineAsm)
 void
 PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 {
-    AST *ast;
+    AST *ast, *top;
     int saveState;
 
     if (gl_errors != 0)
@@ -327,7 +357,11 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     startLine(f, inlineAsm);
     flexbuf_printf(f, "..start");
     endLine(f, inlineAsm);
-    for (ast = P->datblock; ast; ast = ast->right) {
+    for (top = P->datblock; top; top = top->right) {
+        ast = top;
+        while (ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
         /* print anything for start of line here */
         startLine(f, inlineAsm);
         switch (ast->kind) {
@@ -360,6 +394,9 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             break;
         case AST_FIT:
             outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496));
+            break;
+        case AST_COMMENT:
+            outputGasComment(f, ast, inlineAsm);
             break;
         default:
             ERROR(ast, "unknown element in data block");

@@ -655,11 +655,17 @@ void
 PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
 {
     AST *ast;
-
+    AST *top;
+    
     initDataOutput(func);
     if (gl_errors != 0)
         return;
-    for (ast = P->datblock; ast; ast = ast->right) {
+    for (top = P->datblock; top; top = top->right) {
+        ast = top;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (!ast) continue;
         switch (ast->kind) {
         case AST_BYTELIST:
             outputAlignedDataList(f, 1, ast->left, relocs);
@@ -687,6 +693,8 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
         case AST_RES:
         case AST_FIT:
         case AST_LINEBREAK:
+            break;
+        case AST_COMMENT:
             break;
         default:
             ERROR(ast, "unknown element in data block");

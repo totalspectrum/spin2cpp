@@ -592,7 +592,11 @@ enumitem:
 
 datblock:
   datline
-    { $$ = $1; SkipComments(); }
+    {
+        AST *dat = $1;
+        $$ = dat;
+        SkipComments();
+    }
   | datblock datline
     { $$ = AddToList($1, $2); }
   ;
@@ -611,9 +615,9 @@ basedatline:
   | error T_EOLN
     { $$ = NULL; }
   | T_BYTE T_EOLN
-    { $$ = NewAST(AST_BYTELIST, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
   | T_BYTE exprlist T_EOLN
-    { $$ = NewAST(AST_BYTELIST, $2, NULL); }
+    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | T_WORD T_EOLN
     { $$ = NewAST(AST_WORDLIST, NULL, NULL); }
   | T_WORD exprlist T_EOLN

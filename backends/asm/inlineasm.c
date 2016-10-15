@@ -97,14 +97,19 @@ CompileInlineInstr(IRList *irl, AST *ast)
 }
 
 void
-CompileInlineAsm(IRList *irl, AST *ast)
+CompileInlineAsm(IRList *irl, AST *top)
 {
-    while(ast) {
+    AST *ast;
+    while(top) {
+        ast = top;
+        top = top->right;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
         if (ast->kind == AST_INSTRHOLDER) {
             CompileInlineInstr(irl, ast->left);
-            ast = ast->right;
         } else {
-            ERROR(ast, "inline assembly not supported yet");
+            ERROR(ast, "inline assembly of this item not supported yet");
             break;
         }
     }

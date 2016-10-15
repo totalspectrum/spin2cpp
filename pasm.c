@@ -186,11 +186,17 @@ DeclareLabels(Module *P)
     unsigned inc = 0;
     unsigned delta;
 
+    AST *top = NULL;
     AST *ast = NULL;
     AST *pendingLabels = NULL;
     AST *lasttype = ast_type_long;
 
-    for (ast = P->datblock; ast; ast = ast->right) {
+    for (top = P->datblock; top; top = top->right) {
+        ast = top;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (!ast) continue;
         switch (ast->kind) {
         case AST_BYTELIST:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte);
@@ -219,6 +225,7 @@ DeclareLabels(Module *P)
             ast->d.ival = asmpc;
             INCPC(InstrSize(ast->left));
             lasttype = ast_type_long;
+            current->datHasCode = 1;
             break;
         case AST_IDENTIFIER:
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
@@ -271,6 +278,8 @@ DeclareLabels(Module *P)
             break;
         case AST_LINEBREAK:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, lasttype);
+            break;
+        case AST_COMMENT:
             break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);

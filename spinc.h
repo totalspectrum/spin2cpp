@@ -246,6 +246,7 @@ struct modulestate {
     char volatileVariables;
     char sawToken;
     char codeCog; // if 1, module should be placed in COG memory
+    char datHasCode; // if 1, DAT section has PASM code in it
     
     /* back end specific flags */
     void *bedata;
