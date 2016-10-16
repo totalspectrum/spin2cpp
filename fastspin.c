@@ -305,6 +305,7 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
             compile = 0;
             outputMain = 0;
+            outputBin = 0;
             gl_output = OUTPUT_DAT;
             outputDat = 1;
             argv++; --argc;
