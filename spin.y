@@ -619,13 +619,13 @@ basedatline:
   | T_BYTE exprlist T_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | T_WORD T_EOLN
-    { $$ = NewAST(AST_WORDLIST, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
   | T_WORD exprlist T_EOLN
-    { $$ = NewAST(AST_WORDLIST, $2, NULL); }
+    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
   | T_LONG T_EOLN
-    { $$ = NewAST(AST_LONGLIST, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
   | T_LONG exprlist T_EOLN
-    { $$ = NewAST(AST_LONGLIST, $2, NULL); }
+    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
   | instruction operandlist T_EOLN
@@ -635,19 +635,19 @@ basedatline:
   | instruction operandlist modifierlist T_EOLN
     { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, AddToList($2, $3)), NULL); }
   | T_ORG T_EOLN
-    { $$ = NewAST(AST_ORG, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
   | T_ORG expr T_EOLN
-    { $$ = NewAST(AST_ORG, $2, NULL); }
+    { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
   | T_ORGH T_EOLN
-    { $$ = NewAST(AST_ORGH, NULL, NULL); }
+    { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
   | T_ORGH expr T_EOLN
-    { $$ = NewAST(AST_ORGH, $2, NULL); }
+    { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
   | T_RES expr T_EOLN
-    { $$ = NewAST(AST_RES, $2, NULL); }
+    { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
   | T_FIT expr T_EOLN
-    { $$ = NewAST(AST_FIT, $2, NULL); }
+    { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
   | T_FIT T_EOLN
-    { $$ = NewAST(AST_FIT, AstInteger(0x1f0), NULL); }
+    { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | T_FILE string T_EOLN
     { $$ = NewAST(AST_FILE, GetFullFileName($2), NULL); }
   ;

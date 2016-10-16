@@ -336,7 +336,7 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 {
     AST *ast, *top;
     int saveState;
-
+    
     if (gl_errors != 0)
         return;
     saveState = P->printLabelsVerbatim;
@@ -359,11 +359,13 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     endLine(f, inlineAsm);
     for (top = P->datblock; top; top = top->right) {
         ast = top;
-        while (ast->kind == AST_COMMENTEDNODE) {
-            ast = ast->left;
-        }
         /* print anything for start of line here */
         startLine(f, inlineAsm);
+
+        while (ast->kind == AST_COMMENTEDNODE) {
+            outputGasComment(f, ast->right, inlineAsm);
+            ast = ast->left;
+        }
         switch (ast->kind) {
         case AST_BYTELIST:
             outputGasDataList(f, ".byte", ast->left, 1, inlineAsm);
@@ -396,7 +398,7 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496));
             break;
         case AST_COMMENT:
-            outputGasComment(f, ast, inlineAsm);
+//            outputGasComment(f, ast, inlineAsm); // printed above already
             break;
         default:
             ERROR(ast, "unknown element in data block");
