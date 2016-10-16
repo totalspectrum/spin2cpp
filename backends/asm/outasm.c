@@ -56,6 +56,8 @@ static Operand *frameptr;
 static Operand *hubexit;
 static Operand *cogexit;
 
+static Operand *kernelptr;
+
 static Operand *CompileExpression(IRList *irl, AST *expr, Operand *dest);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest);
@@ -2069,10 +2071,12 @@ CompileCoginit(IRList *irl, AST *expr)
         Operand *const4;
         Operand *funcptr;
         OperandList *plist;
-        
+
+        if (!kernelptr) {
+            kernelptr = NewImmediatePtr("entryptr__", NewOperand(IMM_HUB_LABEL, ENTRYNAME, 0));
+        }
         kernel = NewAST(AST_OPERAND, NULL, NULL);
-        kernel->d.ptr = (void *)NewImmediatePtr("entryptr",
-                                                NewOperand(IMM_HUB_LABEL, ENTRYNAME, 0));
+        kernel->d.ptr = (void *)kernelptr;
         
         if (!IS_STACK_CALL(remote)) {
             ERROR(expr, "Internal error: wrong calling convention for coginit");
