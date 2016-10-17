@@ -1452,7 +1452,7 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
     /* if the source is 0, use memset instead */
     if (IsConstExpr(src) && EvalConstExpr(src) == 0) {
         flexbuf_printf(f, "memset( (void *)");
-        PrintAsAddr(f, dst);
+        PrintExpr(f, dst);
         flexbuf_printf(f, ", 0, sizeof(%s)*", type_name);
         PrintExpr(f, count);
         flexbuf_printf(f, ")");
