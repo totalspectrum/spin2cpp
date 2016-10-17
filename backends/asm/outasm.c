@@ -578,12 +578,19 @@ void EmitLong(IRList *irl, int val)
   EmitOp1(irl, OPC_LONG, op);
 }
 
-void EmitReserve(IRList *irl, int val)
+#define COG_RESERVE 0
+#define HUB_RESERVE 1
+
+void EmitReserve(IRList *irl, int val, int isHub)
 {
   Operand *op;
 
   op = NewOperand(IMM_INT, "", val);
-  EmitOp1(irl, OPC_RESERVE, op);
+  if (isHub) {
+      EmitOp1(irl, OPC_RESERVEH, op);
+  } else {
+      EmitOp1(irl, OPC_RESERVE, op);
+  }
 }
 
 static void EmitLongPtr(IRList *irl, Operand *op)
@@ -3007,7 +3014,7 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int
    	      EmitLabel(bssirl, g[i].op);
 	      varsize = g[i].count / LONG_SIZE;
 	      if (varsize == 0) varsize = 1;
-	      EmitReserve(bssirl, varsize);
+	      EmitReserve(bssirl, varsize, COG_RESERVE);
 	      break;
 	  }
 	  // otherwise fall through
@@ -3713,7 +3720,6 @@ EmitDatSection(IRList *irl, Module *P)
 void
 EmitVarSection(IRList *irl, Module *P)
 {
-#if 1
     int len;
     if (!objlabel)
         return;
@@ -3722,27 +3728,7 @@ EmitVarSection(IRList *irl, Module *P)
     EmitLabel(irl, objlabel);
     if (!len)
         len = 1;
-    EmitReserve(irl, len / 4);
-#else
-  char *data;
-  int len;
-  Flexbuf *fb;
-  Operand *op;
-
-  if (!objlabel)
-      return;
-  fb = (Flexbuf *)calloc(1, sizeof(*fb));
-  flexbuf_init(fb, 32768);
-  
-  len = P->varsize;
-  // round up to long boundary
-  len = (len + 3) & ~3;
-  data = (char *)calloc(len, 1);
-
-  flexbuf_addmem(fb, data, len);
-  op = NewOperand(IMM_BINARY, (const char *)fb, 0);
-  EmitOp2(irl, OPC_LABELED_BLOB, objlabel, op);
-#endif
+    EmitReserve(irl, len / 4, HUB_DATA ? HUB_RESERVE : COG_RESERVE);
 }
 
 extern Module *globalModule;
@@ -3940,9 +3926,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // FCACHE space
     if (HUB_CODE) {
         EmitNamedCogLabel(&cogbss, "LMM_RET");
-        EmitReserve(&cogbss, 1);
+        EmitReserve(&cogbss, 1, COG_RESERVE);
         EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
-        EmitReserve(&cogbss, gl_fcache_size+1);
+        EmitReserve(&cogbss, gl_fcache_size+1, COG_RESERVE);
     }
               
     // we need to emit all dat sections
@@ -3955,10 +3941,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     if (stacklabel) {
         if (HUB_DATA) {
             EmitLabel(&hubdata, stacklabel);
-            EmitReserve(&hubdata, 1);
+            EmitReserve(&hubdata, 1, HUB_RESERVE);
         } else {
             EmitLabel(&cogdata, stacklabel);
-            EmitReserve(&cogdata, 1);
+            EmitReserve(&cogdata, 1, COG_RESERVE);
         }
     }
 

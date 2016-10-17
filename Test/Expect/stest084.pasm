@@ -37,7 +37,7 @@ result1
 COG_BSS_START
 	fit	496
 objmem
-	res	2
+	long	0[2]
 	org	COG_BSS_START
 arg1
 	res	1

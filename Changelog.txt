@@ -1,3 +1,9 @@
+Version 3.3.0
+
+- Imported comments into gas output
+- Fixed -c switch for fastspin
+- Fixed a bug with multiple coginits
+
 Version 3.2.0
 
 - Use a simpler, faster multiply routine if the program never needs

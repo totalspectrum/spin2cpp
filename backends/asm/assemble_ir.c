@@ -521,6 +521,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "\n");
         break;
+    case OPC_RESERVEH:
+        flexbuf_printf(fb, "\tlong\t0[");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_addstr(fb, "]\n");
+        break;
     case OPC_FCACHE:
         flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
         flexbuf_printf(fb, "\tlong\t(");

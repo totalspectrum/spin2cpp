@@ -20,7 +20,7 @@ result1
 COG_BSS_START
 	fit	496
 objmem
-	res	3
+	long	0[3]
 	org	COG_BSS_START
 _tmp001_
 	res	1

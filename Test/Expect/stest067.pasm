@@ -46,7 +46,7 @@ sp
 COG_BSS_START
 	fit	496
 stackspace
-	res	1
+	long	0[1]
 	org	COG_BSS_START
 _fibo__cse__0002
 	res	1
