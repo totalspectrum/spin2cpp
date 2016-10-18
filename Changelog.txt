@@ -1,8 +1,10 @@
-Version 3.3.0
+Version 3.2.1
 
-- Imported comments into gas output
+- Print (some) PASM comments in gas output
 - Fixed -c switch for fastspin
 - Fixed a bug with multiple coginits
+- Fixed a bug in translation of wordfill/bytefill to C
+- Make coginit/cognew of Spin methods work with old PropGCC library
 
 Version 3.2.0
 

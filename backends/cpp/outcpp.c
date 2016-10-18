@@ -562,14 +562,30 @@ PrintMacros(Flexbuf *f, Module *parse)
     }
     if (parse->needsCoginit) {
         flexbuf_printf(f, "typedef void (*Cogfunc__)(void *a, void *b, void *c, void *d);\n");
-        flexbuf_printf(f, "static void Cogstub__(void **arg) {\n");
+        flexbuf_printf(f, "static void Cogstub__(void *argp) {\n");
+        flexbuf_printf(f, "  void **arg = (void **)argp;\n");
         flexbuf_printf(f, "  Cogfunc__ func = (Cogfunc__)(arg[0]);\n");
         flexbuf_printf(f, "  func(arg[1], arg[2], arg[3], arg[4]);\n");
         flexbuf_printf(f, "}\n");
-        flexbuf_printf(f, "extern \"C\" void _clone_cog(void *tmp);\n");
-        flexbuf_printf(f, "static int32_t Coginit__(int cogid, void *stacktop, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
-        flexbuf_printf(f, "    void *tmp = __builtin_alloca(1984);\n");
-        flexbuf_printf(f, "    unsigned int *sp = (unsigned int *)stacktop;\n");
+#if 1
+        // this is more efficient, but relies on the clone_cog
+        // function which is only available in newer libaries
+        flexbuf_printf(f, "__asm__(\".global _cogstart\\n\"); // force clone_cog to link if it is present\n");
+        if (gl_output == OUTPUT_CPP) {
+            flexbuf_printf(f, "extern \"C\" ");
+        } else {
+            flexbuf_printf(f, "extern ");
+        }
+        flexbuf_printf(f, "void _clone_cog(void *tmp) __attribute__((weak));\n");
+        if (gl_output == OUTPUT_CPP) {
+            flexbuf_printf(f, "extern \"C\" ");
+        } else {
+            flexbuf_printf(f, "extern ");
+        }
+        flexbuf_printf(f, "long _load_start_kernel[] __attribute__((weak));\n");
+        flexbuf_printf(f, "static int32_t Coginit__(int cogid, void *stackbase, size_t stacksize, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
+        flexbuf_printf(f, "    void *tmp = _load_start_kernel;\n");
+        flexbuf_printf(f, "    unsigned int *sp = ((unsigned int *)stackbase) + stacksize/4;\n");
         flexbuf_printf(f, "    static int32_t cogargs__[5];\n");
         flexbuf_printf(f, "    int r;\n");
         flexbuf_printf(f, "    cogargs__[0] = (int32_t) func;\n");
@@ -577,13 +593,30 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "    cogargs__[2] = arg2;\n");
         flexbuf_printf(f, "    cogargs__[3] = arg3;\n");
         flexbuf_printf(f, "    cogargs__[4] = arg4;\n");
-        flexbuf_printf(f, "    _clone_cog(tmp);\n");
+        flexbuf_printf(f, "    if (_clone_cog) {\n");
+        flexbuf_printf(f, "        tmp = __builtin_alloca(1984);\n");
+        flexbuf_printf(f, "        _clone_cog(tmp);\n");
+        flexbuf_printf(f, "    }\n");
         flexbuf_printf(f, "    *--sp = 0;\n");
         flexbuf_printf(f, "    *--sp = (unsigned int)cogargs__;\n");
         flexbuf_printf(f, "    *--sp = (unsigned int)Cogstub__;\n");
         flexbuf_printf(f, "    r = coginit(cogid, tmp, sp);\n");
         flexbuf_printf(f, "    return r;\n");
-        flexbuf_printf(f, "}\n"); 
+        flexbuf_printf(f, "}\n");
+#else
+        // NOTE: this one does not actually let you specify a cog :(
+        flexbuf_printf(f, "static int32_t Coginit__(int cogid, void *stackbase, size_t stacksize, void *func, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) {\n");
+        flexbuf_printf(f, "    static int32_t cogargs__[5];\n");
+        flexbuf_printf(f, "    int r;\n");
+        flexbuf_printf(f, "    cogargs__[0] = (int32_t) func;\n");
+        flexbuf_printf(f, "    cogargs__[1] = arg1;\n");
+        flexbuf_printf(f, "    cogargs__[2] = arg2;\n");
+        flexbuf_printf(f, "    cogargs__[3] = arg3;\n");
+        flexbuf_printf(f, "    cogargs__[4] = arg4;\n");
+        flexbuf_printf(f, "    r = cogstart(Cogstub__, cogargs__, stackbase, stacksize);\n");
+        flexbuf_printf(f, "    return r;\n");
+        flexbuf_printf(f, "}\n");
+#endif        
     }
 }
 

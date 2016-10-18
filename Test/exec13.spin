@@ -3,7 +3,7 @@ CON
   _clkfreq = 80_000_000
 
 VAR
-  long SqStack[6]	' Stack space for Square cog
+  long SqStack[64]	' Stack space for Square cog
   
 OBJ
   fds: "FullDuplexSerial"

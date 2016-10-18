@@ -1247,3 +1247,19 @@ ExprType(AST *expr)
     return ast_type_generic;
 }
 
+/*
+ * calculate the size of a type
+ */
+int TypeSize(AST *ast)
+{
+    if (!ast)
+        return 1;
+    if (ast->kind == AST_ARRAYTYPE) {
+        return TypeSize(ast->left)*EvalConstExpr(ast->right);
+    }
+    if (ast->kind == AST_INTTYPE || ast->kind == AST_UNSIGNEDTYPE || ast->kind == AST_GENERICTYPE) {
+        return EvalConstExpr(ast->left);
+    }
+    ERROR(ast, "internal error: bad type kind %d", ast->kind);
+    return 0;
+}

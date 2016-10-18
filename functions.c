@@ -421,23 +421,6 @@ Symbol *VarSymbol(Function *func, AST *ast)
 }
 
 /*
- * calculate the size of a type
- */
-int TypeSize(AST *ast)
-{
-    if (!ast)
-        return 1;
-    if (ast->kind == AST_ARRAYTYPE) {
-        return TypeSize(ast->left)*EvalConstExpr(ast->right);
-    }
-    if (ast->kind == AST_INTTYPE || ast->kind == AST_UNSIGNEDTYPE) {
-        return EvalConstExpr(ast->left);
-    }
-    ERROR(ast, "internal error: bad type kind %d", ast->kind);
-    return 0;
-}
-
-/*
  * add a local variable to a function
  */
 void

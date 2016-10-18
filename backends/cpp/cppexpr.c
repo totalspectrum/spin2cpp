@@ -212,7 +212,7 @@ PrintLabelCoginit(Flexbuf *f, AST *params)
 }
 
 void
-PrintTopOfStack(Flexbuf *f, AST *origstack)
+PrintStackWithSize(Flexbuf *f, AST *origstack)
 {
     AST *stack = origstack;
     AST *stype;
@@ -241,10 +241,10 @@ PrintTopOfStack(Flexbuf *f, AST *origstack)
         ERROR(stack, "coginit stack is not array");
         return;
     }
-    stacksize = EvalConstExpr(stype->right);
+    stacksize = EvalConstExpr(stype->right) * TypeSize(stype->left);
 
     /* now change the array reference to use the top of stack */
-    flexbuf_printf(f, "&%s[%d]", sym->name, stacksize);
+    flexbuf_printf(f, "%s, %d", sym->name, stacksize);
 }
 
 void
@@ -302,7 +302,7 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
     PrintExpr(f, cogid);
     flexbuf_printf(f, ", (void *)");
     /* need to find stack size */
-    PrintTopOfStack(f, stack);
+    PrintStackWithSize(f, stack);
     flexbuf_printf(f, ", (void *)");
     if (gl_ccode && sym && sym->type == SYM_FUNCTION) {
         flexbuf_printf(f, "%s_", current->classname);
