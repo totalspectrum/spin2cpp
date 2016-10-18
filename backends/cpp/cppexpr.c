@@ -244,7 +244,8 @@ PrintStackWithSize(Flexbuf *f, AST *origstack)
     stacksize = EvalConstExpr(stype->right) * TypeSize(stype->left);
 
     /* now change the array reference to use the top of stack */
-    flexbuf_printf(f, "%s, %d", sym->name, stacksize);
+    PrintSymbol(f, sym);
+    flexbuf_printf(f, ", %d", stacksize);
 }
 
 void

@@ -1,3 +1,7 @@
+Version 3.2.2
+
+- Fix coginit/cognew of Spin methods in C mode
+
 Version 3.2.1
 
 - Print (some) PASM comments in gas output
