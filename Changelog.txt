@@ -2,6 +2,8 @@ Version 3.2.2
 
 - Fix coginit/cognew of Spin methods in C mode
 - Added --version flag (also -v)
+- Fixed a problem with calculating labels after DAT section
+  expressions like FOO[3]
 
 Version 3.2.1
 

@@ -42,7 +42,7 @@ dataListLen(AST *ast, int elemsize)
     while (ast) {
         sub = ast->left;
         if (sub) {
-            if (sub->kind == AST_ARRAYDECL) {
+            if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
                 numelems = EvalPasmExpr(ast->left->right);
             } else if (sub->kind == AST_STRING) {
                 numelems = strlen(sub->d.string);
