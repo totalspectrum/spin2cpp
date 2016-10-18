@@ -1,6 +1,7 @@
 Version 3.2.2
 
 - Fix coginit/cognew of Spin methods in C mode
+- Added --version flag (also -v)
 
 Version 3.2.1
 

@@ -272,6 +272,9 @@ Spin2cpp accepts the following options:
   Define a path where .spin objects will be searched for. It's OK to use
   this option multiple times.
 
+`--version`
+  Print the current spin2cpp version number, and then exit.
+  
 EXTENSIONS
 ==========
 
