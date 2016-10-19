@@ -261,8 +261,8 @@ Spin2cpp accepts the following options:
   Create output for Propeller 2. This is still experimental.
 
 `--side`
-  Create a SimpleIDE project file listing the C and C++ files created. Usually
-  you will also want to give `--main` to create a main entry point in the top
+  Create a SimpleIDE project file listing the C and C++ files created. This
+  also implies `--main` to create a main entry point in the top
   level file.
   
 `-g`

@@ -260,6 +260,7 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--side", 6)) {
             outputSide = 1;
+            outputMain = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_output = OUTPUT_C;
