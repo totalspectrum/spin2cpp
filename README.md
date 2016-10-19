@@ -243,7 +243,7 @@ Spin2cpp accepts the following options:
   #define (of simple macros, no parameters), #undef, #ifdef, #ifndef,
   #else, #elseifdef, #elseifndef, #endif, #include, #error,
   and #warning. Use of the preprocessor should not normally
-  cause any issues, but it is still experimental.
+  cause any issues, but this option allows you to disable it if necessary.
 
 `--nofcache`
   Disable FCACHE. On the P1 when code is placed in HUB, some small loops
@@ -257,6 +257,14 @@ Spin2cpp accepts the following options:
   conflicts. Without this flag, identifiers use the case specified in
   their first occurence.
 
+`--p2`
+  Create output for Propeller 2. This is still experimental.
+
+`--side`
+  Create a SimpleIDE project file listing the C and C++ files created. Usually
+  you will also want to give `--main` to create a main entry point in the top
+  level file.
+  
 `-g`
   Include debug information. For C and C++, this is in the form of `#line`
   directives which instruct the compiler to put references to the original

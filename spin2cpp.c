@@ -68,6 +68,7 @@ Usage(void)
     fprintf(stderr, "  --nofcache: disable FCACHE (only applies in code=hub)\n");
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
+    fprintf(stderr, "  --side:     create a SimpleIDE file for the C/C++ outputs\n");
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     fprintf(stderr, "  -g:         add debug info to output (original source for PASM output)\n");
     fprintf(stderr, "  -I dir:     add dir to the object search path\n");
@@ -161,6 +162,7 @@ main(int argc, char **argv)
     int outputFiles = 0;
     int outputBin = 0;
     int outputAsm = 0;
+    int outputSide = 0;
     int compile = 0;
     size_t eepromSize = 0;
     Module *P;
@@ -255,6 +257,9 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--p2", 4)) {
             gl_p2 = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--side", 6)) {
+            outputSide = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_output = OUTPUT_C;
@@ -635,5 +640,33 @@ main(int argc, char **argv)
         exit(1);
     }
 
+    if (outputSide) {
+        FILE *f;
+        Module *Q;
+        if (gl_output != OUTPUT_C && gl_output != OUTPUT_CPP) {
+            fprintf(stderr, "Skipping --side output because C code not generated\n");
+            exit(1);
+        }
+        outname = gl_outname;
+        if (!outname) {
+            outname = argv[0];
+        }
+        outname = ReplaceExtension(outname, ".side");
+        f = fopen(outname, "w");
+        if (!f) {
+            perror(outname);
+            exit(1);
+        }
+        for (Q = allparse; Q; Q = Q->next) {
+            fprintf(f, "%s%s\n", Q->basename, cext);
+            fprintf(f, "%s.h\n", Q->basename);
+        }
+        fprintf(f, ">compiler=%s\n", gl_output == OUTPUT_C ? "C" : "C++");
+        fprintf(f, ">memtype=cmm main ram compact\n");
+        fprintf(f, ">optimize=-Os\n");
+        fprintf(f, ">-fno-exceptions\n");
+        fprintf(f, ">-fno-rtti\n");
+        fclose(f);
+    }
     return retval;
 }
