@@ -7,6 +7,18 @@
 #include <errno.h>
 #include "spinc.h"
 
+static char *
+NewOrgName()
+{
+    static int counter;
+    char *buf;
+    ++counter;
+    buf = calloc(1, 32);
+    if (!buf) return buf;
+    sprintf(buf, "_org__%08x", counter);
+    return buf;
+}
+
 unsigned
 InstrSize(AST *instr)
 {
@@ -77,7 +89,7 @@ align(unsigned pc, int size)
  * enter a label
  */
 void
-EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
+EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype, Symbol *lastorg)
 {
     const char *name;
     Label *labelref;
@@ -91,6 +103,7 @@ EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
     labelref->offset = offset;
     labelref->asmval = asmpc;
     labelref->type = ltype;
+    labelref->org = lastorg;
     if (!AddSymbol(&P->objsyms, name, SYM_LABEL, labelref)) {
       ERROR(origLabel, "Duplicate definition of label %s", name);
     }
@@ -100,10 +113,10 @@ EnterLabel(Module *P, AST *origLabel, long offset, long asmpc, AST *ltype)
  * emit pending labels
  */
 AST *
-emitPendingLabels(Module *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype)
+emitPendingLabels(Module *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype, Symbol *lastorg)
 {
     while (label) {
-        EnterLabel(P, label->left, pc, asmpc, ltype);
+        EnterLabel(P, label->left, pc, asmpc, ltype, lastorg);
         label = label->right;
     }
     return NULL;
@@ -190,7 +203,9 @@ DeclareLabels(Module *P)
     AST *ast = NULL;
     AST *pendingLabels = NULL;
     AST *lasttype = ast_type_long;
-
+    Symbol *lastOrg = NULL;
+    const char *tmpName;
+    
     for (top = P->datblock; top; top = top->right) {
         ast = top;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
@@ -199,28 +214,28 @@ DeclareLabels(Module *P)
         if (!ast) continue;
         switch (ast->kind) {
         case AST_BYTELIST:
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte, lastOrg);
             replaceHereDataList(ast->left, asmpc, 1);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
             MAYBEALIGNPC(2);
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_word);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_word, lastOrg);
             replaceHereDataList(ast->left, asmpc, 2);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
             MAYBEALIGNPC(4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             replaceHereDataList(ast->left, asmpc, 4);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
             break;
         case AST_INSTRHOLDER:
             MAYBEALIGNPC(4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             replaceHeres(ast->left, asmpc/4);
             ast->d.ival = asmpc;
             INCPC(InstrSize(ast->left));
@@ -231,17 +246,20 @@ DeclareLabels(Module *P)
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             if (ast->left) {
                 replaceHeres(ast->left, asmpc/4);
                 asmpc = 4*EvalPasmExpr(ast->left);
             } else {
                 asmpc = 0;
             }
+            tmpName = NewOrgName();
+            lastOrg = AddSymbol(&current->objsyms, tmpName, SYM_CONSTANT, AstInteger(asmpc));
             lasttype = ast_type_long;
+            ast->d.ptr = (void *)lastOrg;
             break;
         case AST_ORGH:
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             ast->d.ival = asmpc;
             if (ast->left) {
                 replaceHeres(ast->left, hubpc);
@@ -254,7 +272,7 @@ DeclareLabels(Module *P)
             break;
         case AST_RES:
             asmpc = align(asmpc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             delta = EvalPasmExpr(ast->left);
             asmpc += 4*delta;
 //            hubpc += 4*delta;
@@ -262,7 +280,7 @@ DeclareLabels(Module *P)
             break;
         case AST_FIT:
             asmpc = align(asmpc, 4);
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             if (ast->left) {
                 int32_t max = EvalPasmExpr(ast->left);
                 int32_t cur = (asmpc) / 4;
@@ -273,11 +291,11 @@ DeclareLabels(Module *P)
             lasttype = ast_type_long;
             break;
         case AST_FILE:
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte, lastOrg);
             INCPC(filelen(ast->left));
             break;
         case AST_LINEBREAK:
-            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, lasttype);
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, lasttype, lastOrg);
             break;
         case AST_COMMENT:
             break;
@@ -289,4 +307,3 @@ DeclareLabels(Module *P)
 
     P->datsize = datoff;
 }
-

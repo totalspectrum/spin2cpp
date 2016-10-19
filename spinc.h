@@ -97,7 +97,8 @@ extern struct preprocess gl_pp;
 typedef struct label {
     uint32_t offset;
     uint32_t asmval;
-    AST *type;  /* type of value following the label */
+    AST *type;   /* type of value following the label */
+    Symbol *org; /* symbol associated with last .org, if needed */
 } Label;
 
 /* structure describing a hardware register */
