@@ -722,7 +722,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         flexbuf_printf(f, "((");
         PrintType(f, expr->left);
         flexbuf_printf(f, " *)");
-        PrintExpr(f, expr->right, flags);
+        PrintExpr(f, expr->right, flags & ~PRINTEXPR_ISREF);
         flexbuf_printf(f, ")");
         break;
     default:
