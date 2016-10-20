@@ -616,12 +616,13 @@ PrintType(Flexbuf *f, AST *typedecl)
  * as a reference, so no extra dereferencing should be added to
  * e.g. labels, and plain symbols and such should be cast appropriately
  */
-void
-PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref, int flags)
+static void
+PrintLHS(Flexbuf *f, AST *expr, int flags)
 {
     Symbol *sym;
     HwReg *hw;
-
+    int assignment = (flags & PRINTEXPR_ASSIGNMENT) != 0;
+    int ref = (flags & PRINTEXPR_ISREF) != 0;
     switch (expr->kind) {
     case AST_RESULT:
         if (!curfunc) {
@@ -629,7 +630,7 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref, int flags)
         } else if (curfunc->result_in_parmarray) {
             flexbuf_printf(f, "%s[0]", curfunc->parmarray);
         } else {
-            PrintLHS(f, curfunc->resultexpr, assignment, ref, flags);
+            PrintLHS(f, curfunc->resultexpr, flags);
         }
         break;
     case AST_IDENTIFIER:
@@ -662,7 +663,7 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref, int flags)
         if (!ref) {
             flexbuf_printf(f, "(%s)", gl_intstring);
         }
-        PrintLHS(f, expr->left, assignment, 1, flags);
+        PrintLHS(f, expr->left, flags | (PRINTEXPR_ISREF));
         break;
     case AST_ARRAYREF:
         if (expr->left && expr->left->kind == AST_IDENTIFIER) {
@@ -678,10 +679,10 @@ PrintLHS(Flexbuf *f, AST *expr, int assignment, int ref, int flags)
             if (sym && !IsArraySymbol(sym)) {
 //                ERROR(expr, "array dereference of bad symbol %s", sym->name);
                 flexbuf_printf(f, "(&");
-                PrintLHS(f, expr->left, assignment, 1, flags);
+                PrintLHS(f, expr->left, flags | PRINTEXPR_ISREF);
                 flexbuf_printf(f, ")");
             } else {
-                PrintLHS(f, expr->left, assignment, 1, flags);
+                PrintLHS(f, expr->left, flags | PRINTEXPR_ISREF);
             }
             flexbuf_printf(f, "[");
             PrintExpr(f, expr->right, flags);
@@ -749,7 +750,7 @@ PrintRangeAssign(Flexbuf *f, AST *dst, AST *src, int flags)
         op = rhs->d.ival;
         if (op == '&' || op == '|' || op == '^') {
             rhs = rhs->right;
-            PrintLHS(f, lhs, 1, 0, flags);
+            PrintLHS(f, lhs, flags | PRINTEXPR_ASSIGNMENT);
             flexbuf_printf(f, " %c= ", op);
             if (rhs->kind == AST_INTEGER) {
                 flexbuf_printf(f, "0x%x", rhs->d.ival);
@@ -842,14 +843,14 @@ PrintAsAddr(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_ADDROF:
         flexbuf_printf(f, "&");
-        PrintLHS(f, expr->left, 0, 0, flags);
+        PrintLHS(f, expr->left, flags);
         break;
     case AST_IDENTIFIER:
     case AST_RESULT:
     case AST_HWREG:
     case AST_MEMREF:
     case AST_ARRAYREF:
-        PrintLHS(f, expr, 0, 1, flags);
+        PrintLHS(f, expr, flags | PRINTEXPR_ISREF);
         break;
     case AST_ASSIGN:
     default:
@@ -891,7 +892,7 @@ PrintAssign(Flexbuf *f, AST *lhs, AST *rhs, int flags)
              || rhs->d.ival == '^')
             && AstMatch(lhs, rhs->left))
         {
-            PrintLHS(f, lhs, 1, 0, flags);
+            PrintLHS(f, lhs, flags | PRINTEXPR_ASSIGNMENT);
             flexbuf_printf(f, " %c= ", rhs->d.ival);
             if (rhs->right->kind == AST_INTEGER) {
                 flexbuf_printf(f, "0x%x", rhs->right->d.ival);
@@ -900,7 +901,7 @@ PrintAssign(Flexbuf *f, AST *lhs, AST *rhs, int flags)
             }
             return;
         }
-        PrintLHS(f, lhs, 1, 0, flags);
+        PrintLHS(f, lhs, flags | PRINTEXPR_ASSIGNMENT);
         flexbuf_printf(f, " = ");
         /*
          * Normally we put parentheses around operators, but at
@@ -1038,7 +1039,7 @@ PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags)
         if (!isArray) {
             ERROR(expr, "%s is not an array of objects", objsym->name);
         }
-        PrintLHS(f, expr, 0, 0, flags);
+        PrintLHS(f, expr, flags);
     } else {
         if (gl_ccode || (curfunc && curfunc->force_static) )
             flexbuf_printf(f, "self->");
@@ -1062,11 +1063,11 @@ PrintGasExpr(Flexbuf *f, AST *expr)
 
     switch (expr->kind) {
     case AST_ADDROF:
-        PrintLHS(f, expr->left, 0, 0, PRINTEXPR_GAS);
+        PrintLHS(f, expr->left, PRINTEXPR_GAS);
         break;
     case AST_ABSADDROF:
         flexbuf_printf(f, "_%s + (", current->datname);
-        PrintLHS(f, expr->left, 0, 0, PRINTEXPR_GAS);
+        PrintLHS(f, expr->left, PRINTEXPR_GAS);
         flexbuf_printf(f, " - ..start)");
         break;
     default:
@@ -1123,12 +1124,12 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_ADDROF:
     case AST_ABSADDROF:
         flexbuf_printf(f, "(%s)(&", gl_intstring);
-        PrintLHS(f, expr->left, 0, 0, flags);
+        PrintLHS(f, expr->left, flags);
         flexbuf_printf(f, ")");
         break;
     case AST_DATADDROF:
         flexbuf_printf(f, "(%s)((", gl_intstring);
-        PrintLHS(f, expr->left, 0, 0, flags);
+        PrintLHS(f, expr->left, flags);
         flexbuf_printf(f, ")+%s)", current->datname);
         break;
     case AST_CONDRESULT:
@@ -1153,7 +1154,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_MEMREF:
     case AST_ARRAYREF:
     case AST_RESULT:
-        PrintLHS(f, expr, 0, 0, flags);
+        PrintLHS(f, expr, flags);
         break;
     case AST_SPRREF:
         flexbuf_printf(f, "cogmem_get__(");

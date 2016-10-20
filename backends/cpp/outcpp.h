@@ -20,8 +20,10 @@ int PrintPrivateFunctionDecls(Flexbuf *f, Module *P);
 void PrintFunctionBodies(Flexbuf *f, Module *P);
 
 /* flags for PrintExpr and friends */
-#define PRINTEXPR_DEFAULT 0x0000
-#define PRINTEXPR_GAS     0x0001  /* printing in a GAS context */
+#define PRINTEXPR_DEFAULT    0x0000
+#define PRINTEXPR_GAS        0x0001  /* printing in a GAS context */
+#define PRINTEXPR_ASSIGNMENT 0x0002  /* printing from an assignment operator */
+#define PRINTEXPR_ISREF      0x0004  /* expression used as a reference */
 
 /* printing functions */
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
