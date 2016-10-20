@@ -56,10 +56,11 @@ isNegateOperator(AST *expr)
  * if "ref" is nonzero this is an array reference, so do not
  * dereference again
  */
-void
-PrintLabel(Flexbuf *f, Symbol *sym, int ref)
+static void
+PrintLabel(Flexbuf *f, Symbol *sym, int flags)
 {
-    Label *lab;
+    int ref = (flags & PRINTEXPR_ISREF) != 0;
+    Label *lab = (Label *)sym->val;
 
     if (current->printLabelsVerbatim) {
         if (current->fixImmediate) {
@@ -68,7 +69,6 @@ PrintLabel(Flexbuf *f, Symbol *sym, int ref)
             flexbuf_printf(f, "%s", sym->name);
         }
     } else {
-        lab = (Label *)sym->val;
         flexbuf_printf(f, "(%s(", ref ? "" : "*");
         PrintType(f, lab->type);
         flexbuf_printf(f, " *)&%s[%d])", current->datname, lab->offset);
@@ -102,19 +102,42 @@ PrintFloat(Flexbuf *f, int32_t v)
         flexbuf_printf(f, "0x%lx", (long)v);
 }
 
+static void
+PrintUpper(Flexbuf *f, const char *name)
+{
+    int c;
+    while ((c = *name++) != 0) {
+        flexbuf_addchar(f, toupper(c));
+    }
+}
+
+static void
+PrintObjConstName(Flexbuf *f, Module *P, Symbol *sym)
+{
+    if (gl_ccode) {
+        PrintUpper(f, P->classname);
+        flexbuf_printf(f, "_");
+        PrintUpper(f, sym->name);
+    } else {
+        flexbuf_printf(f, "%s::%s", P->classname, sym->name);
+    }
+}
+
 /* code to print a symbol to a file */
 void
-PrintSymbol(Flexbuf *f, Symbol *sym)
+PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
 {
     switch (sym->type) {
     case SYM_LABEL:
-        PrintLabel(f, sym, 0);
+        PrintLabel(f, sym, flags);
         break;
     case SYM_CONSTANT:
         if (IsReservedWord(sym->name)) {
             int32_t v;
             v = EvalConstExpr((AST *)sym->val);
             PrintInteger(f, v);
+        } else if (gl_ccode) {
+            PrintObjConstName(f, current, sym);
         } else {
             flexbuf_printf(f, "%s", sym->name);
         }
@@ -244,7 +267,7 @@ PrintStackWithSize(Flexbuf *f, AST *origstack)
     stacksize = EvalConstExpr(stype->right) * TypeSize(stype->left);
 
     /* now change the array reference to use the top of stack */
-    PrintSymbol(f, sym);
+    PrintSymbol(f, sym, PRINTEXPR_DEFAULT);
     flexbuf_printf(f, ", %d", stacksize);
 }
 
@@ -308,7 +331,7 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
     if (gl_ccode && sym && sym->type == SYM_FUNCTION) {
         flexbuf_printf(f, "%s_", current->classname);
     }
-    PrintSymbol(f, sym);
+    PrintSymbol(f, sym, PRINTEXPR_DEFAULT);
 
     /* print parameters, and pad with 0's */
     while (params || n < 4) {
@@ -652,10 +675,8 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
                         PrintFuncCall(f, sym, NULL, NULL, NULL);
                     }
                 }
-            } else if (sym->type == SYM_LABEL) {
-                PrintLabel(f, sym, ref);
             } else {
-                PrintSymbol(f, sym);
+                PrintSymbol(f, sym, flags);
             }
         }
         break;
@@ -1234,12 +1255,11 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_CONSTREF:
         if (!GetObjConstant(expr, &objsym, &sym))
             return;
-        if (gl_ccode) {
-            flexbuf_printf(f, "%s", sym->name);
-        } else {
+        {
             AST *objast = (AST *)objsym->val;
             Module *P = (Module *)objast->d.ptr;
-            flexbuf_printf(f, "%s::%s", P->classname, sym->name);
+            
+            PrintObjConstName(f, P, sym);
         }
         break;
     case AST_CATCH:

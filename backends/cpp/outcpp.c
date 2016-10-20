@@ -138,7 +138,9 @@ PrintConstantDecl(Flexbuf *f, AST *ast)
     }
     expr = (AST *)sym->val;
     if (gl_output == OUTPUT_C) {
-        flexbuf_printf(f, "#define %s (", ast->d.string);
+        flexbuf_printf(f, "#define ");
+        PrintSymbol(f, sym, PRINTEXPR_DEFAULT);
+        flexbuf_printf(f, " (");
         PrintConstant(f, expr);
         flexbuf_printf(f, ")\n");
     } else {

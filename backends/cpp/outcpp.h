@@ -37,5 +37,6 @@ void PrintInteger(Flexbuf *f, int32_t v);
 void PrintFloat(Flexbuf *f, int32_t v);
 int  PrintLookupArray(Flexbuf *f, AST *arr, int flags);
 void PrintGasExpr(Flexbuf *f, AST *expr);
+void PrintSymbol(Flexbuf *f, Symbol *sym, int flags);
 
 #endif
