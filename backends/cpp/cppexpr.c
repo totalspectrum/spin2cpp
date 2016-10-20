@@ -646,6 +646,8 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     HwReg *hw;
     int assignment = (flags & PRINTEXPR_ASSIGNMENT) != 0;
     int ref = (flags & PRINTEXPR_ISREF) != 0;
+
+    //flags &= ~PRINTEXPR_ISREF;
     switch (expr->kind) {
     case AST_RESULT:
         if (!curfunc) {
@@ -681,10 +683,12 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         }
         break;
     case AST_ADDROF:
+    case AST_DATADDROF:
+    case AST_ABSADDROF:
         if (!ref) {
             flexbuf_printf(f, "(%s)", gl_intstring);
         }
-        PrintLHS(f, expr->left, flags | (PRINTEXPR_ISREF));
+        PrintLHS(f, expr->left, flags | PRINTEXPR_ISREF);
         break;
     case AST_ARRAYREF:
         if (expr->left && expr->left->kind == AST_IDENTIFIER) {
@@ -1145,7 +1149,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_ADDROF:
     case AST_ABSADDROF:
         flexbuf_printf(f, "(%s)(&", gl_intstring);
-        PrintLHS(f, expr->left, flags);
+        PrintLHS(f, expr->left, flags & ~PRINTEXPR_ISREF);
         flexbuf_printf(f, ")");
         break;
     case AST_DATADDROF:
