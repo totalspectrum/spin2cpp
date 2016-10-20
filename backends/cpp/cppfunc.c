@@ -165,7 +165,7 @@ PrintVarList(Flexbuf *f, AST *typeast, AST *ast, int flags)
             if (gl_expand_constants) {
                 flexbuf_printf(f, "%d", (int)EvalConstExpr(decl->right));
             } else {
-                PrintExpr(f, decl->right);
+                PrintExpr(f, decl->right, PRINTEXPR_DEFAULT);
             }
             flexbuf_printf(f, "]");
             count++;
@@ -295,7 +295,7 @@ PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent, int how)
                     flexbuf_printf(f, "%*cdefault", indent, ' ');
                 } else {
                     flexbuf_printf(f, "%*ccase ", indent, ' ');
-                    PrintExpr(f, expr);
+                    PrintExpr(f, expr, PRINTEXPR_DEFAULT);
                 }
                 flexbuf_printf(f, ":");
                 PrintNewline(f);
@@ -310,7 +310,7 @@ PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent, int how)
     } else {
         flexbuf_printf(f, "if (");
         expr = TransformCaseExprList(var, ast->left);
-        PrintBoolExpr(f, expr);
+        PrintBoolExpr(f, expr, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ") {");
         PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
@@ -359,7 +359,7 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
         // use switch/case for this
         flexbuf_printf(f, "%*c", indent, ' ');
         flexbuf_printf(f, "switch(");
-        PrintExpr(f, expr);
+        PrintExpr(f, expr, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ") {");
         PrintNewline(f);
         while (ast) {
@@ -377,7 +377,7 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
     } else if (expr->kind == AST_ASSIGN) {
         var = expr->left;
         flexbuf_printf(f, "%*c", indent, ' ');
-        PrintAssign(f, var, expr->right);
+        PrintAssign(f, var, expr->right, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ";"); PrintNewline(f);
     } else {
         ERROR(expr, "Internal error: expected identifier or assignment in case");
@@ -413,7 +413,7 @@ PrintExtraDecl(Flexbuf *f, AST *ast, int indent)
             AST *arraydef = decl->left;
             id = arraydef->left;
             flexbuf_printf(f, "%*cstatic %s %s[] = {", indent, ' ', gl_intstring, id->d.string);
-            PrintLookupArray(f, decl->right);
+            PrintLookupArray(f, decl->right, PRINTEXPR_DEFAULT);
             flexbuf_printf(f, "};"); PrintNewline(f);
         } else {
             ERROR(ast, "internal error in expression re-arranging");
@@ -450,7 +450,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         if (retval) {
             flexbuf_printf(f, "%*creturn ", indent, ' ');
-            PrintExpr(f, retval);
+            PrintExpr(f, retval, PRINTEXPR_DEFAULT);
         } else {
             flexbuf_printf(f, "%*creturn", indent, ' ');
         }
@@ -462,11 +462,11 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintNewline(f);
         flexbuf_printf(f, "%*cabortChain__->val =  ", indent, ' ');
         if (ast->left) {
-            PrintExpr(f, ast->left);
+            PrintExpr(f, ast->left, PRINTEXPR_DEFAULT);
         } else if (curfunc->resultexpr) {
-            PrintExpr(f, curfunc->resultexpr);
+            PrintExpr(f, curfunc->resultexpr, PRINTEXPR_DEFAULT);
         } else {
-            PrintExpr(f, AstInteger(0));
+            PrintExpr(f, AstInteger(0), PRINTEXPR_DEFAULT);
         }
         flexbuf_printf(f, ";"); PrintNewline(f);
         flexbuf_printf(f, "%*clongjmp(abortChain__->jmp, 1);", indent, ' ');
@@ -490,7 +490,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_IF:
         PrintDebugDirective(f, ast->left);
         flexbuf_printf(f, "%*cif (", indent, ' ');
-        PrintBoolExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ") {");
         PrintNewline(f);
         ast = ast->right;
@@ -523,7 +523,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_WHILE:
         PrintDebugDirective(f, ast->left);
         flexbuf_printf(f, "%*cwhile (", indent, ' ');
-        PrintBoolExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         flexbuf_printf(f, "%*c}", indent, ' ');
@@ -533,13 +533,13 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_FORATLEASTONCE:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cfor(", indent, ' ');
-        PrintExprToplevel(f, ast->left);
+        PrintExprToplevel(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, "; ");
         ast = ast->right;
-        PrintBoolExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, "; ");
         ast = ast->right;
-        PrintExprToplevel(f, ast->left);
+        PrintExprToplevel(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         flexbuf_printf(f, "%*c}", indent, ' ');
@@ -550,7 +550,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         flexbuf_printf(f, "%*c} while (", indent, ' ');
-        PrintBoolExpr(f, ast->left);
+        PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, ");");
         PrintNewline(f);
         break;
@@ -578,9 +578,9 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*c", indent, ' ');
         if (ast->kind == AST_ASSIGN) {
-            PrintAssign(f, ast->left, ast->right);
+            PrintAssign(f, ast->left, ast->right, PRINTEXPR_DEFAULT);
         } else {
-            PrintExpr(f, ast);
+            PrintExpr(f, ast, PRINTEXPR_DEFAULT);
         }
         flexbuf_printf(f, ";");
         PrintNewline(f);

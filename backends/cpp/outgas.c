@@ -137,7 +137,7 @@ outputGasDirective(Flexbuf *f, const char *prefix, AST *expr)
 {
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
     if (expr)
-        PrintExpr(f, expr);
+        PrintExpr(f, expr, PRINTEXPR_GAS);
     else
         flexbuf_printf(f, "0");
 }
@@ -266,7 +266,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
                 break;
             }
         }
-        PrintExpr(f, operand[i]);
+        PrintExpr(f, operand[i], PRINTEXPR_GAS);
         current->fixImmediate = 0;
     }
     if (effects) {

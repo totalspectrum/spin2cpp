@@ -99,7 +99,10 @@ typedef struct label {
     uint32_t asmval;
     AST *type;   /* type of value following the label */
     Symbol *org; /* symbol associated with last .org, if needed */
+    unsigned flags; /* flags for the label */
+#define LABEL_USED_IN_SPIN 0x01
 } Label;
+
 
 /* structure describing a hardware register */
 typedef struct hwreg {
@@ -275,7 +278,7 @@ extern Module *globalModule;       // global functions and variables
 #define VOLATILE 4
 int PrintVarList(Flexbuf *f, AST *type, AST *list, int flags);
 
-void PrintAssign(Flexbuf *f, AST *left, AST *right);
+void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);
 
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);

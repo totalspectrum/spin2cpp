@@ -19,17 +19,21 @@ int PrintPublicFunctionDecls(Flexbuf *f, Module *P);
 int PrintPrivateFunctionDecls(Flexbuf *f, Module *P);
 void PrintFunctionBodies(Flexbuf *f, Module *P);
 
+/* flags for PrintExpr and friends */
+#define PRINTEXPR_DEFAULT 0x0000
+#define PRINTEXPR_GAS     0x0001  /* printing in a GAS context */
+
 /* printing functions */
-void PrintExpr(Flexbuf *f, AST *expr);
-void PrintExprToplevel(Flexbuf *f, AST *expr);
-void PrintBoolExpr(Flexbuf *f, AST *expr);
-void PrintAsAddr(Flexbuf *f, AST *expr);
-void PrintExprList(Flexbuf *f, AST *list);
+void PrintExpr(Flexbuf *f, AST *expr, int flags);
+void PrintExprToplevel(Flexbuf *f, AST *expr, int flags);
+void PrintBoolExpr(Flexbuf *f, AST *expr, int flags);
+void PrintAsAddr(Flexbuf *f, AST *expr, int flags);
+void PrintExprList(Flexbuf *f, AST *list, int flags);
 void PrintType(Flexbuf *f, AST *type);
-void PrintPostfix(Flexbuf *f, AST *val, int toplevel);
+void PrintPostfix(Flexbuf *f, AST *val, int toplevel, int flags);
 void PrintInteger(Flexbuf *f, int32_t v);
 void PrintFloat(Flexbuf *f, int32_t v);
-int  PrintLookupArray(Flexbuf *f, AST *arr);
+int  PrintLookupArray(Flexbuf *f, AST *arr, int flags);
 void PrintGasExpr(Flexbuf *f, AST *expr);
 
 #endif

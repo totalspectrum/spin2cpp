@@ -117,7 +117,7 @@ PrintConstant(Flexbuf *f, AST *ast)
         PrintFloat(f, EvalConstExpr(ast));
         return;
     }
-    PrintExpr(f, ast);
+    PrintExpr(f, ast, PRINTEXPR_DEFAULT);
 }
 
 static void

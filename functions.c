@@ -156,22 +156,28 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
         }
         break;
     case AST_IDENTIFIER:
-        // convert plain foo into foo[0] if foo is an array
         sym = FindSymbol(&fdef->localsyms,  body->d.string);
         if (!sym) {
             sym = LookupSymbol(body->d.string);
         }
-        if (sym && IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR)) 
-        {
-            if (upper && upper->kind != AST_ARRAYREF) {
-                AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
-                deref->line = upper->line;
-                if (body == upper->left) {
-                    upper->left = deref;
-                } else if (body == upper->right) {
-                    upper->right = deref;
-                } else {
-                    ERROR(body, "failed to dereference %s", body->d.string); 
+        if (sym) {
+            if (sym->type == SYM_LABEL) {
+                Label *L = (Label *)sym->val;
+                L->flags |= LABEL_USED_IN_SPIN;
+            }
+            // convert plain foo into foo[0] if foo is an array
+            if (IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR))
+            {
+                if (upper && upper->kind != AST_ARRAYREF) {
+                    AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
+                    deref->line = upper->line;
+                    if (body == upper->left) {
+                        upper->left = deref;
+                    } else if (body == upper->right) {
+                        upper->right = deref;
+                    } else {
+                        ERROR(body, "failed to dereference %s", body->d.string); 
+                    }
                 }
             }
         }
