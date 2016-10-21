@@ -55,7 +55,7 @@ static void
 startLine(Flexbuf *f, int inlineAsm)
 {
     if (inlineAsm) {
-        flexbuf_printf(f, "\"");
+        flexbuf_printf(f, "_dat_(");
     }
 }
 
@@ -78,7 +78,7 @@ endLine(Flexbuf *f, int inlineAsm)
             linelen = INLINE_ASM_LINELEN - linelen;
             flexbuf_printf(f, "%*s", linelen, " ");
         }
-        flexbuf_printf(f, "\\n\"");
+        flexbuf_printf(f, ");");
     }
     flexbuf_printf(f, "\n");
 }
@@ -251,6 +251,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
             case SRC_OPERAND_ONLY:
                 if (i == 0) {
                     flexbuf_printf(f, "#");
+                    current->fixImmediate = 1;
                     immflag = 0;
                 }
                 break;
@@ -258,10 +259,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
                 if (i == 1) {
                     flexbuf_printf(f, "#");
                     immflag = 0;
-                    if (instr->ops == TWO_OPERANDS)
-                    {
-                        current->fixImmediate = 1;
-                    }
+                    current->fixImmediate = 1;
                 }
                 break;
             }
@@ -283,9 +281,26 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
 }
 
 static void
-outputGasLabel(Flexbuf *f, AST *id)
+outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
 {
-    flexbuf_printf(f, "%s", id->d.string);
+    const char *name = id->d.string;
+    Symbol *sym = LookupSymbol(name);
+    if (sym && inlineAsm) {
+        Label *lab;
+        if (sym->type != SYM_LABEL) {
+            ERROR(id, "expected label symbol");
+        } else {
+            lab = (Label *)sym->val;
+            if (lab->flags & LABEL_USED_IN_SPIN) {
+                endLine(f, inlineAsm);
+                flexbuf_printf(f, "extern ");
+                PrintType(f, lab->type);
+                flexbuf_printf(f, " %s[] __asm__(\"%s\");\n", name, name);
+                startLine(f, inlineAsm);
+            }
+        }
+    }
+    flexbuf_printf(f, "%s:", name);
 }
 
 static void
@@ -302,6 +317,12 @@ PrintConstantsGas(Flexbuf *f, Module *P, int inlineAsm)
 {
     AST *upper, *ast;
 
+    if (inlineAsm) {
+        flexbuf_printf(f, "#define _tostr__(...) #__VA_ARGS__\n");
+        flexbuf_printf(f, "#define _tostr_(...) _tostr__(__VA_ARGS__)\n");
+        flexbuf_printf(f, "#define _dat_(...) __asm__(_tostr_(__VA_ARGS__) \"\\n\")\n");
+        return;
+    }
     for (upper = P->conblock; upper; upper = upper->right) {
         ast = upper->left;
         while (ast) {
@@ -331,6 +352,27 @@ PrintConstantsGas(Flexbuf *f, Module *P, int inlineAsm)
     }
 }
 
+static void
+outputGasOrg(Flexbuf *f, AST *ast, int inlineAsm)
+{
+    int val = 0;
+    Symbol *sym;
+    if (!inlineAsm) {
+        outputGasDirective(f, ".org", ast->left);
+        return;
+    }
+    if (ast->left) {
+        val = EvalConstExpr(ast->left);
+    }
+#if 0    
+    if (val != 0) {
+        ERROR(ast, ".org with non-zero value not supported in GAS output");
+    }
+#endif    
+    sym = (Symbol *)ast->d.ptr;
+    flexbuf_printf(f, "%s = . + 0x%x", sym->name, val);
+}
+
 void
 PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 {
@@ -339,24 +381,19 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     
     if (gl_errors != 0)
         return;
-    saveState = P->printLabelsVerbatim;
-    P->printLabelsVerbatim = 1;
+    saveState = P->pasmLabels;
+    P->pasmLabels = 1;
 
-    if (inlineAsm) {
-        flexbuf_printf(f, "__asm__(\n");
-        flexbuf_printf(f, "\"%11s .section .%s.cog, \\\"ax\\\"",
-                       " ", P->basename);
-        endLine(f, inlineAsm);
-    }
     /* print constant declarations */
     PrintConstantsGas(f, P, inlineAsm);
     if (inlineAsm) {
-        flexbuf_printf(f, "\"%11s .compress off", " ");
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s .section .%s.dat,\"ax\"", " ", P->classname);
+        endLine(f, inlineAsm);
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s .compress off", " ");
         endLine(f, inlineAsm);
     }
-    startLine(f, inlineAsm);
-    flexbuf_printf(f, "..start");
-    endLine(f, inlineAsm);
     for (top = P->datblock; top; top = top->right) {
         ast = top;
         /* print anything for start of line here */
@@ -383,13 +420,13 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             break;
         case AST_IDENTIFIER:
             // FIXME: need to handle labels not on lines (type and alignment)
-            outputGasLabel(f, ast);
+            outputGasLabel(f, ast, inlineAsm);
             break;
         case AST_FILE:
             ERROR(ast, "File directive not supported in GAS output");
             break;
         case AST_ORG:
-            outputGasDirective(f, ".org", ast->left);
+            outputGasOrg(f, ast, inlineAsm);
             break;
         case AST_RES:
             outputGasDirective(f, ".res", ast->left);
@@ -409,11 +446,13 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     }
 
     if (inlineAsm) {
-        flexbuf_printf(f, "\"%11s .compress default", " ");
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s .compress default", " ");
         endLine(f, inlineAsm);
-        flexbuf_printf(f, "\"%11s .text", " ");
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s .text", " ");
         endLine(f, inlineAsm);
-        flexbuf_printf(f, ");\n");
+        flexbuf_printf(f, "\n");
     }
-    P->printLabelsVerbatim = saveState;
+    P->pasmLabels = saveState;
 }

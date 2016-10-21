@@ -245,12 +245,13 @@ struct modulestate {
     char needsCoginit;
     
     /* flags for output */
-    char printLabelsVerbatim;
+    char pasmLabels;
     char fixImmediate;
     char volatileVariables;
     char sawToken;
     char codeCog; // if 1, module should be placed in COG memory
     char datHasCode; // if 1, DAT section has PASM code in it
+    char gasPasm;    // if 1, output is in GAS format
     
     /* back end specific flags */
     void *bedata;

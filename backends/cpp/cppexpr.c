@@ -61,13 +61,16 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
 {
     int ref = (flags & PRINTEXPR_ISREF) != 0;
     Label *lab = (Label *)sym->val;
-
-    if (current->printLabelsVerbatim) {
+    Symbol *org = lab->org;  // last origin value seen
+    
+    if (current->pasmLabels) {
         if (current->fixImmediate) {
-            flexbuf_printf(f, "((%s-..start)/4)", sym->name);
+            flexbuf_printf(f, "((%s-%s)/4)", sym->name, org->name);
         } else {
-            flexbuf_printf(f, "%s", sym->name);
+            flexbuf_printf(f, "(%s-%s)", sym->name, org->name);
         }
+    } else if (current->gasPasm) {
+        flexbuf_printf(f, "%s", sym->name);
     } else {
         flexbuf_printf(f, "(%s(", ref ? "" : "*");
         PrintType(f, lab->type);
@@ -79,7 +82,7 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
 void
 PrintInteger(Flexbuf *f, int32_t v)
 {
-    if (current->printLabelsVerbatim) {
+    if (current->pasmLabels) {
         if (v > -10 && v < 10) {
             flexbuf_printf(f, "%ld", (long)v);
         } else {
@@ -454,7 +457,7 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintInOp(f, ">>", left, right, flags);
         break;
     case T_SHR:
-        if (current->printLabelsVerbatim
+        if (current->pasmLabels
             || (IsConstExpr(left) && EvalConstExpr(left) >= 0))
         {
             PrintInOp(f, ">>", left, right, flags);
@@ -716,7 +719,11 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_HWREG:
         hw = (HwReg *)expr->d.ptr;
-        flexbuf_printf(f, "%s", hw->cname);
+        if (flags & PRINTEXPR_GAS) {
+            flexbuf_printf(f, "%s", hw->name);
+        } else {
+            flexbuf_printf(f, "%s", hw->cname);
+        }
         break;
     case AST_MEMREF:
         flexbuf_printf(f, "((");

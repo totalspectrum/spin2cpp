@@ -15,7 +15,7 @@ NewOrgName()
     ++counter;
     buf = calloc(1, 32);
     if (!buf) return buf;
-    sprintf(buf, "_org__%08x", counter);
+    sprintf(buf, "..org%04x", counter);
     return buf;
 }
 
@@ -205,7 +205,8 @@ DeclareLabels(Module *P)
     AST *lasttype = ast_type_long;
     Symbol *lastOrg = NULL;
     const char *tmpName;
-    
+
+    P->gasPasm = gl_gas_dat;
     for (top = P->datblock; top; top = top->right) {
         ast = top;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
