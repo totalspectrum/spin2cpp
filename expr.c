@@ -1164,6 +1164,25 @@ int ArrayTypeSize(AST *typ)
     }
 }
     
+/* find alignment for a type */
+/* returns size of 1 item for non-array types */
+int TypeAlignment(AST *typ)
+{
+    switch (typ->kind) {
+    case AST_ARRAYTYPE:
+        return TypeAlignment(typ->left);
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_GENERICTYPE:
+    case AST_FLOATTYPE:
+        return EvalConstExpr(typ->left);
+    default:
+        ERROR(typ, "Internal error: unknown type %d passed to TypeAlignment",
+              typ->kind);
+        return 1;
+    }
+}
+
 int
 IsArraySymbol(Symbol *sym)
 {

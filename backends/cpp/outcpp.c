@@ -697,7 +697,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (parse->datblock) {
         if (gl_gas_dat) {
             flexbuf_printf(f, "extern ");
-            PrintDatArray(f, parse, ";\n", false);
+            PrintDatArray(f, parse, " __asm__(\"..dat_start\");\n", false);
             PrintDataBlockForGas(f, parse, 1);
         } else {
             if (gl_output == OUTPUT_C) {

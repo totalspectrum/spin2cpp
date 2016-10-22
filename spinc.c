@@ -875,7 +875,7 @@ ParseFile(const char *name)
             fprintf(stderr, "Out of memory!\n");
             exit(2);
         }
-        sprintf(current->datname, "_load_start_%s_cog", P->basename);
+        sprintf(current->datname, "_dat_%s_", P->basename);
     } else {
         current->datname = "dat";
     }

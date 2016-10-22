@@ -84,6 +84,17 @@ endLine(Flexbuf *f, int inlineAsm)
 }
 
 static void
+forceAlign(Flexbuf *f, int size, int inlineAsm)
+{
+    if ( (datacount % size) != 0 ) {
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s %-7s %d", " ", ".balign", size);
+        endLine(f, inlineAsm);
+        datacount = (datacount + size - 1) & ~(size-1);
+    }
+}
+
+static void
 outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inlineAsm)
 {
     int reps;
@@ -91,13 +102,8 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     char *comma = "";
     AST *origval = NULL;
 
+    forceAlign(f, size, inlineAsm);
     startLine(f, inlineAsm);
-    if ( (datacount % size) != 0 ) {
-        flexbuf_printf(f, "%11s %-7s %d", " ", ".balign", size);
-        endLine(f, inlineAsm);
-        datacount = (datacount + size - 1) & ~(size-1);
-        startLine(f, inlineAsm);
-    }
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
     while (ast) {
         sub = ast->left;
@@ -177,13 +183,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     int printFlags;
     const char *opcode;
 
-    if ( (datacount % 4) != 0) {
-        startLine(f, inlineAsm);
-        flexbuf_printf(f, "%11s .balign 4", " ");
-        endLine(f, inlineAsm);
-        datacount = (datacount + 3) & ~3;
-    }
-    
+    forceAlign(f, 4, inlineAsm);
     startLine(f, inlineAsm);
     instr = (Instruction *)ast->d.ptr;
     /* print modifiers */
@@ -303,6 +303,7 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
 {
     const char *name = id->d.string;
     Symbol *sym = LookupSymbol(name);
+    int align = 1;
     
     if (sym && inlineAsm) {
         Label *lab;
@@ -315,8 +316,10 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
                 PrintType(f, lab->type);
                 flexbuf_printf(f, " %s[] __asm__(\"%s\");\n", name, name);
             }
+            align = TypeAlignment(lab->type);
         }
     }
+    forceAlign(f, align, inlineAsm);
     startLine(f, inlineAsm);
     flexbuf_printf(f, "%s:", name);
     endLine(f, inlineAsm);
@@ -429,6 +432,9 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
         endLine(f, inlineAsm);
         startLine(f, inlineAsm);
         flexbuf_printf(f, "%11s .compress off", " ");
+        endLine(f, inlineAsm);
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, "%11s ..dat_start:", " ");
         endLine(f, inlineAsm);
     }
     for (top = P->datblock; top; top = top->right) {

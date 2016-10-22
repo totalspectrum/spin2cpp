@@ -63,12 +63,13 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
     int divBy4 = (flags & PRINTEXPR_GASIMM) != 0;
     Label *lab = (Label *)sym->val;
     Symbol *org = lab->org;  // last origin value seen
-    
-    if (current->pasmLabels) {
+
+    if (current->pasmLabels && !(flags & PRINTEXPR_GASABS)) {
+        const char *orgName = org ? org->name : "..dat_start";
         if (divBy4) {
-            flexbuf_printf(f, "((%s-%s)/4)", sym->name, org->name);
+            flexbuf_printf(f, "((%s-%s)/4)", sym->name, orgName);
         } else {
-            flexbuf_printf(f, "(%s-%s)", sym->name, org->name);
+            flexbuf_printf(f, "(%s-%s)", sym->name, orgName);
         }
     } else if (current->gasPasm) {
         flexbuf_printf(f, "%s", sym->name);
@@ -1121,9 +1122,7 @@ PrintGasExpr(Flexbuf *f, AST *expr)
         PrintLHS(f, expr->left, PRINTEXPR_GAS);
         break;
     case AST_ABSADDROF:
-        flexbuf_printf(f, "_%s + (", current->datname);
-        PrintLHS(f, expr->left, PRINTEXPR_GAS);
-        flexbuf_printf(f, " - ..start)");
+        PrintLHS(f, expr->left, PRINTEXPR_GAS|PRINTEXPR_GASABS);
         break;
     default:
         PrintExpr(f, expr, PRINTEXPR_GAS);

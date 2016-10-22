@@ -27,6 +27,7 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 #define PRINTEXPR_ISREF      0x0004  /* expression used as a reference */
 #define PRINTEXPR_GASIMM     0x0008  /* GAS expression is an immediate value (so divide labels by 4) */
 #define PRINTEXPR_GASOP      0x0010  /* GAS expression used in an operand */
+#define PRINTEXPR_GASABS     0x0020  /* absolute address, not relative */
 
 /* printing functions */
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
