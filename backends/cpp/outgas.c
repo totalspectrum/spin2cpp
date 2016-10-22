@@ -433,6 +433,8 @@ PrintConstantsGas(Flexbuf *f, Module *P, int inlineAsm)
         flexbuf_printf(f, "#define _tostr__(...) #__VA_ARGS__\n");
         flexbuf_printf(f, "#define _tostr_(...) _tostr__(__VA_ARGS__)\n");
         flexbuf_printf(f, "#define _dat_(...) __asm__(_tostr_(__VA_ARGS__) \"\\n\")\n");
+        flexbuf_printf(f, "#define _lbl_(x) (x - _org_)\n");
+        flexbuf_printf(f, "#define _org_ ..dat_start\n");
         return;
     }
     for (upper = P->conblock; upper; upper = upper->right) {
@@ -477,6 +479,8 @@ outputGasOrg(Flexbuf *f, AST *ast, int inlineAsm)
         val = EvalConstExpr(ast->left);
     }
     sym = (Symbol *)ast->d.ptr;
+    flexbuf_printf(f, "\n#undef _org_\n");
+    flexbuf_printf(f, "#define _org_ %s\n", sym->name);
     startLine(f, inlineAsm);
     flexbuf_printf(f, "%s_base = . + 0x%x", sym->name, val);
     endLine(f, inlineAsm);
@@ -495,7 +499,7 @@ outputFinalOrgs(Flexbuf *f, AST *ast[], int count, int inlineAsm)
     for (i = 0; i < count; i++) {
         sym = (Symbol *)ast[i]->d.ptr;
         startLine(f, inlineAsm);
-        flexbuf_printf(f, ".equ %s, %s_base", sym->name, sym->name);
+        flexbuf_printf(f, "  .equ %s, %s_base", sym->name, sym->name);
         endLine(f, inlineAsm);
     }
 }
