@@ -141,7 +141,7 @@ PrintUpper(Flexbuf *f, const char *name)
 static void
 PrintObjConstName(Flexbuf *f, Module *P, Symbol *sym)
 {
-    if (gl_ccode) {
+    if (gl_ccode || gl_gas_dat) {
         PrintUpper(f, P->classname);
         flexbuf_printf(f, "_");
         PrintUpper(f, sym->name);
@@ -159,19 +159,22 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         PrintLabel(f, sym, flags);
         break;
     case SYM_CONSTANT:
-        if (IsReservedWord(sym->name)) {
+    case SYM_FLOAT_CONSTANT:
+        if (IsReservedWord(sym->name) && !(flags & PRINTEXPR_USECONST)) {
             int32_t v;
             v = EvalConstExpr((AST *)sym->val);
             PrintInteger(f, v, flags);
-        } else if (gl_ccode) {
+        } else if (gl_ccode || gl_gas_dat) {
             PrintObjConstName(f, current, sym);
         } else {
             flexbuf_printf(f, "%s", sym->name);
         }
         break;
+#if 0
     case SYM_FLOAT_CONSTANT:
         PrintFloat(f, EvalConstExpr((AST*)sym->val), flags);
         break;
+#endif        
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
             flexbuf_printf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);

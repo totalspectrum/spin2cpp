@@ -28,7 +28,7 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 #define PRINTEXPR_GASIMM     0x0008  /* GAS expression is an immediate value (so divide labels by 4) */
 #define PRINTEXPR_GASOP      0x0010  /* GAS expression used in an operand */
 #define PRINTEXPR_GASABS     0x0020  /* absolute address, not relative */
-
+#define PRINTEXPR_USECONST   0x0040  /* print constant names, not values */
 /* printing functions */
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
 void PrintExprToplevel(Flexbuf *f, AST *expr, int flags);

@@ -137,9 +137,9 @@ PrintConstantDecl(Flexbuf *f, AST *ast)
         return;
     }
     expr = (AST *)sym->val;
-    if (gl_output == OUTPUT_C) {
+    if (gl_output == OUTPUT_C || gl_gas_dat) {
         flexbuf_printf(f, "#define ");
-        PrintSymbol(f, sym, PRINTEXPR_DEFAULT);
+        PrintSymbol(f, sym, PRINTEXPR_USECONST);
         flexbuf_printf(f, " (");
         PrintConstant(f, expr);
         flexbuf_printf(f, ")\n");
