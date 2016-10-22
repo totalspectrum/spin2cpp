@@ -6,6 +6,6 @@ uint8_t test58::dat[] = {
 };
 int32_t test58::Getval(void)
 {
-  return (*(int32_t *)&dat[0]);
+  return ((int32_t *)&dat[0])[0];
 }
 

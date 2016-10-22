@@ -6,6 +6,6 @@ uint8_t test83::dat[] = {
 };
 void test83::Start(void)
 {
-  cognew((int32_t)(&(*(int32_t *)&dat[8])), 0);
+  cognew((int32_t)(((int32_t *)&dat[8])), 0);
 }
 

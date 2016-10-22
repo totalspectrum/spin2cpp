@@ -7,6 +7,6 @@ uint8_t test73::dat[] = {
 int32_t test73::Flip(int32_t X)
 {
   OUTA = (OUTA & 0xfffffff0) | 0xc;
-  return (*(int32_t *)&dat[0]);
+  return ((int32_t *)&dat[0])[0];
 }
 

@@ -1180,10 +1180,23 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         break;      
     case AST_ADDROF:
     case AST_ABSADDROF:
-        flexbuf_printf(f, "(%s)(&", gl_intstring);
-        PrintLHS(f, expr->left, flags & ~PRINTEXPR_ISREF);
+    {
+        AST *addr = expr->left;
+        // special case array dereferences
+        if (addr && addr->kind == AST_ARRAYREF
+            && addr->right && addr->right->kind == AST_INTEGER
+            && addr->right->d.ival == 0)
+        {
+            addr = addr->left;
+            flexbuf_printf(f, "(%s)(", gl_intstring);
+            PrintLHS(f, addr, flags | PRINTEXPR_ISREF);
+        } else {
+            flexbuf_printf(f, "(%s)(&", gl_intstring);
+            PrintLHS(f, addr, flags & ~PRINTEXPR_ISREF);
+        }
         flexbuf_printf(f, ")");
         break;
+    }
     case AST_DATADDROF:
         flexbuf_printf(f, "(%s)((", gl_intstring);
         PrintLHS(f, expr->left, flags);

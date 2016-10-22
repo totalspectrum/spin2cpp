@@ -6,6 +6,6 @@ uint8_t volatile test106::dat[] = {
 };
 int32_t test106::Foo(void)
 {
-  return ((*(int32_t *)&dat[0]) + 1);
+  return (((int32_t *)&dat[0])[0] + 1);
 }
 

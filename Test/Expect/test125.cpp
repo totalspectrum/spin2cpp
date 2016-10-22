@@ -7,6 +7,6 @@ uint8_t test125::dat[] = {
 };
 int32_t test125::Getx(void)
 {
-  return (*(uint8_t *)&dat[0]);
+  return ((uint8_t *)&dat[0])[0];
 }
 

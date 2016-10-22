@@ -6,6 +6,6 @@ uint8_t test104::dat[] = {
 };
 int32_t test104::Get(void)
 {
-  return (int32_t)(&(*(int32_t *)&dat[0]));
+  return (int32_t)(((int32_t *)&dat[0]));
 }
 

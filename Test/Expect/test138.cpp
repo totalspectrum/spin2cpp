@@ -6,16 +6,16 @@ uint8_t test138::dat[] = {
 };
 int32_t test138::Getobst(void)
 {
-  return (int32_t)(&(*(uint8_t *)&dat[0]));
+  return (int32_t)(((uint8_t *)&dat[0]));
 }
 
 int32_t test138::Getfiller(void)
 {
-  return (int32_t)(&(*(uint8_t *)&dat[1]));
+  return (int32_t)(((uint8_t *)&dat[1]));
 }
 
 int32_t test138::Getcmd(void)
 {
-  return (int32_t)(&(*(uint16_t *)&dat[4]));
+  return (int32_t)(((uint16_t *)&dat[4]));
 }
 

@@ -19,6 +19,6 @@ uint8_t test77::dat[] = {
 };
 int32_t test77::Dummy(void)
 {
-  return (int32_t)(&(*(int32_t *)&dat[0]));
+  return (int32_t)(((int32_t *)&dat[0]));
 }
 

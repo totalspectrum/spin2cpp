@@ -6,6 +6,6 @@ uint8_t test37::dat[] = {
 };
 void test37::Zero(int32_t N)
 {
-  memset( (void *)(int32_t)(&(*(int32_t *)&dat[0])), 0, sizeof(int32_t)*N);
+  memset( (void *)(int32_t)(((int32_t *)&dat[0])), 0, sizeof(int32_t)*N);
 }
 

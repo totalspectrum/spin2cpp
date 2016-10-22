@@ -8,6 +8,6 @@ uint8_t test112::dat[] = {
 };
 int32_t test112::Me(void)
 {
-  return (*(int32_t *)&dat[12]);
+  return ((int32_t *)&dat[12])[0];
 }
 

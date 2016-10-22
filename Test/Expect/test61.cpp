@@ -8,6 +8,6 @@ uint8_t test61::dat[] = {
 };
 int32_t test61::Getstr(void)
 {
-  return (*(uint8_t *)&dat[0]);
+  return ((uint8_t *)&dat[0])[0];
 }
 

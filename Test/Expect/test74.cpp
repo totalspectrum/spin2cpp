@@ -6,6 +6,6 @@ uint8_t test74::dat[] = {
 };
 int32_t test74::Func(void)
 {
-  return (*(int32_t *)&dat[8]);
+  return ((int32_t *)&dat[8])[0];
 }
 
