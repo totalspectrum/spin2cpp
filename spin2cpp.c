@@ -414,6 +414,7 @@ main(int argc, char **argv)
                 || !strncmp(argv[0], "-f", 2)
                 || !strncmp(argv[0], "-m", 2)
                 || !strncmp(argv[0], "-l", 2)
+                || !strncmp(argv[0], "-sav", 4)
                 )
             {
                 appendToCmd(argv[0]); argv++; --argc;

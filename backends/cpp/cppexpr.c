@@ -60,11 +60,12 @@ static void
 PrintLabel(Flexbuf *f, Symbol *sym, int flags)
 {
     int ref = (flags & PRINTEXPR_ISREF) != 0;
+    int divBy4 = (flags & PRINTEXPR_GASIMM) != 0;
     Label *lab = (Label *)sym->val;
     Symbol *org = lab->org;  // last origin value seen
     
     if (current->pasmLabels) {
-        if (current->fixImmediate) {
+        if (divBy4) {
             flexbuf_printf(f, "((%s-%s)/4)", sym->name, org->name);
         } else {
             flexbuf_printf(f, "(%s-%s)", sym->name, org->name);
@@ -78,11 +79,33 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
     }
 }
 
+static void
+PrintHere(Flexbuf *f, AST *ast, int flags)
+{
+    int divBy4 = (flags & PRINTEXPR_GASIMM) != 0;
+    Symbol *org = (Symbol *)ast->d.ptr;  // last origin value seen
+    
+    if (current->pasmLabels) {
+        if (divBy4) {
+            flexbuf_printf(f, "((. - %s)/4)", org->name);
+        } else {
+            flexbuf_printf(f, "(. - %s)", org->name);
+        }
+    } else if (current->gasPasm) {
+        flexbuf_printf(f, ".");
+    } else {
+        ERROR(ast, "AST_HERE encountered in unexpected context");
+    }
+}
+
 /* code to print an integer */
 void
-PrintInteger(Flexbuf *f, int32_t v)
+PrintInteger(Flexbuf *f, int32_t v, int flags)
 {
     if (current->pasmLabels) {
+        if ((flags & PRINTEXPR_GASOP) && !(flags & PRINTEXPR_GASIMM)) {
+            v *= 4; // adjust for COG addressing
+        }
         if (v > -10 && v < 10) {
             flexbuf_printf(f, "%ld", (long)v);
         } else {
@@ -97,7 +120,7 @@ PrintInteger(Flexbuf *f, int32_t v)
 
 /* code to print a float */
 void
-PrintFloat(Flexbuf *f, int32_t v)
+PrintFloat(Flexbuf *f, int32_t v, int flags)
 {
     if (v < 0)
         flexbuf_printf(f, "(%s)0x%lx", gl_intstring, (long)(uint32_t)v);
@@ -138,7 +161,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         if (IsReservedWord(sym->name)) {
             int32_t v;
             v = EvalConstExpr((AST *)sym->val);
-            PrintInteger(f, v);
+            PrintInteger(f, v, flags);
         } else if (gl_ccode) {
             PrintObjConstName(f, current, sym);
         } else {
@@ -146,7 +169,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         }
         break;
     case SYM_FLOAT_CONSTANT:
-        PrintFloat(f, EvalConstExpr((AST*)sym->val));
+        PrintFloat(f, EvalConstExpr((AST*)sym->val), flags);
         break;
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
@@ -1127,10 +1150,13 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     objsym = sym = NULL;
     switch (expr->kind) {
     case AST_INTEGER:
-        PrintInteger(f, (int32_t)expr->d.ival);
+        PrintInteger(f, (int32_t)expr->d.ival, flags);
         break;
     case AST_FLOAT:
-        PrintFloat(f, (int32_t)expr->d.ival);
+        PrintFloat(f, (int32_t)expr->d.ival, flags);
+        break;
+    case AST_HERE:
+        PrintHere(f, expr, flags);
         break;
     case AST_STRING:
         if (strlen(expr->d.string) > 1) 
@@ -1394,7 +1420,11 @@ defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
     if (AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
-    flexbuf_printf(f, "%s(", b->cname);
+    if (gl_gas_dat && b->gasname) {
+        flexbuf_printf(f, "%s(", b->gasname);
+    } else {
+        flexbuf_printf(f, "%s(", b->cname);
+    }
     PrintExprList(f, params, PRINTEXPR_DEFAULT);
     flexbuf_printf(f, ")");
 }
@@ -1417,7 +1447,11 @@ waitpeqBuiltin(Flexbuf *f, Builtin *b, AST *origparams)
         ERROR(params, "Third parameter to %s must be 0", b->name);
         return;
     }
-    flexbuf_printf(f, "%s(", b->cname);
+    if (gl_gas_dat && b->gasname) {
+        flexbuf_printf(f, "%s(", b->gasname);
+    } else {
+        flexbuf_printf(f, "%s(", b->cname);
+    }
     PrintExpr(f, a1, PRINTEXPR_DEFAULT);
     flexbuf_printf(f, ", ");
     PrintExpr(f, a2, PRINTEXPR_DEFAULT);
@@ -1532,5 +1566,9 @@ rebootBuiltin(Flexbuf *f, Builtin *b, AST *params)
     if (AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
-    flexbuf_printf(f, "clkset(0x80, 0)");
+    if (gl_gas_dat) {
+        flexbuf_printf(f, "__builtin_propeller_clkset(0x80, 0)");
+    } else {
+        flexbuf_printf(f, "clkset(0x80, 0)");
+    }
 }

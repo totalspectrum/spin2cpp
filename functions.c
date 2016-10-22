@@ -166,9 +166,9 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                 L->flags |= LABEL_USED_IN_SPIN;
             }
             // convert plain foo into foo[0] if foo is an array
-            if (IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR))
+            if (IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR || sym->type == SYM_LABEL))
             {
-                if (upper && upper->kind != AST_ARRAYREF) {
+                if (upper && !(upper->kind == AST_ARRAYREF && upper->left == body)) {
                     AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
                     deref->line = upper->line;
                     if (body == upper->left) {

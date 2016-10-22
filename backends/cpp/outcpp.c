@@ -36,7 +36,7 @@ PrintDatArray(Flexbuf *f, Module *parse, const char *tail, bool classname)
 /*
  * print out a comment string
  */
-static void
+void
 PrintCommentString(Flexbuf *f, const char *str, int indent)
 {
     int numLines = 0;
@@ -114,7 +114,7 @@ static void
 PrintConstant(Flexbuf *f, AST *ast)
 {
     if (IsFloatConst(ast)) {
-        PrintFloat(f, EvalConstExpr(ast));
+        PrintFloat(f, EvalConstExpr(ast), PRINTEXPR_DEFAULT);
         return;
     }
     PrintExpr(f, ast, PRINTEXPR_DEFAULT);
@@ -667,6 +667,19 @@ PrintCppFile(Flexbuf *f, Module *parse)
     }
     IfdefPropeller(f);
     flexbuf_printf(f, "#include <propeller.h>\n");
+    if (gl_gas_dat) {
+        flexbuf_printf(f, "#undef clkset\n");
+        flexbuf_printf(f, "#undef cogid\n");
+        flexbuf_printf(f, "#undef cogstop\n");
+        flexbuf_printf(f, "#undef locknew\n");
+        flexbuf_printf(f, "#undef lockret\n");
+        flexbuf_printf(f, "#undef lockclr\n");
+        flexbuf_printf(f, "#undef lockset\n");
+        flexbuf_printf(f, "#undef waitcnt\n");
+        flexbuf_printf(f, "#undef waitpeq\n");
+        flexbuf_printf(f, "#undef waitpne\n");
+        flexbuf_printf(f, "#define _waitcnt(x) __builtin_propeller_waitcnt((x), 0)\n");
+    }
     EndIfdefPropeller(f);
     flexbuf_printf(f, "#include \"%s.h\"\n", parse->basename);
     flexbuf_printf(f, "\n");

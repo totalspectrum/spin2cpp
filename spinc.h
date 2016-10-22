@@ -176,7 +176,8 @@ typedef struct builtin {
     /* function to actually print the builtin */
     void        (*printit)(Flexbuf *, struct builtin *, AST *params);
     const char *cname;  /* c version of the name */
-
+    const char *gasname; /* name to use if --gas is given */
+    
     /* extra data */
     int extradata;
 
@@ -246,7 +247,6 @@ struct modulestate {
     
     /* flags for output */
     char pasmLabels;
-    char fixImmediate;
     char volatileVariables;
     char sawToken;
     char codeCog; // if 1, module should be placed in COG memory

@@ -91,6 +91,7 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     char *comma = "";
     AST *origval = NULL;
 
+    startLine(f, inlineAsm);
     if ( (datacount % size) != 0 ) {
         flexbuf_printf(f, "%11s %-7s %d", " ", ".balign", size);
         endLine(f, inlineAsm);
@@ -130,46 +131,30 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
         }
         ast = ast->right;
     }
+    endLine(f, inlineAsm);
 }
 
 static void
-outputGasDirective(Flexbuf *f, const char *prefix, AST *expr)
+outputGasDirective(Flexbuf *f, const char *prefix, AST *expr, int inlineAsm)
 {
+    startLine(f, inlineAsm);
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
     if (expr)
         PrintExpr(f, expr, PRINTEXPR_GAS);
     else
         flexbuf_printf(f, "0");
+    endLine(f, inlineAsm);
 }
 
 static void
 outputGasComment(Flexbuf *f, AST *ast, int inlineAsm)
 {
-    bool needLineStart = false;
-    bool needIndent = true;
-    int c;
     const char *string;
     if (!ast || ast->kind != AST_COMMENT) return;
     string = ast->d.string;
     if (!string) return;
 
-    do {
-        c = *string++;
-        if (needLineStart) {
-            startLine(f, inlineAsm);
-            needLineStart = false;
-        }
-        if (c == '\n') {
-            endLine(f, inlineAsm);
-            needLineStart = needIndent = true;
-        } else if (c != 0) {
-            if (needIndent) {
-                flexbuf_printf(f, "%11s'", " ");
-                needIndent = false;
-            }
-            flexbuf_printf(f, "%c", c);
-        }
-    } while (c);
+    PrintCommentString(f, string, 0);
 }
 
 #define GAS_WZ 1
@@ -189,15 +174,17 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     int i;
     int numoperands = 0;
     int printed_if = 0;
+    int printFlags;
     const char *opcode;
 
     if ( (datacount % 4) != 0) {
+        startLine(f, inlineAsm);
         flexbuf_printf(f, "%11s .balign 4", " ");
         endLine(f, inlineAsm);
         datacount = (datacount + 3) & ~3;
-        startLine(f, inlineAsm);
     }
     
+    startLine(f, inlineAsm);
     instr = (Instruction *)ast->d.ptr;
     /* print modifiers */
     sub = ast->right;
@@ -233,7 +220,11 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     }
 
     /* print instruction opcode */
-    opcode = instr->name;
+    if (instr->opc == OPC_CALL) {
+        opcode = "jmpret";
+    } else {
+        opcode = instr->name;
+    }
     if (!printed_if) {
         flexbuf_printf(f, "%11s ", " ");
     }
@@ -241,6 +232,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     datacount += 4;
     /* now print the operands */
     for (i = 0; i < numoperands; i++) {
+        printFlags = PRINTEXPR_GAS | PRINTEXPR_GASOP;
         if (i == 0)
             flexbuf_printf(f, " ");
         else
@@ -248,10 +240,36 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
         if (immflag) {
             switch (instr->ops) {
             case CALL_OPERAND:
+                if (i == 0) {
+                    AST *ast = operand[i];
+                    Symbol *sym;
+                    char *retname;
+                    if (ast->kind != AST_IDENTIFIER) {
+                        ERROR(ast, "call instruction must be to identifier");
+                        continue;
+                    }
+                    retname = alloca(strlen(ast->d.string) + 6);
+                    sprintf(retname, "%s_ret", ast->d.string);
+                    sym = LookupSymbol(retname);
+                    if (!sym || sym->type != SYM_LABEL) {
+                        ERROR(ast, "cannot find return label %s", retname);
+                        return;
+                    }
+                    PrintSymbol(f, sym, printFlags);
+                    flexbuf_printf(f, ", #");
+                    immflag = 0;
+                }
+                break;
             case SRC_OPERAND_ONLY:
                 if (i == 0) {
                     flexbuf_printf(f, "#");
-                    current->fixImmediate = 1;
+                    if (instr->opc != OPC_JUMP) printFlags |= PRINTEXPR_GASIMM;
+                    immflag = 0;
+                }
+                break;
+            case JMPRET_OPERANDS:
+                if (i == 1) {
+                    flexbuf_printf(f, "#");
                     immflag = 0;
                 }
                 break;
@@ -259,13 +277,12 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
                 if (i == 1) {
                     flexbuf_printf(f, "#");
                     immflag = 0;
-                    current->fixImmediate = 1;
+                    printFlags |= PRINTEXPR_GASIMM;
                 }
                 break;
             }
         }
-        PrintExpr(f, operand[i], PRINTEXPR_GAS);
-        current->fixImmediate = 0;
+        PrintExpr(f, operand[i], printFlags);
     }
     if (effects) {
         const char *comma = "";
@@ -278,6 +295,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
             }
         }
     }
+    endLine(f, inlineAsm);
 }
 
 static void
@@ -285,6 +303,7 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
 {
     const char *name = id->d.string;
     Symbol *sym = LookupSymbol(name);
+    
     if (sym && inlineAsm) {
         Label *lab;
         if (sym->type != SYM_LABEL) {
@@ -292,15 +311,15 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
         } else {
             lab = (Label *)sym->val;
             if (lab->flags & LABEL_USED_IN_SPIN) {
-                endLine(f, inlineAsm);
-                flexbuf_printf(f, "extern ");
+                flexbuf_printf(f, "\nextern ");
                 PrintType(f, lab->type);
                 flexbuf_printf(f, " %s[] __asm__(\"%s\");\n", name, name);
-                startLine(f, inlineAsm);
             }
         }
     }
+    startLine(f, inlineAsm);
     flexbuf_printf(f, "%s:", name);
+    endLine(f, inlineAsm);
 }
 
 static void
@@ -308,7 +327,7 @@ PrintGasConstantDecl(Flexbuf *f, AST *ast, int inlineAsm)
 {
     startLine(f, inlineAsm);
     flexbuf_printf(f, "%11s .equ    %s, ", " ", ast->d.string);
-    PrintInteger(f, EvalConstExpr(ast));
+    PrintInteger(f, EvalConstExpr(ast), PRINTEXPR_DEFAULT);
     endLine(f, inlineAsm);
 }
 
@@ -358,26 +377,44 @@ outputGasOrg(Flexbuf *f, AST *ast, int inlineAsm)
     int val = 0;
     Symbol *sym;
     if (!inlineAsm) {
-        outputGasDirective(f, ".org", ast->left);
+        outputGasDirective(f, ".org", ast->left, inlineAsm);
         return;
     }
     if (ast->left) {
         val = EvalConstExpr(ast->left);
     }
-#if 0    
-    if (val != 0) {
-        ERROR(ast, ".org with non-zero value not supported in GAS output");
-    }
-#endif    
     sym = (Symbol *)ast->d.ptr;
-    flexbuf_printf(f, "%s = . + 0x%x", sym->name, val);
+    startLine(f, inlineAsm);
+    flexbuf_printf(f, "%s_base = . + 0x%x", sym->name, val);
+    endLine(f, inlineAsm);
 }
+
+static void
+outputFinalOrgs(Flexbuf *f, AST *ast[], int count, int inlineAsm)
+{
+    int i;
+    Symbol *sym;
+    if (count == 0 || inlineAsm == 0) return;
+    flexbuf_printf(f, "//\n");
+    flexbuf_printf(f, "// due to a gas bug, we need the .org constants to be unknown during the first pass\n");
+    flexbuf_printf(f, "// so they have to be defined here, after all asm is done\n");
+    flexbuf_printf(f, "//\n");
+    for (i = 0; i < count; i++) {
+        sym = (Symbol *)ast[i]->d.ptr;
+        startLine(f, inlineAsm);
+        flexbuf_printf(f, ".equ %s, %s_base", sym->name, sym->name);
+        endLine(f, inlineAsm);
+    }
+}
+#define MAX_ORG_COUNT 80
 
 void
 PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 {
     AST *ast, *top;
     int saveState;
+    AST *saveOrgs[MAX_ORG_COUNT];
+    int orgCount = 0;
     
     if (gl_errors != 0)
         return;
@@ -396,8 +433,6 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
     }
     for (top = P->datblock; top; top = top->right) {
         ast = top;
-        /* print anything for start of line here */
-        startLine(f, inlineAsm);
 
         while (ast->kind == AST_COMMENTEDNODE) {
             outputGasComment(f, ast->right, inlineAsm);
@@ -426,13 +461,22 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             ERROR(ast, "File directive not supported in GAS output");
             break;
         case AST_ORG:
+            if (orgCount == MAX_ORG_COUNT) {
+                ERROR(ast, "too many .org directives in GAS output");
+            } else {
+                saveOrgs[orgCount++] = ast;
+            }
             outputGasOrg(f, ast, inlineAsm);
             break;
         case AST_RES:
-            outputGasDirective(f, ".res", ast->left);
+            if (0 && inlineAsm && ast->left) {
+                outputGasDirective(f," . = . + 4*", ast->left, inlineAsm);
+            } else {
+                outputGasDirective(f, ".res", ast->left, inlineAsm);
+            }
             break;
         case AST_FIT:
-            outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496));
+            outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496), inlineAsm);
             break;
         case AST_COMMENT:
 //            outputGasComment(f, ast, inlineAsm); // printed above already
@@ -441,10 +485,8 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             ERROR(ast, "unknown element in data block");
             break;
         }
-        /* print end of line stuff here */
-        endLine(f, inlineAsm);
     }
-
+    outputFinalOrgs(f, saveOrgs, orgCount, inlineAsm);
     if (inlineAsm) {
         startLine(f, inlineAsm);
         flexbuf_printf(f, "%11s .compress default", " ");

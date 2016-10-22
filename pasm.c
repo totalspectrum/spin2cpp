@@ -123,34 +123,39 @@ emitPendingLabels(Module *P, AST *label, unsigned pc, unsigned asmpc, AST *ltype
 }
 
 /*
- * replace AST_HERE with AST_INTEGER having pc as its value
+ * replace AST_HERE with AST_INTEGER having pc as its value, if necessary
+ * otherwise update the AST_HERE with the value of the last origin symbol
  */
 void
-replaceHeres(AST *ast, uint32_t asmpc)
+replaceHeres(AST *ast, uint32_t asmpc, Symbol *lastOrg)
 {
     if (ast == NULL)
         return;
     if (ast->kind == AST_HERE) {
-        ast->kind = AST_INTEGER;
-        ast->d.ival = asmpc;
+        if (gl_gas_dat) {
+            ast->d.ptr = (void *)lastOrg;
+        } else {
+            ast->kind = AST_INTEGER;
+            ast->d.ival = asmpc;
+        }
         return;
     }
-    replaceHeres(ast->left, asmpc);
-    replaceHeres(ast->right, asmpc);
+    replaceHeres(ast->left, asmpc, lastOrg);
+    replaceHeres(ast->right, asmpc, lastOrg);
 }
 
 /*
  * do replaceHeres on each element of a long list
  */
 void
-replaceHereDataList(AST *ast, uint32_t asmpc, uint32_t inc)
+replaceHereDataList(AST *ast, uint32_t asmpc, uint32_t inc, Symbol *lastOrg)
 {
     AST *sub;
 
     while (ast) {
         sub = ast->left;
         if (sub)
-            replaceHeres(sub, asmpc/4);
+            replaceHeres(sub, asmpc/4, lastOrg);
         asmpc += inc;
         ast = ast->right;
     }
@@ -216,28 +221,28 @@ DeclareLabels(Module *P)
         switch (ast->kind) {
         case AST_BYTELIST:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_byte, lastOrg);
-            replaceHereDataList(ast->left, asmpc, 1);
+            replaceHereDataList(ast->left, asmpc, 1, lastOrg);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
             MAYBEALIGNPC(2);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_word, lastOrg);
-            replaceHereDataList(ast->left, asmpc, 2);
+            replaceHereDataList(ast->left, asmpc, 2, lastOrg);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
             MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
-            replaceHereDataList(ast->left, asmpc, 4);
+            replaceHereDataList(ast->left, asmpc, 4, lastOrg);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
             break;
         case AST_INSTRHOLDER:
             MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
-            replaceHeres(ast->left, asmpc/4);
+            replaceHeres(ast->left, asmpc/4, lastOrg);
             ast->d.ival = asmpc;
             INCPC(InstrSize(ast->left));
             lasttype = ast_type_long;
@@ -249,7 +254,7 @@ DeclareLabels(Module *P)
         case AST_ORG:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             if (ast->left) {
-                replaceHeres(ast->left, asmpc/4);
+                replaceHeres(ast->left, asmpc/4, lastOrg);
                 asmpc = 4*EvalPasmExpr(ast->left);
             } else {
                 asmpc = 0;
@@ -263,7 +268,7 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, asmpc, ast_type_long, lastOrg);
             ast->d.ival = asmpc;
             if (ast->left) {
-                replaceHeres(ast->left, hubpc);
+                replaceHeres(ast->left, hubpc, lastOrg);
                 hubpc = EvalPasmExpr(ast->left);
             } else {
                 hubpc = 0;
