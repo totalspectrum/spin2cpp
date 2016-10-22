@@ -371,24 +371,48 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
     Symbol *sym = LookupSymbol(name);
     int align = 1;
     
-    if (sym && inlineAsm) {
+    if (sym) {
         Label *lab;
         if (sym->type != SYM_LABEL) {
             ERROR(id, "expected label symbol");
         } else {
             lab = (Label *)sym->val;
-            if (lab->flags & LABEL_USED_IN_SPIN) {
-                flexbuf_printf(f, "\nextern ");
-                PrintType(f, lab->type);
-                flexbuf_printf(f, " %s[] __asm__(\"%s\");\n", name, name);
-            }
             align = TypeAlignment(lab->type);
         }
     }
     forceAlign(f, align, inlineAsm);
     startLine(f, inlineAsm);
-    flexbuf_printf(f, "%s:", name);
+    flexbuf_printf(f, "  %s:", name);
     endLine(f, inlineAsm);
+}
+
+static void
+DeclareLabelsGas(Flexbuf *f, Module *P, int inlineAsm)
+{
+    AST *ast, *top;
+    Symbol *sym;
+    Label *lab;
+   
+    if (!inlineAsm) return; // only need this in inline
+    for (top = P->datblock; top; top = top->right) {
+        ast = top;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+       if (ast && ast->kind == AST_IDENTIFIER) {
+           const char *name = ast->d.string;
+           // GAS label declaration
+           sym = LookupSymbol(name);
+           if (!sym) continue;
+           if (sym->type != SYM_LABEL) continue;
+           lab = (Label *)sym->val;
+           if (lab->flags & LABEL_USED_IN_SPIN) {
+                flexbuf_printf(f, "extern ");
+                PrintType(f, lab->type);
+                flexbuf_printf(f, " %s[] __asm__(\"%s\");\n", name, name);
+           }
+       }
+   }
 }
 
 static void
@@ -492,6 +516,8 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
 
     /* print constant declarations */
     PrintConstantsGas(f, P, inlineAsm);
+    DeclareLabelsGas(f, P, inlineAsm);
+    
     if (inlineAsm) {
         startLine(f, inlineAsm);
         flexbuf_printf(f, "%11s .section .%s.dat,\"ax\"", " ", P->classname);
@@ -500,7 +526,7 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
         flexbuf_printf(f, "%11s .compress off", " ");
         endLine(f, inlineAsm);
         startLine(f, inlineAsm);
-        flexbuf_printf(f, "%11s ..dat_start:", " ");
+        flexbuf_printf(f, "  ..dat_start:");
         endLine(f, inlineAsm);
     }
     for (top = P->datblock; top; top = top->right) {
