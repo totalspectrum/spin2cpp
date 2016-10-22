@@ -1,13 +1,14 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012 Total Spectrum Software Inc.
+// Copyright 2012-2016 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include "spinc.h"
 #include "outcpp.h"
@@ -95,16 +96,73 @@ forceAlign(Flexbuf *f, int size, int inlineAsm)
 }
 
 static void
+PrintQuotedChar(Flexbuf *f, int val)
+{
+    switch (val) {
+    case '"':
+    case '\'':
+    case '\\':
+        flexbuf_printf(f, "\\%c", val);
+        break;
+    case 0:
+        flexbuf_printf(f, "\\0");
+        break;
+    case 10:
+        flexbuf_printf(f, "\\n");
+        break;
+    case 13:
+        flexbuf_printf(f, "\\r");
+        break;
+    default:
+        flexbuf_printf(f, "%c", val);
+        break;
+    }
+}
+
+static bool
+ShouldPrintAsString(AST *ast)
+{
+    AST *sub;
+    int val;
+    while (ast) {
+        sub = ast->left;
+        if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
+            return false;
+        } else if (sub->kind == AST_STRING) {
+            // OK
+        } else {
+            if (!IsConstExpr(sub)) {
+                return false;
+            }
+            val = EvalConstExpr(sub);
+            if (!(isprint(val) || val == 10 || val == 13 || val == 0)) {
+                return false;
+            }
+        }
+        ast = ast->right;
+    }
+    return true;
+}
+
+static void
 outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inlineAsm)
 {
     int reps;
     AST *sub;
     char *comma = "";
     AST *origval = NULL;
-
+    bool isString = false;
+    
+    if (size == 1 && ShouldPrintAsString(ast)) {
+        isString = true;
+        prefix = ".ascii";
+    }
     forceAlign(f, size, inlineAsm);
     startLine(f, inlineAsm);
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
+    if (isString) {
+        flexbuf_printf(f, "\"");
+    }
     while (ast) {
         sub = ast->left;
         if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
@@ -115,8 +173,8 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
             unsigned val;
             while (*ptr) {
                 val = (*ptr++) & 0xff;
-                if (0 && val >= ' ' && val < 0x7f) {
-                    flexbuf_printf(f, "%s'%c'", comma, val);
+                if (isString) {
+                    PrintQuotedChar(f, val);
                 } else {
                     flexbuf_printf(f, "%s%d", comma, val);
                 }
@@ -129,13 +187,21 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
             reps = 1;
         }
         while (reps > 0) {
-            flexbuf_printf(f, "%s", comma);
-            PrintGasExpr(f, origval);
-            comma = ", ";
+            if (isString) {
+                unsigned val = EvalConstExpr(origval);
+                PrintQuotedChar(f, val);
+            } else {
+                flexbuf_printf(f, "%s", comma);
+                PrintGasExpr(f, origval);
+                comma = ", ";
+            }
             --reps;
             datacount += size;
         }
         ast = ast->right;
+    }
+    if (isString) {
+        flexbuf_printf(f, "\"");
     }
     endLine(f, inlineAsm);
 }
