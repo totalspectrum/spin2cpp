@@ -22,7 +22,10 @@
 void
 SkipComments(void)
 {
-    (void)GetComments();
+    AST *ast = GetComments();
+    if (ast && ast->d.string) {
+        printf("got a comment: %s\n", ast->d.string);
+    }
 }
 
 /* create an AST in a comment holder */
@@ -33,6 +36,19 @@ NewCommentedAST(enum astkind kind, AST *left, AST *right, AST *comment)
 
     ast = NewAST(kind, left, right);
     if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    return ast;
+}
+
+AST *
+NewCommentedInstr(AST *instr)
+{
+    AST *comment = GetComments();
+    AST *ast;
+
+    ast = NewAST(AST_INSTRHOLDER, instr, NULL);
+    if (comment && comment->d.string) {
         ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
     return ast;
@@ -627,13 +643,13 @@ basedatline:
   | T_LONG exprlist T_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction T_EOLN
-    { $$ = NewAST(AST_INSTRHOLDER, $1, NULL); }
+    { $$ = NewCommentedInstr($1); }
   | instruction operandlist T_EOLN
-    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
   | instruction modifierlist T_EOLN
-    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, $2), NULL); }
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
   | instruction operandlist modifierlist T_EOLN
-    { $$ = NewAST(AST_INSTRHOLDER, AddToList($1, AddToList($2, $3)), NULL); }
+    { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
   | T_ORG T_EOLN
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
   | T_ORG expr T_EOLN
@@ -649,7 +665,7 @@ basedatline:
   | T_FIT T_EOLN
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | T_FILE string T_EOLN
-    { $$ = NewAST(AST_FILE, GetFullFileName($2), NULL); }
+    { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
 objblock:

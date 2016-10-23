@@ -222,11 +222,14 @@ static void
 outputGasComment(Flexbuf *f, AST *ast, int inlineAsm)
 {
     const char *string;
-    if (!ast || ast->kind != AST_COMMENT) return;
-    string = ast->d.string;
-    if (!string) return;
 
-    PrintCommentString(f, string, 0);
+    while (ast && ast->kind == AST_COMMENT) {
+        string = ast->d.string;
+        if (string) {
+            PrintCommentString(f, string, 7 + 11);
+        }
+        ast = ast->right;
+    }
 }
 
 #define GAS_WZ 1
