@@ -611,7 +611,6 @@ datblock:
     {
         AST *dat = $1;
         $$ = dat;
-        SkipComments();
     }
   | datblock datline
     { $$ = AddToList($1, $2); }
@@ -620,8 +619,18 @@ datblock:
 datline:
   basedatline
   | identifier basedatline
-    {   AST *linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
-        $$ = AddToList(linebreak, AddToList($1, $2)); 
+    {   AST *linebreak;
+        AST *comment = GetComments();
+        AST *ast;
+        ast = $1;
+        if (comment && comment->d.string) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        }
+        ast = AddToList(ast, $2);
+        ast = AddToList(linebreak, ast);
+        $$ = ast;
     }
   ;
 
