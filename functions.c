@@ -125,18 +125,29 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
             sym = FindSymbol(&fdef->localsyms, ast->d.string);
             if (sym) {
                 if (sym->type == SYM_PARAMETER) {
-                    if (!fdef->parmarray)
+                    if (!fdef->parmarray) {
                         fdef->parmarray = NewTemporaryVariable("_parm_");
+                    }
                     fdef->localarray = fdef->parmarray;
                 } else if (sym->type == SYM_LOCALVAR && IsAddrRef(body, sym) ) {
-                    if (!fdef->localarray)
+                    if (!fdef->localarray) {
                         fdef->localarray = NewTemporaryVariable("_local_");
+                    }
                 }
             } else {
                 /* Taking the address of an object variable? That will make the object volatile. */
-                sym = FindSymbol(&current->objsyms, ast->d.string);
+                sym = LookupSymbol(ast->d.string);
                 if (sym && sym->type == SYM_VARIABLE && IsAddrRef(body, sym)) {
                     current->volatileVariables = 1;
+                } else if (sym && sym->type == SYM_LABEL && upper->kind == AST_MEMREF) {
+                    Label *lab = (Label *)sym->val;
+                    int refalign = TypeAlignment(upper->left);
+                    int labalign = TypeAlignment(lab->type);
+                    if (refalign > labalign) {
+                        lab->flags |= (LABEL_NEEDS_EXTRA_ALIGN|LABEL_USED_IN_SPIN);
+                        WARNING(body, "Label is dereferenced with greater alignment than it was declared with");
+                    }
+
                 }
             }
         } else if (ast->kind == AST_RESULT) {

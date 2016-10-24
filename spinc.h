@@ -100,7 +100,8 @@ typedef struct label {
     AST *type;   /* type of value following the label */
     Symbol *org; /* symbol associated with last .org, if needed */
     unsigned flags; /* flags for the label */
-#define LABEL_USED_IN_SPIN 0x01
+#define LABEL_USED_IN_SPIN      0x01
+#define LABEL_NEEDS_EXTRA_ALIGN 0x02
 } Label;
 
 
