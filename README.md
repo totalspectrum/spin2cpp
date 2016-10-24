@@ -231,7 +231,11 @@ Spin2cpp accepts the following options:
   translation of the PASM code in the file. In other cases, causes
   the DAT section to be compiled into a separate GCC section
   containing inline GAS code. This option is still experimental and
-  may not always work correctly.
+  may not always work correctly, but it dramatically improves the
+  readability and maintainability of the generated code. Without it,
+  the DAT section is just an opaque "binary blob"; with it, the DAT
+  section is readable and changeable PASM code placed inline in the C
+  output.
 
 `--main`
   Automatically add a C or C++ main() function that will invoke the default
@@ -343,27 +347,12 @@ to the original Spin, but its output is not as clean as would be produced
 by a human programmer. Some of the things to watch out for:
 
 (1) Without `--gas`, DAT sections are turned into binary blobs
-    (which are not maintainable)
+    (which are not maintainable). --gas helps this a lot.
 
-(2) With `--gas`:
-    (a) Comments in PASM code are lost
-    (b) Only one `.org` is allowed per DAT, in general (in some
-        cases `gas` will accept more than one, but only if the
-	program counter advances).
-    (c) CON defines are repeated in the assembly code rather
-        than being re-used from the header
-
-(3) Code only uses one type (`int32_t`) cast to pointer as necessary;
+(2) Code only uses one type (`int32_t`) cast to pointer as necessary;
     idiomatic C would use pointer types from the start.
 
-(4) Some code (e.g. for starting a cog with a Spin method) relies on
-    features of more recent GCC + libraries, and will have to be ported
-    to SimpleIDE's older versions if that platform is desired.
-
-(5) Access to labelled data in DAT section is awkward from C (lots of
-    weird casts). It would be better if the DAT came out as a struct.
-
-(6) Local variable names get lost when spin2cpp decides it has to
+(3) Local variable names get lost when spin2cpp decides it has to
     force the variables into a local array (for example if the address
     of a local variable is taken)
 
@@ -390,6 +379,8 @@ even in C mode).
 unless all the arguments are constant.
 
 (2) The reverse operator will not work in Catalina.
+
+(3) Code produced with --gas will not work with Catalina.
 
 C INTEROPERATION
 ===============
