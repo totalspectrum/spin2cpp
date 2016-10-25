@@ -130,7 +130,7 @@ spin2cpp.linux: .PHONY
 	$(MAKE) CROSS=linux32
 	cp build-linux32/spin2cpp ./spin2cpp.linux
 
-DOCS=README.md COPYING Changelog.txt docs
+DOCS=README.md README.fastspin COPYING Changelog.txt docs
 
 zip: fastspin.exe spin2cpp.exe spin2cpp.linux
 	zip -r spin2cpp.zip $(DOCS) spin2cpp.exe spin2cpp.linux fastspin.exe

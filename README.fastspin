@@ -23,6 +23,7 @@ usage: fastspin.exe
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
   [ -2 ]             compile for Prop2
+  [ -O ]             enable additional optimizations
   [ -D <define> ]    add a define
 
 The -2 option is new: it is for compiling for the Propeller 2 (FPGA
