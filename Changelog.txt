@@ -1,3 +1,13 @@
+Version 3.4.0
+
+- Completely revamped --gas output to make it easier to edit and
+  to support some constructs (like multiple .org) that could not
+  be used in earlier versions of --gas. DAT sections in --gas are
+  now quite human readable (and more importantly, modifyable).
+- Preserve DAT section comments in --gas output.
+- Changed #define for constants so that we can distinguish constants
+  in different objects.
+  
 Version 3.2.3
 
 - Added --side option to create a SimpleIDE .side file.
