@@ -53,4 +53,8 @@ done
 
 # clean up
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
-echo $endmsg
+if [ "x$endmsg" = "x$ok" ]
+then
+    echo $endmsg
+    exit 1
+fi
