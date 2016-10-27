@@ -4,7 +4,7 @@
 #define Yield__() __asm__ volatile( "" ::: "memory" )
 void test29::Tx(int32_t Val)
 {
-  ((uint8_t *)28672)[Idx] = 0;
+  ((char *)28672)[Idx] = 0;
 }
 
 void test29::Str(int32_t Stringptr)
@@ -15,7 +15,7 @@ void test29::Str(int32_t Stringptr)
     Yield__();
   }
   for(( (_idx__0001 = 0), (_limit__0002 = strlen((char *) Stringptr)) ); _idx__0001 < _limit__0002; _idx__0001++) {
-    Tx(((uint8_t *)(Stringptr++))[0]);
+    Tx(((char *)(Stringptr++))[0]);
   }
   lockclr(Strlock);
 }

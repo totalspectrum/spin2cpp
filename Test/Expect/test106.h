@@ -5,7 +5,7 @@
 
 class test106 {
 public:
-  static uint8_t volatile dat[];
+  static char volatile dat[];
   static int32_t	Foo(void);
 private:
 };

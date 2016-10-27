@@ -5,7 +5,7 @@
 
 class test118 {
 public:
-  static uint8_t dat[];
+  static char dat[];
 private:
 };
 

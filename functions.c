@@ -265,7 +265,7 @@ doDeclareFunction(AST *funcblock)
         resultname = "result";
     fdef->resultexpr = AstIdentifier(resultname);
     fdef->is_public = is_public;
-    fdef->rettype = ast_type_generic;
+    fdef->rettype = NULL;
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
@@ -850,6 +850,16 @@ CheckRetCaseMatchList(Function *func, AST *ast)
     return sawReturn;
 }
 
+static AST *
+ForceExprType(AST *ast)
+{
+    AST *typ;
+    typ = ExprType(ast);
+    if (!typ)
+        typ = ast_type_generic;
+    return typ;
+}
+
 static int
 CheckRetStatement(Function *func, AST *ast)
 {
@@ -863,14 +873,14 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     case AST_RETURN:
         if (ast->left) {
-            SetFunctionType(func, ExprType(ast->left));
+            SetFunctionType(func, ForceExprType(ast->left));
         }
         sawreturn = 1;
         break;
     case AST_ABORT:
         if (ast->left) {
             (void)CheckRetStatement(func, ast->left);
-            SetFunctionType(func, ExprType(ast->left));
+            SetFunctionType(func, ForceExprType(ast->left));
         }
         break;
     case AST_IF:
@@ -907,7 +917,7 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left;
         rhs = ast->right;
         if (IsResultVar(func, lhs)) {
-            SetFunctionType(func, ExprType(rhs));
+            SetFunctionType(func, ForceExprType(rhs));
         }
         sawreturn = 0;
         break;
@@ -982,7 +992,7 @@ ProcessFuncs(Module *P)
         sawreturn = CheckRetStatementList(pf, pf->body);
         if (pf->rettype == NULL && pf->result_used) {
             /* there really is a return type */
-            pf->rettype = ast_type_generic;
+            SetFunctionType(pf, ast_type_generic);
         }
         if (pf->rettype == NULL) {
             pf->rettype = ast_type_void;
@@ -1020,6 +1030,10 @@ InferTypes(Module *P)
         pf->is_static = 1;
         CheckForStatic(pf, pf->body);
         if (pf->is_static) {
+            changes++;
+            pf->force_static = 0;
+        } else if (pf->force_static) {
+            pf->is_static = 1;
             changes++;
         }
     }
@@ -1081,7 +1095,12 @@ MarkUsed(Function *f)
 void
 SetFunctionType(Function *f, AST *typ)
 {
-    f->rettype = typ;
+    if (typ) {
+        if (typ == ast_type_byte || typ == ast_type_word) {
+            typ = ast_type_long;
+        }
+        f->rettype = typ;
+    }
 }
 
 /*
@@ -1322,10 +1341,7 @@ doSpinTransform(AST **astptr, int level)
         if (0 != (func = IsSpinCoginit(ast))) {
             current->needsCoginit = 1;
             func->cog_task = 1;
-            if (!func->is_static) {
-                func->force_static = 1;
-                func->is_static = 1;
-            }
+            func->force_static = 1;
         }
         doSpinTransform(&ast->left, 2);
         doSpinTransform(&ast->right, 2);

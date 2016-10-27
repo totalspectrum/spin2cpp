@@ -1136,3 +1136,26 @@ void InitPreprocessor()
     pp_setcomments(&gl_pp, "\'", "{", "}");
     pp_setlinedirective(&gl_pp, "{#line %d %s}");   
 }
+
+void
+ProcessSpinCode(Module *P)
+{
+    Module *Q;
+    int changes;
+    
+    MarkUsed(P->functions);
+    for (Q = allparse; Q; Q = Q->next) {
+        SpinTransform(Q);
+        ProcessFuncs(Q);
+    }
+    do {
+        changes = 0;
+        for (Q = allparse; Q; Q = Q->next) {
+            changes += InferTypes(Q);
+        }
+    } while (changes != 0);
+    for (Q = allparse; Q; Q = Q->next) {
+        PerformCSE(Q);
+    }
+    AssignObjectOffsets(P);
+}

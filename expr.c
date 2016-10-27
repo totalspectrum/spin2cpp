@@ -191,6 +191,9 @@ IsSpinCoginit(AST *params)
         /* FIXME? Spin requires that it be a local method; do we care? */
         sym = FindFuncSymbol(func, NULL, NULL);
         if (sym) {
+            if (sym->type == SYM_BUILTIN) {
+                return NULL;
+            }
             return (Function *)sym->val;
         }
     }
@@ -1259,11 +1262,75 @@ IsIntType(AST *type)
 
 /*
  * figure out an expression's type
+ * returns NULL if we can't deduce it
  */
 AST *
 ExprType(AST *expr)
 {
-    return ast_type_generic;
+    AST *sub;
+    
+    switch (expr->kind) {
+    case AST_INTEGER:
+    case AST_CONSTANT:
+    case AST_CONSTREF:
+    case AST_HWREG:
+    case AST_ISBETWEEN:
+        return ast_type_long;
+    case AST_FLOAT:
+    case AST_TRUNC:
+    case AST_ROUND:
+        return ast_type_float;
+    case AST_STRING:
+        // in Spin, a string is always dereferenced
+        // so "abc" is the same as "a" is the same as 0x65
+        return ast_type_long;
+    case AST_MEMREF:
+        // FIXME: if expr->right is a variable, we should mark it as a pointer
+        return expr->left; 
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        sub = ExprType(expr->left);
+        if (!sub) sub= ast_type_generic;
+        return NewAST(AST_PTRTYPE, sub, NULL);
+    case AST_IDENTIFIER:
+    {
+        Symbol *sym = LookupSymbol(expr->d.string);
+        Label *lab;
+        if (!sym) return NULL;
+        switch (sym->type) {
+        case SYM_CONSTANT:
+        case SYM_HW_REG:
+            return ast_type_long;
+        case SYM_LABEL:
+            lab = (Label *)sym->val;
+            return NewAST(AST_PTRTYPE, lab->type, NULL);
+        case SYM_FLOAT_CONSTANT:
+            return ast_type_float;
+        case SYM_VARIABLE:
+            return (AST *)sym->val;
+        default:
+            return NULL;
+        }            
+    }
+    case AST_ARRAYREF:
+        sub = ExprType(expr->left);
+        if (!sub) return NULL;
+        if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE)) return NULL;
+        return sub->left;
+    case AST_FUNCCALL:
+    case AST_METHODREF:
+    {
+        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
+        if (sym) {
+            if (sym->type == SYM_FUNCTION) {
+                return ((Function *)sym->val)->rettype;
+            }
+        }
+        return NULL;
+    }
+    default:
+        return NULL;
+    }
 }
 
 /*
@@ -1276,9 +1343,37 @@ int TypeSize(AST *ast)
     if (ast->kind == AST_ARRAYTYPE) {
         return TypeSize(ast->left)*EvalConstExpr(ast->right);
     }
+    if (ast->kind == AST_PTRTYPE) {
+        return 4; // all pointers are the same size
+    }
+    if (ast->kind == AST_FLOATTYPE) {
+        return 4;
+    }
     if (ast->kind == AST_INTTYPE || ast->kind == AST_UNSIGNEDTYPE || ast->kind == AST_GENERICTYPE) {
         return EvalConstExpr(ast->left);
     }
     ERROR(ast, "internal error: bad type kind %d", ast->kind);
     return 0;
+}
+
+/* check for compatibility of types */
+int
+CompatibleTypes(AST *A, AST *B)
+{
+    // FIXME: eventually float types should be
+    // fully supported, but for now treat them
+    // as generic
+    if (!A || A->kind == AST_FLOATTYPE) {
+        A = ast_type_generic;
+    }
+    if (!B || B->kind == AST_FLOATTYPE) {
+        B = ast_type_generic;
+    }
+    if (A == B) return 1;
+    if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
+        return (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE);
+    }
+
+    if (A->kind != B->kind) return 0;
+    return CompatibleTypes(A->left, B->left);
 }

@@ -7,7 +7,7 @@ class test89 {
 public:
   void	Catchlong(int32_t Longvar);
 private:
-  uint8_t	B0, B1, B2, B3;
+  char	B0, B1, B2, B3;
 };
 
 #endif

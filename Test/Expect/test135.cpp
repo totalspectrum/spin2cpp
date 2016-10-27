@@ -3,8 +3,8 @@
 
 void test135::Main(void)
 {
-  int32_t	Left[10];
-  Val = (( Defs.Doout(miscdefs::Left), 0 ) * 8) / 10;
+  int32_t 	Left[10];
+  Val = ((Defs.Doout(miscdefs::Left), 0) * 8) / 10;
   Val2 = miscdefs::Center;
 }
 

@@ -11,8 +11,8 @@ private:
   int32_t	Baud;
   int32_t	Txmask;
   int32_t	Bitcycles;
-  uint8_t	Txpin;
-  uint8_t	Rxpin;
+  char	Txpin;
+  char	Rxpin;
 };
 
 #endif

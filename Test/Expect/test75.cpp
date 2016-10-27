@@ -1,7 +1,7 @@
 #include <propeller.h>
 #include "test75.h"
 
-uint8_t test75::dat[] = {
+char test75::dat[] = {
   0x00, 0xec, 0xff, 0xa0, 
 };
 void test75::Start(int32_t Code)

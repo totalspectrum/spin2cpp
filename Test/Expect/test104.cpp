@@ -1,11 +1,11 @@
 #include <propeller.h>
 #include "test104.h"
 
-uint8_t test104::dat[] = {
+char test104::dat[] = {
   0x01, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x81, 0x01, 0x00, 0x00, 
 };
-int32_t test104::Get(void)
+int32_t *test104::Get(void)
 {
-  return (int32_t)(((int32_t *)&dat[0]));
+  return (((int32_t *)&dat[0]));
 }
 

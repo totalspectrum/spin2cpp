@@ -23,7 +23,7 @@ PrintDatArray(Flexbuf *f, Module *parse, const char *tail, bool classname)
 {
     char *datname = parse->datname;
 
-    flexbuf_printf(f, "uint8_t ");
+    flexbuf_printf(f, "char ");
     if (parse->datannotations) {
         PrintAnnotationList(f, parse->datannotations, ' ');
     }

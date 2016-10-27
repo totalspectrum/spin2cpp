@@ -6,7 +6,7 @@
 class test75 {
 public:
   static const int _Init_size = 4;
-  static uint8_t dat[];
+  static char dat[];
   static void	Start(int32_t Code);
 private:
 };

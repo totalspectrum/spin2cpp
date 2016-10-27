@@ -347,6 +347,9 @@ void AddLocalVariable(Function *func, AST *var, int type);
 // find the size of a type
 int TypeSize(AST *ast);
 
+// check if two types are compatible
+int CompatibleTypes(AST *A, AST *B);
+
 #define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
 void DeclareObjects(AST *newobjs);
@@ -446,6 +449,9 @@ void InitPreprocessor();
 // top level functions
 // parse a spin file
 Module *ParseFile(const char *name);
+
+// process Spin functions (do type deduction, etc.)
+void ProcessSpinCode(Module *P);
 
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);

@@ -6,7 +6,7 @@
 class test73 {
 public:
   static const int A = 3;
-  static uint8_t dat[];
+  static char dat[];
   static int32_t	Flip(int32_t X);
 private:
 };

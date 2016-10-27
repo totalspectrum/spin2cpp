@@ -6,7 +6,7 @@
 class test111 {
 public:
   static const int Default_light_scale = 7;
-  static uint8_t dat[];
+  static char dat[];
 private:
 };
 

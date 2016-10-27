@@ -1,7 +1,7 @@
 #include <propeller.h>
 #include "test93.h"
 
-uint8_t test93::dat[] = {
+char test93::dat[] = {
   0x00, 0x00, 0x00, 0x00, 
 };
 

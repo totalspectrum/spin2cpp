@@ -7,7 +7,7 @@ int32_t test127::Asc2val(int32_t P_str)
 {
   int32_t	C;
   while (1) {
-    C = ((uint8_t *)P_str)[0];
+    C = ((char *)P_str)[0];
     if (C == ' ') {
       (P_str++);
     } else if (('0' <= C) && (C <= '9')) {
