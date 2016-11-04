@@ -722,7 +722,7 @@ static Operand *
 TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
-    while (type && type->kind == AST_ARRAYTYPE) {
+    while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_PTRTYPE)) {
         type = type->left;
     }
     if (!type) {

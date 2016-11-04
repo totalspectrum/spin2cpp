@@ -329,8 +329,11 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
 static int
 ElementSize(AST *typ)
 {
-    while (typ->kind == AST_ARRAYTYPE) {
+    while (typ && typ->kind == AST_ARRAYTYPE) {
         typ = typ->left;
+    }
+    if (!typ) {
+        typ = ast_type_generic;
     }
     return EvalConstExpr(typ->left);
 }
