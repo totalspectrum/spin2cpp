@@ -1111,7 +1111,7 @@ IsArray(AST *expr)
     if (sym->type != SYM_VARIABLE && sym->type != SYM_LOCALVAR)
         return 0;
     type = (AST *)sym->val;
-    if (type->kind == AST_ARRAYTYPE)
+    if (type && type->kind == AST_ARRAYTYPE)
         return 1;
     return 0;
 }
