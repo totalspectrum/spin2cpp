@@ -90,6 +90,10 @@ extern AST *ast_type_float;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;
 extern AST *ast_type_void;
+extern AST *ast_type_ptr_long;
+extern AST *ast_type_ptr_word;
+extern AST *ast_type_ptr_byte;
+extern AST *ast_type_ptr_void;
 
 extern struct preprocess gl_pp;
 
