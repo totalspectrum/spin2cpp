@@ -679,7 +679,7 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
             curtypesize = 2;
             break;
         case AST_LONGLIST:
-	    curtype = NULL; // ast_type_generic;
+	    curtype = NULL; // was ast_type_generic;
             curtypesize = 4;
             break;
         case AST_COMMENT:

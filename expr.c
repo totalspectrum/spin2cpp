@@ -1340,7 +1340,7 @@ ExprType(AST *expr)
 int TypeSize(AST *ast)
 {
     if (!ast)
-        return 1;
+        return 4;  // type is unknown at the moment
     if (ast->kind == AST_ARRAYTYPE) {
         return TypeSize(ast->left)*EvalConstExpr(ast->right);
     }

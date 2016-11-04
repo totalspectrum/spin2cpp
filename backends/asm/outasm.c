@@ -722,10 +722,14 @@ static Operand *
 TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
-    while (type->kind == AST_ARRAYTYPE) {
+    while (type && type->kind == AST_ARRAYTYPE) {
         type = type->left;
     }
-    size = EvalConstExpr(type->left);
+    if (!type) {
+        size = 4;
+    } else {
+        size = EvalConstExpr(type->left);
+    }
     return SizedHubMemRef(size, addr, offset);
 }
 

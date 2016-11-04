@@ -1101,7 +1101,8 @@ SetSymbolType(Symbol *sym, AST *newType)
 {
   AST *oldType = NULL;
   if (!newType) return 0;
-
+  if (!sym) return 0;
+  
   switch(sym->type) {
   case SYM_VARIABLE:
     oldType = (AST *)sym->val;
@@ -1150,6 +1151,7 @@ InferTypes(Module *P)
 {
     Function *pf;
     int changes = 0;
+    Function *savecur = curfunc;
     
     /* scan for static definitions */
     current = P;
@@ -1169,6 +1171,7 @@ InferTypes(Module *P)
             changes++;
         }
     }
+    curfunc = savecur;
     return changes;
 }
 
