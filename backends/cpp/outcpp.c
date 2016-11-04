@@ -151,7 +151,7 @@ PrintConstantDecl(Flexbuf *f, AST *ast)
 }
 
 static int
-PrintAllVarListsOfType(Flexbuf *f, Module *parse, AST *type, int flags)
+PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
 {
     AST *ast;
     AST *upper;
@@ -159,9 +159,9 @@ PrintAllVarListsOfType(Flexbuf *f, Module *parse, AST *type, int flags)
     enum astkind kind;
     int n = 0;
 
-    if (type == ast_type_byte)
+    if (siz == 1)
         kind = AST_BYTELIST;
-    else if (type == ast_type_word)
+    else if (siz == 2)
         kind = AST_WORDLIST;
     else
         kind = AST_LONGLIST;
@@ -180,7 +180,7 @@ PrintAllVarListsOfType(Flexbuf *f, Module *parse, AST *type, int flags)
         if (ast->kind == kind) {
             if (comment)
                 PrintComment(f, comment);
-            n += PrintVarList(f, type, ast->left, flags);
+            n += PrintVarList(f, siz, ast->left, flags);
         }
     }
     return n;
@@ -277,9 +277,9 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
 
     /* print the structure definition */
     flexbuf_printf(f, "\ntypedef struct %s {\n", parse->classname);
-    n = PrintAllVarListsOfType(f, parse, ast_type_long, flags);
-    n += PrintAllVarListsOfType(f, parse, ast_type_word, flags);
-    n += PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
+    n = PrintAllVarListsOfSize(f, parse, 4, flags);
+    n += PrintAllVarListsOfSize(f, parse, 2, flags);
+    n += PrintAllVarListsOfSize(f, parse, 1, flags);
 
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
@@ -374,9 +374,9 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     if (parse->volatileVariables)
         flags |= VOLATILE;
     flexbuf_printf(f, "private:\n");
-    PrintAllVarListsOfType(f, parse, ast_type_long, flags);
-    PrintAllVarListsOfType(f, parse, ast_type_word, flags);
-    PrintAllVarListsOfType(f, parse, ast_type_byte, flags);
+    PrintAllVarListsOfSize(f, parse, 4, flags);
+    PrintAllVarListsOfSize(f, parse, 2, flags);
+    PrintAllVarListsOfSize(f, parse, 1, flags);
 
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);

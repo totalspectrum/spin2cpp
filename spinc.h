@@ -277,15 +277,6 @@ extern Module *globalModule;       // global functions and variables
 
 /* printing functions */
 
-/* flags for PrintVarList */
-#define PUBLIC 0
-#define PRIVATE 1
-#define LOCAL 2
-#define VOLATILE 4
-int PrintVarList(Flexbuf *f, AST *type, AST *list, int flags);
-
-void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);
-
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);
 

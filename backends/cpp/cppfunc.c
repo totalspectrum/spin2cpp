@@ -133,17 +133,30 @@ PrintPrivateFunctionDecls(Flexbuf *f, Module *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(Flexbuf *f, AST *typeast, AST *ast, int flags)
+PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
+    AST *curtype;
+    AST *lasttype = NULL;
 
+    switch (siz) {
+    case 1:
+      curtype = ast_type_byte;
+      break;
+    case 2:
+      curtype = ast_type_word;
+      break;
+    default:
+      curtype = ast_type_long;
+      break;
+    }
     flexbuf_printf(f, "  ");
     if (flags & VOLATILE) {
         flexbuf_printf(f, "volatile ");
     }
-    PrintType(f, typeast);
+    PrintType(f, curtype);
     flexbuf_printf(f, "\t");
     while (ast != NULL) {
         if (needcomma) {
@@ -201,7 +214,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             flexbuf_printf(f, "  %s %s[%d];", gl_intstring, func->localarray, func->localarray_len);
             PrintNewline(f);
         } else {
-            PrintVarList(f, ast_type_long, func->locals, LOCAL);
+            PrintVarList(f, 4, func->locals, LOCAL);
         }
     }
     if (func->parmarray) {

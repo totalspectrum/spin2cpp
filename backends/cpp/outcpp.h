@@ -11,6 +11,15 @@
 #include "util/flexbuf.h"
 #include "cppfunc.h"
 
+/* flags for PrintVarList */
+#define PUBLIC 0
+#define PRIVATE 1
+#define LOCAL 2
+#define VOLATILE 4
+int PrintVarList(Flexbuf *f, int siz, AST *list, int flags);
+
+void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);
+
 void PrintCommentString(Flexbuf *f, const char *str, int indent);
 void PrintAnnotationList(Flexbuf *f, AST *ast, char terminal);
 void PrintIndentedComment(Flexbuf *f, AST *ast, int indent);

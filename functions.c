@@ -54,7 +54,7 @@ EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
     AST *ast;
     Symbol *sym;
     int size;
-    int typesize = EvalConstExpr(symtype->left);
+    int typesize = symtype ? EvalConstExpr(symtype->left) : 4;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
@@ -1012,8 +1012,138 @@ ProcessFuncs(Module *P)
     }
 }
 
+/* forward declaration */
+static int InferTypesStmt(AST *);
+static int InferTypesExpr(AST *expr, AST *expectedType);
+
+/*
+ * do type inference on a statement list
+ */
+static int
+InferTypesStmtList(AST *list)
+{
+  int changes = 0;
+  while (list) {
+    if (list->kind != AST_STMTLIST) {
+      ERROR(list, "Internal error: expected statement list");
+      return 0;
+    }
+    changes |= InferTypesStmt(list->left);
+    list = list->right;
+  }
+  return changes;
+}
+
+static int
+InferTypesStmt(AST *ast)
+{
+  AST *sub;
+  int changes = 0;
+
+  if (!ast) return 0;
+  switch(ast->kind) {
+  case AST_COMMENTEDNODE:
+    return InferTypesStmt(ast->left);
+  case AST_ANNOTATION:
+    return 0;
+  case AST_RETURN:
+    sub = ast->left;
+    if (!sub) {
+      sub = curfunc->resultexpr;
+    }
+    if (sub) {
+      changes = InferTypesExpr(sub, curfunc->rettype);
+    }
+    return changes;
+  case AST_IF:
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    if (ast->kind == AST_COMMENTEDNODE) {
+      ast = ast->left;
+    }
+    changes += InferTypesStmtList(ast->left);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_WHILE:
+  case AST_DOWHILE:
+    changes += InferTypesExpr(ast->left, NULL);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_FOR:
+  case AST_FORATLEASTONCE:
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    changes += InferTypesExpr(ast->left, NULL);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_STMTLIST:
+    return InferTypesStmtList(ast);
+  case AST_SEQUENCE:
+    changes += InferTypesStmt(ast->left);
+    changes += InferTypesStmt(ast->right);
+    return changes;
+  case AST_ASSIGN:
+  default:
+    return InferTypesExpr(ast, NULL);
+  }
+}
+
+static AST *
+PtrType(AST *base)
+{
+  return NewAST(AST_PTRTYPE, base, NULL);
+}
+
+static int
+SetSymbolType(Symbol *sym, AST *newType)
+{
+  AST *oldType = NULL;
+  if (!newType) return 0;
+
+  switch(sym->type) {
+  case SYM_VARIABLE:
+    oldType = (AST *)sym->val;
+    if (oldType) {
+      // FIXME: could warn here about type mismatches
+      return 0;
+    }
+    sym->val = newType;
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+static int
+InferTypesExpr(AST *expr, AST *expectType)
+{
+  int changes = 0;
+  Symbol *sym;
+  AST *lhsType;
+  if (!expr) return 0;
+  switch(expr->kind) {
+  case AST_IDENTIFIER:
+    lhsType = ExprType(expr);
+    if (lhsType == NULL && expectType != NULL) {
+      sym = LookupSymbol(expr->d.string);
+      changes = SetSymbolType(sym, expectType);
+    }
+    return changes;
+  case AST_MEMREF:
+    return InferTypesExpr(expr->right, PtrType(expr->left));
+  default:
+    changes = InferTypesExpr(expr->left, expectType);
+    changes += InferTypesExpr(expr->right, expectType);
+    return changes;
+  }
+}
+
 /*
  * main entry for type checking
+ * returns 0 if no changes happened, nonzero if
+ * some did
  */
 int
 InferTypes(Module *P)
@@ -1024,6 +1154,8 @@ InferTypes(Module *P)
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
+        curfunc = pf;
+        changes += InferTypesStmtList(pf->body);
         if (pf->is_static) {
             continue;
         }

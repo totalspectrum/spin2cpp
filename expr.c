@@ -1131,6 +1131,7 @@ FoldIfConst(AST *expr)
 int
 IsArrayType(AST *ast)
 {
+    if (!ast) return 0;
     switch (ast->kind) {
     case AST_ARRAYTYPE:
         return 1;
@@ -1171,6 +1172,7 @@ int ArrayTypeSize(AST *typ)
 /* returns size of 1 item for non-array types */
 int TypeAlignment(AST *typ)
 {
+    if (!typ) return 4;
     switch (typ->kind) {
     case AST_ARRAYTYPE:
         return TypeAlignment(typ->left);
@@ -1285,7 +1287,6 @@ ExprType(AST *expr)
         // so "abc" is the same as "a" is the same as 0x65
         return ast_type_long;
     case AST_MEMREF:
-        // FIXME: if expr->right is a variable, we should mark it as a pointer
         return expr->left; 
     case AST_ADDROF:
     case AST_ABSADDROF:
