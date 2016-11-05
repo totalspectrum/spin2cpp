@@ -51,6 +51,6 @@ void test123::Exit(void)
 
 void test123::Pauseabit(void)
 {
-  waitcnt((40000000 + CNT));
+  waitcnt(40000000 + CNT);
 }
 

@@ -6,6 +6,6 @@ char test139::dat[] = {
 };
 void test139::Setval(int32_t X)
 {
-  ((int32_t *)(((int32_t *)&dat[0])))[0] = X;
+  (((int32_t *)&dat[0]))[0] = X;
 }
 

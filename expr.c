@@ -1357,6 +1357,18 @@ int TypeSize(AST *ast)
     return 0;
 }
 
+/* check for two types the same */
+int
+SameTypes(AST *A, AST *B)
+{
+    if (A == B) return 1;
+    // NULL is the same as ast_type_generic */
+    if (!A) return (B == ast_type_generic);
+    if (!B) return (A == ast_type_generic);
+    if (A->kind != B->kind) return 0;
+    return AstMatch(A->left, B->left) && SameTypes(A->right, B->right);
+}
+
 /* check for compatibility of types */
 int
 CompatibleTypes(AST *A, AST *B)
@@ -1376,5 +1388,5 @@ CompatibleTypes(AST *A, AST *B)
     }
 
     if (A->kind != B->kind) return 0;
-    return CompatibleTypes(A->left, B->left);
+    return SameTypes(A->left, B->left);
 }

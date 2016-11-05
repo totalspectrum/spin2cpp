@@ -351,7 +351,7 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
         return;
     }
     flexbuf_printf(f, "Coginit__(");
-    PrintExpr(f, cogid, PRINTEXPR_DEFAULT);
+    PrintExpr(f, cogid, PRINTEXPR_TOPLEVEL);
     flexbuf_printf(f, ", (void *)");
     /* need to find stack size */
     PrintStackWithSize(f, stack);
@@ -369,7 +369,7 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
         }
         flexbuf_printf(f, ", ");
         if (params) {
-            PrintTypedExpr(f, NULL, params->left, PRINTEXPR_DEFAULT);
+            PrintTypedExpr(f, NULL, params->left, PRINTEXPR_TOPLEVEL);
             params = params->right;
         } else {
             flexbuf_printf(f, "0");
@@ -1435,7 +1435,7 @@ PrintExprList(Flexbuf *f, AST *list, int flags)
             flexbuf_printf(f, ", ");
         }
         // FIXME: need to know what type to print here
-        PrintTypedExpr(f, paramtype, list->left, flags);
+        PrintTypedExpr(f, paramtype, list->left, flags | PRINTEXPR_TOPLEVEL);
         needcomma = 1;
         list = list->right;
     }
@@ -1457,7 +1457,7 @@ PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
         et = NULL;
     }
     if (!CompatibleTypes(et, casttype)) {
-        needCloseParen = true;
+        needCloseParen = !(flags & PRINTEXPR_TOPLEVEL);
 	if (needCloseParen) {
 	    flexbuf_printf(f, "(");
 	}
@@ -1489,7 +1489,7 @@ defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
     } else {
         flexbuf_printf(f, "%s(", b->cname);
     }
-    PrintExprList(f, params, PRINTEXPR_DEFAULT);
+    PrintExprList(f, params, PRINTEXPR_TOPLEVEL);
     flexbuf_printf(f, ")");
 }
 
@@ -1516,9 +1516,9 @@ waitpeqBuiltin(Flexbuf *f, Builtin *b, AST *origparams)
     } else {
         flexbuf_printf(f, "%s(", b->cname);
     }
-    PrintExpr(f, a1, PRINTEXPR_DEFAULT);
+    PrintExpr(f, a1, PRINTEXPR_TOPLEVEL);
     flexbuf_printf(f, ", ");
-    PrintExpr(f, a2, PRINTEXPR_DEFAULT);
+    PrintExpr(f, a2, PRINTEXPR_TOPLEVEL);
     flexbuf_printf(f, ")");
 }
 
