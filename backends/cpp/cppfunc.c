@@ -140,6 +140,7 @@ PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
     int count = 0;
     AST *curtype;
     AST *lasttype = NULL;
+    int isfirst = 1;
 
     switch (siz) {
     case 1:
@@ -149,25 +150,40 @@ PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
       curtype = ast_type_word;
       break;
     default:
-      curtype = ast_type_long;
+      curtype = NULL;
       break;
     }
-    flexbuf_printf(f, "  ");
-    if (flags & VOLATILE) {
-        flexbuf_printf(f, "volatile ");
-    }
-    PrintType(f, curtype);
-    flexbuf_printf(f, "\t");
     while (ast != NULL) {
-        if (needcomma) {
-            flexbuf_printf(f, ", ");
-        }
-        needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Expected variable list element\n");
             return count;
         }
         decl = ast->left;
+	if (!curtype) {
+	    curtype = ExprType(decl);
+	    if (!curtype) {
+	      curtype = ast_type_generic;
+	    }
+	}
+        if (curtype != lasttype) {
+	    if (!isfirst) {
+	        flexbuf_printf(f, ";");
+		PrintNewline(f);
+	    }
+	    flexbuf_printf(f, "  ");
+	    if (flags & VOLATILE) {
+	        flexbuf_printf(f, "volatile ");
+	    }
+	    PrintType(f, curtype);
+	    flexbuf_printf(f, "\t");
+	    needcomma = 0;
+	    lasttype = curtype;
+	}
+        if (needcomma) {
+            flexbuf_printf(f, ", ");
+        }
+        needcomma = 1;
+	isfirst = 0;
         switch (decl->kind) {
         case AST_IDENTIFIER:
             flexbuf_printf(f, "%s", decl->d.string);

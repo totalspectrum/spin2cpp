@@ -761,11 +761,15 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         }
         break;
     case AST_MEMREF:
+#if 0
         flexbuf_printf(f, "((");
         PrintType(f, expr->left);
         flexbuf_printf(f, "*)");
         PrintExpr(f, expr->right, flags & ~PRINTEXPR_ISREF);
         flexbuf_printf(f, ")");
+#else
+	PrintTypedExpr(f, NewAST(AST_PTRTYPE, expr->left, NULL), expr->right, flags & ~PRINTEXPR_ISREF);
+#endif
         break;
     default:
         ERROR(expr, "bad target for assignment");
@@ -1446,12 +1450,17 @@ PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
 {
     AST *et = ExprType(expr);
     bool addZero = false;
-    
+    bool needCloseParen = false;
+
     if (et && et->kind == AST_VOIDTYPE) {
         addZero = true;
         et = NULL;
     }
     if (!CompatibleTypes(et, casttype)) {
+        needCloseParen = true;
+	if (needCloseParen) {
+	    flexbuf_printf(f, "(");
+	}
         flexbuf_printf(f, "(");
         PrintCastType(f, casttype);
         flexbuf_printf(f, ")");
@@ -1462,6 +1471,9 @@ PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
     PrintExpr(f, expr, flags);
     if (addZero) {
         flexbuf_printf(f, ", 0)");
+    }
+    if (needCloseParen) {
+        flexbuf_printf(f, ")");
     }
 }
 
