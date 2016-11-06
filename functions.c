@@ -276,25 +276,17 @@ doDeclareFunction(AST *funcblock)
     fdef->params = vars->left;
     fdef->locals = vars->right;
 
-    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0) / LONG_SIZE;
-    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0) / LONG_SIZE;
+    // the symbol value is the type, which we will discover via inference
+    // so initialize it to NULL
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
+    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
 
-    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
+    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, NULL);
 
     fdef->body = body;
 
     /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
-
-#if 0
-    /* check for special conditions */
-    ScanFunctionBody(fdef, fdef->body, NULL);
-
-    /* if we put the locals into an array, record the size of that array */
-    if (fdef->localarray) {
-        fdef->localarray_len += fdef->numlocals;
-    }
-#endif
 }
 
 void
@@ -1105,6 +1097,8 @@ SetSymbolType(Symbol *sym, AST *newType)
   
   switch(sym->type) {
   case SYM_VARIABLE:
+  case SYM_LOCALVAR:
+  case SYM_PARAMETER:
     oldType = (AST *)sym->val;
     if (oldType) {
       // FIXME: could warn here about type mismatches
@@ -1126,18 +1120,47 @@ InferTypesExpr(AST *expr, AST *expectType)
   if (!expr) return 0;
   switch(expr->kind) {
   case AST_IDENTIFIER:
-    lhsType = ExprType(expr);
-    if (lhsType == NULL && expectType != NULL) {
-      sym = LookupSymbol(expr->d.string);
-      changes = SetSymbolType(sym, expectType);
-    }
-    return changes;
+        lhsType = ExprType(expr);
+        if (lhsType == NULL && expectType != NULL) {
+          sym = LookupSymbol(expr->d.string);
+          changes = SetSymbolType(sym, expectType);
+      }
+      return changes;
   case AST_MEMREF:
-    return InferTypesExpr(expr->right, PtrType(expr->left));
+      return InferTypesExpr(expr->right, PtrType(expr->left));
+  case AST_OPERATOR:
+      switch (expr->d.ival) {
+      case T_INCREMENT:
+      case T_DECREMENT:
+      case '+':
+      case '-':
+          if (expectType) {
+              if (IsPointerType(expectType) && PointerTypeSize(expectType) != 1) {
+                  // addition only works right on pointers of size 1
+                  expectType = ast_type_generic; // force generic type
+              } else if (!IsIntOrGenericType(expectType)) {
+                  expectType = ast_type_generic;
+              }
+          }
+          changes = InferTypesExpr(expr->left, expectType);
+          changes += InferTypesExpr(expr->right, expectType);
+          return changes;
+      default:
+          if (!expectType || !IsIntOrGenericType(expectType)) {
+              expectType = ast_type_long;
+          }
+          changes = InferTypesExpr(expr->left, expectType);
+          changes += InferTypesExpr(expr->right, expectType);
+          return changes;
+      }          
+  case AST_ADDROF:
+  case AST_ABSADDROF:
+      expectType = NULL; // forget what we were expecting
+      // fall through
   default:
-    changes = InferTypesExpr(expr->left, expectType);
-    changes += InferTypesExpr(expr->right, expectType);
-    return changes;
+      changes = InferTypesExpr(expr->left, expectType);
+      changes += InferTypesExpr(expr->right, expectType);
+      return changes;
   }
 }
 

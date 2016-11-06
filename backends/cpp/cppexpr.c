@@ -501,11 +501,20 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintInOp(f, "%", left, right, flags);
         break;
     case T_INCREMENT:
-        PrintInOp(f, "++", left, right, flags);
-        break;
     case T_DECREMENT:
-        PrintInOp(f, "--", left, right, flags);
+    {
+        // we don't go through the usual PrintInOp because we
+        // do not want any casting to occur
+        const char *str = op == T_INCREMENT ? "++" : "--";
+        if (left) {
+            PrintExpr(f, left, flags);
+            flexbuf_printf(f, "%s", str);
+        } else {
+            flexbuf_printf(f, "%s", str);
+            PrintExpr(f, right, flags);
+        }
         break;
+    }
     case T_NEGATE:
         /* watch out for a special case: boolean operators get a negation as well,
 	   so optimize away the double negate */

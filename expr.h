@@ -43,10 +43,12 @@ int IsArrayType(AST *typ);
 int IsArraySymbol(Symbol *);
 int ArrayTypeSize(AST *typ);
 int TypeAlignment(AST *typ);
+int PointerTypeSize(AST *typ);
 
 int IsFloatType(AST *typ);
 int IsIntType(AST *typ);
 int IsGenericType(AST *typ);
+int IsPointerType(AST *typ);
 #define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
 
 Symbol *LookupSymbol(const char *name);

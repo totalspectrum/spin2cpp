@@ -1152,6 +1152,9 @@ IsArrayType(AST *ast)
 int ArrayTypeSize(AST *typ)
 {
     int size;
+    if (!typ) {
+        return 4;
+    }
     switch (typ->kind) {
     case AST_ARRAYTYPE:
         size = EvalConstExpr(typ->right);
@@ -1161,6 +1164,8 @@ int ArrayTypeSize(AST *typ)
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
         return EvalConstExpr(typ->left);
+    case AST_PTRTYPE:
+        return 4; // all pointers are 4 bytes
     default:
         ERROR(typ, "Internal error: unknown type %d passed to ArrayTypeSize",
               typ->kind);
@@ -1175,6 +1180,7 @@ int TypeAlignment(AST *typ)
     if (!typ) return 4;
     switch (typ->kind) {
     case AST_ARRAYTYPE:
+    case AST_PTRTYPE:
         return TypeAlignment(typ->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -1249,6 +1255,23 @@ IsFloatType(AST *type)
 }
 
 int
+IsPointerType(AST *type)
+{
+    if (type->kind == AST_PTRTYPE)
+        return 1;
+    return 0;
+}
+
+int
+PointerTypeSize(AST *type)
+{
+    if (!IsPointerType(type)) {
+        return 1;
+    }
+    return TypeSize(type->left);
+}
+
+int
 IsGenericType(AST *type)
 {
     return type->kind == AST_GENERICTYPE;
@@ -1270,7 +1293,8 @@ AST *
 ExprType(AST *expr)
 {
     AST *sub;
-    
+
+    if (!expr) return NULL;
     switch (expr->kind) {
     case AST_INTEGER:
     case AST_CONSTANT:
@@ -1308,6 +1332,8 @@ ExprType(AST *expr)
         case SYM_FLOAT_CONSTANT:
             return ast_type_float;
         case SYM_VARIABLE:
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
             return (AST *)sym->val;
         default:
             return NULL;
@@ -1328,6 +1354,28 @@ ExprType(AST *expr)
             }
         }
         return NULL;
+    }
+    case AST_OPERATOR:
+    {
+        AST *subtype;
+        switch (expr->d.ival) {
+        case '+':
+        case '-':
+        case T_INCREMENT:
+        case T_DECREMENT:
+            subtype = ExprType(expr->left);
+            if (!subtype) subtype = ExprType(expr->right);
+            if (subtype) {
+                if (IsIntOrGenericType(subtype)) return subtype;
+                if (IsPointerType(subtype) && PointerTypeSize(subtype) == 1) {
+                    return subtype;
+                }
+                return ast_type_generic;
+            }
+            return NULL;
+        default:
+            return ast_type_long;
+        }
     }
     default:
         return NULL;

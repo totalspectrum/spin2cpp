@@ -5,7 +5,7 @@
 
 class test127 {
 public:
-  static int32_t	Asc2val(int32_t P_str);
+  static int32_t 	Asc2val(char *P_str);
 private:
 };
 

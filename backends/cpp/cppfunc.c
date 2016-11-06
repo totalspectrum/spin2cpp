@@ -29,6 +29,8 @@ PrintParameterList(Flexbuf *f, Function *func)
         needcomma = 1;
     }
     while (list) {
+        AST *typ;
+        Symbol *sym;
         if (list->kind != AST_LISTHOLDER) {
             ERROR(list, "Internal error: expected parameter list");
             return;
@@ -38,9 +40,17 @@ PrintParameterList(Flexbuf *f, Function *func)
             ERROR(ast, "Internal error: expected identifier in function parameter list");
             return;
         }
-        if (needcomma)
+        if (needcomma) {
             flexbuf_printf(f, ", ");
-        flexbuf_printf(f, "%s %s", gl_intstring, ast->d.string);
+        }
+        sym = FindSymbol(&func->localsyms, ast->d.string);
+        if (sym && sym->type == SYM_PARAMETER && sym->val) {
+            typ = (AST *)sym->val;
+        } else {
+            typ = ast_type_generic;
+        }
+        PrintType(f, typ);
+        flexbuf_printf(f, "%s", ast->d.string);
         needcomma = 1;
         list = list->right;
     }
