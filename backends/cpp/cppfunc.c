@@ -178,6 +178,10 @@ PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
 	    flexbuf_printf(f, "\t");
 	    needcomma = 0;
 	    lasttype = curtype;
+            if (curtype && curtype->kind == AST_PTRTYPE) {
+                // force next line to have a new declaration
+                lasttype = NULL;
+            }
 	}
         if (needcomma) {
             flexbuf_printf(f, ", ");
