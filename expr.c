@@ -1310,6 +1310,8 @@ ExprType(AST *expr)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         return ast_type_long;
+    case AST_STRINGPTR:
+        return ast_type_ptr_byte;
     case AST_MEMREF:
         return expr->left; 
     case AST_ADDROF:

@@ -5,8 +5,8 @@
 
 class test71 {
 public:
-  static int32_t	Blah(void);
-  static void	Foo(int32_t M, int32_t N);
+  static int32_t 	Blah(void);
+  static void 	Foo(int32_t *M, int32_t *N);
 private:
 };
 

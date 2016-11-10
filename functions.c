@@ -1088,6 +1088,14 @@ PtrType(AST *base)
   return NewAST(AST_PTRTYPE, base, NULL);
 }
 
+static AST *
+WidenType(AST *newType)
+{
+    if (newType == ast_type_byte || newType == ast_type_word)
+        return ast_type_long;
+    return newType;
+}
+
 static int
 SetSymbolType(Symbol *sym, AST *newType)
 {
@@ -1103,12 +1111,63 @@ SetSymbolType(Symbol *sym, AST *newType)
     if (oldType) {
       // FIXME: could warn here about type mismatches
       return 0;
+    } else if (newType) {
+        // if we had an unknown type before, the new type must be at least
+        // 4 bytes wide
+        sym->val = WidenType(newType);
+        return 1;
     }
-    sym->val = newType;
-    return 1;
   default:
-    return 0;
+    break;
   }
+  return 0;
+}
+
+static int
+InferTypesFunccall(AST *callast)
+{
+    Symbol *sym;
+    int changes = 0;
+    AST *typelist;
+    Function *func;
+    AST *paramtype;
+    AST *paramid;
+    AST *list;
+
+
+    list = callast->right;
+    sym = FindFuncSymbol(callast, NULL, NULL);
+    if (!sym || sym->type != SYM_FUNCTION) return 0;
+    
+    func = (Function *)sym->val;
+    typelist = func->params;
+    while (list) {
+        paramtype = NULL;
+        sym = NULL;
+        if (list->kind != AST_EXPRLIST) break;
+        if (typelist) {
+            paramid = typelist->left;
+            typelist = typelist->right;
+            if (paramid && paramid->kind == AST_IDENTIFIER) {
+                sym = FindSymbol(&func->localsyms, paramid->d.string);
+                if (sym && sym->type == SYM_PARAMETER) {
+                    paramtype = (AST *)sym->val;
+                }
+            }
+        } else {
+            paramid = NULL;
+        }
+        if (paramtype) {
+            changes += InferTypesExpr(list->left, paramtype);
+        } else if (paramid) {
+            AST *et = ExprType(list->left);
+            if (et && sym) {
+                changes += SetSymbolType(sym, et);
+            }
+        }
+        list = list->right;
+    }
+    return changes;
 }
 
 static int
@@ -1152,7 +1211,22 @@ InferTypesExpr(AST *expr, AST *expectType)
           changes = InferTypesExpr(expr->left, expectType);
           changes += InferTypesExpr(expr->right, expectType);
           return changes;
-      }          
+      }
+#if 0
+  case AST_ASSIGN:
+      lhsType = ExprType(expr->left);
+      if (!expectType) expectType = ExprType(expr->right);
+      if (!lhsType && expectType) {
+          changes += InferTypesExpr(expr->left, expectType);
+      } else {
+          expectType = lhsType;
+      }
+      changes += InferTypesExpr(expr->right, expectType);
+      return changes;
+#endif
+  case AST_FUNCCALL:
+      changes += InferTypesFunccall(expr);
+      return changes;
   case AST_ADDROF:
   case AST_ABSADDROF:
       expectType = NULL; // forget what we were expecting

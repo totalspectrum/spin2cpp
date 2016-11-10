@@ -45,7 +45,7 @@ void PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags);
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
 void PrintBoolExpr(Flexbuf *f, AST *expr, int flags);
 void PrintAsAddr(Flexbuf *f, AST *expr, int flags);
-void PrintExprList(Flexbuf *f, AST *list, int flags);
+void PrintExprList(Flexbuf *f, AST *list, int flags, Function *func);
 void PrintType(Flexbuf *f, AST *type);
 void PrintCastType(Flexbuf *f, AST *type);
 void PrintPostfix(Flexbuf *f, AST *val, int toplevel, int flags);

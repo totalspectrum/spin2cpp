@@ -1147,11 +1147,14 @@ void InitPreprocessor()
     pp_setlinedirective(&gl_pp, "{#line %d %s}");   
 }
 
+#define MAX_TYPE_PASSES 4
+
 void
 ProcessSpinCode(Module *P)
 {
     Module *Q;
     int changes;
+    int tries = 0;
     
     MarkUsed(P->functions);
     for (Q = allparse; Q; Q = Q->next) {
@@ -1163,7 +1166,7 @@ ProcessSpinCode(Module *P)
         for (Q = allparse; Q; Q = Q->next) {
             changes += InferTypes(Q);
         }
-    } while (changes != 0);
+    } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }
