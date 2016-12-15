@@ -1,3 +1,8 @@
+Version 3.4.1
+
+- Fixed an issue with the not operator on its own (should have
+  been turned into an assignment)
+  
 Version 3.4.0
 
 - Completely revamped --gas output to make it easier to edit and

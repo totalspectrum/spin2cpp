@@ -3,4 +3,4 @@ VAR
 
 PUB ReadDelta(EncID) : DeltaPos
    DeltaPos := 0 + -(EncID < Totdelta)
-
+   not Totdelta
