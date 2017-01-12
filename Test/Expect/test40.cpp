@@ -9,7 +9,7 @@ void test40::Tx(int32_t Character)
 
 int32_t test40::Dec(int32_t Value)
 {
-  int32_t	I, X, _idx__0001;
+  int32_t 	I, X, _idx__0001;
   int32_t result = 0;
   // Print a decimal number
   // Check for max negative
@@ -26,7 +26,7 @@ int32_t test40::Dec(int32_t Value)
     // Loop for 10 digits
     if (Value >= I) {
       // If non-zero digit, output digit; adjust for max negative
-      Tx((((Value / I) + '0') + (X * -(I == 1))));
+      Tx(((Value / I) + '0') + (X * -(I == 1)));
       // and digit from value
       Value = Value % I;
       // flag non-zero found

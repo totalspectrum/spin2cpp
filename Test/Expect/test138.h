@@ -6,10 +6,10 @@
 class test138 {
 public:
   static const int Zero = 0;
-  static uint8_t dat[];
-  static int32_t	Getobst(void);
-  static int32_t	Getfiller(void);
-  static int32_t	Getcmd(void);
+  static char dat[];
+  static char *	Getobst(void);
+  static char *	Getfiller(void);
+  static uint16_t *	Getcmd(void);
 private:
 };
 

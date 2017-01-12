@@ -40,7 +40,7 @@ void test123::Demo(void)
 
 void test123::Hello(test123 *self)
 {
-  self->Fds.Str((int32_t)"Hello, World\r\n");
+  self->Fds.Str((char *)"Hello, World\r\n");
 }
 
 void test123::Exit(void)
@@ -51,6 +51,6 @@ void test123::Exit(void)
 
 void test123::Pauseabit(void)
 {
-  waitcnt((40000000 + CNT));
+  waitcnt(40000000 + CNT);
 }
 

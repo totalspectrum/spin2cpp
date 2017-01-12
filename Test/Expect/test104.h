@@ -8,8 +8,8 @@ public:
   static const int Foo = 1;
   static const int Bar = 257;
   static const int Baz = 385;
-  static uint8_t dat[];
-  static int32_t	Get(void);
+  static char dat[];
+  static int32_t *	Get(void);
 private:
 };
 

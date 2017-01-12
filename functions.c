@@ -54,7 +54,7 @@ EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
     AST *ast;
     Symbol *sym;
     int size;
-    int typesize = EvalConstExpr(symtype->left);
+    int typesize = symtype ? EvalConstExpr(symtype->left) : 4;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
@@ -265,7 +265,7 @@ doDeclareFunction(AST *funcblock)
         resultname = "result";
     fdef->resultexpr = AstIdentifier(resultname);
     fdef->is_public = is_public;
-    fdef->rettype = ast_type_generic;
+    fdef->rettype = NULL;
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
@@ -276,25 +276,17 @@ doDeclareFunction(AST *funcblock)
     fdef->params = vars->left;
     fdef->locals = vars->right;
 
-    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, ast_type_long, fdef->params, 0) / LONG_SIZE;
-    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, ast_type_long, fdef->locals, 0) / LONG_SIZE;
+    // the symbol value is the type, which we will discover via inference
+    // so initialize it to NULL
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
+    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
 
-    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, ast_type_long);
+    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, NULL);
 
     fdef->body = body;
 
     /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
-
-#if 0
-    /* check for special conditions */
-    ScanFunctionBody(fdef, fdef->body, NULL);
-
-    /* if we put the locals into an array, record the size of that array */
-    if (fdef->localarray) {
-        fdef->localarray_len += fdef->numlocals;
-    }
-#endif
 }
 
 void
@@ -850,6 +842,16 @@ CheckRetCaseMatchList(Function *func, AST *ast)
     return sawReturn;
 }
 
+static AST *
+ForceExprType(AST *ast)
+{
+    AST *typ;
+    typ = ExprType(ast);
+    if (!typ)
+        typ = ast_type_generic;
+    return typ;
+}
+
 static int
 CheckRetStatement(Function *func, AST *ast)
 {
@@ -863,14 +865,14 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     case AST_RETURN:
         if (ast->left) {
-            SetFunctionType(func, ExprType(ast->left));
+            SetFunctionType(func, ForceExprType(ast->left));
         }
         sawreturn = 1;
         break;
     case AST_ABORT:
         if (ast->left) {
             (void)CheckRetStatement(func, ast->left);
-            SetFunctionType(func, ExprType(ast->left));
+            SetFunctionType(func, ForceExprType(ast->left));
         }
         break;
     case AST_IF:
@@ -907,7 +909,7 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left;
         rhs = ast->right;
         if (IsResultVar(func, lhs)) {
-            SetFunctionType(func, ExprType(rhs));
+            SetFunctionType(func, ForceExprType(rhs));
         }
         sawreturn = 0;
         break;
@@ -982,7 +984,7 @@ ProcessFuncs(Module *P)
         sawreturn = CheckRetStatementList(pf, pf->body);
         if (pf->rettype == NULL && pf->result_used) {
             /* there really is a return type */
-            pf->rettype = ast_type_generic;
+            SetFunctionType(pf, ast_type_generic);
         }
         if (pf->rettype == NULL) {
             pf->rettype = ast_type_void;
@@ -1002,18 +1004,257 @@ ProcessFuncs(Module *P)
     }
 }
 
+/* forward declaration */
+static int InferTypesStmt(AST *);
+static int InferTypesExpr(AST *expr, AST *expectedType);
+
+/*
+ * do type inference on a statement list
+ */
+static int
+InferTypesStmtList(AST *list)
+{
+  int changes = 0;
+  while (list) {
+    if (list->kind != AST_STMTLIST) {
+      ERROR(list, "Internal error: expected statement list");
+      return 0;
+    }
+    changes |= InferTypesStmt(list->left);
+    list = list->right;
+  }
+  return changes;
+}
+
+static int
+InferTypesStmt(AST *ast)
+{
+  AST *sub;
+  int changes = 0;
+
+  if (!ast) return 0;
+  switch(ast->kind) {
+  case AST_COMMENTEDNODE:
+    return InferTypesStmt(ast->left);
+  case AST_ANNOTATION:
+    return 0;
+  case AST_RETURN:
+    sub = ast->left;
+    if (!sub) {
+      sub = curfunc->resultexpr;
+    }
+    if (sub) {
+      changes = InferTypesExpr(sub, curfunc->rettype);
+    }
+    return changes;
+  case AST_IF:
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    if (ast->kind == AST_COMMENTEDNODE) {
+      ast = ast->left;
+    }
+    changes += InferTypesStmtList(ast->left);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_WHILE:
+  case AST_DOWHILE:
+    changes += InferTypesExpr(ast->left, NULL);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_FOR:
+  case AST_FORATLEASTONCE:
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    changes += InferTypesExpr(ast->left, NULL);
+    ast = ast->right;
+    changes += InferTypesExpr(ast->left, NULL);
+    changes += InferTypesStmtList(ast->right);
+    return changes;
+  case AST_STMTLIST:
+    return InferTypesStmtList(ast);
+  case AST_SEQUENCE:
+    changes += InferTypesStmt(ast->left);
+    changes += InferTypesStmt(ast->right);
+    return changes;
+  case AST_ASSIGN:
+  default:
+    return InferTypesExpr(ast, NULL);
+  }
+}
+
+static AST *
+PtrType(AST *base)
+{
+  return NewAST(AST_PTRTYPE, base, NULL);
+}
+
+static AST *
+WidenType(AST *newType)
+{
+    if (newType == ast_type_byte || newType == ast_type_word)
+        return ast_type_long;
+    return newType;
+}
+
+static int
+SetSymbolType(Symbol *sym, AST *newType)
+{
+  AST *oldType = NULL;
+  if (!newType) return 0;
+  if (!sym) return 0;
+  
+  switch(sym->type) {
+  case SYM_VARIABLE:
+  case SYM_LOCALVAR:
+  case SYM_PARAMETER:
+    oldType = (AST *)sym->val;
+    if (oldType) {
+      // FIXME: could warn here about type mismatches
+      return 0;
+    } else if (newType) {
+        // if we had an unknown type before, the new type must be at least
+        // 4 bytes wide
+        sym->val = WidenType(newType);
+        return 1;
+    }
+  default:
+    break;
+  }
+  return 0;
+}
+
+static int
+InferTypesFunccall(AST *callast)
+{
+    Symbol *sym;
+    int changes = 0;
+    AST *typelist;
+    Function *func;
+    AST *paramtype;
+    AST *paramid;
+    AST *list;
+
+
+    list = callast->right;
+    sym = FindFuncSymbol(callast, NULL, NULL);
+    if (!sym || sym->type != SYM_FUNCTION) return 0;
+    
+    func = (Function *)sym->val;
+    typelist = func->params;
+    while (list) {
+        paramtype = NULL;
+        sym = NULL;
+        if (list->kind != AST_EXPRLIST) break;
+        if (typelist) {
+            paramid = typelist->left;
+            typelist = typelist->right;
+            if (paramid && paramid->kind == AST_IDENTIFIER) {
+                sym = FindSymbol(&func->localsyms, paramid->d.string);
+                if (sym && sym->type == SYM_PARAMETER) {
+                    paramtype = (AST *)sym->val;
+                }
+            }
+        } else {
+            paramid = NULL;
+        }
+        if (paramtype) {
+            changes += InferTypesExpr(list->left, paramtype);
+        } else if (paramid) {
+            AST *et = ExprType(list->left);
+            if (et && sym) {
+                changes += SetSymbolType(sym, et);
+            }
+        }
+        list = list->right;
+    }
+    return changes;
+}
+
+static int
+InferTypesExpr(AST *expr, AST *expectType)
+{
+  int changes = 0;
+  Symbol *sym;
+  AST *lhsType;
+  if (!expr) return 0;
+  switch(expr->kind) {
+  case AST_IDENTIFIER:
+        lhsType = ExprType(expr);
+        if (lhsType == NULL && expectType != NULL) {
+          sym = LookupSymbol(expr->d.string);
+          changes = SetSymbolType(sym, expectType);
+      }
+      return changes;
+  case AST_MEMREF:
+      return InferTypesExpr(expr->right, PtrType(expr->left));
+  case AST_OPERATOR:
+      switch (expr->d.ival) {
+      case T_INCREMENT:
+      case T_DECREMENT:
+      case '+':
+      case '-':
+          if (expectType) {
+              if (IsPointerType(expectType) && PointerTypeSize(expectType) != 1) {
+                  // addition only works right on pointers of size 1
+                  expectType = ast_type_generic; // force generic type
+              } else if (!IsIntOrGenericType(expectType)) {
+                  expectType = ast_type_generic;
+              }
+          }
+          changes = InferTypesExpr(expr->left, expectType);
+          changes += InferTypesExpr(expr->right, expectType);
+          return changes;
+      default:
+          if (!expectType || !IsIntOrGenericType(expectType)) {
+              expectType = ast_type_long;
+          }
+          changes = InferTypesExpr(expr->left, expectType);
+          changes += InferTypesExpr(expr->right, expectType);
+          return changes;
+      }
+#if 0
+  case AST_ASSIGN:
+      lhsType = ExprType(expr->left);
+      if (!expectType) expectType = ExprType(expr->right);
+      if (!lhsType && expectType) {
+          changes += InferTypesExpr(expr->left, expectType);
+      } else {
+          expectType = lhsType;
+      }
+      changes += InferTypesExpr(expr->right, expectType);
+      return changes;
+#endif
+  case AST_FUNCCALL:
+      changes += InferTypesFunccall(expr);
+      return changes;
+  case AST_ADDROF:
+  case AST_ABSADDROF:
+      expectType = NULL; // forget what we were expecting
+      // fall through
+  default:
+      changes = InferTypesExpr(expr->left, expectType);
+      changes += InferTypesExpr(expr->right, expectType);
+      return changes;
+  }
+}
+
 /*
  * main entry for type checking
+ * returns 0 if no changes happened, nonzero if
+ * some did
  */
 int
 InferTypes(Module *P)
 {
     Function *pf;
     int changes = 0;
+    Function *savecur = curfunc;
     
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
+        curfunc = pf;
+        changes += InferTypesStmtList(pf->body);
         if (pf->is_static) {
             continue;
         }
@@ -1021,8 +1262,13 @@ InferTypes(Module *P)
         CheckForStatic(pf, pf->body);
         if (pf->is_static) {
             changes++;
+            pf->force_static = 0;
+        } else if (pf->force_static) {
+            pf->is_static = 1;
+            changes++;
         }
     }
+    curfunc = savecur;
     return changes;
 }
 
@@ -1081,7 +1327,12 @@ MarkUsed(Function *f)
 void
 SetFunctionType(Function *f, AST *typ)
 {
-    f->rettype = typ;
+    if (typ) {
+        if (typ == ast_type_byte || typ == ast_type_word) {
+            typ = ast_type_long;
+        }
+        f->rettype = typ;
+    }
 }
 
 /*
@@ -1322,10 +1573,7 @@ doSpinTransform(AST **astptr, int level)
         if (0 != (func = IsSpinCoginit(ast))) {
             current->needsCoginit = 1;
             func->cog_task = 1;
-            if (!func->is_static) {
-                func->force_static = 1;
-                func->is_static = 1;
-            }
+            func->force_static = 1;
         }
         doSpinTransform(&ast->left, 2);
         doSpinTransform(&ast->right, 2);

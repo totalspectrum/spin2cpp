@@ -59,6 +59,10 @@ int gl_printprogress = 0;
 int gl_depth = 0;
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
+AST *ast_type_ptr_long;
+AST *ast_type_ptr_word;
+AST *ast_type_ptr_byte;
+AST *ast_type_ptr_void;
 AST *ast_type_generic;
 AST *ast_type_void;
 
@@ -675,7 +679,7 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
             curtypesize = 2;
             break;
         case AST_LONGLIST:
-            curtype = ast_type_generic;
+	    curtype = NULL; // was ast_type_generic;
             curtypesize = 4;
             break;
         case AST_COMMENT:
@@ -981,6 +985,12 @@ Init()
     ast_type_string = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
+
+    ast_type_ptr_long = NewAST(AST_PTRTYPE, ast_type_long, NULL);
+    ast_type_ptr_word = NewAST(AST_PTRTYPE, ast_type_word, NULL);
+    ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
+    ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
+    
     initLexer(gl_p2);
 
     /* fill in the global symbol table */
@@ -1135,4 +1145,30 @@ void InitPreprocessor()
     pp_init(&gl_pp);
     pp_setcomments(&gl_pp, "\'", "{", "}");
     pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+}
+
+#define MAX_TYPE_PASSES 4
+
+void
+ProcessSpinCode(Module *P)
+{
+    Module *Q;
+    int changes;
+    int tries = 0;
+    
+    MarkUsed(P->functions);
+    for (Q = allparse; Q; Q = Q->next) {
+        SpinTransform(Q);
+        ProcessFuncs(Q);
+    }
+    do {
+        changes = 0;
+        for (Q = allparse; Q; Q = Q->next) {
+            changes += InferTypes(Q);
+        }
+    } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
+    for (Q = allparse; Q; Q = Q->next) {
+        PerformCSE(Q);
+    }
+    AssignObjectOffsets(P);
 }

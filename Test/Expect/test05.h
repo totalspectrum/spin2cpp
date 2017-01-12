@@ -8,7 +8,7 @@ public:
   static const int Size = 4;
 private:
   int32_t	X[Size];
-  uint8_t	Str[Size];
+  char	Str[Size];
 };
 
 #endif

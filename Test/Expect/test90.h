@@ -11,8 +11,8 @@ private:
   int32_t	C;
   int32_t	E;
   uint16_t	D;
-  uint8_t	B;
-  uint8_t	F;
+  char	B;
+  char	F;
 };
 
 #endif

@@ -4,7 +4,7 @@
 #line 1 "gtest02.spin"
 void gtest02::run(void)
 {
-  int32_t	i, now, elapsed, x;
+  int32_t 	i, now, elapsed, x;
 #line 8 "gtest02.spin"
   for(i = 1; i <= 15; i++) {
 #line 4 "gtest02.spin"
@@ -22,6 +22,6 @@ int32_t gtest02::fibo(int32_t x)
     return x;
   }
 #line 11 "gtest02.spin"
-  return (fibo((x - 1)) + fibo((x - 2)));
+  return (fibo(x - 1) + fibo(x - 2));
 }
 

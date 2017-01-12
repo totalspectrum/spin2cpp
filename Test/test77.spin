@@ -5,7 +5,7 @@ CON
   rootf = ^^twof
 
 PUB dummy
-  return @arr
+  return @arr[0]
 
 DAT
 

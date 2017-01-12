@@ -5,8 +5,8 @@
 
 class test18 {
 public:
-  static uint8_t dat[];
-  static int32_t	Start(void);
+  static char dat[];
+  static int32_t *	Start(void);
 private:
 };
 

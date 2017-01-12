@@ -1,6 +1,6 @@
 #include <propeller.h>
 #include "test13.h"
 
-uint8_t test13::dat[] = {
+char test13::dat[] = {
   0xaa, 0xbb, 0xcc, 0x00, 0xdd, 0xcc, 0xbb, 0xaa, 
 };

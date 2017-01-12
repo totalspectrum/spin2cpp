@@ -90,6 +90,10 @@ extern AST *ast_type_float;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;
 extern AST *ast_type_void;
+extern AST *ast_type_ptr_long;
+extern AST *ast_type_ptr_word;
+extern AST *ast_type_ptr_byte;
+extern AST *ast_type_ptr_void;
 
 extern struct preprocess gl_pp;
 
@@ -273,15 +277,6 @@ extern Module *globalModule;       // global functions and variables
 
 /* printing functions */
 
-/* flags for PrintVarList */
-#define PUBLIC 0
-#define PRIVATE 1
-#define LOCAL 2
-#define VOLATILE 4
-int PrintVarList(Flexbuf *f, AST *type, AST *list, int flags);
-
-void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);
-
 /* create a new AST describing a table lookup */
 AST *NewLookup(AST *expr, AST *table);
 
@@ -346,6 +341,9 @@ void AddLocalVariable(Function *func, AST *var, int type);
 
 // find the size of a type
 int TypeSize(AST *ast);
+
+// check if two types are compatible
+int CompatibleTypes(AST *A, AST *B);
 
 #define PrintComment(f, ast) PrintIndentedComment(f, ast, 0)
 
@@ -446,6 +444,9 @@ void InitPreprocessor();
 // top level functions
 // parse a spin file
 Module *ParseFile(const char *name);
+
+// process Spin functions (do type deduction, etc.)
+void ProcessSpinCode(Module *P);
 
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);

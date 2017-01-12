@@ -232,7 +232,7 @@ ArrayBaseType(AST *var)
     Symbol *sym;
     AST *stype;
     if (var->kind == AST_MEMREF) {
-        return var->left;
+        return var->left ? var->left : ast_type_generic;
     }
     if (var->kind != AST_IDENTIFIER) {
         return NULL;
@@ -243,7 +243,7 @@ ArrayBaseType(AST *var)
     case SYM_LABEL:
         {
             Label *label = (Label *)sym->val;
-            return label->type;
+            return label->type ? label->type : ast_type_generic;
         }
     case SYM_LOCALVAR:
     case SYM_PARAMETER:
@@ -264,7 +264,7 @@ ArrayBaseType(AST *var)
             ERROR(var, "array reference to non-array");
             return NULL;
         }
-        return stype->left;
+        return stype->left ? stype->left : ast_type_generic;
     default:
         return NULL;
     }

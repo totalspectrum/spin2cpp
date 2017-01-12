@@ -5,7 +5,7 @@
 
 class test37 {
 public:
-  static uint8_t dat[];
+  static char dat[];
   static void	Zero(int32_t N);
 private:
 };

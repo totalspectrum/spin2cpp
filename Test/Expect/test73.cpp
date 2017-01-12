@@ -1,7 +1,7 @@
 #include <propeller.h>
 #include "test73.h"
 
-uint8_t test73::dat[] = {
+char test73::dat[] = {
   0x00, 0x60, 0x00, 0x00, 
 };
 int32_t test73::Flip(int32_t X)

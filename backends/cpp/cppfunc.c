@@ -29,6 +29,8 @@ PrintParameterList(Flexbuf *f, Function *func)
         needcomma = 1;
     }
     while (list) {
+        AST *typ;
+        Symbol *sym;
         if (list->kind != AST_LISTHOLDER) {
             ERROR(list, "Internal error: expected parameter list");
             return;
@@ -38,9 +40,17 @@ PrintParameterList(Flexbuf *f, Function *func)
             ERROR(ast, "Internal error: expected identifier in function parameter list");
             return;
         }
-        if (needcomma)
+        if (needcomma) {
             flexbuf_printf(f, ", ");
-        flexbuf_printf(f, "%s %s", gl_intstring, ast->d.string);
+        }
+        sym = FindSymbol(&func->localsyms, ast->d.string);
+        if (sym && sym->type == SYM_PARAMETER && sym->val) {
+            typ = (AST *)sym->val;
+        } else {
+            typ = ast_type_generic;
+        }
+        PrintType(f, typ);
+        flexbuf_printf(f, "%s", ast->d.string);
         needcomma = 1;
         list = list->right;
     }
@@ -87,7 +97,7 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
     }
     if (gl_output == OUTPUT_C) {
         PrintType(f, func->rettype);
-        flexbuf_printf(f, " %s_%s(", current->classname, 
+        flexbuf_printf(f, "%s_%s(", current->classname, 
                 func->name);
     } else {
         if (func->is_static) {
@@ -133,28 +143,61 @@ PrintPrivateFunctionDecls(Flexbuf *f, Module *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(Flexbuf *f, AST *typeast, AST *ast, int flags)
+PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
+    AST *curtype;
+    AST *lasttype = NULL;
+    int isfirst = 1;
 
-    flexbuf_printf(f, "  ");
-    if (flags & VOLATILE) {
-        flexbuf_printf(f, "volatile ");
+    switch (siz) {
+    case 1:
+      curtype = ast_type_byte;
+      break;
+    case 2:
+      curtype = ast_type_word;
+      break;
+    default:
+      curtype = NULL;
+      break;
     }
-    PrintType(f, typeast);
-    flexbuf_printf(f, "\t");
     while (ast != NULL) {
-        if (needcomma) {
-            flexbuf_printf(f, ", ");
-        }
-        needcomma = 1;
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Expected variable list element\n");
             return count;
         }
         decl = ast->left;
+	if (!curtype) {
+	    curtype = ExprType(decl);
+	    if (!curtype) {
+	      curtype = ast_type_generic;
+	    }
+	}
+        if (curtype != lasttype) {
+	    if (!isfirst) {
+	        flexbuf_printf(f, ";");
+		PrintNewline(f);
+	    }
+	    flexbuf_printf(f, "  ");
+	    if (flags & VOLATILE) {
+	        flexbuf_printf(f, "volatile ");
+	    }
+	    PrintType(f, curtype);
+	    flexbuf_printf(f, "\t");
+	    needcomma = 0;
+	    lasttype = curtype;
+            if (curtype && curtype->kind == AST_PTRTYPE) {
+                // force next line to have a new declaration
+                lasttype = NULL;
+            }
+	}
+        if (needcomma) {
+            flexbuf_printf(f, ", ");
+        }
+        needcomma = 1;
+	isfirst = 0;
         switch (decl->kind) {
         case AST_IDENTIFIER:
             flexbuf_printf(f, "%s", decl->d.string);
@@ -201,7 +244,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             flexbuf_printf(f, "  %s %s[%d];", gl_intstring, func->localarray, func->localarray_len);
             PrintNewline(f);
         } else {
-            PrintVarList(f, ast_type_long, func->locals, LOCAL);
+            PrintVarList(f, 4, func->locals, LOCAL);
         }
     }
     if (func->parmarray) {
@@ -235,7 +278,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
         if (func->resultexpr->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  ");
             PrintType(f, func->rettype);
-            flexbuf_printf(f, " %s = 0;", func->resultexpr->d.string);
+            flexbuf_printf(f, "%s = 0;", func->resultexpr->d.string);
             PrintNewline(f);
         }
     }
@@ -450,7 +493,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         if (retval) {
             flexbuf_printf(f, "%*creturn ", indent, ' ');
-            PrintExpr(f, retval, PRINTEXPR_DEFAULT);
+            PrintTypedExpr(f, curfunc->rettype, retval, PRINTEXPR_DEFAULT);
         } else {
             flexbuf_printf(f, "%*creturn", indent, ' ');
         }
@@ -533,13 +576,13 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_FORATLEASTONCE:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cfor(", indent, ' ');
-        PrintExprToplevel(f, ast->left, PRINTEXPR_DEFAULT);
+        PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
         flexbuf_printf(f, "; ");
         ast = ast->right;
         PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
         flexbuf_printf(f, "; ");
         ast = ast->right;
-        PrintExprToplevel(f, ast->left, PRINTEXPR_DEFAULT);
+        PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
         flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         flexbuf_printf(f, "%*c}", indent, ' ');
@@ -622,12 +665,12 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
                 flexbuf_printf(f, "static ");
             }
             PrintType(f, pf->rettype);
-            flexbuf_printf(f, " %s_%s(", parse->classname, pf->name);
+            flexbuf_printf(f, "%s_%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
 
         } else {
             PrintType(f, pf->rettype);
-            flexbuf_printf(f, " %s::%s(", parse->classname, pf->name);
+            flexbuf_printf(f, "%s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
         }
         flexbuf_printf(f, ")");

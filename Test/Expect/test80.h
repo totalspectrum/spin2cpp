@@ -9,7 +9,7 @@ public:
   FullDuplexSerial	Fds;
   void	Init(void);
 private:
-  uint8_t	Namebuffer[14];
+  char	Namebuffer[14];
 };
 
 #endif

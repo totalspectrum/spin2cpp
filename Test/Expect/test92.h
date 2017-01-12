@@ -9,7 +9,7 @@ public:
 private:
   int32_t	volatile X;
   int32_t	Y;
-  uint8_t	A;
+  char	A;
 };
 
 #endif

@@ -7,7 +7,7 @@ class test115 {
 public:
   int32_t	Setit(int32_t X);
 private:
-  uint8_t	Mybuf[8];
+  char	Mybuf[8];
 };
 
 #endif

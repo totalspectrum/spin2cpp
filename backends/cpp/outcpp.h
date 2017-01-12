@@ -11,6 +11,15 @@
 #include "util/flexbuf.h"
 #include "cppfunc.h"
 
+/* flags for PrintVarList */
+#define PUBLIC 0
+#define PRIVATE 1
+#define LOCAL 2
+#define VOLATILE 4
+int PrintVarList(Flexbuf *f, int siz, AST *list, int flags);
+
+void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);
+
 void PrintCommentString(Flexbuf *f, const char *str, int indent);
 void PrintAnnotationList(Flexbuf *f, AST *ast, char terminal);
 void PrintIndentedComment(Flexbuf *f, AST *ast, int indent);
@@ -29,13 +38,16 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 #define PRINTEXPR_GASOP      0x0010  /* GAS expression used in an operand */
 #define PRINTEXPR_GASABS     0x0020  /* absolute address, not relative */
 #define PRINTEXPR_USECONST   0x0040  /* print constant names, not values */
+#define PRINTEXPR_TOPLEVEL   0x0080  /* leave out parens around operators */
+
 /* printing functions */
+void PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags);
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
-void PrintExprToplevel(Flexbuf *f, AST *expr, int flags);
 void PrintBoolExpr(Flexbuf *f, AST *expr, int flags);
 void PrintAsAddr(Flexbuf *f, AST *expr, int flags);
-void PrintExprList(Flexbuf *f, AST *list, int flags);
+void PrintExprList(Flexbuf *f, AST *list, int flags, Function *func);
 void PrintType(Flexbuf *f, AST *type);
+void PrintCastType(Flexbuf *f, AST *type);
 void PrintPostfix(Flexbuf *f, AST *val, int toplevel, int flags);
 void PrintInteger(Flexbuf *f, int32_t v, int flags);
 void PrintFloat(Flexbuf *f, int32_t v, int flags);

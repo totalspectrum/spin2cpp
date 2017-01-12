@@ -487,26 +487,12 @@ main(int argc, char **argv)
 
     if (P) {
         /* do type checking and deduction */
-        int changes;
         Module *Q;
+        ProcessSpinCode(P);
         MarkUsed(P->functions);
-        for (Q = allparse; Q; Q = Q->next) {
-            ProcessFuncs(Q);
-        }
-        do {
-            changes = 0;
-            for (Q = allparse; Q; Q = Q->next) {
-                changes += InferTypes(Q);
-            }
-        } while (changes != 0);
         if (gl_errors > 0) {
             exit(1);
         }
-        for (Q = allparse; Q; Q = Q->next) {
-            SpinTransform(Q);
-            PerformCSE(Q);
-        }
-        AssignObjectOffsets(P);
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {
