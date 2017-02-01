@@ -2356,7 +2356,12 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
     return r;
   case AST_RESULT:
   case AST_IDENTIFIER:
-    return CompileIdentifier(irl, expr);
+    r = CompileIdentifier(irl, expr);
+    if (dest) {
+        EmitMove(irl, dest, r);
+        r = dest;
+    }
+    return r;
   case AST_HWREG:
     return CompileHWReg(irl, expr);
   case AST_OPERATOR:

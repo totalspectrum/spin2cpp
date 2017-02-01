@@ -33,6 +33,14 @@ PUB demo | x,y
   testdiv(-999)
   testdiv($80000000)
   testdiv($80001234)
+
+  fds.str(string("fibo1(7)="))
+  fds.dec(fibo1(7))
+  fds.str(string(13, 10))
+  fds.str(string("fibo2(7)="))
+  fds.dec(fibo2(7))
+  fds.str(string(13, 10))
+  
   exit
 
 PUB newline
@@ -67,4 +75,34 @@ PUB testdiv(x)
   fds.str(string("//16 = "))
   fds.dec(x//16)
   newline
-  
+
+PRI fibo1(i) : a | b, c
+  b := 1
+  c := 0
+  repeat i
+    c := a
+    a := b + c
+    b := c
+
+#ifdef __SPIN2CPP__
+''
+'' traditional recursive definition
+''
+PRI fibo2(i)
+  if (i < 2)
+    return i
+  return fibo2(i-1) + fibo2(i-2)
+
+#else
+
+'' Spin "optimized" version that relies on
+'' stack behavior of the Spin compiler
+'' our PASM implementation has to act like this
+'' note that C++ will evaluate right to left rather
+'' than left to right, so it won't work in C++ mode
+
+PRI fibo2(i) : a | b
+  b := 1
+  repeat i
+    a := b + (b := a)
+#endif
