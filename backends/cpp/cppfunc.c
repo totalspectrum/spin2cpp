@@ -49,7 +49,7 @@ PrintParameterList(Flexbuf *f, Function *func)
         } else {
             typ = ast_type_generic;
         }
-        PrintType(f, typ);
+        PrintType(f, typ, 0);
         flexbuf_printf(f, "%s", ast->d.string);
         needcomma = 1;
         list = list->right;
@@ -96,14 +96,14 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_output == OUTPUT_C) {
-        PrintType(f, func->rettype);
+        PrintType(f, func->rettype, 0);
         flexbuf_printf(f, "%s_%s(", current->classname, 
                 func->name);
     } else {
         if (func->is_static) {
             flexbuf_printf(f, "static ");
         }
-        PrintType(f, func->rettype);
+        PrintType(f, func->rettype, 0);
         flexbuf_printf(f, "\t%s(", func->name);
     }
     PrintParameterList(f, func);
@@ -181,10 +181,7 @@ PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
 		PrintNewline(f);
 	    }
 	    flexbuf_printf(f, "  ");
-	    if (flags & VOLATILE) {
-	        flexbuf_printf(f, "volatile ");
-	    }
-	    PrintType(f, curtype);
+	    PrintType(f, curtype, flags);
 	    flexbuf_printf(f, "\t");
 	    needcomma = 0;
 	    lasttype = curtype;
@@ -277,7 +274,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
     if (!func->result_in_parmarray && func->resultexpr) {
         if (func->resultexpr->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  ");
-            PrintType(f, func->rettype);
+            PrintType(f, func->rettype, 0);
             flexbuf_printf(f, "%s = 0;", func->resultexpr->d.string);
             PrintNewline(f);
         }
@@ -664,12 +661,12 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
             if (!pf->is_public) {
                 flexbuf_printf(f, "static ");
             }
-            PrintType(f, pf->rettype);
+            PrintType(f, pf->rettype, 0);
             flexbuf_printf(f, "%s_%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
 
         } else {
-            PrintType(f, pf->rettype);
+            PrintType(f, pf->rettype, 0);
             flexbuf_printf(f, "%s::%s(", parse->classname, pf->name);
             PrintParameterList(f, pf);
         }

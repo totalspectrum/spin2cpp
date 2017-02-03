@@ -73,7 +73,7 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
         flexbuf_printf(f, "%s", sym->name);
     } else {
         flexbuf_printf(f, "(%s(", ref ? "" : "*");
-        PrintType(f, lab->type);
+        PrintType(f, lab->type, 0);
         flexbuf_printf(f, "*)&%s[%d])", current->datname, lab->offset);
     }
 }
@@ -607,13 +607,16 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
  * code to print out a type declaration
  */
 static void
-doPrintType(Flexbuf *f, AST *typedecl, int addspace)
+doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
 {
     int size;
     char *space = addspace ? " " : "";
     
     if (!typedecl) {
         typedecl = ast_type_generic;
+    }
+    if (typedecl->kind != AST_PTRTYPE && (flags & VOLATILE)) {
+        flexbuf_printf(f, "volatile ");
     }
     switch (typedecl->kind) {
     case AST_GENERICTYPE:
@@ -665,8 +668,11 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace)
 #endif        
         break;
     case AST_PTRTYPE:
-        doPrintType(f, typedecl->left, 1);
+        doPrintType(f, typedecl->left, 1, 0);
         flexbuf_printf(f, "*");
+        if (0 != (flags & VOLATILE)) {
+            flexbuf_printf(f, "volatile ");
+        }
         break;
     case AST_VOIDTYPE:
         flexbuf_printf(f, "void%s", space);
@@ -678,14 +684,14 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace)
 }
 
 void
-PrintType(Flexbuf *f, AST *typedecl)
+PrintType(Flexbuf *f, AST *typedecl, int flags)
 {
-    doPrintType(f, typedecl, 1);
+    doPrintType(f, typedecl, 1, flags);
 }
 void
 PrintCastType(Flexbuf *f, AST *typedecl)
 {
-    doPrintType(f, typedecl, 0);
+    doPrintType(f, typedecl, 0, 0);
 }
 
 /* code to print a source expression (could be an array reference or

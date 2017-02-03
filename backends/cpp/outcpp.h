@@ -11,7 +11,7 @@
 #include "util/flexbuf.h"
 #include "cppfunc.h"
 
-/* flags for PrintVarList */
+/* flags for PrintVarList and PrintType */
 #define PUBLIC 0
 #define PRIVATE 1
 #define LOCAL 2
@@ -46,7 +46,7 @@ void PrintExpr(Flexbuf *f, AST *expr, int flags);
 void PrintBoolExpr(Flexbuf *f, AST *expr, int flags);
 void PrintAsAddr(Flexbuf *f, AST *expr, int flags);
 void PrintExprList(Flexbuf *f, AST *list, int flags, Function *func);
-void PrintType(Flexbuf *f, AST *type);
+void PrintType(Flexbuf *f, AST *type, int flags);
 void PrintCastType(Flexbuf *f, AST *type);
 void PrintPostfix(Flexbuf *f, AST *val, int toplevel, int flags);
 void PrintInteger(Flexbuf *f, int32_t v, int flags);

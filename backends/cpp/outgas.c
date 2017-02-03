@@ -411,7 +411,7 @@ DeclareLabelsGas(Flexbuf *f, Module *P, int inlineAsm)
            lab = (Label *)sym->val;
            if (lab->flags & LABEL_USED_IN_SPIN) {
                 flexbuf_printf(f, "extern ");
-                PrintType(f, lab->type);
+                PrintType(f, lab->type, 0);
                 flexbuf_printf(f, "%s[] __asm__(\"%s\")", name, name);
                 if (lab->flags & LABEL_NEEDS_EXTRA_ALIGN) {
                     flexbuf_printf(f, " __attribute__((aligned(4)))");
