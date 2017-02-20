@@ -20,12 +20,6 @@ Support @@@foo + offset in --asm mode.
 Optimization
 ------------
 
-Hoist loop invariant assignments out of loops.
-
-Loop strength reduction, particularly for address calculations.
-
-Common subexpression elimination.
-
 Take advantage of commutative operators to improve optimization.
 
 Put more commonly used functions in COG RAM, and/or FCACHE whole functions
@@ -35,7 +29,6 @@ Allow system functions to go into HUB RAM to free up COG space.
 
 Better fcache loading code.
 
-Faster multiply / divide.
 
 Long Term
 ---------

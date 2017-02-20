@@ -337,6 +337,12 @@ please report them so they can be fixed.
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
 
+Timing of produced code is different, of course (in general much faster than
+the native Spin interpreter). This may affect some objects; sometimes
+developers left out delay loops in time critical code because the Spin
+interpreter is so slow they weren't necessary. Watch out for this when porting
+I2C, SPI and similar functions.
+
 Quality of Produced C and C++Code
 ---------------------------------
 
