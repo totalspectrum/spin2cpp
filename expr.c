@@ -980,7 +980,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             }
             if (kind == AST_ABSADDROF) {
                 if (gl_dat_offset == -1) {
-                    ERROR(expr, "offset for the @@@ operator is not known");
+                    if (reportError) {
+                        ERROR(expr, "offset for the @@@ operator is not known");
+                    } else {
+                        *valid = 0;
+                    }
+                    return intExpr(0);
                 } else {
                     return intExpr(lref->offset + gl_dat_offset);
                 }

@@ -121,6 +121,10 @@ PrintInteger(Flexbuf *f, int32_t v, int flags)
 void
 PrintFloat(Flexbuf *f, int32_t v, int flags)
 {
+    if (flags & PRINTEXPR_USEFLOATS) {
+        flexbuf_printf(f, "%f", intAsFloat(v));
+        return;
+    }
     if (v < 0)
         flexbuf_printf(f, "(%s)0x%lx", gl_intstring, (long)(uint32_t)v);
     else
@@ -168,11 +172,6 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
             flexbuf_printf(f, "%s", sym->name);
         }
         break;
-#if 0
-    case SYM_FLOAT_CONSTANT:
-        PrintFloat(f, EvalConstExpr((AST*)sym->val), flags);
-        break;
-#endif        
     case SYM_PARAMETER:
         if (curfunc && curfunc->parmarray) {
             flexbuf_printf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
@@ -1136,8 +1135,10 @@ PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags)
 }
 
 void
-PrintGasExpr(Flexbuf *f, AST *expr)
+PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat)
 {
+    int flags = PRINTEXPR_GAS;
+    
     if (!expr) {
         return;
     }
@@ -1146,6 +1147,13 @@ PrintGasExpr(Flexbuf *f, AST *expr)
         if (!expr) return;
     }
 
+    if (useFloat) {
+        flags |= PRINTEXPR_USEFLOATS;
+    } else if (IsFloatConst(expr)) {
+        int32_t v = EvalConstExpr(expr);
+        PrintInteger(f, v, flags);
+        return;
+    }
     switch (expr->kind) {
     case AST_ADDROF:
         PrintLHS(f, expr->left, PRINTEXPR_GAS);
@@ -1154,7 +1162,7 @@ PrintGasExpr(Flexbuf *f, AST *expr)
         PrintLHS(f, expr->left, PRINTEXPR_GAS|PRINTEXPR_GASABS);
         break;
     default:
-        PrintExpr(f, expr, PRINTEXPR_GAS);
+        PrintExpr(f, expr, flags);
         break;
     }
 }

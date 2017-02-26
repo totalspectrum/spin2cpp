@@ -39,6 +39,7 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 #define PRINTEXPR_GASABS     0x0020  /* absolute address, not relative */
 #define PRINTEXPR_USECONST   0x0040  /* print constant names, not values */
 #define PRINTEXPR_TOPLEVEL   0x0080  /* leave out parens around operators */
+#define PRINTEXPR_USEFLOATS  0x0100  /* print  expression as floats if appropriate */
 
 /* printing functions */
 void PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags);
@@ -52,7 +53,7 @@ void PrintPostfix(Flexbuf *f, AST *val, int toplevel, int flags);
 void PrintInteger(Flexbuf *f, int32_t v, int flags);
 void PrintFloat(Flexbuf *f, int32_t v, int flags);
 int  PrintLookupArray(Flexbuf *f, AST *arr, int flags);
-void PrintGasExpr(Flexbuf *f, AST *expr);
+void PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat);
 void PrintSymbol(Flexbuf *f, Symbol *sym, int flags);
 
 #endif

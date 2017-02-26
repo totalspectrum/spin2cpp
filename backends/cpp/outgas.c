@@ -144,6 +144,12 @@ ShouldPrintAsString(AST *ast)
     return true;
 }
 
+static bool
+AllFloats(AST *ast)
+{
+    return false;
+}
+
 static void
 outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inlineAsm)
 {
@@ -152,11 +158,17 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     char *comma = "";
     AST *origval = NULL;
     bool isString = false;
+    bool isFloat = false;
     
     if (size == 1 && ShouldPrintAsString(ast)) {
         isString = true;
         prefix = ".ascii";
     }
+    if (size == 4 && AllFloats(ast)) {
+        prefix = ".float";
+        isFloat = true;
+    }
+        
     forceAlign(f, size, inlineAsm);
     startLine(f, inlineAsm);
     flexbuf_printf(f, "%11s %-7s ", " ", prefix);
@@ -192,7 +204,7 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
                 PrintQuotedChar(f, val);
             } else {
                 flexbuf_printf(f, "%s", comma);
-                PrintGasExpr(f, origval);
+                PrintGasExpr(f, origval, isFloat);
                 comma = ", ";
             }
             --reps;
