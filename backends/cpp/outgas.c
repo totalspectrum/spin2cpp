@@ -144,10 +144,36 @@ ShouldPrintAsString(AST *ast)
     return true;
 }
 
+//
+// return true if all members of the list are floats (so we can use
+// .float instead of .long)
+// BUG: it appears the current propeller-elf-gas doesn't parse .float
+// properly, so for now just answer false
+//
 static bool
 AllFloats(AST *ast)
 {
+#if 0 // see comment above
+    AST *sub;
+    AST *origval;
+    while (ast) {
+        sub = ast->left;
+        if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
+            origval = sub->left;
+        } else if (sub->kind == AST_STRING) {
+            return false;
+        } else {
+            origval = sub;
+        }
+        if (!IsFloatConst(origval)) {
+            return false;
+        }
+        ast = ast->right;
+    }
+    return true;
+#else
     return false;
+#endif
 }
 
 static void
@@ -178,8 +204,8 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
     while (ast) {
         sub = ast->left;
         if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
-            origval = ast->left->left;
-            reps = EvalPasmExpr(ast->left->right);
+            origval = sub->left;
+            reps = EvalPasmExpr(sub->right);
         } else if (sub->kind == AST_STRING) {
             const char *ptr = sub->d.string;
             unsigned val;
@@ -195,7 +221,7 @@ outputGasDataList(Flexbuf *f, const char *prefix, AST *ast, int size, int inline
             }
             reps = 0;
         } else {
-            origval = ast->left;
+            origval = sub;
             reps = 1;
         }
         while (reps > 0) {
