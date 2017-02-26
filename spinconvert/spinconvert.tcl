@@ -12,6 +12,8 @@ set radioOut 1
 set makeBinary 0
 set codemem hub
 set datamem hub
+set gasmode 1
+set casemode 0
 set LIBRARY ""
 
 #
@@ -116,6 +118,8 @@ proc regenOutput { spinfile } {
     global makeBinary
     global codemem
     global datamem
+    global gasmode
+    global casemode
     
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
@@ -130,6 +134,12 @@ proc regenOutput { spinfile } {
 	set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
     } else {
 	set cmdline [list $COMPILE --noheader $OUTPUT]
+	if { $gasmode ne 0 } {
+	    set cmdline [concat $cmdline [list --gas]]
+	}
+	if { $casemode ne 0 } {
+	    set cmdline [concat $cmdline [list --normalize]]
+	}
     }
     if { $LIBRARY ne "" } {
 	set cmdline [concat $cmdline [list -L $LIBRARY]]
@@ -240,8 +250,8 @@ proc saveSpinAs {} {
 
 set aboutMsg {
 Convert .spin to PASM/C/C++
-Version 3.0    
-Copyright 2011-2016 Total Spectrum Software Inc.
+Version 3.1    
+Copyright 2011-2017 Total Spectrum Software Inc.
 ------
 There is no warranty and no guarantee that
 output will be correct.    
@@ -276,23 +286,42 @@ proc doHelp {} {
     wm title .help "Spin Converter help"
 }
 
-proc doPasmOptions {} {
-    if {[winfo exists .asmopt]} {
-	raise .asmopt
+proc doCppOptions {} {
+    if {[winfo exists .cppopt]} {
+	raise .cppopt
 	return
     }
-    toplevel .asmopt
-    ttk::labelframe .asmopt.c -text "Code goes in:"
-    radiobutton .asmopt.c.cogcode -value cog -text "Cog memory" -variable codemem
-    radiobutton .asmopt.c.hubcode -value hub -text "Hub memory" -variable codemem
-    ttk::labelframe .asmopt.d -text "Data goes in:"
-    radiobutton .asmopt.d.cogdata -value cog -text "Cog memory" -variable datamem
-    radiobutton .asmopt.d.hubdata -value hub -text "Hub memory" -variable datamem
-    grid .asmopt.c
-    grid .asmopt.d
-    grid .asmopt.c.cogcode .asmopt.c.hubcode
-    grid .asmopt.d.cogdata .asmopt.d.hubdata
-    wm title .asmopt "PASM Options"
+    toplevel .cppopt
+    ttk::labelframe .cppopt.g -text "Data Section as:"
+    radiobutton .cppopt.g.gascode -value 1 -text "GAS code" -variable gasmode
+    radiobutton .cppopt.g.datcode -value 0 -text "Binary blob" -variable gasmode
+    ttk::labelframe .cppopt.v -text "Variable case:"
+    radiobutton .cppopt.v.casedef -value 0 -text "Keep case of first use" -variable casemode
+    radiobutton .cppopt.v.casenorm -value 1 -text "Normalize to standard form" -variable casemode
+    grid .cppopt.g
+    grid .cppopt.v
+    grid .cppopt.g.gascode .cppopt.g.datcode
+    grid .cppopt.v.casedef .cppopt.v.casenorm
+    wm title .cppopt "C / C++ Options"
+}
+
+proc doPasmOptions {} {
+    if {[winfo exists .pasmopt]} {
+	raise .pasmopt
+	return
+    }
+    toplevel .pasmopt
+    ttk::labelframe .pasmopt.c -text "Code goes in:"
+    radiobutton .pasmopt.c.cogcode -value cog -text "Cog memory" -variable codemem
+    radiobutton .pasmopt.c.hubcode -value hub -text "Hub memory" -variable codemem
+    ttk::labelframe .pasmopt.d -text "Data goes in:"
+    radiobutton .pasmopt.d.cogdata -value cog -text "Cog memory" -variable datamem
+    radiobutton .pasmopt.d.hubdata -value hub -text "Hub memory" -variable datamem
+    grid .pasmopt.c
+    grid .pasmopt.d
+    grid .pasmopt.c.cogcode .pasmopt.c.hubcode
+    grid .pasmopt.d.cogdata .pasmopt.d.hubdata
+    wm title .pasmopt "PASM Options"
 }
 
 #
@@ -344,6 +373,7 @@ menu .mbar.help -tearoff 0
 .mbar.options add separator
 .mbar.options add checkbutton -label "Make Binary" -variable makeBinary -onvalue 1 -offvalue 0
 .mbar.options add command -label "PASM Options..." -command { doPasmOptions }
+.mbar.options add command -label "C/C++ Options..." -command { doCppOptions }
 #.mbar.options add checkbutton -label "LMM Mode" -variable codemem -onvalue hub -offvalue cog
 .mbar.options add separator
 .mbar.options add command -label "Library directory..." -command { getLibrary }
