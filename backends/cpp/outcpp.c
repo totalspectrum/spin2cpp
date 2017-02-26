@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2016 Total Spectrum Software Inc.
+// Copyright 2012-2017 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 

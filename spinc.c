@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2017 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -873,16 +873,6 @@ ParseFile(const char *name)
         allparse = P;
     current = P;
 
-    if (gl_gas_dat) {
-        current->datname = (char *)malloc(strlen(P->basename) + 40);
-        if (!current->datname) {
-            fprintf(stderr, "Out of memory!\n");
-            exit(2);
-        }
-        sprintf(current->datname, "_dat_%s_", P->basename);
-    } else {
-        current->datname = "dat";
-    }
     if (gl_preprocess) {
         void *defineState;
 
@@ -911,6 +901,16 @@ ParseFile(const char *name)
 
     /* work to avoid conflicts with variables and constants */
     makeClassNameSafe(P);
+    if (gl_gas_dat) {
+        current->datname = (char *)malloc(strlen(P->classname) + 40);
+        if (!current->datname) {
+            fprintf(stderr, "Out of memory!\n");
+            exit(2);
+        }
+        sprintf(current->datname, "_dat_%s_", P->classname);
+    } else {
+        current->datname = "dat";
+    }
 
     if (gl_errors > 0) {
         free(fname);

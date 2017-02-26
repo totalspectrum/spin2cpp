@@ -1,3 +1,10 @@
+Version 3.5.1
+
+- Fixed a problem with the name of the ..dat_start in gas mode if the
+  base file name contains spaces
+- Added a C / C++ options dialog to spinconvert
+- Updated copyright notices.
+
 Version 3.5.0
 
 - Added type inference so that C/C++ code has types that are more
