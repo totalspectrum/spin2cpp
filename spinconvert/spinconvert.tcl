@@ -15,6 +15,7 @@ set datamem hub
 set gasmode 1
 set casemode 0
 set LIBRARY ""
+set cseoptimize 0
 
 #
 # read a file and return its text
@@ -120,6 +121,7 @@ proc regenOutput { spinfile } {
     global datamem
     global gasmode
     global casemode
+    global cseoptimize
     
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
@@ -132,6 +134,9 @@ proc regenOutput { spinfile } {
     set status 0
     if { $EXT eq ".pasm" } {
 	set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
+	if { $cseoptimize ne 0 } {
+	    set cmdline [concat $cmdline [list --cse]]
+	}
     } else {
 	set cmdline [list $COMPILE --noheader $OUTPUT]
 	if { $gasmode ne 0 } {
@@ -317,10 +322,15 @@ proc doPasmOptions {} {
     ttk::labelframe .pasmopt.d -text "Data goes in:"
     radiobutton .pasmopt.d.cogdata -value cog -text "Cog memory" -variable datamem
     radiobutton .pasmopt.d.hubdata -value hub -text "Hub memory" -variable datamem
+    ttk::labelframe .pasmopt.opt -text "Optimization options:"
+    checkbutton .pasmopt.opt.cse -text "Enable common subexpression optimizations" -variable cseoptimize -onvalue 1 -offvalue 0
     grid .pasmopt.c
     grid .pasmopt.d
+    grid .pasmopt.opt
     grid .pasmopt.c.cogcode .pasmopt.c.hubcode
     grid .pasmopt.d.cogdata .pasmopt.d.hubdata
+    grid .pasmopt.opt.cse
+    
     wm title .pasmopt "PASM Options"
 }
 
