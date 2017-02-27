@@ -1161,6 +1161,9 @@ int ArrayTypeSize(AST *typ)
         return 4;
     }
     switch (typ->kind) {
+    case AST_MODIFIER_CONST:
+    case AST_MODIFIER_VOLATILE:
+        return ArrayTypeSize(typ->left);
     case AST_ARRAYTYPE:
         size = EvalConstExpr(typ->right);
         return size * ArrayTypeSize(typ->left);
@@ -1184,6 +1187,9 @@ int TypeAlignment(AST *typ)
 {
     if (!typ) return 4;
     switch (typ->kind) {
+    case AST_MODIFIER_CONST:
+    case AST_MODIFIER_VOLATILE:
+        return TypeAlignment(typ->left);
     case AST_ARRAYTYPE:
     case AST_PTRTYPE:
         return TypeAlignment(typ->left);
@@ -1254,6 +1260,9 @@ FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
 int
 IsFloatType(AST *type)
 {
+    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
+        type = type->left;
+    }
     if (type->kind == AST_FLOATTYPE)
         return 1;
     return 0;
@@ -1262,6 +1271,9 @@ IsFloatType(AST *type)
 int
 IsPointerType(AST *type)
 {
+    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
+        type = type->left;
+    }
     if (type->kind == AST_PTRTYPE)
         return 1;
     return 0;
@@ -1285,6 +1297,9 @@ IsGenericType(AST *type)
 int
 IsIntType(AST *type)
 {
+    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
+        type = type->left;
+    }
     if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE)
         return 1;
     return 0;
@@ -1316,7 +1331,7 @@ ExprType(AST *expr)
         // so "abc" is the same as "a" is the same as 0x65
         return ast_type_long;
     case AST_STRINGPTR:
-        return ast_type_ptr_byte;
+        return ast_type_string;
     case AST_MEMREF:
         return expr->left; 
     case AST_ADDROF:
@@ -1394,6 +1409,9 @@ ExprType(AST *expr)
  */
 int TypeSize(AST *ast)
 {
+    while ( ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE) ) {
+        ast = ast->left;
+    }
     if (!ast)
         return 4;  // type is unknown at the moment
     if (ast->kind == AST_ARRAYTYPE) {

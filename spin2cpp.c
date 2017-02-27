@@ -53,6 +53,7 @@ Usage(void)
     fprintf(stderr, "  --cc=CC:   use CC as the C++ compiler instead of PropGCC\n");
     fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
     fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
+    fprintf(stderr, "  --ctypes : use inferred pointer (and other) types in generated C/C++ code\n");
     fprintf(stderr, "  --data=x : PASM output only: control placement of data\n");
     fprintf(stderr, "             x can be cog or hub (default is hub)\n");
     fprintf(stderr, "  --dat:     output binary blob of DAT section only\n");
@@ -265,6 +266,9 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--ccode", 7)) {
             gl_output = OUTPUT_C;
             cext = ".c";
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--ctypes", 7)) {
+            gl_infer_ctypes = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--cc=", 5)) {
             gl_cc = argv[0] + 5;

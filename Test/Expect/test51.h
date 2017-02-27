@@ -6,7 +6,7 @@
 class test51 {
 public:
   static void 	Run(void);
-  static int32_t 	Len(char *Stringptr);
+  static int32_t 	Len(const char *Stringptr);
 private:
 };
 

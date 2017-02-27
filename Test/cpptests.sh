@@ -15,7 +15,7 @@ endmsg=$ok
 for i in ctest*.spin
 do
   j=`basename $i .spin`
-  $PROG --ccode --noheader -DCOUNT=4 $i
+  $PROG --ccode --ctypes --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.c $j.c
   then
       rm -f $j.h $j.c
@@ -34,7 +34,7 @@ done
 for i in test*.spin
 do
   j=`basename $i .spin`
-  $PROG -n --noheader -DCOUNT=4 $i
+  $PROG --ctypes -n --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
   then
       rm -f $j.h $j.cpp
@@ -51,7 +51,7 @@ done
 for i in gtest*.spin
 do
   j=`basename $i .spin`
-  $PROG -g --noheader -DCOUNT=4 $i
+  $PROG --ctypes -g --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
   then
       rm -f $j.h $j.cpp

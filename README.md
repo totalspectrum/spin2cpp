@@ -154,7 +154,7 @@ See Demo/Makefile for more examples.
 binary output without PropGCC. To use this, use the --asm switch. For example,
 to produce a binary with code in HUB (LMM mode) do:
 
-    spin2cpp --asm --binary demo.spin
+    spin2cpp --asm --binary --code=hub demo.spin
 
 This will produce demo.pasm (the converted assembly code) and demo.binary (the
 compiled binary suitable for download to the device).
@@ -195,17 +195,30 @@ Spin2cpp accepts the following options:
   This is similar to the way the C++ compiler implements object methods
   internally, but in C it has to be exposed explicitly.
 
-`--code=cog`
-`--code=hub`
-  Only for PASM output (--asm option); specify whether code is to be
-  placed in COG or HUB memory. The default
-  is to use COG memory.
-  
 `--cse`
   Enable common subexpression elimination. This optimization may be
   useful for ASM output, but it is still experimental and does not always
   help performance. It's not really useful for C output, since GCC already
   can do this.
+
+`--ctypes`
+  Attempt to infer C types for parameters, object variables, and functions,
+  based on usage within the code. This doesn't always work, and as a result
+  may cause some compiler warnings. The GCC `-fpermissive` flag may be
+  necessary in C++ mode.
+  
+`--code=cog`
+`--code=hub`
+  Only for PASM output (--asm option); specify whether code is to be
+  placed in COG or HUB memory. The default
+  is to use COG memory for code.
+  
+`--data=cog`
+`--data=hub`
+  Only for PASM output (--asm option); specify whether data is to be
+  placed in COG or HUB memory. The default
+  is to use HUB memory for data.
+
 
 `--dat`
   Output a binary blob of the DAT section only, similar to the
@@ -356,7 +369,9 @@ by a human programmer. Some of the things to watch out for:
     (which are not maintainable). --gas helps this a lot.
 
 (2) Code only uses one type (`int32_t`) cast to pointer as necessary;
-    idiomatic C would use pointer types from the start.
+    idiomatic C would use pointer types from the start. The `--ctypes`
+    flag to spin2cpp tries to guess at types, and so improves the code
+    quality somewhat, but still needs some work.
 
 (3) Local variable names get lost when spin2cpp decides it has to
     force the variables into a local array (for example if the address

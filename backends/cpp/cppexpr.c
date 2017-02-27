@@ -614,6 +614,14 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
     if (!typedecl) {
         typedecl = ast_type_generic;
     }
+    if (typedecl->kind == AST_MODIFIER_VOLATILE) {
+        doPrintType(f, typedecl->left, addspace, flags | VOLATILE);
+        return;
+    }
+    if (typedecl->kind == AST_MODIFIER_CONST) {
+        flexbuf_printf(f, "const ");
+        typedecl = typedecl->left;
+    }
     if (typedecl->kind != AST_PTRTYPE && (flags & VOLATILE)) {
         flexbuf_printf(f, "volatile ");
     }
@@ -1220,7 +1228,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         }
         break;
     case AST_STRINGPTR:
-        flexbuf_printf(f, "(char *)");
+        //flexbuf_printf(f, "(char *)");
         PrintStringList(f, expr->left);
         break;
     case AST_CONSTANT:
@@ -1503,10 +1511,11 @@ PrintExprList(Flexbuf *f, AST *list, int flags, Function *func)
 void
 PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
 {
-    AST *et = ExprType(expr);
+    AST *et;
     bool addZero = false;
     bool needCloseParen = false;
 
+    et = ExprType(expr);
     if (flags & PRINTEXPR_GAS) {
         PrintExpr(f, expr, flags);
         return;
@@ -1667,7 +1676,7 @@ void
 str1Builtin(Flexbuf *f, Builtin *b, AST *params)
 {
     flexbuf_printf(f, "%s(", b->cname);
-    PrintTypedExpr(f, ast_type_ptr_byte, params->left, PRINTEXPR_TOPLEVEL);
+    PrintTypedExpr(f, ast_type_string, params->left, PRINTEXPR_TOPLEVEL);
     params = params->right;
     flexbuf_printf(f, ")");
 }
@@ -1677,10 +1686,10 @@ void
 strcompBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
     flexbuf_printf(f, "-(0 == strcmp(");
-    PrintTypedExpr(f, ast_type_ptr_byte, params->left, PRINTEXPR_TOPLEVEL);
+    PrintTypedExpr(f, ast_type_string, params->left, PRINTEXPR_TOPLEVEL);
     params = params->right;
     flexbuf_printf(f, ", ");
-    PrintTypedExpr(f, ast_type_ptr_byte, params->left, PRINTEXPR_TOPLEVEL);
+    PrintTypedExpr(f, ast_type_string, params->left, PRINTEXPR_TOPLEVEL);
     params = params->right;
     flexbuf_printf(f, "))");
 }

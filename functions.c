@@ -1102,6 +1102,7 @@ SetSymbolType(Symbol *sym, AST *newType)
   AST *oldType = NULL;
   if (!newType) return 0;
   if (!sym) return 0;
+  if (!gl_infer_ctypes) return 0;
   
   switch(sym->type) {
   case SYM_VARIABLE:
@@ -1331,7 +1332,7 @@ SetFunctionType(Function *f, AST *typ)
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
-        f->rettype = typ;
+        f->rettype = gl_infer_ctypes ? typ : ast_type_generic;
     }
 }
 

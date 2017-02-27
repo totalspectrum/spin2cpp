@@ -134,6 +134,8 @@ enum astkind {
 
     AST_ORGH = 92,
     AST_MASKMOVE,
+    AST_MODIFIER_CONST,
+    AST_MODIFIER_VOLATILE,
 };
 
 struct AST {

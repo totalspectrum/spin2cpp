@@ -40,7 +40,7 @@ void test123::Demo(void)
 
 void test123::Hello(test123 *self)
 {
-  self->Fds.Str((char *)"Hello, World\r\n");
+  self->Fds.Str("Hello, World\r\n");
 }
 
 void test123::Exit(void)

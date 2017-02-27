@@ -57,6 +57,8 @@ int gl_optimize_flags;
 int gl_dat_offset;
 int gl_printprogress = 0;
 int gl_depth = 0;
+int gl_infer_ctypes = 0;
+
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
 AST *ast_type_ptr_long;
@@ -982,7 +984,6 @@ Init()
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
-    ast_type_string = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
 
@@ -991,6 +992,8 @@ Init()
     ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
     
+    ast_type_string = NewAST(AST_MODIFIER_CONST, ast_type_ptr_byte, NULL);
+
     initLexer(gl_p2);
 
     /* fill in the global symbol table */

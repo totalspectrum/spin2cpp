@@ -14,7 +14,7 @@ void test29::Str(int32_t Stringptr)
   while (lockset(Strlock)) {
     Yield__();
   }
-  for(( (_idx__0001 = 0), (_limit__0002 = strlen((char *)Stringptr)) ); _idx__0001 < _limit__0002; _idx__0001++) {
+  for(( (_idx__0001 = 0), (_limit__0002 = strlen((const char *)Stringptr)) ); _idx__0001 < _limit__0002; _idx__0001++) {
     Tx(((char *)(Stringptr++))[0]);
   }
   lockclr(Strlock);

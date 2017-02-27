@@ -3,10 +3,10 @@
 
 void test51::Run(void)
 {
-  OUTA = Len((char *)"hello, world\r\n");
+  OUTA = Len("hello, world\r\n");
 }
 
-int32_t test51::Len(char *Stringptr)
+int32_t test51::Len(const char *Stringptr)
 {
   return strlen(Stringptr);
 }
