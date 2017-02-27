@@ -16,6 +16,7 @@ set gasmode 1
 set casemode 0
 set LIBRARY ""
 set cseoptimize 0
+set usectypes 0
 
 #
 # read a file and return its text
@@ -122,6 +123,7 @@ proc regenOutput { spinfile } {
     global gasmode
     global casemode
     global cseoptimize
+    global usectypes
     
     set outname $PASMFILE
     if { [string length $outname] == 0 } {
@@ -144,6 +146,9 @@ proc regenOutput { spinfile } {
 	}
 	if { $casemode ne 0 } {
 	    set cmdline [concat $cmdline [list --normalize]]
+	}
+	if { $usectypes ne 0 } {
+	    set cmdline [concat $cmdline [list --ctypes]]
 	}
     }
     if { $LIBRARY ne "" } {
@@ -303,8 +308,10 @@ proc doCppOptions {} {
     ttk::labelframe .cppopt.v -text "Variable case:"
     radiobutton .cppopt.v.casedef -value 0 -text "Keep case of first use" -variable casemode
     radiobutton .cppopt.v.casenorm -value 1 -text "Normalize to standard form" -variable casemode
+    checkbutton .cppopt.ctype -text "Try to guess C types" -variable usectypes -onvalue 1 -offvalue 0
     grid .cppopt.g
     grid .cppopt.v
+    grid .cppopt.ctype
     grid .cppopt.g.gascode .cppopt.g.datcode
     grid .cppopt.v.casedef .cppopt.v.casenorm
     wm title .cppopt "C / C++ Options"
