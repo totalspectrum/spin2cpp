@@ -29,6 +29,16 @@ _sendchar_index
 _sendchar_index_ret
 	ret
 
+_sendchar_abstract
+	mov	_sendchar_abstract_fds, arg1
+	mov	arg1, arg2
+	mov	sendchar_abstract_tmp002_, objptr
+	mov	objptr, _sendchar_abstract_fds
+	call	#_simplepin_tx
+	mov	objptr, sendchar_abstract_tmp002_
+_sendchar_abstract_ret
+	ret
+
 _simplepin_tx
 	mov	_var_02, #1
 	rdlong	_tmp002_, objptr
@@ -47,6 +57,8 @@ COG_BSS_START
 objmem
 	long	0[6]
 	org	COG_BSS_START
+_sendchar_abstract_fds
+	res	1
 _tmp002_
 	res	1
 _var_02
@@ -58,6 +70,8 @@ arg2
 arg3
 	res	1
 arg4
+	res	1
+sendchar_abstract_tmp002_
 	res	1
 sendchar_index_tmp002_
 	res	1

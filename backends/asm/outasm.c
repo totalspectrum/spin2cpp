@@ -1836,8 +1836,7 @@ CompileFunccall(IRList *irl, AST *expr)
               arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
               offset = CompileExpression(irl, arrayderef, NULL);
           } else {
-              ERROR(expr, "%s is not an object array", objsym->name);
-              absaddr = NewImmediate(0);
+              absaddr = CompileExpression(irl, call->right, NULL);
           }
       } else {
           offset = NewImmediate(objsym->offset);
