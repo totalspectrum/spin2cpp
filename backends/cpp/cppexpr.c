@@ -1128,17 +1128,24 @@ PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags)
     }
 
     if (expr->kind == AST_ARRAYREF) {
-        if (!isArray) {
-            ERROR(expr, "%s is not an array of objects", objsym->name);
+        if (isArray) {
+            PrintLHS(f, expr, flags);
+            return;
+        } else {
+            // treat it as a cast of the parameter contents
+//            ERROR(expr, "%s is not an array of objects", objsym->name);
+            flexbuf_printf(f, "((%s *)", ObjClassName(objsym));
+            PrintLHS(f, expr->right, flags);
+            flexbuf_printf(f, ")");
+            isArray = 1; // force the dereference
         }
-        PrintLHS(f, expr, flags);
     } else {
         if (gl_ccode || (curfunc && curfunc->force_static) )
             flexbuf_printf(f, "self->");
         flexbuf_printf(f, "%s", objsym->name);
-        if (isArray) {
-            flexbuf_printf(f, "[0]");
-        }
+    }
+    if (isArray) {
+        flexbuf_printf(f, "[0]");
     }
 }
 

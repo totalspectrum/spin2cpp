@@ -691,6 +691,8 @@ objline:
     { $$ = NULL; }
   | identdecl ':' string
     { $$ = NewObject($1, $3); }
+  | identdecl '=' string
+    { $$ = NewAbstractObject($1, $3); }
 ;
 
 varblock:

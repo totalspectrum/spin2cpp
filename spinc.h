@@ -376,6 +376,8 @@ extern int IsReservedWord(const char *str);
 
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);
+/* like NewObject, but does not instantiate data */
+AST *NewAbstractObject(AST *identifier, AST *string);
 
 /* different kinds of output functions */
 void OutputCppCode(const char *name, Module *P, int printMain);

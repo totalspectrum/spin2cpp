@@ -725,6 +725,9 @@ DeclareObjects(AST *newobjs)
             break;
         }
         obj = ast->left;
+        if (obj->kind == AST_OBJDECL) {
+            obj = obj->left;
+        }
         if (obj->kind == AST_IDENTIFIER) {
             AddSymbol(&current->objsyms, obj->d.string, SYM_OBJECT, ast);
         } else if (obj->kind == AST_ARRAYDECL) {
@@ -776,6 +779,9 @@ AssignObjectOffsets(Module *P)
         } else if (obj->kind == AST_ARRAYDECL) {
             sym = FindSymbol(&P->objsyms, obj->left->d.string);
             count = EvalConstExpr(obj->right);
+        } else if (obj->kind == AST_OBJDECL) {
+            sym = FindSymbol(&P->objsyms, obj->left->d.string);
+            count = 0;
         }
         if (sym == NULL) {
             ERROR(ast, "Internal error, cannot find object symbol");
@@ -932,6 +938,12 @@ NewObject(AST *identifier, AST *string)
     ast = NewAST(AST_OBJECT, identifier, NULL);
     ast->d.ptr = ParseFile(filename);
     return ast;
+}
+
+AST *
+NewAbstractObject(AST *identifier, AST *string)
+{
+    return NewObject( NewAST(AST_OBJDECL, identifier, 0), string );
 }
 
 void
