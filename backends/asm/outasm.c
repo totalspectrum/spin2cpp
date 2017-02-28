@@ -1819,10 +1819,43 @@ CompileFunccall(IRList *irl, AST *expr)
 
   /* emit the call */
   if (objsym) {
+      Operand *offset = NULL;
+      Operand *absaddr = NULL;
+      Operand *saveobj = NULL;
+      AST *call = expr->left;
+      if (call->kind == AST_METHODREF) {
+          call = call->left;
+      } else {
+          ERROR(call, "Internal error: expected method reference");
+      }
+      if (call->kind == AST_ARRAYREF) {
+          if (IsArraySymbol(objsym)) {
+              // add the index * sizeof(object) into the array offset
+              Module *objModule = GetObjectPtr(objsym);
+              AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
+              arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
+              offset = CompileExpression(irl, arrayderef, NULL);
+          } else {
+              ERROR(expr, "%s is not an object array", objsym->name);
+              absaddr = NewImmediate(0);
+          }
+      } else {
+          offset = NewImmediate(objsym->offset);
+      }
       ValidateObjbase();
-      EmitOp2(irl, OPC_ADD, objbase, NewImmediate(objsym->offset));
+      if (offset) {
+          EmitOp2(irl, OPC_ADD, objbase, offset);
+      } else {
+          saveobj = NewFunctionTempRegister();
+          EmitMove(irl, saveobj, objbase);
+          EmitMove(irl, objbase, absaddr);
+      }
       ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
-      EmitOp2(irl, OPC_SUB, objbase, NewImmediate(objsym->offset));
+      if (offset) {
+          EmitOp2(irl, OPC_SUB, objbase, offset);
+      } else {
+          EmitMove(irl, objbase, saveobj);
+      }
   } else {
       ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
   }
