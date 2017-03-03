@@ -231,11 +231,16 @@ typedef enum InstrOps {
     /* P2 extensions */
     TWO_OPERANDS_OPTIONAL,  /* one of the 2 operands is optional */
     P2_TJZ_OPERANDS,        /* like TJZ */
+    P2_JINT_OPERANDS,       /* like TJZ, but source only */
     P2_RDWR_OPERANDS,       /* like rdlong/wrlong, accepts postinc and such */
     P2_DST_CONST_OK,        /* dst only, but immediate is OK */
     P2_JUMP,                /* jump and call, opcode may change based on dest */
     P2_TWO_OPERANDS,        /* two operands, both may be imm */
-    
+    TWO_OPERANDS_NO_FLAGS,  /* no wc or wz effects allowed */
+
+    THREE_OPERANDS_NIBBLE,
+    THREE_OPERANDS_BYTE,
+    THREE_OPERANDS_WORD,
 } InstrOps;
 
 /* structure describing a PASM instruction */

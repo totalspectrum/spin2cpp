@@ -282,6 +282,7 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
     switch(instr->ops) {
     case P2_JUMP:
     case P2_TJZ_OPERANDS:
+    case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
     case CALL_OPERAND:
         return mask;
@@ -506,6 +507,24 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             src = isrc & 0x1ff;
         } else {
             src = EvalPasmExpr(operand[1]);
+        }
+        break;
+    case P2_JINT_OPERANDS:
+        dst = 0;
+        if (immSrc) {
+            isrc = EvalPasmExpr(operand[0]);
+            if (isrc < 0x400) {
+                isrc *= 4;
+            }
+            isrc = isrc - (asmpc+4);
+            isrc /= 4;
+            if ( (isrc < -256) || (isrc > 255) ) {
+                ERROR(line, "Source out of range for relative branch %s", instr->name);
+                isrc = 0;
+            }
+            src = isrc & 0x1ff;
+        } else {
+            src = EvalPasmExpr(operand[0]);
         }
         break;
     case SRC_OPERAND_ONLY:
