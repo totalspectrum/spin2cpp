@@ -1581,14 +1581,14 @@ instr_p2[] = {
   { "fltn",   0x0d600056, P2_DST_CONST_OK, OPC_GENERIC },
   { "fltrnd", 0x0d600057, P2_DST_CONST_OK, OPC_GENERIC },
   
-  { "drvl",   0x0d600048, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvh",   0x0d600049, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvc",   0x0d60004a, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvnc",  0x0d60004b, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvz",   0x0d60004c, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvnz",  0x0d60004d, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvn",   0x0d60004e, P2_DST_CONST_OK, OPC_GENERIC },
-  { "drvrnd", 0x0d60004f, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvl",   0x0d600058, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvh",   0x0d600059, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvc",   0x0d60005a, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvnc",  0x0d60005b, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvz",   0x0d60005c, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvnz",  0x0d60005d, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvn",   0x0d60005e, P2_DST_CONST_OK, OPC_GENERIC },
+  { "drvrnd", 0x0d60005f, P2_DST_CONST_OK, OPC_GENERIC },
 
   // long jumps
   { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP },

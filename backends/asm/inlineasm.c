@@ -88,11 +88,14 @@ CompileInlineInstr(IRList *irl, AST *ast)
         }
         sub = sub->right;
     }
+#if 0
+    // this check is too simplistic for P2
     if (immflag) {
 	 if (ir->src && ir->src->kind != IMM_INT) {
 	   ERROR(sub, "Only immediate integers in inline asm");
 	 }
     }
+#endif
     AppendIR(irl, ir);
 }
 
