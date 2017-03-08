@@ -332,10 +332,24 @@ which is the same as
 (3) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
 
 (4) In PASM mode (--asm), spin2cpp accepts inline assembly in PUB and PRI sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly
-is still somewhat limited; the only operands permitted are local variables of
-the containing function.
+is somewhat limited; the only operands permitted are local variables of
+the containing function (or immediate constants).
 
-(5) There are various special comments ("annotations") which can control
+(5) The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
+```
+OBJ
+  fds = "FullDuplexSerial"
+```
+declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
+```
+PUB print(f, c)
+  fds[f].dec(c)
+
+PUB doprint22
+  print(@aFullDuplexSerialObj, 22)
+```
+
+(6) There are various special comments ("annotations") which can control
 how spin2cpp behaves or insert C code into the output. See below for details.
 
 LIMITATIONS
