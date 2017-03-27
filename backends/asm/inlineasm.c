@@ -47,7 +47,6 @@ CompileInlineInstr(IRList *irl, AST *ast)
     Instruction *instr = (Instruction *)ast->d.ptr;
     IR *ir = NewIR(instr->opc);
     int numoperands = 0;
-    int immflag = 0;
     ir->instr = instr;
 
     // check for modifiers and operands
@@ -64,7 +63,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
 	    } else if (!strcmp(mod->name, "wr")) {
 		 ir->flags |= FLAG_WR;
 	    } else if (!strcmp(mod->name, "#")) {
-		 immflag = 1;
+//		 immflag = 1;
 	    } else {
 		 ERROR(ast, "Modifier %s not handled yet in inline asm", mod->name);
 	    }
