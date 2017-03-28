@@ -1013,6 +1013,12 @@ GetLocalRegsUsed(OperandList **list, IRList *irl)
     }
 }
 
+static bool
+NeedToSaveLocals(Function *func)
+{
+    return func->is_recursive;
+}
+
 //
 // the header/footer are code that should only be emitted for
 // non-inline function invocations, at the beginning and
@@ -1056,7 +1062,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // are used only after the first call
     //
     
-    if (func->is_recursive) {
+    if (NeedToSaveLocals(func)) {
         GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
         // push scratch registers that need preserving
         for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
@@ -1074,7 +1080,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname) {
         EmitLabel(irl, FuncData(func)->asmreturnlabel);
     }
-    if (func->is_recursive) {
+    if (NeedToSaveLocals(func)) {
         // pop return address
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
@@ -3177,7 +3183,7 @@ AssignFuncNames(IRList *irl, Module *P)
         if (ShouldSkipFunction(f))
             continue;
         curfunc = f;
-        f->cog_code = (COG_CODE || IsGlobalModule(P)) ? 1 : 0;
+        f->cog_code = (COG_CODE || (IsGlobalModule(P) && !gl_compressed)) ? 1 : 0;
         fname = IdentifierGlobalName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 8);
 	sprintf(frname, "%s_ret", fname);
@@ -3940,9 +3946,16 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     EmitBuiltins(&cogcode);
     // we compiled builtin functions into IR form earlier, now
     // output them
+#if 0
     // these always go in COG memory
     CompileToIR_internal(&cogcode, globalModule);
-    
+#else
+    if (HUB_CODE && gl_compressed) {
+        CompileToIR_internal(&hubcode, globalModule);
+    } else {
+        CompileToIR_internal(&cogcode, globalModule);
+    }
+#endif
     // now copy the hub code into place
     orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     if (gl_p2) {
