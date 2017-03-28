@@ -238,6 +238,15 @@ Spin2cpp accepts the following options:
   Print a list of the .cpp (or .c) files that were produced by
   spin2cpp. Useful for tracking object dependencies.
 
+`--fcache=N`
+  Sets the size of the FCACHE area, in instructions. On the P1 when
+  code is placed in HUB, some small loops are compiled to be loaded
+  into a region of COG memory (the FCACHE) to improve performance. The
+  default FCACHE size is 64. Larger sizes may improve performance, but
+  at the risk of running out of COG memory space. The minimum size is
+  8; any size less than this disables FCACHE completely.
+  
+
 `--gas`
   Output inline GAS assembly code instead of binary constants. If
   given with the --dat option, produces a .S file containing the

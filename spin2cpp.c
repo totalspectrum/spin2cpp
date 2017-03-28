@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2017 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -60,13 +60,14 @@ Usage(void)
     fprintf(stderr, "  --eeprom:  create EEPROM binary file for download\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
+    fprintf(stderr, "  --fcache=N: set size of FCACHE area\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --noheader: skip the normal comment about spin2cpp version\n");
     fprintf(stderr, "  --noopt:   turn off all optimization in PASM output\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n");
-    fprintf(stderr, "  --nofcache: disable FCACHE (only applies in code=hub)\n");
+    fprintf(stderr, "  --nofcache: disable FCACHE (same as --fcache=0)\n");
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
     fprintf(stderr, "  --side:     create a SimpleIDE file for the C/C++ outputs\n");
@@ -329,8 +330,14 @@ main(int argc, char **argv)
             free(gl_header);
             gl_header = NULL;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--nofcache", 9)) {
+        } else if (!strncmp(argv[0], "--nofcache", 10)) {
             gl_fcache_size = 0;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--fcache=", 9)) {
+            gl_fcache_size = atoi(argv[0]+9);
+            if (gl_fcache_size < 8) {
+                gl_fcache_size = 0;
+            }
             argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    char *opt;
