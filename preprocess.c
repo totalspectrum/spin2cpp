@@ -592,7 +592,8 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
     char *word;
     const char *def;
     struct ifstate *I;
-
+    int live = pp_active(pp);
+    
     I = (struct ifstate *)calloc(1, sizeof(*I));
     if (!I) {
         doerror(pp, "Out of memory\n");
@@ -603,7 +604,7 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
         I->linenum = pp->fil->lineno;
     }
     pp->ifs = I;
-    if (!pp_active(pp)) {
+    if (!live) {
         I->skip = 1;
         I->skiprest = 1;  /* skip all branches, even else */
         return;
@@ -638,6 +639,7 @@ handle_else(struct preprocess *pp, ParseState *P)
         I->skip = 1;
     } else {
         I->skip = 0;
+        I->skiprest = 1;
     }
 }
 
