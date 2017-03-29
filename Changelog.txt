@@ -1,7 +1,7 @@
-Version 3.5.2
+Version 3.6.0
 
-- PASM output did not handle arrays of objects correctly, now it does
 - added Spin2 style object declarations and casts
+- PASM output did not handle arrays of objects correctly, now it does
 - fixed a preprocessor bug with #ifdef
 
 Version 3.5.1
