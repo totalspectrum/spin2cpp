@@ -1357,6 +1357,8 @@ ExprType(AST *expr)
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
             return (AST *)sym->val;
+        case SYM_FUNCTION:
+            return ((Function *)sym->val)->rettype;
         default:
             return NULL;
         }            

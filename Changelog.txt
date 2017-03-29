@@ -1,6 +1,7 @@
 Version 3.6.1
 - fixed a bogus error about function symbols used as array
   dereferences
+- fixed type casting of function return values used in expressions
 
 Version 3.6.0
 
