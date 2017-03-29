@@ -761,6 +761,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         PrintLHS(f, expr->left, flags | PRINTEXPR_ISREF);
         break;
     case AST_ARRAYREF:
+        flags &= ~PRINTEXPR_ASSIGNMENT;
         if (expr->left && expr->left->kind == AST_IDENTIFIER) {
             sym = LookupSymbol(expr->left->d.string);
         } else {
@@ -793,6 +794,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         }
         break;
     case AST_MEMREF:
+        flags &= ~(PRINTEXPR_ISREF|PRINTEXPR_ASSIGNMENT);
 #if 0
         flexbuf_printf(f, "((");
         PrintType(f, expr->left);
