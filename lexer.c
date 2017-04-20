@@ -1532,14 +1532,18 @@ instr_p2[] = {
   // will recognize x is a register and rewrite it as "jmp.i x"
   { "jmp.i" , 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
   { "call.i", 0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "ret",    0x0d64002d, NO_OPERANDS, OPC_GENERIC_BRANCH },
   { "calla.i",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "reta",   0x0d64002e, NO_OPERANDS, OPC_RET },
   { "callb.i",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH },
 
   { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_GENERIC_BRANCH },
-  { "ret",    0x0d600031, NO_OPERANDS, OPC_GENERIC_BRANCH },
-  { "reta",   0x0d600032, NO_OPERANDS, OPC_RET },
-  { "retb",   0x0d600033, NO_OPERANDS, OPC_GENERIC_BRANCH },
   
+  { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC },
+  { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC },
+  { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC },
+
   { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC },
   { "getint", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC },
   { "setbrk", 0x0d600036, P2_DST_CONST_OK, OPC_GENERIC },
@@ -1645,56 +1649,56 @@ HwReg hwreg_p2[] = {
     { NULL, 0, NULL },
 };
 
-#define IF_NEVER_P1 0xffc3ffff
-#define IF_NEVER_P2 0x0fffffff
+#define COND_MASK_P1 0xffc3ffff
+#define COND_MASK_P2 0x0fffffff
 
 InstrModifier modifiers_p1[] = {
-    { "if_never",  IF_NEVER_P1 },
-    { "if_always", IF_NEVER_P1 | (0xf<<18) },
+    { "if_never",  COND_MASK_P1 },
+    { "if_always", COND_MASK_P1 | (0xf<<18) },
 
-    { "if_a",           IF_NEVER_P1 | (0x1<<18) },
-    { "if_nc_and_nz",   IF_NEVER_P1 | (0x1<<18) },
-    { "if_nz_and_nc",   IF_NEVER_P1 | (0x1<<18) },
+    { "if_a",           COND_MASK_P1 | (0x1<<18) },
+    { "if_nc_and_nz",   COND_MASK_P1 | (0x1<<18) },
+    { "if_nz_and_nc",   COND_MASK_P1 | (0x1<<18) },
 
-    { "if_nc_and_z",    IF_NEVER_P1 | (0x2<<18) },
-    { "if_z_and_nc",    IF_NEVER_P1 | (0x2<<18) },
+    { "if_nc_and_z",    COND_MASK_P1 | (0x2<<18) },
+    { "if_z_and_nc",    COND_MASK_P1 | (0x2<<18) },
 
-    { "if_ae",     IF_NEVER_P1 | (0x3<<18) },
-    { "if_nc",     IF_NEVER_P1 | (0x3<<18) },
+    { "if_ae",     COND_MASK_P1 | (0x3<<18) },
+    { "if_nc",     COND_MASK_P1 | (0x3<<18) },
 
-    { "if_c_and_nz",    IF_NEVER_P1 | (0x4<<18) },
-    { "if_nz_and_c",    IF_NEVER_P1 | (0x4<<18) },
+    { "if_c_and_nz",    COND_MASK_P1 | (0x4<<18) },
+    { "if_nz_and_c",    COND_MASK_P1 | (0x4<<18) },
 
-    { "if_ne",     IF_NEVER_P1 | (0x5<<18) },
-    { "if_nz",     IF_NEVER_P1 | (0x5<<18) },
+    { "if_ne",     COND_MASK_P1 | (0x5<<18) },
+    { "if_nz",     COND_MASK_P1 | (0x5<<18) },
 
-    { "if_c_ne_z", IF_NEVER_P1 | (0x6<<18) },
-    { "if_z_ne_c", IF_NEVER_P1 | (0x6<<18) },
+    { "if_c_ne_z", COND_MASK_P1 | (0x6<<18) },
+    { "if_z_ne_c", COND_MASK_P1 | (0x6<<18) },
 
-    { "if_nc_or_nz", IF_NEVER_P1 | (0x7<<18) },
-    { "if_nz_or_nc", IF_NEVER_P1 | (0x7<<18) },
+    { "if_nc_or_nz", COND_MASK_P1 | (0x7<<18) },
+    { "if_nz_or_nc", COND_MASK_P1 | (0x7<<18) },
 
-    { "if_c_and_z", IF_NEVER_P1 | (0x8<<18) },
-    { "if_z_and_c", IF_NEVER_P1 | (0x8<<18) },
+    { "if_c_and_z", COND_MASK_P1 | (0x8<<18) },
+    { "if_z_and_c", COND_MASK_P1 | (0x8<<18) },
 
-    { "if_c_eq_z", IF_NEVER_P1 | (0x9<<18) },
-    { "if_z_eq_c", IF_NEVER_P1 | (0x9<<18) },
+    { "if_c_eq_z", COND_MASK_P1 | (0x9<<18) },
+    { "if_z_eq_c", COND_MASK_P1 | (0x9<<18) },
 
-    { "if_e",      IF_NEVER_P1 | (0xa<<18) },
-    { "if_z",      IF_NEVER_P1 | (0xa<<18) },
+    { "if_e",      COND_MASK_P1 | (0xa<<18) },
+    { "if_z",      COND_MASK_P1 | (0xa<<18) },
 
-    { "if_nc_or_z", IF_NEVER_P1 | (0xb<<18) },
-    { "if_z_or_nc", IF_NEVER_P1 | (0xb<<18) },
+    { "if_nc_or_z", COND_MASK_P1 | (0xb<<18) },
+    { "if_z_or_nc", COND_MASK_P1 | (0xb<<18) },
 
-    { "if_b",      IF_NEVER_P1 | (0xc<<18) },
-    { "if_c",      IF_NEVER_P1 | (0xc<<18) },
+    { "if_b",      COND_MASK_P1 | (0xc<<18) },
+    { "if_c",      COND_MASK_P1 | (0xc<<18) },
 
-    { "if_c_or_nz", IF_NEVER_P1 | (0xd<<18) },
-    { "if_nz_or_c", IF_NEVER_P1 | (0xd<<18) },
+    { "if_c_or_nz", COND_MASK_P1 | (0xd<<18) },
+    { "if_nz_or_c", COND_MASK_P1 | (0xd<<18) },
 
-    { "if_be",     IF_NEVER_P1 | (0xe<<18) },
-    { "if_c_or_z", IF_NEVER_P1 | (0xe<<18) },
-    { "if_z_or_c", IF_NEVER_P1 | (0xe<<18) },
+    { "if_be",     COND_MASK_P1 | (0xe<<18) },
+    { "if_c_or_z", COND_MASK_P1 | (0xe<<18) },
+    { "if_z_or_c", COND_MASK_P1 | (0xe<<18) },
 
 
     { "wz", (1<<25) },
@@ -1706,52 +1710,52 @@ InstrModifier modifiers_p1[] = {
 };
 
 InstrModifier modifiers_p2[] = {
-    { "if_never",  IF_NEVER_P2 },
-    { "if_always", IF_NEVER_P2 | (0xf<<28) },
+    { "_ret_",  COND_MASK_P2 },
+    { "if_always", COND_MASK_P2 | (0xf<<28) },
 
-    { "if_a",           IF_NEVER_P2 | (0x1<<28) },
-    { "if_nc_and_nz",   IF_NEVER_P2 | (0x1<<28) },
-    { "if_nz_and_nc",   IF_NEVER_P2 | (0x1<<28) },
+    { "if_a",           COND_MASK_P2 | (0x1<<28) },
+    { "if_nc_and_nz",   COND_MASK_P2 | (0x1<<28) },
+    { "if_nz_and_nc",   COND_MASK_P2 | (0x1<<28) },
 
-    { "if_nc_and_z",    IF_NEVER_P2 | (0x2<<28) },
-    { "if_z_and_nc",    IF_NEVER_P2 | (0x2<<28) },
+    { "if_nc_and_z",    COND_MASK_P2 | (0x2<<28) },
+    { "if_z_and_nc",    COND_MASK_P2 | (0x2<<28) },
 
-    { "if_ae",     IF_NEVER_P2 | (0x3<<28) },
-    { "if_nc",     IF_NEVER_P2 | (0x3<<28) },
+    { "if_ae",     COND_MASK_P2 | (0x3<<28) },
+    { "if_nc",     COND_MASK_P2 | (0x3<<28) },
 
-    { "if_c_and_nz",    IF_NEVER_P2 | (0x4<<28) },
-    { "if_nz_and_c",    IF_NEVER_P2 | (0x4<<28) },
+    { "if_c_and_nz",    COND_MASK_P2 | (0x4<<28) },
+    { "if_nz_and_c",    COND_MASK_P2 | (0x4<<28) },
 
-    { "if_ne",     IF_NEVER_P2 | (0x5<<28) },
-    { "if_nz",     IF_NEVER_P2 | (0x5<<28) },
+    { "if_ne",     COND_MASK_P2 | (0x5<<28) },
+    { "if_nz",     COND_MASK_P2 | (0x5<<28) },
 
-    { "if_c_ne_z", IF_NEVER_P2 | (0x6<<28) },
-    { "if_z_ne_c", IF_NEVER_P2 | (0x6<<28) },
+    { "if_c_ne_z", COND_MASK_P2 | (0x6<<28) },
+    { "if_z_ne_c", COND_MASK_P2 | (0x6<<28) },
 
-    { "if_nc_or_nz", IF_NEVER_P2 | (0x7<<28) },
-    { "if_nz_or_nc", IF_NEVER_P2 | (0x7<<28) },
+    { "if_nc_or_nz", COND_MASK_P2 | (0x7<<28) },
+    { "if_nz_or_nc", COND_MASK_P2 | (0x7<<28) },
 
-    { "if_c_and_z", IF_NEVER_P2 | (0x8<<28) },
-    { "if_z_and_c", IF_NEVER_P2 | (0x8<<28) },
+    { "if_c_and_z", COND_MASK_P2 | (0x8<<28) },
+    { "if_z_and_c", COND_MASK_P2 | (0x8<<28) },
 
-    { "if_c_eq_z", IF_NEVER_P2 | (0x9<<28) },
-    { "if_z_eq_c", IF_NEVER_P2 | (0x9<<28) },
+    { "if_c_eq_z", COND_MASK_P2 | (0x9<<28) },
+    { "if_z_eq_c", COND_MASK_P2 | (0x9<<28) },
 
-    { "if_e",      IF_NEVER_P2 | (0xa<<28) },
-    { "if_z",      IF_NEVER_P2 | (0xa<<28) },
+    { "if_e",      COND_MASK_P2 | (0xa<<28) },
+    { "if_z",      COND_MASK_P2 | (0xa<<28) },
 
-    { "if_nc_or_z", IF_NEVER_P2 | (0xb<<28) },
-    { "if_z_or_nc", IF_NEVER_P2 | (0xb<<28) },
+    { "if_nc_or_z", COND_MASK_P2 | (0xb<<28) },
+    { "if_z_or_nc", COND_MASK_P2 | (0xb<<28) },
 
-    { "if_b",      IF_NEVER_P2 | (0xc<<28) },
-    { "if_c",      IF_NEVER_P2 | (0xc<<28) },
+    { "if_b",      COND_MASK_P2 | (0xc<<28) },
+    { "if_c",      COND_MASK_P2 | (0xc<<28) },
 
-    { "if_c_or_nz", IF_NEVER_P2 | (0xd<<28) },
-    { "if_nz_or_c", IF_NEVER_P2 | (0xd<<28) },
+    { "if_c_or_nz", COND_MASK_P2 | (0xd<<28) },
+    { "if_nz_or_c", COND_MASK_P2 | (0xd<<28) },
 
-    { "if_be",     IF_NEVER_P2 | (0xe<<28) },
-    { "if_c_or_z", IF_NEVER_P2 | (0xe<<28) },
-    { "if_z_or_c", IF_NEVER_P2 | (0xe<<28) },
+    { "if_be",     COND_MASK_P2 | (0xe<<28) },
+    { "if_c_or_z", COND_MASK_P2 | (0xe<<28) },
+    { "if_z_or_c", COND_MASK_P2 | (0xe<<28) },
 
 
     { "wz", (1<<19) },

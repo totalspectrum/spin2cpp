@@ -15,10 +15,9 @@ cognum		long	15
 '
 		org
 
-blink		cogid	x		'which cog am I?
-		setb	dirb,x		'make that pin an output
-		notb	outb,x		'flip its output state
-		add	x,#16		'add to my id
+blink		cogid	x		'which cog am I, 0..15?
+		add	x,#32		'add 32 to get pin 32..47
+		drvn	x		'output and flip that pin
 		shl	x,#18		'shift up to make it big
 		waitx	x		'wait that many clocks
 		jmp	#blink		'do it again
