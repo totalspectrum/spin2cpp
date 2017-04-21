@@ -2,6 +2,7 @@ Version 3.6.2
 - fixed an optimizer bug where it tried to change INA from a src in
   one instruction to a dest in another (INA as dest points to RAM
   rather than register)
+- Fixed preprocessor handling of quoted characters
 - Partially updated P2 instructions to v18
 
 Version 3.6.1

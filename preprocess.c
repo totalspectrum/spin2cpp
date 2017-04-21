@@ -416,6 +416,7 @@ static void parse_init(ParseState *P, char *s)
 #define PARSE_ISSPACE 1
 #define PARSE_IDCHAR  2
 #define PARSE_OTHER   3
+#define PARSE_QUOTE   4
 
 static int
 classify_char(int c)
@@ -424,6 +425,8 @@ classify_char(int c)
         return PARSE_ISSPACE;
     if (isalnum(c) || (c == '_'))
         return PARSE_IDCHAR;
+    if (c == '"')
+        return PARSE_QUOTE;
     return PARSE_OTHER;
 }
 
@@ -1006,7 +1009,7 @@ pp_restore_define_state(struct preprocess *pp, void *vp)
     pp->defs = x;
 }
 
-#ifdef TEST
+#ifdef TESTPP
 char *
 preprocess(const char *filename)
 {
@@ -1020,7 +1023,7 @@ preprocess(const char *filename)
         return NULL;
     }
     pp_init(&pp);
-    pp_push_file_struct(&pp, f);
+    pp_push_file_struct(&pp, f, filename);
     pp_run(&pp);
     result = pp_finish(&pp);
     fclose(f);

@@ -68,6 +68,9 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: spin.y
 	$(YACC) -t -b $(BUILD)/spin -d spin.y
 
+preproc: preprocess.c $(UTIL)
+	$(CC) $(CFLAGS) -DTESTPP -o $@ $^ $(LIBS)
+
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
