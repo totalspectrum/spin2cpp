@@ -1115,6 +1115,8 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
 {
     IR *ir;
 
+    if (SrcOnlyHwReg(dst))
+        return NULL;
     for (ir = irl->prev; ir; ir = ir->prev) {
         if (IsDummy(ir)) {
             continue;
@@ -1156,6 +1158,8 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
     IR *ir;
     IR *saveir;
     
+    if (SrcOnlyHwReg(dst))
+        return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {
         if (IsDummy(ir)) {
             continue;
@@ -1591,7 +1595,7 @@ OptimizePeepholes(IRList *irl)
         }
         if (opc == OPC_AND && InstrSetsAnyFlags(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
-            if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst)) {
+            if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst) && !SrcOnlyHwReg(previr->src)) {
 	        ReplaceOpcode(ir, OPC_TEST);
                 ir->dst = previr->src;
                 DeleteIR(irl, previr);
