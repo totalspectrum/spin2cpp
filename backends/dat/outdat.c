@@ -288,6 +288,7 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
         return mask;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
         if (numoperands < 2) {
             ERROR(ast, "bad immediate operand to %s", instr->name);
@@ -385,7 +386,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     AST *retast;
     int immSrc = 0;
     int isRelJmp = 0;
-    
+    extern Instruction instr_p2[];
     curpc = ast->d.ival;
     ast = ast->left;
     
@@ -452,6 +453,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
         break;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
@@ -478,6 +480,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_NO_FLAGS:
     case P2_TWO_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
@@ -534,23 +537,48 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     case P2_JUMP:
         // indirect jump needs to be handled
         if (!immSrc) {
-            ERROR(line, "indirect jumps via %s not implemented yet", instr->name);
-            return;
+            char tempName[80];
+            int k;
+            strcpy(tempName, instr->name);
+            strcat(tempName, ".i"); // convert to indirect
+            k = 0;
+            while (instr_p2[k].name && strcmp(tempName, instr_p2[k].name) != 0) {
+                k++;
+            }
+            if (!instr_p2[k].name) {
+                ERROR(line, "Internal error, could not find %s\n", tempName);
+                return;
+            }
+            instr = &instr_p2[k];
+            val = val & 0xF0000000U;
+            val |= instr->binary;
+            goto instr_ok;
         }
         immmask = 0;
         dst = 0;
         // figure out if absolute or relative
         // if  crossing from COG to HUB or vice-versa,
         // make it absolute
-        isrc = EvalPasmExpr(operand[0]);
-        if ( (curpc < 0x200 && isrc >= 0x200)
-             || (curpc < 0x400 && isrc >= 0x400)
-             || (curpc >= 0x400 && isrc < 0x200)
-            )
-        {
+        // if it's of the form \xxx, which we parse as CATCH(xxx),
+        // then make it absolute
+        if (operand[0]->kind == AST_CATCH) {
+            AST *realval = operand[0]->left;
+            if (realval->kind == AST_FUNCCALL) {
+                realval = realval->left;  // correct for parser misreading
+            }
+            isrc = EvalPasmExpr(realval);
             isRelJmp = 0;
         } else {
-            isRelJmp = 1;
+            isrc = EvalPasmExpr(operand[0]);
+            if ( (curpc < 0x200 && isrc >= 0x200)
+                 || (curpc < 0x400 && isrc >= 0x400)
+                 || (curpc >= 0x400 && isrc < 0x200)
+                )
+            {
+                isRelJmp = 0;
+            } else {
+                isRelJmp = 1;
+            }
         }
         if (isRelJmp) {
             if (curpc < 0x400) {
