@@ -1633,8 +1633,8 @@ HwReg hwreg_p2[] = {
     { "iret2", 0x1f3, "IRET2" },
     { "ijmp1", 0x1f4, "IJMP1" },
     { "iret1", 0x1f5, "IRET1" },
-    { "adra", 0x1f6, "ADRA" },
-    { "adrb", 0x1f7, "ADRB" },
+    { "pa", 0x1f6, "PA" },
+    { "pb", 0x1f7, "PB" },
     { "ptra", 0x1f8, "PTRA" },
     { "ptrb", 0x1f9, "PTRB" },
 
