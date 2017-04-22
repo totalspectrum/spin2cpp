@@ -384,6 +384,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     AST *line = ast;
     char *callname;
     AST *retast;
+    AST *origast;
     int immSrc = 0;
     int isRelJmp = 0;
     extern Instruction instr_p2[];
@@ -398,6 +399,8 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     }
 
     instr = (Instruction *)ast->d.ptr;
+decode_instr:
+    origast = ast;
     val = instr->binary;
     immmask = 0;
     if (instr->opc != OPC_NOP) {
@@ -540,7 +543,7 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
             char tempName[80];
             int k;
             strcpy(tempName, instr->name);
-            strcat(tempName, ".i"); // convert to indirect
+            strcat(tempName, ".ind"); // convert to indirect
             k = 0;
             while (instr_p2[k].name && strcmp(tempName, instr_p2[k].name) != 0) {
                 k++;
@@ -550,9 +553,8 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
                 return;
             }
             instr = &instr_p2[k];
-            val = val & 0xF0000000U;
-            val |= instr->binary;
-            goto instr_ok;
+            ast = origast;
+            goto decode_instr;
         }
         immmask = 0;
         dst = 0;

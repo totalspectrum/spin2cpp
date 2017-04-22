@@ -1530,12 +1530,12 @@ instr_p2[] = {
   // indirect jumps via register
   // normally the user will write "jmp x" and the assembler
   // will recognize x is a register and rewrite it as "jmp.i x"
-  { "jmp.i" , 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
-  { "call.i", 0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "jmp.ind",0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "call.ind",0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
   { "ret",    0x0d64002d, NO_OPERANDS, OPC_GENERIC_BRANCH },
-  { "calla.i",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "calla.ind",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
   { "reta",   0x0d64002e, NO_OPERANDS, OPC_RET },
-  { "callb.i",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
+  { "callb.ind",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH },
   { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH },
 
   { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_GENERIC_BRANCH },

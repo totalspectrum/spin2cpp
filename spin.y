@@ -852,6 +852,8 @@ expr:
     { $$ = AstCatch($2); }
   | '\\' identifier
     { $$ = AstCatch(NewAST(AST_FUNCCALL, $2, NULL)); }
+  | '\\' '(' expr ')'
+    { $$ = AstCatch($3); }
   | funccall
     { $$ = $1; }
   | '-' expr %prec T_NEGATE
