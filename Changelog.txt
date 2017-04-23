@@ -1,5 +1,6 @@
 Version 3.6.2
-- fixed an optimizer bug where it tried to change INA from a src in
+- fastspin can now compile to binary for P2
+- Fixed an optimizer bug where it tried to change INA from a src in
   one instruction to a dest in another (INA as dest points to RAM
   rather than register)
 - Fixed preprocessor handling of quoted characters
