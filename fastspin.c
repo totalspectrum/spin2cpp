@@ -547,7 +547,10 @@ main(int argc, char **argv)
                 asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
             }
             OutputAsmCode(asmname, P, outputMain);
-            if (compile && !gl_p2)  {
+            if (compile)  {
+                if (gl_p2) {
+                    appendToCmd("-p2");
+                }
                 appendToCmd("-o");
                 appendToCmd(binname);
                 appendToCmd(asmname);
