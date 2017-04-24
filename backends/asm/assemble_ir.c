@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016 Total Spectrum Software Inc.
+ * Copyright 2016-2017 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -585,4 +585,10 @@ IRAssemble(IRList *list)
     ret = flexbuf_get(&fb);
     flexbuf_delete(&fb);
     return ret;
+}
+
+void
+DumpIRL(IRList *irl)
+{
+    puts(IRAssemble(irl));
 }
