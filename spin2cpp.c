@@ -500,7 +500,6 @@ main(int argc, char **argv)
         /* do type checking and deduction */
         Module *Q;
         ProcessSpinCode(P);
-        MarkUsed(P->functions);
         if (gl_errors > 0) {
             exit(1);
         }
