@@ -767,6 +767,9 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
     if (IsLabel(ir)) {
         return change;
     }
+    if (ir->opc == OPC_CALL) {
+        return change;
+    }
     if (IsBranch(ir) && !JumpIsAfterOrEqual(instr, ir)) {
       return change;
     }
