@@ -8,6 +8,9 @@ static Operand *
 CompileInlineOperand(IRList *irl, AST *expr)
 {
     Operand *r;
+    if (expr->kind == AST_IMMHOLDER || expr->kind == AST_BIGIMMHOLDER) {
+        expr = expr->left;
+    }
     if (expr->kind == AST_IDENTIFIER) {
 	 Symbol *sym = LookupSymbol(expr->d.string);
 	 if (!sym) {

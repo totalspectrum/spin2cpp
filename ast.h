@@ -136,6 +136,9 @@ enum astkind {
     AST_MASKMOVE,
     AST_MODIFIER_CONST,
     AST_MODIFIER_VOLATILE,
+
+    AST_IMMHOLDER = 96,
+    AST_BIGIMMHOLDER,
 };
 
 struct AST {

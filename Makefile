@@ -74,8 +74,8 @@ preproc: preprocess.c $(UTIL)
 clean:
 	$(RM) $(PROGS) $(BUILD)/* *.zip
 
-#test: lextest asmtest cpptest errtest p2test runtest
-test: lextest asmtest cpptest errtest runtest
+test: lextest asmtest cpptest errtest p2test runtest
+#test: lextest asmtest cpptest errtest runtest
 
 lextest: $(PROGS)
 	$(BUILD)/testlex

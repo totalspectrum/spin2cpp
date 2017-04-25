@@ -24,18 +24,14 @@ InstrSize(AST *instr)
 {
     AST *ast;
     unsigned size = 4;
-    InstrModifier *im;
     while(instr) {
         ast = instr;
         instr = instr->right;
-        if (ast && ast->kind == AST_EXPRLIST) {
+        while (ast && ast->kind == AST_EXPRLIST) {
             ast = ast->left;
         }
-        if (ast && ast->kind == AST_INSTRMODIFIER) {
-            im = (InstrModifier *)ast->d.ptr;
-            if (!strcmp(im->name, "##")) {
-                size += 4;
-            }
+        if (ast && ast->kind == AST_BIGIMMHOLDER) {
+            size += 4;
         }
     }
     return size;

@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2016 Total Spectrum Software Inc.
+// Copyright 2012-2017 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -251,25 +251,14 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
     }
 }
 
-/*
- * check immediates
- */
-static int
-isImmediate(InstrModifier *im)
-{
-    return im->name[0] == '#';
-}
-
 #define BIG_IMM_SRC 0x01
 #define BIG_IMM_DST 0x02
 #define ANY_BIG_IMM (BIG_IMM_SRC|BIG_IMM_DST)
 
 static unsigned
-ImmMask(Instruction *instr, int numoperands, AST *ast)
+ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
 {
     unsigned mask;
-    InstrModifier *mod = (InstrModifier *)ast->d.ptr;
-    bool bigImm = strcmp(mod->name, "##") == 0;
     
     if (gl_p2) {
         mask = P2_IMM_SRC;
@@ -290,15 +279,24 @@ ImmMask(Instruction *instr, int numoperands, AST *ast)
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
-        if (numoperands < 2) {
-            ERROR(ast, "bad immediate operand to %s", instr->name);
-            return 0;
-        }
-        return mask;
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
+        if (gl_p2) {
+            if (opnum == 0) {
+                mask = P2_IMM_DST;
+                if (bigImm) {
+                    mask |= BIG_IMM_DST;
+                }
+            }
+        } else {
+            if (opnum == 0) {
+                ERROR(ast, "bad immediate operand to %s", instr->name);
+                return 0;
+            }
+        }
         return mask;
     case P2_DST_CONST_OK:
+        /* uses the I bit instead of L?? */
         mask = P2_IMM_SRC;
         if (bigImm) {
             mask |= BIG_IMM_SRC;
@@ -381,11 +379,11 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     Instruction *instr;
     int numoperands, expectops;
     AST *operand[MAX_OPERANDS];
+    uint32_t opimm[MAX_OPERANDS];
     AST *line = ast;
     char *callname;
     AST *retast;
     AST *origast;
-    int immSrc = 0;
     int isRelJmp = 0;
     extern Instruction instr_p2[];
     curpc = ast->d.ival;
@@ -416,27 +414,29 @@ decode_instr:
     ast = ast->right;
     while (ast != NULL) {
         if (ast->kind == AST_EXPRLIST) {
+            uint32_t imask;
+            AST *op;
             if (numoperands >= MAX_OPERANDS) {
                 ERROR(line, "Too many operands to instruction");
                 return;
             }
-            operand[numoperands++] = ast->left;
+            if (ast->left && ast->left->kind == AST_IMMHOLDER) {
+                imask = ImmMask(instr, numoperands, false, ast);
+                op = ast->left->left;
+            } else if (ast->left && ast->left->kind == AST_BIGIMMHOLDER) {
+                imask = ImmMask(instr, numoperands, true, ast);
+                op = ast->left->left;
+            } else {
+                imask = 0;
+                op = ast->left;
+            }
+            operand[numoperands] = op;
+            opimm[numoperands] = imask;
+            immmask |= imask;
+            numoperands++;
         } else if (ast->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)ast->d.ptr;
-            if (isImmediate(mod)) {
-                // sanity check that the immediate
-                // is on the correct operand
-                immmask = ImmMask(instr, numoperands, ast);
-                if (gl_p2) {
-                    immSrc = immmask & P2_IMM_SRC;
-                    //immDst = mask & P2_IMM_DST;
-                } else {
-                    immSrc = immmask & IMMEDIATE_INSTR;
-                }
-                mask = 0;
-            } else {
-                mask = mod->modifier;
-            }
+            mask = mod->modifier;
             if (mask & 0x0003ffff) {
                 val = val & mask;
             } else {
@@ -499,7 +499,7 @@ decode_instr:
         break;
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
-        if (immSrc) {
+        if (opimm[1]) {
             isrc = EvalPasmExpr(operand[1]);
             if (isrc < 0x400) {
                 isrc *= 4;
@@ -517,7 +517,7 @@ decode_instr:
         break;
     case P2_JINT_OPERANDS:
         dst = 0;
-        if (immSrc) {
+        if (opimm[0]) {
             isrc = EvalPasmExpr(operand[0]);
             if (isrc < 0x400) {
                 isrc *= 4;
@@ -539,7 +539,7 @@ decode_instr:
         break;
     case P2_JUMP:
         // indirect jump needs to be handled
-        if (!immSrc) {
+        if (!opimm[0]) {
             char tempName[80];
             int k;
             strcpy(tempName, instr->name);
@@ -556,8 +556,8 @@ decode_instr:
             ast = origast;
             goto decode_instr;
         }
-        immmask = 0;
         dst = 0;
+        immmask = 0; // handle immediates specially for jumps
         // figure out if absolute or relative
         // if  crossing from COG to HUB or vice-versa,
         // make it absolute
@@ -591,10 +591,6 @@ decode_instr:
             val = val | (1<<20);
         } else {
             src = isrc & 0xfffff;
-        }
-        if (immmask & ANY_BIG_IMM) {
-            ERROR(line, "big immediates not yet supported for %s", instr->name);
-            immmask &= ~ANY_BIG_IMM;
         }
         goto instr_ok;
     case DST_OPERAND_ONLY:

@@ -1025,9 +1025,10 @@ operand:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
  | '#' expr
-   { $$ = AddToList(NewAST(AST_EXPRLIST, $2, NULL), AstInstrModifier(IMMEDIATE_INSTR)); }
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
  | '#' '#' expr
-   { $$ = AddToList(NewAST(AST_EXPRLIST, $3, NULL), AstInstrModifier(BIGIMM_INSTR)); }
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
+;
 
 operandlist:
    operand

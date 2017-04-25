@@ -1,0 +1,9 @@
+DAT
+	orgh	$800
+	calla	#@run
+	nop
+
+run
+	mov	0, ##@run2
+run2
+	long	0

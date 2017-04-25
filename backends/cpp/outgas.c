@@ -281,8 +281,8 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
 {
     Instruction *instr;
     AST *operand[MAX_OPERANDS];
+    int immop[MAX_OPERANDS];
     AST *sub;
-    int immflag = 0;
     int effects = 0;
     int i;
     int numoperands = 0;
@@ -309,17 +309,26 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
                 effects |= GAS_WR;
             } else if (!strcmp(mod->name, "nr")) {
                 effects |= GAS_NR;
-            } else if (!strcmp(mod->name, "#")) {
-                immflag = 1;
             } else {
                 ERROR(sub, "unknown modifier %s", mod->name);
             }
         } else if (sub->kind == AST_EXPRLIST) {
+            AST *op = sub->left;
             if (numoperands >= MAX_OPERANDS) {
                 ERROR(ast, "Too many operands to instruction");
                 return;
             }
-            operand[numoperands++] = sub->left;
+            if (op->kind == AST_IMMHOLDER) {
+                immop[numoperands] = 1;
+                op = op->left;
+            } else if (op->kind == AST_BIGIMMHOLDER) {
+                immop[numoperands] = 2;
+                op = op->left;
+            } else {
+                immop[numoperands] = 0;
+            }
+            operand[numoperands] = op;
+            numoperands++;
         } else {
             ERROR(ast, "Internal error parsing instruction");
         }
@@ -344,48 +353,38 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
             flexbuf_printf(f, " ");
         else
             flexbuf_printf(f, ", ");
-        if (immflag) {
+        if (immop[i]) {
             switch (instr->ops) {
             case CALL_OPERAND:
-                if (i == 0) {
-                    AST *ast = operand[i];
-                    Symbol *sym;
-                    char *retname;
-                    if (ast->kind != AST_IDENTIFIER) {
-                        ERROR(ast, "call instruction must be to identifier");
-                        continue;
-                    }
-                    retname = alloca(strlen(ast->d.string) + 6);
-                    sprintf(retname, "%s_ret", ast->d.string);
-                    sym = LookupSymbol(retname);
-                    if (!sym || sym->type != SYM_LABEL) {
-                        ERROR(ast, "cannot find return label %s", retname);
-                        return;
-                    }
-                    PrintSymbol(f, sym, printFlags);
-                    flexbuf_printf(f, ", #");
-                    immflag = 0;
+            {
+                AST *ast = operand[i];
+                Symbol *sym;
+                char *retname;
+                if (ast->kind != AST_IDENTIFIER) {
+                    ERROR(ast, "call instruction must be to identifier");
+                    continue;
                 }
+                retname = alloca(strlen(ast->d.string) + 6);
+                sprintf(retname, "%s_ret", ast->d.string);
+                sym = LookupSymbol(retname);
+                if (!sym || sym->type != SYM_LABEL) {
+                    ERROR(ast, "cannot find return label %s", retname);
+                    return;
+                }
+                PrintSymbol(f, sym, printFlags);
+                flexbuf_printf(f, ", #");
                 break;
+            }
             case SRC_OPERAND_ONLY:
-                if (i == 0) {
-                    flexbuf_printf(f, "#");
-                    if (instr->opc != OPC_JUMP) printFlags |= PRINTEXPR_GASIMM;
-                    immflag = 0;
-                }
+                flexbuf_printf(f, "#");
+                if (instr->opc != OPC_JUMP) printFlags |= PRINTEXPR_GASIMM;
                 break;
             case JMPRET_OPERANDS:
-                if (i == 1) {
-                    flexbuf_printf(f, "#");
-                    immflag = 0;
-                }
+                flexbuf_printf(f, "#");
                 break;
             default:
-                if (i == 1) {
-                    flexbuf_printf(f, "#");
-                    immflag = 0;
-                    printFlags |= PRINTEXPR_GASIMM;
-                }
+                flexbuf_printf(f, "#");
+                printFlags |= PRINTEXPR_GASIMM;
                 break;
             }
         }
