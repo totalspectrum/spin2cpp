@@ -316,6 +316,8 @@ SpecialRdOperand(AST *ast)
 {
     HwReg *hwreg;
     uint32_t val = 0;
+    int subval = 0;
+    int negsubval = 0;
     
     if (ast->kind == AST_OPERATOR && (ast->d.ival == T_INCREMENT
                                       || ast->d.ival == T_DECREMENT))
@@ -324,25 +326,48 @@ SpecialRdOperand(AST *ast)
             if (ast->left) {
                 ast = ast->left;
                 // a++: x110 0001
-                val = 0x61;
+                val = 0x60;
+                subval = 1;
             } else {
                 // ++a: x100 0001
                 ast = ast->right;
-                val = 0x41;
+                val = 0x40;
+                subval = 1;
             }
         } else {
             if (ast->left) {
                 ast = ast->left;
                 // a--
-                val = 0x7f;
+                val = 0x60;
+                subval = -1;
             } else {
                 // --a: x101 1111
                 ast = ast->right;
-                val = 0x5f;
+                val = 0x40;
+                subval = -1;
             }
         }
     }
-    
+
+    negsubval = subval < 0 ? -1 : 1;
+    if (ast->kind == AST_RANGEREF) {
+        AST *idx = ast->right;
+        if (idx && idx->kind == AST_RANGE) {
+            if (idx->right) {
+                ERROR(ast, "illegal ptr dereference");
+                return 0;
+            }
+            subval = EvalPasmExpr(idx->left) * negsubval;
+            if (subval < -16 || subval > 15) {
+                ERROR(ast, "ptr index out of range");
+                subval = 0;
+            }
+            ast = ast->left;
+        } else {
+            ERROR(ast, "bad ptr expression");
+            return 0;
+        }
+    }
     if (ast->kind == AST_HWREG) {
         hwreg = (HwReg *)ast->d.ptr;
         if (hwreg->addr == 0x1f8) {
@@ -353,15 +378,15 @@ SpecialRdOperand(AST *ast)
             val |= 0x180;
         } else {
             if (val) {
-                ERROR(ast, "bad increment/decrement");
+                ERROR(ast, "bad hardware reference");
             }
             return 0;
         }
     } else if (val) {
-        ERROR(ast, "bad increment/decrement");
+        ERROR(ast, "bad rdlong/wrlong pointer reference");
         return 0;
     }
-    return val;
+    return val | (subval & 0x1f);
 }
 
 /*
