@@ -1,0 +1,38 @@
+DAT
+        org     0
+        rdlong  x, ptra
+        rdlong  x, ptrb
+        rdlong  x, ++ptra
+        rdlong  x, ++ptrb
+        rdlong  x, --ptra
+        rdlong  x, --ptrb
+        rdlong  x, ptra++
+        rdlong  x, ptrb++
+        rdlong  x, ptra--
+        rdlong  x, ptrb--
+        rdlong  x, ptra[3]
+        rdlong  x, ptrb[3]
+        rdlong  x, ++ptra[3]
+        rdlong  x, ++ptrb[3]
+        rdlong  x, --ptra[3]
+        rdlong  x, --ptrb[3]
+'        rdlong  x, ptra++[3]
+'        rdlong  x, ptrb++[3]
+'        rdlong  x, ptra--[3]
+'        rdlong  x, ptrb--[3]
+        rdlong  x, ptra[-3]
+
+   WRLONG  regx,ptra++ 'PUSHA   reg/#
+   WRLONG  regx,ptrb++ 'PUSHB   reg/#
+   RDLONG  regx,--ptra 'POPA    reg
+   RDLONG  regx,--ptrb 'POPB    reg
+
+   CALLD   INB,INB     WC,WZ 'reti0
+   CALLD   INB,$1F5    WC,WZ 'reti1
+   CALLD   INB,$1F3    WC,WZ 'reti2
+   CALLD   INB,$1F1    WC,WZ 'reti3
+
+regx long 0
+x    long 0
+
+
