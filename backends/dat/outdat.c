@@ -254,6 +254,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 #define BIG_IMM_SRC 0x01
 #define BIG_IMM_DST 0x02
 #define ANY_BIG_IMM (BIG_IMM_SRC|BIG_IMM_DST)
+#define DUMMY_MASK  0x80
 
 static unsigned
 ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
@@ -281,12 +282,17 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case JMPRET_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
+    case THREE_OPERANDS_BYTE:
+    case THREE_OPERANDS_NIBBLE:
+    case THREE_OPERANDS_WORD:
         if (gl_p2) {
             if (opnum == 0) {
                 mask = P2_IMM_DST;
                 if (bigImm) {
                     mask |= BIG_IMM_DST;
                 }
+            } else if (opnum == 2) {
+                mask = DUMMY_MASK; // no change to opcode
             }
         } else {
             if (opnum == 0) {
@@ -389,10 +395,29 @@ SpecialRdOperand(AST *ast)
     return val | (subval & 0x1f);
 }
 
+/* utility routine to fix up an opcode based on the #N at the end */
+uint32_t
+FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST *line, Instruction *instr)
+{
+    uint32_t NN;
+    if (!op || immflags == 0) {
+        ERROR(line, "Third operand to %s must be an immediate\n", instr->name);
+        return val;
+    }
+    op = op->left;
+    NN = EvalPasmExpr(op);
+    if (NN >= maxN) {
+        ERROR(line, "Third operand to %s must be less than %u\n", instr->name, maxN);
+        return val;
+    }
+    val |= NN << 19;
+    return val;
+}
+
 /*
  * assemble an instruction, along with its modifiers
  */
-#define MAX_OPERANDS 2
+#define MAX_OPERANDS 3
 
 void
 assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
@@ -488,6 +513,11 @@ decode_instr:
     case P2_RDWR_OPERANDS:
         expectops = 2;
         break;
+    case THREE_OPERANDS_BYTE:
+    case THREE_OPERANDS_WORD:
+    case THREE_OPERANDS_NIBBLE:
+        expectops = 3;
+        break;
     default:
         expectops = 1;
         break;
@@ -510,6 +540,7 @@ decode_instr:
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_NO_FLAGS:
     case P2_TWO_OPERANDS:
+    handle_two_operands:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
         break;
@@ -636,6 +667,15 @@ decode_instr:
         retast->d.string = callname;
         dst = EvalPasmExpr(retast);
         break;
+    case THREE_OPERANDS_NIBBLE:
+        val = FixupThreeOperands(val, operand[2], opimm[2], 8, line, instr);
+        goto handle_two_operands;
+    case THREE_OPERANDS_BYTE:
+        val = FixupThreeOperands(val, operand[2], opimm[2], 4, line, instr);
+        goto handle_two_operands;
+    case THREE_OPERANDS_WORD:
+        val = FixupThreeOperands(val, operand[2], opimm[2], 2, line, instr);
+        goto handle_two_operands;
     default:
         ERROR(line, "Unsupported instruction `%s'", instr->name);
         return;
@@ -666,7 +706,7 @@ decode_instr:
         return;
     }
 instr_ok:
-    val = val | (dst << 9) | src | immmask;
+    val = val | (dst << 9) | src | (immmask & ~0xff);
     /* output the instruction */
     outputInstrLong(f, val);
 }

@@ -1,4 +1,5 @@
 Version 3.6.3
+- Implemented 3 operand instructions like getbyte, setnib
 - Fixed another optimizer bug (forward propagation of constants was
   crossing call boundaries, which caused problems with things changed
   by the call)
