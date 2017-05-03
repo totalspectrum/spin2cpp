@@ -271,6 +271,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     }
     switch(instr->ops) {
     case P2_JUMP:
+    case P2_LOC:
     case P2_TJZ_OPERANDS:
     case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
@@ -414,6 +415,7 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
     return val;
 }
 
+    
 /*
  * assemble an instruction, along with its modifiers
  */
@@ -435,6 +437,9 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     AST *retast;
     AST *origast;
     int isRelJmp = 0;
+    int opidx;
+    bool needIndirect = false;
+    
     extern Instruction instr_p2[];
     curpc = ast->d.ival;
     ast = ast->left;
@@ -461,6 +466,7 @@ decode_instr:
     }
     /* check for modifiers and operands */
     numoperands = 0;
+    opidx = 0;
     ast = ast->right;
     while (ast != NULL) {
         if (ast->kind == AST_EXPRLIST) {
@@ -511,6 +517,7 @@ decode_instr:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
+    case P2_LOC:
         expectops = 2;
         break;
     case THREE_OPERANDS_BYTE:
@@ -593,11 +600,29 @@ decode_instr:
         dst = 0;
         src = EvalPasmExpr(operand[0]);
         break;
+    case P2_LOC:
+        dst = EvalPasmExpr(operand[0]);
+        if (dst >= 0x1f6 && dst <= 0x1f9) {
+            val |= ( (dst-0x1f6) & 0x3) << 21;
+        } else {
+            if (instr->opc == OPC_GENERIC_BRANCH) {
+                // try the .ind version
+                needIndirect = true;
+            } else {
+                ERROR(line, "bad first operand to %s instruction", instr->name);
+            }
+        }
+        opidx = 1;
+        // fall through
     case P2_JUMP:
         // indirect jump needs to be handled
-        if (!opimm[0]) {
+        if (needIndirect || !opimm[opidx]) {
             char tempName[80];
             int k;
+            if (instr->ops == P2_LOC && instr->opc != OPC_GENERIC_BRANCH) {
+                ERROR(line, "loc requires immediate operand");
+                return;
+            }
             strcpy(tempName, instr->name);
             strcat(tempName, ".ind"); // convert to indirect
             k = 0;
@@ -619,15 +644,15 @@ decode_instr:
         // make it absolute
         // if it's of the form \xxx, which we parse as CATCH(xxx),
         // then make it absolute
-        if (operand[0]->kind == AST_CATCH) {
-            AST *realval = operand[0]->left;
+        if (operand[opidx]->kind == AST_CATCH) {
+            AST *realval = operand[opidx]->left;
             if (realval->kind == AST_FUNCCALL) {
                 realval = realval->left;  // correct for parser misreading
             }
             isrc = EvalPasmExpr(realval);
             isRelJmp = 0;
         } else {
-            isrc = EvalPasmExpr(operand[0]);
+            isrc = EvalPasmExpr(operand[opidx]);
             if ( (curpc < 0x200 && isrc >= 0x200)
                  || (curpc < 0x400 && isrc >= 0x400)
                  || (curpc >= 0x400 && isrc < 0x200)

@@ -1,0 +1,11 @@
+pub start
+    return
+
+dat
+
+entry
+	org 0
+	loc	ptrb, #\(0)
+	loc	pa, #\(5)
+	
+

@@ -1357,7 +1357,7 @@ instr_p2[] = {
   { "rdword", 0x0ae00000, P2_RDWR_OPERANDS, OPC_RDWORD },
   { "rdlong", 0x0b000000, P2_RDWR_OPERANDS, OPC_RDLONG },
 
-  { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
+  { "calld.ind",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
 
   { "ijz",    0x0b400000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
   { "ijnz",   0x0b480000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
@@ -1599,6 +1599,9 @@ instr_p2[] = {
   { "call",   0x0da00000, P2_JUMP, OPC_GENERIC_BRANCH },
   { "calla",  0x0dc00000, P2_JUMP, OPC_CALL },
   { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH },
+
+  { "calld",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH },
+  { "loc",    0x0e800000, P2_LOC, OPC_GENERIC },
   
   { NULL, 0, NO_OPERANDS, OPC_GENERIC},
 };
