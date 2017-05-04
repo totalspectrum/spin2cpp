@@ -928,7 +928,9 @@ lhs: identifier
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | hwreg
   | hwreg '[' range ']'
-    { $$ = NewAST(AST_RANGEREF, $1, $3); }
+    { $$ = NewAST(AST_RANGEREF, $1, $3);
+      current->needsStdlib = 1; // range calc may invoke abs
+    }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | memref

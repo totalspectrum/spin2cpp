@@ -220,9 +220,15 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
         func = (Function *)sym->val;
         is_static = func->is_static;
     }
+    if (curfunc && curfunc->force_static && !gl_ccode) {
+        // need to call through an object
+        flexbuf_printf(f, "self->");
+    }
     /* check for object method call */
     flexbuf_printf(f, "%s(", sym->name);
-    if (gl_ccode && !is_static) {
+    if ( (gl_ccode && !is_static)
+         || (func && func->force_static)
+        ) {
         if (objsym) {
             flexbuf_printf(f, "&");
             PrintObjectSym(f, objsym, objref, PRINTEXPR_DEFAULT);

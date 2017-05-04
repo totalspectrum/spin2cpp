@@ -1,9 +1,12 @@
 Version 3.6.3
-- Implemented 3 operand instructions like getbyte, setnib
+- Fixed a bug in handling C++ methods forced to be static due to
+  their use in cognew
 - Fixed another optimizer bug (forward propagation of constants was
   crossing call boundaries, which caused problems with things changed
   by the call)
 - Fixed immediates on destinations in P2 (like rdfast #0, foo)
+- Implemented 3 operand P2 instructions like getbyte, setnib, and
+  fixed a few other missing P2 instructions
 
 Version 3.6.2
 - fastspin can now compile to binary for P2
