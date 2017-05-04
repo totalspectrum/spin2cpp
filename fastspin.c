@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2017 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -548,6 +548,10 @@ main(int argc, char **argv)
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile)  {
+                if (gl_errors > 0) {
+                    remove(binname);
+                    exit(1);
+                }
                 if (gl_p2) {
                     appendToCmd("-p2");
                 }

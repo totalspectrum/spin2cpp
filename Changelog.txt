@@ -1,4 +1,6 @@
 Version 3.6.3
+- In --asm --binary mode, delete the final output binary name if
+  compilation to assembly fails.
 - Fixed a bug in handling C++ methods forced to be static due to
   their use in cognew
 - Fixed another optimizer bug (forward propagation of constants was
