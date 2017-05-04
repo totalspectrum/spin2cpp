@@ -211,16 +211,22 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
 }
 
 /* code to print a function call to a file */
+/* localMethod is true for plain calls (like foo(x))
+   and false for object references (like bar.foo(x))
+*/
 void
 PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
 {
     int is_static = 0;
+    bool localMethod = false;
+    
     Function *func = NULL;
     if (sym->type == SYM_FUNCTION) {
         func = (Function *)sym->val;
         is_static = func->is_static;
+        localMethod = (objsym == NULL) && (objref == NULL);
     }
-    if (curfunc && curfunc->force_static && !gl_ccode) {
+    if (localMethod && curfunc && curfunc->force_static && !gl_ccode) {
         // need to call through an object
         flexbuf_printf(f, "self->");
     }
