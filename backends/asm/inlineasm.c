@@ -50,8 +50,33 @@ CompileInlineInstr(IRList *irl, AST *ast)
     Instruction *instr = (Instruction *)ast->d.ptr;
     IR *ir = NewIR(instr->opc);
     int numoperands = 0;
+    int expectops;
     ir->instr = instr;
 
+    /* parse operands and put them in place */
+    switch (instr->ops) {
+    case NO_OPERANDS:
+        expectops = 0;
+        break;
+    case TWO_OPERANDS:
+    case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_NO_FLAGS:
+    case JMPRET_OPERANDS:
+    case P2_TJZ_OPERANDS:
+    case P2_TWO_OPERANDS:
+    case P2_RDWR_OPERANDS:
+    case P2_LOC:
+        expectops = 2;
+        break;
+    case THREE_OPERANDS_BYTE:
+    case THREE_OPERANDS_WORD:
+    case THREE_OPERANDS_NIBBLE:
+        expectops = 3;
+        break;
+    default:
+        expectops = 1;
+        break;
+    }
     // check for modifiers and operands
     sub = ast->right;
     while (sub != NULL) {
@@ -98,6 +123,9 @@ CompileInlineInstr(IRList *irl, AST *ast)
 	 }
     }
 #endif
+    if (expectops != numoperands) {
+        ERROR(ast, "Wrong number of operands to inline %s: expected %d, found %d", instr->name, expectops, numoperands);
+    }
     AppendIR(irl, ir);
 }
 

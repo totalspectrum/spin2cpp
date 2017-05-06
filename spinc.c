@@ -333,7 +333,7 @@ const char p2_system_spincode[] =
     "pri waitcnt(x)\n"
     "  asm\n"
     "    addct1  x, #0\n"
-    "    waitct1 x\n"
+    "    waitct1\n"
     "  endasm\n"
     "pri cogid | rval\n"
     "  asm\n"
