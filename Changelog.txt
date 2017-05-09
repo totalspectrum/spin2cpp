@@ -1,4 +1,5 @@
 Version 3.6.4
+- Fixed compilation of getnib, getbyte instructions in P2
 - Added check for correct number of operands for instructions found in
   inline assembly
   

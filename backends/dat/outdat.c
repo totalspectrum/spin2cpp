@@ -405,7 +405,6 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
         ERROR(line, "Third operand to %s must be an immediate\n", instr->name);
         return val;
     }
-    op = op->left;
     NN = EvalPasmExpr(op);
     if (NN >= maxN) {
         ERROR(line, "Third operand to %s must be less than %u\n", instr->name, maxN);
