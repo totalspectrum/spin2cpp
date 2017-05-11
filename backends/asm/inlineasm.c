@@ -8,6 +8,7 @@ static Operand *
 CompileInlineOperand(IRList *irl, AST *expr)
 {
     Operand *r;
+    int32_t v;
     if (expr->kind == AST_IMMHOLDER || expr->kind == AST_BIGIMMHOLDER) {
         expr = expr->left;
     }
@@ -27,6 +28,9 @@ CompileInlineOperand(IRList *irl, AST *expr)
                   ERROR(expr, "Bad identifier expression %s", sym->name);
               }
               return r;
+         case SYM_CONSTANT:
+             v = EvalPasmExpr(expr);
+             return NewImmediate(v);
 	 default:
 	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
 	      return NULL;
