@@ -70,6 +70,7 @@ Usage(void)
     fprintf(stderr, "  --nofcache: disable FCACHE (same as --fcache=0)\n");
     fprintf(stderr, "  --normalize: normalize case of all identifiers\n"); 
     fprintf(stderr, "  --p2:       use Propeller 2 instructions (experimental)\n");
+    fprintf(stderr, "  --require:  require a specific version (or later) of spin2cpp\n");
     fprintf(stderr, "  --side:     create a SimpleIDE file for the C/C++ outputs\n");
     fprintf(stderr, "  -Dname=val: define a preprocessor symbol\n");
     fprintf(stderr, "  -g:         add debug info to output (original source for PASM output)\n");
@@ -290,6 +291,19 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--version", 7) || !strcmp(argv[0], "-v")) {
             printf("Spin to C++ converter version %s\n", VERSIONSTR);
             exit(0);
+        } else if (!strncmp(argv[0], "--require", 9)) {
+            const char *reqStr;
+            if (argv[0][9] == '=') {
+                reqStr = argv[0]+10;
+            } else {
+                argv++; --argc;
+                if (!argv[0]) {
+                    Usage();
+                }
+                reqStr = argv[0];
+            }
+            CheckVersion(reqStr);
+            argv++; --argc;
         } else if (!strncmp(argv[0], "--elf", 5)) {
             compile = 1;
             outputMain = 1;

@@ -4,6 +4,7 @@ Version 3.6.4
 - Fixed compilation of getnib, getbyte instructions in P2
 - Added check for correct number of operands for instructions found in
   inline assembly
+- Added a --require= option to check the version number being used
   
 Version 3.6.3
 - In --asm --binary mode, delete the final output binary name if

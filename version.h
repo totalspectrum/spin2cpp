@@ -15,4 +15,6 @@
 //#define VERSIONSTR "3.00 beta"
 #define VERSIONSTR str_(VERSION_MAJOR) "." str_(VERSION_MINOR) "." str_(VERSION_REV) BETA
 
+extern void CheckVersion(const char *string);
+
 #endif

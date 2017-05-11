@@ -1187,3 +1187,47 @@ ProcessSpinCode(Module *P)
     }
     AssignObjectOffsets(P);
 }
+
+//
+// check the version
+//
+void
+CheckVersion(const char *str)
+{
+    int majorVersion = 0;
+    int minorVersion = 0;
+    int revVersion = 0;
+
+    while (isdigit(*str)) {
+        majorVersion = 10 * majorVersion + (*str - '0');
+        str++;
+    }
+    if (*str == '.') {
+        str++;
+        while (isdigit(*str)) {
+            minorVersion = 10 * minorVersion + (*str - '0');
+            str++;
+        }
+    }
+    if (*str == '.') {
+        str++;
+        while (isdigit(*str)) {
+            revVersion = 10 * revVersion + (*str - '0');
+            str++;
+        }
+    }
+
+    if (majorVersion < VERSION_MAJOR)
+        return; // everything OK
+    if (majorVersion == VERSION_MAJOR) {
+        if (minorVersion < VERSION_MINOR)
+            return; // everything OK
+        if (minorVersion == VERSION_MINOR) {
+            if (revVersion <= VERSION_REV) {
+                return;
+            }
+        }
+    }
+    fprintf(stderr, "ERROR: required version %d.%d.%d but current version is %s\n", majorVersion, minorVersion, revVersion, VERSIONSTR);
+    exit(1);
+}

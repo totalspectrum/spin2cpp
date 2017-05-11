@@ -286,6 +286,10 @@ Spin2cpp accepts the following options:
 `--p2`
   Create output for Propeller 2. This is still experimental.
 
+`--require=M.N.K'
+  Require spin2cpp version M.N.K or later. If an earlier version number is
+  detected, an error is thrown.
+  
 `--side`
   Create a SimpleIDE project file listing the C and C++ files created. This
   also implies `--main` to create a main entry point in the top
