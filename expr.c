@@ -890,6 +890,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = (Label *)sym->val;
+                    if (gl_p2) {
+                        if (lref->asmval > 0x7ff) {
+                            // just return it as-is
+                            return intExpr(lref->asmval);
+                        }
+                    }
                     if (lref->asmval & 0x03) {
                         if (reportError)
                             ERROR(expr, "label %s not on longword boundary", sym->name);
