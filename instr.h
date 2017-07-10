@@ -151,17 +151,27 @@ enum flags {
     FLAG_WC = 2,
     FLAG_NR = 4,
     FLAG_WR = 8,
-
+    FLAG_WCZ = 0x10,
+    FLAG_ANDC = 0x20,
+    FLAG_ANDZ = 0x40,
+    FLAG_ORC = 0x80,
+    FLAG_ORZ = 0x100,
+    FLAG_XORC = 0x200,
+    FLAG_XORZ = 0x400,
+    
     // not exactly an assembler feature, but should not
     // be touched by the optimizer
-    FLAG_KEEP_INSTR = 0x80,
+    FLAG_KEEP_INSTR = 0x800,
 
     // rest of the bits are used by the optimizer
 
-    FLAG_LABEL_USED = 0x100,
-    FLAG_INSTR_NEW  = 0x200,
-    FLAG_OPTIMIZER = 0xFFFF00,
+    FLAG_LABEL_USED = 0x1000,
+    FLAG_INSTR_NEW  = 0x2000,
+    FLAG_OPTIMIZER = 0xFFF000,
 };
+
+#define FLAG_P1_STD (FLAG_WZ|FLAG_WC|FLAG_NR|FLAG_WR)
+#define FLAG_P2_STD (FLAG_WZ|FLAG_WC|FLAG_WCZ)
 
 typedef struct IRList {
     IR *head;
@@ -244,12 +254,14 @@ typedef enum InstrOps {
     THREE_OPERANDS_WORD,
 } InstrOps;
 
+
 /* structure describing a PASM instruction */
 typedef struct Instruction {
     const char *name;      /* instruction mnemonic */
     uint32_t    binary;    /* binary form of instruction */
     InstrOps    ops;       /* operand forms */
     IROpcode    opc;       /* information for optimizer */
+    uint32_t    flags;     /* allowable flags */
 } Instruction;
 
 /* instruction modifiers */
