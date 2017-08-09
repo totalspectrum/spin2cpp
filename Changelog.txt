@@ -1,4 +1,5 @@
 Version 3.6.4
+- Fix a hang with --dat --gas output
 - In P2 mode, handle hub symbols more like PNut (so usually use byte
   address rather than long address).
 - Fixed compilation of getnib, getbyte instructions in P2

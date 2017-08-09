@@ -349,6 +349,9 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     /* now print the operands */
     for (i = 0; i < numoperands; i++) {
         printFlags = PRINTEXPR_GAS | PRINTEXPR_GASOP;
+        if (!inlineAsm) {
+            printFlags |= PRINTEXPR_GASABS;
+        }
         if (i == 0)
             flexbuf_printf(f, " ");
         else
@@ -495,6 +498,7 @@ PrintConstantsGas(Flexbuf *f, Module *P, int inlineAsm)
                 break;
             case AST_ENUMSKIP:
                 PrintGasConstantDecl(f, ast->left, inlineAsm);
+                ast = ast->right;
                 break;
             case AST_COMMENTEDNODE:
                 // FIXME: these nodes are backwards, the rest of the list is on the left
