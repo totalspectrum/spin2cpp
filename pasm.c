@@ -57,7 +57,7 @@ dataListLen(AST *ast, int elemsize)
             } else if (sub->kind == AST_RANGE) {
                 int start = EvalPasmExpr(sub->left);
                 numelems = (EvalPasmExpr(sub->right) - start) + 1;
-                if (numelems < 0) {
+                if ((int)numelems < 0) {
                     ERROR(sub, "Backwards range not supported");
                     numelems = 0;
                 }
