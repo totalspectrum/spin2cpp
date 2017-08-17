@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2017 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -55,5 +55,6 @@ void PrintFloat(Flexbuf *f, int32_t v, int flags);
 int  PrintLookupArray(Flexbuf *f, AST *arr, int flags);
 void PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat);
 void PrintSymbol(Flexbuf *f, Symbol *sym, int flags);
+void PrintObjConstName(Flexbuf *f, Module *P, const char* name);
 
 #endif

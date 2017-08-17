@@ -466,7 +466,9 @@ static void
 PrintGasConstantDecl(Flexbuf *f, AST *ast, int inlineAsm)
 {
     startLine(f, inlineAsm);
-    flexbuf_printf(f, "%11s .equ    %s, ", " ", ast->d.string);
+    flexbuf_printf(f, "%11s .equ    ", " ");
+    PrintObjConstName(f, current, ast->d.string);
+    flexbuf_printf(f, ", ");
     PrintInteger(f, EvalConstExpr(ast), PRINTEXPR_DEFAULT);
     endLine(f, inlineAsm);
 }

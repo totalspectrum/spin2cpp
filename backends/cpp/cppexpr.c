@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2017 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -140,15 +140,15 @@ PrintUpper(Flexbuf *f, const char *name)
     }
 }
 
-static void
-PrintObjConstName(Flexbuf *f, Module *P, Symbol *sym)
+void
+PrintObjConstName(Flexbuf *f, Module *P, const char* symname)
 {
     if (gl_ccode || gl_gas_dat) {
         PrintUpper(f, P->classname);
         flexbuf_printf(f, "_");
-        PrintUpper(f, sym->name);
+        PrintUpper(f, symname);
     } else {
-        flexbuf_printf(f, "%s::%s", P->classname, sym->name);
+        flexbuf_printf(f, "%s::%s", P->classname, symname);
     }
 }
 
@@ -167,7 +167,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
             v = EvalConstExpr((AST *)sym->val);
             PrintInteger(f, v, flags);
         } else if (gl_ccode || gl_gas_dat) {
-            PrintObjConstName(f, current, sym);
+            PrintObjConstName(f, current, sym->name);
         } else {
             flexbuf_printf(f, "%s", sym->name);
         }
@@ -1385,7 +1385,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             AST *objast = (AST *)objsym->val;
             Module *P = (Module *)objast->d.ptr;
             
-            PrintObjConstName(f, P, sym);
+            PrintObjConstName(f, P, sym->name);
         }
         break;
     case AST_CATCH:

@@ -1,4 +1,5 @@
 Version 3.6.4
+- Fixed output of const symbols in gas mode
 - Fix a hang with --dat --gas output
 - In P2 mode, handle hub symbols more like PNut (so usually use byte
   address rather than long address).
