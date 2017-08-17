@@ -7,7 +7,7 @@
 #define VERSION_MAJOR 3
 #define VERSION_MINOR 6
 #define VERSION_REV   4
-#define BETA "-beta"
+//#define BETA "-beta"
 #ifndef BETA
 #define BETA ""
 #endif
