@@ -361,7 +361,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     }
 }
 
-Operand *NewOperand(enum Operandkind k, const char *name, int value)
+Operand *NewOperand(enum Operandkind k, const char *name, intptr_t value)
 {
     Operand *R = (Operand *)malloc(sizeof(*R));
     memset(R, 0, sizeof(*R));

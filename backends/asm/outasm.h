@@ -25,7 +25,7 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 //
 // functions for operand manipulation
 //
-Operand *NewOperand(enum Operandkind, const char *name, int val);
+Operand *NewOperand(enum Operandkind, const char *name, intptr_t val);
 Operand *NewImmediate(int32_t val);
 Operand *NewImmediatePtr(const char *name, Operand *val);
 Operand *NewCodeLabel();  // use only while compiling a function
