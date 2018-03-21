@@ -1,3 +1,6 @@
+Version 3.6.5
+- Fixed asm output segmentation fault on Debian 64 bit
+
 Version 3.6.4
 - Fixed output of const symbols in gas mode
 - Fix a hang with --dat --gas output

@@ -3049,7 +3049,7 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int
       case REG_HUBPTR:
       case REG_COGPTR:
           EmitLabel(datairl, g[i].op);
-          EmitLongPtr(datairl, (Operand *)g[i].op->val);
+          EmitLongPtr(datairl, (Operand *)g[i].val);
           break;
       case IMM_INT:
           EmitLabel(datairl, g[i].op);
