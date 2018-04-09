@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -73,7 +73,7 @@ double gl_start_time;
 static void
 PrintInfo(void)
 {
-    fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2016 Total Spectrum Software Inc.\n");
+    fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2018 Total Spectrum Software Inc.\n");
     fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
     fflush(stderr);
 }
