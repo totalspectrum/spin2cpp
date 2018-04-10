@@ -1,4 +1,5 @@
 Version 3.6.5
+- Minor tweak to LMM return code
 - Fixed asm output segmentation fault on Debian 64 bit
 
 Version 3.6.4

@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016 Total Spectrum Software Inc.
+// Copyright 2016-2018 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -3503,6 +3503,10 @@ static const char *builtin_lmm_p1 =
     "LMM_JUMP\n"
     "    rdlong pc, pc\n"
     "    jmp    #LMM_LOOP\n"
+    "LMM_RET\n"
+    "    sub    sp, #4\n"
+    "    rdlong pc, sp\n"
+    "    jmp    #LMM_LOOP\n"
     "LMM_CALL_FROM_COG\n"
     "    wrlong  hubretptr, sp\n"
     "    add     sp, #4\n"
@@ -3530,7 +3534,7 @@ static const char *builtin_lmm_p1 =
     "    mov    0-0, LMM_jmptop\n"
     "a_fcachego\n"
     "    mov    LMM_ADDR, ADDR\n"
-    "    jmpret LMM_RET,#LMM_FCACHE_START\n"
+    "    jmpret LMM_RETREG,#LMM_FCACHE_START\n"
     "a_fcachegoaddpc\n"
     "    add    pc, COUNT\n"
     "    jmp    #a_fcachego\n"
@@ -3539,7 +3543,7 @@ static const char *builtin_lmm_p1 =
     "inc_dest1\n"
     "    long (1<<9)\n"
     "LMM_LEAVE_CODE\n"
-    "    jmp LMM_RET\n"
+    "    jmp LMM_RETREG\n"
     "LMM_ADDR\n"
     "    long 0\n"
     "ADDR\n"
@@ -3979,7 +3983,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // COG bss
     // FCACHE space
     if (HUB_CODE) {
-        EmitNamedCogLabel(&cogbss, "LMM_RET");
+        EmitNamedCogLabel(&cogbss, "LMM_RETREG");
         EmitReserve(&cogbss, 1, COG_RESERVE);
         EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
         EmitReserve(&cogbss, gl_fcache_size+1, COG_RESERVE);

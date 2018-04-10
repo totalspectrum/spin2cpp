@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2017 Total Spectrum Software Inc.
+ * Copyright 2016-2018 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -407,9 +407,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
                 return;
             } else if (lmmMode) {
                 PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "sub\tsp, #4\n");
-                PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "rdlong\tpc, sp\n");
+                flexbuf_addstr(fb, "jmp\t#LMM_RET\n");
                 return;
             }
         default:
