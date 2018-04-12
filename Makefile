@@ -1,6 +1,6 @@
 #
 # Makefile for spin compiler
-# Copyright (c) 2011-2016 Total Spectrum Software Inc.
+# Copyright (c) 2011-2018 Total Spectrum Software Inc.
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
@@ -9,6 +9,8 @@
 # which Linux distribution you are using (e.g. ubuntu uses
 # "i586-mingw32msvc-gcc" for mingw, whereas Debian uses
 # "i686-w64-mingw32-gcc"
+#
+# to build a release .zip, do "make zip" and "make spincvt.zip"
 #
 
 ifeq ($(CROSS),win32)
