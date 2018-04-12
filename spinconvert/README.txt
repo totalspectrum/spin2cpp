@@ -1,6 +1,6 @@
 Spin Converter
 ==============
-Copyright 2011-2016 Total Spectrum Software Inc.
+Copyright 2011-2018 Total Spectrum Software Inc.
 See COPYING for terms of redistribution
 
 This is a simple Spin to PASM (or C/C++) converter. It should be able
@@ -23,16 +23,32 @@ executable .binary. To do this select the "Make binary" option under
 the Options menu. This always works for PASM output, and will work
 for C/C++ output only if you have PropGCC installed. The result has the
 same name as the PASM output file, but with an extension of
-".binary". To run this binary file on your Propeller hardware you will
-have to use the Propeller Tool or some similar IDE, or use the
-propeller-load command line tool from PropGCC.
+".binary". To run this binary file on your Propeller hardware you can
+use the Propeller Tool or some similar IDE, or use the
+propeller-load command line tool from PropGCC. Alternatively, you
+can select "Run on device" from the "Run" menu, which will launch
+propeller-load automatically.
 
-Also under the Options menu is a selection for "LMM mode". If "LMM mode"
-is on, then the PASM output is run in "Large Memory Model", which
-means that the code is actually placed in Hub memory. This means you
+Also under the Options menu are selection for "PASM Options..." and
+"C/C++ Options...".
+
+The PASM options dialog box contains selectors for whether code goes
+in Cog memory or Hub memory. If the code goes in Hub memory then you
 can run larger Spin programs (the output doesn't have to fit in the
 tiny Cog memory!) but comes at a cost: reading instructions from Hub
-memory slows the program down by about 4x.
+memory slows the program down by about 4x. There's also a selection
+for placing data in Cog or Hub memory; normally data should go in Hub
+memory, as doing byte or word access in Cog memory is not possible.
+
+Under C/C++ Options are selections for how to handle the DAT section
+(converting PASM assembler syntax to GAS syntax, or else compiling the
+DAT to an array of bytes 'binary blob') and how to handle variable
+names (Spin is case insensitive, whereas C is case sensitive, so all
+Spin variable names have to be converted to some standard form; either
+the case the variable is spelled with originally, or a "normalized"
+form as described in the spin2cpp documentation). There is also a
+checkbox asking spin2cpp to try to guess at C types; without this the
+compiler will use int32_t for all types, even pointers.
 
 The filename for the output is set automatically by
 changing the extension of the Spin file. For example, if the input is
