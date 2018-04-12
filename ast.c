@@ -132,7 +132,7 @@ AstUses(AST *a, AST *b)
     if (!b) return 1;
     if (!a) return 0;
     if (AstMatch(a, b)) return 1;
-    return AstMatch(a->left, b) || AstMatch(a->right, b);
+    return AstUses(a->left, b) || AstUses(a->right, b);
 }
 
 /* create an integer */
