@@ -67,9 +67,17 @@ fastspin
 
 fastspin is a simple interface to the SPIN -> PASM converter. It acts very
 much like openspin, including mimicking its console output, so that it
-can easily be used in IDEs in place of openspin. As an alternative, it
-can also mimic the bstc command line compiler, if it is named something that
-starts with the letters "bstc" (e.g. "bstc.fastspin").
+can easily be used in IDEs in place of openspin. The basic usage is
+
+    fastspin file.spin
+
+which will produce `file.binary`, an executable which may be downloaded
+to the Propeller. There are various options, use `fastspin -h` to see them
+all.
+
+As an alternative, fastspin can also mimic the bstc command line
+compiler, if it is named something that starts with the letters "bstc"
+(e.g. "bstc.fastspin").
 
 spin2cpp
 --------
