@@ -433,6 +433,45 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             }
         }
         return NULL;
+    case AST_OPERATOR:
+        if (val->d.ival == '*') {
+            // CONST * index or index * CONST may be
+            // strength reduced to adding CONST to the index each time
+            AST *constval;
+            AST *indexval;
+            AST *loopstep;
+            int32_t stepval;
+            if (IsConstExpr(val->left)) {
+                constval = val->left;
+                indexval = val->right;
+            } else if (IsConstExpr(val->right)) {
+                constval = val->right;
+                indexval = val->left;
+            } else {
+                return NULL;
+            }
+            stepval = EvalConstExpr(constval);
+            loopstep = FindLoopStep(lvs, indexval, basename);
+            if (!loopstep || !IsConstExpr(loopstep))
+                return NULL;
+            if (!*basename) return NULL;
+            stepval = stepval * EvalConstExpr(loopstep);
+            if (stepval >= 0) {
+                return AstInteger(stepval);
+            } else {
+                return AstOperator(T_NEGATE, NULL, AstInteger(-stepval));
+            }
+        } else if (val->d.ival == '-') {
+            // C - indexval may be strength reduced
+            if (IsConstExpr(val->left)) {
+                AST *loopstep = FindLoopStep(lvs, val->right, basename);
+                if (!loopstep || !IsConstExpr(loopstep) || !*basename) {
+                    return NULL;
+                }
+                return AstOperator(T_NEGATE, NULL, loopstep);
+            }
+        }
+        return NULL;
     default:
         return NULL;
     }

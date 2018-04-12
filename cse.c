@@ -445,6 +445,9 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
+        if (IsConstExpr(ast)) {
+            return newflags;
+        }
         switch(ast->d.ival) {
         case T_OR:
         case T_AND:

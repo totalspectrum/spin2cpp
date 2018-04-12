@@ -1,3 +1,7 @@
+Version 3.7.0
+- Added strength reduction for multiplication and subtraction
+- Convert more loops to use djnz
+
 Version 3.6.6
 - Minor tweak to LMM return code
 - Use bstc mode in fastspin only if the program name starts with bstc
