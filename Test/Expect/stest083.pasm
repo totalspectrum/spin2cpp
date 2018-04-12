@@ -6,17 +6,13 @@ entry
 
 _inc
 	mov	_var_03, objptr
-	mov	_var_02, #0
-L__0003
-	cmps	_var_02, #9 wc,wz
- if_a	jmp	#L__0005
+	mov	_var_02, #10
+L__0006
 	rdlong	_var_04, _var_03
 	add	_var_04, arg1
 	wrlong	_var_04, _var_03
-	add	_var_02, #1
 	add	_var_03, #4
-	jmp	#L__0003
-L__0005
+	djnz	_var_02, #L__0006
 _inc_ret
 	ret
 

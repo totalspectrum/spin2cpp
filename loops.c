@@ -641,6 +641,127 @@ doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
 }
 
 //
+// convert a <= b to a < b+1
+// and a <= b-1 to a < b
+// leave a < b alone
+//
+AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
+{
+    if (IsConstExpr(oldLimit) || oldLimit->kind == AST_IDENTIFIER) {
+        // a constant expression is always good
+        if (updateTestOp == T_LE) {
+            oldLimit = AstOperator('+', oldLimit, AstInteger(1));
+        }
+        return oldLimit;
+    }
+    if (updateTestOp != T_LE) {
+        return NULL;
+    }
+    // only accept very simple expressions
+    if (oldLimit->kind == AST_OPERATOR && oldLimit->d.ival == '-') {
+        int32_t offset;
+        if (oldLimit->left->kind != AST_IDENTIFIER) {
+            return NULL;
+        }
+        if (!IsConstExpr(oldLimit->right)) {
+            return NULL;
+        }
+        offset = EvalConstExpr(oldLimit->right);
+        if (offset == 1) {
+            return oldLimit->left;
+        }
+        oldLimit->right = AstInteger(offset - 1);
+        return oldLimit;
+    }
+    return NULL;
+}
+
+//
+// check for "simple" loops (like "repeat i from 0 to 9") these may be further
+// optimized into "repeat 10" if we discover that the loop index is not
+// used inside the body
+//
+static void
+CheckSimpleLoop(AST *stmt)
+{
+    AST *condtest;
+    AST *updateparent;
+    AST *update;
+    AST *body;
+    AST *initial;
+    AST *updateVar = NULL;
+    AST *updateInit = NULL;
+    AST *updateLimit = NULL;
+    AST *newInitial = NULL;
+    int updateTestOp = 0;
+    int32_t initVal;
+    
+    initial = stmt->left;
+    condtest = stmt->right;
+    updateparent = condtest->right;
+    condtest = condtest->left;
+    body = updateparent->right;
+    update = updateparent->left;
+    updateVar = NULL;
+
+    /* check initial assignment */
+    if (initial->kind != AST_ASSIGN)
+        return;
+    updateVar = initial->left;
+    if (updateVar->kind != AST_IDENTIFIER)
+        return;
+    updateInit = initial->right;
+    if (!IsConstExpr(updateInit))
+        return;
+    /* must start at 0 (for now) */
+    initVal = EvalConstExpr(updateInit);
+    if (initVal != 0) {
+        return;
+    }
+    /* check condition */
+    if (condtest->kind != AST_OPERATOR)
+        return;
+
+    updateTestOp = condtest->d.ival;
+    updateLimit = condtest->right;
+    if (updateTestOp == T_LE || updateTestOp == '<') {
+        newInitial = GetRevisedLimit(updateTestOp, updateLimit);
+    } else {
+        return;
+    }
+    if (!AstMatch(updateVar, condtest->left))
+        return;
+
+    /* check that the update is i++, and the variable is not used anywhere else */
+    while (update->kind == AST_SEQUENCE) {
+        if (AstUses(update->right, updateVar)) {
+            return;
+        }
+        update = update->left;
+    }
+    if (update->kind != AST_OPERATOR || update->d.ival != T_INCREMENT) {
+        return;
+    }
+    if (!AstMatch(update->left, updateVar) && !AstMatch(update->right, updateVar)) {
+        return;
+    }
+    /* if i is used inside the loop, bail */
+    if (AstUses(body, updateVar)) {
+        return;
+    }
+    
+    /* flip the update to -- */
+    update->d.ival = T_DECREMENT;
+    /* change the initialization */
+    initial = AstAssign(T_ASSIGN, updateVar, newInitial);
+    condtest = AstOperator(T_NE, updateVar, AstInteger(0));
+
+    /* update statement */
+    stmt->left = initial;
+    stmt->right->left = condtest;
+}
+
+//
 // optimize a statement list
 // "lvs" keeps track of current variable assignments
 // so we (may) know some of the initial values of
@@ -696,6 +817,10 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
                 updateparent->left = update;
             }
             pull = doLoopHelper(lvs, initial, condtest, update, body);
+            // now that we (may have) hoisted some things out of the loop,
+            // see if we can rewrite the loop initial and conditions
+            // to use djnz
+            CheckSimpleLoop(stmt);
             break;
         }
         default:
@@ -705,6 +830,8 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
     loop_next:
         list = list->right;
         if (pull) {
+            // we pulled some statements out of the loop body and
+            // need to put them before the loop
             stmt = NewAST(AST_STMTLIST, stmt, NULL);
             pull = AddToList(pull, stmt);
             stmtptr->left = pull;
