@@ -422,7 +422,37 @@ static void doASTDump(AST *ast, int indent)
         if (ast->d.ival >= 32 && ast->d.ival <= 126) {
             sprintf(buf, "<operator '%c'>", ast->d.ival);
         } else {
-            sprintf(buf, "<operator #%d>", ast->d.ival);
+            const char *opString = NULL;
+            switch(ast->d.ival) {
+            case T_GE:
+                opString = ">=";
+                break;
+            case T_LE:
+                opString = "<=";
+                break;
+            case T_NE:
+                opString = "<>";
+                break;
+            case T_EQ:
+                opString = "==";
+                break;
+            case T_INCREMENT:
+                opString = "++";
+                break;
+            case T_DECREMENT:
+                opString = "--";
+                break;
+            case T_DOUBLEAT:
+                opString = "@@";
+                break;
+            default:
+                sprintf(buf, "<operator #%d>", ast->d.ival);
+                break;
+            }
+            if (opString) {
+                sprintf(buf, "<operator '%s'>", opString);
+                break;
+            }
         }
         astname = "operator";
         break;
