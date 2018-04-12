@@ -71,17 +71,27 @@ const char *gl_outname = NULL;
 double gl_start_time;
 
 static void
-PrintInfo(void)
+PrintInfo(int bstcMode)
 {
-    fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2018 Total Spectrum Software Inc.\n");
-    fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
+    if (bstcMode) {
+        fprintf(stderr, "FastSpin Compiler v" VERSIONSTR " - Copyright 2011-2018 Total Spectrum Software Inc.\n");
+        fprintf(stderr, "Compiled on: " __DATE__ "\n");
+        
+    } else {
+        fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2018 Total Spectrum Software Inc.\n");
+        fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
+    }
     fflush(stderr);
 }
 
 static void
-Usage(void)
+Usage(int bstcMode)
 {
-    fprintf(stderr, "usage: %s\n", gl_progname);
+    if (bstcMode) {
+        fprintf(stderr, "Program usage :- %s (Options) Filename[.spin]\n", gl_progname);
+    } else {
+        fprintf(stderr, "usage: %s\n", gl_progname);
+    }
     fprintf(stderr, "  [ -h ]              display this help\n");
     fprintf(stderr, "  [ -L or -I <path> ] add a directory to the include path\n");
     fprintf(stderr, "  [ -o ]             output filename\n");
@@ -91,9 +101,10 @@ Usage(void)
     fprintf(stderr, "  [ -f ]             output list of file names\n");
     fprintf(stderr, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
     fprintf(stderr, "  [ -p ]             disable the preprocessor\n");
+    fprintf(stderr, "  [ -D <define> ]    add a define\n");
+    fprintf(stderr, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
     fprintf(stderr, "  [ -O ]             enable extra optimizations\n");
-    fprintf(stderr, "  [ -D <define> ]    add a define\n");
     fflush(stderr);
     exit(2);
 }
@@ -254,7 +265,17 @@ main(int argc, char **argv)
         gl_progname = argv[0];
         argv++; --argc;
     }
-    bstcMode = (strstr(gl_progname, "bstc") != 0);
+    // check for name starting with "bstc"
+    {
+        const char *nameRoot;
+        nameRoot = gl_progname;
+        while (*nameRoot != 0) nameRoot++;
+        while (nameRoot > gl_progname && nameRoot[-1] != '/' && nameRoot[-1] != '\\') --nameRoot;
+        
+        if (strncmp(nameRoot, "bstc", 4) == 0) {
+            bstcMode = 1;
+        }
+    }
     gl_normalizeIdents = 1;
     compile = 1;
     outputMain = 1;
@@ -273,7 +294,7 @@ main(int argc, char **argv)
     while (argv[0] && argv[0][0] != 0) {
         if (argv[0][0] != '-') {
             if (target) {
-                Usage();
+                Usage(bstcMode);
             }
             target = argv[0];
             argv++; argc--;
@@ -289,7 +310,7 @@ main(int argc, char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
                 fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
-                Usage();
+                Usage(bstcMode);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--code=", 7)) {
@@ -299,7 +320,7 @@ main(int argc, char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_CODE;
             } else {
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
-                Usage();
+                Usage(bstcMode);
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
@@ -319,12 +340,15 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[0], "-q")) {
             quiet = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-u")) {
+            // ignore -u, we always eliminate unused methods
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-2")) {
             gl_p2 = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
-            PrintInfo();
-            Usage();
+            PrintInfo(bstcMode);
+            Usage(bstcMode);
             exit(0);
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
@@ -435,15 +459,15 @@ main(int argc, char **argv)
             argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
-            Usage();
+            Usage(bstcMode);
         }
     }
 
     if (!quiet) {
-        PrintInfo();
+        PrintInfo(bstcMode);
     }
     if (target == NULL) {
-        Usage();
+        Usage(bstcMode);
     }
 
     /* add some predefined symbols */

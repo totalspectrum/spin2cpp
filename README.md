@@ -62,7 +62,19 @@ details.
 COMMAND LINE USAGE
 ==================
 
-spin2cpp is the command line tool. To use it, just give the name of the
+fastspin
+--------
+
+fastspin is a simple interface to the SPIN -> PASM converter. It acts very
+much like openspin, including mimicking its console output, so that it
+can easily be used in IDEs in place of openspin. As an alternative, it
+can also mimic the bstc command line compiler, if it is named something that
+starts with the letters "bstc" (e.g. "bstc.fastspin").
+
+spin2cpp
+--------
+
+spin2cpp is the general command line tool. To use it, just give the name of the
 .spin file it should convert, e.g:
 
     spin2cpp test.spin
@@ -316,7 +328,8 @@ Spin2cpp accepts the following options:
 EXTENSIONS
 ==========
 
-spin2cpp supports a few extensions to the Spin language:
+spin2cpp (and fastspin, which is just a different interface to spin2cpp)
+supports a few extensions to the Spin language:
 
 (1) spin2cpp has a pre-processor that understands `#include`, `#define`, and
 `#ifdef / #ifndef / #else / #endif`. There are several predefined symbols:
@@ -395,10 +408,10 @@ by a human programmer. Some of the things to watch out for:
 (1) Without `--gas`, DAT sections are turned into binary blobs
     (which are not maintainable). --gas helps this a lot.
 
-(2) Code only uses one type (`int32_t`) cast to pointer as necessary;
-    idiomatic C would use pointer types from the start. The `--ctypes`
-    flag to spin2cpp tries to guess at types, and so improves the code
-    quality somewhat, but still needs some work.
+(2) By default, code only uses one type (`int32_t`) cast to pointer as
+    necessary; idiomatic C would use pointer types from the start. The
+    `--ctypes` flag to spin2cpp tries to guess at types, and so
+    improves the code quality somewhat, but still needs some work.
 
 (3) Local variable names get lost when spin2cpp decides it has to
     force the variables into a local array (for example if the address

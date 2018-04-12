@@ -1,5 +1,8 @@
-Version 3.6.5
+Version 3.6.6
 - Minor tweak to LMM return code
+- Use bstc mode in fastspin only if the program name starts with bstc
+
+Version 3.6.5
 - Fixed asm output segmentation fault on Debian 64 bit
 
 Version 3.6.4
