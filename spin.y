@@ -1102,12 +1102,25 @@ modifierlist:
 void
 yyerror(const char *msg)
 {
+    extern int saved_yychar;
+    int yychar = saved_yychar;
+    
     fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+
+    // massage bison's error messages to make them easier to understand
     while (*msg) {
+        // say which identifier was unexpected
         if (!strncmp(msg, "unexpected identifier", strlen("unexpected identifier")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
             fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
             msg += strlen("unexpected identifier");
-        } else {
+        }
+        // if we get a stray character in source, sometimes bison tries to treat it as a token for
+        // error purposes, resulting in $undefined as the token
+        else if (!strncmp(msg, "$undefined", strlen("$undefined")) && yychar >= ' ' && yychar < 127) {
+            fprintf(stderr, "%c", yychar);
+            msg += strlen("$undefined");
+        }
+        else {
             fprintf(stderr, "%c", *msg);
             msg++;
         }

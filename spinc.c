@@ -73,11 +73,13 @@ struct preprocess gl_pp;
 // process a module after parsing it
 static void ProcessModule(Module *P);
 
+int saved_yychar;
+
 int
 yylex(YYSTYPE *yval)
 {
     int c;
-    c = getToken(&current->L, yval);
+    saved_yychar = c = getToken(&current->L, yval);
     if (c == T_EOF)
         return 0;
     return c;
