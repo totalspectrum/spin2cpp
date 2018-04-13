@@ -29,10 +29,11 @@ which may modify the compilation:
   [ -f ]             output list of file names
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
-  [ -2 ]             compile for Prop2
   [ -O ]             enable additional optimizations
   [ -D <define> ]    add a define
-
+  [ -2 ]             compile for Prop2
+  [ --code=cog  ]    compile to run in COG memory instead of HUB
+  
 The -2 option is new: it is for compiling for the Propeller 2 (FPGA
 version). The output code may not may not work properly on any given
 FPGA image, because the Prop2 is a moving target.

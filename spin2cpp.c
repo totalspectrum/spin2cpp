@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -49,7 +49,7 @@ Usage(void)
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
-    fprintf(stderr, "  --cse:     perform common subexpression optimization (experimental)\n");
+    fprintf(stderr, "  --cse:     perform common subexpression optimizations on C code\n");
     fprintf(stderr, "  --cc=CC:   use CC as the C++ compiler instead of PropGCC\n");
     fprintf(stderr, "  --code=x : PASM output only: control placement of code\n");
     fprintf(stderr, "             x can be cog (default) or hub (for LMM)\n");
@@ -65,6 +65,7 @@ Usage(void)
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --noheader: skip the normal comment about spin2cpp version\n");
+    fprintf(stderr, "  --nocse:   disable common subexpression optimizations on PASM code\n");
     fprintf(stderr, "  --noopt:   turn off all optimization in PASM output\n");
     fprintf(stderr, "  --nopre:   do not run preprocessor on the .spin file\n");
     fprintf(stderr, "  --nofcache: disable FCACHE (same as --fcache=0)\n");
@@ -138,7 +139,7 @@ static void
 appendToCmd(const char *s)
 {
     if (cmdline[0] != 0)
-      appendWithoutSpace(" ", 0);
+        appendWithoutSpace(" ", 0);
     appendWithoutSpace(s, 1);
 }
 
@@ -175,7 +176,8 @@ main(int argc, char **argv)
     time_t timep;
     int i;
     const char *outname = NULL;
-
+    int wantcse = -1;
+    
     /* Initialize the global preprocessor; we need to do this here
        so that the -D command line option can define preprocessor
        symbols. The rest of initialization happens after command line
@@ -243,9 +245,13 @@ main(int argc, char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--noopt", 5) ) {
             gl_optimize_flags |= OPT_NO_ASM;
+            wantcse = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--cse", 5) ) {
-            gl_optimize_flags |= OPT_PERFORM_CSE;
+            wantcse = 1;
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--nocse", 7) ) {
+            wantcse = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--asm", 5) ) {
             outputAsm = 1;
@@ -465,6 +471,21 @@ main(int argc, char **argv)
             Usage();
         }
     }
+    if (wantcse < 0) {
+        switch (gl_output) {
+        case OUTPUT_C:
+        case OUTPUT_CPP:
+            wantcse = 0;
+            break;
+        default:
+            wantcse = 1;
+            break;
+        }
+    }
+    if (wantcse) {
+        gl_optimize_flags |= OPT_PERFORM_CSE;
+    }
+    
     if (argv[0] == NULL || (argc != 1 && !compile)) {
         fprintf(stderr, "Spin to C++ converter version %s\n", VERSIONSTR);
         Usage();

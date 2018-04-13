@@ -219,10 +219,9 @@ Spin2cpp accepts the following options:
   internally, but in C it has to be exposed explicitly.
 
 `--cse`
-  Enable common subexpression elimination. This optimization may be
-  useful for ASM output, but it is still experimental and does not always
-  help performance. It's not really useful for C output, since GCC already
-  can do this.
+  Enable common subexpression elimination. This optimization is the default
+  for ASM output. It's not usually useful for C output, since most C
+  compilers can already do this.
 
 `--ctypes`
   Attempt to infer C types for parameters, object variables, and functions,
@@ -286,6 +285,12 @@ Spin2cpp accepts the following options:
 `--main`
   Automatically add a C or C++ main() function that will invoke the default
   Spin method. Use this on top level objects only. 
+
+`--nocse`
+  Disable common subexpression elimination. This will turn off just
+  the common subexpression optimization for ASM output. CSE is
+  probably the riskiest of the optimizations performed by spin2cpp, so
+  this flag may help if you find a bug in the compiler.
 
 `--nopre`
   Skip the preprocessor. Normally spin2cpp runs a very simple

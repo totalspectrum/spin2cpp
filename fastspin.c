@@ -105,6 +105,7 @@ Usage(int bstcMode)
     fprintf(stderr, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
     fprintf(stderr, "  [ -O ]             enable extra optimizations\n");
+    fprintf(stderr, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fflush(stderr);
     exit(2);
 }
@@ -281,7 +282,7 @@ main(int argc, char **argv)
     outputMain = 1;
     outputBin = 1;
     outputAsm = 1;
-    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS);
+    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS|OPT_PERFORM_CSE);
     appendCompiler(gl_progname);
     appendToCmd("-q");
     appendToCmd("--dat");
