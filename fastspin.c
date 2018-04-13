@@ -110,77 +110,6 @@ Usage(int bstcMode)
     exit(2);
 }
 
-#define MAX_CMDLINE 4096
-static char cmdline[MAX_CMDLINE];
-
-#define needsquote(x) (needEscape && ((x) == ' '))
-
-static void
-appendWithoutSpace(const char *s, int needEscape)
-{
-    int len = 0;
-    const char *src = s;
-    char *dst = cmdline;
-    int c;
-    int addquote = 0;
-
-    // move dst to the end of cmdline, and count up
-    // the size
-    while (*dst) {
-      dst++;
-      len++;
-    }
-    // check to see if "s" contains any spaces; if so,
-    // we will have to escape those
-    while (*s) {
-      if (needEscape && needsquote(*s))
-	addquote = 1;
-      s++;
-      len++;
-    }
-    if (addquote) len += 2;
-    if (len >= MAX_CMDLINE) {
-        fprintf(stderr, "command line too long: aborting");
-	exit(2);
-    }
-    // now actually copy it in
-    if (addquote)
-      *dst++ = '"';
-    do {
-      c = *src++;
-      if (!c) break;
-      *dst++ = c;
-    } while (c);
-    if (addquote)
-      *dst++ = '"';
-    *dst++ = 0;
-}
-
-static void
-appendToCmd(const char *s)
-{
-    if (cmdline[0] != 0)
-      appendWithoutSpace(" ", 0);
-#ifdef WIN32
-    else
-        appendWithoutSpace("\"", 0);
-#endif
-    appendWithoutSpace(s, 1);
-}
-
-static void
-appendCompiler(const char *ccompiler)
-{
-    cmdline[0] = 0;
-    if (!ccompiler) {
-        ccompiler = getenv("CC");
-    }
-    if (!ccompiler) {
-        ccompiler = "propeller-elf-gcc";
-    }
-    appendToCmd(ccompiler);
-}
-
 void
 PrintFileSize(const char *fname)
 {
@@ -283,10 +212,6 @@ main(int argc, char **argv)
     outputBin = 1;
     outputAsm = 1;
     gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS|OPT_PERFORM_CSE);
-    appendCompiler(gl_progname);
-    appendToCmd("-q");
-    appendToCmd("--dat");
-    appendToCmd("--binary");
     
     // put everything in HUB by default
     gl_outputflags &= ~OUTFLAG_COG_DATA;
@@ -361,14 +286,6 @@ main(int argc, char **argv)
                 useEeprom = 1;
             }
             gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
-            if (gl_output == OUTPUT_ASM) {
-                appendCompiler(gl_progname);
-                appendToCmd("--dat");
-                appendToCmd(argv[0]);
-                appendToCmd("-q");
-            } else {
-                appendCompiler(NULL);
-            }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
             gl_preprocess = 0;
@@ -389,9 +306,6 @@ main(int argc, char **argv)
             }
 	    gl_outname = outname = strdup(opt);
         } else if (!strncmp(argv[0], "-g", 2)) {
-            if (compile) {
-                appendToCmd(argv[0]);
-            }
             argv++; --argc;
             gl_debug = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
@@ -411,11 +325,6 @@ main(int argc, char **argv)
                 argv++; --argc;
             } else {
                 opt += 2;
-            }
-            /* if we are compiling, pass this on to the compiler too */
-            if (compile) {
-                appendToCmd(optchar);
-                appendToCmd(opt);
             }
             opt = strdup(opt);
             name = opt;
@@ -444,11 +353,6 @@ main(int argc, char **argv)
                 argv++; --argc;
             } else {
                 opt += 2;
-            }
-            /* if we are compiling, pass this on to the compiler too */
-            if (compile) {
-                appendToCmd(optchar);
-                appendToCmd(opt);
             }
             opt = strdup(opt);
             incpath = opt;
@@ -577,24 +481,18 @@ main(int argc, char **argv)
                     remove(binname);
                     exit(1);
                 }
-                if (gl_p2) {
-                    appendToCmd("-p2");
+                gl_output = OUTPUT_DAT;
+                Q = ParseTopFile(asmname);
+                if (Q && gl_errors == 0) {
+                    ProcessSpinCode(Q);
                 }
-                appendToCmd("-o");
-                appendToCmd(binname);
-                appendToCmd(asmname);
-#ifdef WIN32
-                appendWithoutSpace("\"", 0);
-#endif                
-//DEBUG                fprintf(stderr, "running: [%s]\n", cmdline); fflush(stderr);
-                retval = system(cmdline);
-                if (retval < 0) {
-                    fprintf(stderr, "Unable to run command: %s\n", cmdline);
-                    exit(1);
+                if (gl_errors == 0) {
+                    OutputDatFile(binname, Q, 1);
+                    DoPropellerChecksum(binname, useEeprom ? eepromSize : 0);
                 }
                 if (!quiet) {
                     printf("Done.\n");
-                    if (retval == 0) {
+                    if (gl_errors == 0) {
                         PrintFileSize(binname);
                     }
                     if (bstcMode) {

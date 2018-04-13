@@ -331,9 +331,6 @@ main(int argc, char **argv)
 	    outputBin = 1;
             if (gl_output == OUTPUT_ASM) {
                 gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
-                appendCompiler(gl_progname);
-                appendToCmd("--dat");
-                appendToCmd(argv[0]);
             } else {
                 appendCompiler(NULL);
             }
@@ -595,7 +592,7 @@ main(int argc, char **argv)
                 }
                 if (gl_errors == 0) {
                     OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, 0);
+                    DoPropellerChecksum(binname, eepromSize);
                 }
                 if (gl_errors > 0) {
                     remove(binname);
