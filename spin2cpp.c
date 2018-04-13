@@ -588,15 +588,17 @@ main(int argc, char **argv)
                     remove(binname);
                     exit(1);
                 }
-                if (gl_p2) {
-                    appendToCmd("--p2");
+                gl_output = OUTPUT_DAT;
+                Q = ParseTopFile(asmname);
+                if (Q && gl_errors == 0) {
+                    ProcessSpinCode(Q);
                 }
-                appendToCmd("-o");
-                appendToCmd(binname);
-                appendToCmd(asmname);
-                retval = system(cmdline);
-                if (retval < 0) {
-                    fprintf(stderr, "Unable to run command: %s\n", cmdline);
+                if (gl_errors == 0) {
+                    OutputDatFile(binname, Q, 1);
+                    DoPropellerChecksum(binname, 0);
+                }
+                if (gl_errors > 0) {
+                    remove(binname);
                     exit(1);
                 }
             }

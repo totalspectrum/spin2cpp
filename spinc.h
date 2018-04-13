@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * main header file
  */
 
@@ -447,6 +447,9 @@ void InitPreprocessor();
 // top level functions
 // parse a spin file
 Module *ParseFile(const char *name);
+
+// parse a top level spin file (resets global state)
+Module *ParseTopFile(const char *name);
 
 // process Spin functions (do type deduction, etc.)
 void ProcessSpinCode(Module *P);

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -927,6 +927,13 @@ ParseFile(const char *name)
 
     current = save;
     return P;
+}
+
+Module *
+ParseTopFile(const char *name)
+{
+    current = allparse = NULL;
+    return ParseFile(name);
 }
 
 AST *
