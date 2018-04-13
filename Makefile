@@ -136,11 +136,12 @@ spin2cpp.linux: .PHONY
 	$(MAKE) CROSS=linux32
 	cp build-linux32/spin2cpp ./spin2cpp.linux
 
-DOCS=README.md README.fastspin COPYING Changelog.txt docs
+COMMONDOCS=COPYING Changelog.txt docs
+ALLDOCS=README.md README.fastspin.md $(COMMONDOCS)
 
 zip: fastspin.exe spin2cpp.exe spin2cpp.linux
-	zip -r spin2cpp.zip $(DOCS) spin2cpp.exe spin2cpp.linux fastspin.exe
-	zip -r fastspin.zip fastspin.exe $(DOCS)
+	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe spin2cpp.linux fastspin.exe
+	zip -r fastspin.zip fastspin.exe README.fastspin.md $(COMMONDOCS)
 
 #
 # target to build a windows spincvt GUI
@@ -164,6 +165,7 @@ spincvt.zip: .PHONY
 	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
 	rm spincvt/spinconvert.tcl
 	zip -r spincvt.zip spincvt
+	rm -rf spincvt
 
 spincvt_linux.zip: .PHONY
 	rm -f spincvt_linux.zip
@@ -182,5 +184,6 @@ spincvt_linux.zip: .PHONY
 #	(cd spincvt; $(FREEWRAP) spinconvert.tcl)
 #	rm spincvt/spinconvert.tcl
 	zip -r spincvt_linux.zip spincvt
+	rm -rf spincvt
 
 .PHONY:
