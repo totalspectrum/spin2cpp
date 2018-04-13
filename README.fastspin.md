@@ -12,7 +12,14 @@ support translation to C or C++, only to binary (via PASM). The
 command line options for fastspin are very similar to those of the
 openspin compiler:
 
-usage: fastspin.exe
+The basic usage is very simple:
+
+   fastspin program.spin
+
+will compile program.spin into program.binary, which may then be
+loaded into the Propeller. There are various command line options
+which may modify the compilation:
+
   [ -h ]              display this help
   [ -L or -I <path> ] add a directory to the include path
   [ -o ]             output filename
@@ -27,13 +34,15 @@ usage: fastspin.exe
   [ -D <define> ]    add a define
 
 The -2 option is new: it is for compiling for the Propeller 2 (FPGA
-version).  Note that for Prop2 output we only generate the PASM code,
-in a file with a ".p2asm" extension. This is because PNut for the P2
-does not have any way to load a binary file yet.
+version). The output code may not may not work properly on any given
+FPGA image, because the Prop2 is a moving target.
 
-fastspin.exe checks the name it was invoked by. If the name contains the
-string "bstc" (case matters) then its output messages mimic that of the
-bstc compiler; otherwise it tries to match openspin's messages.
+fastspin.exe checks the name it was invoked by. If the name starts
+with the string "bstc" (case matters) then its output messages mimic
+that of the bstc compiler; otherwise it tries to match openspin's
+messages. This is for compatibility with Propeller IDE. For example,
+you can use fastspin with the PropellerIDE by renaming bstc.exe to
+bstc.orig.exe and then copying fastspin.exe to bstc.exe.
 
 EXTENSIONS
 ==========
@@ -52,7 +61,14 @@ Symbol           | When Defined
 `__cplusplus`    | if C++ is being output (never in fastspin)
 `__P2__`         | if compiling for Propeller 2
 
-(2) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
+(this isn't exactly an extension anymore, since openspin has the same
+preprocessor).
+
+(2) @@@ operator: the @@@ operator returns the absolute hub address of
+a variable. This is the same as @ in Spin code, but in PASM code @
+returns only the address relative to the start of the DAT section.
+
+(3) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
 ```
 r := if a then b else c
 ````
@@ -64,14 +80,24 @@ which is the same as
      r := c
 ```
 
-(3) @@@ operator: the @@@ operator returns the absolute hub address of
-a variable. This is the same as @ in Spin code, but in PASM code @
-returns only the address relative to the start of the DAT section.
-
 (4) fastspin accepts inline assembly in PUB and PRI sections. Inline
 assembly starts with `asm` and ends with `endasm`. The inline assembly
 is still somewhat limited; the only operands permitted are local
 variables of the containing function.
+
+(5) The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
+```
+OBJ
+  fds = "FullDuplexSerial"
+```
+declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
+```
+PUB print(f, c)
+  fds[f].dec(c)
+
+PUB doprint22
+  print(@aFullDuplexSerialObj, 22)
+```
 
 CODE
 ====
@@ -90,3 +116,10 @@ Not all P2 assembly instructions and addressing modes are supported yet.
 
 Beware when compiling P1 objects that contain PASM for P2: some
 instructions have changed in subtle ways.
+
+Programs compiled with fastspin will always be larger than those
+compiled with openspin or bstc. If the spin code is mostly PASM (as is
+the case with, for example, PropBASIC compiler output) then the
+fastspin overhead will be relatively small and probably fixed, but for
+large programs with lots of Spin methods the difference could be
+significant.

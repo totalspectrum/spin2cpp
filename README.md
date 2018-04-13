@@ -10,7 +10,7 @@ compilers can produce direct machine language.
 spin2cpp started off as a program to convert Spin language programs to C++.
 It has grown considerably past that now, and can perform conversions like:
 
-  * Converting Spin code to directly to PASM
+  * Converting Spin code directly to PASM
   * Compiling a Spin program to executable binary (using PASM instructions,
     so *much* faster than ordinary Spin bytecodes, but also larger)
   * Converting Spin to C++ or to plain C
@@ -21,13 +21,13 @@ It has grown considerably past that now, and can perform conversions like:
 spin2cpp should be able to deal with any Spin program; please report
 any that it cannot convert.
 
-Along with spin2cpp there is a GUI program (spincvt) which many users
+Along with spin2cpp there is a GUI program (spinconvert) which some users
 will find more comfortable.
 
 There is also an alternate front end `fastspin` which mimics the command
 line of the `openspin` compiler, but which produces LMM binaries instead
 of spin bytecode binaries. `fastspin` compiled programs will typically be
-about 4 times faster than `openspin` ones, but will be 2-3 times as large.
+about 4-10 times faster than `openspin` ones, but will be 2-3 times as large.
 
 INSTALLATION
 ============ 
@@ -109,18 +109,20 @@ optimization level -Os. (It is strongly recommended to pass some
 form of optimization to gcc).
 
 You can output a .binary file (like bstc and openspin do with the -b option)
-instead of .elf:
+instead of .elf. For example, to convert to C code and then compile that in
+CMM mode, you can do:
 
     spin2cpp --binary -mcmm -Os test.spin
 
-will create "test.binary", ready to be run with propeller-load or with
-any other Spin loader.
+This will create "test.binary", ready to be run with propeller-load or with
+any other Spin loader. The `-mcmm` and `-Os` options are passed to PropGCC;
+you could also use `-mlmm` to produce LMM code.
 
 If you just want to convert a top level object to C++ (or C), you may
 want spin2cpp to automatically insert a main() function and a call to
 the first method of the object. To do this, give spin2cpp the --main
-option. --main is implied by --elf or --binary, so you do not have to
-explicitly give it in those cases.
+option. `--main` is implied by `--elf` or `--binary`, so you do not
+have to explicitly give it in those cases.
 
 
 Examples
@@ -196,7 +198,8 @@ Spin2cpp accepts the following options:
   this option imples --main. Also note that after --binary you may
   specify options to be passed to PropGCC, such as -Os or -mcmm.
   If --binary appears after --dat or --asm, then the binary is produced
-  by spin2cpp itself directly, and PropGCC is not invoked.
+  by spin2cpp itself directly, and PropGCC is not invoked. Note that the
+  order of the options matter: --binary must come after --asm.
   
 `--cc=<compiler>`
   Use `<compiler>` as the C/C++ compiler instead of `propeller-elf-gcc`.
@@ -235,15 +238,16 @@ Spin2cpp accepts the following options:
   
 `--data=cog`
 `--data=hub`
-  Only for PASM output (--asm option); specify whether data is to be
-  placed in COG or HUB memory. The default
-  is to use HUB memory for data.
+   Only for PASM output (--asm option); specify whether data is to be
+   placed in COG or HUB memory. The default is to use HUB memory for
+   data. Note that placing data in COG memory is experimental and
+   probably won't work properly for byte or word data.
 
 
 `--dat`
-  Output a binary blob of the DAT section only, similar to the
-  bstc -c option; or, if --gas is given, output GAS assembly for
-  the DAT section. If --binary is also given, prepends an appropriate
+  Output a binary blob of the DAT section only, similar to the bstc -c
+  option; or, if --gas is given, output GAS assembly for the DAT
+  section. If --binary is given after --dat, prepends an appropriate
   Spin executable header so the resulting output is executable.
 
 `--eeprom`
