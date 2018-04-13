@@ -1,4 +1,7 @@
 Version 3.7.0
+- fastspin and spin2cpp no longer have to call themselves to compile
+  the .pasm for a --asm binary output
+- Better error messages for unexpected characters in the source
 - Added strength reduction for multiplication and subtraction
 - Convert more loops to use djnz
 

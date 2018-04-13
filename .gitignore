@@ -3,6 +3,15 @@
 *~
 foo.*
 build*/
+Lib/*.cpp
+Lib/*.h
+Lib/*.pasm
+Lib/*.p2asm
+Demo/*.cpp
+Demo/*.h
+Demo/*.pasm
+Demo/*.p2asm
+Demo/*.binary
 spincvt/
 spinconvert/bin/
 spin2cpp.linux
