@@ -484,7 +484,7 @@ InitGlobalModule(void)
     sym->offset = gl_p2 ? 0x804 : 4;
 
     /* compile inline assembly */
-    if (gl_output == OUTPUT_ASM) {
+    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
 

@@ -3923,7 +3923,7 @@ void
 EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
 {
     IR *ir;
-    Operand *objptr = NewOperand(REG_REG, "objptr", 0);
+    Operand *objptr = GetOneGlobal(REG_REG, "objptr", 0);
     Operand *arg[MAX_COGSPIN_ARGS];
     Operand *par = GetOneGlobal(REG_HW, "par", 0);
     Operand *const4 = NewImmediate(4);
