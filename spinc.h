@@ -77,6 +77,7 @@ extern int gl_compressed; /* if instructions should be compressed */
 #define OUTPUT_C    1
 #define OUTPUT_DAT  2
 #define OUTPUT_ASM  3
+#define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01

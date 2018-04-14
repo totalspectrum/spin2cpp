@@ -4019,7 +4019,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     AppendIR(&cogcode, cogbss.head);
 
     // and assemble the result
-    asmcode = IRAssemble(&cogcode);
+    asmcode = IRAssemble(&cogcode, P);
     
     current = save;
 

@@ -106,6 +106,7 @@ Usage(int bstcMode)
     fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
     fprintf(stderr, "  [ -O ]             enable extra optimizations\n");
     fprintf(stderr, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
+    fprintf(stderr, "  [ -w ]             compile for COG with Spin wrappers\n");
     fflush(stderr);
     exit(2);
 }
@@ -248,6 +249,13 @@ main(int argc, char **argv)
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
                 Usage(bstcMode);
             }
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-w")) {
+            gl_outputflags |= OUTFLAG_COG_CODE;
+            gl_output = OUTPUT_COGSPIN;
+            compile = 0;
+            outputMain = 0;
+            outputBin = 0;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
             compile = 0;
@@ -473,7 +481,11 @@ main(int argc, char **argv)
                 asmname = gl_outname;
             }
             if (!asmname) {
-                asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
+                if (gl_output == OUTPUT_COGSPIN) {
+                    asmname = ReplaceExtension(P->fullname, ".cog.spin");
+                } else {
+                    asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
+                }
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile)  {

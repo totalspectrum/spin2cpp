@@ -38,7 +38,7 @@ IRCond InvertCond(IRCond v);
 
 // function to convert an IR list into a text representation of the
 // assembly
-char *IRAssemble(IRList *list);
+char *IRAssemble(IRList *list, Module *P);
 
 // create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);

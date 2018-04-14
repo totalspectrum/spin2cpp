@@ -268,6 +268,22 @@ StringFor(IROpcode opc)
     }
 }
 
+//
+// emit public methods for Spin
+// this is needed if we want to assemble the .pasm output with
+// bstc or some similar compiler
+//
+void
+EmitSpinMethods(struct flexbuf *fb, Module *P)
+{
+    if (!P) return;
+    if (gl_output == OUTPUT_COGSPIN) {
+    } else {
+        flexbuf_addstr(fb, "PUB main\n");
+        flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
+    }        
+}
+
 // LMM jumps +- this amount are turned into add/sub of the pc
 // pick a conservative value
 // 127 would be the absolute maximum here
@@ -277,7 +293,7 @@ StringFor(IROpcode opc)
 static int didPub = 0;
 
 void
-DoAssembleIR(struct flexbuf *fb, IR *ir)
+DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
 {
     const char *str;
     if (ir->opc == OPC_CONST) {
@@ -295,9 +311,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
         return;
     }
     if (!inDat) {
-        if (!didPub) {
-            flexbuf_addstr(fb, "PUB main\n");
-            flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
+        if (!didPub && P) {
+            EmitSpinMethods(fb, P);
             didPub = 1;
         }
         flexbuf_addstr(fb, "DAT\n");
@@ -560,7 +575,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir)
 
 /* assemble an IR list */
 char *
-IRAssemble(IRList *list)
+IRAssemble(IRList *list, Module *P)
 {
     IR *ir;
     struct flexbuf fb;
@@ -577,7 +592,7 @@ IRAssemble(IRList *list)
     }
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {
-        DoAssembleIR(&fb, ir);
+        DoAssembleIR(&fb, ir, P);
     }
     flexbuf_addchar(&fb, 0);
     ret = flexbuf_get(&fb);
@@ -588,5 +603,5 @@ IRAssemble(IRList *list)
 void
 DumpIRL(IRList *irl)
 {
-    puts(IRAssemble(irl));
+    puts(IRAssemble(irl, NULL));
 }

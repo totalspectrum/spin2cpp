@@ -48,6 +48,7 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
+    fprintf(stderr, "  --cogspin: create PASM based Spin object (translate Spin to PASM)\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
     fprintf(stderr, "  --cse:     perform common subexpression optimizations on C code\n");
     fprintf(stderr, "  --cc=CC:   use CC as the C++ compiler instead of PropGCC\n");
@@ -258,6 +259,11 @@ main(int argc, char **argv)
             gl_output = OUTPUT_ASM;
             argv++; --argc;
             gl_optimize_flags |= DEFAULT_ASM_OPTS;
+        } else if (!strcmp(argv[0], "--cogspin") ) {
+            outputAsm = 1;
+            gl_output = OUTPUT_COGSPIN;
+            argv++; --argc;
+            gl_optimize_flags |= DEFAULT_ASM_OPTS;
         } else if (!strncmp(argv[0], "--gas", 5)) {
             gl_gas_dat = 1;
             argv++; --argc;
@@ -331,6 +337,9 @@ main(int argc, char **argv)
 	    outputBin = 1;
             if (gl_output == OUTPUT_ASM) {
                 gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
+            } else if (gl_output == OUTPUT_COGSPIN) {
+                fprintf(stderr, "--cogspin and --binary are incompatible\n");
+                exit(1);
             } else {
                 appendCompiler(NULL);
             }
@@ -492,7 +501,7 @@ main(int argc, char **argv)
     
     pp_define(&gl_pp, "__SPIN2X__", str_(VERSION_MAJOR)); // deprecated
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
-    if (gl_output == OUTPUT_ASM) {
+    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
     }
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
@@ -577,7 +586,11 @@ main(int argc, char **argv)
                 asmname = gl_outname;
             }
             if (!asmname) {
-                asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
+                if (gl_output == OUTPUT_COGSPIN) {
+                    asmname = ReplaceExtension(P->fullname, ".cog.spin");
+                } else {
+                    asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
+                }
             }
             OutputAsmCode(asmname, P, outputMain);
             if (compile) {
