@@ -53,6 +53,7 @@ static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
 
+static Operand *s_doreturn;
 static Operand *hubexit;
 static Operand *cogexit;
 
@@ -1033,6 +1034,14 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // copy them out now
     //EmitDebugComment(irl, func->decl);
     AppendIRList(irl, &FuncData(func)->irheader);
+
+    if (gl_output == OUTPUT_COGSPIN && FuncData(func)->asmaltname) {
+        // insert a dummy function header that just changes
+        EmitLabel(irl, FuncData(func)->asmaltname);
+        EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretname, s_doreturn);
+    }
+    
+    // now the function label
     EmitLabel(irl, FuncData(func)->asmname);
 
     // set up frame pointer for stack call functions
@@ -3137,6 +3146,8 @@ ShouldSkipFunction(Function *f)
 {
     if (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return false;
+    if (gl_output == OUTPUT_COGSPIN)
+        return false;
     if (0 != f->callSites)
         return false;
     if (f->cog_task)
@@ -3179,14 +3190,21 @@ AssignFuncNames(IRList *irl, Module *P)
     for(f = P->functions; f; f = f->next) {
 	const char *fname;
         char *frname;
-
+        char *faltname;
+        
         if (ShouldSkipFunction(f))
             continue;
         curfunc = f;
         f->cog_code = (COG_CODE || (IsGlobalModule(P) && !gl_compressed)) ? 1 : 0;
         fname = IdentifierGlobalName(P, f->name);
-	frname = (char *)malloc(strlen(fname) + 8);
+	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
+        if (gl_output == OUTPUT_COGSPIN && f->cog_code && f->is_public) {
+            faltname = (char *)malloc(strlen(fname) + 6);
+            sprintf(faltname, "pasm%s", fname);
+        } else {
+            faltname = NULL;
+        }
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
@@ -3210,6 +3228,9 @@ AssignFuncNames(IRList *irl, Module *P)
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
+        }
+        if (faltname) {
+            FuncData(f)->asmaltname = NewOperand(IMM_COG_LABEL, faltname, 0);
         }
         // also fix up any extra declarations
         if (f->extradecl) {
@@ -3892,6 +3913,90 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp1(irl, OPC_COGSTOP, arg1);
 }
 
+/*
+ * .cog.spin main program looks like:
+ * 
+ */
+#define MAX_COGSPIN_ARGS 16
+
+void
+EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
+{
+    IR *ir;
+    Operand *objptr = NewOperand(REG_REG, "objptr", 0);
+    Operand *arg[MAX_COGSPIN_ARGS];
+    Operand *par = GetOneGlobal(REG_HW, "par", 0);
+    Operand *const4 = NewImmediate(4);
+    Operand *mboxptr = GetOneGlobal(REG_REG, "mboxptr", 0);
+    Operand *mboxcmd = GetOneGlobal(REG_REG, "mboxcmd", 0);
+    Operand *waitloop;
+    
+    int i;
+    if (maxArgs > MAX_COGSPIN_ARGS) {
+        ERROR(NULL, ".cog.spin functions may not have more than %d arguments", MAX_COGSPIN_ARGS);
+        maxArgs = MAX_COGSPIN_ARGS;
+    }
+    for (i = 0; i < maxArgs; i++) {
+        char temp[20];
+        sprintf(temp, "arg%d", i+1);
+        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
+    }
+    if (maxArgs > 0) {
+        arg1 = arg[0];
+    } else {
+        arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
+    }
+    result1 = GetOneGlobal(REG_REG, "result1", 0);
+    
+    stackptr = GetOneGlobal(REG_REG, "sp", 0);
+    stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
+    objbase = GetOneGlobal(REG_REG, "objbase", 0);
+
+    // mov mboxptr, par
+    EmitMove(irl, mboxptr, par);
+    // mov arg1, #0
+    EmitMove(irl, arg1, NewImmediate(0));
+    // rdlong objptr, mboxptr
+    EmitOp2(irl, OPC_RDLONG, objptr, mboxptr);
+    // wrlong arg1, mboxptr
+    EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
+    // add mboxptr, #4 ' skip over lock
+    EmitOp2(irl, OPC_ADD, mboxptr, const4);
+    // rdlong stackptr, mboxptr
+    EmitOp2(irl, OPC_RDLONG, stackptr, mboxptr);
+    // wrlong arg1, mboxptr
+    EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
+
+    waitloop = NewOperand(IMM_COG_LABEL, "waitloop", 0);
+    EmitLabel(irl, waitloop);
+    ir = EmitOp2(irl, OPC_RDLONG, mboxcmd, mboxptr);
+    ir->flags |= FLAG_WZ;
+    EmitJump(irl, COND_EQ, waitloop);
+    for (i = 0; i < maxArgs; i++) {
+        EmitOp2(irl, OPC_ADD, mboxptr, const4);
+        EmitOp2(irl, OPC_RDLONG, arg[i], mboxptr);
+    }
+    if (maxArgs > 1) {
+        EmitOp2(irl, OPC_SUB, mboxptr, NewImmediate((maxArgs-1)*4));
+    } else if (maxArgs == 0) {
+        EmitOp2(irl, OPC_ADD, mboxptr, const4);
+    }
+    // divide address by 4 to convert from cog to hub
+    EmitOp2(irl, OPC_SHR, mboxcmd, NewImmediate(2));
+    // call command
+    EmitJump(irl, COND_TRUE, mboxcmd);
+
+    s_doreturn = NewOperand(IMM_COG_LABEL, "doreturn", 0);
+    EmitLabel(irl, s_doreturn);
+
+    // write back the result
+    EmitOp2(irl, OPC_WRLONG, result1, mboxptr);
+    EmitOp2(irl, OPC_SUB, mboxptr, const4);
+    EmitMove(irl, arg1, NewImmediate(0));
+    EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
+    EmitJump(irl, COND_TRUE, waitloop);
+}
+
 void
 OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
@@ -3903,6 +4008,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     unsigned int clkfreq, clkreg;
     const char *asmcode;
+    int maxargs = 0;
     
     save = current;
     current = P;
@@ -3913,12 +4019,48 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     memset(&hubdata, 0, sizeof(hubdata));
     memset(&cogbss, 0, sizeof(cogbss));
     
+    if (gl_output == OUTPUT_COGSPIN) {
+        // count max. number of arguments in any public function
+        // also try to guess at stack size required
+        Function *func;
+        int mboxSize;
+        int stackSize = 1;
+        int maxLeafSize = 0;
+        func = P->functions;
+
+        while (func) {
+            if (func->is_public) {
+                if (func->numparams > maxargs) {
+                    maxargs = func->numparams;
+                }
+            }
+            if (func->local_address_taken || func->is_recursive || func->cog_task) {
+                int savesize = LocalSize(func) / LONG_SIZE;
+                if (func->is_recursive) {
+                    savesize *= 16;
+                }
+                if (func->is_leaf) {
+                    if (maxLeafSize < savesize) maxLeafSize = savesize;
+                } else {
+                    stackSize += savesize;
+                }
+                stackSize += maxLeafSize;
+            }
+
+            func = func->next;            
+        }
+        mboxSize = maxargs + 3;
+        EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, "__MBOX_SIZE", mboxSize), NewImmediate(mboxSize));
+        EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, "__STACK_SIZE", stackSize), NewImmediate(stackSize));
+    }
     EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
     CompileConsts(&cogcode, P->conblock);
 
     // output the main stub
     EmitLabel(&cogcode, entrylabel);
-    if (outputMain) {
+    if (gl_output == OUTPUT_COGSPIN) {
+        EmitMain_CogSpin(&cogcode, P, maxargs);
+    } else if (outputMain) {
         if (gl_p2) {
             EmitMain_P2(&cogcode, P);
         } else {

@@ -278,6 +278,76 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 {
     if (!P) return;
     if (gl_output == OUTPUT_COGSPIN) {
+        int varlen = P->varsize;
+        varlen = (varlen + 3) & ~3; // round up to long boundary
+        if (varlen < 1) varlen = 1;
+        Function *f;
+        
+        flexbuf_addstr(fb, "VAR\n");
+        flexbuf_addstr(fb, "  long __mbox[__MBOX_SIZE]\n");
+        flexbuf_printf(fb, "  long __objmem[%d]\n", varlen / 4);
+        flexbuf_addstr(fb, "  long __stack[__STACK_SIZE]\n");
+        flexbuf_addstr(fb, "  byte __cognum\n\n");
+
+        flexbuf_addstr(fb, "PUB __cognew\n");
+        flexbuf_addstr(fb, "  if (__cognum == 0)\n");
+        flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
+        flexbuf_addstr(fb, "    __mbox[0] := @__objmem\n");
+        flexbuf_addstr(fb, "    __mbox[1] := @__stack\n");
+        flexbuf_addstr(fb, "    __cognum := cognew(@entry, @__mbox) + 1\n");
+        flexbuf_addstr(fb, "  return __cognum\n\n");
+
+        flexbuf_addstr(fb, "PUB __cogstop\n");
+        flexbuf_addstr(fb, "  if __cognum\n");
+        flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
+        flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n\n");
+
+        flexbuf_addstr(fb, "PRI __lock\n");
+        flexbuf_addstr(fb, "   repeat\n");
+        flexbuf_addstr(fb, "     repeat until __mbox[0] == 0\n");
+        flexbuf_addstr(fb, "     __mbox[0] := __cognum\n");
+        flexbuf_addstr(fb, "   until __mbox[0] == __cognum\n\n");
+
+        flexbuf_addstr(fb, "PRI __unlock\n");
+        flexbuf_addstr(fb, "   __mbox[0] := 0\n\n");
+
+        flexbuf_addstr(fb, "PRI __invoke(func) | r\n");
+        flexbuf_addstr(fb, "   __mbox[1] := func - @entry\n");
+        flexbuf_addstr(fb, "   repeat until __mbox[1] == 0\n");
+        flexbuf_addstr(fb, "   r := __mbox[2]\n");
+        flexbuf_addstr(fb, "   __unlock\n");
+        flexbuf_addstr(fb, "   return r\n\n");
+
+        // now we have to create the stub functions
+        for (f = P->functions; f; f = f->next) {
+            if (f->is_public) {
+                AST *list = f->params;
+                AST *ast;
+                int needcomma = 0;
+                flexbuf_printf(fb, "PUB %s", f->name);
+                if (list) {
+                    int paramnum = 2;
+                    flexbuf_addstr(fb, "(");
+                    while (list) {
+                        ast = list->left;
+                        if (needcomma) {
+                            flexbuf_addstr(fb, ", ");
+                        }
+                        flexbuf_addstr(fb, ast->d.string);
+                        needcomma = 1;
+                        list = list->right;
+                    }
+                    flexbuf_addstr(fb, ")\n");
+                    flexbuf_addstr(fb, "  __lock\n");
+                    list = f->params;
+                    while (list) {
+                        flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, list->left->d.string);
+                        list = list->right;
+                    }
+                    flexbuf_printf(fb, "  return __invoke(@pasm_%s)\n\n", f->name);
+                }
+            }
+        }
     } else {
         flexbuf_addstr(fb, "PUB main\n");
         flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");

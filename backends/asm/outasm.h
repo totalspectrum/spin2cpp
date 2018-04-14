@@ -83,6 +83,11 @@ typedef struct ir_bedata {
        for function cleanup
     */
     Operand *asmreturnlabel;
+
+    /* optional label for COGSPIN output, which is the entry point
+       the Spin->PASM wrapper code needs to use
+    */
+    Operand *asmaltname;
     
     /* function header (mostly to make sure we collect comments
        at the right time */
