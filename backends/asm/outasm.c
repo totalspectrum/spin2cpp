@@ -123,7 +123,7 @@ IdentifierLocalName(Function *func, const char *name)
     } else if (IsTopLevel(P)) {
         snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
     } else {
-        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s", P->basename, func->name, name);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s", P->classname, func->name, name);
     }
     return strdup(temp);
 }
@@ -136,7 +136,7 @@ IdentifierGlobalName(Module *P, const char *name)
         // avoid conflict with built-in assembler names by prepending "_"
         snprintf(temp, sizeof(temp)-1, "_%s", name);
     } else {
-        snprintf(temp, sizeof(temp)-1, "_%s_%s", P->basename, name);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s", P->classname, name);
     }
     return strdup(temp);
 }
@@ -682,7 +682,7 @@ GetFunctionTempRegister(Function *f, int n)
   } else if (IsTopLevel(P)) {
       snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
   } else {
-      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->basename, f->name, n);
+      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, f->name, n);
   }
   return GetOneGlobal(REG_LOCAL, strdup(buf), 0);
 }
