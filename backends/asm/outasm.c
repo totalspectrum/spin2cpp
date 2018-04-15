@@ -159,6 +159,8 @@ ValidateStackptr(void)
             stacklabel = NewOperand(IMM_HUB_LABEL, "stackspace", 0);
             if (gl_p2) {
                 stackptr = GetOneGlobal(REG_HW, "ptra", 0);
+            } else if (gl_optimize_flags & OPT_REMOVE_HUB_BSS) {
+                stackptr = GetOneGlobal(REG_REG, "sp", 0);
             } else {
                 stackptr = NewImmediatePtr("sp", stacklabel);
             }
@@ -3800,7 +3802,11 @@ EmitVarSection(IRList *irl, Module *P)
     EmitLabel(irl, objlabel);
     if (!len)
         len = 1;
-    EmitReserve(irl, len / 4, HUB_DATA ? HUB_RESERVE : COG_RESERVE);
+    if (HUB_DATA && (gl_optimize_flags & OPT_REMOVE_HUB_BSS)) {
+        EmitReserve(irl, 1, HUB_RESERVE);
+    } else {
+        EmitReserve(irl, len / 4, HUB_DATA ? HUB_RESERVE : COG_RESERVE);
+    }
 }
 
 extern Module *globalModule;
@@ -3854,7 +3860,11 @@ EmitMain_P1(IRList *irl, Module *P)
     if (HUB_CODE) {
         EmitJump(irl, COND_NE, spinlabel);
     }
-    
+
+    if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) && stackptr ) {
+        stackptr->val = P->varsize;
+        EmitOp2(irl, OPC_ADD, stackptr, objbase);
+    }
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {

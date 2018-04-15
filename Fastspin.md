@@ -1,5 +1,8 @@
-OVERVIEW
+Fastspin
 ========
+(Fastspin is copyright 2011-2018 Total Spectrum Software Inc.,
+and is distributed under the terms of the MIT License (see the
+end of this file for details)
 
 Fastspin is a compiler from the Spin language to assembly (PASM).
 Normally Spin is translated to a special kind of bytecode which
@@ -17,7 +20,78 @@ The basic usage is very simple:
    fastspin program.spin
 
 will compile program.spin into program.binary, which may then be
-loaded into the Propeller. There are various command line options
+loaded into the Propeller. There are many methods to do this; most
+IDEs (including the Propeller Tool) have a way to run a binary
+file. There are also command line tools (such as propeller-load) to
+run binaries. My workflow with Spin programs typically looks like:
+
+   emacs program.spin & # or use your favorite text editor
+   fastspin program.spin
+   propeller-load program.binary -r -t
+
+
+## Speed ##
+
+If you compile with fastspin, your binary program will be much larger
+than when compiled with openspin or bstc. That's because fastspin
+outputs native Propeller instructions (PASM) instead of Spin
+bytecode. It also means the fastspin compiled binary is much faster.
+
+
+Spin wrappers
+-------------
+The simplest way to use fastspin is just to compile a whole program
+(convert everything to PASM). However, sometimes a program compiled
+this way may be too big to fit in memory; or sometimes you may want
+to convert some Spin module to PASM and make it easy to use in other
+Spin projects (which may be compiled with openspin or bstc).
+
+fastspin may be used to convert a Spin object into PASM code that has
+Spin wrappers. This is achieved with the `-w` ("wrap") command line
+flag. The output is a generic Spin module with a .cog.spin extension.
+The wrapped Spin must fit in a single COG (so no LMM mode is used) and is
+designed basically for converting device drivers from Spin to PASM
+easily. All of the PUB functions of the original .spin will be available
+in in the .cog.spin, but instead of running Spin bytecode they will send
+a message to the PASM code (which must be running in another COG) for
+execution there.  There will also be a __cognew method to start a COG up.
+__cognew must be called before any other methods.
+
+### Example
+
+Suppose you have a file Fibo.spin that has:
+```
+PUB fibo(n)
+  if (n < 2)
+    return n
+  return fibo(n-1) + fibo(n-2)
+```
+
+To use the Spin version of this you would do something like:
+```
+OBJ f : "Fibo"
+
+PUB test
+  answer1 := f.fibo(1)
+  answer9 := f.fibo(9)
+```
+
+To convert this to COG PASM you would do:
+   fastspin -w Fibo.spin
+which would produce Fibo.cog.spin; and you would modify your program to
+```
+OBJ f : "Fibo.cog"
+
+PUB test
+  f.__cognew '' start the COG PASM running
+  answer1 := f.fibo(1)
+  answer9 := f.fibo(9)
+```
+
+
+Command Line Options
+--------------------
+There are various command line options
 which may modify the compilation:
 
   [ -h ]              display this help
@@ -33,7 +107,8 @@ which may modify the compilation:
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
   [ --code=cog  ]    compile to run in COG memory instead of HUB
-  
+  [ -w ]             produce Spin wrappers for PASM code
+   
 The -2 option is new: it is for compiling for the Propeller 2 (FPGA
 version). The output code may not may not work properly on any given
 FPGA image, because the Prop2 is a moving target.
@@ -45,8 +120,8 @@ messages. This is for compatibility with Propeller IDE. For example,
 you can use fastspin with the PropellerIDE by renaming bstc.exe to
 bstc.orig.exe and then copying fastspin.exe to bstc.exe.
 
-EXTENSIONS
-==========
+Extensions
+----------
 
 fastspin supports a few extensions to the Spin language:
 
@@ -86,6 +161,16 @@ assembly starts with `asm` and ends with `endasm`. The inline assembly
 is still somewhat limited; the only operands permitted are local
 variables of the containing function.
 
+Example:
+
+  PUB waitcnt2(newcnt, incr)
+    asm
+      waitcnt newcnt, incr
+    endasm
+    return newcnt
+
+waits until CNT reaches "newcnt", and returns "newcnt + incr".
+  
 (5) The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
 ```
 OBJ
@@ -100,18 +185,8 @@ PUB doprint22
   print(@aFullDuplexSerialObj, 22)
 ```
 
-CODE
-====
-
-The output code and data are always placed in HUB memory, and the code is
-interpreted with a simple LMM interpreter. The spin2cpp front end has
-additional options (for example to place code in COG memory).
-
-In P2 the code is still placed in HUB memory, but no LMM interpreter is
-needed (we use the P2 hubexec feature).
-
-LIMITATIONS
-===========
+Limitations
+-----------
 
 Not all P2 assembly instructions and addressing modes are supported yet.
 
@@ -124,3 +199,25 @@ the case with, for example, PropBASIC compiler output) then the
 fastspin overhead will be relatively small and probably fixed, but for
 large programs with lots of Spin methods the difference could be
 significant.
+
+License
+-------
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files
+(the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

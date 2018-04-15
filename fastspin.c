@@ -212,7 +212,7 @@ main(int argc, char **argv)
     outputMain = 1;
     outputBin = 1;
     outputAsm = 1;
-    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS|OPT_PERFORM_CSE);
+    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS);
     
     // put everything in HUB by default
     gl_outputflags &= ~OUTFLAG_COG_DATA;
@@ -293,7 +293,6 @@ main(int argc, char **argv)
             if (!strcmp(argv[0], "-e")) {
                 useEeprom = 1;
             }
-            gl_optimize_flags |= OPT_REMOVE_UNUSED_FUNCS;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
             gl_preprocess = 0;

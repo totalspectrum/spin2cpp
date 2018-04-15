@@ -58,11 +58,11 @@ extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code
 extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_PERFORM_CSE         0x02
+#define OPT_REMOVE_HUB_BSS      0x04
 #define OPT_NO_ASM 0x100
 
-//#define DEFAULT_ASM_OPTS        OPT_PERFORM_CSE
-#define DEFAULT_ASM_OPTS        0x00   /* default opts for fastspin */
-#define EXTRA_ASM_OPTS          OPT_PERFORM_CSE /* extras added with -O */
+#define DEFAULT_ASM_OPTS        OPT_PERFORM_CSE
+#define EXTRA_ASM_OPTS          OPT_REMOVE_HUB_BSS /* extras added with -O */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
