@@ -1,8 +1,11 @@
 CON
-  pin = 2
+  pin = 15
+  pausetime = 25_000_000
   
 PUB run(countptr)
+  DIRA[pin] := 1
   repeat
-    OUTA[pin] := 1
-    OUTA[pin] := 0
+    OUTA[pin] ^= 1
+    waitcnt(CNT+pausetime)
     long[countptr]++
+
