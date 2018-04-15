@@ -2,15 +2,11 @@
 '' serial port definitions
 ''
 '' this is for a very simple serial port
-'' also note: if PC is defined then we
-'' substitute some C code instead
+'' (transmit only)
 ''
 VAR
   byte txpin
-  byte rxpin
-  long baud
   long txmask
-  long rxmask
   long bitcycles
    
 
@@ -19,12 +15,9 @@ VAR
 ''
 
 PUB start(rx_pin, tx_pin, mode, baudrate)
-  baud := baudrate
   bitcycles := clkfreq / baudrate
   txpin := tx_pin
   txmask := (1<<txpin)
-  rxpin := rx_pin
-  rxmask := (1<<rxpin)
   return 1
   
 PUB tx(c) | val, waitcycles
@@ -76,29 +69,3 @@ PUB hex(val, digits) | shft, x
       x := x + "0"
     tx(x)
 
-PUB rx | waitcycles, cycles, mask, val, x
-  mask := rxmask
-  cycles := bitcycles
-  DIRA &= !mask  ' set for input
-  '' wait for start bit
-  repeat
-    x := INA
-  while ( (x & mask) <> 0 )
-  val := $0
-  waitcycles := CNT + (cycles >> 1)  '' sync for one half bit
-  repeat 8
-      val := val >> 1
-      waitcnt(waitcycles += cycles)
-      x := INA
-      if ( (x & mask) <> 0 )
-        val |= $80
-  '' wait for stop bit?
-  waitpeq(mask, mask, 0)
-  return val
-
-''
-'' could signal back to the host with an exit code
-'' for now don't
-''
-PUB exit(code)
-  repeat
