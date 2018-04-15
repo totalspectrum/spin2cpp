@@ -289,13 +289,14 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "  long __stack[__STACK_SIZE]\n");
         flexbuf_addstr(fb, "  byte __cognum\n\n");
 
-        flexbuf_addstr(fb, "PUB __cognew\n");
+        flexbuf_addstr(fb, "PUB __cognew | id\n");
         flexbuf_addstr(fb, "  if (__cognum == 0)\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
         flexbuf_addstr(fb, "    __mbox[0] := @__objmem\n");
         flexbuf_addstr(fb, "    __mbox[1] := @__stack\n");
-        flexbuf_addstr(fb, "    __cognum := cognew(@entry, @__mbox) + 1\n");
-        flexbuf_addstr(fb, "  return __cognum\n\n");
+        flexbuf_addstr(fb, "    id := cognew(@entry, @__mbox)\n");
+        flexbuf_addstr(fb, "    __cognum := id + 1\n");
+        flexbuf_addstr(fb, "  return id\n\n");
 
         flexbuf_addstr(fb, "PUB __cogstop\n");
         flexbuf_addstr(fb, "  if __cognum\n");
