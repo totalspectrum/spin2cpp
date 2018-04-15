@@ -303,20 +303,20 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n\n");
 
         flexbuf_addstr(fb, "PRI __lock\n");
-        flexbuf_addstr(fb, "   repeat\n");
-        flexbuf_addstr(fb, "     repeat until __mbox[0] == 0\n");
-        flexbuf_addstr(fb, "     __mbox[0] := __cognum\n");
-        flexbuf_addstr(fb, "   until __mbox[0] == __cognum\n\n");
+        flexbuf_addstr(fb, "  repeat\n");
+        flexbuf_addstr(fb, "    repeat until __mbox[0] == 0\n");
+        flexbuf_addstr(fb, "    __mbox[0] := __cognum\n");
+        flexbuf_addstr(fb, "  until __mbox[0] == __cognum\n\n");
 
         flexbuf_addstr(fb, "PRI __unlock\n");
-        flexbuf_addstr(fb, "   __mbox[0] := 0\n\n");
+        flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
         flexbuf_addstr(fb, "PRI __invoke(func) | r\n");
-        flexbuf_addstr(fb, "   __mbox[1] := func - @entry\n");
-        flexbuf_addstr(fb, "   repeat until __mbox[1] == 0\n");
-        flexbuf_addstr(fb, "   r := __mbox[2]\n");
-        flexbuf_addstr(fb, "   __unlock\n");
-        flexbuf_addstr(fb, "   return r\n\n");
+        flexbuf_addstr(fb, "  __mbox[1] := func - @entry\n");
+        flexbuf_addstr(fb, "  repeat until __mbox[1] == 0\n");
+        flexbuf_addstr(fb, "  r := __mbox[2]\n");
+        flexbuf_addstr(fb, "  __unlock\n");
+        flexbuf_addstr(fb, "  return r\n\n");
 
         // now we have to create the stub functions
         for (f = P->functions; f; f = f->next) {
@@ -343,6 +343,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     while (list) {
                         flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, list->left->d.string);
                         list = list->right;
+                        paramnum++;
                     }
                     flexbuf_printf(fb, "  return __invoke(@pasm_%s)\n\n", f->name);
                 }

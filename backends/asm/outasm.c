@@ -3950,7 +3950,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     
     stackptr = GetOneGlobal(REG_REG, "sp", 0);
     stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
-    objbase = GetOneGlobal(REG_REG, "objbase", 0);
+    objbase = GetOneGlobal(REG_REG, "objptr", 0);
 
     // mov mboxptr, par
     EmitMove(irl, mboxptr, par);

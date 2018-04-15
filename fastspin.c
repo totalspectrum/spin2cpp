@@ -383,11 +383,15 @@ main(int argc, char **argv)
         Usage(bstcMode);
     }
 
+    /* tweak flags */
+    if (gl_output == OUTPUT_COGSPIN) {
+        gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
+    }
     /* add some predefined symbols */
     
     pp_define(&gl_pp, "__FASTSPIN__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
-    if (gl_output == OUTPUT_ASM) {
+    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
     }
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
