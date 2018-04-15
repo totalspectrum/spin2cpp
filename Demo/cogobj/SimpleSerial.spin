@@ -6,32 +6,27 @@
 ''
 VAR
   byte txpin
-  long txmask
   long bitcycles
    
 
 ''
-'' code: largely taken from FullDuplexSerial.spin
+'' the dec and hex code are largely taken from FullDuplexSerial.spin
 ''
 
 PUB start(rx_pin, tx_pin, mode, baudrate)
   bitcycles := clkfreq / baudrate
   txpin := tx_pin
-  txmask := (1<<txpin)
   return 1
   
-PUB tx(c) | val, waitcycles
-  OUTA |= txmask
-  DIRA |= txmask
+PUB tx(c) | val, nextcnt
+  OUTA[txpin] := 1
+  DIRA[txpin] := 1
 
   val := (c | 256) << 1
-  waitcycles := CNT
+  nextcnt := CNT
   repeat 10
-     waitcnt(waitcycles += bitcycles)
-     if (val & 1)
-       OUTA |= txmask
-     else
-       OUTA &= !txmask
+     waitcnt(nextcnt += bitcycles)
+     OUTA[txpin] := val
      val >>= 1
 
 PUB str(s) | c
