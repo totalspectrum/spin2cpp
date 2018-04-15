@@ -10,3 +10,6 @@ Fibo.cog.spin: Fibo.spin
 
 SimpleSerial.cog.spin: SimpleSerial.spin
 	$(FASTSPIN) -w SimpleSerial.spin
+
+clean:
+	rm -rf *.binary *.cog.spin

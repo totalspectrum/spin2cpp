@@ -307,14 +307,16 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    repeat until __mbox[0] == 0\n");
         flexbuf_addstr(fb, "    __mbox[0] := __cognum\n");
         flexbuf_addstr(fb, "  until __mbox[0] == __cognum\n\n");
+        flexbuf_addstr(fb, "  repeat until __mbox[1] == 0\n");
 
         flexbuf_addstr(fb, "PRI __unlock\n");
         flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
-        flexbuf_addstr(fb, "PRI __invoke(func) | r\n");
+        flexbuf_addstr(fb, "PRI __invoke(func, getresult) : r\n");
         flexbuf_addstr(fb, "  __mbox[1] := func - @entry\n");
-        flexbuf_addstr(fb, "  repeat until __mbox[1] == 0\n");
-        flexbuf_addstr(fb, "  r := __mbox[2]\n");
+        flexbuf_addstr(fb, "  if getresult\n");
+        flexbuf_addstr(fb, "    repeat until __mbox[1] == 0\n");
+        flexbuf_addstr(fb, "    r := __mbox[2]\n");
         flexbuf_addstr(fb, "  __unlock\n");
         flexbuf_addstr(fb, "  return r\n\n");
 
@@ -325,6 +327,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 AST *ast;
                 int paramnum = 2;
                 int needcomma = 0;
+                int synchronous;
                 flexbuf_printf(fb, "PUB %s", f->name);
                 if (list) {
                     flexbuf_addstr(fb, "(");
@@ -347,7 +350,13 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     list = list->right;
                     paramnum++;
                 }
-                flexbuf_printf(fb, "  return __invoke(@pasm_%s)\n\n", f->name);
+                // if there's a result from the function, make this call
+                // synchronous
+                if (f->rettype && f->rettype->kind == AST_VOIDTYPE)
+                    synchronous = 0;
+                else
+                    synchronous = 1;
+                flexbuf_printf(fb, "  return __invoke(@pasm_%s, %d)\n\n", f->name, synchronous);
             }
         }
     } else {
