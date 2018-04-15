@@ -323,10 +323,10 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
             if (f->is_public) {
                 AST *list = f->params;
                 AST *ast;
+                int paramnum = 2;
                 int needcomma = 0;
                 flexbuf_printf(fb, "PUB %s", f->name);
                 if (list) {
-                    int paramnum = 2;
                     flexbuf_addstr(fb, "(");
                     while (list) {
                         ast = list->left;
@@ -337,16 +337,17 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                         needcomma = 1;
                         list = list->right;
                     }
-                    flexbuf_addstr(fb, ")\n");
-                    flexbuf_addstr(fb, "  __lock\n");
-                    list = f->params;
-                    while (list) {
-                        flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, list->left->d.string);
-                        list = list->right;
-                        paramnum++;
-                    }
-                    flexbuf_printf(fb, "  return __invoke(@pasm_%s)\n\n", f->name);
+                    flexbuf_addstr(fb, ")");
                 }
+                flexbuf_addstr(fb, "\n");
+                flexbuf_addstr(fb, "  __lock\n");
+                list = f->params;
+                while (list) {
+                    flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, list->left->d.string);
+                    list = list->right;
+                    paramnum++;
+                }
+                flexbuf_printf(fb, "  return __invoke(@pasm_%s)\n\n", f->name);
             }
         }
     } else {
