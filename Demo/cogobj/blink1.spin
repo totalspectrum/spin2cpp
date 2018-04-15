@@ -8,13 +8,17 @@ CON
   pin = 15
 
 VAR
-  long BlinkStack[32]	' stack space for Blink cog
+  long BlinkStack[8]	' stack space for Blink cog
 
 OBJ
   fds: "FullDuplexSerial"
 
+''
+'' main entry point
+''
 PUB demo | id, count
   fds.start(31, 30, 0, 115200)
+
   count := 0
   id := cognew(Blink(@count), @BlinkStack)
   fds.str(string("blink running in cog "))
