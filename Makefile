@@ -137,11 +137,11 @@ spin2cpp.linux: .PHONY
 	cp build-linux32/spin2cpp ./spin2cpp.linux
 
 COMMONDOCS=COPYING Changelog.txt docs
-ALLDOCS=README.md README.fastspin.md $(COMMONDOCS)
+ALLDOCS=README.md Fastspin.md $(COMMONDOCS)
 
 zip: fastspin.exe spin2cpp.exe spin2cpp.linux
 	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe spin2cpp.linux fastspin.exe
-	zip -r fastspin.zip fastspin.exe README.fastspin.md $(COMMONDOCS)
+	zip -r fastspin.zip fastspin.exe Fastspin.md
 
 #
 # target to build a windows spincvt GUI
