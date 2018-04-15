@@ -160,7 +160,7 @@ ValidateStackptr(void)
             if (gl_p2) {
                 stackptr = GetOneGlobal(REG_HW, "ptra", 0);
             } else if (gl_optimize_flags & OPT_REMOVE_HUB_BSS) {
-                stackptr = GetOneGlobal(REG_REG, "sp", 0);
+                stackptr = GetOneGlobal(IMM_INT, "sp", current->varsize);
             } else {
                 stackptr = NewImmediatePtr("sp", stacklabel);
             }
@@ -3858,13 +3858,14 @@ EmitMain_P1(IRList *irl, Module *P)
     ir->flags |= FLAG_WZ;
 
     if (HUB_CODE) {
+        ValidateStackptr();
+        ValidateObjbase();
         EmitJump(irl, COND_NE, spinlabel);
+        if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) ) {
+            EmitOp2(irl, OPC_ADD, stackptr, objbase);
+        }
     }
 
-    if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) && stackptr ) {
-        stackptr->val = P->varsize;
-        EmitOp2(irl, OPC_ADD, stackptr, objbase);
-    }
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {
@@ -3880,8 +3881,6 @@ EmitMain_P1(IRList *irl, Module *P)
             ERROR(NULL, "The combination --code=hub --data=cog is not supported");
             return;
         }
-        ValidateStackptr();
-        ValidateObjbase();
         EmitLabel(irl, spinlabel);
         EmitMove(irl, stackptr, arg1);
         EmitMove(irl, objptr, stacktop);

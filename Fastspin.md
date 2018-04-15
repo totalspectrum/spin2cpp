@@ -30,12 +30,24 @@ run binaries. My workflow with Spin programs typically looks like:
    propeller-load program.binary -r -t
 
 
-## Speed ##
+## Speed and Size ##
 
 If you compile with fastspin, your binary program will be much larger
 than when compiled with openspin or bstc. That's because fastspin
 outputs native Propeller instructions (PASM) instead of Spin
 bytecode. It also means the fastspin compiled binary is much faster.
+
+For example, the fftbench demo program compiled with
+   bstc -b -Oa fftbench.spin
+is 3048 bytes long and runs in 1460 milliseconds. With
+   fastspin -O fftbench.spin
+it is 4968 bytes long and runs in 170 milliseconds; so it is a bit
+less than twice as big and runs more than 8 times as fast.
+
+The SPI test benchmark gives:
+   openspin -u: 11732816 cycles  796 bytes
+   bstc -Oa:    11699984 cycles  796 bytes
+   fastspin -O:    98848 cycles 2056 bytes
 
 
 Spin wrappers
@@ -88,6 +100,9 @@ PUB test
   answer9 := f.fibo(9)
 ```
 
+The usage is exactly the same, except that you have to insert the call
+to `__cognew` to start up the remote COG; but now the time critical
+`fibo` function will actually run in the other COG, as PASM code.
 
 Command Line Options
 --------------------
