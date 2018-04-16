@@ -11,7 +11,7 @@ OBJ
 PUB hello | elapsed, e2, i, n, n2
   ser.__cognew
   fibo2.__cognew
-  ser.start(31, 30, 0, 115200)
+  ser.start(115200)
   ser.str(string("hello, world!", 13, 10))
   repeat i from 1 to 12
     elapsed := CNT

@@ -1,5 +1,5 @@
-FASTSPIN=../../build/fastspin
-OPENSPIN=openspin -L../../Lib
+FASTSPIN=../../build/fastspin -q
+OPENSPIN=openspin -q -L../../Lib
 
 all: demo.binary blink1.binary blink2.binary
 
@@ -23,3 +23,4 @@ blinker.cog.spin: blinker.spin
 
 clean:
 	rm -rf *.binary *.cog.spin
+
