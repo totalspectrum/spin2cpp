@@ -1,8 +1,8 @@
 ''
 '' Fibonacci computer
 ''
-PUB calc(n)
+PUB fibo(n)
   if (n < 2)
     return n
-  return calc(n-1) + calc(n-2)
+  return fibo(n-1) + fibo(n-2)
   

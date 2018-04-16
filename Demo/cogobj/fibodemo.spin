@@ -14,10 +14,10 @@ PUB hello | elapsed, e2, i, n, n2
   ser.start(115200)
   repeat i from 1 to 16
     elapsed := CNT
-    n := fibo.calc(i)
+    n := fibo.fibo(i)
     elapsed := CNT - elapsed
     e2 := CNT
-    n2 := fibo2.calc(i)
+    n2 := fibo2.fibo(i)
     e2 := CNT - e2
     ser.str(string("fibo("))
     ser.decuns(i, 2)
