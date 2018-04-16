@@ -4032,11 +4032,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         // count max. number of arguments in any public function
         // also try to guess at stack size required
         Function *func;
+        Symbol *stackSym;
         int mboxSize;
         int stackSize = 1;
         int maxLeafSize = 0;
         func = P->functions;
-
+#define STACK_SIZE_NAME "__STACK_SIZE"
+        stackSym = FindSymbol(&P->objsyms, STACK_SIZE_NAME);
         while (func) {
             if (func->is_public) {
                 if (func->numparams > maxargs) {
@@ -4060,7 +4062,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
         mboxSize = maxargs + 3;
         EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, "__MBOX_SIZE", mboxSize), NewImmediate(mboxSize));
-        EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, "__STACK_SIZE", stackSize), NewImmediate(stackSize));
+
+        if (!stackSym) {
+            EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, STACK_SIZE_NAME, stackSize), NewImmediate(stackSize));
+        }
     }
     EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
     CompileConsts(&cogcode, P->conblock);
