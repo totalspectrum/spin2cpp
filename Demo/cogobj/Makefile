@@ -1,10 +1,10 @@
 FASTSPIN=../../build/fastspin -q
 OPENSPIN=openspin -q -L../../Lib
 
-all: demo.binary blink1.binary blink2.binary
+all: fibodemo.binary blink1.binary blink2.binary
 
-demo.binary: demo.spin Fibo.spin Fibo.cog.spin SimpleSerial.cog.spin
-	$(OPENSPIN) demo.spin
+fibodemo.binary: fibodemo.spin Fibo.spin Fibo.cog.spin SimpleSerial.cog.spin
+	$(OPENSPIN) fibodemo.spin
 
 blink1.binary: blink1.spin
 	$(OPENSPIN) blink1.spin
