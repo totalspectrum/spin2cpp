@@ -12,8 +12,7 @@ PUB hello | elapsed, e2, i, n, n2
   ser.__cognew
   fibo2.__cognew
   ser.start(115200)
-  ser.str(string("hello, world!", 13, 10))
-  repeat i from 1 to 12
+  repeat i from 1 to 16
     elapsed := CNT
     n := fibo.calc(i)
     elapsed := CNT - elapsed
@@ -21,13 +20,13 @@ PUB hello | elapsed, e2, i, n, n2
     n2 := fibo2.calc(i)
     e2 := CNT - e2
     ser.str(string("fibo("))
-    ser.dec(i)
+    ser.decuns(i, 2)
     ser.str(string(") = "))
-    ser.dec(n)
+    ser.decuns(n, 4)
     ser.str(string(" elapsed time "))
-    ser.dec(elapsed)
+    ser.decuns(elapsed, 8)
     ser.str(string(" / "))
-    ser.dec(e2)
+    ser.decuns(e2, 8)
     ser.str(string(" cycles", 13, 10))
     if ( n <> n2)
       ser.str(string("  ERROR", 13, 10))

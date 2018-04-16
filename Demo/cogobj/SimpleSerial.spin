@@ -102,6 +102,11 @@ PUB Num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
 PUB dec(val)
   num(val, 10, 1, 0)
 
+'' print an unsigned decimal number with the specified
+'' number of digits; 0 means just use as many as we need
+PUB decuns(val, digits)
+  num(val, 10, 0, digits)
+
 '' print a hex number with the specified number
 '' of digits; 0 means just use as many as we need
 PUB hex(val, digits) | mask
