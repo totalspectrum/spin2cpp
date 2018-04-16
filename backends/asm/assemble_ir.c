@@ -301,8 +301,10 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "PUB __cogstop\n");
         flexbuf_addstr(fb, "  if __cognum\n");
         flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
-        flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n\n");
-
+        flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
+	flexbuf_addstr(fb, "    __mbox[0] := 0\n");
+	flexbuf_addstr(fb, "    __cognum := 0\n");
+		       
         flexbuf_addstr(fb, "PRI __lock\n");
         flexbuf_addstr(fb, "  repeat\n");
         flexbuf_addstr(fb, "    repeat until __mbox[0] == 0\n");
