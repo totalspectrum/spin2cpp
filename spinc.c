@@ -86,7 +86,8 @@ yylex(YYSTYPE *yval)
 }
 
 const char *gl_progname = "spin2cpp";
-char *gl_header = NULL;
+char *gl_header1 = NULL;
+char *gl_header2 = NULL;
 
 static int
 FindSymbolExact(SymbolTable *S, const char *name)

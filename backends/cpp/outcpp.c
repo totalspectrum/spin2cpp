@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2017 Total Spectrum Software Inc.
+// Copyright 2012-2018 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -261,8 +261,9 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
     int flags = PRIVATE;
 
     /* things we always need */
-    if (gl_header) {
-        flexbuf_printf(f, "%s", gl_header);
+    if (gl_header1 && gl_header2) {
+        flexbuf_printf(f, "// %s", gl_header1);
+        flexbuf_printf(f, "// %s", gl_header2);
     }
     flexbuf_printf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
     flexbuf_printf(f, "#define %s_Class_Defined__\n\n", parse->classname);
@@ -324,8 +325,9 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     int flags = PRIVATE;
 
     /* things we always need */
-    if (gl_header) {
-        flexbuf_printf(f, "%s", gl_header);
+    if (gl_header1 && gl_header2) {
+        flexbuf_printf(f, "// %s", gl_header1);
+        flexbuf_printf(f, "// %s", gl_header2);
     }
     flexbuf_printf(f, "#ifndef %s_Class_Defined__\n", parse->classname);
     flexbuf_printf(f, "#define %s_Class_Defined__\n\n", parse->classname);
@@ -656,8 +658,9 @@ static void
 PrintCppFile(Flexbuf *f, Module *parse)
 {
     /* things we always need */
-    if (gl_header) {
-        flexbuf_printf(f, "%s", gl_header);
+    if (gl_header1 && gl_header2) {
+        flexbuf_printf(f, "// %s", gl_header1);
+        flexbuf_printf(f, "// %s", gl_header2);
     }
     if (parse->topcomment) {
         PrintComment(f, parse->topcomment);

@@ -4188,6 +4188,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         perror(fname);
         exit(1);
     }
+    // write a header if appropriate
+    if (gl_output == OUTPUT_COGSPIN && gl_header1) {
+        fprintf(f, "'' %s", gl_header1);
+        fprintf(f, "'' %s", gl_header2);
+    }
     fwrite(asmcode, 1, strlen(asmcode), f);
     fclose(f);
 }
