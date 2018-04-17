@@ -155,15 +155,12 @@ approaches 10x faster than regular Spin bytecode.
 Blinking Leds
 -------------
 
-Another classic test. Here's a simple pin blinking object:
+Another classic test. Here's a simple pin blinking object. The pin and time
+between blinks are given as a parameter:
 
 ```
 '' blinker.spin
-CON
-  pin = 15
-  pausetime = 40_000_000
-
-PUB run
+PUB run(pin, pausetime)
   DIRA[pin] := 1
   repeat
     OUTA[pin] ^= 1
@@ -182,7 +179,8 @@ To use this in a program do something like:
 CON
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
-  
+  mypin = 15
+  mypause = 40_000_000
 OBJ
   fds: "FullDuplexSerial"
   blink: "blinker.cog"
@@ -190,7 +188,7 @@ OBJ
 PUB demo | id
   fds.start(31, 30, 0, 115200)
   id := blink.__cognew
-  blink.run
+  blink.run(mypin, mypause)
   fds.str(string("blink running in cog "))
   fds.dec(id)
   fds.tx(13)
