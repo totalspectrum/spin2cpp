@@ -10,6 +10,7 @@ Version 3.7.0
 - Better error messages for unexpected characters in the source
 - Added strength reduction for multiplication and subtraction
 - Convert more loops to use djnz
+- Added simplified loop test for loops where the step value is constant
 
 Version 3.6.6
 - Minor tweak to LMM return code

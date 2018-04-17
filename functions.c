@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -487,7 +487,7 @@ TransformCaseExprList(AST *var, AST *ast)
 }
 
 /*
- * print a counting repeat loop
+ * transform AST for a counting repeat loop
  */
 AST *
 TransformCountRepeat(AST *ast)
@@ -617,7 +617,7 @@ TransformCountRepeat(AST *ast)
     } else {
         stepstmt = AstAssign('+', loopvar, step);
     }
-    
+        
     /* want to do:
      * if (loopvar > limit) step = -step;
      * do {
@@ -669,8 +669,17 @@ TransformCountRepeat(AST *ast)
         condtest = loopright;
     } else if (IsConstExpr(loopright)) {
         condtest = loopleft;
+    } else if (IsConstExpr(stepval) && EvalConstExpr(stepval) == 1) {
+        // if the step is known to be 1, we can calculate an exact limit easily;
+        // we keep looping until the index variable != the exact limit
+        AST *oldlimit = limit;
+        if (limit->kind != AST_IDENTIFIER) {
+            limit = AstTempLocalVariable("_limit_");
+        }
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, AstOperator('+', oldlimit, step)));
+        condtest = AstOperator(T_NE, loopvar, limit);
     } else {
-        // condtest = AstOperator(T_OR, loopleft, loopright);
+        // otherwise loop as long as loopvar is between init and final values
         // use the AST_BETWEEN operator for better code
         condtest = NewAST(AST_ISBETWEEN, loopvar, NewAST(AST_RANGE, initvar, limit));
         /* the loop has to execute at least once */

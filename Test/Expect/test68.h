@@ -5,7 +5,7 @@
 
 class test68 {
 public:
-  static int32_t	Foo(int32_t N);
+  static int32_t 	Foo(int32_t N);
 private:
 };
 

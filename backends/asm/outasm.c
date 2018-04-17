@@ -2626,6 +2626,9 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         }            
     } else {
         if (dst != src) {
+            if (dst->kind == IMM_INT) {
+                ERROR(NULL, "Internal Error: emitting move to immediate");
+            }
             ir = EmitOp2(irl, OPC_MOV, dst, src);
         }
     }
