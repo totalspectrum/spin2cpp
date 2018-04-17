@@ -315,6 +315,9 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "PRI __unlock\n");
         flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
+        flexbuf_addstr(fb, "PUB __busy\n");
+        flexbuf_addstr(fb, "  return __mbox[1] <> 0\n\n");
+
         flexbuf_addstr(fb, "PRI __invoke(func, getresult) : r\n");
         flexbuf_addstr(fb, "  __mbox[1] := func - @entry\n");
         flexbuf_addstr(fb, "  if getresult\n");
