@@ -49,9 +49,9 @@ in a command line (Windows or Linux or Mac).  This produces a file
 Fibo.cog.spin. You now can use "Fibo.cog" in place of "Fibo" and get
 the speed benefits.
 
-The only other thing you have to do is add a call to the Fibo.__cognew
+The only other thing you have to do is add a call to the `__cognew`
 method to actually start the object up. (We have to use the special
-__cognew method because the Spin cognew function only supports
+`__cognew` method because the Spin cognew function only supports
 executing bytecode methods.)
 
 
@@ -123,8 +123,8 @@ openspin fibodemo.spin
 propeller-load fibodemo.binary -r -t
 ```
 
-You can also use Fibo.cog.spin in any Spin IDE or other Spin tools.
-It should be legal with all Spin compilers.
+You can also use Fibo.cog.spin with any Spin IDE or other Spin tools.
+It should be legal for all Spin compilers.
 
 The output looks like:
 ```
