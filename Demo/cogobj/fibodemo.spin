@@ -10,8 +10,10 @@ OBJ
   
 PUB hello | elapsed, e2, i, n, n2
   ser.__cognew
-  fibo2.__cognew
   ser.start(115200)
+  ser.str(string("Fibonacci demo...", 13, 10))
+  
+  fibo2.__cognew
   repeat i from 1 to 16
     elapsed := CNT
     n := fibo.fibo(i)

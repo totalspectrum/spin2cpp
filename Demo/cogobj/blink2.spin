@@ -1,27 +1,29 @@
 ''
-'' blink an LED in another COG
-'' COGSPIN version
+'' blink LEDs in two other cogs
 ''
 CON
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
+  pin1 = 15
+  pin2 = 0
+  pausetime = 40_000_000
   
 OBJ
   fds: "FullDuplexSerial"
-  blink: "blinker.cog"
+  blinka: "blinker.cog"
+  blinkb: "blinker.cog"
   
-PUB demo | id, count
+PUB demo | id
   fds.start(31, 30, 0, 115200)
-  count := 0
-  id := blink.__cognew
-  blink.run(@count)
-  fds.str(string("blink running in cog "))
+  id := blinka.__cognew
+  blinka.run(pin1, pausetime)
+  fds.str(string("blinka running in cog "))
   fds.dec(id)
   fds.tx(13)
   fds.tx(10)
-  repeat
-    waitcnt(CNT+80_000_000)
-    fds.str(string("blinked "))
-    fds.dec(count)
-    fds.str(string(" times", 13, 10))
-
+  id := blinkb.__cognew
+  blinkb.run(pin2, pausetime/2)
+  fds.str(string("blinkb running in cog "))
+  fds.dec(id)
+  fds.tx(13)
+  fds.tx(10)
