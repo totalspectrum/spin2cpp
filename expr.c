@@ -1473,11 +1473,14 @@ CompatibleTypes(AST *A, AST *B)
 }
 
 //
-// do some simple optimizations on an expr
+// Do some simple optimizations on an expr
 // this is mainly used to tidy up internally generated
 // expressions
 //   (A+N)-n => A
-//   etc
+// etc.
+// The transformations done here are deliberately restricted
+// because they can be applied to source code
+//
 AST *SimpleOptimizeExpr(AST *expr)
 {
     AST *lhs = expr->left;
@@ -1496,6 +1499,8 @@ AST *SimpleOptimizeExpr(AST *expr)
                 if (IsConstExpr(rhs) && AstMatch(lhs->right, rhs)) {
                     return lhs->left;
                 }
+            } else if (rhs->kind == AST_INTEGER && rhs->d.ival == 0) {
+                return lhs;
             }
         }
         // optimize integer expressions

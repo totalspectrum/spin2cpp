@@ -588,6 +588,9 @@ TransformCountRepeat(AST *ast)
         fromi = EvalConstExpr(fromval);
         toi = EvalConstExpr(toval);
         knownStepDir = (fromi > toi) ? -1 : 1;
+        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+            loopkind = AST_FORATLEASTONCE;
+        }
     }
 
     /* get the loop variable, if we don't already have one */
@@ -677,52 +680,11 @@ TransformCountRepeat(AST *ast)
         /* otherwise, we have to just test for loopvar between to and from */
         condtest = NewAST(AST_ISBETWEEN, loopvar,
                           NewAST(AST_RANGE, fromval, toval));
-        /* the loop has to execute at least once */
-        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
-            condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
-        } else {
+        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
             loopkind = AST_FORATLEASTONCE;
         }
     }
 
-
-#if 0
-    if (IsConstExpr(stepval) && EvalConstExpr(stepval) == 1) {
-        // if the step is known to be 1, we can calculate an exact limit easily;
-        // we keep looping until the index variable != the exact limit
-        AST *oldlimit = limit;
-        if (limit->kind != AST_IDENTIFIER) {
-            limit = AstTempLocalVariable("_limit_");
-        }
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, AstOperator('+', oldlimit, step)));
-        condtest = AstOperator(T_NE, loopvar, limit);
-    } else {
-        // otherwise loop as long as loopvar is between init and final values
-        // use the AST_BETWEEN operator for better code
-        condtest = NewAST(AST_ISBETWEEN, loopvar, NewAST(AST_RANGE, initvar, limit));
-        /* the loop has to execute at least once */
-        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
-            condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
-        } else {
-            loopkind = AST_FORATLEASTONCE;
-        }
-    }
-
-    // optimize counting down to 1; x != 0 is much faster than x >= 1
-    if (deltaknown && delta == -1) {
-        if (condtest->kind == AST_OPERATOR && condtest->d.ival == T_GE
-            && IsConstExpr(condtest->right)
-            && 1 == EvalConstExpr(condtest->right))
-        {
-            AST *lhs = condtest->left;
-            condtest = AstOperator(T_NE, lhs, AstInteger(0));
-            /* if we know we will execute at least once, optimize */
-            if (IsConstExpr(fromval) && EvalConstExpr(fromval) >= 1) {
-                loopkind = AST_FORATLEASTONCE;
-            }
-        }
-    }
-#endif
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);

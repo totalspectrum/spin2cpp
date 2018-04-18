@@ -19,13 +19,13 @@ _serchar
 	mov	_serchar_val, arg1
 	mov	_serchar_waitcycles, CNT
 	mov	_serchar__idx__0001, #10
-L__0011
+L__0006
 	add	_serchar_waitcycles, imm_694_
 	mov	arg1, _serchar_waitcycles
 	waitcnt	arg1, #0
 	shr	_serchar_val, #1 wc
 	muxc	OUTA, imm_1073741824_
-	djnz	_serchar__idx__0001, #L__0011
+	djnz	_serchar__idx__0001, #L__0006
 _serchar_ret
 	ret
 
