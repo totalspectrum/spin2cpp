@@ -5,14 +5,14 @@ DAT
 entry
 
 _blink
-	mov	_var_05, #1
-	shl	_var_05, arg1
+	mov	_var_04, #1
+	shl	_var_04, arg1
 	cmps	arg2, #0 wz
- if_e	jmp	#L__0006
-L__0007
-	xor	OUTA, _var_05
-	djnz	arg2, #L__0007
+ if_e	jmp	#L__0005
 L__0006
+	xor	OUTA, _var_04
+	djnz	arg2, #L__0006
+L__0005
 	rdlong	result1, ptr__dat__
 _blink_ret
 	ret
@@ -28,7 +28,7 @@ _dat_
 	long	$11223344
 	long	@@@_dat_ + 4
 	org	COG_BSS_START
-_var_05
+_var_04
 	res	1
 arg1
 	res	1

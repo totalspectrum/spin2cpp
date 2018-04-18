@@ -135,6 +135,30 @@ AstUses(AST *a, AST *b)
     return AstUses(a->left, b) || AstUses(a->right, b);
 }
 
+/* see if a changes b */
+/* be conservative here */
+int
+AstModifiesIdentifier(AST *body, AST *id)
+{
+    while (body) {
+        if (body->kind == AST_ASSIGN) {
+            if (AstUses(body->left, id))
+                return 1;
+            /* FIXME: we should handle memory references here */
+        }
+        if (body->kind == AST_OPERATOR) {
+            int op = body->d.ival;
+            if (op == T_INCREMENT || op == T_DECREMENT) {
+                return AstUses(body->left, id) || AstUses(body->right, id);
+            }
+        }
+        if (AstModifiesIdentifier(body->left, id))
+            return 1;
+        body = body->right;
+    }
+    return 0;
+}
+
 /* create an integer */
 AST *
 AstInteger(long ival)

@@ -519,6 +519,8 @@ TransformCountRepeat(AST *ast)
     
     AST *initstmt;
     AST *stepstmt;
+
+    AST *limitvar = NULL;
     
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -568,7 +570,8 @@ TransformCountRepeat(AST *ast)
        we can just count one way
     */
     if (fromval == NULL) {
-        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
+        if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
+            // for (i = 0; i < 10; i++) is more idiomatic
             fromval = AstInteger(0);
             testOp = '<';
             knownStepDir = 1;
@@ -598,7 +601,7 @@ TransformCountRepeat(AST *ast)
         loopvar = AstTempLocalVariable("_idx_");
     }
 
-    if (!IsConstExpr(fromval)) {
+    if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
         AST *initvar = AstTempLocalVariable("_start_");
         initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
         fromval = initvar;
@@ -610,8 +613,10 @@ TransformCountRepeat(AST *ast)
         if (gl_expand_constants) {
             toval = AstInteger(EvalConstExpr(toval));
         }
+    } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
+        /* do nothing, toval is already OK */
     } else {
-        AST *limitvar = AstTempLocalVariable("_limit_");
+        limitvar = AstTempLocalVariable("_limit_");
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, toval));
         toval = limitvar;
     }
@@ -627,7 +632,7 @@ TransformCountRepeat(AST *ast)
         initstmt = NewAST(AST_SEQUENCE, initstmt,
                           AstAssign(T_ASSIGN, stepvar,
                                     NewAST(AST_CONDRESULT,
-                                           AstOperator('<', fromval, toval),
+                                           AstOperator('>', toval, fromval),
                                            NewAST(AST_THENELSE, stepval,
                                                   AstOperator(T_NEGATE, NULL, stepval)))));
         stepval = stepvar;
@@ -661,13 +666,20 @@ TransformCountRepeat(AST *ast)
                 testOp = (knownStepDir > 0) ? '+' : '-';
                 toval = SimpleOptimizeExpr(AstOperator(testOp, toval, AstInteger(1)));
             } else {
-                AST *limitvar = AstTempLocalVariable("_limit_");
+                if (!limitvar) {
+                    limitvar = AstTempLocalVariable("_limit_");
+                }
                 initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
                 toval = limitvar;
             }
         } else {
+            if (!limitvar) {
+                limitvar = AstTempLocalVariable("_limit_");
+            }
             initstmt = NewAST(AST_SEQUENCE, initstmt,
-                              AstAssign('+', toval, stepval));
+                              AstAssign(T_ASSIGN, limitvar,
+                                        SimpleOptimizeExpr(
+                                            AstOperator('+', toval, stepval))));
         }
         if (knownStepDir > 0) {
             condtest = AstOperator('<', loopvar, toval);
