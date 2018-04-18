@@ -800,18 +800,30 @@ OptimizeMoves(IRList *irl)
         ir = irl->head;
         while (ir != 0) {
             ir_next = ir->next;
-            if (ir->opc == OPC_MOV && ir->cond == COND_TRUE && !InstrIsVolatile(ir)) {
-	      if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
+            if (InstrIsVolatile(ir)) {
+                /* do nothing */
+            } else if (ir->opc == OPC_MOV && ir->src == ir->dst) {
+                if (!InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-              } else if (IsImmediate(ir->src)) {
-                    change |= PropagateConstForward(ir_next, ir->dst, ir->src);
-	      } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
+                }
+            } else if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
+                if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
+                    DeleteIR(irl, ir);
+                    change = 1;
+                } else if (IsImmediate(ir->src)) {
+                    int sawchange;
+                    change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
+                    if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
+                        // we no longer need the original mov
+                        DeleteIR(irl, ir);
+                    }
+                } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
                     change = 1;
                 }
-	      else if ( !InstrSetsAnyFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
+                else if ( !InstrSetsAnyFlags(ir) && 0 != (stop_ir = SafeToReplaceForward(ir->next, ir->dst, ir->src)) ) {
                     ReplaceForward(ir->next, ir->dst, ir->src, stop_ir);
                     DeleteIR(irl, ir);
                     change = 1;
@@ -820,7 +832,7 @@ OptimizeMoves(IRList *irl)
             ir = ir_next;
         }
         everchange |= change;
-    } while (change);
+    } while (change && 0);
     return everchange;
 }
 
