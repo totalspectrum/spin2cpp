@@ -493,26 +493,34 @@ AST *
 TransformCountRepeat(AST *ast)
 {
     AST *origast = ast;
+
+    // initial values for the loop
+    AST *loopvar = NULL;
     AST *fromval, *toval;
     AST *stepval;
-    AST *limit;
-    AST *step;
-    AST *loop_le_limit, *loop_ge_limit;
-    AST *loopvar = NULL;
-    AST *loopleft, *loopright;
-    AST *initstmt;
-    AST *condtest;
-    AST *stepstmt;
-    AST *forast;
     AST *body;
-    AST *initvar = NULL;
+
+    // what kind of test to perform (loopvar < toval, loopvar != toval, etc.)
+    // note that if not set, we haven't figured it out yet (and probably
+    // need to use between)
+    int testOp = 0;
+
+    // if the step value is known, put +1 (for increasing) or -1 (for decreasing) here
+    int knownStepDir = 0;
+
+    // if the step value is constant, put it here
+    int knownStepVal = 0;
     
-    int negstep = 0;
-    int needsteptest = 1;
-    int deltaknown = 0;
-    int32_t delta = 0;
-    int useLt = 0;
+    // test for terminating the loop
+    AST *condtest = NULL;
+
     int loopkind = AST_FOR;
+    AST *forast;
+    
+    AST *initstmt;
+    AST *stepstmt;
+
+    AST *limitvar = NULL;
     
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -546,6 +554,10 @@ TransformCountRepeat(AST *ast)
     } else {
         stepval = AstInteger(1);
     }
+    if (IsConstExpr(stepval)) {
+        knownStepVal = EvalConstExpr(stepval);
+    }
+    
     body = ast->right;
 
     /* create new ast elements using this ast's line info */
@@ -554,156 +566,137 @@ TransformCountRepeat(AST *ast)
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
        from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
+       it also means that we don't have to do the "between" check,
+       we can just count one way
     */
     if (fromval == NULL) {
-        needsteptest = 0;
-        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
-            useLt = 1;
+        if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
+            // for (i = 0; i < 10; i++) is more idiomatic
             fromval = AstInteger(0);
-            negstep = 0;
+            testOp = '<';
+            knownStepDir = 1;
         } else {
             fromval = toval;
-            toval = AstInteger(1);
-            negstep = 1;
+            toval = AstInteger(0);
+            testOp = '>';
+            knownStepDir = -1;
+            if (knownStepVal == 1) {
+                testOp = T_NE;
+            }
         }
-    } else if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+    }
+    if (IsConstExpr(fromval) && IsConstExpr(toval)) {
         int32_t fromi, toi;
 
         fromi = EvalConstExpr(fromval);
         toi = EvalConstExpr(toval);
-        needsteptest = 0;
-        negstep = (fromi > toi);
-    }
-
-    /* set the loop variable */
-    if (!loopvar) {
-        loopvar = AstTempLocalVariable("_idx_");
-    }
-
-    if (!IsConstExpr(fromval)) {
-        initvar = AstTempLocalVariable("_start_");
-        initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
-    } else {
-        initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
-        initvar = fromval;
-    }
-    /* set the limit variable */
-    if (IsConstExpr(toval)) {
-        if (gl_expand_constants) {
-            limit = AstInteger(EvalConstExpr(toval));
-        } else {
-            limit = toval;
-        }
-    } else {
-        limit = AstTempLocalVariable("_limit_");
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, toval));
-    }
-    /* set the step variable */
-    if (IsConstExpr(stepval) && !needsteptest) {
-        delta = EvalConstExpr(stepval);
-        if (negstep) delta = -delta;
-        step = AstInteger(delta);
-        deltaknown = 1;
-    } else {
-        if (negstep) stepval = AstOperator(T_NEGATE, NULL, stepval);
-        step = AstTempLocalVariable("_step_");
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, step, stepval));
-    }
-
-    if (deltaknown && delta == 1) {
-        stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
-    } else if (deltaknown && delta == -1) {
-        stepstmt = AstOperator(T_DECREMENT, NULL, loopvar);
-    } else {
-        stepstmt = AstAssign('+', loopvar, step);
-    }
-        
-    /* want to do:
-     * if (loopvar > limit) step = -step;
-     * do {
-     *   body
-     * } while ( (step > 0 && loopvar <= limit) || (step < 0 && loopvar >= limit));
-     */
-
-    loop_ge_limit = AstOperator(T_GE, loopvar, limit);
-
-    /* try to make things a bit more idiomatic; if the limit is N - 1,
-       change the ge_limit to actually be "< N" rather than "<= N - 1"
-    */
-    if (!useLt && limit->kind == AST_OPERATOR && limit->d.ival == '-'
-        && limit->right->kind == AST_INTEGER
-        && limit->right->d.ival == 1)
-    {
-        loop_le_limit = AstOperator('<', loopvar, limit->left);
-    } else if (useLt) {
-        loop_le_limit = AstOperator('<', loopvar, limit);
-    } else {
-        loop_le_limit = AstOperator(T_LE, loopvar, limit);
-    }
-    if (needsteptest) {
-        AST *fixstep;
-        fixstep = NewAST( AST_CONDRESULT, loop_ge_limit,
-                          NewAST(AST_THENELSE,
-                                 AstOperator(T_NEGATE, NULL, step),
-                                 step) );
-        initstmt = NewAST(AST_SEQUENCE, initstmt,
-                          AstAssign(T_ASSIGN, step, fixstep));
-    }
-
-    if (deltaknown) {
-        if (delta > 0) {
-            loopleft = loop_le_limit;
-            loopright = AstInteger(0);
-        } else if (delta < 0) {
-            loopleft = AstInteger(0);
-            loopright = loop_ge_limit;
-        } else {
-            loopleft = loopright = AstInteger(0);
-        }
-    } else {
-        loopleft = AstOperator(T_AND, AstOperator('>', step, AstInteger(0)), loop_le_limit);
-        loopright = AstOperator(T_AND, AstOperator('<', step, AstInteger(0)), loop_ge_limit);
-    }
-
-    if (IsConstExpr(loopleft)) {
-        condtest = loopright;
-    } else if (IsConstExpr(loopright)) {
-        condtest = loopleft;
-    } else if (IsConstExpr(stepval) && EvalConstExpr(stepval) == 1) {
-        // if the step is known to be 1, we can calculate an exact limit easily;
-        // we keep looping until the index variable != the exact limit
-        AST *oldlimit = limit;
-        if (limit->kind != AST_IDENTIFIER) {
-            limit = AstTempLocalVariable("_limit_");
-        }
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limit, AstOperator('+', oldlimit, step)));
-        condtest = AstOperator(T_NE, loopvar, limit);
-    } else {
-        // otherwise loop as long as loopvar is between init and final values
-        // use the AST_BETWEEN operator for better code
-        condtest = NewAST(AST_ISBETWEEN, loopvar, NewAST(AST_RANGE, initvar, limit));
-        /* the loop has to execute at least once */
-        if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
-            condtest = AstOperator(T_OR, condtest, AstOperator(T_EQ, loopvar, fromval));
-        } else {
+        knownStepDir = (fromi > toi) ? -1 : 1;
+        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
             loopkind = AST_FORATLEASTONCE;
         }
     }
 
-    // optimize counting down to 1; x != 0 is much faster than x >= 1
-    if (deltaknown && delta == -1) {
-        if (condtest->kind == AST_OPERATOR && condtest->d.ival == T_GE
-            && IsConstExpr(condtest->right)
-            && 1 == EvalConstExpr(condtest->right))
-        {
-            AST *lhs = condtest->left;
-            condtest = AstOperator(T_NE, lhs, AstInteger(0));
-            /* if we know we will execute at least once, optimize */
-            if (IsConstExpr(fromval) && EvalConstExpr(fromval) >= 1) {
-                loopkind = AST_FORATLEASTONCE;
-            }
+    /* get the loop variable, if we don't already have one */
+    if (!loopvar) {
+        loopvar = AstTempLocalVariable("_idx_");
+    }
+
+    if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
+        AST *initvar = AstTempLocalVariable("_start_");
+        initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
+        fromval = initvar;
+    } else {
+        initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
+    }
+    /* set the limit variable */
+    if (IsConstExpr(toval)) {
+        if (gl_expand_constants) {
+            toval = AstInteger(EvalConstExpr(toval));
+        }
+    } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
+        /* do nothing, toval is already OK */
+    } else {
+        limitvar = AstTempLocalVariable("_limit_");
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, toval));
+        toval = limitvar;
+    }
+
+    /* set the step variable */
+    if (knownStepVal && knownStepDir) {
+        if (knownStepDir < 0) {
+            stepval = AstOperator(T_NEGATE, NULL, stepval);
+            knownStepVal = -knownStepVal;
+        }
+    } else {
+        AST *stepvar = AstTempLocalVariable("_step_");
+        initstmt = NewAST(AST_SEQUENCE, initstmt,
+                          AstAssign(T_ASSIGN, stepvar,
+                                    NewAST(AST_CONDRESULT,
+                                           AstOperator('>', toval, fromval),
+                                           NewAST(AST_THENELSE, stepval,
+                                                  AstOperator(T_NEGATE, NULL, stepval)))));
+        stepval = stepvar;
+    }
+
+    stepstmt = NULL;
+    if (knownStepDir) {
+        if (knownStepVal == 1) {
+            stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
+        } else if (knownStepVal == -1) {
+            stepstmt = AstOperator(T_DECREMENT, NULL, loopvar);
+        } else if (knownStepVal < 0) {
+            stepstmt = AstAssign('-', loopvar, AstInteger(-knownStepVal));
         }
     }
+    if (stepstmt == NULL) {
+        stepstmt = AstAssign('+', loopvar, stepval);
+    }
+
+    if (!condtest && testOp) {
+        // we know how to construct the test
+        // we may want to adjust the test slightly though
+        condtest = AstOperator(testOp, loopvar, toval);
+    }
+    
+    if (!condtest && knownStepVal == 1) {
+        // we can optimize the condition test by adjusting the to value
+        // and testing for loopvar != to
+        if (IsConstExpr(toval)) {
+            if (knownStepDir) {
+                testOp = (knownStepDir > 0) ? '+' : '-';
+                toval = SimpleOptimizeExpr(AstOperator(testOp, toval, AstInteger(1)));
+            } else {
+                if (!limitvar) {
+                    limitvar = AstTempLocalVariable("_limit_");
+                }
+                initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
+                toval = limitvar;
+            }
+        } else {
+            if (!limitvar) {
+                limitvar = AstTempLocalVariable("_limit_");
+            }
+            initstmt = NewAST(AST_SEQUENCE, initstmt,
+                              AstAssign(T_ASSIGN, limitvar,
+                                        SimpleOptimizeExpr(
+                                            AstOperator('+', toval, stepval))));
+        }
+        if (knownStepDir > 0) {
+            condtest = AstOperator('<', loopvar, toval);
+        } else {
+            condtest = AstOperator(T_NE, loopvar, toval);
+        }
+    }
+    
+    if (!condtest) {
+        /* otherwise, we have to just test for loopvar between to and from */
+        condtest = NewAST(AST_ISBETWEEN, loopvar,
+                          NewAST(AST_RANGE, fromval, toval));
+        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+            loopkind = AST_FORATLEASTONCE;
+        }
+    }
+
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);

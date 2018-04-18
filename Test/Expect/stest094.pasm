@@ -5,15 +5,14 @@ DAT
 entry
 
 _zcount
-	cmps	arg1, arg2 wc,wz
- if_ae	neg	_tmp001_, #1
- if_b	mov	_tmp001_, #1
-	add	arg2, _tmp001_
-L__0006
+	cmps	arg2, arg1 wc,wz
+ if_a	mov	_tmp001_, #1
+ if_be	neg	_tmp001_, #1
+L__0005
 	cmps	arg1, arg2 wz
  if_ne	mov	OUTA, arg1
  if_ne	add	arg1, _tmp001_
- if_ne	jmp	#L__0006
+ if_ne	jmp	#L__0005
 _zcount_ret
 	ret
 

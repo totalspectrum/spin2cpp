@@ -7,12 +7,12 @@ entry
 _inc
 	mov	_var_03, objptr
 	mov	_var_02, #10
-L__0006
+L__0003
 	rdlong	_var_04, _var_03
 	add	_var_04, arg1
 	wrlong	_var_04, _var_03
 	add	_var_03, #4
-	djnz	_var_02, #L__0006
+	djnz	_var_02, #L__0003
 _inc_ret
 	ret
 

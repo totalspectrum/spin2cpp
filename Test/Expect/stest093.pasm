@@ -14,7 +14,7 @@ _fillInput
 	mov	_var_06, objptr
 	add	_var_06, imm_5119_
 	mov	_var_01, imm_1024_
-L__0009
+L__0006
 	wrlong	_var_02, _var_03
 	wrbyte	_var_04, _var_06
 	add	_var_02, #13
@@ -22,7 +22,7 @@ L__0009
 	add	_var_04, #17
 	sub	_var_05, #1
 	sub	_var_06, #1
-	djnz	_var_01, #L__0009
+	djnz	_var_01, #L__0006
 _fillInput_ret
 	ret
 

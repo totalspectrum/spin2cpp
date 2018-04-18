@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -1470,4 +1470,43 @@ CompatibleTypes(AST *A, AST *B)
 
     if (A->kind != B->kind) return 0;
     return SameTypes(A->left, B->left);
+}
+
+//
+// Do some simple optimizations on an expr
+// this is mainly used to tidy up internally generated
+// expressions
+//   (A+N)-n => A
+// etc.
+// The transformations done here are deliberately restricted
+// because they can be applied to source code
+//
+AST *SimpleOptimizeExpr(AST *expr)
+{
+    AST *lhs = expr->left;
+    AST *rhs = expr->right;
+    if (expr->kind == AST_OPERATOR) {
+        int op = expr->d.ival;
+        if (op == T_NEGATE) {
+            //   -(-x) => x
+            if (rhs->kind == AST_OPERATOR && rhs->d.ival == T_NEGATE) {
+                return rhs->right;
+            }
+        } else if (op == '+' || op == '-') {
+            int oppositeOp = (op == '+') ? '-' : '+';
+            // (A+N)-N => A, similarly for (A-N)+N
+            if (lhs->kind == AST_OPERATOR && lhs->d.ival == oppositeOp) {
+                if (IsConstExpr(rhs) && AstMatch(lhs->right, rhs)) {
+                    return lhs->left;
+                }
+            } else if (rhs->kind == AST_INTEGER && rhs->d.ival == 0) {
+                return lhs;
+            }
+        }
+        // optimize integer expressions
+        if (lhs->kind == AST_INTEGER && rhs->kind == AST_INTEGER) {
+            return AstInteger(EvalConstExpr(expr));
+        }
+    }
+    return expr;
 }

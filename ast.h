@@ -171,6 +171,9 @@ int AstMatch(AST *a, AST *b);
 /* check to see if a tree is a subtree of another */
 int AstUses(AST *big, AST *sub);
 
+/* check to see if identifier AST *id is modified inside *body */
+int AstModifiesIdentifier(AST *body, AST *id);
+
 /* length of an AST list */
 int AstListLen(AST *a);
 
