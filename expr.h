@@ -61,4 +61,7 @@ AST *TransformRangeAssign(AST *dst, AST *src, int toplevel);
 AST *TransformRangeUse(AST *src);
 AST *TransformCaseExprList(AST *var, AST *list);
 
+// optimize things like ((a+N)-N) -> a
+AST *SimpleOptimizeExpr(AST *);
+
 #endif

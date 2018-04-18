@@ -6,8 +6,8 @@ entry
 
 _zcount
 	cmps	arg1, arg2 wc,wz
- if_ae	neg	_tmp001_, #1
  if_b	mov	_tmp001_, #1
+ if_ae	neg	_tmp001_, #1
 	add	arg2, _tmp001_
 L__0006
 	cmps	arg1, arg2 wz

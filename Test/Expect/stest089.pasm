@@ -7,9 +7,9 @@ entry
 _main
 	mov	_var_01, CNT
 	mov	_var_02, imm_512_
-L__0002
+L__0005
 	xor	OUTA, #1
-	djnz	_var_02, #L__0002
+	djnz	_var_02, #L__0005
 	mov	_tmp001_, CNT
 	sub	_tmp001_, _var_01
 	mov	DIRA, _tmp001_

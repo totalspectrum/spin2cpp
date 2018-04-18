@@ -4,11 +4,11 @@
 
 int32_t test117::Getit(void)
 {
-  int32_t	I;
+  int32_t 	I;
   // start something
   A = 0;
   // count up
-  for(I = 1; I <= 5; I++) {
+  for(I = 1; I < 6; I++) {
     // update a
     A = A + I;
   }
