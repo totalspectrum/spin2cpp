@@ -353,7 +353,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "  if getresult                   ' if we should wait for an answer\n");
         flexbuf_addstr(fb, "    repeat until __mbox[1] == 0  ' wait for remote COG to be idle\n");
         flexbuf_addstr(fb, "    r := __mbox[2]               ' pick up remote COG result\n");
-        flexbuf_addstr(fb, "    __unlock                     ' release to other COGs\n");
+        flexbuf_addstr(fb, "  __unlock                       ' release to other COGs\n");
         flexbuf_addstr(fb, "  return r\n\n");
 
         flexbuf_addstr(fb, "'' Code to convert Spin relative addresses to absolute addresses\n");
@@ -748,7 +748,7 @@ IRAssemble(IRList *list, Module *P)
     if (gl_output == OUTPUT_COGSPIN) {
         flexbuf_printf(&fb, "__fixup_ptr\n\tlong\t");
         if (fixup_number > 0) {
-            flexbuf_printf(&fb, "@__fixup_%d\n", fixup_number);
+            flexbuf_printf(&fb, "@__fixup_%d - 4\n", fixup_number);
         } else {
             flexbuf_printf(&fb, "0\n");
         }
