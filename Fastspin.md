@@ -10,10 +10,8 @@ is interpreted by a program in the Propeller's ROM. This bytecode
 is very compact, but it is slow to run. Fastspin produces much larger
 code, but it is also much faster.
 
-Fastspin is an alternate (simpler) frontend to spin2cpp. It does not
-support translation to C or C++, only to binary (via PASM). The
-command line options for fastspin are very similar to those of the
-openspin compiler:
+The command line options for fastspin are very similar to those of the
+openspin compiler.
 
 The basic usage is very simple:
 
@@ -38,9 +36,13 @@ outputs native Propeller instructions (PASM) instead of Spin
 bytecode. It also means the fastspin compiled binary is much faster.
 
 For example, the fftbench demo program compiled with
+
    bstc -b -Oa fftbench.spin
+
 is 3048 bytes long and runs in 1460 milliseconds. With
+
    fastspin -O fftbench.spin
+
 it is 4968 bytes long and runs in 170 milliseconds; so it is a bit
 less than twice as big and runs more than 8 times as fast.
 
@@ -52,6 +54,7 @@ The SPI test benchmark gives:
 
 Spin wrappers
 -------------
+
 The simplest way to use fastspin is just to compile a whole program
 (convert everything to PASM). However, sometimes a program compiled
 this way may be too big to fit in memory; or sometimes you may want
