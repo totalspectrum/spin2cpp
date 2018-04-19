@@ -33,6 +33,7 @@
 static int fixup_number = 0;
 static int pending_fixup = 0;
 
+// flags for what has been output so far
 static int inDat;
 static int inCon;
 static int didOrg;
@@ -298,60 +299,86 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         Function *f;
         
         flexbuf_addstr(fb, "VAR\n");
-        flexbuf_addstr(fb, "  long __mbox[__MBOX_SIZE]\n");
-        flexbuf_printf(fb, "  long __objmem[%d]\n", varlen / 4);
-        flexbuf_addstr(fb, "  long __stack[__STACK_SIZE]\n");
-        flexbuf_addstr(fb, "  byte __cognum\n\n");
+        flexbuf_addstr(fb, "  long __mbox[__MBOX_SIZE]   ' mailbox for communicating with remote COG\n");
+        flexbuf_printf(fb, "  long __objmem[%d]          ' space for hub data in COG code\n", varlen / 4);
+        flexbuf_addstr(fb, "  long __stack[__STACK_SIZE] ' stack for new COG\n");
+        flexbuf_addstr(fb, "  byte __cognum              ' 1 + the ID of the running COG (0 if nothing running)\n\n");
 
+        flexbuf_addstr(fb, "'' Code to start the object running in its own COG\n");
+        flexbuf_addstr(fb, "'' This must always be called before any other methods\n");
         flexbuf_addstr(fb, "PUB __cognew | id\n");
-        flexbuf_addstr(fb, "  if (__cognum == 0)\n");
+        flexbuf_addstr(fb, "  if (__cognum == 0) ' if the cog isn't running yet\n");
         flexbuf_addstr(fb, "    __fixup_addresses\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
         flexbuf_addstr(fb, "    __mbox[0] := @__objmem\n");
         flexbuf_addstr(fb, "    __mbox[1] := @__stack\n");
-        flexbuf_addstr(fb, "    id := cognew(@entry, @__mbox)\n");
+        flexbuf_addstr(fb, "    id := cognew(@entry, @__mbox) ' actually start the cog\n");
         flexbuf_addstr(fb, "    __cognum := id + 1\n");
         flexbuf_addstr(fb, "  return id\n\n");
 
+        flexbuf_addstr(fb, "'' Code to stop the remote COG\n");
         flexbuf_addstr(fb, "PUB __cogstop\n");
         flexbuf_addstr(fb, "  if __cognum\n");
         flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
 	flexbuf_addstr(fb, "    __mbox[0] := 0\n");
 	flexbuf_addstr(fb, "    __cognum := 0\n\n");
-		       
+        
+        flexbuf_addstr(fb, "'' Code to lock access to the PASM COG\n");
+        flexbuf_addstr(fb, "'' The idea here is that (in theory) multiple Spin bytecode threads might\n");
+        flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock mackes sure they don't step on each other.\n");
+        flexbuf_addstr(fb, "'' This method also makes sure the remote COG is idle and ready to receive commands.\n");
         flexbuf_addstr(fb, "PRI __lock\n");
         flexbuf_addstr(fb, "  repeat\n");
-        flexbuf_addstr(fb, "    repeat until __mbox[0] == 0\n");
-        flexbuf_addstr(fb, "    __mbox[0] := __cognum\n");
-        flexbuf_addstr(fb, "  until __mbox[0] == __cognum\n\n");
-        flexbuf_addstr(fb, "  repeat until __mbox[1] == 0\n");
+        flexbuf_addstr(fb, "    repeat until __mbox[0] == 0   ' wait until no other Spin code is using remote\n");
+        flexbuf_addstr(fb, "    __mbox[0] := __cognum         ' try to claim it\n");
+        flexbuf_addstr(fb, "  until __mbox[0] == __cognum     ' make sure we really did get it\n\n");
+        flexbuf_addstr(fb, "  repeat until __mbox[1] == 0     ' now wait for the COG itself to be idle\n\n");
 
+        flexbuf_addstr(fb, "'' Code to release access to the PASM COG\n");
         flexbuf_addstr(fb, "PRI __unlock\n");
         flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
+        flexbuf_addstr(fb, "'' Check to see if the PASM COG is busy (still working on something)\n");
         flexbuf_addstr(fb, "PUB __busy\n");
         flexbuf_addstr(fb, "  return __mbox[1] <> 0\n\n");
 
+        flexbuf_addstr(fb, "'' Code to send a message to the remote COG asking it to perform a method\n");
+        flexbuf_addstr(fb, "'' func is the PASM entrypoint of the method to perform\n");
+        flexbuf_addstr(fb, "'' if getresult is nonzero then we wait for the remote COG to answer us with a result\n");
+        flexbuf_addstr(fb, "'' if getresult is 0 then we continue without waiting (the remote COG runs in parallel\n");
+        flexbuf_addstr(fb, "'' We must always call __lock before this, and set up the parameters starting in __mbox[2]\n");
         flexbuf_addstr(fb, "PRI __invoke(func, getresult) : r\n");
-        flexbuf_addstr(fb, "  __mbox[1] := func - @entry\n");
-        flexbuf_addstr(fb, "  if getresult\n");
-        flexbuf_addstr(fb, "    repeat until __mbox[1] == 0\n");
-        flexbuf_addstr(fb, "    r := __mbox[2]\n");
-        flexbuf_addstr(fb, "  __unlock\n");
+        flexbuf_addstr(fb, "  __mbox[1] := func - @entry     ' set the function to perform (NB: this is a HUB address)\n");
+        flexbuf_addstr(fb, "  if getresult                   ' if we should wait for an answer\n");
+        flexbuf_addstr(fb, "    repeat until __mbox[1] == 0  ' wait for remote COG to be idle\n");
+        flexbuf_addstr(fb, "    r := __mbox[2]               ' pick up remote COG result\n");
+        flexbuf_addstr(fb, "    __unlock                     ' release to other COGs\n");
         flexbuf_addstr(fb, "  return r\n\n");
 
+        flexbuf_addstr(fb, "'' Code to convert Spin relative addresses to absolute addresses\n");
+        flexbuf_addstr(fb, "'' The PASM code contains some absolute pointers internally; but the\n");
+        flexbuf_addstr(fb, "'' regular Spin compiler cannot emit these (bstc and fastspin can, with the\n");
+        flexbuf_addstr(fb, "'' @@@ operator, but we don't want to rely on having those compilers).\n");
+        flexbuf_addstr(fb, "'' So the compiler inserts a chain of fixups, with each entry having the Spin\n");
+        flexbuf_addstr(fb, "'' relative address in the low word, and a pointer to the next fixup in the high word.\n");
+        flexbuf_addstr(fb, "'' This code follows that chain and adjusts the relative addresses to absolute ones.\n");
+        
         flexbuf_addstr(fb, "PRI __fixup_addresses | ptr, nextptr, temp\n");
         flexbuf_addstr(fb, "  ptr := __fixup_ptr[0]\n");
-        flexbuf_addstr(fb, "  repeat while (ptr)\n");
+        flexbuf_addstr(fb, "  repeat while (ptr)      ' the fixup chain is terminated with a 0 pointer\n");
         flexbuf_addstr(fb, "    ptr := @@ptr          ' point to next fixup\n");
         flexbuf_addstr(fb, "    temp := long[ptr]     ' get the data\n");
         flexbuf_addstr(fb, "    nextptr := temp >> 16 ' high 16 bits contains link to next fixup\n");
         flexbuf_addstr(fb, "    temp := temp & $ffff  ' low 16 bits contains real pointer\n");
         flexbuf_addstr(fb, "    long[ptr] := @@temp   ' replace fixup data with real pointer\n");
         flexbuf_addstr(fb, "    ptr := nextptr\n");
-        flexbuf_addstr(fb, "  __fixup_ptr[0] := 0 ' mark fixups as done\n");
+        flexbuf_addstr(fb, "  __fixup_ptr[0] := 0 ' mark fixups as done\n\n");
 
+        flexbuf_addstr(fb, "'--------------------------------------------------\n");
+        flexbuf_addstr(fb, "' Stub functions to perform remote calls to the COG\n");
+        flexbuf_addstr(fb, "'--------------------------------------------------\n\n");
+        
         // now we have to create the stub functions
         for (f = P->functions; f; f = f->next) {
             if (f->is_public) {
@@ -391,6 +418,11 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 flexbuf_printf(fb, "  return __invoke(@pasm_%s, %d)\n\n", f->name, synchronous);
             }
         }
+        flexbuf_addstr(fb, "'--------------------------------------------------\n");
+        flexbuf_addstr(fb, "' The converted object (Spin translated to PASM)\n");
+        flexbuf_addstr(fb, "' This is the code that will run in the remote COG\n");
+        flexbuf_addstr(fb, "'--------------------------------------------------\n\n");
+
     } else {
         flexbuf_addstr(fb, "PUB main\n");
         flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
