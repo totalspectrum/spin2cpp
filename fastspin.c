@@ -257,6 +257,7 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
+            gl_debug = 1;
             compile = 0;
             outputMain = 0;
             outputBin = 0;
