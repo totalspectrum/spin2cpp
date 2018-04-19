@@ -28,6 +28,11 @@
 #include "spinc.h"
 #include "outasm.h"
 
+// used for converting Spin relative addresses to absolute addresses
+// (only needed for OUTPUT_COGSPIN)
+static int fixup_number = 0;
+static int pending_fixup = 0;
+
 static int inDat;
 static int inCon;
 static int didOrg;
@@ -132,6 +137,15 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
     case STRING_DEF:
         if (gl_p2) {
             flexbuf_addstr(fb, "@");
+        } else if (gl_output == OUTPUT_COGSPIN) {
+            // record fixup info
+            if (fixup_number > 0) {
+                flexbuf_printf(fb, "( (@__fixup_%d - 4) << 16) + @", fixup_number);
+            } else {
+                flexbuf_addstr(fb, "@");
+            }
+            fixup_number++;
+            pending_fixup = fixup_number;
         } else {
             flexbuf_addstr(fb, "@@@");
         }
@@ -291,6 +305,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 
         flexbuf_addstr(fb, "PUB __cognew | id\n");
         flexbuf_addstr(fb, "  if (__cognum == 0)\n");
+        flexbuf_addstr(fb, "    __fixup_addresses\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
         flexbuf_addstr(fb, "    __mbox[0] := @__objmem\n");
         flexbuf_addstr(fb, "    __mbox[1] := @__stack\n");
@@ -303,7 +318,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
 	flexbuf_addstr(fb, "    __mbox[0] := 0\n");
-	flexbuf_addstr(fb, "    __cognum := 0\n");
+	flexbuf_addstr(fb, "    __cognum := 0\n\n");
 		       
         flexbuf_addstr(fb, "PRI __lock\n");
         flexbuf_addstr(fb, "  repeat\n");
@@ -325,6 +340,17 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    r := __mbox[2]\n");
         flexbuf_addstr(fb, "  __unlock\n");
         flexbuf_addstr(fb, "  return r\n\n");
+
+        flexbuf_addstr(fb, "PRI __fixup_addresses | ptr, nextptr, temp\n");
+        flexbuf_addstr(fb, "  ptr := __fixup_ptr[0]\n");
+        flexbuf_addstr(fb, "  repeat while (ptr)\n");
+        flexbuf_addstr(fb, "    ptr := @@ptr          ' point to next fixup\n");
+        flexbuf_addstr(fb, "    temp := long[ptr]     ' get the data\n");
+        flexbuf_addstr(fb, "    nextptr := temp >> 16 ' high 16 bits contains link to next fixup\n");
+        flexbuf_addstr(fb, "    temp := temp & $ffff  ' low 16 bits contains real pointer\n");
+        flexbuf_addstr(fb, "    long[ptr] := @@temp   ' replace fixup data with real pointer\n");
+        flexbuf_addstr(fb, "    ptr := nextptr\n");
+        flexbuf_addstr(fb, "  __fixup_ptr[0] := 0 ' mark fixups as done\n");
 
         // now we have to create the stub functions
         for (f = P->functions; f; f = f->next) {
@@ -680,6 +706,20 @@ IRAssemble(IRList *list, Module *P)
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {
         DoAssembleIR(&fb, ir, P);
+        if (gl_output == OUTPUT_COGSPIN) {
+            if (pending_fixup) {
+                flexbuf_printf(&fb, "__fixup_%d\n", pending_fixup);
+                pending_fixup = 0;
+            }
+        }
+    }
+    if (gl_output == OUTPUT_COGSPIN) {
+        flexbuf_printf(&fb, "__fixup_ptr\n\tlong\t");
+        if (fixup_number > 0) {
+            flexbuf_printf(&fb, "@__fixup_%d\n", fixup_number);
+        } else {
+            flexbuf_printf(&fb, "0\n");
+        }
     }
     flexbuf_addchar(&fb, 0);
     ret = flexbuf_get(&fb);
