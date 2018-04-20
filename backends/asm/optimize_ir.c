@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016 Total Spectrum Software Inc.
+// Copyright 2016-2018 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -784,6 +784,84 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
     }
   }
   return change;
+}
+
+extern Operand *mulfunc, *divfunc, *muldiva, *muldivb;
+
+static bool
+DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand *opb)
+{
+    IR *ir2, *ir3;
+    
+    // ir is pointing at the mov muldiva, opa instruction
+    ir2 = ir->next;
+    if (!ir2) return false;
+    ir3 = ir2->next;
+    if (!ir3) return false;
+    if (ir2->opc != OPC_MOV) return false;
+    if (ir2->dst != muldivb || ir2->src != opb) return false;
+    if (ir3->opc != OPC_CALL || ir3->dst != lastop) return false;
+    ir->opc = OPC_DUMMY;
+    ir2->opc = OPC_DUMMY;
+    ir3->opc = OPC_DUMMY;
+    return true;
+}
+
+int
+OptimizeMulDiv(IRList *irl)
+{
+    // known operands (NULL if not known)
+    Operand *opa = NULL;   // first operand to multiply or divide
+    Operand *opb = NULL;  // second operand to multiply or divide
+    Operand *lastop = NULL;
+    IR *ir;
+    int change = 0;
+    
+    ir = irl->head;
+    while (ir != 0) {
+        if (IsLabel(ir)) {
+            opa = NULL;
+        } else if (IsDummy(ir)) {
+            // do nothing
+        } else if (InstrModifies(ir, muldiva)) {
+            if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
+                // this may be a particular sequence:
+                //   mov muldiva, opa
+                //   mov muldivb, opb
+                //   call #function
+                // if so, see if we have just done that sequence previously
+                // so that the proper results are already in their
+                // registers
+                if (opa == ir->src && DeleteMulDivSequence(irl, ir, lastop, opa, opb)) {
+                    change = 1;
+                } else {
+                    opa = ir->src;
+                    opb = NULL;
+                    lastop = NULL;
+                }
+            } else {
+                opa = opb = lastop = NULL;
+            }
+        } else if (InstrModifies(ir, muldivb)) {
+            if (ir->opc == OPC_MOV) {
+                opb = ir->src;
+            } else if (InstrSetsDst(ir)) {
+                opb = NULL;
+            }
+        } else if (opa && InstrModifies(ir, opa)) {
+                opa = NULL;
+        } else if (opb && InstrModifies(ir, opb)) {
+                opb = NULL;
+        } else if (ir->opc == OPC_CALL) {
+            if (ir->dst == mulfunc || ir->dst == divfunc) {
+                lastop = ir->dst;
+            } else {
+                lastop = NULL;
+            }
+        }
+        ir = ir->next;
+    }
+    return change;
 }
 
 int
@@ -1932,6 +2010,10 @@ OptimizeIRLocal(IRList *irl)
     
     if (gl_optimize_flags & OPT_NO_ASM) return;
     if (!irl->head) return;
+
+    // multiply divide optimization need only be performed once,
+    // and should be done before other optimizations confuse things
+    OptimizeMulDiv(irl);
     do {
         change = 0;
         AssignTemporaryAddresses(irl);

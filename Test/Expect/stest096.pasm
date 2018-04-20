@@ -4,14 +4,17 @@ DAT
 	org	0
 entry
 
-_divmod16
+_calcdiv
 	mov	muldiva_, arg1
 	mov	muldivb_, arg2
 	call	#divide_
-	shl	muldivb_, #16
-	or	muldivb_, muldiva_
-	mov	result1, muldivb_
-_divmod16_ret
+	wrlong	muldivb_, objptr
+	add	objptr, #4
+	wrlong	muldiva_, objptr
+	add	objptr, #4
+	wrlong	muldivb_, objptr
+	sub	objptr, #8
+_calcdiv_ret
 	ret
 ' code originally from spin interpreter, modified slightly
 
@@ -44,10 +47,14 @@ itmp1_
 	long	0
 itmp2_
 	long	0
+objptr
+	long	@@@objmem
 result1
 	long	0
 COG_BSS_START
 	fit	496
+objmem
+	long	0[3]
 	org	COG_BSS_START
 arg1
 	res	1
