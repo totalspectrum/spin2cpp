@@ -17,8 +17,13 @@ Add in the missing openspin options to fastspin.
 
 Support @@@foo + offset in --asm mode.
 
+Add an option to get a report of method sizes and free space left.
+
 Optimization
 ------------
+
+merge / and // (and * and **) when possible. Probably this could be done in
+the common sub-expression code (if we add a CSE entry for x / y add one for x // y at the same time??)
 
 Take advantage of commutative operators to improve optimization.
 
