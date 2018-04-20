@@ -1,7 +1,11 @@
 *.exe
 *.zip
 *~
-foo.*
+foo*.spin
+foo*.h
+foo*.cpp
+foo*.c
+foo*.pasm
 build*/
 Lib/*.cpp
 Lib/*.h
