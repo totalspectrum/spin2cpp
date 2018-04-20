@@ -2112,6 +2112,8 @@ EmitLea(IRList *irl, Operand *dst, Operand *src)
 
 //
 // compile a coginit expression
+// if we have a spin function call inside it then this
+// is mildly complicated
 //
 static Operand *
 CompileCoginit(IRList *irl, AST *expr)
@@ -2142,8 +2144,13 @@ CompileCoginit(IRList *irl, AST *expr)
             ERROR(expr, "Internal error: wrong calling convention for coginit");
             return NewImmediate(0);
         }
+        if (gl_output == OUTPUT_COGSPIN) {
+            ERROR(expr, "coginit/cognew of Spin objects is not permitted from COG code");
+            return NewImmediate(0);
+        }
         if (remote->cog_code) {
             ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
+            return NewImmediate(0);
         }
         if (remote->module != curfunc->module) {
             ERROR(expr, "Coginit/cognew across objects is not supported");
