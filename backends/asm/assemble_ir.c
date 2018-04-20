@@ -306,16 +306,23 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 
         flexbuf_addstr(fb, "'' Code to start the object running in its own COG\n");
         flexbuf_addstr(fb, "'' This must always be called before any other methods\n");
-        flexbuf_addstr(fb, "PUB __cognew | id\n");
+        flexbuf_addstr(fb, "PUB __coginit(id)\n");
         flexbuf_addstr(fb, "  if (__cognum == 0) ' if the cog isn't running yet\n");
         flexbuf_addstr(fb, "    __fixup_addresses\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
-        flexbuf_addstr(fb, "    __mbox[0] := @__objmem\n");
-        flexbuf_addstr(fb, "    __mbox[1] := @__stack\n");
-        flexbuf_addstr(fb, "    id := cognew(@entry, @__mbox) ' actually start the cog\n");
+        flexbuf_addstr(fb, "    __mbox[1] := @pasm__init - @entry\n");
+        flexbuf_addstr(fb, "    __mbox[2] := @__objmem\n");
+        flexbuf_addstr(fb, "    __mbox[3] := @__stack\n");
+        flexbuf_addstr(fb, "    if (id < 0)\n");
+        flexbuf_addstr(fb, "      id := cognew(@entry, @__mbox)\n");
+        flexbuf_addstr(fb, "    else\n");
+        flexbuf_addstr(fb, "      coginit(id, @entry, @__mbox) ' actually start the cog\n");
         flexbuf_addstr(fb, "    __cognum := id + 1\n");
         flexbuf_addstr(fb, "  return id\n\n");
 
+        flexbuf_addstr(fb, "PUB __cognew\n");
+        flexbuf_addstr(fb, "  return __coginit(-1)\n\n");
+                       
         flexbuf_addstr(fb, "'' Code to stop the remote COG\n");
         flexbuf_addstr(fb, "PUB __cogstop\n");
         flexbuf_addstr(fb, "  if __cognum\n");

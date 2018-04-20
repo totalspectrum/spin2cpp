@@ -39,6 +39,7 @@ static Operand *putcogreg;
 static Operand *abortfunc;
 static Operand *catchfunc;
 static Operand *arg1;
+static Operand *arg2;
 static Operand *result1;
 static Operand *abortcalled;
 
@@ -3942,13 +3943,13 @@ void
 EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
 {
     IR *ir;
-    Operand *objptr = GetOneGlobal(REG_REG, "objptr", 0);
     Operand *arg[MAX_COGSPIN_ARGS];
     Operand *par = GetOneGlobal(REG_HW, "par", 0);
     Operand *const4 = NewImmediate(4);
     Operand *mboxptr = GetOneGlobal(REG_REG, "mboxptr", 0);
     Operand *mboxcmd = GetOneGlobal(REG_REG, "mboxcmd", 0);
     Operand *waitloop;
+    Operand *pasm__init;
     
     int i;
     if (maxArgs > MAX_COGSPIN_ARGS) {
@@ -3960,11 +3961,9 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
         sprintf(temp, "arg%d", i+1);
         arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
     }
-    if (maxArgs > 0) {
-        arg1 = arg[0];
-    } else {
-        arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
-    }
+    // always have at least 2 arguments
+    arg1 = arg[0];
+    arg2 = arg[1];
     result1 = GetOneGlobal(REG_REG, "result1", 0);
     
     stackptr = GetOneGlobal(REG_REG, "sp", 0);
@@ -3974,18 +3973,8 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
 
     // mov mboxptr, par
     EmitMove(irl, mboxptr, par);
-    // mov arg1, #0
-    EmitMove(irl, arg1, NewImmediate(0));
-    // rdlong objptr, mboxptr
-    EmitOp2(irl, OPC_RDLONG, objptr, mboxptr);
-    // wrlong arg1, mboxptr
-    EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
     // add mboxptr, #4 ' skip over lock
     EmitOp2(irl, OPC_ADD, mboxptr, const4);
-    // rdlong stackptr, mboxptr
-    EmitOp2(irl, OPC_RDLONG, stackptr, mboxptr);
-    // wrlong arg1, mboxptr
-    EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
 
     waitloop = NewOperand(IMM_COG_LABEL, "waitloop", 0);
     EmitLabel(irl, waitloop);
@@ -4013,6 +4002,12 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     EmitMove(irl, arg1, NewImmediate(0));
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
     EmitJump(irl, COND_TRUE, waitloop);
+
+    pasm__init = NewOperand(IMM_COG_LABEL, "pasm__init", 0);
+    EmitLabel(irl, pasm__init);
+    EmitMove(irl, objbase, arg1);
+    EmitMove(irl, stackptr, arg2);
+    EmitJump(irl, COND_TRUE, linkreg);
 }
 
 void
@@ -4026,7 +4021,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
     unsigned int clkfreq, clkreg;
     const char *asmcode;
-    int maxargs = 0;
+    int maxargs = 2; // initialization code wants 2 arguments
     
     save = current;
     current = P;
