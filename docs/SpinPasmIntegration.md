@@ -144,11 +144,11 @@ fibo(10) = 55 bytecode time 362720 / pasm time 41344 cycles
 
 Some things to note about the performance:
 
-(1) There's a fixed overhead of nearly 10000 cycles for managing the
+1. There's a fixed overhead of nearly 10000 cycles for managing the
 inter-COG communication and getting the answer back from the remote COG.
 So for small calculations the PASM isn't worth it.
 
-(2) Once we start getting slightly more complicated calculations the PASM
+2. Once we start getting slightly more complicated calculations the PASM
 speed quickly becomes apparent. In this case we can see that the PASM
 approaches 10x faster than regular Spin bytecode.
 
@@ -367,8 +367,11 @@ Restrictions
 
 There are a few restrictions on .cog.spin mode:
 
-(1) coginit and cognew cannot be used to start Spin methods in a .cog.spin file. They can start assembly code, if you choose to insert some PASM in your .spin, but it must be PASM that you wrote, not generated automatically by the compiler.
+1. coginit and cognew cannot be used to start Spin methods in a .cog.spin file. They can start assembly code, if you choose to insert some PASM in your .spin, but it must be PASM that you wrote, not generated automatically by the compiler.
 
-(2) Obviously, your code must fit into the memory of a single COG
+2. Obviously, your code must fit into the memory of a single COG
 
-(3) Variables in the VAR section will be placed in HUB memory. Local variables in Spin methods will usually be in COG memory, unless the @ operator is applied to them.
+3. Variables in the VAR section will be placed in HUB memory. Local variables in Spin methods will usually be in COG memory, unless the @ operator is applied to them.
+
+4. Note that if you're converting an existing .spin object to use in COG mode that the timing will be vastly different. In particular, some Spin objects may not have delay loops because the Spin interpreter is slow enough that they're not needed; after conversion to COG mode you may need to insert some `waitcnt` calls in loops that didn't have them before.
+
