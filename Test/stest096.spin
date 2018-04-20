@@ -1,8 +1,12 @@
 VAR
   long q,r, s
   
-PUB calcdiv(a, b)
+PUB calc1(a, b)
   q := a / b
+  b++
   r := a // b
-  s := a / b
-  
+
+PUB calc2(a, b)
+  q := a * b
+  s := a ** b
+  r := a * b
