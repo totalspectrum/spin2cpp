@@ -52,8 +52,8 @@ static Operand *stackptr;
 static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
+static Operand *linkreg;
 
-static Operand *s_doreturn;
 static Operand *hubexit;
 static Operand *cogexit;
 
@@ -1038,9 +1038,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     AppendIRList(irl, &FuncData(func)->irheader);
 
     if (gl_output == OUTPUT_COGSPIN && FuncData(func)->asmaltname) {
-        // insert a dummy function header that just changes
+        // insert a dummy function header that just changes the return address
         EmitLabel(irl, FuncData(func)->asmaltname);
-        EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretname, s_doreturn);
+        EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretname, linkreg);
     }
     
     // now the function label
@@ -2681,7 +2681,7 @@ ResetDebugComment(Module *P)
 }
 
 static void
-EmitOneComment(IRList *irl, int line, LexStream *L)
+EmitOneSrcComment(IRList *irl, int line, LexStream *L)
 {
     const char **srclines;
     const char *theline;
@@ -2718,7 +2718,7 @@ EmitDebugComment(IRList *irl, AST *ast)
         int line = ast->line;
         int i = L->lineCounter;
         while (i <= line) {
-            EmitOneComment(irl, i, L);
+            EmitOneSrcComment(irl, i, L);
             i++;
         }
         L->lineCounter = i;
@@ -3968,6 +3968,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     result1 = GetOneGlobal(REG_REG, "result1", 0);
     
     stackptr = GetOneGlobal(REG_REG, "sp", 0);
+    linkreg = GetOneGlobal(REG_REG, "linkreg", 0);
     stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
     objbase = GetOneGlobal(REG_REG, "objptr", 0);
 
@@ -4003,10 +4004,8 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     // divide address by 4 to convert from cog to hub
     EmitOp2(irl, OPC_SHR, mboxcmd, NewImmediate(2));
     // call command
-    EmitJump(irl, COND_TRUE, mboxcmd);
-
-    s_doreturn = NewOperand(IMM_COG_LABEL, "doreturn", 0);
-    EmitLabel(irl, s_doreturn);
+    //EmitJump(irl, COND_TRUE, mboxcmd);
+    EmitOp2(irl, OPC_JMPRET, linkreg, mboxcmd);
 
     // write back the result
     EmitOp2(irl, OPC_WRLONG, result1, mboxptr);

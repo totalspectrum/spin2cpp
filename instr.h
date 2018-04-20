@@ -35,6 +35,7 @@ typedef enum IROpcode {
     OPC_COGSTOP,
     OPC_DJNZ,
     OPC_JUMP,
+    OPC_JMPRET,
     OPC_LOCKCLR,
     OPC_LOCKNEW,
     OPC_LOCKRET,
