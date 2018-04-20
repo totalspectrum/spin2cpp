@@ -362,3 +362,13 @@ Some other things you will note in the .cog.spin file:
     indicates what function the PASM COG is running. If it is 0 it means the
     PASM COG is idle and is able to accept new commands.
 
+Restrictions
+------------
+
+There are a few restrictions on .cog.spin mode:
+
+(1) coginit and cognew cannot be used to start Spin methods in a .cog.spin file. They can start assembly code, if you choose to insert some PASM in your .spin, but it must be PASM that you wrote, not generated automatically by the compiler.
+
+(2) Obviously, your code must fit into the memory of a single COG
+
+(3) Variables in the VAR section will be placed in HUB memory. Local variables in Spin methods will usually be in COG memory, unless the @ operator is applied to them.
