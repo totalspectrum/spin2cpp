@@ -15,17 +15,17 @@ openspin compiler.
 
 The basic usage is very simple:
 
-   fastspin program.spin
+    fastspin program.spin
 
-will compile program.spin into program.binary, which may then be
+will compile `program.spin` into `program.binary`, which may then be
 loaded into the Propeller. There are many methods to do this; most
 IDEs (including the Propeller Tool) have a way to run a binary
-file. There are also command line tools (such as propeller-load) to
+file. There are also command line tools (such as `propeller-load`) to
 run binaries. My workflow with Spin programs typically looks like:
 
-   emacs program.spin & # or use your favorite text editor
-   fastspin program.spin
-   propeller-load program.binary -r -t
+    emacs program.spin & # or use your favorite text editor
+    fastspin program.spin
+    propeller-load program.binary -r -t
 
 
 ## Speed and Size ##
@@ -37,19 +37,20 @@ bytecode. It also means the fastspin compiled binary is much faster.
 
 For example, the fftbench demo program compiled with
 
-   bstc -b -Oa fftbench.spin
+    bstc -b -Oa fftbench.spin
 
 is 3048 bytes long and runs in 1460 milliseconds. With
 
-   fastspin -O fftbench.spin
+    fastspin -O fftbench.spin
 
 it is 4968 bytes long and runs in 170 milliseconds; so it is a bit
 less than twice as big and runs more than 8 times as fast.
 
 The SPI test benchmark gives:
-   openspin -u: 11732816 cycles  796 bytes
-   bstc -Oa:    11699984 cycles  796 bytes
-   fastspin -O:    98848 cycles 2056 bytes
+
+    openspin -u: 11732816 cycles  796 bytes
+    bstc -Oa:    11699984 cycles  796 bytes
+    fastspin -O:    98848 cycles 2056 bytes
 
 
 Spin wrappers
@@ -63,18 +64,18 @@ Spin projects (which may be compiled with openspin or bstc).
 
 fastspin may be used to convert a Spin object into PASM code that has
 Spin wrappers. This is achieved with the `-w` ("wrap") command line
-flag. The output is a generic Spin module with a .cog.spin extension.
+flag. The output is a generic Spin module with a `.cog.spin` extension.
 The wrapped Spin must fit in a single COG (so no LMM mode is used) and is
 designed basically for converting device drivers from Spin to PASM
-easily. All of the PUB functions of the original .spin will be available
-in in the .cog.spin, but instead of running Spin bytecode they will send
+easily. All of the PUB functions of the original `.spin` will be available
+in in the `.cog.spin`, but instead of running Spin bytecode they will send
 a message to the PASM code (which must be running in another COG) for
-execution there.  There will also be a __cognew method to start a COG up.
-__cognew must be called before any other methods.
+execution there.  There will also be a `__cognew` method to start a COG up.
+`__cognew` must be called before any other methods.
 
 ### Example
 
-Suppose you have a file Fibo.spin that has:
+Suppose you have a file `Fibo.spin` that has:
 ```
 PUB fibo(n)
   if (n < 2)
@@ -92,8 +93,10 @@ PUB test
 ```
 
 To convert this to COG PASM you would do:
-   fastspin -w Fibo.spin
-which would produce Fibo.cog.spin; and you would modify your program to
+
+    fastspin -w Fibo.spin
+
+which would produce `Fibo.cog.spin`; and you would modify your program to
 ```
 OBJ f : "Fibo.cog"
 
@@ -111,7 +114,7 @@ Command Line Options
 --------------------
 There are various command line options
 which may modify the compilation:
-
+```
   [ -h ]              display this help
   [ -L or -I <path> ] add a directory to the include path
   [ -o ]             output filename
@@ -126,17 +129,17 @@ which may modify the compilation:
   [ -2 ]             compile for Prop2
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ -w ]             produce Spin wrappers for PASM code
-   
-The -2 option is new: it is for compiling for the Propeller 2 (FPGA
+```
+The `-2` option is new: it is for compiling for the Propeller 2 (FPGA
 version). The output code may not may not work properly on any given
 FPGA image, because the Prop2 is a moving target.
 
-fastspin.exe checks the name it was invoked by. If the name starts
+`fastspin.exe` checks the name it was invoked by. If the name starts
 with the string "bstc" (case matters) then its output messages mimic
 that of the bstc compiler; otherwise it tries to match openspin's
 messages. This is for compatibility with Propeller IDE. For example,
-you can use fastspin with the PropellerIDE by renaming bstc.exe to
-bstc.orig.exe and then copying fastspin.exe to bstc.exe.
+you can use fastspin with the PropellerIDE by renaming `bstc.exe` to
+`bstc.orig.exe` and then copying `fastspin.exe` to `bstc.exe`.
 
 Extensions
 ----------
