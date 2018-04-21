@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016 Total Spectrum Software Inc.
+// Copyright 2016-2018 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -324,7 +324,7 @@ NextUseAfter(IR *ir, Operand *op)
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
  * follows branches, but gives up after MAX_FOLLOWED_JUMPS to prevent
- * inifinite loops
+ * infinite loops
  */
 #define MAX_FOLLOWED_JUMPS 8
 
@@ -337,12 +337,12 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
   if (instr->opc == OPC_DEAD && op == instr->dst) {
     return true;
   }
-  if (level >= MAX_FOLLOWED_JUMPS) {
-      // give up!
-      return false;
-  }
   if (op->kind == REG_HW) {
       // hardware registers are never dead
+      return false;
+  }
+  if (level >= MAX_FOLLOWED_JUMPS) {
+      // give up!
       return false;
   }
   for (ir = instr->next; ir; ir = ir->next) {
@@ -368,14 +368,32 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     }
     if (InstrUses(ir, op)) {
         // value is used, so definitely not dead
-        return false;
-    }
-    if (InstrModifies(ir, op)) {
-      if (ir->cond == COND_TRUE) {
-	return true;
-//      } else {
-//        return false;
-      }
+        // well, unless the value is used only to update itself:
+        // check for that here
+        if (ir->dst != op) {
+            return false;  // op used to modify something else
+        }
+        switch(ir->opc) {
+            // be very cautious about whether op is dead if
+            // any "unusal" opcodes (like waitpeq) are used
+            // so just accept
+        case OPC_ADD:
+        case OPC_SUB:
+        case OPC_AND:
+        case OPC_OR:
+        case OPC_XOR:
+            // not definitely alive or dead yet
+            break;
+        default:
+            // assume live
+            return false;
+        }
+    } else if (InstrModifies(ir, op)) {
+        // if the instruction modifies but does not use the op,
+        // then we're setting it from another register and it's dead
+        if (ir->cond == COND_TRUE) {
+            return true;
+        }
     }
     if (ir->opc == OPC_RET && ir->cond == COND_TRUE) {
       return IsLocalOrArg(op);

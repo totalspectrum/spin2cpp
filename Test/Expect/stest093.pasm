@@ -10,7 +10,6 @@ _fillInput
 	mov	_var_02, #0
 	mov	_var_03, objptr
 	mov	_var_04, #0
-	mov	_var_05, imm_1023_
 	mov	_var_06, objptr
 	add	_var_06, imm_5119_
 	mov	_var_01, imm_1024_
@@ -20,14 +19,11 @@ L__0006
 	add	_var_02, #13
 	add	_var_03, #4
 	add	_var_04, #17
-	sub	_var_05, #1
 	sub	_var_06, #1
 	djnz	_var_01, #L__0006
 _fillInput_ret
 	ret
 
-imm_1023_
-	long	1023
 imm_1024_
 	long	1024
 imm_5119_
@@ -48,8 +44,6 @@ _var_02
 _var_03
 	res	1
 _var_04
-	res	1
-_var_05
 	res	1
 _var_06
 	res	1
