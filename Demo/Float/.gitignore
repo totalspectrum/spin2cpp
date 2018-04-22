@@ -1,0 +1,6 @@
+*.binary
+*.pasm
+*.elf
+*.cpp
+*.h
+*.cog.spin
