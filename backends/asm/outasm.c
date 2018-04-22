@@ -31,8 +31,8 @@ static IRList cogdata;
 static IRList cogbss;
 static IRList hubdata;
 
-static Operand *mulfunc, *mula, *mulb;
-static Operand *divfunc, *diva, *divb;
+Operand *mulfunc, *muldiva, *muldivb;
+Operand *divfunc;
 
 static Operand *putcogreg;
 
@@ -1233,16 +1233,16 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
     }
     if (!mulfunc) {
         mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
-        mula = GetOneGlobal(REG_ARG, "muldiva_", 0);
-        mulb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+        muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+        muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
     }
-    EmitMove(irl, mula, lhs);
-    EmitMove(irl, mulb, rhs);
+    EmitMove(irl, muldiva, lhs);
+    EmitMove(irl, muldivb, rhs);
     EmitOp1(irl, OPC_CALL, mulfunc);
     if (gethi) {
-        EmitMove(irl, temp, mulb);
+        EmitMove(irl, temp, muldivb);
     } else {
-        EmitMove(irl, temp, mula);
+        EmitMove(irl, temp, muldiva);
     }
     return temp;
 }
@@ -1288,16 +1288,16 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   
   if (!divfunc) {
     divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
-    diva = GetOneGlobal(REG_ARG, "muldiva_", 0);
-    divb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+    muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
+    muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
-  EmitMove(irl, diva, lhs);
-  EmitMove(irl, divb, rhs);
+  EmitMove(irl, muldiva, lhs);
+  EmitMove(irl, muldivb, rhs);
   EmitOp1(irl, OPC_CALL, divfunc);
   if (getmod) {
-      EmitMove(irl, temp, diva);
+      EmitMove(irl, temp, muldiva);
   } else {
-      EmitMove(irl, temp, divb);
+      EmitMove(irl, temp, muldivb);
   }
   return temp;
 }

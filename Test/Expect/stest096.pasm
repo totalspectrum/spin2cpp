@@ -4,14 +4,55 @@ DAT
 	org	0
 entry
 
-_divmod16
+_calc1
+	mov	_var_01, arg1
+	mov	_var_02, arg2
+	mov	muldiva_, _var_01
+	mov	muldivb_, _var_02
+	call	#divide_
+	wrlong	muldivb_, objptr
+	add	_var_02, #1
+	mov	muldiva_, _var_01
+	mov	muldivb_, _var_02
+	call	#divide_
+	add	objptr, #4
+	wrlong	muldiva_, objptr
+	sub	objptr, #4
+_calc1_ret
+	ret
+
+_calc2
 	mov	muldiva_, arg1
 	mov	muldivb_, arg2
-	call	#divide_
-	shl	muldivb_, #16
-	or	muldivb_, muldiva_
-	mov	result1, muldivb_
-_divmod16_ret
+	call	#multiply_
+	wrlong	muldiva_, objptr
+	add	objptr, #8
+	wrlong	muldivb_, objptr
+	sub	objptr, #4
+	wrlong	muldiva_, objptr
+	sub	objptr, #4
+_calc2_ret
+	ret
+
+multiply_
+	mov	itmp2_, muldiva_
+	xor	itmp2_, muldivb_
+	abs	muldiva_, muldiva_
+	abs	muldivb_, muldivb_
+	mov	result1, #0
+	mov	itmp1_, #32
+	shr	muldiva_, #1 wc
+mul_lp_
+ if_c	add	result1, muldivb_ wc
+	rcr	result1, #1 wc
+	rcr	muldiva_, #1 wc
+	djnz	itmp1_, #mul_lp_
+	shr	itmp2_, #31 wz
+ if_nz	neg	result1, result1
+ if_nz	neg	muldiva_, muldiva_ wz
+ if_nz	sub	result1, #1
+	mov	muldivb_, result1
+multiply__ret
 	ret
 ' code originally from spin interpreter, modified slightly
 
@@ -44,11 +85,19 @@ itmp1_
 	long	0
 itmp2_
 	long	0
+objptr
+	long	@@@objmem
 result1
 	long	0
 COG_BSS_START
 	fit	496
+objmem
+	long	0[3]
 	org	COG_BSS_START
+_var_01
+	res	1
+_var_02
+	res	1
 arg1
 	res	1
 arg2
