@@ -838,7 +838,7 @@ OptimizeMulDiv(IRList *irl)
     ir = irl->head;
     while (ir != 0) {
         if (IsLabel(ir)) {
-            opa = NULL;
+            opa = opb = lastop = NULL;
         } else if (IsDummy(ir)) {
             // do nothing
         } else if (InstrModifies(ir, muldiva)) {
@@ -867,9 +867,9 @@ OptimizeMulDiv(IRList *irl)
                 opb = NULL;
             }
         } else if (opa && InstrModifies(ir, opa)) {
-                opa = NULL;
+            opa = NULL;
         } else if (opb && InstrModifies(ir, opb)) {
-                opb = NULL;
+            opb = NULL;
         } else if (ir->opc == OPC_CALL) {
             if (ir->dst == mulfunc || ir->dst == divfunc) {
                 lastop = ir->dst;
