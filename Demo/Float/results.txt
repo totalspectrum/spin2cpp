@@ -9,7 +9,9 @@ Spin interpreter:
 F32:          832.4 microseconds
 Float32Full:  926.4 microseconds
 FloatMath:  15435.6 microseconds
-
+FloatMathSimple.cog:
+             3264.2 microseconds
+	     
 C++: (options -Os -mfcache)
 
 F32:          696.6 microseconds (469.8 at -O2)

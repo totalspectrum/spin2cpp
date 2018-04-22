@@ -12,7 +12,7 @@ OBJ
   fstr: "FloatString"
 
 PUB demo | x, start, end, us
-  fp.start
+  fp.__cognew
   fds.start(31, 30, 0, 115200)
   fds.str(string("floating point timing test", 13, 10))
   start := CNT
