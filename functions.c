@@ -665,7 +665,10 @@ TransformCountRepeat(AST *ast)
             if (knownStepDir) {
                 testOp = (knownStepDir > 0) ? '+' : '-';
                 toval = SimpleOptimizeExpr(AstOperator(testOp, toval, AstInteger(1)));
+                /* no limit variable change necessary here */
             } else {
+                /* toval is constant, but step isn't, so we need to introduce
+                   a variable for the limit = toval + step */
                 if (!limitvar) {
                     limitvar = AstTempLocalVariable("_limit_");
                 }
@@ -680,6 +683,7 @@ TransformCountRepeat(AST *ast)
                               AstAssign(T_ASSIGN, limitvar,
                                         SimpleOptimizeExpr(
                                             AstOperator('+', toval, stepval))));
+            toval = limitvar;
         }
         if (knownStepDir > 0) {
             condtest = AstOperator('<', loopvar, toval);

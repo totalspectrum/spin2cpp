@@ -373,6 +373,9 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (ir->dst != op) {
             return false;  // op used to modify something else
         }
+        if (InstrSetsAnyFlags(ir)) {
+            return false;  // flag setting matters, we are not dead
+        }
         switch(ir->opc) {
             // be very cautious about whether op is dead if
             // any "unusal" opcodes (like waitpeq) are used

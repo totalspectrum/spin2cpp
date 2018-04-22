@@ -23,8 +23,9 @@ PUB demo | x, start, end, us
   us := fp.FDiv(fp.FFloat(end), 80.0)
   fds.str(string("result is "))
   fds.str(fstr.FloatToString(x))
-  fds.tx(13)
-  fds.tx(10)
+  fds.str(string(" (hex "))
+  fds.hex(x, 8)
+  fds.str(string(")", 13, 10))
   fds.str(string("time taken: "))
   fds.str(fstr.FloatToString(us))
   fds.str(string(" microseconds, "))
@@ -38,3 +39,9 @@ PUB series(n) : sum | i, term, two
   repeat i from 1 to n
     term := fp.FDiv(term, two)
     sum := fp.FAdd(sum, term)
+    fds.str(string(" i="))
+    fds.hex(i,8)
+    fds.str(string(13, 10))
+  fds.tx(13)
+  fds.tx(10)
+  

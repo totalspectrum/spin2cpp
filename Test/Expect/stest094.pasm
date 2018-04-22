@@ -8,6 +8,7 @@ _zcount
 	cmps	arg2, arg1 wc,wz
  if_a	mov	_tmp001_, #1
  if_be	neg	_tmp001_, #1
+	add	arg2, _tmp001_
 L__0005
 	cmps	arg1, arg2 wz
  if_ne	mov	OUTA, arg1

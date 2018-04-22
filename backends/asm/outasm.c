@@ -835,8 +835,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           }
           /* fall through */
       case SYM_LOCALVAR:
-      case SYM_RESULT:
       case SYM_PARAMETER:
+      case SYM_RESULT:
           if (IS_STACK_CALL(func)) {
               if (stype == SYM_RESULT) {
                   return FrameRef(0);
@@ -848,7 +848,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
                   return FrameRef(LONG_SIZE * (1+func->numparams) + sym->offset);
               }
           }
-          size = ArrayTypeSize((AST *)sym->val);
+          if (stype == SYM_RESULT) {
+              size = LONG_SIZE;
+          } else {
+              size = ArrayTypeSize((AST *)sym->val);
+          }
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
       case SYM_TEMPVAR:
           size = ArrayTypeSize((AST *)sym->val);
