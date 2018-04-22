@@ -742,7 +742,7 @@ expr:
   | lhs
   | '@' lhs
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
-  | T_DOUBLEAT lhs
+  | T_DOUBLEAT expr
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
   | T_TRIPLEAT lhs
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
