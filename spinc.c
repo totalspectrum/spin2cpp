@@ -1175,13 +1175,25 @@ void InitPreprocessor()
 #define MAX_TYPE_PASSES 4
 
 void
-ProcessSpinCode(Module *P)
+ProcessSpinCode(Module *P, int isBinary)
 {
     Module *Q;
     int changes;
     int tries = 0;
-    
-    MarkUsed(P->functions);
+
+    // if we are compiling binary, we can just check for functions
+    // called (directly or indirectly) from the top level
+    // otherwise, we need to check all PUB functions
+    if (isBinary) {
+        MarkUsed(P->functions);
+    } else {
+        Function *pf;
+        for (pf = P->functions; pf; pf = pf->next) {
+            if (pf->is_public) {
+                MarkUsed(pf);
+            }
+        }
+    }
     for (Q = allparse; Q; Q = Q->next) {
         SpinTransform(Q);
         ProcessFuncs(Q);

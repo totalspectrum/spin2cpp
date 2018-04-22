@@ -454,7 +454,8 @@ Module *ParseFile(const char *name);
 Module *ParseTopFile(const char *name);
 
 // process Spin functions (do type deduction, etc.)
-void ProcessSpinCode(Module *P);
+// isBinary is non-zero if we are doing a final binary output
+void ProcessSpinCode(Module *P, int isBinary);
 
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);

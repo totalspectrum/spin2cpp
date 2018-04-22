@@ -440,7 +440,7 @@ main(int argc, char **argv)
         /* do type checking and deduction */
         Module *Q;
 
-        ProcessSpinCode(P);
+        ProcessSpinCode(P, outputBin);
         if (gl_errors > 0) {
             exit(1);
         }
@@ -504,7 +504,7 @@ main(int argc, char **argv)
                 gl_output = OUTPUT_DAT;
                 Q = ParseTopFile(asmname);
                 if (Q && gl_errors == 0) {
-                    ProcessSpinCode(Q);
+                    ProcessSpinCode(Q, 1);
                 }
                 if (gl_errors == 0) {
                     OutputDatFile(binname, Q, 1);
