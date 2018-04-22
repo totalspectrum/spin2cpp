@@ -39,9 +39,4 @@ PUB series(n) : sum | i, term, two
   repeat i from 1 to n
     term := fp.FDiv(term, two)
     sum := fp.FAdd(sum, term)
-    fds.str(string(" i="))
-    fds.hex(i,8)
-    fds.str(string(13, 10))
-  fds.tx(13)
-  fds.tx(10)
   

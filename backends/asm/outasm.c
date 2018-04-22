@@ -798,7 +798,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   int size;
   
   if (expr->kind == AST_RESULT) {
-      name = "result";
+      if (func->resultexpr && func->resultexpr->kind == AST_IDENTIFIER) {
+          name = func->resultexpr->d.string;
+      } else {
+          name = "result";
+      }
   } else if (expr->kind == AST_IDENTIFIER) {
       name = expr->d.string;
   } else {
@@ -2953,7 +2957,6 @@ static void CompileStatement(IRList *irl, AST *ast)
 	  ast = ast->left;
 	}
 	/* ast should be an AST_THENELSE */
-        //EmitDebugComment(irl, ast);
 	CompileStatementList(irl, ast->left);
 	if (ast->right) {
 	  botloop = NewCodeLabel();
@@ -2997,7 +3000,7 @@ CompileFunctionBody(Function *f)
     
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
-    if (!f->result_in_parmarray && f->resultexpr && f->resultexpr->kind == AST_IDENTIFIER)
+    if (!f->result_in_parmarray && f->resultexpr && !IsConstExpr(f->resultexpr))
     {
         AST *resinit = AstAssign(T_ASSIGN, f->resultexpr, AstInteger(0));
         CompileStatement(irl, resinit);
