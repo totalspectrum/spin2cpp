@@ -22,4 +22,4 @@ FloatMathSimple.cog.spin: FloatMathSimple.spin
 	$(FASTSPIN) -w FloatMathSimple.spin
 
 clean:
-	rm -f *.cpp *.c *.h *.elf *.binary *.cog.spin
+	rm -f *.cpp *.c *.h *.elf *.pasm *.binary *.cog.spin
