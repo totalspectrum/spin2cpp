@@ -69,7 +69,8 @@ static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
-static void EmitLea(IRList *irl, Operand *dst, Operand *src);
+//static void EmitLea(IRList *irl, Operand *dst, Operand *src);
+static Operand *GetLea(IRList *irl, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
@@ -2001,13 +2002,12 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
         return newbase;
     }
-    newbase = NewFunctionTempRegister();
     temp = NewFunctionTempRegister();
     EmitMove(irl, temp, offset);
     if (shift) {
         EmitOp2(irl, OPC_SHL, temp, NewImmediate(shift));
     }
-    EmitLea(irl, newbase, base);
+    newbase = GetLea(irl, base);
     EmitOp2(irl, OPC_ADD, temp, newbase);
     return NewOperand(base->kind, (char *)temp, 0);
 }
@@ -2080,31 +2080,31 @@ CompileMaskMove(IRList *irl, AST *expr)
 }
 
 //
-// emit a load effective address
+// get the effective address of "src"
+// this may require us to emit instructions
 //
-static void
-EmitLea(IRList *irl, Operand *dst, Operand *src)
+static Operand *
+GetLea(IRList *irl, Operand *src)
 {
     // check for COG memory references
     if (!IsMemRef(src) && IsCogMem(src)) {
         Operand *addr;
         switch(src->kind) {
         case IMM_COG_LABEL:
-            src = CogMemRef(src, 0);
-            break;
+            return src;
         case REG_REG:
         case REG_LOCAL:
         case REG_ARG:
         case REG_HW:
             src->used = 1;
             addr = NewOperand(IMM_COG_LABEL, src->name, 0);
-            src = CogMemRef(addr, 0);
-            break;
+            return addr;
         default:
             break;
         }
     }
     if (IsMemRef(src)) {
+        Operand *dst = NewFunctionTempRegister();
         int off = src->val;
         src = (Operand *)src->name;
         if (off) {
@@ -2114,8 +2114,10 @@ EmitLea(IRList *irl, Operand *dst, Operand *src)
         if (off) {
             EmitAddSub(irl, src, -off);
         }
+        return dst;
     } else {
         ERROR(NULL, "Load Effective Address on a non-memory reference");
+        return NULL;
     }
 }
 
@@ -2313,9 +2315,8 @@ GetAddressOf(IRList *irl, AST *expr)
     Operand *tmp;
     switch (expr->kind) {
     case AST_IDENTIFIER:
-        tmp = NewFunctionTempRegister();
         res = CompileExpression(irl, expr, NULL);
-        EmitLea(irl, tmp, res);
+        tmp = GetLea(irl, res);
         return tmp;
     case AST_ARRAYREF:
     {
@@ -2329,8 +2330,7 @@ GetAddressOf(IRList *irl, AST *expr)
       base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
       res = ApplyArrayIndex(irl, base, offset);
-      tmp = NewFunctionTempRegister();
-      EmitLea(irl, tmp, res);
+      tmp = GetLea(irl, res);
       return tmp;
     }    
     default:
@@ -2536,11 +2536,11 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
 
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 {
-    Operand *dstimm = NewFunctionTempRegister();
+    Operand *dstimm;
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
-    EmitLea(irl, dstimm, dst);
+    dstimm = GetLea(irl, dst);
     EmitOp2(irl, OPC_MOVS, putcogreg, src);
     EmitOp2(irl, OPC_MOVD, putcogreg, dstimm);
     return EmitOp1(irl, OPC_CALL, putcogreg);
@@ -2548,12 +2548,12 @@ static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 
 static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 {
-    Operand *srcimm = NewFunctionTempRegister();
+    Operand *srcimm;
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
     src = Dereference(irl, src);
-    EmitLea(irl, srcimm, src);
+    srcimm = GetLea(irl, src);
     EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
     EmitOp2(irl, OPC_MOVD, putcogreg, dst);
     return EmitOp1(irl, OPC_CALL, putcogreg);
