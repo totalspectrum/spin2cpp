@@ -16,9 +16,8 @@ _tx_ret
 _str
 	mov	_str_s, arg1
 L__0005
-	mov	str_tmp001_, _str_s
+	rdbyte	_str_c, _str_s wz
 	add	_str_s, #1
-	rdbyte	_str_c, str_tmp001_ wz
  if_e	jmp	#L__0006
 	mov	arg1, _str_c
 	call	#_tx
@@ -45,7 +44,5 @@ arg2
 arg3
 	res	1
 arg4
-	res	1
-str_tmp001_
 	res	1
 	fit	496

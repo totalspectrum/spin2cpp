@@ -1821,9 +1821,9 @@ OptimizePeepholes(IRList *irl)
                  && !InstrSetsAnyFlags(ir_next)
             )
         {
-            // add x, y   '' previr
-            // mov a, x   '' ir
-            // sub x, y   '' ir_next
+            // add ptr, y   '' previr
+            // mov a, ptr   '' ir
+            // sub ptr, y   '' ir_next
             // => mov a, x
             //    add a, y
             ReplaceOpcode(ir_next, OPC_ADD);
@@ -1851,6 +1851,70 @@ OptimizePeepholes(IRList *irl)
         ir = ir_next;
     }
     return changed;
+}
+
+/* special peephole for buf[i++] := n */
+/* look for mov tmp, b; add b, #1; use tmp */
+/* in this case push the add b, #1 as far forward as we can */
+static int
+OptimizeIncDec(IRList *irl)
+{
+    IR *ir, *ir_next;
+    ir = irl->head;
+    int change = 0;
+    while (ir) {
+        ir_next = ir->next;
+        while (ir_next && IsDummy(ir_next)) {
+            ir_next = ir_next->next;
+        }
+        if (ir->opc == OPC_MOV
+            && IsLocal(ir->dst)
+            && ir->cond == COND_TRUE
+            && (ir_next->opc == OPC_ADD || ir_next->opc == OPC_SUB)
+            && ir_next->dst == ir->src
+            && IsImmediate(ir_next->src)
+            && !InstrIsVolatile(ir)
+            && !InstrIsVolatile(ir_next)
+            && !InstrSetsAnyFlags(ir_next)
+            )
+        {
+            // push the add forward in the instruction stream as far as we can
+            IR *placeir = NULL;
+            IR *stepir = ir_next->next;
+            Operand *changedOp = ir_next->dst;
+            while (stepir) {
+                if (IsBranch(stepir))
+                    break;
+                if (IsLabel(stepir))
+                    break;
+                if (stepir->dst == changedOp || stepir->src == changedOp) {
+                    // cannot push any further
+                    break;
+                }
+                if (InstrModifies(stepir, changedOp)) {
+                    // also cannot push further
+                    break;
+                }
+                // technically we could push past conditionals, but
+                // the code may look ugly if we do
+                if (stepir->cond != COND_TRUE)
+                    break;
+                // and break on DEAD notes
+                if (stepir->opc == OPC_DEAD)
+                    break;
+                placeir = stepir;
+                stepir = stepir->next;
+            }
+            if (placeir) {
+                DeleteIR(irl, ir_next);
+                ir_next->next = NULL;
+                InsertAfterIR(irl, placeir, ir_next);
+                change = 1;
+            }
+        }
+        ir = ir->next;
+    }
+    return change;
 }
 
 /* perform P2 specific optimizations */
@@ -2059,6 +2123,7 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeShortBranches(irl);
         change |= OptimizeAddSub(irl);
         change |= OptimizePeepholes(irl);
+        change |= OptimizeIncDec(irl);
         if (gl_p2) {
             change |= OptimizeP2(irl);
         }
