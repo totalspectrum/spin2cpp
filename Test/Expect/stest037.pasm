@@ -6,8 +6,8 @@ entry
 
 _fetch
 	shl	arg2, #1
-	add	arg1, arg2
-	rdword	result1, arg1
+	add	arg2, arg1
+	rdword	result1, arg2
 _fetch_ret
 	ret
 

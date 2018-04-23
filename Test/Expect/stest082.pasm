@@ -5,12 +5,11 @@ DAT
 entry
 
 _incby
-	mov	_var_03, objptr
 	shl	arg1, #2
-	add	_var_03, arg1
-	rdlong	_var_04, _var_03
+	add	arg1, objptr
+	rdlong	_var_04, arg1
 	add	_var_04, arg2
-	wrlong	_var_04, _var_03
+	wrlong	_var_04, arg1
 _incby_ret
 	ret
 
@@ -23,8 +22,6 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
-_var_03
-	res	1
 _var_04
 	res	1
 arg1

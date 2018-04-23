@@ -10,8 +10,10 @@ _fillInput
 	mov	_var_02, #0
 	mov	_var_03, objptr
 	mov	_var_04, #0
-	mov	_var_06, objptr
-	add	_var_06, imm_5119_
+	mov	_var_06, imm_1023_
+	mov	_tmp001_, objptr
+	add	_tmp001_, imm_4096_
+	add	_var_06, _tmp001_
 	mov	_var_01, imm_1024_
 L__0006
 	wrlong	_var_02, _var_03
@@ -24,10 +26,12 @@ L__0006
 _fillInput_ret
 	ret
 
+imm_1023_
+	long	1023
 imm_1024_
 	long	1024
-imm_5119_
-	long	5119
+imm_4096_
+	long	4096
 objptr
 	long	@@@objmem
 result1
@@ -37,6 +41,8 @@ COG_BSS_START
 objmem
 	long	0[1280]
 	org	COG_BSS_START
+_tmp001_
+	res	1
 _var_01
 	res	1
 _var_02

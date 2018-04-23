@@ -2003,13 +2003,13 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     }
     newbase = NewFunctionTempRegister();
     temp = NewFunctionTempRegister();
-    EmitLea(irl, newbase, base);
     EmitMove(irl, temp, offset);
     if (shift) {
         EmitOp2(irl, OPC_SHL, temp, NewImmediate(shift));
     }
-    EmitOp2(irl, OPC_ADD, newbase, temp);
-    return NewOperand(base->kind, (char *)newbase, 0);
+    EmitLea(irl, newbase, base);
+    EmitOp2(irl, OPC_ADD, temp, newbase);
+    return NewOperand(base->kind, (char *)temp, 0);
 }
 
 static Operand *

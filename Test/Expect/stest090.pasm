@@ -8,10 +8,9 @@ _proc1
 	sub	arg2, #1
 	mov	_var_03, arg2
 	mov	_var_05, #0
-	mov	_var_07, arg1
-	mov	_tmp002_, arg2
-	shl	_tmp002_, #2
-	add	_var_07, _tmp002_
+	mov	_var_07, arg2
+	shl	_var_07, #2
+	add	_var_07, arg1
 L__0005
 	cmps	_var_03, #0 wc,wz
  if_be	jmp	#L__0006

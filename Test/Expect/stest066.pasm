@@ -5,12 +5,11 @@ DAT
 entry
 
 _set
-	add	objptr, #8
-	mov	_var_02, objptr
-	sub	objptr, #4
-	rdlong	_tmp002_, objptr
-	sub	objptr, #4
-	add	_var_02, _tmp002_
+	add	objptr, #4
+	rdlong	_var_02, objptr
+	add	objptr, #4
+	add	_var_02, objptr
+	sub	objptr, #8
 	wrbyte	arg1, _var_02
 _set_ret
 	ret
@@ -24,8 +23,6 @@ COG_BSS_START
 objmem
 	long	0[3]
 	org	COG_BSS_START
-_tmp002_
-	res	1
 _var_02
 	res	1
 arg1
