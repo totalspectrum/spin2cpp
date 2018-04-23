@@ -361,8 +361,20 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         // that goes to LABEL then we might miss a set
         // so check
         IR *comefrom = (IR *)ir->aux;
-        if (!comefrom || (level == 0 && comefrom->addr < instr->addr)) {
+        if (!comefrom) {
             return false;
+        }
+        if (level == 0 && comefrom->addr < instr->addr) {
+            // go back and see if there are any references before the
+            // jump that brought us here
+            // if so, abort
+            IR *backir = comefrom;
+            while (backir) {
+                if (backir->src == op || backir->dst == op) {
+                    return false;
+                }
+                backir = backir->prev;
+            }
         }
         continue;
     }
