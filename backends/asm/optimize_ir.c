@@ -320,6 +320,25 @@ NextUseAfter(IR *ir, Operand *op)
 }
 #endif
 
+bool
+IsMathInstr(IR *ir)
+{
+    switch (ir->opc) {
+    case OPC_ADD:
+    case OPC_SUB:
+    case OPC_AND:
+    case OPC_ANDN:
+    case OPC_OR:
+    case OPC_XOR:
+    case OPC_SHL:
+    case OPC_SHR:
+    case OPC_SAR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 /*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
@@ -1917,6 +1936,46 @@ OptimizeIncDec(IRList *irl)
     return change;
 }
 
+/* the code generator produces some obviously silly sequences
+ * like:  mov T, A; op T, B; mov A, T
+ * replace those with op A, B
+ */
+static int
+OptimizeSimpleAssignments(IRList *irl)
+{
+    int change = 0;
+    IR *ir, *ir_next, *ir_prev;
+    ir_prev = ir_next = NULL;
+    ir = irl->head;
+    while (ir) {
+        ir_next = ir->next;
+        if (ir_prev && ir_next
+            && ir_prev->opc == OPC_MOV && ir_next->opc == OPC_MOV
+            && ir_prev->dst == ir_next->src && ir_prev->src == ir_next->dst
+            && ir_prev->cond == ir->cond
+            && ir_next->cond == ir->cond
+            && IsMathInstr(ir)
+            && !InstrIsVolatile(ir) && !InstrIsVolatile(ir_prev) && !InstrIsVolatile(ir_next)
+            && !InstrSetsAnyFlags(ir)
+            && !InstrSetsAnyFlags(ir_prev)
+            && !InstrSetsAnyFlags(ir_next)
+            )
+        {
+            ir->dst = ir_next->dst;
+            ir = ir_next;
+            ir_next = ir->next;
+            change = 1;
+            DeleteIR(irl, ir);
+            if (IsDeadAfter(ir_prev, ir_prev->dst)) {
+                DeleteIR(irl, ir_prev);
+                ir_prev = NULL;
+            }
+        }
+        ir_prev = ir;
+        ir = ir_next;
+    }
+    return change;
+}
 /* perform P2 specific optimizations */
 int
 OptimizeP2(IRList *irl)
@@ -2108,6 +2167,9 @@ OptimizeIRLocal(IRList *irl)
     if (gl_optimize_flags & OPT_NO_ASM) return;
     if (!irl->head) return;
 
+    // get some low hanging fruit before any other optimizations happen
+    OptimizeSimpleAssignments(irl);
+    
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
     OptimizeMulDiv(irl);
