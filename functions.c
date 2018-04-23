@@ -689,6 +689,9 @@ TransformCountRepeat(AST *ast)
             condtest = AstOperator('<', loopvar, toval);
         } else {
             condtest = AstOperator(T_NE, loopvar, toval);
+            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+                loopkind = AST_FORATLEASTONCE;
+            }
         }
     }
     
