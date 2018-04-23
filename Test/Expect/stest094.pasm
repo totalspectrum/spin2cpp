@@ -10,9 +10,9 @@ _zcount
  if_be	neg	_tmp001_, #1
 	add	arg2, _tmp001_
 L__0005
+	mov	OUTA, arg1
+	add	arg1, _tmp001_
 	cmps	arg1, arg2 wz
- if_ne	mov	OUTA, arg1
- if_ne	add	arg1, _tmp001_
  if_ne	jmp	#L__0005
 _zcount_ret
 	ret
