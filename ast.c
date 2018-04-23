@@ -135,14 +135,34 @@ AstUses(AST *a, AST *b)
     return AstUses(a->left, b) || AstUses(a->right, b);
 }
 
-/* see if a changes b */
+/* helper; see if a LHS assignment modifies */
+static int
+AstModifiesIdentifierLHS(AST *body, AST *id)
+{
+    if (!body) return 0;
+    if (body->kind == AST_IDENTIFIER) {
+        if (!strcasecmp(id->d.string, body->d.string)) {
+            return 1;
+        }
+    } else if (body->kind == AST_ARRAYREF) {
+        return AstModifiesIdentifierLHS(body->left, id)
+            || AstModifiesIdentifier(body->right, id);
+    }
+    if (AstModifiesIdentifierLHS(body->left, id) || AstModifiesIdentifierLHS(body->right, id)) {
+        return 1;
+    }
+    // FIXME should we handle memory references here?
+    return 0;
+}
+
+/* see if a changes the identifier b */
 /* be conservative here */
 int
 AstModifiesIdentifier(AST *body, AST *id)
 {
     while (body) {
         if (body->kind == AST_ASSIGN) {
-            if (AstUses(body->left, id))
+            if (AstModifiesIdentifierLHS(body->left, id))
                 return 1;
             /* FIXME: we should handle memory references here */
         }
