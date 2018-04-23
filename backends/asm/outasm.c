@@ -4168,8 +4168,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitLabel(&hubdata, stacklabel);
             EmitReserve(&hubdata, 1, HUB_RESERVE);
         } else {
-            EmitLabel(&cogdata, stacklabel);
-            EmitReserve(&cogdata, 1, COG_RESERVE);
+            EmitLabel(&cogbss, stacklabel);
+            EmitReserve(&cogbss, 1, COG_RESERVE);
         }
     }
 
