@@ -1434,16 +1434,21 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
         Operand *lo, *hi;
         Operand *val;
         Operand *tmplo, *tmphi;
+        Operand *tmp2lo, *tmp2hi;
         val = CompileExpression(irl, expr->left, NULL);
         val = Dereference(irl, val);
         lo = CompileExpression(irl, expr->right->left, NULL);
         hi = CompileExpression(irl, expr->right->right, NULL);
         tmplo = NewFunctionTempRegister();
         tmphi = NewFunctionTempRegister();
+        tmp2lo = NewFunctionTempRegister();
+        tmp2hi = NewFunctionTempRegister();
         EmitMove(irl, tmplo, lo);
+        EmitMove(irl, tmp2lo, tmplo);
         EmitMove(irl, tmphi, hi);
-        EmitOp2(irl, OPC_MAXS, tmplo, hi); // now tmplo really is the smallest
-        EmitOp2(irl, OPC_MINS, tmphi, lo); // and tmphi really is highest
+        EmitMove(irl, tmp2hi, tmphi);
+        EmitOp2(irl, OPC_MAXS, tmplo, tmp2hi); // now tmplo really is the smallest
+        EmitOp2(irl, OPC_MINS, tmphi, tmp2lo); // and tmphi really is highest
         ir = EmitOp2(irl, OPC_CMPS, tmplo, val);
         ir->flags |= FLAG_WZ|FLAG_WC;
         ir = EmitOp2(irl, OPC_CMPS, val, tmphi);
