@@ -789,6 +789,7 @@ CheckSimpleLoop(AST *stmt)
         return;
     }
     
+    AstReportAs(update); // new ASTs should be associated with the "update" line
     /* flip the update to -- */
     update->d.ival = T_DECREMENT;
     /* change the initialization */
@@ -846,6 +847,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             AST *body;
             AST *initial;
             initial = stmt->left;
+            AstReportAs(initial);
             condtest = stmt->right;
             updateparent = condtest->right;
             condtest = condtest->left;

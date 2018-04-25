@@ -297,6 +297,7 @@ RangeXor(AST *dst, AST *src)
     AST *loexpr;
     AST *hiexpr = NULL;
     
+    AstReportAs(dst);
     if (dst->right->right == NULL) {
         loexpr = FoldIfConst(dst->right->left);
         nbits = AstInteger(1);
@@ -355,6 +356,7 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
     AST *loexpr;
     AST *maskexpr;
     
+    AstReportAs(dst);
     if (dst->right->right == NULL) {
         loexpr = dst->right->left;
     } else {
@@ -585,7 +587,7 @@ TransformRangeUse(AST *src)
         ERROR(src, "internal error: expecting range");
         return src;
     }
-
+    AstReportAs(src);
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
         hi = lo = src->right->left;

@@ -209,7 +209,7 @@ DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation, AST *co
 {
     AST *funcblock;
     AST *holder;
-
+    
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
     funcblock->d.ptr = (void *)comment;
@@ -467,6 +467,7 @@ TransformCaseExprList(AST *var, AST *ast)
     AST *listexpr = NULL;
     AST *node;
     while (ast) {
+        AstReportAs(ast);
         if (ast->kind == AST_OTHER) {
             return AstInteger(1);
         } else {
@@ -521,7 +522,10 @@ TransformCountRepeat(AST *ast)
     AST *stepstmt;
 
     AST *limitvar = NULL;
-    
+
+    /* create new ast elements using this ast's line info, at least for now */
+    AstReportAs(ast);
+
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
             loopvar = ast->left;
@@ -559,9 +563,6 @@ TransformCountRepeat(AST *ast)
     }
     
     body = ast->right;
-
-    /* create new ast elements using this ast's line info */
-    AstReportAs(toval ? toval : origast);
 
     /* for fixed counts (like "REPEAT expr") we get a NULL value
        for fromval; this signals that we should be counting
@@ -1006,6 +1007,7 @@ ProcessFuncs(Module *P)
             if (!sawreturn) {
                 AST *retstmt;
 
+                AstReportAs(pf->body); // use old debug info
                 retstmt = NewAST(AST_STMTLIST, NewAST(AST_RETURN, pf->resultexpr, NULL), NULL);
                 pf->body = AddToList(pf->body, retstmt);
             }
@@ -1042,6 +1044,7 @@ InferTypesStmt(AST *ast)
   int changes = 0;
 
   if (!ast) return 0;
+  AstReportAs(ast);
   switch(ast->kind) {
   case AST_COMMENTEDNODE:
     return InferTypesStmt(ast->left);
@@ -1412,6 +1415,7 @@ TransformLongMove(AST **astptr, AST *ast)
     int n;
     SymbolTable *srctab, *dsttab;
     
+    AstReportAs(ast);
     ast = ast->right; // ast->left is the longmove function
     dst = ast->left; ast = ast->right;
     if (!ast || !dst) return false;
@@ -1532,6 +1536,7 @@ doSpinTransform(AST **astptr, int level)
         ast = *astptr;
     }
     if (!ast) return;
+    AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
     switch (ast->kind) {
     case AST_EXPRLIST:
     case AST_THENELSE:

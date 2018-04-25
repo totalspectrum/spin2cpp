@@ -219,6 +219,7 @@ PlacePendingAssignments(AST *stmtlist, CSESet *cse)
     if (!cse->assignList) {
         return;
     }
+    AstReportAs(stmtlist->left);
     oldstmt = NewAST(AST_STMTLIST, stmtlist->left, NULL);
     sublist = AddToList(cse->assignList, oldstmt);
     stmtlist->left = sublist;
@@ -286,6 +287,7 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         // cannot figure out type of array
         return NULL;
     }
+    
     // do not add entries for some simple expressions
     if (expr->kind == AST_ARRAYREF &&
         IsConstExpr(expr->right))
@@ -293,6 +295,8 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         return NULL;
     }
     
+    AstReportAs(expr); // set line number for error/debug purposes
+
     entry->expr = expr;
     entry->replace = NULL; // FIXME: was name;, but make sure name does not change later
     entry->flags = 0;
@@ -419,6 +423,7 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
     unsigned newflags = flags;
     
     if (!ast) return true;
+    AstReportAs(stmtptr);
     switch(ast->kind) {
     case AST_STMTLIST:
         while (ast) {

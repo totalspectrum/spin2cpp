@@ -340,6 +340,8 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                 InsertAfterIR(irl, dest, newir);
                 dest = newir;
             }
+        } else if (newir->opc == OPC_COMMENT) {
+            /* leave out comments, they will be out of place */
         } else {
             InsertAfterIR(irl, dest, newir);
             dest = newir;
