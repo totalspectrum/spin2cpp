@@ -857,6 +857,8 @@ expr:
     { $$ = AstOpAssign(K_LE, $1, $4); }
   | expr SP_GE '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_GE, $1, $4); }
+  | '(' expr ')' '?' expr ':' expr %prec SP_ELSE
+    { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' funccall
