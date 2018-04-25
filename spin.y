@@ -758,7 +758,9 @@ expr:
   | SP_TRIPLEAT lhs
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
   | lhs SP_ASSIGN expr
-    { $$ = AstAssign($1, $3); }
+    { $$ = AstAssign(K_ASSIGN, $1, $3); }
+  | lhsseq SP_ASSIGN '(' exprlist ')'
+    { $$ = AstAssign(K_ASSIGN, $1, $4); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
   | expr '+' expr
@@ -958,6 +960,17 @@ lhs: identifier
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3); }
   ;
+
+lhsseq:
+  '(' lhs ',' lhsseqcont ')'
+    { $$ = NewAST(AST_SEQUENCE, $2, $4); }
+  ;
+lhsseqcont:
+lhs
+  { $$ = NewAST(AST_SEQUENCE, $1, NULL); }
+| lhs ',' lhsseqcont
+  { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+;
 
 memref:
   SP_BYTE '[' expr ']'

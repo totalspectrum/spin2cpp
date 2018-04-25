@@ -1918,6 +1918,47 @@ CompileFunccall(IRList *irl, AST *expr)
   return reg;
 }
 
+#define MAX_ASSIGNS 8
+static Operand *
+CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
+{
+    Operand *temp[MAX_ASSIGNS] ;
+    Operand *r = NULL;
+    int count = 0;
+    int i;
+    while (rhs) {
+        if (rhs->kind != AST_EXPRLIST) {
+            ERROR(rhs, "Expected expression list");
+            return NewImmediate(0);
+        }
+        if (count >= MAX_ASSIGNS) {
+            ERROR(rhs, "Too many elements in multiple assignment");
+            return NewImmediate(0);
+        }
+        r = CompileExpression(irl, rhs->left, NULL);
+        temp[count] = NewFunctionTempRegister();
+        EmitMove(irl, temp[count], r);
+        count++;
+        rhs = rhs->right;
+    }
+    i = 0;
+    while (lhs && i < count) {
+        if (lhs->kind != AST_SEQUENCE) {
+            ERROR(lhs, "Illegal left hand side for multiple assignment");
+            return NewImmediate(0);
+        }
+        r = CompileExpression(irl, lhs->left, NULL);
+        EmitMove(irl, r, temp[i++]);
+        lhs = lhs->right;
+    }
+    if (i != count) {
+        ERROR(rhs, "Too many elements on right hand side of assignment");
+    } else if (lhs) {
+        ERROR(rhs, "Not enough elements on right hand side of assignment");
+    }
+    return r;
+}
+
 static bool
 IsCogMem(Operand *addr)
 {
@@ -2448,6 +2489,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_ASSIGN:
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
+      if (expr->left && expr->left->kind == AST_SEQUENCE) {
+          // do a series of assignments
+          return CompileMultipleAssign(irl, expr->left, expr->right);
       }
       r = CompileExpression(irl, expr->left, NULL);
       if (IsRegister(r->kind)) {
