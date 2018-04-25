@@ -65,7 +65,11 @@ PUB fibo(n)
   return fibo(n-1) + fibo(n-2)
 ```
 
-and here is fibodemo.spin, which uses it:
+Below is fibodemo.spin, which uses it.This demo compares the
+performance of the original Spin object (`Fibo.spin`) and the
+converted COG version (`Fibo.cog.spin`).
+
+
 ```
 '' fibodemo.spin: demonstrate COGOBJ with a Fibonacci calculator
 '' runs both bytecode and PASM versions of the fibo function
@@ -104,7 +108,8 @@ PUB hello | e1, e2, i, n, n2
 
 Note that you can mix regular Spin objects and COG objects freely, and
 in fact can use the original Fibo.spin alongside the converted
-Fibo.cog.spin.
+Fibo.cog.spin. But you don't have to! After it's been created,
+Fibo.cog.spin does not rely on Fibo.spin at all.
 
 The `__cognew` method was automatically added by `fastspin` when it
 translated blinker.spin from Spin to PASM. It does all the
@@ -260,6 +265,11 @@ answer with `getAnswer`. If instead of `answer := sum` we had done
 `return sum` or `result := sum` then `scaleArray` would have caused
 the Spin COG to wait for the result.
 
+The converted code also has a new method, `__busy`, which returns
+`TRUE` if the Spin COG is still working and `FALSE` (or 0) if it
+is finished. You can use this, for example, to assign work to COG
+objects as they become free.
+
 A More Real World Example
 -------------------------
 
@@ -367,11 +377,21 @@ Restrictions
 
 There are a few restrictions on .cog.spin mode:
 
-1. coginit and cognew cannot be used to start Spin methods in a .cog.spin file. They can start assembly code, if you choose to insert some PASM in your .spin, but it must be PASM that you wrote, not generated automatically by the compiler.
+1. `coginit` and `cognew` cannot be used to start Spin methods in a
+`.cog.spin` file. They can start assembly code, if you choose to insert
+some PASM in your `.spin`, but it must be PASM that you wrote, not
+generated automatically by the compiler.
 
 2. Obviously, your code must fit into the memory of a single COG
 
-3. Variables in the VAR section will be placed in HUB memory. Local variables in Spin methods will usually be in COG memory, unless the @ operator is applied to them.
+3. Variables in the VAR section will be placed in HUB memory. Local
+variables in Spin methods will usually be in COG memory, unless the @
+operator is applied to them.
 
-4. Note that if you're converting an existing .spin object to use in COG mode that the timing will be vastly different. In particular, some Spin objects may not have delay loops because the Spin interpreter is slow enough that they're not needed; after conversion to COG mode you may need to insert some `waitcnt` calls in loops that didn't have them before.
+4. Note that if you're converting an existing `.spin` object to use in
+COG mode that the timing will be vastly different. In particular, some
+Spin objects may not have delay loops because the Spin interpreter is
+slow enough that they're not needed; after conversion to COG mode you
+may need to insert some `waitcnt` calls in loops that didn't have them
+before.
 
