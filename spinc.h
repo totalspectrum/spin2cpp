@@ -464,4 +464,7 @@ void AssignObjectOffsets(Module *P);
 void PerformCSE(Module *P);
 void PerformLoopOptimization(Module *P);
 
+// simplify statments like a^=b to a = a^b
+void SimplifyAssignments(AST **astptr);
+
 #endif

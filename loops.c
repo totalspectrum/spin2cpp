@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -627,9 +627,11 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
             if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == T_NEGATE) {
-                replace = AstAssign('-', entry->name, entry->loopstep->right);
+                replace = AstAssign(entry->name,
+                                    AstOperator('-', entry->name, entry->loopstep->right));
             } else {
-                replace = AstAssign('+', entry->name, entry->loopstep);
+                replace = AstAssign(entry->name,
+                                    AstOperator('+', entry->name, entry->loopstep));
             }
 
             // we have to place the "replace" after the last
@@ -645,7 +647,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             parent->left = NULL; // null out original statement
         }
         // this statement can be pulled out
-        stmt = AstAssign(T_ASSIGN, entry->name, pullvalue);
+        stmt = AstAssign(entry->name, pullvalue);
         stmt = NewAST(AST_STMTLIST, stmt, NULL);
 
         stmtlist = AddToList(stmtlist, stmt);
@@ -793,7 +795,7 @@ CheckSimpleLoop(AST *stmt)
     /* flip the update to -- */
     update->d.ival = T_DECREMENT;
     /* change the initialization */
-    initial = AstAssign(T_ASSIGN, updateVar, newInitial);
+    initial = AstAssign(updateVar, newInitial);
     condtest = AstOperator(T_NE, updateVar, AstInteger(0));
 
     /* update statement */

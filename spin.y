@@ -747,7 +747,7 @@ expr:
   | T_TRIPLEAT lhs
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
   | lhs T_ASSIGN expr
-    { $$ = AstAssign(T_ASSIGN, $1, $3); }
+    { $$ = AstAssign($1, $3); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
   | expr '+' expr
@@ -801,51 +801,51 @@ expr:
   | expr T_AND expr
     { $$ = AstOperator(T_AND, $1, $3); }
   | expr '+' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('+', $1, $4); }
+    { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('-', $1, $4); }
+    { $$ = AstOpAssign('-', $1, $4); }
   | expr '/' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('/', $1, $4); }
+    { $$ = AstOpAssign('/', $1, $4); }
   | expr '*' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('*', $1, $4); }
+    { $$ = AstOpAssign('*', $1, $4); }
   | expr '&' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('&', $1, $4); }
+    { $$ = AstOpAssign('&', $1, $4); }
   | expr '|' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('|', $1, $4); }
+    { $$ = AstOpAssign('|', $1, $4); }
   | expr '^' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('^', $1, $4); }
+    { $$ = AstOpAssign('^', $1, $4); }
   | expr T_MODULUS '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_MODULUS, $1, $4); }
+    { $$ = AstOpAssign(T_MODULUS, $1, $4); }
   | expr T_HIGHMULT '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_HIGHMULT, $1, $4); current->needsHighmult = 1;}
+    { $$ = AstOpAssign(T_HIGHMULT, $1, $4); current->needsHighmult = 1;}
   | expr T_LIMITMIN '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMIN, $1, $4); current->needsMinMax = 1; }
+    { $$ = AstOpAssign(T_LIMITMIN, $1, $4); current->needsMinMax = 1; }
   | expr T_LIMITMAX '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LIMITMAX, $1, $4); current->needsMinMax = 1; }
+    { $$ = AstOpAssign(T_LIMITMAX, $1, $4); current->needsMinMax = 1; }
   | expr T_REV '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_REV, $1, $4); }
+    { $$ = AstOpAssign(T_REV, $1, $4); }
   | expr T_ROTL '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_ROTL, $1, $4); current->needsRotate = 1; }
+    { $$ = AstOpAssign(T_ROTL, $1, $4); current->needsRotate = 1; }
   | expr T_ROTR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_ROTR, $1, $4); current->needsRotate = 1; }
+    { $$ = AstOpAssign(T_ROTR, $1, $4); current->needsRotate = 1; }
   | expr T_SHL '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_SHL, $1, $4); }
+    { $$ = AstOpAssign(T_SHL, $1, $4); }
   | expr T_SHR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_SHR, $1, $4); current->needsShr = 1; }
+    { $$ = AstOpAssign(T_SHR, $1, $4); current->needsShr = 1; }
   | expr T_SAR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_SAR, $1, $4); }
+    { $$ = AstOpAssign(T_SAR, $1, $4); }
   | expr T_AND '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_AND, $1, $4); }
+    { $$ = AstOpAssign(T_AND, $1, $4); }
   | expr T_OR '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_OR, $1, $4); }
+    { $$ = AstOpAssign(T_OR, $1, $4); }
   | expr '<' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('<', $1, $4); }
+    { $$ = AstOpAssign('<', $1, $4); }
   | expr '>' '=' expr %prec T_ASSIGN
-    { $$ = AstAssign('>', $1, $4); }
+    { $$ = AstOpAssign('>', $1, $4); }
   | expr T_LE '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_LE, $1, $4); }
+    { $$ = AstOpAssign(T_LE, $1, $4); }
   | expr T_GE '=' expr %prec T_ASSIGN
-    { $$ = AstAssign(T_GE, $1, $4); }
+    { $$ = AstOpAssign(T_GE, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' funccall

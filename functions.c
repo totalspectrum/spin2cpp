@@ -604,10 +604,10 @@ TransformCountRepeat(AST *ast)
 
     if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
         AST *initvar = AstTempLocalVariable("_start_");
-        initstmt = AstAssign(T_ASSIGN, loopvar, AstAssign(T_ASSIGN, initvar, fromval));
+        initstmt = AstAssign(loopvar, AstAssign(initvar, fromval));
         fromval = initvar;
     } else {
-        initstmt = AstAssign(T_ASSIGN, loopvar, fromval);
+        initstmt = AstAssign(loopvar, fromval);
     }
     /* set the limit variable */
     if (IsConstExpr(toval)) {
@@ -618,7 +618,7 @@ TransformCountRepeat(AST *ast)
         /* do nothing, toval is already OK */
     } else {
         limitvar = AstTempLocalVariable("_limit_");
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, toval));
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
         toval = limitvar;
     }
 
@@ -631,7 +631,7 @@ TransformCountRepeat(AST *ast)
     } else {
         AST *stepvar = AstTempLocalVariable("_step_");
         initstmt = NewAST(AST_SEQUENCE, initstmt,
-                          AstAssign(T_ASSIGN, stepvar,
+                          AstAssign(stepvar,
                                     NewAST(AST_CONDRESULT,
                                            AstOperator('>', toval, fromval),
                                            NewAST(AST_THENELSE, stepval,
@@ -646,11 +646,11 @@ TransformCountRepeat(AST *ast)
         } else if (knownStepVal == -1) {
             stepstmt = AstOperator(T_DECREMENT, NULL, loopvar);
         } else if (knownStepVal < 0) {
-            stepstmt = AstAssign('-', loopvar, AstInteger(-knownStepVal));
+            stepstmt = AstAssign(loopvar, AstOperator('-', loopvar, AstInteger(-knownStepVal)));
         }
     }
     if (stepstmt == NULL) {
-        stepstmt = AstAssign('+', loopvar, stepval);
+        stepstmt = AstAssign(loopvar, AstOperator('+', loopvar, stepval));
     }
 
     if (!condtest && testOp) {
@@ -673,7 +673,7 @@ TransformCountRepeat(AST *ast)
                 if (!limitvar) {
                     limitvar = AstTempLocalVariable("_limit_");
                 }
-                initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(T_ASSIGN, limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
+                initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
                 toval = limitvar;
             }
         } else {
@@ -681,7 +681,7 @@ TransformCountRepeat(AST *ast)
                 limitvar = AstTempLocalVariable("_limit_");
             }
             initstmt = NewAST(AST_SEQUENCE, initstmt,
-                              AstAssign(T_ASSIGN, limitvar,
+                              AstAssign(limitvar,
                                         SimpleOptimizeExpr(
                                             AstOperator('+', toval, stepval))));
             toval = limitvar;
@@ -1467,8 +1467,7 @@ TransformLongMove(AST **astptr, AST *ast)
     dstoff = symd->offset;
     sequence = NULL;
     for(;;) {
-        assign = AstAssign(T_ASSIGN,
-                           AstIdentifier(symd->name),
+        assign = AstAssign(AstIdentifier(symd->name),
                            AstIdentifier(syms->name));
         sequence = AddToList(sequence, NewAST(AST_SEQUENCE, assign, NULL));
         --n;
@@ -1575,7 +1574,7 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
             AST *var = AstTempLocalVariable("_tmp_");
-            ast->left = AstAssign(T_ASSIGN, var, ast->left);
+            ast->left = AstAssign(var, ast->left);
         }
         while (list) {
             doSpinTransform(&list->left->left, 0);
@@ -1637,13 +1636,13 @@ doSpinTransform(AST **astptr, int level)
         }
         if (level == 1) {
             // at toplevel we can ignore the old result
-            *astptr = AstAssign(T_ASSIGN, ast->left, target);
+            *astptr = AstAssign(ast->left, target);
         } else {
             tmp = AstTempLocalVariable("_tmp_");
 
             seq1 = NewAST(AST_SEQUENCE,
-                          AstAssign(T_ASSIGN, tmp, ast->left),
-                          AstAssign(T_ASSIGN, ast->left, target));
+                          AstAssign(tmp, ast->left),
+                          AstAssign(ast->left, target));
             seq2 = NewAST(AST_SEQUENCE, seq1, tmp);
             *astptr = seq2;
         }
@@ -1682,7 +1681,7 @@ doSpinTransform(AST **astptr, int level)
             case T_DECODE:
             case T_ENCODE:
                 lhsast = DupAST(ast->right);
-                *astptr = ast = AstAssign(T_ASSIGN, lhsast, ast);
+                *astptr = ast = AstAssign(lhsast, ast);
                 ast->line = lhsast->line = line;
                 doSpinTransform(astptr, level);
                 break;
@@ -1714,6 +1713,12 @@ SpinTransform(Module *Q)
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
+
+        // simplify assignments: this is required for some of
+        // the other passes to work
+        SimplifyAssignments(&func->body);
+        
+        // spin specific stuff
         doSpinTransform(&func->body, 1);
 
         // ScanFunctionBody is left over from older code
@@ -1728,4 +1733,66 @@ SpinTransform(Module *Q)
     }
     curfunc = savefunc;
     current = savecur;
+}
+
+/*
+ * if we see something like M ^= N
+ * we want to transform to M := M ^ N
+ * but we cannot do that if M has side effects
+ * so we have to pull side effects out of M
+ * cases to watch for:
+ *  M == X[(A, B, C)]  --> temp := (A, B, C), X[temp]
+ *  M == X[A:=B] --> A:=B, X[A]
+ *  M == X[func(A)] --> temp := func(A), X[temp]
+ *
+ * beware though of post effects:
+ *   X[I++] := I  --> X[I]:=I, I++
+ */
+
+static AST*
+ExtractSideEffects(AST *expr, AST **preseq)
+{
+    AST *temp;
+    AST *sideexpr = NULL;
+    
+    switch (expr->kind) {
+    case AST_MEMREF:
+    case AST_ARRAYREF:
+        sideexpr = expr->right;
+        temp = AstTempLocalVariable("_temp_");
+        expr->right = temp;
+        break;
+    default:
+        ERROR(expr, "Internal error, unable to handle assignment side effects");
+        break;
+    }
+    *preseq = sideexpr;
+    return expr;
+}
+
+void
+SimplifyAssignments(AST **astptr)
+{
+    AST *ast = *astptr;
+    AST *preseq = NULL;
+    
+    if (!ast) return;
+    if (ast->kind == AST_ASSIGN) {
+        int op = ast->d.ival;
+        if (op != T_ASSIGN)
+        {
+            AST *lhs = ast->left;
+            AstReportAs(ast);
+            if (ExprHasSideEffects(lhs)) {
+                lhs = ExtractSideEffects(lhs, &preseq);
+            }
+            ast = AstAssign(lhs, AstOperator(op, lhs, ast->right));
+            if (preseq) {
+                ast = NewAST(AST_SEQUENCE, preseq, ast);
+            }
+            *astptr = ast;
+        }
+    }
+    SimplifyAssignments(&ast->left);
+    SimplifyAssignments(&ast->right);
 }

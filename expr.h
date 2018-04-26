@@ -64,4 +64,7 @@ AST *TransformCaseExprList(AST *var, AST *list);
 // optimize things like ((a+N)-N) -> a
 AST *SimpleOptimizeExpr(AST *);
 
+// return 1 if an expression can have side effects
+int ExprHasSideEffects(AST *);
+
 #endif

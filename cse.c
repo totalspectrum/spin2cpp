@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Common Subexpression Elimination
@@ -314,12 +314,12 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
                 return NULL;
             }
             origexpr = NewAST(AST_ADDROF, origexpr, NULL);
-            assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
+            assign = AstAssign(entry->replace, origexpr);
             entry->replace = NewAST(AST_ARRAYREF,
                                     NewAST(AST_MEMREF, reftype, entry->replace),
                                     AstInteger(0));
         } else {
-            assign = AstAssign(T_ASSIGN, entry->replace, origexpr);
+            assign = AstAssign(entry->replace, origexpr);
         }
         assign = NewAST(AST_STMTLIST, assign, NULL);
         cse->assignList = AddToList(cse->assignList, assign);

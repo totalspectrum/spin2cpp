@@ -1689,7 +1689,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       }
       fcall = NewAST(AST_FUNCCALL, AstIdentifier(fname),
                      NewAST(AST_EXPRLIST, var, NULL));
-      fcall = AstAssign(T_ASSIGN, var, fcall);
+      fcall = AstAssign(var, fcall);
       return CompileExpression(irl, fcall, NULL);
   }
   default:
@@ -1711,14 +1711,14 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
         Operand *temp = NULL;
         int opc = (op == T_INCREMENT) ? '+' : '-';
         if (expr->left) {  /* x++ */
-            addone = AstAssign(opc, expr->left, AstInteger(1));
+            addone = AstAssign(expr->left, AstOperator(opc, expr->left, AstInteger(1)));
             temp = NewFunctionTempRegister();
             lhs = CompileExpression(irl, expr->left, NULL);
             EmitMove(irl, temp, lhs);
             CompileExpression(irl, addone, NULL);
             return temp;
         } else {
-            addone = AstAssign(opc, expr->right, AstInteger(1));
+            addone = AstAssign(expr->right, AstOperator(opc, expr->right, AstInteger(1)));
         }
         return CompileExpression(irl, addone, NULL);
     }
@@ -2441,6 +2441,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_FUNCCALL:
       return CompileFunccall(irl, expr);
   case AST_ASSIGN:
+      if (expr->d.ival != T_ASSIGN) {
+          ERROR(expr, "Internal error: asm code cannot handle assignment");
+      }
       r = CompileExpression(irl, expr->left, NULL);
       if (IsRegister(r->kind)) {
           val = CompileExpression(irl, expr->right, r);
@@ -3009,7 +3012,7 @@ CompileFunctionBody(Function *f)
     // emit initializations if any required
     if (!f->result_in_parmarray && f->resultexpr && !IsConstExpr(f->resultexpr))
     {
-        AST *resinit = AstAssign(T_ASSIGN, f->resultexpr, AstInteger(0));
+        AST *resinit = AstAssign(f->resultexpr, AstInteger(0));
         CompileStatement(irl, resinit);
     }
     //

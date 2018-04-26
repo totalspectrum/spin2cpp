@@ -278,7 +278,7 @@ ReplaceExprWithVariable(const char *prefix, AST *expr)
     // didn't find a variable, create a new one
     exprvar = AstTempLocalVariable(prefix);
     exprinit = NewAST(AST_STMTLIST,
-                      AstAssign(T_ASSIGN, exprvar, expr),
+                      AstAssign(exprvar, expr),
                       NULL);
     // insert it in the initialization sequence
     exprinit->right = *lastptr;
@@ -310,7 +310,8 @@ RangeXor(AST *dst, AST *src)
             AST *maskexpr;
             if (srcval == -1 || srcval == 0) {
                 maskexpr = AstOperator(T_SHL, AstInteger(1), loexpr);
-                return AstAssign('^', dst->left, maskexpr);
+                return AstAssign(dst->left,
+                                 AstOperator('^', dst->left, maskexpr));
             }
         }
     } else {
@@ -334,7 +335,8 @@ RangeXor(AST *dst, AST *src)
     maskexpr = AstOperator('&', maskexpr, src);
     maskexpr = AstOperator(T_ROTL, maskexpr, loexpr);
     maskexpr = FoldIfConst(maskexpr);
-    return AstAssign('^', dst->left, maskexpr);
+    return AstAssign(dst->left,
+                     AstOperator('^', dst->left, maskexpr));
 }
 
 /*
@@ -368,10 +370,12 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
     }
     maskexpr = AstOperator(T_SHL, AstInteger(mask), loexpr);
     if (bitset) {
-        return AstAssign('|', dst->left, maskexpr);
+        return AstAssign(dst->left,
+                         AstOperator('|', dst->left, maskexpr));
     } else {
         maskexpr = AstOperator(T_BIT_NOT, NULL, maskexpr);
-        return AstAssign('&', dst->left, maskexpr);
+        return AstAssign(dst->left,
+                         AstOperator('&', dst->left, maskexpr));
     }
 }
 
@@ -475,7 +479,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         }
     }
     if (IsConstExpr(nbits) && EvalConstExpr(nbits) >= 32) {
-        return AstAssign(T_ASSIGN, dst->left, FoldIfConst(src));
+        return AstAssign(dst->left, FoldIfConst(src));
     }
 
     /*
@@ -498,7 +502,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
 
         maskvar = AstTempLocalVariable("_mask");
         shift = AstOperator(T_SHL, AstInteger(1), loexpr);
-        maskassign = AstAssign(T_ASSIGN, maskvar, shift);
+        maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
         // insert the mask assignment at the beginning of the function
         maskassign->right = curfunc->body;
@@ -506,12 +510,12 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
             
         ifcond = AstOperator('&', src, AstInteger(1));
         ifpart = AstOperator('|', dst->left, maskvar);
-        ifpart = AstAssign(T_ASSIGN, dst->left, ifpart);
+        ifpart = AstAssign(dst->left, ifpart);
         ifpart = NewAST(AST_STMTLIST, ifpart, NULL);
         
         elsepart = AstOperator('&', dst->left,
                                AstOperator(T_BIT_NOT, NULL, maskvar));
-        elsepart = AstAssign(T_ASSIGN, dst->left, elsepart);
+        elsepart = AstAssign(dst->left, elsepart);
         elsepart = NewAST(AST_STMTLIST, elsepart, NULL);
         
         stmt = NewAST(AST_THENELSE, ifpart, elsepart);
@@ -558,7 +562,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
       
 #endif        
-        return AstAssign(T_ASSIGN, dst->left, orexpr);
+        return AstAssign(dst->left, orexpr);
     }
 }
 
@@ -1511,4 +1515,37 @@ AST *SimpleOptimizeExpr(AST *expr)
         }
     }
     return expr;
+}
+
+/*
+ * check an expression for side effects
+ */
+int
+ExprHasSideEffects(AST *expr)
+{
+    if (!expr) return 0;
+    switch (expr->kind) {
+    case AST_ASSIGN:
+    case AST_FUNCCALL:
+    case AST_POSTEFFECT:
+        return 1;
+    case AST_OPERATOR:
+        switch(expr->d.ival) {
+        case T_INCREMENT:
+        case T_DECREMENT:
+            return 1;
+        default:
+            break;
+        }
+        break;
+    case AST_IDENTIFIER:
+        return 0;
+    case AST_INTEGER:
+    case AST_STRING:
+    case AST_FLOAT:
+        return 0;
+    default:
+        break;
+    }
+    return ExprHasSideEffects(expr->left) || ExprHasSideEffects(expr->right);
 }
