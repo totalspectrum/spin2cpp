@@ -1754,19 +1754,29 @@ ExtractSideEffects(AST *expr, AST **preseq)
 {
     AST *temp;
     AST *sideexpr = NULL;
-    
+
+    if (!expr) {
+        return expr;
+    }
     switch (expr->kind) {
-    case AST_MEMREF:
     case AST_ARRAYREF:
-        sideexpr = expr->right;
-        temp = AstTempLocalVariable("_temp_");
-        expr->right = temp;
+    case AST_MEMREF:
+        expr->left = ExtractSideEffects(expr->left, preseq);
+        if (ExprHasSideEffects(expr->right)) {
+            temp = AstTempLocalVariable("_temp_");
+            sideexpr = AstAssign(temp, expr->right);
+            expr->right = temp;
+            if (*preseq) {
+                *preseq = NewAST(AST_SEQUENCE, *preseq, sideexpr);
+            } else {
+                *preseq = sideexpr;
+            }
+        }
         break;
     default:
-        ERROR(expr, "Internal error, unable to handle assignment side effects");
+        /* do nothing */
         break;
     }
-    *preseq = sideexpr;
     return expr;
 }
 
