@@ -1,3 +1,7 @@
+Version 3.7.1
+- Fixed a nasty bug in assignment operators ("a[i++] += b" was being
+  treated as "a[i++] = a[i++] + b", which is obviously wrong)
+
 Version 3.7.0
 - Added the -w flag to fastspin to allow creation of assembly language
   wrappers for Spin methods. See docs/SpinPasmIntegration.md for
