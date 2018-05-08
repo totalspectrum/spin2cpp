@@ -3506,7 +3506,7 @@ static const char *builtin_div_p2 =
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
 "       muxc    itmp2_,#%11                    'store sign of x\n"
-"       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
+"       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
 "       setq    #0\n"
 "       qdiv    muldiva_, muldivb_\n"
@@ -3940,6 +3940,7 @@ EmitMain_P2(IRList *irl, Module *P)
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
     EmitMove(irl, stackptr, stacklabel);
+    EmitOp1(irl, OPC_HUBSET, NewImmediate(255));
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {

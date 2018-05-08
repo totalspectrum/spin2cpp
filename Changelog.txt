@@ -1,3 +1,6 @@
+Version 3.7.2
+- Updated P2 support
+
 Version 3.7.1
 - Fixed a nasty bug in assignment operators ("a[i++] += b" was being
   treated as "a[i++] = a[i++] + b", which is obviously wrong)

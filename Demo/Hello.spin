@@ -32,6 +32,9 @@ VAR
 '' print out hello, world
 ''
 PUB hello
+#ifdef __P2__
+  clkset($ff, 80_000_000)
+#endif
   start(31, 30, 0, 115200)
   repeat
     str(string("hello, world!", 13, 10))
@@ -40,48 +43,53 @@ PUB hello
 '' code: largely taken from FullDuplexSerial.spin
 ''
 
+#ifdef PC
 PUB start(rx_pin, tx_pin, mode, baudrate)
-#ifndef PC
+  return 1
+  
+#else
+
+PUB start(rx_pin, tx_pin, mode, baudrate)
   baud := baudrate
   bitcycles := _clkfreq / baudrate
   txpin := tx_pin
   txmask := (1<<txpin)
   rxpin := rx_pin
-#endif
-  return 1
   
-PUB tx(c) | val, waitcycles, mask
-#ifdef PC
-  '' just emit direct C code here
-  {++
-  putchar(c);
-  }
-#else
+#ifdef __P2__
+PUB tx(c) | waitcycles, mask, bcycles
+  c := (c|256) << 1
   mask := txmask
-# ifdef __P2__
   OUTB |= mask
   DIRB |= mask
-# else
+  waitcycles := CNT
+  bcycles := 80000000 / 115200
+  repeat 10
+    asm
+      shr c, #1 wc
+      drvc #62
+      addct1 waitcycles, bcycles
+      waitct1
+    endasm
+    
+#else
+
+PUB tx(c) | val, waitcycles, mask
+  mask := txmask
   OUTA |= mask
   DIRA |= mask
-#endif
   val := (c | 256) << 1
   waitcycles := CNT
   repeat 10
      waitcnt(waitcycles += bitcycles)
-#ifdef __P2__
-     if (val & 1)
-       OUTB |= mask
-     else
-       OUTB &= !mask
-     val >>= 1
-#else
      if (val & 1)
        OUTA |= mask
      else
        OUTA &= !mask
      val >>= 1
+
 #endif
+
 #endif
 
 PUB str(s) | c

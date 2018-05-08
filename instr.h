@@ -74,6 +74,7 @@ typedef enum IROpcode {
 
     /* p2 instructions */
     OPC_ADDCT1,
+    OPC_HUBSET,
     
     /* an instruction unknown to the optimizer */
     /* this must immediately follow the actual instructions */

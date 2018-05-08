@@ -608,13 +608,18 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);
         if (ccset) {
             const char *sepstring = " ";
-            if (ccset & FLAG_WC) {
-                flexbuf_printf(fb, "%swc", sepstring);
+            if (gl_p2 && ((FLAG_WC|FLAG_WZ) == (ccset & (FLAG_WC|FLAG_WZ)))) {
+                flexbuf_printf(fb, "%swcz", sepstring);
                 sepstring = ",";
-            }
-            if (ccset & FLAG_WZ) {
-                flexbuf_printf(fb, "%swz", sepstring);
-                sepstring = ",";
+            } else { 
+                if (ccset & FLAG_WC) {
+                    flexbuf_printf(fb, "%swc", sepstring);
+                    sepstring = ",";
+                }
+                if (ccset & FLAG_WZ) {
+                    flexbuf_printf(fb, "%swz", sepstring);
+                    sepstring = ",";
+                }
             }
             if (ccset & FLAG_NR) {
                 flexbuf_printf(fb, "%snr", sepstring);

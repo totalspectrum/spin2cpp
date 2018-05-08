@@ -1303,13 +1303,14 @@ instr_p2[] = {
 
     { "incmod", 0x07000000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
     { "decmod", 0x07200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-    { "encod",  0x07400000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-//    { "botone", 0x07600000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "zerox",  0x07400000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "signx",  0x07600000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
 
-    { "testn",  0x07800000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P2_STD },
-    { "test",   0x07a00000, TWO_OPERANDS, OPC_TEST, FLAG_P2_STD },
-    { "anyb",   0x07c00000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P2_STD },
-//    { "res",  0x07e00000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P2_STD },
+    { "encod",  0x07800000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "ones",   0x07a00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+
+    { "test",   0x07c00000, TWO_OPERANDS, OPC_TEST, FLAG_P2_STD },
+    { "testn",  0x07e00000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P2_STD },
 
     { "setnib", 0x08000000, THREE_OPERANDS_NIBBLE, OPC_GENERIC, 0 },
     { "getnib", 0x08400000, THREE_OPERANDS_NIBBLE, OPC_GENERIC, 0 },
@@ -1454,13 +1455,13 @@ instr_p2[] = {
     { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qvector",0x0d500000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "clkset", 0x0d600000, P2_DST_CONST_OK,  OPC_GENERIC, FLAG_WC },
+    { "hubset", 0x0d600000, P2_DST_CONST_OK,  OPC_HUBSET, FLAG_WC },
     { "cogid",  0x0d600001, P2_DST_CONST_OK,  OPC_COGID, FLAG_WC },
     { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP, 0 },
     { "locknew",0x0d600004, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_WC },
     { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "lockclr",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
-    { "lockset",0x0d600007, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
+    { "locktry",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
+    { "lockrel",0x0d600007, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
 
     { "qlog",   0x0d60000e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "qexp",   0x0d60000f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
@@ -1468,12 +1469,13 @@ instr_p2[] = {
     { "rfbyte", 0x0d600010, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rfword", 0x0d600011, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rflong", 0x0d600012, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "wfbyte", 0x0d600013, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "wfword", 0x0d600014, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "wflong", 0x0d600015, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "rfvar",  0x0d600013, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
+    { "rfvars", 0x0d600014, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
+    
+    { "wfbyte", 0x0d600015, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "wfword", 0x0d600016, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "wflong", 0x0d600017, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
-    { "setq",   0x0d600016, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "setq2",  0x0d600017, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "getqx",  0x0d600018, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "getqy",  0x0d600019, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "getct",  0x0d60001a, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
@@ -1481,8 +1483,8 @@ instr_p2[] = {
 
     { "setdacs",0x0d60001c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setxfrq",0x0d60001d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "getxcos",0x0d60001e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "getxsin",0x0d60001f, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "getxacc",0x0d60001e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
   
     { "setse1", 0x0d600020, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setse2", 0x0d600021, P2_DST_CONST_OK, OPC_GENERIC, 0 },
@@ -1536,15 +1538,16 @@ instr_p2[] = {
     { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
-    { "waitx",  0x0d600028, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-//  { "setcz",  0x0d600029, P2_DST_CONST_OK, OPC_GENERIC },
+    { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+
     { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
 
   // indirect jumps via register
-  // normally the user will write "jmp x" and the assembler
-  // will recognize x is a register and rewrite it as "jmp.i x"
-    { "jmp.ind",0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+  // normally the user will write "jmp x" and the assembler will
+  // recognize if x is a register and rewrite it as "jmp.ind x"
+    { "jmp.ind", 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "call.ind",0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "ret",    0x0d64002d, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "calla.ind",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
@@ -1559,8 +1562,8 @@ instr_p2[] = {
     { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
     { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "getint", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "setbrk", 0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC, 0 },
   
     { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC, 0 },
