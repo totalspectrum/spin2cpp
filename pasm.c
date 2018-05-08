@@ -301,6 +301,9 @@ DeclareLabels(Module *P)
             break;
         case AST_COMMENT:
             break;
+        case AST_ALIGN:
+            ALIGNPC(EvalPasmExpr(ast->left));
+            break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);
             break;

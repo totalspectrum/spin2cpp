@@ -306,7 +306,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
         /* uses the I bit instead of L?? */
         mask = P2_IMM_SRC;
         if (bigImm) {
-            mask |= BIG_IMM_SRC;
+            mask |= BIG_IMM_DST;
         }
         return mask;
     default:
@@ -735,13 +735,19 @@ instr_ok:
     outputInstrLong(f, val);
 }
 
+static void
+AlignPc(Flexbuf *f, int size)
+{
+        while ((datacount % size) != 0) {
+            outputByte(f, 0);
+        }
+}
+
 void
 outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     if (size > 1 && !gl_p2) {
-        while ((datacount % size) != 0) {
-            outputByte(f, 0);
-        }
+        AlignPc(f, size);
     }
     outputDataList(f, size, ast, relocs);
 }
@@ -810,6 +816,12 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
         case AST_LONGLIST:
             outputAlignedDataList(f, 4, ast->left, relocs);
             break;
+        case AST_ALIGN:
+        {
+            int size = EvalPasmExpr(ast->left);
+            AlignPc(f, size);
+            break;
+        }
         case AST_INSTRHOLDER:
             assembleInstruction(f, ast, ast->d.ival);
             break;

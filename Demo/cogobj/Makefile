@@ -1,4 +1,4 @@
-FASTSPIN=../../build/fastspin -q
+FASTSPIN=../../build/fastspin -q -2
 OPENSPIN=openspin -q -L../../Lib
 
 all: fibodemo.binary blink1.binary blink2.binary blink7.binary fibomulti.binary

@@ -744,7 +744,7 @@ IRAssemble(IRList *list, Module *P)
     didPub = 0;
     lmmMode = 0;
     
-    if (gl_p2) {
+    if (gl_p2 && gl_output != OUTPUT_COGSPIN) {
         didPub = 1; // we do not want PUB declaration in P2 code
     }
     flexbuf_init(&fb, 512);

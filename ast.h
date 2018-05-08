@@ -139,6 +139,7 @@ enum astkind {
 
     AST_IMMHOLDER = 96,
     AST_BIGIMMHOLDER,
+    AST_ALIGN,
 };
 
 struct AST {

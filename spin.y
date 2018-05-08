@@ -178,6 +178,8 @@ CheckYield(AST *body)
 %token T_ORGH       "ORGH"
 %token T_RES        "RES"
 %token T_FIT        "FIT"
+%token T_ALIGNL     "ALIGNL"
+%token T_ALIGNW     "ALIGNW"
 
 %token T_REPEAT     "REPEAT"
 %token T_FROM       "FROM"
@@ -659,6 +661,10 @@ basedatline:
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
   | instruction operandlist modifierlist T_EOLN
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
+  | T_ALIGNL T_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
+  | T_ALIGNW T_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
   | T_ORG T_EOLN
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
   | T_ORG expr T_EOLN

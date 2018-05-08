@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // is significant
 //
-// Copyright (c) 2011-2017 Total Spectrum Software Inc.
+// Copyright (c) 2011-2018 Total Spectrum Software Inc.
 //
 #include <string.h>
 #include <ctype.h>
@@ -1099,7 +1099,10 @@ initLexer(int flags)
     for (i = 0; i < N_ELEMENTS(init_words); i++) {
         AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
     }
-
+    if (gl_p2) {
+        AddSymbol(&reservedWords, "alignl", SYM_RESERVED, (void *)T_ALIGNL);
+        AddSymbol(&reservedWords, "alignw", SYM_RESERVED, (void *)T_ALIGNW);
+    }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
         AddSymbol(&reservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
@@ -1340,13 +1343,13 @@ instr_p2[] = {
     { "decod",  0x09c00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
     { "bmask",  0x09c80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
     
-    { "zerox",  0x09d00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "signz",  0x09d80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "crcbit", 0x09d00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "crcnib", 0x09d80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
     
-    { "muxnits",  0x09e00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "muxnibs",  0x09e80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "muxbyts",  0x09f00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "movbyts",  0x09f80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "muxnits", 0x09e00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "muxnibs", 0x09e80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "muxq",   0x09f00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "movbyts", 0x09f80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
 
     { "mul",    0x0a000000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
     { "muls",   0x0a100000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
