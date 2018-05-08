@@ -180,7 +180,7 @@ GetAddrOffset(AST *ast)
         return 0;
     }
     label = (Label *)sym->val;
-    return label->offset;
+    return label->hubval;
 }
         
 void

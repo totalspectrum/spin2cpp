@@ -174,6 +174,7 @@ enum flags {
 
 #define FLAG_P1_STD (FLAG_WZ|FLAG_WC|FLAG_NR|FLAG_WR)
 #define FLAG_P2_STD (FLAG_WZ|FLAG_WC|FLAG_WCZ)
+#define FLAG_P2_CZTEST (FLAG_WZ|FLAG_WC|FLAG_ANDC|FLAG_ANDZ|FLAG_ORC|FLAG_ORZ|FLAG_XORC|FLAG_XORZ)
 
 typedef struct IRList {
     IR *head;
@@ -250,7 +251,8 @@ typedef enum InstrOps {
     P2_LOC,		    /* like JUMP, but no relative version */
     P2_TWO_OPERANDS,        /* two operands, both may be imm */
     TWO_OPERANDS_NO_FLAGS,  /* no wc or wz effects allowed */
-
+    P2_DST_TESTP,           /* special flag handling for testp/testpn */
+    
     THREE_OPERANDS_NIBBLE,
     THREE_OPERANDS_BYTE,
     THREE_OPERANDS_WORD,

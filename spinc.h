@@ -102,13 +102,14 @@ extern struct preprocess gl_pp;
 
 /* structure describing a dat block label */
 typedef struct label {
-    uint32_t offset;
-    uint32_t asmval;
+    uint32_t hubval;  // for P1, offset in dat block; for P2, a real address
+    uint32_t cogval;  // cog address; note that it is in bytes, needs to be divided by 4 for most uses
     AST *type;   /* type of value following the label */
     Symbol *org; /* symbol associated with last .org, if needed */
     unsigned flags; /* flags for the label */
 #define LABEL_USED_IN_SPIN      0x01
 #define LABEL_NEEDS_EXTRA_ALIGN 0x02
+#define LABEL_IN_HUB            0x04
 } Label;
 
 

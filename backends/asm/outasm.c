@@ -785,8 +785,9 @@ LabelRef(IRList *irl, Symbol *sym)
     Label *lab = (Label *)sym->val;
     Module *P = current;
     Operand *datbase = ValidateDatBase(P);
-    
-    temp = TypedHubMemRef(lab->type, datbase, (int)lab->offset);
+    // FIXME: should we check the label's flags to see if it's actually
+    // declared in COG memory??
+    temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
     return temp;
 }
 
@@ -3303,7 +3304,7 @@ AssignFuncNames(IRList *irl, Module *P)
                 }
                 P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
                 label = (Label *)calloc(sizeof(*label), 1);
-                sym->offset = label->offset = P->datsize;
+                sym->offset = label->hubval = P->datsize;
                 label->type = ast_type_long;
                 sym->type = SYM_LABEL;
                 sym->val = (void *)label;

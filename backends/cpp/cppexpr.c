@@ -74,7 +74,7 @@ PrintLabel(Flexbuf *f, Symbol *sym, int flags)
     } else {
         flexbuf_printf(f, "(%s(", ref ? "" : "*");
         PrintType(f, lab->type, 0);
-        flexbuf_printf(f, "*)&%s[%d])", current->datname, lab->offset);
+        flexbuf_printf(f, "*)&%s[%d])", current->datname, lab->hubval);
     }
 }
 

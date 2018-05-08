@@ -896,20 +896,21 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = (Label *)sym->val;
-                    if (gl_p2) {
-                        if (lref->asmval > 0x7ff) {
-                            // just return it as-is
-                            return intExpr(lref->asmval);
-                        }
+                    if (lref->flags & LABEL_IN_HUB) {
+                        return intExpr(lref->hubval);
                     }
-                    if (lref->asmval & 0x03) {
-                        if (reportError)
-                            ERROR(expr, "label %s not on longword boundary", sym->name);
-                        else
+                    if (gl_p2 && lref->cogval > 0x7ff) {
+                        return intExpr(lref->cogval); // not sure if this is right
+                    }
+                    if (lref->cogval & 0x03) {
+                        if (reportError) {
+                            ERROR(expr, "label %s in COG memory not on longword boundary", sym->name);
+                        } else {
                             *valid = 0;
+                        }
                         return intExpr(0);
                     }
-                    return intExpr(lref->asmval >> 2);
+                    return intExpr(lref->cogval >> 2);
                 }
                 /* otherwise fall through */
             default:
@@ -988,7 +989,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         } else {
             Label *lref = (Label *)sym->val;
             if (gl_p2) {
-                return intExpr(lref->offset);
+                return intExpr(lref->hubval);
             }
             if (kind == AST_ABSADDROF) {
                 if (gl_dat_offset == -1) {
@@ -999,10 +1000,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                     }
                     return intExpr(0);
                 } else {
-                    return intExpr(lref->offset + gl_dat_offset);
+                    return intExpr(lref->hubval + gl_dat_offset);
                 }
             }
-            return intExpr(lref->offset);
+            return intExpr(lref->hubval);
         }
         break;
     default:
