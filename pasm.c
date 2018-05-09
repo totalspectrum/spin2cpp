@@ -269,7 +269,7 @@ DeclareLabels(Module *P)
             break;
         case AST_ORGH:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub);
-            ast->d.ival = cogpc;
+            ast->d.ival = hubpc;
             if (ast->left) {
                 replaceHeres(ast->left, hubpc, lastOrg);
                 hubpc = EvalPasmExpr(ast->left);
@@ -316,5 +316,8 @@ DeclareLabels(Module *P)
         }
     }
 
+    // emit any labels that come at the end
+    pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub);
+    
     P->datsize = datoff;
 }
