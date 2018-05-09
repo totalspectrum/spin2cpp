@@ -17,6 +17,9 @@
 #include "util/flexbuf.h"
 #include "instr.h"
 
+// definition for the Spin parser
+#define YYSTYPE AST*
+
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
 
