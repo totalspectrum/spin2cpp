@@ -544,6 +544,8 @@ decode_instr:
         break;
     case P2_TWO_OPERANDS:
         if (!strcmp(instr->name, "rep")) {
+            // special case: rep @x, N says to count the instructions up to x
+            // and repeat them N times; fixup the operand here
             if (operand[0]->kind == AST_ADDROF && !opimm[0]) {
                 operand[0] = AstOperator('/', AstOperator('-', operand[0], AstInteger(asmpc+4)), AstInteger(4));
                 opimm[0] = P2_IMM_DST;
