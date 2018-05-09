@@ -245,7 +245,7 @@ DeclareLabels(Module *P)
             MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub);
             replaceHeres(ast->left, HEREPC, lastOrg);
-            ast->d.ival = cogpc;
+            ast->d.ival = inHub ? hubpc : (cogpc | (1<<30));
             INCPC(InstrSize(ast->left));
             lasttype = ast_type_long;
             current->datHasCode = 1;

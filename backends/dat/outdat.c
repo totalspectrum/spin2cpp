@@ -421,12 +421,13 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
  */
 #define MAX_OPERANDS 3
 
-void
-assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
+static void
+assembleInstruction(Flexbuf *f, AST *ast)
 {
     uint32_t val, mask, src, dst;
     uint32_t immmask;
     uint32_t curpc;
+    int inHub;
     int32_t isrc;
     Instruction *instr;
     int numoperands, expectops;
@@ -441,7 +442,8 @@ assembleInstruction(Flexbuf *f, AST *ast, int asmpc)
     bool needIndirect = false;
     
     extern Instruction instr_p2[];
-    curpc = ast->d.ival;
+    curpc = ast->d.ival & 0x00ffffff;
+    inHub = (0 == (ast->d.ival & (1<<30)));
     ast = ast->left;
     
     /* make sure it is aligned */
@@ -547,7 +549,7 @@ decode_instr:
             // special case: rep @x, N says to count the instructions up to x
             // and repeat them N times; fixup the operand here
             if (operand[0]->kind == AST_ADDROF && !opimm[0]) {
-                operand[0] = AstOperator('/', AstOperator('-', operand[0], AstInteger(asmpc+4)), AstInteger(4));
+                operand[0] = AstOperator('/', AstOperator('-', operand[0], AstInteger(curpc+4)), AstInteger(4));
                 opimm[0] = P2_IMM_DST;
                 immmask |= P2_IMM_DST;
             }
@@ -582,12 +584,12 @@ decode_instr:
             }
             isrc = EvalPasmExpr(operand[1]);
             if (isrc < 0x400) {
-                if (asmpc >= 0x400) goto force_loc;
+                if (inHub) goto force_loc;
                 isrc *= 4;
-            } else if (asmpc < 0x400) {
+            } else if (!inHub) {
                 goto force_loc;
             }
-            isrc = (isrc - (asmpc+4));
+            isrc = (isrc - (curpc+4));
             if (0 != (isrc & 0x3)) {
                 // "loc" required
                 goto force_loc;
@@ -621,7 +623,7 @@ decode_instr:
             if (isrc < 0x400) {
                 isrc *= 4;
             }
-            isrc = isrc - (asmpc+4);
+            isrc = isrc - (curpc+4);
             isrc /= 4;
             if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
@@ -690,9 +692,8 @@ decode_instr:
             isRelJmp = 0;
         } else {
             isrc = EvalPasmExpr(operand[opidx]);
-            if ( (curpc < 0x200 && isrc >= 0x200)
-                 || (curpc < 0x400 && isrc >= 0x400)
-                 || (curpc >= 0x400 && isrc < 0x200)
+            if ( (inHub && isrc < 0x400)
+                 || (!inHub && isrc >= 0x400)
                 )
             {
                 isRelJmp = 0;
@@ -701,10 +702,10 @@ decode_instr:
             }
         }
         if (isRelJmp) {
-            if (curpc < 0x400) {
+            if (!inHub) {
                 isrc *= 4;
             }
-            isrc = isrc - (asmpc+4);
+            isrc = isrc - (curpc+4);
             src = isrc & 0xfffff;
             val = val | (1<<20);
         } else {
@@ -869,7 +870,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
             break;
         }
         case AST_INSTRHOLDER:
-            assembleInstruction(f, ast, ast->d.ival);
+            assembleInstruction(f, ast);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
