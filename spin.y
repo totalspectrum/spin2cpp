@@ -877,6 +877,11 @@ expr:
             $$ = AstOperator(K_NEGATE, NULL, $2);
         }
     }
+  | '+' expr %prec SP_NEGATE
+    {
+        AST *op = $2;
+        $$ = $2;
+    }
   | '!' expr %prec SP_BIT_NOT
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
   | '~' expr
