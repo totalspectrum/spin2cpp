@@ -1451,6 +1451,7 @@ instr_p2[] = {
     { "fblock", 0x0c900000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
 
     { "xinit",  0x0ca00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "xstop",  0x0cac0000, NO_OPERANDS, OPC_GENERIC, 0 },
     { "xzero",  0x0cb00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "xcont",  0x0cc00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
 
