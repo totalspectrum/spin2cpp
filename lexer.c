@@ -1270,14 +1270,8 @@ instr_p2[] = {
     { "sumz",   0x03c00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
     { "sumnz",  0x03e00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
 
-    { "testb",   0x04000000, TWO_OPERANDS, OPC_GENERIC, FLAG_WC|FLAG_WZ },
-    { "testbn",  0x04200000, TWO_OPERANDS, OPC_GENERIC, FLAG_WC|FLAG_WZ },
-    { "testb",   0x04400000, TWO_OPERANDS, OPC_GENERIC, FLAG_ANDC|FLAG_ANDZ },
-    { "testbn",  0x04600000, TWO_OPERANDS, OPC_GENERIC, FLAG_ANDC|FLAG_ANDZ },
-    { "testb",   0x04800000, TWO_OPERANDS, OPC_GENERIC, FLAG_ORC|FLAG_ORZ },
-    { "testbn",  0x04a00000, TWO_OPERANDS, OPC_GENERIC, FLAG_ORC|FLAG_ORZ },
-    { "testb",   0x04c00000, TWO_OPERANDS, OPC_GENERIC, FLAG_XORC|FLAG_XORZ },
-    { "testbn",  0x04e00000, TWO_OPERANDS, OPC_GENERIC, FLAG_XORC|FLAG_XORZ },
+    { "testb",   0x04000000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_CZTEST },
+    { "testbn",  0x04200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_CZTEST },
 
     { "bitl",   0x04000000, TWO_OPERANDS, OPC_GENERIC, FLAG_WCZ },
     { "bith",   0x04200000, TWO_OPERANDS, OPC_GENERIC, FLAG_WCZ },
@@ -1580,8 +1574,8 @@ instr_p2[] = {
     { "setpiv", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
-    { "testp",  0x0d600040, P2_DST_TESTP, OPC_GENERIC, FLAG_P2_CZTEST },
-    { "testpn", 0x0d600041, P2_DST_TESTP, OPC_GENERIC, FLAG_P2_CZTEST },
+    { "testp",  0x0d600040, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_CZTEST },
+    { "testpn", 0x0d600041, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_CZTEST },
 
     { "dirl",   0x0d600040, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
     { "dirh",   0x0d600041, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
@@ -1648,7 +1642,10 @@ instr_p2[] = {
 
     { "calld",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH, 0 },
     { "loc",    0x0e800000, P2_LOC, OPC_GENERIC, 0 },
-  
+
+    { "augs",   0x0f000000, P2_AUG, OPC_GENERIC, 0 },
+    { "augd",   0x0f800000, P2_AUG, OPC_GENERIC, 0 },
+
     { NULL, 0, NO_OPERANDS, OPC_GENERIC},
 };
 
@@ -1812,7 +1809,7 @@ InstrModifier modifiers_p2[] = {
 
 
     { "wz", (1<<19) },
-    { "wc", (1<<20) },
+    { "wc", (2<<19) },
     { "wcz", (3<<19) },
     
     { NULL, 0 }

@@ -272,6 +272,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     switch(instr->ops) {
     case P2_JUMP:
     case P2_LOC:
+    case P2_AUG:
     case P2_TJZ_OPERANDS:
     case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
@@ -596,6 +597,7 @@ decode_instr:
         }
         break;
     case SRC_OPERAND_ONLY:
+    case P2_AUG:
         dst = 0;
         src = EvalPasmExpr(operand[0]);
         break;
@@ -705,25 +707,33 @@ decode_instr:
         return;
     }
 
-    if (immmask & BIG_IMM_SRC) {
-        uint32_t augval = val & 0xf0000000; // preserve condition
-        augval |= (src >> 9) & 0x007fffff;
-        augval |= 0x0f000000; // AUGS
-        src &= 0x1ff;
-        outputInstrLong(f, augval);
-        immmask &= ~BIG_IMM_SRC;
-    }
-    if (immmask & BIG_IMM_DST) {
-        uint32_t augval = val & 0xf0000000; // preserve condition
-        augval |= (dst >> 9) & 0x007fffff;
-        augval |= 0x0f800000; // AUGD
-        dst &= 0x1ff;
-        outputInstrLong(f, augval);
-        immmask &= ~BIG_IMM_DST;
-    }
-    if (src > 511) {
-        ERROR(line, "Source operand too big for %s", instr->name);
-        return;
+    if (instr->ops == P2_AUG) {
+        if (immmask == 0) {
+            ERROR(line, "%s requires immediate operand", instr->name);
+        }
+        immmask = 0;
+        src = src >> 9;
+    } else {
+        if (immmask & BIG_IMM_SRC) {
+            uint32_t augval = val & 0xf0000000; // preserve condition
+            augval |= (src >> 9) & 0x007fffff;
+            augval |= 0x0f000000; // AUGS
+            src &= 0x1ff;
+            outputInstrLong(f, augval);
+            immmask &= ~BIG_IMM_SRC;
+        }
+        if (immmask & BIG_IMM_DST) {
+            uint32_t augval = val & 0xf0000000; // preserve condition
+            augval |= (dst >> 9) & 0x007fffff;
+            augval |= 0x0f800000; // AUGD
+            dst &= 0x1ff;
+            outputInstrLong(f, augval);
+            immmask &= ~BIG_IMM_DST;
+        }
+        if (src > 511) {
+            ERROR(line, "Source operand too big for %s", instr->name);
+            return;
+        }
     }
     if (dst > 511) {
         ERROR(line, "Destination operand too big for %s", instr->name);

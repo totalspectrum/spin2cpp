@@ -256,6 +256,8 @@ typedef enum InstrOps {
     THREE_OPERANDS_NIBBLE,
     THREE_OPERANDS_BYTE,
     THREE_OPERANDS_WORD,
+
+    P2_AUG,
 } InstrOps;
 
 

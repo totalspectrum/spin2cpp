@@ -862,6 +862,8 @@ expr:
     { $$ = AstCatch(NewAST(AST_FUNCCALL, $2, NULL)); }
   | '\\' '(' expr ')'
     { $$ = AstCatch($3); }
+  | '\\' integer
+    { $$ = AstCatch($2); }
   | funccall
     { $$ = $1; }
   | '-' expr %prec SP_NEGATE
