@@ -1585,7 +1585,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           // reverse, then shift right
           left = CompileExpression(irl, lhs, NULL);
           right = CompileExpression(irl, rhs, NULL);
-          EmitOp2(irl, OPC_REV_P2, temp, left); // reverse the bits
+          EmitMove(irl, temp, left);
+          EmitOp1(irl, OPC_REV_P2, temp); // reverse the bits
           EmitOp2(irl, OPC_SHR, temp, right);
           return temp;
       } else {
