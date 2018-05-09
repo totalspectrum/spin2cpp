@@ -542,11 +542,19 @@ decode_instr:
     switch (instr->ops) {
     case NO_OPERANDS:
         break;
+    case P2_TWO_OPERANDS:
+        if (!strcmp(instr->name, "rep")) {
+            if (operand[0]->kind == AST_ADDROF && !opimm[0]) {
+                operand[0] = AstOperator('/', AstOperator('-', operand[0], AstInteger(asmpc+4)), AstInteger(4));
+                opimm[0] = P2_IMM_DST;
+                immmask |= P2_IMM_DST;
+            }
+        }
+        // fall through
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_NO_FLAGS:
-    case P2_TWO_OPERANDS:
     handle_two_operands:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
@@ -562,7 +570,7 @@ decode_instr:
         break;
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
-        if (!strcmp(instr->name, "calld") && (dst >= 0x1f6 && dst <= 0x1f9)) {
+        if (!strcmp(instr->name, "calld") && opimm[1] && (dst >= 0x1f6 && dst <= 0x1f9)) {
             // use the .loc version of this instruction
             int k = 0;
             while (instr_p2[k].name && strcmp(instr_p2[k].name, "calld.loc") != 0) {
