@@ -562,26 +562,29 @@ decode_instr:
         break;
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
-        if (opimm[1]) {
-            isrc = EvalPasmExpr(operand[1]);
-            if (isrc < 0x400) {
-                isrc *= 4;
+        if (!strcmp(instr->name, "calld") && (dst >= 0x1f6 && dst <= 0x1f9)) {
+            // use the .loc version of this instruction
+            int k = 0;
+            while (instr_p2[k].name && strcmp(instr_p2[k].name, "calld.loc") != 0) {
+                k++;
             }
-            isrc = isrc - (asmpc+4);
-            isrc /= 4;
-            if ( (isrc < -256) || (isrc > 255) ) {
-                ERROR(line, "Source out of range for relative branch %s", instr->name);
-                isrc = 0;
+            if (!instr_p2[k].name) {
+                ERROR(line, "Internal error in calld parsing");
+                return;
             }
-            src = isrc & 0x1ff;
-        } else {
-            src = EvalPasmExpr(operand[1]);
+            instr = &instr_p2[k];
+            ast = origast;
+            goto decode_instr;
         }
-        break;
+        /* fall through */
     case P2_JINT_OPERANDS:
-        dst = 0;
-        if (opimm[0]) {
-            isrc = EvalPasmExpr(operand[0]);
+        opidx = (instr->ops == P2_TJZ_OPERANDS) ? 1 : 0;
+        if (operand[opidx]->kind == AST_CATCH) {
+            // asking for absolute address
+            ERROR(line, "Absolute address not valid for %s", instr->name);
+            isrc = 0;
+        } else if (opimm[opidx]) {
+            isrc = EvalPasmExpr(operand[opidx]);
             if (isrc < 0x400) {
                 isrc *= 4;
             }
@@ -593,7 +596,7 @@ decode_instr:
             }
             src = isrc & 0x1ff;
         } else {
-            src = EvalPasmExpr(operand[0]);
+            src = EvalPasmExpr(operand[opidx]);
         }
         break;
     case SRC_OPERAND_ONLY:

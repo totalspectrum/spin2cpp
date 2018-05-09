@@ -1370,7 +1370,16 @@ instr_p2[] = {
     { "rdword", 0x0ae00000, P2_RDWR_OPERANDS, OPC_RDWORD, FLAG_P2_STD },
     { "rdlong", 0x0b000000, P2_RDWR_OPERANDS, OPC_RDLONG, FLAG_P2_STD },
 
-    { "calld.ind",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "reti1",  0x0b3bfff5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "reti2",  0x0b3bfff3, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "reti3",  0x0b3bfff1, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "resi0",  0x0b3bfdff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "resi1",  0x0b3be9f5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "resi2",  0x0b3be5f3, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "resi3",  0x0b3be1f1, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+
     { "callpa", 0x0b400000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
     { "callpb", 0x0b500000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
 
@@ -1640,7 +1649,7 @@ instr_p2[] = {
     { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
 
-    { "calld",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH, 0 },
+    { "calld.loc",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH, 0 },
     { "loc",    0x0e800000, P2_LOC, OPC_GENERIC, 0 },
 
     { "augs",   0x0f000000, P2_AUG, OPC_GENERIC, 0 },
