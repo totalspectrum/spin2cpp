@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "spintokens.h"
+#include "optokens.h"
 #include "util/flexbuf.h"
 
 /*
