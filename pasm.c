@@ -147,15 +147,16 @@ replaceHeres(AST *ast, uint32_t newpc, Symbol *lastOrg)
  * do replaceHeres on each element of a long list
  */
 static void
-replaceHereDataList(AST *ast, uint32_t cogpc, uint32_t inc, Symbol *lastOrg)
+replaceHereDataList(AST *ast, int inHub, uint32_t newpc, uint32_t inc, Symbol *lastOrg)
 {
     AST *sub;
 
     while (ast) {
         sub = ast->left;
-        if (sub)
-            replaceHeres(sub, cogpc, lastOrg);
-        cogpc += inc;
+        if (sub) {
+            replaceHeres(sub, inHub ? newpc : newpc / 4, lastOrg);
+        }
+        newpc += inc;
         ast = ast->right;
     }
 }
@@ -222,21 +223,21 @@ DeclareLabels(Module *P)
         switch (ast->kind) {
         case AST_BYTELIST:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_byte, lastOrg, inHub);
-            replaceHereDataList(ast->left, HEREPC, 1, lastOrg);
+            replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 1, lastOrg);
             INCPC(dataListLen(ast->left, 1));
             lasttype = ast_type_byte;
             break;
         case AST_WORDLIST:
             MAYBEALIGNPC(2);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_word, lastOrg, inHub);
-            replaceHereDataList(ast->left, HEREPC, 2, lastOrg);
+            replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 2, lastOrg);
             INCPC(dataListLen(ast->left, 2));
             lasttype = ast_type_word;
             break;
         case AST_LONGLIST:
             MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub);
-            replaceHereDataList(ast->left, HEREPC, 4, lastOrg);
+            replaceHereDataList(ast->left, inHub, inHub ? hubpc : cogpc, 4, lastOrg);
             INCPC(dataListLen(ast->left, 4));
             lasttype = ast_type_long;
             break;
