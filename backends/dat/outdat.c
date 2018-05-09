@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2017 Total Spectrum Software Inc.
+// Copyright 2012-2018 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -573,8 +573,30 @@ decode_instr:
     case P2_TJZ_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
         if (!strcmp(instr->name, "calld") && opimm[1] && (dst >= 0x1f6 && dst <= 0x1f9)) {
-            // use the .loc version of this instruction
             int k = 0;
+            // use the .loc version of this instruction
+            // if we cannot reach the src address
+            // or if we are requested to by the user
+            if (operand[1]->kind == AST_CATCH) {
+                goto force_loc;
+            }
+            isrc = EvalPasmExpr(operand[1]);
+            if (isrc < 0x400) {
+                if (asmpc >= 0x400) goto force_loc;
+                isrc *= 4;
+            } else if (asmpc < 0x400) {
+                goto force_loc;
+            }
+            isrc = (isrc - (asmpc+4));
+            if (0 != (isrc & 0x3)) {
+                // "loc" required
+                goto force_loc;
+            }
+            isrc /= 4;
+            if ((isrc >= -256) && (isrc < 255)) {
+                goto skip_loc;
+            }
+        force_loc:
             while (instr_p2[k].name && strcmp(instr_p2[k].name, "calld.loc") != 0) {
                 k++;
             }
@@ -586,6 +608,7 @@ decode_instr:
             ast = origast;
             goto decode_instr;
         }
+    skip_loc:
         /* fall through */
     case P2_JINT_OPERANDS:
         opidx = (instr->ops == P2_TJZ_OPERANDS) ? 1 : 0;
@@ -727,14 +750,6 @@ decode_instr:
         immmask = 0;
         src = src >> 9;
     } else {
-        if (immmask & BIG_IMM_SRC) {
-            uint32_t augval = val & 0xf0000000; // preserve condition
-            augval |= (src >> 9) & 0x007fffff;
-            augval |= 0x0f000000; // AUGS
-            src &= 0x1ff;
-            outputInstrLong(f, augval);
-            immmask &= ~BIG_IMM_SRC;
-        }
         if (immmask & BIG_IMM_DST) {
             uint32_t augval = val & 0xf0000000; // preserve condition
             augval |= (dst >> 9) & 0x007fffff;
@@ -742,6 +757,14 @@ decode_instr:
             dst &= 0x1ff;
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_DST;
+        }
+        if (immmask & BIG_IMM_SRC) {
+            uint32_t augval = val & 0xf0000000; // preserve condition
+            augval |= (src >> 9) & 0x007fffff;
+            augval |= 0x0f000000; // AUGS
+            src &= 0x1ff;
+            outputInstrLong(f, augval);
+            immmask &= ~BIG_IMM_SRC;
         }
         if (src > 511) {
             ERROR(line, "Source operand too big for %s", instr->name);
