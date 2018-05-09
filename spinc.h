@@ -9,10 +9,6 @@
 
 #include <stdint.h>
 
-/* Yacc define */
-/* we need to put it up here because the lexer includes spin.tab.h */
-#define YYSTYPE AST *
-
 #include "ast.h"
 #include "lexer.h"
 #include "symbol.h"

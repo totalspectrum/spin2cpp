@@ -309,7 +309,7 @@ RangeXor(AST *dst, AST *src)
             int32_t srcval = EvalConstExpr(src);
             AST *maskexpr;
             if (srcval == -1 || srcval == 0) {
-                maskexpr = AstOperator(T_SHL, AstInteger(1), loexpr);
+                maskexpr = AstOperator(K_SHL, AstInteger(1), loexpr);
                 return AstAssign(dst->left,
                                  AstOperator('^', dst->left, maskexpr));
             }
@@ -319,21 +319,21 @@ RangeXor(AST *dst, AST *src)
         loexpr = FoldIfConst(dst->right->right);
         //nbits = (hi - lo + 1);
         nbits = AstOperator('+',
-                            AstOperator(T_ABS, NULL,
+                            AstOperator(K_ABS, NULL,
                                         AstOperator('-', hiexpr, loexpr)),
                             AstInteger(1));
         nbits = FoldIfConst(nbits);
-        loexpr = AstOperator(T_LIMITMAX, loexpr, hiexpr);
+        loexpr = AstOperator(K_LIMITMAX, loexpr, hiexpr);
     }
     //mask = ((1U<<nbits) - 1);
     //mask = mask & EvalConstExpr(src);
     //mask = (mask << lo) | (mask >> (32-lo));
     maskexpr = AstOperator('-',
-                           AstOperator(T_SHL, AstInteger(1), nbits),
+                           AstOperator(K_SHL, AstInteger(1), nbits),
                            AstInteger(1));
     maskexpr = FoldIfConst(maskexpr);
     maskexpr = AstOperator('&', maskexpr, src);
-    maskexpr = AstOperator(T_ROTL, maskexpr, loexpr);
+    maskexpr = AstOperator(K_ROTL, maskexpr, loexpr);
     maskexpr = FoldIfConst(maskexpr);
     return AstAssign(dst->left,
                      AstOperator('^', dst->left, maskexpr));
@@ -365,15 +365,15 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
         AST *hiexpr;
         loexpr = dst->right->right;
 	hiexpr = dst->right->left;
-        loexpr = AstOperator(T_LIMITMAX, loexpr, hiexpr);
+        loexpr = AstOperator(K_LIMITMAX, loexpr, hiexpr);
         loexpr = FoldIfConst(loexpr);
     }
-    maskexpr = AstOperator(T_SHL, AstInteger(mask), loexpr);
+    maskexpr = AstOperator(K_SHL, AstInteger(mask), loexpr);
     if (bitset) {
         return AstAssign(dst->left,
                          AstOperator('|', dst->left, maskexpr));
     } else {
-        maskexpr = AstOperator(T_BIT_NOT, NULL, maskexpr);
+        maskexpr = AstOperator(K_BIT_NOT, NULL, maskexpr);
         return AstAssign(dst->left,
                          AstOperator('&', dst->left, maskexpr));
     }
@@ -410,7 +410,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     /* special case logical operators */
 
     /* doing a NOT on the whole thing */
-    if (src->kind == AST_OPERATOR && src->d.ival == T_BIT_NOT
+    if (src->kind == AST_OPERATOR && src->d.ival == K_BIT_NOT
         && AstMatch(dst, src->right))
     {
         return RangeXor(dst, AstInteger(0xffffffff));
@@ -439,7 +439,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
 
         //nbits = (hi - lo + 1);
         nbits = AstOperator('+',
-                            AstOperator(T_ABS, NULL,
+                            AstOperator(K_ABS, NULL,
                                         AstOperator('-', hiexpr, loexpr)),
                             AstInteger(1));
         if (IsConstExpr(nbits)) {
@@ -449,12 +449,12 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         }
         needrev = FoldIfConst(AstOperator('<', hiexpr, loexpr));
         if (IsConstExpr(loexpr)) {
-            loexpr = FoldIfConst(AstOperator(T_LIMITMAX, loexpr, hiexpr));
+            loexpr = FoldIfConst(AstOperator(K_LIMITMAX, loexpr, hiexpr));
         } else if (loexpr->kind != AST_IDENTIFIER) {
             current->needsMinMax = 1;
             loexpr = ReplaceExprWithVariable("_lo", loexpr);
         }
-        revsrc = AstOperator(T_REV, src, nbits);
+        revsrc = AstOperator(K_REV, src, nbits);
         if (IsConstExpr(needrev)) {
             if (EvalConstExpr(needrev)) {
                 src = revsrc;
@@ -468,7 +468,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     }
     //mask = ((1U<<nbits) - 1);
     maskexpr = AstOperator('-',
-                           AstOperator(T_SHL, AstInteger(1), nbits),
+                           AstOperator(K_SHL, AstInteger(1), nbits),
                            AstInteger(1));
     maskexpr = FoldIfConst(maskexpr);
     if (IsConstExpr(src) && IsConstExpr(maskexpr)) {
@@ -501,7 +501,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         AST *maskassign;
 
         maskvar = AstTempLocalVariable("_mask");
-        shift = AstOperator(T_SHL, AstInteger(1), loexpr);
+        shift = AstOperator(K_SHL, AstInteger(1), loexpr);
         maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
         // insert the mask assignment at the beginning of the function
@@ -514,7 +514,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         ifpart = NewAST(AST_STMTLIST, ifpart, NULL);
         
         elsepart = AstOperator('&', dst->left,
-                               AstOperator(T_BIT_NOT, NULL, maskvar));
+                               AstOperator(K_BIT_NOT, NULL, maskvar));
         elsepart = AstAssign(dst->left, elsepart);
         elsepart = NewAST(AST_STMTLIST, elsepart, NULL);
         
@@ -540,23 +540,23 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         }
 
 #if 0
-        andexpr = AstOperator(T_SHL, maskexpr, loexpr);
-        andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
+        andexpr = AstOperator(K_SHL, maskexpr, loexpr);
+        andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
         andexpr = AstOperator('&', dst->left, andexpr);
 
         orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
-        orexpr = AstOperator(T_SHL, orexpr, loexpr);
+        orexpr = AstOperator(K_SHL, orexpr, loexpr);
         orexpr = FoldIfConst(orexpr);
         orexpr = AstOperator('|', andexpr, orexpr);
 
 #else
-        andexpr = AstOperator(T_SHL, maskexpr, loexpr);
-        andexpr = AstOperator(T_BIT_NOT, NULL, andexpr);
+        andexpr = AstOperator(K_SHL, maskexpr, loexpr);
+        andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
 
         orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
-        orexpr = AstOperator(T_SHL, orexpr, loexpr);
+        orexpr = AstOperator(K_SHL, orexpr, loexpr);
         orexpr = FoldIfConst(orexpr);
         
         orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
@@ -610,7 +610,7 @@ TransformRangeUse(AST *src)
         */
         //nbits = (hi - lo + 1);
         nbits = AstOperator('+', AstInteger(1),
-                            AstOperator(T_ABS, NULL,
+                            AstOperator(K_ABS, NULL,
                                         AstOperator('-', hi, lo)));
         if (IsConstExpr(nbits)) {
             nbits = FoldIfConst(nbits);
@@ -627,7 +627,7 @@ TransformRangeUse(AST *src)
         }
     }
     //mask = AstInteger((1U<<nbits) - 1);
-    mask = AstOperator(T_SHL, AstInteger(1), nbits);
+    mask = AstOperator(K_SHL, AstInteger(1), nbits);
     mask = AstOperator('-', mask, AstInteger(1));
     if (IsConstExpr(mask)) {
         mask = FoldIfConst(mask);
@@ -638,9 +638,9 @@ TransformRangeUse(AST *src)
     /* we want to end up with:
        ((src->left >> lo) & mask)
     */
-    val = FoldIfConst(AstOperator(T_SAR, src->left, lo));
+    val = FoldIfConst(AstOperator(K_SAR, src->left, lo));
     val = FoldIfConst(AstOperator('&', val, mask));
-    revval = FoldIfConst(AstOperator(T_REV, val, nbits));
+    revval = FoldIfConst(AstOperator(K_REV, val, nbits));
     
     if (IsConstExpr(test)) {
         int tval = EvalConstExpr(test);
@@ -674,31 +674,31 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
         return intAsFloat(floatAsInt(lval) & floatAsInt(rval));
     case '^':
         return intAsFloat(floatAsInt(lval) ^ floatAsInt(rval));
-    case T_HIGHMULT:
+    case K_HIGHMULT:
         return lval*rval / (float)(1LL<<32);
-    case T_SHL:
+    case K_SHL:
         return intAsFloat(floatAsInt(lval) << floatAsInt(rval));
-    case T_SHR:
+    case K_SHR:
         return intAsFloat(((uint32_t)floatAsInt(lval)) >> floatAsInt(rval));
-    case T_SAR:
+    case K_SAR:
         return intAsFloat(((int32_t)floatAsInt(lval)) >> floatAsInt(rval));
     case '<':
         return intAsFloat(-(lval < rval));
     case '>':
         return intAsFloat(-(lval > rval));
-    case T_LE:
+    case K_LE:
         return intAsFloat(-(lval <= rval));
-    case T_GE:
+    case K_GE:
         return intAsFloat(-(lval >= rval));
-    case T_NE:
+    case K_NE:
         return intAsFloat(-(lval != rval));
-    case T_EQ:
+    case K_EQ:
         return intAsFloat(-(lval == rval));
-    case T_NEGATE:
+    case K_NEGATE:
         return -rval;
-    case T_ABS:
+    case K_ABS:
         return (rval < 0) ? -rval : rval;
-    case T_SQRT:
+    case K_SQRT:
         return sqrtf(rval);
     default:
         if (valid)
@@ -722,7 +722,7 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         if (rval == 0)
 	    return rval;
         return lval / rval;
-    case T_MODULUS:
+    case K_MODULUS:
         if (rval == 0)
 	    return rval;
         return lval % rval;
@@ -734,47 +734,47 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval ^ rval;
     case '&':
         return lval & rval;
-    case T_HIGHMULT:
+    case K_HIGHMULT:
         return (int)(((long long)lval * (long long)rval) >> 32LL);
-    case T_SHL:
+    case K_SHL:
         return lval << rval;
-    case T_SHR:
+    case K_SHR:
         return ((uint32_t)lval) >> rval;
-    case T_SAR:
+    case K_SAR:
         return ((int32_t)lval) >> rval;
-    case T_ROTL:
+    case K_ROTL:
         return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
-    case T_ROTR:
+    case K_ROTR:
         return ((uint32_t)lval >> rval) | ((uint32_t) lval) << (32-rval);
     case '<':
         return -(lval < rval);
     case '>':
         return -(lval > rval);
-    case T_LE:
+    case K_LE:
         return -(lval <= rval);
-    case T_GE:
+    case K_GE:
         return -(lval >= rval);
-    case T_NE:
+    case K_NE:
         return -(lval != rval);
-    case T_EQ:
+    case K_EQ:
         return -(lval == rval);
-    case T_NEGATE:
+    case K_NEGATE:
         return -rval;
-    case T_BIT_NOT:
+    case K_BIT_NOT:
         return ~rval;
-    case T_ABS:
+    case K_ABS:
         return (rval < 0) ? -rval : rval;
-    case T_SQRT:
+    case K_SQRT:
         return (unsigned int)sqrtf((float)(unsigned int)rval);
-    case T_DECODE:
+    case K_DECODE:
         return (1L << rval);
-    case T_ENCODE:
+    case K_ENCODE:
         return 32 - __builtin_clz(rval);
-    case T_LIMITMIN:
+    case K_LIMITMIN:
         return (lval < rval) ? rval : lval;
-    case T_LIMITMAX:
+    case K_LIMITMAX:
         return (lval > rval) ? rval : lval;
-    case T_REV:
+    case K_REV:
         return ReverseBits(lval, rval);
     default:
         if (valid)
@@ -924,9 +924,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         break;
     case AST_OPERATOR:
         lval = EvalExpr(expr->left, flags, valid);
-        if (expr->d.ival == T_OR && lval.val)
+        if (expr->d.ival == K_OR && lval.val)
             return lval;
-        if (expr->d.ival == T_AND && lval.val == 0)
+        if (expr->d.ival == K_AND && lval.val == 0)
             return lval;
         rval = EvalExpr(expr->right, flags, valid);
         return EvalOperator(expr->d.ival, lval, rval, valid);
@@ -947,9 +947,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             aval = EvalExpr(expr->left, flags, valid);
             lval = EvalExpr(expr->right->left, flags, valid);
             rval = EvalExpr(expr->right->right, flags, valid);
-            isge = EvalOperator(T_LE, lval, aval, valid);
-            isle = EvalOperator(T_LE, aval, rval, valid);
-            return EvalOperator(T_AND, isge, isle, valid);
+            isge = EvalOperator(K_LE, lval, aval, valid);
+            isle = EvalOperator(K_LE, aval, rval, valid);
+            return EvalOperator(K_AND, isge, isle, valid);
         }
     case AST_HWREG:
         if (flags & PASM_FLAG) {
@@ -1398,8 +1398,8 @@ ExprType(AST *expr)
         switch (expr->d.ival) {
         case '+':
         case '-':
-        case T_INCREMENT:
-        case T_DECREMENT:
+        case K_INCREMENT:
+        case K_DECREMENT:
             subtype = ExprType(expr->left);
             if (!subtype) subtype = ExprType(expr->right);
             if (subtype) {
@@ -1494,9 +1494,9 @@ AST *SimpleOptimizeExpr(AST *expr)
     AST *rhs = expr->right;
     if (expr->kind == AST_OPERATOR) {
         int op = expr->d.ival;
-        if (op == T_NEGATE) {
+        if (op == K_NEGATE) {
             //   -(-x) => x
-            if (rhs->kind == AST_OPERATOR && rhs->d.ival == T_NEGATE) {
+            if (rhs->kind == AST_OPERATOR && rhs->d.ival == K_NEGATE) {
                 return rhs->right;
             }
         } else if (op == '+' || op == '-') {
@@ -1532,8 +1532,8 @@ ExprHasSideEffects(AST *expr)
         return 1;
     case AST_OPERATOR:
         switch(expr->d.ival) {
-        case T_INCREMENT:
-        case T_DECREMENT:
+        case K_INCREMENT:
+        case K_DECREMENT:
             return 1;
         default:
             break;

@@ -454,18 +454,18 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             return newflags;
         }
         switch(ast->d.ival) {
-        case T_OR:
-        case T_AND:
+        case K_OR:
+        case K_AND:
             // may not actually execute both sides of this, so
             // do not add any new entries on the second half
             flags |= CSE_NO_ADD;
             break;
         case '<':
         case '>':
-        case T_LE:
-        case T_GE:
-        case T_EQ:
-        case T_NE:
+        case K_LE:
+        case K_GE:
+        case K_EQ:
+        case K_NE:
             // do not add CSE entries for boolean operators,
             // it generally won't help code generation and
             // actually hurts it a lot of times
@@ -475,8 +475,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             // random number operator; cannot CSE this
             newflags |= CSE_NO_REPLACE;
             break;
-        case T_INCREMENT:
-        case T_DECREMENT:
+        case K_INCREMENT:
+        case K_DECREMENT:
             if (ast->left) {
                 doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
                 RemoveCSEUsing(cse, ast->left);

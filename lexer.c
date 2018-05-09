@@ -14,6 +14,8 @@
 #include "spinc.h"
 #include "preprocess.h"
 
+#include "spin.tab.h"
+
 // used for error messages
 AST *last_ast;
 
@@ -53,7 +55,7 @@ strgetc(LexStream *L)
     }
     if (c != 0)
         L->ptr = s;
-    return (c == 0) ? T_EOF : c;
+    return (c == 0) ? SP_EOF : c;
 }
 
 /* open a stream from a string s */
@@ -90,7 +92,7 @@ filegetc(LexStream *L)
         }
     }
 
-    return (c >= 0) ? c : T_EOF;
+    return (c >= 0) ? c : SP_EOF;
 }
 
 static int 
@@ -102,10 +104,10 @@ filegetwc(LexStream *L)
     f = (FILE *)L->ptr;
 again:
     c1 = fgetc(f);
-    if (c1 < 0) return T_EOF;
+    if (c1 < 0) return SP_EOF;
     c2 = fgetc(f);
     if (c2 != 0) {
-        if (c2 < 0) return T_EOF;
+        if (c2 < 0) return SP_EOF;
         /* FIXME: should convert to UTF-8 */
         return 0xff;
     }
@@ -186,7 +188,7 @@ lexgetc(LexStream *L)
     } else {
         L->colCounter++;
     }
-    if (c == T_EOF) {
+    if (c == SP_EOF) {
       flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
       linedata = flexbuf_get(&L->curLine);
       flexbuf_addmem(&L->lines, (char *)&linedata, sizeof(linedata));
@@ -216,7 +218,7 @@ lexpeekc(LexStream *L)
 
 //
 // establish an indent level
-// if the line is indented more than this, a T_INDENT will
+// if the line is indented more than this, aa SP_INDENT will
 // be emitted
 //
 void
@@ -272,7 +274,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     unsigned long uval, digit;
     unsigned int c;
     int sawdigit = 0;
-    int kind = T_NUM;
+    int kind = SP_NUM;
 
     uval = 0;
 
@@ -352,18 +354,18 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             f *= powf(10.0f, (float)exponent);
         }
         uval = floatAsInt(f);
-        kind = T_FLOATNUM;
+        kind = SP_FLOATNUM;
     }
 donefloat:
     lexungetc(L, c);
     *num = uval;
-    return sawdigit ? kind : ((base == 16) ? T_HERE : '%');
+    return sawdigit ? kind : ((base == 16) ? SP_HERE : '%');
 }
 
 /* check for DAT or ASM blocks */
 static int InDatBlock(LexStream *L)
 {
-    return L->in_block == T_DAT || L->in_block == T_ASM;
+    return L->in_block == SP_DAT || L->in_block == SP_ASM;
 }
 
 /* parse an identifier */
@@ -408,13 +410,13 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
-                return T_INSTR;
+                return SP_INSTR;
             }
             if (sym->type == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
-                return T_INSTRMODIFIER;
+                return SP_INSTRMODIFIER;
             }
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
         }
@@ -440,34 +442,34 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             c = INTVAL(sym);
             /* check for special handling */
             switch(c) {
-            case T_PUB:
-            case T_PRI:
-            case T_DAT:
-            case T_OBJ:
-            case T_VAR:
-            case T_CON:
+            case SP_PUB:
+            case SP_PRI:
+            case SP_DAT:
+            case SP_OBJ:
+            case SP_VAR:
+            case SP_CON:
                 L->in_block = c;
                 L->block_firstline = L->lineCounter;
                 //EstablishIndent(L, 1);
                 break;
-	    case T_ASM:
-	        if (L->in_block == T_ASM) {
+	    case SP_ASM:
+	        if (L->in_block == SP_ASM) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
 		} else {
 		    L->save_block = L->in_block;
 		}
 		L->in_block = c;
 		break;
-	    case T_ENDASM:
+	    case SP_ENDASM:
 	        L->in_block = L->save_block;
 	        break;
-            case T_IF:
-            case T_IFNOT:
-            case T_ELSE:
-            case T_ELSEIF:
-            case T_ELSEIFNOT:
-            case T_REPEAT:
-            case T_CASE:
+            case SP_IF:
+            case SP_IFNOT:
+            case SP_ELSE:
+            case SP_ELSEIF:
+            case SP_ELSEIFNOT:
+            case SP_REPEAT:
+            case SP_CASE:
                 EstablishIndent(L, startColumn);
                 break;
             default:
@@ -482,7 +484,7 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             ast = NewAST(AST_HWREG, NULL, NULL);
             ast->d.ptr = sym->val;
             *ast_ptr = ast;
-            return T_HWREG;
+            return SP_HWREG;
         }
         fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
     }
@@ -495,7 +497,7 @@ is_identifier:
     }
     ast->d.string = idstr;
     *ast_ptr = ast;
-    return T_IDENTIFIER;
+    return SP_IDENTIFIER;
 }
 
 /* parse a string */
@@ -517,7 +519,7 @@ parseString(LexStream *L, AST **ast_ptr)
     ast = NewAST(AST_STRING, NULL, NULL);
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
-    return T_STRING;
+    return SP_STRING;
 }
 
 //
@@ -542,7 +544,7 @@ GetComments(void)
 // skip over comments and spaces
 // return first non-comment non-space character
 // if we are inside a function, emit T_INDENT when
-// we increase the indent level, T_OUTDENT when we
+// we increase the indent level, SP_OUTDENT when we
 // decrease it
 //
 
@@ -567,7 +569,7 @@ again:
     /* ignore completely empty lines or ones with just comments */
     if (c == '\'') {
         while (c == '\'') c = lexgetc(L);
-        while (c != '\n' && c != T_EOF) {
+        while (c != '\n' && c != SP_EOF) {
             flexbuf_addchar(&cb, c);
             c = lexgetc(L);
         }
@@ -624,7 +626,7 @@ again:
 		  --commentNest;
 		}
 	    }
-            if (commentNest <= 0 || c == T_EOF) {
+            if (commentNest <= 0 || c == SP_EOF) {
                 break;
             }
             if (annotate || directive) {
@@ -633,7 +635,7 @@ again:
                 flexbuf_addchar(&cb, c);
             }
         }
-        if (c == T_EOF) {
+        if (c == SP_EOF) {
 	    if (commentNest > 0)
 	        fprintf(stderr, "WARNING: EOF seen inside comment\n");
             return c;
@@ -645,10 +647,10 @@ again:
             *ast_ptr = ast;
             // if this is indented and inside a PUB or PRI,
             // then treat it as inline C code
-            if (startcol > 1 && startline > L->block_firstline && (L->in_block == T_PUB || L->in_block == T_PRI)) {
-                return T_INLINECCODE;
+            if (startcol > 1 && startline > L->block_firstline && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
+                return SP_INLINECCODE;
             }
-            return T_ANNOTATION;
+            return SP_ANNOTATION;
         } else if (directive) {
             char *dir;
             flexbuf_addchar(&anno, '\0');
@@ -675,7 +677,7 @@ again:
         goto again;
     }
 
-    if (L->eoln && (L->in_block == T_PUB || L->in_block == T_PRI)) {
+    if (L->eoln && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
             goto again;
@@ -684,14 +686,14 @@ again:
         if (L->pending_indent) {
             lexungetc(L, c);
             --L->pending_indent;
-            return T_INDENT;
+            return SP_INDENT;
         }
         /* on EOF send as many OUTDENTS as we need */
-        if (c == T_EOF) {
+        if (c == SP_EOF) {
             if (L->indentsp > 0) {
                 lexungetc(L, c);
                 --L->indentsp;
-                return T_OUTDENT;
+                return SP_OUTDENT;
             }
         }
         /* if our indentation is <= the start value, send back an outdent */
@@ -699,13 +701,13 @@ again:
         if (start_indent <= L->indent[L->indentsp] && L->indentsp > 0) {
             lexungetc(L, c);
             --L->indentsp;
-            return T_OUTDENT;
+            return SP_OUTDENT;
         }
     }
     // force an end-of line at EOF
-    if (c == T_EOF && !L->eoln && !L->eof) {
+    if (c == SP_EOF && !L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
-        return T_EOLN;
+        return SP_EOLN;
     }
     if (L->eoln) {
         L->eoln = 0;
@@ -713,7 +715,7 @@ again:
     }
     if (c == '\n') {
         L->eoln = 1;
-        return T_EOLN;
+        return SP_EOLN;
     }
     if (current && !current->sawToken) {
         current->sawToken = 1;
@@ -743,7 +745,7 @@ getToken(LexStream *L, AST **ast_ptr)
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
-        if (c == T_FLOATNUM)
+        if (c == SP_FLOATNUM)
             ast->kind = AST_FLOAT;
     } else if (c == '$') {
         ast = NewAST(AST_INTEGER, NULL, NULL);
@@ -762,13 +764,13 @@ getToken(LexStream *L, AST **ast_ptr)
         c = parseIdentifier(L, &ast, NULL);
         /* if in pasm, and at start of line, restart temporary
            labels */
-        if (c == T_IDENTIFIER && InDatBlock(L) && at_startofline) {
+        if (c == SP_IDENTIFIER && InDatBlock(L) && at_startofline) {
             L->lastGlobal = ast->d.string;
         }
     } else if (c == ':') {
         peekc = lexgetc(L);
         if (peekc == '=') {
-            c = T_ASSIGN;
+            c = SP_ASSIGN;
         } else if (!gl_p2 && isIdentifierStart(peekc) && InDatBlock(L)) {
             lexungetc(L, peekc);
             c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
@@ -816,108 +818,108 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_words[] = {
-    { "abort", T_ABORT },
-    { "and", T_AND },
-    { "asm", T_ASM },
-    { "byte", T_BYTE },
+    { "abort", SP_ABORT },
+    { "and", SP_AND },
+    { "asm", SP_ASM },
+    { "byte", SP_BYTE },
 
-    { "case", T_CASE },
-    { "cognew", T_COGNEW },
-    { "coginit", T_COGINIT },
-    { "con", T_CON },
-    { "constant", T_CONSTANT },
+    { "case", SP_CASE },
+    { "cognew", SP_COGNEW },
+    { "coginit", SP_COGINIT },
+    { "con", SP_CON },
+    { "constant", SP_CONSTANT },
 
-    { "dat", T_DAT },
+    { "dat", SP_DAT },
 
-    { "else", T_ELSE },
-    { "elseif", T_ELSEIF },
-    { "elseifnot", T_ELSEIFNOT },
-    { "endasm", T_ENDASM },
+    { "else", SP_ELSE },
+    { "elseif", SP_ELSEIF },
+    { "elseifnot", SP_ELSEIFNOT },
+    { "endasm", SP_ENDASM },
 
-    { "file", T_FILE },
-    { "fit", T_FIT },
-    { "float", T_FLOAT },
-    { "from", T_FROM },
+    { "file", SP_FILE },
+    { "fit", SP_FIT },
+    { "float", SP_FLOAT },
+    { "from", SP_FROM },
 
-    { "if", T_IF },
-    { "ifnot", T_IFNOT },
+    { "if", SP_IF },
+    { "ifnot", SP_IFNOT },
 
-    { "long", T_LONG },
-    { "lookdown", T_LOOKDOWN },
-    { "lookdownz", T_LOOKDOWNZ },
-    { "lookup", T_LOOKUP },
-    { "lookupz", T_LOOKUPZ },
+    { "long", SP_LONG },
+    { "lookdown", SP_LOOKDOWN },
+    { "lookdownz", SP_LOOKDOWNZ },
+    { "lookup", SP_LOOKUP },
+    { "lookupz", SP_LOOKUPZ },
 
-    { "next", T_NEXT },
-    { "not", T_NOT },
+    { "next", SP_NEXT },
+    { "not", SP_NOT },
 
-    { "obj", T_OBJ },
-    { "or", T_OR },
-    { "org", T_ORG },
-    { "orgh", T_ORGH },
-    { "other", T_OTHER },
+    { "obj", SP_OBJ },
+    { "or", SP_OR },
+    { "org", SP_ORG },
+    { "orgh", SP_ORGH },
+    { "other", SP_OTHER },
 
-    { "quit", T_QUIT },
-    { "pri", T_PRI },
-    { "pub", T_PUB },
-    { "repeat", T_REPEAT },
-    { "res", T_RES },
-    { "result", T_RESULT },
-    { "return", T_RETURN },
-    { "round", T_ROUND },
+    { "quit", SP_QUIT },
+    { "pri", SP_PRI },
+    { "pub", SP_PUB },
+    { "repeat", SP_REPEAT },
+    { "res", SP_RES },
+    { "result", SP_RESULT },
+    { "return", SP_RETURN },
+    { "round", SP_ROUND },
 
-    { "spr", T_SPR },
-    { "step", T_STEP },
-    { "string", T_STRINGPTR },
-    { "to", T_TO },
-    { "trunc", T_TRUNC },
-    { "then", T_THEN },
+    { "spr", SP_SPR },
+    { "step", SP_STEP },
+    { "string", SP_STRINGPTR },
+    { "to", SP_TO },
+    { "trunc", SP_TRUNC },
+    { "then", SP_THEN },
 
-    { "until", T_UNTIL },
+    { "until", SP_UNTIL },
 
-    { "var", T_VAR },
+    { "var", SP_VAR },
 
-    { "while", T_WHILE },
-    { "word", T_WORD },
+    { "while", SP_WHILE },
+    { "word", SP_WORD },
 
     /* operators */
     { "+", '+' },
     { "-", '-' },
     { "/", '/' },
     { "?", '?' },
-    { "//", T_MODULUS },
+    { "//", SP_MODULUS },
     { "*", '*' },
-    { "**", T_HIGHMULT },
+    { "**", SP_HIGHMULT },
     { ">", '>' },
     { "<", '<' },
-    { "=<", T_LE },
-    { "=>", T_GE },
+    { "=<", SP_LE },
+    { "=>", SP_GE },
     { "=", '=' },
-    { "==", T_EQ },
-    { "<>", T_NE },
+    { "==", SP_EQ },
+    { "<>", SP_NE },
 
-    { "><", T_REV },
-    { "->", T_ROTR },
-    { "<-", T_ROTL },
+    { "><", SP_REV },
+    { "->", SP_ROTR },
+    { "<-", SP_ROTL },
 
-    { "<<", T_SHL },
-    { ">>", T_SHR },
-    { "~>", T_SAR },
+    { "<<", SP_SHL },
+    { ">>", SP_SHR },
+    { "~>", SP_SAR },
 
-    { "..", T_DOTS },
-    { "|<", T_DECODE },
-    { ">|", T_ENCODE },
-    { "||", T_ABS },
-    { "#>", T_LIMITMIN },
-    { "<#", T_LIMITMAX },
+    { "..", SP_DOTS },
+    { "|<", SP_DECODE },
+    { ">|", SP_ENCODE },
+    { "||", SP_ABS },
+    { "#>", SP_LIMITMIN },
+    { "<#", SP_LIMITMAX },
 
-    { "~~", T_DOUBLETILDE },
-    { "++", T_INCREMENT },
-    { "--", T_DECREMENT },
-    { "^^", T_SQRT },
+    { "~~", SP_DOUBLETILDE },
+    { "++", SP_INCREMENT },
+    { "--", SP_DECREMENT },
+    { "^^", SP_SQRT },
 
-    { "@@", T_DOUBLEAT },
-    { "@@@", T_TRIPLEAT },
+    { "@@", SP_DOUBLEAT },
+    { "@@@", SP_TRIPLEAT },
 };
 
 static char *c_words[] = {
@@ -1100,8 +1102,8 @@ initLexer(int flags)
         AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
     }
     if (gl_p2) {
-        AddSymbol(&reservedWords, "alignl", SYM_RESERVED, (void *)T_ALIGNL);
-        AddSymbol(&reservedWords, "alignw", SYM_RESERVED, (void *)T_ALIGNW);
+        AddSymbol(&reservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL);
+        AddSymbol(&reservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW);
     }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {

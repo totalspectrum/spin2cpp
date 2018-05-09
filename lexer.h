@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "spin.tab.h"
+#include "spintokens.h"
 #include "util/flexbuf.h"
 
 /*

@@ -164,16 +164,16 @@ CheckOperatorForAssignment(LoopValueSet *lvs, AST *parent, AST *ast, unsigned fl
     AST *val = ast;
     
     switch (ast->d.ival) {
-    case T_INCREMENT:
+    case K_INCREMENT:
         name = ast->left ? ast->left : ast->right;
         AddAssignment(lvs, name, val, flags, parent);
         break;
-    case T_DECREMENT:
+    case K_DECREMENT:
         name = ast->left ? ast->left : ast->right;
         AddAssignment(lvs, name, val, flags, parent);
         break;
-    case T_OR:
-    case T_AND:
+    case K_OR:
+    case K_AND:
         /* lhs will be unconditional, but we cannot check that here */
         flags |= LVFLAG_CONDITIONAL;
         break;
@@ -281,8 +281,8 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
     }
     case AST_OPERATOR:
         switch (expr->d.ival) {
-        case T_INCREMENT:
-        case T_DECREMENT:
+        case K_INCREMENT:
+        case K_DECREMENT:
             return true;
         default:
             break;
@@ -366,12 +366,12 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
                 }
             } else if (newval->kind == AST_OPERATOR && newval->d.ival == '-') {
                 if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
-                    increment = AstOperator(T_NEGATE, NULL, newval->right);
+                    increment = AstOperator(K_NEGATE, NULL, newval->right);
                 }
-            } else if (newval->kind == AST_OPERATOR && newval->d.ival == T_INCREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_INCREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
                 increment = AstInteger(1);
-            } else if (newval->kind == AST_OPERATOR && newval->d.ival == T_DECREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
-                increment = AstOperator(T_NEGATE, NULL, AstInteger(1));
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_DECREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+                increment = AstOperator(K_NEGATE, NULL, AstInteger(1));
             }
             if (increment) {
                 if (*basename == NULL) {
@@ -429,7 +429,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             if (stepval >= 0) {
                 return AstInteger(stepval);
             } else {
-                return AstOperator(T_NEGATE, NULL, AstInteger(-stepval));
+                return AstOperator(K_NEGATE, NULL, AstInteger(-stepval));
             }
         }
         return NULL;
@@ -459,7 +459,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             if (stepval >= 0) {
                 return AstInteger(stepval);
             } else {
-                return AstOperator(T_NEGATE, NULL, AstInteger(-stepval));
+                return AstOperator(K_NEGATE, NULL, AstInteger(-stepval));
             }
         } else if (val->d.ival == '-') {
             // C - indexval may be strength reduced
@@ -468,7 +468,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
                 if (!loopstep || !IsConstExpr(loopstep) || !*basename) {
                     return NULL;
                 }
-                return AstOperator(T_NEGATE, NULL, loopstep);
+                return AstOperator(K_NEGATE, NULL, loopstep);
             }
         }
         return NULL;
@@ -626,7 +626,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
                 continue;
             }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
-            if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == T_NEGATE) {
+            if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == K_NEGATE) {
                 replace = AstAssign(entry->name,
                                     AstOperator('-', entry->name, entry->loopstep->right));
             } else {
@@ -690,12 +690,12 @@ AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
 {
     if (IsConstExpr(oldLimit) || oldLimit->kind == AST_IDENTIFIER) {
         // a constant expression is always good
-        if (updateTestOp == T_LE) {
+        if (updateTestOp == K_LE) {
             oldLimit = AstOperator('+', oldLimit, AstInteger(1));
         }
         return oldLimit;
     }
-    if (updateTestOp != T_LE) {
+    if (updateTestOp != K_LE) {
         return NULL;
     }
     // only accept very simple expressions
@@ -765,7 +765,7 @@ CheckSimpleLoop(AST *stmt)
 
     updateTestOp = condtest->d.ival;
     updateLimit = condtest->right;
-    if (updateTestOp == T_LE || updateTestOp == '<') {
+    if (updateTestOp == K_LE || updateTestOp == '<') {
         newInitial = GetRevisedLimit(updateTestOp, updateLimit);
     } else {
         return;
@@ -780,7 +780,7 @@ CheckSimpleLoop(AST *stmt)
         }
         update = update->left;
     }
-    if (update->kind != AST_OPERATOR || update->d.ival != T_INCREMENT) {
+    if (update->kind != AST_OPERATOR || update->d.ival != K_INCREMENT) {
         return;
     }
     if (!AstMatch(update->left, updateVar) && !AstMatch(update->right, updateVar)) {
@@ -793,10 +793,10 @@ CheckSimpleLoop(AST *stmt)
     
     AstReportAs(update); // new ASTs should be associated with the "update" line
     /* flip the update to -- */
-    update->d.ival = T_DECREMENT;
+    update->d.ival = K_DECREMENT;
     /* change the initialization */
     initial = AstAssign(updateVar, newInitial);
-    condtest = AstOperator(T_NE, updateVar, AstInteger(0));
+    condtest = AstOperator(K_NE, updateVar, AstInteger(0));
 
     /* update statement */
     stmt->left = initial;

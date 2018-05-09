@@ -27,15 +27,15 @@ isBooleanOperator(AST *expr)
 
     x = expr->d.ival;
     switch (x) {
-    case T_NOT:
-    case T_AND:
-    case T_OR:
-    case T_LE:
+    case K_NOT:
+    case K_AND:
+    case K_OR:
+    case K_LE:
     case '<':
-    case T_GE:
+    case K_GE:
     case '>':
-    case T_EQ:
-    case T_NE:
+    case K_EQ:
+    case K_NE:
         return 1;
     default:
         return 0;
@@ -47,7 +47,7 @@ isNegateOperator(AST *expr)
 {
   if (expr->kind != AST_OPERATOR)
     return 0;
-  if (expr->d.ival != T_NEGATE)
+  if (expr->d.ival != K_NEGATE)
     return 0;
   return 1;
 }
@@ -471,28 +471,28 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
     char opstring[4];
 
     switch (op) {
-    case T_HIGHMULT:
+    case K_HIGHMULT:
         PrintMacroExpr(f, "Highmult__", left, right, flags);
         break;
-    case T_LE:
+    case K_LE:
         PrintInOp(f, "<=", left, right, flags);
         break;
-    case T_GE:
+    case K_GE:
         PrintInOp(f, ">=", left, right, flags);
         break;
-    case T_EQ:
+    case K_EQ:
         PrintInOp(f, "==", left, right, flags);
         break;
-    case T_NE:
+    case K_NE:
         PrintInOp(f, "!=", left, right, flags);
         break;
-    case T_SHL:
+    case K_SHL:
         PrintInOp(f, "<<", left, right, flags);
         break;
-    case T_SAR:
+    case K_SAR:
         PrintInOp(f, ">>", left, right, flags);
         break;
-    case T_SHR:
+    case K_SHR:
         if (current->pasmLabels
             || (IsConstExpr(left) && EvalConstExpr(left) >= 0))
         {
@@ -501,22 +501,22 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
             PrintMacroExpr(f, "Shr__", left, right, flags);
         }
         break;
-    case T_REV:
+    case K_REV:
         flexbuf_printf(f, "__builtin_propeller_rev(");
         PrintExpr(f, left, flags);
         flexbuf_printf(f, ", 32 - ");
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
-    case T_MODULUS:
+    case K_MODULUS:
         PrintInOp(f, "%", left, right, flags);
         break;
-    case T_INCREMENT:
-    case T_DECREMENT:
+    case K_INCREMENT:
+    case K_DECREMENT:
     {
         // we don't go through the usual PrintInOp because we
         // do not want any casting to occur
-        const char *str = op == T_INCREMENT ? "++" : "--";
+        const char *str = op == K_INCREMENT ? "++" : "--";
         if (left) {
             PrintExpr(f, left, flags);
             flexbuf_printf(f, "%s", str);
@@ -526,7 +526,7 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         }
         break;
     }
-    case T_NEGATE:
+    case K_NEGATE:
         /* watch out for a special case: boolean operators get a negation as well,
 	   so optimize away the double negate */
         /* similarly for - - x */
@@ -536,36 +536,36 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
             PrintInOp(f, "-", left, right, flags);
 	}
         break;
-    case T_BIT_NOT:
+    case K_BIT_NOT:
         PrintLogicOp(f, "~", left, right, flags);
         break;
-    case T_AND:
+    case K_AND:
         PrintInOp(f, "&&", left, right, flags);
         break;
-    case T_OR:
+    case K_OR:
         PrintInOp(f, "||", left, right, flags);
         break;
-    case T_NOT:
+    case K_NOT:
         PrintInOp(f, "!", left, right, flags);
         break;
-    case T_LIMITMIN:
+    case K_LIMITMIN:
         PrintMacroExpr(f, "Max__", left, right, flags);
         break;
-    case T_LIMITMAX:
+    case K_LIMITMAX:
         PrintMacroExpr(f, "Min__", left, right, flags);
         break;
-    case T_ROTL:
+    case K_ROTL:
         PrintMacroExpr(f, "Rotl__", left, right, flags);
         break;
-    case T_ROTR:
+    case K_ROTR:
         PrintMacroExpr(f, "Rotr__", left, right, flags);
         break;
-    case T_ABS:
+    case K_ABS:
         flexbuf_printf(f, "abs(");
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
-    case T_SQRT:
+    case K_SQRT:
         flexbuf_printf(f, "Sqrt__(");
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
@@ -598,12 +598,12 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         opstring[1] = 0;
         PrintInOp(f, opstring, left, right, flags);
         break;
-    case T_ENCODE:
+    case K_ENCODE:
         flexbuf_printf(f, "BitEncode__(");
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
-    case T_DECODE:
+    case K_DECODE:
         flexbuf_printf(f, "(1<<");
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
@@ -834,7 +834,7 @@ PrintPostfix(Flexbuf *f, AST *expr, int toplevel, int flags)
 
     if (expr->d.ival == '~')
         target = AstInteger(0);
-    else if (expr->d.ival == T_DOUBLETILDE) {
+    else if (expr->d.ival == K_DOUBLETILDE) {
         target = AstInteger(-1);
     } else {
         ERROR(expr, "bad postfix operator %d", expr->d.ival);
@@ -1433,16 +1433,16 @@ PrintBoolExpr(Flexbuf *f, AST *expr, int flags)
         }
         op = expr->d.ival;
         switch (op) {
-        case T_NOT:
+        case K_NOT:
             flexbuf_printf(f, "!(");
             PrintBoolExpr(f, rhs, flags);
             flexbuf_printf(f, ")");
             break;
-        case T_OR:
-        case T_AND:
+        case K_OR:
+        case K_AND:
             flexbuf_printf(f, "(");
             PrintBoolExpr(f, lhs, flags);
-            flexbuf_printf(f, "%s", op == T_OR ? ") || (" : ") && (");
+            flexbuf_printf(f, "%s", op == K_OR ? ") || (" : ") && (");
             PrintBoolExpr(f, rhs, flags);
             flexbuf_printf(f, ")");
             break;

@@ -474,11 +474,11 @@ TransformCaseExprList(AST *var, AST *ast)
             if (ast->left->kind == AST_RANGE) {
                 node = NewAST(AST_ISBETWEEN, var, ast->left);
             } else {
-                node = AstOperator(T_EQ, var, ast->left);
+                node = AstOperator(K_EQ, var, ast->left);
             }
         }
         if (listexpr) {
-            listexpr = AstOperator(T_OR, listexpr, node);
+            listexpr = AstOperator(K_OR, listexpr, node);
         } else {
             listexpr = node;
         }
@@ -582,7 +582,7 @@ TransformCountRepeat(AST *ast)
             testOp = '>';
             knownStepDir = -1;
             if (knownStepVal == 1) {
-                testOp = T_NE;
+                testOp = K_NE;
             }
         }
     }
@@ -625,7 +625,7 @@ TransformCountRepeat(AST *ast)
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
         if (knownStepDir < 0) {
-            stepval = AstOperator(T_NEGATE, NULL, stepval);
+            stepval = AstOperator(K_NEGATE, NULL, stepval);
             knownStepVal = -knownStepVal;
         }
     } else {
@@ -635,16 +635,16 @@ TransformCountRepeat(AST *ast)
                                     NewAST(AST_CONDRESULT,
                                            AstOperator('>', toval, fromval),
                                            NewAST(AST_THENELSE, stepval,
-                                                  AstOperator(T_NEGATE, NULL, stepval)))));
+                                                  AstOperator(K_NEGATE, NULL, stepval)))));
         stepval = stepvar;
     }
 
     stepstmt = NULL;
     if (knownStepDir) {
         if (knownStepVal == 1) {
-            stepstmt = AstOperator(T_INCREMENT, loopvar, NULL);
+            stepstmt = AstOperator(K_INCREMENT, loopvar, NULL);
         } else if (knownStepVal == -1) {
-            stepstmt = AstOperator(T_DECREMENT, NULL, loopvar);
+            stepstmt = AstOperator(K_DECREMENT, NULL, loopvar);
         } else if (knownStepVal < 0) {
             stepstmt = AstAssign(loopvar, AstOperator('-', loopvar, AstInteger(-knownStepVal)));
         }
@@ -689,7 +689,7 @@ TransformCountRepeat(AST *ast)
         if (knownStepDir > 0) {
             condtest = AstOperator('<', loopvar, toval);
         } else {
-            condtest = AstOperator(T_NE, loopvar, toval);
+            condtest = AstOperator(K_NE, loopvar, toval);
             if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
                 loopkind = AST_FORATLEASTONCE;
             }
@@ -1202,8 +1202,8 @@ InferTypesExpr(AST *expr, AST *expectType)
       return InferTypesExpr(expr->right, PtrType(expr->left));
   case AST_OPERATOR:
       switch (expr->d.ival) {
-      case T_INCREMENT:
-      case T_DECREMENT:
+      case K_INCREMENT:
+      case K_DECREMENT:
       case '+':
       case '-':
           if (expectType) {
@@ -1625,7 +1625,7 @@ doSpinTransform(AST **astptr, int level)
         AST *seq1, *seq2;
         if (ast->d.ival == '~') {
             target = AstInteger(0);
-        } else if (ast->d.ival == T_DOUBLETILDE) {
+        } else if (ast->d.ival == K_DOUBLETILDE) {
             target = AstInteger(-1);
         } else {
             ERROR(ast, "bad posteffect operator %d", ast->d.ival);
@@ -1673,13 +1673,13 @@ doSpinTransform(AST **astptr, int level)
             AST *lhsast;
             int line = ast->line;
             switch (ast->d.ival) {
-            case T_NEGATE:
-            case T_ABS:
-            case T_SQRT:
-            case T_BIT_NOT:
-            case T_NOT:
-            case T_DECODE:
-            case T_ENCODE:
+            case K_NEGATE:
+            case K_ABS:
+            case K_SQRT:
+            case K_BIT_NOT:
+            case K_NOT:
+            case K_DECODE:
+            case K_ENCODE:
                 lhsast = DupAST(ast->right);
                 *astptr = ast = AstAssign(lhsast, ast);
                 ast->line = lhsast->line = line;
@@ -1689,8 +1689,8 @@ doSpinTransform(AST **astptr, int level)
         } else {
             AST *lhsast;
             switch (ast->d.ival) {
-            case T_DECODE:
-                lhsast = AstOperator(T_SHL, AstInteger(1), ast->right);
+            case K_DECODE:
+                lhsast = AstOperator(K_SHL, AstInteger(1), ast->right);
                 lhsast->line = ast->line;
                 *astptr = ast = lhsast;
                 break;
@@ -1789,7 +1789,7 @@ SimplifyAssignments(AST **astptr)
     if (!ast) return;
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
-        if (op != T_ASSIGN)
+        if (op != K_ASSIGN)
         {
             AST *lhs = ast->left;
             AstReportAs(ast);
