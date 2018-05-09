@@ -33,6 +33,7 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
+#include "spin.tab.h"
 
 //#define DEBUG_YACC
 
@@ -80,7 +81,7 @@ yylex(YYSTYPE *yval)
 {
     int c;
     saved_yychar = c = getToken(&current->L, yval);
-    if (c == T_EOF)
+    if (c == SP_EOF)
         return 0;
     return c;
 }

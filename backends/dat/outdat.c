@@ -326,10 +326,10 @@ SpecialRdOperand(AST *ast)
     int subval = 0;
     int negsubval = 0;
     
-    if (ast->kind == AST_OPERATOR && (ast->d.ival == T_INCREMENT
-                                      || ast->d.ival == T_DECREMENT))
+    if (ast->kind == AST_OPERATOR && (ast->d.ival == K_INCREMENT
+                                      || ast->d.ival == K_DECREMENT))
     {
-        if (ast->d.ival == T_INCREMENT) {
+        if (ast->d.ival == K_INCREMENT) {
             if (ast->left) {
                 ast = ast->left;
                 // a++: x110 0001

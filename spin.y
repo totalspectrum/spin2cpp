@@ -10,6 +10,8 @@
 #include <ctype.h>
 #include "spinc.h"
 
+#define YYSTYPE AST*
+    
 /* Yacc functions */
     void yyerror(const char *);
     int yylex();
@@ -151,130 +153,130 @@ CheckYield(AST *body)
  //%define parse.error verbose
  //%define parse.lac full
 
-%token T_IDENTIFIER "identifier"
-%token T_NUM        "number"
-%token T_STRING     "string"
-%token T_FLOATNUM   "float"
-%token T_SPR        "SPR"
+%token SP_IDENTIFIER "identifier"
+%token SP_NUM        "number"
+%token SP_STRING     "string"
+%token SP_FLOATNUM   "float"
+%token SP_SPR        "SPR"
 
 /* various keywords */
-%token T_CON        "CON"
-%token T_VAR        "VAR"
-%token T_DAT        "DAT"
-%token T_PUB        "PUB"
-%token T_PRI        "PRI"
-%token T_OBJ        "OBJ"
-%token T_ASM        "ASM"
-%token T_ENDASM     "ENDASM"
-%token T_INLINECCODE "CCODE"
-%token T_BYTE       "BYTE"
-%token T_WORD       "WORD"
-%token T_LONG       "LONG"
+%token SP_CON        "CON"
+%token SP_VAR        "VAR"
+%token SP_DAT        "DAT"
+%token SP_PUB        "PUB"
+%token SP_PRI        "PRI"
+%token SP_OBJ        "OBJ"
+%token SP_ASM        "ASM"
+%token SP_ENDASM     "ENDASM"
+%token SP_INLINECCODE "CCODE"
+%token SP_BYTE       "BYTE"
+%token SP_WORD       "WORD"
+%token SP_LONG       "LONG"
 
-%token T_INSTR      "instruction"
-%token T_INSTRMODIFIER "instruction modifier"
-%token T_HWREG      "hardware register"
-%token T_ORG        "ORG"
-%token T_ORGH       "ORGH"
-%token T_RES        "RES"
-%token T_FIT        "FIT"
-%token T_ALIGNL     "ALIGNL"
-%token T_ALIGNW     "ALIGNW"
+%token SP_INSTR      "instruction"
+%token SP_INSTRMODIFIER "instruction modifier"
+%token SP_HWREG      "hardware register"
+%token SP_ORG        "ORG"
+%token SP_ORGH       "ORGH"
+%token SP_RES        "RES"
+%token SP_FIT        "FIT"
+%token SP_ALIGNL     "ALIGNL"
+%token SP_ALIGNW     "ALIGNW"
 
-%token T_REPEAT     "REPEAT"
-%token T_FROM       "FROM"
-%token T_TO         "TO"
-%token T_STEP       "STEP"
-%token T_WHILE      "WHILE"
-%token T_UNTIL      "UNTIL"
-%token T_IF         "IF"
-%token T_IFNOT      "IFNOT"
-%token T_ELSE       "ELSE"
-%token T_ELSEIF     "ELSEIF"
-%token T_ELSEIFNOT  "ELSEIFNOT"
-%token T_THEN       "THEN"
-%token T_ENDIF      "ENDIF"
+%token SP_REPEAT     "REPEAT"
+%token SP_FROM       "FROM"
+%token SP_TO         "TO"
+%token SP_STEP       "STEP"
+%token SP_WHILE      "WHILE"
+%token SP_UNTIL      "UNTIL"
+%token SP_IF         "IF"
+%token SP_IFNOT      "IFNOT"
+%token SP_ELSE       "ELSE"
+%token SP_ELSEIF     "ELSEIF"
+%token SP_ELSEIFNOT  "ELSEIFNOT"
+%token SP_THEN       "THEN"
+%token SP_ENDIF      "ENDIF"
 
-%token T_LOOKDOWN   "LOOKDOWN"
-%token T_LOOKDOWNZ  "LOOKDOWNZ"
-%token T_LOOKUP     "LOOKUP"
-%token T_LOOKUPZ    "LOOKUPZ"
-%token T_COGINIT    "COGINIT"
-%token T_COGNEW     "COGNEW"
+%token SP_LOOKDOWN   "LOOKDOWN"
+%token SP_LOOKDOWNZ  "LOOKDOWNZ"
+%token SP_LOOKUP     "LOOKUP"
+%token SP_LOOKUPZ    "LOOKUPZ"
+%token SP_COGINIT    "COGINIT"
+%token SP_COGNEW     "COGNEW"
 
-%token T_CASE       "CASE"
-%token T_OTHER      "OTHER"
+%token SP_CASE       "CASE"
+%token SP_OTHER      "OTHER"
 
-%token T_QUIT       "QUIT"
-%token T_NEXT       "NEXT"
+%token SP_QUIT       "QUIT"
+%token SP_NEXT       "NEXT"
 
 /* other stuff */
-%token T_ABORT      "ABORT"
-%token T_RESULT     "RESULT"
-%token T_RETURN     "RETURN"
-%token T_INDENT     "indentation"
-%token T_OUTDENT    "lack of indentation"
-%token T_EOLN       "end of line"
-%token T_EOF        "end of file"
-%token T_DOTS       ".."
-%token T_HERE       "$"
-%token T_STRINGPTR  "STRING"
-%token T_FILE       "FILE"
+%token SP_ABORT      "ABORT"
+%token SP_RESULT     "RESULT"
+%token SP_RETURN     "RETURN"
+%token SP_INDENT     "indentation"
+%token SP_OUTDENT    "lack of indentation"
+%token SP_EOLN       "end of line"
+%token SP_EOF        "end of file"
+%token SP_DOTS       ".."
+%token SP_HERE       "$"
+%token SP_STRINGPTR  "STRING"
+%token SP_FILE       "FILE"
 
-%token T_ANNOTATION
+%token SP_ANNOTATION
 
 /* operators */
-%token T_ASSIGN     ":="
-%token T_OR         "OR"
-%token T_AND        "AND"
-%token T_GE         "=>"
-%token T_LE         "=<"
-%token T_NE         "<>"
-%token T_EQ         "=="
-%token T_LIMITMIN   "#>"
-%token T_LIMITMAX   "<#"
-%token T_MODULUS    "//"
-%token T_HIGHMULT   "**"
-%token T_ROTR       "->"
-%token T_ROTL       "<-"
-%token T_SHL        "<<"
-%token T_SHR        ">>"
-%token T_SAR        "~>"
-%token T_REV        "><"
-%token T_NEGATE     "-"
-%token T_BIT_NOT    "!"
-%token T_SQRT       "^^"
-%token T_ABS        "||"
-%token T_DECODE     "|<"
-%token T_ENCODE     ">|"
-%token T_NOT        "NOT"
-%token T_DOUBLETILDE "~~"
-%token T_INCREMENT  "++"
-%token T_DECREMENT  "--"
-%token T_DOUBLEAT   "@@"
-%token T_TRIPLEAT   "@@@"
-%token T_FLOAT      "floating point number"
-%token T_TRUNC      "TRUNC"
-%token T_ROUND      "ROUND"
-%token T_CONSTANT   "constant"
+%token SP_ASSIGN     ":="
+%token SP_OR         "OR"
+%token SP_AND        "AND"
+%token SP_GE         "=>"
+%token SP_LE         "=<"
+%token SP_NE         "<>"
+%token SP_EQ         "=="
+%token SP_LIMITMIN   "#>"
+%token SP_LIMITMAX   "<#"
+%token SP_MODULUS    "//"
+%token SP_HIGHMULT   "**"
+%token SP_ROTR       "->"
+%token SP_ROTL       "<-"
+%token SP_SHL        "<<"
+%token SP_SHR        ">>"
+%token SP_SAR        "~>"
+%token SP_REV        "><"
+%token SP_NEGATE     "-"
+%token SP_BIT_NOT    "!"
+%token SP_SQRT       "^^"
+%token SP_ABS        "||"
+%token SP_DECODE     "|<"
+%token SP_ENCODE     ">|"
+%token SP_NOT        "NOT"
+%token SP_DOUBLETILDE "~~"
+%token SP_INCREMENT  "++"
+%token SP_DECREMENT  "--"
+%token SP_DOUBLEAT   "@@"
+%token SP_TRIPLEAT   "@@@"
+%token SP_FLOAT      "floating point number"
+%token SP_TRUNC      "TRUNC"
+%token SP_ROUND      "ROUND"
+%token SP_CONSTANT   "constant"
 
 /* operator precedence */
-%right T_ASSIGN
-%right T_THEN
-%right T_ELSE
-%left T_OR
-%left T_AND
-%left '<' '>' T_GE T_LE T_NE T_EQ
-%left T_LIMITMIN T_LIMITMAX
+%right SP_ASSIGN
+%right SP_THEN
+%right SP_ELSE
+%left SP_OR
+%left SP_AND
+%left '<' '>' SP_GE SP_LE SP_NE SP_EQ
+%left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
-%left '*' '/' T_MODULUS T_HIGHMULT
+%left '*' '/' SP_MODULUS SP_HIGHMULT
 %left '|' '^'
 %left '&'
-%left T_ROTL T_ROTR T_SHL T_SHR T_SAR T_REV
-%left T_NEGATE T_BIT_NOT T_ABS T_SQRT T_DECODE T_ENCODE
-%left T_NOT
-%left '@' '~' '?' T_DOUBLETILDE T_INCREMENT T_DECREMENT T_DOUBLEAT T_TRIPLEAT
-%left T_CONSTANT T_FLOAT T_TRUNC T_ROUND
+%left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE
+%left SP_NOT
+%left '@' '~' '?' SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
+%left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
 %%
 input:
@@ -288,7 +290,7 @@ rest:
   ;
 
 emptyline:
-  T_EOLN
+  SP_EOLN
   ;
 
 emptylines: 
@@ -296,49 +298,49 @@ emptylines:
   ;
 
 topelement:
-  T_CON conblock
+  SP_CON conblock
   { $$ = current->conblock = AddToList(current->conblock, $2); }
-  | T_DAT datblock
+  | SP_DAT datblock
   { $$ = current->datblock = AddToList(current->datblock, $2); }
-  | T_DAT annotation datblock
+  | SP_DAT annotation datblock
   {
       current->datannotations = AddToList(current->datannotations, $2);
       $$ = current->datblock = AddToList(current->datblock, $3); 
   }
-  | T_VAR varblock
+  | SP_VAR varblock
   { $$ = current->varblock = AddToList(current->varblock, $2); }
-  | T_OBJ objblock
+  | SP_OBJ objblock
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
-  | T_PUB funcdef funcbody
+  | SP_PUB funcdef funcbody
     { DeclareFunction(1, $2, $3, NULL, $1); }
-  | T_PRI funcdef funcbody
+  | SP_PRI funcdef funcbody
     { DeclareFunction(0, $2, $3, NULL, $1); }
-  | T_PUB annotation funcdef funcbody
+  | SP_PUB annotation funcdef funcbody
     { DeclareFunction(1, $3, $4, $2, $1); }
-  | T_PRI annotation funcdef funcbody
+  | SP_PRI annotation funcdef funcbody
     { DeclareFunction(0, $3, $4, $2, $1); }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;
 
 funcdef:
-  identifier optparamlist T_EOLN
+  identifier optparamlist SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  identifier optparamlist localvars T_EOLN
+|  identifier optparamlist localvars SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $3);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  identifier optparamlist resultname localvars T_EOLN
+|  identifier optparamlist resultname localvars SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  identifier optparamlist resultname T_EOLN
+|  identifier optparamlist resultname SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
@@ -386,26 +388,26 @@ stmt:
     {  $$ = NewCommentedStatement($1); }
   | compoundstmt
     { $$ = NewStatement($1); }
-  | T_EOLN
+  | SP_EOLN
     { $$ = NULL; }
-  | error T_EOLN
+  | error SP_EOLN
     { $$ = NULL; }
   ;
 
 basicstmt:
-   T_RETURN T_EOLN
+   SP_RETURN SP_EOLN
     { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
-  |  T_RETURN expr T_EOLN
+  |  SP_RETURN expr SP_EOLN
     { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
-  | T_ABORT T_EOLN
+  | SP_ABORT SP_EOLN
     { $$ = AstAbort(NULL, $1); }
-  |  T_ABORT expr T_EOLN
+  |  SP_ABORT expr SP_EOLN
     { $$ = AstAbort($2, $1); }
-  |  expr T_EOLN
+  |  expr SP_EOLN
     { $$ = $1; }
-  | T_QUIT T_EOLN
+  | SP_QUIT SP_EOLN
     { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
-  | T_NEXT T_EOLN
+  | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
 ;
 
@@ -421,32 +423,32 @@ compoundstmt:
 ;
 
 stmtblock:
-  T_INDENT stmtlist T_OUTDENT
+  SP_INDENT stmtlist SP_OUTDENT
   { $$ = $2; }
-  | T_INDENT T_OUTDENT
+  | SP_INDENT SP_OUTDENT
   { $$ = NULL; }
 ;
 
 ifstmt:
-  T_IF expr T_EOLN elseblock
+  SP_IF expr SP_EOLN elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $4, $1); }
-  | T_IFNOT expr T_EOLN elseblock
-    { $$ = NewCommentedAST(AST_IF, AstOperator(T_NOT, NULL, $2), $4, $1); }
+  | SP_IFNOT expr SP_EOLN elseblock
+    { $$ = NewCommentedAST(AST_IF, AstOperator(K_NOT, NULL, $2), $4, $1); }
 ;
 
 elseblock:
   stmtblock
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
-  | stmtblock T_ELSE T_EOLN stmtblock
+  | stmtblock SP_ELSE SP_EOLN stmtblock
   { $$ = NewCommentedAST(AST_THENELSE, $1, $4, $2); }
-  | stmtblock T_ELSEIF expr T_EOLN elseblock
+  | stmtblock SP_ELSEIF expr SP_EOLN elseblock
     { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, $3, $5, $2), NULL)); }
-  | stmtblock T_ELSEIFNOT expr T_EOLN elseblock
-    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, AstOperator(T_NOT, NULL, $3), $5, $2), NULL)); }
+  | stmtblock SP_ELSEIFNOT expr SP_EOLN elseblock
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, AstOperator(K_NOT, NULL, $3), $5, $2), NULL)); }
   ;
 
 casestmt:
-  T_CASE expr T_EOLN T_INDENT casematchlist T_OUTDENT
+  SP_CASE expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
     { $$ = NewCommentedAST(AST_CASE, $2, $5, $1); }
 ;
 
@@ -458,7 +460,7 @@ casematchlist:
   ;
 
 casematchitem:
-  casematch T_EOLN stmtblock
+  casematch SP_EOLN stmtblock
     {
         AST *slist = NewAST(AST_STMTLIST, $3, NULL);
         $$ = NewAST(AST_CASEITEM, $1, slist);
@@ -480,9 +482,9 @@ matchexprlist:
   ;
 
 matchexpritem:
-  T_OTHER
+  SP_OTHER
     { $$ = NewAST(AST_OTHER, NULL, NULL); }
-  | expr T_DOTS expr
+  | expr SP_DOTS expr
     { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); }
   | expr
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
@@ -492,7 +494,7 @@ matchexpritem:
 rangeexpritem:
   expr
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
-  | expr T_DOTS expr
+  | expr SP_DOTS expr
     { $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $1, $3), NULL); }
   ;
 
@@ -503,31 +505,31 @@ rangeexprlist:
   ;
 
 repeatstmt:
-    T_REPEAT T_EOLN stmtblock
+    SP_REPEAT SP_EOLN stmtblock
     {   AST *body = $3; body = CheckYield(body);
         AST *one = AstInteger(1);
         one->line = $1->line;
         $$ = NewCommentedAST(AST_WHILE, one, body, $1);
         $$->line = $1->line;
     }
-  | T_REPEAT T_EOLN stmtblock T_WHILE expr T_EOLN
+  | SP_REPEAT SP_EOLN stmtblock SP_WHILE expr SP_EOLN
     { $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($3), $1); }
-  | T_REPEAT T_EOLN stmtblock T_UNTIL expr T_EOLN
-    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(T_NOT, NULL, $5), CheckYield($3), $1); }
-  | T_REPEAT T_WHILE expr T_EOLN stmtblock
+  | SP_REPEAT SP_EOLN stmtblock SP_UNTIL expr SP_EOLN
+    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_NOT, NULL, $5), CheckYield($3), $1); }
+  | SP_REPEAT SP_WHILE expr SP_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
         $$->line = $1->line;
     }
-  | T_REPEAT T_UNTIL expr T_EOLN stmtblock
+  | SP_REPEAT SP_UNTIL expr SP_EOLN stmtblock
     {   AST *body = $5;
-        AST *expr = AstOperator(T_NOT, NULL, $3);
+        AST *expr = AstOperator(K_NOT, NULL, $3);
         expr->line = $3->line;
         body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, expr, body, $1);
         $$->line = $1->line;
     }
-  | T_REPEAT identifier T_FROM expr T_TO expr T_STEP expr T_EOLN stmtblock
+  | SP_REPEAT identifier SP_FROM expr SP_TO expr SP_STEP expr SP_EOLN stmtblock
     {
       AST *from, *to, *step; 
       step = NewAST(AST_STEP, $8, $10);
@@ -535,7 +537,7 @@ repeatstmt:
       from = NewAST(AST_FROM, $4, to);
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
     }
-  | T_REPEAT identifier T_FROM expr T_TO expr T_EOLN stmtblock
+  | SP_REPEAT identifier SP_FROM expr SP_TO expr SP_EOLN stmtblock
     {
       AST *from, *to, *step; 
       step = NewAST(AST_STEP, AstInteger(1), $8);
@@ -543,7 +545,7 @@ repeatstmt:
       from = NewAST(AST_FROM, $4, to);
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
     }
-  | T_REPEAT expr T_EOLN stmtblock
+  | SP_REPEAT expr SP_EOLN stmtblock
     {
       AST *from, *to, *step;
       AST *body = $4;
@@ -553,22 +555,22 @@ repeatstmt:
       from = NewAST(AST_FROM, NULL, to);
       $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
-  | T_ASM datblock T_ENDASM
+  | SP_ASM datblock SP_ENDASM
     {  $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1); }
-  | T_INLINECCODE
+  | SP_INLINECCODE
     {  $$ = $1; }
 ;
 
 lookupexpr:
-  T_LOOKUPZ '(' expr ':' rangeexprlist ')'
+  SP_LOOKUPZ '(' expr ':' rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 0, $3, $5); }
-  | T_LOOKUP '(' expr ':' rangeexprlist ')'
+  | SP_LOOKUP '(' expr ':' rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 1, $3, $5); }
 ;
 lookdownexpr:
-  T_LOOKDOWNZ '(' expr ':' rangeexprlist ')'
+  SP_LOOKDOWNZ '(' expr ':' rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 0, $3, $5); }
-  | T_LOOKDOWN '(' expr ':' rangeexprlist ')'
+  | SP_LOOKDOWN '(' expr ':' rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 1, $3, $5); }
 ;
 
@@ -580,11 +582,11 @@ conblock:
   ;
 
 conline:
-  enumlist T_EOLN
+  enumlist SP_EOLN
     { $$ = $1; }
-  | T_EOLN
+  | SP_EOLN
     { $$ = NULL; }
-  | error T_EOLN
+  | error SP_EOLN
     { $$ = NULL; }
   ;
 
@@ -637,49 +639,49 @@ datline:
   ;
 
 basedatline:
-  T_EOLN
+  SP_EOLN
     { $$ = NULL; }
-  | error T_EOLN
+  | error SP_EOLN
     { $$ = NULL; }
-  | T_BYTE T_EOLN
+  | SP_BYTE SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | T_BYTE exprlist T_EOLN
+  | SP_BYTE exprlist SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
-  | T_WORD T_EOLN
+  | SP_WORD SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | T_WORD exprlist T_EOLN
+  | SP_WORD exprlist SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
-  | T_LONG T_EOLN
+  | SP_LONG SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | T_LONG exprlist T_EOLN
+  | SP_LONG exprlist SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
-  | instruction T_EOLN
+  | instruction SP_EOLN
     { $$ = NewCommentedInstr($1); }
-  | instruction operandlist T_EOLN
+  | instruction operandlist SP_EOLN
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction modifierlist T_EOLN
+  | instruction modifierlist SP_EOLN
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction operandlist modifierlist T_EOLN
+  | instruction operandlist modifierlist SP_EOLN
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
-  | T_ALIGNL T_EOLN
+  | SP_ALIGNL SP_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
-  | T_ALIGNW T_EOLN
+  | SP_ALIGNW SP_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
-  | T_ORG T_EOLN
+  | SP_ORG SP_EOLN
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
-  | T_ORG expr T_EOLN
+  | SP_ORG expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
-  | T_ORGH T_EOLN
+  | SP_ORGH SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
-  | T_ORGH expr T_EOLN
+  | SP_ORGH expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
-  | T_RES expr T_EOLN
+  | SP_RES expr SP_EOLN
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
-  | T_FIT expr T_EOLN
+  | SP_FIT expr SP_EOLN
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
-  | T_FIT T_EOLN
+  | SP_FIT SP_EOLN
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
-  | T_FILE string T_EOLN
+  | SP_FILE string SP_EOLN
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
@@ -691,9 +693,9 @@ objblock:
 ;
 
 objline:
-    T_EOLN
+    SP_EOLN
     { $$ = NULL; }
-  | error  T_EOLN
+  | error  SP_EOLN
     { $$ = NULL; }
   | identdecl ':' string
     { $$ = NewObject($1, $3); }
@@ -709,15 +711,15 @@ varblock:
   ;
 
 varline:
-  T_BYTE identlist T_EOLN
+  SP_BYTE identlist SP_EOLN
     { $$ = NewAST(AST_BYTELIST, $2, NULL); }
-  | T_WORD identlist T_EOLN
+  | SP_WORD identlist SP_EOLN
     { $$ = NewAST(AST_WORDLIST, $2, NULL); }
-  | T_LONG identlist T_EOLN
+  | SP_LONG identlist SP_EOLN
     { $$ = NewAST(AST_LONGLIST, $2, NULL); }
-  | T_EOLN
+  | SP_EOLN
     { $$ = NULL; }
-  | error T_EOLN
+  | error SP_EOLN
     { $$ = NULL; }
   ;
 
@@ -743,16 +745,16 @@ expr:
   integer
   | float
   | string
-  | T_STRINGPTR '(' exprlist ')'
+  | SP_STRINGPTR '(' exprlist ')'
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
   | '@' lhs
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
-  | T_DOUBLEAT expr
+  | SP_DOUBLEAT expr
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
-  | T_TRIPLEAT lhs
+  | SP_TRIPLEAT lhs
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
-  | lhs T_ASSIGN expr
+  | lhs SP_ASSIGN expr
     { $$ = AstAssign($1, $3); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
@@ -774,84 +776,84 @@ expr:
     { $$ = AstOperator('>', $1, $3); }
   | expr '<' expr
     { $$ = AstOperator('<', $1, $3); }
-  | expr T_GE expr
-    { $$ = AstOperator(T_GE, $1, $3); }
-  | expr T_LE expr
-    { $$ = AstOperator(T_LE, $1, $3); }
-  | expr T_NE expr
-    { $$ = AstOperator(T_NE, $1, $3); }
-  | expr T_EQ expr
-    { $$ = AstOperator(T_EQ, $1, $3); }
-  | expr T_MODULUS expr
-    { $$ = AstOperator(T_MODULUS, $1, $3); }
-  | expr T_HIGHMULT expr
-    { $$ = AstOperator(T_HIGHMULT, $1, $3); current->needsHighmult = 1; }
-  | expr T_LIMITMIN expr
-    { $$ = AstOperator(T_LIMITMIN, $1, $3); current->needsMinMax = 1; }
-  | expr T_LIMITMAX expr
-    { $$ = AstOperator(T_LIMITMAX, $1, $3); current->needsMinMax = 1;}
-  | expr T_REV expr
-    { $$ = AstOperator(T_REV, $1, $3); }
-  | expr T_ROTL expr
-    { $$ = AstOperator(T_ROTL, $1, $3); current->needsRotate = 1; }
-  | expr T_ROTR expr
-    { $$ = AstOperator(T_ROTR, $1, $3); current->needsRotate = 1; }
-  | expr T_SHL expr
-    { $$ = AstOperator(T_SHL, $1, $3); }
-  | expr T_SHR expr
-    { $$ = AstOperator(T_SHR, $1, $3); current->needsShr = 1; }
-  | expr T_SAR expr
-    { $$ = AstOperator(T_SAR, $1, $3); }
-  | expr T_OR expr
-    { $$ = AstOperator(T_OR, $1, $3); }
-  | expr T_AND expr
-    { $$ = AstOperator(T_AND, $1, $3); }
-  | expr '+' '=' expr %prec T_ASSIGN
+  | expr SP_GE expr
+    { $$ = AstOperator(K_GE, $1, $3); }
+  | expr SP_LE expr
+    { $$ = AstOperator(K_LE, $1, $3); }
+  | expr SP_NE expr
+    { $$ = AstOperator(K_NE, $1, $3); }
+  | expr SP_EQ expr
+    { $$ = AstOperator(K_EQ, $1, $3); }
+  | expr SP_MODULUS expr
+    { $$ = AstOperator(K_MODULUS, $1, $3); }
+  | expr SP_HIGHMULT expr
+    { $$ = AstOperator(K_HIGHMULT, $1, $3); current->needsHighmult = 1; }
+  | expr SP_LIMITMIN expr
+    { $$ = AstOperator(K_LIMITMIN, $1, $3); current->needsMinMax = 1; }
+  | expr SP_LIMITMAX expr
+    { $$ = AstOperator(K_LIMITMAX, $1, $3); current->needsMinMax = 1;}
+  | expr SP_REV expr
+    { $$ = AstOperator(K_REV, $1, $3); }
+  | expr SP_ROTL expr
+    { $$ = AstOperator(K_ROTL, $1, $3); current->needsRotate = 1; }
+  | expr SP_ROTR expr
+    { $$ = AstOperator(K_ROTR, $1, $3); current->needsRotate = 1; }
+  | expr SP_SHL expr
+    { $$ = AstOperator(K_SHL, $1, $3); }
+  | expr SP_SHR expr
+    { $$ = AstOperator(K_SHR, $1, $3); current->needsShr = 1; }
+  | expr SP_SAR expr
+    { $$ = AstOperator(K_SAR, $1, $3); }
+  | expr SP_OR expr
+    { $$ = AstOperator(K_OR, $1, $3); }
+  | expr SP_AND expr
+    { $$ = AstOperator(K_AND, $1, $3); }
+  | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
-  | expr '-' '=' expr %prec T_ASSIGN
+  | expr '-' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('-', $1, $4); }
-  | expr '/' '=' expr %prec T_ASSIGN
+  | expr '/' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('/', $1, $4); }
-  | expr '*' '=' expr %prec T_ASSIGN
+  | expr '*' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('*', $1, $4); }
-  | expr '&' '=' expr %prec T_ASSIGN
+  | expr '&' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('&', $1, $4); }
-  | expr '|' '=' expr %prec T_ASSIGN
+  | expr '|' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('|', $1, $4); }
-  | expr '^' '=' expr %prec T_ASSIGN
+  | expr '^' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('^', $1, $4); }
-  | expr T_MODULUS '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_MODULUS, $1, $4); }
-  | expr T_HIGHMULT '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_HIGHMULT, $1, $4); current->needsHighmult = 1;}
-  | expr T_LIMITMIN '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_LIMITMIN, $1, $4); current->needsMinMax = 1; }
-  | expr T_LIMITMAX '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_LIMITMAX, $1, $4); current->needsMinMax = 1; }
-  | expr T_REV '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_REV, $1, $4); }
-  | expr T_ROTL '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_ROTL, $1, $4); current->needsRotate = 1; }
-  | expr T_ROTR '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_ROTR, $1, $4); current->needsRotate = 1; }
-  | expr T_SHL '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_SHL, $1, $4); }
-  | expr T_SHR '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_SHR, $1, $4); current->needsShr = 1; }
-  | expr T_SAR '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_SAR, $1, $4); }
-  | expr T_AND '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_AND, $1, $4); }
-  | expr T_OR '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_OR, $1, $4); }
-  | expr '<' '=' expr %prec T_ASSIGN
+  | expr SP_MODULUS '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_MODULUS, $1, $4); }
+  | expr SP_HIGHMULT '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_HIGHMULT, $1, $4); current->needsHighmult = 1;}
+  | expr SP_LIMITMIN '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_LIMITMIN, $1, $4); current->needsMinMax = 1; }
+  | expr SP_LIMITMAX '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_LIMITMAX, $1, $4); current->needsMinMax = 1; }
+  | expr SP_REV '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_REV, $1, $4); }
+  | expr SP_ROTL '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ROTL, $1, $4); current->needsRotate = 1; }
+  | expr SP_ROTR '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ROTR, $1, $4); current->needsRotate = 1; }
+  | expr SP_SHL '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SHL, $1, $4); }
+  | expr SP_SHR '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SHR, $1, $4); current->needsShr = 1; }
+  | expr SP_SAR '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SAR, $1, $4); }
+  | expr SP_AND '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_AND, $1, $4); }
+  | expr SP_OR '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_OR, $1, $4); }
+  | expr '<' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('<', $1, $4); }
-  | expr '>' '=' expr %prec T_ASSIGN
+  | expr '>' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('>', $1, $4); }
-  | expr T_LE '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_LE, $1, $4); }
-  | expr T_GE '=' expr %prec T_ASSIGN
-    { $$ = AstOpAssign(T_GE, $1, $4); }
+  | expr SP_LE '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_LE, $1, $4); }
+  | expr SP_GE '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_GE, $1, $4); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' funccall
@@ -862,7 +864,7 @@ expr:
     { $$ = AstCatch($3); }
   | funccall
     { $$ = $1; }
-  | '-' expr %prec T_NEGATE
+  | '-' expr %prec SP_NEGATE
     {
         AST *op = $2;
         /* special case -x where x is a float constant */
@@ -870,62 +872,62 @@ expr:
             op->d.ival ^= 0x80000000U;
             $$ = op;
         } else {
-            $$ = AstOperator(T_NEGATE, NULL, $2);
+            $$ = AstOperator(K_NEGATE, NULL, $2);
         }
     }
-  | '!' expr %prec T_BIT_NOT
-    { $$ = AstOperator(T_BIT_NOT, NULL, $2); }
+  | '!' expr %prec SP_BIT_NOT
+    { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
   | '~' expr
     { AST *shf;
-      shf = AstOperator(T_SHL, $2, AstInteger(24));
-      $$ = AstOperator(T_SAR, shf, AstInteger(24)); 
+      shf = AstOperator(K_SHL, $2, AstInteger(24));
+      $$ = AstOperator(K_SAR, shf, AstInteger(24)); 
     }
-  | T_DOUBLETILDE expr
+  | SP_DOUBLETILDE expr
     { AST *shf;
-      shf = AstOperator(T_SHL, $2, AstInteger(16));
-      $$ = AstOperator(T_SAR, shf, AstInteger(16)); 
+      shf = AstOperator(K_SHL, $2, AstInteger(16));
+      $$ = AstOperator(K_SAR, shf, AstInteger(16)); 
     }
-  | T_NOT expr
-    { $$ = AstOperator(T_NOT, NULL, $2); }
-  | T_ABS expr
-    { $$ = AstOperator(T_ABS, NULL, $2); current->needsStdlib = 1; }
-  | T_SQRT expr
-    { $$ = AstOperator(T_SQRT, NULL, $2); current->needsSqrt = 1; }
-  | T_DECODE expr
-    { $$ = AstOperator(T_DECODE, NULL, $2); }
-  | T_ENCODE expr
-    { $$ = AstOperator(T_ENCODE, NULL, $2); current->needsBitEncode = 1; }
-  | T_HERE
+  | SP_NOT expr
+    { $$ = AstOperator(K_NOT, NULL, $2); }
+  | SP_ABS expr
+    { $$ = AstOperator(K_ABS, NULL, $2); current->needsStdlib = 1; }
+  | SP_SQRT expr
+    { $$ = AstOperator(K_SQRT, NULL, $2); current->needsSqrt = 1; }
+  | SP_DECODE expr
+    { $$ = AstOperator(K_DECODE, NULL, $2); }
+  | SP_ENCODE expr
+    { $$ = AstOperator(K_ENCODE, NULL, $2); current->needsBitEncode = 1; }
+  | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
-  | lhs T_INCREMENT
-    { $$ = AstOperator(T_INCREMENT, $1, NULL); }
-  | lhs T_DECREMENT
-    { $$ = AstOperator(T_DECREMENT, $1, NULL); }
-  | T_INCREMENT lhs
-    { $$ = AstOperator(T_INCREMENT, NULL, $2); }
-  | T_DECREMENT lhs
-    { $$ = AstOperator(T_DECREMENT, NULL, $2); }
+  | lhs SP_INCREMENT
+    { $$ = AstOperator(K_INCREMENT, $1, NULL); }
+  | lhs SP_DECREMENT
+    { $$ = AstOperator(K_DECREMENT, $1, NULL); }
+  | SP_INCREMENT lhs
+    { $$ = AstOperator(K_INCREMENT, NULL, $2); }
+  | SP_DECREMENT lhs
+    { $$ = AstOperator(K_DECREMENT, NULL, $2); }
   | lhs '?'
     { $$ = AstOperator('?', $1, NULL); current->needsRand = 1; }
   | '?' lhs
     { $$ = AstOperator('?', NULL, $2); current->needsRand = 1; }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
-  | lhs T_DOUBLETILDE
-    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = T_DOUBLETILDE; }
-  | T_CONSTANT '(' expr ')'
+  | lhs SP_DOUBLETILDE
+    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = K_DOUBLETILDE; }
+  | SP_CONSTANT '(' expr ')'
     { $$ = NewAST(AST_CONSTANT, $3, NULL); }
-  | T_FLOAT '(' expr ')'
+  | SP_FLOAT '(' expr ')'
     { $$ = NewAST(AST_TOFLOAT, $3, NULL); }
-  | T_ROUND '(' expr ')'
+  | SP_ROUND '(' expr ')'
     { $$ = NewAST(AST_ROUND, $3, NULL); }
-  | T_TRUNC '(' expr ')'
+  | SP_TRUNC '(' expr ')'
     { $$ = NewAST(AST_TRUNC, $3, NULL); }
   | lookupexpr
     { $$ = $1; current->needsLookup = 1; }
   | lookdownexpr
     { $$ = $1; current->needsLookdown = 1; }
-  | T_IF expr T_THEN expr T_ELSE expr
+  | SP_IF expr SP_THEN expr SP_ELSE expr
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $4, $6)); }
   ;
 
@@ -941,31 +943,31 @@ lhs: identifier
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
-  | T_SPR '[' expr ']'
+  | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3); }
   ;
 
 memref:
-  T_BYTE '[' expr ']'
+  SP_BYTE '[' expr ']'
     { $$ = NewAST(AST_MEMREF, ast_type_byte, $3); }
-  | T_WORD '[' expr ']'
+  | SP_WORD '[' expr ']'
     { $$ = NewAST(AST_MEMREF, ast_type_word, $3); }
-  | T_LONG '[' expr ']'
+  | SP_LONG '[' expr ']'
     { $$ = NewAST(AST_MEMREF, ast_type_long, $3); }
-  | identifier '.' T_BYTE
+  | identifier '.' SP_BYTE
     { $$ = NewAST(AST_MEMREF, ast_type_byte, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' T_WORD
+  | identifier '.' SP_WORD
     { $$ = NewAST(AST_MEMREF, ast_type_word, NewAST(AST_ADDROF, $1, NULL)); }
-  | identifier '.' T_LONG
+  | identifier '.' SP_LONG
     { $$ = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL)); }
 ;
 
 funccall:
   identifier '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | T_COGINIT '(' exprlist ')'
+  | SP_COGINIT '(' exprlist ')'
     { $$ = NewAST(AST_COGINIT, $3, NULL); }
-  | T_COGNEW '(' exprlist ')'
+  | SP_COGNEW '(' exprlist ')'
     {
         AST *elist;
         AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
@@ -1048,49 +1050,49 @@ operandlist:
 range:
   expr
     { $$ = NewAST(AST_RANGE, $1, NULL); }
-  | expr T_DOTS expr
+  | expr SP_DOTS expr
     { $$ = NewAST(AST_RANGE, $1, $3); }
   ;
 
 integer:
-  T_NUM
+  SP_NUM
 ;
 
 float:
-  T_FLOATNUM
+  SP_FLOATNUM
 ;
 
 string:
-  T_STRING
+  SP_STRING
 ;
 
 identifier:
-  T_IDENTIFIER
+  SP_IDENTIFIER
   { $$ = $1; }
-  | T_RESULT
+  | SP_RESULT
   { $$ = NewAST(AST_RESULT, NULL, NULL); }
 ;
 
 annotation:
-  T_ANNOTATION
+  SP_ANNOTATION
   { $$ = $1; }
 ;
 
 
 hwreg:
-  T_HWREG
+  SP_HWREG
   { $$ = $1; }
 ;
 
 instruction:
-  T_INSTR
+  SP_INSTR
   { $$ = $1; }
   | instrmodifier instruction
   { $$ = AddToList($2, $1); }
 ;
  
 instrmodifier:
-  T_INSTRMODIFIER
+  SP_INSTRMODIFIER
   { $$ = $1; }
 ;
 

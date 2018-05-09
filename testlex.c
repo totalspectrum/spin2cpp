@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "spinc.h"
+#include "spin.tab.h"
 
 //typedef enum yytokentype Token;
 typedef int Token;
@@ -56,9 +57,9 @@ testNumber(const char *str, uint32_t val)
     printf("testing number[%s]...", str);
     strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
-    EXPECTEQ(t, T_NUM);
+    EXPECTEQ(t, SP_NUM);
     c = lexgetc(&L);
-    EXPECTEQ(c, T_EOF);
+    EXPECTEQ(c, SP_EOF);
     assert(ast != NULL);
     assert(ast->kind == AST_INTEGER);
     EXPECTEQ(ast->d.ival, val);
@@ -83,9 +84,9 @@ testFloat(const char *str, float fval)
     printf("testing number[%s]...", str);
     strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
-    EXPECTEQ(t, T_FLOATNUM);
+    EXPECTEQ(t, SP_FLOATNUM);
     c = lexgetc(&L);
-    EXPECTEQ(c, T_EOF);
+    EXPECTEQ(c, SP_EOF);
     assert(ast != NULL);
     assert(ast->kind == AST_FLOAT);
     EXPECTEQ(ast->d.ival, val);
@@ -101,7 +102,7 @@ testIdentifier(const char *str, const char *expect)
 
     strToLex(&L, str, NULL);
     t = getToken(&L, &ast);
-    EXPECTEQ(t, T_IDENTIFIER);
+    EXPECTEQ(t, SP_IDENTIFIER);
     assert(ast != NULL);
     assert(ast->kind == AST_IDENTIFIER);
     EXPECTEQ(0, strcmp(ast->d.string, expect));
@@ -148,20 +149,20 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 }
 
 #define N_ELEM(x) (sizeof(x)/sizeof(x[0]))
-static int tokens0[] = { T_NUM, '+', T_NUM, T_EOLN, T_EOF };
-static int tokens1[] = { T_IDENTIFIER, '-', T_NUM, '+', T_IDENTIFIER, T_EOLN, T_EOF };
-static int tokens2[] = { T_CON, T_CON, T_IDENTIFIER, T_CON, T_NUM, T_EOLN, T_EOF };
-static int tokens3[] = { T_LIMITMAX, T_LIMITMIN, '<', T_LE, T_GE, '>', T_EQ, '=', '+', '<' };
+static int tokens0[] = { SP_NUM, '+', SP_NUM, SP_EOLN, SP_EOF };
+static int tokens1[] = { SP_IDENTIFIER, '-', SP_NUM, '+', SP_IDENTIFIER, SP_EOLN, SP_EOF };
+static int tokens2[] = { SP_CON, SP_CON, SP_IDENTIFIER, SP_CON, SP_NUM, SP_EOLN, SP_EOF };
+static int tokens3[] = { SP_LIMITMAX, SP_LIMITMIN, '<', SP_LE, SP_GE, '>', SP_EQ, '=', '+', '<' };
 
 static const char *token4test = "pub \r\n  if\n    foo\n  bar\n";
-static int tokens4[] = { T_PUB, T_EOLN, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_OUTDENT, T_IDENTIFIER, T_EOLN };
+static int tokens4[] = { SP_PUB, SP_EOLN, SP_IF, SP_EOLN, SP_INDENT, SP_IDENTIFIER, SP_EOLN, SP_OUTDENT, SP_IDENTIFIER, SP_EOLN };
 
 static const char *token5test = "pub\n  if\n    foo\n      repeat\n  else";
-static int tokens5[] = { T_PUB, T_EOLN, T_IF, T_EOLN, T_INDENT, T_IDENTIFIER, T_EOLN, T_REPEAT, T_EOLN, T_INDENT, T_OUTDENT, T_OUTDENT, T_ELSE};
+static int tokens5[] = { SP_PUB, SP_EOLN, SP_IF, SP_EOLN, SP_INDENT, SP_IDENTIFIER, SP_EOLN, SP_REPEAT, SP_EOLN, SP_INDENT, SP_OUTDENT, SP_OUTDENT, SP_ELSE};
 
 static const char *token6test = "dat\nlabel if_z add x,#1 wc";
-static int tokens6[] = { T_DAT, T_EOLN, T_IDENTIFIER, T_INSTRMODIFIER, T_INSTR,
-                         T_IDENTIFIER, ',', '#', T_NUM, T_INSTRMODIFIER};
+static int tokens6[] = { SP_DAT, SP_EOLN, SP_IDENTIFIER, SP_INSTRMODIFIER, SP_INSTR,
+                         SP_IDENTIFIER, ',', '#', SP_NUM, SP_INSTRMODIFIER};
 
 static const char *token7test = 
 "pub f\n"
@@ -171,11 +172,11 @@ static const char *token7test =
 
 static int tokens7[] = 
 { 
-  T_PUB, T_IDENTIFIER, T_EOLN,
-  T_IDENTIFIER, T_EOLN,
-  T_REPEAT, T_WHILE, T_IDENTIFIER, T_EOLN,
-  T_INDENT, T_OUTDENT,
-  T_RETURN, T_IDENTIFIER, T_EOLN, T_EOF
+  SP_PUB, SP_IDENTIFIER, SP_EOLN,
+  SP_IDENTIFIER, SP_EOLN,
+  SP_REPEAT, SP_WHILE, SP_IDENTIFIER, SP_EOLN,
+  SP_INDENT, SP_OUTDENT,
+  SP_RETURN, SP_IDENTIFIER, SP_EOLN, SP_EOF
 };
 
 static const char *token8test = 
@@ -188,12 +189,12 @@ static const char *token8test =
 
 static int tokens8[] = 
 { 
-  T_PUB, T_IDENTIFIER, T_EOLN,
-  T_IDENTIFIER, T_EOLN,
-  T_REPEAT, T_WHILE, T_IDENTIFIER, '.', T_IDENTIFIER, '[', T_NUM, ']', '<', T_IDENTIFIER, T_EOLN,
-  T_INDENT, T_OUTDENT,
-  T_PRI, T_IDENTIFIER, T_EOLN,
-  T_RETURN, T_IDENTIFIER, T_EOLN, T_EOF
+  SP_PUB, SP_IDENTIFIER, SP_EOLN,
+  SP_IDENTIFIER, SP_EOLN,
+  SP_REPEAT, SP_WHILE, SP_IDENTIFIER, '.', SP_IDENTIFIER, '[', SP_NUM, ']', '<', SP_IDENTIFIER, SP_EOLN,
+  SP_INDENT, SP_OUTDENT,
+  SP_PRI, SP_IDENTIFIER, SP_EOLN,
+  SP_RETURN, SP_IDENTIFIER, SP_EOLN, SP_EOF
 };
 
 int

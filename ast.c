@@ -168,7 +168,7 @@ AstModifiesIdentifier(AST *body, AST *id)
         }
         if (body->kind == AST_OPERATOR) {
             int op = body->d.ival;
-            if (op == T_INCREMENT || op == T_DECREMENT) {
+            if (op == K_INCREMENT || op == K_DECREMENT) {
                 return AstUses(body->left, id) || AstUses(body->right, id);
             }
         }
@@ -245,7 +245,7 @@ AstOpAssign(int32_t ival, AST *left, AST *right)
 AST *
 AstAssign(AST *left, AST *right)
 {
-    return AstOpAssign(T_ASSIGN, left, right);
+    return AstOpAssign(K_ASSIGN, left, right);
 }
 
 AST *
@@ -468,26 +468,23 @@ static void doASTDump(AST *ast, int indent)
         } else {
             const char *opString = NULL;
             switch(ast->d.ival) {
-            case T_GE:
+            case K_GE:
                 opString = ">=";
                 break;
-            case T_LE:
+            case K_LE:
                 opString = "<=";
                 break;
-            case T_NE:
+            case K_NE:
                 opString = "<>";
                 break;
-            case T_EQ:
+            case K_EQ:
                 opString = "==";
                 break;
-            case T_INCREMENT:
+            case K_INCREMENT:
                 opString = "++";
                 break;
-            case T_DECREMENT:
+            case K_DECREMENT:
                 opString = "--";
-                break;
-            case T_DOUBLEAT:
-                opString = "@@";
                 break;
             default:
                 sprintf(buf, "<operator #%d>", ast->d.ival);

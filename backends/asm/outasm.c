@@ -1320,13 +1320,13 @@ static IRCond
 CondFromExpr(int kind)
 {
   switch (kind) {
-  case T_NE:
+  case K_NE:
     return COND_NE;
-  case T_EQ:
+  case K_EQ:
     return COND_EQ;
-  case T_GE:
+  case K_GE:
     return COND_GE;
-  case T_LE:
+  case K_LE:
     return COND_LE;
   case '<':
     return COND_LT;
@@ -1387,12 +1387,12 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
     opkind = -1;
   }
   switch(opkind) {
-  case T_NE:
-  case T_EQ:
+  case K_NE:
+  case K_EQ:
   case '<':
   case '>':
-  case T_LE:
-  case T_GE:
+  case K_LE:
+  case K_GE:
     cond = CondFromExpr(opkind);
     lhs = CompileExpression(irl, expr->left, NULL);
     rhs = CompileExpression(irl, expr->right, NULL);
@@ -1475,10 +1475,10 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     }
 
     switch (opkind) {
-    case T_NOT:
+    case K_NOT:
         CompileBoolBranches(irl, expr->right, falsedest, truedest);
         break;
-    case T_AND:
+    case K_AND:
         if (!falsedest) {
             dummylabel = NewCodeLabel();
             falsedest = dummylabel;
@@ -1489,7 +1489,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
             EmitLabel(irl, dummylabel);
         }
         break;
-    case T_OR:
+    case K_OR:
         if (!truedest) {
             dummylabel = NewCodeLabel();
             truedest = dummylabel;
@@ -1530,25 +1530,25 @@ OpcFromOp(int op)
     return OPC_OR;
   case '^':
     return OPC_XOR;
-  case T_SHL:
+  case K_SHL:
     return OPC_SHL;
-  case T_SAR:
+  case K_SAR:
     return OPC_SAR;
-  case T_SHR:
+  case K_SHR:
     return OPC_SHR;
-  case T_NEGATE:
+  case K_NEGATE:
     return OPC_NEG;
-  case T_ABS:
+  case K_ABS:
     return OPC_ABS;
-  case T_ROTL:
+  case K_ROTL:
       return OPC_ROL;
-  case T_ROTR:
+  case K_ROTR:
       return OPC_ROR;
-//  case T_REV:
+//  case K_REV:
 //      return gl_p2 ? OPC_REV_P2 : OPC_REV_P1;
-  case T_LIMITMIN:
+  case K_LIMITMIN:
       return OPC_MINS;
-  case T_LIMITMAX:
+  case K_LIMITMAX:
       return OPC_MAXS;
   default:
     ERROR(NULL, "Unsupported operator %d", op);
@@ -1578,7 +1578,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   IR *ir;
 
   switch(op) {
-  case T_REV:
+  case K_REV:
       // we actually want rev lhs, 32 - rhs
       rhs = AstOperator('-', AstInteger(32), rhs);
       if (gl_p2) {
@@ -1598,13 +1598,13 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           return temp;
       }
   case '-':
-  case T_SHL:
-  case T_SHR:
-  case T_SAR:
-  case T_ROTL:
-  case T_ROTR:
-  case T_LIMITMIN:
-  case T_LIMITMAX:
+  case K_SHL:
+  case K_SHR:
+  case K_SAR:
+  case K_ROTL:
+  case K_ROTR:
+  case K_LIMITMIN:
+  case K_LIMITMAX:
       left = CompileExpression(irl, lhs, temp);
       right = CompileExpression(irl, rhs, NULL);
       EmitMove(irl, temp, left);
@@ -1624,19 +1624,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
-  case T_NEGATE:
-  case T_ABS:
+  case K_NEGATE:
+  case K_ABS:
       right = CompileExpression(irl, rhs, temp);
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
-  case T_BIT_NOT:
+  case K_BIT_NOT:
       right = CompileExpression(irl, rhs, temp);
       EmitMove(irl, temp, right);
       left = NewImmediate(-1);
       EmitOp2(irl, OPC_XOR, temp, left);
       return temp;
-  case T_ENCODE:
+  case K_ENCODE:
       right = CompileExpression(irl, rhs, temp);
       left = NewFunctionTempRegister();
       EmitMove(irl, left, right);
@@ -1648,17 +1648,17 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       ir = EmitOp2(irl, OPC_DJNZ, temp, right);
       ir->cond = COND_NC;
       return temp;
-  case T_DECODE:
+  case K_DECODE:
       ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
       return NewImmediate(0);
 
-  case T_NOT:
-  case T_AND:
-  case T_OR:
-  case T_EQ:
-  case T_NE:
-  case T_LE:
-  case T_GE:
+  case K_NOT:
+  case K_AND:
+  case K_OR:
+  case K_EQ:
+  case K_NE:
+  case K_LE:
+  case K_GE:
   case '<':
   case '>':
   {
@@ -1670,7 +1670,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       EmitLabel(irl, skiplabel);
       return temp;
   }
-  case T_SQRT:
+  case K_SQRT:
   {
       AST *fcall;
       AstReportAs(expr);
@@ -1707,13 +1707,13 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
 {
     int op = (int)expr->d.ival;
     switch (op) {
-    case T_INCREMENT:
-    case T_DECREMENT:
+    case K_INCREMENT:
+    case K_DECREMENT:
     {
         AST *addone;
         Operand *lhs;
         Operand *temp = NULL;
-        int opc = (op == T_INCREMENT) ? '+' : '-';
+        int opc = (op == K_INCREMENT) ? '+' : '-';
         if (expr->left) {  /* x++ */
             addone = AstAssign(expr->left, AstOperator(opc, expr->left, AstInteger(1)));
             temp = NewFunctionTempRegister();
@@ -1728,14 +1728,14 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
     }
     case '*':
         return CompileMul(irl, expr, 0, dest);
-    case T_HIGHMULT:
+    case K_HIGHMULT:
         return CompileMul(irl, expr, 1, dest);
     case '/':
         return CompileDiv(irl, expr, 0, dest);
-    case T_MODULUS:
+    case K_MODULUS:
         return CompileDiv(irl, expr, 1, dest);
     case '&':
-        if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == T_BIT_NOT) {
+        if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == K_BIT_NOT) {
             Operand *temp = dest ? dest : NewFunctionTempRegister();
             Operand *lhs = CompileExpression(irl, expr->left, temp);
             Operand *rhs = CompileExpression(irl, expr->right->right, NULL);
@@ -2445,7 +2445,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_FUNCCALL:
       return CompileFunccall(irl, expr);
   case AST_ASSIGN:
-      if (expr->d.ival != T_ASSIGN) {
+      if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
       }
       r = CompileExpression(irl, expr->left, NULL);

@@ -9,10 +9,6 @@
 
 #include <stdint.h>
 
-/* Yacc define */
-/* we need to put it up here because the lexer includes spin.tab.h */
-#define YYSTYPE AST *
-
 #include "ast.h"
 #include "lexer.h"
 #include "symbol.h"
@@ -20,6 +16,9 @@
 #include "util/util.h"
 #include "util/flexbuf.h"
 #include "instr.h"
+
+// definition for the Spin parser
+#define YYSTYPE AST*
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))
