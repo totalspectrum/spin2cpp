@@ -269,14 +269,35 @@ DeclareLabels(Module *P)
             break;
         case AST_ORGH:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub);
-            ast->d.ival = hubpc;
+            ast->d.ival = hubpc; // temporary
             if (ast->left) {
                 replaceHeres(ast->left, hubpc, lastOrg);
                 hubpc = EvalPasmExpr(ast->left);
             }
             cogpc = hubpc;
+            // calculate padding amount
+            if (ast->d.ival < hubpc) {
+                ast->d.ival = hubpc - ast->d.ival;
+            } else {
+                ast->d.ival = 0;
+            }
             lasttype = ast_type_long;
             inHub = 1;
+            break;
+        case AST_ORGF:
+            if (inHub) {
+                ERROR(ast, "ORGF only valid in cog mode");
+                ast->d.ival = 0;
+            } else {
+                uint32_t newpc = 4*EvalPasmExpr(ast->left);
+                uint32_t pad = 0;
+                while (newpc < cogpc) {
+                    cogpc++;
+                    hubpc++;
+                    pad++;
+                }
+                ast->d.ival = pad;
+            }
             break;
         case AST_RES:
             cogpc = align(cogpc, 4);

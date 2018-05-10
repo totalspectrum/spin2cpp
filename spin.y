@@ -178,6 +178,7 @@ CheckYield(AST *body)
 %token SP_HWREG      "hardware register"
 %token SP_ORG        "ORG"
 %token SP_ORGH       "ORGH"
+%token SP_ORGF       "ORGF"
 %token SP_RES        "RES"
 %token SP_FIT        "FIT"
 %token SP_ALIGNL     "ALIGNL"
@@ -675,6 +676,8 @@ basedatline:
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
   | SP_ORGH expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
+  | SP_ORGF expr SP_EOLN
+    { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
   | SP_RES expr SP_EOLN
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
   | SP_FIT expr SP_EOLN
@@ -880,7 +883,7 @@ expr:
   | '+' expr %prec SP_NEGATE
     {
         AST *op = $2;
-        $$ = $2;
+        $$ = op;
     }
   | '!' expr %prec SP_BIT_NOT
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }

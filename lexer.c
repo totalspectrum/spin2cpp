@@ -857,6 +857,7 @@ struct reservedword {
     { "or", SP_OR },
     { "org", SP_ORG },
     { "orgh", SP_ORGH },
+    { "orgf", SP_ORGF },
     { "other", SP_OTHER },
 
     { "quit", SP_QUIT },
@@ -1633,7 +1634,7 @@ instr_p2[] = {
     { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
     { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC, 0 },
   

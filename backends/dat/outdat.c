@@ -544,6 +544,16 @@ decode_instr:
         // so neg r0 -> neg r0,r0
         operand[numoperands++] = operand[0];
     }
+    if (expectops == 3 && numoperands == 1) {
+        // SETNIB reg/# -> SETNIB 0,reg/#,#0
+        operand[1] = operand[0];
+        opimm[1] = opimm[0];
+        operand[0] = AstInteger(0);
+        opimm[0] = 0;
+        operand[2] = AstInteger(0);
+        opimm[2] = DUMMY_MASK;
+        numoperands = 3;
+    }
     if (expectops != numoperands) {
         ERROR(line, "Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
         return;
@@ -841,14 +851,10 @@ assembleFile(Flexbuf *f, AST *ast)
  * output padding bytes
  */
 static void
-padTo(Flexbuf *f, AST *ast)
+padBytes(Flexbuf *f, AST *ast, int bytes)
 {
-    uint32_t dest = EvalPasmExpr(ast->left);
-    uint32_t cur = ast->d.ival;
-
-    while (cur < dest) {
+    while (bytes-- > 0) {
         outputByte(f, 0);
-        cur++;
     }
 }
 
@@ -896,8 +902,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
             assembleFile(f, ast->left);
             break;
         case AST_ORGH:
+        case AST_ORGF:
             /* need to skip ahead to PC */
-            padTo(f, ast);
+            padBytes(f, ast, ast->d.ival);
             break;
         case AST_ORG:
         case AST_RES:
