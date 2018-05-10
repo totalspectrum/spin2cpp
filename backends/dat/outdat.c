@@ -280,6 +280,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
         return mask;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_DEFZ:
     case JMPRET_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
@@ -541,6 +542,7 @@ decode_instr:
         break;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_DEFZ:
     case JMPRET_OPERANDS:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
@@ -562,6 +564,15 @@ decode_instr:
         // duplicate the operand
         // so neg r0 -> neg r0,r0
         operand[numoperands++] = operand[0];
+    } else if (instr->ops == TWO_OPERANDS_DEFZ && numoperands == 1) {
+        // supply #0 for second operand
+        int defval = 0;
+        if (!strcmp(instr->name, "alti")) {
+            defval = 0x164; // 1 01_10 0_100
+        }
+        operand[1] = AstInteger(defval);
+        opimm[1] = P2_IMM_SRC;
+        numoperands = 2;
     }
     if (expectops == 3 && numoperands == 1) {
         // SETNIB reg/# -> SETNIB 0,reg/#,#0
@@ -595,6 +606,7 @@ decode_instr:
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
+    case TWO_OPERANDS_DEFZ:
     handle_two_operands:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);

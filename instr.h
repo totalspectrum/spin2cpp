@@ -258,6 +258,7 @@ typedef enum InstrOps {
 
     P2_AUG,
     P2_MODCZ,
+    TWO_OPERANDS_DEFZ,
     
 } InstrOps;
 
