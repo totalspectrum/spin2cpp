@@ -1505,6 +1505,8 @@ IsLocalVariable(AST *ast) {
         break;
     case AST_ARRAYREF:
         return IsLocalVariable(ast->left);
+    case AST_RESULT:
+        return true;
     default:
         return false;
     }

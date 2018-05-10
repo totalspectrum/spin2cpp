@@ -2325,6 +2325,7 @@ GetAddressOf(IRList *irl, AST *expr)
     Operand *res;
     Operand *tmp;
     switch (expr->kind) {
+    case AST_RESULT:
     case AST_IDENTIFIER:
         res = CompileExpression(irl, expr, NULL);
         tmp = GetLea(irl, res);
