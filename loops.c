@@ -520,7 +520,7 @@ MarkDependencies(LoopValueSet *lvs)
         if (AstUses(entry->value, entry->name)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
-        if (AstUsesMemory(entry->value)) {
+        if (AstUsesMemory(entry->value) || AstUsesMemory(entry->name)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
     }
