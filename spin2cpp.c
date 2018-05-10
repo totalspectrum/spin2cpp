@@ -494,6 +494,8 @@ main(int argc, char **argv)
     }
     if (wantcse) {
         gl_optimize_flags |= OPT_PERFORM_CSE;
+    } else {
+        gl_optimize_flags &= ~OPT_PERFORM_CSE;
     }
     
     if (argv[0] == NULL || (argc != 1 && !compile)) {
