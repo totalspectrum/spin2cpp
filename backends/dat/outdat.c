@@ -501,6 +501,25 @@ decode_instr:
                 }
                 if (instr->flags == FLAG_P2_CZTEST) {
                     // need to tweak the instruction bits here based on instruction type
+                    uint32_t instrMask = 0;
+                    if (mod->flags == FLAG_WZ || mod->flags == FLAG_WC) {
+                        instrMask = 0;
+                    } else if (mod->flags == FLAG_ANDC || mod->flags == FLAG_ANDZ) {
+                        instrMask = 2;
+                    } else if (mod->flags == FLAG_ORC || mod->flags == FLAG_ORZ) {
+                        instrMask = 4;
+                    } else if (mod->flags == FLAG_XORC || mod->flags == FLAG_XORZ) {
+                        instrMask = 6;
+                    }
+                    if (instr->ops == P2_DST_CONST_OK) {
+                        // testp: modify src bits
+                        val |= instrMask;
+                    } else if (instr->ops == TWO_OPERANDS) {
+                        // testb: modify opcode bits
+                        val |= (instrMask << 21);
+                    } else {
+                        ERROR(line, "internal error in instruction table");
+                    }
                 }
             }
             if (mask & 0x0003ffff) {
