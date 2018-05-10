@@ -273,7 +273,6 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case P2_JUMP:
     case P2_LOC:
     case P2_AUG:
-    case P2_TJZ_OPERANDS:
     case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
     case CALL_OPERAND:
@@ -282,6 +281,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_DEFZ:
     case JMPRET_OPERANDS:
+    case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
     case THREE_OPERANDS_BYTE:
@@ -572,14 +572,13 @@ decode_instr:
         }
         operand[1] = AstInteger(defval);
         opimm[1] = P2_IMM_SRC;
+        immmask |= opimm[1];
         numoperands = 2;
     }
     if (expectops == 3 && numoperands == 1) {
-        // SETNIB reg/# -> SETNIB 0,reg/#,#0
-        operand[1] = operand[0];
-        opimm[1] = opimm[0];
-        operand[0] = AstInteger(0);
-        opimm[0] = 0;
+        // SETNIB reg/# -> SETNIB reg/#, 0, #0
+        operand[1] = AstInteger(0);
+        opimm[1] = 0;
         operand[2] = AstInteger(0);
         opimm[2] = DUMMY_MASK;
         numoperands = 3;
@@ -597,7 +596,14 @@ decode_instr:
             // special case: rep @x, N says to count the instructions up to x
             // and repeat them N times; fixup the operand here
             if (operand[0]->kind == AST_ADDROF && !opimm[0]) {
-                operand[0] = AstOperator('/', AstOperator('-', operand[0], AstInteger(curpc+4)), AstInteger(4));
+                int32_t label = EvalPasmExpr(operand[0]->left);
+                int32_t count;
+                if (inHub) {
+                    count = (label - (curpc+4)) / 4;
+                } else {
+                    count = (label - (curpc+4)/4);
+                }
+                operand[0] = AstInteger(count);
                 opimm[0] = P2_IMM_DST;
                 immmask |= P2_IMM_DST;
             }
