@@ -64,7 +64,6 @@ CompileInlineInstr(IRList *irl, AST *ast)
         break;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
-    case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:

@@ -250,7 +250,6 @@ typedef enum InstrOps {
     P2_JUMP,                /* jump and call, opcode may change based on dest */
     P2_LOC,		    /* like JUMP, but no relative version */
     P2_TWO_OPERANDS,        /* two operands, both may be imm */
-    TWO_OPERANDS_NO_FLAGS,  /* no wc or wz effects allowed */
     P2_DST_TESTP,           /* special flag handling for testp/testpn */
     
     THREE_OPERANDS_NIBBLE,
@@ -258,6 +257,8 @@ typedef enum InstrOps {
     THREE_OPERANDS_WORD,
 
     P2_AUG,
+    P2_MODCZ,
+    
 } InstrOps;
 
 
@@ -273,7 +274,8 @@ typedef struct Instruction {
 /* instruction modifiers */
 typedef struct instrmodifier {
     const char *name;
-    uint32_t modifier;
+    uint32_t modifier; // bits to modify in the instruction
+    uint32_t flags;    // internal meaning (0 for condition codes)
 } InstrModifier;
 
 #define IMMEDIATE_INSTR (1<<22)

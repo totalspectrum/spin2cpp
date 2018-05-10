@@ -280,7 +280,6 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
         return mask;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
-    case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
@@ -495,6 +494,15 @@ decode_instr:
         } else if (ast->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)ast->d.ptr;
             mask = mod->modifier;
+            /* verify here that the modifier is permitted for this instruction */
+            if (mod->flags) {
+                if (0 == (mod->flags & instr->flags)) {
+                    ERROR(line, "modifier %s not valid for %s", mod->name, instr->name);
+                }
+                if (instr->flags == FLAG_P2_CZTEST) {
+                    // need to tweak the instruction bits here based on instruction type
+                }
+            }
             if (mask & 0x0003ffff) {
                 val = val & mask;
             } else {
@@ -514,12 +522,12 @@ decode_instr:
         break;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
-    case TWO_OPERANDS_NO_FLAGS:
     case JMPRET_OPERANDS:
     case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
     case P2_LOC:
+    case P2_MODCZ:
         expectops = 2;
         break;
     case THREE_OPERANDS_BYTE:
@@ -558,10 +566,19 @@ decode_instr:
     case TWO_OPERANDS:
     case JMPRET_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
-    case TWO_OPERANDS_NO_FLAGS:
     handle_two_operands:
         dst = EvalPasmExpr(operand[0]);
         src = EvalPasmExpr(operand[1]);
+        break;
+    case P2_MODCZ:
+        dst = EvalPasmExpr(operand[0]);
+        src = EvalPasmExpr(operand[1]);
+        if (dst > 0xf || src > 0xf) {
+            ERROR(line, "bad operand for %s", instr->name);
+            dst = src = 0;
+        }
+        dst = (dst<<4) | src;
+        src = 0;
         break;
     case P2_RDWR_OPERANDS:
         dst = EvalPasmExpr(operand[0]);

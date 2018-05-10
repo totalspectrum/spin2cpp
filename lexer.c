@@ -1072,7 +1072,7 @@ struct constants {
     const char *name;
     int     type;
     int32_t val;
-} constants[] = {
+} p1_constants[] = {
     { "CHIPVER", SYM_CONSTANT, 1 },
     { "TRUE", SYM_CONSTANT, -1 },
     { "FALSE", SYM_CONSTANT, 0 },
@@ -1090,6 +1090,61 @@ struct constants {
     { "PLL8X", SYM_CONSTANT, 0x00000200 },
     { "PLL16X", SYM_CONSTANT, 0x00000400 },
     { "PI", SYM_FLOAT_CONSTANT, 0x40490fdb },
+};
+
+struct constants p2_constants[] = {
+    { "CHIPVER", SYM_CONSTANT, 2 },
+    { "TRUE", SYM_CONSTANT, -1 },
+    { "FALSE", SYM_CONSTANT, 0 },
+    { "POSX", SYM_CONSTANT, 0x7fffffff },
+    { "NEGX", SYM_CONSTANT, 0x80000000U },
+    { "RCFAST", SYM_CONSTANT, 0x00000001 },
+    { "RCSLOW", SYM_CONSTANT, 0x00000002 },
+    { "XINPUT", SYM_CONSTANT, 0x00000004 },
+    { "XTAL1", SYM_CONSTANT, 0x00000008 },
+    { "XTAL2", SYM_CONSTANT, 0x00000010 },
+    { "XTAL3", SYM_CONSTANT, 0x00000020 },
+    { "PLL1X", SYM_CONSTANT, 0x00000040 },
+    { "PLL2X", SYM_CONSTANT, 0x00000080 },
+    { "PLL4X", SYM_CONSTANT, 0x00000100 },
+    { "PLL8X", SYM_CONSTANT, 0x00000200 },
+    { "PLL16X", SYM_CONSTANT, 0x00000400 },
+    { "PI", SYM_FLOAT_CONSTANT, 0x40490fdb },
+
+    { "_CLR", SYM_CONSTANT, 0x0 },
+    { "_NC_AND_NZ", SYM_CONSTANT, 0x1 },
+    { "_NZ_AND_NC", SYM_CONSTANT, 0x1 },
+    { "_GT",        SYM_CONSTANT, 0x1 },
+    { "_NC_AND_Z",  SYM_CONSTANT, 0x2 },
+    { "_Z_AND_NC",  SYM_CONSTANT, 0x2 },
+    { "_NC",        SYM_CONSTANT, 0x3 },
+    { "_GE",        SYM_CONSTANT, 0x3 },
+    { "_C_AND_NZ",  SYM_CONSTANT, 0x4 },
+    { "_NZ_AND_C",  SYM_CONSTANT, 0x4 },
+    { "_NZ",        SYM_CONSTANT, 0x5 },
+    { "_NE",        SYM_CONSTANT, 0x5 },
+    { "_C_NE_Z",    SYM_CONSTANT, 0x6 },
+    { "_Z_NE_C",    SYM_CONSTANT, 0x6 },
+    { "_NZ_OR_NC",  SYM_CONSTANT, 0x7 },
+    { "_NC_OR_NZ",  SYM_CONSTANT, 0x7 },
+    
+    { "_C_AND_Z",   SYM_CONSTANT, 0x8 },
+    { "_Z_AND_C",   SYM_CONSTANT, 0x8 },
+    { "_C_EQ_Z",    SYM_CONSTANT, 0x9 },
+    { "_Z_EQ_C",    SYM_CONSTANT, 0x9 },
+    { "_Z",         SYM_CONSTANT, 0xA },
+    { "_E",         SYM_CONSTANT, 0xA },
+    { "_Z_OR_NC",   SYM_CONSTANT, 0xB },
+    { "_NC_OR_Z",   SYM_CONSTANT, 0xB },
+    { "_C",         SYM_CONSTANT, 0xC },
+    { "_LT",        SYM_CONSTANT, 0xC },
+    { "_C_OR_NZ",   SYM_CONSTANT, 0xD },
+    { "_NZ_OR_C",   SYM_CONSTANT, 0xD },
+    { "_Z_OR_C",    SYM_CONSTANT, 0xE },
+    { "_C_OR_Z",    SYM_CONSTANT, 0xE },
+    { "_LE",        SYM_CONSTANT, 0xE },
+    { "_SET",       SYM_CONSTANT, 0xF },
+    
 };
 
 void
@@ -1111,10 +1166,16 @@ initLexer(int flags)
     }
 
     /* and builtin constants */
-    for (i = 0; i < N_ELEMENTS(constants); i++) {
-        AddSymbol(&reservedWords, constants[i].name, constants[i].type, AstInteger(constants[i].val));
+    if (gl_p2) {
+        for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
+            AddSymbol(&reservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val));
+        }
+    } else {
+        for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
+            AddSymbol(&reservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val));
+        }
     }
-
+    
     /* C keywords */
     for (i = 0; i < N_ELEMENTS(c_words); i++) {
         AddSymbol(&ckeywords, c_words[i], SYM_RESERVED, NULL);
@@ -1321,41 +1382,41 @@ instr_p2[] = {
     { "getword", 0x09300000, THREE_OPERANDS_WORD, OPC_GENERIC, 0 },
     { "rolword", 0x09400000, THREE_OPERANDS_WORD, OPC_GENERIC, 0 },
 
-    { "altsn",  0x09500000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altgn",  0x09580000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altsb",  0x09600000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altgb",  0x09680000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altsw",  0x09700000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altgw",  0x09780000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altr",   0x09800000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altd",   0x09880000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "alts",   0x09900000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "altb",   0x09980000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "alti",   0x09a00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "setr",   0x09a80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "setd",   0x09b00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "sets",   0x09b80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "altsn",  0x09500000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altgn",  0x09580000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altsb",  0x09600000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altgb",  0x09680000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altsw",  0x09700000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altgw",  0x09780000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altr",   0x09800000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altd",   0x09880000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "alts",   0x09900000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "altb",   0x09980000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "alti",   0x09a00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "setr",   0x09a80000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "setd",   0x09b00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "sets",   0x09b80000, TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "decod",  0x09c00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "bmask",  0x09c80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "decod",  0x09c00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "bmask",  0x09c80000, TWO_OPERANDS, OPC_GENERIC, 0 },
     
-    { "crcbit", 0x09d00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "crcnib", 0x09d80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "crcbit", 0x09d00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "crcnib", 0x09d80000, TWO_OPERANDS, OPC_GENERIC, 0 },
     
-    { "muxnits", 0x09e00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "muxnibs", 0x09e80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "muxq",   0x09f00000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "movbyts", 0x09f80000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "muxnits", 0x09e00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "muxnibs", 0x09e80000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "muxq",   0x09f00000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "movbyts", 0x09f80000, TWO_OPERANDS, OPC_GENERIC, 0 },
 
     { "mul",    0x0a000000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
     { "muls",   0x0a100000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
     { "sca",    0x0a200000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
     { "scas",   0x0a300000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
 
-    { "addpix", 0x0a400000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "mulpix", 0x0a480000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "blnpix", 0x0a500000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
-    { "mixpix", 0x0a580000, TWO_OPERANDS_NO_FLAGS, OPC_GENERIC, 0 },
+    { "addpix", 0x0a400000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "mulpix", 0x0a480000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "blnpix", 0x0a500000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "mixpix", 0x0a580000, TWO_OPERANDS, OPC_GENERIC, 0 },
 
     { "addct1", 0x0a600000, TWO_OPERANDS, OPC_ADDCT1, 0 },
     { "addct2", 0x0a680000, TWO_OPERANDS, OPC_GENERIC, 0 },
@@ -1465,7 +1526,7 @@ instr_p2[] = {
     { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qvector",0x0d500000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "hubset", 0x0d600000, P2_DST_CONST_OK,  OPC_HUBSET, FLAG_WC },
+    { "hubset", 0x0d600000, P2_DST_CONST_OK,  OPC_HUBSET, 0 },
     { "cogid",  0x0d600001, P2_DST_CONST_OK,  OPC_COGID, FLAG_WC },
     { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP, 0 },
     { "locknew",0x0d600004, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_WC },
@@ -1494,7 +1555,7 @@ instr_p2[] = {
     { "setdacs",0x0d60001c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setxfrq",0x0d60001d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "getxacc",0x0d60001e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_STD },
   
     { "setse1", 0x0d600020, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setse2", 0x0d600021, P2_DST_CONST_OK, OPC_GENERIC, 0 },
@@ -1641,7 +1702,7 @@ instr_p2[] = {
     { "wrnc",   0x0d60006d, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "wrz",    0x0d60006e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "wrnz",   0x0d60006f, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-//    { "modcz",   0x0d64006f, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD }, // FIXME needs new operand type
+    { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD },
     { "rfvar",  0x0d600070, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rfvars", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     
@@ -1710,119 +1771,126 @@ HwReg hwreg_p2[] = {
 #define COND_MASK_P2 0x0fffffff
 
 InstrModifier modifiers_p1[] = {
-    { "if_never",  COND_MASK_P1 },
-    { "if_always", COND_MASK_P1 | (0xf<<18) },
+    { "if_never",  COND_MASK_P1, 0 },
+    { "if_always", COND_MASK_P1 | (0xf<<18), 0 },
 
-    { "if_a",           COND_MASK_P1 | (0x1<<18) },
-    { "if_nc_and_nz",   COND_MASK_P1 | (0x1<<18) },
-    { "if_nz_and_nc",   COND_MASK_P1 | (0x1<<18) },
+    { "if_a",           COND_MASK_P1 | (0x1<<18), 0 },
+    { "if_nc_and_nz",   COND_MASK_P1 | (0x1<<18), 0 },
+    { "if_nz_and_nc",   COND_MASK_P1 | (0x1<<18), 0 },
 
-    { "if_nc_and_z",    COND_MASK_P1 | (0x2<<18) },
-    { "if_z_and_nc",    COND_MASK_P1 | (0x2<<18) },
+    { "if_nc_and_z",    COND_MASK_P1 | (0x2<<18), 0 },
+    { "if_z_and_nc",    COND_MASK_P1 | (0x2<<18), 0 },
 
-    { "if_ae",     COND_MASK_P1 | (0x3<<18) },
-    { "if_nc",     COND_MASK_P1 | (0x3<<18) },
+    { "if_ae",     COND_MASK_P1 | (0x3<<18), 0 },
+    { "if_nc",     COND_MASK_P1 | (0x3<<18), 0 },
 
-    { "if_c_and_nz",    COND_MASK_P1 | (0x4<<18) },
-    { "if_nz_and_c",    COND_MASK_P1 | (0x4<<18) },
+    { "if_c_and_nz",    COND_MASK_P1 | (0x4<<18), 0 },
+    { "if_nz_and_c",    COND_MASK_P1 | (0x4<<18), 0 },
 
-    { "if_ne",     COND_MASK_P1 | (0x5<<18) },
-    { "if_nz",     COND_MASK_P1 | (0x5<<18) },
+    { "if_ne",     COND_MASK_P1 | (0x5<<18), 0 },
+    { "if_nz",     COND_MASK_P1 | (0x5<<18), 0 },
 
-    { "if_c_ne_z", COND_MASK_P1 | (0x6<<18) },
-    { "if_z_ne_c", COND_MASK_P1 | (0x6<<18) },
+    { "if_c_ne_z", COND_MASK_P1 | (0x6<<18), 0 },
+    { "if_z_ne_c", COND_MASK_P1 | (0x6<<18), 0 },
 
-    { "if_nc_or_nz", COND_MASK_P1 | (0x7<<18) },
-    { "if_nz_or_nc", COND_MASK_P1 | (0x7<<18) },
+    { "if_nc_or_nz", COND_MASK_P1 | (0x7<<18), 0 },
+    { "if_nz_or_nc", COND_MASK_P1 | (0x7<<18), 0 },
 
-    { "if_c_and_z", COND_MASK_P1 | (0x8<<18) },
-    { "if_z_and_c", COND_MASK_P1 | (0x8<<18) },
+    { "if_c_and_z", COND_MASK_P1 | (0x8<<18), 0 },
+    { "if_z_and_c", COND_MASK_P1 | (0x8<<18), 0 },
 
-    { "if_c_eq_z", COND_MASK_P1 | (0x9<<18) },
-    { "if_z_eq_c", COND_MASK_P1 | (0x9<<18) },
+    { "if_c_eq_z", COND_MASK_P1 | (0x9<<18), 0 },
+    { "if_z_eq_c", COND_MASK_P1 | (0x9<<18), 0 },
 
-    { "if_e",      COND_MASK_P1 | (0xa<<18) },
-    { "if_z",      COND_MASK_P1 | (0xa<<18) },
+    { "if_e",      COND_MASK_P1 | (0xa<<18), 0 },
+    { "if_z",      COND_MASK_P1 | (0xa<<18), 0 },
 
-    { "if_nc_or_z", COND_MASK_P1 | (0xb<<18) },
-    { "if_z_or_nc", COND_MASK_P1 | (0xb<<18) },
+    { "if_nc_or_z", COND_MASK_P1 | (0xb<<18), 0 },
+    { "if_z_or_nc", COND_MASK_P1 | (0xb<<18), 0 },
 
-    { "if_b",      COND_MASK_P1 | (0xc<<18) },
-    { "if_c",      COND_MASK_P1 | (0xc<<18) },
+    { "if_b",      COND_MASK_P1 | (0xc<<18), 0 },
+    { "if_c",      COND_MASK_P1 | (0xc<<18), 0 },
 
-    { "if_c_or_nz", COND_MASK_P1 | (0xd<<18) },
-    { "if_nz_or_c", COND_MASK_P1 | (0xd<<18) },
+    { "if_c_or_nz", COND_MASK_P1 | (0xd<<18), 0 },
+    { "if_nz_or_c", COND_MASK_P1 | (0xd<<18), 0 },
 
-    { "if_be",     COND_MASK_P1 | (0xe<<18) },
-    { "if_c_or_z", COND_MASK_P1 | (0xe<<18) },
-    { "if_z_or_c", COND_MASK_P1 | (0xe<<18) },
+    { "if_be",     COND_MASK_P1 | (0xe<<18), 0 },
+    { "if_c_or_z", COND_MASK_P1 | (0xe<<18), 0 },
+    { "if_z_or_c", COND_MASK_P1 | (0xe<<18), 0 },
 
 
-    { "wz", (1<<25) },
-    { "wc", (1<<24) },
-    { "wr", (1<<23) },
-    { "nr", ~(1<<23) },
+    { "wz", (1<<25), 0 },
+    { "wc", (1<<24), 0 },
+    { "wr", (1<<23), 0 },
+    { "nr", ~(1<<23), 0 },
 
     { NULL, 0 }
 };
 
 InstrModifier modifiers_p2[] = {
-    { "_ret_",  COND_MASK_P2 },
-    { "if_always", COND_MASK_P2 | (0xf<<28) },
+    { "_ret_",  COND_MASK_P2, 0 },
+    { "if_always", COND_MASK_P2 | (0xf<<28), 0 },
 
-    { "if_a",           COND_MASK_P2 | (0x1<<28) },
-    { "if_gt",           COND_MASK_P2 | (0x1<<28) },
-    { "if_nc_and_nz",   COND_MASK_P2 | (0x1<<28) },
-    { "if_nz_and_nc",   COND_MASK_P2 | (0x1<<28) },
+    { "if_a",           COND_MASK_P2 | (0x1<<28), 0 },
+    { "if_gt",           COND_MASK_P2 | (0x1<<28), 0 },
+    { "if_nc_and_nz",   COND_MASK_P2 | (0x1<<28), 0 },
+    { "if_nz_and_nc",   COND_MASK_P2 | (0x1<<28), 0 },
 
-    { "if_nc_and_z",    COND_MASK_P2 | (0x2<<28) },
-    { "if_z_and_nc",    COND_MASK_P2 | (0x2<<28) },
+    { "if_nc_and_z",    COND_MASK_P2 | (0x2<<28), 0 },
+    { "if_z_and_nc",    COND_MASK_P2 | (0x2<<28), 0 },
 
-    { "if_ae",     COND_MASK_P2 | (0x3<<28) },
-    { "if_ge",     COND_MASK_P2 | (0x3<<28) },
-    { "if_nc",     COND_MASK_P2 | (0x3<<28) },
+    { "if_ae",     COND_MASK_P2 | (0x3<<28), 0 },
+    { "if_ge",     COND_MASK_P2 | (0x3<<28), 0 },
+    { "if_nc",     COND_MASK_P2 | (0x3<<28), 0 },
 
-    { "if_c_and_nz",    COND_MASK_P2 | (0x4<<28) },
-    { "if_nz_and_c",    COND_MASK_P2 | (0x4<<28) },
+    { "if_c_and_nz",    COND_MASK_P2 | (0x4<<28), 0 },
+    { "if_nz_and_c",    COND_MASK_P2 | (0x4<<28), 0 },
 
-    { "if_ne",     COND_MASK_P2 | (0x5<<28) },
-    { "if_nz",     COND_MASK_P2 | (0x5<<28) },
+    { "if_ne",     COND_MASK_P2 | (0x5<<28), 0 },
+    { "if_nz",     COND_MASK_P2 | (0x5<<28), 0 },
 
-    { "if_c_ne_z", COND_MASK_P2 | (0x6<<28) },
-    { "if_z_ne_c", COND_MASK_P2 | (0x6<<28) },
+    { "if_c_ne_z", COND_MASK_P2 | (0x6<<28), 0 },
+    { "if_z_ne_c", COND_MASK_P2 | (0x6<<28), 0 },
 
-    { "if_nc_or_nz", COND_MASK_P2 | (0x7<<28) },
-    { "if_nz_or_nc", COND_MASK_P2 | (0x7<<28) },
+    { "if_nc_or_nz", COND_MASK_P2 | (0x7<<28), 0 },
+    { "if_nz_or_nc", COND_MASK_P2 | (0x7<<28), 0 },
 
-    { "if_c_and_z", COND_MASK_P2 | (0x8<<28) },
-    { "if_z_and_c", COND_MASK_P2 | (0x8<<28) },
+    { "if_c_and_z", COND_MASK_P2 | (0x8<<28), 0 },
+    { "if_z_and_c", COND_MASK_P2 | (0x8<<28), 0 },
 
-    { "if_c_eq_z", COND_MASK_P2 | (0x9<<28) },
-    { "if_z_eq_c", COND_MASK_P2 | (0x9<<28) },
+    { "if_c_eq_z", COND_MASK_P2 | (0x9<<28), 0 },
+    { "if_z_eq_c", COND_MASK_P2 | (0x9<<28), 0 },
 
-    { "if_e",      COND_MASK_P2 | (0xa<<28) },
-    { "if_z",      COND_MASK_P2 | (0xa<<28) },
+    { "if_e",      COND_MASK_P2 | (0xa<<28), 0 },
+    { "if_z",      COND_MASK_P2 | (0xa<<28), 0 },
 
-    { "if_nc_or_z", COND_MASK_P2 | (0xb<<28) },
-    { "if_z_or_nc", COND_MASK_P2 | (0xb<<28) },
+    { "if_nc_or_z", COND_MASK_P2 | (0xb<<28), 0 },
+    { "if_z_or_nc", COND_MASK_P2 | (0xb<<28), 0 },
 
-    { "if_b",      COND_MASK_P2 | (0xc<<28) },
-    { "if_c",      COND_MASK_P2 | (0xc<<28) },
-    { "if_lt",      COND_MASK_P2 | (0xc<<28) },
+    { "if_b",      COND_MASK_P2 | (0xc<<28), 0 },
+    { "if_c",      COND_MASK_P2 | (0xc<<28), 0 },
+    { "if_lt",      COND_MASK_P2 | (0xc<<28), 0 },
 
-    { "if_c_or_nz", COND_MASK_P2 | (0xd<<28) },
-    { "if_nz_or_c", COND_MASK_P2 | (0xd<<28) },
+    { "if_c_or_nz", COND_MASK_P2 | (0xd<<28), 0 },
+    { "if_nz_or_c", COND_MASK_P2 | (0xd<<28), 0 },
 
-    { "if_be",     COND_MASK_P2 | (0xe<<28) },
-    { "if_le",     COND_MASK_P2 | (0xe<<28) },
-    { "if_c_or_z", COND_MASK_P2 | (0xe<<28) },
-    { "if_z_or_c", COND_MASK_P2 | (0xe<<28) },
+    { "if_be",     COND_MASK_P2 | (0xe<<28), 0 },
+    { "if_le",     COND_MASK_P2 | (0xe<<28), 0 },
+    { "if_c_or_z", COND_MASK_P2 | (0xe<<28), 0 },
+    { "if_z_or_c", COND_MASK_P2 | (0xe<<28), 0 },
 
 
-    { "wz", (1<<19) },
-    { "wc", (2<<19) },
-    { "wcz", (3<<19) },
+    { "wz", (1<<19), FLAG_WZ },
+    { "wc", (2<<19), FLAG_WC },
+    { "wcz", (3<<19), FLAG_WCZ },
     
+    { "andz", (1<<19), FLAG_ANDZ },
+    { "andc", (2<<19), FLAG_ANDC },
+    { "xorz", (1<<19), FLAG_XORZ },
+    { "xorc", (2<<19), FLAG_XORC },
+    { "orz", (1<<19), FLAG_ORZ },
+    { "orc", (2<<19), FLAG_ORC },
+
     { NULL, 0 }
 };
 
