@@ -899,9 +899,6 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
                     if (lref->flags & LABEL_IN_HUB) {
                         return intExpr(lref->hubval);
                     }
-                    if (gl_p2 && lref->cogval > 0x7ff) {
-                        return intExpr(lref->cogval); // not sure if this is right
-                    }
                     if (lref->cogval & 0x03) {
                         if (reportError) {
                             ERROR(expr, "label %s in COG memory not on longword boundary", sym->name);
