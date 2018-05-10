@@ -13,6 +13,7 @@
 #define LVFLAG_CONDITIONAL 0x01 /* assignment is conditional */
 #define LVFLAG_NESTED      0x02 /* assignment is nested in a loop */
 #define LVFLAG_LOOPDEPEND  0x04 /* assignment value is loop dependent */
+#define LVFLAG_LOOPUSED    0x08 /* variable in assignment is used */
 #define LVFLAG_VARYMASK    0xff /* any of these bits set means assignment depends on loop */
 
 //
@@ -126,7 +127,8 @@ MergeAndFreeLoopValueSets(LoopValueSet *lvs, LoopValueSet *l2)
 }
 
 /*
- * Add a new assignment "name = val" to a LoopValueSet
+ * Add a new assignment "name = value" to a LoopValueSet
+ * if value is NULL then we're adding a use rather than an assignment
  */
 static LoopValueEntry *
 AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *parent)
@@ -138,14 +140,16 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
     }
     entry = FindName(lvs, name);
     if (entry) {
-        entry->hits++;
-        entry->value = value;
-        entry->parent = parent; // keep track of last assignment
-        entry->flags |= flags;
+        if (value) {
+            entry->hits++;
+            entry->value = value;
+            entry->parent = parent; // keep track of last assignment
+            entry->flags |= flags;
+        }
         return entry;
     }
     entry = calloc(sizeof(*entry), 1);
-    entry->hits = 1;
+    entry->hits = value ? 1 : 0;
     entry->name = name;
     entry->value = value;
     entry->parent = parent;
@@ -194,7 +198,10 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     if (!ast) return;
     switch (ast->kind) {
     case AST_ASSIGN:
-        AddAssignment(lvs, ast->left, ast->right, flags, parent);
+        if (AddAssignment(lvs, ast->left, ast->right, flags, parent)) {
+            FindAllAssignments(lvs, parent, ast->right, flags);
+            return;
+        }
         break;
     case AST_OPERATOR:
         flags = CheckOperatorForAssignment(lvs, parent, ast, flags);
@@ -212,15 +219,22 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     case AST_FORATLEASTONCE:
         flags |= LVFLAG_NESTED;
         break;
+#if 0        
     case AST_METHODREF:
     case AST_CONSTREF:
         // don't recurse inside these
         return;
+#endif        
     case AST_COMMENTEDNODE:
         // don't update parent here
         break;
     case AST_STMTLIST:
         parent = ast;
+        break;
+    case AST_IDENTIFIER:
+        // if this identifier is being used in the loop, but has not
+        // yet been assigned, add an entry for it
+        AddAssignment(lvs, ast, NULL, flags | LVFLAG_LOOPUSED, NULL);
         break;
     default:
         parent = ast; // do we really want this?
@@ -256,7 +270,7 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         case SYM_LOCALVAR:
         case SYM_TEMPVAR:
             entry = FindName(lvs, expr);
-            if (!entry) {
+            if (!entry || !entry->value) {
                 // never assigned in the loop
                 return false;
             }
@@ -517,6 +531,7 @@ MarkDependencies(LoopValueSet *lvs)
 
     // mark any self-dependent entries
     for (entry = lvs->head; entry; entry = entry->next) {
+        if (!entry->value) continue;
         if (AstUses(entry->value, entry->name)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
