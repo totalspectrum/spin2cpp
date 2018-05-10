@@ -3,6 +3,7 @@ Version 3.7.2
 - Fixed some bugs in common subexpression elimination
 - Made the --nocse flag to spin2cpp actually work
 - Fixed labels at end of input
+- Fixed @result in assembly output
 
 Version 3.7.1
 - Fixed a nasty bug in assignment operators ("a[i++] += b" was being
