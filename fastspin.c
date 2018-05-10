@@ -71,42 +71,42 @@ const char *gl_outname = NULL;
 double gl_start_time;
 
 static void
-PrintInfo(int bstcMode)
+PrintInfo(FILE *f, int bstcMode)
 {
     if (bstcMode) {
-        fprintf(stderr, "FastSpin Compiler v" VERSIONSTR " - Copyright 2011-2018 Total Spectrum Software Inc.\n");
-        fprintf(stderr, "Compiled on: " __DATE__ "\n");
+        fprintf(f, "FastSpin Compiler v" VERSIONSTR " - Copyright 2011-2018 Total Spectrum Software Inc.\n");
+        fprintf(f, "Compiled on: " __DATE__ "\n");
         
     } else {
-        fprintf(stderr, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2018 Total Spectrum Software Inc.\n");
-        fprintf(stderr, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
+        fprintf(f, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2018 Total Spectrum Software Inc.\n");
+        fprintf(f, "Version " VERSIONSTR " Compiled on: " __DATE__ "\n");
     }
-    fflush(stderr);
+    fflush(f);
 }
 
 static void
-Usage(int bstcMode)
+Usage(FILE *f, int bstcMode)
 {
     if (bstcMode) {
-        fprintf(stderr, "Program usage :- %s (Options) Filename[.spin]\n", gl_progname);
+        fprintf(f, "Program usage :- %s (Options) Filename[.spin]\n", gl_progname);
     } else {
-        fprintf(stderr, "usage: %s\n", gl_progname);
+        fprintf(f, "usage: %s\n", gl_progname);
     }
-    fprintf(stderr, "  [ -h ]              display this help\n");
-    fprintf(stderr, "  [ -L or -I <path> ] add a directory to the include path\n");
-    fprintf(stderr, "  [ -o ]             output filename\n");
-    fprintf(stderr, "  [ -b ]             output binary file format\n");
-    fprintf(stderr, "  [ -e ]             output eeprom file format\n");
-    fprintf(stderr, "  [ -c ]             output only DAT sections\n");
-    fprintf(stderr, "  [ -f ]             output list of file names\n");
-    fprintf(stderr, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
-    fprintf(stderr, "  [ -p ]             disable the preprocessor\n");
-    fprintf(stderr, "  [ -D <define> ]    add a define\n");
-    fprintf(stderr, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
-    fprintf(stderr, "  [ -2 ]             compile for Prop2\n");
-    fprintf(stderr, "  [ -O ]             enable extra optimizations\n");
-    fprintf(stderr, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
-    fprintf(stderr, "  [ -w ]             compile for COG with Spin wrappers\n");
+    fprintf(f, "  [ -h ]              display this help\n");
+    fprintf(f, "  [ -L or -I <path> ] add a directory to the include path\n");
+    fprintf(f, "  [ -o ]             output filename\n");
+    fprintf(f, "  [ -b ]             output binary file format\n");
+    fprintf(f, "  [ -e ]             output eeprom file format\n");
+    fprintf(f, "  [ -c ]             output only DAT sections\n");
+    fprintf(f, "  [ -f ]             output list of file names\n");
+    fprintf(f, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
+    fprintf(f, "  [ -p ]             disable the preprocessor\n");
+    fprintf(f, "  [ -D <define> ]    add a define\n");
+    fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
+    fprintf(f, "  [ -2 ]             compile for Prop2\n");
+    fprintf(f, "  [ -O ]             enable extra optimizations\n");
+    fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
+    fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fflush(stderr);
     exit(2);
 }
@@ -225,7 +225,7 @@ main(int argc, char **argv)
     while (argv[0] && argv[0][0] != 0) {
         if (argv[0][0] != '-') {
             if (target) {
-                Usage(bstcMode);
+                Usage(stderr, bstcMode);
             }
             target = argv[0];
             argv++; argc--;
@@ -241,7 +241,7 @@ main(int argc, char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
                 fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
-                Usage(bstcMode);
+                Usage(stderr, bstcMode);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--code=", 7)) {
@@ -251,7 +251,7 @@ main(int argc, char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_CODE;
             } else {
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
-                Usage(bstcMode);
+                Usage(stderr, bstcMode);
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
@@ -286,8 +286,8 @@ main(int argc, char **argv)
             gl_p2 = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
-            PrintInfo(bstcMode);
-            Usage(bstcMode);
+            PrintInfo(stdout, bstcMode);
+            Usage(stdout, bstcMode);
             exit(0);
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
@@ -376,15 +376,15 @@ main(int argc, char **argv)
             argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
-            Usage(bstcMode);
+            Usage(stderr, bstcMode);
         }
     }
 
     if (!quiet) {
-        PrintInfo(bstcMode);
+        PrintInfo(stdout, bstcMode);
     }
     if (target == NULL) {
-        Usage(bstcMode);
+        Usage(stderr, bstcMode);
     }
 
     /* tweak flags */
