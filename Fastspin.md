@@ -130,9 +130,9 @@ which may modify the compilation:
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ -w ]             produce Spin wrappers for PASM code
 ```
-The `-2` option is new: it is for compiling for the Propeller 2 (FPGA
-version). The output code may not may not work properly on any given
-FPGA image, because the Prop2 is a moving target.
+The `-2` option is new: it is for compiling for the Propeller 2 (v32
+FPGA version). It is still somewhat experimental, but works well enough
+to compile the Prop2 boot ROM.
 
 `fastspin.exe` checks the name it was invoked by. If the name starts
 with the string "bstc" (case matters) then its output messages mimic

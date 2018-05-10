@@ -313,8 +313,9 @@ Spin2cpp accepts the following options:
   their first occurence.
 
 `--p2`
-  Create output for Propeller 2. This is still experimental.
-
+  Create output for Propeller 2. This is still experimental, but should
+  work. Requires v32b FPGA images.
+  
 `--require=M.N.K`
   Require spin2cpp version M.N.K or later. If an earlier version number is
   detected, an error is thrown.
