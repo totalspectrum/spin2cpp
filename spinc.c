@@ -436,7 +436,7 @@ const char p2_system_spincode[] =
     "  if (a =< 0)\n"
     "    return 0\n"
     "  asm\n"
-    "    qsqrt #0, a\n"
+    "    qsqrt a, #0\n"
     "    getqx r\n"
     "  endasm\n"
     "  return r\n"
