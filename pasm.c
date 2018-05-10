@@ -291,7 +291,7 @@ DeclareLabels(Module *P)
             } else {
                 uint32_t newpc = 4*EvalPasmExpr(ast->left);
                 uint32_t pad = 0;
-                while (newpc < cogpc) {
+                while (cogpc < newpc) {
                     cogpc++;
                     hubpc++;
                     pad++;
