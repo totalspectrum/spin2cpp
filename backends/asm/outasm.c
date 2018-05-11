@@ -2489,6 +2489,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_ASSIGN:
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
+      }
       if (expr->left && expr->left->kind == AST_SEQUENCE) {
           // do a series of assignments
           return CompileMultipleAssign(irl, expr->left, expr->right);

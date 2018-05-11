@@ -758,9 +758,9 @@ expr:
   | SP_TRIPLEAT lhs
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
   | lhs SP_ASSIGN expr
-    { $$ = AstAssign(K_ASSIGN, $1, $3); }
+    { $$ = AstAssign($1, $3); }
   | lhsseq SP_ASSIGN '(' exprlist ')'
-    { $$ = AstAssign(K_ASSIGN, $1, $4); }
+    { $$ = AstAssign($1, $4); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
   | expr '+' expr
