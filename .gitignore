@@ -6,6 +6,7 @@ foo*.h
 foo*.cpp
 foo*.c
 foo*.pasm
+foo.*
 build*/
 Lib/*.cpp
 Lib/*.h

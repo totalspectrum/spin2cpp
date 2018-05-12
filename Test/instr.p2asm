@@ -1,0 +1,12 @@
+DAT
+'
+' Some problematic P2 instructions
+'
+		org
+		callpa	#1, #2		
+		alts	y
+		alts	y, #0
+		getbyte y
+		getbyte 0,y,#0
+
+y		long	0
