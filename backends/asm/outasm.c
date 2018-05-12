@@ -3967,7 +3967,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
 {
     IR *ir;
     Operand *arg[MAX_COGSPIN_ARGS];
-    Operand *par = GetOneGlobal(REG_HW, "par", 0);
+    Operand *par;
     Operand *const4 = NewImmediate(4);
     Operand *mboxptr = GetOneGlobal(REG_REG, "mboxptr", 0);
     Operand *mboxcmd = GetOneGlobal(REG_REG, "mboxcmd", 0);
@@ -3992,18 +3992,29 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     if (gl_p2) {
         stackptr = GetOneGlobal(REG_HW, "ptra", 0);
         objbase = GetOneGlobal(REG_REG, "objptr", 0);
+        par = GetOneGlobal(REG_HW, "ptra", 0);
     } else {
         stackptr = GetOneGlobal(REG_REG, "sp", 0);
         objbase = GetOneGlobal(REG_REG, "objptr", 0);
         linkreg = GetOneGlobal(REG_REG, "linkreg", 0);
+        par = GetOneGlobal(REG_HW, "par", 0);
     }
     stacktop = SizedHubMemRef(LONG_SIZE, stackptr, 0);
 
     // mov mboxptr, par
     EmitMove(irl, mboxptr, par);
-    // add mboxptr, #4 ' skip over lock
-    EmitOp2(irl, OPC_ADD, mboxptr, const4);
-
+    if (gl_p2) {
+        Operand *const8 = NewImmediate(8);
+        EmitOp2(irl, OPC_ADD, mboxptr, const8);
+        EmitOp2(irl, OPC_RDLONG, objbase, mboxptr);
+        EmitOp2(irl, OPC_ADD, mboxptr, const4);
+        EmitOp2(irl, OPC_RDLONG, stackptr, mboxptr);
+        EmitOp2(irl, OPC_SUB, mboxptr, const8);
+        EmitOp2(irl, OPC_WRLONG, NewImmediate(0), mboxptr);
+    } else {
+        // add mboxptr, #4 ' skip over lock
+        EmitOp2(irl, OPC_ADD, mboxptr, const4);
+    }
     waitloop = NewOperand(IMM_COG_LABEL, "waitloop", 0);
     EmitLabel(irl, waitloop);
     ir = EmitOp2(irl, OPC_RDLONG, mboxcmd, mboxptr);
@@ -4034,13 +4045,11 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
     EmitJump(irl, COND_TRUE, waitloop);
 
-    pasm__init = NewOperand(IMM_COG_LABEL, "pasm__init", 0);
-    EmitLabel(irl, pasm__init);
-    EmitMove(irl, objbase, arg1);
-    EmitMove(irl, stackptr, arg2);
-    if (gl_p2) {
-        EmitOp0(irl, OPC_RET);
-    } else {
+    if (!gl_p2) {
+        pasm__init = NewOperand(IMM_COG_LABEL, "pasm__init", 0);
+        EmitLabel(irl, pasm__init);
+        EmitMove(irl, objbase, arg1);
+        EmitMove(irl, stackptr, arg2);
         EmitJump(irl, COND_TRUE, linkreg);
     }
 }

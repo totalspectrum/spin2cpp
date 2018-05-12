@@ -4,6 +4,14 @@
 '' this is for a very simple serial port
 '' (transmit only, and only on the default pin for now)
 ''
+#ifdef __P2__
+#define OUT OUTB
+#define DIR DIRB
+#else
+#define OUT OUTA
+#define DIR DIRA
+#endif
+
 CON
   txpin = 30
   
@@ -15,14 +23,14 @@ PUB start(baudrate)
   return 1
   
 PUB tx(c) | val, nextcnt
-  OUTA[txpin] := 1
-  DIRA[txpin] := 1
+  OUT[txpin] := 1
+  DIR[txpin] := 1
 
   val := (c | 256) << 1
   nextcnt := CNT
   repeat 10
      waitcnt(nextcnt += bitcycles)
-     OUTA[txpin] := val
+     OUT[txpin] := val
      val >>= 1
 
 PUB str(s) | c
