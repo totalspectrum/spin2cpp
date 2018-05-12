@@ -260,8 +260,8 @@ proc saveSpinAs {} {
 
 set aboutMsg {
 Convert .spin to PASM/C/C++
-Version 3.1    
-Copyright 2011-2017 Total Spectrum Software Inc.
+Version 3.7    
+Copyright 2011-2018 Total Spectrum Software Inc.
 ------
 There is no warranty and no guarantee that
 output will be correct.    
@@ -346,20 +346,26 @@ proc doPasmOptions {} {
 proc setHighlightingSpin {w} {
     set color(keywords) blue
     set color(brackets) purple
+    set color(numbers) DarkPink
     set color(operators) green
-    set color(comments) DeepPink
+    set color(comments) grey
     set color(strings)  red
-    set keywordsbase [list con obj dat pub pri quit exit repeat while until if then else return abort long word byte]
+    set color(preprocessor) cyan
+    set keywordsbase [list Con Obj Dat Var Pub Pri Quit Exit Repeat While Until If Then Else Return Abort Long Word Byte]
     foreach i $keywordsbase {
 	lappend keywordsupper [string toupper $i]
     }
-    set keywords [concat $keywordsbase $keywordsupper]
+    foreach i $keywordsbase {
+	lappend keywordslower [string tolower $i]
+    }
+    set keywords [concat $keywordsbase $keywordsupper $keywordslower]
     
     ctext::addHighlightClass $w keywords $color(keywords) $keywords
     ctext::addHighlightClassForSpecialChars $w brackets $color(brackets) {[](){}}
-    ctext::addHighlightClassForSpecialChars $w operators $color(operators) {+-=><!@~\#*/&:|}
+    ctext::addHighlightClassForSpecialChars $w operators $color(operators) {+-=><!@~\*/&:|}
     ctext::addHighlightClassForRegexp $w comments $color(comments) {\'[^\n\r]*}
     ctext::addHighlightClassForRegexp $w strings $color(strings) {"(\\"||^"])*"}
+    ctext::addHighlightClassForRegexp $w preprocessor $color(preprocessor) {\#[a-z]+}
 }
 
 menu .mbar
@@ -557,7 +563,7 @@ proc doRun {} {
 }
 
 
-#setHighlightingSpin .orig.txt
+setHighlightingSpin .orig.txt
 
 set PASMFILE ""
 # Configure your serial port here
