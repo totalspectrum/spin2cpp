@@ -27,6 +27,18 @@ run binaries. My workflow with Spin programs typically looks like:
     fastspin program.spin
     propeller-load program.binary -r -t
 
+## Propeller 2 Support ##
+
+fastspin supports the Propeller 2 instruction set (the v32b FPGA images).
+To compile programs for Propeller 2, you can use the -2 option. Binaries
+may be downloaded to the board using Dave Hein's loadp2 program:
+
+    fastspin -2 program.spin2
+    loadp2 program.binary -t
+
+If the fastspin program is named something that ends in "spin2" (for
+example "fastspin2.exe") then it will use the -2 flag automatically. This
+may be more convenient for integration with IDEs.
 
 ## Speed and Size ##
 
@@ -208,8 +220,6 @@ PUB doprint22
 
 Limitations
 -----------
-
-Not all P2 assembly instructions and addressing modes are supported yet.
 
 Beware when compiling P1 objects that contain PASM for P2: some
 instructions have changed in subtle ways.
