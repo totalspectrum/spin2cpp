@@ -103,22 +103,18 @@ NewCommentedStatement(AST *stmt)
 AST *
 AstYield(void)
 {
-    current->needsYield = 1;
     return NewStatement(NewAST(AST_YIELD, NULL, NULL));
 }
 
 AST *
 AstAbort(AST *expr, AST *comment)
 {
-    current->needsAbortdef = 1;
-    current->needsStdlib = 1;
     return NewCommentedAST(AST_ABORT, expr, NULL, comment);
 }
 
 AST *
 AstCatch(AST *expr)
 {
-    current->needsAbortdef = 1;
     return NewAST(AST_CATCH, expr, NULL);
 }
 
@@ -126,7 +122,6 @@ AST *
 AstSprRef(AST *index)
 {
     AST *expr = AstOperator('+', AstInteger(0x1f0), index);
-    current->needsCogAccess = 1;
     return NewAST(AST_SPRREF, expr, NULL);
 }
 
@@ -357,8 +352,16 @@ optparamlist:
   { $$ = $2; }
   ;
 
-resultname: ':' identifier
-  { $$ = $2; }
+resultname: ':' identlist
+  {
+      // handle the common case of just one identifier by
+      // unwrapping the list
+      AST *list = $2;
+      if (list->kind == AST_LISTHOLDER && list->right == NULL) {
+          list = list->left;
+      }
+      $$ = list;
+  }
   ;
 
 localvars:
@@ -398,6 +401,10 @@ stmt:
 basicstmt:
    SP_RETURN SP_EOLN
     { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
+  |  SP_RETURN '(' exprlist ',' expr ')' SP_EOLN
+    {
+        $$ = NewCommentedAST(AST_RETURN, AddToList($3, NewAST(AST_EXPRLIST, $5, NULL)), NULL, $1);
+    }
   |  SP_RETURN expr SP_EOLN
     { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
   | SP_ABORT SP_EOLN
@@ -792,21 +799,21 @@ expr:
   | expr SP_MODULUS expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
   | expr SP_HIGHMULT expr
-    { $$ = AstOperator(K_HIGHMULT, $1, $3); current->needsHighmult = 1; }
+    { $$ = AstOperator(K_HIGHMULT, $1, $3); }
   | expr SP_LIMITMIN expr
-    { $$ = AstOperator(K_LIMITMIN, $1, $3); current->needsMinMax = 1; }
+    { $$ = AstOperator(K_LIMITMIN, $1, $3); }
   | expr SP_LIMITMAX expr
-    { $$ = AstOperator(K_LIMITMAX, $1, $3); current->needsMinMax = 1;}
+    { $$ = AstOperator(K_LIMITMAX, $1, $3); }
   | expr SP_REV expr
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_ROTL expr
-    { $$ = AstOperator(K_ROTL, $1, $3); current->needsRotate = 1; }
+    { $$ = AstOperator(K_ROTL, $1, $3); }
   | expr SP_ROTR expr
-    { $$ = AstOperator(K_ROTR, $1, $3); current->needsRotate = 1; }
+    { $$ = AstOperator(K_ROTR, $1, $3); }
   | expr SP_SHL expr
     { $$ = AstOperator(K_SHL, $1, $3); }
   | expr SP_SHR expr
-    { $$ = AstOperator(K_SHR, $1, $3); current->needsShr = 1; }
+    { $$ = AstOperator(K_SHR, $1, $3); }
   | expr SP_SAR expr
     { $$ = AstOperator(K_SAR, $1, $3); }
   | expr SP_OR expr
@@ -830,21 +837,21 @@ expr:
   | expr SP_MODULUS '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_MODULUS, $1, $4); }
   | expr SP_HIGHMULT '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_HIGHMULT, $1, $4); current->needsHighmult = 1;}
+    { $$ = AstOpAssign(K_HIGHMULT, $1, $4); }
   | expr SP_LIMITMIN '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_LIMITMIN, $1, $4); current->needsMinMax = 1; }
+    { $$ = AstOpAssign(K_LIMITMIN, $1, $4); }
   | expr SP_LIMITMAX '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_LIMITMAX, $1, $4); current->needsMinMax = 1; }
+    { $$ = AstOpAssign(K_LIMITMAX, $1, $4); }
   | expr SP_REV '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_REV, $1, $4); }
   | expr SP_ROTL '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_ROTL, $1, $4); current->needsRotate = 1; }
+    { $$ = AstOpAssign(K_ROTL, $1, $4); }
   | expr SP_ROTR '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_ROTR, $1, $4); current->needsRotate = 1; }
+    { $$ = AstOpAssign(K_ROTR, $1, $4); }
   | expr SP_SHL '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_SHL, $1, $4); }
   | expr SP_SHR '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_SHR, $1, $4); current->needsShr = 1; }
+    { $$ = AstOpAssign(K_SHR, $1, $4); }
   | expr SP_SAR '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_SAR, $1, $4); }
   | expr SP_AND '=' expr %prec SP_ASSIGN
@@ -904,13 +911,13 @@ expr:
   | SP_NOT expr
     { $$ = AstOperator(K_NOT, NULL, $2); }
   | SP_ABS expr
-    { $$ = AstOperator(K_ABS, NULL, $2); current->needsStdlib = 1; }
+    { $$ = AstOperator(K_ABS, NULL, $2); }
   | SP_SQRT expr
-    { $$ = AstOperator(K_SQRT, NULL, $2); current->needsSqrt = 1; }
+    { $$ = AstOperator(K_SQRT, NULL, $2); }
   | SP_DECODE expr
     { $$ = AstOperator(K_DECODE, NULL, $2); }
   | SP_ENCODE expr
-    { $$ = AstOperator(K_ENCODE, NULL, $2); current->needsBitEncode = 1; }
+    { $$ = AstOperator(K_ENCODE, NULL, $2); }
   | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
   | lhs SP_INCREMENT
@@ -922,9 +929,9 @@ expr:
   | SP_DECREMENT lhs
     { $$ = AstOperator(K_DECREMENT, NULL, $2); }
   | lhs '?'
-    { $$ = AstOperator('?', $1, NULL); current->needsRand = 1; }
+    { $$ = AstOperator('?', $1, NULL); }
   | '?' lhs
-    { $$ = AstOperator('?', NULL, $2); current->needsRand = 1; }
+    { $$ = AstOperator('?', NULL, $2); }
   | lhs '~'
     { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
   | lhs SP_DOUBLETILDE
@@ -938,9 +945,9 @@ expr:
   | SP_TRUNC '(' expr ')'
     { $$ = NewAST(AST_TRUNC, $3, NULL); }
   | lookupexpr
-    { $$ = $1; current->needsLookup = 1; }
+    { $$ = $1; }
   | lookdownexpr
-    { $$ = $1; current->needsLookdown = 1; }
+    { $$ = $1; }
   | SP_IF expr SP_THEN expr SP_ELSE expr
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $4, $6)); }
   ;
@@ -951,7 +958,6 @@ lhs: identifier
   | hwreg
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
-      current->needsStdlib = 1; // range calc may invoke abs
     }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }

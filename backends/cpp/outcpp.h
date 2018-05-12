@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -10,6 +10,36 @@
 
 #include "util/flexbuf.h"
 #include "cppfunc.h"
+
+//
+// back end data for modules
+//
+typedef struct asmmoddata {
+    /* flags for emitting macros */
+    char needsMinMax;
+    char needsRotate;
+    char needsShr;
+    char needsStdlib;
+    char needsYield;
+    char needsAbortdef;
+    char needsRand;
+    char needsSqrt;
+    char needsLookup;
+    char needsLookdown;
+    char needsHighmult;
+    char needsBitEncode;
+    char needsLockFuncs;
+    char needsCogAccess;
+    char needsCoginit;
+
+    /* flags for whether tuples of size N are needed */
+    /* if needsTuple & (1<<N) then we need a definition for TupleN__ */
+    uint32_t needsTuple;
+    
+} CppModData;
+
+#define ModData(P) ((CppModData *)(P->bedata))
+
 
 /* flags for PrintVarList and PrintType */
 #define PUBLIC 0

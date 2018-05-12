@@ -234,25 +234,6 @@ struct modulestate {
     /* for walking through modules and avoiding visiting the same one multiple times */
     unsigned visitflag;
 
-    /* flags for emitting macros; these should really be part of the
-       CPP backend struct
-     */
-    char needsMinMax;
-    char needsRotate;
-    char needsShr;
-    char needsStdlib;
-    char needsYield;
-    char needsAbortdef;
-    char needsRand;
-    char needsSqrt;
-    char needsLookup;
-    char needsLookdown;
-    char needsHighmult;
-    char needsBitEncode;
-    char needsLockFuncs;
-    char needsCogAccess;
-    char needsCoginit;
-    
     /* flags for output */
     char pasmLabels;
     char volatileVariables;
