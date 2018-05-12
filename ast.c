@@ -135,7 +135,7 @@ AstUses(AST *a, AST *b)
     return AstUses(a->left, b) || AstUses(a->right, b);
 }
 
-/* helper; see if a LHS assignment modifies */
+/* helper; see if a LHS assignment modifies id */
 static int
 AstModifiesIdentifierLHS(AST *body, AST *id)
 {
@@ -165,12 +165,15 @@ AstModifiesIdentifier(AST *body, AST *id)
             if (AstModifiesIdentifierLHS(body->left, id))
                 return 1;
             /* FIXME: we should handle memory references here */
-        }
-        if (body->kind == AST_OPERATOR) {
+        } else if (body->kind == AST_OPERATOR) {
             int op = body->d.ival;
             if (op == K_INCREMENT || op == K_DECREMENT) {
                 return AstUses(body->left, id) || AstUses(body->right, id);
             }
+        } else if (body->kind == AST_ADDROF) {
+            /* if we take the address of a variable, assume it will be modified */
+            if (AstModifiesIdentifierLHS(body->left, id))
+                return 1;
         }
         if (AstModifiesIdentifier(body->left, id))
             return 1;

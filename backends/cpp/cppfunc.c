@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2016 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -490,7 +490,14 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         if (retval) {
             flexbuf_printf(f, "%*creturn ", indent, ' ');
-            PrintTypedExpr(f, curfunc->rettype, retval, PRINTEXPR_DEFAULT);
+            if (retval->kind == AST_EXPRLIST) {
+                int n = AstListLen(retval);
+                flexbuf_printf(f, "((Tuple%d__){", n);
+                PrintExprList(f, retval, PRINTEXPR_DEFAULT, NULL);
+                flexbuf_printf(f, "})");
+            } else {
+                PrintTypedExpr(f, curfunc->rettype, retval, PRINTEXPR_DEFAULT);
+            }
         } else {
             flexbuf_printf(f, "%*creturn", indent, ' ');
         }

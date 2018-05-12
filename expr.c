@@ -451,7 +451,6 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         if (IsConstExpr(loexpr)) {
             loexpr = FoldIfConst(AstOperator(K_LIMITMAX, loexpr, hiexpr));
         } else if (loexpr->kind != AST_IDENTIFIER) {
-            current->needsMinMax = 1;
             loexpr = ReplaceExprWithVariable("_lo", loexpr);
         }
         revsrc = AstOperator(K_REV, src, nbits);

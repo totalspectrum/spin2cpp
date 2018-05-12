@@ -141,6 +141,8 @@ enum astkind {
     AST_BIGIMMHOLDER,
     AST_ALIGN,
     AST_ORGF,
+
+    AST_TUPLETYPE = 100,
 };
 
 struct AST {

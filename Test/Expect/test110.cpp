@@ -4,7 +4,6 @@
    a 'doc' comment starting with '{{'; in that case it only searches for
    the closing comment symbol of two }'s in a row
  */
-#include <stdlib.h>
 #include <propeller.h>
 #include "test110.h"
 

@@ -389,6 +389,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
 static void
 PrintMacros(Flexbuf *f, Module *parse)
 {
+    CppModData *be = ModData(parse);
     bool needsIfdef = false;
     bool needsInline = false;
     if (gl_nospin)
@@ -397,12 +398,12 @@ PrintMacros(Flexbuf *f, Module *parse)
       needsIfdef = true;
       needsInline = true;
     }
-    if (parse->needsBitEncode
-	  || parse->needsMinMax
-	  || parse->needsRotate
-	  || parse->needsShr
-	  || parse->needsLookup
-	  || parse->needsLookdown)
+    if (be->needsBitEncode
+	  || be->needsMinMax
+	  || be->needsRotate
+	  || be->needsShr
+	  || be->needsLookup
+	  || be->needsLookdown)
       {
 	needsInline = true;
       }
@@ -412,17 +413,17 @@ PrintMacros(Flexbuf *f, Module *parse)
     }
 
     if (needsInline) flexbuf_printf(f, "#define INLINE__ static inline\n");
-    if (parse->needsYield) {
+    if (be->needsYield) {
         // old way
         //flexbuf_printf(f, "#include <sys/thread.h>\n");
         //flexbuf_printf(f, "#define Yield__() (__napuntil(_CNT))\n");
         // new way -- not as thread friendly, but much faster
         flexbuf_printf(f, "#define Yield__() __asm__ volatile( \"\" ::: \"memory\" )\n");
     }
-    if (parse->needsHighmult) {
+    if (be->needsHighmult) {
         flexbuf_printf(f, "#define Highmult__(X, Y) ( ( (X) * (int64_t)(Y) ) >> 32 )\n");
     }
-    if (parse->needsBitEncode) {
+    if (be->needsBitEncode) {
         flexbuf_printf(f, "#define BitEncode__(X) (32 - __builtin_clz(X))\n");
     }
     if (needsIfdef) 
@@ -430,12 +431,12 @@ PrintMacros(Flexbuf *f, Module *parse)
 	flexbuf_printf(f, "#else\n");
 
 	if (needsInline) flexbuf_printf(f, "#define INLINE__ static\n");
-	if (parse->needsYield) {
+	if (be->needsYield) {
 	  flexbuf_printf(f, "#define Yield__()\n");
 	}
 	if (gl_output == OUTPUT_C) {
 	  flexbuf_printf(f, "#define waitcnt(n) _waitcnt(n)\n");
-	  if (parse->needsLockFuncs) {
+	  if (be->needsLockFuncs) {
               flexbuf_printf(f, "#define locknew() _locknew()\n");
               flexbuf_printf(f, "#define lockret(i) _lockret(i)\n");
               flexbuf_printf(f, "#define lockset(i) _lockset(i)\n");
@@ -444,7 +445,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	  flexbuf_printf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
 	  flexbuf_printf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
 	  flexbuf_printf(f, "#define cogstop(i) _cogstop(i)\n");
-	  if (parse->needsHighmult) {
+	  if (be->needsHighmult) {
               flexbuf_printf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
 	      flexbuf_printf(f, "  int sign = (a^b)>>31;\n");
 	      flexbuf_printf(f, "  uint32_t ua = a < 0 ? -a : a;\n");
@@ -461,7 +462,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	      flexbuf_printf(f, "  return rhi;\n");
 	      flexbuf_printf(f, "}\n");
 	  }
-	  if (parse->needsBitEncode) {
+	  if (be->needsBitEncode) {
               flexbuf_printf(f, "INLINE__ int32_t BitEncode__(uint32_t a) {\n");
 	      flexbuf_printf(f, "  int r=0;\n");
 	      flexbuf_printf(f, "  while (a != 0) { a = a>>1; r++; }\n");
@@ -473,11 +474,11 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "#endif\n");
         flexbuf_printf(f, "\n");
     }
-    if (parse->needsMinMax) {
+    if (be->needsMinMax) {
         flexbuf_printf(f, "INLINE__ int32_t Min__(int32_t a, int32_t b) { return a < b ? a : b; }\n"); 
         flexbuf_printf(f, "INLINE__ int32_t Max__(int32_t a, int32_t b) { return a > b ? a : b; }\n"); 
     }
-    if (parse->needsAbortdef) {
+    if (be->needsAbortdef) {
         if (gl_output == OUTPUT_CPP)
             flexbuf_printf(f, "extern \"C\" {\n");
         flexbuf_printf(f, "#include <setjmp.h>\n");
@@ -486,22 +487,34 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "typedef struct { jmp_buf jmp; int32_t val; } AbortHook__;\n");
         flexbuf_printf(f, "AbortHook__ *abortChain__ __attribute__((common));\n\n");
     }
-    if (parse->needsRotate) {
+    if (be->needsRotate) {
         flexbuf_printf(f, "INLINE__ int32_t Rotl__(uint32_t a, uint32_t b) { return (a<<b) | (a>>(32-b)); }\n"); 
         flexbuf_printf(f, "INLINE__ int32_t Rotr__(uint32_t a, uint32_t b) { return (a>>b) | (a<<(32-b)); }\n"); 
     }
-    if (parse->needsShr) {
+    if (be->needsShr) {
         flexbuf_printf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
-    if (parse->needsLookup) {
+    if (be->needsTuple) {
+        int n, i;
+        for (n = 0; n < MAX_TUPLE; n++) {
+            if (be->needsTuple & (1<<n)) {
+                flexbuf_printf(f, "typedef struct tuple%d__ {", n);
+                for (i = 0; i < n; i++) {
+                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                }
+                flexbuf_printf(f, "} Tuple%d__;\n", n);
+            }
+        }
+    }
+    if (be->needsLookup) {
         flexbuf_printf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
         flexbuf_printf(f, "\n");
     }
-    if (parse->needsLookdown) {
+    if (be->needsLookdown) {
         flexbuf_printf(f, "INLINE__ int32_t Lookdown__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i, r; r = 0; for (i = 0; i < n; i++) { if (a[i] == x) { r = i+b; break; } }; return r; }\n");
         flexbuf_printf(f, "\n");
     }
-    if (parse->needsRand) {
+    if (be->needsRand) {
         flexbuf_printf(f, "static uint32_t LFSR__(uint32_t x, uint32_t forward) {\n");
         flexbuf_printf(f, "    uint32_t y, c, a;\n");
         flexbuf_printf(f, "    if (x < 1) x = 1;\n");
@@ -516,7 +529,7 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "#define RandForw__(x) ((x) = LFSR__((x), 1))\n");
         flexbuf_printf(f, "#define RandBack__(x) ((x) = LFSR__((x), 0))\n");
     }
-    if (parse->needsSqrt) {
+    if (be->needsSqrt) {
         flexbuf_printf(f, "static uint32_t Sqrt__(uint32_t a) {\n");
         flexbuf_printf(f, "    uint32_t res = 0;\n");
         flexbuf_printf(f, "    uint32_t bit = 1<<30;\n");
@@ -531,7 +544,7 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "    return res;\n");
         flexbuf_printf(f, "}\n"); 
     }
-    if (parse->needsCogAccess) {
+    if (be->needsCogAccess) {
         // we need to execute code that looks like:
         //    mov r0, <addr>
         //    jmp <retaddr>
@@ -564,7 +577,7 @@ PrintMacros(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "#define cogmem_put__(addr,data) _cog_xfer((addr), 0, (data))\n");
         flexbuf_printf(f, "\n");
     }
-    if (parse->needsCoginit) {
+    if (be->needsCoginit) {
         flexbuf_printf(f, "typedef void (*Cogfunc__)(void *a, void *b, void *c, void *d);\n");
         flexbuf_printf(f, "static void Cogstub__(void *argp) {\n");
         flexbuf_printf(f, "  void **arg = (void **)argp;\n");
@@ -665,7 +678,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (parse->topcomment) {
         PrintComment(f, parse->topcomment);
     }
-    if (parse->needsStdlib) {
+    if (ModData(parse)->needsStdlib) {
         flexbuf_printf(f, "#include <stdlib.h>\n");
     }
     IfdefPropeller(f);
@@ -750,6 +763,115 @@ OutputClkFreq(Flexbuf *f, Module *P)
     }
 }
 
+static void
+SetCppFlags(CppModData *bedata, AST *ast)
+{
+    if (!ast) return;
+    switch(ast->kind) {
+    case AST_YIELD:
+        bedata->needsYield = 1;
+        break;
+    case AST_CATCH:
+    case AST_ABORT:
+        bedata->needsAbortdef = 1;
+        bedata->needsStdlib = 1;
+        break;
+    case AST_SPRREF:
+        bedata->needsCogAccess = 1;
+        break;
+    case AST_OPERATOR:
+        {
+            switch (ast->d.ival) {
+            case K_HIGHMULT:
+                bedata->needsHighmult = 1;
+                break;
+            case K_LIMITMIN:
+            case K_LIMITMAX:
+                bedata->needsMinMax = 1;
+                break;
+            case K_ROTL:
+            case K_ROTR:
+                bedata->needsRotate = 1;
+                break;
+            case K_SHR:
+                bedata->needsShr = 1;
+                break;
+            case K_ABS:
+                bedata->needsStdlib = 1;
+                break;
+            case K_SQRT:
+                bedata->needsSqrt = 1;
+                break;
+            case K_ENCODE:
+                bedata->needsBitEncode = 1;
+                break;
+            case '?':
+                bedata->needsRand = 1;
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case AST_LOOKUP:
+        bedata->needsLookup = 1;
+        break;
+    case AST_LOOKDOWN:
+        bedata->needsLookdown = 1;
+        break;
+    case AST_RANGEREF:
+        bedata->needsStdlib = 1; // range calc may invoke abs
+        break;
+    case AST_IDENTIFIER:
+        {
+            Symbol *sym = LookupSymbol(ast->d.string);
+            if (sym && sym->type == SYM_BUILTIN) {
+                Builtin *b = (Builtin *)sym->val;
+                if (!strncmp(b->name, "lock", 4)) {
+                    bedata->needsLockFuncs = 1;
+                }
+            }
+        }
+        break;
+    case AST_RETURN:
+        {
+            AST *retval = ast->left;
+            int n;
+            if (!retval) {
+                retval = curfunc->resultexpr;
+            }
+            if (retval) {
+                if (retval->kind == AST_EXPRLIST) {
+                    n = AstListLen(retval);
+                    if (n > MAX_TUPLE) {
+                        ERROR(retval, "Too many items in compound assignment");
+                    }
+                    bedata->needsTuple |= (1<<n);
+                }
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    SetCppFlags(bedata, ast->left);
+    SetCppFlags(bedata, ast->right);
+}
+
+static void
+CheckCppFlags(Module *P)
+{
+    Function *f;
+    P->bedata = calloc(1, sizeof(CppModData));
+    for (f = P->functions; f; f = f->next) {
+        curfunc = f;
+        SetCppFlags(ModData(P), f->body);
+        if (f->cog_task) {
+            ModData(P)->needsCoginit = 1;
+        }
+    }
+}
+
 void
 OutputCppCode(const char *filename, Module *P, int printMain)
 {
@@ -761,6 +883,10 @@ OutputCppCode(const char *filename, Module *P, int printMain)
     save = current;
     current = P;
 
+    /* gather any specific info we need (like whether we will
+       need to print certain macros) */
+    CheckCppFlags(P);
+    
     flexbuf_init(&fb, 0);
     PrintDebugDirective(&fb, NULL);
     if (gl_output == OUTPUT_C) {

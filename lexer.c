@@ -1036,7 +1036,7 @@ extern void rebootBuiltin(Flexbuf *, Builtin *, AST *);
 extern void waitpeqBuiltin(Flexbuf *, Builtin *, AST *);
 
 /* hooks to be called when we recognize a builtin */
-static void lockhook(Builtin *dummy) { current->needsLockFuncs = 1; }
+static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL, 0, NULL },

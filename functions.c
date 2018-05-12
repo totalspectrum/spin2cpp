@@ -1344,7 +1344,11 @@ SetFunctionType(Function *f, AST *typ)
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
-        f->rettype = gl_infer_ctypes ? typ : ast_type_generic;
+        if (gl_infer_ctypes || (typ && typ->kind == AST_TUPLETYPE)) {
+            f->rettype = typ;
+        } else {
+            f->rettype = ast_type_generic;
+        }
     }
 }
 
@@ -1587,7 +1591,6 @@ doSpinTransform(AST **astptr, int level)
     }
     case AST_COGINIT:
         if (0 != (func = IsSpinCoginit(ast))) {
-            current->needsCoginit = 1;
             func->cog_task = 1;
             func->force_static = 1;
         }

@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <propeller.h>
 #include "test31.h"
 
