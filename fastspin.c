@@ -201,14 +201,24 @@ main(int argc, char **argv)
         argv++; --argc;
     }
     // check for name starting with "bstc"
+    // also, if our name ends in "spin2" use Spin2 mode
     {
         const char *nameRoot;
+        size_t n;
         nameRoot = gl_progname;
         while (*nameRoot != 0) nameRoot++;
         while (nameRoot > gl_progname && nameRoot[-1] != '/' && nameRoot[-1] != '\\') --nameRoot;
         
         if (strncmp(nameRoot, "bstc", 4) == 0) {
             bstcMode = 1;
+        }
+        n = strlen(nameRoot);
+        if (n > 4) {
+            if (strcmp(nameRoot + n - 5, "spin2") == 0) {
+                gl_p2 = 1;
+            } else if (n > 8 && strcmp(nameRoot + n - 9, "spin2.exe") == 0) {
+                gl_p2 = 1;
+            }
         }
     }
     gl_normalizeIdents = 1;
@@ -268,9 +278,6 @@ main(int argc, char **argv)
             outputBin = 0;
             gl_output = OUTPUT_DAT;
             outputDat = 1;
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-p2")) {
-            gl_p2 = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
             outputFiles = 1;
