@@ -494,6 +494,18 @@ PrintMacros(Flexbuf *f, Module *parse)
     if (be->needsShr) {
         flexbuf_printf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
     }
+    if (be->needsTuple) {
+        int n, i;
+        for (n = 0; n < MAX_TUPLE; n++) {
+            if (be->needsTuple & (1<<n)) {
+                flexbuf_printf(f, "typedef struct tuple%d__ {", n);
+                for (i = 0; i < n; i++) {
+                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                }
+                flexbuf_printf(f, "} Tuple%d__;\n", n);
+            }
+        }
+    }
     if (be->needsLookup) {
         flexbuf_printf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");
         flexbuf_printf(f, "\n");
@@ -821,6 +833,24 @@ SetCppFlags(CppModData *bedata, AST *ast)
             }
         }
         break;
+    case AST_RETURN:
+        {
+            AST *retval = ast->left;
+            int n;
+            if (!retval) {
+                retval = curfunc->resultexpr;
+            }
+            if (retval) {
+                if (retval->kind == AST_EXPRLIST) {
+                    n = AstListLen(retval);
+                    if (n > MAX_TUPLE) {
+                        ERROR(retval, "Too many items in compound assignment");
+                    }
+                    bedata->needsTuple |= (1<<n);
+                }
+            }
+        }
+        break;
     default:
         break;
     }
@@ -834,6 +864,7 @@ CheckCppFlags(Module *P)
     Function *f;
     P->bedata = calloc(1, sizeof(CppModData));
     for (f = P->functions; f; f = f->next) {
+        curfunc = f;
         SetCppFlags(ModData(P), f->body);
         if (f->cog_task) {
             ModData(P)->needsCoginit = 1;

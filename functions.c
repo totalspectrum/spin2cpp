@@ -1344,7 +1344,11 @@ SetFunctionType(Function *f, AST *typ)
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
-        f->rettype = gl_infer_ctypes ? typ : ast_type_generic;
+        if (gl_infer_ctypes || (typ && typ->kind == AST_TUPLETYPE)) {
+            f->rettype = typ;
+        } else {
+            f->rettype = ast_type_generic;
+        }
     }
 }
 

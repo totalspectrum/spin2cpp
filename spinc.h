@@ -128,7 +128,7 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *decl;        /* always filled in with the line numbers of the declaration */
-    AST *rettype;        /* the function return type, normally long */
+    AST *rettype;     /* the function return type, normally long */
     AST *annotations; /* any annotations for the function (section, etc.) */
     AST *doccomment;  /* documentation comments */
     int numparams;
@@ -245,6 +245,9 @@ struct modulestate {
     /* back end specific flags */
     void *bedata;
 };
+
+/* maximum number of items in a multiple assignment */
+#define MAX_TUPLE 8
 
 /* the current parser state */
 extern Module *current;
