@@ -1,4 +1,5 @@
 Version 3.7.3
+- Made fastspin -w work correctly in P2 mode
 - if fastspin is named something ending with "spin2" (like
   "fastspin2") then it will start in Propeller2 mode by default
  
