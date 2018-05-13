@@ -847,6 +847,10 @@ static bool
 IsResultVar(Function *func, AST *lhs)
 {
     if (lhs->kind == AST_RESULT) {
+        if (func->resultexpr && func->resultexpr->kind == AST_EXPRLIST) {
+            ERROR(lhs, "Do not use RESULT in functions returning multiple values");
+            return false;
+        }
         return true;
     }
     if (lhs->kind == AST_IDENTIFIER) {
