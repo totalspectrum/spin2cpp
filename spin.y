@@ -411,13 +411,18 @@ basicstmt:
     { $$ = AstAbort(NULL, $1); }
   |  SP_ABORT expr SP_EOLN
     { $$ = AstAbort($2, $1); }
-  |  expr SP_EOLN
+  | multiassign
+  | expr SP_EOLN
     { $$ = $1; }
   | SP_QUIT SP_EOLN
     { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
 ;
+
+multiassign:
+  lhsseq SP_ASSIGN '(' exprlist ')'
+    { $$ = AstAssign($1, $4); }
 
 compoundstmt:
    ifstmt
@@ -766,8 +771,6 @@ expr:
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
   | lhs SP_ASSIGN expr
     { $$ = AstAssign($1, $3); }
-  | lhsseq SP_ASSIGN '(' exprlist ')'
-    { $$ = AstAssign($1, $4); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
   | expr '+' expr

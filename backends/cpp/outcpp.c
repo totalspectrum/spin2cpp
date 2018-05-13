@@ -259,6 +259,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
     int n;
     AST *ast;
     int flags = PRIVATE;
+    CppModData *be = ModData(parse);
 
     /* things we always need */
     if (gl_header1 && gl_header2) {
@@ -273,6 +274,21 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
     PrintSubHeaders(f, parse);
     PrintAllConstants(f, parse);
 
+    if (be->needsTuple) {
+        int n, i;
+        for (n = 0; n < MAX_TUPLE; n++) {
+            if (be->needsTuple & (1<<n)) {
+                flexbuf_printf(f, "#ifndef Tuple%d__\n", n);
+                flexbuf_printf(f, "  struct tuple%d__ {", n);
+                for (i = 0; i < n; i++) {
+                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                }
+                flexbuf_printf(f, "};\n");
+                flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
+                flexbuf_printf(f, "#endif\n\n");
+            }
+        }
+    }
     if (parse->volatileVariables)
         flags |= VOLATILE;
 
@@ -323,6 +339,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
 {
     AST *ast;
     int flags = PRIVATE;
+    CppModData *be = ModData(parse);
 
     /* things we always need */
     if (gl_header1 && gl_header2) {
@@ -336,6 +353,22 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
 
     /* include any needed object headers */
     PrintSubHeaders(f, parse);
+
+    if (be->needsTuple) {
+        int n, i;
+        for (n = 0; n < MAX_TUPLE; n++) {
+            if (be->needsTuple & (1<<n)) {
+                flexbuf_printf(f, "#ifndef Tuple%d__\n", n);
+                flexbuf_printf(f, "  struct tuple%d__ {", n);
+                for (i = 0; i < n; i++) {
+                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                }
+                flexbuf_printf(f, "};\n");
+                flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
+                flexbuf_printf(f, "#endif\n\n");
+            }
+        }
+    }
 
     /* print the constant declarations */
     flexbuf_printf(f, "class %s {\npublic:\n", parse->classname);
@@ -493,18 +526,6 @@ PrintMacros(Flexbuf *f, Module *parse)
     }
     if (be->needsShr) {
         flexbuf_printf(f, "INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }\n"); 
-    }
-    if (be->needsTuple) {
-        int n, i;
-        for (n = 0; n < MAX_TUPLE; n++) {
-            if (be->needsTuple & (1<<n)) {
-                flexbuf_printf(f, "typedef struct tuple%d__ {", n);
-                for (i = 0; i < n; i++) {
-                    flexbuf_printf(f, " int32_t v%d__; ", i);
-                }
-                flexbuf_printf(f, "} Tuple%d__;\n", n);
-            }
-        }
     }
     if (be->needsLookup) {
         flexbuf_printf(f, "INLINE__ int32_t Lookup__(int32_t x, int32_t b, int32_t a[], int32_t n) { int32_t i = (x)-(b); return ((unsigned)i >= n) ? 0 : (a)[i]; }\n");

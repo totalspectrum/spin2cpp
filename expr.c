@@ -1410,6 +1410,12 @@ ExprType(AST *expr)
             return ast_type_long;
         }
     }
+    case AST_EXPRLIST:
+    {
+        AST *typ = NewAST(AST_TUPLETYPE, NULL, NULL);
+        typ->d.ival = AstListLen(expr);
+        return typ; 
+    }
     default:
         return NULL;
     }

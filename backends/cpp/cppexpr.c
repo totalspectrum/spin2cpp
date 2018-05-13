@@ -693,6 +693,9 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             flexbuf_printf(f, "volatile ");
         }
         break;
+    case AST_TUPLETYPE:
+        flexbuf_printf(f, "Tuple%d__%s", typedecl->d.ival, space);
+        break;
     case AST_VOIDTYPE:
         flexbuf_printf(f, "void%s", space);
         break;
