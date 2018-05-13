@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2016 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2018 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -141,7 +141,7 @@ pp_nextline(struct preprocess *pp)
     FILE *f;
     char buf[4];
     struct filestate *A;
-
+    
     A = pp->fil;
     if (!A)
         return 0;
@@ -184,6 +184,7 @@ pp_nextline(struct preprocess *pp)
                 ungetc(c1, f);
             }
         }
+        A->skipnl = 0;
         if (c0 == '\n') {
             flexbuf_addchar(&pp->line, 0);
             A->lineno++;
@@ -193,11 +194,21 @@ pp_nextline(struct preprocess *pp)
     for(;;) {
         r = (*A->readfunc)(f, buf);
         if (r <= 0) break;
+        if (buf[0] == '\n' && A->skipnl) {
+            A->skipnl = 0;
+            continue;
+        }
+        if (buf[0] == '\r') {
+            buf[0] = '\n';
+            A->skipnl = 1; // if CR NL is seen, skip the NL
+        }
         count += r;
         flexbuf_addmem(&pp->line, buf, r);
-        if (r == 1 && buf[0] == '\n') {
+        if (buf[0] == '\n') {
             A->lineno++;
             break;
+        } else {
+            A->skipnl = 0;
         }
     }
     flexbuf_addchar(&pp->line, '\0');

@@ -32,6 +32,7 @@ struct filestate {
     int lineno;
     int (*readfunc)(FILE *f, char *buf);
     int flags;
+    int skipnl;
 };
 #define FILE_FLAGS_CLOSEFILE 0x01
 
