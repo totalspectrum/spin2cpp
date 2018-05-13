@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2016 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -423,6 +423,8 @@ basicstmt:
 multiassign:
   lhsseq SP_ASSIGN '(' exprlist ')'
     { $$ = AstAssign($1, $4); }
+  | lhsseq SP_ASSIGN funccall
+    { $$ = AstAssign($1, $3); }
 
 compoundstmt:
    ifstmt
@@ -972,13 +974,13 @@ lhs: identifier
 
 lhsseq:
   '(' lhs ',' lhsseqcont ')'
-    { $$ = NewAST(AST_SEQUENCE, $2, $4); }
+    { $$ = NewAST(AST_EXPRLIST, $2, $4); }
   ;
 lhsseqcont:
 lhs
-  { $$ = NewAST(AST_SEQUENCE, $1, NULL); }
+  { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 | lhs ',' lhsseqcont
-  { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+  { $$ = NewAST(AST_EXPRLIST, $1, $3); }
 ;
 
 memref:

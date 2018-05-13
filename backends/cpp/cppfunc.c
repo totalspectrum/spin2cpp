@@ -624,7 +624,28 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*c", indent, ' ');
-        if (ast->kind == AST_ASSIGN) {
+        if (ast->kind == AST_ASSIGN && ast->left->kind == AST_EXPRLIST) {
+            // multiple assignment
+            AST *lhs = ast->left;
+            int n = AstListLen(lhs);
+            flexbuf_printf(f, "{ Tuple%d__ tmp__ = ", n);
+            if (ast->right && ast->right->kind == AST_EXPRLIST) {
+                flexbuf_printf(f, "((Tuple%d__){", n, n);
+                PrintExprList(f, ast->right, PRINTEXPR_DEFAULT, NULL);
+                flexbuf_printf(f, "})");
+            } else {
+                PrintExpr(f, ast->right, PRINTEXPR_DEFAULT);
+            }
+            flexbuf_printf(f, "; ");
+            n = 0;
+            while (lhs) {
+                PrintLHS(f, lhs->left, PRINTEXPR_ASSIGNMENT);
+                flexbuf_printf(f, " = tmp__.v%d; ", n);
+                n++;
+                lhs = lhs->right;
+            }
+            flexbuf_printf(f, " }");
+        } else if (ast->kind == AST_ASSIGN) {
             PrintAssign(f, ast->left, ast->right, PRINTEXPR_DEFAULT);
         } else {
             PrintExpr(f, ast, PRINTEXPR_DEFAULT);

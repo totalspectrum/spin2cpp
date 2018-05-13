@@ -724,7 +724,7 @@ PrintCastType(Flexbuf *f, AST *typedecl)
  * as a reference, so no extra dereferencing should be added to
  * e.g. labels, and plain symbols and such should be cast appropriately
  */
-static void
+void
 PrintLHS(Flexbuf *f, AST *expr, int flags)
 {
     Symbol *sym;

@@ -1055,7 +1055,7 @@ InferTypesStmt(AST *ast)
     if (!sub) {
       sub = curfunc->resultexpr;
     }
-    if (sub) {
+    if (sub && sub->kind != AST_TUPLETYPE && sub->kind != AST_EXPRLIST) {
       changes = InferTypesExpr(sub, curfunc->rettype);
     }
     return changes;
@@ -1794,9 +1794,19 @@ SimplifyAssignments(AST **astptr)
     if (!ast) return;
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
-        if (op != K_ASSIGN)
+        AST *lhs = ast->left;
+        if (lhs->kind == AST_EXPRLIST) {
+            // multiple assignment; verify it's a simple assignment
+            // note that we cannot check the number of assignments
+            // here because we have not yet done type inference, so
+            // the count for functions is unknown
+            if (op != K_ASSIGN) {
+                ERROR(ast, "Multiple assignment with modification not permitted");
+                return;
+            }
+        }
+        else if (op != K_ASSIGN)
         {
-            AST *lhs = ast->left;
             AstReportAs(ast);
             if (ExprHasSideEffects(lhs)) {
                 lhs = ExtractSideEffects(lhs, &preseq);

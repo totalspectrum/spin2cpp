@@ -74,6 +74,7 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 /* printing functions */
 void PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags);
 void PrintExpr(Flexbuf *f, AST *expr, int flags);
+void PrintLHS(Flexbuf *f, AST *expr, int flags);
 void PrintBoolExpr(Flexbuf *f, AST *expr, int flags);
 void PrintAsAddr(Flexbuf *f, AST *expr, int flags);
 void PrintExprList(Flexbuf *f, AST *list, int flags, Function *func);

@@ -281,7 +281,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
                 flexbuf_printf(f, "#ifndef Tuple%d__\n", n);
                 flexbuf_printf(f, "  struct tuple%d__ {", n);
                 for (i = 0; i < n; i++) {
-                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                    flexbuf_printf(f, " int32_t v%d; ", i);
                 }
                 flexbuf_printf(f, "};\n");
                 flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
@@ -361,7 +361,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
                 flexbuf_printf(f, "#ifndef Tuple%d__\n", n);
                 flexbuf_printf(f, "  struct tuple%d__ {", n);
                 for (i = 0; i < n; i++) {
-                    flexbuf_printf(f, " int32_t v%d__; ", i);
+                    flexbuf_printf(f, " int32_t v%d; ", i);
                 }
                 flexbuf_printf(f, "};\n");
                 flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
@@ -869,6 +869,19 @@ SetCppFlags(CppModData *bedata, AST *ast)
                     }
                     bedata->needsTuple |= (1<<n);
                 }
+            }
+        }
+        break;
+    case AST_ASSIGN:
+        if (ast->left && ast->left->kind == AST_EXPRLIST) {
+            AST *lhstyp = ExprType(ast->left);
+            AST *rhstyp = ExprType(ast->right);
+            int lhscount = (lhstyp && lhstyp->kind == AST_TUPLETYPE) ? lhstyp->d.ival : 1;
+            int rhscount = (rhstyp && rhstyp->kind == AST_TUPLETYPE) ? rhstyp->d.ival : 1;
+            if (lhscount != rhscount) {
+                ERROR(ast, "Expected to assign %d items but found %d", lhscount, rhscount);
+            } else {
+                bedata->needsTuple |= (1<<lhscount);
             }
         }
         break;
