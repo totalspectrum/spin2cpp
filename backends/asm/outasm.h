@@ -137,4 +137,6 @@ Operand *GetOneGlobal(Operandkind kind, const char *name, intptr_t value);
 Operand *GetSizedHub(Operandkind kind, const char *name, intptr_t value, int count);
 Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value);
 
+void InitAsmCode();
+
 #endif

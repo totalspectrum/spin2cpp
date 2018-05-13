@@ -40,7 +40,7 @@ static Operand *abortfunc;
 static Operand *catchfunc;
 static Operand *arg1;
 static Operand *arg2;
-static Operand *result[MAX_TUPLE];
+static Operand *resultreg[MAX_TUPLE];
 static Operand *abortcalled;
 
 static Operand *nextlabel;
@@ -182,9 +182,6 @@ ValidateAbortFuncs(void)
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
         abortcalled = GetOneGlobal(REG_REG, "result2", 0);
-        if (!result[0]) {
-            result[0] = GetOneGlobal(REG_REG, "result1", 0);
-        }
         if (!arg1) {
             arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
         }
@@ -238,6 +235,20 @@ Operand *GetSizedGlobal(Operandkind kind, const char *name, intptr_t value, int 
 Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value)
 {
     return GetSizedVar(&hubGlobalVars, kind, name, value, 1);
+}
+
+Operand *GetResultReg(int n)
+{
+    static char rvalname[32];
+    if (n < 0 || n >= MAX_TUPLE) {
+        ERROR(NULL, "Internal error bad return value");
+        return NULL;
+    }
+    if (!resultreg[n]) {
+        sprintf(rvalname, "result%d", n+1);
+        resultreg[n] = GetOneGlobal(REG_REG, strdup(rvalname), 0);
+    }
+    return resultreg[n];
 }
 
 Instruction *
@@ -1911,11 +1922,8 @@ CompileFunccall(IRList *irl, AST *expr)
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  if (!result[0]) {
-      result[0] = GetOneGlobal(REG_REG, "result1", 0);
-  }
   reg = NewFunctionTempRegister();
-  EmitMove(irl, reg, result[0]);
+  EmitMove(irl, reg, GetResultReg(0));
   return reg;
 }
 
@@ -2443,7 +2451,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       //   result := compile(expr->left)
       // }
       EmitJump(irl, COND_EQ, labelskip);
-      EmitMove(irl, tmp, result[0]);
+      EmitMove(irl, tmp, GetResultReg(0));
       EmitJump(irl, COND_TRUE, labelend);
       EmitLabel(irl, labelskip);
       EmitMove(irl, tmp, CompileExpression(irl, expr->left, NULL));
@@ -2937,8 +2945,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                 ERROR(NULL, "unfinished business");
             } else {
                 op = CompileExpression(irl, retval, NULL);
-                if (!result[0]) result[0] = GetOneGlobal(REG_REG, "result1", 0);
-                EmitMove(irl, result[0], op);
+                EmitMove(irl, GetResultReg(0), op);
             }
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
@@ -3408,9 +3415,8 @@ ExpandInline_internal(IRList *irl, Module *P)
 void
 CompileIntermediate(Module *P)
 {
-    if (!newlineOp)
-      newlineOp = NewOperand(IMM_STRING, "\n", 0);
-
+    InitAsmCode();
+    
     VisitRecursive(NULL, P, AssignFuncNames, VISITFLAG_FUNCNAMES);
     VisitRecursive(NULL, P, CompileFunc_internal, VISITFLAG_COMPILEFUNCS);
     VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
@@ -4035,8 +4041,6 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     // always have at least 2 arguments
     arg1 = arg[0];
     arg2 = arg[1];
-    if (!result[0])
-        result[0] = GetOneGlobal(REG_REG, "result1", 0);
 
     if (gl_p2) {
         stackptr = GetOneGlobal(REG_HW, "ptra", 0);
@@ -4088,7 +4092,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
         EmitOp2(irl, OPC_JMPRET, linkreg, mboxcmd);
     }
     // write back the result
-    EmitOp2(irl, OPC_WRLONG, result[0], mboxptr);
+    EmitOp2(irl, OPC_WRLONG, GetResultReg(0), mboxptr);
     EmitOp2(irl, OPC_SUB, mboxptr, const4);
     EmitMove(irl, arg1, NewImmediate(0));
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
@@ -4101,6 +4105,17 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
         EmitMove(irl, stackptr, arg2);
         EmitJump(irl, COND_TRUE, linkreg);
     }
+}
+
+void
+InitAsmCode()
+{
+    static int initDone = 0;
+
+    if (initDone) return;
+    
+    newlineOp = NewOperand(IMM_STRING, "\n", 0);    
+    initDone = 1;
 }
 
 void
@@ -4119,6 +4134,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     save = current;
     current = P;
 
+    InitAsmCode();
+    
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
     memset(&cogdata, 0, sizeof(cogdata));
