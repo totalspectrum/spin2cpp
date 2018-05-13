@@ -40,7 +40,7 @@ static Operand *abortfunc;
 static Operand *catchfunc;
 static Operand *arg1;
 static Operand *arg2;
-static Operand *result1;
+static Operand *result[MAX_TUPLE];
 static Operand *abortcalled;
 
 static Operand *nextlabel;
@@ -182,8 +182,8 @@ ValidateAbortFuncs(void)
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
         abortcalled = GetOneGlobal(REG_REG, "result2", 0);
-        if (!result1) {
-            result1 = GetOneGlobal(REG_REG, "result1", 0);
+        if (!result[0]) {
+            result[0] = GetOneGlobal(REG_REG, "result1", 0);
         }
         if (!arg1) {
             arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
@@ -1829,7 +1829,6 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
 static Operand *
 CompileFunccall(IRList *irl, AST *expr)
 {
-  Operand *result;
   Symbol *sym;
   Function *func;
   AST *params;
@@ -1912,17 +1911,18 @@ CompileFunccall(IRList *irl, AST *expr)
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  result = GetOneGlobal(REG_REG, "result1", 0);
+  if (!result[0]) {
+      result[0] = GetOneGlobal(REG_REG, "result1", 0);
+  }
   reg = NewFunctionTempRegister();
-  EmitMove(irl, reg, result);
+  EmitMove(irl, reg, result[0]);
   return reg;
 }
 
-#define MAX_ASSIGNS 8
 static Operand *
 CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
 {
-    Operand *temp[MAX_ASSIGNS] ;
+    Operand *temp[MAX_TUPLE] ;
     Operand *r = NULL;
     int count = 0;
     int i;
@@ -1931,7 +1931,7 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
             ERROR(rhs, "Expected expression list");
             return NewImmediate(0);
         }
-        if (count >= MAX_ASSIGNS) {
+        if (count >= MAX_TUPLE) {
             ERROR(rhs, "Too many elements in multiple assignment");
             return NewImmediate(0);
         }
@@ -1943,7 +1943,7 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     }
     i = 0;
     while (lhs && i < count) {
-        if (lhs->kind != AST_SEQUENCE) {
+        if (lhs->kind != AST_EXPRLIST) {
             ERROR(lhs, "Illegal left hand side for multiple assignment");
             return NewImmediate(0);
         }
@@ -2443,7 +2443,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       //   result := compile(expr->left)
       // }
       EmitJump(irl, COND_EQ, labelskip);
-      EmitMove(irl, tmp, result1);
+      EmitMove(irl, tmp, result[0]);
       EmitJump(irl, COND_TRUE, labelend);
       EmitLabel(irl, labelskip);
       EmitMove(irl, tmp, CompileExpression(irl, expr->left, NULL));
@@ -2490,7 +2490,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
       }
-      if (expr->left && expr->left->kind == AST_SEQUENCE) {
+      if (expr->left && expr->left->kind == AST_EXPRLIST) {
           // do a series of assignments
           return CompileMultipleAssign(irl, expr->left, expr->right);
       }
@@ -2915,7 +2915,6 @@ static void CompileStatement(IRList *irl, AST *ast)
 {
     AST *retval;
     Operand *op;
-    Operand *result;
     Operand *botloop, *toploop;
     Operand *exitloop;
     int starttempreg;
@@ -2934,9 +2933,13 @@ static void CompileStatement(IRList *irl, AST *ast)
             retval = curfunc->resultexpr;
         }
 	if (retval) {
-	    op = CompileExpression(irl, retval, NULL);
-	    result = GetOneGlobal(REG_REG, "result1", 0);
-            EmitMove(irl, result, op);
+            if (retval->kind == AST_EXPRLIST) {
+                ERROR(NULL, "unfinished business");
+            } else {
+                op = CompileExpression(irl, retval, NULL);
+                if (!result[0]) result[0] = GetOneGlobal(REG_REG, "result1", 0);
+                EmitMove(irl, result[0], op);
+            }
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
 	break;
@@ -4032,7 +4035,8 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
     // always have at least 2 arguments
     arg1 = arg[0];
     arg2 = arg[1];
-    result1 = GetOneGlobal(REG_REG, "result1", 0);
+    if (!result[0])
+        result[0] = GetOneGlobal(REG_REG, "result1", 0);
 
     if (gl_p2) {
         stackptr = GetOneGlobal(REG_HW, "ptra", 0);
@@ -4084,7 +4088,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
         EmitOp2(irl, OPC_JMPRET, linkreg, mboxcmd);
     }
     // write back the result
-    EmitOp2(irl, OPC_WRLONG, result1, mboxptr);
+    EmitOp2(irl, OPC_WRLONG, result[0], mboxptr);
     EmitOp2(irl, OPC_SUB, mboxptr, const4);
     EmitMove(irl, arg1, NewImmediate(0));
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
