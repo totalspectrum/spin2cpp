@@ -1934,20 +1934,47 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     Operand *r = NULL;
     int count = 0;
     int i;
-    while (rhs) {
-        if (rhs->kind != AST_EXPRLIST) {
-            ERROR(rhs, "Expected expression list");
+
+    if (!rhs) {
+        ERROR(lhs, "Unexpected end of multiple assignment list");
+        return NewImmediate(0);
+    }
+    if (rhs->kind == AST_EXPRLIST) {
+        while (rhs) {
+            if (rhs->kind != AST_EXPRLIST) {
+                ERROR(rhs, "Expected expression list");
+                return NewImmediate(0);
+            }
+            if (count >= MAX_TUPLE) {
+                ERROR(rhs, "Too many elements in multiple assignment");
+                return NewImmediate(0);
+            }
+            r = CompileExpression(irl, rhs->left, NULL);
+            temp[count] = NewFunctionTempRegister();
+            EmitMove(irl, temp[count], r);
+            count++;
+            rhs = rhs->right;
+        }
+    } else if (rhs->kind == AST_FUNCCALL) {
+        Symbol *sym;
+        Function *func;
+        sym = FindFuncSymbol(rhs, NULL, NULL);
+        if (!sym) {
+            ERROR(rhs, "Expected function symbol");
             return NewImmediate(0);
         }
-        if (count >= MAX_TUPLE) {
-            ERROR(rhs, "Too many elements in multiple assignment");
-            return NewImmediate(0);
+        func = (Function *)sym->val;
+        if (!func->rettype || func->rettype->kind != AST_TUPLETYPE) {
+            count = 1;
+        } else {
+            count = func->rettype->d.ival;
         }
-        r = CompileExpression(irl, rhs->left, NULL);
-        temp[count] = NewFunctionTempRegister();
-        EmitMove(irl, temp[count], r);
-        count++;
-        rhs = rhs->right;
+        r = CompileFunccall(irl, rhs);
+        for (i = 0; i < count; i++) {
+            temp[i] = GetResultReg(i);
+        }
+    } else {
+        ERROR(rhs, "Expected multiple values");
     }
     i = 0;
     while (lhs && i < count) {
@@ -2942,7 +2969,13 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
 	if (retval) {
             if (retval->kind == AST_EXPRLIST) {
-                ERROR(NULL, "unfinished business");
+                int n = 0;
+                while (retval) {
+                    op = CompileExpression(irl, retval->left, NULL);
+                    EmitMove(irl, GetResultReg(n), op);
+                    n++;
+                    retval = retval->right;
+                }
             } else {
                 op = CompileExpression(irl, retval, NULL);
                 EmitMove(irl, GetResultReg(0), op);
