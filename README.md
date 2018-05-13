@@ -347,7 +347,7 @@ EXTENSIONS
 ==========
 
 spin2cpp (and fastspin, which is just a different interface to spin2cpp)
-supports a few extensions to the Spin language:
+supports a number of extensions to the Spin language:
 
 (1) spin2cpp has a pre-processor that understands `#include`, `#define`, and
 `#ifdef / #ifndef / #else / #endif`. There are several predefined symbols:
@@ -361,9 +361,9 @@ Symbol           | When Defined
 `__cplusplus`    | if C++ is being output
 `__P2__`         | if compiling for Propeller 2
 
-(2) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
+(2) Ternary selection operator: as in C or Verilog, you can write:
 ```
-r := if a then b else c
+r := (a) ? b : c
 ````
 which is the same as
 ```
@@ -372,6 +372,7 @@ which is the same as
    else
      r := c
 ```
+The parentheses around the condition (`a` in this case) are mandatory, to avoid ambiguity with the random number operator ?.
 
 (3) @@@ operator: the @@@ operator returns the absolute hub address of a variable. This is the same as @ in Spin code, but in PASM code @ returns only the address relative to the start of the DAT section. Note that due to implementation issues @@@ works in C/C++ output only if --gas is given.
 
@@ -393,7 +394,24 @@ PUB doprint22
   print(@aFullDuplexSerialObj, 22)
 ```
 
-(6) There are various special comments ("annotations") which can control
+(6) spin2cpp allows multiple return values and assignments. For example,
+to swap two variables `a` and `b` you can write:
+```
+  (a,b) := (b,a)
+```
+For now the parentheses around both sets of values are mandatory.
+
+A function can also return multiple values. For instance, a function to calculate both a quotient and remainder could be written as:
+```
+PUB divrem(x,y)
+  return (x/y, x//y)
+```
+And this could later be used like:
+```
+  (q,r) := divrem(a, 10)
+```
+
+(7) There are various special comments ("annotations") which can control
 how spin2cpp behaves or insert C code into the output. See below for details.
 
 LIMITATIONS

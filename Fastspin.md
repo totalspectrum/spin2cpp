@@ -188,6 +188,11 @@ which is the same as
    else
      r := c
 ```
+This may also be written in C / Verilog style as:
+```
+r := (a) ? b : c
+```
+In the latter form the parentheses around `a` are mandatory to avoid confusion with the random number operator `?`.
 
 (4) fastspin accepts inline assembly in PUB and PRI sections. Inline
 assembly starts with `asm` and ends with `endasm`. The inline assembly
@@ -216,6 +221,22 @@ PUB print(f, c)
 
 PUB doprint22
   print(@aFullDuplexSerialObj, 22)
+```
+
+(6) fastspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
+```
+  (a,b) := (b,a)
+```
+For now the parentheses around both sets of values are mandatory.
+
+A function can also return multiple values. For instance, a function to calculate both a quotient and remainder could be written as:
+```
+PUB divrem(x,y)
+  return (x/y, x//y)
+```
+And this could later be used like:
+```
+  (q,r) := divrem(a, 10)
 ```
 
 Limitations
