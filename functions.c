@@ -218,6 +218,19 @@ DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation, AST *co
     current->funcblock = AddToList(current->funcblock, funcblock);
 }
 
+static AST *
+TranslateToExprList(AST *listholder)
+{
+    AST *head, *tail;
+
+    if (!listholder) {
+        return NULL;
+    }
+    tail = TranslateToExprList(listholder->right);
+    head = NewAST(AST_EXPRLIST, listholder->left, tail);
+    return head;
+}
+
 static void
 doDeclareFunction(AST *funcblock)
 {
@@ -229,7 +242,6 @@ doDeclareFunction(AST *funcblock)
     AST *vars;
     AST *src;
     AST *comment;
-    const char *resultname;
     int is_public;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
@@ -259,13 +271,27 @@ doDeclareFunction(AST *funcblock)
         }
         fdef->doccomment = comment;
     }
-    if (src->right && src->right->kind == AST_IDENTIFIER)
-        resultname = src->right->d.string;
-    else
-        resultname = "result";
-    fdef->resultexpr = AstIdentifier(resultname);
     fdef->is_public = is_public;
     fdef->rettype = NULL;
+    if (!src->right || src->right->kind == AST_RESULT) {
+        fdef->resultexpr = AstIdentifier("result");
+        AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
+        fdef->numresults = 1;
+    } else {
+        fdef->resultexpr = src->right;
+        if (src->right->kind == AST_IDENTIFIER) {
+            AddSymbol(&fdef->localsyms, src->right->d.string, SYM_RESULT, NULL);
+            fdef->numresults = 1;
+        } else if (src->right->kind == AST_LISTHOLDER) {
+            fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, src->right, 0) / LONG_SIZE;
+            AstReportAs(src);
+            fdef->rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
+            fdef->rettype->d.ival = fdef->numresults;
+            fdef->resultexpr = TranslateToExprList(fdef->resultexpr);
+        } else {
+            ERROR(src, "Internal problem with function result definition");
+        }
+    }
 
     vars = funcdef->right;
     if (vars->kind != AST_FUNCVARS) {
@@ -280,8 +306,6 @@ doDeclareFunction(AST *funcblock)
     // so initialize it to NULL
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
     fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
-
-    AddSymbol(&fdef->localsyms, resultname, SYM_RESULT, NULL);
 
     fdef->body = body;
 
@@ -394,7 +418,7 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_IDENTIFIER:
         rdecl = func->resultexpr;
-        if (rdecl && AstMatch(rdecl, ast))
+        if (rdecl && AstUses(rdecl, ast))
             func->result_used = 1;
         return NULL;
     case AST_INTEGER:
@@ -990,7 +1014,6 @@ ProcessFuncs(Module *P)
         CheckFunctionCalls(pf->body);
         
         /* check for void functions */
-        pf->rettype = NULL;
         sawreturn = CheckRetStatementList(pf, pf->body);
         if (pf->rettype == NULL && pf->result_used) {
             /* there really is a return type */

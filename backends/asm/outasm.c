@@ -3105,8 +3105,10 @@ CompileFunctionBody(Function *f)
     // emit initializations if any required
     if (!f->result_in_parmarray && f->resultexpr && !IsConstExpr(f->resultexpr))
     {
-        AST *resinit = AstAssign(f->resultexpr, AstInteger(0));
-        CompileStatement(irl, resinit);
+        if (f->resultexpr->kind == AST_IDENTIFIER) {
+            AST *resinit = AstAssign(f->resultexpr, AstInteger(0));
+            CompileStatement(irl, resinit);
+        }
     }
     //
     CompileStatementList(irl, f->body);

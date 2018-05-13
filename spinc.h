@@ -136,6 +136,7 @@ typedef struct funcdef {
     int numlocals;
     AST *locals;      /* local variables */
     AST *body;
+    int numresults;
     AST *resultexpr;
     AST *extradecl;
     
