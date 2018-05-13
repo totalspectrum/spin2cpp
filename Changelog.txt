@@ -1,5 +1,6 @@
-Version 3.7.3
-- Added multiple assignments
+Version 3.8.0
+- Added multiple assignments like (x,y) := (y,x)
+- Added ability for functions to return multiple values
 - Made the preprocessor work correctly with Mac encoded files (CR for
   end of line)
 - Made fastspin -w work correctly in P2 mode
