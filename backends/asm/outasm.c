@@ -4052,7 +4052,7 @@ EmitMain_P2(IRList *irl, Module *P)
 #define MAX_COGSPIN_ARGS 16
 
 void
-EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
+EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
 {
     IR *ir;
     Operand *arg[MAX_COGSPIN_ARGS];
@@ -4127,8 +4127,13 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs)
         EmitOp2(irl, OPC_JMPRET, linkreg, mboxcmd);
     }
     // write back the result
-    EmitOp2(irl, OPC_WRLONG, GetResultReg(0), mboxptr);
-    EmitOp2(irl, OPC_SUB, mboxptr, const4);
+    for (i = 0; i < maxResults; i++) {
+        EmitOp2(irl, OPC_WRLONG, GetResultReg(i), mboxptr);
+        if (i != maxResults-1) {
+            EmitOp2(irl, OPC_ADD, mboxptr, const4);
+        }
+    }
+    EmitOp2(irl, OPC_SUB, mboxptr, NewImmediate(4*maxResults));
     EmitMove(irl, arg1, NewImmediate(0));
     EmitOp2(irl, OPC_WRLONG, arg1, mboxptr);
     EmitJump(irl, COND_TRUE, waitloop);
@@ -4165,6 +4170,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     unsigned int clkfreq, clkreg;
     const char *asmcode;
     int maxargs = 2; // initialization code wants 2 arguments
+    int maxrets = 1;  // assume 1 return value is default
     
     save = current;
     current = P;
@@ -4193,6 +4199,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 if (func->numparams > maxargs) {
                     maxargs = func->numparams;
                 }
+                if (func->numresults > maxrets) {
+                    maxrets = func->numresults;
+                }
             }
             if (func->local_address_taken || func->is_recursive || func->cog_task) {
                 int savesize = LocalSize(func) / LONG_SIZE;
@@ -4209,7 +4218,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
             func = func->next;            
         }
-        mboxSize = maxargs + 3;
+        if (maxargs > maxrets) {
+            mboxSize = maxargs + 3;
+        } else {
+            mboxSize = maxrets + 3;
+        }
         EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, "__MBOX_SIZE", mboxSize), NewImmediate(mboxSize));
 
         if (!stackSym) {
@@ -4222,7 +4235,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // output the main stub
     EmitLabel(&cogcode, entrylabel);
     if (gl_output == OUTPUT_COGSPIN) {
-        EmitMain_CogSpin(&cogcode, P, maxargs);
+        EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);
     } else if (outputMain) {
         if (gl_p2) {
             EmitMain_P2(&cogcode, P);

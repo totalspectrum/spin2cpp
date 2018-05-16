@@ -398,6 +398,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 int paramnum = 2;
                 int needcomma = 0;
                 int synchronous;
+                int i;
                 flexbuf_printf(fb, "PUB %s", f->name);
                 if (list) {
                     flexbuf_addstr(fb, "(");
@@ -411,6 +412,12 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                         list = list->right;
                     }
                     flexbuf_addstr(fb, ")");
+                }
+                if (f->numresults > 1) {
+                    flexbuf_addstr(fb, " : r0");
+                    for (i = 1; i < f->numresults; i++) {
+                        flexbuf_printf(fb, ", r%d", i);
+                    }
                 }
                 flexbuf_addstr(fb, "\n");
                 flexbuf_addstr(fb, "  __lock\n");
@@ -426,7 +433,17 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                     synchronous = 0;
                 else
                     synchronous = 1;
-                flexbuf_printf(fb, "  return __invoke(@pasm_%s, %d)\n\n", f->name, synchronous);
+                if (f->numresults < 2) {
+                    flexbuf_printf(fb, "  return __invoke(@pasm_%s, %d)\n\n", f->name, synchronous);
+                } else {
+                    // synchronous call, fetch all results
+                    flexbuf_printf(fb, "  __mbox[1] := @pasm_%s - @entry\n", f->name);
+                    flexbuf_printf(fb, "  repeat until __mbox[1] == 0\n");
+                    for (i = 0; i < f->numresults; i++) {
+                        flexbuf_printf(fb, "  r%d := __mbox[%d]\n", i, 2+i);
+                    }
+                    flexbuf_printf(fb, "  __unlock\n\n");
+                }
             }
         }
         flexbuf_addstr(fb, "'--------------------------------------------------\n");
