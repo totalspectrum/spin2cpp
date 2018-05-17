@@ -984,12 +984,15 @@ lhs: identifier
 lhsseq:
   '(' lhs ',' lhsseqcont ')'
     { $$ = NewAST(AST_EXPRLIST, $2, $4); }
+  | lhs ',' lhsseqcont
+    { $$ = NewAST(AST_EXPRLIST, $1, $3); }
   ;
+
 lhsseqcont:
-lhs
-  { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
-| lhs ',' lhsseqcont
-  { $$ = NewAST(AST_EXPRLIST, $1, $3); }
+  lhs
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | lhsseqcont ',' lhs
+    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
 ;
 
 memref:
