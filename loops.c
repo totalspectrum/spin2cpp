@@ -749,6 +749,7 @@ CheckSimpleLoop(AST *stmt)
     AST *updateInit = NULL;
     AST *updateLimit = NULL;
     AST *newInitial = NULL;
+    Symbol *sym;
     int updateTestOp = 0;
     int32_t initVal;
     
@@ -766,6 +767,18 @@ CheckSimpleLoop(AST *stmt)
     updateVar = initial->left;
     if (updateVar->kind != AST_IDENTIFIER)
         return;
+    sym = LookupSymbol(updateVar->d.string);
+    switch (sym->type) {
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+        /* OK, we can see all uses of these variables */
+        break;
+    default:
+        /* memory based variable, may be modified inside a function call */
+        return;
+    }
     updateInit = initial->right;
     if (!IsConstExpr(updateInit))
         return;
