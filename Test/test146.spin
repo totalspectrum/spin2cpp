@@ -8,5 +8,5 @@ PUB seq3(n)
   return (n, n+1, n+2)
 
 PUB setit
-  (a,b,c) := seq3(1)
+  a,b,c := seq3(1)
   

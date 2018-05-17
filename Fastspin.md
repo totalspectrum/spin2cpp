@@ -225,18 +225,27 @@ PUB doprint22
 
 (6) fastspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
 ```
+  a,b := b,a
+```
+It's also acceptable (and perhaps easier to read) if there are parentheses around some or all of the multiple values:
+```
   (a,b) := (b,a)
 ```
-For now the parentheses around both sets of values are mandatory.
 
 A function can also return multiple values. For instance, a function to calculate both a quotient and remainder could be written as:
 ```
 PUB divrem(x,y)
-  return (x/y, x//y)
+  return x/y, x//y
 ```
-And this could later be used like:
+or
 ```
-  (q,r) := divrem(a, 10)
+PUB divrem(x,y) : q, r
+  q := x/y
+  r := x//y
+```
+This could later be used like:
+```
+  (a,digit) := divrem(a, 10)
 ```
 
 Limitations

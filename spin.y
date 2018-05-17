@@ -116,6 +116,20 @@ AstReturn(AST *expr, AST *comment)
 }
 
 AST *
+AstAssignList(AST *dest, AST *expr, AST *comment)
+{
+    AST *ast;
+    if (expr && expr->kind == AST_EXPRLIST && expr->right == NULL) {
+        ast = AstAssign(dest, expr->left);
+    } else {
+        ast = AstAssign(dest, expr);
+    }
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+}
+
+AST *
 AstAbort(AST *expr, AST *comment)
 {
     return NewCommentedAST(AST_ABORT, expr, NULL, comment);
@@ -431,9 +445,9 @@ basicstmt:
 
 multiassign:
   lhsseq SP_ASSIGN '(' exprlist ')'
-    { $$ = AstAssign($1, $4); }
-  | lhsseq SP_ASSIGN funccall
-    { $$ = AstAssign($1, $3); }
+    { $$ = AstAssignList($1, $4, $2); }
+  | lhsseq SP_ASSIGN exprlist
+    { $$ = AstAssignList($1, $3, $2); }
 
 compoundstmt:
    ifstmt
