@@ -6,7 +6,8 @@ Version 3.8.0
 - Made fastspin -w work correctly in P2 mode
 - if fastspin is named something ending with "spin2" (like
   "fastspin2") then it will start in Propeller2 mode by default
- 
+- simplified parsing of \ expressions
+
 Version 3.7.2
 - Updated P2 support to v32
 - Fixed some bugs in common subexpression elimination

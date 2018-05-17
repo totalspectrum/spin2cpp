@@ -4,14 +4,17 @@
 CON
   _clkfreq = 80_000_000
   _clkmode = xtal1 + pll16x
-   
+
+VAR
+  long i
+  
 OBJ
  ser: "FullDuplexSerial"
 
-PUB demo | i
+PUB demo
   ser.start(31, 30, 0, 115200)
   repeat i from 0 to 5
-    if not \mytest(i)
+    if not \mytest
       ser.str(string("abort called", 13, 10))
   exit
   
@@ -25,7 +28,7 @@ PUB exit
   ser.txflush
   repeat
 
-pub mytest(i)
+pub mytest
   result := true
   ser.str(string("testing: "))
   ser.dec(i)
