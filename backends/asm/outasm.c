@@ -4166,7 +4166,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     IR *orgh;
     Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
     Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
-
+    bool emitSpinCode = true;
+    
     unsigned int clkfreq, clkreg;
     const char *asmcode;
     int maxargs = 2; // initialization code wants 2 arguments
@@ -4175,6 +4176,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     save = current;
     current = P;
 
+    if (!P->functions) {
+        // no Spin methods, so just output the DAT section
+        emitSpinCode = false;
+        P->bedata = calloc(sizeof(AsmModData), 1);
+        ValidateDatBase(P); // include DAT even though no labels referenced
+        
+    }
     InitAsmCode();
     
     memset(&cogcode, 0, sizeof(cogcode));
@@ -4229,84 +4237,90 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, STACK_SIZE_NAME, stackSize), NewImmediate(stackSize));
         }
     }
-    EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
+    if (emitSpinCode) {
+        EmitOp1(&cogbss, OPC_ORG, cog_bss_start);
+    }
     CompileConsts(&cogcode, P->conblock);
 
-    // output the main stub
-    EmitLabel(&cogcode, entrylabel);
-    if (gl_output == OUTPUT_COGSPIN) {
-        EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);
-    } else if (outputMain) {
-        if (gl_p2) {
-            EmitMain_P2(&cogcode, P);
-        } else {
-            EmitMain_P1(&cogcode, P);
+    if (emitSpinCode) {
+        // output the main stub
+        EmitLabel(&cogcode, entrylabel);
+        if (gl_output == OUTPUT_COGSPIN) {
+            EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);
+        } else if (outputMain) {
+            if (gl_p2) {
+                EmitMain_P2(&cogcode, P);
+            } else {
+                EmitMain_P1(&cogcode, P);
+            }
         }
-    }
-    // compile COG functions
-    if (COG_CODE) {
-        if (!CompileToIR(&cogcode, P)) {
-            return;
+        // compile COG functions
+        if (COG_CODE) {
+            if (!CompileToIR(&cogcode, P)) {
+                return;
+            }
         }
-    }
-    if (HUB_CODE) {
-        ValidateStackptr();
-        if (!gl_p2) {
-            EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hub_ret_to_cog", 0));
-            EmitJump(&hubcode, COND_TRUE,
-                     NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
+        if (HUB_CODE) {
+            ValidateStackptr();
+            if (!gl_p2) {
+                EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hub_ret_to_cog", 0));
+                EmitJump(&hubcode, COND_TRUE,
+                         NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
+            }
+            EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
+            if (!CompileToIR(&hubcode, P)) {
+                return;
+            }
         }
-        EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
-        if (!CompileToIR(&hubcode, P)) {
-            return;
+        if (hubexit) {
+            EmitLabel(&hubcode, hubexit);
+            EmitJump(&hubcode, COND_TRUE, cogexit);
         }
-    }
-    if (hubexit) {
-        EmitLabel(&hubcode, hubexit);
-        EmitJump(&hubcode, COND_TRUE, cogexit);
-    }
-    EmitBuiltins(&cogcode);
-    // we compiled builtin functions into IR form earlier, now
-    // output them
+        EmitBuiltins(&cogcode);
+        // we compiled builtin functions into IR form earlier, now
+        // output them
 #if 0
-    // these always go in COG memory
-    CompileToIR_internal(&cogcode, globalModule);
-#else
-    if (HUB_CODE && gl_compressed) {
-        CompileToIR_internal(&hubcode, globalModule);
-    } else {
+        // these always go in COG memory
         CompileToIR_internal(&cogcode, globalModule);
-    }
-#endif
-    // now copy the hub code into place
-    orgh = EmitOp0(&cogcode, OPC_HUBMODE);
-    if (gl_p2) {
-        // on P2, make room for CLKFREQ and CLKMODE
-        if (!GetClkFreq(P, &clkfreq, &clkreg)) {
-            clkfreq = 80000000;
-            clkreg = 0x64;
+#else
+        if (HUB_CODE && gl_compressed) {
+            CompileToIR_internal(&hubcode, globalModule);
+        } else {
+            CompileToIR_internal(&cogcode, globalModule);
         }
-        EmitLong(&cogcode, clkfreq);
-        EmitLong(&cogcode, clkreg);
+#endif
+        // now copy the hub code into place
+        orgh = EmitOp0(&cogcode, OPC_HUBMODE);
+        if (gl_p2) {
+            // on P2, make room for CLKFREQ and CLKMODE
+            if (!GetClkFreq(P, &clkfreq, &clkreg)) {
+                clkfreq = 80000000;
+                clkreg = 0x64;
+            }
+            EmitLong(&cogcode, clkfreq);
+            EmitLong(&cogcode, clkreg);
+        }
     }
 
-    AppendIR(&cogcode, hubcode.head);
+    if (emitSpinCode) {
+        AppendIR(&cogcode, hubcode.head);
 
-    // we have to optimize all code before emitting any variables
-    OptimizeIRGlobal(&cogcode);
+        // we have to optimize all code before emitting any variables
+        OptimizeIRGlobal(&cogcode);
 
-    // cog data
-    EmitGlobals(&cogdata, &cogbss, &hubdata);
-
-    // COG bss
-    // FCACHE space
-    if (HUB_CODE) {
-        EmitNamedCogLabel(&cogbss, "LMM_RETREG");
-        EmitReserve(&cogbss, 1, COG_RESERVE);
-        EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
-        EmitReserve(&cogbss, gl_fcache_size+1, COG_RESERVE);
+        // cog data
+        EmitGlobals(&cogdata, &cogbss, &hubdata);
+    
+        // COG bss
+        // FCACHE space
+        if (HUB_CODE && !gl_p2) {
+            EmitNamedCogLabel(&cogbss, "LMM_RETREG");
+            EmitReserve(&cogbss, 1, COG_RESERVE);
+            EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
+            EmitReserve(&cogbss, gl_fcache_size+1, COG_RESERVE);
+        }
     }
-              
+    
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
 
@@ -4324,13 +4338,14 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
 
-    // now insert the cog data after the cog code, before the orgh
-    EmitLabel(&cogdata, cog_bss_start);
-    EmitOp0(&cogdata, OPC_FIT);
+    if (emitSpinCode) {
+        // now insert the cog data after the cog code, before the orgh
+        EmitLabel(&cogdata, cog_bss_start);
+        EmitOp0(&cogdata, OPC_FIT);
     
-    EmitOp0(&cogbss, OPC_FIT);
-    InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
-    
+        EmitOp0(&cogbss, OPC_FIT);
+        InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
+    }
     // and the hub data at the end
     AppendIR(&cogcode, hubdata.head);
     // now the cog bss (which doesn't need any actual space

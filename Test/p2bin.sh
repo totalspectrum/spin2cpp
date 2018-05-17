@@ -1,23 +1,23 @@
 #!/bin/sh
 
 if [ "$1" != "" ]; then
-  SPIN2CPP=$1
+  FASTSPIN=$1
 else
-  SPIN2CPP=../build/spin2cpp
+  FASTSPIN=../build/fastspin
 fi
 
-PROG="$SPIN2CPP -I../Lib"
+PROG="$FASTSPIN -q -2 -I../Lib"
 ok="ok"
 endmsg=$ok
 
 # P2 ASM mode compilation tests
-for i in *.p2asm
+for i in *.spin2
 do
-  j=`basename $i .p2asm`
-  $PROG --p2 --dat $i
-  if  diff -ub Expect/$j.obj $j.dat
+  j=`basename $i .spin2`
+  $PROG $i
+  if  diff -ub Expect/$j.obj $j.binary
   then
-      rm -f $j.dat
+      rm -f $j.binary $j.p2asm
       echo $j passed
   else
       echo $j failed
