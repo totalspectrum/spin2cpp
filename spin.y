@@ -898,13 +898,7 @@ expr:
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
   | '(' expr ')'
     { $$ = $2; }
-  | '\\' funccall
-    { $$ = AstCatch($2); }
-  | '\\' identifier
-    { $$ = AstCatch(NewAST(AST_FUNCCALL, $2, NULL)); }
-  | '\\' '(' expr ')'
-    { $$ = AstCatch($3); }
-  | '\\' integer
+  | '\\' expr
     { $$ = AstCatch($2); }
   | funccall
     { $$ = $1; }
