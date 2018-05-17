@@ -107,6 +107,15 @@ AstYield(void)
 }
 
 AST *
+AstReturn(AST *expr, AST *comment)
+{
+    if (expr && expr->kind == AST_EXPRLIST && expr->right == NULL) {
+        return NewCommentedAST(AST_RETURN, expr->left, NULL, comment);
+    }
+    return NewCommentedAST(AST_RETURN, expr, NULL, comment);
+}
+
+AST *
 AstAbort(AST *expr, AST *comment)
 {
     return NewCommentedAST(AST_ABORT, expr, NULL, comment);
@@ -400,13 +409,13 @@ stmt:
 
 basicstmt:
    SP_RETURN SP_EOLN
-    { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
-  |  SP_RETURN '(' exprlist ',' expr ')' SP_EOLN
+    { $$ = AstReturn(NULL, $1); }
+  |  SP_RETURN '(' exprlist ')' SP_EOLN
     {
-        $$ = NewCommentedAST(AST_RETURN, AddToList($3, NewAST(AST_EXPRLIST, $5, NULL)), NULL, $1);
+        $$ = AstReturn($3, $1);
     }
-  |  SP_RETURN expr SP_EOLN
-    { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
+  |  SP_RETURN exprlist SP_EOLN
+    { $$ = AstReturn($2, $1); }
   | SP_ABORT SP_EOLN
     { $$ = AstAbort(NULL, $1); }
   |  SP_ABORT expr SP_EOLN
