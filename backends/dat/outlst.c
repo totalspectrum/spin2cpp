@@ -18,15 +18,6 @@ static void initOutput(Module *P)
     current_lex->lineCounter = 0;
 }
 
-static void lstPutByte(Flexbuf *f, int c) {
-    if (bytesOnLine < 4) {
-        flexbuf_printf(f, "%02X", c);
-        bytesOnLine++;
-    }
-    hubPc++;
-    cogPc++;
-}
-
 //
 // every byte will start with 24 bytes
 //  HHHHH CCC DDDDDDDD  |   (3 spaces at end)
@@ -44,8 +35,17 @@ static void startNewLine(Flexbuf *f) {
     }
 }
 
+static void lstPutByte(Flexbuf *f, int c) {
+    if (bytesOnLine >= 4) {
+        startNewLine(f);
+    }
+    flexbuf_printf(f, "%02X", c);
+    bytesOnLine++;
+    hubPc++;
+    cogPc++;
+}
+
 static void AddRestOfLine(Flexbuf *f, const char *s) {
-    int sawNL;
     int c;
     while (bytesOnLine < 4) {
         flexbuf_printf(f, "  ");
@@ -129,12 +129,11 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     // update PCs as appropriate
     switch (ast->kind) {
     case AST_ORG:
-//        cogPc = ast->d.ival;
         inCog = 1;
+        cogPc = 4*EvalPasmExpr(ast->left);
         break;
     case AST_ORGH:
         inCog = 0;
-        hubPc = ast->d.ival;
         break;
     case AST_INSTRHOLDER:
         inCog = (ast->d.ival & (1<<30)) != 0;
@@ -160,6 +159,9 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     case AST_IDENTIFIER:
         /* do not catch up to line, yet */
         return;
+    case AST_ORGH:
+        hubPc = ast->d.ival;
+        break;
     default:
         break;
     }
