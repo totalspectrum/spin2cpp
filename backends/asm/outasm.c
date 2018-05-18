@@ -4163,7 +4163,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
     FILE *f = NULL;
     Module *save;
-    IR *orgh;
+    IR *orgh = NULL;
     Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
     Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
     bool emitSpinCode = true;
@@ -4344,7 +4344,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         EmitOp0(&cogdata, OPC_FIT);
     
         EmitOp0(&cogbss, OPC_FIT);
-        InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
+        if (orgh) {
+            InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
+        }
     }
     // and the hub data at the end
     AppendIR(&cogcode, hubdata.head);
