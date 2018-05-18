@@ -160,7 +160,6 @@ static void lstEndAst(Flexbuf *f, AST *ast)
         /* do not catch up to line, yet */
         return;
     case AST_ORGH:
-        hubPc = ast->d.ival;
         break;
     default:
         break;
