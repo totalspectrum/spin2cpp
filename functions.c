@@ -191,6 +191,18 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                     }
                 }
             }
+            // convert plain IDENTIFIER into a FUNCCALL if it is a function
+            // identifier
+            if (sym->type == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL) {
+                AST *funccall;
+                AstReportAs(body);
+                funccall = NewAST(AST_FUNCCALL, body, NULL);
+                if (body == upper->left) {
+                    upper->left = funccall;
+                } else if (body == upper->right) {
+                    upper->right = funccall;
+                }
+            }
         }
         break;
     default:
