@@ -133,6 +133,7 @@ which may modify the compilation:
   [ -b ]             output binary file format
   [ -e ]             output eeprom file format
   [ -c ]             output only DAT sections
+  [ -l ]             output DAT section as an annotated list file
   [ -f ]             output list of file names
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
