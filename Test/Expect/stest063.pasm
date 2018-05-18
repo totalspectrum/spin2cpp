@@ -47,10 +47,7 @@ _dat_
 	long	$f8bc1e0e
 	long	$6cbfe80d
 	long	$5c7c0009
-	long	$00000000
-	long	$00000000
-	long	$00000000
-	long	$00000000
+	long	$00000000[4]
 	org	COG_BSS_START
 arg1
 	res	1

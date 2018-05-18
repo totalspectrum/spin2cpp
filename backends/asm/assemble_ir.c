@@ -217,6 +217,8 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
     int addr;
     Reloc *nextreloc;
     int relocs;
+    uint32_t runlen;
+    int lastdata;
     
     if (op->kind != IMM_BINARY) {
         ERROR(NULL, "Internal: bad binary blob");
@@ -241,7 +243,8 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         len = flexbuf_curlen(databuf);
     }
     data = (uint32_t *)flexbuf_peek(databuf);
-    for (addr = 0; addr < len; addr += 4) {
+    addr = 0;
+    while (addr < len) {
         flexbuf_printf(fb, "\tlong\t");
         if (relocs > 0) {
             // see if this particular long needs a reloc
@@ -256,12 +259,27 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                 }
                 data++;
                 nextreloc++;
+                addr += 4;
                 --relocs;
                 continue;
             }
         }
-        flexbuf_printf(fb, "$%08x\n", data[0]);
-        data ++;
+        /* check for a run of data */
+        runlen = 1;
+        lastdata = data[0];
+        data++;
+        addr += 4;
+        while (data[0] == lastdata && addr < len && (relocs == 0 || nextreloc->addr != addr))
+        {
+            runlen++;
+            data++;
+            addr += 4;
+        }
+        if (runlen > 1) {
+            flexbuf_printf(fb, "$%08x[%d]\n", lastdata, runlen);
+        } else {
+            flexbuf_printf(fb, "$%08x\n", lastdata);
+        }
     }
 }
 
