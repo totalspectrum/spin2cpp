@@ -1,0 +1,13 @@
+DAT
+	orgh $400
+
+	byte 1
+start
+	long $BBBBBBBB
+	word $AA
+end
+	alignl
+
+	long start	' should be $401
+	long end	' should be $407
+

@@ -329,6 +329,7 @@ DeclareLabels(Module *P)
         case AST_COMMENT:
             break;
         case AST_ALIGN:
+            pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub);
             ALIGNPC(EvalPasmExpr(ast->left));
             break;
         default:
