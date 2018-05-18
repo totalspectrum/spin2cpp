@@ -836,6 +836,7 @@ decode_instr:
     } else {
         if (immmask & BIG_IMM_DST) {
             uint32_t augval = val & 0xf0000000; // preserve condition
+            if (augval == 0) augval = 0xf0000000; // except _ret_
             augval |= (dst >> 9) & 0x007fffff;
             augval |= 0x0f800000; // AUGD
             dst &= 0x1ff;
@@ -844,6 +845,7 @@ decode_instr:
         }
         if (immmask & BIG_IMM_SRC) {
             uint32_t augval = val & 0xf0000000; // preserve condition
+            if (augval == 0) augval = 0xf0000000; // except _ret_
             augval |= (src >> 9) & 0x007fffff;
             augval |= 0x0f000000; // AUGS
             src &= 0x1ff;

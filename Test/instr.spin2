@@ -3,6 +3,7 @@ DAT
 ' Some problematic P2 instructions
 '
 		org
+  _ret_		mov    y, ##$DEADBEEF
 		wrpin  #1, #2
 		akpin  #2
 		wrpin  #1, y
