@@ -1499,7 +1499,7 @@ instr_p2[] = {
 
     { "setpat", 0x0bf00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "wrpin",  0x0c000000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "akpin",  0x0c0c0200, SRC_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "akpin",  0x0c040200, SRC_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "wxpin",  0x0c100000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "wypin",  0x0c200000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "wrlut",  0x0c300000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },

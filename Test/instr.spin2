@@ -3,6 +3,10 @@ DAT
 ' Some problematic P2 instructions
 '
 		org
+		wrpin  #1, #2
+		akpin  #2
+		wrpin  #1, y
+		akpin  y
 		wrlong #2,PTRB++
 		pushb #2
 		wrlong y, PTRA++
