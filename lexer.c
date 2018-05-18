@@ -1398,8 +1398,8 @@ instr_p2[] = {
     { "setd",   0x09b00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "sets",   0x09b80000, TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "decod",  0x09c00000, TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "bmask",  0x09c80000, TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "decod",  0x09c00000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC, 0 },
+    { "bmask",  0x09c80000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC, 0 },
     
     { "crcbit", 0x09d00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "crcnib", 0x09d80000, TWO_OPERANDS, OPC_GENERIC, 0 },
