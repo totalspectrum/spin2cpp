@@ -1,6 +1,8 @@
 Version 3.8.1
+- Added -l flag to fastspin to produce a listing file
 - Fixed multiple returns from functions with no parameters
 - Added pusha, pushb, modc, modz aliases for P2 instructions
+- Various fixes for P2 binary output
 
 Version 3.8.0
 - Added multiple assignments like (x,y) := (y,x)
