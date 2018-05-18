@@ -296,7 +296,13 @@ void DeclareFunctions(Module *);
 */
 void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareToplevelAnnotation(AST *annotation);
-typedef void (*DataBlockOutFunc)(Flexbuf *f, int c);
+
+/* functions for printing data into a flexbuf */
+typedef struct DataBlockOutFuncs {
+    void (*startAst)(Flexbuf *f, AST *ast);
+    void (*putByte)(Flexbuf *f, int c);
+    void (*endAst)(Flexbuf *f, AST *ast);
+} DataBlockOutFuncs;
 
 /*
  * information about relocations:
@@ -317,7 +323,7 @@ typedef struct Reloc {
     int  value;   // the value to add to dat base at that location
 } Reloc;
 
-void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc putc, Flexbuf *relocs);
+void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
 int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
 
@@ -370,6 +376,7 @@ AST *NewAbstractObject(AST *identifier, AST *string);
 void OutputCppCode(const char *name, Module *P, int printMain);
 void OutputDatFile(const char *name, Module *P, int prefixBin);
 void OutputGasFile(const char *name, Module *P);
+void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
 
 /* function to canonicalize an identifier */

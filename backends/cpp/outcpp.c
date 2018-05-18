@@ -675,6 +675,12 @@ outputByteHex(Flexbuf *f, int c)
     }
 }
 
+static DataBlockOutFuncs cppOutputFuncs = {
+    NULL,
+    outputByteHex,
+    NULL,
+};
+
 static void IfdefPropeller(Flexbuf *f)
 {
     if (gl_cc) {
@@ -744,7 +750,7 @@ PrintCppFile(Flexbuf *f, Module *parse)
                 PrintDatArray(f, parse, " = {\n", true);
             }
             datacount = 0;
-            PrintDataBlock(f, parse, outputByteHex, NULL);
+            PrintDataBlock(f, parse, &cppOutputFuncs, NULL);
             if (datacount != 0) {
                 flexbuf_printf(f, "\n");
             }

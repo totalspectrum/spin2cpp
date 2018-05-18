@@ -75,7 +75,6 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     Flexbuf fb;
     size_t curlen;
     size_t desiredlen;
-    
     save = current;
     current = P;
 
@@ -118,18 +117,24 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
 #define BYTES_PER_LINE 16  /* must be at least 4 */
 static int datacount = 0;
 
-static DataBlockOutFunc outc;
-
 static void
 outputByteBinary(Flexbuf *f, int c)
 {
     flexbuf_putc(c, f);
 }
 
+static DataBlockOutFuncs defaultOutFuncs = {
+    NULL,
+    outputByteBinary,
+    NULL,
+};
+
+static DataBlockOutFuncs *outFuncs;
+
 static void
 outputByte(Flexbuf *f, int c)
 {
-    (*outc)(f, c);
+    (outFuncs->putByte)(f, c);
     datacount++;
 }
 
@@ -150,13 +155,13 @@ outputInstrLong(Flexbuf *f, uint32_t c)
 }
 
 static void
-initDataOutput(DataBlockOutFunc func)
+initDataOutput(DataBlockOutFuncs *funcs)
 {
     datacount = 0;
-    if (func) {
-        outc = func;
+    if (funcs) {
+        outFuncs = funcs;
     } else {
-        outc = outputByteBinary;
+        outFuncs = &defaultOutFuncs;
     }
 }
 
@@ -913,20 +918,36 @@ padBytes(Flexbuf *f, AST *ast, int bytes)
  * print out a data block
  */
 void
-PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
+PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
 {
     AST *ast;
     AST *top;
+    void (*startAst)(Flexbuf *f, AST *ast) = NULL;
+    void (*endAst)(Flexbuf *f, AST *ast) = NULL;
     
-    initDataOutput(func);
+    initDataOutput(funcs);
+    if (funcs) {
+        startAst = funcs->startAst;
+        endAst = funcs->endAst;
+    }
+    
     if (gl_errors != 0)
         return;
     for (top = P->datblock; top; top = top->right) {
         ast = top;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
+            if (startAst) {
+                (*startAst)(f, ast);
+            }
+            if (endAst) {
+                (*endAst)(f, ast);
+            }
             ast = ast->left;
         }
         if (!ast) continue;
+        if (startAst) {
+            (*startAst)(f, ast);
+        }
         switch (ast->kind) {
         case AST_BYTELIST:
             outputAlignedDataList(f, 1, ast->left, relocs);
@@ -967,6 +988,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFunc func, Flexbuf *relocs)
         default:
             ERROR(ast, "unknown element in data block");
             break;
+        }
+        if (endAst) {
+            (*endAst)(f, ast);
         }
     }
 }
