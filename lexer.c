@@ -1508,6 +1508,10 @@ instr_p2[] = {
     { "wrword", 0x0c500000, P2_RDWR_OPERANDS, OPC_WRWORD, 0 },
     { "wrlong", 0x0c600000, P2_RDWR_OPERANDS, OPC_WRLONG, 0 },
 
+    // some aliases for wrlong x, ptra++ etc.
+    { "pusha",  0x0c600161, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+    { "pushb",  0x0c6001e1, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+
     { "rdfast", 0x0c700000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "wrfast", 0x0c800000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "fblock", 0x0c900000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
@@ -1637,6 +1641,8 @@ instr_p2[] = {
     { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC, 0 },
+    { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC, 0 },
   
     { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC, 0 },
@@ -1704,6 +1710,8 @@ instr_p2[] = {
     { "wrz",    0x0d60006e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "wrnz",   0x0d60006f, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD },
+    { "modc",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD },
+    { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD },
     { "rfvar",  0x0d600070, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rfvars", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     

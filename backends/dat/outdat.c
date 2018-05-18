@@ -574,6 +574,20 @@ decode_instr:
         opimm[1] = P2_IMM_SRC;
         immmask |= opimm[1];
         numoperands = 2;
+    } else if (instr->ops == P2_MODCZ && numoperands == 1) {
+        // modc x -> modcz x, 0
+        // modz y -> modcz 0, y
+        if (!strcmp(instr->name, "modc")) {
+            operand[1] = AstInteger(0);
+            opimm[1] = 0;
+            numoperands = 2;
+        } else if (!strcmp(instr->name, "modz")) {
+            operand[1] = operand[0];
+            operand[0] = AstInteger(0);
+            opimm[1] = opimm[0];
+            opimm[0] = 0;
+            numoperands = 2;
+        }
     }
     if (expectops == 3 && numoperands == 1) {
         // SETNIB reg/# -> SETNIB reg/#, 0, #0

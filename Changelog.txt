@@ -1,3 +1,7 @@
+Version 3.8.1
+- Fixed multiple returns from functions with no parameters
+- Added pusha, pushb, modc, modz aliases for P2 instructions
+
 Version 3.8.0
 - Added multiple assignments like (x,y) := (y,x)
 - Added ability for functions to return multiple values
