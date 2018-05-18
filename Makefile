@@ -39,7 +39,7 @@ INC=-I. -I$(BUILD)
 #
 #YACC = byacc
 YACC = bison
-CFLAGS = -g -Wall $(INC)
+CFLAGS = -Og -g -Wall $(INC)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC)
 LIBS = -lm
 RM = rm -f
