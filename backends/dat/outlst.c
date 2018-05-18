@@ -20,7 +20,7 @@ static void initOutput(Module *P)
 
 static void lstPutByte(Flexbuf *f, int c) {
     if (bytesOnLine < 4) {
-        flexbuf_printf(f, "%02x", c);
+        flexbuf_printf(f, "%02X", c);
         bytesOnLine++;
     }
     hubPc++;
@@ -28,15 +28,15 @@ static void lstPutByte(Flexbuf *f, int c) {
 }
 
 //
-// every byte will start with 20 bytes
-//  HHHHH CCC DDDDDDDD  (two spaces at end)
+// every byte will start with 24 bytes
+//  HHHHH CCC DDDDDDDD  |   (3 spaces at end)
 // HHHHH is the hub address
 // CCC is the cog address, or blank
 // DDDDDDDD is up to 4 bytes of data
 
 static void startNewLine(Flexbuf *f) {
     bytesOnLine = 0;
-    flexbuf_printf(f, "%05x ", hubPc);
+    flexbuf_printf(f, "\n%05x ", hubPc);
     if (inCog) {
         flexbuf_printf(f, "%03x ", cogPc / 4);
     } else {
@@ -45,11 +45,22 @@ static void startNewLine(Flexbuf *f) {
 }
 
 static void AddRestOfLine(Flexbuf *f, const char *s) {
+    int sawNL;
+    int c;
     while (bytesOnLine < 4) {
         flexbuf_printf(f, "  ");
         bytesOnLine++;
     }
-    flexbuf_printf(f, "  %s\n", s);
+    // at this point we have written 6+4+8 == 18 characters
+    // line it up to 24 to make tabs work
+    flexbuf_printf(f, "    | ");
+    while (*s) {
+        c = *s++;
+        if (c == '\n') {
+            break;
+        }
+        flexbuf_addchar(f, c);
+    }
 }
 
 static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
@@ -96,21 +107,29 @@ static void catchUpToLine(Flexbuf *f, const char *fileName, int line, bool needs
     L->lineCounter = i;
 }
 
+static int ignoreAst(AST *ast)
+{
+    if (!ast) return 1;
+    switch (ast->kind) {
+    case AST_COMMENT:
+    case AST_COMMENTEDNODE:
+    case AST_LINEBREAK:
+        return 1;
+    default:
+        return 0;
+    }
+}
 static void lstStartAst(Flexbuf *f, AST *ast)
 {
-    if (!ast) return;
+    if (ignoreAst(ast)) {
+        return;
+    }
     catchUpToLine(f, ast->fileName, ast->line, true);
 
-    startNewLine(f);
-}
-
-static void lstEndAst(Flexbuf *f, AST *ast)
-{
-    catchUpToLine(f, ast->fileName, ast->line+1, false);
     // update PCs as appropriate
     switch (ast->kind) {
     case AST_ORG:
-        cogPc = ast->d.ival;
+//        cogPc = ast->d.ival;
         inCog = 1;
         break;
     case AST_ORGH:
@@ -118,7 +137,7 @@ static void lstEndAst(Flexbuf *f, AST *ast)
         hubPc = ast->d.ival;
         break;
     case AST_INSTRHOLDER:
-        inCog = !(ast->d.ival & (1<<30));
+        inCog = (ast->d.ival & (1<<30)) != 0;
         if (inCog) {
             cogPc = (ast->d.ival & 0x00ffffff);
         } else {
@@ -128,6 +147,23 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     default:
         break;
     }
+    startNewLine(f);
+}
+
+static void lstEndAst(Flexbuf *f, AST *ast)
+{
+    if (ignoreAst(ast)) {
+        return;
+    }
+    // do anything special we need to here
+    switch (ast->kind) {
+    case AST_IDENTIFIER:
+        /* do not catch up to line, yet */
+        return;
+    default:
+        break;
+    }
+    catchUpToLine(f, ast->fileName, ast->line+1, false);
 }
 
 static DataBlockOutFuncs lstOutputFuncs = {

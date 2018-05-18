@@ -98,6 +98,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -b ]             output binary file format\n");
     fprintf(f, "  [ -e ]             output eeprom file format\n");
     fprintf(f, "  [ -c ]             output only DAT sections\n");
+    fprintf(f, "  [ -l ]             output DAT as a listing file\n");
     fprintf(f, "  [ -f ]             output list of file names\n");
     fprintf(f, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
     fprintf(f, "  [ -p ]             disable the preprocessor\n");
@@ -137,6 +138,7 @@ main(int argc, char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
+    int listFile = 0;
     int outputFiles = 0;
     int outputBin = 0;
     int outputAsm = 0;
@@ -278,6 +280,14 @@ main(int argc, char **argv)
             outputBin = 0;
             gl_output = OUTPUT_DAT;
             outputDat = 1;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-l")) {
+            compile = 0;
+            outputMain = 0;
+            outputBin = 0;
+            gl_output = OUTPUT_DAT;
+            outputDat = 1;
+            listFile = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
             outputFiles = 1;
@@ -466,14 +476,20 @@ main(int argc, char **argv)
                         } else {
                             outname = ReplaceExtension(P->fullname, ".binary");
                         }
+                    } else if (listFile) {
+                        outname = ReplaceExtension(P->fullname, ".lst");
                     } else {
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
-                if (bstcMode) {
+                if (bstcMode && !listFile) {
                     outname = ReplaceExtension(outname, ".binary");
                 }
-                OutputDatFile(outname, P, outputBin);
+                if (listFile) {
+                    OutputLstFile(outname, P);
+                } else {
+                    OutputDatFile(outname, P, outputBin);
+                }
                 if (outputBin) {
                     DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
                 }
