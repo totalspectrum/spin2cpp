@@ -445,6 +445,7 @@ assembleInstruction(Flexbuf *f, AST *ast)
     int isRelJmp = 0;
     int opidx;
     bool needIndirect = false;
+    bool sawFlagUsed = false;
     
     extern Instruction instr_p2[];
     curpc = ast->d.ival & 0x00ffffff;
@@ -500,6 +501,10 @@ decode_instr:
         } else if (ast->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)ast->d.ptr;
             mask = mod->modifier;
+            /* record if C or Z flags were set */
+            if (mod->flags & (FLAG_CZSET)) {
+                sawFlagUsed = true;
+            }
             /* verify here that the modifier is permitted for this instruction */
             if (mod->flags) {
                 if (0 == (mod->flags & instr->flags)) {
@@ -540,6 +545,10 @@ decode_instr:
         ast = ast->right;
     }
 
+    /* warn about some instructions not having wc or wz */
+    if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
+        WARNING(line, "instruction %s used without flags being set", instr->name);
+    }
     /* parse operands and put them in place */
     switch (instr->ops) {
     case NO_OPERANDS:

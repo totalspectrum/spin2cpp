@@ -1,3 +1,7 @@
+Version 3.8.2
+- Added warning for instructions that should set C or Z flags not
+  doing so
+
 Version 3.8.1
 - Added -l flag to fastspin to produce a listing file
 - Fixed multiple returns from functions with no parameters

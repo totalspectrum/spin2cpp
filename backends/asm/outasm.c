@@ -2132,7 +2132,7 @@ CompileCondResult(IRList *irl, AST *expr)
 //   (a & mask) | val
 // here a is expr->left, mask = expr->right->left, val = expr->right->right
 // note that this is marked volatile to prevent later optimization
-// useful for maniuplating groups of bits in OUTA and DIRA
+// useful for manipulating groups of bits in OUTA and DIRA
 //
 static Operand *
 CompileMaskMove(IRList *irl, AST *expr)

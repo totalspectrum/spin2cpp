@@ -15,10 +15,10 @@ DAT
 		
 		lutson
 		setluts	#1
-		modcz   _c_or_z, _clr
-		modc	_c_or_z
-		modcz	_clr, _set
-		modz	_set
+		modcz   _c_or_z, _clr wc
+		modc	_c_or_z wc
+		modcz	_clr, _set wz
+		modz	_set wz
 
 		callpa	#1, #2		
 		alts	y

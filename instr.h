@@ -160,21 +160,25 @@ enum flags {
     FLAG_ORZ = 0x100,
     FLAG_XORC = 0x200,
     FLAG_XORZ = 0x400,
+
+    // warn if there are no wc, wz markers on the instruction
+    FLAG_WARN_NOTUSED = 0x800,
     
     // not exactly an assembler feature, but should not
     // be touched by the optimizer
-    FLAG_KEEP_INSTR = 0x800,
+    FLAG_KEEP_INSTR = 0x1000,
 
     // rest of the bits are used by the optimizer
 
-    FLAG_LABEL_USED = 0x1000,
-    FLAG_INSTR_NEW  = 0x2000,
-    FLAG_OPTIMIZER = 0xFFF000,
+    FLAG_LABEL_USED = 0x10000,
+    FLAG_INSTR_NEW  = 0x20000,
+    FLAG_OPTIMIZER = 0xFFF0000,
 };
 
 #define FLAG_P1_STD (FLAG_WZ|FLAG_WC|FLAG_NR|FLAG_WR)
 #define FLAG_P2_STD (FLAG_WZ|FLAG_WC|FLAG_WCZ)
 #define FLAG_P2_CZTEST (FLAG_WZ|FLAG_WC|FLAG_ANDC|FLAG_ANDZ|FLAG_ORC|FLAG_ORZ|FLAG_XORC|FLAG_XORZ)
+#define FLAG_CZSET (FLAG_P2_CZTEST|FLAG_WCZ)
 
 typedef struct IRList {
     IR *head;
