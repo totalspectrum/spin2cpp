@@ -21,7 +21,20 @@ PUB demo | x,y
   x := 1
   putnum(?x)
   putnum(?x)
+
+  check
+  check(1)
+  check(1,2)
+  
   exit
+
+PUB check(x = $a, y = $b)
+  fds.str(string("check called x="))
+  fds.hex(x,4)
+  fds.str(string(" y="))
+  fds.hex(y,4)
+  fds.tx(13)
+  fds.tx(10)
 
 PUB exit
 '' send an exit sequence which propeller-load recognizes:

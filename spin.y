@@ -127,6 +127,7 @@ AstAssignList(AST *dest, AST *expr, AST *comment)
     if (comment) {
         ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
+    return ast;
 }
 
 AST *
@@ -369,9 +370,9 @@ funcdef:
 optparamlist:
 /* empty */
   { $$ = NULL; }
-| identlist
+| paramidentlist
   { $$ = $1; }
-| '(' identlist ')'
+| '(' paramidentlist ')'
   { $$ = $2; }
   ;
 
@@ -778,10 +779,26 @@ identdecl:
   { $$ = $1; }
   | identifier '[' expr ']'
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+  ;
+
+paramidentdecl:
+  identifier
+  { $$ = $1; }
+  | identifier '[' expr ']'
+  { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
   | identifier '=' expr
   { $$ = AstAssign($1, $3); }
   ;
 
+paramidentlist:
+  paramidentdecl
+  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | annotation paramidentdecl
+  { $$ = AddToList(NewAST(AST_LISTHOLDER, $1, NULL),
+                   NewAST(AST_LISTHOLDER, $2, NULL)); }
+  | paramidentlist ',' paramidentdecl
+  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+  ;
 
 expr:
   integer

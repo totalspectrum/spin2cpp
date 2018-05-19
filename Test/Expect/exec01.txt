@@ -6,3 +6,6 @@ Forward test
 Backward test
 -805306367
 1358954497
+check called x=000A y=000B
+check called x=0001 y=000B
+check called x=0001 y=0002
