@@ -133,6 +133,7 @@ typedef struct funcdef {
     AST *doccomment;  /* documentation comments */
     int numparams;
     AST *params;      /* parameter list */
+    AST *defaultparams; /* default values for parameters */
     int numlocals;
     AST *locals;      /* local variables */
     AST *body;

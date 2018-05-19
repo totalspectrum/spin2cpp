@@ -778,6 +778,8 @@ identdecl:
   { $$ = $1; }
   | identifier '[' expr ']'
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+  | identifier '=' expr
+  { $$ = AstAssign($1, $3); }
   ;
 
 

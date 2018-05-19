@@ -254,6 +254,7 @@ doDeclareFunction(AST *funcblock)
     AST *vars;
     AST *src;
     AST *comment;
+    AST *defparams;
     int is_public;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
@@ -314,6 +315,28 @@ doDeclareFunction(AST *funcblock)
     fdef->params = vars->left;
     fdef->locals = vars->right;
 
+    /* set up default values for parameters, if any present */
+    {
+        AST *a, *p;
+        AST *defval;
+        
+        defparams = NULL;
+        for (a = fdef->params; a; a = a->right) {
+            p = a->left;
+            if (p->kind == AST_ASSIGN) {
+                a->left = p->left;
+                defval = p->right;
+                if (!IsConstExpr(defval)) {
+                    ERROR(defval, "default parameter value must be constant");
+                }
+            } else {
+                defval = NULL;
+            }
+            defparams = AddToList(defparams, NewAST(AST_LISTHOLDER, defval, NULL));
+        }
+        fdef->defaultparams = defparams;
+    }
+    
     // the symbol value is the type, which we will discover via inference
     // so initialize it to NULL
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
@@ -971,6 +994,16 @@ CheckRetStatement(Function *func, AST *ast)
 }
 
 /*
+ * how many items will this expression put on the stack?
+ * for now assume 1, but eventually handle multiple returns correctly
+ */
+static int
+NumExprItems(AST *expr)
+{
+    return 1;
+}
+
+/*
  * check function calls for correct number of arguments
  */
 void
@@ -980,6 +1013,7 @@ CheckFunctionCalls(AST *ast)
     int gotArgs;
     Symbol *sym;
     const char *fname = "function";
+    Function *f = NULL;
     
     if (!ast) {
         return;
@@ -994,7 +1028,7 @@ CheckFunctionCalls(AST *ast)
                 Builtin *b = (Builtin *)sym->val;
                 expectArgs = b->numparameters;
             } else if (sym->type == SYM_FUNCTION) {
-                Function *f = (Function *)sym->val;
+                f = (Function *)sym->val;
                 expectArgs = f->numparams;
             } else {
                 ERROR(ast, "Unexpected function type");
@@ -1003,7 +1037,27 @@ CheckFunctionCalls(AST *ast)
         }
         gotArgs = 0;
         for (a = ast->right; a; a = a->right) {
-            gotArgs++;
+            gotArgs += NumExprItems(a->left);
+        }
+        if (gotArgs < expectArgs) {
+            // see if there are default values, and if so, insert them
+            if (f && f->defaultparams) {
+                AST *extra = f->defaultparams;
+                int n = gotArgs;
+                // skip first n items in the defaultparams list
+                while (extra && n > 0) {
+                    extra = extra->right;
+                    --n;
+                }
+                while (extra) {
+                    if (extra->left) {
+                        a = NewAST(AST_EXPRLIST, extra->left, NULL);
+                        ast->right = AddToList(ast->right, a);
+                        gotArgs++;
+                    }
+                    extra = extra->right;
+                }
+            }
         }
         if (gotArgs != expectArgs) {
             ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
