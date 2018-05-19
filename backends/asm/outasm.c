@@ -1796,9 +1796,8 @@ PopQuitNext()
   free(ql);
 }
 
-/* compiles a list of expressions; returns the last one
- * tolist is a list of where to store the expressions
- * (may be NULL if we don't care about saving them)
+/* compiles a list of expressions; returns
+ * a list of operands
  */
 static OperandList *
 CompileExprList(IRList *irl, AST *fromlist)
