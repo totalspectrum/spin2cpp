@@ -277,6 +277,21 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             PrintType(f, func->rettype, 0);
             flexbuf_printf(f, "%s = 0;", func->resultexpr->d.string);
             PrintNewline(f);
+        } else if (func->resultexpr->kind == AST_EXPRLIST) {
+            AST *id = func->resultexpr;
+            while (id) {
+                if (id->left && id->left->kind == AST_IDENTIFIER) {
+                    flexbuf_printf(f, "  int32_t %s;", id->left->d.string);
+                } else {
+                    ERROR(id, "Internal error printing return exprlist");
+                }
+                id = id->right;
+            }
+            PrintNewline(f);
+        } else if (func->resultexpr->kind == AST_INTEGER) {
+            // default return 0
+        } else {
+            ERROR(func->resultexpr, "Internal error printing function");
         }
     }
     /* now actually assign initial values for the array */
@@ -623,18 +638,28 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     default:
     case AST_ASSIGN:
         PrintDebugDirective(f, ast);
-        flexbuf_printf(f, "%*c", indent, ' ');
         if (ast->kind == AST_ASSIGN && ast->left->kind == AST_EXPRLIST) {
             // multiple assignment
             AST *lhs = ast->left;
+            AST *rhs = ast->right;
             int n = AstListLen(lhs);
+            // if the rhs is a sequence, try to distill it down
+            while (rhs && rhs->kind == AST_SEQUENCE) {
+                if (rhs->right) {
+                    PrintStatement(f, rhs->left, indent);
+                    rhs = rhs->right;
+                } else {
+                    rhs = rhs->left;
+                }
+            }
+            flexbuf_printf(f, "%*c", indent, ' ');
             flexbuf_printf(f, "{ Tuple%d__ tmp__ = ", n);
-            if (ast->right && ast->right->kind == AST_EXPRLIST) {
+            if (rhs && rhs->kind == AST_EXPRLIST) {
                 flexbuf_printf(f, "((Tuple%d__){", n, n);
-                PrintExprList(f, ast->right, PRINTEXPR_DEFAULT, NULL);
+                PrintExprList(f, rhs, PRINTEXPR_DEFAULT, NULL);
                 flexbuf_printf(f, "})");
             } else {
-                PrintExpr(f, ast->right, PRINTEXPR_DEFAULT);
+                PrintExpr(f, rhs, PRINTEXPR_DEFAULT);
             }
             flexbuf_printf(f, "; ");
             n = 0;
@@ -646,8 +671,10 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
             }
             flexbuf_printf(f, " }");
         } else if (ast->kind == AST_ASSIGN) {
+            flexbuf_printf(f, "%*c", indent, ' ');
             PrintAssign(f, ast->left, ast->right, PRINTEXPR_DEFAULT);
         } else {
+            flexbuf_printf(f, "%*c", indent, ' ');
             PrintExpr(f, ast, PRINTEXPR_DEFAULT);
         }
         flexbuf_printf(f, ";");

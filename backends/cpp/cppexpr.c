@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2017 Total Spectrum Software Inc.
+ * Copyright 2011-2018 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -988,7 +988,28 @@ void
 PrintAssign(Flexbuf *f, AST *lhs, AST *rhs, int flags)
 {
     AST *desttype;
-    if (lhs->kind == AST_RANGEREF) {
+    if (lhs->kind == AST_EXPRLIST) {
+        ERROR(lhs, "Possible compiler problem, should not see multiple assignments in cppexpr.c");
+        // multiple assignment
+        int n = AstListLen(lhs);
+        flexbuf_printf(f, "({ Tuple%d__ tmp__ = ", n);
+        if (rhs && rhs->kind == AST_EXPRLIST) {
+            flexbuf_printf(f, "((Tuple%d__){", n, n);
+            PrintExprList(f, rhs, PRINTEXPR_DEFAULT, NULL);
+            flexbuf_printf(f, "})");
+        } else {
+            PrintExpr(f, rhs, PRINTEXPR_DEFAULT);
+        }
+        flexbuf_printf(f, "; ");
+        n = 0;
+        while (lhs) {
+            PrintLHS(f, lhs->left, PRINTEXPR_ASSIGNMENT);
+            flexbuf_printf(f, " = tmp__.v%d; ", n);
+            n++;
+            lhs = lhs->right;
+        }
+        flexbuf_printf(f, " })");
+    } else if (lhs->kind == AST_RANGEREF) {
         PrintRangeAssign(f, lhs, rhs, flags);
     } else if (lhs->kind == AST_SPRREF) {
         flexbuf_printf(f, "cogmem_put__(");

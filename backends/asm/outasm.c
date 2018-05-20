@@ -1973,6 +1973,19 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     OperandList *opList, *ptr ;
     Operand *r = NULL;
 
+    while (rhs && rhs->kind == AST_SEQUENCE) {
+        // OK, this is slightly tricky, we have to chase the sequence
+        // down, compiling the parts, until we get to the final
+        // function call
+        if (rhs->right) {
+            CompileExpression(irl, rhs->left, NULL);
+            rhs = rhs->right;
+        } else if (rhs->left && rhs->left->kind == AST_SEQUENCE) {
+            rhs = rhs->left;
+        } else {
+            rhs = NULL;
+        }
+    }
     if (!rhs) {
         ERROR(lhs, "Unexpected end of multiple assignment list");
         return NewImmediate(0);

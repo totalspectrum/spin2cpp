@@ -1014,6 +1014,8 @@ NumExprItems(AST *expr)
 
 /*
  * check function calls for correct number of arguments
+ * also does expansion for multiple returns used as parameters
+ * and does default parameter substitution
  */
 void
 CheckFunctionCalls(AST *ast)
@@ -1023,12 +1025,18 @@ CheckFunctionCalls(AST *ast)
     Symbol *sym;
     const char *fname = "function";
     Function *f = NULL;
+    int i, n;
+    AST *initseq = NULL;
+    AST *temps[MAX_TUPLE];
     
     if (!ast) {
         return;
     }
+    // we may need to create temporaries
+    AstReportAs(ast);
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
+        AST **lastaptr;
         sym = FindFuncSymbol(ast, NULL, NULL);
         expectArgs = 0;
         if (sym) {
@@ -1045,8 +1053,41 @@ CheckFunctionCalls(AST *ast)
             }
         }
         gotArgs = 0;
-        for (a = ast->right; a; a = a->right) {
-            gotArgs += NumExprItems(a->left);
+        lastaptr = &ast->right;
+        a = ast->right;
+        while (a) {
+            n = NumExprItems(a->left);
+            if (n > 1) {
+                AST *lhsseq = NULL;
+                AST *assign;
+                AST *newparams;
+                // many backends need the results placed in temporaries
+                for (i = 0; i < n; i++) {
+                    temps[i] = AstTempLocalVariable("_parm_");
+                    lhsseq = AddToList(lhsseq, NewAST(AST_EXPRLIST, temps[i], NULL));
+                }
+                // create the new parameters
+                newparams = DupAST(lhsseq);
+                // create an initialization for the temps
+                assign = AstAssign(lhsseq, a->left);
+                if (initseq) {
+                    initseq = NewAST(AST_SEQUENCE, initseq, assign);
+                } else {
+                    initseq = NewAST(AST_SEQUENCE, assign, NULL);
+                }
+                // insert the new parameters into the list
+                *lastaptr = newparams;
+                {
+                    AST *savea = a;
+                    for (a = newparams; a->right; a = a->right)
+                        ;
+                    // now a is the last item
+                    a->right = savea->right;
+                }
+            }
+            lastaptr = &a->right;
+            a = *lastaptr;
+            gotArgs += n;
         }
         if (gotArgs < expectArgs) {
             // see if there are default values, and if so, insert them
@@ -1070,6 +1111,15 @@ CheckFunctionCalls(AST *ast)
         }
         if (gotArgs != expectArgs) {
             ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+            return;
+        }
+        if (initseq) {
+            // modify the ast to hold the sequence and then the function call
+            initseq = NewAST(AST_SEQUENCE, initseq,
+                             NewAST(AST_FUNCCALL, ast->left, ast->right));
+            ast->kind = AST_SEQUENCE;
+            ast->left = initseq;
+            ast->right = NULL;
         }
     }
     CheckFunctionCalls(ast->left);
@@ -1084,13 +1134,17 @@ ProcessFuncs(Module *P)
 {
     Function *pf;
     int sawreturn = 0;
-
+    Function *savecurfunc;
+    
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
         CheckRecursive(pf);  /* check for recursive functions */
         pf->extradecl = NormalizeFunc(pf->body, pf);
 
+        savecurfunc = curfunc;
+        curfunc = pf;
         CheckFunctionCalls(pf->body);
+        curfunc = savecurfunc;
         
         /* check for void functions */
         sawreturn = CheckRetStatementList(pf, pf->body);

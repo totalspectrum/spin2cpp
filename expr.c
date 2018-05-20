@@ -1416,6 +1416,18 @@ ExprType(AST *expr)
         typ->d.ival = AstListLen(expr);
         return typ; 
     }
+    case AST_SEQUENCE:
+    {
+        // find the last item in the sequence
+        while (expr && expr->kind == AST_SEQUENCE) {
+            if (expr->right) {
+                expr = expr->right;
+            } else {
+                expr = expr->left;
+            }
+        }
+        return ExprType(expr);
+    }
     default:
         return NULL;
     }
