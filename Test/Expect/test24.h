@@ -5,9 +5,9 @@
 
 class test24 {
 public:
-  int32_t	Unlock(void);
+  void 	Unlock(void);
 private:
-  int32_t	X;
+  int32_t 	X;
 };
 
 #endif

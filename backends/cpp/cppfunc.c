@@ -504,6 +504,15 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         }
         PrintDebugDirective(f, ast);
         if (retval) {
+            // extract the return value if it's buried in a sequence
+            while (retval->kind == AST_SEQUENCE) {
+                if (retval->right) {
+                    PrintStatement(f, retval->left, indent);
+                    retval = retval->right;
+                } else {
+                    retval = retval->left;
+                }
+            }
             flexbuf_printf(f, "%*creturn ", indent, ' ');
             if (retval->kind == AST_EXPRLIST) {
                 int n = AstListLen(retval);

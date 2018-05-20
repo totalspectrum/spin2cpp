@@ -1,3 +1,8 @@
+Version 3.8.3
+- Allow multiple return values to in turn be passed to functions as
+  parameters
+- Allow default values for parameters. So far these must be constant
+
 Version 3.8.2
 - Added warning for instructions that should set C or Z flags not
   doing so

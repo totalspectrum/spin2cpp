@@ -2991,6 +2991,15 @@ static void CompileStatement(IRList *irl, AST *ast)
             retval = curfunc->resultexpr;
         }
 	if (retval) {
+            // extract the return value if it's buried in a sequence
+            while (retval->kind == AST_SEQUENCE) {
+                if (retval->right) {
+                    CompileStatement(irl, retval->left);
+                    retval = retval->right;
+                } else {
+                    retval = retval->left;
+                }
+            }
             if (retval->kind == AST_EXPRLIST) {
                 int n = 0;
                 while (retval) {
@@ -2998,6 +3007,14 @@ static void CompileStatement(IRList *irl, AST *ast)
                     EmitMove(irl, GetResultReg(n), op);
                     n++;
                     retval = retval->right;
+                }
+            } else if (retval->kind == AST_FUNCCALL) {
+                OperandList *oplist = CompileFunccall(irl, retval);
+                int n = 0;
+                while (oplist) {
+                    EmitMove(irl, GetResultReg(n), oplist->op);
+                    n++;
+                    oplist = oplist->next;
                 }
             } else {
                 op = CompileExpression(irl, retval, NULL);
