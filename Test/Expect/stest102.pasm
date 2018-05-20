@@ -13,8 +13,7 @@ _set
 	rdlong	result1, fp
 	sub	fp, #4
 	wrlong	result1, fp
-	mov	_var_02, fp
-	wrlong	_var_02, objptr
+	wrlong	fp, objptr
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp

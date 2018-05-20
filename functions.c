@@ -1000,6 +1000,15 @@ CheckRetStatement(Function *func, AST *ast)
 static int
 NumExprItems(AST *expr)
 {
+    Function *f;
+    if (expr->kind == AST_FUNCCALL) {
+        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
+        if (sym && sym->type == SYM_FUNCTION) {
+            f = (Function *)sym->val;
+            return f->numresults;
+        }
+            
+    }
     return 1;
 }
 
@@ -1437,7 +1446,15 @@ SetFunctionType(Function *f, AST *typ)
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
-        if (gl_infer_ctypes || (typ && typ->kind == AST_TUPLETYPE)) {
+        if (typ && typ->kind == AST_TUPLETYPE) {
+            f->rettype = typ;
+            if (f->numresults > 1) {
+                if (f->numresults != typ->d.ival) {
+                    ERROR(NULL, "inconsistent return values from function %s", f->name);
+                }
+            }
+            f->numresults = typ->d.ival;
+        } else if (gl_infer_ctypes) {
             f->rettype = typ;
         } else {
             f->rettype = ast_type_generic;

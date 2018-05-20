@@ -74,6 +74,9 @@ InstrSetsDst(IR *ir)
 {
   switch (ir->opc) {
   case OPC_LABEL:
+  case OPC_WRLONG:
+  case OPC_WRWORD:
+  case OPC_WRBYTE:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
@@ -531,6 +534,7 @@ SrcOnlyHwReg(Operand *orig)
 }
 
 //
+// see if we can replace "orig" with "replace" in code after first_ir
 // returns the IR where we should stop scanning for replacement,
 // or NULL if replacement is unsafe
 //

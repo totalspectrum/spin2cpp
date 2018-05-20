@@ -64,8 +64,9 @@ static Operand *CompileExpression(IRList *irl, AST *expr, Operand *dest);
 static Operand* CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest);
 static Operand* CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest);
 static Operand *Dereference(IRList *irl, Operand *op);
-static Operand *CompileFunccall(IRList *irl, AST *expr);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
+static Operand *CompileFunccallFirstResult(IRList *irl, AST *expr);
+static OperandList *CompileFunccall(IRList *irl, AST *expr);
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
@@ -399,6 +400,20 @@ AppendOperand(OperandList **listptr, Operand *op)
   OperandList *x;
   next->op = op;
   next->next = NULL;
+  for(;;) {
+    x = *listptr;
+    if (!x) {
+      *listptr = next;
+      return;
+    }
+    listptr = &x->next;
+  }
+}
+
+void
+AppendOperandList(OperandList **listptr, OperandList *next)
+{
+  OperandList *x;
   for(;;) {
     x = *listptr;
     if (!x) {
@@ -808,7 +823,6 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   Module *P = func->module;
   Symbol *sym;
   const char *name;
-  AST *fcall;
   int stype;
   int size;
   
@@ -843,8 +857,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               return TypedHubMemRef((AST *)sym->val, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
-          fcall = NewAST(AST_FUNCCALL, expr, NULL);
-          return CompileFunccall(irl, fcall);
+          ERROR(expr, "Internal error: identifier without FUNCCALL wrapper");
+          return NewImmediate(0);
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
               /* do nothing, this is OK */
@@ -1687,7 +1701,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       AstReportAs(expr);
       fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
                      NewAST(AST_EXPRLIST, expr->right, NULL));
-      return CompileFunccall(irl, fcall);
+      return CompileFunccallFirstResult(irl, fcall);
   }
   case '?':
   {
@@ -1806,16 +1820,22 @@ CompileExprList(IRList *irl, AST *fromlist)
   Operand *opfrom = NULL;
   Operand *opto = NULL;
   OperandList *ret = NULL;
-
+  OperandList *fresults = NULL;
+  
   while (fromlist) {
     from = fromlist->left;
     fromlist = fromlist->right;
 
-    opfrom = CompileExpression(irl, from, NULL);
-    opto = NewFunctionTempRegister();
-    if (!opfrom) break;
-    EmitMove(irl, opto, opfrom);
-    AppendOperand(&ret, opto);
+    if (from && from->kind == AST_FUNCCALL) {
+        fresults = CompileFunccall(irl, from);
+        AppendOperandList(&ret, fresults);
+    } else {
+        opfrom = CompileExpression(irl, from, NULL);
+        opto = NewFunctionTempRegister();
+        if (!opfrom) break;
+        EmitMove(irl, opto, opfrom);
+        AppendOperand(&ret, opto);
+    }
   }
   return ret;
 }
@@ -1836,7 +1856,24 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
     }
 }
 
+/*
+ * compile a function call and give the first result
+ */
 static Operand *
+CompileFunccallFirstResult(IRList *irl, AST *expr)
+{
+    OperandList *ptr = CompileFunccall(irl, expr);
+    if (!ptr) {
+        return NewImmediate(0);
+    }
+    return ptr->op;
+}
+
+/*
+ * compile a function call
+ * returns a list of the things the function returns
+ */
+static OperandList *
 CompileFunccall(IRList *irl, AST *expr)
 {
   Symbol *sym;
@@ -1844,16 +1881,17 @@ CompileFunccall(IRList *irl, AST *expr)
   AST *params;
   Symbol *objsym;
   OperandList *temp;
+  OperandList *results = NULL;
   Operand *reg;
   IR *ir;
-  int n;
+  int i, n;
 
   /* compile the function operands */
   objsym = NULL;
   sym = FindFuncSymbol(expr, NULL, &objsym);
   if (!sym || sym->type != SYM_FUNCTION) {
     ERROR(expr, "expected function symbol");
-    return NewImmediate(0);
+    return NULL;
   }
   func = (Function *)sym->val;
   params = expr->right;
@@ -1917,75 +1955,48 @@ CompileFunccall(IRList *irl, AST *expr)
       }
   }
 
-  /* now get the result */
+  /* now get the results */
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  reg = NewFunctionTempRegister();
-  EmitMove(irl, reg, GetResultReg(0));
-  return reg;
+  for (i = 0; i < func->numresults; i++) {
+      reg = NewFunctionTempRegister();
+      EmitMove(irl, reg, GetResultReg(i));
+      AppendOperand(&results, reg);
+  }
+  return results;
 }
 
 static Operand *
 CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
 {
-    Operand *temp[MAX_TUPLE] ;
+    OperandList *opList, *ptr ;
     Operand *r = NULL;
-    int count = 0;
-    int i;
 
     if (!rhs) {
         ERROR(lhs, "Unexpected end of multiple assignment list");
         return NewImmediate(0);
     }
     if (rhs->kind == AST_EXPRLIST) {
-        while (rhs) {
-            if (rhs->kind != AST_EXPRLIST) {
-                ERROR(rhs, "Expected expression list");
-                return NewImmediate(0);
-            }
-            if (count >= MAX_TUPLE) {
-                ERROR(rhs, "Too many elements in multiple assignment");
-                return NewImmediate(0);
-            }
-            r = CompileExpression(irl, rhs->left, NULL);
-            temp[count] = NewFunctionTempRegister();
-            EmitMove(irl, temp[count], r);
-            count++;
-            rhs = rhs->right;
-        }
+        opList = CompileExprList(irl, rhs);
     } else if (rhs->kind == AST_FUNCCALL) {
-        Symbol *sym;
-        Function *func;
-        sym = FindFuncSymbol(rhs, NULL, NULL);
-        if (!sym) {
-            ERROR(rhs, "Expected function symbol");
-            return NewImmediate(0);
-        }
-        func = (Function *)sym->val;
-        if (!func->rettype || func->rettype->kind != AST_TUPLETYPE) {
-            count = 1;
-        } else {
-            count = func->rettype->d.ival;
-        }
-        r = CompileFunccall(irl, rhs);
-        for (i = 0; i < count; i++) {
-            temp[i] = GetResultReg(i);
-        }
+        opList = CompileFunccall(irl, rhs);
     } else {
         ERROR(rhs, "Expected multiple values");
+        return NewImmediate(0);
     }
-    i = 0;
-    while (lhs && i < count) {
+    ptr = opList;
+    while (lhs && ptr) {
         if (lhs->kind != AST_EXPRLIST) {
             ERROR(lhs, "Illegal left hand side for multiple assignment");
             return NewImmediate(0);
         }
         r = CompileExpression(irl, lhs->left, NULL);
-        EmitMove(irl, r, temp[i++]);
+        EmitMove(irl, r, ptr->op);
         lhs = lhs->right;
+        ptr = ptr->next;
     }
-    if (i != count) {
+    if (ptr) {
         ERROR(rhs, "Too many elements on right hand side of assignment");
     } else if (lhs) {
         ERROR(rhs, "Not enough elements on right hand side of assignment");
@@ -2313,7 +2324,7 @@ CompileCoginit(IRList *irl, AST *expr)
     }
     funccall = AstIdentifier("_coginit");
     funccall = NewAST(AST_FUNCCALL, funccall, params);
-    return CompileFunccall(irl, funccall);
+    return CompileFunccallFirstResult(irl, funccall);
 }
 
 //
@@ -2384,7 +2395,7 @@ CompileLookupDown(IRList *irl, AST *expr)
                            NewAST(AST_EXPRLIST, arrid,
                                   NewAST(AST_EXPRLIST, len, NULL))));
     funccall = NewAST(AST_FUNCCALL, funccall, params);
-    value = CompileFunccall(irl, funccall);
+    value = CompileFunccallFirstResult(irl, funccall);
     if (popsize) {
         EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(popsize));
     }
@@ -2519,7 +2530,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_OPERATOR:
       return CompileOperator(irl, expr, dest);
   case AST_FUNCCALL:
-      return CompileFunccall(irl, expr);
+      return CompileFunccallFirstResult(irl, expr);
   case AST_ASSIGN:
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
