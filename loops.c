@@ -206,8 +206,8 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     case AST_OPERATOR:
         flags = CheckOperatorForAssignment(lvs, parent, ast, flags);
         break;
-    case AST_POSTEFFECT:
-        ERROR(NULL, "Internal error, should not see POSTEFFECT in LVS");
+    case AST_POSTSET:
+        ERROR(NULL, "Internal error, should not see POSTSET in LVS");
         break;
     case AST_IF:
     case AST_CASE:

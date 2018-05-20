@@ -1542,7 +1542,7 @@ ExprHasSideEffects(AST *expr)
     switch (expr->kind) {
     case AST_ASSIGN:
     case AST_FUNCCALL:
-    case AST_POSTEFFECT:
+    case AST_POSTSET:
         return 1;
     case AST_OPERATOR:
         switch(expr->d.ival) {

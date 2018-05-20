@@ -1785,24 +1785,15 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         break;
-    case AST_POSTEFFECT:
+    case AST_POSTSET:
     {
         /* x~ is the same as (tmp = x, x = 0, tmp) */
         /* x~~ is (tmp = x, x = -1, tmp) */
+        /* x\y is (tmp = x, x = y, tmp) */
         AST *target;
         AST *tmp;
         AST *seq1, *seq2;
-        if (ast->d.ival == '~') {
-            target = AstInteger(0);
-        } else if (ast->d.ival == K_DOUBLETILDE) {
-            target = AstInteger(-1);
-        } else {
-            ERROR(ast, "bad posteffect operator %d", ast->d.ival);
-            target = AstInteger(0);
-        }
-         if (ast->right != NULL) {
-            ERROR(ast, "Expected NULL on right of posteffect");
-        }
+        target = ast->right;
         if (level == 1) {
             // at toplevel we can ignore the old result
             *astptr = AstAssign(ast->left, target);

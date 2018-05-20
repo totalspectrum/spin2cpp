@@ -282,6 +282,7 @@ CheckYield(AST *body)
 
 /* operator precedence */
 %right SP_ASSIGN
+%left '\\'
 %right SP_THEN
 %right SP_ELSE
 %left SP_OR
@@ -817,6 +818,8 @@ expr:
     { $$ = AstAssign($1, $3); }
   | identifier '#' identifier
     { $$ = NewAST(AST_CONSTREF, $1, $3); }
+  | lhs '\\' expr
+    { $$ = NewAST(AST_POSTSET, $1, $3); }
   | expr '+' expr
     { $$ = AstOperator('+', $1, $3); }
   | expr '-' expr
@@ -974,9 +977,9 @@ expr:
   | '?' lhs
     { $$ = AstOperator('?', NULL, $2); }
   | lhs '~'
-    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = '~'; }
+    { $$ = NewAST(AST_POSTSET, $1, AstInteger(0)); }
   | lhs SP_DOUBLETILDE
-    { $$ = NewAST(AST_POSTEFFECT, $1, NULL); $$->d.ival = K_DOUBLETILDE; }
+    { $$ = NewAST(AST_POSTSET, $1, AstInteger(-1)); }
   | SP_CONSTANT '(' expr ')'
     { $$ = NewAST(AST_CONSTANT, $3, NULL); }
   | SP_FLOAT '(' expr ')'

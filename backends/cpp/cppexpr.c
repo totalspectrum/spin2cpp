@@ -826,34 +826,6 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     }
 }
 
-/*
- * code to print a postfix operator like x~ (which returns x then sets x to 0)
- * if "toplevel" is 1 then we can skip the saving of the original value
- */
-void
-PrintPostfix(Flexbuf *f, AST *expr, int toplevel, int flags)
-{
-    AST *target;
-
-    if (expr->d.ival == '~')
-        target = AstInteger(0);
-    else if (expr->d.ival == K_DOUBLETILDE) {
-        target = AstInteger(-1);
-    } else {
-        ERROR(expr, "bad postfix operator %d", expr->d.ival);
-        return;
-    }
-    if (toplevel) {
-        PrintAssign(f, expr->left, target, flags);
-    } else {
-        flexbuf_printf(f, "PostEffect__(");
-        PrintExpr(f, expr->left, flags);
-        flexbuf_printf(f, ", ");
-        PrintExpr(f, target, flags);
-        flexbuf_printf(f, ")");
-    }
-}
-
 void
 PrintRangeAssign(Flexbuf *f, AST *dst, AST *src, int flags)
 {
