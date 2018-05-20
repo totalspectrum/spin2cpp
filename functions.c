@@ -1831,7 +1831,6 @@ doSpinTransform(AST **astptr, int level)
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;
-            int line = ast->line;
             switch (ast->d.ival) {
             case K_NEGATE:
             case K_ABS:
@@ -1842,7 +1841,6 @@ doSpinTransform(AST **astptr, int level)
             case K_ENCODE:
                 lhsast = DupAST(ast->right);
                 *astptr = ast = AstAssign(lhsast, ast);
-                ast->line = lhsast->line = line;
                 doSpinTransform(astptr, level);
                 break;
             }
@@ -1855,6 +1853,42 @@ doSpinTransform(AST **astptr, int level)
                 *astptr = ast = lhsast;
                 break;
             }
+        }
+        if (ast->d.ival == K_SGNCOMP) {
+            AST *tmpx, *tmpy;
+            AST *seq1 = NULL;
+            AST *seq2 = NULL;
+            AST *lhsast;
+            if (ExprHasSideEffects(ast->left)) {
+                tmpx = AstTempLocalVariable("_temp_");
+                seq1 = NewAST(AST_SEQUENCE, AstAssign(tmpx, ast->left), NULL);
+            } else {
+                tmpx = ast->left;
+            }
+            if (ExprHasSideEffects(ast->right)) {
+                tmpy = AstTempLocalVariable("_temp_");
+                seq2 = NewAST(AST_SEQUENCE, AstAssign(tmpy, ast->right), NULL);
+            } else {
+                tmpy = ast->right;
+            }
+            if (!tmpx || !tmpy) {
+                ERROR(ast, "Internal error in <=>");
+            }
+            if (seq1) {
+                if (seq2) {
+                    seq1->right = seq2;
+                }
+            } else {
+                seq1 = seq2;
+            }
+            // x <=> y means (x < y) ? -1 : (x == y) ? 0 : 1
+            // or equivalently (x > y) ? 1 : (x < y)
+            lhsast = NewAST(AST_CONDRESULT, AstOperator('>', tmpx, tmpy),
+                            NewAST(AST_THENELSE, AstInteger(1), AstOperator('<', tmpx, tmpy)));
+            if (seq1) {
+                lhsast = NewAST(AST_SEQUENCE, seq1, lhsast);
+            }
+            *astptr = ast = lhsast;
         }
         /* fall through */
     default:

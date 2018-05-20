@@ -895,6 +895,8 @@ struct reservedword {
     { "<", '<' },
     { "=<", SP_LE },
     { "=>", SP_GE },
+    { "<=>", SP_SGNCOMP },
+    
     { "=", '=' },
     { "==", SP_EQ },
     { "<>", SP_NE },

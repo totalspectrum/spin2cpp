@@ -22,6 +22,7 @@ PUB demo | x,y
   putnum(?x)
   putnum(?x)
 
+  ' test default parameters
   check
   check(1)
   check(1,2)

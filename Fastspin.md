@@ -281,6 +281,12 @@ PUB main
 ```
 The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
 
+(8) fastspin accepts some Spin2 operators:
+```
+  a \ b   uses the value of a, but then sets a to b
+  x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
+```
+
 Limitations
 -----------
 

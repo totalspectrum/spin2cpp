@@ -28,7 +28,7 @@
 #define K_DECODE   0x115
 #define K_ENCODE   0x116
 #define K_NOT      0x117
-//#define K_DOUBLETILDE   0x118
+#define K_SGNCOMP  0x118
 #define K_INCREMENT 0x119
 #define K_DECREMENT 0x11a
 

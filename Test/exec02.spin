@@ -40,6 +40,14 @@ PUB demo | x,y
   fds.str(string("fibo2(7)="))
   fds.dec(fibo2(7))
   fds.str(string(13, 10))
+
+  fds.str(string("<=> tests", 13, 10))
+  fds.dec(fibo2(3) <=> 1)
+  fds.str(string(13,10))
+  fds.dec(2 <=> fibo2(3))
+  fds.str(string(13,10))
+  fds.dec(fibo2(3) <=> 10)
+  fds.str(string(13,10))
   
   exit
 

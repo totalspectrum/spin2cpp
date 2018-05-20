@@ -253,6 +253,7 @@ CheckYield(AST *body)
 %token SP_LE         "=<"
 %token SP_NE         "<>"
 %token SP_EQ         "=="
+%token SP_SGNCOMP    "<=>"
 %token SP_LIMITMIN   "#>"
 %token SP_LIMITMAX   "<#"
 %token SP_MODULUS    "//"
@@ -287,7 +288,7 @@ CheckYield(AST *body)
 %right SP_ELSE
 %left SP_OR
 %left SP_AND
-%left '<' '>' SP_GE SP_LE SP_NE SP_EQ
+%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
 %left '*' '/' SP_MODULUS SP_HIGHMULT
@@ -846,6 +847,11 @@ expr:
     { $$ = AstOperator(K_NE, $1, $3); }
   | expr SP_EQ expr
     { $$ = AstOperator(K_EQ, $1, $3); }
+  | expr SP_SGNCOMP expr
+    { $$ = AstOperator(K_SGNCOMP, $1, $3); }
+  | expr '<' SP_GE expr
+    // lexer quirk, <=> gets parsed as <  => in Spin1
+    { $$ = AstOperator(K_SGNCOMP, $1, $4); }
   | expr SP_MODULUS expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
   | expr SP_HIGHMULT expr
