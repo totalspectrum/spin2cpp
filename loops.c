@@ -176,8 +176,8 @@ CheckOperatorForAssignment(LoopValueSet *lvs, AST *parent, AST *ast, unsigned fl
         name = ast->left ? ast->left : ast->right;
         AddAssignment(lvs, name, val, flags, parent);
         break;
-    case K_OR:
-    case K_AND:
+    case K_BOOL_OR:
+    case K_BOOL_AND:
         /* lhs will be unconditional, but we cannot check that here */
         flags |= LVFLAG_CONDITIONAL;
         break;

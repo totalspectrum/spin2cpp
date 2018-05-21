@@ -920,9 +920,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         break;
     case AST_OPERATOR:
         lval = EvalExpr(expr->left, flags, valid);
-        if (expr->d.ival == K_OR && lval.val)
+        if (expr->d.ival == K_BOOL_OR && lval.val)
             return lval;
-        if (expr->d.ival == K_AND && lval.val == 0)
+        if (expr->d.ival == K_BOOL_AND && lval.val == 0)
             return lval;
         rval = EvalExpr(expr->right, flags, valid);
         return EvalOperator(expr->d.ival, lval, rval, valid);
@@ -945,7 +945,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
             rval = EvalExpr(expr->right->right, flags, valid);
             isge = EvalOperator(K_LE, lval, aval, valid);
             isle = EvalOperator(K_LE, aval, rval, valid);
-            return EvalOperator(K_AND, isge, isle, valid);
+            return EvalOperator(K_BOOL_AND, isge, isle, valid);
         }
     case AST_HWREG:
         if (flags & PASM_FLAG) {

@@ -883,12 +883,14 @@ struct reservedword {
     { "while", SP_WHILE },
     { "word", SP_WORD },
 
+    { "xor", SP_XOR },
+    
     /* operators */
     { "+", '+' },
     { "-", '-' },
     { "/", '/' },
     { "?", '?' },
-    { "//", SP_MODULUS },
+    { "//", SP_REMAINDER },
     { "*", '*' },
     { "**", SP_HIGHMULT },
     { ">", '>' },
@@ -921,6 +923,8 @@ struct reservedword {
     { "--", SP_DECREMENT },
     { "^^", SP_SQRT },
 
+    { "??", SP_RANDOM },
+    
     { "@@", SP_DOUBLEAT },
     { "@@@", SP_TRIPLEAT },
 };

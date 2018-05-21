@@ -537,7 +537,7 @@ TransformCaseExprList(AST *var, AST *ast)
             }
         }
         if (listexpr) {
-            listexpr = AstOperator(K_OR, listexpr, node);
+            listexpr = AstOperator(K_BOOL_OR, listexpr, node);
         } else {
             listexpr = node;
         }
@@ -1836,7 +1836,7 @@ doSpinTransform(AST **astptr, int level)
             case K_ABS:
             case K_SQRT:
             case K_BIT_NOT:
-            case K_NOT:
+            case K_BOOL_NOT:
             case K_DECODE:
             case K_ENCODE:
                 lhsast = DupAST(ast->right);

@@ -27,9 +27,9 @@ isBooleanOperator(AST *expr)
 
     x = expr->d.ival;
     switch (x) {
-    case K_NOT:
-    case K_AND:
-    case K_OR:
+    case K_BOOL_NOT:
+    case K_BOOL_AND:
+    case K_BOOL_OR:
     case K_LE:
     case '<':
     case K_GE:
@@ -539,13 +539,13 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
     case K_BIT_NOT:
         PrintLogicOp(f, "~", left, right, flags);
         break;
-    case K_AND:
+    case K_BOOL_AND:
         PrintInOp(f, "&&", left, right, flags);
         break;
-    case K_OR:
+    case K_BOOL_OR:
         PrintInOp(f, "||", left, right, flags);
         break;
-    case K_NOT:
+    case K_BOOL_NOT:
         PrintInOp(f, "!", left, right, flags);
         break;
     case K_LIMITMIN:
@@ -1429,16 +1429,16 @@ PrintBoolExpr(Flexbuf *f, AST *expr, int flags)
         }
         op = expr->d.ival;
         switch (op) {
-        case K_NOT:
+        case K_BOOL_NOT:
             flexbuf_printf(f, "!(");
             PrintBoolExpr(f, rhs, flags);
             flexbuf_printf(f, ")");
             break;
-        case K_OR:
-        case K_AND:
+        case K_BOOL_OR:
+        case K_BOOL_AND:
             flexbuf_printf(f, "(");
             PrintBoolExpr(f, lhs, flags);
-            flexbuf_printf(f, "%s", op == K_OR ? ") || (" : ") && (");
+            flexbuf_printf(f, "%s", op == K_BOOL_OR ? ") || (" : ") && (");
             PrintBoolExpr(f, rhs, flags);
             flexbuf_printf(f, ")");
             break;

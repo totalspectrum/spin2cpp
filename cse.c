@@ -454,8 +454,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             return newflags;
         }
         switch(ast->d.ival) {
-        case K_OR:
-        case K_AND:
+        case K_BOOL_OR:
+        case K_BOOL_AND:
             // may not actually execute both sides of this, so
             // do not add any new entries on the second half
             flags |= CSE_NO_ADD;

@@ -1500,10 +1500,10 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
     }
 
     switch (opkind) {
-    case K_NOT:
+    case K_BOOL_NOT:
         CompileBoolBranches(irl, expr->right, falsedest, truedest);
         break;
-    case K_AND:
+    case K_BOOL_AND:
         if (!falsedest) {
             dummylabel = NewCodeLabel();
             falsedest = dummylabel;
@@ -1514,7 +1514,7 @@ CompileBoolBranches(IRList *irl, AST *expr, Operand *truedest, Operand *falsedes
             EmitLabel(irl, dummylabel);
         }
         break;
-    case K_OR:
+    case K_BOOL_OR:
         if (!truedest) {
             dummylabel = NewCodeLabel();
             truedest = dummylabel;
@@ -1677,9 +1677,9 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
       return NewImmediate(0);
 
-  case K_NOT:
-  case K_AND:
-  case K_OR:
+  case K_BOOL_NOT:
+  case K_BOOL_AND:
+  case K_BOOL_OR:
   case K_EQ:
   case K_NE:
   case K_LE:

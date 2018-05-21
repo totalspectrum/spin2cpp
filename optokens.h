@@ -5,8 +5,8 @@
 #define BINOP_H
 
 #define K_ASSIGN 0x100
-#define K_OR     0x101
-#define K_AND    0x102
+#define K_BOOL_OR 0x101
+#define K_BOOL_AND 0x102
 #define K_GE     0x103
 #define K_LE     0x104
 #define K_NE     0x105
@@ -27,9 +27,10 @@
 #define K_ABS      0x114
 #define K_DECODE   0x115
 #define K_ENCODE   0x116
-#define K_NOT      0x117
+#define K_BOOL_NOT      0x117
 #define K_SGNCOMP  0x118
 #define K_INCREMENT 0x119
 #define K_DECREMENT 0x11a
+#define K_BOOL_XOR   0x11b
 
 #endif

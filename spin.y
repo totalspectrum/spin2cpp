@@ -247,6 +247,7 @@ CheckYield(AST *body)
 
 /* operators */
 %token SP_ASSIGN     ":="
+%token SP_XOR         "XOR"
 %token SP_OR         "OR"
 %token SP_AND        "AND"
 %token SP_GE         "=>"
@@ -256,7 +257,7 @@ CheckYield(AST *body)
 %token SP_SGNCOMP    "<=>"
 %token SP_LIMITMIN   "#>"
 %token SP_LIMITMAX   "<#"
-%token SP_MODULUS    "//"
+%token SP_REMAINDER  "//"
 %token SP_HIGHMULT   "**"
 %token SP_ROTR       "->"
 %token SP_ROTL       "<-"
@@ -280,24 +281,26 @@ CheckYield(AST *body)
 %token SP_TRUNC      "TRUNC"
 %token SP_ROUND      "ROUND"
 %token SP_CONSTANT   "constant"
+%token SP_RANDOM     "??"
 
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
+%left SP_XOR
 %left SP_OR
 %left SP_AND
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
-%left '*' '/' SP_MODULUS SP_HIGHMULT
+%left '*' '/' SP_REMAINDER SP_HIGHMULT
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV
 %left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE
 %left SP_NOT
-%left '@' '~' '?' SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
+%left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
 %%
@@ -474,7 +477,7 @@ ifstmt:
   SP_IF expr SP_EOLN elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $4, $1); }
   | SP_IFNOT expr SP_EOLN elseblock
-    { $$ = NewCommentedAST(AST_IF, AstOperator(K_NOT, NULL, $2), $4, $1); }
+    { $$ = NewCommentedAST(AST_IF, AstOperator(K_BOOL_NOT, NULL, $2), $4, $1); }
 ;
 
 elseblock:
@@ -485,7 +488,7 @@ elseblock:
   | stmtblock SP_ELSEIF expr SP_EOLN elseblock
     { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, $3, $5, $2), NULL)); }
   | stmtblock SP_ELSEIFNOT expr SP_EOLN elseblock
-    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, AstOperator(K_NOT, NULL, $3), $5, $2), NULL)); }
+    { $$ = NewAST(AST_THENELSE, $1, NewAST(AST_STMTLIST, NewCommentedAST(AST_IF, AstOperator(K_BOOL_NOT, NULL, $3), $5, $2), NULL)); }
   ;
 
 casestmt:
@@ -556,7 +559,7 @@ repeatstmt:
   | SP_REPEAT SP_EOLN stmtblock SP_WHILE expr SP_EOLN
     { $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($3), $1); }
   | SP_REPEAT SP_EOLN stmtblock SP_UNTIL expr SP_EOLN
-    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_NOT, NULL, $5), CheckYield($3), $1); }
+    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $5), CheckYield($3), $1); }
   | SP_REPEAT SP_WHILE expr SP_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
@@ -564,7 +567,7 @@ repeatstmt:
     }
   | SP_REPEAT SP_UNTIL expr SP_EOLN stmtblock
     {   AST *body = $5;
-        AST *expr = AstOperator(K_NOT, NULL, $3);
+        AST *expr = AstOperator(K_BOOL_NOT, NULL, $3);
         expr->line = $3->line;
         body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, expr, body, $1);
@@ -852,7 +855,7 @@ expr:
   | expr '<' SP_GE expr
     // lexer quirk, <=> gets parsed as <  => in Spin1
     { $$ = AstOperator(K_SGNCOMP, $1, $4); }
-  | expr SP_MODULUS expr
+  | expr SP_REMAINDER expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
   | expr SP_HIGHMULT expr
     { $$ = AstOperator(K_HIGHMULT, $1, $3); }
@@ -873,9 +876,11 @@ expr:
   | expr SP_SAR expr
     { $$ = AstOperator(K_SAR, $1, $3); }
   | expr SP_OR expr
-    { $$ = AstOperator(K_OR, $1, $3); }
+    { $$ = AstOperator(K_BOOL_OR, $1, $3); }
   | expr SP_AND expr
-    { $$ = AstOperator(K_AND, $1, $3); }
+    { $$ = AstOperator(K_BOOL_AND, $1, $3); }
+  | expr SP_XOR expr
+    { $$ = AstOperator(K_BOOL_XOR, $1, $3); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN
@@ -890,7 +895,7 @@ expr:
     { $$ = AstOpAssign('|', $1, $4); }
   | expr '^' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('^', $1, $4); }
-  | expr SP_MODULUS '=' expr %prec SP_ASSIGN
+  | expr SP_REMAINDER '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_MODULUS, $1, $4); }
   | expr SP_HIGHMULT '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_HIGHMULT, $1, $4); }
@@ -911,9 +916,11 @@ expr:
   | expr SP_SAR '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_SAR, $1, $4); }
   | expr SP_AND '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_AND, $1, $4); }
+    { $$ = AstOpAssign(K_BOOL_AND, $1, $4); }
   | expr SP_OR '=' expr %prec SP_ASSIGN
-    { $$ = AstOpAssign(K_OR, $1, $4); }
+    { $$ = AstOpAssign(K_BOOL_OR, $1, $4); }
+  | expr SP_XOR '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_BOOL_XOR, $1, $4); }
   | expr '<' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('<', $1, $4); }
   | expr '>' '=' expr %prec SP_ASSIGN
@@ -959,7 +966,7 @@ expr:
       $$ = AstOperator(K_SAR, shf, AstInteger(16)); 
     }
   | SP_NOT expr
-    { $$ = AstOperator(K_NOT, NULL, $2); }
+    { $$ = AstOperator(K_BOOL_NOT, NULL, $2); }
   | SP_ABS expr
     { $$ = AstOperator(K_ABS, NULL, $2); }
   | SP_SQRT expr
@@ -980,7 +987,11 @@ expr:
     { $$ = AstOperator(K_DECREMENT, NULL, $2); }
   | lhs '?'
     { $$ = AstOperator('?', $1, NULL); }
+  | lhs SP_RANDOM
+    { $$ = AstOperator('?', $1, NULL); }
   | '?' lhs
+    { $$ = AstOperator('?', NULL, $2); }
+  | SP_RANDOM lhs
     { $$ = AstOperator('?', NULL, $2); }
   | lhs '~'
     { $$ = NewAST(AST_POSTSET, $1, AstInteger(0)); }
