@@ -135,6 +135,15 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
 {
     LoopValueEntry *entry;
 
+    if (name->kind == AST_EXPRLIST) {
+        // multiple assignment... punt on this for now
+        // pretend all of these depend on a hardware register
+        while (name) {
+            AddAssignment(lvs, name->left, NewAST(AST_HWREG, NULL, NULL), LVFLAG_VARYMASK, NULL);
+            name = name->right;
+        }
+        return NULL;
+    }
     if (name->kind != AST_IDENTIFIER) {
         return NULL;
     }
