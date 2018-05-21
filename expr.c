@@ -1564,3 +1564,34 @@ ExprHasSideEffects(AST *expr)
     }
     return ExprHasSideEffects(expr->left) || ExprHasSideEffects(expr->right);
 }
+
+bool
+IsStringConst(AST *expr)
+{
+    AST *val;
+    if (!expr) return 1;
+    if (expr->kind == AST_STRINGPTR) {
+        expr = expr->left;
+        if (expr->kind == AST_STRING) {
+            return true;
+        } else if (expr->kind == AST_EXPRLIST) {
+            // walk the string list
+            while (expr) {
+                val = expr->left;
+                if (!val) return false;
+                if (val->kind != AST_STRING
+                    && !IsConstExpr(val))
+                {
+                    return false;
+                }
+                expr = expr->right;
+            }
+            return true;
+        }
+    } else if (expr->kind == AST_STRING) {
+        /* hmmm, funny thing: is "A" a string or the integer 65? */
+        /* we'll go with the standard Spin interpretation of the latter */
+        return false;
+    }
+    return false;
+}

@@ -326,7 +326,7 @@ doDeclareFunction(AST *funcblock)
             if (p->kind == AST_ASSIGN) {
                 a->left = p->left;
                 defval = p->right;
-                if (!IsConstExpr(defval)) {
+                if (!IsConstExpr(defval) && !IsStringConst(defval)) {
                     ERROR(defval, "default parameter value must be constant");
                 }
             } else {
