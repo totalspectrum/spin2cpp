@@ -843,8 +843,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         return floatExpr(intAsFloat(expr->d.ival));
 
     case AST_STRING:
+    {
+        const char *s = expr->d.string;
+        if (reportError && strlen(s) > 1) {
+            WARNING(expr, "only first element of string is used");
+        }
         return intExpr(expr->d.string[0]);
-
+    }
     case AST_TOFLOAT:
         lval = EvalExpr(expr->left, flags, valid);
         if ( !IsIntOrGenericType(lval.type)) {

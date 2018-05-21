@@ -143,6 +143,22 @@ ERROR(AST *instr, const char *msg, ...)
 }
 
 void
+WARNING(AST *instr, const char *msg, ...)
+{
+    va_list args;
+
+    if (instr)
+        fprintf(stderr, "Warning on line %d: ", instr->line);
+    else
+        fprintf(stderr, "Warning: ");
+
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+void
 ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     ERROR(ast, "Unknown symbol %s", ast->d.string);
