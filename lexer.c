@@ -819,6 +819,7 @@ struct reservedword {
     intptr_t val;
 } init_words[] = {
     { "abort", SP_ABORT },
+    { "abs", SP_ABS },
     { "and", SP_AND },
     { "asm", SP_ASM },
     { "byte", SP_BYTE },
@@ -865,8 +866,11 @@ struct reservedword {
     { "pub", SP_PUB },
     { "repeat", SP_REPEAT },
     { "res", SP_RES },
+    { "rev", SP_REV },
     { "result", SP_RESULT },
     { "return", SP_RETURN },
+    { "rol", SP_ROTL },
+    { "ror", SP_ROTR },
     { "round", SP_ROUND },
 
     { "spr", SP_SPR },
