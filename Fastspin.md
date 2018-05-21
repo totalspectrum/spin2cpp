@@ -281,7 +281,21 @@ PUB main
 ```
 The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
 
-(8) fastspin accepts some Spin2 operators:
+(8) If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically fastspin inserts a `string` operator around the literal in this case. So for example in:
+```
+PUB write(msg = string(""))
+  '' do some stuff
+...
+  write(string("hello, world"))
+  write("hello, world")
+```
+the two calls to "write" will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
+```
+  write($68)  ' $68 = ASCII value of "h"
+```
+which is probably not what was intended.
+
+(9) fastspin accepts some Spin2 operators:
 ```
   a \ b   uses the value of a, but then sets a to b
   x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y

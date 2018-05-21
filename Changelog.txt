@@ -1,3 +1,7 @@
+Version 3.8.4
+- Automatically promote literal strings to string("foo") if they are
+  being passed to a function that expects a pointer
+  
 Version 3.8.3
 - Allow multiple return values to in turn be passed to functions as
   parameters

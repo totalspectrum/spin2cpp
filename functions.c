@@ -10,6 +10,24 @@
 #include <string.h>
 #include "spinc.h"
 
+/*
+ * how many items will this expression put on the stack?
+ */
+static int
+NumExprItems(AST *expr)
+{
+    Function *f;
+    if (expr->kind == AST_FUNCCALL) {
+        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
+        if (sym && sym->type == SYM_FUNCTION) {
+            f = (Function *)sym->val;
+            return f->numresults;
+        }
+            
+    }
+    return 1;
+}
+
 Function *curfunc;
 static int visitPass = 1;
 
@@ -101,9 +119,10 @@ IsAddrRef(AST *body, Symbol *sym)
 
 /*
  * scan a function body for various special conditions
+ * "expectType" marks a parameter type that is expected
  */
 static void
-ScanFunctionBody(Function *fdef, AST *body, AST *upper)
+ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
 {
     AST *ast;
     Symbol *sym;
@@ -165,6 +184,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
                 fdef->result_used = 1;
             }
         }
+        // after an @, we probably cannot rely on any typing info??
+        expectType = NULL;
         break;
     case AST_IDENTIFIER:
         sym = FindSymbol(&fdef->localsyms,  body->d.string);
@@ -205,11 +226,73 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper)
             }
         }
         break;
+    case AST_STRINGPTR:
+        return; // should be only constants inside, and we do not want to mess with them
+        
+    case AST_STRING:
+        {
+            // if we're passing to a string parameter, make sure
+            // we're in a stringptr
+            if (expectType && IsPointerType(expectType)) {
+                if (upper->left == body) {
+                    AST *newString;
+                    AstReportAs(body);
+                    newString = NewAST(AST_STRINGPTR,
+                                       NewAST(AST_EXPRLIST, body, NULL),
+                                       NULL);
+                    upper->left = newString;
+                }
+            }
+        }
+        return;
+    case AST_FUNCCALL:
+        {
+            AST *actualParamList = body->right;
+            AST *paramType;
+            AST *actualParam;
+            int n;
+            
+            // scan through parameters, adjusting for expected return types
+            Symbol *calledSym = FindFuncSymbol(body, NULL, NULL);
+            if (calledSym && calledSym->type == SYM_FUNCTION) {
+                Function *calledFunc = (Function *)calledSym->val;
+                AST *calledParam = calledFunc->params;
+                while (calledParam && actualParamList) {
+                    AST *paramId = calledParam->left;
+                    
+                    actualParam = actualParamList->left;
+                    paramType = NULL;
+                    if (paramId && paramId->kind == AST_IDENTIFIER) {
+                        Symbol *paramSym = FindSymbol(&calledFunc->localsyms, paramId->d.string);
+                        if (paramSym && paramSym->type == SYM_PARAMETER) {
+                            // symbol value is its expected type
+                            paramType = (AST *)paramSym->val; 
+                        }
+                    }
+                    ScanFunctionBody(fdef, actualParam, actualParamList, paramType);
+                    // consume an appropriate number of parameters in the target
+                    n = NumExprItems(actualParam);
+                    while (n > 0 && calledParam) {
+                        calledParam = calledParam->right;
+                        --n;
+                    }
+                    actualParamList = actualParamList->right;
+                }
+                // any leftovers? probably an error, but scan them anyway
+                if (actualParamList) {
+                    ScanFunctionBody(fdef, actualParamList->left, actualParamList, NULL);
+                    ScanFunctionBody(fdef, actualParamList->right, actualParamList, NULL);
+                }
+                // we're done processing
+                return;
+            }
+        }
+        break;
     default:
         break;
     }
-    ScanFunctionBody(fdef, body->left, body);
-    ScanFunctionBody(fdef, body->right, body);
+    ScanFunctionBody(fdef, body->left, body, expectType);
+    ScanFunctionBody(fdef, body->right, body, expectType);
 }
 
 /*
@@ -1012,25 +1095,6 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     }
     return sawreturn;
-}
-
-/*
- * how many items will this expression put on the stack?
- * for now assume 1, but eventually handle multiple returns correctly
- */
-static int
-NumExprItems(AST *expr)
-{
-    Function *f;
-    if (expr->kind == AST_FUNCCALL) {
-        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
-        if (sym && sym->type == SYM_FUNCTION) {
-            f = (Function *)sym->val;
-            return f->numresults;
-        }
-            
-    }
-    return 1;
 }
 
 /*
@@ -1945,7 +2009,7 @@ SpinTransform(Module *Q)
         // ScanFunctionBody is left over from older code
         // it should probably be merged in with doSpinTransform
         /* check for special conditions */
-        ScanFunctionBody(func, func->body, NULL);
+        ScanFunctionBody(func, func->body, NULL, NULL);
 
         /* if we put the locals into an array, record the size of that array */
         if (func->localarray) {
