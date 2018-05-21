@@ -1889,6 +1889,12 @@ doSpinTransform(AST **astptr, int level)
                 lhsast = NewAST(AST_SEQUENCE, seq1, lhsast);
             }
             *astptr = ast = lhsast;
+        } else if (ast->d.ival == K_BOOL_XOR) {
+            // transform a XOR b to (a<>0) ^ (b<>0)
+            ast = AstOperator('^',
+                              AstOperator(K_NE, ast->left, AstInteger(0)),
+                              AstOperator(K_NE, ast->right, AstInteger(0)));
+            *astptr = ast;
         }
         /* fall through */
     default:
