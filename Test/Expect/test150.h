@@ -5,8 +5,12 @@
 
 class test150 {
 public:
-  static int32_t 	Testit(int32_t A, int32_t B, int32_t C, int32_t D);
+  static const char *	Ptr(const char *A);
+  static const char *	Greet1(void);
+  static const char *	Greet2(void);
+  char *	Fluff(void);
 private:
+  volatile char 	Buf[10];
 };
 
 #endif

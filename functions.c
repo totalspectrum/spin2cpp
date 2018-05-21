@@ -342,6 +342,27 @@ doDeclareFunction(AST *funcblock)
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
     fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
 
+    // if there are default values for the parameters, use those to initialize
+    // the symbol types
+    if (fdef->defaultparams) {
+        AST *vals = fdef->defaultparams;
+        AST *params = fdef->params;
+        AST *id;
+        AST *defval;
+        while (params && vals) {
+            id = params->left;
+            params = params->right;
+            defval = vals->left;
+            vals = vals->right;
+            if (id->kind == AST_IDENTIFIER) {
+                Symbol *sym = FindSymbol(&fdef->localsyms, id->d.string);
+                if (sym && sym->type == SYM_PARAMETER) {
+                    sym->val = (void *)ExprType(defval);
+                }
+            }
+        }
+    }
+    
     fdef->body = body;
 
     /* define the function itself */
@@ -1144,7 +1165,6 @@ ProcessFuncs(Module *P)
         savecurfunc = curfunc;
         curfunc = pf;
         CheckFunctionCalls(pf->body);
-        curfunc = savecurfunc;
         
         /* check for void functions */
         sawreturn = CheckRetStatementList(pf, pf->body);
@@ -1152,6 +1172,7 @@ ProcessFuncs(Module *P)
             /* there really is a return type */
             SetFunctionType(pf, ast_type_generic);
         }
+        curfunc = savecurfunc;
         if (pf->rettype == NULL) {
             pf->rettype = ast_type_void;
             pf->resultexpr = NULL;

@@ -1,11 +1,23 @@
 #include <propeller.h>
 #include "test150.h"
 
-int32_t test150::Testit(int32_t A, int32_t B, int32_t C, int32_t D)
+const char *test150::Ptr(const char *A)
 {
-  if (-((-(A != 0) ^ -(B != 0)) != 0) ^ -(C != 0)) {
-    return D;
-  }
-  return (-(A != 0) ^ -(B != 0));
+  return A;
+}
+
+const char *test150::Greet1(void)
+{
+  return Ptr("hello");
+}
+
+const char *test150::Greet2(void)
+{
+  return Ptr("hi");
+}
+
+char *test150::Fluff(void)
+{
+  return (Buf);
 }
 
