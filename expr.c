@@ -957,6 +957,17 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         else if (valid)
             *valid = 0;
         break;
+    case AST_ARRAYREF:
+        if (expr->left && expr->left->kind == AST_STRING) {
+            const char *str = expr->left->d.string;
+            rval = EvalExpr(expr->right, flags, valid);
+            if ((!valid || *valid) && IsIntOrGenericType(rval.type)
+                && rval.val >= 0 && rval.val <= strlen(str))
+            {
+                return intExpr(str[rval.val]);
+            }
+        }
+        break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         /* it's OK to take the address of a label; in that case, just
@@ -1497,7 +1508,7 @@ CompatibleTypes(AST *A, AST *B)
 // Do some simple optimizations on an expr
 // this is mainly used to tidy up internally generated
 // expressions
-//   (A+N)-n => A
+//   (A+N)-N => A
 // etc.
 // The transformations done here are deliberately restricted
 // because they can be applied to source code

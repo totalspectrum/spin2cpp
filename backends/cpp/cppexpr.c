@@ -16,6 +16,7 @@
 #define gl_ccode (gl_output == OUTPUT_C)
 
 static void PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags);
+static void PrintStringLiteral(Flexbuf *f, const char *s);
 
 static int
 isBooleanOperator(AST *expr)
@@ -819,6 +820,9 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
 #else
 	PrintTypedExpr(f, NewAST(AST_PTRTYPE, expr->left, NULL), expr->right, flags & ~PRINTEXPR_ISREF);
 #endif
+        break;
+    case AST_STRING:
+        PrintStringLiteral(f, expr->d.string);
         break;
     default:
         ERROR(expr, "bad target for assignment");
