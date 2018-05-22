@@ -460,4 +460,6 @@ void PerformLoopOptimization(Module *P);
 // simplify statments like a^=b to a = a^b
 void SimplifyAssignments(AST **astptr);
 
+#define P2_HUB_BASE 0x400
+
 #endif

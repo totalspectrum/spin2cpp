@@ -759,7 +759,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_HUBMODE:
         if (gl_p2) {
-            flexbuf_addstr(fb, "\torgh\t$800\n");
+            flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
         }
         lmmMode = 1;
         break;
