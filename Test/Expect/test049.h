@@ -1,0 +1,14 @@
+#ifndef test049_Class_Defined__
+#define test049_Class_Defined__
+
+#include <stdint.h>
+#include "test009.h"
+
+class test049 {
+public:
+  test009	X;
+  void	Myfunc(void);
+private:
+};
+
+#endif
