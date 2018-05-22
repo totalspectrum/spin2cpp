@@ -174,9 +174,9 @@ Symbol           | When Defined
 (this isn't exactly an extension anymore, since openspin has the same
 preprocessor).
 
-(2) @@@ operator: the @@@ operator returns the absolute hub address of
-a variable. This is the same as @ in Spin code, but in PASM code @
-returns only the address relative to the start of the DAT section.
+(2) `@@@` operator: the `@@@` operator returns the absolute hub address of
+a variable. This is the same as `@` in Spin code, but in PASM code `@`
+returns only the address relative to the start of the `DAT` section.
 
 (3) IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
 ```
@@ -195,19 +195,19 @@ r := (a) ? b : c
 ```
 In the latter form the parentheses around `a` are mandatory to avoid confusion with the random number operator `?`.
 
-(4) fastspin accepts inline assembly in PUB and PRI sections. Inline
+(4) fastspin accepts inline assembly in `PUB` and `PRI` sections. Inline
 assembly starts with `asm` and ends with `endasm`. The inline assembly
 is still somewhat limited; the only operands permitted are local
 variables of the containing function.
 
 Example:
-
-  PUB waitcnt2(newcnt, incr)
-    asm
-      waitcnt newcnt, incr
-    endasm
-    return newcnt
-
+```
+PUB waitcnt2(newcnt, incr)
+  asm
+    waitcnt newcnt, incr
+  endasm
+  return newcnt
+```
 waits until CNT reaches "newcnt", and returns "newcnt + incr".
   
 (5) The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
@@ -289,7 +289,7 @@ PUB write(msg = string(""))
   write(string("hello, world"))
   write("hello, world")
 ```
-the two calls to "write" will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
+the two calls to `write` will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
 ```
   write($68)  ' $68 = ASCII value of "h"
 ```
