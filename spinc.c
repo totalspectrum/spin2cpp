@@ -360,7 +360,7 @@ const char p2_system_spincode[] =
     "  mask := -1\n"
     "  asm\n"
     "    locktry id wc\n"
-    "    muxc   rval,mask\n"
+    "    muxnc   rval,mask\n"  /* NOTE: C bit is opposite in P2 */
     "  endasm\n"
     "  return rval\n"
     "pri locknew | rval\n"
