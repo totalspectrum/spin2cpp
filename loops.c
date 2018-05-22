@@ -39,6 +39,7 @@ typedef struct LoopValueEntry {
 typedef struct LoopValueSet {
     LoopValueEntry *head;
     LoopValueEntry *tail;
+    bool valid;  //  if false, abandon all attempts to use this LVS
 } LoopValueSet;
 
 /*
@@ -48,6 +49,7 @@ static void
 InitLoopValueSet(LoopValueSet *lvs)
 {
     lvs->head = lvs->tail = NULL;
+    lvs->valid = true;
 }
 
 /*
@@ -135,7 +137,9 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
 {
     LoopValueEntry *entry;
 
-    if (name->kind == AST_EXPRLIST) {
+    switch (name->kind) {
+    case AST_EXPRLIST:
+    {
         // multiple assignment... punt on this for now
         // pretend all of these depend on a hardware register
         while (name) {
@@ -144,7 +148,19 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
         }
         return NULL;
     }
-    if (name->kind != AST_IDENTIFIER) {
+    case AST_ARRAYREF:
+    case AST_MEMREF:
+    case AST_HWREG:
+    case AST_RANGEREF:
+    {
+        // we mostly just leave array updates out of things
+        return NULL;
+    }
+    case AST_IDENTIFIER:
+        break;
+    default:
+        // unexpected item, bail
+        lvs->valid = false;
         return NULL;
     }
     entry = FindName(lvs, name);
@@ -217,6 +233,7 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
         break;
     case AST_POSTSET:
         ERROR(NULL, "Internal error, should not see POSTSET in LVS");
+        lvs->valid = false;
         break;
     case AST_IF:
     case AST_CASE:
@@ -620,6 +637,9 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
     FindAllAssignments(&lv, update, update, 0);
     FindAllAssignments(&lv, NULL, condition, 0);
     MarkDependencies(&lv);
+    if (!lv.valid) {
+        return NULL;
+    }
     for (entry = lv.head; entry; entry = entry->next) {
         if (entry->hits > 1) {
             continue;
@@ -691,10 +711,13 @@ doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
 {
     LoopValueSet sub;
     AST *pull;
-    
+
     // initial loop assignments take place before the loop
     if (initial) {
         FindAllAssignments(lvs, NULL, initial, 0);
+    }
+    if (!lvs->valid) {
+        return NULL;
     }
     // optimize sub-loops
     InitLoopValueSet(&sub);
