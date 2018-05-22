@@ -57,11 +57,15 @@ NewFunction(void)
 }
 
 static Symbol *
-EnterVariable(int kind, SymbolTable *stab, const char *name, AST *type)
+EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
 {
     Symbol *sym;
-
+    const char *name = astname->d.string;
+    
     sym = AddSymbol(stab, name, kind, (void *)type);
+    if (!sym) {
+        ERROR(astname, "Duplicate definition for %s", name);
+    }
     return sym;
 }
 
@@ -79,14 +83,14 @@ EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
             ast = lower->left;
             switch (ast->kind) {
             case AST_IDENTIFIER:
-                sym = EnterVariable(kind, stab, ast->d.string, symtype);
-                sym->offset = offset;
+                sym = EnterVariable(kind, stab, ast, symtype);
+                if (sym) sym->offset = offset;
                 offset += typesize;
                 break;
             case AST_ARRAYDECL:
-                sym = EnterVariable(kind, stab, ast->left->d.string, NewAST(AST_ARRAYTYPE, symtype, ast->right));
+                sym = EnterVariable(kind, stab, ast->left, NewAST(AST_ARRAYTYPE, symtype, ast->right));
                 size = EvalConstExpr(ast->right);
-                sym->offset = offset;
+                if (sym) sym->offset = offset;
                 offset += size * typesize;
                 break;
             case AST_ANNOTATION:
