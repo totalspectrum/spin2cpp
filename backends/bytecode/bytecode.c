@@ -13,30 +13,6 @@
 #include "spinc.h"
 #include "bytecode.h"
 
-// some flexbuf utilities
-static void flexbuf_putlong(Flexbuf *fb, uint32_t L)
-{
-    char *r;
-    flexbuf_addchar(fb, L & 0xff);
-    flexbuf_addchar(fb, (L>>8) & 0xff);
-    flexbuf_addchar(fb, (L>>16) & 0xff);
-    r = flexbuf_addchar(fb, (L>>24) & 0xff);
-    if (!r) {
-        fprintf(stderr, "out of memory\n");
-        exit(2);
-    }
-}
-static void flexbuf_putword(Flexbuf *fb, uint32_t L)
-{
-    char *r;
-    flexbuf_addchar(fb, L & 0xff);
-    r = flexbuf_addchar(fb, (L>>8) & 0xff);
-    if (!r) {
-        fprintf(stderr, "out of memory\n");
-        exit(2);
-    }
-}
-
 // compilation routines
 static void
 SetupForBytecode(Module *P)
@@ -48,7 +24,6 @@ SetupForBytecode(Module *P)
         P->bedata = calloc(sizeof(ByteCodeModData), 1);
         for (f = P->functions; f; f = f->next) {
             f->bedata = calloc(sizeof(ByteCodeFuncData), 1);
-            flexbuf_init(&FuncData(f)->code, 512);
         }
         mem = (Flexbuf *)calloc(1, sizeof(*mem));
         flexbuf_init(mem, 32768);
@@ -56,14 +31,16 @@ SetupForBytecode(Module *P)
     }
 }
 
-static inline void EmitBytecode(Flexbuf *fb, int i)
+StackIR *NewStackIR(StackOp opc)
 {
-    flexbuf_addchar(fb, i);
+    StackIR *ir = (StackIR*)calloc(1, sizeof(*ir));
+    ir->opc = opc;
+    return ir;
 }
 
-static void CompileStatement(Flexbuf *fb, AST *ast); /* forward declaration */
+static void CompileStatement(StackIRList *irl, AST *ast); /* forward declaration */
 
-static void CompileStatementList(Flexbuf *fb, AST *ast)
+static void CompileStatementList(StackIRList *irl, AST *ast)
 {
     while (ast) {
         if (ast->kind != AST_STMTLIST) {
@@ -71,75 +48,18 @@ static void CompileStatementList(Flexbuf *fb, AST *ast)
                   ast->kind);
             return;
         }
-        CompileStatement(fb, ast->left);
+        CompileStatement(irl, ast->left);
         ast = ast->right;
     }
 }
 
-static bool PowOfTwo(int32_t ival, int *bval)
+static void CompileImmediate(StackIRList *irl, int32_t i)
 {
-    int b;
-    int32_t m = 2;
-    for (b = 0; b < 31; b++) {
-        if (ival == m) {
-            *bval = b;
-            return true;
-        }
-        if (ival == m-1) {
-            *bval = b | 0x20;
-            return true;
-        }
-        if (ival == ~m) {
-            *bval = b | 0x40;
-            return true;
-        }
-        if (ival == -m) {
-            *bval = b | 0x60;
-            return true;
-        }
-        m = m << 1;
-    }
-    return false;
+    StackIR *ir = NewStackIR(SOP_PUSHIMM);
+    ir->operand = AstInteger(i);
 }
 
-static void CompileImmediate(Flexbuf *fb, int32_t i)
-{
-    int bval;
-    if (i == -1) {
-        EmitBytecode(fb, 0x34); // push#-1
-    } else if (i == 0) {
-        EmitBytecode(fb, 0x35); // push#0
-    } else if (i == 1) {
-        EmitBytecode(fb, 0x36); // push#1
-    } else if ( 0 == (i & 0xffffff00) ) {
-        EmitBytecode(fb, 0x38); // push#byte
-        EmitBytecode(fb, i);
-    } else if (PowOfTwo(i, &bval)) {
-        EmitBytecode(fb, 0x37);
-        EmitBytecode(fb, bval);
-    } else if ( 0 == ( (~i) & 0xffffff00 ) ) {
-        EmitBytecode(fb, 0x38);
-        EmitBytecode(fb, ~i);
-        EmitBytecode(fb, 0xe7); // bit_not
-    } else if (0 == (i & 0xffff0000)) {
-        EmitBytecode(fb, 0x39);
-        EmitBytecode(fb, i >> 8);
-        EmitBytecode(fb, i & 0xff);
-    } else if (0 == (i & 0xff000000)) {
-        EmitBytecode(fb, 0x3a);
-        EmitBytecode(fb, (i >> 16) & 0xff);
-        EmitBytecode(fb, (i >> 8) & 0xff);
-        EmitBytecode(fb, i & 0xff);
-    } else {
-        EmitBytecode(fb, 0x3b);
-        EmitBytecode(fb, (i >> 24) & 0xff);
-        EmitBytecode(fb, (i >> 16) & 0xff);
-        EmitBytecode(fb, (i >> 8) & 0xff);
-        EmitBytecode(fb, i & 0xff);
-    }
-}
-
-static void CompileExpression(Flexbuf *fb, AST *ast)
+static void CompileExpression(StackIRList *irl, AST *ast)
 {
     AST *expr = ast;
     while (expr && expr->kind == AST_COMMENTEDNODE) {
@@ -154,7 +74,7 @@ static void CompileExpression(Flexbuf *fb, AST *ast)
     switch (expr->kind) {
     case AST_INTEGER:
     case AST_FLOAT:
-        CompileImmediate(fb, (int32_t)expr->d.ival);
+        CompileImmediate(irl, (int32_t)expr->d.ival);
         break;
     default:
         ERROR(ast, "Cannot handle expression in bytecode yet");
@@ -162,25 +82,26 @@ static void CompileExpression(Flexbuf *fb, AST *ast)
     }
 }
 
-static void CompileStatement(Flexbuf *fb, AST *ast)
+static void CompileStatement(StackIRList *irl, AST *ast)
 {
     AST *retval;
+    StackIR *ir;
+    
     if (!ast) return;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
-        CompileStatement(fb, ast->left);
+        CompileStatement(irl, ast->left);
         break;
     case AST_RETURN:
         retval = ast->left;
-        if (!retval) {
-            // just a plain return
-            EmitBytecode(fb, 0x32);
+        if (retval) {
+            CompileExpression(irl, retval);
         }
-        CompileExpression(fb, retval);
-        EmitBytecode(fb, 0x33);
+        ir = NewStackIR(SOP_RET);
+        AppendStackIR(irl, ir);
         break;
     case AST_STMTLIST:
-        CompileStatementList(fb, ast);
+        CompileStatementList(irl, ast);
         break;
     default:
         ERROR(ast, "Cannot compile statement for bytecode yet");
@@ -194,23 +115,14 @@ CompileFunctions(Module *P)
     Function *f;
 
     for (f = P->functions; f; f = f->next) {
-        Flexbuf *code = &FuncData(f)->code;
-        CompileStatementList(code, f->body);
+        StackIRList *irl = &FuncData(f)->code;
+        CompileStatementList(irl, f->body);
     }
 }
 
 static void
 DoFuncDecl(Module *P)
 {
-    Flexbuf *mem = ModData(P)->mem;
-    Function *f;
-    flexbuf_putlong(mem, 0); // reserve space for link to next object
-    for (f = P->functions; f; f = f->next) {
-        // address of method, still to be determined
-        flexbuf_putword(mem, 0);
-        // stack growth for method
-        flexbuf_putword(mem, 4*(1 + f->numparams + f->numlocals));
-    }
 }
 
 static void

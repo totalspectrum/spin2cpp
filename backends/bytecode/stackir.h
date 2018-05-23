@@ -33,7 +33,7 @@ typedef enum stackop {
 
     // a > b gets done as b < a
 
-    // 5 branches
+    // 6 branches
     
     SOP_JZ,  // val := pop(); if (tos == 0) pc := val; pop()
     SOP_JNZ,
@@ -42,7 +42,8 @@ typedef enum stackop {
     // calls; address is on stack
     SOP_CALL, // saves ret address on ret stack
     SOP_CALLASM, // jumps to native code
-
+    SOP_RET, // return from subroutine
+    
     // 11 stack access
     
     // push an immediate value
@@ -81,10 +82,20 @@ typedef enum stackop {
     
 } StackOp;
 
+typedef struct stackir StackIR;
+
 typedef struct stackir {
-    struct stackir *next;
-    StackOp opcode;
-    intptr_t val;
+    /* must match the start of IR in instr.h */
+    StackIR *next;
+    StackIR *prev;
+    
+    StackOp opc;
+    AST *operand;
 } StackIr;
+
+typedef struct StackIRList {
+    StackIR *head;
+    StackIR *tail;
+} StackIRList;
 
 #endif
