@@ -290,21 +290,36 @@ typedef struct instrmodifier {
 #define P2_IMM_SRC (1<<18)
 
 /* optimizer friendly form of instructions */
+/* this is the assembler intermediate form;
+ * some backends (e.g. bytecode) may have their own
+ * if they start with "next" and "prev" then they may
+ * be able to share some manipulation routines
+ */
 struct IR {
+    // always start with next, pre
+    IR *next;
+    IR *prev;
+    unsigned addr;
+    
     enum IROpcode opc;
     enum IRCond cond;
     Operand *dst;
     Operand *src;
     int flags;
-    IR *prev;
-    IR *next;
-    unsigned addr;
     void *aux; // auxiliary data for back end
     Instruction *instr; // PASM assembler data for instruction
     enum OperandEffect srceffect; // special effect (e.g. postinc) for source
     Operand *fcache;   // if non-NULL, fcache root
 };
 
-void AppendOperand(OperandList **listptr, Operand *op);
+// these functions can also work on "generalized" IR lists
+// (e.g. bytecode IRs) as long as they start with "next" and "prev"
+
+// append an IR at the end of a list
+void AppendIR(IRList *irl, IR *ir);
+void InsertAfterIR(IRList *irl, IR *orig, IR *ir);
+void DeleteIR(IRList *irl, IR *ir);
+void AppendIRList(IRList *irl, IRList *sub);
+
 
 #endif

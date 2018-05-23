@@ -14,12 +14,6 @@
 //
 IR *NewIR(IROpcode kind);
 
-// append an IR at the end of a list
-void AppendIR(IRList *irl, IR *ir);
-// insert an IR after another in a list
-void InsertAfterIR(IRList *irl, IR *orig, IR *ir);
-void DeleteIR(IRList *irl, IR *ir);
-void AppendIRList(IRList *irl, IRList *sub);
 void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 
 //
@@ -30,6 +24,8 @@ Operand *NewImmediate(int32_t val);
 Operand *NewImmediatePtr(const char *name, Operand *val);
 Operand *NewCodeLabel();  // use only while compiling a function
 Operand *NewHubLabel();
+
+void AppendOperand(OperandList **listptr, Operand *op);
 
 void FreeTempRegisters(IRList *irl, int starttempreg);
 
