@@ -118,14 +118,6 @@ CompileInlineInstr(IRList *irl, AST *ast)
         }
         sub = sub->right;
     }
-#if 0
-    // this check is too simplistic for P2
-    if (immflag) {
-	 if (ir->src && ir->src->kind != IMM_INT) {
-	   ERROR(sub, "Only immediate integers in inline asm");
-	 }
-    }
-#endif
     if (expectops != numoperands) {
         ERROR(ast, "Wrong number of operands to inline %s: expected %d, found %d", instr->name, expectops, numoperands);
     }

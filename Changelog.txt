@@ -3,6 +3,7 @@ Version 3.8.4
   being passed to a function that expects a pointer
 - Fixed lockset() on P2 (C flag behavior differs between P1 and P2)
 - Changed default hub start for P2 from $800 to $400
+- Provide some inline assembly support for C/C++
 
 Version 3.8.3
 - Allow multiple return values to in turn be passed to functions as

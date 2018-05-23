@@ -52,6 +52,7 @@ PUB demo | x,y,z,i
 #endif
   fds.str(string("multiple parameter test", 13, 10))
   info(shl64(i64($1234, $56789ABC), i64(0, 4)))
+  info(add64(i64(0, $ffffffff), 0, 3))
   exit
 
 PUB i64(a, b): x,y
@@ -59,27 +60,18 @@ PUB i64(a, b): x,y
   y := b
 
 PUB shl64(ahi, a, bhi, b) : chi, c | t
-#ifdef VERBOSE
-  fds.str(string("shl64 params: "))
-  fds.hex(ahi, 8)
-  fds.hex(a, 8)
-  fds.tx(",")
-  fds.hex(bhi,8)
-  fds.hex(b, 8)
-  fds.tx(13)
-  fds.tx(10)
-#endif
   chi := ahi << b
   t := a >> (32-b)
   chi |= t
   c := a << b
-#ifdef VERBOSE
-  fds.str(string("shl64 result: "))
-  fds.hex(chi, 8)
-  fds.hex(c, 8)
-  fds.tx(13)
-  fds.tx(10)
-#endif
+
+PUB add64(ahi, a, bhi, b) : chi, c
+  chi := ahi
+  c := a
+  asm
+    add c, b wc
+    addx chi, bhi
+  endasm
   
 PUB info(x,y)
   fds.str(string("func eval: x="))

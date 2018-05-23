@@ -274,10 +274,10 @@ outputGasComment(Flexbuf *f, AST *ast, int inlineAsm)
 #define GAS_WC 2
 #define GAS_NR 4
 #define GAS_WR 8
-#define MAX_OPERANDS 2
+#define MAX_OPERANDS 3
 
-static void
-outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
+void
+outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
 {
     Instruction *instr;
     AST *operand[MAX_OPERANDS];
@@ -290,8 +290,12 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
     int printFlags;
     const char *opcode;
 
-    forceAlign(f, 4, inlineAsm);
-    startLine(f, inlineAsm);
+    if (!state) {
+        forceAlign(f, 4, inlineAsm);
+        startLine(f, inlineAsm);
+    } else {
+        flexbuf_printf(f, "%*c\"", state->indent, ' ');
+    }
     instr = (Instruction *)ast->d.ptr;
     /* print modifiers */
     sub = ast->right;
@@ -391,6 +395,47 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
                 break;
             }
         }
+        printFlags &= ~PRINTEXPR_INLINESYM;
+        if (state && operand[i]) {
+            if (IsConstExpr(operand[i])) {
+                /* constants are OK */
+            } else if (operand[i]->kind != AST_IDENTIFIER) {
+                ERROR(operand[i], "illegal operand for inline assembly");
+            } else {
+                printFlags |= PRINTEXPR_INLINESYM;
+                // add it to the inputs or outputs
+                if (AstUses(state->outputs, operand[i])) {
+                    // we're OK, already in outputs
+                } else if (i == 0) {
+                    // take it out of inputs
+                    AST *ast, **astptr;
+                    
+                    //AstRemoveFromList(state->inputs, operand[i]);
+                    astptr = &state->inputs;
+                    ast = *astptr;
+                    while (ast) {
+                        AST *sub = ast->left;
+                        if (sub && sub->kind == AST_IDENTIFIER) {
+                            if (!strcmp(operand[i]->d.string, sub->d.string)) {
+                                *astptr = ast->right;
+                                break;
+                            }
+                        } else {
+                            ERROR(sub, "Internal error in AST list");
+                        }
+                        astptr = &ast->right;
+                        ast = *astptr;
+                    }
+                    // add it to outputs
+                    state->outputs = AddToList(state->outputs,
+                                               NewAST(AST_LISTHOLDER, operand[i], NULL));
+                } else if (!AstUses(state->inputs, operand[i])) {
+                    // add it to inputs
+                    state->inputs = AddToList(state->inputs,
+                                              NewAST(AST_LISTHOLDER, operand[i], NULL));
+                }
+            }
+        }
         PrintExpr(f, operand[i], printFlags);
     }
     if (effects) {
@@ -404,7 +449,11 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm)
             }
         }
     }
-    endLine(f, inlineAsm);
+    if (!state) {
+        endLine(f, inlineAsm);
+    } else {
+        flexbuf_printf(f, "\\t\\n\"\n");
+    }
 }
 
 static void
@@ -601,7 +650,7 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             outputGasDataList(f, ".long", ast->left, 4, inlineAsm);
             break;
         case AST_INSTRHOLDER:
-            outputGasInstruction(f, ast->left, inlineAsm);
+            outputGasInstruction(f, ast->left, inlineAsm, NULL);
             break;
         case AST_LINEBREAK:
             break;

@@ -153,6 +153,16 @@ PrintObjConstName(Flexbuf *f, Module *P, const char* symname)
     }
 }
 
+static void
+basePrintName(Flexbuf *f, const char *name, int flags)
+{
+    if (flags & PRINTEXPR_INLINESYM) {
+        flexbuf_printf(f, "%%[%s]", name);
+    } else {
+        flexbuf_printf(f, "%s", name);
+    }
+}
+
 /* code to print a symbol to a file */
 void
 PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
@@ -174,25 +184,25 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         }
         break;
     case SYM_PARAMETER:
-        if (curfunc && curfunc->parmarray) {
+        if (curfunc && curfunc->parmarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
         } else {
-            flexbuf_printf(f, "%s", sym->name);
+            basePrintName(f, sym->name, flags);
         }
         break;              
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
-        if (curfunc && curfunc->localarray) {
+        if (curfunc && curfunc->localarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
         } else {
-            flexbuf_printf(f, "%s", sym->name);
+            basePrintName(f, sym->name, flags);
         }
         break;              
     case SYM_RESULT:
-        if (curfunc && curfunc->result_in_parmarray) {
+        if (curfunc && curfunc->result_in_parmarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[0]", curfunc->parmarray);
         } else {
-            flexbuf_printf(f, "%s", sym->name);
+            basePrintName(f, sym->name, flags);
         }
         break;
     case SYM_VARIABLE:

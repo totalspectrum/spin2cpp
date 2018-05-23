@@ -7,3 +7,4 @@ expr eval: x=0001 y=0002 z=0003
 func eval: x=00000065 y=00000066
 multiple parameter test
 func eval: x=00012345 y=6789ABC0
+func eval: x=00000001 y=00000002

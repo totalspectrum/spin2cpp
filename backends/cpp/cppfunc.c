@@ -478,6 +478,59 @@ PrintExtraDecl(Flexbuf *f, AST *ast, int indent)
 }
 
 /*
+ * print inline assembly
+ */
+static void
+PrintInlineAsm(Flexbuf *f, AST *top, int indent)
+{
+    AST *ast;
+    CppInlineState *state;
+
+    state = calloc(sizeof(*state), 1);
+    flexbuf_printf(f, "%*c__asm__ volatile(\n", indent, ' ');
+    state->indent = indent + 4;
+    while (top) {
+        ast = top;
+        top = top->right;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (ast->kind == AST_INSTRHOLDER) {
+            outputGasInstruction(f, ast->left, 1, state);
+        } else {
+            ERROR(ast, "Inline assembly of this item not supported yet");
+            break;
+        }
+    }
+    /* print outputs */
+    flexbuf_printf(f, "%*c:", indent, ' ');
+    for (ast = state->outputs; ast; ast = ast->right) {
+        const char *name = ast->left->d.string;
+        flexbuf_printf(f, " [%s] \"+r\"(%s)", name, name);
+        if (ast->right) {
+            flexbuf_printf(f, ",");
+        } else {
+            flexbuf_printf(f, "\n");
+        }
+    }
+
+    /* print inputs */
+    flexbuf_printf(f, "%*c:", indent, ' ');
+    for (ast = state->inputs; ast; ast = ast->right) {
+        const char *name = ast->left->d.string;
+        flexbuf_printf(f, " [%s] \"r\"(%s)", name, name);
+        if (ast->right) {
+            flexbuf_printf(f, ",");
+        } else {
+            flexbuf_printf(f, "\n");
+        }
+    }
+
+    flexbuf_printf(f, "%*c);\n", indent, ' ');
+    free(state);
+}
+
+/*
  * print a single statement
  */
 static void
@@ -637,7 +690,8 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintCaseStmt(f, ast->left, ast->right, indent);
         break;
     case AST_INLINEASM:
-        ERROR(ast, "C/C++ output cannot handle inline assembly yet");
+        PrintDebugDirective(f, ast);
+        PrintInlineAsm(f, ast->left, indent);
         break;
     case AST_SEQUENCE:
         PrintDebugDirective(f, ast);
