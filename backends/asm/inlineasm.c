@@ -23,7 +23,7 @@ CompileInlineOperand(IRList *irl, AST *expr)
 	 case SYM_RESULT:
 	 case SYM_LOCALVAR:
 	 case SYM_TEMPVAR:
-	      r = CompileIdentifier(irl, expr);
+	      r = CompileAsmIdentifier(irl, expr);
               if (!r) {
                   ERROR(expr, "Bad identifier expression %s", sym->name);
               }

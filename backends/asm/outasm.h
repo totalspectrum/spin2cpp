@@ -123,7 +123,7 @@ Instruction *FindInstrForOpc(IROpcode kind);
 
 // compile inline assembly
 void CompileInlineAsm(IRList *irl, AST *ast);
-Operand *CompileIdentifier(IRList *irl, AST *expr);
+Operand *CompileAsmIdentifier(IRList *irl, AST *expr);
 
 /* assign variable space in COG memory */
 Operand *GetSizedGlobal(Operandkind kind, const char *name, intptr_t value, int count);

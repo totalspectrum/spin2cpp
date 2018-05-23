@@ -464,4 +464,9 @@ void SimplifyAssignments(AST **astptr);
 
 #define P2_HUB_BASE 0x400
 
+// some utility functions shared by backends
+
+// in outasm.c
+const char *IdentifierGlobalName(Module *P, const char *name);
+
 #endif

@@ -132,7 +132,7 @@ IdentifierLocalName(Function *func, const char *name)
     return strdup(temp);
 }
 
-static const char *
+const char *
 IdentifierGlobalName(Module *P, const char *name)
 {
     char temp[1024];
@@ -872,13 +872,13 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       case SYM_RESULT:
           if (IS_STACK_CALL(func)) {
               if (stype == SYM_RESULT) {
-                  return FrameRef(0);
+                  return FrameRef(sym->offset);
               }
               if (stype == SYM_PARAMETER) {
-                  return FrameRef(LONG_SIZE + sym->offset);
+                  return FrameRef(LONG_SIZE * func->numresults +  sym->offset);
               }
               if (stype == SYM_LOCALVAR) {
-                  return FrameRef(LONG_SIZE * (1+func->numparams) + sym->offset);
+                  return FrameRef(LONG_SIZE * (func->numresults+func->numparams) + sym->offset);
               }
           }
           if (stype == SYM_RESULT) {
@@ -1150,8 +1150,8 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     EmitOp0(irl, OPC_RET);
 }
 
-Operand *
-CompileIdentifier(IRList *irl, AST *expr)
+ Operand *
+CompileAsmIdentifier(IRList *irl, AST *expr)
 {
     Symbol *sym;
 
@@ -2171,7 +2171,7 @@ CompileMaskMove(IRList *irl, AST *expr)
 
     switch(destast->kind) {
     case AST_IDENTIFIER:
-        dest = CompileIdentifier(irl, destast);
+        dest = CompileAsmIdentifier(irl, destast);
         break;
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
@@ -2532,7 +2532,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
     return r;
   case AST_RESULT:
   case AST_IDENTIFIER:
-    r = CompileIdentifier(irl, expr);
+    r = CompileAsmIdentifier(irl, expr);
     if (dest) {
         EmitMove(irl, dest, r);
         r = dest;

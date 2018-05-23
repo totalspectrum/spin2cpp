@@ -14,6 +14,7 @@
 //
 typedef struct bc_bedata {
     StackIRList code;
+    AST *label; // function entry point
     /* flag for whether we might want to inline this function (not used yet) */
     bool isInline;
 } ByteCodeFuncData;

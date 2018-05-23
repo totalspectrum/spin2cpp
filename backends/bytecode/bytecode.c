@@ -64,6 +64,31 @@ static void CompileImmediate(StackIRList *irl, int32_t i)
     AppendStackIR(irl, ir);
 }
 
+static void CompileSymbol(StackIRList *irl, AST *expr)
+{
+    Symbol *sym;
+    int stype;
+    sym = LookupSymbol(expr->d.string);
+    if (!sym) {
+        ERROR_UNKNOWN_SYMBOL(expr);
+        return;
+    }
+    stype = sym->type;
+    switch(stype) {
+    case SYM_CONSTANT:
+    case SYM_FLOAT_CONSTANT:
+    {
+        AST *symexpr = (AST *)sym->val;
+        int val = EvalConstExpr(symexpr);
+        CompileImmediate(irl, val);
+        return;
+    }
+    default:
+        ERROR(expr, "Internal error, symbol not handled for bytecode");
+        return;
+    }
+}
+
 static void CompileExpression(StackIRList *irl, AST *ast)
 {
     AST *expr = ast;
@@ -80,6 +105,9 @@ static void CompileExpression(StackIRList *irl, AST *ast)
     case AST_INTEGER:
     case AST_FLOAT:
         CompileImmediate(irl, (int32_t)expr->d.ival);
+        break;
+    case AST_IDENTIFIER:
+        CompileSymbol(irl, expr);
         break;
     default:
         ERROR(ast, "Cannot handle expression in bytecode yet");
@@ -118,9 +146,14 @@ static void
 CompileFunctions(Module *P)
 {
     Function *f;
-
+    StackIR *ir;
     for (f = P->functions; f; f = f->next) {
         StackIRList *irl = &FuncData(f)->code;
+        // emit function prolog
+        ir = NewStackIR(SOP_LABEL);
+        ir->operand = FuncData(f)->label;
+        AppendStackIR(irl, ir);
+        // compile function
         CompileStatementList(irl, f->body);
     }
 }
@@ -128,6 +161,12 @@ CompileFunctions(Module *P)
 static void
 DoFuncDecl(Module *P)
 {
+    Function *f;
+    for (f = P->functions; f; f = f->next) {
+        const char *fname;
+        fname = IdentifierGlobalName(P, f->name);
+        FuncData(f)->label = AstIdentifier(fname);
+    }
 }
 
 static void
@@ -220,10 +259,33 @@ static const char *opname(StackOp op)
 {
     switch(op) {
     case SOP_ADD: return "add";
+    case SOP_AND: return "and";
     case SOP_SUB: return "sub";
+    case SOP_OR:  return "or";
+    case SOP_XOR: return "xor";
+    case SOP_SHL: return "shl";
+    case SOP_SHR: return "shr";
+    case SOP_SAR: return "sar";
+
+    case SOP_EQ:  return "eq";
+    case SOP_NE:  return "ne";
+    case SOP_LT:  return "lt";
+    case SOP_LE:  return "le";
+    case SOP_LTU:  return "ltu";
+    case SOP_LEU:  return "leu";
+        
     case SOP_RET: return "ret";
-    case SOP_PUSHIMM: return "push#";
     case SOP_CALL: return "call";
+    case SOP_CALLASM: return "callasm";
+    case SOP_PUSHIMM: return "pushi";
+    case SOP_PICK: return "pick";
+    case SOP_PUT: return "put";
+    case SOP_STOB: return "stob";
+    case SOP_STOW: return "stow";
+    case SOP_STOL: return "stol";
+    case SOP_LODB: return "lodb";
+    case SOP_LODW: return "lodw";
+    case SOP_LODL: return "lodl";
     default:
         return "???";
     }
@@ -248,6 +310,10 @@ AssembleStackIRL(StackIRList *irl)
             break;
         case SOP_PUSHIMM:
         case SOP_CALL:
+        case SOP_CALLASM:
+        case SOP_JZ:
+        case SOP_JNZ:
+        case SOP_JMP:
             flexbuf_printf(f, "\t%s ", opname(ir->opc));
             PrintExpr(f, ir->operand, 0);
             flexbuf_printf(f, "\n");
