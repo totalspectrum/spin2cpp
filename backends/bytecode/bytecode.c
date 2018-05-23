@@ -13,6 +13,10 @@
 #include "spinc.h"
 #include "bytecode.h"
 
+// routine for printing a stack IRL
+static char *AssembleStackIRL(StackIRList *irl);
+void DumpStackIRL(StackIRList *irl);
+
 // compilation routines
 static void
 SetupForBytecode(Module *P)
@@ -57,6 +61,7 @@ static void CompileImmediate(StackIRList *irl, int32_t i)
 {
     StackIR *ir = NewStackIR(SOP_PUSHIMM);
     ir->operand = AstInteger(i);
+    AppendStackIR(irl, ir);
 }
 
 static void CompileExpression(StackIRList *irl, AST *ast)
@@ -181,18 +186,87 @@ void
 OutputBytecode(const char *fname, Module *P)
 {
     FILE *f = NULL;
-
+    char *str;
+    
     f = fopen(fname, "w");
     if (!f) {
         fprintf(stderr, "Unable to open bytecode output: ");
         perror(fname);
         exit(1);
     }
-    // write the bytecode here
+    // create the bytecode here
     VisitRecursive(P, SetupForBytecode, VISITFLAG_INIT);
     VisitRecursive(P, DoFuncDecl, VISITFLAG_FUNCDECL);
     VisitRecursive(P, CompileFunctions, VISITFLAG_COMPILEFUNCS);
     VisitRecursive(P, EmitDatSection, VISITFLAG_EMITDAT);
-    
+
+    // chain all the IR together
+    {
+        Function *pf;
+        for (pf = P->functions; pf; pf = pf->next) {
+            str = AssembleStackIRL(&FuncData(pf)->code);
+            puts(str);
+            free(str);
+        }
+    }
+            
     fclose(f);
+}
+
+//
+// debug routine
+//
+static const char *opname(StackOp op)
+{
+    switch(op) {
+    case SOP_ADD: return "add";
+    case SOP_SUB: return "sub";
+    case SOP_RET: return "ret";
+    case SOP_PUSHIMM: return "push#";
+    case SOP_CALL: return "call";
+    default:
+        return "???";
+    }
+}
+
+static char *
+AssembleStackIRL(StackIRList *irl)
+{
+    StackIR *ir;
+    Flexbuf fb_base;
+    Flexbuf *f;
+    char *ret;
+    
+    f = &fb_base;
+    flexbuf_init(f, 512);
+    
+    ir = irl->head;
+    while (ir) {
+        switch(ir->opc) {
+        case SOP_LABEL:
+            flexbuf_printf(f, "%s:\n", ir->operand->d.string);
+            break;
+        case SOP_PUSHIMM:
+        case SOP_CALL:
+            flexbuf_printf(f, "\t%s ", opname(ir->opc));
+            PrintExpr(f, ir->operand, 0);
+            flexbuf_printf(f, "\n");
+            break;
+        default:
+            flexbuf_printf(f, "\t%s\n", opname(ir->opc));
+            break;
+        }
+        ir = ir->next;
+    }
+    flexbuf_addchar(f, 0);
+    ret = flexbuf_get(f);
+    flexbuf_delete(f);
+    return ret;
+}
+
+void DumpStackIRL(StackIRList *irl)
+{
+    char *ret = AssembleStackIRL(irl);
+    puts(ret);
+    free(ret);
 }

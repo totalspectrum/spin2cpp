@@ -48,6 +48,7 @@ Usage(void)
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  --asm:     output (user readable) PASM code\n");
     fprintf(stderr, "  --binary:  create binary file for download\n");
+    fprintf(stderr, "  --bc:      output stack bytecodes\n");
     fprintf(stderr, "  --cogspin: create PASM based Spin object (translate Spin to PASM)\n");
     fprintf(stderr, "  --ccode:   output C code instead of C++\n");
     fprintf(stderr, "  --cse:     perform common subexpression optimizations on C code\n");
@@ -254,12 +255,17 @@ main(int argc, char **argv)
         } else if (!strncmp(argv[0], "--cse", 5) ) {
             wantcse = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--nocse", 7) ) {
+        } else if (!strcmp(argv[0], "--nocse") ) {
             wantcse = 0;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--asm", 5) ) {
+        } else if (!strcmp(argv[0], "--asm") ) {
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
+            argv++; --argc;
+            gl_optimize_flags |= DEFAULT_ASM_OPTS;
+        } else if (!strcmp(argv[0], "--bc") ) {
+            outputAsm = 1;
+            gl_output = OUTPUT_BYTEC;
             argv++; --argc;
             gl_optimize_flags |= DEFAULT_ASM_OPTS;
         } else if (!strcmp(argv[0], "--cogspin") ) {
@@ -598,7 +604,11 @@ main(int argc, char **argv)
                     asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
                 }
             }
-            OutputAsmCode(asmname, P, outputMain);
+            if (gl_output == OUTPUT_BYTEC) {
+                OutputBytecode(asmname, P);
+            } else {
+                OutputAsmCode(asmname, P, outputMain);
+            }
             if (compile) {
                 if (gl_errors > 0) {
                     remove(binname);

@@ -78,6 +78,7 @@ extern int gl_compressed; /* if instructions should be compressed */
 #define OUTPUT_DAT  2
 #define OUTPUT_ASM  3
 #define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
+#define OUTPUT_BYTEC 5    /* compressed bytecode */
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
@@ -379,6 +380,7 @@ void OutputDatFile(const char *name, Module *P, int prefixBin);
 void OutputGasFile(const char *name, Module *P);
 void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
+void OutputBytecode(const char *name, Module *P);
 
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
