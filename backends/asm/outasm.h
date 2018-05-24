@@ -43,6 +43,8 @@ char *IRAssemble(IRList *list, Module *P);
 // create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);
 
+void EmitLabel(IRList *list, Operand *op);
+
 // optimization functions
 void OptimizeIRLocal(IRList *irl);
 void OptimizeIRGlobal(IRList *irl);

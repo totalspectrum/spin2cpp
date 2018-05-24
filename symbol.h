@@ -23,6 +23,7 @@ typedef enum symtype {
     SYM_RESULT,          /* result expression */
     SYM_LOCALVAR,        /* local variable in function */
     SYM_TEMPVAR,         /* temporary variable in function */
+    SYM_LOCALLABEL,      /* label in inline assembly */
 } Symtype;
 
 typedef struct symbol {

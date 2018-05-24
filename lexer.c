@@ -1840,8 +1840,8 @@ InstrModifier modifiers_p1[] = {
 
     { "wz", (1<<25), FLAG_WZ },
     { "wc", (1<<24), FLAG_WC },
-    { "wr", (1<<23), 0 },
-    { "nr", ~(1<<23), 0 },
+    { "wr", (1<<23), FLAG_WR },
+    { "nr", ~(1<<23), FLAG_NR },
 
     { NULL, 0 }
 };

@@ -307,4 +307,9 @@ struct IR {
 
 void AppendOperand(OperandList **listptr, Operand *op);
 
+// decode the operands of an assembly language instruction
+// places the ASTs for the various operands into the operands[] array,
+// and immediate bits into opimm[]
+int DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, uint32_t *val, uint32_t *effectFlags);
+
 #endif

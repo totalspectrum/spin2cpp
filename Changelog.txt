@@ -1,3 +1,6 @@
+Version 3.8.5
+- Improve inline assembly: allow labels
+
 Version 3.8.4
 - Automatically promote literal strings to string("foo") if they are
   being passed to a function that expects a pointer

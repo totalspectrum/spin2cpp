@@ -420,61 +420,25 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
     return val;
 }
 
-    
-/*
- * assemble an instruction, along with its modifiers
- */
 #define MAX_OPERANDS 3
+/*
+ * decode operands, taking care of alternate forms and such
+ * fills in the operands table with operands for the instruction,
+ * and opimm with immediate bits
+ * returns number of operands
+ */
 
-static void
-assembleInstruction(Flexbuf *f, AST *ast)
+int
+DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, uint32_t *val, uint32_t *effectFlags)
 {
-    uint32_t val, mask, src, dst;
-    uint32_t immmask;
-    uint32_t curpc;
-    int inHub;
-    int32_t isrc;
-    Instruction *instr;
-    int numoperands, expectops;
-    AST *operand[MAX_OPERANDS];
-    uint32_t opimm[MAX_OPERANDS];
+    int numoperands = 0;
     AST *line = ast;
-    char *callname;
-    AST *retast;
-    AST *origast;
-    int isRelJmp = 0;
-    int opidx;
-    bool needIndirect = false;
     bool sawFlagUsed = false;
+    uint32_t mask;
+    int expectops;
     
-    extern Instruction instr_p2[];
-    curpc = ast->d.ival & 0x00ffffff;
-    inHub = (0 == (ast->d.ival & (1<<30)));
-    ast = ast->left;
-    
-    /* make sure it is aligned */
-    if (!gl_p2 && !gl_compressed) {
-        while ((datacount % 4) != 0) {
-            outputByte(f, 0);
-        }
-    }
-
-    instr = (Instruction *)ast->d.ptr;
-decode_instr:
-    origast = ast;
-    val = instr->binary;
-    immmask = 0;
-    if (instr->opc != OPC_NOP) {
-        /* for anything except NOP set the condition to "always" */
-        if (gl_p2) {
-            val |= 0xf << 28;
-        } else {
-            val |= 0xf << 18;
-        }
-    }
     /* check for modifiers and operands */
     numoperands = 0;
-    opidx = 0;
     ast = ast->right;
     while (ast != NULL) {
         if (ast->kind == AST_EXPRLIST) {
@@ -482,7 +446,7 @@ decode_instr:
             AST *op;
             if (numoperands >= MAX_OPERANDS) {
                 ERROR(line, "Too many operands to instruction");
-                return;
+                return -1;
             }
             if (ast->left && ast->left->kind == AST_IMMHOLDER) {
                 imask = ImmMask(instr, numoperands, false, ast);
@@ -496,7 +460,6 @@ decode_instr:
             }
             operand[numoperands] = op;
             opimm[numoperands] = imask;
-            immmask |= imask;
             numoperands++;
         } else if (ast->kind == AST_INSTRMODIFIER) {
             InstrModifier *mod = (InstrModifier *)ast->d.ptr;
@@ -504,6 +467,9 @@ decode_instr:
             /* record if C or Z flags were set */
             if (mod->flags & (FLAG_CZSET)) {
                 sawFlagUsed = true;
+            }
+            if (effectFlags) {
+                *effectFlags |= mod->flags;
             }
             /* verify here that the modifier is permitted for this instruction */
             if (mod->flags) {
@@ -524,27 +490,29 @@ decode_instr:
                     }
                     if (instr->ops == P2_DST_CONST_OK) {
                         // testp: modify src bits
-                        val |= instrMask;
+                        if (val) *val |= instrMask;
                     } else if (instr->ops == TWO_OPERANDS) {
                         // testb: modify opcode bits
-                        val |= (instrMask << 21);
+                        if (val) *val |= (instrMask << 21);
                     } else {
                         ERROR(line, "internal error in instruction table");
                     }
                 }
             }
-            if (mask & 0x0003ffff) {
-                val = val & mask;
-            } else {
-                val = val | mask;
+            if (val) {
+                if (mask & 0x0003ffff) {
+                    *val = *val & mask;
+                } else {
+                    *val = *val | mask;
+                }
             }
         } else {
             ERROR(line, "Internal error: expected instruction modifier found %d", ast->kind);
-            return;
+            return -1;
         }
         ast = ast->right;
     }
-
+    
     /* warn about some instructions not having wc or wz */
     if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
@@ -586,7 +554,6 @@ decode_instr:
         }
         operand[1] = AstInteger(defval);
         opimm[1] = P2_IMM_SRC;
-        immmask |= opimm[1];
         numoperands = 2;
     } else if (instr->ops == P2_MODCZ && numoperands == 1) {
         // modc x -> modcz x, 0
@@ -613,8 +580,68 @@ decode_instr:
     }
     if (expectops != numoperands) {
         ERROR(line, "Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
-        return;
+        return -1;
     }
+
+    return numoperands;
+}
+
+/*
+ * assemble an instruction, along with its modifiers,
+ * into a flexbuf
+ */
+
+void
+AssembleInstruction(Flexbuf *f, AST *ast)
+{
+    uint32_t val, src, dst;
+    uint32_t immmask;
+    uint32_t curpc;
+    int inHub;
+    int32_t isrc;
+    Instruction *instr;
+    int numoperands;
+    AST *operand[MAX_OPERANDS];
+    uint32_t opimm[MAX_OPERANDS];
+    AST *line = ast;
+    char *callname;
+    AST *retast;
+    AST *origast;
+    int isRelJmp = 0;
+    int opidx;
+    bool needIndirect = false;
+    
+    extern Instruction instr_p2[];
+    curpc = ast->d.ival & 0x00ffffff;
+    inHub = (0 == (ast->d.ival & (1<<30)));
+    ast = ast->left;
+    
+    instr = (Instruction *)ast->d.ptr;
+decode_instr:
+    origast = ast;
+    val = instr->binary;
+    if (instr->opc != OPC_NOP) {
+        /* for anything except NOP set the condition to "always" */
+        if (gl_p2) {
+            val |= 0xf << 28;
+        } else {
+            val |= 0xf << 18;
+        }
+    }
+    opidx = 0;
+
+    numoperands = DecodeAsmOperands(instr, ast, operand, opimm, &val, NULL);
+    if (numoperands < 0) return;
+
+    immmask = 0;
+
+    {
+        int j;
+        for (j = 0; j < numoperands; j++) {
+            immmask |= opimm[j];
+        }
+    }
+    
     src = dst = 0;
     switch (instr->ops) {
     case NO_OPERANDS:
@@ -976,7 +1003,13 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             break;
         }
         case AST_INSTRHOLDER:
-            assembleInstruction(f, ast);
+            /* make sure it is aligned */
+            if (!gl_p2 && !gl_compressed) {
+                while ((datacount % 4) != 0) {
+                    outputByte(f, 0);
+                }
+            }
+            AssembleInstruction(f, ast);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */

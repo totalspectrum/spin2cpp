@@ -1,6 +1,18 @@
 #include "spinc.h"
 #include "outasm.h"
 
+static Operand *
+GetLabel(const char *name)
+{
+    Operand *op;
+    if (curfunc && !curfunc->cog_code) {
+        op = NewOperand(IMM_HUB_LABEL, name, 0);
+    } else {
+        op = NewOperand(IMM_COG_LABEL, name, 0);
+    }
+    return op;
+}
+
 //
 // compile an expression as an inine asm operand
 //
@@ -15,8 +27,8 @@ CompileInlineOperand(IRList *irl, AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
 	 Symbol *sym = LookupSymbol(expr->d.string);
 	 if (!sym) {
-	      ERROR(expr, "Unknown symbol %s", expr->d.string);
-	      return NULL;
+             ERROR(expr, "Undefined symbol %s", expr->d.string);
+             return NewImmediate(0);
 	 }
 	 switch(sym->type) {
 	 case SYM_PARAMETER:
@@ -31,6 +43,9 @@ CompileInlineOperand(IRList *irl, AST *expr)
          case SYM_CONSTANT:
              v = EvalPasmExpr(expr);
              return NewImmediate(v);
+         case SYM_LOCALLABEL:
+             return (Operand *)sym->val;
+             break;
 	 default:
 	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
 	      return NULL;
@@ -47,95 +62,95 @@ CompileInlineOperand(IRList *irl, AST *expr)
 // compile an inline instruction
 // ast points to an AST_INSTRUCTION
 //
+#define MAX_OPERANDS 4
+
 static void
 CompileInlineInstr(IRList *irl, AST *ast)
 {
-    AST *sub;
     Instruction *instr = (Instruction *)ast->d.ptr;
     IR *ir = NewIR(instr->opc);
-    int numoperands = 0;
-    int expectops;
+    int numoperands;
+    AST *operands[MAX_OPERANDS];
+    uint32_t opimm[MAX_OPERANDS];
+    int i;
+    uint32_t effectFlags = 0;
+    
     ir->instr = instr;
 
     /* parse operands and put them in place */
-    switch (instr->ops) {
-    case NO_OPERANDS:
-        expectops = 0;
-        break;
-    case TWO_OPERANDS:
-    case TWO_OPERANDS_OPTIONAL:
-    case JMPRET_OPERANDS:
-    case P2_TJZ_OPERANDS:
-    case P2_TWO_OPERANDS:
-    case P2_RDWR_OPERANDS:
-    case P2_LOC:
-        expectops = 2;
-        break;
-    case THREE_OPERANDS_BYTE:
-    case THREE_OPERANDS_WORD:
-    case THREE_OPERANDS_NIBBLE:
-        expectops = 3;
-        break;
-    default:
-        expectops = 1;
-        break;
+    numoperands = DecodeAsmOperands(instr, ast, operands, opimm, NULL, &effectFlags);
+
+    ir->flags = effectFlags;
+    
+    if (numoperands < 0) {
+        return;
     }
-    // check for modifiers and operands
-    sub = ast->right;
-    while (sub != NULL) {
-        if (sub->kind == AST_INSTRMODIFIER) {
-            InstrModifier *mod = (InstrModifier *)sub->d.ptr;
-	    if (!strcmp(mod->name, "wc")) {
-		 ir->flags |= FLAG_WC;
-	    } else if (!strcmp(mod->name, "wz")) {
-		 ir->flags |= FLAG_WZ;
-	    } else if (!strcmp(mod->name, "nr")) {
-		 ir->flags |= FLAG_NR;
-	    } else if (!strcmp(mod->name, "wr")) {
-		 ir->flags |= FLAG_WR;
-	    } else if (!strcmp(mod->name, "#")) {
-//		 immflag = 1;
-	    } else {
-		 ERROR(ast, "Modifier %s not handled yet in inline asm", mod->name);
-	    }
-	} else if (sub->kind == AST_EXPRLIST) {
-	     Operand *op;
-	     op = CompileInlineOperand(irl, sub->left);
-	     switch(numoperands) {
-	     case 0:
-		  ir->dst = op;
-		  break;
-	     case 1:
-		  ir->src = op;
-		  break;
-	     default:
-		  ERROR(sub, "Too many operands to instruction");
-		  break;
-	     }
-	     numoperands++;
-        } else {
-            ERROR(ast, "Internal error parsing instruction");
+    if (numoperands == 3) {
+        ERROR(ast, "Cannot yet handle instruction %s in inline asm", instr->name);
+        return;
+    }
+    for (i = 0; i < numoperands; i++) {
+        Operand *op;
+        op = CompileInlineOperand(irl, operands[i]);
+        switch(i) {
+        case 0:
+            ir->dst = op;
+            break;
+        case 1:
+            ir->src = op;
+            break;
+        default:
+            ERROR(ast, "Too many operands to instruction");
+            break;
         }
-        sub = sub->right;
-    }
-    if (expectops != numoperands) {
-        ERROR(ast, "Wrong number of operands to inline %s: expected %d, found %d", instr->name, expectops, numoperands);
     }
     AppendIR(irl, ir);
 }
 
 void
-CompileInlineAsm(IRList *irl, AST *top)
+CompileInlineAsm(IRList *irl, AST *origtop)
 {
     AST *ast;
-    while(top) {
+    AST *top = origtop;
+
+    if (!curfunc) {
+        ERROR(origtop, "Internal error, no context for inline assembly");
+        return;
+    }
+    
+    // first run through and define all the labels
+    while (top) {
         ast = top;
         top = top->right;
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             ast = ast->left;
         }
+        if (ast->kind == AST_IDENTIFIER) {
+            Operand *labelop = GetLabel(ast->d.string);
+            AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, (void *)labelop);
+        }
+    }
+    
+    // now go back and emit code
+    top = origtop;
+    while(top) {
+        ast = top;
+        top = top->right;
+        if (ast->kind == AST_LINEBREAK) {
+            continue;
+        }
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
         if (ast->kind == AST_INSTRHOLDER) {
             CompileInlineInstr(irl, ast->left);
+        } else if (ast->kind == AST_IDENTIFIER) {
+            Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
+            if (!sym || sym->type != SYM_LOCALLABEL) {
+                ERROR(ast, "%s is not a label or is multiply defined", ast->d.string);
+                break;
+            }
+            EmitLabel(irl, (Operand *)sym->val);
         } else {
             ERROR(ast, "inline assembly of this item not supported yet");
             break;
