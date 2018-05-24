@@ -64,7 +64,15 @@ static void CompileImmediate(StackIRList *irl, int32_t i)
     AppendStackIR(irl, ir);
 }
 
-static void CompileSymbol(StackIRList *irl, AST *expr)
+// 
+// false if we are popping it
+enum symbolOp {
+    SYMBOL_PUSH = 0,
+    SYMBOL_POP = 1,
+    SYMBOL_LEA = 2
+};
+
+static void CompileSymbol(StackIRList *irl, AST *expr, int symbolOp)
 {
     Symbol *sym;
     int stype;
@@ -80,12 +88,33 @@ static void CompileSymbol(StackIRList *irl, AST *expr)
     {
         AST *symexpr = (AST *)sym->val;
         int val = EvalConstExpr(symexpr);
+        if (symbolOp != SYMBOL_PUSH) {
+            ERROR(expr, "Internal error: trying to store to a constant");
+        }
         CompileImmediate(irl, val);
         return;
     }
     default:
         ERROR(expr, "Internal error, symbol not handled for bytecode");
         return;
+    }
+}
+
+// compile pops for the expressions on the stack
+static void CompileStores(StackIRList *irl, AST *ast)
+{
+    if (ast->kind == AST_EXPRLIST) {
+        // pop off the preceding items
+        CompileStores(irl, ast->right);
+        ast = ast->left;
+    }
+    switch(ast->kind) {
+    case AST_IDENTIFIER:
+        CompileSymbol(irl, ast, SYMBOL_POP);
+        break;
+    default:
+        ERROR(ast, "Unhandled bytecode");
+        break;
     }
 }
 
@@ -107,7 +136,7 @@ static void CompileExpression(StackIRList *irl, AST *ast)
         CompileImmediate(irl, (int32_t)expr->d.ival);
         break;
     case AST_IDENTIFIER:
-        CompileSymbol(irl, expr);
+        CompileSymbol(irl, expr, SYMBOL_PUSH);
         break;
     default:
         ERROR(ast, "Cannot handle expression in bytecode yet");
@@ -135,6 +164,10 @@ static void CompileStatement(StackIRList *irl, AST *ast)
         break;
     case AST_STMTLIST:
         CompileStatementList(irl, ast);
+        break;
+    case AST_ASSIGN:
+        CompileExpression(irl, ast->right);
+        CompileStores(irl, ast->left);
         break;
     default:
         ERROR(ast, "Cannot compile statement for bytecode yet");
@@ -286,6 +319,8 @@ static const char *opname(StackOp op)
     case SOP_LODB: return "lodb";
     case SOP_LODW: return "lodw";
     case SOP_LODL: return "lodl";
+    case SOP_PUSHREG: return "pushreg";
+    case SOP_POPREG: return "popreg";
     default:
         return "???";
     }
