@@ -325,13 +325,26 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
  * assemble a special read operand
  */
 unsigned
-SpecialRdOperand(AST *ast)
+SpecialRdOperand(AST *ast, uint32_t opimm)
 {
     HwReg *hwreg;
-    uint32_t val = 0;
+    uint32_t val;
     int subval = 0;
     int negsubval = 0;
-    
+
+    if (opimm) {
+        // user provided an immediate value; make sure it
+        // fits in $00-$ff
+        if (!IsConstExpr(ast)) {
+            ERROR(ast, "bad immediate value");
+            return 0x1ff;
+        }
+        val = EvalConstExpr(ast);
+        if (val > 0xff) {
+            WARNING(ast, "immediate value out of range");
+        }
+    }
+    val = 0;
     if (ast->kind == AST_OPERATOR && (ast->d.ival == K_INCREMENT
                                       || ast->d.ival == K_DECREMENT))
     {
@@ -684,7 +697,7 @@ decode_instr:
         break;
     case P2_RDWR_OPERANDS:
         dst = EvalPasmExpr(operand[0]);
-        src = SpecialRdOperand(operand[1]);
+        src = SpecialRdOperand(operand[1], opimm[1]);
         if (src == 0) {
             src = EvalPasmExpr(operand[1]);
         } else {
