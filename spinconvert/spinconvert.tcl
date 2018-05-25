@@ -14,6 +14,7 @@ set codemem hub
 set datamem hub
 set gasmode 1
 set casemode 0
+set p2mode 0
 set LIBRARY ""
 set cseoptimize 0
 set usectypes 0
@@ -48,10 +49,14 @@ proc resetOutputVars { } {
     global radioOut
     global SPINFILE
     global PASMFILE
+    global p2mode
     
     if { $radioOut == 1 } {
 	set OUTPUT "--asm"
 	set EXT ".pasm"
+	if { $p2mode == 1 } {
+	    set EXT ".p2asm"
+	}
     }
     if { $radioOut == 2 } {
 	set OUTPUT "--ccode"
@@ -121,6 +126,7 @@ proc regenOutput { spinfile } {
     global codemem
     global datamem
     global gasmode
+    global p2mode
     global casemode
     global cseoptimize
     global usectypes
@@ -134,13 +140,19 @@ proc regenOutput { spinfile } {
     }
     set errout ""
     set status 0
-    if { $EXT eq ".pasm" } {
+    if { $EXT eq ".pasm" || $EXT eq ".p2asm" } {
 	set cmdline [list $COMPILE --noheader -g $OUTPUT --code=$codemem --data=$datamem]
-	if { $cseoptimize ne 0 } {
-	    set cmdline [concat $cmdline [list --cse]]
+	if { $cseoptimize ne 1 } {
+	    set cmdline [concat $cmdline [list --nocse]]
+	}
+	if { $p2mode ne 0 } {
+	    set cmdline [concat $cmdline [list --p2]]
 	}
     } else {
 	set cmdline [list $COMPILE --noheader $OUTPUT]
+	if { $p2mode ne 0 } {
+	    set cmdline [concat $cmdline [list --p2]]
+	}
 	if { $gasmode ne 0 } {
 	    set cmdline [concat $cmdline [list --gas]]
 	}
@@ -157,7 +169,7 @@ proc regenOutput { spinfile } {
     if { $makeBinary == 1 } {
 	set binfile [file rootname $PASMFILE]
 	set binfile "$binfile.binary"
-	if { $EXT eq ".pasm" } {
+	if { $EXT eq ".pasm" || $EXT eq ".p2asm" } {
 	    set cmdline [concat $cmdline [list --binary -o $binfile $spinfile]]
 	} else {
 	    set cmdline [concat $cmdline [list --binary -O -o $binfile $spinfile]]
@@ -323,6 +335,10 @@ proc doPasmOptions {} {
 	return
     }
     toplevel .pasmopt
+    ttk::labelframe .pasmopt.p -text "Target Processor:"
+    radiobutton .pasmopt.p.usep1 -text "Propeller 1" -variable p2mode -value 0
+    radiobutton .pasmopt.p.usep2 -text "P2" -variable p2mode -value 1
+    
     ttk::labelframe .pasmopt.c -text "Code goes in:"
     radiobutton .pasmopt.c.cogcode -value cog -text "Cog memory" -variable codemem
     radiobutton .pasmopt.c.hubcode -value hub -text "Hub memory" -variable codemem
@@ -331,9 +347,11 @@ proc doPasmOptions {} {
     radiobutton .pasmopt.d.hubdata -value hub -text "Hub memory" -variable datamem
     ttk::labelframe .pasmopt.opt -text "Optimization options:"
     checkbutton .pasmopt.opt.cse -text "Enable common subexpression optimizations" -variable cseoptimize -onvalue 1 -offvalue 0
+    grid .pasmopt.p
     grid .pasmopt.c
     grid .pasmopt.d
     grid .pasmopt.opt
+    grid .pasmopt.p.usep1 .pasmopt.p.usep2
     grid .pasmopt.c.cogcode .pasmopt.c.hubcode
     grid .pasmopt.d.cogdata .pasmopt.d.hubdata
     grid .pasmopt.opt.cse
