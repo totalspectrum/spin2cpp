@@ -65,16 +65,17 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
 
 static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
 {
-    const char **srclines;
+    LineInfo *srcinfo;
     const char *theline;
     int maxline;
 
-    srclines = (const char **)flexbuf_peek(&L->lines);
-    maxline = flexbuf_curlen(&L->lines) / sizeof(char **);
-    theline = srclines[line];
-    if (!theline) return;
+    srcinfo = (LineInfo *)flexbuf_peek(&L->lineInfo);
+    maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
     if (line < 0 || line >= maxline) return;
     
+    theline = srcinfo[line].linedata;
+    if (!theline) return;
+
     // skip over preprocessor comments
     if (theline[0] == '{' && theline[1] == '#') {
         theline += 2;

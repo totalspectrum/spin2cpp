@@ -6,6 +6,12 @@
 #include "optokens.h"
 #include "util/flexbuf.h"
 
+typedef struct LineInfo {
+    const char *filename;
+    int lineno;
+    char *linedata;
+} LineInfo;
+
 /*
  * input stream; could be either a string or a file
  */
@@ -35,8 +41,8 @@ struct lexstream {
     const char *lastGlobal;
 
     /* for error messages */
-    int lineCounter;
     int colCounter;
+    int lineCounter;
     const char *fileName;
 
     /* for handling Unicode CR+LF */
@@ -45,7 +51,7 @@ struct lexstream {
     int pendingLine;  /* 1 if lineCounter needs incrementing */
 
     Flexbuf curLine;  /* string of current line */
-    Flexbuf lines;    /* pointers to all lines in the file */
+    Flexbuf lineInfo; /* pointers to line info about the file */
 };
 
 extern int lexgetc(LexStream *L);

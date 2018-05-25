@@ -67,7 +67,7 @@ void strToLex(LexStream *L, const char *s, const char *name)
     L->pendingLine = 1;
     L->fileName = name ? name : "<string>";
     flexbuf_init(&L->curLine, 1024);
-    flexbuf_init(&L->lines, 1024);
+    flexbuf_init(&L->lineInfo, 1024);
 }
 
 /* functions for handling FILE streams */
@@ -144,7 +144,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     L->getcf = filegetc;
     L->pendingLine = 1;
     flexbuf_init(&L->curLine, 1024);
-    flexbuf_init(&L->lines, 1024);
+    flexbuf_init(&L->lineInfo, 1024);
     /* check for Unicode */
     c1 = fgetc(f);
     c2 = fgetc(f);
@@ -165,15 +165,17 @@ int
 lexgetc(LexStream *L)
 {
     int c;
-    char *linedata;
+    LineInfo lineInfo;
     if (L->ungot_ptr) {
         --L->ungot_ptr;
         return L->ungot[L->ungot_ptr];
     }
     if (L->pendingLine) {
       flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      linedata = flexbuf_get(&L->curLine);
-      flexbuf_addmem(&L->lines, (char *)&linedata, sizeof(linedata));
+      lineInfo.linedata = flexbuf_get(&L->curLine);
+      lineInfo.filename = L->fileName;
+      lineInfo.lineno = L->lineCounter;
+      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
       L->lineCounter ++;
       L->pendingLine = 0;
       L->colCounter = 0;
@@ -190,8 +192,10 @@ lexgetc(LexStream *L)
     }
     if (c == SP_EOF) {
       flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      linedata = flexbuf_get(&L->curLine);
-      flexbuf_addmem(&L->lines, (char *)&linedata, sizeof(linedata));
+      lineInfo.linedata = flexbuf_get(&L->curLine);
+      lineInfo.lineno = L->lineCounter;
+      lineInfo.filename = L->fileName;
+      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
     } else {
         flexbuf_addchar(&L->curLine, c);
     }
