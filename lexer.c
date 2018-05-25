@@ -173,7 +173,7 @@ lexgetc(LexStream *L)
     if (L->pendingLine) {
       flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
       lineInfo.linedata = flexbuf_get(&L->curLine);
-      lineInfo.filename = L->fileName;
+      lineInfo.fileName = L->fileName;
       lineInfo.lineno = L->lineCounter;
       flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
       L->lineCounter ++;
@@ -194,7 +194,7 @@ lexgetc(LexStream *L)
       flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
       lineInfo.linedata = flexbuf_get(&L->curLine);
       lineInfo.lineno = L->lineCounter;
-      lineInfo.filename = L->fileName;
+      lineInfo.fileName = L->fileName;
       flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
     } else {
         flexbuf_addchar(&L->curLine, c);

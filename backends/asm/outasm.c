@@ -2841,9 +2841,10 @@ EmitDebugComment(IRList *irl, AST *ast)
     if (!ast) return;
     if (!current) return;
     
-    L = &current->L;
-    if (!strcmp(L->fileName, ast->fileName)) {
-        int line = ast->line;
+    L = ast->lexdata;
+    if (!L) return;
+    if (1) {
+        int line = ast->lineidx;
         int i = L->lineCounter;
         while (i <= line) {
             EmitOneSrcComment(irl, i, L);

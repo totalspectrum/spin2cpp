@@ -206,7 +206,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             {
                 if (upper && !(upper->kind == AST_ARRAYREF && upper->left == body)) {
                     AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
-                    deref->line = upper->line;
+                    deref->lineidx = upper->lineidx;
+                    deref->lexdata = upper->lexdata;
                     if (body == upper->left) {
                         upper->left = deref;
                     } else if (body == upper->right) {
@@ -875,7 +876,8 @@ TransformCountRepeat(AST *ast)
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);
-    forast->line = origast->line;
+    forast->lineidx = origast->lineidx;
+    forast->lexdata = origast->lexdata;
     return forast;
 }
 
@@ -1938,7 +1940,8 @@ doSpinTransform(AST **astptr, int level)
             switch (ast->d.ival) {
             case K_DECODE:
                 lhsast = AstOperator(K_SHL, AstInteger(1), ast->right);
-                lhsast->line = ast->line;
+                lhsast->lineidx = ast->lineidx;
+                lhsast->lexdata = ast->lexdata;
                 *astptr = ast = lhsast;
                 break;
             }

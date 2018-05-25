@@ -6,16 +6,9 @@
 #include "optokens.h"
 #include "util/flexbuf.h"
 
-typedef struct LineInfo {
-    const char *filename;
-    int lineno;
-    char *linedata;
-} LineInfo;
-
 /*
  * input stream; could be either a string or a file
  */
-typedef struct lexstream LexStream;
 
 struct lexstream {
     void *ptr;  /* current pointer */
@@ -53,6 +46,8 @@ struct lexstream {
     Flexbuf curLine;  /* string of current line */
     Flexbuf lineInfo; /* pointers to line info about the file */
 };
+
+#define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))
 
 extern int lexgetc(LexStream *L);
 extern void lexungetc(LexStream *L, int c);

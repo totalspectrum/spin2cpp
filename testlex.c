@@ -130,12 +130,13 @@ void
 ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
-
-    if (instr)
-        fprintf(stderr, "Error on line %d: ", instr->line);
-    else
+    LineInfo *info = GetLineInfo(instr);
+    
+    if (info) {
+        fprintf(stderr, "Error on line %d: ", info->lineno);
+    } else {
         fprintf(stderr, "Error: ");
-
+    }
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     va_end(args);
@@ -146,9 +147,10 @@ void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;
-
-    if (instr)
-        fprintf(stderr, "Warning on line %d: ", instr->line);
+    LineInfo *info = GetLineInfo(instr);
+    
+    if (info)
+        fprintf(stderr, "Warning on line %d: ", info->lineno);
     else
         fprintf(stderr, "Warning: ");
 

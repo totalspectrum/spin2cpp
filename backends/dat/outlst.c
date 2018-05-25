@@ -86,16 +86,10 @@ static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
     AddRestOfLine(f, theline);
 }
 
-static void catchUpToLine(Flexbuf *f, const char *fileName, int line, bool needsStart)
+static void catchUpToLine(Flexbuf *f, LexStream *L, int line, bool needsStart)
 {
-    LexStream *L;
     int i;
     
-    L = &current->L;
-    if (strcmp(L->fileName, fileName) != 0) {
-        // wrong file, just bail
-        return;
-    }
     i = L->lineCounter;
     while (i < line) {
         if (needsStart) {
@@ -125,7 +119,7 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     if (ignoreAst(ast)) {
         return;
     }
-    catchUpToLine(f, ast->fileName, ast->line, true);
+    catchUpToLine(f, ast->lexdata, ast->lineidx, true);
 
     // update PCs as appropriate
     switch (ast->kind) {
@@ -165,7 +159,7 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     default:
         break;
     }
-    catchUpToLine(f, ast->fileName, ast->line+1, false);
+    catchUpToLine(f, ast->lexdata, ast->lineidx+1, false);
 }
 
 static DataBlockOutFuncs lstOutputFuncs = {

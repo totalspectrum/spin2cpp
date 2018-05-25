@@ -1035,19 +1035,21 @@ PrintDebugDirective(Flexbuf *f, AST *ast)
 {
     int line;
     const char *name;
+    LineInfo *info;
 
     if (!gl_debug) {
         return;
     }
-
-    if (!ast) {
+    info = GetLineInfo(ast);
+    
+    if (!info) {
         // reset our knowledge
         name = NULL;
         line = 0;
         return;
     }
-    line = ast->line;
-    name = ast->fileName;
+    line = info->lineno;
+    name = info->fileName;
 
     if (lastfile != name) {
         EmitLineDirective(f, name, line);

@@ -6,6 +6,8 @@
 #include <string.h>
 #include "spinc.h"
 
+static AST *s_reportas;
+
 AST *
 NewAST(enum astkind kind, AST *left, AST *right)
 {
@@ -19,12 +21,15 @@ NewAST(enum astkind kind, AST *left, AST *right)
     ast->kind = kind;
     ast->left = left;
     ast->right = right;
-    if (current) {
-        ast->fileName = current->L.fileName;
-        ast->line = current->L.lineCounter;
+    if (0 && s_reportas) {
+        ast->lexdata = s_reportas->lexdata;
+        ast->lineidx = s_reportas->lineidx;
+    } else if (current) {
+        ast->lexdata = &current->L;
+        ast->lineidx = getLineInfoIndex(ast->lexdata);
     } else {
-        ast->fileName = "<unknown>";
-        ast->line = 0;
+        ast->lexdata = NULL;
+        ast->lineidx = 0;
     }
     return ast;
 }
@@ -314,10 +319,7 @@ RemoveFromList(AST **listptr, AST *elem)
 
 void AstReportAs(AST *old)
 {
-    if (current && old) {
-        current->L.fileName = old->fileName;
-        current->L.lineCounter = old->line;
-    }
+    s_reportas = old;
 }
 
 static const char *astnames[] = {
@@ -525,3 +527,15 @@ DumpAST(AST *ast)
     doASTDump(ast, 0);
 }
 
+LineInfo *GetLineInfo(AST *ast)
+{
+    LexStream *L;
+    LineInfo *I;
+    if (!ast || !ast->lexdata) return NULL;
+    L = ast->lexdata;
+    I = (LineInfo *)flexbuf_peek(&L->lineInfo);
+    if (I) {
+        return I + ast->lineidx;
+    }
+    return NULL;
+}

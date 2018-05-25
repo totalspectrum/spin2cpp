@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 
+typedef struct LineInfo {
+    const char *fileName;
+    int lineno;
+    char *linedata;
+} LineInfo;
+
 /*
  * types of data which may be contained within an AST node
  */
@@ -145,13 +151,18 @@ enum astkind {
     AST_TUPLETYPE = 100,
 };
 
+/* forward reference */
+typedef struct lexstream LexStream;
+
 struct AST {
     enum astkind kind;        /* type of this node */
     union ASTdata d; /* data in this node */
-    const char *fileName; /* file associated with this */
-    int line;        /* line number */
     AST *left;
     AST *right;
+
+    // debug info
+    LexStream *lexdata; /* points to the current lexer */
+    int lineidx;        /* index within the lexer LineInfo struct */
 };
 
 /* function declarations */
@@ -188,5 +199,8 @@ void AstReportAs(AST *old);
 
 /* print out an AST */
 void DumpAST(AST *);
+
+/* get LineInfo for an AST */
+LineInfo *GetLineInfo(AST *);
 
 #endif

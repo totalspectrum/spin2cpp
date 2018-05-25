@@ -961,9 +961,10 @@ void
 ERROR(AST *instr, const char *msg, ...)
 {
     va_list args;
+    LineInfo *info = GetLineInfo(instr);
 
     if (instr)
-        fprintf(stderr, "%s:%d: error: ", instr->fileName, instr->line);
+        fprintf(stderr, "%s:%d: error: ", info->fileName, info->lineno);
     else
         fprintf(stderr, "error: ");
 
@@ -978,9 +979,10 @@ void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;
+    LineInfo *info = GetLineInfo(instr);
 
-    if (instr)
-        fprintf(stderr, "%s:%d: warning: ", instr->fileName, instr->line);
+    if (info)
+        fprintf(stderr, "%s:%d: warning: ", info->fileName, info->lineno);
     else
         fprintf(stderr, "warning: ");
 

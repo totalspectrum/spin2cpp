@@ -552,9 +552,9 @@ repeatstmt:
     SP_REPEAT SP_EOLN stmtblock
     {   AST *body = $3; body = CheckYield(body);
         AST *one = AstInteger(1);
-        one->line = $1->line;
+        one->lineidx = $1->lineidx;
         $$ = NewCommentedAST(AST_WHILE, one, body, $1);
-        $$->line = $1->line;
+        $$->lineidx = $1->lineidx;
     }
   | SP_REPEAT SP_EOLN stmtblock SP_WHILE expr SP_EOLN
     { $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($3), $1); }
@@ -563,15 +563,15 @@ repeatstmt:
   | SP_REPEAT SP_WHILE expr SP_EOLN stmtblock
     {   AST *body = $5; body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
-        $$->line = $1->line;
+        $$->lineidx = $1->lineidx;
     }
   | SP_REPEAT SP_UNTIL expr SP_EOLN stmtblock
     {   AST *body = $5;
         AST *expr = AstOperator(K_BOOL_NOT, NULL, $3);
-        expr->line = $3->line;
+        expr->lineidx = $3->lineidx;
         body = CheckYield(body); 
         $$ = NewCommentedAST(AST_WHILE, expr, body, $1);
-        $$->line = $1->line;
+        $$->lineidx = $1->lineidx;
     }
   | SP_REPEAT identifier SP_FROM expr SP_TO expr SP_STEP expr SP_EOLN stmtblock
     {
