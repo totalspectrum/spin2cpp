@@ -94,11 +94,18 @@ void
 PrintIndentedComment(Flexbuf *f, AST *ast, int indent)
 {
     while (ast) {
-        if (ast->kind != AST_COMMENT) {
-            ERROR(ast, "Internal error: expected comment");
-            return;
+        if (ast->kind == AST_SRCCOMMENT) {
+            LineInfo *info = GetLineInfo(ast);
+            if (info && info->linedata) {
+                flexbuf_printf(f, "// %s", info->linedata);
+            }
+        } else {
+            if (ast->kind != AST_COMMENT) {
+                ERROR(ast, "Internal error: expected comment");
+                return;
+            }
+            PrintCommentString(f, ast->d.string, indent);
         }
-        PrintCommentString(f, ast->d.string, indent);
         ast = ast->right;
     }
 }
@@ -1025,9 +1032,11 @@ static int lastline = 0;
 static void
 EmitLineDirective(Flexbuf *f, const char *name, int line)
 {
-    flexbuf_printf(f, "#line %d \"%s\"\n", line, name);
-    lastfile = name;
-    lastline = line;
+    if (name) {
+        flexbuf_printf(f, "#line %d \"%s\"\n", line, name);
+        lastfile = name;
+        lastline = line;
+    }
 }
 
 void

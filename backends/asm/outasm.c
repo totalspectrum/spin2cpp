@@ -2451,6 +2451,30 @@ GetAddressOf(IRList *irl, AST *expr)
     return NewImmediate(-1);
 }
 
+static void
+EmitComments(IRList *irl, AST *comment)
+{
+    Operand *r;
+    
+    while (comment) {
+        if (comment->kind == AST_COMMENT) {
+            if (comment->d.string) {
+                r = NewOperand(IMM_STRING, comment->d.string, 0);
+                EmitOp1(irl, OPC_COMMENT, r);
+            }
+        } else if (comment->kind == AST_SRCCOMMENT) {
+            LineInfo *info = GetLineInfo(comment);
+            if (info && info->linedata) {
+                r = NewOperand(IMM_STRING, info->linedata, 0);
+                EmitOp1(irl, OPC_COMMENT, r);
+            }
+        } else {
+            ERROR(comment, "Internal error, expected comment node");
+        }
+        comment = comment->right;
+    }
+}
+
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
@@ -2458,7 +2482,11 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   Operand *val;
 
   while (expr && expr->kind == AST_COMMENTEDNODE) {
-    expr = expr->left;
+      if (gl_srccomments) {
+          AST *comment = expr->right;
+          EmitComments(irl, comment);          
+      }
+      expr = expr->left;
   }
   if (!expr) return NULL;
   if (IsConstExpr(expr)) {
@@ -2835,6 +2863,7 @@ EmitOneSrcComment(IRList *irl, int line, LexStream *L)
 void
 EmitDebugComment(IRList *irl, AST *ast)
 {
+#if 0
     LexStream *L;
 
     if (!gl_debug) return;
@@ -2852,6 +2881,7 @@ EmitDebugComment(IRList *irl, AST *ast)
         }
         L->lineCounter = i;
     }
+#endif
 }
 
 //
@@ -2984,6 +3014,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     starttempreg = FuncData(curfunc)->curtempreg;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
+        EmitComments(irl, ast->right);
         CompileStatement(irl, ast->left);
         break;
     case AST_RETURN:

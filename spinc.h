@@ -53,6 +53,7 @@ extern char *gl_header1; /* first comment line to prepend to files */
 extern char *gl_header2; /* second comment line to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 extern int gl_debug;    /* flag: if set, include debugging directives */
+extern int gl_srccomments; /* if set, include original source as comments */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */

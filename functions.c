@@ -366,7 +366,7 @@ doDeclareFunction(AST *funcblock)
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     if (comment) {
-        if (comment->kind != AST_COMMENT) {
+        if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");
             abort();
         }

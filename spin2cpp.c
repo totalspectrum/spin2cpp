@@ -390,6 +390,7 @@ main(int argc, char **argv)
             }
             argv++; --argc;
             gl_debug = 1;
+            gl_srccomments = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
             char *opt = argv[0];
             char *name;

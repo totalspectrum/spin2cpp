@@ -801,12 +801,33 @@ AssignObjectOffsets(Module *P)
     current = save;
 }
 
+#if 0
+/*
+ * transform AST_SRCCOMMENTs into comments with the line data of the 
+ * next non-comment AST
+ */
+static void
+TransformSrcCommentsBlock(AST *ast, AST *upper)
+{
+    while (ast) {
+        if (ast->kind == AST_SRCCOMMENT) {
+            ast->kind = AST_COMMENT;
+            ast->d.string = "+++";
+        }
+        TransformSrcCommentsBlock(ast->left, ast);
+        upper = ast;
+        ast = ast->right;
+    }
+}
+#endif
+
 /*
  * process a parsed module
  */
 static void
 ProcessModule(Module *P)
 {
+    Function *pf;
     P->botcomment = GetComments();
 
     /* now declare all the symbols that weren't already declared */

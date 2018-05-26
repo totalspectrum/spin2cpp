@@ -149,6 +149,8 @@ enum astkind {
     AST_ORGF,
 
     AST_TUPLETYPE = 100,
+    AST_SRCCOMMENT,
+    
 };
 
 /* forward reference */

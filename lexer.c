@@ -22,6 +22,10 @@ AST *last_ast;
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
+/* flag: if set, add original source as comments */
+int gl_srccomments = 0;
+
+/* some ctype style functions that work on non-ASCII tokens */
 static inline int
 safe_isalpha(unsigned int x) {
     return (x < 255) ? isalpha(x) : 0;
@@ -157,6 +161,20 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
 
 }
 
+/*
+ * utility function: start a new line
+ */
+static void startNewLine(LexStream *L)
+{
+    LineInfo lineInfo;
+
+    flexbuf_addchar(&L->curLine, 0); // terminate the line
+    lineInfo.linedata = flexbuf_get(&L->curLine);
+    lineInfo.fileName = L->fileName;
+    lineInfo.lineno = L->lineCounter;
+    flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+}
+
 #define TAB_STOP 8
 /*
  *
@@ -165,20 +183,15 @@ int
 lexgetc(LexStream *L)
 {
     int c;
-    LineInfo lineInfo;
     if (L->ungot_ptr) {
         --L->ungot_ptr;
         return L->ungot[L->ungot_ptr];
     }
     if (L->pendingLine) {
-      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      lineInfo.linedata = flexbuf_get(&L->curLine);
-      lineInfo.fileName = L->fileName;
-      lineInfo.lineno = L->lineCounter;
-      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
-      L->lineCounter ++;
-      L->pendingLine = 0;
-      L->colCounter = 0;
+        startNewLine(L);
+        L->lineCounter++;
+        L->pendingLine = 0;
+        L->colCounter = 0;
     }
     c = (L->getcf(L));
     if (c == '\n') {
@@ -191,11 +204,7 @@ lexgetc(LexStream *L)
         L->colCounter++;
     }
     if (c == SP_EOF) {
-      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      lineInfo.linedata = flexbuf_get(&L->curLine);
-      lineInfo.lineno = L->lineCounter;
-      lineInfo.fileName = L->fileName;
-      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+        startNewLine(L);
     } else {
         flexbuf_addchar(&L->curLine, c);
     }
@@ -530,7 +539,7 @@ parseString(LexStream *L, AST **ast_ptr)
 // keep track of accumulated comments
 //
 
-AST *comment_chain;
+static AST *comment_chain;
 
 AST *
 GetComments(void)
@@ -562,6 +571,7 @@ skipSpace(LexStream *L, AST **ast_ptr)
     AST *ast;
     int startcol = 0;
     int startline = 0;
+    int needSrcComment = gl_srccomments && L->eoln;
     
     flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
@@ -681,6 +691,9 @@ again:
         goto again;
     }
 
+    if (needSrcComment) {
+        comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
+    }
     if (L->eoln && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
@@ -739,6 +752,7 @@ getToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
     int peekc;
+    
     c = skipSpace(L, &ast);
 
 //    printf("L->linecounter=%d\n", L->lineCounter);
