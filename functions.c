@@ -633,17 +633,35 @@ AST *
 TransformCaseExprList(AST *var, AST *ast)
 {
     AST *listexpr = NULL;
-    AST *node;
+    AST *node = NULL;
     while (ast) {
         AstReportAs(ast);
         if (ast->kind == AST_OTHER) {
             return AstInteger(1);
-        } else {
-            if (ast->left->kind == AST_RANGE) {
-                node = NewAST(AST_ISBETWEEN, var, ast->left);
-            } else {
-                node = AstOperator(K_EQ, var, ast->left);
+        }
+        if (ast->left->kind == AST_RANGE) {
+            node = NewAST(AST_ISBETWEEN, var, ast->left);
+        } else if (ast->left->kind == AST_STRING) {
+            // if the string is long, break it up into single characters
+            const char *sptr = ast->left->d.string;
+            int c;
+            while ( (c = *sptr++) != 0) {
+                char *newStr = malloc(2);
+                AST *strNode;
+                newStr[0] = c; newStr[1] = 0;
+                strNode = NewAST(AST_STRING, NULL, NULL);
+                strNode->d.string = newStr;
+                node = AstOperator(K_EQ, var, strNode);
+                if (*sptr) {
+                    if (listexpr) {
+                        listexpr = AstOperator(K_BOOL_OR, listexpr, node);
+                    } else {
+                        listexpr = node;
+                    }
+                }
             }
+        } else {
+            node = AstOperator(K_EQ, var, ast->left);
         }
         if (listexpr) {
             listexpr = AstOperator(K_BOOL_OR, listexpr, node);

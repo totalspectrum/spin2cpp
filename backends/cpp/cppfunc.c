@@ -348,6 +348,16 @@ PrintCaseItem(Flexbuf *f, AST *var, AST *ast, int indent, int how)
                 expr = exprlist->left;
                 if (expr->kind == AST_OTHER) {
                     flexbuf_printf(f, "%*cdefault", indent, ' ');
+                } else if (expr->kind == AST_STRING) {
+                    int c;
+                    const char *sptr = expr->d.string;
+                    while ((c = *sptr++) != 0) {
+                        flexbuf_printf(f, "%*ccase '%c'", indent, ' ', c);
+                        if (*sptr) {
+                            flexbuf_printf(f, ":");
+                            PrintNewline(f);
+                        }
+                    }
                 } else {
                     flexbuf_printf(f, "%*ccase ", indent, ' ');
                     PrintExpr(f, expr, PRINTEXPR_DEFAULT);
@@ -400,6 +410,8 @@ PrintCaseStmt(Flexbuf *f, AST *expr, AST *ast, int indent)
             if (itemexprlist->kind == AST_OTHER) {
                 otherIsLast = 1;
                 noOther = 0;
+            } else if (itemexpr->kind == AST_STRING) {
+                otherIsLast = 0;
             } else {
                 otherIsLast = 0;
                 if (!IsConstExpr(itemexpr)) {
