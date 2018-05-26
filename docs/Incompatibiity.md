@@ -1,6 +1,18 @@
 Areas of incompatibility between fastspin and "standard" Spin
 =============================================================
 
+Symbols
+-------
+
+### Opcodes
+In regular Spin opcodes like `TEST` are always reserved.
+
+In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to have a function or variable named `test` or `add`.
+
+### Reserved words
+
+fastspin adds some reserved words: `asm`, `endasm`, and `then`.
+
 Array references
 ----------------
 In regular Spin any symbol may be used as an array; that is, in
@@ -10,12 +22,6 @@ VAR
 ```
 a reference to `a[1]` is the same as `b`. fastspin is stricter about this,
 and only allows array references to symbols explicitly specified as arrays.
-
-Symbols
--------
-In regular Spin opcodes like `TEST` are always reserved.
-
-In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to have a function or variable named `test` or `add`.
 
 Strings
 -------
