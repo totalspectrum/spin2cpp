@@ -2,6 +2,7 @@ Version 3.8.5
 - Improve inline assembly: allow labels
 - Fix string constants in case labels (they should be treated as
   lists)
+- Add a check for recursive symbol definition
 
 Version 3.8.4
 - Automatically promote literal strings to string("foo") if they are

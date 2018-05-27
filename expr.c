@@ -795,13 +795,13 @@ EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 
 #define PASM_FLAG 0x01
 
-static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid);
+static ExprVal EvalExpr(AST *expr, unsigned flags, int *valid, int depth);
 
 /*
  * evaluate an expression in a particular parser state
  */
 static ExprVal
-EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid)
+EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid, int depth)
 {
     Module *saveState;
     Function *saveFunc;
@@ -811,7 +811,7 @@ EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid)
     saveFunc = curfunc;
     current = P;
     curfunc = 0;
-    ret = EvalExpr(expr, flags, valid);
+    ret = EvalExpr(expr, flags, valid, depth);
     current = saveState;
     curfunc = saveFunc;
     return ret;
@@ -821,8 +821,10 @@ EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid)
  * evaluate an expression
  * if unable to evaluate, return 0 and set "*valid" to 0
  */
+#define MAX_DEPTH 50
+
 static ExprVal
-EvalExpr(AST *expr, unsigned flags, int *valid)
+EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 {
     Symbol *sym, *objsym;
     ExprVal lval, rval;
@@ -830,9 +832,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     int reportError = (valid == NULL);
     ExprVal ret;
     int kind;
-    
+
     if (!expr)
         return intExpr(0);
+    if (depth > MAX_DEPTH) {
+        ERROR(expr, "Expression too complicated or symbol definition loop");
+        return intExpr(0);
+    }
 
     kind = expr->kind;
     switch (kind) {
@@ -851,34 +857,34 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         return intExpr(expr->d.string[0]);
     }
     case AST_TOFLOAT:
-        lval = EvalExpr(expr->left, flags, valid);
+        lval = EvalExpr(expr->left, flags, valid, depth+1);
         if ( !IsIntOrGenericType(lval.type)) {
             ERROR(expr, "applying float to a non integer expression");
         }
         return floatExpr((float)(lval.val));
 
     case AST_TRUNC:
-        lval = EvalExpr(expr->left, flags, valid);
+        lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying trunc to a non float expression");
         }
         return intExpr((int)intAsFloat(lval.val));
 
     case AST_ROUND:
-        lval = EvalExpr(expr->left, flags, valid);
+        lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying round to a non float expression");
         }
         return intExpr((int)roundf(intAsFloat(lval.val)));
 
     case AST_CONSTANT:
-        return EvalExpr(expr->left, flags, valid);
+        return EvalExpr(expr->left, flags, valid, depth+1);
     case AST_CONSTREF:
         if (!GetObjConstant(expr, &objsym, &sym)) {
             return intExpr(0);
         }
         /* while we're evaluating, use the object context */
-        ret = EvalExprInState(GetObjectPtr(objsym), (AST *)sym->val, flags, valid);
+        ret = EvalExprInState(GetObjectPtr(objsym), (AST *)sym->val, flags, valid, depth+1);
         return ret;
     case AST_RESULT:
         *valid = 0;
@@ -894,9 +900,15 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         } else {
             switch (sym->type) {
             case SYM_CONSTANT:
-                return intExpr(EvalConstExpr((AST *)sym->val));
+            {
+                ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
+                return intExpr(e.val);
+            }
             case SYM_FLOAT_CONSTANT:
-                return floatExpr(intAsFloat(EvalConstExpr((AST *)sym->val)));
+            {
+                ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
+                return floatExpr(intAsFloat(e.val));
+            }
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {
                     Label *lref = (Label *)sym->val;
@@ -924,30 +936,30 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
         }
         break;
     case AST_OPERATOR:
-        lval = EvalExpr(expr->left, flags, valid);
+        lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (expr->d.ival == K_BOOL_OR && lval.val)
             return lval;
         if (expr->d.ival == K_BOOL_AND && lval.val == 0)
             return lval;
-        rval = EvalExpr(expr->right, flags, valid);
+        rval = EvalExpr(expr->right, flags, valid, depth+1);
         return EvalOperator(expr->d.ival, lval, rval, valid);
     case AST_CONDRESULT:
-        aval = EvalExpr(expr->left, flags, valid);
+        aval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!expr->right || expr->right->kind != AST_THENELSE)
             goto invalid_const_expr;
         if (aval.val) {
-            return EvalExpr(expr->right->left, flags, valid);
+            return EvalExpr(expr->right->left, flags, valid, depth+1);
         } else {
-            return EvalExpr(expr->right->right, flags, valid);
+            return EvalExpr(expr->right->right, flags, valid, depth+1);
         }
     case AST_ISBETWEEN:
         if (!expr->right || expr->right->kind != AST_RANGE) {
             goto invalid_const_expr;
         } else {
             ExprVal isge, isle;
-            aval = EvalExpr(expr->left, flags, valid);
-            lval = EvalExpr(expr->right->left, flags, valid);
-            rval = EvalExpr(expr->right->right, flags, valid);
+            aval = EvalExpr(expr->left, flags, valid, depth+1);
+            lval = EvalExpr(expr->right->left, flags, valid, depth+1);
+            rval = EvalExpr(expr->right->right, flags, valid, depth+1);
             isge = EvalOperator(K_LE, lval, aval, valid);
             isle = EvalOperator(K_LE, aval, rval, valid);
             return EvalOperator(K_BOOL_AND, isge, isle, valid);
@@ -965,7 +977,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid)
     case AST_ARRAYREF:
         if (expr->left && expr->left->kind == AST_STRING) {
             const char *str = expr->left->d.string;
-            rval = EvalExpr(expr->right, flags, valid);
+            rval = EvalExpr(expr->right, flags, valid, depth+1);
             if ((!valid || *valid) && IsIntOrGenericType(rval.type)
                 && rval.val >= 0 && rval.val <= strlen(str))
             {
@@ -1032,14 +1044,14 @@ invalid_const_expr:
 int32_t
 EvalConstExpr(AST *expr)
 {
-    ExprVal e = EvalExpr(expr, 0, NULL);
+    ExprVal e = EvalExpr(expr, 0, NULL, 0);
     return e.val;
 }
 
 int32_t
 EvalPasmExpr(AST *expr)
 {
-    ExprVal e = EvalExpr(expr, PASM_FLAG, NULL);
+    ExprVal e = EvalExpr(expr, PASM_FLAG, NULL, 0);
     return e.val;
 }
 
@@ -1048,7 +1060,7 @@ IsConstExpr(AST *expr)
 {
     int valid;
     valid = 1;
-    EvalExpr(expr, 0, &valid);
+    EvalExpr(expr, 0, &valid, 0);
     return valid;
 }
 
@@ -1058,7 +1070,7 @@ IsFloatConst(AST *expr)
     int valid;
     ExprVal eval;
     valid = 1;
-    eval = EvalExpr(expr, 0, &valid);
+    eval = EvalExpr(expr, 0, &valid, 0);
     if (valid && IsFloatType(eval.type))
         return 1;
     return 0;
