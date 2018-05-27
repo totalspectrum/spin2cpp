@@ -2231,7 +2231,9 @@ ShouldBeInlined(Function *f)
     IR *ir;
     int n = 0;
 
-    if (!(gl_optimize_flags & OPT_INLINE_FUNCS)) return false;
+    if (!(gl_optimize_flags & (OPT_INLINE_SMALLFUNCS|OPT_INLINE_SINGLEUSE))) {
+        return false;
+    }
     if (f->no_inline) return false;
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
@@ -2259,7 +2261,7 @@ ShouldBeInlined(Function *f)
     }
     // a function called from only 1 place should be inlined
     // if it means that the function definition can be eliminated
-    if (RemoveIfInlined(f)) {
+    if (RemoveIfInlined(f) && (gl_optimize_flags & OPT_INLINE_SINGLEUSE)) {
         if (f->callSites == 1) {
             return true;
         } else if (f->callSites == 2) {

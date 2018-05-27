@@ -62,10 +62,11 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_PERFORM_CSE         0x02
 #define OPT_REMOVE_HUB_BSS      0x04
 #define OPT_BASIC_ASM           0x08  /* basic peephole optimizations &c */
-#define OPT_INLINE_FUNCS        0x10  /* inline functions */
+#define OPT_INLINE_SMALLFUNCS   0x10  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
 
-#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_FUNCS|OPT_BASIC_ASM)
-#define EXTRA_ASM_OPTS          (OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O */
+#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */

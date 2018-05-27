@@ -15,7 +15,10 @@ endmsg=$ok
 for i in stest*.spin
 do
   j=`basename $i .spin`
-  $PROG --asm --cse --noheader $i
+  # NOTE: optimize 250 is all optimizations except
+  #   remove_unused_funcs (0x01)
+  #   remove_hub_bss (0x04)
+  $PROG --asm --optimize 250 --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm
