@@ -827,7 +827,6 @@ TransformSrcCommentsBlock(AST *ast, AST *upper)
 static void
 ProcessModule(Module *P)
 {
-    Function *pf;
     P->botcomment = GetComments();
 
     /* now declare all the symbols that weren't already declared */

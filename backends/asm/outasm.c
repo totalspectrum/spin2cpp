@@ -79,7 +79,6 @@ static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 static Operand *CogMemRef(Operand *addr, int offset);
-static void EmitDebugComment(IRList *irl, AST *ast);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -1072,7 +1071,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
-    //EmitDebugComment(irl, func->decl);
     AppendIRList(irl, &FuncData(func)->irheader);
 
     if (gl_output == OUTPUT_COGSPIN && FuncData(func)->asmaltname) {
@@ -2458,13 +2456,13 @@ EmitComments(IRList *irl, AST *comment)
     
     while (comment) {
         if (comment->kind == AST_COMMENT) {
-            if (comment->d.string) {
+            if (comment->d.string && !gl_srccomments) {
                 r = NewOperand(IMM_STRING, comment->d.string, 0);
                 EmitOp1(irl, OPC_COMMENT, r);
             }
         } else if (comment->kind == AST_SRCCOMMENT) {
             LineInfo *info = GetLineInfo(comment);
-            if (info && info->linedata) {
+            if (info && info->linedata && gl_srccomments) {
                 r = NewOperand(IMM_STRING, info->linedata, 0);
                 EmitOp1(irl, OPC_COMMENT, r);
             }
@@ -2475,6 +2473,11 @@ EmitComments(IRList *irl, AST *comment)
     }
 }
 
+static void
+EmitDebugComment(IRList *irl, AST *ast)
+{
+}
+
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
@@ -2482,10 +2485,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   Operand *val;
 
   while (expr && expr->kind == AST_COMMENTEDNODE) {
-      if (gl_srccomments) {
-          AST *comment = expr->right;
-          EmitComments(irl, comment);          
-      }
+      EmitComments(irl, expr->right);          
       expr = expr->left;
   }
   if (!expr) return NULL;
@@ -2822,69 +2822,6 @@ FreeTempRegisters(IRList *irl, int starttempreg)
 }
 
 //
-// emit debug directives
-//
-static LexStream *current_lex = NULL;
-
-void
-ResetDebugComment(Module *P)
-{
-    current_lex = &P->L;
-    if (gl_debug) {
-        current_lex->lineCounter = 0;
-    }
-}
-
-static void
-EmitOneSrcComment(IRList *irl, int line, LexStream *L)
-{
-    LineInfo *srcinfo;
-    const char *theline;
-    int maxline;
-    Operand *c;
-    
-    srcinfo = (LineInfo*)flexbuf_peek(&L->lineInfo);
-    maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
-
-    if (line < 0 || line >= maxline) return;
-    
-    theline = srcinfo[line].linedata;
-    if (!theline) return;
-    // skip over preprocessor comments
-    if (theline[0] == '{' && theline[1] == '#') {
-        theline += 2;
-        while (*theline && *theline != '}') theline++;
-        if (*theline) theline++;
-    }
-    c = NewOperand(IMM_STRING, theline, 0);
-    EmitOp1(irl, OPC_COMMENT, c);
-}
-
-void
-EmitDebugComment(IRList *irl, AST *ast)
-{
-#if 0
-    LexStream *L;
-
-    if (!gl_debug) return;
-    if (!ast) return;
-    if (!current) return;
-    
-    L = ast->lexdata;
-    if (!L) return;
-    if (1) {
-        int line = ast->lineidx;
-        int i = L->lineCounter;
-        while (i <= line) {
-            EmitOneSrcComment(irl, i, L);
-            i++;
-        }
-        L->lineCounter = i;
-    }
-#endif
-}
-
-//
 // a for loop gets a pattern like
 //
 //   initial code
@@ -3130,7 +3067,8 @@ static void CompileStatement(IRList *irl, AST *ast)
 	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
 	if (ast->kind == AST_COMMENTEDNODE) {
-	  ast = ast->left;
+            EmitComments(irl, ast->right);
+            ast = ast->left;
 	}
 	/* ast should be an AST_THENELSE */
 	CompileStatementList(irl, ast->left);
@@ -3170,9 +3108,10 @@ CompileFunctionBody(Function *f)
 {
     IRList *irl = FuncIRL(f);
     IRList *irheader = &FuncData(f)->irheader;
+
+    EmitComments(irheader, f->doccomment);
     
     nextlabel = quitlabel = NULL;
-    EmitDebugComment(irheader, f->decl);
     
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
@@ -3381,7 +3320,6 @@ AssignFuncNames(IRList *irl, Module *P)
     
     (void)irl; // not used
 
-    ResetDebugComment(P);
     if (!P->bedata) {
         P->bedata = calloc(sizeof(AsmModData), 1);
     }
