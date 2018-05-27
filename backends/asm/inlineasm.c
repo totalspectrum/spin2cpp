@@ -60,21 +60,30 @@ CompileInlineOperand(IRList *irl, AST *expr)
 
 //
 // compile an inline instruction
-// ast points to an AST_INSTRUCTION
+// ast points to an AST_INSTRUCTION, or the comments before it
 //
 #define MAX_OPERANDS 4
 
 static void
 CompileInlineInstr(IRList *irl, AST *ast)
 {
-    Instruction *instr = (Instruction *)ast->d.ptr;
-    IR *ir = NewIR(instr->opc);
+    Instruction *instr;
+    IR *ir;
     int numoperands;
     AST *operands[MAX_OPERANDS];
     uint32_t opimm[MAX_OPERANDS];
     int i;
     uint32_t effectFlags = 0;
-    
+
+    while (ast && ast->kind != AST_INSTR) {
+        ast = ast->right;
+    }
+    if (!ast) {
+        ERROR(NULL, "Internal error, expected instruction");
+        return;
+    }
+    instr = (Instruction *)ast->d.ptr;
+    ir = NewIR(instr->opc);
     ir->instr = instr;
 
     /* parse operands and put them in place */

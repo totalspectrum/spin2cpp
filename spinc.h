@@ -321,11 +321,19 @@ typedef struct DataBlockOutFuncs {
  * of the dat section at that long.
  * The relocs should be sorted in order of increasing offset, so we can
  * easily process them in order along with the output.
+ *
+ * We also re-use the Reloc struct to hold debug information as well, so
+ * that we can provide source listings for the DAT section contents.
+ * for that purpose we emit DebugEntry
  */
 typedef struct Reloc {
-    int  addr;    // the address of the long to relocate (offset from dat base)
-    int  value;   // the value to add to dat base at that location
+    int32_t  kind;    // reloc or debug
+    int32_t  off;     // the address the entry affects (offset from dat base)
+    intptr_t val;     // value to add to dat base, or pointer to LineInfo
 } Reloc;
+
+#define RELOC_KIND_LONG  0
+#define RELOC_KIND_DEBUG 1
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);

@@ -19,6 +19,9 @@
 // used for error messages
 AST *last_ast;
 
+// accumulated comments
+static AST *comment_chain;
+
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
@@ -422,6 +425,10 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             if (sym->type == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
+                if (comment_chain) {
+                    ast = AddToList(comment_chain, ast);
+                    comment_chain = NULL;
+                }
                 *ast_ptr = ast;
                 return SP_INSTR;
             }
@@ -538,8 +545,6 @@ parseString(LexStream *L, AST **ast_ptr)
 //
 // keep track of accumulated comments
 //
-
-static AST *comment_chain;
 
 AST *
 GetComments(void)
