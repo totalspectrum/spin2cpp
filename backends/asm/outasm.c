@@ -351,7 +351,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                 InsertAfterIR(irl, dest, newir);
                 dest = newir;
             }
-        } else if (newir->opc == OPC_COMMENT) {
+        } else if (newir->opc == OPC_COMMENT && !gl_srccomments) {
             /* leave out comments, they will be out of place */
         } else {
             InsertAfterIR(irl, dest, newir);

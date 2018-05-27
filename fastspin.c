@@ -141,7 +141,6 @@ main(int argc, char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
-    int listFile = 0;
     int outputFiles = 0;
     int outputBin = 0;
     int outputAsm = 0;
@@ -157,7 +156,8 @@ main(int argc, char **argv)
     size_t eepromSize = 32768;
     int useEeprom = 0;
     const char *target = NULL;
-
+    const char *listFile = NULL;
+    
 #if 0
     printf("fastspin: arguments are:\n");
     for (i = 0; i < argc; i++) {
@@ -285,12 +285,7 @@ main(int argc, char **argv)
             outputDat = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-l")) {
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
-            gl_output = OUTPUT_DAT;
-            outputDat = 1;
-            listFile = 1;
+            gl_listing = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
             outputFiles = 1;
@@ -407,7 +402,7 @@ main(int argc, char **argv)
             Usage(stderr, bstcMode);
         }
     }
-
+    
     if (!quiet) {
         PrintInfo(stdout, bstcMode);
     }
@@ -446,6 +441,10 @@ main(int argc, char **argv)
         gl_dat_offset = 0;
     }
 
+    if (gl_listing && !(gl_output == OUTPUT_DAT)) {
+        gl_srccomments = 1;
+    }
+    
     /* initialize the parser; we do that after command line processing
        so that command line options can influence it */
     Init();
@@ -472,6 +471,11 @@ main(int argc, char **argv)
         if (gl_errors > 0) {
             exit(1);
         }
+        /* set up output file names */
+        if (gl_listing) {
+            listFile = ReplaceExtension(P->fullname, ".lst");
+        }
+    
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {
@@ -497,10 +501,9 @@ main(int argc, char **argv)
                     outname = ReplaceExtension(outname, ".binary");
                 }
                 if (listFile) {
-                    OutputLstFile(outname, P);
-                } else {
-                    OutputDatFile(outname, P, outputBin);
+                    OutputLstFile(listFile, P);
                 }
+                OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
                     DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
                 }
@@ -533,6 +536,9 @@ main(int argc, char **argv)
             if (compile)  {
                 if (gl_errors > 0) {
                     remove(binname);
+                    if (listFile) {
+                        remove(listFile);
+                    }
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
@@ -541,6 +547,9 @@ main(int argc, char **argv)
                     ProcessSpinCode(Q, 1);
                 }
                 if (gl_errors == 0) {
+                    if (listFile) {
+                        OutputLstFile(listFile, Q);
+                    }
                     OutputDatFile(binname, Q, 1);
                     DoPropellerChecksum(binname, useEeprom ? eepromSize : 0);
                 }

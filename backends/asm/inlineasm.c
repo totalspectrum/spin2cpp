@@ -151,6 +151,8 @@ CompileInlineAsm(IRList *irl, AST *origtop)
                 break;
             }
             EmitLabel(irl, (Operand *)sym->val);
+        } else if (ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
+            // do nothing
         } else {
             ERROR(ast, "inline assembly of this item not supported yet");
             break;
