@@ -340,7 +340,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
             return 0x1ff;
         }
         val = EvalConstExpr(ast);
-        if (val > 0xff) {
+        if ( (val > 0xff) && 0 == (opimm & BIG_IMM_SRC) ) {
             WARNING(ast, "immediate value out of range");
         }
     }
@@ -1041,6 +1041,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         case AST_LINEBREAK:
             break;
         case AST_COMMENT:
+        case AST_SRCCOMMENT:
             break;
         default:
             ERROR(ast, "unknown element in data block");
