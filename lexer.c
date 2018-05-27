@@ -394,7 +394,8 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     AST *ast = NULL;
     int startColumn = L->colCounter - 1;
     char *idstr;
-
+    int gatherComments = 1;
+    
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
@@ -493,10 +494,14 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 EstablishIndent(L, startColumn);
                 break;
             default:
+                gatherComments = 0;
                 break;
             }
-            if (!ast)
-                ast = GetComments();
+            if (!ast) {
+                if (gatherComments) {
+                    ast = GetComments();
+                }
+            }
             *ast_ptr = ast;
             return c;
         }
@@ -558,6 +563,26 @@ GetComments(void)
     return ret;
 }
 
+/* try to output only one AST_SRCCOMMENT per input line, so check here for
+ * duplication
+ */
+static void CheckSrcComment( LexStream *L )
+{
+    static LexStream *s_lastStream;
+    static int s_lastLine = -1;
+    static const char *s_lastFileName;
+    
+    if (s_lastStream == L && s_lastLine == L->lineCounter
+        && s_lastFileName == L->fileName)
+    {
+        return;
+    }
+    comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
+    s_lastStream = L;
+    s_lastLine = L->lineCounter;
+    s_lastFileName = L->fileName;
+}
+
 //
 // skip over comments and spaces
 // return first non-comment non-space character
@@ -576,11 +601,13 @@ skipSpace(LexStream *L, AST **ast_ptr)
     AST *ast;
     int startcol = 0;
     int startline = 0;
-    int needSrcComment = gl_srccomments && L->eoln;
     
     flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
 again:
+    if (gl_srccomments && L->eoln) {
+        CheckSrcComment(L);
+    }
     while (c == ' ' || c == '\t') {
         c = lexgetc(L);
     }
@@ -727,9 +754,6 @@ again:
     if (c == SP_EOF && !L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
         return SP_EOLN;
-    }
-    if (needSrcComment) {
-        comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
     }
     if (L->eoln) {
         L->eoln = 0;
