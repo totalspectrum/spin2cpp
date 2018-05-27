@@ -691,9 +691,6 @@ again:
         goto again;
     }
 
-    if (needSrcComment) {
-        comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
-    }
     if (L->eoln && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
@@ -725,6 +722,9 @@ again:
     if (c == SP_EOF && !L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
         return SP_EOLN;
+    }
+    if (needSrcComment) {
+        comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
     }
     if (L->eoln) {
         L->eoln = 0;
