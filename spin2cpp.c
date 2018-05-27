@@ -261,7 +261,7 @@ main(int argc, char **argv)
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
-            gl_optimize_flags |= DEFAULT_ASM_OPTS;
+            gl_optimize_flags |= (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
         } else if (!strcmp(argv[0], "--cogspin") ) {
             outputAsm = 1;
             gl_output = OUTPUT_COGSPIN;
@@ -390,7 +390,6 @@ main(int argc, char **argv)
             }
             argv++; --argc;
             gl_debug = 1;
-            gl_srccomments = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
             char *opt = argv[0];
             char *name;

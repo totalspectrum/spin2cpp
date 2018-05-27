@@ -2456,10 +2456,13 @@ EmitComments(IRList *irl, AST *comment)
     
     while (comment) {
         if (comment->kind == AST_COMMENT) {
+            /* for now ignore comments */
+#if 0
             if (comment->d.string && !gl_srccomments) {
                 r = NewOperand(IMM_STRING, comment->d.string, 0);
                 EmitOp1(irl, OPC_COMMENT, r);
             }
+#endif
         } else if (comment->kind == AST_SRCCOMMENT) {
             LineInfo *info = GetLineInfo(comment);
             if (info && info->linedata && gl_srccomments) {
