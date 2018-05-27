@@ -105,7 +105,10 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(f, "  [ -2 ]             compile for Prop2\n");
-    fprintf(f, "  [ -O ]             enable extra optimizations\n");
+    fprintf(f, "  [ -O# ]            set optimization level:\n");
+    fprintf(f, "          -O0 = no optimization\n");
+    fprintf(f, "          -O1 = basic optimization\n");
+    fprintf(f, "          -O2 = all optimization\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fflush(stderr);
@@ -228,7 +231,7 @@ main(int argc, char **argv)
     outputMain = 1;
     outputBin = 1;
     outputAsm = 1;
-    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS);
+    gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
     gl_outputflags &= ~OUTFLAG_COG_DATA;
@@ -387,9 +390,17 @@ main(int argc, char **argv)
             incpath = opt;
             pp_add_to_path(&gl_pp, incpath);
         } else if (!strncmp(argv[0], "-O", 2)) {
-            // ignore bstc optimization options
-            // substitute our own
-            gl_optimize_flags |= EXTRA_ASM_OPTS;
+            // -O0 means no optimization
+            // -O1 means default optimization
+            // -O2 means extra optimization
+            int flag = argv[0][2];
+            if (flag == '0') {
+                gl_optimize_flags = 0;
+            } else if (flag == '1') {
+                gl_optimize_flags = DEFAULT_ASM_OPTS;
+            } else {
+                gl_optimize_flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
+            }
             argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);

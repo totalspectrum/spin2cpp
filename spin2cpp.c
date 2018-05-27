@@ -248,7 +248,7 @@ main(int argc, char **argv)
             outputDat = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--noopt", 5) ) {
-            gl_optimize_flags |= OPT_NO_ASM;
+            gl_optimize_flags = 0;
             wantcse = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--cse", 5) ) {

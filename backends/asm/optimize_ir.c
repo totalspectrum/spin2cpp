@@ -2168,7 +2168,7 @@ OptimizeIRLocal(IRList *irl)
 {
     int change;
     
-    if (gl_optimize_flags & OPT_NO_ASM) return;
+    if (!(gl_optimize_flags & OPT_BASIC_ASM)) return;
     if (!irl->head) return;
 
     // get some low hanging fruit before any other optimizations happen
@@ -2231,7 +2231,7 @@ ShouldBeInlined(Function *f)
     IR *ir;
     int n = 0;
 
-    if (gl_optimize_flags & OPT_NO_ASM) return false;
+    if (!(gl_optimize_flags & OPT_INLINE_FUNCS)) return false;
     if (f->no_inline) return false;
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;

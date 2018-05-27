@@ -133,11 +133,14 @@ which may modify the compilation:
   [ -b ]             output binary file format
   [ -e ]             output eeprom file format
   [ -c ]             output only DAT sections
-  [ -l ]             output DAT section as an annotated list file
+  [ -l ]             output a .lst listing file
   [ -f ]             output list of file names
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
-  [ -O ]             enable additional optimizations
+  [ -O[#] ]          set optimization level
+                       -O0 disable all optimization
+                       -O1 apply default optimization (same as no -O flag)
+		       -O2 apply all optimization (same as -O)
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
   [ --code=cog  ]    compile to run in COG memory instead of HUB
