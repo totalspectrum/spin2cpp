@@ -20,14 +20,16 @@
 
     extern AST *last_ast;
     
-/* Skip Comments */
-void
-SkipComments(void)
+/* fetch pending comments and wrap the AST up with them */
+AST *
+WrapASTWithComments(AST *ast)
 {
-    AST *ast = GetComments();
-    if (ast && ast->d.string) {
-        printf("got a comment: %s\n", ast->d.string);
+    AST *comment = GetComments();
+    if (comment) {
+//        printf("got a comment: %s\n", comment->d.string);
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
+    return ast;
 }
 
 /* create an AST in a comment holder */

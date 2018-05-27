@@ -2945,7 +2945,8 @@ static void CompileStatement(IRList *irl, AST *ast)
     Operand *botloop, *toploop;
     Operand *exitloop;
     int starttempreg;
-
+    AST *pendingComments = NULL;
+    
     if (!ast) return;
 
     starttempreg = FuncData(curfunc)->curtempreg;
@@ -3067,19 +3068,20 @@ static void CompileStatement(IRList *irl, AST *ast)
 	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
 	if (ast->kind == AST_COMMENTEDNODE) {
-            EmitComments(irl, ast->right);
+            pendingComments = ast->right;
             ast = ast->left;
 	}
 	/* ast should be an AST_THENELSE */
 	CompileStatementList(irl, ast->left);
 	if (ast->right) {
-	  botloop = NewCodeLabel();
-	  EmitJump(irl, COND_TRUE, botloop);
-	  EmitLabel(irl, toploop);
-	  CompileStatementList(irl, ast->right);
-	  EmitLabel(irl, botloop);
+            EmitComments(irl, pendingComments);
+            botloop = NewCodeLabel();
+            EmitJump(irl, COND_TRUE, botloop);
+            EmitLabel(irl, toploop);
+            CompileStatementList(irl, ast->right);
+            EmitLabel(irl, botloop);
 	} else {
-	  EmitLabel(irl, toploop);
+            EmitLabel(irl, toploop);
 	}
 	break;
     case AST_YIELD:
@@ -3887,6 +3889,7 @@ CompileConsts(IRList *irl, AST *conblock)
     for (upper = conblock; upper; upper = upper->right) {
         ast = upper->left;
         if (ast->kind == AST_COMMENTEDNODE) {
+            EmitComments(irl, ast->right);
             ast = ast->left;
         }
         switch (ast->kind) {
