@@ -63,19 +63,34 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
     }
 }
 
+// AppendOneSrcLine:
+// normally, this should just append line "line"
+// however, if the line starts with '-' then skip it
+// if the previous line starts with '-', then use that previous line
+
 static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
 {
     LineInfo *srcinfo;
     const char *theline;
+    const char *prevline = NULL;
     int maxline;
 
     srcinfo = (LineInfo *)flexbuf_peek(&L->lineInfo);
     maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
     if (line < 0 || line >= maxline) return;
-    
+
+    if (line > 0) {
+        prevline = srcinfo[line-1].linedata;
+    }
     theline = srcinfo[line].linedata;
     if (!theline) return;
 
+    if (!strncmp(theline, "'-' ", 4)) {
+        return; // skip this line
+    }
+    if (prevline && !strncmp(prevline, "'-' ", 4)) {
+        theline = prevline + 4;
+    }
     // skip over preprocessor comments
     if (theline[0] == '{' && theline[1] == '#') {
         theline += 2;

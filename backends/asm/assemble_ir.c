@@ -283,7 +283,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->val;
                     if (info && info->linedata) {
-                        flexbuf_printf(fb, "' %s", info->linedata);
+                        flexbuf_printf(fb, "'-' %s", info->linedata);
                     }
                     nextreloc++;
                     --relocs;
