@@ -194,7 +194,6 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
     unsigned val, origval;
     int i, reps;
     AST *sub;
-    Reloc r;
     
     origval = 0;
     while (ast) {
@@ -226,15 +225,14 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
             reps = 0;
         } else if (sub->kind == AST_ABSADDROF) {
             if (relocs) {
+                Reloc r;
                 int addr = flexbuf_curlen(f);
                 if (size != LONG_SIZE) {
                     ERROR(ast, "@@@ supported only on long values");
                 }
-                if ( (addr & 3) != 0 ) {
-                    ERROR(ast, "@@@ supported only on long boundary");
-                }
-                r.addr = addr;
-                r.value = origval = GetAddrOffset(sub->left);
+                r.kind = RELOC_KIND_LONG;
+                r.off = addr;
+                r.val = origval = GetAddrOffset(sub->left);
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             } else {
                 origval = EvalPasmExpr(sub);
@@ -340,7 +338,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
             return 0x1ff;
         }
         val = EvalConstExpr(ast);
-        if (val > 0xff) {
+        if ( (val > 0xff) && 0 == (opimm & BIG_IMM_SRC) ) {
             WARNING(ast, "immediate value out of range");
         }
     }
@@ -454,7 +452,9 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     numoperands = 0;
     ast = ast->right;
     while (ast != NULL) {
-        if (ast->kind == AST_EXPRLIST) {
+        if (ast->kind == AST_SRCCOMMENT || ast->kind == AST_COMMENT) {
+            /* do nothing */
+        } else if (ast->kind == AST_EXPRLIST) {
             uint32_t imask;
             AST *op;
             if (numoperands >= MAX_OPERANDS) {
@@ -599,13 +599,36 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     return numoperands;
 }
 
+// assemble comments
+// returns first non-comment thing seen
+static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
+{
+    Reloc r;
+    while (ast) {
+        if (ast->kind == AST_SRCCOMMENT && gl_srccomments) {
+            if (relocs) {
+                r.kind = RELOC_KIND_DEBUG;
+                r.off = flexbuf_curlen(f);
+                r.val = (intptr_t)GetLineInfo(ast);
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            }
+        } else if (ast->kind == AST_COMMENT) {
+            /* do nothing */
+        } else {
+            return ast;
+        }
+        ast = ast->right;
+    }
+    return ast;
+}
+
 /*
  * assemble an instruction, along with its modifiers,
  * into a flexbuf
  */
 
 void
-AssembleInstruction(Flexbuf *f, AST *ast)
+AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
     uint32_t val, src, dst;
     uint32_t immmask;
@@ -627,8 +650,12 @@ AssembleInstruction(Flexbuf *f, AST *ast)
     extern Instruction instr_p2[];
     curpc = ast->d.ival & 0x00ffffff;
     inHub = (0 == (ast->d.ival & (1<<30)));
-    ast = ast->left;
-    
+
+    if (relocs && ast->right) {
+        AssembleComments(f, relocs, ast->right);
+    }
+    ast = AssembleComments(f, relocs, ast->left);
+        
     instr = (Instruction *)ast->d.ptr;
 decode_instr:
     origast = ast;
@@ -966,6 +993,34 @@ padBytes(Flexbuf *f, AST *ast, int bytes)
 }
 
 /*
+ * send out all comments pending, and return the next non-comment node
+ */
+AST *
+SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
+{
+    Reloc r;
+    while (ast) {
+        switch (ast->kind) {
+        case AST_COMMENT:
+            /* ignore, for now */
+            break;
+        case AST_SRCCOMMENT:
+            if (relocs) {
+                r.kind = RELOC_KIND_DEBUG;
+                r.off = flexbuf_curlen(f);
+                r.val = (intptr_t)GetLineInfo(ast);
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            }
+            break;
+        default:
+            return ast;
+        }
+        ast = ast->right;
+    }
+    return ast;
+}
+
+/*
  * print out a data block
  */
 void
@@ -973,6 +1028,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
 {
     AST *ast;
     AST *top;
+    Reloc r;
     void (*startAst)(Flexbuf *f, AST *ast) = NULL;
     void (*endAst)(Flexbuf *f, AST *ast) = NULL;
     
@@ -984,8 +1040,14 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     
     if (gl_errors != 0)
         return;
-    for (top = P->datblock; top; top = top->right) {
+    top = P->datblock;
+    while (top) {
         ast = top;
+        if (top->kind == AST_COMMENTEDNODE) {
+            top = SendComments(f, top->right, relocs);
+        } else {
+            top = top->right;
+        }
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             if (startAst) {
                 (*startAst)(f, ast);
@@ -1022,7 +1084,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
                     outputByte(f, 0);
                 }
             }
-            AssembleInstruction(f, ast);
+            AssembleInstruction(f, ast, relocs);
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
@@ -1041,6 +1103,15 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         case AST_LINEBREAK:
             break;
         case AST_COMMENT:
+            break;
+        case AST_SRCCOMMENT:
+            if (relocs) {
+                // emit a debug entry
+                r.kind = RELOC_KIND_DEBUG;
+                r.off = flexbuf_curlen(f);
+                r.val = (intptr_t)GetLineInfo(ast);
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            }
             break;
         default:
             ERROR(ast, "unknown element in data block");

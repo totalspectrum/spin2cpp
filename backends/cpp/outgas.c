@@ -256,18 +256,30 @@ outputGasDirective(Flexbuf *f, const char *prefix, AST *expr, int inlineAsm)
     endLine(f, inlineAsm);
 }
 
-static void
-outputGasComment(Flexbuf *f, AST *ast, int inlineAsm)
+static AST *
+outputGasComment(Flexbuf *f, AST *ast, int inlineAsm, const char *debugStr)
 {
     const char *string;
 
-    while (ast && ast->kind == AST_COMMENT) {
-        string = ast->d.string;
-        if (string) {
-            PrintCommentString(f, string, 7 + 11);
+    while (ast) {
+        if (ast->kind == AST_COMMENT) {
+            string = ast->d.string;
+            if (string && !gl_srccomments) {
+//                PrintCommentString(f, debugStr, 1);
+                PrintCommentString(f, string, 7 + 11);
+            }
+        } else if (ast->kind == AST_SRCCOMMENT) {
+            LineInfo *info = GetLineInfo(ast);
+            if (info && gl_srccomments) {
+//                PrintCommentString(f, debugStr, 1);
+                PrintCommentString(f, info->linedata, 7+11);
+            }
+        } else {
+            break;
         }
         ast = ast->right;
     }
+    return ast;
 }
 
 #define GAS_WZ 1
@@ -290,6 +302,8 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
     int printFlags;
     const char *opcode;
 
+    ast = outputGasComment(f, ast, inlineAsm, "++instr");
+    if (!ast) return;
     if (!state) {
         forceAlign(f, 4, inlineAsm);
         startLine(f, inlineAsm);
@@ -636,7 +650,7 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
         ast = top;
 
         while (ast->kind == AST_COMMENTEDNODE) {
-            outputGasComment(f, ast->right, inlineAsm);
+            outputGasComment(f, ast->right, inlineAsm, "++commentedNode");
             ast = ast->left;
         }
         switch (ast->kind) {
@@ -680,7 +694,8 @@ PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm)
             outputGasDirective(f, ".fit", ast->left ? ast->left : AstInteger(496), inlineAsm);
             break;
         case AST_COMMENT:
-//            outputGasComment(f, ast, inlineAsm); // printed above already
+        case AST_SRCCOMMENT:
+//            outputGasComment(f, ast, inlineAsm, "++comment"); // printed above already??
             break;
         default:
             ERROR(ast, "unknown element in data block");

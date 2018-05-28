@@ -64,6 +64,7 @@ Usage(void)
     fprintf(stderr, "  --fcache=N: set size of FCACHE area\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
+    fprintf(stderr, "  --list:    produce a listing file\n");
     fprintf(stderr, "  --main:    include C++ main() function\n");
     fprintf(stderr, "  --noheader: skip the normal comment about spin2cpp version\n");
     fprintf(stderr, "  --nocse:   disable common subexpression optimizations on PASM code\n");
@@ -220,7 +221,7 @@ main(int argc, char **argv)
         if (!strcmp(argv[0], "-y")) {
             yydebug = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--main", 6) || !strcmp(argv[0], "-main")) {
+        } else if (!strcmp(argv[0], "--main") || !strcmp(argv[0], "-main")) {
             outputMain = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--data=", 7)) {
@@ -243,48 +244,51 @@ main(int argc, char **argv)
                 Usage();
             }
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--dat", 5) || (!compile && !strcmp(argv[0], "-c"))) {
+        } else if (!strcmp(argv[0], "--dat") || (!compile && !strcmp(argv[0], "-c"))) {
             gl_output = OUTPUT_DAT;
             outputDat = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--noopt", 5) ) {
-            gl_optimize_flags |= OPT_NO_ASM;
+        } else if (!strcmp(argv[0], "--noopt") ) {
+            gl_optimize_flags = 0;
             wantcse = 0;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--cse", 5) ) {
+        } else if (!strcmp(argv[0], "--cse") ) {
             wantcse = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--nocse", 7) ) {
+        } else if (!strcmp(argv[0], "--nocse") ) {
             wantcse = 0;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--asm", 5) ) {
+        } else if (!strcmp(argv[0], "--asm") ) {
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
-            gl_optimize_flags |= DEFAULT_ASM_OPTS;
+            gl_optimize_flags |= (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
+        } else if (!strcmp(argv[0], "--list")) {
+            gl_listing = 1;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "--cogspin") ) {
             outputAsm = 1;
             gl_output = OUTPUT_COGSPIN;
             argv++; --argc;
             gl_optimize_flags |= DEFAULT_ASM_OPTS;
-        } else if (!strncmp(argv[0], "--gas", 5)) {
+        } else if (!strcmp(argv[0], "--gas")) {
             gl_gas_dat = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--normalize", 8) || !strcmp(argv[0], "-n")) {
+        } else if (!strcmp(argv[0], "--normalize") || !strcmp(argv[0], "-n")) {
             gl_normalizeIdents = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--p2", 4)) {
+        } else if (!strcmp(argv[0], "--p2")) {
             gl_p2 = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--side", 6)) {
+        } else if (!strcmp(argv[0], "--side")) {
             outputSide = 1;
             outputMain = 1;
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--ccode", 7)) {
+        } else if (!strcmp(argv[0], "--ccode")) {
             gl_output = OUTPUT_C;
             cext = ".c";
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--ctypes", 7)) {
+        } else if (!strcmp(argv[0], "--ctypes")) {
             gl_infer_ctypes = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--cc=", 5)) {
@@ -319,7 +323,7 @@ main(int argc, char **argv)
             }
             CheckVersion(reqStr);
             argv++; --argc;
-        } else if (!strncmp(argv[0], "--elf", 5)) {
+        } else if (!strcmp(argv[0], "--elf")) {
             compile = 1;
             outputMain = 1;
             argv++; --argc;
@@ -530,6 +534,10 @@ main(int argc, char **argv)
         gl_dat_offset = 0;
     }
 
+    if (gl_listing && !(gl_output == OUTPUT_DAT)) {
+        gl_srccomments = 1;
+    }
+    
     /* initialize the parser; we do that after command line processing
        so that command line options can influence it */
     Init();

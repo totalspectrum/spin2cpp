@@ -2,6 +2,9 @@ Version 3.8.5
 - Improve inline assembly: allow labels
 - Fix string constants in case labels (they should be treated as
   lists)
+- Big revision of how listing files are created. This is worse for all
+  assembly files (DAT section output is a bit weaker) but much better
+  for regular Spin files, which can now have listing files.
 - Add a check for recursive symbol definition
 
 Version 3.8.4

@@ -105,7 +105,10 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(f, "  [ -2 ]             compile for Prop2\n");
-    fprintf(f, "  [ -O ]             enable extra optimizations\n");
+    fprintf(f, "  [ -O# ]            set optimization level:\n");
+    fprintf(f, "          -O0 = no optimization\n");
+    fprintf(f, "          -O1 = basic optimization\n");
+    fprintf(f, "          -O2 = all optimization\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fflush(stderr);
@@ -138,7 +141,6 @@ main(int argc, char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
-    int listFile = 0;
     int outputFiles = 0;
     int outputBin = 0;
     int outputAsm = 0;
@@ -154,7 +156,8 @@ main(int argc, char **argv)
     size_t eepromSize = 32768;
     int useEeprom = 0;
     const char *target = NULL;
-
+    const char *listFile = NULL;
+    
 #if 0
     printf("fastspin: arguments are:\n");
     for (i = 0; i < argc; i++) {
@@ -228,7 +231,7 @@ main(int argc, char **argv)
     outputMain = 1;
     outputBin = 1;
     outputAsm = 1;
-    gl_optimize_flags |= (OPT_REMOVE_UNUSED_FUNCS|DEFAULT_ASM_OPTS);
+    gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
     gl_outputflags &= ~OUTFLAG_COG_DATA;
@@ -282,12 +285,7 @@ main(int argc, char **argv)
             outputDat = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-l")) {
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
-            gl_output = OUTPUT_DAT;
-            outputDat = 1;
-            listFile = 1;
+            gl_listing = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
             outputFiles = 1;
@@ -387,16 +385,24 @@ main(int argc, char **argv)
             incpath = opt;
             pp_add_to_path(&gl_pp, incpath);
         } else if (!strncmp(argv[0], "-O", 2)) {
-            // ignore bstc optimization options
-            // substitute our own
-            gl_optimize_flags |= EXTRA_ASM_OPTS;
+            // -O0 means no optimization
+            // -O1 means default optimization
+            // -O2 means extra optimization
+            int flag = argv[0][2];
+            if (flag == '0') {
+                gl_optimize_flags = 0;
+            } else if (flag == '1') {
+                gl_optimize_flags = DEFAULT_ASM_OPTS;
+            } else {
+                gl_optimize_flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
+            }
             argv++; --argc;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage(stderr, bstcMode);
         }
     }
-
+    
     if (!quiet) {
         PrintInfo(stdout, bstcMode);
     }
@@ -435,6 +441,10 @@ main(int argc, char **argv)
         gl_dat_offset = 0;
     }
 
+    if (gl_listing && !(gl_output == OUTPUT_DAT)) {
+        gl_srccomments = 1;
+    }
+    
     /* initialize the parser; we do that after command line processing
        so that command line options can influence it */
     Init();
@@ -461,6 +471,11 @@ main(int argc, char **argv)
         if (gl_errors > 0) {
             exit(1);
         }
+        /* set up output file names */
+        if (gl_listing) {
+            listFile = ReplaceExtension(P->fullname, ".lst");
+        }
+    
         if (outputDat) {
             outname = gl_outname;
             if (gl_gas_dat) {
@@ -486,10 +501,9 @@ main(int argc, char **argv)
                     outname = ReplaceExtension(outname, ".binary");
                 }
                 if (listFile) {
-                    OutputLstFile(outname, P);
-                } else {
-                    OutputDatFile(outname, P, outputBin);
+                    OutputLstFile(listFile, P);
                 }
+                OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
                     DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
                 }
@@ -522,6 +536,9 @@ main(int argc, char **argv)
             if (compile)  {
                 if (gl_errors > 0) {
                     remove(binname);
+                    if (listFile) {
+                        remove(listFile);
+                    }
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
@@ -530,6 +547,9 @@ main(int argc, char **argv)
                     ProcessSpinCode(Q, 1);
                 }
                 if (gl_errors == 0) {
+                    if (listFile) {
+                        OutputLstFile(listFile, Q);
+                    }
                     OutputDatFile(binname, Q, 1);
                     DoPropellerChecksum(binname, useEeprom ? eepromSize : 0);
                 }

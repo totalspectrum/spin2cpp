@@ -79,7 +79,6 @@ static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 static Operand *CogMemRef(Operand *addr, int offset);
-static void EmitDebugComment(IRList *irl, AST *ast);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -352,7 +351,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                 InsertAfterIR(irl, dest, newir);
                 dest = newir;
             }
-        } else if (newir->opc == OPC_COMMENT) {
+        } else if (newir->opc == OPC_COMMENT && !gl_srccomments) {
             /* leave out comments, they will be out of place */
         } else {
             InsertAfterIR(irl, dest, newir);
@@ -1072,7 +1071,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
-    //EmitDebugComment(irl, func->decl);
     AppendIRList(irl, &FuncData(func)->irheader);
 
     if (gl_output == OUTPUT_COGSPIN && FuncData(func)->asmaltname) {
@@ -2451,6 +2449,38 @@ GetAddressOf(IRList *irl, AST *expr)
     return NewImmediate(-1);
 }
 
+static void
+EmitComments(IRList *irl, AST *comment)
+{
+    Operand *r;
+    
+    while (comment) {
+        if (comment->kind == AST_COMMENT) {
+            /* for now ignore comments */
+#if 0
+            if (comment->d.string && !gl_srccomments) {
+                r = NewOperand(IMM_STRING, comment->d.string, 0);
+                EmitOp1(irl, OPC_COMMENT, r);
+            }
+#endif
+        } else if (comment->kind == AST_SRCCOMMENT) {
+            LineInfo *info = GetLineInfo(comment);
+            if (info && info->linedata && gl_srccomments) {
+                r = NewOperand(IMM_STRING, info->linedata, 0);
+                EmitOp1(irl, OPC_COMMENT, r);
+            }
+        } else {
+            ERROR(comment, "Internal error, expected comment node");
+        }
+        comment = comment->right;
+    }
+}
+
+static void
+EmitDebugComment(IRList *irl, AST *ast)
+{
+}
+
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
@@ -2458,7 +2488,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   Operand *val;
 
   while (expr && expr->kind == AST_COMMENTEDNODE) {
-    expr = expr->left;
+      EmitComments(irl, expr->right);          
+      expr = expr->left;
   }
   if (!expr) return NULL;
   if (IsConstExpr(expr)) {
@@ -2794,67 +2825,6 @@ FreeTempRegisters(IRList *irl, int starttempreg)
 }
 
 //
-// emit debug directives
-//
-static LexStream *current_lex = NULL;
-
-void
-ResetDebugComment(Module *P)
-{
-    current_lex = &P->L;
-    if (gl_debug) {
-        current_lex->lineCounter = 0;
-    }
-}
-
-static void
-EmitOneSrcComment(IRList *irl, int line, LexStream *L)
-{
-    LineInfo *srcinfo;
-    const char *theline;
-    int maxline;
-    Operand *c;
-    
-    srcinfo = (LineInfo*)flexbuf_peek(&L->lineInfo);
-    maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
-
-    if (line < 0 || line >= maxline) return;
-    
-    theline = srcinfo[line].linedata;
-    if (!theline) return;
-    // skip over preprocessor comments
-    if (theline[0] == '{' && theline[1] == '#') {
-        theline += 2;
-        while (*theline && *theline != '}') theline++;
-        if (*theline) theline++;
-    }
-    c = NewOperand(IMM_STRING, theline, 0);
-    EmitOp1(irl, OPC_COMMENT, c);
-}
-
-void
-EmitDebugComment(IRList *irl, AST *ast)
-{
-    LexStream *L;
-
-    if (!gl_debug) return;
-    if (!ast) return;
-    if (!current) return;
-    
-    L = ast->lexdata;
-    if (!L) return;
-    if (1) {
-        int line = ast->lineidx;
-        int i = L->lineCounter;
-        while (i <= line) {
-            EmitOneSrcComment(irl, i, L);
-            i++;
-        }
-        L->lineCounter = i;
-    }
-}
-
-//
 // a for loop gets a pattern like
 //
 //   initial code
@@ -2978,12 +2948,14 @@ static void CompileStatement(IRList *irl, AST *ast)
     Operand *botloop, *toploop;
     Operand *exitloop;
     int starttempreg;
-
+    AST *pendingComments = NULL;
+    
     if (!ast) return;
 
     starttempreg = FuncData(curfunc)->curtempreg;
     switch (ast->kind) {
     case AST_COMMENTEDNODE:
+        EmitComments(irl, ast->right);
         CompileStatement(irl, ast->left);
         break;
     case AST_RETURN:
@@ -3099,18 +3071,20 @@ static void CompileStatement(IRList *irl, AST *ast)
 	FreeTempRegisters(irl, starttempreg);
 	ast = ast->right;
 	if (ast->kind == AST_COMMENTEDNODE) {
-	  ast = ast->left;
+            pendingComments = ast->right;
+            ast = ast->left;
 	}
 	/* ast should be an AST_THENELSE */
 	CompileStatementList(irl, ast->left);
 	if (ast->right) {
-	  botloop = NewCodeLabel();
-	  EmitJump(irl, COND_TRUE, botloop);
-	  EmitLabel(irl, toploop);
-	  CompileStatementList(irl, ast->right);
-	  EmitLabel(irl, botloop);
+            EmitComments(irl, pendingComments);
+            botloop = NewCodeLabel();
+            EmitJump(irl, COND_TRUE, botloop);
+            EmitLabel(irl, toploop);
+            CompileStatementList(irl, ast->right);
+            EmitLabel(irl, botloop);
 	} else {
-	  EmitLabel(irl, toploop);
+            EmitLabel(irl, toploop);
 	}
 	break;
     case AST_YIELD:
@@ -3139,9 +3113,10 @@ CompileFunctionBody(Function *f)
 {
     IRList *irl = FuncIRL(f);
     IRList *irheader = &FuncData(f)->irheader;
+
+    EmitComments(irheader, f->doccomment);
     
     nextlabel = quitlabel = NULL;
-    EmitDebugComment(irheader, f->decl);
     
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
@@ -3350,7 +3325,6 @@ AssignFuncNames(IRList *irl, Module *P)
     
     (void)irl; // not used
 
-    ResetDebugComment(P);
     if (!P->bedata) {
         P->bedata = calloc(sizeof(AsmModData), 1);
     }
@@ -3918,6 +3892,7 @@ CompileConsts(IRList *irl, AST *conblock)
     for (upper = conblock; upper; upper = upper->right) {
         ast = upper->left;
         if (ast->kind == AST_COMMENTEDNODE) {
+            EmitComments(irl, ast->right);
             ast = ast->left;
         }
         switch (ast->kind) {

@@ -212,7 +212,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
 {
     Flexbuf *databuf;
     Flexbuf *relocbuf;
-    uint32_t *data;
+    uint8_t *data;
     int len;
     int addr;
     Reloc *nextreloc;
@@ -224,7 +224,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         ERROR(NULL, "Internal: bad binary blob");
         return;
     }
-    flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
+    if (gl_p2) {
+        flexbuf_printf(fb, "\talignl\n"); // ensure long alignment
+    } else {
+        flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
+    }
     flexbuf_printf(fb, label->name);
     flexbuf_printf(fb, "\n");
     databuf = (Flexbuf *)op->name;
@@ -242,43 +246,86 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         flexbuf_addchar(databuf, 0);
         len = flexbuf_curlen(databuf);
     }
-    data = (uint32_t *)flexbuf_peek(databuf);
+    data = (uint8_t *)flexbuf_peek(databuf);
     addr = 0;
     while (addr < len) {
-        flexbuf_printf(fb, "\tlong\t");
+        // figure out how many bytes we can output
+        int bytesPending = len - addr;
+        int bytesToReloc;
+
+    again:
         if (relocs > 0) {
-            // see if this particular long needs a reloc
-            if (nextreloc->addr == addr) {
-                int offset = nextreloc->value;
-                if (offset == 0) {
-                    flexbuf_printf(fb, "@@@%s\n", label->name);
-                } else if (offset > 0) {
-                    flexbuf_printf(fb, "@@@%s + %d\n", label->name, offset);
-                } else {
-                    flexbuf_printf(fb, "@@@%s - %d\n", label->name, -offset);
+            bytesToReloc = nextreloc->off - addr;
+            if (bytesToReloc == 0) {
+                intptr_t offset;
+                // we have to output a relocation or debug entry now
+                if (nextreloc->kind == RELOC_KIND_LONG) {
+                    if (bytesPending < 4) {
+                        ERROR(NULL, "internal error: not enough space for reloc");
+                        return;
+                    }
+                    
+                    flexbuf_printf(fb, "\tlong\t");
+                    offset = nextreloc->val;
+                    if (offset == 0) {
+                        flexbuf_printf(fb, "@@@%s\n", label->name);
+                    } else if (offset > 0) {
+                        flexbuf_printf(fb, "@@@%s + %d\n", label->name, offset);
+                    } else {
+                        flexbuf_printf(fb, "@@@%s - %d\n", label->name, -offset);
+                    }
+                    data += 4;
+                    addr += 4;
+                    nextreloc++;
+                    --relocs;
+                    continue;
                 }
-                data++;
-                nextreloc++;
-                addr += 4;
-                --relocs;
+                if (nextreloc->kind == RELOC_KIND_DEBUG) {
+                    LineInfo *info = (LineInfo *)nextreloc->val;
+                    if (info && info->linedata) {
+                        flexbuf_printf(fb, "'-' %s", info->linedata);
+                    }
+                    nextreloc++;
+                    --relocs;
+                    goto again;
+                }
+                ERROR(NULL, "internal error: bad reloc kind %d", nextreloc->kind);
+                return;
+            }
+            if (bytesPending > bytesToReloc) {
+                bytesPending = bytesToReloc;
+            }
+        }
+
+        /* if we have more than 7 bytes pending, look for runs of data */
+        if (bytesPending > 4) {
+            /* check for a run of data */
+            runlen = 0;
+            lastdata = data[0];
+            while (data[runlen] == lastdata && addr < len && runlen < bytesPending) {
+                runlen++;
+            }
+            if (runlen > 4) {
+                /* output as long if we can */
+                if (0 == (runlen & 3)) {
+                    flexbuf_printf(fb, "\tlong\t$%08x[%d]\n", lastdata, runlen/4);
+                } else {
+                    flexbuf_printf(fb, "\tbyte\t$%02x[%d]\n", lastdata, runlen);
+                }
+                addr += runlen;
+                data += runlen;
                 continue;
             }
         }
-        /* check for a run of data */
-        runlen = 1;
-        lastdata = data[0];
-        data++;
-        addr += 4;
-        while (data[0] == lastdata && addr < len && (relocs == 0 || nextreloc->addr != addr))
-        {
-            runlen++;
-            data++;
+        /* try to chunk into longs if we can */
+        if (bytesPending >= 4) {
+            flexbuf_printf(fb, "\tlong\t$%02x%02x%02x%02x\n", data[3], data[2], data[1], data[0]);
+            data += 4;
             addr += 4;
-        }
-        if (runlen > 1) {
-            flexbuf_printf(fb, "$%08x[%d]\n", lastdata, runlen);
         } else {
-            flexbuf_printf(fb, "$%08x\n", lastdata);
+            flexbuf_printf(fb, "\tbyte\t$%02x\n", data[0]);
+            data++;
+            addr++;
         }
     }
 }
@@ -487,6 +534,23 @@ void
 DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
 {
     const char *str;
+    if (ir->opc == OPC_COMMENT) {
+        if (ir->dst->kind != IMM_STRING) {
+            ERROR(NULL, "COMMENT is not a string");
+            return;
+        }
+        flexbuf_addstr(fb, "' ");
+        str = ir->dst->name;
+        while (*str && *str != '\n') {
+            flexbuf_addchar(fb, *str);
+            str++;
+        }
+        flexbuf_addchar(fb, '\n');
+        return;
+    }
+    if (ir->opc == OPC_DUMMY) {
+        return;
+    }
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -676,28 +740,12 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     }
     
     switch(ir->opc) {
-    case OPC_DUMMY:
-        break;
     case OPC_DEAD:
         /* no code necessary, internal opcode */
         flexbuf_addstr(fb, "\t.dead\t");
         flexbuf_addstr(fb, ir->dst->name);
         flexbuf_addstr(fb, "\n");
         break;
-    case OPC_COMMENT:
-        if (ir->dst->kind != IMM_STRING) {
-            ERROR(NULL, "COMMENT is not a string");
-            return;
-        }
-        flexbuf_addstr(fb, "' ");
-        str = ir->dst->name;
-        while (*str && *str != '\n') {
-            flexbuf_addchar(fb, *str);
-            str++;
-        }
-        flexbuf_addchar(fb, '\n');
-        break;
-        /* fall through */
     case OPC_LITERAL:
         PrintOperand(fb, ir->dst);
 	break;

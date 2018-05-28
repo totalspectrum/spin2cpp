@@ -59,6 +59,7 @@ int gl_dat_offset;
 int gl_printprogress = 0;
 int gl_depth = 0;
 int gl_infer_ctypes = 0;
+int gl_listing = 0;
 
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
@@ -800,6 +801,26 @@ AssignObjectOffsets(Module *P)
     P->varsize = offset;
     current = save;
 }
+
+#if 0
+/*
+ * transform AST_SRCCOMMENTs into comments with the line data of the 
+ * next non-comment AST
+ */
+static void
+TransformSrcCommentsBlock(AST *ast, AST *upper)
+{
+    while (ast) {
+        if (ast->kind == AST_SRCCOMMENT) {
+            ast->kind = AST_COMMENT;
+            ast->d.string = "+++";
+        }
+        TransformSrcCommentsBlock(ast->left, ast);
+        upper = ast;
+        ast = ast->right;
+    }
+}
+#endif
 
 /*
  * process a parsed module

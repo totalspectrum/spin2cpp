@@ -19,9 +19,16 @@
 // used for error messages
 AST *last_ast;
 
+// accumulated comments
+static AST *comment_chain;
+
 /* flag: if set, run the  preprocessor */
 int gl_preprocess = 1;
 
+/* flag: if set, add original source as comments */
+int gl_srccomments = 0;
+
+/* some ctype style functions that work on non-ASCII tokens */
 static inline int
 safe_isalpha(unsigned int x) {
     return (x < 255) ? isalpha(x) : 0;
@@ -157,6 +164,20 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
 
 }
 
+/*
+ * utility function: start a new line
+ */
+static void startNewLine(LexStream *L)
+{
+    LineInfo lineInfo;
+
+    flexbuf_addchar(&L->curLine, 0); // terminate the line
+    lineInfo.linedata = flexbuf_get(&L->curLine);
+    lineInfo.fileName = L->fileName;
+    lineInfo.lineno = L->lineCounter;
+    flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+}
+
 #define TAB_STOP 8
 /*
  *
@@ -165,20 +186,15 @@ int
 lexgetc(LexStream *L)
 {
     int c;
-    LineInfo lineInfo;
     if (L->ungot_ptr) {
         --L->ungot_ptr;
         return L->ungot[L->ungot_ptr];
     }
     if (L->pendingLine) {
-      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      lineInfo.linedata = flexbuf_get(&L->curLine);
-      lineInfo.fileName = L->fileName;
-      lineInfo.lineno = L->lineCounter;
-      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
-      L->lineCounter ++;
-      L->pendingLine = 0;
-      L->colCounter = 0;
+        startNewLine(L);
+        L->lineCounter++;
+        L->pendingLine = 0;
+        L->colCounter = 0;
     }
     c = (L->getcf(L));
     if (c == '\n') {
@@ -191,11 +207,7 @@ lexgetc(LexStream *L)
         L->colCounter++;
     }
     if (c == SP_EOF) {
-      flexbuf_addchar(&L->curLine, 0); // 0 terminate the line
-      lineInfo.linedata = flexbuf_get(&L->curLine);
-      lineInfo.lineno = L->lineCounter;
-      lineInfo.fileName = L->fileName;
-      flexbuf_addmem(&L->lineInfo, (char *)&lineInfo, sizeof(lineInfo));
+        startNewLine(L);
     } else {
         flexbuf_addchar(&L->curLine, c);
     }
@@ -382,7 +394,8 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     AST *ast = NULL;
     int startColumn = L->colCounter - 1;
     char *idstr;
-
+    int gatherComments = 1;
+    
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
@@ -413,6 +426,10 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             if (sym->type == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
+                if (comment_chain) {
+                    ast = AddToList(comment_chain, ast);
+                    comment_chain = NULL;
+                }
                 *ast_ptr = ast;
                 return SP_INSTR;
             }
@@ -476,11 +493,24 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_CASE:
                 EstablishIndent(L, startColumn);
                 break;
+            case SP_LONG:
+            case SP_BYTE:
+            case SP_WORD:
+                if (L->in_block == SP_ASM || L->in_block == SP_DAT) {
+                    gatherComments = 1;
+                } else {
+                    gatherComments = 0;
+                }
+                break;
             default:
+                gatherComments = 0;
                 break;
             }
-            if (!ast)
-                ast = GetComments();
+            if (!ast) {
+                if (gatherComments) {
+                    ast = GetComments();
+                }
+            }
             *ast_ptr = ast;
             return c;
         }
@@ -530,8 +560,6 @@ parseString(LexStream *L, AST **ast_ptr)
 // keep track of accumulated comments
 //
 
-AST *comment_chain;
-
 AST *
 GetComments(void)
 {
@@ -542,6 +570,26 @@ GetComments(void)
         ret->d.string = NULL;
     }
     return ret;
+}
+
+/* try to output only one AST_SRCCOMMENT per input line, so check here for
+ * duplication
+ */
+static void CheckSrcComment( LexStream *L )
+{
+    static LexStream *s_lastStream;
+    static int s_lastLine = -1;
+    static const char *s_lastFileName;
+    
+    if (s_lastStream == L && s_lastLine == L->lineCounter
+        && s_lastFileName == L->fileName)
+    {
+        return;
+    }
+    comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
+    s_lastStream = L;
+    s_lastLine = L->lineCounter;
+    s_lastFileName = L->fileName;
 }
 
 //
@@ -566,6 +614,9 @@ skipSpace(LexStream *L, AST **ast_ptr)
     flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
 again:
+    if (gl_srccomments && L->eoln) {
+        CheckSrcComment(L);
+    }
     while (c == ' ' || c == '\t') {
         c = lexgetc(L);
     }
@@ -739,6 +790,7 @@ getToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
     int peekc;
+    
     c = skipSpace(L, &ast);
 
 //    printf("L->linecounter=%d\n", L->lineCounter);

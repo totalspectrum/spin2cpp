@@ -20,14 +20,16 @@
 
     extern AST *last_ast;
     
-/* Skip Comments */
-void
-SkipComments(void)
+/* fetch pending comments and wrap the AST up with them */
+AST *
+WrapASTWithComments(AST *ast)
 {
-    AST *ast = GetComments();
-    if (ast && ast->d.string) {
-        printf("got a comment: %s\n", ast->d.string);
+    AST *comment = GetComments();
+    if (comment) {
+//        printf("got a comment: %s\n", comment->d.string);
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
+    return ast;
 }
 
 /* create an AST in a comment holder */
@@ -50,7 +52,7 @@ NewCommentedInstr(AST *instr)
     AST *ast;
 
     ast = NewAST(AST_INSTRHOLDER, instr, NULL);
-    if (comment && comment->d.string) {
+    if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
         ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
     return ast;
@@ -671,7 +673,7 @@ datline:
         AST *comment = GetComments();
         AST *ast;
         ast = $1;
-        if (comment && comment->d.string) {
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
             linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
         } else {
             linebreak = NewAST(AST_LINEBREAK, NULL, NULL);

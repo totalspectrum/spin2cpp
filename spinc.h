@@ -53,16 +53,20 @@ extern char *gl_header1; /* first comment line to prepend to files */
 extern char *gl_header2; /* second comment line to prepend to files */
 extern int gl_normalizeIdents; /* if set, change case of all identifiers to all lower except first letter upper */
 extern int gl_debug;    /* flag: if set, include debugging directives */
+extern int gl_srccomments; /* if set, include original source as comments */
+extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_REMOVE_UNUSED_FUNCS 0x01
 #define OPT_PERFORM_CSE         0x02
 #define OPT_REMOVE_HUB_BSS      0x04
-#define OPT_NO_ASM 0x100
+#define OPT_BASIC_ASM           0x08  /* basic peephole optimizations &c */
+#define OPT_INLINE_SMALLFUNCS   0x10  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
 
-#define DEFAULT_ASM_OPTS        OPT_PERFORM_CSE
-#define EXTRA_ASM_OPTS          OPT_REMOVE_HUB_BSS /* extras added with -O */
+#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
@@ -318,11 +322,19 @@ typedef struct DataBlockOutFuncs {
  * of the dat section at that long.
  * The relocs should be sorted in order of increasing offset, so we can
  * easily process them in order along with the output.
+ *
+ * We also re-use the Reloc struct to hold debug information as well, so
+ * that we can provide source listings for the DAT section contents.
+ * for that purpose we emit DebugEntry
  */
 typedef struct Reloc {
-    int  addr;    // the address of the long to relocate (offset from dat base)
-    int  value;   // the value to add to dat base at that location
+    int32_t  kind;    // reloc or debug
+    int32_t  off;     // the address the entry affects (offset from dat base)
+    intptr_t val;     // value to add to dat base, or pointer to LineInfo
 } Reloc;
+
+#define RELOC_KIND_LONG  0
+#define RELOC_KIND_DEBUG 1
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);

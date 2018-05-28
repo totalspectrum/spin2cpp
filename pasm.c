@@ -327,6 +327,7 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub);
             break;
         case AST_COMMENT:
+        case AST_SRCCOMMENT:
             break;
         case AST_ALIGN:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub);
