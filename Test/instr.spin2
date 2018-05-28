@@ -6,6 +6,10 @@ DAT
   _ret_		mov    y, ##$DEADBEEF
 		wrpin  #1, #2
 		akpin  #2
+		neg    a
+		neg    a, a
+		decod  a
+		decod  a, a
 		wrpin  #1, y
 		akpin  y
 		wrlong #2,PTRB++
@@ -27,3 +31,4 @@ DAT
 		getbyte 0,y,#0
 		
 y		long	0
+a		long	1

@@ -1,5 +1,7 @@
 Version 3.8.6
 - Fixed ##label arguments to rdbyte/wrlong/etc.
+- Fixed a bug where aliases like neg a -> neg a,a could generate
+  incorrect code
 
 Version 3.8.5
 - Improve inline assembly: allow labels

@@ -554,7 +554,9 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     if (instr->ops == TWO_OPERANDS_OPTIONAL && numoperands == 1) {
         // duplicate the operand
         // so neg r0 -> neg r0,r0
-        operand[numoperands++] = operand[0];
+        operand[numoperands] = operand[0];
+        opimm[numoperands] = opimm[0];
+        numoperands++;
     } else if (instr->ops == TWO_OPERANDS_DEFZ && numoperands == 1) {
         // supply #0 for second operand
         int defval = 0;
