@@ -52,7 +52,7 @@ NewCommentedInstr(AST *instr)
     AST *ast;
 
     ast = NewAST(AST_INSTRHOLDER, instr, NULL);
-    if (comment && comment->d.string) {
+    if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
         ast = NewAST(AST_COMMENTEDNODE, ast, comment);
     }
     return ast;
@@ -673,7 +673,7 @@ datline:
         AST *comment = GetComments();
         AST *ast;
         ast = $1;
-        if (comment && comment->d.string) {
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
             linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
         } else {
             linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
