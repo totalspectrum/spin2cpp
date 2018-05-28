@@ -3713,11 +3713,6 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     ;
 
-static const char *builtin_lmm_p2 =
-    "\tmov ptra, ##@stackspace\n"
-    "\tjmp #@hubentry\n"
-    ;
-
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
  * more things to be saved in abort/catch
  */
@@ -3805,8 +3800,8 @@ const char *builtin_wrcog =
 static void
 EmitBuiltins(IRList *irl)
 {
-    if (HUB_CODE) {
-        const char *builtin_lmm = gl_p2 ? builtin_lmm_p2 : builtin_lmm_p1;
+    if (HUB_CODE && !gl_p2) {
+        const char *builtin_lmm = builtin_lmm_p1;
         Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
         EmitOp1(irl, OPC_LITERAL, loop);
     }
@@ -3962,9 +3957,9 @@ extern Module *globalModule;
  *         cogstop(cogid)
  * spininit:
  *         mov sp, arg1
- *         mov objbase, (sp)
+ *         rdlong objbase, sp
  *         add sp, #4
- *         mov pc, sp
+ *         rdlong pc, sp
  *         add sp #4
  *         call result1 using stackcall
  *         jmp  #exit
@@ -4036,6 +4031,10 @@ EmitMain_P2(IRList *irl, Module *P)
 {
     Function *firstfunc;
     const char *firstfuncname;
+    IR *ir;
+    Operand *spinlabel;
+    Operand *const4 = NewImmediate(4);
+    Operand *result1 = GetResultReg(0);
     
     arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
     firstfunc = P->functions;
@@ -4048,8 +4047,12 @@ EmitMain_P2(IRList *irl, Module *P)
     ValidateStackptr();
     ValidateObjbase();
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
+    spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
+    ir = EmitOp2(irl, OPC_CMPS, stackptr, NewImmediate(0));
+    ir->flags |= FLAG_WZ;
+    EmitJump(irl, COND_NE, spinlabel);
     EmitMove(irl, stackptr, stacklabel);
     EmitOp1(irl, OPC_HUBSET, NewImmediate(255));
     if (firstfunc->cog_code || COG_CODE) {
@@ -4060,6 +4063,14 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitLabel(irl, cogexit);
     EmitOp1(irl, OPC_COGID, arg1);
     EmitOp1(irl, OPC_COGSTOP, arg1);
+
+    // and now the code for when we are started with Spin coginit
+    EmitLabel(irl, spinlabel);
+    EmitOp2(irl, OPC_RDLONG, objbase, stackptr);
+    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    EmitOp2(irl, OPC_RDLONG, result1, stackptr);
+    EmitOp1(irl, OPC_CALL, result1);
+    EmitJump(irl, COND_TRUE, cogexit);
 }
 
 /*
