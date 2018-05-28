@@ -74,20 +74,31 @@ static bool AppendOneSrcLine(Flexbuf *f, int line, LexStream *L, bool needsStart
     LineInfo *srcinfo;
     const char *theline;
     const char *prevline = NULL;
+    const char *nextline = NULL;
     int maxline;
 
     srcinfo = (LineInfo *)flexbuf_peek(&L->lineInfo);
     maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
     if (line < 0 || line >= maxline) return false;
 
-    if (line > 0) {
-        prevline = srcinfo[line-1].linedata;
-    }
     theline = srcinfo[line].linedata;
     if (!theline) return true;
 
     if (!strncmp(theline, "'-' ", 4)) {
-        return false; // skip this line
+        // we may want to skip this line, if the next line is
+        // not a comment
+        if (line < maxline-1) {
+            nextline = srcinfo[line+1].linedata;
+        }
+        if (!strncmp(nextline, "'-' ", 4)) {
+            theline = theline + 4;
+        } else {
+            return false; // skip this line
+        }
+    } else {
+        if (line > 0) {
+            prevline = srcinfo[line-1].linedata;
+        }
     }
     if (prevline && !strncmp(prevline, "'-' ", 4)) {
         theline = prevline + 4;

@@ -993,6 +993,34 @@ padBytes(Flexbuf *f, AST *ast, int bytes)
 }
 
 /*
+ * send out all comments pending, and return the next non-comment node
+ */
+AST *
+SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
+{
+    Reloc r;
+    while (ast) {
+        switch (ast->kind) {
+        case AST_COMMENT:
+            /* ignore, for now */
+            break;
+        case AST_SRCCOMMENT:
+            if (relocs) {
+                r.kind = RELOC_KIND_DEBUG;
+                r.off = flexbuf_curlen(f);
+                r.val = (intptr_t)GetLineInfo(ast);
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            }
+            break;
+        default:
+            return ast;
+        }
+        ast = ast->right;
+    }
+    return ast;
+}
+
+/*
  * print out a data block
  */
 void
@@ -1012,8 +1040,14 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     
     if (gl_errors != 0)
         return;
-    for (top = P->datblock; top; top = top->right) {
+    top = P->datblock;
+    while (top) {
         ast = top;
+        if (top->kind == AST_COMMENTEDNODE) {
+            top = SendComments(f, top->right, relocs);
+        } else {
+            top = top->right;
+        }
         while (ast && ast->kind == AST_COMMENTEDNODE) {
             if (startAst) {
                 (*startAst)(f, ast);
