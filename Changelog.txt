@@ -1,3 +1,6 @@
+Version 3.8.6
+- Fixed ##label arguments to rdbyte/wrlong/etc.
+
 Version 3.8.5
 - Improve inline assembly: allow labels
 - Fix string constants in case labels (they should be treated as

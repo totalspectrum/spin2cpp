@@ -333,11 +333,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     if (opimm) {
         // user provided an immediate value; make sure it
         // fits in $00-$ff
-        if (!IsConstExpr(ast)) {
-            ERROR(ast, "bad immediate value");
-            return 0x1ff;
-        }
-        val = EvalConstExpr(ast);
+        val = EvalPasmExpr(ast);
         if ( (val > 0xff) && 0 == (opimm & BIG_IMM_SRC) ) {
             WARNING(ast, "immediate value out of range");
         }
