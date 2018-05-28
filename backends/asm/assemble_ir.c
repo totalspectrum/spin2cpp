@@ -534,6 +534,23 @@ void
 DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
 {
     const char *str;
+    if (ir->opc == OPC_COMMENT) {
+        if (ir->dst->kind != IMM_STRING) {
+            ERROR(NULL, "COMMENT is not a string");
+            return;
+        }
+        flexbuf_addstr(fb, "' ");
+        str = ir->dst->name;
+        while (*str && *str != '\n') {
+            flexbuf_addchar(fb, *str);
+            str++;
+        }
+        flexbuf_addchar(fb, '\n');
+        return;
+    }
+    if (ir->opc == OPC_DUMMY) {
+        return;
+    }
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -723,28 +740,12 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     }
     
     switch(ir->opc) {
-    case OPC_DUMMY:
-        break;
     case OPC_DEAD:
         /* no code necessary, internal opcode */
         flexbuf_addstr(fb, "\t.dead\t");
         flexbuf_addstr(fb, ir->dst->name);
         flexbuf_addstr(fb, "\n");
         break;
-    case OPC_COMMENT:
-        if (ir->dst->kind != IMM_STRING) {
-            ERROR(NULL, "COMMENT is not a string");
-            return;
-        }
-        flexbuf_addstr(fb, "' ");
-        str = ir->dst->name;
-        while (*str && *str != '\n') {
-            flexbuf_addchar(fb, *str);
-            str++;
-        }
-        flexbuf_addchar(fb, '\n');
-        break;
-        /* fall through */
     case OPC_LITERAL:
         PrintOperand(fb, ir->dst);
 	break;

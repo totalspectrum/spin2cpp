@@ -67,8 +67,9 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
 // normally, this should just append line "line"
 // however, if the line starts with '-' then skip it
 // if the previous line starts with '-', then use that previous line
-
-static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
+// returns true if something was printed
+//
+static bool AppendOneSrcLine(Flexbuf *f, int line, LexStream *L, bool needsStart)
 {
     LineInfo *srcinfo;
     const char *theline;
@@ -77,16 +78,16 @@ static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
 
     srcinfo = (LineInfo *)flexbuf_peek(&L->lineInfo);
     maxline = flexbuf_curlen(&L->lineInfo) / sizeof(LineInfo);
-    if (line < 0 || line >= maxline) return;
+    if (line < 0 || line >= maxline) return false;
 
     if (line > 0) {
         prevline = srcinfo[line-1].linedata;
     }
     theline = srcinfo[line].linedata;
-    if (!theline) return;
+    if (!theline) return true;
 
     if (!strncmp(theline, "'-' ", 4)) {
-        return; // skip this line
+        return false; // skip this line
     }
     if (prevline && !strncmp(prevline, "'-' ", 4)) {
         theline = prevline + 4;
@@ -99,9 +100,10 @@ static void AppendOneSrcLine(Flexbuf *f, int line, LexStream *L)
     }
 
     AddRestOfLine(f, theline);
+    return true;
 }
 
-static void catchUpToLine(Flexbuf *f, LexStream *L, int line, bool needsStart)
+static bool catchUpToLine(Flexbuf *f, LexStream *L, int line, bool needsStart)
 {
     int i;
     
@@ -110,11 +112,11 @@ static void catchUpToLine(Flexbuf *f, LexStream *L, int line, bool needsStart)
         if (needsStart) {
             startNewLine(f);
         }
-        needsStart = true;
-        AppendOneSrcLine(f, i, L);
+        needsStart = AppendOneSrcLine(f, i, L, needsStart);
         i++;
     }
     L->lineCounter = i;
+    return needsStart;
 }
 
 static int ignoreAst(AST *ast)
@@ -122,6 +124,7 @@ static int ignoreAst(AST *ast)
     if (!ast) return 1;
     switch (ast->kind) {
     case AST_COMMENT:
+    case AST_SRCCOMMENT:
     case AST_COMMENTEDNODE:
     case AST_LINEBREAK:
         return 1;
@@ -131,10 +134,12 @@ static int ignoreAst(AST *ast)
 }
 static void lstStartAst(Flexbuf *f, AST *ast)
 {
+    bool needsStart;
+    
     if (ignoreAst(ast)) {
         return;
     }
-    catchUpToLine(f, ast->lexdata, ast->lineidx, true);
+    needsStart = catchUpToLine(f, ast->lexdata, ast->lineidx, true);
 
     // update PCs as appropriate
     switch (ast->kind) {
@@ -156,7 +161,9 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     default:
         break;
     }
-    startNewLine(f);
+    if (needsStart) {
+        startNewLine(f);
+    }
 }
 
 static void lstEndAst(Flexbuf *f, AST *ast)

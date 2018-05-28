@@ -493,6 +493,15 @@ parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_CASE:
                 EstablishIndent(L, startColumn);
                 break;
+            case SP_LONG:
+            case SP_BYTE:
+            case SP_WORD:
+                if (L->in_block == SP_ASM || L->in_block == SP_DAT) {
+                    gatherComments = 1;
+                } else {
+                    gatherComments = 0;
+                }
+                break;
             default:
                 gatherComments = 0;
                 break;
