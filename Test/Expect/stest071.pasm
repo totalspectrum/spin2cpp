@@ -25,7 +25,7 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	long	$11223344
+	byte	$44, $33, $22, $11
 	long	@@@_dat_ + 4
 	org	COG_BSS_START
 _var_04

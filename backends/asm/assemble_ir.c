@@ -207,6 +207,8 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     flexbuf_addchar(fb, '\t');
 }
 
+#define MAX_BYTES_ON_LINE 16
+
 static void
 OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
 {
@@ -298,7 +300,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         }
 
         /* if we have more than 7 bytes pending, look for runs of data */
-        if (bytesPending > 4) {
+        if (bytesPending > MAX_BYTES_ON_LINE) {
             /* check for a run of data */
             runlen = 0;
             lastdata = data[0];
@@ -306,7 +308,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                 runlen++;
             }
             if (runlen > 4) {
-                /* output as long if we can */
+                /* output as long as we can */
                 if (0 == (runlen & 3)) {
                     flexbuf_printf(fb, "\tlong\t$%08x[%d]\n", lastdata, runlen/4);
                 } else {
@@ -318,15 +320,18 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
             }
         }
         /* try to chunk into longs if we can */
-        if (bytesPending >= 4) {
-            flexbuf_printf(fb, "\tlong\t$%02x%02x%02x%02x\n", data[3], data[2], data[1], data[0]);
-            data += 4;
-            addr += 4;
-        } else {
-            flexbuf_printf(fb, "\tbyte\t$%02x\n", data[0]);
-            data++;
-            addr++;
+        if (bytesPending > MAX_BYTES_ON_LINE) {
+            bytesPending = MAX_BYTES_ON_LINE;
         }
+        flexbuf_printf(fb, "\tbyte\t$%02x", data[0]);
+        data++;
+        addr++;
+        bytesPending--;
+        while (bytesPending > 0) {
+            flexbuf_printf(fb, ", $%02x", data[0]);
+            data++; addr++; --bytesPending;
+        }
+        flexbuf_printf(fb,"\n");
     }
 }
 
