@@ -187,6 +187,7 @@ RemoveCSEUsing(CSESet *set, AST *modified)
         // it's all good here
         break;
     case AST_MEMREF:
+    case AST_HWREG:
         ClearMemoryCSESet(set);
         return;
     default:
