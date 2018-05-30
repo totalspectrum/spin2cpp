@@ -58,6 +58,7 @@ InstrReadsDst(IR *ir)
   case OPC_RDBYTE:
   case OPC_RDWORD:
   case OPC_RDLONG:
+  case OPC_REPEAT_END: // this is a dummy
     return false;
   default:
     break;
@@ -77,6 +78,7 @@ InstrSetsDst(IR *ir)
   case OPC_WRLONG:
   case OPC_WRWORD:
   case OPC_WRBYTE:
+  case OPC_REPEAT_END:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
@@ -462,7 +464,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
             return false;
         }
-        if (ir->cond == COND_TRUE && ir->opc == OPC_JUMP) {
+        if (ir->cond == COND_TRUE && (ir->opc == OPC_JUMP || ir->opc == OPC_REPEAT_END)) {
             return true;
         }
     }
@@ -948,11 +950,11 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 } else if (IsImmediate(ir->src)) {
-                    int sawchange;
-                    change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
-                    if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
+                    change |= (PropagateConstForward(ir_next, ir->dst, ir->src));
+                    if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
                         // we no longer need the original mov
                         DeleteIR(irl, ir);
+                        change |= 1;
                     }
                 } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
@@ -2039,7 +2041,14 @@ OptimizeP2(IRList *irl)
                     repir->src = var;
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
+                    if (labir->next) {
+                        labir->addr = labir->next->addr;
+                    } else {
+                        labir->addr = ir->addr+1;
+                    }
                     ir->opc = OPC_REPEAT_END;
+                    ir->aux = (void *)labir;
+                    changed = 1;
                 }
             }
         }
