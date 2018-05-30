@@ -800,6 +800,7 @@ CheckSimpleLoop(AST *stmt)
     if (updateVar->kind != AST_IDENTIFIER)
         return;
     sym = LookupSymbol(updateVar->d.string);
+    if (!sym) return;
     switch (sym->type) {
     case SYM_PARAMETER:
     case SYM_RESULT:
