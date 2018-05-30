@@ -4,6 +4,7 @@ Version 3.8.6
   incorrect code
 - Fixed CSE where hardware registers are set so that they do not
   invalidate all entries
+- Made some improvements to listing files
 
 Version 3.8.5
 - Improve inline assembly: allow labels
