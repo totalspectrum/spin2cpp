@@ -1,4 +1,5 @@
 Version 3.8.6
+- Added P2 optimization to use REP instruction when possible
 - Fixed ##label arguments to rdbyte/wrlong/etc.
 - Fixed a bug where aliases like neg a -> neg a,a could generate
   incorrect code
