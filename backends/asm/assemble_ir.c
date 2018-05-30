@@ -556,6 +556,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     if (ir->opc == OPC_DUMMY) {
         return;
     }
+    if (ir->opc == OPC_REPEAT_END) {
+        // not an actual instruction, just a marker for
+        // avoiding moving instructions
+        return;
+    }
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
@@ -708,6 +713,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             break;
         default:
             flexbuf_addstr(fb, "\t");
+            if (ir->opc == OPC_REPEAT) {
+                flexbuf_addstr(fb, "@");
+            }
             PrintOperand(fb, ir->dst);
             flexbuf_addstr(fb, ", ");
             PrintOperandSrc(fb, ir->src, ir->srceffect);

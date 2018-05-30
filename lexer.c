@@ -1587,7 +1587,7 @@ instr_p2[] = {
     { "xzero",  0x0cb00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "xcont",  0x0cc00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "rep",    0x0cd00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "rep",    0x0cd00000, P2_TWO_OPERANDS, OPC_REPEAT, 0 },
   
     { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
     { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },

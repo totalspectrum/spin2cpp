@@ -98,6 +98,7 @@ static bool IsJump(IR *ir)
   switch (ir->opc) {
   case OPC_JUMP:
   case OPC_DJNZ:
+  case OPC_REPEAT_END:
   case OPC_GENERIC_BRANCH:
     return true;
   default:
@@ -262,6 +263,7 @@ JumpDest(IR *jmp)
 {
     switch (jmp->opc) {
     case OPC_DJNZ:
+    case OPC_REPEAT_END:
         return jmp->src;
     default:
         return jmp->dst;
@@ -2003,6 +2005,42 @@ OptimizeP2(IRList *irl)
                 ir->src = previr->src;
                 DeleteIR(irl, previr);
                 changed = 1;
+            }
+        }
+        if (opc == OPC_DJNZ && ir->cond == COND_TRUE) {
+            // see if we can change the loop to use "repeat"
+            Operand *var = ir->dst;
+            Operand *dst = ir->src;
+            IR *labir = NULL;
+            IR *pir = NULL;
+            IR *repir = NULL;
+            bool canRepeat = true;
+            if (IsDeadAfter(ir, var)) {
+                for (pir = ir->prev; pir; pir = pir->prev) {
+                    if (pir->opc == OPC_LABEL) {
+                        if (pir->dst != dst) {
+                            canRepeat = false;
+                        }
+                        break;
+                    } else if (IsBranch(pir)) {
+                        canRepeat = false;
+                        break;
+                    } else if (pir->src == var || pir->dst == var) {
+                        canRepeat = false;
+                        break;
+                    }
+                }
+                if (pir && canRepeat && pir->prev) {
+                    pir = pir->prev;
+                    labir = NewIR(OPC_LABEL);
+                    labir->dst = NewCodeLabel();
+                    repir = NewIR(OPC_REPEAT);
+                    repir->dst = labir->dst;
+                    repir->src = var;
+                    InsertAfterIR(irl, pir, repir);
+                    InsertAfterIR(irl, ir, labir);
+                    ir->opc = OPC_REPEAT_END;
+                }
             }
         }
         ir = ir_next;

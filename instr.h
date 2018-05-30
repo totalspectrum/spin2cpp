@@ -75,6 +75,8 @@ typedef enum IROpcode {
     /* p2 instructions */
     OPC_ADDCT1,
     OPC_HUBSET,
+    OPC_REPEAT,
+    OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     
     /* an instruction unknown to the optimizer */
     /* this must immediately follow the actual instructions */
