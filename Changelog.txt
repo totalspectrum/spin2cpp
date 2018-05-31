@@ -1,3 +1,7 @@
+Version 3.8.7
+- Improved constant propagation for REP instructions
+- Fixed addresses for listing in P1 mode
+
 Version 3.8.6
 - Added P2 optimization to use REP instruction when possible
 - Fixed ##label arguments to rdbyte/wrlong/etc.

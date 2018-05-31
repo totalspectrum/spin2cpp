@@ -12,7 +12,9 @@ static LexStream *current_lex = NULL;
 static void initOutput(Module *P)
 {
     inCog = 0;
-    cogPc = hubPc = 0;
+    cogPc = 0;
+    hubPc = gl_dat_offset;
+
     bytesOnLine = 0;
     current_lex = &P->L;
     current_lex->lineCounter = 0;
