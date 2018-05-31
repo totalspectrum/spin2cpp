@@ -950,11 +950,11 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 } else if (IsImmediate(ir->src)) {
-                    change |= (PropagateConstForward(ir_next, ir->dst, ir->src));
-                    if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
+                    int sawchange;
+                    change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
+                    if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
                         // we no longer need the original mov
                         DeleteIR(irl, ir);
-                        change |= 1;
                     }
                 } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
@@ -2041,13 +2041,7 @@ OptimizeP2(IRList *irl)
                     repir->src = var;
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
-                    if (labir->next) {
-                        labir->addr = labir->next->addr;
-                    } else {
-                        labir->addr = ir->addr+1;
-                    }
                     ir->opc = OPC_REPEAT_END;
-                    ir->aux = (void *)labir;
                     changed = 1;
                 }
             }
