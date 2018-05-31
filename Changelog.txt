@@ -3,7 +3,8 @@ Version 3.8.7
 - Fixed addresses for listing in P1 mode
 - Fixed an optimization problem where hw registers could be used
   to hold intermediate values in a calculation
-  
+- Fixed relocations for @@@ calculations
+
 Version 3.8.6
 - Added P2 optimization to use REP instruction when possible
 - Fixed ##label arguments to rdbyte/wrlong/etc.

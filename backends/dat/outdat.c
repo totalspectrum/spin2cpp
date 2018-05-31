@@ -187,13 +187,76 @@ GetAddrOffset(AST *ast)
     label = (Label *)sym->val;
     return label->hubval;
 }
-        
+
+// figure out whether an expression is relocatable;
+// if it is, calculate the offset
+// NOTE: if the relocation is complicated like "@@@foo / 4"
+// then we return -1
+
+static int
+IsRelocatable(AST *sub, int32_t *offset)
+{
+    int32_t myoff;
+    int r1 , r2;
+    
+    if (!sub) {
+        *offset = 0;
+        return 0;
+    }
+    if (sub->kind == AST_ABSADDROF) {
+        *offset = GetAddrOffset(sub->left);
+        return 1;
+    }
+    if (sub->kind == AST_OPERATOR) {
+        r1 = IsRelocatable(sub->left, offset);
+        r2 = IsRelocatable(sub->right, &myoff);
+        if (r1 || r2) {
+            // if one side has an error, return an error
+            if ( -1 == (r1|r2) ) {
+                return -1;
+            }
+            // only certain kinds of math we can do on relocations
+            switch (sub->d.ival) {
+            case '+':
+                if (r1 && r2) {
+                    return -1;
+                }
+                *offset += myoff;
+                return 1;
+            case '-':
+                if (r1 && r2) {
+                    // difference of absolute relocations
+                    // this is fine
+                    return 0;
+                }
+                if (r1) {
+                    // reloc - offset
+                    *offset -= myoff;
+                    return 1;
+                }
+                // offset - reloc
+                // not implemented
+                return -1;
+            default:
+                return -1;
+            }
+        }
+    }
+
+    // not a relocatable expression per se; so just set the offset
+    // to our value
+    *offset = EvalPasmExpr(sub);
+    return 0;
+}
+
 void
 outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     unsigned val, origval;
     int i, reps;
+    int checkReloc;
     AST *sub;
+    int32_t offset = 0;
     
     origval = 0;
     while (ast) {
@@ -223,7 +286,10 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 start++;
             }
             reps = 0;
-        } else if (sub->kind == AST_ABSADDROF) {
+        } else if ( 0 != (checkReloc = IsRelocatable(sub, &offset)) ) {
+            if (checkReloc == -1) {
+                ERROR(ast, "Illegal operation on relocatable @@@ value");
+            }
             if (relocs) {
                 Reloc r;
                 int addr = flexbuf_curlen(f);
@@ -232,7 +298,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 }
                 r.kind = RELOC_KIND_LONG;
                 r.off = addr;
-                r.val = origval = GetAddrOffset(sub->left);
+                r.val = origval = offset;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             } else {
                 origval = EvalPasmExpr(sub);

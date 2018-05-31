@@ -1,0 +1,9 @@
+DAT
+    long 0
+myaddr
+    long @@@myaddr
+    long $12340000 + @@@myaddr
+myaddr2
+    long @@@myaddr - 1
+    long @@@myaddr2 - @@@myaddr
+    
