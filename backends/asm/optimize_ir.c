@@ -484,6 +484,8 @@ static bool
 SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
+  int usecount = 0;
+  
   if (SrcOnlyHwReg(replace))
       return false;
   for (ir = instr; ir; ir = ir->prev) {
@@ -502,10 +504,19 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           {
               return false;
           }
+          if (usecount > 0 && IsHwReg(replace) && ir->src != replace) {
+              return false;
+          }
           return ir->cond == COND_TRUE;
       }
       if (InstrUses(ir, replace) || ir->dst == replace) {
           return false;
+      }
+      if ( (InstrUses(ir, orig) || InstrModifies(ir, orig)) && IsHwReg(replace)) {
+          if (usecount > 0) {
+              return false;
+          }
+          usecount++;
       }
   }
   // we've reached the start
