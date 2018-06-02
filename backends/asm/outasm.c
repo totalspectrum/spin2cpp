@@ -3336,7 +3336,10 @@ AssignFuncNames(IRList *irl, Module *P)
         if (ShouldSkipFunction(f))
             continue;
         curfunc = f;
-        f->cog_code = (COG_CODE || (IsGlobalModule(P) && !gl_compressed)) ? 1 : 0;
+        // at one time we also forced the global module stuff into
+        // COG memory, so we still have the capability to put code
+        // into COG on a per-function basis; may be useful later
+        f->cog_code = COG_CODE ? 1 : 0;
         fname = IdentifierGlobalName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
@@ -4311,7 +4314,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         // these always go in COG memory
         CompileToIR_internal(&cogcode, globalModule);
 #else
-        if (HUB_CODE && gl_compressed) {
+        if (HUB_CODE) {
             CompileToIR_internal(&hubcode, globalModule);
         } else {
             CompileToIR_internal(&cogcode, globalModule);

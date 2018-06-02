@@ -4,6 +4,8 @@ Version 3.8.7
 - Fixed an optimization problem where hw registers could be used
   to hold intermediate values in a calculation
 - Fixed relocations for @@@ calculations
+- Moved utility functions like longfill into HUB memory to free space
+- Added --fcache=N option to fastspin
 
 Version 3.8.6
 - Added P2 optimization to use REP instruction when possible

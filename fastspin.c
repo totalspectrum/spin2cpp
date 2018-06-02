@@ -109,8 +109,9 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
     fprintf(f, "          -O2 = all optimization\n");
-    fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
+    fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
+    fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fflush(stderr);
     exit(2);
 }
@@ -257,6 +258,12 @@ main(int argc, char **argv)
             } else {
                 fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
                 Usage(stderr, bstcMode);
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--fcache=", 9)) {
+            gl_fcache_size = atoi(argv[0]+9);
+            if (gl_fcache_size < 8) {
+                gl_fcache_size = 0;
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--code=", 7)) {

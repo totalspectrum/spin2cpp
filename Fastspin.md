@@ -143,8 +143,9 @@ which may modify the compilation:
 		       -O2 apply all optimization (same as -O)
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
-  [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ -w ]             produce Spin wrappers for PASM code
+  [ --code=cog  ]    compile to run in COG memory instead of HUB
+  [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
 ```
 The `-2` option is new: it is for compiling for the Propeller 2 (v32
 FPGA version). It is still somewhat experimental, but works well enough
