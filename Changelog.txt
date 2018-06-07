@@ -6,6 +6,7 @@ Version 3.8.7
 - Fixed relocations for @@@ calculations
 - Moved utility functions like longfill into HUB memory to free space
 - Added --fcache=N option to fastspin
+- Fixed BSS removal optimization for P2
 
 Version 3.8.6
 - Added P2 optimization to use REP instruction when possible
