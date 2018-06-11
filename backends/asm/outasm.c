@@ -100,6 +100,19 @@ IsTopLevel(Module *P)
     return P == allparse;
 }
 
+static int sym_offset(Function *func, Symbol *s)
+{
+    int offset = -1;
+    if (s->type == SYM_RESULT) {
+        offset = s->offset;
+    } else if (s->type == SYM_PARAMETER) {
+        offset = LONG_SIZE*func->numresults + s->offset;
+    } else if (s->type == SYM_LOCALVAR || s->type == SYM_TEMPVAR) {
+        offset = LONG_SIZE*(func->numresults + func->numparams) + s->offset;
+    }
+    return offset;
+}
+
 static const char *
 IdentifierLocalName(Function *func, const char *name)
 {
@@ -110,16 +123,10 @@ IdentifierLocalName(Function *func, const char *name)
         Symbol *s = FindSymbol(&func->localsyms, name);
         int offset = -1;
         if (s) {
-            if (s->type == SYM_RESULT) {
-                offset = 0;
-            } else if (s->type == SYM_PARAMETER) {
-                offset = (LONG_SIZE + s->offset)/LONG_SIZE;
-            } else if (s->type == SYM_LOCALVAR || s->type == SYM_TEMPVAR) {
-                offset = (LONG_SIZE * (1+func->numparams) + s->offset) / LONG_SIZE;
-            }
+            offset = sym_offset(func, s);
         }
-        if (offset > 0) {
-            snprintf(temp, sizeof(temp)-1, "_var_%02d", offset);
+        if (offset >= 0) {
+            snprintf(temp, sizeof(temp)-1, "_var_%02d", offset / LONG_SIZE);
         } else {
             snprintf(temp, sizeof(temp)-1, "_var_%s", name);
         }
@@ -874,14 +881,9 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       case SYM_PARAMETER:
       case SYM_RESULT:
           if (IS_STACK_CALL(func)) {
-              if (stype == SYM_RESULT) {
-                  return FrameRef(0);
-              }
-              if (stype == SYM_PARAMETER) {
-                  return FrameRef(LONG_SIZE + sym->offset);
-              }
-              if (stype == SYM_LOCALVAR) {
-                  return FrameRef(LONG_SIZE * (1+func->numparams) + sym->offset);
+              int offset = sym_offset(func, sym);
+              if (offset >= 0) {
+                  return FrameRef(offset);
               }
           }
           if (stype == SYM_RESULT) {
@@ -973,7 +975,7 @@ static void EmitPop(IRList *irl, Operand *src)
 //
 static int LocalSize(Function *func)
 {
-    return LONG_SIZE * (func->numlocals + func->numparams + 1);
+    return LONG_SIZE * (func->numlocals + func->numparams + func->numresults);
 }
 
 //

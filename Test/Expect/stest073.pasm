@@ -5,7 +5,7 @@ DAT
 entry
 
 _get
-	mov	_var_sum, #0
+	mov	_var_00, #0
 	mov	_var_01, #0
 L__0001
 	mov	_tmp002_, #496
@@ -13,11 +13,11 @@ L__0001
 	movs	wrcog, _tmp002_
 	movd	wrcog, #_tmp003_
 	call	#wrcog
-	add	_var_sum, _tmp003_
+	add	_var_00, _tmp003_
 	add	_var_01, #1
 	cmps	_var_01, #10 wc,wz
  if_b	jmp	#L__0001
-	mov	result1, _var_sum
+	mov	result1, _var_00
 _get_ret
 	ret
 
@@ -50,9 +50,9 @@ _tmp002_
 	res	1
 _tmp003_
 	res	1
-_var_01
+_var_00
 	res	1
-_var_sum
+_var_01
 	res	1
 arg1
 	res	1

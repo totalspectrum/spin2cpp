@@ -6,7 +6,7 @@ entry
 
 _fibolp
 	mov	_var_03, #1
-	mov	_var_r, #1
+	mov	_var_00, #1
 	mov	_var_02, #0
 	sub	arg1, #1 wz
  if_e	jmp	#L__0006
@@ -14,11 +14,11 @@ L__0007
 	add	_var_02, _var_03
 	mov	_tmp003_, _var_02
 	mov	_var_02, _var_03
-	mov	_var_03, _var_r
-	mov	_var_r, _tmp003_
+	mov	_var_03, _var_00
+	mov	_var_00, _tmp003_
 	djnz	arg1, #L__0007
 L__0006
-	mov	result1, _var_r
+	mov	result1, _var_00
 _fibolp_ret
 	ret
 
@@ -29,11 +29,11 @@ COG_BSS_START
 	org	COG_BSS_START
 _tmp003_
 	res	1
+_var_00
+	res	1
 _var_02
 	res	1
 _var_03
-	res	1
-_var_r
 	res	1
 arg1
 	res	1
