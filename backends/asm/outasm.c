@@ -434,11 +434,20 @@ AppendOperandList(OperandList **listptr, OperandList *next)
   }
 }
 
-void
+static Operand *LocalVarNum(int i)
+{
+    char buf[1024];
+
+    snprintf(buf, sizeof(buf), "_local_%02d", i);
+    return GetOneGlobal(REG_LOCAL, strdup(buf), 0);
+}
+
+Operand *
 AppendOperandUnique(OperandList **listptr, Operand *op)
 {
   OperandList *next;
   OperandList *x;
+  int i = 0;
   for(;;) {
     x = *listptr;
     if (!x) {
@@ -446,12 +455,13 @@ AppendOperandUnique(OperandList **listptr, Operand *op)
         next->op = op;
         next->next = NULL;
         *listptr = next;
-        return;
+        return LocalVarNum(i);
     }
     if (x->op == op) {
-        return;
+        return LocalVarNum(i);
     }
     listptr = &x->next;
+    i++;
   }
 }
 
@@ -1013,7 +1023,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
 // pop backwards from there
 //
 #define MAX_LOCAL_STACK 1024
-static void PopList(IRList *irl, OperandList *list, Function *func)
+static void PopLocalVarList(IRList *irl, OperandList *list, Function *func)
 {
     Operand *revstack[MAX_LOCAL_STACK];
     Operand *dst;
@@ -1021,7 +1031,8 @@ static void PopList(IRList *irl, OperandList *list, Function *func)
 
     for (; list; list = list->next) {
         dst = list->op;
-        revstack[n++] = dst;
+        revstack[n] = LocalVarNum(n); // dst;
+        n++;
         if (n == MAX_LOCAL_STACK) {
             ERROR(func->locals, "Stack needed for function %s is too big", func->name);
             return;
@@ -1051,10 +1062,10 @@ GetLocalRegsUsed(OperandList **list, IRList *irl)
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
-            AppendOperandUnique(list, ir->dst);
+            ir->dst = AppendOperandUnique(list, ir->dst);
         }
         if (ir->src && IsLocal(ir->src)) {
-            AppendOperandUnique(list, ir->src);
+            ir->src = AppendOperandUnique(list, ir->src);
         }
     }
 }
@@ -1062,7 +1073,11 @@ GetLocalRegsUsed(OperandList **list, IRList *irl)
 static bool
 NeedToSaveLocals(Function *func)
 {
+#if 0
     return func->is_recursive;
+#else
+    return !func->is_leaf;
+#endif
 }
 
 //
@@ -1118,13 +1133,16 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     //
     
     if (NeedToSaveLocals(func)) {
+        int i = 0;
         GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
         // push scratch registers that need preserving
         for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
-            EmitPush(irl, oplist->op);
+//            EmitPush(irl, oplist->op);
+            EmitPush(irl, LocalVarNum(i));
+            i++;
         }
         // push return address, if we are in cog mode
-        if (func->cog_code && !gl_p2) {
+        if (func->cog_code && func->is_recursive && !gl_p2) {
             EmitPush(irl, FuncData(func)->asmretname);
         }
     }
@@ -1140,11 +1158,11 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
         // and the actual return
-        if (func->cog_code && !gl_p2) {
+        if (func->cog_code && func->is_recursive && !gl_p2) {
             EmitPop(irl, FuncData(func)->asmretname);
         }
         // pop off all local variables
-        PopList(irl, FuncData(func)->saveregs, func);
+        PopLocalVarList(irl, FuncData(func)->saveregs, func);
     }
     if (IS_STACK_CALL(func)) {
         EmitMove(irl, stackptr, frameptr);
@@ -3373,7 +3391,7 @@ AssignFuncNames(IRList *irl, Module *P)
             FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
         }
-        if (f->is_recursive || IS_STACK_CALL(f)) {
+        if (f->is_recursive || IS_STACK_CALL(f) || NeedToSaveLocals(f)) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
         } else {
