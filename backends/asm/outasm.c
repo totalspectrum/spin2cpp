@@ -1073,11 +1073,10 @@ GetLocalRegsUsed(OperandList **list, IRList *irl)
 static bool
 NeedToSaveLocals(Function *func)
 {
-#if 0
+    if (gl_compressed) {
+        return 1;
+    }
     return func->is_recursive;
-#else
-    return !func->is_leaf;
-#endif
 }
 
 //
@@ -3376,7 +3375,7 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
-        if (f->local_address_taken || f->cog_task) {
+        if (f->local_address_taken || f->cog_task || gl_compressed) {
             FuncData(f)->convention = STACK_CALL;
         } else if (f->cog_code) {
             FuncData(f)->convention = FAST_CALL;
