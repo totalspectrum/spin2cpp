@@ -2237,8 +2237,10 @@ OptimizeIRLocal(IRList *irl)
         change |= OptimizeReadWrite(irl);
         change |= OptimizeMoves(irl);
         change |= OptimizeImmediates(irl);
-        change |= OptimizeCompares(irl);
-        change |= OptimizeShortBranches(irl);
+        if (!gl_compressed) {
+            change |= OptimizeCompares(irl);
+            change |= OptimizeShortBranches(irl);
+        }
         change |= OptimizeAddSub(irl);
         change |= OptimizePeepholes(irl);
         change |= OptimizeIncDec(irl);
@@ -2435,4 +2437,82 @@ OptimizeFcache(IRList *irl)
         }
         ir = ir->next;
     }
+}
+
+static bool OperandMatch(Operand *a, Operand *b)
+{
+    if (a == b) return true;
+    if (a == NULL || b == NULL) return false;
+    if (a->kind != b->kind) return false;
+    if (a->kind == IMM_INT) return a->val == b->val;
+    return false;
+}
+
+static bool
+IRMatch(IR *a, IR *b)
+{
+    if (a->opc != b->opc) return false;
+    if (!OperandMatch(a->dst, b->dst)) return false;
+    if (!OperandMatch(a->src, b->src)) return false;
+    if (a->cond != b->cond) return false;
+    return true;
+}
+
+void
+CompressCode(IRList *irl)
+{
+#if 1
+    IR *curir, *nextir;
+    IR *ir, *nir;
+    Operand *backref = NULL;
+    
+    for (curir = irl->head; curir; curir = curir->next) {
+        if (IsDummy(curir) || curir->opc == OPC_LABEL) {
+            continue;
+        }
+        if (IsBranch(curir)) {
+            continue;
+        }
+        nextir = curir->next;
+        while (nextir && (IsDummy(nextir) || nextir->opc == OPC_LABEL)) {
+            nextir = nextir->next;
+        }
+        if (nextir && IsBranch(nextir)) {
+            nextir = NULL;
+        }
+        backref = NULL;
+        for (ir = curir->next; ir; ir = ir->next) {
+            nir = NULL;
+            if (IRMatch(curir, ir)) {
+                if (!backref) {
+                    IR *newlab;
+                    backref = NewCodeLabel();
+                    newlab = NewIR(OPC_LABEL);
+                    newlab->dst = backref;
+                    InsertAfterIR(irl, curir->prev, newlab);
+                }
+                if (nextir) {
+                    nir = ir->next;
+                    while (nir && IsDummy(nir)) {
+                        nir = nir->next;
+                    }
+                }
+                if (nextir && nir && IRMatch(nextir, nir)) {
+                    nir->opc = OPC_DUMMY;
+                    nir->dst = nir->src = NULL;
+                    nir->instr = NULL;
+                    ir->opc = OPC_WORD1;
+                } else if (ir->opc == OPC_WORD) {
+                    continue;
+                } else {
+                    ir->opc = OPC_WORD;
+                }
+                ir->dst = backref;
+                ir->src = NULL;
+                ir->cond = COND_TRUE;
+                ir->instr = NULL;
+            }
+        }
+    }
+#endif
 }

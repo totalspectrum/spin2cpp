@@ -3375,7 +3375,7 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
-        if (f->local_address_taken || f->cog_task || gl_compressed) {
+        if (f->local_address_taken || f->cog_task || (gl_compressed && 0 && !IsGlobalModule(f->module))) {
             FuncData(f)->convention = STACK_CALL;
         } else if (f->cog_code) {
             FuncData(f)->convention = FAST_CALL;
@@ -4319,6 +4319,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 return;
             }
         }
+        orgh = EmitOp0(&hubcode, OPC_HUBMODE);        
         if (HUB_CODE) {
             ValidateStackptr();
             if (!gl_p2) {
@@ -4338,18 +4339,12 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         EmitBuiltins(&cogcode);
         // we compiled builtin functions into IR form earlier, now
         // output them
-#if 0
-        // these always go in COG memory
-        CompileToIR_internal(&cogcode, globalModule);
-#else
         if (HUB_CODE) {
             CompileToIR_internal(&hubcode, globalModule);
         } else {
             CompileToIR_internal(&cogcode, globalModule);
         }
-#endif
         // now copy the hub code into place
-        orgh = EmitOp0(&cogcode, OPC_HUBMODE);
         if (gl_p2) {
             // on P2, make room for CLKFREQ and CLKMODE
             if (!GetClkFreq(P, &clkfreq, &clkreg)) {
@@ -4362,6 +4357,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
 
     if (emitSpinCode) {
+        if (gl_compressed) {
+            CompressCode(&hubcode);
+        }
         AppendIR(&cogcode, hubcode.head);
 
         // we have to optimize all code before emitting any variables

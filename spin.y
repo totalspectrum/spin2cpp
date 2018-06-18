@@ -1184,6 +1184,11 @@ hwreg:
 instruction:
   SP_INSTR
   { $$ = $1; }
+  | '~' SP_INSTR
+  { AST *instr = $2;
+    instr->d.ival = 1;
+    $$ = instr;
+  }
   | instrmodifier instruction
   { $$ = AddToList($2, $1); }
 ;

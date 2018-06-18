@@ -1018,7 +1018,7 @@ AlignPc(Flexbuf *f, int size)
 void
 outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
-    if (size > 1 && !gl_p2) {
+    if (size > 1 && !gl_p2 && !gl_compressed) {
         AlignPc(f, size);
     }
     outputDataList(f, size, ast, relocs);

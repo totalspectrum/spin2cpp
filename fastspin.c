@@ -320,6 +320,9 @@ main(int argc, char **argv)
             if (!strcmp(argv[0], "-e")) {
                 useEeprom = 1;
             }
+            if (!strcmp(argv[0], "-b")) {
+                gl_compressed = 1;
+            }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
             gl_preprocess = 0;

@@ -140,5 +140,6 @@ Operand *GetSizedHub(Operandkind kind, const char *name, intptr_t value, int cou
 Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value);
 
 void InitAsmCode();
+void CompressCode(IRList *irl);
 
 #endif

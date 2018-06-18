@@ -347,6 +347,8 @@ StringFor(IROpcode opc)
         return "long";
     case OPC_WORD:
         return "word";
+    case OPC_WORD1:
+        return "word 1 |";
     default:
         ERROR(NULL, "internal error, bad StringFor call");
         return "???";
@@ -588,7 +590,18 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             didOrg = 1;
         }
     }
-    if (!gl_p2) {
+    if (gl_compressed) {
+        switch(ir->opc) {
+        case OPC_DJNZ:
+        case OPC_CALL:
+        case OPC_JUMP:
+        case OPC_RET:
+            flexbuf_addstr(fb, "\tlong\t$FFFF\n");
+            return;
+        default:
+            break;
+        }
+    } else if (!gl_p2) {
         // handle jumps in LMM mode
         switch (ir->opc) {
         case OPC_CALL:
@@ -772,6 +785,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_BYTE:
     case OPC_WORD:
+    case OPC_WORD1:
     case OPC_LONG:
     case OPC_STRING:
         flexbuf_addchar(fb, '\t');
@@ -821,6 +835,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     case OPC_HUBMODE:
         if (gl_p2) {
             flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
+        } else if (gl_compressed) {
+            flexbuf_printf(fb, "\torgh\n");
         }
         lmmMode = 1;
         break;

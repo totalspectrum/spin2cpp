@@ -192,7 +192,7 @@ filelen(AST *ast)
  */
 
 #define ALIGNPC(size)  do { inc = size; cogpc = align(cogpc, inc); datoff = align(datoff, inc); hubpc = align(hubpc, inc); } while (0)
-#define MAYBEALIGNPC(size) if (!gl_p2) { ALIGNPC(size); }
+#define MAYBEALIGNPC(size) if (!gl_p2 && !gl_compressed) { ALIGNPC(size); }
 #define INCPC(size)  do { inc = size; cogpc += inc; datoff += inc; hubpc += inc; } while (0)
 #define HEREPC (inHub ? hubpc : (cogpc/4))
 

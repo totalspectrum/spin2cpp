@@ -116,6 +116,7 @@ typedef enum IROpcode {
     OPC_LABELED_BLOB, // binary blob
     OPC_RESERVE,   // reserve space in cog
     OPC_RESERVEH,  // reserve space in hub
+    OPC_WORD1,     // special marker
     
     /* pseudo-instruction to load FCACHE */
     OPC_FCACHE,

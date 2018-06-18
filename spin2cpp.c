@@ -258,6 +258,9 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[0], "--nocse") ) {
             wantcse = 0;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--compressed") ) {
+            gl_compressed = 1;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "--asm") ) {
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
