@@ -39,7 +39,7 @@ const char *gl_progname;
 const char *gl_cc = NULL;
 const char *gl_intstring = "int32_t";
 Module *allparse = NULL;
-extern int yydebug;
+extern int spinyydebug;
 
 static void
 Usage(void)
@@ -210,7 +210,7 @@ main(int argc, char **argv)
     
     allparse = NULL;
 #ifdef DEBUG_YACC
-    yydebug = 1;  /* turn on yacc debugging */
+    spinyydebug = 1;  /* turn on yacc debugging */
 #endif
     /* parse arguments */
     if (argv[0] != NULL) {
@@ -219,7 +219,7 @@ main(int argc, char **argv)
     }
     while (argv[0] && argv[0][0] == '-') {
         if (!strcmp(argv[0], "-y")) {
-            yydebug = 1;
+            spinyydebug = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "--main") || !strcmp(argv[0], "-main")) {
             outputMain = 1;

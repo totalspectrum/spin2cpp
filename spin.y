@@ -4,17 +4,19 @@
  * See the file COPYING for terms of use.
  */
 
+%define api.prefix {spinyy}
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include "spinc.h"
 
-#define YYSTYPE AST*
+#define SPINYYSTYPE AST*
     
 /* Yacc functions */
-    void yyerror(const char *);
-    int yylex();
+    void spinyyerror(const char *);
+    int spinyylex();
 
     extern int gl_errors;
 
@@ -1205,10 +1207,10 @@ modifierlist:
 %%
 
 void
-yyerror(const char *msg)
+spinyyerror(const char *msg)
 {
-    extern int saved_yychar;
-    int yychar = saved_yychar;
+    extern int saved_spinyychar;
+    int yychar = saved_spinyychar;
     
     fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
 

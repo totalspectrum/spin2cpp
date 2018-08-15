@@ -75,13 +75,13 @@ struct preprocess gl_pp;
 // process a module after parsing it
 static void ProcessModule(Module *P);
 
-int saved_yychar;
+int saved_spinyychar;
 
 int
-yylex(YYSTYPE *yval)
+spinyylex(SPINYYSTYPE *yval)
 {
     int c;
-    saved_yychar = c = getToken(&current->L, yval);
+    saved_spinyychar = c = getToken(&current->L, yval);
     if (c == SP_EOF)
         return 0;
     return c;
@@ -497,7 +497,7 @@ InitGlobalModule(void)
             syscode = p1_system_spincode;
         }
         strToLex(&globalModule->L, syscode, "_system_");
-        yyparse();
+        spinyyparse();
         ProcessModule(globalModule);
         InferTypes(globalModule);
         ProcessFuncs(globalModule);
@@ -915,11 +915,11 @@ ParseFile(const char *name)
         parseString = pp_finish(&gl_pp);
         pp_restore_define_state(&gl_pp, defineState);
         strToLex(&current->L, parseString, fname);
-        yyparse();
+        spinyyparse();
         free(parseString);
     } else {
         fileToLex(&current->L, f, fname);
-        yyparse();
+        spinyyparse();
     }
     fclose(f);
 

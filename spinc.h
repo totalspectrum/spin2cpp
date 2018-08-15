@@ -18,7 +18,7 @@
 #include "instr.h"
 
 // definition for the Spin parser
-#define YYSTYPE AST*
+#define SPINYYSTYPE AST*
 
 /* useful macro */
 #define N_ELEMENTS(x) (sizeof(x)/sizeof(x[0]))

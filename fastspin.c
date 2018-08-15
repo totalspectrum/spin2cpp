@@ -40,7 +40,7 @@
 
 extern int yyparse(void);
 
-extern int yydebug;
+extern int spinyydebug;
 
 const char *gl_progname;
 const char *gl_cc = NULL;
@@ -199,7 +199,7 @@ main(int argc, char **argv)
     
     allparse = NULL;
 #ifdef DEBUG_YACC
-    yydebug = 1;  /* turn on yacc debugging */
+    spinyydebug = 1;  /* turn on yacc debugging */
 #endif
     /* parse arguments */
     if (argv[0] != NULL) {
@@ -248,7 +248,7 @@ main(int argc, char **argv)
             continue;
         }
         if (!strcmp(argv[0], "-y")) {
-            yydebug = 1;
+            spinyydebug = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--data=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
