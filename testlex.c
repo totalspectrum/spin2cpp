@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "spinc.h"
+#include "frontends/spin/lexer.h"
 #include "spin.tab.h"
 
 //typedef enum yytokentype Token;
@@ -218,7 +219,7 @@ static int tokens8[] =
 int
 main()
 {
-    initLexer(0);
+    initSpinLexer(0);
 
     testTokenStream("1 + 1", tokens0, N_ELEM(tokens0));
     testTokenStream("{a comment line} $1 + 1", tokens0, N_ELEM(tokens0));

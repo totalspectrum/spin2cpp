@@ -37,40 +37,9 @@
 
 //#define DEBUG_YACC
 
-extern int yyparse(void);
+extern int spinyyparse(void);
 
-extern int yydebug;
-
-Module *current;
-Module *allparse;
-Module *globalModule;
-
-int gl_p2;
-int gl_errors;
-int gl_output;
-int gl_outputflags;
-int gl_nospin;
-int gl_gas_dat;
-int gl_normalizeIdents;
-int gl_debug;
-int gl_expand_constants;
-int gl_optimize_flags;
-int gl_dat_offset;
-int gl_printprogress = 0;
-int gl_depth = 0;
-int gl_infer_ctypes = 0;
-int gl_listing = 0;
-
-AST *ast_type_word, *ast_type_long, *ast_type_byte;
-AST *ast_type_float, *ast_type_string;
-AST *ast_type_ptr_long;
-AST *ast_type_ptr_word;
-AST *ast_type_ptr_byte;
-AST *ast_type_ptr_void;
-AST *ast_type_generic;
-AST *ast_type_void;
-
-struct preprocess gl_pp;
+extern int spinyydebug;
 
 // process a module after parsing it
 static void ProcessModule(Module *P);
@@ -86,10 +55,6 @@ spinyylex(SPINYYSTYPE *yval)
         return 0;
     return c;
 }
-
-const char *gl_progname = "spin2cpp";
-char *gl_header1 = NULL;
-char *gl_header2 = NULL;
 
 static int
 FindSymbolExact(SymbolTable *S, const char *name)
@@ -125,49 +90,6 @@ makeClassNameSafe(Module *P)
         P->classname = newname;
         strcat(P->classname, "Class");
     }
-}
-
-/*
- * allocate a new parser state
- */ 
-Module *
-NewModule(const char *fullname)
-{
-    Module *P;
-    char *s;
-    char *root;
-
-    P = (Module *)calloc(1, sizeof(*P));
-    if (!P) {
-        fprintf(stderr, "out of memory\n");
-        exit(1);
-    }
-    /* set up the base file name */
-    P->fullname = fullname;
-    P->basename = strdup(fullname);
-    s = strrchr(P->basename, '.');
-    if (s) *s = 0;
-    root = strrchr(P->basename, '/');
-#if defined(WIN32) || defined(WIN64)
-    if (!root) {
-      root = strrchr(P->basename, '\\');
-    }
-#endif
-    if (!root)
-      root = P->basename;
-    else
-      P->basename = root+1;
-    /* set up the class name */
-    P->classname = (char *)calloc(1, strlen(P->basename)+1);
-    strcpy(P->classname, P->basename);
-
-    /* link the global symbols */
-    if (globalModule) {
-        P->objsyms.next = &globalModule->objsyms;
-    } else {
-        P->objsyms.next = &reservedWords;
-    }
-    return P;
 }
 
 /*
@@ -511,153 +433,6 @@ InitGlobalModule(void)
 
 }
 
-/*
- * declare constant symbols
- */
-static Symbol *
-EnterConstant(const char *name, AST *expr)
-{
-    Symbol *sym;
-
-    if (IsFloatConst(expr)) {
-        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr);
-    } else {
-        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr);
-    }
-    return sym;
-}
-
-void
-DeclareConstants(AST **conlist_ptr)
-{
-    AST *conlist;
-    AST *upper, *ast, *id;
-    AST *next;
-    int default_val;
-    int default_val_ok = 0;
-    int n;
-
-    conlist = *conlist_ptr;
-
-    // first do all the simple assignments
-    // this is necessary because Spin will sometimes allow out-of-order
-    // assignments
-
-    do {
-        n = 0; // no assignments yet
-        default_val = 0;
-        default_val_ok = 1;
-        upper = conlist;
-        while (upper) {
-            next = upper->right;
-            if (upper->kind == AST_LISTHOLDER) {
-                ast = upper->left;
-                if (ast->kind == AST_COMMENTEDNODE)
-                    ast = ast->left;
-
-                switch (ast->kind) {
-                case AST_ASSIGN:
-                    if (IsConstExpr(ast->right)) {
-                        EnterConstant(ast->left->d.string, ast->right);
-                        n++;
-                        // now pull the assignment out so we don't see it again
-                        RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
-                        conlist = *conlist_ptr;
-                    }
-                    break;
-                case AST_ENUMSET:
-                    if (IsConstExpr(ast->left)) {
-                        default_val = EvalConstExpr(ast->left);
-                        default_val_ok = 1;
-                    } else {
-                        default_val_ok = 0;
-                    }
-                    break;
-                case AST_ENUMSKIP:
-                    if (default_val_ok) {
-                        id = ast->left;
-                        if (id->kind != AST_IDENTIFIER) {
-                            ERROR(ast, "Internal error, expected identifier in constant list");
-                        } else {
-                            EnterConstant(id->d.string, AstInteger(default_val));
-                            default_val += EvalConstExpr(ast->right);
-                        }
-                        n++;
-                        // now pull the assignment out so we don't see it again
-                        RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
-                        conlist = *conlist_ptr;
-                    }
-                    break;
-                case AST_IDENTIFIER:
-                    if (default_val_ok) {
-                        EnterConstant(ast->d.string, AstInteger(default_val));
-                        default_val++;
-                        n++;
-                        // now pull the assignment out so we don't see it again
-                        RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
-                        conlist = *conlist_ptr;
-                    }
-                    break;
-                default:
-                    /* do nothing */
-                    break;
-                }
-            }
-            upper = next;
-        }
-
-    } while (n > 0);
-
-    default_val = 0;
-    default_val_ok = 1;
-    for (upper = conlist; upper; upper = upper->right) {
-        if (upper->kind == AST_LISTHOLDER) {
-            ast = upper->left;
-            if (ast->kind == AST_COMMENTEDNODE)
-                ast = ast->left;
-            switch (ast->kind) {
-            case AST_ENUMSET:
-                default_val = EvalConstExpr(ast->left);
-                break;
-            case AST_IDENTIFIER:
-                EnterConstant(ast->d.string, AstInteger(default_val));
-                default_val++;
-                break;
-            case AST_ENUMSKIP:
-                id = ast->left;
-                if (id->kind != AST_IDENTIFIER) {
-                    ERROR(ast, "Internal error, expected identifier in constant list");
-                } else {
-                    EnterConstant(id->d.string, AstInteger(default_val));
-                    default_val += EvalConstExpr(ast->right);
-                }
-                break;
-            case AST_ASSIGN:
-                EnterConstant(ast->left->d.string, ast->right);
-                default_val = EvalConstExpr(ast->right) + 1;
-                break;
-            case AST_COMMENT:
-                /* just skip it for now */
-                break;
-            default:
-                ERROR(ast, "Internal error: bad AST value %d", ast->kind);
-                break;
-            }
-        } else {
-            ERROR(upper, "Expected list in constant, found %d instead", upper->kind);
-        }
-    }
-}
-
 static int
 DeclareVariablesOfType(Module *P, AST *basetype, int offset)
 {
@@ -802,26 +577,6 @@ AssignObjectOffsets(Module *P)
     current = save;
 }
 
-#if 0
-/*
- * transform AST_SRCCOMMENTs into comments with the line data of the 
- * next non-comment AST
- */
-static void
-TransformSrcCommentsBlock(AST *ast, AST *upper)
-{
-    while (ast) {
-        if (ast->kind == AST_SRCCOMMENT) {
-            ast->kind = AST_COMMENT;
-            ast->d.string = "+++";
-        }
-        TransformSrcCommentsBlock(ast->left, ast);
-        upper = ast;
-        ast = ast->right;
-    }
-}
-#endif
-
 /*
  * process a parsed module
  */
@@ -838,12 +593,14 @@ ProcessModule(Module *P)
 }
 
 /*
- * parse a file
+ * parse a spin file
  * This is the main entry point for the compiler
  * "name" is the file name; if it has no .spin suffix
  * we'll try it with one
  * if "gl_depth" is >= 0 then print the file name
  */
+int gl_depth = 0;
+
 Module *
 ParseFile(const char *name)
 {
@@ -961,241 +718,6 @@ ParseTopFile(const char *name)
     return ParseFile(name);
 }
 
-AST *
-NewObject(AST *identifier, AST *string)
-{
-    AST *ast;
-    const char *filename = string->d.string;
-
-    ast = NewAST(AST_OBJECT, identifier, NULL);
-    ast->d.ptr = ParseFile(filename);
-    return ast;
-}
-
-AST *
-NewAbstractObject(AST *identifier, AST *string)
-{
-    return NewObject( NewAST(AST_OBJDECL, identifier, 0), string );
-}
-
-void
-ERROR(AST *instr, const char *msg, ...)
-{
-    va_list args;
-    LineInfo *info = GetLineInfo(instr);
-
-    if (instr)
-        fprintf(stderr, "%s:%d: error: ", info->fileName, info->lineno);
-    else
-        fprintf(stderr, "error: ");
-
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
-    fprintf(stderr, "\n");
-    gl_errors++;
-}
-
-void
-WARNING(AST *instr, const char *msg, ...)
-{
-    va_list args;
-    LineInfo *info = GetLineInfo(instr);
-
-    if (info)
-        fprintf(stderr, "%s:%d: warning: ", info->fileName, info->lineno);
-    else
-        fprintf(stderr, "warning: ");
-
-    va_start(args, msg);
-    vfprintf(stderr, msg, args);
-    va_end(args);
-    fprintf(stderr, "\n");
-}
-
-void
-ERROR_UNKNOWN_SYMBOL(AST *ast)
-{
-    ERROR(ast, "Unknown symbol %s", ast->d.string);
-    // add a definition for this symbol so we don't get this error again
-    if (curfunc) {
-        AddLocalVariable(curfunc, ast, SYM_LOCALVAR);
-    }
-}
-
-void
-Init()
-{
-    ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
-    ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
-    ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
-    ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
-    ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
-    ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
-
-    ast_type_ptr_long = NewAST(AST_PTRTYPE, ast_type_long, NULL);
-    ast_type_ptr_word = NewAST(AST_PTRTYPE, ast_type_word, NULL);
-    ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
-    ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
-    
-    ast_type_string = NewAST(AST_MODIFIER_CONST, ast_type_ptr_byte, NULL);
-
-    initLexer(gl_p2);
-
-    /* fill in the global symbol table */
-    InitGlobalModule();
-}
-
-const char *
-FindLastDirectoryChar(const char *fname)
-{
-    const char *found = NULL;
-    if (!fname) return NULL;
-    while (*fname) {
-        if (*fname == '/'
-#ifdef WIN32
-            || *fname == '\\'
-#endif
-            )
-        {
-            found = fname;
-        }
-        fname++;
-    }
-    return found;
-}
-
-//
-// use the directory portion of "directory" (if any) and then add
-// on the basename
-//
-char *
-ReplaceDirectory(const char *basename, const char *directory)
-{
-  char *ret = (char *)malloc(strlen(basename) + strlen(directory) + 2);
-  char *dot;
-  if (!ret) {
-    fprintf(stderr, "FATAL: out of memory\n");
-    exit(2);
-  }
-  strcpy(ret, directory);
-  dot = (char *)FindLastDirectoryChar(ret);
-  if (dot) {
-      *dot++ = '/';
-  } else {
-      dot = ret;
-  }
-  strcpy(dot, basename);
-  return ret;
-}
-
-char *
-ReplaceExtension(const char *basename, const char *extension)
-{
-  char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
-  char *dot;
-  if (!ret) {
-    fprintf(stderr, "FATAL: out of memory\n");
-    exit(2);
-  }
-  strcpy(ret, basename);
-  dot = strrchr(ret, '/');
-  if (!dot) dot = ret;
-  dot = strrchr(dot, '.');
-  if (dot) *dot = 0;
-  strcat(ret, extension);
-  return ret;
-}
-
-//
-// add a propeller checksum to a binary file
-// may also pad the image out to form a .eeprom
-// image, if eepromSize is non-zero
-//
-int
-DoPropellerChecksum(const char *fname, size_t eepromSize)
-{
-    FILE *f = fopen(fname, "r+b");
-    unsigned char checksum = 0;
-    int c, r;
-    size_t len;
-    size_t padbytes;
-
-    if (gl_p2) return 0; // no checksum required
-    
-    if (!f) {
-        fprintf(stderr, "checksum: ");
-        perror(fname);
-        return -1;
-    }
-    fseek(f, 0L, SEEK_END);
-    len = ftell(f);  // find length of file
-    // pad file to multiple of 4, if necessary
-    padbytes = ((len + 3) & ~3) - len;
-    if (padbytes) {
-        while (padbytes > 0) {
-            fputc(0, f);
-            padbytes--;
-            len++;
-        }
-    }
-    // update header fields
-    fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
-    fputc(len & 0xff, f);
-    fputc( (len >> 8) & 0xff, f);
-    // update dbase = vbase + 2 * sizeof(int)
-    fputc( (len+8) & 0xff, f);
-    fputc( ((len+8)>>8) & 0xff, f);
-    // update initial program counter
-    fputc( 0x18, f );
-    fputc( 0x00, f );
-    // update dcurr = dbase + 2 * sizeof(int)
-    fputc( (len+16) & 0xff, f);
-    fputc( ((len+16)>>8) & 0xff, f);
-
-    fseek(f, 0L, SEEK_SET);
-    for(;;) {
-        c = fgetc(f);
-        if (c < 0) break;
-        checksum += (unsigned char)c;
-    }
-    fflush(f);
-    checksum = 0x14 - checksum;
-    r = fseek(f, 5L, SEEK_SET);
-    if (r != 0) {
-        perror("fseek");
-        return -1;
-    }
-    //printf("writing checksum 0x%x\n", checksum);
-    r = fputc(checksum, f);
-    if (r < 0) {
-        perror("fputc");
-        return -1;
-    }
-    fflush(f);
-    if (eepromSize && eepromSize >= len + 8) {
-        fseek(f, 0L, SEEK_END);
-        fputc(0xff, f); fputc(0xff, f);
-        fputc(0xf9, f); fputc(0xff, f);
-        fputc(0xff, f); fputc(0xff, f);
-        fputc(0xf9, f); fputc(0xff, f);
-        len += 8;
-        while (len < eepromSize) {
-            fputc(0, f);
-            len++;
-        }
-    }
-    fclose(f);
-    return 0;
-}
-
-void InitPreprocessor()
-{
-    pp_init(&gl_pp);
-    pp_setcomments(&gl_pp, "\'", "{", "}");
-    pp_setlinedirective(&gl_pp, "{#line %d %s}");   
-}
-
 #define MAX_TYPE_PASSES 4
 
 void
@@ -1234,46 +756,3 @@ ProcessSpinCode(Module *P, int isBinary)
     AssignObjectOffsets(P);
 }
 
-//
-// check the version
-//
-void
-CheckVersion(const char *str)
-{
-    int majorVersion = 0;
-    int minorVersion = 0;
-    int revVersion = 0;
-
-    while (isdigit(*str)) {
-        majorVersion = 10 * majorVersion + (*str - '0');
-        str++;
-    }
-    if (*str == '.') {
-        str++;
-        while (isdigit(*str)) {
-            minorVersion = 10 * minorVersion + (*str - '0');
-            str++;
-        }
-    }
-    if (*str == '.') {
-        str++;
-        while (isdigit(*str)) {
-            revVersion = 10 * revVersion + (*str - '0');
-            str++;
-        }
-    }
-
-    if (majorVersion < VERSION_MAJOR)
-        return; // everything OK
-    if (majorVersion == VERSION_MAJOR) {
-        if (minorVersion < VERSION_MINOR)
-            return; // everything OK
-        if (minorVersion == VERSION_MINOR) {
-            if (revVersion <= VERSION_REV) {
-                return;
-            }
-        }
-    }
-    fprintf(stderr, "ERROR: required version %d.%d.%d but current version is %s\n", majorVersion, minorVersion, revVersion, VERSIONSTR);
-    exit(1);
-}

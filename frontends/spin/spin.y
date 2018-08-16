@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "spinc.h"
-
+#include "frontends/spin/lexer.h"
+    
 #define SPINYYSTYPE AST*
     
 /* Yacc functions */
@@ -179,7 +180,7 @@ CheckYield(AST *body)
 %token SP_IDENTIFIER "identifier"
 %token SP_NUM        "number"
 %token SP_STRING     "string"
-%token SP_FLOATNUM   "float"
+%token SP_FLOATNUM   "float point number"
 %token SP_SPR        "SPR"
 
 /* various keywords */

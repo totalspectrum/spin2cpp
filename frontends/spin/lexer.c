@@ -12,9 +12,12 @@
 #include <stdbool.h>
 #include <math.h>
 #include "spinc.h"
+#include "lexer.h"
 #include "preprocess.h"
 
 #include "spin.tab.h"
+
+struct preprocess gl_pp;
 
 // used for error messages
 AST *last_ast;
@@ -1214,8 +1217,16 @@ struct constants p2_constants[] = {
     
 };
 
+void InitPreprocessor()
+{
+    pp_init(&gl_pp);
+    pp_setcomments(&gl_pp, "\'", "{", "}");
+    pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+}
+
+
 void
-initLexer(int flags)
+initSpinLexer(int flags)
 {
     int i;
 
