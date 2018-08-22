@@ -10,8 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "basic.h"
-
+#include <stdlib.h>
+#include "frontends/common.h"
+  
 /* Yacc functions */
     void basicyyerror(const char *);
     int basicyylex();
@@ -64,7 +65,7 @@ statement:
   ;
 
 expr:
-  BAS_NUMBER
+  BAS_INTEGER
   ;
 
 %%

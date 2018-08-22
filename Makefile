@@ -44,9 +44,9 @@ CFLAGS = -g -Wall $(INC)
 LIBS = -lm
 RM = rm -f
 
-VPATH=.:util:frontends:frontends/spin:backends:backends/asm:backends/cpp:backends/dat
+VPATH=.:util:frontends:frontends/basic:frontends/spin:backends:backends/asm:backends/cpp:backends/dat
 
-HEADERS = $(BUILD)/spin.tab.h
+HEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
 
@@ -60,7 +60,7 @@ SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
-OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o
+OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o
 
 all: $(BUILD) $(PROGS)
 
@@ -69,6 +69,9 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
 	$(YACC) -t -b $(BUILD)/spin -d frontends/spin/spin.y
+
+$(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
+	$(YACC) -t -b $(BUILD)/basic -d frontends/basic/basic.y
 
 preproc: preprocess.c $(UTIL)
 	$(CC) $(CFLAGS) -DTESTPP -o $@ $^ $(LIBS)
@@ -107,6 +110,9 @@ $(BUILD):
 	mkdir -p $(BUILD)
 
 $(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(BUILD)/basic.tab.o: $(BUILD)/basic.tab.c $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BUILD)/%.o: %.c $(HEADERS)

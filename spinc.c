@@ -44,18 +44,6 @@ extern int spinyydebug;
 // process a module after parsing it
 static void ProcessModule(Module *P);
 
-int saved_spinyychar;
-
-int
-spinyylex(SPINYYSTYPE *yval)
-{
-    int c;
-    saved_spinyychar = c = getToken(&current->L, yval);
-    if (c == SP_EOF)
-        return 0;
-    return c;
-}
-
 static int
 FindSymbolExact(SymbolTable *S, const char *name)
 {

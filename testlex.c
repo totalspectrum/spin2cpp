@@ -57,7 +57,7 @@ testNumber(const char *str, uint32_t val)
     int c;
     printf("testing number[%s]...", str);
     strToLex(&L, str, NULL);
-    t = getToken(&L, &ast);
+    t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_NUM);
     c = lexgetc(&L);
     EXPECTEQ(c, SP_EOF);
@@ -84,7 +84,7 @@ testFloat(const char *str, float fval)
 
     printf("testing number[%s]...", str);
     strToLex(&L, str, NULL);
-    t = getToken(&L, &ast);
+    t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_FLOATNUM);
     c = lexgetc(&L);
     EXPECTEQ(c, SP_EOF);
@@ -102,7 +102,7 @@ testIdentifier(const char *str, const char *expect)
     Token t;
 
     strToLex(&L, str, NULL);
-    t = getToken(&L, &ast);
+    t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_IDENTIFIER);
     assert(ast != NULL);
     assert(ast->kind == AST_IDENTIFIER);
@@ -121,7 +121,7 @@ testTokenStream(const char *str, int *tokens, int numtokens)
     printf("testing tokens [%s]...", str); fflush(stdout);
     strToLex(&L, str, NULL);
     for (i = 0; i < numtokens; i++) {
-        t = getToken(&L, &ast);
+        t = getSpinToken(&L, &ast);
         EXPECTEQ(t, tokens[i]);
     }
     printf("passed\n");

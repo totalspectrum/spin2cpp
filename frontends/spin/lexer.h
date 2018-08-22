@@ -26,7 +26,7 @@ void fileToLex(LexStream *lex, FILE *f, const char *name);
  * it will allocate and fill in an AST if necessary,
  * otherwise *ast will be set to NULL
  */
-int getToken(LexStream *, AST **ast);
+int getSpinToken(LexStream *, AST **ast);
 
 /*
  * function to check for C reserved words

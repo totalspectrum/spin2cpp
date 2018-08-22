@@ -16,6 +16,7 @@
 #include "preprocess.h"
 
 #include "spin.tab.h"
+#include "basic.tab.h"
 
 struct preprocess gl_pp;
 
@@ -389,7 +390,7 @@ static int InDatBlock(LexStream *L)
 
 /* parse an identifier */
 static int
-parseIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
+parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
     struct flexbuf fb;
@@ -598,7 +599,7 @@ static void CheckSrcComment( LexStream *L )
 //
 // skip over comments and spaces
 // return first non-comment non-space character
-// if we are inside a function, emit T_INDENT when
+// if we are inside a function, emit SP_INDENT when
 // we increase the indent level, SP_OUTDENT when we
 // decrease it
 //
@@ -786,7 +787,7 @@ again:
 static char operator_chars[] = "-+*/|<>=!@~#^.?";
 
 int
-getToken(LexStream *L, AST **ast_ptr)
+getSpinToken(LexStream *L, AST **ast_ptr)
 {
 //    int base = 10;
     int c;
@@ -820,7 +821,7 @@ getToken(LexStream *L, AST **ast_ptr)
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
-        c = parseIdentifier(L, &ast, NULL);
+        c = parseSpinIdentifier(L, &ast, NULL);
         /* if in pasm, and at start of line, restart temporary
            labels */
         if (c == SP_IDENTIFIER && InDatBlock(L) && at_startofline) {
@@ -832,12 +833,12 @@ getToken(LexStream *L, AST **ast_ptr)
             c = SP_ASSIGN;
         } else if (!gl_p2 && isIdentifierStart(peekc) && InDatBlock(L)) {
             lexungetc(L, peekc);
-            c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
-            c = parseIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
     } else if (strchr(operator_chars, c) != NULL) {
         char op[6];
         int i;
@@ -2058,3 +2059,120 @@ NormalizeIdentifier(char *idstr)
         ptr++;
     }
 }
+
+int saved_spinyychar;
+
+int
+spinyylex(SPINYYSTYPE *yval)
+{
+    int c;
+    saved_spinyychar = c = getSpinToken(&current->L, yval);
+    if (c == SP_EOF)
+        return 0;
+    return c;
+}
+
+static int
+parseBasicIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
+{
+    int c;
+    struct flexbuf fb;
+    Symbol *sym;
+    AST *ast = NULL;
+    int startColumn = L->colCounter - 1;
+    char *idstr;
+    int gatherComments = 1;
+    
+    flexbuf_init(&fb, INCSTR);
+    if (prefix) {
+        flexbuf_addmem(&fb, prefix, strlen(prefix));
+        if (gl_gas_dat) {
+            flexbuf_addchar(&fb, '.');
+        } else {
+            flexbuf_addchar(&fb, ':');
+        }
+    }
+    c = lexgetc(L);
+    while (isIdentifierChar(c)) {
+        //flexbuf_addchar(&fb, tolower(c));
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
+    // add a trailing 0, and make sure there is room for an extra
+    // character in case the name mangling needs it
+    flexbuf_addchar(&fb, '\0');
+    flexbuf_addchar(&fb, '\0');
+    idstr = flexbuf_get(&fb);
+    lexungetc(L, c);  
+
+    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    /* make sure identifiers do not conflict with C keywords */
+    if (gl_normalizeIdents || Is_C_Reserved(idstr)) {
+        NormalizeIdentifier(idstr);
+    }
+    ast->d.string = idstr;
+    *ast_ptr = ast;
+    return BAS_IDENTIFIER;
+}
+
+static int
+getBasicToken(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    AST *ast = NULL;
+    int at_startofline = (L->eoln == 1);
+    int peekc;
+    
+    c = skipSpace(L, &ast);
+
+//    printf("L->linecounter=%d\n", L->lineCounter);
+    if (c >= 127) {
+        *ast_ptr = last_ast = ast;
+        return c;
+    } else if (safe_isdigit(c)) {
+        lexungetc(L,c);
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 10, &ast->d.ival);
+        if (c == SP_FLOATNUM) {
+            ast->kind = AST_FLOAT;
+	    c = BAS_FLOAT;
+	} else {
+	  c = BAS_INTEGER;
+	}
+#if 0
+    } else if (c == '$') {
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 16, &ast->d.ival);
+    } else if (c == '%') {
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = lexgetc(L);
+        if (c == '%') {
+            c = parseNumber(L, 4, &ast->d.ival);
+        } else {
+            lexungetc(L, c);
+            c = parseNumber(L, 2, &ast->d.ival);
+        }
+#endif
+    } else if (isIdentifierStart(c)) {
+        lexungetc(L, c);
+        c = parseBasicIdentifier(L, &ast, NULL);
+    } else if (c == '"') {
+        parseString(L, &ast);
+	c = BAS_STRING;
+    }
+    *ast_ptr = last_ast = ast;
+    return c;
+}
+
+int saved_basicyychar;
+
+int
+basicyylex(SPINYYSTYPE *yval)
+{
+    int c;
+    saved_basicyychar = c = getBasicToken(&current->L, yval);
+    if (c == SP_EOF)
+        return 0;
+    return c;
+}
+
