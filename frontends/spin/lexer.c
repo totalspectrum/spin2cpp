@@ -2073,7 +2073,7 @@ spinyylex(SPINYYSTYPE *yval)
 }
 
 static int
-parseBasicIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
+parseBasicIdentifier(LexStream *L, AST **ast_ptr)
 {
     int c;
     struct flexbuf fb;
@@ -2081,20 +2081,17 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     AST *ast = NULL;
     int startColumn = L->colCounter - 1;
     char *idstr;
-    int gatherComments = 1;
     
     flexbuf_init(&fb, INCSTR);
-    if (prefix) {
-        flexbuf_addmem(&fb, prefix, strlen(prefix));
-        if (gl_gas_dat) {
-            flexbuf_addchar(&fb, '.');
-        } else {
-            flexbuf_addchar(&fb, ':');
-        }
-    }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        //flexbuf_addchar(&fb, tolower(c));
+        if (c != '_') {
+            flexbuf_addchar(&fb, tolower(c));
+	}
+        c = lexgetc(L);
+    }
+    // allow trailing $, %, #
+    if (c == '$' || c == '#' || c == '%') {
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
@@ -2120,8 +2117,6 @@ getBasicToken(LexStream *L, AST **ast_ptr)
 {
     int c;
     AST *ast = NULL;
-    int at_startofline = (L->eoln == 1);
-    int peekc;
     
     c = skipSpace(L, &ast);
 
@@ -2155,7 +2150,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
 #endif
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
-        c = parseBasicIdentifier(L, &ast, NULL);
+        c = parseBasicIdentifier(L, &ast);
     } else if (c == '"') {
         parseString(L, &ast);
 	c = BAS_STRING;
