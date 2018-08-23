@@ -105,7 +105,8 @@ NewModule(const char *fullname)
     if (globalModule) {
         P->objsyms.next = &globalModule->objsyms;
     } else {
-        P->objsyms.next = &reservedWords;
+        //P->objsyms.next = &reservedWords;
+        P->objsyms.next = NULL;
     }
     return P;
 }

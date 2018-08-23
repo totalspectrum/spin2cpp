@@ -38,8 +38,10 @@
 //#define DEBUG_YACC
 
 extern int spinyyparse(void);
+extern int basicyyparse(void);
 
 extern int spinyydebug;
+extern int basicyydebug;
 
 // process a module after parsing it
 static void ProcessModule(Module *P);
@@ -589,6 +591,17 @@ ProcessModule(Module *P)
  */
 int gl_depth = 0;
 
+static void
+doparse(const char *language)
+{
+  if (!strcmp(language, ".bas")) {
+    basicyydebug = spinyydebug;
+    basicyyparse();
+  } else {
+    spinyyparse();
+  }
+}
+
 Module *
 ParseFile(const char *name)
 {
@@ -596,9 +609,15 @@ ParseFile(const char *name)
     Module *P, *save, *Q, *LastQ;
     char *fname = NULL;
     char *parseString = NULL;
+    char *language;
 
+    // check language to process
+    language = strrchr(name, '.');
+    if (!language) {
+      language = ".spin";
+    }
     if (current)
-      fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
+      fname = find_file_on_path(&gl_pp, name, language, current->fullname);
     if (!fname)
       fname = strdup(name);
 
@@ -660,11 +679,11 @@ ParseFile(const char *name)
         parseString = pp_finish(&gl_pp);
         pp_restore_define_state(&gl_pp, defineState);
         strToLex(&current->L, parseString, fname);
-        spinyyparse();
+	doparse(language);
         free(parseString);
     } else {
         fileToLex(&current->L, f, fname);
-        spinyyparse();
+        doparse(language);
     }
     fclose(f);
 

@@ -60,7 +60,7 @@ testNumber(const char *str, uint32_t val)
     t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_NUM);
     c = lexgetc(&L);
-    EXPECTEQ(c, SP_EOF);
+    EXPECTEQ(c, EOF);
     assert(ast != NULL);
     assert(ast->kind == AST_INTEGER);
     EXPECTEQ(ast->d.ival, val);
@@ -87,7 +87,7 @@ testFloat(const char *str, float fval)
     t = getSpinToken(&L, &ast);
     EXPECTEQ(t, SP_FLOATNUM);
     c = lexgetc(&L);
-    EXPECTEQ(c, SP_EOF);
+    EXPECTEQ(c, EOF);
     assert(ast != NULL);
     assert(ast->kind == AST_FLOAT);
     EXPECTEQ(ast->d.ival, val);

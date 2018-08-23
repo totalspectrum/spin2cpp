@@ -15,6 +15,8 @@
 #include "lexer.h"
 #include "preprocess.h"
 
+#define EOF -1
+
 #include "spin.tab.h"
 #include "basic.tab.h"
 
@@ -42,7 +44,8 @@ safe_isdigit(unsigned int x) {
     return (x < 255) ? isdigit(x) : 0;
 }
 
-SymbolTable reservedWords;
+static SymbolTable spinReservedWords;
+static SymbolTable basicReservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
 
@@ -66,7 +69,7 @@ strgetc(LexStream *L)
     }
     if (c != 0)
         L->ptr = s;
-    return (c == 0) ? SP_EOF : c;
+    return (c == 0) ? EOF : c;
 }
 
 /* open a stream from a string s */
@@ -103,7 +106,7 @@ filegetc(LexStream *L)
         }
     }
 
-    return (c >= 0) ? c : SP_EOF;
+    return (c >= 0) ? c : EOF;
 }
 
 static int 
@@ -115,10 +118,10 @@ filegetwc(LexStream *L)
     f = (FILE *)L->ptr;
 again:
     c1 = fgetc(f);
-    if (c1 < 0) return SP_EOF;
+    if (c1 < 0) return EOF;
     c2 = fgetc(f);
     if (c2 != 0) {
-        if (c2 < 0) return SP_EOF;
+        if (c2 < 0) return EOF;
         /* FIXME: should convert to UTF-8 */
         return 0xff;
     }
@@ -210,7 +213,7 @@ lexgetc(LexStream *L)
     } else {
         L->colCounter++;
     }
-    if (c == SP_EOF) {
+    if (c == EOF) {
         startNewLine(L);
     } else {
         flexbuf_addchar(&L->curLine, c);
@@ -446,7 +449,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
         }
     }
-    sym = FindSymbol(&reservedWords, idstr);
+    sym = FindSymbol(&spinReservedWords, idstr);
     if (sym != NULL) {
         if (sym->type == SYM_BUILTIN)
         {
@@ -604,8 +607,11 @@ static void CheckSrcComment( LexStream *L )
 // decrease it
 //
 
-int
-skipSpace(LexStream *L, AST **ast_ptr)
+#define LANG_SPIN 0
+#define LANG_BASIC 1
+
+static int
+skipSpace(LexStream *L, AST **ast_ptr, int language)
 {
     int c;
     int commentNest;
@@ -614,6 +620,16 @@ skipSpace(LexStream *L, AST **ast_ptr)
     AST *ast;
     int startcol = 0;
     int startline = 0;
+    int eoln_token;
+    int eof_token;
+
+    if (language == LANG_BASIC) {
+      eoln_token = BAS_EOLN;
+      eof_token = BAS_EOF;
+    } else {
+      eoln_token = SP_EOLN;
+      eof_token = SP_EOF;
+    }
     
     flexbuf_init(&cb, INCSTR);
     c = lexgetc(L);
@@ -628,7 +644,7 @@ again:
     /* ignore completely empty lines or ones with just comments */
     if (c == '\'') {
         while (c == '\'') c = lexgetc(L);
-        while (c != '\n' && c != SP_EOF) {
+        while (c != '\n' && c != EOF) {
             flexbuf_addchar(&cb, c);
             c = lexgetc(L);
         }
@@ -685,7 +701,7 @@ again:
 		  --commentNest;
 		}
 	    }
-            if (commentNest <= 0 || c == SP_EOF) {
+            if (commentNest <= 0 || c == EOF) {
                 break;
             }
             if (annotate || directive) {
@@ -694,10 +710,10 @@ again:
                 flexbuf_addchar(&cb, c);
             }
         }
-        if (c == SP_EOF) {
+        if (c == EOF) {
 	    if (commentNest > 0)
 	        fprintf(stderr, "WARNING: EOF seen inside comment\n");
-            return c;
+            return eof_token;
 	}
         if (annotate) {
             AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
@@ -736,7 +752,7 @@ again:
         goto again;
     }
 
-    if (L->eoln && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
+    if (L->eoln && language == LANG_SPIN && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
             goto again;
@@ -748,7 +764,7 @@ again:
             return SP_INDENT;
         }
         /* on EOF send as many OUTDENTS as we need */
-        if (c == SP_EOF) {
+        if (c == EOF) {
             if (L->indentsp > 0) {
                 lexungetc(L, c);
                 --L->indentsp;
@@ -764,9 +780,12 @@ again:
         }
     }
     // force an end-of line at EOF
-    if (c == SP_EOF && !L->eoln && !L->eof) {
+    if (c == EOF) {
+      if (!L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
-        return SP_EOLN;
+        return eoln_token;
+      }
+      return eof_token;
     }
     if (L->eoln) {
         L->eoln = 0;
@@ -774,7 +793,7 @@ again:
     }
     if (c == '\n') {
         L->eoln = 1;
-        return SP_EOLN;
+        return eoln_token;
     }
     if (current && !current->sawToken) {
         current->sawToken = 1;
@@ -795,8 +814,11 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     int at_startofline = (L->eoln == 1);
     int peekc;
     
-    c = skipSpace(L, &ast);
+    c = skipSpace(L, &ast, LANG_SPIN);
 
+    if (c == EOF) {
+      c = SP_EOF;
+    }
 //    printf("L->linecounter=%d\n", L->lineCounter);
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
@@ -848,13 +870,13 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         op[0] = token = c;
         for (i = 1; i < sizeof(op)-1; i++) {
             c = lexgetc(L);
-            if (c >= 128 || strchr(operator_chars, c) == NULL) {
+            if (c >= 128 || c < 0 || strchr(operator_chars, c) == NULL) {
                 lexungetc(L, c);
                 break;
             }
             op[i] = c;
             op[i+1] = 0;
-            sym = FindSymbol(&reservedWords, op);
+            sym = FindSymbol(&spinReservedWords, op);
             if (sym) {
                 token = INTVAL(sym);
             } else {
@@ -877,7 +899,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
 struct reservedword {
     const char *name;
     intptr_t val;
-} init_words[] = {
+} init_spin_words[] = {
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
     { "and", SP_AND },
@@ -1232,26 +1254,26 @@ initSpinLexer(int flags)
     int i;
 
     /* add our reserved words */
-    for (i = 0; i < N_ELEMENTS(init_words); i++) {
-        AddSymbol(&reservedWords, init_words[i].name, SYM_RESERVED, (void *)init_words[i].val);
+    for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
+        AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val);
     }
     if (gl_p2) {
-        AddSymbol(&reservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL);
-        AddSymbol(&reservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW);
+        AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL);
+        AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW);
     }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&reservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
+        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&reservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val));
+            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val));
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&reservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val));
+            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val));
         }
     }
     
@@ -1267,7 +1289,7 @@ initSpinLexer(int flags)
 int
 IsReservedWord(const char *name)
 {
-    return FindSymbol(&reservedWords, name) != 0;
+    return FindSymbol(&spinReservedWords, name) != 0;
 }
 
 Instruction *instr;
@@ -2002,7 +2024,8 @@ InitPasm(int flags)
 
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
-        AddSymbol(&reservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+        AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+        AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
     }
 
     /* add instructions */
@@ -2072,6 +2095,31 @@ spinyylex(SPINYYSTYPE *yval)
     return c;
 }
 
+struct reservedword basic_keywords[] = {
+  { "as", BAS_AS },
+  { "asm", BAS_ASM },
+  { "continue", BAS_CONTINUE },
+  { "dim", BAS_DIM },
+  { "do", BAS_DO },
+  { "else", BAS_ELSE },
+  { "end", BAS_END },
+  { "exit", BAS_EXIT },
+  { "for", BAS_FOR },
+  { "function", BAS_FUNCTION },
+  { "if", BAS_IF },
+  { "let", BAS_LET },
+  { "loop", BAS_LOOP },
+  { "mod", BAS_MOD },
+  { "next", BAS_NEXT },
+  { "return", BAS_RETURN },
+  { "step", BAS_STEP },
+  { "sub", BAS_SUB },
+  { "to", BAS_TO },
+  { "until", BAS_UNTIL },
+  { "while", BAS_WHILE },
+  { NULL, 0 },
+};
+
 static int
 parseBasicIdentifier(LexStream *L, AST **ast_ptr)
 {
@@ -2118,9 +2166,9 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     int c;
     AST *ast = NULL;
     
-    c = skipSpace(L, &ast);
+    c = skipSpace(L, &ast, LANG_BASIC);
 
-//    printf("L->linecounter=%d\n", L->lineCounter);
+    // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
         return c;
@@ -2170,4 +2218,3 @@ basicyylex(SPINYYSTYPE *yval)
         return 0;
     return c;
 }
-

@@ -30,6 +30,8 @@
 %token BAS_INTEGER    "integer"
 %token BAS_FLOAT      "number"
 %token BAS_STRING     "string"
+%token BAS_EOLN       "end of line"
+%token BAS_EOF        "end of file"
 
 /* keywords */
 %token BAS_AS         "as"
@@ -56,12 +58,12 @@
 
 %%
 statement_list:
-  statement
-  | statement statement_list
+  statement BAS_EOLN
+  | statement BAS_EOLN statement_list
 ;
 
 statement:
-  BAS_IDENTIFIER "=" expr
+  BAS_IDENTIFIER '=' expr
   ;
 
 expr:
