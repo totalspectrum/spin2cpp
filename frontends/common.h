@@ -299,7 +299,8 @@ struct cmddefs {
     const char *val;
 };
 
-extern SymbolTable reservedWords;  // in the lexer
+extern SymbolTable spinReservedWords;  // in the lexer
+extern SymbolTable basicReservedWords;
 extern Module *globalModule;       // global functions and variables
 
 /* create a new AST describing a table lookup */
@@ -484,8 +485,12 @@ void SimplifyAssignments(AST **astptr);
 void initSpinLexer(int flags);
 
 /* parsing functions */
+#define LANG_SPIN  0
+#define LANG_BASIC 1
+#define LANG_C     2
+
 void InitGlobalModule(void);
-Module *NewModule(const char *modulename);
+Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename);
 
 #endif

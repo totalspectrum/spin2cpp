@@ -389,7 +389,7 @@ InitGlobalModule(void)
     int oldtmpnum;
     const char *syscode;
     
-    current = globalModule = NewModule("_system_");
+    current = globalModule = NewModule("_system_", LANG_SPIN);
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
@@ -592,9 +592,9 @@ ProcessModule(Module *P)
 int gl_depth = 0;
 
 static void
-doparse(const char *language)
+doparse(int language)
 {
-  if (!strcmp(language, ".bas")) {
+  if (language == LANG_BASIC) {
     basicyydebug = spinyydebug;
     basicyyparse();
   } else {
@@ -609,15 +609,22 @@ ParseFile(const char *name)
     Module *P, *save, *Q, *LastQ;
     char *fname = NULL;
     char *parseString = NULL;
-    char *language;
-
+    char *langptr;
+    int language = LANG_SPIN;
+    
     // check language to process
-    language = strrchr(name, '.');
-    if (!language) {
-      language = ".spin";
+    langptr = strrchr(name, '.');
+    if (langptr) {
+      if (!strcmp(langptr, ".bas") || !strcmp(langptr, ".basic")) {
+	language = LANG_BASIC;
+      } else if (!strcmp(langptr, ".c")) {
+	language = LANG_C;
+      }
+    } else {
+      langptr = ".spin";
     }
     if (current)
-      fname = find_file_on_path(&gl_pp, name, language, current->fullname);
+      fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
     if (!fname)
       fname = strdup(name);
 
@@ -629,7 +636,7 @@ ParseFile(const char *name)
         exit(1);
     }
     save = current;
-    P = NewModule(fname);
+    P = NewModule(fname, language);
 
     if (gl_printprogress) {
         int n = gl_depth;

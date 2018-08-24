@@ -44,8 +44,8 @@ safe_isdigit(unsigned int x) {
     return (x < 255) ? isdigit(x) : 0;
 }
 
-static SymbolTable spinReservedWords;
-static SymbolTable basicReservedWords;
+SymbolTable spinReservedWords;
+SymbolTable basicReservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
 
@@ -606,9 +606,6 @@ static void CheckSrcComment( LexStream *L )
 // we increase the indent level, SP_OUTDENT when we
 // decrease it
 //
-
-#define LANG_SPIN 0
-#define LANG_BASIC 1
 
 static int
 skipSpace(LexStream *L, AST **ast_ptr, int language)

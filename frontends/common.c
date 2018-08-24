@@ -71,7 +71,7 @@ char *gl_header2 = NULL;
  * allocate a new parser state
  */ 
 Module *
-NewModule(const char *fullname)
+NewModule(const char *fullname, int language)
 {
     Module *P;
     char *s;
@@ -104,9 +104,10 @@ NewModule(const char *fullname)
     /* link the global symbols */
     if (globalModule) {
         P->objsyms.next = &globalModule->objsyms;
+    } else if (language == LANG_BASIC) {
+        P->objsyms.next = &basicReservedWords;
     } else {
-        //P->objsyms.next = &reservedWords;
-        P->objsyms.next = NULL;
+        P->objsyms.next = &spinReservedWords;
     }
     return P;
 }
