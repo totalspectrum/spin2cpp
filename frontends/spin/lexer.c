@@ -15,7 +15,9 @@
 #include "lexer.h"
 #include "preprocess.h"
 
-#define EOF -1
+#ifndef EOF
+#define EOF (-1)
+#endif
 
 #include "spin.tab.h"
 #include "basic.tab.h"
@@ -2122,9 +2124,8 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
 {
     int c;
     struct flexbuf fb;
-    Symbol *sym;
+    //Symbol *sym;
     AST *ast = NULL;
-    int startColumn = L->colCounter - 1;
     char *idstr;
     
     flexbuf_init(&fb, INCSTR);
@@ -2211,7 +2212,7 @@ basicyylex(SPINYYSTYPE *yval)
 {
     int c;
     saved_basicyychar = c = getBasicToken(&current->L, yval);
-    if (c == SP_EOF)
+    if (c == BAS_EOF || c == EOF)
         return 0;
     return c;
 }

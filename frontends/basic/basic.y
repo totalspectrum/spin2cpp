@@ -57,9 +57,10 @@
 %token BAS_WHILE      "while"
 
 %%
-statement_list:
-  statement BAS_EOLN
-  | statement BAS_EOLN statement_list
+toplist:
+ /* empty */
+ | toplist statement BAS_EOLN
+ | toplist error BAS_EOLN
 ;
 
 statement:
