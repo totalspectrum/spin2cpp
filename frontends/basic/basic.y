@@ -93,7 +93,12 @@ topstatement:
 statement:
   lhs '=' expr newlines
     { $$ = AstAssign($1, $3); }
+  | BAS_RETURN newlines
+    { $$ = AstReturn(NULL, $1); }
+  | BAS_RETURN expr newlines
+    { $$ = AstReturn($2, $1); }
   | ifstmt
+    { $$ = $1; }
 ;
 
 ifstmt:
@@ -162,7 +167,12 @@ identifier:
 ;
 
 topdecl:
-  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' newlines funcbody
+  subdecl
+  | funcdecl
+  ;
+
+subdecl:
+  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' newlines subbody
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
@@ -171,8 +181,23 @@ topdecl:
   }
   ;
 
-funcbody:
+funcdecl:
+  BAS_FUNCTION BAS_IDENTIFIER '(' identifierlist ')' newlines funcbody
+  {
+    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(1, funcdef, $7, NULL, $1);
+  }
+  ;
+
+subbody:
   statementlist BAS_END BAS_SUB
+  { $$ = $1; }
+  ;
+
+funcbody:
+  statementlist BAS_END BAS_FUNCTION
   { $$ = $1; }
   ;
 
