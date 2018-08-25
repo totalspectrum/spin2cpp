@@ -539,3 +539,95 @@ LineInfo *GetLineInfo(AST *ast)
     }
     return NULL;
 }
+
+//
+// some useful utilities
+//
+/* create an AST in a comment holder */
+AST *
+NewCommentedAST(enum astkind kind, AST *left, AST *right, AST *comment)
+{
+    AST *ast;
+
+    ast = NewAST(kind, left, right);
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    return ast;
+}
+
+AST *
+NewStatement(AST *stmt)
+{
+    AST *ast;
+
+    if (!stmt) return NULL;
+    ast = NewAST(AST_STMTLIST, stmt, NULL);
+    return ast;
+}
+
+AST *
+NewCommentedStatement(AST *stmt)
+{
+    AST *ast;
+    AST *comment;
+
+    if (!stmt) return NULL;
+    comment = GetComments();
+    if (comment) {
+        stmt = NewAST(AST_COMMENTEDNODE, stmt, comment);
+    }
+    ast = NewAST(AST_STMTLIST, stmt, NULL);
+    return ast;
+}
+
+/* utility functions */
+AST *
+AstYield(void)
+{
+    return NewStatement(NewAST(AST_YIELD, NULL, NULL));
+}
+
+AST *
+AstReturn(AST *expr, AST *comment)
+{
+    if (expr && expr->kind == AST_EXPRLIST && expr->right == NULL) {
+        return NewCommentedAST(AST_RETURN, expr->left, NULL, comment);
+    }
+    return NewCommentedAST(AST_RETURN, expr, NULL, comment);
+}
+
+AST *
+AstAssignList(AST *dest, AST *expr, AST *comment)
+{
+    AST *ast;
+    if (expr && expr->kind == AST_EXPRLIST && expr->right == NULL) {
+        ast = AstAssign(dest, expr->left);
+    } else {
+        ast = AstAssign(dest, expr);
+    }
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    return ast;
+}
+
+AST *
+AstAbort(AST *expr, AST *comment)
+{
+    return NewCommentedAST(AST_ABORT, expr, NULL, comment);
+}
+
+AST *
+AstCatch(AST *expr)
+{
+    return NewAST(AST_CATCH, expr, NULL);
+}
+
+AST *
+AstSprRef(AST *index)
+{
+    AST *expr = AstOperator('+', AstInteger(0x1f0), index);
+    return NewAST(AST_SPRREF, expr, NULL);
+}
+

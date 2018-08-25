@@ -205,4 +205,15 @@ void DumpAST(AST *);
 /* get LineInfo for an AST */
 LineInfo *GetLineInfo(AST *);
 
+/* useful utilities for language parsers */
+AST *NewCommentedAST(enum astkind kind, AST *left, AST *right, AST *comment);
+AST *NewStatement(AST *stmt);
+AST *NewCommentedStatement(AST *stmt);
+AST *AstReturn(AST *expr, AST *comment);
+AST *AstAssignList(AST *dest, AST *expr, AST *comment);
+AST *AstYield(void);
+AST *AstAbort(AST *expr, AST *comment);
+AST *AstCatch(AST *expr);
+AST *AstSprRef(AST *index);
+
 #endif

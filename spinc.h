@@ -15,6 +15,7 @@
 
 // definition for the Spin parser
 #define SPINYYSTYPE AST*
+#define BASICYYSTYPE AST*
 
 extern struct preprocess gl_pp;
 

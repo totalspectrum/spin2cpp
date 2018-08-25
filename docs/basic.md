@@ -11,6 +11,7 @@ Comments start with `rem` or a single quote character, and go to the end of line
 ```
 as
 continue
+declare
 dim
 do
 else
@@ -20,9 +21,11 @@ for
 function
 if
 let
+local
 loop
 mod
 next
+program
 rem
 return
 step

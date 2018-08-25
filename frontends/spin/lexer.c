@@ -1014,6 +1014,34 @@ struct reservedword {
     { "@@@", SP_TRIPLEAT },
 };
 
+struct reservedword basic_keywords[] = {
+  { "as", BAS_AS },
+  { "asm", BAS_ASM },
+  { "continue", BAS_CONTINUE },
+  { "declare", BAS_DECLARE },
+  { "dim", BAS_DIM },
+  { "do", BAS_DO },
+  { "else", BAS_ELSE },
+  { "end", BAS_END },
+  { "exit", BAS_EXIT },
+  { "for", BAS_FOR },
+  { "function", BAS_FUNCTION },
+  { "if", BAS_IF },
+  { "let", BAS_LET },
+  { "local", BAS_LOCAL },
+  { "loop", BAS_LOOP },
+  { "mod", BAS_MOD },
+  { "next", BAS_NEXT },
+  { "program", BAS_PROGRAM },
+  { "return", BAS_RETURN },
+  { "step", BAS_STEP },
+  { "sub", BAS_SUB },
+  { "then", BAS_THEN },
+  { "to", BAS_TO },
+  { "until", BAS_UNTIL },
+  { "while", BAS_WHILE },
+};
+
 static char *c_words[] = {
     "abort",
     "abs",
@@ -1256,6 +1284,10 @@ initSpinLexer(int flags)
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
         AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val);
     }
+    for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
+        AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val);
+    }
+    
     if (gl_p2) {
         AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL);
         AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW);
@@ -2094,37 +2126,13 @@ spinyylex(SPINYYSTYPE *yval)
     return c;
 }
 
-struct reservedword basic_keywords[] = {
-  { "as", BAS_AS },
-  { "asm", BAS_ASM },
-  { "continue", BAS_CONTINUE },
-  { "dim", BAS_DIM },
-  { "do", BAS_DO },
-  { "else", BAS_ELSE },
-  { "end", BAS_END },
-  { "exit", BAS_EXIT },
-  { "for", BAS_FOR },
-  { "function", BAS_FUNCTION },
-  { "if", BAS_IF },
-  { "let", BAS_LET },
-  { "loop", BAS_LOOP },
-  { "mod", BAS_MOD },
-  { "next", BAS_NEXT },
-  { "return", BAS_RETURN },
-  { "step", BAS_STEP },
-  { "sub", BAS_SUB },
-  { "to", BAS_TO },
-  { "until", BAS_UNTIL },
-  { "while", BAS_WHILE },
-  { NULL, 0 },
-};
 
 static int
 parseBasicIdentifier(LexStream *L, AST **ast_ptr)
 {
     int c;
     struct flexbuf fb;
-    //Symbol *sym;
+    Symbol *sym;
     AST *ast = NULL;
     char *idstr;
     
@@ -2148,6 +2156,19 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     idstr = flexbuf_get(&fb);
     lexungetc(L, c);  
 
+    // check for keywords
+    sym = FindSymbol(&basicReservedWords, idstr);
+    if (sym != NULL) {
+      if (sym->type == SYM_RESERVED) {
+	c = INTVAL(sym);
+	if (!ast) {
+	  ast = GetComments();
+	  *ast_ptr = ast;
+	  return c;
+	}
+      }
+    }
+    // it's an identifier
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     /* make sure identifiers do not conflict with C keywords */
     if (gl_normalizeIdents || Is_C_Reserved(idstr)) {
@@ -2208,7 +2229,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
 int saved_basicyychar;
 
 int
-basicyylex(SPINYYSTYPE *yval)
+basicyylex(BASICYYSTYPE *yval)
 {
     int c;
     saved_basicyychar = c = getBasicToken(&current->L, yval);

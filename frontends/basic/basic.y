@@ -22,6 +22,7 @@
     extern AST *last_ast;
 
 #define YYERROR_VERBOSE 1
+#define BASICYYSTYPE AST*
 %}
 
 %pure-parser
@@ -37,6 +38,7 @@
 %token BAS_AS         "as"
 %token BAS_ASM        "asm"
 %token BAS_CONTINUE   "continue"
+%token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
 %token BAS_DO         "do"
 %token BAS_ELSE       "else"
@@ -46,29 +48,132 @@
 %token BAS_FUNCTION   "function"
 %token BAS_IF         "if"
 %token BAS_LET        "let"
+%token BAS_LOCAL      "local"
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
 %token BAS_NEXT       "next"
+%token BAS_PROGRAM    "program"
 %token BAS_RETURN     "return"
 %token BAS_STEP       "step"
 %token BAS_SUB        "sub"
+%token BAS_THEN       "then"
 %token BAS_TO         "to"
 %token BAS_UNTIL      "until"
 %token BAS_WHILE      "while"
 
+%token BAS_LE         "<="
+%token BAS_GE         ">="
+%token BAS_NE         "<>"
+
+%left '<' '>' BAS_LE BAS_GE BAS_NE '='
+%left '-' '+'
+%left '*' '/' BAS_MOD
+
 %%
 toplist:
  /* empty */
- | toplist statement BAS_EOLN
- | toplist error BAS_EOLN
+ | toplist1
+;
+
+toplist1:
+ topstatement
+ | toplist1 topstatement
+;
+
+newlines:
+  BAS_EOLN
+  | newlines BAS_EOLN
+  ;
+
+topstatement:
+  statement newlines
+  | topdecl newlines
 ;
 
 statement:
-  BAS_IDENTIFIER '=' expr
+  lhs '=' expr newlines
+    { $$ = AstAssign($1, $3); }
+  | ifstmt
+;
+
+ifstmt:
+  BAS_IF expr BAS_THEN newlines elseblock
+    { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
+;
+elseblock:
+  statementlist
+    { $$ = NewAST(AST_THENELSE, $1, NULL); }
+  | statementlist BAS_ELSE newlines statementlist BAS_END BAS_IF
+    { $$ = NewAST(AST_THENELSE, $1, $4); }
+;
+
+statementlist:
+  statement
+    { $$ = NewCommentedStatement($1); }
+  | statementlist statement
+    { $$ = AddToList($1, $2); }
+  ;
+
+identifierlist:
+  /* empty */
+    { $$ = NULL; }
+  | identifierlist1
+    { $$ = $1; }
+;
+identifierlist1:
+  identifier
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identifierlist1 ',' identifier
+  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
 
 expr:
   BAS_INTEGER
+    { $$ = $1; }
+  | BAS_FLOAT
+    { $$ = $1; }
+  | BAS_STRING
+    { $$ = $1; }
+  | lhs
+    { $$ = $1; }
+  | expr '+' expr
+    { $$ = AstOperator('+', $1, $3); }
+  | expr '-' expr
+    { $$ = AstOperator('-', $1, $3); }
+  | expr '*' expr
+    { $$ = AstOperator('*', $1, $3); }
+  | expr '/' expr
+    { $$ = AstOperator('/', $1, $3); }
+  | expr BAS_MOD expr
+    { $$ = AstOperator(K_MODULUS, $1, $3); }
+  | '(' expr ')'
+    { $$ = $2; }
+;
+
+lhs: identifier
+    { $$ = $1; }
+  | identifier '(' expr ')'
+    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+;
+
+identifier:
+  BAS_IDENTIFIER
+    { $$ = $1; }
+;
+
+topdecl:
+  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' newlines funcbody
+  {
+    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(1, funcdef, $7, NULL, $1);
+  }
+  ;
+
+funcbody:
+  statementlist BAS_END BAS_SUB
+  { $$ = $1; }
   ;
 
 %%
