@@ -215,5 +215,6 @@ AST *AstYield(void);
 AST *AstAbort(AST *expr, AST *comment);
 AST *AstCatch(AST *expr);
 AST *AstSprRef(AST *index);
+AST *CheckYield(AST *loopbody);
 
 #endif

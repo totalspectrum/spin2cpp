@@ -1015,6 +1015,7 @@ struct reservedword {
 };
 
 struct reservedword basic_keywords[] = {
+  { "and", BAS_AND },
   { "as", BAS_AS },
   { "asm", BAS_ASM },
   { "continue", BAS_CONTINUE },
@@ -1032,6 +1033,8 @@ struct reservedword basic_keywords[] = {
   { "loop", BAS_LOOP },
   { "mod", BAS_MOD },
   { "next", BAS_NEXT },
+  { "or", BAS_OR },
+  { "print", BAS_PRINT },
   { "program", BAS_PROGRAM },
   { "return", BAS_RETURN },
   { "step", BAS_STEP },
@@ -1039,6 +1042,7 @@ struct reservedword basic_keywords[] = {
   { "then", BAS_THEN },
   { "to", BAS_TO },
   { "until", BAS_UNTIL },
+  { "wend", BAS_WEND },
   { "while", BAS_WHILE },
 };
 
