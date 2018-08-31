@@ -226,7 +226,8 @@ identifier:
 ;
 
 topdecl:
-  subdecl
+    /* empty */
+  | subdecl
   | funcdecl
   ;
 

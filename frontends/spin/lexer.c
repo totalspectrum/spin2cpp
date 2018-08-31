@@ -601,6 +601,47 @@ static void CheckSrcComment( LexStream *L )
     s_lastFileName = L->fileName;
 }
 
+// check for a comment that runs to end of line
+static int
+checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
+{
+    AST *ast;
+    if (language == LANG_BASIC && (c == 'r' || c == 'R') ) {
+        int c2, c3;
+        c2 = lexgetc(L);
+        if (c2 == 'e' || c2 == 'E') {
+            c3 = lexgetc(L);
+            if (c3 == 'm' || c3 == 'M') {
+                // skip until next space or non-letter
+                do {
+                    c = lexgetc(L);
+                } while isalpha(c);
+                goto docomment;
+            }
+            lexungetc(L, c3);
+        }
+        lexungetc(L, c2);
+        return c;
+    }
+    
+    if (c == '\'') {
+        while (c == '\'') c = lexgetc(L);
+        goto docomment;
+    }
+    return c;
+docomment:
+    while (c != '\n' && c != EOF) {
+        flexbuf_addchar(cbp, c);
+        c = lexgetc(L);
+    }
+    flexbuf_addchar(cbp, c);
+    flexbuf_addchar(cbp, 0);
+    ast = NewAST(AST_COMMENT, NULL, NULL);
+    ast->d.string = flexbuf_get(cbp);
+    comment_chain = AddToList(comment_chain, ast);
+    return c;
+}
+
 //
 // skip over comments and spaces
 // return first non-comment non-space character
@@ -641,18 +682,7 @@ again:
     }
 
     /* ignore completely empty lines or ones with just comments */
-    if (c == '\'') {
-        while (c == '\'') c = lexgetc(L);
-        while (c != '\n' && c != EOF) {
-            flexbuf_addchar(&cb, c);
-            c = lexgetc(L);
-        }
-        flexbuf_addchar(&cb, '\n');
-        flexbuf_addchar(&cb, 0);
-        ast = NewAST(AST_COMMENT, NULL, NULL);
-        ast->d.string = flexbuf_get(&cb);
-        comment_chain = AddToList(comment_chain, ast);
-    }
+    c = checkCommentedLine(&cb, L, c, language);
     if (c == '{') {
         struct flexbuf anno;
         int annotate = 0;
@@ -1027,6 +1057,7 @@ struct reservedword basic_keywords[] = {
   { "exit", BAS_EXIT },
   { "for", BAS_FOR },
   { "function", BAS_FUNCTION },
+  { "goto", BAS_GOTO },
   { "if", BAS_IF },
   { "let", BAS_LET },
   { "local", BAS_LOCAL },
