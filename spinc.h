@@ -51,4 +51,10 @@ void ProcessSpinCode(Module *P, int isBinary);
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);
 
+// type inference based on BASIC name (e.g. A$ is a string)
+AST *InferTypeFromName(AST *identifier);
+
+// declare a module level variable if one does not already exist
+void MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ);
+
 #endif

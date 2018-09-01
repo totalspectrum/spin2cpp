@@ -28,9 +28,9 @@
 %pure-parser
 
 %token BAS_IDENTIFIER "identifier"
-%token BAS_INTEGER    "integer"
+%token BAS_INTEGER    "integer number"
 %token BAS_FLOAT      "number"
-%token BAS_STRING     "string"
+%token BAS_STRING     "literal string"
 %token BAS_EOLN       "end of line"
 %token BAS_EOF        "end of file"
 
@@ -38,6 +38,7 @@
 %token BAS_AND        "and"
 %token BAS_AS         "as"
 %token BAS_ASM        "asm"
+%token BAS_BYTE       "byte"
 %token BAS_CONTINUE   "continue"
 %token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
@@ -49,23 +50,28 @@
 %token BAS_FUNCTION   "function"
 %token BAS_GOTO       "goto"
 %token BAS_IF         "if"
+%token BAS_INTEGER_KW "integer"
 %token BAS_LET        "let"
 %token BAS_LOCAL      "local"
+%token BAS_LONG       "long"
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
 %token BAS_NEXT       "next"
 %token BAS_OR         "or"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
+%token BAS_REAL       "real"
 %token BAS_RETURN     "return"
 %token BAS_STEP       "step"
+%token BAS_STRING_KW  "string"
+%token BAS_STRUCT     "struct"
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
 %token BAS_TO         "to"
 %token BAS_UNTIL      "until"
 %token BAS_WEND       "wend"
 %token BAS_WHILE      "while"
-
+%token BAS_WORD       "word"
 %token BAS_LE         "<="
 %token BAS_GE         ">="
 %token BAS_NE         "<>"
@@ -93,13 +99,21 @@ newlines:
   ;
 
 topstatement:
-  statement newlines
-  | topdecl newlines
+  statement
+  | topdecl
+  | newlines
 ;
 
 statement:
   lhs '=' expr newlines
     { $$ = AstAssign($1, $3); }
+  | BAS_LET BAS_IDENTIFIER '=' expr newlines
+    { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
+      $$ = AstAssign($2, $4); }
+  | BAS_LOCAL BAS_IDENTIFIER newlines
+    { $$ = AstDeclareLocal($2, NULL); }
+  | BAS_LOCAL BAS_IDENTIFIER '=' expr newlines
+    { $$ = AstDeclareLocal($2, $4); }
   | BAS_RETURN newlines
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN expr newlines
@@ -156,7 +170,7 @@ statementlist:
   statement
     { $$ = NewCommentedStatement($1); }
   | statementlist statement
-    { $$ = AddToList($1, $2); }
+    { $$ = AddToList($1, NewCommentedStatement($2)); }
   ;
 
 identifierlist:
@@ -226,8 +240,7 @@ identifier:
 ;
 
 topdecl:
-    /* empty */
-  | subdecl
+  subdecl
   | funcdecl
   ;
 
@@ -252,12 +265,12 @@ funcdecl:
   ;
 
 subbody:
-  statementlist BAS_END BAS_SUB
+  statementlist BAS_END BAS_SUB newlines
   { $$ = $1; }
   ;
 
 funcbody:
-  statementlist BAS_END BAS_FUNCTION
+  statementlist BAS_END BAS_FUNCTION newlines
   { $$ = $1; }
   ;
 

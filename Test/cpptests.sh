@@ -45,6 +45,21 @@ do
   fi
 done
 
+# C++ output for Basic code
+for i in btest*.bas
+do
+  j=`basename $i .bas`
+  $PROG --ctypes --noheader -DCOUNT=4 $i
+  if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
+  then
+      rm -f $j.h $j.cpp
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
 #
 # debug directive tests
 #

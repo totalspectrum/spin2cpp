@@ -257,6 +257,13 @@ AstAssign(AST *left, AST *right)
 }
 
 AST *
+AstDeclareLocal(AST *left, AST *right)
+{
+    AST *ast = NewAST(AST_DECLARE_LOCAL, left, right);
+    return ast;
+}
+
+AST *
 AstTempVariable(const char *prefix)
 {
     char *name;

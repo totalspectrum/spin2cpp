@@ -469,6 +469,37 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
     
 }
 
+AST *
+InferTypeFromName(AST *identifier)
+{
+    const char *name = identifier->d.string;
+    if (!*name) {
+        ERROR(identifier, "Internal error, empty identifier");
+        return NULL;
+    }
+    while (name[1] != 0) {
+        name++;
+    }
+    switch(name[0]) {
+    case '%':
+        return ast_type_long;
+    case '#':
+        return ast_type_float;
+    default:
+        return ast_type_long;
+    }
+}
+
+void
+MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
+{
+    if (!AstUses(P->varblock, identifier)) {
+        AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
+        AST *newdecl = NewAST(AST_LONGLIST, iddecl, NULL);
+        P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+    }
+}
+
 void
 DeclareVariables(Module *P)
 {
