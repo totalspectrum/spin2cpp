@@ -1060,6 +1060,7 @@ struct reservedword basic_keywords[] = {
   { "function", BAS_FUNCTION },
   { "goto", BAS_GOTO },
   { "if", BAS_IF },
+  { "input", BAS_INPUT },
   { "integer", BAS_INTEGER_KW },
   { "let", BAS_LET },
   { "local", BAS_LOCAL },
@@ -1068,6 +1069,8 @@ struct reservedword basic_keywords[] = {
   { "mod", BAS_MOD },
   { "next", BAS_NEXT },
   { "or", BAS_OR },
+  { "output", BAS_OUTPUT },
+  { "pin", BAS_PIN },
   { "print", BAS_PRINT },
   { "program", BAS_PROGRAM },
   { "real", BAS_REAL },
@@ -1081,6 +1084,7 @@ struct reservedword basic_keywords[] = {
   { "until", BAS_UNTIL },
   { "wend", BAS_WEND },
   { "while", BAS_WHILE },
+  { "with", BAS_WITH },
   { "word", BAS_WORD },
 };
 

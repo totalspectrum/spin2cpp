@@ -180,6 +180,7 @@ AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);
 AST *AstOpAssign(int32_t intval, AST *left, AST *right);
 AST *AstAssign(AST *left, AST *right);
+AST *AstDeclareLocal(AST *left, AST *right);
 AST *AstTempVariable(const char *prefix);
 AST *AstTempLocalVariable(const char *prefix);
 AST *AstLookup(enum astkind kind, int index, AST *expr, AST *table);

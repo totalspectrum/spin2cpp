@@ -9,7 +9,10 @@ Comments start with `rem` or a single quote character, and go to the end of line
 ### Keywords
 
 ```
+and
 as
+asm
+byte
 continue
 declare
 dim
@@ -23,17 +26,27 @@ goto
 if
 let
 local
+long
 loop
 mod
 next
+or
+output
+pin
+print
 program
+real
 rem
 return
 step
 sub
+then
 to
 until
+wend
 while
+with
+word
 ```
 
 ### Variables
