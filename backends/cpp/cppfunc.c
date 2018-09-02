@@ -50,7 +50,7 @@ PrintParameterList(Flexbuf *f, Function *func)
             typ = ast_type_generic;
         }
         PrintType(f, typ, 0);
-        flexbuf_printf(f, "%s", ast->d.string);
+        CppPrintName(f, ast->d.string, 0);
         needcomma = 1;
         list = list->right;
     }
@@ -97,15 +97,16 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
     }
     if (gl_output == OUTPUT_C) {
         PrintType(f, func->rettype, 0);
-        flexbuf_printf(f, "%s_%s(", current->classname, 
-                func->name);
+        flexbuf_printf(f, "%s_", current->classname);
     } else {
         if (func->is_static) {
             flexbuf_printf(f, "static ");
         }
         PrintType(f, func->rettype, 0);
-        flexbuf_printf(f, "\t%s(", func->name);
+        flexbuf_printf(f, "\t");
     }
+    CppPrintName(f, func->name, 0);
+    flexbuf_printf(f, "(");
     PrintParameterList(f, func);
     flexbuf_printf(f, ");");
     PrintNewline(f);
@@ -197,11 +198,12 @@ PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
 	isfirst = 0;
         switch (decl->kind) {
         case AST_IDENTIFIER:
-            flexbuf_printf(f, "%s", decl->d.string);
+            CppPrintName(f, decl->d.string, 0);
             count++;
             break;
         case AST_ARRAYDECL:
-            flexbuf_printf(f, "%s[", decl->left->d.string);
+            CppPrintName(f, decl->left->d.string, 0);
+            flexbuf_printf(f, "[");
             if (gl_expand_constants) {
                 flexbuf_printf(f, "%d", (int)EvalConstExpr(decl->right));
             } else {
@@ -275,13 +277,16 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
         if (func->resultexpr->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  ");
             PrintType(f, func->rettype, 0);
-            flexbuf_printf(f, "%s = 0;", func->resultexpr->d.string);
+            CppPrintName(f, func->resultexpr->d.string, 0);
+            flexbuf_printf(f, " = 0;");
             PrintNewline(f);
         } else if (func->resultexpr->kind == AST_EXPRLIST) {
             AST *id = func->resultexpr;
             while (id) {
                 if (id->left && id->left->kind == AST_IDENTIFIER) {
-                    flexbuf_printf(f, "  int32_t %s;", id->left->d.string);
+                    flexbuf_printf(f, "  int32_t ");
+                    CppPrintName(f, id->left->d.string, 0);
+                    flexbuf_printf(f, ";");
                 } else {
                     ERROR(id, "Internal error printing return exprlist");
                 }

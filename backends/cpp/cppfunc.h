@@ -5,4 +5,6 @@ int PrintPublicFunctionDecls(Flexbuf *f, Module *parse);
 int PrintPrivateFunctionDecls(Flexbuf *f, Module *parse);
 void PrintFunctionBodies(Flexbuf *f, Module *parse);
 
+void CppPrintName(Flexbuf *f, const char *name, int flags);
+
 #endif

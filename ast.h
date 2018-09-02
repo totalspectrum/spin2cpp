@@ -151,6 +151,7 @@ enum astkind {
     AST_TUPLETYPE = 100,
     AST_SRCCOMMENT,
     AST_DECLARE_LOCAL,
+    AST_DECLARE_GLOBAL,
 };
 
 /* forward reference */

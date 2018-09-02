@@ -435,6 +435,7 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
     basetypesize = TypeSize(basetype);
     
     for (upper = P->varblock; upper; upper = upper->right) {
+        AST *idlist;
         if (upper->kind != AST_LISTHOLDER) {
             ERROR(upper, "Expected list holder\n");
         }
@@ -445,14 +446,22 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
         case AST_BYTELIST:
             curtype = ast_type_byte;
             curtypesize = 1;
+            idlist = ast->left;
             break;
         case AST_WORDLIST:
             curtype = ast_type_word;
             curtypesize = 2;
+            idlist = ast->left;
             break;
         case AST_LONGLIST:
 	    curtype = NULL; // was ast_type_generic;
             curtypesize = 4;
+            idlist = ast->left;
+            break;
+        case AST_DECLARE_GLOBAL:
+            curtype = ast->left;
+            idlist = ast->right;
+            curtypesize = TypeSize(curtype);
             break;
         case AST_COMMENT:
             /* skip */
@@ -462,7 +471,7 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
             return offset;
         }
         if (basetypesize == curtypesize) {
-            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, ast->left, offset);
+            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
         }
     }
     return offset;
@@ -495,7 +504,7 @@ MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
 {
     if (!AstUses(P->varblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
-        AST *newdecl = NewAST(AST_LONGLIST, iddecl, NULL);
+        AST *newdecl = NewAST(AST_DECLARE_GLOBAL, typ, iddecl);
         P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
     }
 }

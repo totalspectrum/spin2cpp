@@ -163,15 +163,9 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
     AST *ast;
     AST *upper;
     AST *comment;
-    enum astkind kind;
+    AST *idlist;
     int n = 0;
-
-    if (siz == 1)
-        kind = AST_BYTELIST;
-    else if (siz == 2)
-        kind = AST_WORDLIST;
-    else
-        kind = AST_LONGLIST;
+    int astsiz;
     
     for (upper = parse->varblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
@@ -184,10 +178,31 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             comment = ast->right;
             ast = ast->left;
         }
-        if (ast->kind == kind) {
+        switch(ast->kind) {
+        case AST_BYTELIST:
+            astsiz = 1;
+            idlist = ast->left;
+            break;
+        case AST_WORDLIST:
+            astsiz = 2;
+            idlist = ast->left;
+            break;
+        case AST_LONGLIST:
+            astsiz = 4;
+            idlist = ast->left;
+            break;
+        case AST_DECLARE_GLOBAL:
+            astsiz = TypeSize(ast->left);
+            idlist = ast->right;
+            break;
+        default:
+            ERROR(ast, "Internal error: Unexpected declaration");
+            return n;
+        }            
+        if (astsiz == siz) {
             if (comment)
                 PrintComment(f, comment);
-            n += PrintVarList(f, siz, ast->left, flags);
+            n += PrintVarList(f, siz, idlist, flags);
         }
     }
     return n;

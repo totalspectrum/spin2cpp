@@ -153,8 +153,8 @@ PrintObjConstName(Flexbuf *f, Module *P, const char* symname)
     }
 }
 
-static void
-basePrintName(Flexbuf *f, const char *name, int flags)
+void
+CppPrintName(Flexbuf *f, const char *name, int flags)
 {
     if (flags & PRINTEXPR_INLINESYM) {
         flexbuf_printf(f, "%%[%s]", name);
@@ -187,7 +187,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         if (curfunc && curfunc->parmarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[%d]", curfunc->parmarray, curfunc->result_in_parmarray+sym->offset/4);
         } else {
-            basePrintName(f, sym->name, flags);
+            CppPrintName(f, sym->name, flags);
         }
         break;              
     case SYM_LOCALVAR:
@@ -195,28 +195,27 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         if (curfunc && curfunc->localarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[%d]", curfunc->localarray, sym->offset/4);
         } else {
-            basePrintName(f, sym->name, flags);
+            CppPrintName(f, sym->name, flags);
         }
         break;              
     case SYM_RESULT:
         if (curfunc && curfunc->result_in_parmarray && !(flags & PRINTEXPR_INLINESYM)) {
             flexbuf_printf(f, "%s[0]", curfunc->parmarray);
         } else {
-            basePrintName(f, sym->name, flags);
+            CppPrintName(f, sym->name, flags);
         }
         break;
     case SYM_VARIABLE:
         if ( (gl_ccode || (curfunc && curfunc->force_static))
              && !(sym->flags & SYMF_GLOBAL) )
         {
-            flexbuf_printf(f, "self->%s", sym->name);
-        } else {
-            flexbuf_printf(f, "%s", sym->name);
+            flexbuf_printf(f, "self->");
         }
+        CppPrintName(f, sym->name, flags);
         break;
     case SYM_FUNCTION:
     default:
-        flexbuf_printf(f, "%s", sym->name);
+        CppPrintName(f, sym->name, 0);
         break;
     }
 }
