@@ -2212,10 +2212,6 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     }
     // it's an identifier
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    /* make sure identifiers do not conflict with C keywords */
-    if (gl_normalizeIdents || Is_C_Reserved(idstr)) {
-        NormalizeIdentifier(idstr);
-    }
     ast->d.string = idstr;
     *ast_ptr = ast;
     return BAS_IDENTIFIER;

@@ -785,14 +785,15 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
                 flexbuf_printf(f, "static ");
             }
             PrintType(f, pf->rettype, 0);
-            flexbuf_printf(f, "%s_%s(", parse->classname, pf->name);
-            PrintParameterList(f, pf);
+            flexbuf_printf(f, "%s_", parse->classname);
 
         } else {
             PrintType(f, pf->rettype, 0);
-            flexbuf_printf(f, "%s::%s(", parse->classname, pf->name);
-            PrintParameterList(f, pf);
+            flexbuf_printf(f, "%s::", parse->classname);
         }
+        CppPrintName(f, pf->name, 0);
+        flexbuf_printf(f, "(");
+        PrintParameterList(f, pf);
         flexbuf_printf(f, ")");
         PrintNewline(f);
         flexbuf_printf(f, "{");
