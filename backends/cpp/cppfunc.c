@@ -144,26 +144,14 @@ PrintPrivateFunctionDecls(Flexbuf *f, Module *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(Flexbuf *f, int siz, AST *ast, int flags)
+PrintVarList(Flexbuf *f, AST *curtype, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
-    AST *curtype;
     AST *lasttype = NULL;
     int isfirst = 1;
 
-    switch (siz) {
-    case 1:
-      curtype = ast_type_byte;
-      break;
-    case 2:
-      curtype = ast_type_word;
-      break;
-    default:
-      curtype = NULL;
-      break;
-    }
     while (ast != NULL) {
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Expected variable list element\n");
@@ -243,7 +231,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             flexbuf_printf(f, "  %s %s[%d];", gl_intstring, func->localarray, func->localarray_len);
             PrintNewline(f);
         } else {
-            PrintVarList(f, 4, func->locals, LOCAL);
+            PrintVarList(f, NULL, func->locals, LOCAL);
         }
     }
     if (func->parmarray) {

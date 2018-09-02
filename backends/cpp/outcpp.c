@@ -164,6 +164,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
     AST *upper;
     AST *comment;
     AST *idlist;
+    AST *typ;
     int n = 0;
     int astsiz;
     
@@ -181,18 +182,22 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
         switch(ast->kind) {
         case AST_BYTELIST:
             astsiz = 1;
+            typ = ast_type_byte;
             idlist = ast->left;
             break;
         case AST_WORDLIST:
             astsiz = 2;
+            typ = ast_type_word;
             idlist = ast->left;
             break;
         case AST_LONGLIST:
             astsiz = 4;
+            typ = NULL;
             idlist = ast->left;
             break;
         case AST_DECLARE_GLOBAL:
-            astsiz = TypeSize(ast->left);
+            typ = ast->left;
+            astsiz = TypeSize(typ);
             idlist = ast->right;
             break;
         default:
@@ -202,7 +207,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
         if (astsiz == siz) {
             if (comment)
                 PrintComment(f, comment);
-            n += PrintVarList(f, siz, idlist, flags);
+            n += PrintVarList(f, typ, idlist, flags);
         }
     }
     return n;

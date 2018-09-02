@@ -122,7 +122,7 @@ PrintInteger(Flexbuf *f, int32_t v, int flags)
 void
 PrintFloat(Flexbuf *f, int32_t v, int flags)
 {
-    if (flags & PRINTEXPR_USEFLOATS) {
+    if ((current && current->language != LANG_SPIN) || (flags & PRINTEXPR_USEFLOATS)) {
         flexbuf_printf(f, "%f", intAsFloat(v));
         return;
     }
@@ -156,11 +156,30 @@ PrintObjConstName(Flexbuf *f, Module *P, const char* symname)
 void
 CppPrintName(Flexbuf *f, const char *name, int flags)
 {
+    int c;
     if (flags & PRINTEXPR_INLINESYM) {
-        flexbuf_printf(f, "%%[%s]", name);
-    } else {
-        flexbuf_printf(f, "%s", name);
+        flexbuf_printf(f, "%%[", name);
     }
+    while (0 != (c = *name++)) {
+        switch (c) {
+        case '#':
+            flexbuf_printf(f, "_R");
+            break;
+        case '%':
+            flexbuf_printf(f, "_I");
+            break;
+        case '$':
+            flexbuf_printf(f, "_S");
+            break;
+        default:
+            flexbuf_addchar(f, c);
+            break;
+        }
+    }
+    if (flags & PRINTEXPR_INLINESYM) {
+        flexbuf_printf(f, "]");
+    }
+
 }
 
 /* code to print a symbol to a file */
@@ -678,23 +697,23 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         break;
     case AST_FLOATTYPE:
         size = EvalConstExpr(typedecl->left);
-#if 0
-        // eventually we will want to really support float operands
-        // but for now, treat floats as ints
-        if (size == 4) {
-            flexbuf_printf(f, "float%s", space);
-        } else if (size == 8) {
-            flexbuf_printf(f, "long double%s", space);
+        if (current->language == LANG_SPIN) {
+            // eventually we will want to really support float operands
+            // but for now, treat floats as ints
+            if (size == 4) {
+                flexbuf_printf(f, "int32_t%s", space);
+            } else {
+                ERROR(typedecl, "unsupported float size %d", size);
+            }
         } else {
-            ERROR(typedecl, "unsupported float size %d", size);
+            if (size == 4) {
+                flexbuf_printf(f, "float%s", space);
+            } else if (size == 8) {
+                flexbuf_printf(f, "long double%s", space);
+            } else {
+                ERROR(typedecl, "unsupported float size %d", size);
+            }
         }
-#else
-        if (size == 4) {
-            flexbuf_printf(f, "int32_t%s", space);
-        } else {
-            ERROR(typedecl, "unsupported float size %d", size);
-        }
-#endif        
         break;
     case AST_PTRTYPE:
         doPrintType(f, typedecl->left, 1, 0);

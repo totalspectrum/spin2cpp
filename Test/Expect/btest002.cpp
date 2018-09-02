@@ -5,5 +5,7 @@ void btest002::init(void)
 {
   x = 1;
   y = 2;
+  z_R = 1.000000;
+  w_R = 2.000000;
 }
 

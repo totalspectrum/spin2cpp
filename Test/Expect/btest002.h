@@ -9,6 +9,8 @@ public:
 private:
   int32_t 	x;
   int32_t 	y;
+  float 	z_R;
+  float 	w_R;
 };
 
 #endif

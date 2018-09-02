@@ -284,6 +284,9 @@ struct modulestate {
     
     /* back end specific flags */
     void *bedata;
+
+    /* language the module was written in */
+    int language;
 };
 
 /* maximum number of items in a multiple assignment */
