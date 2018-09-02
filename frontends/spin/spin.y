@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "spinc.h"
-#include "frontends/spin/lexer.h"
     
 #define SPINYYSTYPE AST*
     

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "spinc.h"
-#include "frontends/spin/lexer.h"
+#include "frontends/lexer.h"
 #include "spin.tab.h"
 
 //typedef enum yytokentype Token;

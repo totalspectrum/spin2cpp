@@ -11,7 +11,7 @@
 
 #include "ast.h"
 #include "frontends/common.h"
-#include "frontends/spin/lexer.h"
+#include "frontends/lexer.h"
 
 // definition for the Spin parser
 #define SPINYYSTYPE AST*
