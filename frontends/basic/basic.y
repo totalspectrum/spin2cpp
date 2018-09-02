@@ -75,12 +75,14 @@
 %token BAS_LE         "<="
 %token BAS_GE         ">="
 %token BAS_NE         "<>"
+%token BAS_NEGATE     "-"
 
 %left BAS_OR
 %left BAS_AND
 %left '<' '>' BAS_LE BAS_GE BAS_NE '='
 %left '-' '+'
 %left '*' '/' BAS_MOD
+%left BAS_NEGATE
 
 %%
 toplist:
@@ -205,6 +207,8 @@ expr:
     { $$ = AstOperator('/', $1, $3); }
   | expr BAS_MOD expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
+  | '-' expr %prec BAS_NEGATE
+    { $$ = AstOperator(K_NEGATE, NULL, $2); }
 ;
 
 boolexpr:
