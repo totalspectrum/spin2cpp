@@ -113,6 +113,15 @@ topstatement:
 statement:
   lhs '=' expr newlines
     { $$ = AstAssign($1, $3); }
+  | BAS_OUTPUT '(' expr ')' '=' expr newlines
+    {
+        Symbol *sym = FindSymbol(&basicReservedWords, "outa");
+        AST *outa = NewAST(AST_HWREG, NULL, NULL);
+        AST *lhs;
+        outa->d.ptr = sym->val;
+        lhs = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
+        $$ = AstAssign(lhs, $6);
+    }
   | BAS_LET BAS_IDENTIFIER '=' expr newlines
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
