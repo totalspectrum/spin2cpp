@@ -42,7 +42,8 @@ void SpinTransform(Module *Q);
 Module *ParseFile(const char *name);
 
 // parse a top level spin file (resets global state)
-Module *ParseTopFile(const char *name);
+// outputBin is nonzero if we are outputting binary code
+Module *ParseTopFile(const char *name, int outputBin);
 
 // process Spin functions (do type deduction, etc.)
 // isBinary is non-zero if we are doing a final binary output

@@ -13,6 +13,7 @@ and
 as
 asm
 byte
+class
 continue
 declare
 dim

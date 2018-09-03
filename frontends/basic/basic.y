@@ -23,6 +23,19 @@
 
 #define YYERROR_VERBOSE 1
 #define BASICYYSTYPE AST*
+
+AST *GetIORegister(const char *name)
+{
+    Symbol *sym = FindSymbol(&basicReservedWords, name);
+    AST *reg = NewAST(AST_HWREG, NULL, NULL);
+    if (!sym) {
+        ERROR(NULL, "Unknown ioregister %s", name);
+        return NULL;
+    }
+    reg->d.ptr = sym->val;
+    return reg;
+}
+    
 %}
 
 %pure-parser
@@ -39,6 +52,7 @@
 %token BAS_AS         "as"
 %token BAS_ASM        "asm"
 %token BAS_BYTE       "byte"
+%token BAS_CLASS      "class"
 %token BAS_CONTINUE   "continue"
 %token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
@@ -58,6 +72,7 @@
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
 %token BAS_NEXT       "next"
+%token BAS_NOT        "not"
 %token BAS_OR         "or"
 %token BAS_OUTPUT     "output"
 %token BAS_PIN        "pin"
@@ -115,14 +130,14 @@ topstatement:
 ;
 
 statement:
-  lhs '=' expr newlines
+  BAS_IDENTIFIER '=' expr newlines
     { $$ = AstAssign($1, $3); }
+  | BAS_IDENTIFIER '(' expr ')' '=' expr newlines
+    { $$ = AstAssign( NewAST(AST_ARRAYREF, $1, $3), $6 ); }
   | BAS_OUTPUT '(' expr ')' '=' expr newlines
     {
-        Symbol *sym = FindSymbol(&basicReservedWords, "outa");
-        AST *outa = NewAST(AST_HWREG, NULL, NULL);
+        AST *outa = GetIORegister("outa");
         AST *lhs;
-        outa->d.ptr = sym->val;
         lhs = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
         $$ = AstAssign(lhs, $6);
     }
@@ -205,6 +220,13 @@ identifierlist1:
   { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
 
+iorange:
+  BAS_OUTPUT '(' expr ')'
+  {   AST *outa = GetIORegister("outa");
+      $$ = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
+  }
+;
+
 expr:
   BAS_INTEGER
     { $$ = $1; }
@@ -226,6 +248,9 @@ expr:
     { $$ = AstOperator(K_MODULUS, $1, $3); }
   | '-' expr %prec BAS_NEGATE
     { $$ = AstOperator(K_NEGATE, NULL, $2); }
+  | BAS_NOT expr
+    { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+ 
 ;
 
 boolexpr:
@@ -263,6 +288,9 @@ identifier:
 topdecl:
   subdecl
   | funcdecl
+  | classdecl
+  | dimension
+  | pindecl
   ;
 
 subdecl:
@@ -295,6 +323,40 @@ funcbody:
   { $$ = $1; }
   ;
 
+classdecl:
+  BAS_CLASS BAS_INPUT BAS_STRING BAS_AS BAS_IDENTIFIER newlines
+    {
+        AST *newobj = NewAbstractObject( $5, $3 );
+        DeclareObjects(newobj);
+        $$ = NULL;
+    }
+  ;
+
+dimension:
+  BAS_DIM identdecl BAS_AS typename
+  ;
+
+pindecl:
+  BAS_DECLARE BAS_IDENTIFIER BAS_AS iorange
+  ;
+
+identdecl:
+  identifier
+    { $$ = $1; }
+  | identifier '(' expr ')'
+    { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+;
+
+typename:
+  BAS_BYTE
+    { $$ = ast_type_byte; }
+  | BAS_WORD
+    { $$ = ast_type_word; }
+  | BAS_LONG
+    { $$ = ast_type_long; }
+  | BAS_REAL
+    { $$ = ast_type_float; }
+;
 %%
 void
 basicyyerror(const char *msg)

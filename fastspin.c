@@ -460,7 +460,7 @@ main(int argc, char **argv)
     if (!quiet) {
         gl_printprogress = 1;
     }
-    P = ParseFile(target);
+    P = ParseTopFile(target, outputBin);
 
     if (outputFiles) {
         Module *Q;
@@ -474,7 +474,6 @@ main(int argc, char **argv)
         /* do type checking and deduction */
         Module *Q;
 
-        ProcessSpinCode(P, outputBin);
         if (gl_errors > 0) {
             exit(1);
         }
@@ -549,10 +548,7 @@ main(int argc, char **argv)
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
-                Q = ParseTopFile(asmname);
-                if (Q && gl_errors == 0) {
-                    ProcessSpinCode(Q, 1);
-                }
+                Q = ParseTopFile(asmname, 1);
                 if (gl_errors == 0) {
                     if (listFile) {
                         OutputLstFile(listFile, Q);

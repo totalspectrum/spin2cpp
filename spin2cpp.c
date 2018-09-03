@@ -543,7 +543,7 @@ main(int argc, char **argv)
     Init();
 
     /* now actually parse the file */
-    P = ParseFile(argv[0]);
+    P = ParseTopFile(argv[0], outputBin);
     if (compile && argc > 1) {
         /* append the remaining arguments to the command line */
         for (i = 1; i < argc; i++) {
@@ -554,7 +554,6 @@ main(int argc, char **argv)
     if (P) {
         /* do type checking and deduction */
         Module *Q;
-        ProcessSpinCode(P, outputBin);
         if (gl_errors > 0) {
             exit(1);
         }
@@ -613,10 +612,7 @@ main(int argc, char **argv)
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
-                Q = ParseTopFile(asmname);
-                if (Q && gl_errors == 0) {
-                    ProcessSpinCode(Q, 1);
-                }
+                Q = ParseTopFile(asmname, 1);
                 if (gl_errors == 0) {
                     OutputDatFile(binname, Q, 1);
                     DoPropellerChecksum(binname, eepromSize);

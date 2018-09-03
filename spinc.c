@@ -773,10 +773,15 @@ ParseFile(const char *name)
 }
 
 Module *
-ParseTopFile(const char *name)
+ParseTopFile(const char *name, int outputBin)
 {
+    Module *P;
     current = allparse = NULL;
-    return ParseFile(name);
+    P = ParseFile(name);
+    if (P && gl_errors == 0) {
+        ProcessSpinCode(P, outputBin);
+    }
+    return P;
 }
 
 #define MAX_TYPE_PASSES 4
