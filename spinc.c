@@ -615,6 +615,13 @@ ProcessModule(Module *P)
 {
     P->botcomment = GetComments();
 
+    if (P->body) {
+        AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
+        AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
+        AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+        DeclareFunction(1, funcdef, P->body, NULL, NULL);
+    }
+    
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);
     DeclareVariables(P);

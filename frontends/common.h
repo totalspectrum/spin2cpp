@@ -287,6 +287,10 @@ struct modulestate {
 
     /* language the module was written in */
     int language;
+
+    /* "body" (statements outside any function) */
+    /* not all languages support this */
+    AST *body;
 };
 
 /* maximum number of items in a multiple assignment */

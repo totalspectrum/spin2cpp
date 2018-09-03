@@ -106,6 +106,10 @@ newlines:
 
 topstatement:
   statement
+    {
+        AST *stmtholder = NewCommentedStatement($1);
+        current->body = AddToList(current->body, stmtholder);
+    }
   | topdecl
   | newlines
 ;

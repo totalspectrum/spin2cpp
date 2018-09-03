@@ -111,6 +111,7 @@ NewModule(const char *fullname, int language)
     } else {
         P->objsyms.next = &spinReservedWords;
     }
+    P->body = NULL;
     return P;
 }
 
