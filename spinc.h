@@ -37,6 +37,12 @@ void CanonicalizeIdentifier(char *idstr);
 /* perform useful Spin specific transformations */
 void SpinTransform(Module *Q);
 
+/* ditto for BASIC */
+void BasicTransform(Module *Q);
+
+/* do some optimizations on a counting repeat loop */
+AST *TransformCountRepeat(AST *);
+
 // top level functions
 // parse a spin file
 Module *ParseFile(const char *name);
@@ -44,10 +50,6 @@ Module *ParseFile(const char *name);
 // parse a top level spin file (resets global state)
 // outputBin is nonzero if we are outputting binary code
 Module *ParseTopFile(const char *name, int outputBin);
-
-// process Spin functions (do type deduction, etc.)
-// isBinary is non-zero if we are doing a final binary output
-void ProcessSpinCode(Module *P, int isBinary);
 
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);
@@ -57,5 +59,8 @@ AST *InferTypeFromName(AST *identifier);
 
 // declare a module level variable if one does not already exist
 void MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ);
+
+// calculate number of expression items that may be placed on the stack
+int NumExprItemsOnStack(AST *param);
 
 #endif

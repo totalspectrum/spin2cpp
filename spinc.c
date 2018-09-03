@@ -772,22 +772,10 @@ ParseFile(const char *name)
     return P;
 }
 
-Module *
-ParseTopFile(const char *name, int outputBin)
-{
-    Module *P;
-    current = allparse = NULL;
-    P = ParseFile(name);
-    if (P && gl_errors == 0) {
-        ProcessSpinCode(P, outputBin);
-    }
-    return P;
-}
-
 #define MAX_TYPE_PASSES 4
 
-void
-ProcessSpinCode(Module *P, int isBinary)
+static void
+FixupCode(Module *P, int isBinary)
 {
     Module *Q;
     int changes;
@@ -807,7 +795,11 @@ ProcessSpinCode(Module *P, int isBinary)
         }
     }
     for (Q = allparse; Q; Q = Q->next) {
-        SpinTransform(Q);
+        if (Q->language == LANG_SPIN) {
+            SpinTransform(Q);
+        } else if (Q->language == LANG_BASIC) {
+            BasicTransform(Q);
+        }
         ProcessFuncs(Q);
     }
     do {
@@ -820,5 +812,17 @@ ProcessSpinCode(Module *P, int isBinary)
         PerformCSE(Q);
     }
     AssignObjectOffsets(P);
+}
+
+Module *
+ParseTopFile(const char *name, int outputBin)
+{
+    Module *P;
+    current = allparse = NULL;
+    P = ParseFile(name);
+    if (P && gl_errors == 0) {
+        FixupCode(P, outputBin);
+    }
+    return P;
 }
 

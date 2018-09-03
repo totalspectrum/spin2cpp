@@ -56,7 +56,7 @@ UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c cppexpr.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c
 CPPBACK = outcpp.c cppfunc.c outgas.c # cppexpr.c
-SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c $(PASMBACK) $(CPPBACK)
+SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c spinlang.c basiclang.c $(PASMBACK) $(CPPBACK)
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
