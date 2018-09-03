@@ -231,11 +231,18 @@ doloopstmt:
 forstmt:
   BAS_FOR BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
     {
-      AST *from, *to, *step; 
+      AST *from, *to, *step;
+      AST *ident = $2;
+      AST *closeident = $10;
+      MaybeDeclareGlobal(current, ident, InferTypeFromName(ident));
       step = NewAST(AST_STEP, $7, $9);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
+      // validate the "next i"
+      if (closeident && !AstMatch(ident, closeident)) {
+          ERROR(closeident, "Wrong variable in next: expected %s, saw %s", ident->d.string, closeident->d.string);
+      }
     }
 ;
 
