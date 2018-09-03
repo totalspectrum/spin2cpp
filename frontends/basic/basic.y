@@ -35,7 +35,20 @@ AST *GetIORegister(const char *name)
     reg->d.ptr = sym->val;
     return reg;
 }
+
+AST *
+DeclareBasicVariables(AST *idlist, AST *typ)
+{
+    AST *ident;
     
+    while (idlist) {
+        ident = idlist->left;
+        MaybeDeclareGlobal(current, ident, typ);
+        idlist = idlist->right;
+    }
+    return NULL;
+}
+
 %}
 
 %pure-parser
@@ -46,6 +59,7 @@ AST *GetIORegister(const char *name)
 %token BAS_STRING     "literal string"
 %token BAS_EOLN       "end of line"
 %token BAS_EOF        "end of file"
+%token BAS_TYPENAME   "class name"
 
 /* keywords */
 %token BAS_AND        "and"
@@ -60,6 +74,7 @@ AST *GetIORegister(const char *name)
 %token BAS_DO         "do"
 %token BAS_ELSE       "else"
 %token BAS_END        "end"
+%token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
@@ -114,9 +129,8 @@ toplist1:
  | toplist1 topstatement
 ;
 
-newlines:
+eoln:
   BAS_EOLN
-  | newlines BAS_EOLN
   ;
 
 topstatement:
@@ -126,42 +140,41 @@ topstatement:
         current->body = AddToList(current->body, stmtholder);
     }
   | topdecl
-  | newlines
 ;
 
 statement:
-  BAS_IDENTIFIER '=' expr newlines
+  BAS_IDENTIFIER '=' expr eoln
     { $$ = AstAssign($1, $3); }
-  | BAS_IDENTIFIER '(' exprlist ')' newlines
+  | BAS_IDENTIFIER '(' optexprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '(' ')' newlines
+  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')' eoln
+    { $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5); }
+  | BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-  | BAS_IDENTIFIER newlines
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-  | BAS_OUTPUT '(' expr ')' '=' expr newlines
+  | BAS_OUTPUT '(' expr ')' '=' expr eoln
     {
         AST *outa = GetIORegister("outa");
         AST *lhs;
         lhs = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
         $$ = AstAssign(lhs, $6);
     }
-  | BAS_DIRECTION '(' expr ')' '=' expr newlines
+  | BAS_DIRECTION '(' expr ')' '=' expr eoln
     {
         AST *reg = GetIORegister("dira");
         AST *lhs;
         lhs = NewAST(AST_RANGEREF, reg, NewAST(AST_RANGE, $3, NULL));
         $$ = AstAssign(lhs, $6);
     }
-  | BAS_LET BAS_IDENTIFIER '=' expr newlines
+  | BAS_LET BAS_IDENTIFIER '=' expr eoln
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
-  | BAS_LOCAL BAS_IDENTIFIER newlines
+  | BAS_LOCAL BAS_IDENTIFIER eoln
     { $$ = AstDeclareLocal($2, NULL); }
-  | BAS_LOCAL BAS_IDENTIFIER '=' expr newlines
+  | BAS_LOCAL BAS_IDENTIFIER '=' expr eoln
     { $$ = AstDeclareLocal($2, $4); }
-  | BAS_RETURN newlines
+  | BAS_RETURN eoln
     { $$ = AstReturn(NULL, $1); }
-  | BAS_RETURN expr newlines
+  | BAS_RETURN expr eoln
     { $$ = AstReturn($2, $1); }
   | ifstmt
     { $$ = $1; }
@@ -169,47 +182,76 @@ statement:
     { $$ = $1; }
   | doloopstmt
     { $$ = $1; }
+  | forstmt
+    { $$ = $1; }
+  | eoln
+    { $$ = NULL; }
 ;
 
 ifstmt:
-  BAS_IF boolexpr BAS_THEN newlines elseblock
+  BAS_IF boolexpr BAS_THEN eoln elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
 ;
 elseblock:
   statementlist endif
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
-  | statementlist BAS_ELSE newlines statementlist endif
+  | statementlist BAS_ELSE eoln statementlist endif
     { $$ = NewAST(AST_THENELSE, $1, $4); }
 ;
 
 endif:
-  BAS_END newlines
-  | BAS_END BAS_IF newlines
+  BAS_END eoln
+  | BAS_END BAS_IF eoln
 ;
 
 whilestmt:
-  BAS_WHILE boolexpr newlines statementlist endwhile
+  BAS_WHILE boolexpr eoln statementlist endwhile
     { AST *body = CheckYield($4);
       $$ = NewCommentedAST(AST_WHILE, $2, body, $1);
     }
 ;
 
 endwhile:
-  BAS_WEND newlines
-  | BAS_END BAS_WHILE newlines
+  BAS_WEND eoln
+  | BAS_END BAS_WHILE eoln
   ;
 
 doloopstmt:
-  BAS_DO newlines statementlist BAS_LOOP newlines
+  BAS_DO eoln statementlist BAS_LOOP eoln
     { AST *body = CheckYield($3);
       AST *one = AstInteger(1);
       $$ = NewCommentedAST(AST_WHILE, one, body, $1);
     }
-  | BAS_DO newlines statementlist BAS_LOOP BAS_WHILE boolexpr newlines
+  | BAS_DO eoln statementlist BAS_LOOP BAS_WHILE boolexpr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, $6, CheckYield($3), $1); }
-  | BAS_DO newlines statementlist BAS_LOOP BAS_UNTIL boolexpr newlines
+  | BAS_DO eoln statementlist BAS_LOOP BAS_UNTIL boolexpr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $6), CheckYield($3), $1); }
   ;
+
+forstmt:
+  BAS_FOR BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
+    {
+      AST *from, *to, *step; 
+      step = NewAST(AST_STEP, $7, $9);
+      to = NewAST(AST_TO, $6, step);
+      from = NewAST(AST_FROM, $4, to);
+      $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
+    }
+;
+
+endfor:
+  BAS_NEXT eoln
+    { $$ = NULL; }
+  | BAS_NEXT BAS_IDENTIFIER eoln
+    { $$ = $2; }
+;
+
+optstep:
+  /* nothing */
+    { $$ = AstInteger(1); }
+  | BAS_STEP expr
+    { $$ = $2; }
+;
 
 statementlist:
   statement
@@ -244,6 +286,13 @@ exprlist:
    { $$ = AddToList($1, $3); }
  ;
 
+optexprlist:
+  /* empty */
+    {  $$ = NULL; }
+  | exprlist
+    { $$ = $1; }
+;
+
 expritem:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
@@ -272,10 +321,12 @@ expr:
     { $$ = AstOperator(K_NEGATE, NULL, $2); }
   | BAS_NOT expr
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
-  | BAS_IDENTIFIER '(' exprlist ')'
+  | BAS_IDENTIFIER '(' optexprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '(' ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')'
+    { 
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+    }
 ;
 
 boolexpr:
@@ -317,7 +368,7 @@ topdecl:
   ;
 
 subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' newlines subbody
+  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' eoln subbody
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
@@ -327,7 +378,7 @@ subdecl:
   ;
 
 funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' identifierlist ')' newlines funcbody
+  BAS_FUNCTION BAS_IDENTIFIER '(' identifierlist ')' eoln funcbody
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
@@ -337,30 +388,33 @@ funcdecl:
   ;
 
 subbody:
-  statementlist BAS_END BAS_SUB newlines
+  statementlist BAS_END BAS_SUB eoln
   { $$ = $1; }
   ;
 
 funcbody:
-  statementlist BAS_END BAS_FUNCTION newlines
+  statementlist BAS_END BAS_FUNCTION eoln
   { $$ = $1; }
   ;
 
 classdecl:
-  BAS_CLASS BAS_INPUT BAS_STRING BAS_AS BAS_IDENTIFIER newlines
+  BAS_CLASS BAS_IDENTIFIER BAS_INPUT BAS_STRING eoln
     {
-        AST *newobj = NewAbstractObject( $5, $3 );
+        AST *newobj = NewAbstractObject( $2, $4 );
         DeclareObjects(newobj);
+        current->objblock = AddToList(current->objblock, newobj);
         $$ = NULL;
     }
   ;
 
 dimension:
-  BAS_DIM identdecl BAS_AS typename
+  BAS_DIM identlist BAS_AS typename
+    { $$ = DeclareBasicVariables($2, $4); }
   ;
 
 pindecl:
   BAS_DECLARE BAS_IDENTIFIER BAS_AS iorange
+    { ERROR($1, "pin declarations not implemented yet"); }
   ;
 
 identdecl:
@@ -369,6 +423,13 @@ identdecl:
   | identifier '(' expr ')'
     { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
 ;
+
+identlist:
+  identdecl
+  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identlist ',' identdecl
+  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+  ;
 
 typename:
   BAS_BYTE
@@ -379,7 +440,10 @@ typename:
     { $$ = ast_type_long; }
   | BAS_REAL
     { $$ = ast_type_float; }
+  | BAS_TYPENAME
+    { $$ = $1; }
 ;
+
 %%
 void
 basicyyerror(const char *msg)

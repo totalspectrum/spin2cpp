@@ -29,6 +29,12 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
         break;
+    case AST_COUNTREPEAT:
+        // convert repeat count into a for loop
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        *astptr = TransformCountRepeat(*astptr);
+        break;
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;

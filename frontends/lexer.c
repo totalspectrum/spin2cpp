@@ -1057,6 +1057,7 @@ struct reservedword basic_keywords[] = {
   { "do", BAS_DO },
   { "else", BAS_ELSE },
   { "end", BAS_END },
+  { "enum", BAS_ENUM },
   { "exit", BAS_EXIT },
   { "for", BAS_FOR },
   { "function", BAS_FUNCTION },
@@ -2215,6 +2216,18 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
 	  return c;
 	}
       }
+    }
+    // check for a defined class or similar type
+    if (current) {
+        sym = FindSymbol(&current->objsyms, idstr);
+        if (sym && sym->type == SYM_OBJECT) {
+            ast = (AST *)sym->val;
+            // check for an abstract object declaration
+            if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
+                *ast_ptr = ast;
+                return BAS_TYPENAME;
+            }
+        }
     }
     // it's an identifier
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);

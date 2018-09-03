@@ -509,6 +509,21 @@ InferTypeFromName(AST *identifier)
 void
 MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
 {
+    if (typ->kind == AST_OBJECT) {
+        AST *newobj;
+        if (AstUses(P->objblock, identifier))
+            return;
+
+        if (typ->kind == AST_OBJDECL) {
+            typ = typ->left;
+        }
+        newobj = NewAST(AST_OBJECT, identifier, NULL);
+        newobj->d.ptr = typ->d.ptr;
+        P->objblock = AddToList(P->objblock, newobj);
+        DeclareObjects(newobj);
+        return;
+    }
+    
     if (!AstUses(P->varblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_GLOBAL, typ, iddecl);

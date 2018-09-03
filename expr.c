@@ -1211,6 +1211,11 @@ int ArrayTypeSize(AST *typ)
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
         return 4; // all pointers are 4 bytes
+    case AST_OBJECT:
+    {
+        Module *P = (Module *)typ->d.ptr;
+        return P->varsize;
+    }
     default:
         ERROR(typ, "Internal error: unknown type %d passed to ArrayTypeSize",
               typ->kind);
@@ -1466,6 +1471,9 @@ ExprType(AST *expr)
  */
 int TypeSize(AST *ast)
 {
+#if 1
+    return ArrayTypeSize(ast);
+#else
     while ( ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE) ) {
         ast = ast->left;
     }
@@ -1485,6 +1493,7 @@ int TypeSize(AST *ast)
     }
     ERROR(ast, "internal error: bad type kind %d", ast->kind);
     return 0;
+#endif
 }
 
 /* check for two types the same */

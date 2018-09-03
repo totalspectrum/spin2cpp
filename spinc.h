@@ -34,9 +34,6 @@ extern int IsReservedWord(const char *str);
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
 
-/* declare a global variable if it does not already exist */
-void MaybeDeclareGlobal(Module *P, AST *ident, AST *typ);
-
 /* perform useful Spin specific transformations */
 void SpinTransform(Module *Q);
 
@@ -56,12 +53,6 @@ Module *ParseTopFile(const char *name, int outputBin);
 
 // recursively assign offsets to all objects in modules
 void AssignObjectOffsets(Module *P);
-
-// type inference based on BASIC name (e.g. A$ is a string)
-AST *InferTypeFromName(AST *identifier);
-
-// declare a module level variable if one does not already exist
-void MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ);
 
 // calculate number of expression items that may be placed on the stack
 int NumExprItemsOnStack(AST *param);

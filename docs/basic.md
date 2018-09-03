@@ -21,11 +21,13 @@ direction
 do
 else
 end
+enum
 exit
 for
 function
 goto
 if
+input
 let
 local
 long
