@@ -92,6 +92,8 @@ const char p1_system_spincode[] =
     "  asm\n"
     "    waitcnt x,#0\n"
     "  endasm\n"
+    "pri getcnt\n"
+    "  return cnt\n"
     "pri waitpeq(pin, mask, c)\n"
     "  asm\n"
     "    waitpeq pin,mask\n"
@@ -243,6 +245,11 @@ const char p1_system_spincode[] =
 // FIXME: there's a lot of duplication with P1
 const char p2_system_spincode[] =
     "pri cnt | r\n"
+    "  asm\n"
+    "    getct r\n"
+    "  endasm\n"
+    "  return r\n"
+    "pri getcnt | r\n"
     "  asm\n"
     "    getct r\n"
     "  endasm\n"
@@ -785,7 +792,7 @@ FixupCode(Module *P, int isBinary)
     // called (directly or indirectly) from the top level
     // otherwise, we need to check all PUB functions
     if (isBinary) {
-        MarkUsed(P->functions);
+        MarkUsed(GetMainFunction(P));
     } else {
         Function *pf;
         for (pf = P->functions; pf; pf = pf->next) {
@@ -826,3 +833,17 @@ ParseTopFile(const char *name, int outputBin)
     return P;
 }
 
+Function *
+GetMainFunction(Module *P)
+{
+    if (P->language == LANG_BASIC) {
+        // look for function named "program"
+        Function *f;
+        for (f = P->functions; f; f = f->next) {
+            if (!strcmp(f->name, "program")) {
+                return f;
+            }
+        }
+    }
+    return P->functions;
+}

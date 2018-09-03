@@ -985,7 +985,7 @@ OutputCppCode(const char *filename, Module *P, int printMain)
 
     PrintCppFile(&fb, P);
     if (printMain) {
-        Function *defaultMethod = P->functions;
+        Function *defaultMethod = GetMainFunction(P);
         while (defaultMethod && defaultMethod->name == NULL) {
             // skip over any dummy methods for annotations
             defaultMethod = defaultMethod->next;

@@ -56,6 +56,7 @@ AST *GetIORegister(const char *name)
 %token BAS_CONTINUE   "continue"
 %token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
+%token BAS_DIRECTION  "direction"
 %token BAS_DO         "do"
 %token BAS_ELSE       "else"
 %token BAS_END        "end"
@@ -75,7 +76,6 @@ AST *GetIORegister(const char *name)
 %token BAS_NOT        "not"
 %token BAS_OR         "or"
 %token BAS_OUTPUT     "output"
-%token BAS_PIN        "pin"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
 %token BAS_REAL       "real"
@@ -132,13 +132,24 @@ topstatement:
 statement:
   BAS_IDENTIFIER '=' expr newlines
     { $$ = AstAssign($1, $3); }
-  | BAS_IDENTIFIER '(' expr ')' '=' expr newlines
-    { $$ = AstAssign( NewAST(AST_ARRAYREF, $1, $3), $6 ); }
+  | BAS_IDENTIFIER '(' exprlist ')' newlines
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | BAS_IDENTIFIER '(' ')' newlines
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  | BAS_IDENTIFIER newlines
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | BAS_OUTPUT '(' expr ')' '=' expr newlines
     {
         AST *outa = GetIORegister("outa");
         AST *lhs;
         lhs = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
+        $$ = AstAssign(lhs, $6);
+    }
+  | BAS_DIRECTION '(' expr ')' '=' expr newlines
+    {
+        AST *reg = GetIORegister("dira");
+        AST *lhs;
+        lhs = NewAST(AST_RANGEREF, reg, NewAST(AST_RANGE, $3, NULL));
         $$ = AstAssign(lhs, $6);
     }
   | BAS_LET BAS_IDENTIFIER '=' expr newlines
@@ -227,6 +238,17 @@ iorange:
   }
 ;
 
+exprlist:
+  expritem
+ | exprlist ',' expritem
+   { $$ = AddToList($1, $3); }
+ ;
+
+expritem:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+;
+
 expr:
   BAS_INTEGER
     { $$ = $1; }
@@ -249,8 +271,11 @@ expr:
   | '-' expr %prec BAS_NEGATE
     { $$ = AstOperator(K_NEGATE, NULL, $2); }
   | BAS_NOT expr
-    { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
- 
+    { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
+  | BAS_IDENTIFIER '(' exprlist ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | BAS_IDENTIFIER '(' ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
 ;
 
 boolexpr:
@@ -276,8 +301,6 @@ boolexpr:
 
 lhs: identifier
     { $$ = $1; }
-  | identifier '(' expr ')'
-    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
 ;
 
 identifier:

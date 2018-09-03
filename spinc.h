@@ -34,6 +34,9 @@ extern int IsReservedWord(const char *str);
 /* function to canonicalize an identifier */
 void CanonicalizeIdentifier(char *idstr);
 
+/* declare a global variable if it does not already exist */
+void MaybeDeclareGlobal(Module *P, AST *ident, AST *typ);
+
 /* perform useful Spin specific transformations */
 void SpinTransform(Module *Q);
 
@@ -62,5 +65,8 @@ void MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ);
 
 // calculate number of expression items that may be placed on the stack
 int NumExprItemsOnStack(AST *param);
+
+// find the "main" function in a module, if any
+Function *GetMainFunction(Module *P);
 
 #endif

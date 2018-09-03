@@ -3986,7 +3986,7 @@ EmitMain_P1(IRList *irl, Module *P)
     Operand *objptr = NewOperand(REG_REG, "objptr", 0);
     
     arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
-    firstfunc = P->functions;
+    firstfunc = GetMainFunction(P);
     if (!firstfunc) {
         return;  // no functions at all
     }
@@ -4046,7 +4046,7 @@ EmitMain_P2(IRList *irl, Module *P)
     Operand *result1 = GetResultReg(0);
     
     arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
-    firstfunc = P->functions;
+    firstfunc = GetMainFunction(P);
     if (!firstfunc) {
         return;  // no functions at all
     }
@@ -4241,7 +4241,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         int mboxSize;
         int stackSize = 1;
         int maxLeafSize = 0;
-        func = P->functions;
+        func = GetMainFunction(P);
 #define STACK_SIZE_NAME "__STACK_SIZE"
         stackSym = FindSymbol(&P->objsyms, STACK_SIZE_NAME);
         while (func) {

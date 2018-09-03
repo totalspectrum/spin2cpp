@@ -17,6 +17,7 @@ class
 continue
 declare
 dim
+direction
 do
 else
 end
@@ -33,7 +34,6 @@ mod
 next
 or
 output
-pin
 print
 program
 real
