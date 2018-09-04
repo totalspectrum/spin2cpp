@@ -2255,23 +2255,21 @@ getBasicToken(LexStream *L, AST **ast_ptr)
         if (c == SP_FLOATNUM) {
             ast->kind = AST_FLOAT;
 	    c = BAS_FLOAT;
+	} else if (ast->d.ival == 0) {
+            // check for hex or binary prefixes like 0x or 0h
+            int c2;
+            c2 = lexgetc(L);
+            if (c2 == 'h' || c2 == 'x' || c2 == 'X') {
+                c = parseNumber(L, 16, &ast->d.ival);
+            } else if (c2 == 'b') {
+                c = parseNumber(L, 2, &ast->d.ival);
+            } else {
+                lexungetc(L, c2);
+            }
+            c = BAS_INTEGER;
 	} else {
-	  c = BAS_INTEGER;
-	}
-#if 0
-    } else if (c == '$') {
-        ast = NewAST(AST_INTEGER, NULL, NULL);
-        c = parseNumber(L, 16, &ast->d.ival);
-    } else if (c == '%') {
-        ast = NewAST(AST_INTEGER, NULL, NULL);
-        c = lexgetc(L);
-        if (c == '%') {
-            c = parseNumber(L, 4, &ast->d.ival);
-        } else {
-            lexungetc(L, c);
-            c = parseNumber(L, 2, &ast->d.ival);
+            c = BAS_INTEGER;
         }
-#endif
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
         c = parseBasicIdentifier(L, &ast);

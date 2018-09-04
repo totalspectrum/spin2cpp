@@ -6,8 +6,29 @@
 
 Comments start with `rem` or a single quote character, and go to the end of line
 
+### Integers
+
+Decimal integers are a sequence of digits, 0-9.
+
+Hexadecimal (base 16) integers start with the sequence "0h" followed by digits and/or the letters A-F or a-f.
+
+Binary (base 2) integers start with the sequence "0b" followed by the digits 0 and 1.
+
+Numbers may contain underscores anywhere to separate digits; those underscores are ignored.
+
+For example, the following are all ways to represent the decimal number `10`:
+```
+   10
+   1_0
+   0hA
+   0h_a
+   0b1010
+```
+
 ### Keywords
 
+Keywords are always treated specially by the compiler, and no identifier may be
+named the same as a keyword. The keyword `rem` is special, in that those 3 characters start a comment, so no identifier may start with `rem`.
 ```
 and
 as
