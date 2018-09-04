@@ -251,7 +251,8 @@ forstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
       // validate the "next i"
       if (closeident && !AstMatch(ident, closeident)) {
-          ERROR(closeident, "Wrong variable in next: expected %s, saw %s", ident->d.string, closeident->d.string);
+          fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+          fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
       }
     }
 ;

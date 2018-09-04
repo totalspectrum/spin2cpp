@@ -26,6 +26,20 @@ do
   fi
 done
 
+for i in error*.bas
+do
+  j=`basename $i .bas`
+  $PROG --noheader -DCOUNT=4 $i >$j.err 2>&1
+  if  diff -ub Expect/$j.err $j.err
+  then
+      rm -f $j.err
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
 #
 # now see about tests on the propeller itself
 #
