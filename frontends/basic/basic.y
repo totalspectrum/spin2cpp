@@ -143,7 +143,9 @@ topstatement:
 ;
 
 statement:
-  BAS_IDENTIFIER '=' expr eoln
+  BAS_IDENTIFIER ':'
+    { $$ = NewAST(AST_LABEL, $1, NULL); }
+  | BAS_IDENTIFIER '=' expr eoln
     { $$ = AstAssign($1, $3); }
   | BAS_IDENTIFIER '(' optexprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
@@ -176,6 +178,8 @@ statement:
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN expr eoln
     { $$ = AstReturn($2, $1); }
+  | BAS_GOTO BAS_IDENTIFIER eoln
+    { $$ = NewAST(AST_GOTO, $2, NULL); }
   | ifstmt
     { $$ = $1; }
   | whilestmt
@@ -191,6 +195,12 @@ statement:
 ifstmt:
   BAS_IF boolexpr BAS_THEN eoln elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
+  | BAS_IF boolexpr statement eoln
+    {
+        AST *stmtlist = NewCommentedStatement($3);
+        AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
+        $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
+    }
 ;
 elseblock:
   statementlist endif

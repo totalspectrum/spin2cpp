@@ -616,6 +616,20 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         flexbuf_printf(f, "%*ccontinue;", indent, ' ');
         PrintNewline(f);
         break;
+    case AST_GOTO:
+        PrintDebugDirective(f, ast);
+        flexbuf_printf(f, "%*cgoto ", indent, ' ');
+        CppPrintName(f, ast->left->d.string, 0);
+        flexbuf_printf(f, ";");
+        PrintNewline(f);
+        break;
+    case AST_LABEL:
+        PrintDebugDirective(f, ast);
+        flexbuf_printf(f, "%*c", indent, ' ');
+        CppPrintName(f, ast->left->d.string, 0);
+        flexbuf_printf(f, ":");
+        PrintNewline(f);
+        break;
     case AST_IF:
         PrintDebugDirective(f, ast->left);
         flexbuf_printf(f, "%*cif (", indent, ' ');

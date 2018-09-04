@@ -152,6 +152,9 @@ enum astkind {
     AST_SRCCOMMENT,
     AST_DECLARE_LOCAL,
     AST_DECLARE_GLOBAL,
+
+    AST_LABEL = 104,
+    AST_GOTO,
 };
 
 /* forward reference */

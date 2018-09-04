@@ -592,16 +592,22 @@ NewHubLabel()
 }
 
 Operand *
-NewCodeLabel()
+NewNamedCodeLabel(const char *id)
 {
   Operand *label;
   if (curfunc && !curfunc->cog_code) {
-      label = NewOperand(IMM_HUB_LABEL, NewTempLabelName(), 0);
+      label = NewOperand(IMM_HUB_LABEL, id, 0);
   } else {
-      label = NewOperand(IMM_COG_LABEL, NewTempLabelName(), 0);
+      label = NewOperand(IMM_COG_LABEL, id, 0);
   }
   label->used = 0;
   return label;
+}
+
+Operand *
+NewCodeLabel()
+{
+    return NewNamedCodeLabel(NewTempLabelName());
 }
 
 Operand *
@@ -3016,6 +3022,18 @@ static void CompileStatement(IRList *irl, AST *ast)
         op = CompileExpression(irl, retval, NULL);
         EmitMove(irl, arg1, op);
         EmitOp1(irl, OPC_CALL, abortfunc);
+        break;
+    case AST_LABEL:
+        EmitDebugComment(irl, ast);
+        op = NewNamedCodeLabel(ast->left->d.string);
+        op->used = 1;
+        EmitLabel(irl, op);
+        break;
+    case AST_GOTO:
+        EmitDebugComment(irl, ast);
+        op = NewNamedCodeLabel(ast->left->d.string);
+        op->used = 1;
+        EmitJump(irl, COND_TRUE, op);
         break;
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);
