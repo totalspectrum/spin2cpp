@@ -591,10 +591,14 @@ NewHubLabel()
   return label;
 }
 
+//
+// NewCodeLabel() returns a new temporary label
+//
 Operand *
-NewNamedCodeLabel(const char *id)
+NewCodeLabel()
 {
   Operand *label;
+  const char *id = NewTempLabelName();
   if (curfunc && !curfunc->cog_code) {
       label = NewOperand(IMM_HUB_LABEL, id, 0);
   } else {
@@ -604,10 +608,25 @@ NewNamedCodeLabel(const char *id)
   return label;
 }
 
+// new code label should be persistent
+// and unique to the function
 Operand *
-NewCodeLabel()
+NewNamedCodeLabel(const char *id)
 {
-    return NewNamedCodeLabel(NewTempLabelName());
+  Operand *label;
+  char temp[1024];
+  if (curfunc) {
+      snprintf(temp, sizeof(temp)-1, "Label_%s_%s", curfunc->name, id);
+      id = temp;
+  }
+  id = strdup(id);
+  if (curfunc && !curfunc->cog_code) {
+      label = NewOperand(IMM_HUB_LABEL, id, 0);
+  } else {
+      label = NewOperand(IMM_COG_LABEL, id, 0);
+  }
+  label->used = 1;
+  return label;
 }
 
 Operand *
@@ -875,6 +894,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       case SYM_FUNCTION:
           ERROR(expr, "Internal error: identifier without FUNCCALL wrapper");
           return NewImmediate(0);
+      case SYM_HWREG:
+      {
+          HwReg *hw = sym->val;
+          return GetOneGlobal(REG_HW, hw->cname, 0);
+      }
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
               /* do nothing, this is OK */
@@ -3026,13 +3050,11 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_LABEL:
         EmitDebugComment(irl, ast);
         op = NewNamedCodeLabel(ast->left->d.string);
-        op->used = 1;
         EmitLabel(irl, op);
         break;
     case AST_GOTO:
         EmitDebugComment(irl, ast);
         op = NewNamedCodeLabel(ast->left->d.string);
-        op->used = 1;
         EmitJump(irl, COND_TRUE, op);
         break;
     case AST_WHILE:
