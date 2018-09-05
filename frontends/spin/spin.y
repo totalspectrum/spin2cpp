@@ -1124,7 +1124,7 @@ spinyyerror(const char *msg)
     extern int saved_spinyychar;
     int yychar = saved_spinyychar;
     
-    fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+    ERRORHEADER(current->L.fileName, current->L.lineCounter);
 
     // massage bison's error messages to make them easier to understand
     while (*msg) {

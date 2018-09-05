@@ -469,7 +469,7 @@ basicyyerror(const char *msg)
     extern int saved_basicyychar;
     int yychar = saved_basicyychar;
     
-    fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+    ERRORHEADER(current->L.fileName, current->L.lineCounter);
 
     // massage bison's error messages to make them easier to understand
     while (*msg) {

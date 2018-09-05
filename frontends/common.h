@@ -412,6 +412,10 @@ void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
 void ERROR_UNKNOWN_SYMBOL(AST *);
 
+/* just prints the start of the error message, formatted appropriately
+   with file name and line number */
+void ERRORHEADER(const char *fileName, int lineno);
+
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);
 /* like NewObject, but does not instantiate data */
