@@ -497,6 +497,8 @@ InferTypeFromName(AST *identifier)
         name++;
     }
     switch(name[0]) {
+    case '$':
+        return ast_type_basic_string;
     case '%':
         return ast_type_long;
     case '#':
@@ -641,7 +643,7 @@ ProcessModule(Module *P)
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
         AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-        DeclareFunction(1, funcdef, P->body, NULL, NULL);
+        DeclareFunction(ast_type_void, 1, funcdef, P->body, NULL, NULL);
     }
     
     /* now declare all the symbols that weren't already declared */

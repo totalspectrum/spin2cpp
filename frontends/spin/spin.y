@@ -254,13 +254,13 @@ topelement:
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
   | SP_PUB funcdef funcbody
-    { DeclareFunction(1, $2, $3, NULL, $1); }
+    { DeclareFunction(NULL, 1, $2, $3, NULL, $1); }
   | SP_PRI funcdef funcbody
-    { DeclareFunction(0, $2, $3, NULL, $1); }
+    { DeclareFunction(NULL, 0, $2, $3, NULL, $1); }
   | SP_PUB annotation funcdef funcbody
-    { DeclareFunction(1, $3, $4, $2, $1); }
+    { DeclareFunction(NULL, 1, $3, $4, $2, $1); }
   | SP_PRI annotation funcdef funcbody
-    { DeclareFunction(0, $3, $4, $2, $1); }
+    { DeclareFunction(NULL, 0, $3, $4, $2, $1); }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;

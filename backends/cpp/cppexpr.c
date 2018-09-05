@@ -1263,17 +1263,21 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintHere(f, expr, flags);
         break;
     case AST_STRING:
-        if (strlen(expr->d.string) > 1) 
-            ERROR(expr, "string too long, expected a single character");
-
-        c = expr->d.string[0];
+        if (current->language == LANG_SPIN) {
+            if (strlen(expr->d.string) > 1)  {
+                ERROR(expr, "string too long, expected a single character");
+            }
+            c = expr->d.string[0];
         
-        if (isprint(c)) {
-            flexbuf_putc('\'', f);
-            PrintStringChar(f, c);
-            flexbuf_putc('\'', f);
+            if (isprint(c)) {
+                flexbuf_putc('\'', f);
+                PrintStringChar(f, c);
+                flexbuf_putc('\'', f);
+            } else {
+                flexbuf_printf(f, "%d", c);
+            }
         } else {
-            flexbuf_printf(f, "%d", c);
+            PrintStringLiteral(f, expr->d.string);
         }
         break;
     case AST_STRINGPTR:

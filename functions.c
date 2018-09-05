@@ -113,15 +113,23 @@ EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
  */
 
 void
-DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
+DeclareFunction(AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
 {
     AST *funcblock;
     AST *holder;
+    AST *funcdecl;
+    AST *retinfoholder;
     
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
     funcblock->d.ptr = (void *)comment;
     funcblock = NewAST(AST_LISTHOLDER, funcblock, NULL);
+
+    funcdecl = funcdef->left;
+
+    // a bit of a hack here, undone in doDeclareFunction
+    retinfoholder = NewAST(AST_RETURN, rettype, funcdecl->right);
+    funcdecl->right = retinfoholder;
 
     current->funcblock = AddToList(current->funcblock, funcblock);
 }
@@ -151,6 +159,7 @@ doDeclareFunction(AST *funcblock)
     AST *src;
     AST *comment;
     AST *defparams;
+    AST *retinfo;
     int is_public;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
@@ -169,6 +178,7 @@ doDeclareFunction(AST *funcblock)
         ERROR(funcdef, "Internal error: no function name");
         return;
     }
+    
     fdef = NewFunction();
     fdef->name = src->left->d.string;
     fdef->annotations = annotation;
@@ -182,15 +192,28 @@ doDeclareFunction(AST *funcblock)
     }
     fdef->is_public = is_public;
     fdef->rettype = NULL;
+    retinfo = src->right;
+    if (retinfo->kind == AST_RETURN) {
+        src = retinfo; // so src->right holds returned variables
+        fdef->rettype = retinfo->left;
+    } else {
+        ERROR(funcdef, "Internal error in function declaration structure");
+    }
+    fdef->numresults = 1;
+    if (fdef->rettype) {
+        if (fdef->rettype == ast_type_void) {
+            fdef->numresults = 0;
+        } else if (fdef->rettype->kind == AST_TUPLETYPE) {
+            fdef->numresults = fdef->rettype->d.ival;
+        }
+    }
     if (!src->right || src->right->kind == AST_RESULT) {
         fdef->resultexpr = AstIdentifier("result");
         AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
-        fdef->numresults = 1;
     } else {
         fdef->resultexpr = src->right;
         if (src->right->kind == AST_IDENTIFIER) {
             AddSymbol(&fdef->localsyms, src->right->d.string, SYM_RESULT, NULL);
-            fdef->numresults = 1;
         } else if (src->right->kind == AST_LISTHOLDER) {
             fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, src->right, 0) / LONG_SIZE;
             AstReportAs(src);
@@ -198,7 +221,7 @@ doDeclareFunction(AST *funcblock)
             fdef->rettype->d.ival = fdef->numresults;
             fdef->resultexpr = TranslateToExprList(fdef->resultexpr);
         } else {
-            ERROR(src, "Internal problem with function result definition");
+            ERROR(funcdef, "Internal error: bad contents of return value field");
         }
     }
 
@@ -1069,7 +1092,7 @@ ProcessFuncs(Module *P)
             SetFunctionType(pf, ast_type_generic);
         }
         curfunc = savecurfunc;
-        if (pf->rettype == NULL) {
+        if (pf->rettype == NULL || pf->rettype == ast_type_void) {
             pf->rettype = ast_type_void;
             pf->resultexpr = NULL;
         } else {
@@ -1413,7 +1436,7 @@ MarkUsed(Function *f)
 void
 SetFunctionType(Function *f, AST *typ)
 {
-    if (typ) {
+    if (typ && !f->rettype) {
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
@@ -1429,6 +1452,14 @@ SetFunctionType(Function *f, AST *typ)
             f->rettype = typ;
         } else {
             f->rettype = ast_type_generic;
+        }
+    }
+    if (typ && typ->kind == AST_TUPLETYPE) {
+        if (f->numresults <= 1) {
+            f->numresults = typ->d.ival;
+        }
+        else if (f->numresults != typ->d.ival) {
+            ERROR(NULL, "inconsistent return values from function %s", f->name);
         }
     }
 }

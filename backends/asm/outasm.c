@@ -113,6 +113,39 @@ static int sym_offset(Function *func, Symbol *s)
     return offset;
 }
 
+static char *cleanname(const char *name)
+{
+    static char temp[1024];
+    int i, c;
+    i = 0;
+    while (i < 1020) {
+        c = *name++;
+        if (c == 0) break;
+        if (isalnum(c) || c == '_') {
+            temp[i++] = c;
+        } else {
+            temp[i++] = '_';
+            switch (c) {
+            case '$':
+                temp[i++] = 'S';
+                break;
+            case '#':
+                temp[i++] = 'R';
+                break;
+            case '%':
+                temp[i++] = 'I';
+                break;
+            default:
+                temp[i++] = 'A' + (c & 0xF);
+                temp[i++] = 'A' + (c & 0xF);
+                break;
+            }
+        }
+    }
+    temp[i++] = 0;
+    return temp;
+}
+
 static const char *
 IdentifierLocalName(Function *func, const char *name)
 {
@@ -128,12 +161,15 @@ IdentifierLocalName(Function *func, const char *name)
         if (offset >= 0) {
             snprintf(temp, sizeof(temp)-1, "_var_%02d", offset / LONG_SIZE);
         } else {
-            snprintf(temp, sizeof(temp)-1, "_var_%s", name);
+            snprintf(temp, sizeof(temp)-1, "_var_%s", cleanname(name));
         }
-    } else if (IsTopLevel(P)) {
-        snprintf(temp, sizeof(temp)-1, "_%s_%s", func->name, name);
     } else {
-        snprintf(temp, sizeof(temp)-1, "_%s_%s_%s", P->classname, func->name, name);
+        if (IsTopLevel(P)) {
+            snprintf(temp, sizeof(temp)-1, "_%s_", cleanname(func->name));
+        } else {
+            snprintf(temp, sizeof(temp)-1, "_%s_%s_", P->classname, cleanname(func->name));
+        }
+        strncat(temp, cleanname(name), sizeof(temp)-1);
     }
     return strdup(temp);
 }
@@ -144,9 +180,9 @@ IdentifierGlobalName(Module *P, const char *name)
     char temp[1024];
     if (IsTopLevel(P)) {
         // avoid conflict with built-in assembler names by prepending "_"
-        snprintf(temp, sizeof(temp)-1, "_%s", name);
+        snprintf(temp, sizeof(temp)-1, "_%s", cleanname(name));
     } else {
-        snprintf(temp, sizeof(temp)-1, "_%s_%s", P->classname, name);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s", P->classname, cleanname(name));
     }
     return strdup(temp);
 }

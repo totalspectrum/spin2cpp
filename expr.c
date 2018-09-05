@@ -1371,7 +1371,13 @@ ExprType(AST *expr)
     case AST_STRING:
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
-        return ast_type_long;
+        // (actually no -- "abc" is the same as "a", "b", "c")
+        if (current->language == LANG_SPIN) {
+            return ast_type_long;
+        } else if (current->language == LANG_BASIC) {
+            return ast_type_basic_string;
+        }
+        /* otherwise fall through */
     case AST_STRINGPTR:
         return ast_type_string;
     case AST_MEMREF:

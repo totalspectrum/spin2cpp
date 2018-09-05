@@ -137,6 +137,8 @@ extern AST *ast_type_ptr_word;
 extern AST *ast_type_ptr_byte;
 extern AST *ast_type_ptr_void;
 
+extern AST *ast_type_basic_string;
+
 /* structure describing a dat block label */
 typedef struct label {
     uint32_t hubval;  // for P1, offset in dat block; for P2, a real address
@@ -332,8 +334,9 @@ void DeclareLabels(Module *);
 
  "annotate" is a list of C++ annotation strings
  "comment" is the list of comments preceding this function
+ "rettype" is the return type of the function, if it is known, or NULL
 */
-void DeclareFunction(int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
+void DeclareFunction(AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareToplevelAnnotation(AST *annotation);
 
 /* functions for printing data into a flexbuf */

@@ -391,17 +391,19 @@ subdecl:
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(1, funcdef, $7, NULL, $1);
+    DeclareFunction(ast_type_void, 1, funcdef, $7, NULL, $1);
   }
   ;
 
 funcdecl:
   BAS_FUNCTION BAS_IDENTIFIER '(' identifierlist ')' eoln funcbody
   {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
+    AST *name = $2;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(1, funcdef, $7, NULL, $1);
+    AST *rettype = InferTypeFromName(name);
+    DeclareFunction(rettype, 1, funcdef, $7, NULL, $1);
   }
   ;
 
