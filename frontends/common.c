@@ -316,7 +316,7 @@ ERROR(AST *instr, const char *msg, ...)
     va_list args;
     LineInfo *info = GetLineInfo(instr);
 
-    if (instr)
+    if (info)
         ERRORHEADER(info->fileName, info->lineno);
     else
         ERRORHEADER(NULL, 0);

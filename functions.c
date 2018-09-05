@@ -76,7 +76,7 @@ EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
     AST *ast;
     Symbol *sym;
     int size;
-    int typesize = symtype ? EvalConstExpr(symtype->left) : 4;
+    int typesize = symtype ? TypeSize(symtype) : 4;
 
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
@@ -1303,7 +1303,7 @@ InferTypesExpr(AST *expr, AST *expectType)
       case '+':
       case '-':
           if (expectType) {
-              if (IsPointerType(expectType) && PointerTypeSize(expectType) != 1) {
+              if (IsPointerType(expectType) && PointerTypeIncrement(expectType) != 1) {
                   // addition only works right on pointers of size 1
                   expectType = ast_type_generic; // force generic type
               } else if (!IsIntOrGenericType(expectType)) {

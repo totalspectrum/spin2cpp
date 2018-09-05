@@ -431,15 +431,12 @@ InitGlobalModule(void)
 }
 
 static int
-DeclareVariablesOfType(Module *P, AST *basetype, int offset)
+DeclareVariablesOfSize(Module *P, int basetypesize, int offset)
 {
     AST *upper;
     AST *ast;
     AST *curtype;
     int curtypesize;
-    int basetypesize;
-    
-    basetypesize = TypeSize(basetype);
     
     for (upper = P->varblock; upper; upper = upper->right) {
         AST *idlist;
@@ -477,7 +474,7 @@ DeclareVariablesOfType(Module *P, AST *basetype, int offset)
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return offset;
         }
-        if (basetypesize == curtypesize) {
+        if (basetypesize == curtypesize || (basetypesize == 4 && curtypesize >= 4)) {
             offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
         }
     }
@@ -537,10 +534,12 @@ void
 DeclareVariables(Module *P)
 {
     int offset = 0;
-    
-    offset = DeclareVariablesOfType(P, ast_type_long, offset);
-    offset = DeclareVariablesOfType(P, ast_type_word, offset);
-    offset = DeclareVariablesOfType(P, ast_type_byte, offset);
+
+    // FIXME: Spin always declares longs first, then words, then bytes
+    // but other languages may have other preferences
+    offset = DeclareVariablesOfSize(P, 4, offset); // also declares >= 4
+    offset = DeclareVariablesOfSize(P, 2, offset);
+    offset = DeclareVariablesOfSize(P, 1, offset);
 
     // round up to next LONG boundary
     offset = (offset + 3) & ~3;

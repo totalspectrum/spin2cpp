@@ -204,7 +204,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             ERROR(ast, "Internal error: Unexpected declaration");
             return n;
         }            
-        if (astsiz == siz) {
+        if (astsiz == siz || (siz == 4 && astsiz >= siz)) {
             if (comment)
                 PrintComment(f, comment);
             n += PrintVarList(f, typ, idlist, flags);

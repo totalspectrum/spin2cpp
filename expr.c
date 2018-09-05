@@ -1216,6 +1216,10 @@ int ArrayTypeSize(AST *typ)
         Module *P = (Module *)typ->d.ptr;
         return P->varsize;
     }
+    case AST_TUPLETYPE:
+    {
+        return typ->d.ival * 4;
+    }
     default:
         ERROR(typ, "Internal error: unknown type %d passed to ArrayTypeSize",
               typ->kind);
@@ -1322,7 +1326,7 @@ IsPointerType(AST *type)
 }
 
 int
-PointerTypeSize(AST *type)
+PointerTypeIncrement(AST *type)
 {
     if (!IsPointerType(type)) {
         return 1;
@@ -1439,7 +1443,7 @@ ExprType(AST *expr)
             if (!subtype) subtype = ExprType(expr->right);
             if (subtype) {
                 if (IsIntOrGenericType(subtype)) return subtype;
-                if (IsPointerType(subtype) && PointerTypeSize(subtype) == 1) {
+                if (IsPointerType(subtype) && PointerTypeIncrement(subtype) == 1) {
                     return subtype;
                 }
                 return ast_type_generic;

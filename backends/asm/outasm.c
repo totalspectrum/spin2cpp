@@ -831,6 +831,8 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
     }
     if (!type) {
         size = 4;
+    } else if (type->kind == AST_TUPLETYPE) {
+        size = 4;
     } else {
         size = EvalConstExpr(type->left);
     }
