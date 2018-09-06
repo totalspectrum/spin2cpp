@@ -10,6 +10,21 @@
 #include <string.h>
 #include "spinc.h"
 
+static AST *basic_print_float;
+static AST *basic_print_string;
+static AST *basic_print_integer;
+static AST *basic_print_nl;
+
+static AST *
+addPrintCall(AST *seq, AST *func, AST *expr)
+{
+    AST *elem;
+    AST *funccall = NewAST(AST_FUNCCALL, func,
+                           expr ? NewAST(AST_EXPRLIST, expr, NULL) : NULL);
+    elem = NewAST(AST_SEQUENCE, funccall, NULL);
+    return AddToList(seq, elem);
+}
+
 static void
 doBasicTransform(AST **astptr)
 {
@@ -38,11 +53,50 @@ doBasicTransform(AST **astptr)
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;
+    case AST_PRINT:
+    {
+        // convert PRINT to a series of calls to basic_print_xxx
+        AST *seq = NULL;
+        AST *type;
+        AST *exprlist = ast->left;
+        AST *expr;
+        while (exprlist) {
+            expr = exprlist->left;
+            exprlist = exprlist->right;
+            type = ExprType(expr);
+            if (!type) {
+                ERROR(ast, "Unknown type in print");
+                continue;
+            }
+            if (type == ast_type_float) {
+                seq = addPrintCall(seq, basic_print_float, expr);
+            } else if (ast_type_string) {
+                seq = addPrintCall(seq, basic_print_string, expr);
+            } else if (type->kind == AST_INTTYPE) {
+                seq = addPrintCall(seq, basic_print_integer, expr);
+            } else {
+                ERROR(ast, "Unable to print expression of this type");
+            }
+            break;
+        }
+        seq = addPrintCall(seq, basic_print_nl, NULL);
+        *astptr = ast = seq;
+        break;
+    }
     default:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
         break;
     }
+}
+
+static AST *
+getBasicPrimitive(const char *name)
+{
+    AST *ast;
+
+    ast = AstIdentifier(name);
+    return ast;
 }
 
 void
@@ -51,6 +105,12 @@ BasicTransform(Module *Q)
     Module *savecur = current;
     Function *func;
     Function *savefunc = curfunc;
+
+    basic_print_float = getBasicPrimitive("basic_print_float");
+    basic_print_integer = getBasicPrimitive("basic_print_integer");
+    basic_print_string = getBasicPrimitive("basic_print_string");
+    basic_print_nl = getBasicPrimitive("basic_print_nl");
+    
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;

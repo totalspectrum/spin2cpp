@@ -439,6 +439,30 @@ static const char *astnames[] = {
     "voidtype",
     "sequence",
     "condresult",
+
+    "foratleastonce",
+    "isbetween",
+    "inlineasm",
+    "operand",
+
+    "orgh",
+    "maskmove",
+    "const_modifier",
+    "volatile_modifier",
+
+    "immholder",
+    "bigimmholder",
+    "align",
+    "orgf",
+
+    "tupletype",
+    "srccomment",
+    "declare_local",
+    "declare_global",
+
+    "label",
+    "goto",
+    "print",
 };
 
 //
@@ -451,7 +475,10 @@ static void doASTDump(AST *ast, int indent)
     unsigned idx;
     const char *astname = "ast";
     
-    if (!ast) return;
+    if (!ast) {
+        printf("%*c<>\n", indent, ' ');
+        return;
+    }
     switch (ast->kind) {
     case AST_STMTLIST:
         printf("%*c<stmtlist>\n", indent, ' ');

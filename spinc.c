@@ -239,10 +239,23 @@ const char p1_system_spincode[] =
     "      rcr  x, #1\n"
     "    endasm\n"
     "  return x\n"
+    ;
+
+// common code (for both P1 and P2)
+const char common_spincode[] =
+    "pri basic_print_char(x) | txmask, bitcycles\n"
+    "  return\n"
+    "pri basic_print_integer(x)\n"
+    "  return\n"
+    "pri basic_print_float(x)\n"
+    "  return\n"
+    "pri basic_print_string(x)\n"
+    "  OUTA := x\n"
+    "pri basic_print_nl\n"
+    "  OUTA := 13\n"
 ;
 
 // code for P2
-// FIXME: there's a lot of duplication with P1
 const char p2_system_spincode[] =
     "pri cnt | r\n"
     "  asm\n"
@@ -417,6 +430,9 @@ InitGlobalModule(void)
         }
         strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
+        strToLex(&globalModule->L, common_spincode, "_common_");
+        spinyyparse();
+        
         ProcessModule(globalModule);
         InferTypes(globalModule);
         ProcessFuncs(globalModule);

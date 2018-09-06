@@ -180,6 +180,8 @@ statement:
     { $$ = AstReturn($2, $1); }
   | BAS_GOTO BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_GOTO, $2, NULL); }
+  | BAS_PRINT exprlist eoln
+    { $$ = NewAST(AST_PRINT, $2, NULL); }
   | ifstmt
     { $$ = $1; }
   | whilestmt
