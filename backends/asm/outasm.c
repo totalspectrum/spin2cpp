@@ -2141,7 +2141,9 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         case REG_HW:
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
-            base = CogMemRef(addr, 0);
+            temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, addr);
+            base = CogMemRef(temp, 0);
             break;
         default:
             break;
@@ -2763,6 +2765,7 @@ static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
+    EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
     dstimm = GetLea(irl, dst);
     EmitOp2(irl, OPC_MOVS, putcogreg, src);
     EmitOp2(irl, OPC_MOVD, putcogreg, dstimm);
@@ -2775,6 +2778,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
     if (!putcogreg) {
         putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
     }
+    EmitOp1(irl, OPC_LIVE, src);
     src = Dereference(irl, src);
     srcimm = GetLea(irl, src);
     EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
