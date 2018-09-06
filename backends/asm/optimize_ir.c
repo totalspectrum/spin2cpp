@@ -68,7 +68,7 @@ InstrReadsDst(IR *ir)
 
 // recognize instructions that modify their
 // destination
-// (should only be called on real instructions)
+// (should only be called on real instructions and OPC_LIVE)
 
 static bool
 InstrSetsDst(IR *ir)
@@ -126,6 +126,11 @@ InstrModifies(IR *ir, Operand *reg)
     Operand *dst = ir->dst;
     if (dst == reg) {
         return InstrSetsDst(ir);
+    }
+    if (ir->opc == OPC_MOVD && reg) {
+        if (dst->kind == IMM_COG_LABEL && !strcmp(reg->name, dst->name)) {
+            return true;
+        }
     }
     return false;
 }

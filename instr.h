@@ -122,6 +122,11 @@ typedef enum IROpcode {
     
     /* special flag to indicate a dead register */
     OPC_DEAD,
+    /* special flag to indicate a register is used/modified */
+    /* used for cases like array accesses where the optimizer may
+       not be able to figure it out */
+    OPC_LIVE,
+    
     /* const declaration */
     OPC_CONST,
     /* indicates an instruction slated for removal */

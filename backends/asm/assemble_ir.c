@@ -755,7 +755,13 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     switch(ir->opc) {
     case OPC_DEAD:
         /* no code necessary, internal opcode */
-        flexbuf_addstr(fb, "\t.dead\t");
+        flexbuf_addstr(fb, "\t'.dead\t");
+        flexbuf_addstr(fb, ir->dst->name);
+        flexbuf_addstr(fb, "\n");
+        break;
+    case OPC_LIVE:
+        /* no code necessary, internal opcode */
+        flexbuf_addstr(fb, "\t'.live\t");
         flexbuf_addstr(fb, ir->dst->name);
         flexbuf_addstr(fb, "\n");
         break;
