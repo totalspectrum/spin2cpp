@@ -1206,6 +1206,11 @@ extern void waitpeqBuiltin(Flexbuf *, Builtin *, AST *);
 /* hooks to be called when we recognize a builtin */
 static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 
+// the fields here are:
+// "spin name", numparameters, outputfunc, cname, gasname, extradata, parsehook
+
+// the C version of the name
+// an alternate form to use
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL, 0, NULL },
     { "clkmode", 0, defaultVariable, "CLKMODE", NULL, 0, NULL },
@@ -1235,6 +1240,16 @@ Builtin builtinfuncs[] = {
     { "bytemove", 3, memBuiltin, "memcpy", NULL, 1, NULL },
 
     { "getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
+
+    // BASIC compiler builtins
+    { "_basic_print_nl", 0, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
+    { "_basic_print_string", 1, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
+    { "_basic_print_integer", 1, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
+    { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
+    
+    { "_basic_strcpy", 2, defaultBuiltin, "basic_strcpy", NULL, 0, NULL },
+    { "_basic_strcat", 2, defaultBuiltin, "basic_strcat", NULL, 0, NULL },
+    { "_basic_tmpstr", 1, defaultBuiltin, "basic_tmpstr", NULL, 0, NULL },
 };
 
 struct constants {

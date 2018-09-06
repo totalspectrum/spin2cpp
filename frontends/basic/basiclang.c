@@ -106,10 +106,10 @@ BasicTransform(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
 
-    basic_print_float = getBasicPrimitive("basic_print_float");
-    basic_print_integer = getBasicPrimitive("basic_print_integer");
-    basic_print_string = getBasicPrimitive("basic_print_string");
-    basic_print_nl = getBasicPrimitive("basic_print_nl");
+    basic_print_float = getBasicPrimitive("_basic_print_float");
+    basic_print_integer = getBasicPrimitive("_basic_print_integer");
+    basic_print_string = getBasicPrimitive("_basic_print_string");
+    basic_print_nl = getBasicPrimitive("_basic_print_nl");
     
     current = Q;
     for (func = Q->functions; func; func = func->next) {
