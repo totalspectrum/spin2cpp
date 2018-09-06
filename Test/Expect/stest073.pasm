@@ -10,6 +10,7 @@ _get
 L__0001
 	mov	_tmp002_, #496
 	add	_tmp002_, _var_01
+	'.live	_tmp003_
 	movs	wrcog, _tmp002_
 	movd	wrcog, #_tmp003_
 	call	#wrcog
@@ -26,6 +27,7 @@ _put
 L__0004
 	mov	_tmp001_, #496
 	add	_tmp001_, _var_01
+	'.live	_var_01
 	movs	wrcog, #_var_01
 	movd	wrcog, _tmp001_
 	call	#wrcog

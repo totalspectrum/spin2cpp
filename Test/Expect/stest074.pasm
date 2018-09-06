@@ -9,18 +9,20 @@ _get
 	mov	_var_13, objptr
 	mov	_var_11, #0
 L__0003
-	mov	_tmp001_, _var_11
-	add	_tmp001_, #_var_01
-	rdlong	_tmp003_, _var_13
-	movs	wrcog, #_tmp003_
-	movd	wrcog, _tmp001_
-	call	#wrcog
 	mov	_tmp002_, _var_11
 	add	_tmp002_, #_var_01
-	movs	wrcog, _tmp002_
-	movd	wrcog, #_tmp004_
+	rdlong	_tmp004_, _var_13
+	'.live	_tmp004_
+	movs	wrcog, #_tmp004_
+	movd	wrcog, _tmp002_
 	call	#wrcog
-	add	_var_12, _tmp004_
+	mov	_tmp003_, _var_11
+	add	_tmp003_, #_var_01
+	'.live	_tmp005_
+	movs	wrcog, _tmp003_
+	movd	wrcog, #_tmp005_
+	call	#wrcog
+	add	_var_12, _tmp005_
 	add	_var_11, #1
 	add	_var_13, #4
 	cmps	_var_11, #10 wc,wz
@@ -42,13 +44,13 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
-_tmp001_
-	res	1
 _tmp002_
 	res	1
 _tmp003_
 	res	1
 _tmp004_
+	res	1
+_tmp005_
 	res	1
 _var_01
 	res	10
