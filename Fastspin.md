@@ -305,6 +305,12 @@ which is probably not what was intended.
   x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
 ```
 
+(10) fastspin has its own new operators:
+```
+  a ~/ b   is the unsigned quotient of a and b (treating both as unsigned)
+  a ~// b  is the unsigned remainder of a and b
+```
+
 Limitations
 -----------
 

@@ -1006,6 +1006,8 @@ struct reservedword {
     { "/", '/' },
     { "?", '?' },
     { "//", SP_REMAINDER },
+    { "~/", SP_UNSDIV },
+    { "~//", SP_UNSMOD },
     { "*", '*' },
     { "**", SP_HIGHMULT },
     { ">", '>' },

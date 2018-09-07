@@ -32,5 +32,6 @@
 #define K_INCREMENT 0x119
 #define K_DECREMENT 0x11a
 #define K_BOOL_XOR   0x11b
-
+#define K_UNS_DIV    0x11c
+#define K_UNS_MOD    0x11d
 #endif

@@ -174,6 +174,8 @@ CheckYield(AST *body)
 %token SP_LIMITMIN   "#>"
 %token SP_LIMITMAX   "<#"
 %token SP_REMAINDER  "//"
+%token SP_UNSDIV     "~/"
+%token SP_UNSMOD     "~//"
 %token SP_HIGHMULT   "**"
 %token SP_ROTR       "ROR (->)"
 %token SP_ROTL       "ROL (<-)"
@@ -210,7 +212,7 @@ CheckYield(AST *body)
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
-%left '*' '/' SP_REMAINDER SP_HIGHMULT
+%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSDIV SP_UNSMOD
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV
@@ -773,6 +775,10 @@ expr:
     { $$ = AstOperator(K_SGNCOMP, $1, $4); }
   | expr SP_REMAINDER expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
+  | expr SP_UNSDIV expr
+    { $$ = AstOperator(K_UNS_DIV, $1, $3); }
+  | expr SP_UNSMOD expr
+    { $$ = AstOperator(K_UNS_MOD, $1, $3); }
   | expr SP_HIGHMULT expr
     { $$ = AstOperator(K_HIGHMULT, $1, $3); }
   | expr SP_LIMITMIN expr

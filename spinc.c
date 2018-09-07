@@ -264,8 +264,8 @@ const char common_spincode[] =
     "    _basic_print_char(c)\n"
     
     "pri _basic_print_uns_raw(x) | d\n"
-    "  d := x // 10\n"
-    "  x := x / 10\n"
+    "  d := x ~// 10  ' unsigned modulus\n"
+    "  x := x ~/ 10  ' unsigned divide\n"
     "  if (x)\n"
     "    _basic_print_uns_raw(x)\n"
     "  _basic_print_char(d + \"0\")\n"

@@ -862,7 +862,7 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
   return change;
 }
 
-extern Operand *mulfunc, *divfunc, *muldiva, *muldivb;
+extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
 static bool
 DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand *opb)
@@ -929,7 +929,7 @@ OptimizeMulDiv(IRList *irl)
         } else if (opb && InstrModifies(ir, opb)) {
             opb = NULL;
         } else if (ir->opc == OPC_CALL) {
-            if (ir->dst == mulfunc || ir->dst == divfunc) {
+            if (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc) {
                 lastop = ir->dst;
             } else {
                 lastop = NULL;

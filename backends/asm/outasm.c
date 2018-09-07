@@ -32,7 +32,7 @@ static IRList cogbss;
 static IRList hubdata;
 
 Operand *mulfunc, *muldiva, *muldivb;
-Operand *divfunc;
+Operand *divfunc, *unsdivfunc;
 
 static Operand *putcogreg;
 
@@ -1360,13 +1360,17 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 
 #define FAST_IMMEDIATE_DIVIDES
 
+// getmod is: 0 for divide, 1 for remainder, 2 for unsigned divide
 static Operand *
 CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
 {
   Operand *lhs = CompileExpression(irl, expr->left, NULL);
   Operand *rhs = CompileExpression(irl, expr->right, NULL);
   Operand *temp = dest ? dest : NewFunctionTempRegister();
+  int isSigned = (getmod & 2) == 0;
 
+  getmod &= 1;
+  
 #ifdef FAST_IMMEDIATE_DIVIDES
   if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val)) {
       IR *ir;
@@ -1378,7 +1382,9 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
       }
 
       lhs = Dereference(irl, lhs);
-      ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+      if (isSigned) {
+          ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+      }
       ir->flags |= FLAG_WC; // carry will have the original sign bit
       if (getmod) {
           EmitOp2(irl, OPC_AND, temp, NewImmediate(val-1));
@@ -1391,20 +1397,23 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
           }
           EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
       }
-      ir = EmitOp2(irl, OPC_NEG, temp, temp);
-      ir->cond = COND_LT; // only do the negate if x < 0
+      if (isSigned) {
+          ir = EmitOp2(irl, OPC_NEG, temp, temp);
+          ir->cond = COND_LT; // only do the negate if x < 0
+      }
       return temp;
   }
 #endif
   
   if (!divfunc) {
     divfunc = NewOperand(IMM_COG_LABEL, "divide_", 0);
+    unsdivfunc = NewOperand(IMM_COG_LABEL, "unsdivide_", 0);
     muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
     muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
   EmitMove(irl, muldiva, lhs);
   EmitMove(irl, muldivb, rhs);
-  EmitOp1(irl, OPC_CALL, divfunc);
+  EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
   if (getmod) {
       EmitMove(irl, temp, muldiva);
   } else {
@@ -1831,6 +1840,10 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
         return CompileDiv(irl, expr, 0, dest);
     case K_MODULUS:
         return CompileDiv(irl, expr, 1, dest);
+    case K_UNS_DIV:
+        return CompileDiv(irl, expr, 2, dest);
+    case K_UNS_MOD:
+        return CompileDiv(irl, expr, 3, dest);
     case '&':
         if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == K_BIT_NOT) {
             Operand *temp = dest ? dest : NewFunctionTempRegister();
@@ -3675,12 +3688,16 @@ static const char *builtin_mul_p2 =
 
 static const char *builtin_div_p1 =
 "' code originally from spin interpreter, modified slightly\n"
+"\nunsdivide_\n"
+"       mov     itmp2_,#0\n"
+"       jmp     #udiv__\n"
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
 
+"udiv__\n"
 "        mov     itmp1_,#0                    'unsigned divide\n"
 "        mov     DIVCNT,#32\n"
 "mdiv__\n"
@@ -3699,6 +3716,7 @@ static const char *builtin_div_p1 =
 "        negc    muldivb_,muldivb_\n"
 
 "divide__ret\n"
+"unsdivide__ret\n"
     "\tret\n"
 "DIVCNT\n"
 "\tlong\t0\n"
