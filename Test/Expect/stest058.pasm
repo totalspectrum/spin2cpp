@@ -25,12 +25,4 @@ objmem
 	org	COG_BSS_START
 _tmp002_
 	res	1
-arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
-	res	1
 	fit	496

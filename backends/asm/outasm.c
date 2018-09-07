@@ -4308,6 +4308,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         
     }
     InitAsmCode();
+    CompileIntermediate(globalModule);
     
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
@@ -4401,18 +4402,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitJump(&hubcode, COND_TRUE, cogexit);
         }
         EmitBuiltins(&cogcode);
-        // we compiled builtin functions into IR form earlier, now
-        // output them
-#if 0
-        // these always go in COG memory
-        CompileToIR_internal(&cogcode, globalModule);
-#else
+
+        // output global functions
         if (HUB_CODE) {
             CompileToIR_internal(&hubcode, globalModule);
         } else {
             CompileToIR_internal(&cogcode, globalModule);
         }
-#endif
         // now copy the hub code into place
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
         if (gl_p2) {

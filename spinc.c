@@ -246,7 +246,7 @@ const char common_spincode[] =
     "con\n"
     " _txpin = 30\n"
     " _bitcycles = 80_000_000 / 115_200\n"
-    "pri _basic_print_char(c) | val, nextcnt\n"
+    "pri _tx(c) | val, nextcnt\n"
     "  OUTA[_txpin] := 1\n"
     "  DIRA[_txpin] := 1\n"
     "  val := (c | 256 | 512) << 1\n"
@@ -255,13 +255,26 @@ const char common_spincode[] =
     "    waitcnt(nextcnt += _bitcycles)\n"
     "    OUTA[_txpin] := val\n"
     "    val >>= 1\n"
+
+    "pri _basic_print_char(c)\n"
+    "  return _tx(c)\n"
     
     "pri _basic_print_string(ptr)|c\n"
     "  repeat while ((c := byte[ptr++]) <> 0)\n"
     "    _basic_print_char(c)\n"
     
+    "pri _basic_print_uns_raw(x) | d\n"
+    "  d := x // 10\n"
+    "  x := x / 10\n"
+    "  if (x)\n"
+    "    _basic_print_uns_raw(x)\n"
+    "  _basic_print_char(d + \"0\")\n"
+    
     "pri _basic_print_integer(x)\n"
-    "  return\n"
+    "  if (x < 0)\n"
+    "    _basic_print_char(\"-\")\n"
+    "    x := -x\n"
+    "  _basic_print_uns_raw(x)\n"
     "pri _basic_print_float(x)\n"
     "  return\n"
     "pri _basic_print_nl\n"
@@ -373,14 +386,10 @@ InitGlobalModule(void)
         }
         strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
-        strToLex(&globalModule->L, common_spincode, "_system_");
+        strToLex(&globalModule->L, common_spincode, "_common_");
         spinyyparse();
         
         ProcessModule(globalModule);
-        InferTypes(globalModule);
-        ProcessFuncs(globalModule);
-        SpinTransform(globalModule);
-        CompileIntermediate(globalModule);
 
         curfunc = NULL;
         /* restore temp variable base */
@@ -754,28 +763,87 @@ ParseFile(const char *name)
     return P;
 }
 
+//
+// now that we've figured out what's reachable, remove
+// uncalled methods from modules
+//
+static void
+doPruneMethods(Module *P)
+{
+    Function *pf;
+    Function **oldptr = &P->functions;
+    for(;;) {
+        pf = *oldptr;
+        if (!pf) break;
+        if (pf->callSites == 0) {
+            *oldptr = pf->next; // remove this function
+        } else {
+            oldptr = &pf->next;
+        }
+    }
+}
+
+//
+// remove unused methods
+// if "isBinary" is true we can eliminate any methods not called
+// directly or indirectly from the main function
+// Otherwise, we mark everything accessible from public functions
+//
+void
+RemoveUnusedMethods(int isBinary)
+{
+    Module *P;
+    Function *pf;
+
+    // mark everything unused
+    for (P = allparse; P; P = P->next) {
+        for (pf = P->functions; pf; pf = pf->next) {
+            pf->callSites = 0;
+        }
+    }
+    
+    if (isBinary) {
+        MarkUsed(GetMainFunction(allparse));
+    } else {
+        // mark stuff called via public functions
+    }
+    for (P = allparse; P; P = P->next) {
+        for (pf = P->functions; pf; pf = pf->next) {
+            if (pf->callSites == 0) {
+                if (pf->is_public) {
+                    MarkUsed(pf);
+                } else if (pf->annotations) {
+                    MarkUsed(pf);
+                }
+            }
+            
+        }
+    }
+    // Now remove the ones that are never called
+    for (P = allparse; P; P = P->next) {
+        doPruneMethods(P);
+    }
+}
+
 #define MAX_TYPE_PASSES 4
 
 static void
 FixupCode(Module *P, int isBinary)
 {
-    Module *Q;
+    Module *Q, *LastQ;
     int changes;
     int tries = 0;
 
-    // if we are compiling binary, we can just check for functions
-    // called (directly or indirectly) from the top level
-    // otherwise, we need to check all PUB functions
-    if (isBinary) {
-        MarkUsed(GetMainFunction(P));
-    } else {
-        Function *pf;
-        for (pf = P->functions; pf; pf = pf->next) {
-            if (pf->is_public) {
-                MarkUsed(pf);
-            }
+    // append the global module to the list
+    if (allparse)
+    {
+        LastQ = NULL;
+        for (Q = allparse; Q; Q = Q->next) {
+            LastQ = Q;
         }
+        LastQ->next = globalModule;
     }
+    
     for (Q = allparse; Q; Q = Q->next) {
         if (Q->language == LANG_SPIN) {
             SpinTransform(Q);
@@ -793,6 +861,7 @@ FixupCode(Module *P, int isBinary)
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }
+    RemoveUnusedMethods(isBinary);
     AssignObjectOffsets(P);
 }
 

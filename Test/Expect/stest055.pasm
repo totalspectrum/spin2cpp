@@ -21,12 +21,4 @@ COG_BSS_START
 _dat_
 	byte	$44, $33, $22, $11, $88, $77, $66, $55, $cc, $bb, $aa, $99
 	org	COG_BSS_START
-arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
-	res	1
 	fit	496

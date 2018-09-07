@@ -6,12 +6,12 @@ entry
 
 _myfill
 	cmps	arg3, #0 wz
- if_e	jmp	#L__0005
-L__0006
+ if_e	jmp	#L__0049
+L__0050
 	wrlong	arg2, arg1
 	add	arg1, #4
-	djnz	arg3, #L__0006
-L__0005
+	djnz	arg3, #L__0050
+L__0049
 _myfill_ret
 	ret
 
@@ -39,7 +39,5 @@ arg1
 arg2
 	res	1
 arg3
-	res	1
-arg4
 	res	1
 	fit	496
