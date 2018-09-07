@@ -106,12 +106,13 @@ DeclareBasicVariables(AST *idlist, AST *typ)
 %token BAS_WITH       "with"
 %token BAS_WHILE      "while"
 %token BAS_WORD       "word"
+%token BAS_XOR        "xor"
 %token BAS_LE         "<="
 %token BAS_GE         ">="
 %token BAS_NE         "<>"
 %token BAS_NEGATE     "-"
 
-%left BAS_OR
+%left BAS_OR BAS_XOR
 %left BAS_AND
 %left '<' '>' BAS_LE BAS_GE BAS_NE '='
 %left '-' '+'
@@ -195,9 +196,9 @@ statement:
 ;
 
 ifstmt:
-  BAS_IF boolexpr BAS_THEN eoln elseblock
+  BAS_IF expr BAS_THEN eoln elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
-  | BAS_IF boolexpr statement
+  | BAS_IF expr statement
     {
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
@@ -217,7 +218,7 @@ endif:
 ;
 
 whilestmt:
-  BAS_WHILE boolexpr eoln statementlist endwhile
+  BAS_WHILE expr eoln statementlist endwhile
     { AST *body = CheckYield($4);
       $$ = NewCommentedAST(AST_WHILE, $2, body, $1);
     }
@@ -234,9 +235,9 @@ doloopstmt:
       AST *one = AstInteger(1);
       $$ = NewCommentedAST(AST_WHILE, one, body, $1);
     }
-  | BAS_DO eoln statementlist BAS_LOOP BAS_WHILE boolexpr eoln
+  | BAS_DO eoln statementlist BAS_LOOP BAS_WHILE expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, $6, CheckYield($3), $1); }
-  | BAS_DO eoln statementlist BAS_LOOP BAS_UNTIL boolexpr eoln
+  | BAS_DO eoln statementlist BAS_LOOP BAS_UNTIL expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $6), CheckYield($3), $1); }
   ;
 
@@ -338,22 +339,7 @@ expr:
     { $$ = AstOperator('/', $1, $3); }
   | expr BAS_MOD expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
-  | '-' expr %prec BAS_NEGATE
-    { $$ = AstOperator(K_NEGATE, NULL, $2); }
-  | BAS_NOT expr
-    { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
-  | BAS_IDENTIFIER '(' optexprlist ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')'
-    { 
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
-    }
-  | '(' expr ')'
-    { $$ = $2; }
-;
-
-boolexpr:
-  expr '=' expr
+  | expr '=' expr
     { $$ = AstOperator(K_EQ, $1, $3); }
   | expr BAS_NE expr
     { $$ = AstOperator(K_NE, $1, $3); }
@@ -365,11 +351,23 @@ boolexpr:
     { $$ = AstOperator('<', $1, $3); }
   | expr '>' expr
     { $$ = AstOperator('>', $1, $3); }
-  | boolexpr BAS_AND boolexpr
-    { $$ = AstOperator(K_BOOL_AND, $1, $3); }
-  | boolexpr BAS_OR boolexpr
-    { $$ = AstOperator(K_BOOL_OR, $1, $3); }
-  | '(' boolexpr ')'
+  | expr BAS_AND expr
+    { $$ = AstOperator('&', $1, $3); }
+  | expr BAS_OR expr
+    { $$ = AstOperator('|', $1, $3); }
+  | expr BAS_XOR expr
+    { $$ = AstOperator('^', $1, $3); }
+  | '-' expr %prec BAS_NEGATE
+    { $$ = AstOperator(K_NEGATE, NULL, $2); }
+  | BAS_NOT expr
+    { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
+  | BAS_IDENTIFIER '(' optexprlist ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')'
+    { 
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+    }
+  | '(' expr ')'
     { $$ = $2; }
 ;
 

@@ -1089,6 +1089,7 @@ struct reservedword basic_keywords[] = {
   { "while", BAS_WHILE },
   { "with", BAS_WITH },
   { "word", BAS_WORD },
+  { "xor", BAS_XOR },
 };
 
 static char *c_words[] = {
