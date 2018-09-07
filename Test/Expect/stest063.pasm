@@ -6,25 +6,17 @@ entry
 
 _blinky
 	mov	arg2, ptr__dat__
-	mov	arg1, #8
-	mov	arg3, #240
-	call	#__system___coginit
+	mov	result1, imm_15728640_
+	and	arg2, imm_65532_
+	shl	arg2, #2
+	or	result1, arg2
+	or	result1, #8
+	coginit	result1 wr
 _blinky_ret
 	ret
 
-__system___coginit
-	and	arg3, imm_65532_
-	shl	arg3, #16
-	and	arg2, imm_65532_
-	shl	arg2, #2
-	or	arg3, arg2
-	and	arg1, #15
-	or	arg3, arg1
-	coginit	arg3 wr
-	mov	result1, arg3
-__system___coginit_ret
-	ret
-
+imm_15728640_
+	long	15728640
 imm_65532_
 	long	65532
 ptr__dat__
@@ -45,7 +37,5 @@ arg1
 arg2
 	res	1
 arg3
-	res	1
-arg4
 	res	1
 	fit	496

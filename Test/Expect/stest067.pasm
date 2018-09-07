@@ -7,7 +7,7 @@ entry
 _fibo
 	wrlong	fibo_tmp002_, sp
 	add	sp, #4
-	wrlong	_fibo__cse__0002, sp
+	wrlong	_fibo__cse__0014, sp
 	add	sp, #4
 	wrlong	fibo_tmp003_, sp
 	add	sp, #4
@@ -19,11 +19,11 @@ _fibo
 	mov	fibo_tmp002_, arg1
 	sub	fibo_tmp002_, #1
 	sub	arg1, #2
-	mov	_fibo__cse__0002, arg1
+	mov	_fibo__cse__0014, arg1
 	mov	arg1, fibo_tmp002_
 	call	#_fibo
 	mov	fibo_tmp003_, result1
-	mov	arg1, _fibo__cse__0002
+	mov	arg1, _fibo__cse__0014
 	call	#_fibo
 	add	fibo_tmp003_, result1
 	mov	result1, fibo_tmp003_
@@ -33,7 +33,7 @@ LR__0001
 	sub	sp, #4
 	rdlong	fibo_tmp003_, sp
 	sub	sp, #4
-	rdlong	_fibo__cse__0002, sp
+	rdlong	_fibo__cse__0014, sp
 	sub	sp, #4
 	rdlong	fibo_tmp002_, sp
 _fibo_ret
@@ -48,15 +48,9 @@ COG_BSS_START
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_fibo__cse__0002
+_fibo__cse__0014
 	res	1
 arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
 	res	1
 fibo_tmp002_
 	res	1

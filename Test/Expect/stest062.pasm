@@ -5,11 +5,6 @@ DAT
 entry
 
 _mylen
-	call	#__system__strsize
-_mylen_ret
-	ret
-
-__system__strsize
 	mov	_var_00, #0
 LR__0001
 	rdbyte	_tmp001_, arg1 wz
@@ -17,7 +12,7 @@ LR__0001
  if_ne	add	arg1, #1
  if_ne	jmp	#LR__0001
 	mov	result1, _var_00
-__system__strsize_ret
+_mylen_ret
 	ret
 
 result1
@@ -30,11 +25,5 @@ _tmp001_
 _var_00
 	res	1
 arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
 	res	1
 	fit	496

@@ -7,11 +7,11 @@ DAT
 entry
 
 _demo
-	mov	result1, ptr_L__0001_
+	mov	result1, ptr_L__0048_
 _demo_ret
 	ret
 
-ptr_L__0001_
+ptr_L__0048_
 	long	@@@LR__0001
 result1
 	long	0
@@ -23,12 +23,4 @@ LR__0001
 	byte	13
 	byte	0
 	org	COG_BSS_START
-arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
-	res	1
 	fit	496

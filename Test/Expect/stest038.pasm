@@ -20,21 +20,11 @@ LR__0002
 _test_ret
 	ret
 
-result1
-	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _tmp001_
 	res	1
 _var_01
-	res	1
-arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
 	res	1
 	fit	496

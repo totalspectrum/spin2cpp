@@ -24,8 +24,6 @@ _update_ret
 
 objptr
 	long	@@@objmem
-result1
-	long	0
 COG_BSS_START
 	fit	496
 objmem
@@ -36,13 +34,5 @@ _var_01
 _var_02
 	res	1
 _var_03
-	res	1
-arg1
-	res	1
-arg2
-	res	1
-arg3
-	res	1
-arg4
 	res	1
 	fit	496

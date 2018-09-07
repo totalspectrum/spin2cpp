@@ -1382,6 +1382,20 @@ InferTypes(Module *P)
 }
 
 static void
+UseInternal(const char *name)
+{
+    Symbol *sym = FindSymbol(&globalModule->objsyms, name);
+    if (sym && sym->type == SYM_FUNCTION) {
+        Function *func = (Function *)sym->val;
+        MarkUsed(func);
+    } else {
+        // don't actually error here, if we are in some modes the global modules
+        // aren't compiled (e.g. C++ output)
+        // ERROR(NULL, "UseInternal did not find the requested function %s", name);
+    }
+}
+
+static void
 MarkUsedBody(AST *body)
 {
     Symbol *sym, *objsym;
@@ -1410,11 +1424,36 @@ MarkUsedBody(AST *body)
         }
         MarkUsed((Function *)sym->val);
         break;
+    case AST_COGINIT:
+        UseInternal("_coginit");
+        break;
+    case AST_LOOKUP:
+        UseInternal("_lookup");
+        break;
+    case AST_LOOKDOWN:
+        UseInternal("_lookdown");
+        break;
+    case AST_OPERATOR:
+        switch (body->d.ival) {
+        case K_SQRT:
+            UseInternal("_sqrt");
+            break;
+        case '?':
+            if (body->left) {
+                UseInternal("_lfsr_forward");
+            } else {
+                UseInternal("_lfsr_backward");
+            }
+            break;
+        default:
+            break;
+        }
+        break;
     default:
-        MarkUsedBody(body->left);
-        MarkUsedBody(body->right);
         break;
     }
+    MarkUsedBody(body->left);
+    MarkUsedBody(body->right);
 }
 
 #define CALLSITES_MANY 10
