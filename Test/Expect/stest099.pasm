@@ -11,27 +11,27 @@ _copy1
  if_a	mov	_tmp002_, #1
  if_be	neg	_tmp002_, #1
 	add	arg3, _tmp002_
-L__0006
+LR__0001
 	rdbyte	_tmp008_, arg2
 	add	arg2, #1
 	wrbyte	_tmp008_, arg1
 	add	arg1, #1
 	add	_var_04, _tmp002_
 	cmps	_var_04, arg3 wz
- if_ne	jmp	#L__0006
+ if_ne	jmp	#LR__0001
 _copy1_ret
 	ret
 
 _copy2
 	cmps	arg3, #0 wz
- if_e	jmp	#L__0011
-L__0012
+ if_e	jmp	#LR__0003
+LR__0002
 	rdbyte	_tmp005_, arg2
 	add	arg2, #1
 	wrbyte	_tmp005_, arg1
 	add	arg1, #1
-	djnz	arg3, #L__0012
-L__0011
+	djnz	arg3, #LR__0002
+LR__0003
 _copy2_ret
 	ret
 

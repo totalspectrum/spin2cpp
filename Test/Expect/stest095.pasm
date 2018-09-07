@@ -7,11 +7,11 @@ DAT
 entry
 
 _start
-L__0005
+LR__0001
 	mov	CTRA, imm_1073741824_
 	mov	FRQA, #1
 	mov	PHSA, #0
-	jmp	#L__0005
+	jmp	#LR__0001
 _start_ret
 	ret
 

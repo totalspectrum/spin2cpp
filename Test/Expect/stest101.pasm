@@ -6,23 +6,23 @@ entry
 
 _checkcmd
 	mov	_var_01, #1
-L__0001
-L__0003
+LR__0001
+LR__0002
 	cmps	_var_01, #0 wz
- if_ne	jmp	#L__0003
+ if_ne	jmp	#LR__0002
 	rdlong	_tmp002_, objptr
 	add	_tmp002_, #1
 	wrlong	_tmp002_, objptr
 	mov	_var_01, #0
-	jmp	#L__0001
+	jmp	#LR__0001
 _checkcmd_ret
 	ret
 
 _cmd2
-L__0006
+LR__0003
 	mov	OUTA, arg1
 	mov	arg1, #0
-	jmp	#L__0006
+	jmp	#LR__0003
 _cmd2_ret
 	ret
 

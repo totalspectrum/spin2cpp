@@ -6,23 +6,23 @@ entry
 
 _tx
 	mov	_var_02, #4
-L__0002
+LR__0001
 	mov	OUTA, arg1
 	add	arg1, #1
-	djnz	_var_02, #L__0002
+	djnz	_var_02, #LR__0001
 _tx_ret
 	ret
 
 _str
 	mov	_str_s, arg1
-L__0005
+LR__0002
 	rdbyte	_str_c, _str_s wz
 	add	_str_s, #1
- if_e	jmp	#L__0006
+ if_e	jmp	#LR__0003
 	mov	arg1, _str_c
 	call	#_tx
-	jmp	#L__0005
-L__0006
+	jmp	#LR__0002
+LR__0003
 _str_ret
 	ret
 

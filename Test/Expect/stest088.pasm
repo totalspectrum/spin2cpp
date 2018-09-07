@@ -9,11 +9,11 @@ _clr
 	add	objptr, #40
 	mov	_var_02, objptr
 	sub	objptr, #40
-L__0002
+LR__0001
 	sub	_var_02, #4
 	mov	_tmp001_, #0
 	wrlong	_tmp001_, _var_02
-	djnz	_var_01, #L__0002
+	djnz	_var_01, #LR__0001
 _clr_ret
 	ret
 

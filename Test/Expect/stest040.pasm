@@ -6,9 +6,9 @@ entry
 
 _foo
 	mov	_var_01, #5
-L__0002
+LR__0001
 	add	OUTA, #1
-	djnz	_var_01, #L__0002
+	djnz	_var_01, #LR__0001
 _foo_ret
 	ret
 

@@ -7,9 +7,9 @@ entry
 _waitcycles
 	mov	_var_02, CNT
 	add	_var_02, arg1
-L__0001
+LR__0001
 	cmps	CNT, _var_02 wc,wz
- if_b	jmp	#L__0001
+ if_b	jmp	#LR__0001
 _waitcycles_ret
 	ret
 

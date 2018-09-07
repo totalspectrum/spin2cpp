@@ -11,15 +11,15 @@ _proc1
 	mov	_var_07, arg2
 	shl	_var_07, #2
 	add	_var_07, arg1
-L__0005
+LR__0001
 	cmps	_var_03, #0 wc,wz
- if_be	jmp	#L__0006
+ if_be	jmp	#LR__0002
 	rdlong	_tmp002_, _var_07
 	add	_var_05, _tmp002_
 	sub	_var_03, #1
 	sub	_var_07, #4
-	jmp	#L__0005
-L__0006
+	jmp	#LR__0001
+LR__0002
 	add	_var_05, arg2
 	wrlong	_var_05, arg1
 _proc1_ret

@@ -6,8 +6,8 @@ entry
 
 _xorbytes
 	cmps	arg3, #0 wz
- if_e	jmp	#L__0005
-L__0006
+ if_e	jmp	#LR__0002
+LR__0001
 	mov	_tmp004_, arg2
 	rdbyte	_tmp003_, arg1
 	add	arg2, #1
@@ -15,8 +15,8 @@ L__0006
 	xor	_tmp003_, _tmp006_
 	wrbyte	_tmp003_, arg1
 	add	arg1, #1
-	djnz	arg3, #L__0006
-L__0005
+	djnz	arg3, #LR__0001
+LR__0002
 _xorbytes_ret
 	ret
 

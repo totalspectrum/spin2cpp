@@ -8,11 +8,11 @@ _blink
 	mov	_var_04, #1
 	shl	_var_04, arg1
 	cmps	arg2, #0 wz
- if_e	jmp	#L__0005
-L__0006
+ if_e	jmp	#LR__0002
+LR__0001
 	xor	OUTA, _var_04
-	djnz	arg2, #L__0006
-L__0005
+	djnz	arg2, #LR__0001
+LR__0002
 	rdlong	result1, ptr__dat__
 _blink_ret
 	ret

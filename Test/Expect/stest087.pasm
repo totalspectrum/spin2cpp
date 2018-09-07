@@ -6,16 +6,16 @@ entry
 
 _update
 	mov	_var_02, #0
-L__0003
+LR__0001
 	cmps	_var_02, #10 wc,wz
- if_ae	jmp	#L__0004
+ if_ae	jmp	#LR__0002
 	rdlong	_var_04, arg1
 	add	_var_04, #1
 	wrlong	_var_04, arg1
 	add	_var_02, #1
 	add	arg1, #4
-	jmp	#L__0003
-L__0004
+	jmp	#LR__0001
+LR__0002
 _update_ret
 	ret
 

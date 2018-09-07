@@ -24,19 +24,19 @@ _dounpack_x
 	and	arg1, imm_8388607_
  if_ne	shl	arg1, #6
  if_ne	or	arg1, imm_536870912_
- if_ne	jmp	#L__0010
+ if_ne	jmp	#LR__0002
 	mov	_tmp003_, arg1
 	mov	_tmp002_, #32
-L__0011
+LR__0001
 	shl	_tmp003_, #1 wc
- if_nc	djnz	_tmp002_, #L__0011
+ if_nc	djnz	_tmp002_, #LR__0001
 	sub	_tmp002_, #23
 	mov	_var_05, _tmp002_
 	mov	_var_03, _var_05
 	mov	_var_11, #7
 	sub	_var_11, _var_05
 	shl	arg1, _var_11
-L__0010
+LR__0002
 	sub	_var_03, #127
 	cmps	arg2, #0 wz
  if_ne	mov	result1, _var_03

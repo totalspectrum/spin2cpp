@@ -6,11 +6,11 @@ entry
 
 _mul
 	mov	_var_00, #0
-L__0004
+LR__0001
 	shr	arg2, #1 wc,wz
  if_c	add	_var_00, arg1
 	shl	arg1, #1
- if_ne	jmp	#L__0004
+ if_ne	jmp	#LR__0001
 	mov	result1, _var_00
 _mul_ret
 	ret
