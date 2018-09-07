@@ -70,7 +70,7 @@ doBasicTransform(AST **astptr)
             }
             if (type == ast_type_float) {
                 seq = addPrintCall(seq, basic_print_float, expr);
-            } else if (ast_type_string) {
+            } else if (type == ast_type_string) {
                 seq = addPrintCall(seq, basic_print_string, expr);
             } else if (type->kind == AST_INTTYPE) {
                 seq = addPrintCall(seq, basic_print_integer, expr);
