@@ -6,10 +6,10 @@ entry
 
 _rx
 	andn	DIRA, arg1
-L__0001
+LR__0001
 	mov	_tmp001_, INA
 	test	_tmp001_, arg1 wz
- if_ne	jmp	#L__0001
+ if_ne	jmp	#LR__0001
 	mov	result1, INA
 	and	result1, arg1
 _rx_ret

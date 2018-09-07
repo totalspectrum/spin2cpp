@@ -7,18 +7,18 @@ entry
 _check
 	mov	_var_01, arg1
 	cmps	_var_01, #48 wz
- if_e	jmp	#L__0003
+ if_e	jmp	#LR__0001
 	cmps	_var_01, #49 wz
- if_e	jmp	#L__0003
+ if_e	jmp	#LR__0001
 	cmps	_var_01, #50 wz
- if_e	jmp	#L__0003
+ if_e	jmp	#LR__0001
 	rdlong	_tmp001_, objptr
 	cmps	_var_01, _tmp001_ wz
- if_ne	jmp	#L__0002
-L__0003
+ if_ne	jmp	#LR__0002
+LR__0001
 	mov	result1, #1
 	jmp	#_check_ret
-L__0002
+LR__0002
 	mov	result1, #0
 _check_ret
 	ret

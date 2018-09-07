@@ -12,13 +12,13 @@ _demo_ret
 	ret
 
 ptr_L__0001_
-	long	@@@L__0001
+	long	@@@LR__0001
 result1
 	long	0
 COG_BSS_START
 	fit	496
 
-L__0001
+LR__0001
 	byte	"hello"
 	byte	13
 	byte	0

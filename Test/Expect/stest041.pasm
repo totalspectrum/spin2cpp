@@ -6,9 +6,9 @@ entry
 
 _count1
 	mov	_var_01, #5
-L__0002
+LR__0001
 	xor	OUTA, #2
-	djnz	_var_01, #L__0002
+	djnz	_var_01, #LR__0001
 _count1_ret
 	ret
 

@@ -15,14 +15,14 @@ _fillInput
 	add	_tmp002_, imm_4096_
 	add	_var_06, _tmp002_
 	mov	_var_01, imm_1024_
-L__0006
+LR__0001
 	wrlong	_var_02, _var_03
 	wrbyte	_var_04, _var_06
 	add	_var_02, #13
 	add	_var_03, #4
 	add	_var_04, #17
 	sub	_var_06, #1
-	djnz	_var_01, #L__0006
+	djnz	_var_01, #LR__0001
 _fillInput_ret
 	ret
 

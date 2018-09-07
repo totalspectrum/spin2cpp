@@ -5,18 +5,18 @@ DAT
 entry
 
 _test
-L__0001
+LR__0001
 	mov	_var_01, INA
 	sar	_var_01, #1
 	test	_var_01, #1 wz
- if_ne	jmp	#L__0002
+ if_ne	jmp	#LR__0002
 	mov	_tmp001_, INA
 	sar	_tmp001_, #2
 	test	_tmp001_, #1 wz
- if_ne	jmp	#L__0001
+ if_ne	jmp	#LR__0001
 	xor	OUTA, #1
-	jmp	#L__0001
-L__0002
+	jmp	#LR__0001
+LR__0002
 _test_ret
 	ret
 

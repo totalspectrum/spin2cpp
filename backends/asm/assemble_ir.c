@@ -27,6 +27,7 @@
  */
 #include "spinc.h"
 #include "outasm.h"
+#include <ctype.h>
 
 // used for converting Spin relative addresses to absolute addresses
 // (only needed for OUTPUT_COGSPIN)
@@ -39,6 +40,38 @@ static int inCon;
 static int didOrg;
 static int lmmMode;
 
+// table for remapping label names
+static SymbolTable localLabelMap;
+
+// we remap local names (starting with L__0xxx)
+// this is to help with debugging and testing; almost any trivial
+// change in optimization can change the numbers associated with labels,
+// which in turn makes tests fail with trivial changes (e.g. L_0001 => L_0003)
+// to avoid this we do a remapping of all the temporary labels in the program
+static bool mayRemap(const char *name)
+{
+    if (name[0] == 'L' && name[1] == '_' && name[2] == '_' && isdigit(name[3])) {
+        return true;
+    }
+    return false;
+}
+
+static const char *RemappedName(const char *name)
+{
+    Symbol *sym;
+    unsigned num;
+    static char buf[32];
+    
+    if (!mayRemap(name))
+        return name;
+    sym = FindSymbol(&localLabelMap, name);
+    if (!sym) return name;
+    num = (uintptr_t)sym->val;
+    sprintf(buf, "LR__%04u", num);
+    return buf;
+}
+
+// helper function for printing operands
 static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect)
 {
@@ -63,7 +96,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         if (reg->val >= 0 && reg->val < 512) {
             flexbuf_addstr(fb, "#");
             if (reg->name && reg->name[0]) {
-                flexbuf_addstr(fb, reg->name);
+                flexbuf_addstr(fb, RemappedName(reg->name));
             } else {
                 sprintf(temp, "%d", (int)(int32_t)reg->val);
                 flexbuf_addstr(fb, temp);
@@ -71,14 +104,14 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         } else if (gl_p2) {
             flexbuf_addstr(fb, "##");
             if (reg->name && reg->name[0]) {
-                flexbuf_addstr(fb, reg->name);
+                flexbuf_addstr(fb, RemappedName(reg->name));
             } else {
                 sprintf(temp, "%d", (int)(int32_t)reg->val);
                 flexbuf_addstr(fb, temp);
             }            
         } else {
             // the immediate actually got processed as a register
-            flexbuf_addstr(fb, reg->name);
+            flexbuf_addstr(fb, RemappedName(reg->name));
         }
         break;
     case BYTE_REF:
@@ -90,7 +123,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         if (gl_p2 && useimm) {
             flexbuf_addstr(fb, "#@");
         }
-        flexbuf_addstr(fb, reg->name);
+        flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     case IMM_COG_LABEL:
         if (useimm) {
@@ -103,7 +136,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         } else if (effect == OPEFFECT_PREDEC) {
             flexbuf_printf(fb, "--");
         }
-        flexbuf_addstr(fb, reg->name);
+        flexbuf_addstr(fb, RemappedName(reg->name));
         if (effect == OPEFFECT_POSTINC) {
             flexbuf_printf(fb, "++");
         } else if (effect == OPEFFECT_POSTDEC) {
@@ -152,7 +185,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         }
         // fall through
     case IMM_COG_LABEL:
-        flexbuf_addstr(fb, reg->name);
+        flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     case IMM_STRING:
         flexbuf_addchar(fb, '"');
@@ -162,7 +195,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
     case REG_HUBPTR:
     case REG_COGPTR:
         indirect = (Operand *)reg->val;
-        flexbuf_addstr(fb, indirect->name);
+        flexbuf_addstr(fb, RemappedName(indirect->name));
         break;
     default:
         PrintOperand(fb, reg);
@@ -270,11 +303,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                     flexbuf_printf(fb, "\tlong\t");
                     offset = nextreloc->val;
                     if (offset == 0) {
-                        flexbuf_printf(fb, "@@@%s\n", label->name);
+                        flexbuf_printf(fb, "@@@%s\n", RemappedName(label->name));
                     } else if (offset > 0) {
-                        flexbuf_printf(fb, "@@@%s + %d\n", label->name, offset);
+                        flexbuf_printf(fb, "@@@%s + %d\n", RemappedName(label->name), offset);
                     } else {
-                        flexbuf_printf(fb, "@@@%s - %d\n", label->name, -offset);
+                        flexbuf_printf(fb, "@@@%s - %d\n", RemappedName(label->name), -offset);
                     }
                     data += 4;
                     addr += 4;
@@ -769,7 +802,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         PrintOperand(fb, ir->dst);
 	break;
     case OPC_LABEL:
-        flexbuf_addstr(fb, ir->dst->name);
+        flexbuf_addstr(fb, RemappedName(ir->dst->name));
         flexbuf_addstr(fb, "\n");
         break;
     case OPC_RET:
@@ -836,6 +869,27 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     }
 }
 
+static void
+RenameLabels(IRList *list)
+{
+    IR *ir;
+    Symbol *sym;
+    uintptr_t labelValue = 1;
+    
+    for (ir = list->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_LABEL) {
+            const char *name = ir->dst->name;
+            if (mayRemap(name)) {
+                sym = FindSymbol(&localLabelMap, ir->dst->name);
+                if (!sym) {
+                    sym = AddSymbol(&localLabelMap, ir->dst->name, SYM_UNKNOWN, (void *)0);
+                }
+                sym->val = (void *)(labelValue++);
+            }
+        }
+    }
+}
+
 /* assemble an IR list */
 char *
 IRAssemble(IRList *list, Module *P)
@@ -849,6 +903,8 @@ IRAssemble(IRList *list, Module *P)
     didOrg = 0;
     didPub = 0;
     lmmMode = 0;
+    
+    RenameLabels(list);
     
     if (gl_p2 && gl_output != OUTPUT_COGSPIN) {
         didPub = 1; // we do not want PUB declaration in P2 code

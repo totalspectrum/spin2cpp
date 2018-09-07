@@ -8,7 +8,7 @@ _get
 	mov	_var_12, #0
 	mov	_var_13, objptr
 	mov	_var_11, #0
-L__0003
+LR__0001
 	mov	_tmp002_, _var_11
 	add	_tmp002_, #_var_01
 	rdlong	_tmp004_, _var_13
@@ -26,7 +26,7 @@ L__0003
 	add	_var_11, #1
 	add	_var_13, #4
 	cmps	_var_11, #10 wc,wz
- if_b	jmp	#L__0003
+ if_b	jmp	#LR__0001
 	mov	result1, _var_12
 _get_ret
 	ret

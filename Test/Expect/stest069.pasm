@@ -6,19 +6,19 @@ entry
 
 _demo
 	mov	_demo__idx__0001, #7
-L__0002
+LR__0001
 	mov	arg1, imm_40000000_
 	add	arg1, CNT
 	waitcnt	arg1, #0
-	djnz	_demo__idx__0001, #L__0002
-L__0005
-	jmp	#L__0005
+	djnz	_demo__idx__0001, #LR__0001
+LR__0002
+	jmp	#LR__0002
 _demo_ret
 	ret
 
 _Exit
-L__0007
-	jmp	#L__0007
+LR__0003
+	jmp	#LR__0003
 _Exit_ret
 	ret
 

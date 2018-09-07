@@ -7,7 +7,7 @@ entry
 _get
 	mov	_var_00, #0
 	mov	_var_01, #0
-L__0001
+LR__0001
 	mov	_tmp002_, #496
 	add	_tmp002_, _var_01
 	'.live	_tmp003_
@@ -17,14 +17,14 @@ L__0001
 	add	_var_00, _tmp003_
 	add	_var_01, #1
 	cmps	_var_01, #10 wc,wz
- if_b	jmp	#L__0001
+ if_b	jmp	#LR__0001
 	mov	result1, _var_00
 _get_ret
 	ret
 
 _put
 	mov	_var_01, #0
-L__0004
+LR__0002
 	mov	_tmp001_, #496
 	add	_tmp001_, _var_01
 	'.live	_var_01
@@ -33,7 +33,7 @@ L__0004
 	call	#wrcog
 	add	_var_01, #1
 	cmps	_var_01, #10 wc,wz
- if_b	jmp	#L__0004
+ if_b	jmp	#LR__0002
 _put_ret
 	ret
 wrcog

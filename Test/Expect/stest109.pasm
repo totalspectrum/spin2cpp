@@ -9,15 +9,15 @@ _fibolp
 	mov	_var_00, #1
 	mov	_var_02, #0
 	sub	arg1, #1 wz
- if_e	jmp	#L__0006
-L__0007
+ if_e	jmp	#LR__0002
+LR__0001
 	add	_var_02, _var_03
 	mov	_tmp003_, _var_02
 	mov	_var_02, _var_03
 	mov	_var_03, _var_00
 	mov	_var_00, _tmp003_
-	djnz	arg1, #L__0007
-L__0006
+	djnz	arg1, #LR__0001
+LR__0002
 	mov	result1, _var_00
 _fibolp_ret
 	ret
