@@ -433,6 +433,8 @@ classdecl:
 dimension:
   BAS_DIM identlist BAS_AS typename
     { $$ = DeclareBasicVariables($2, $4); }
+   | BAS_DIM BAS_AS typename identlist
+    { $$ = DeclareBasicVariables($4, $3); }
   ;
 
 pindecl:
@@ -460,6 +462,8 @@ typename:
   | BAS_WORD
     { $$ = ast_type_word; }
   | BAS_LONG
+    { $$ = ast_type_long; }
+  | BAS_INTEGER_KW
     { $$ = ast_type_long; }
   | BAS_REAL
     { $$ = ast_type_float; }
