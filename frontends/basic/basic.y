@@ -197,7 +197,7 @@ statement:
 ifstmt:
   BAS_IF boolexpr BAS_THEN eoln elseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
-  | BAS_IF boolexpr statement eoln
+  | BAS_IF boolexpr statement
     {
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
