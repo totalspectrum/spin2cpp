@@ -324,7 +324,8 @@ expr:
   | BAS_FLOAT
     { $$ = $1; }
   | BAS_STRING
-    { $$ = $1; }
+    { $$ = NewAST(AST_STRINGPTR,
+                  NewAST(AST_EXPRLIST, $1, NULL), NULL); }
   | lhs
     { $$ = $1; }
   | expr '+' expr

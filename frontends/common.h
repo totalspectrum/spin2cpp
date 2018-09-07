@@ -137,8 +137,6 @@ extern AST *ast_type_ptr_word;
 extern AST *ast_type_ptr_byte;
 extern AST *ast_type_ptr_void;
 
-extern AST *ast_type_basic_string;
-
 /* structure describing a dat block label */
 typedef struct label {
     uint32_t hubval;  // for P1, offset in dat block; for P2, a real address

@@ -243,16 +243,30 @@ const char common_spincode[] =
     "      rcr  x, #1\n"
     "    endasm\n"
     "  return x\n"
-    "pri _basic_print_char(x) | txmask, bitcycles\n"
-    "  return\n"
+    "con\n"
+    " _txpin = 30\n"
+    " _bitcycles = 80_000_000 / 115_200\n"
+    "pri _basic_print_char(c) | val, nextcnt\n"
+    "  OUTA[_txpin] := 1\n"
+    "  DIRA[_txpin] := 1\n"
+    "  val := (c | 256 | 512) << 1\n"
+    "  nextcnt := cnt\n"
+    "  repeat 11\n"
+    "    waitcnt(nextcnt += _bitcycles)\n"
+    "    OUTA[_txpin] := val\n"
+    "    val >>= 1\n"
+    
+    "pri _basic_print_string(ptr)|c\n"
+    "  repeat while ((c := byte[ptr++]) <> 0)\n"
+    "    _basic_print_char(c)\n"
+    
     "pri _basic_print_integer(x)\n"
     "  return\n"
     "pri _basic_print_float(x)\n"
     "  return\n"
-    "pri _basic_print_string(x)\n"
-    "  OUTA := x\n"
     "pri _basic_print_nl\n"
-    "  OUTA := 13\n"
+    "  _basic_print_char(13)\n"
+    "  _basic_print_char(10)\n"
 ;
 
 // code for P2
@@ -359,7 +373,7 @@ InitGlobalModule(void)
         }
         strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
-        strToLex(&globalModule->L, common_spincode, "_common_");
+        strToLex(&globalModule->L, common_spincode, "_system_");
         spinyyparse();
         
         ProcessModule(globalModule);
@@ -440,7 +454,7 @@ InferTypeFromName(AST *identifier)
     }
     switch(name[0]) {
     case '$':
-        return ast_type_basic_string;
+        return ast_type_string;
     case '%':
         return ast_type_long;
     case '#':

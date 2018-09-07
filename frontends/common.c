@@ -56,7 +56,6 @@ int gl_listing = 0;
 
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
 AST *ast_type_float, *ast_type_string;
-AST *ast_type_basic_string;
 AST *ast_type_ptr_long;
 AST *ast_type_ptr_word;
 AST *ast_type_ptr_byte;
@@ -372,9 +371,6 @@ Init()
     
     ast_type_string = NewAST(AST_MODIFIER_CONST, ast_type_ptr_byte, NULL);
 
-    ast_type_basic_string = NewAST(AST_TUPLETYPE, NULL, NULL);
-    ast_type_basic_string->d.ival = 2;
-    
     initSpinLexer(gl_p2);
 
     /* fill in the global symbol table */

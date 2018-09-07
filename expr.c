@@ -1378,8 +1378,6 @@ ExprType(AST *expr)
         // (actually no -- "abc" is the same as "a", "b", "c")
         if (current->language == LANG_SPIN) {
             return ast_type_long;
-        } else if (current->language == LANG_BASIC) {
-            return ast_type_basic_string;
         }
         /* otherwise fall through */
     case AST_STRINGPTR:
