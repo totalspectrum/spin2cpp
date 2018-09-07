@@ -77,7 +77,6 @@ doBasicTransform(AST **astptr)
             } else {
                 ERROR(ast, "Unable to print expression of this type");
             }
-            break;
         }
         seq = addPrintCall(seq, basic_print_nl, NULL);
         *astptr = ast = seq;
