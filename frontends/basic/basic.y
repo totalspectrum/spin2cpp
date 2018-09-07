@@ -348,6 +348,8 @@ expr:
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
     }
+  | '(' expr ')'
+    { $$ = $2; }
 ;
 
 boolexpr:
