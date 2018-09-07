@@ -792,7 +792,7 @@ doPruneMethods(Module *P)
 void
 RemoveUnusedMethods(int isBinary)
 {
-    Module *P;
+    Module *P, *LastP;
     Function *pf;
 
     // mark everything unused
@@ -822,6 +822,22 @@ RemoveUnusedMethods(int isBinary)
     // Now remove the ones that are never called
     for (P = allparse; P; P = P->next) {
         doPruneMethods(P);
+    }
+
+    // finally remove modules that have no defined functions and
+    // no constant definitions or dat sections
+    LastP = NULL;
+    P = allparse;
+    while (P) {
+        if (!P->functions && !P->datblock && !P->conblock && !P->varblock) {
+            if (LastP) {
+                LastP->next = P->next;
+            } else {
+                allparse = P->next;
+            }
+        }
+        LastP = P;
+        P = P->next;
     }
 }
 
