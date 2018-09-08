@@ -505,6 +505,14 @@ static void doASTDump(AST *ast, int indent)
         sprintf(buf, "<string %s/>", ast->d.string);
         leaf = 1;
         break;        
+    case AST_HWREG:
+        sprintf(buf, "<hwreg/>");
+        leaf = 1;
+        break;        
+    case AST_COMMENT:
+        sprintf(buf, "<comment/>"); // could print ast->d.string);
+        leaf = 1;
+        break;        
     case AST_OPERATOR:
         if (ast->d.ival >= 32 && ast->d.ival <= 126) {
             sprintf(buf, "<operator '%c'>", ast->d.ival);
