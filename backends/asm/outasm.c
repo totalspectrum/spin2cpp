@@ -826,12 +826,13 @@ static Operand *
 TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
-    while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_PTRTYPE)) {
+
+    while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_MODIFIER_CONST)) {
         type = type->left;
     }
     if (!type) {
         size = 4;
-    } else if (type->kind == AST_TUPLETYPE) {
+    } else if (type->kind == AST_TUPLETYPE || type->kind == AST_PTRTYPE ) {
         size = 4;
     } else {
         size = EvalConstExpr(type->left);
