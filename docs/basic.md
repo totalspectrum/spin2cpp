@@ -42,6 +42,7 @@ declare
 dim
 direction
 do
+double
 else
 end
 enum
@@ -52,7 +53,6 @@ goto
 if
 input
 let
-local
 long
 loop
 mod
@@ -61,9 +61,10 @@ or
 output
 print
 program
-real
 rem
 return
+shared
+single
 step
 sub
 then

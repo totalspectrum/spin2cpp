@@ -1057,6 +1057,7 @@ struct reservedword basic_keywords[] = {
   { "dim", BAS_DIM },
   { "direction", BAS_DIRECTION },
   { "do", BAS_DO },
+  { "double", BAS_DOUBLE },
   { "else", BAS_ELSE },
   { "end", BAS_END },
   { "enum", BAS_ENUM },
@@ -1068,7 +1069,6 @@ struct reservedword basic_keywords[] = {
   { "input", BAS_INPUT },
   { "integer", BAS_INTEGER_KW },
   { "let", BAS_LET },
-  { "local", BAS_LOCAL },
   { "long", BAS_LONG },
   { "loop", BAS_LOOP },
   { "mod", BAS_MOD },
@@ -1078,8 +1078,9 @@ struct reservedword basic_keywords[] = {
   { "output", BAS_OUTPUT },
   { "print", BAS_PRINT },
   { "program", BAS_PROGRAM },
-  { "real", BAS_REAL },
   { "return", BAS_RETURN },
+  { "shared", BAS_SHARED },
+  { "single", BAS_SINGLE },
   { "step", BAS_STEP },
   { "string", BAS_STRING_KW },
   { "struct", BAS_STRUCT },
@@ -2294,6 +2295,28 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     } else if (c == '"') {
         parseString(L, &ast);
 	c = BAS_STRING;
+    } else if (c == '<' || c == '>' || c == '=') {
+        int c2 = lexgetc(L);
+        if (c2 == '<' || c2 == '>' || c2 == '=') {
+            c2 += c;
+            if (c2 == ('<' + '>')) {
+                c = BAS_NE;
+            } else if (c2 == '<' + '<') {
+                c = BAS_SHL;
+            } else if (c2 == '=' + '<') {
+                c = BAS_LE;
+            } else if (c2 == '=' + '>') {
+                c = BAS_GE;
+            } else if (c2 == '=' + '=') {
+                c = '=';
+            } else if (c2 == '>' + '>') {
+                c = BAS_SHR;
+            } else {
+                ERROR(NULL, "internal lexer error");
+            }
+        } else {
+            lexungetc(L, c2);
+        }
     }
     *ast_ptr = last_ast = ast;
     return c;

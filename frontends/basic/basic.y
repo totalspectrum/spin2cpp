@@ -81,6 +81,7 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_DIM        "dim"
 %token BAS_DIRECTION  "direction"
 %token BAS_DO         "do"
+%token BAS_DOUBLE     "double"
 %token BAS_ELSE       "else"
 %token BAS_END        "end"
 %token BAS_ENUM       "enum"
@@ -92,7 +93,6 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_INPUT      "input"
 %token BAS_INTEGER_KW "integer"
 %token BAS_LET        "let"
-%token BAS_LOCAL      "local"
 %token BAS_LONG       "long"
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
@@ -102,8 +102,9 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_OUTPUT     "output"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
-%token BAS_REAL       "real"
 %token BAS_RETURN     "return"
+%token BAS_SHARED     "shared"
+%token BAS_SINGLE     "single"
 %token BAS_STEP       "step"
 %token BAS_STRING_KW  "string"
 %token BAS_STRUCT     "struct"
@@ -119,6 +120,8 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_LE         "<="
 %token BAS_GE         ">="
 %token BAS_NE         "<>"
+%token BAS_SHL        "<<"
+%token BAS_SHR        ">>"
 %token BAS_NEGATE     "-"
 
 %left BAS_OR BAS_XOR
@@ -126,6 +129,7 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %left '<' '>' BAS_LE BAS_GE BAS_NE '='
 %left '-' '+'
 %left '*' '/' BAS_MOD
+%left BAS_SHL BAS_SHR
 %left BAS_NEGATE
 
 %%
@@ -184,10 +188,6 @@ statement:
     { $$ = NewAST(AST_FUNCCALL, $1, $2); }
   | BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-  | BAS_LOCAL BAS_IDENTIFIER eoln
-    { $$ = AstDeclareLocal($2, NULL); }
-  | BAS_LOCAL BAS_IDENTIFIER '=' expr eoln
-    { $$ = AstDeclareLocal($2, $4); }
   | BAS_RETURN eoln
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN expr eoln
@@ -368,6 +368,10 @@ expr:
     { $$ = AstOperator('&', $1, $3); }
   | expr BAS_OR expr
     { $$ = AstOperator('|', $1, $3); }
+  | expr BAS_SHL expr
+    { $$ = AstOperator(K_SHL, $1, $3); }
+  | expr BAS_SHR expr
+    { $$ = AstOperator(K_SHR, $1, $3); }
   | expr BAS_XOR expr
     { $$ = AstOperator('^', $1, $3); }
   | '-' expr %prec BAS_NEGATE
@@ -487,7 +491,9 @@ typename:
     { $$ = ast_type_long; }
   | BAS_INTEGER_KW
     { $$ = ast_type_long; }
-  | BAS_REAL
+  | BAS_SINGLE
+    { $$ = ast_type_float; }
+  | BAS_DOUBLE
     { $$ = ast_type_float; }
   | BAS_STRING_KW
     { $$ = ast_type_string; }
