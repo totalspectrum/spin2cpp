@@ -676,6 +676,10 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (!lastAssign) {
                 continue;
             }
+            if (AstMatch(entry->name, entry->basename)) {
+                // entry depends on itself, do not update
+                continue;
+            }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
             if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == K_NEGATE) {
                 replace = AstAssign(entry->name,
