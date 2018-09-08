@@ -677,3 +677,13 @@ AstSprRef(AST *index)
     return NewAST(AST_SPRREF, expr, NULL);
 }
 
+//
+// turn an AST entry into a no-op
+// an empty comment should do for this
+//
+void
+AstNullify(AST *ast)
+{
+    memset(ast, 0, sizeof(*ast));
+    ast->kind = AST_COMMENT;
+}

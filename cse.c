@@ -19,6 +19,9 @@ typedef struct CSEEntry {
     AST *replace; // the symbol to replace it with, or NULL if no substitute yet
     unsigned exprHash; // hash of "expr"
     unsigned flags;  // flags describing this expression
+    AST *cseAssign;  // the assignment statement for the CSE variable
+    AST **cseFirstUse; // first place we used the CSE
+    unsigned uses;   // number of time the CSE has been used
 } CSEEntry;
 
 typedef struct CSESet {
@@ -68,6 +71,19 @@ InitCSESet(CSESet *cse)
     cse->assignList = NULL;
 }
 
+static void
+DestroyCSEEntry(CSEEntry *old)
+{
+    if (old->uses == 0) {
+        // this turns out to have been a redundant CSE
+        if (old->cseAssign != NULL && old->cseFirstUse != NULL) {
+            AstNullify(old->cseAssign); // make the assignment a no-op
+            *old->cseFirstUse = old->expr; // and undo our initial CSE use
+        }
+    }
+    free(old);
+}
+
 // clear out everything in a CSESet
 static void
 ClearCSESetFiltered(CSESet *cse, bool (*filter)(AST *expr))
@@ -85,7 +101,7 @@ ClearCSESetFiltered(CSESet *cse, bool (*filter)(AST *expr))
                 old = cur;
                 cur = cur->next;
                 *curptr = cur;
-                free(old);
+                DestroyCSEEntry(old);
             } else {
                 curptr = &cur->next;
                 cur = cur->next;
@@ -281,7 +297,7 @@ ArrayBaseType(AST *var)
 static CSEEntry *
 AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replaceptr)
 {
-    CSEEntry *entry = malloc(sizeof(*entry));
+    CSEEntry *entry = calloc(1, sizeof(*entry));
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
 
     if (expr->kind == AST_ARRAYREF && !ArrayBaseType(expr->left)) {
@@ -322,8 +338,22 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         } else {
             assign = AstAssign(entry->replace, origexpr);
         }
-        assign = NewAST(AST_STMTLIST, assign, NULL);
+        // we do not want to create a CSE for "i+1" in "i = i + 1"
+        // unless it is used multiple times; OTOH in "x = i+1" we probably
+        // should, if we are inside a loop (because we might be able to hoist
+        // it outside the loop if i is not loop dependent)
+        // our heuristic is if we gave a name, that's the variable being
+        // updated, and we probably do not want to CSE it unless the expr
+        // is used again
+        if (name && AstUses(origexpr, name)) {
+            entry->uses = 0; // this may be a redundant CSE
+        } else {
+            entry->uses = 1; // keep it
+        }
+        entry->cseAssign = assign;  // save off the original assignment
+        assign = NewAST(AST_STMTLIST, assign, NULL); // wrap it in a statement list
         cse->assignList = AddToList(cse->assignList, assign);
+        entry->cseFirstUse = replaceptr;
         *replaceptr = entry->replace;
     }
     return entry;
@@ -337,6 +367,7 @@ ReplaceCSE(AST **astptr, CSEEntry *entry)
 {
     if (!entry) return; // sanity check
     *astptr = entry->replace;
+    entry->uses++;
 }
 
 // flags:
@@ -412,8 +443,8 @@ loopCSE(AST *stmtptr, AST **astptr, AST **body, AST **condition, AST **update, C
 // "astptr" points to where the AST might be replaced
 // cse is the CSESet holding potential replacements
 // flags are various flags governing replacements
-// "name", if non-zero, is the name of a variable that should
-// be used for replacements
+// "name", if non-zero, is the name of a variable that could
+// be used for replacements (that we're assigning to)
 //
 static unsigned
 doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)

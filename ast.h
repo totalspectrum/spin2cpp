@@ -223,4 +223,7 @@ AST *AstCatch(AST *expr);
 AST *AstSprRef(AST *index);
 AST *CheckYield(AST *loopbody);
 
+// turn an AST into a no-op
+void AstNullify(AST *ptr);
+
 #endif
