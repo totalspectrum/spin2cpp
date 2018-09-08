@@ -501,14 +501,21 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             } else {
                 return AstOperator(K_NEGATE, NULL, AstInteger(-stepval));
             }
-        } else if (val->d.ival == '-') {
+        } else if (val->d.ival == '-' || val->d.ival == '+' ) {
+            if (IsConstExpr(val->right)) {
+                AST *loopstep = FindLoopStep(lvs, val->left, basename);
+                if (!loopstep || !IsConstExpr(loopstep) || !*basename) {
+                    return NULL;
+                }
+                return loopstep;
+            }
             // C - indexval may be strength reduced
             if (IsConstExpr(val->left)) {
                 AST *loopstep = FindLoopStep(lvs, val->right, basename);
                 if (!loopstep || !IsConstExpr(loopstep) || !*basename) {
                     return NULL;
                 }
-                return AstOperator(K_NEGATE, NULL, loopstep);
+                return (val->d.ival == '+') ? loopstep : AstOperator(K_NEGATE, NULL, loopstep);
             }
         }
         return NULL;
