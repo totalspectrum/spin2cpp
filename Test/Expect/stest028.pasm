@@ -15,11 +15,16 @@ _divmod16_ret
 	ret
 ' code originally from spin interpreter, modified slightly
 
+unsdivide_
+       mov     itmp2_,#0
+       jmp     #udiv__
+
 divide_
        abs     muldiva_,muldiva_     wc       'abs(x)
        muxc    itmp2_,#%11                    'store sign of x
        abs     muldivb_,muldivb_     wc,wz    'abs(y)
  if_c  xor     itmp2_,#%10                    'store sign of y
+udiv__
         mov     itmp1_,#0                    'unsigned divide
         mov     DIVCNT,#32
 mdiv__
@@ -36,6 +41,7 @@ mdiv2__
         test    itmp2_,#%10      wc       'restore sign, division result
         negc    muldivb_,muldivb_
 divide__ret
+unsdivide__ret
 	ret
 DIVCNT
 	long	0
