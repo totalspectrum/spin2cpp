@@ -85,34 +85,36 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_PRINT:
-    {
-        // convert PRINT to a series of calls to basic_print_xxx
-        AST *seq = NULL;
-        AST *type;
-        AST *exprlist = ast->left;
-        AST *expr;
-        while (exprlist) {
-            expr = exprlist->left;
-            exprlist = exprlist->right;
-            type = ExprType(expr);
-            if (!type) {
-                ERROR(ast, "Unknown type in print");
-                continue;
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        {
+            // convert PRINT to a series of calls to basic_print_xxx
+            AST *seq = NULL;
+            AST *type;
+            AST *exprlist = ast->left;
+            AST *expr;
+            while (exprlist) {
+                expr = exprlist->left;
+                exprlist = exprlist->right;
+                type = ExprType(expr);
+                if (!type) {
+                    ERROR(ast, "Unknown type in print");
+                    continue;
+                }
+                if (type == ast_type_float) {
+                    seq = addPrintCall(seq, basic_print_float, expr);
+                } else if (type == ast_type_string) {
+                    seq = addPrintCall(seq, basic_print_string, expr);
+                } else if (type->kind == AST_INTTYPE) {
+                    seq = addPrintCall(seq, basic_print_integer, expr);
+                } else {
+                    ERROR(ast, "Unable to print expression of this type");
+                }
             }
-            if (type == ast_type_float) {
-                seq = addPrintCall(seq, basic_print_float, expr);
-            } else if (type == ast_type_string) {
-                seq = addPrintCall(seq, basic_print_string, expr);
-            } else if (type->kind == AST_INTTYPE) {
-                seq = addPrintCall(seq, basic_print_integer, expr);
-            } else {
-                ERROR(ast, "Unable to print expression of this type");
-            }
+            seq = addPrintCall(seq, basic_print_nl, NULL);
+            *astptr = ast = seq;
         }
-        seq = addPrintCall(seq, basic_print_nl, NULL);
-        *astptr = ast = seq;
         break;
-    }
     default:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);

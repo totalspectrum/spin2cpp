@@ -489,6 +489,8 @@ typename:
     { $$ = ast_type_long; }
   | BAS_REAL
     { $$ = ast_type_float; }
+  | BAS_STRING_KW
+    { $$ = ast_type_string; }
   | BAS_TYPENAME
     { $$ = $1; }
 ;
