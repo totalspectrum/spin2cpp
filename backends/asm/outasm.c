@@ -2581,6 +2581,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       expr = expr->left;
   }
   if (!expr) return NULL;
+  if (expr->kind == AST_COMMENT) return NULL;
   if (IsConstExpr(expr)) {
       switch (expr->kind) {
       case AST_IDENTIFIER:

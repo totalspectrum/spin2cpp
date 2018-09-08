@@ -1239,6 +1239,9 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         expr = expr->left;
         if (!expr) return;
     }
+    if (expr->kind == AST_COMMENT) {
+        return;
+    }
     if (flags & PRINTEXPR_TOPLEVEL) {
         flags &= ~PRINTEXPR_TOPLEVEL;
         if (expr->kind == AST_ASSIGN) {
