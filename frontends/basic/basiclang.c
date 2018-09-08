@@ -53,6 +53,37 @@ doBasicTransform(AST **astptr)
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;
+    case AST_FUNCCALL:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        if (1)
+        {
+            // the parser treats a(x) as a function call (always), but in
+            // fact it may be an array reference; change it to one if applicable
+            AST *left = ast->left;
+            AST *index = ast->right;
+            AST *typ;
+        
+            typ = ExprType(left);
+            if (typ && typ->kind == AST_ARRAYTYPE) {
+                ast->kind = AST_ARRAYREF;
+                if (!index || index->kind != AST_EXPRLIST) {
+                    ERROR(ast, "Internal error: expected expression list in array subscript");
+                    return;
+                }
+                // reduce a single item expression list, if necessary
+                if (index->right != NULL) {
+                    ERROR(index, "Multi-dimensional arrays are not supported\n");
+                    return;
+                }
+                index = index->left;
+                // and now we have to convert the array reference to
+                // BASIC style (subtract one)
+                index = AstOperator('-', index, AstInteger(1));
+                ast->right = index;
+            }
+        }
+        break;
     case AST_PRINT:
     {
         // convert PRINT to a series of calls to basic_print_xxx

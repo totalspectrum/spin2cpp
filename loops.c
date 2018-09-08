@@ -826,11 +826,9 @@ CheckSimpleLoop(AST *stmt)
     updateInit = initial->right;
     if (!IsConstExpr(updateInit))
         return;
-    /* must start at 0 (for now) */
+    /* find where the loop starts */
     initVal = EvalConstExpr(updateInit);
-    if (initVal != 0) {
-        return;
-    }
+
     /* check condition */
     if (condtest->kind != AST_OPERATOR)
         return;
@@ -867,6 +865,14 @@ CheckSimpleLoop(AST *stmt)
     /* flip the update to -- */
     update->d.ival = K_DECREMENT;
     /* change the initialization */
+
+    /* if initVal is nonzero, we want to go from 0 to X-N instead of from N to X */
+    if (initVal) {
+        newInitial = AstOperator('-', newInitial, AstInteger(initVal));
+        if (IsConstExpr(newInitial)) {
+            newInitial = AstInteger(EvalConstExpr(newInitial));
+        }
+    }
     initial = AstAssign(updateVar, newInitial);
     condtest = AstOperator(K_NE, updateVar, AstInteger(0));
 

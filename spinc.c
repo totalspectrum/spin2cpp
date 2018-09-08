@@ -453,7 +453,16 @@ DeclareVariablesOfSize(Module *P, int basetypesize, int offset)
 AST *
 InferTypeFromName(AST *identifier)
 {
-    const char *name = identifier->d.string;
+    const char *name;
+
+    if (identifier->kind == AST_ARRAYDECL) {
+        identifier = identifier->left;
+    }
+    if (identifier->kind != AST_IDENTIFIER) {
+        ERROR(identifier, "Internal error, expected identifier");
+        return NULL;
+    }
+    name = identifier->d.string;
     if (!*name) {
         ERROR(identifier, "Internal error, empty identifier");
         return NULL;

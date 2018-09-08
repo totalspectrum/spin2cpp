@@ -17,6 +17,18 @@ LR__0001
 _init_ret
 	ret
 
+_initzero
+	mov	_var_03, #0
+	add	_var_03, objptr
+	mov	_var_01, #10
+LR__0002
+	mov	_tmp001_, #0
+	wrlong	_tmp001_, _var_03
+	add	_var_03, #4
+	djnz	_var_01, #LR__0002
+_initzero_ret
+	ret
+
 objptr
 	long	@@@objmem
 COG_BSS_START
@@ -24,6 +36,8 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
+_tmp001_
+	res	1
 _var_01
 	res	1
 _var_03
