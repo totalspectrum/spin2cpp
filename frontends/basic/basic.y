@@ -49,6 +49,15 @@ DeclareBasicVariables(AST *idlist, AST *typ)
     return NULL;
 }
 
+AST *BASICArrayRef(AST *id, AST *expr)
+{
+    AST *ast;
+
+    // BASIC arrays start at 1
+    expr = AstOperator('-', expr, AstInteger(1));
+    ast = NewAST(AST_ARRAYREF, id, expr);
+    return ast;
+}
 %}
 
 %pure-parser
@@ -148,12 +157,8 @@ statement:
     { $$ = NewAST(AST_LABEL, $1, NULL); }
   | BAS_IDENTIFIER '=' expr eoln
     { $$ = AstAssign($1, $3); }
-  | BAS_IDENTIFIER '(' optexprlist ')' eoln
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')' eoln
-    { $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5); }
-  | BAS_IDENTIFIER eoln
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  | BAS_IDENTIFIER '(' expr ')' '=' expr eoln
+    { $$ = AstAssign(BASICArrayRef($1, $3), $6); }
   | BAS_OUTPUT '(' expr ')' '=' expr eoln
     {
         AST *outa = GetIORegister("outa");
@@ -171,6 +176,14 @@ statement:
   | BAS_LET BAS_IDENTIFIER '=' expr eoln
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
+  | BAS_IDENTIFIER '(' optexprlist ')' eoln
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')' eoln
+    { $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5); }
+  | BAS_IDENTIFIER optexprlist eoln
+    { $$ = NewAST(AST_FUNCCALL, $1, $2); }
+  | BAS_IDENTIFIER eoln
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | BAS_LOCAL BAS_IDENTIFIER eoln
     { $$ = AstDeclareLocal($2, NULL); }
   | BAS_LOCAL BAS_IDENTIFIER '=' expr eoln
@@ -435,6 +448,8 @@ dimension:
     { $$ = DeclareBasicVariables($2, $4); }
    | BAS_DIM BAS_AS typename identlist
     { $$ = DeclareBasicVariables($4, $3); }
+   | BAS_DIM identlist
+    { $$ = DeclareBasicVariables($2, NULL); } 
   ;
 
 pindecl:

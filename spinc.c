@@ -476,6 +476,9 @@ InferTypeFromName(AST *identifier)
 void
 MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
 {
+    if (!typ) {
+        typ = InferTypeFromName(identifier);
+    }
     if (typ->kind == AST_OBJECT) {
         AST *newobj;
         if (AstUses(P->objblock, identifier))
@@ -874,10 +877,11 @@ FixupCode(Module *P, int isBinary)
             changes += InferTypes(Q);
         }
     } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
+
+    RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }
-    RemoveUnusedMethods(isBinary);
     AssignObjectOffsets(P);
 }
 
