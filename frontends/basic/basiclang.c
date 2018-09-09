@@ -13,6 +13,7 @@
 static AST *basic_print_float;
 static AST *basic_print_string;
 static AST *basic_print_integer;
+static AST *basic_print_unsigned;
 static AST *basic_print_char;
 static AST *basic_print_nl;
 
@@ -117,6 +118,8 @@ doBasicTransform(AST **astptr)
                     seq = addPrintCall(seq, basic_print_string, expr);
                 } else if (type->kind == AST_INTTYPE) {
                     seq = addPrintCall(seq, basic_print_integer, expr);
+                } else if (type->kind == AST_UNSIGNEDTYPE) {
+                    seq = addPrintCall(seq, basic_print_unsigned, expr);
                 } else {
                     ERROR(ast, "Unable to print expression of this type");
                 }
@@ -149,6 +152,7 @@ BasicTransform(Module *Q)
 
     basic_print_float = getBasicPrimitive("_basic_print_float");
     basic_print_integer = getBasicPrimitive("_basic_print_integer");
+    basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
     basic_print_string = getBasicPrimitive("_basic_print_string");
     basic_print_char = getBasicPrimitive("_basic_print_char");
     basic_print_nl = getBasicPrimitive("_basic_print_nl");

@@ -12,9 +12,9 @@ Comments start with `rem` or a single quote character, and go to the end of line
 
 Decimal integers are a sequence of digits, 0-9.
 
-Hexadecimal (base 16) integers start with the sequence "0h" or "0x" followed by digits and/or the letters A-F or a-f. 
+Hexadecimal (base 16) integers start with the sequence "&h", "0h", or "0x" followed by digits and/or the letters A-F or a-f. 
 
-Binary (base 2) integers start with the sequence "0b" followed by the digits 0 and 1.
+Binary (base 2) integers start with the sequence "&b" or "0b" followed by the digits 0 and 1.
 
 Numbers may contain underscores anywhere to separate digits; those underscores are ignored.
 
@@ -23,8 +23,8 @@ For example, the following are all ways to represent the decimal number `10`:
    10
    1_0
    0hA
-   0h_a
-   0b1010
+   &h_a
+   &B1010
 ```
 
 ### Keywords

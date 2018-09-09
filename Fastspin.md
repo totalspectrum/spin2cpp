@@ -307,8 +307,8 @@ which is probably not what was intended.
 
 (10) fastspin has its own new operators:
 ```
-  a ~/ b   is the unsigned quotient of a and b (treating both as unsigned)
-  a ~// b  is the unsigned remainder of a and b
+  a +/ b   is the unsigned quotient of a and b (treating both as unsigned)
+  a +// b  is the unsigned remainder of a and b
 ```
 
 Limitations

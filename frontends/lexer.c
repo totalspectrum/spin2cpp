@@ -1006,8 +1006,8 @@ struct reservedword {
     { "/", '/' },
     { "?", '?' },
     { "//", SP_REMAINDER },
-    { "~/", SP_UNSDIV },
-    { "~//", SP_UNSMOD },
+    { "+/", SP_UNSDIV },
+    { "+//", SP_UNSMOD },
     { "*", '*' },
     { "**", SP_HIGHMULT },
     { ">", '>' },
@@ -1255,6 +1255,7 @@ Builtin builtinfuncs[] = {
     { "_basic_print_nl", 0, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
     { "_basic_print_string", 1, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
     { "_basic_print_integer", 1, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
+    { "_basic_print_unsigned", 1, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
     { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
     { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
     
@@ -2274,6 +2275,22 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
         return c;
+    }
+    // special case: '&' followed immediately by a letter is potentially
+    // a literal like &H0123 for hex 0123
+
+    if (c == '&') {
+        int c2 = lexgetc(L);
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        if (c2 == 'h' || c2 == 'H' || c2 == 'x' || c2 == 'X') {
+            parseNumber(L, 16, &ast->d.ival);
+            c = BAS_INTEGER;
+        } else if (c2 == 'b' || c2 == 'B') {
+            parseNumber(L, 2, &ast->d.ival);
+            c = BAS_INTEGER;
+        } else {
+            lexungetc(L, c2);
+        }
     } else if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
@@ -2285,9 +2302,9 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             // check for hex or binary prefixes like 0x or 0h
             int c2;
             c2 = lexgetc(L);
-            if (c2 == 'h' || c2 == 'x' || c2 == 'X') {
+            if (c2 == 'h' || c2 == 'H' || c2 == 'x' || c2 == 'X') {
                 c = parseNumber(L, 16, &ast->d.ival);
-            } else if (c2 == 'b') {
+            } else if (c2 == 'b' || c2 == 'B') {
                 c = parseNumber(L, 2, &ast->d.ival);
             } else {
                 lexungetc(L, c2);
