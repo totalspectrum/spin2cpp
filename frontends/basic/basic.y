@@ -104,6 +104,7 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_PROGRAM    "program"
 %token BAS_RETURN     "return"
 %token BAS_SHARED     "shared"
+%token BAS_SHORT      "short"
 %token BAS_SINGLE     "single"
 %token BAS_STEP       "step"
 %token BAS_STRING_KW  "string"
@@ -111,11 +112,14 @@ AST *BASICArrayRef(AST *id, AST *expr)
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
 %token BAS_TO         "to"
+%token BAS_UBYTE      "ubyte"
+%token BAS_UINTEGER   "uinteger"
+%token BAS_ULONG      "ulong"
+%token BAS_USHORT     "ushort"
 %token BAS_UNTIL      "until"
 %token BAS_WEND       "wend"
 %token BAS_WITH       "with"
 %token BAS_WHILE      "while"
-%token BAS_WORD       "word"
 %token BAS_XOR        "xor"
 %token BAS_LE         "<="
 %token BAS_GE         ">="
@@ -483,9 +487,9 @@ identlist:
   ;
 
 typename:
-  BAS_BYTE
+  BAS_UBYTE
     { $$ = ast_type_byte; }
-  | BAS_WORD
+  | BAS_USHORT
     { $$ = ast_type_word; }
   | BAS_LONG
     { $$ = ast_type_long; }

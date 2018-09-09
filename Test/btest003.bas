@@ -1,7 +1,7 @@
 class FDS input "FullDuplexSerial.spin"
 
 dim ser as FDS
-dim i as byte
+dim i as ubyte
 
 ser.start(31, 30, 0, 115_200)
 for i = 0b01 to 10
