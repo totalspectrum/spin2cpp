@@ -142,6 +142,7 @@ AST *AstCharItem(int c)
 %left '*' '/' BAS_MOD
 %left BAS_SHL BAS_SHR
 %left BAS_NEGATE
+%left '@'
 
 %%
 toplist:
@@ -414,6 +415,8 @@ expr:
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
     }
+  | '@' expr
+    { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'
     { $$ = $2; }
 ;
