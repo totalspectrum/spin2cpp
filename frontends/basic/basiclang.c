@@ -13,6 +13,7 @@
 static AST *basic_print_float;
 static AST *basic_print_string;
 static AST *basic_print_integer;
+static AST *basic_print_char;
 static AST *basic_print_nl;
 
 static AST *
@@ -96,6 +97,15 @@ doBasicTransform(AST **astptr)
             while (exprlist) {
                 expr = exprlist->left;
                 exprlist = exprlist->right;
+                if (expr->kind == AST_CHAR) {
+                    expr = expr->left;
+                    if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
+                        seq = addPrintCall(seq, basic_print_nl, NULL);
+                    } else {
+                        seq = addPrintCall(seq, basic_print_char, expr);
+                    }
+                    continue;
+                }
                 type = ExprType(expr);
                 if (!type) {
                     ERROR(ast, "Unknown type in print");
@@ -111,7 +121,6 @@ doBasicTransform(AST **astptr)
                     ERROR(ast, "Unable to print expression of this type");
                 }
             }
-            seq = addPrintCall(seq, basic_print_nl, NULL);
             *astptr = ast = seq;
         }
         break;
@@ -141,6 +150,7 @@ BasicTransform(Module *Q)
     basic_print_float = getBasicPrimitive("_basic_print_float");
     basic_print_integer = getBasicPrimitive("_basic_print_integer");
     basic_print_string = getBasicPrimitive("_basic_print_string");
+    basic_print_char = getBasicPrimitive("_basic_print_char");
     basic_print_nl = getBasicPrimitive("_basic_print_nl");
     
     current = Q;

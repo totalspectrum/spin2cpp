@@ -156,6 +156,7 @@ enum astkind {
     AST_LABEL = 104,
     AST_GOTO,
     AST_PRINT,
+    AST_CHAR,
 };
 
 /* forward reference */

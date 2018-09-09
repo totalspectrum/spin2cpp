@@ -58,6 +58,13 @@ AST *BASICArrayRef(AST *id, AST *expr)
     ast = NewAST(AST_ARRAYREF, id, expr);
     return ast;
 }
+
+AST *AstCharItem(int c)
+{
+    AST *expr = NewAST(AST_CHAR, AstInteger(c), NULL);
+    return NewAST(AST_EXPRLIST, expr, NULL);
+}
+
 %}
 
 %pure-parser
@@ -198,7 +205,7 @@ statement:
     { $$ = AstReturn($2, $1); }
   | BAS_GOTO BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_GOTO, $2, NULL); }
-  | BAS_PRINT exprlist eoln
+  | BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
   | ifstmt
     { $$ = $1; }
@@ -210,6 +217,25 @@ statement:
     { $$ = $1; }
   | eoln
     { $$ = NULL; }
+;
+
+rawprintlist:
+  | expritem
+  { $$ = $1; }
+  | rawprintlist ';' expritem
+  { $$ = AddToList($1, $3); }
+  | rawprintlist ',' expritem
+  { $$ = AddToList(AddToList($1, AstCharItem('\t')), $3); }
+;
+printlist:
+  eoln
+    { $$ = AstCharItem('\n'); }
+  | rawprintlist eoln
+    { $$ = AddToList($1, AstCharItem('\n')); }
+  | rawprintlist ',' eoln
+    { $$ = AddToList($1, AstCharItem('\t')); }
+  | rawprintlist ';' eoln
+    { $$ = $1; }
 ;
 
 ifstmt:

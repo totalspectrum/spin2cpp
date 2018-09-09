@@ -1256,6 +1256,7 @@ Builtin builtinfuncs[] = {
     { "_basic_print_string", 1, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
     { "_basic_print_integer", 1, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
     { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
+    { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
     
     { "_basic_strcpy", 2, defaultBuiltin, "basic_strcpy", NULL, 0, NULL },
     { "_basic_strcat", 2, defaultBuiltin, "basic_strcat", NULL, 0, NULL },
