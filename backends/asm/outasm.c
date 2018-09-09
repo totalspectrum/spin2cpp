@@ -2859,7 +2859,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             ir = EmitOp2(irl, OPC_RDWORD, where, src);
             break;
         case SBYTE_REF:
-            signextend = 8;
+            signextend = 32 - 8;
             // fall through
         case BYTE_REF:
             ir = EmitOp2(irl, OPC_RDBYTE, where, src);
@@ -2898,9 +2898,11 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         case LONG_REF:
             ir = EmitOp2(irl, OPC_WRLONG, src, dst);
             break;
+        case SWORD_REF:
         case WORD_REF:
             ir = EmitOp2(irl, OPC_WRWORD, src, dst);
             break;
+        case SBYTE_REF:
         case BYTE_REF:
             ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
             break;

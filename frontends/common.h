@@ -128,6 +128,9 @@ extern int gl_compressed; /* if instructions should be compressed */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
 extern AST *ast_type_byte;
+extern AST *ast_type_unsigned_long;
+extern AST *ast_type_signed_word;
+extern AST *ast_type_signed_byte;
 extern AST *ast_type_float;
 extern AST *ast_type_string;
 extern AST *ast_type_generic;

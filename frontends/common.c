@@ -54,7 +54,12 @@ int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
 int gl_listing = 0;
 
+// bytes and words are unsigned by default, but longs are signed by default
+// this is confusing, and someday we should make all of these explicit
+// but it's a legacy from Spin
 AST *ast_type_word, *ast_type_long, *ast_type_byte;
+AST *ast_type_signed_word, *ast_type_signed_byte;
+AST *ast_type_unsigned_long;
 AST *ast_type_float, *ast_type_string;
 AST *ast_type_ptr_long;
 AST *ast_type_ptr_word;
@@ -360,6 +365,11 @@ Init()
     ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
+
+    ast_type_unsigned_long = NewAST(AST_UNSIGNEDTYPE, AstInteger(4), NULL);
+    ast_type_signed_word = NewAST(AST_INTTYPE, AstInteger(2), NULL);
+    ast_type_signed_byte = NewAST(AST_INTTYPE, AstInteger(1), NULL);
+
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);

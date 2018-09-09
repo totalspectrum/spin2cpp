@@ -519,8 +519,16 @@ typename:
     { $$ = ast_type_word; }
   | BAS_LONG
     { $$ = ast_type_long; }
+  | BAS_BYTE
+    { $$ = ast_type_signed_byte; }
+  | BAS_SHORT
+    { $$ = ast_type_signed_word; }
+  | BAS_ULONG
+    { $$ = ast_type_unsigned_long; }
   | BAS_INTEGER_KW
     { $$ = ast_type_long; }
+  | BAS_UINTEGER
+    { $$ = ast_type_unsigned_long; }
   | BAS_SINGLE
     { $$ = ast_type_float; }
   | BAS_DOUBLE
