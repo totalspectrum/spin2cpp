@@ -1318,6 +1318,7 @@ FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
 int
 IsFloatType(AST *type)
 {
+    if (!type) return 0;
     while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
         type = type->left;
     }
@@ -1329,6 +1330,7 @@ IsFloatType(AST *type)
 int
 IsPointerType(AST *type)
 {
+    if (!type) return 0;
     while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
         type = type->left;
     }
@@ -1355,6 +1357,7 @@ IsGenericType(AST *type)
 int
 IsIntType(AST *type)
 {
+    if (!type) return 0;
     while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
         type = type->left;
     }
@@ -1362,6 +1365,19 @@ IsIntType(AST *type)
         return 1;
     return 0;
 }
+
+int
+IsNumericType(AST *type)
+{
+    if (!type) return 0;
+    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
+        type = type->left;
+    }
+    if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE || type->kind == AST_FLOATTYPE)
+        return 1;
+    return 0;
+}
+
 
 /*
  * figure out an expression's type
@@ -1443,18 +1459,22 @@ ExprType(AST *expr)
     }
     case AST_OPERATOR:
     {
-        AST *subtype;
+        AST *ltype, *rtype;
         switch (expr->d.ival) {
         case '+':
         case '-':
         case K_INCREMENT:
         case K_DECREMENT:
-            subtype = ExprType(expr->left);
-            if (!subtype) subtype = ExprType(expr->right);
-            if (subtype) {
-                if (IsIntOrGenericType(subtype)) return subtype;
-                if (IsPointerType(subtype) && PointerTypeIncrement(subtype) == 1) {
-                    return subtype;
+            ltype = ExprType(expr->left);
+            rtype = ExprType(expr->right);
+            if (IsFloatType(ltype) || IsFloatType(rtype)) {
+                return ast_type_float;
+            }
+            if (!ltype) ltype = rtype;
+            if (ltype) {
+                if (IsIntOrGenericType(ltype)) return ltype;
+                if (IsPointerType(ltype) && PointerTypeIncrement(ltype) == 1) {
+                    return ltype;
                 }
                 return ast_type_generic;
             }
@@ -1532,7 +1552,9 @@ SameTypes(AST *A, AST *B)
 int
 CompatibleTypes(AST *A, AST *B)
 {
-    bool skipfloats = (current == NULL || current->language == LANG_SPIN);
+    bool typesOK = (current != NULL && current->language != LANG_SPIN);
+    bool skipfloats = !typesOK;
+    
     // FIXME: eventually float types should be
     // fully supported, but for now treat them
     // as generic
@@ -1547,7 +1569,9 @@ CompatibleTypes(AST *A, AST *B)
     if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
         return (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE);
     }
-
+    if (typesOK && (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
+        return 1;
+    }
     if (A->kind != B->kind) return 0;
     return SameTypes(A->left, B->left);
 }

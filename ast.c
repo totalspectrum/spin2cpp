@@ -502,6 +502,10 @@ static void doASTDump(AST *ast, int indent)
         sprintf(buf, "<integer %d/>", ast->d.ival);
         leaf = 1;
         break;
+    case AST_FLOAT:
+        sprintf(buf, "<float %x/>", ast->d.ival);
+        leaf = 1;
+        break;
     case AST_STRING:
         sprintf(buf, "<string %s/>", ast->d.string);
         leaf = 1;

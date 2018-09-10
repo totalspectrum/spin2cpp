@@ -601,12 +601,12 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         break;
     case K_ZEROEXTEND:
         flexbuf_printf(f, "(uint32_t)(");
-        PrintExpr(f, right, flags);
+        PrintExpr(f, left, flags);
         flexbuf_printf(f, ")");
         break;
     case K_SIGNEXTEND:
         flexbuf_printf(f, "(int32_t)");
-        PrintExpr(f, right, flags);
+        PrintExpr(f, left, flags);
         flexbuf_printf(f, ")");
         break;
     case '?':
