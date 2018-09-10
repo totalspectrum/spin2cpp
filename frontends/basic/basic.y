@@ -402,7 +402,7 @@ expr:
   | expr BAS_SHL expr
     { $$ = AstOperator(K_SHL, $1, $3); }
   | expr BAS_SHR expr
-    { $$ = AstOperator(K_SHR, $1, $3); }
+    { $$ = AstOperator(K_SAR, $1, $3); }
   | expr BAS_XOR expr
     { $$ = AstOperator('^', $1, $3); }
   | '-' expr %prec BAS_NEGATE

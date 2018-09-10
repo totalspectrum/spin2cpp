@@ -134,6 +134,85 @@ doBasicTransform(AST **astptr)
     }
 }
 
+bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
+{
+    if (!typ)
+        return true;
+    if (typ->kind == AST_INTTYPE || typ->kind == AST_UNSIGNEDTYPE)
+        return true;
+    ERROR(astForError, "Expected integer type for parameter of %s", opname);
+    return false;
+}
+
+bool IsUnsignedType(AST *typ) {
+    return typ && typ->kind == AST_UNSIGNEDTYPE;
+}
+
+bool BothIntegers(AST *astForError, AST *ltyp, AST *rtyp, const char *opname)
+{
+    return VerifyIntegerType(astForError, ltyp, opname) && VerifyIntegerType(astForError, rtyp, opname);
+}
+
+AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
+{
+    //assert(ast->kind == AST_OPERATOR)
+    switch(ast->d.ival) {
+    case K_SAR:
+        if (!BothIntegers(ast, lefttype, righttype, "shift"))
+            return NULL;
+        if (lefttype && IsUnsignedType(lefttype)) {
+            ast->d.ival = K_SHR;
+        }
+        return lefttype;
+    default:
+        return lefttype;
+    }
+}
+
+//
+// function for doing type checking and various kinds of
+// type related manipulations. for example:
+//
+// signed/unsigned shift: x >> y  => signed shift if x is signed,
+//                                   unsigned otherwise
+// returns the most recent type signature
+//
+AST *CheckTypes(AST *ast)
+{
+    AST *ltype, *rtype;
+    if (!ast) return NULL;
+    ltype = CheckTypes(ast->left);
+    rtype = CheckTypes(ast->right);
+    switch (ast->kind) {
+    case AST_OPERATOR:
+        ltype = CoerceOperatorTypes(ast, ltype, rtype);
+        break;
+    case AST_FLOAT:
+    case AST_TRUNC:
+    case AST_ROUND:
+        return ast_type_float;
+    case AST_ISBETWEEN:
+    case AST_INTEGER:
+    case AST_HWREG:
+    case AST_CONSTREF:
+    case AST_CONSTANT:
+        return ast_type_long;
+    case AST_STRING:
+        return ast_type_string;
+    case AST_EXPRLIST:
+    case AST_SEQUENCE:
+    case AST_FUNCCALL:
+    case AST_METHODREF:
+    case AST_ARRAYREF:
+    case AST_IDENTIFIER:
+        return ExprType(ast);
+    default:
+        break;
+    }
+    return ltype;
+}
+
+////////////////////////////////////////////////////////////////
 static AST *
 getBasicPrimitive(const char *name)
 {
@@ -162,6 +241,7 @@ BasicTransform(Module *Q)
         curfunc = func;
 
         doBasicTransform(&func->body);
+        CheckTypes(func->body);
     }
     curfunc = savefunc;
     current = savecur;
