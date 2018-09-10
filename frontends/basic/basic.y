@@ -491,12 +491,12 @@ subdecl:
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     DeclareFunction(ast_type_void, 1, funcdef, $7, NULL, $1);
   }
-  | BAS_SUB BAS_IDENTIFIER eoln subbody
+  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(ast_type_void, 1, funcdef, $4, NULL, $1);
+    DeclareFunction(ast_type_void, 1, funcdef, $5, NULL, $1);
   }
   ;
 
