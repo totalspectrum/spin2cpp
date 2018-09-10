@@ -1,9 +1,10 @@
 ' this is a comment
 '
 rem and this is a comment too
-REMARK as is this
 
 function sum%(re, y%)
-  remark variable re should not trigger a comment
+  rem variable re should not trigger a comment
+  rem and neither should remainder
+  let remainder = y%
   return re+y%
 end function

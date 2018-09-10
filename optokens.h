@@ -34,4 +34,7 @@
 #define K_BOOL_XOR   0x11b
 #define K_UNS_DIV    0x11c
 #define K_UNS_MOD    0x11d
+#define K_SIGNEXTEND 0x11e
+#define K_ZEROEXTEND 0x11f
+
 #endif

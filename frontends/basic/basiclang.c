@@ -138,7 +138,7 @@ bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
 {
     if (!typ)
         return true;
-    if (typ->kind == AST_INTTYPE || typ->kind == AST_UNSIGNEDTYPE)
+    if (IsIntType(typ))
         return true;
     ERROR(astForError, "Expected integer type for parameter of %s", opname);
     return false;
@@ -153,6 +153,55 @@ bool BothIntegers(AST *astForError, AST *ltyp, AST *rtyp, const char *opname)
     return VerifyIntegerType(astForError, ltyp, opname) && VerifyIntegerType(astForError, rtyp, opname);
 }
 
+static AST *dopromote(AST *expr, int numbytes, int operator)
+{
+    int shiftbits = numbytes * 8;
+    AST *promote = AstOperator(operator, expr, AstInteger(shiftbits));
+    return promote;
+}
+
+//
+// insert promotion code under AST for either the left or right type
+// if "force" is nonzero then we will always promote small integers,
+// otherwise we promote only if their sizes do not match
+// return the final type
+//
+AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
+    int lsize = TypeSize(lefttype);
+    int rsize = TypeSize(righttype);
+    AST *rettype = lefttype;
+    int leftunsigned = IsUnsignedType(lefttype);
+    int rightunsigned = IsUnsignedType(righttype);
+    
+    force = force || (lsize != rsize);
+    
+    if (lsize < 4 && force) {
+        if (leftunsigned) {
+            ast->left = dopromote(ast->left, lsize, K_ZEROEXTEND);
+            lefttype = ast_type_unsigned_long;
+        } else {
+            ast->left = dopromote(ast->left, lsize, K_SIGNEXTEND);
+            lefttype = ast_type_long;
+        }
+        rettype = righttype;
+    }
+    if (rsize < 4 && force) {
+        if (rightunsigned) {
+            ast->right = dopromote(ast->right, rsize, K_ZEROEXTEND);
+            righttype = ast_type_unsigned_long;
+        } else {
+            ast->right = dopromote(ast->right, rsize, K_SIGNEXTEND);
+            righttype = ast_type_long;
+        }
+        rettype = lefttype;
+    }
+    if (leftunsigned && rightunsigned) {
+        return rettype;
+    } else {
+        return ast_type_long;
+    }
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     //assert(ast->kind == AST_OPERATOR)
@@ -164,9 +213,55 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             ast->d.ival = K_SHR;
         }
         return lefttype;
+    case '&':
+    case '|':
+    case '^':
+        if (!BothIntegers(ast, lefttype, righttype, "bit operation"))
+            return NULL;
+        
+    case K_SIGNEXTEND:
+        return ast_type_long;
+    case K_ZEROEXTEND:
+        return ast_type_unsigned_long;
+    case K_NEGATE:
+        if (IsFloatType(righttype) || IsIntType(righttype))
+            return righttype;
+        ERROR(ast, "Expected arithmetic type\n");
+        return NULL;
     default:
-        return lefttype;
+        if (!BothIntegers(ast, lefttype, righttype, "operator")) {
+            return NULL;
+        }
+        return MatchIntegerTypes(ast, lefttype, righttype, 1);
     }
+}
+
+AST *CoerceAssignTypes(AST *ast, AST *desttype, AST *srctype)
+{
+    if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
+        return desttype;
+    }
+    if (!CompatibleTypes(desttype, srctype)) {
+        ERROR(ast, "incompatible types in assignment");
+        return desttype;
+    }
+    if (IsIntType(desttype)) {
+        if (IsIntType(srctype)) {
+            int lsize = TypeSize(desttype);
+            int rsize = TypeSize(srctype);
+            if (lsize > rsize) {
+                if (IsUnsignedType(srctype)) {
+                    ast->right = dopromote(ast->right, rsize, K_ZEROEXTEND);
+                } else {
+                    ast->right = dopromote(ast->right, rsize, K_SIGNEXTEND);
+                }
+            }
+        }
+        if (IsFloatType(srctype)) {
+            ERROR(ast, "cannot assign float to integer");
+        }
+    }
+    return desttype;
 }
 
 //
@@ -186,6 +281,9 @@ AST *CheckTypes(AST *ast)
     switch (ast->kind) {
     case AST_OPERATOR:
         ltype = CoerceOperatorTypes(ast, ltype, rtype);
+        break;
+    case AST_ASSIGN:
+        ltype = CoerceAssignTypes(ast, ltype, rtype);
         break;
     case AST_FLOAT:
     case AST_TRUNC:

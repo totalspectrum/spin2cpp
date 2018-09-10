@@ -775,6 +775,18 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return (lval > rval) ? rval : lval;
     case K_REV:
         return ReverseBits(lval, rval);
+    case K_ZEROEXTEND:
+        {
+            int shift = 32 - rval;
+            return ((uint32_t)lval << shift) >> shift;
+        }
+        break;
+    case K_SIGNEXTEND:
+        {
+            int shift = 32 - rval;
+            return ((int32_t)lval << shift) >> shift;
+        }
+        break;
     default:
         if (valid)
             *valid = 0;
@@ -1520,15 +1532,17 @@ SameTypes(AST *A, AST *B)
 int
 CompatibleTypes(AST *A, AST *B)
 {
+    bool skipfloats = (current == NULL || current->language == LANG_SPIN);
     // FIXME: eventually float types should be
     // fully supported, but for now treat them
     // as generic
-    if (!A || A->kind == AST_FLOATTYPE) {
+    if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
         A = ast_type_generic;
     }
-    if (!B || B->kind == AST_FLOATTYPE) {
+    if (!B || (skipfloats && B->kind == AST_FLOATTYPE)) {
         B = ast_type_generic;
     }
+
     if (A == B) return 1;
     if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
         return (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE);

@@ -6,7 +6,7 @@ Fastspin BASIC is the BASIC language support of the fastspin compiler for the Pa
 
 ### Comments
 
-Comments start with `rem` or a single quote character, and go to the end of line
+Comments start with `rem` or a single quote character, and go to the end of line. Note that you need a space or non-alphabetical character after the `rem`; the word `remark` does not start a comment.
 
 ### Integers
 

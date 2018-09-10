@@ -58,6 +58,8 @@ int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 #define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
 
+int CompatibleTypes(AST *A, AST *B);
+
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);

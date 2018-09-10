@@ -599,6 +599,16 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
+    case K_ZEROEXTEND:
+        flexbuf_printf(f, "(uint32_t)(");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ")");
+        break;
+    case K_SIGNEXTEND:
+        flexbuf_printf(f, "(int32_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ")");
+        break;
     case '?':
         if (left) {
             flexbuf_printf(f, "RandForw__(");

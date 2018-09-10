@@ -5,8 +5,9 @@
 
 class btest001 {
 public:
-  static int32_t 	sum_I(int32_t re, int32_t y_I);
+  int32_t 	sum_I(int32_t re, int32_t y_I);
 private:
+  int32_t 	remainder;
 };
 
 #endif

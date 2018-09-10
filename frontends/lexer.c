@@ -607,16 +607,16 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
 {
     AST *ast;
     if (language == LANG_BASIC && (c == 'r' || c == 'R') ) {
-        int c2, c3;
+        int c2, c3, c4;
         c2 = lexgetc(L);
         if (c2 == 'e' || c2 == 'E') {
             c3 = lexgetc(L);
             if (c3 == 'm' || c3 == 'M') {
-                // skip until next space or non-letter
-                do {
-                    c = lexgetc(L);
-                } while isalpha(c);
-                goto docomment;
+                c4 = lexgetc(L);
+                if (!safe_isalpha(c4)) {
+                    goto docomment;
+                }
+                lexungetc(L, c4);
             }
             lexungetc(L, c3);
         }

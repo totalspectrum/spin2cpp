@@ -1721,6 +1721,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       right = Dereference(irl, right);
       EmitOp2(irl, OpcFromOp(op), temp, right);
       return temp;
+  case K_ZEROEXTEND:
+  case K_SIGNEXTEND:
+      if (!IsConstExpr(rhs)) {
+          ERROR(NULL, "Internal error: non-constant extend");
+      } else {
+          int shift = 32 - EvalConstExpr(rhs);
+          left = CompileExpression(irl, lhs, temp);
+          right = NewImmediate(shift);
+          EmitMove(irl, temp, left);
+          EmitOp2(irl, OPC_SHL, temp, right);
+          EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
+      }
+      return temp;
     // commutative ops 
   case '+':
   case '^':
