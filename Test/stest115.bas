@@ -1,11 +1,8 @@
-dim s as integer
-dim u as uinteger
-
-function shalf()
+function shalf(s as integer)
   return s >> 1
 end function
 
-function uhalf()
+function uhalf(u as uinteger)
   return u >> 1
 end function
 

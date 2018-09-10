@@ -5,26 +5,22 @@ DAT
 entry
 
 _shalf
-	rdlong	result1, objptr
-	sar	result1, #1
+	sar	arg1, #1
+	mov	result1, arg1
 _shalf_ret
 	ret
 
 _uhalf
-	add	objptr, #4
-	rdlong	result1, objptr
-	sub	objptr, #4
-	shr	result1, #1
+	shr	arg1, #1
+	mov	result1, arg1
 _uhalf_ret
 	ret
 
-objptr
-	long	@@@objmem
 result1
 	long	0
 COG_BSS_START
 	fit	496
-objmem
-	long	0[2]
 	org	COG_BSS_START
+arg1
+	res	1
 	fit	496
