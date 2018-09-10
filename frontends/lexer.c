@@ -1052,6 +1052,7 @@ struct reservedword basic_keywords[] = {
   { "asm", BAS_ASM },
   { "byte", BAS_BYTE },
   { "class", BAS_CLASS },
+  { "const", BAS_CONST },
   { "continue", BAS_CONTINUE },
   { "declare", BAS_DECLARE },
   { "dim", BAS_DIM },

@@ -76,11 +76,32 @@ with
 word
 ```
 
-### Variables
+### Variable, Subroutine, and Function names
 
-Variable names consist of a letter, followed by any sequence of letters or digits. Underscores may be inserted anywhere in this sequence, but are ignored for purposes of comparing variables. Similarly, case is ignored. So the names `avar`, `a_var`, `AVar`, `A_VAR`, etc. all refer to the same variable.
+Names of variables, subroutines, or functions ("identifiers") consist of a letter, followed by any sequence of letters or digits. Underscores may be inserted anywhere in this sequence, but are ignored for purposes of comparing variables. Similarly, case is ignored. So the names `avar`, `a_var`, `AVar`, `A_VAR`, etc. all refer to the same variable.
 
-Variables may have a type specifier appended to them. `$` indicates a string variable, `%` an integer variable, and `#` a floating point variable. The type specifier is part of the name, so `a$` and `a#` are different variables: the first is a string variable, and the second is a floating point variable. If no type specifier is appended, the variable is assumed to be an integer.
+Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers. the first is a string variable. If no type specifier is appended, the identifier is assumed to be an integer.
+
+Variable or function types may also be explicitly given, and in this case the type overrides any implicit type defined by the name. However, we strongly recommend that you not use type specifiers like `$` for variables (or functions) that you give an explicit type to.
+
+Examples:
+
+```
+   dim a%            ' defines an integer variable
+   dim a#            ' defines a different floating point variable
+   dim a as string   ' defines another variable, this time a string
+   dim a$ as integer ' NOT RECOMMENDED: overrides the $ suffix to make an integer variable
+
+   '' this function returns a string and takes a float and string as parameters
+   function f$(a#, b$)
+     ...
+   end function
+
+   '' this function also returns a string from a float and string
+   function g(a as single, b as string) as string
+     ...
+   end function
+```
 
 #### Arrays
 
@@ -116,6 +137,9 @@ to 0 could look like:
 
 There are two kinds of variables: global variables and local variables. Global variables may be accessed from anywhere in the program, and exist for the duration of the program. Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called.
 
+
+## Language features
+
 ### Function declarations
 
 Function names follow the same rules as variable names. Like variable names, function names may have a type specifier appended, and the type specifier gives the type that the function returns.
@@ -124,4 +148,69 @@ Function names follow the same rules as variable names. Like variable names, fun
 function Add(a, b)
   return a+b
 end function
+```
+This could be written more verbosely as
+```
+function Add(a as integer, b as integer) as integer
+  return a+b
+end function
+```
+
+## Propeller Specific Features
+
+### Input, Output, and Direction
+
+For the Propeller we have some special pseudo-variables `direction`, `input`, and `output`. These may be
+used to directly control pins of the processor. For example, to set pin 1 as output and then set it high do:
+```
+  direction(1) = output
+  output(1) = 1
+```
+Similarly, to set pin 2 as input and read it:
+```
+  direction(2) = input
+  x = input(2)
+```
+
+### Propeller Specific Functions
+
+#### getcnt
+
+```
+  function getcnt() as uinteger
+  x = getcnt()
+```
+Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
+
+### Propeller Specific Variables
+
+#### clkfreq
+
+```
+  dim clkfreq as uinteger
+```
+Clkfreq gives the frequency of the system clock in cycles per second.
+
+## Sample Programs
+
+### Toggle a pin
+
+This program toggles a pin once per second.
+```
+rem simple program to toggle a pin
+
+const pin = 16
+
+let mscycles = clkfreq / 1000
+
+direction(pin) = output
+
+do
+  output(pin) = output(pin) xor 1
+  pausems 1000
+loop
+
+sub pausems(ms)
+  waitcnt(getcnt() + ms * mscycles)
+end sub
 ```

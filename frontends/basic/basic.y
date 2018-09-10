@@ -20,7 +20,8 @@
     extern int gl_errors;
 
     extern AST *last_ast;
-
+    extern AST *CommentedListHolder(AST *); // in spin.y
+    
 #define YYERROR_VERBOSE 1
 #define BASICYYSTYPE AST*
 
@@ -34,6 +35,16 @@ AST *GetIORegister(const char *name)
     }
     reg->d.ptr = sym->val;
     return reg;
+}
+
+AST *GetPinRange(const char *name, AST *range)
+{
+    AST *reg = GetIORegister(name);
+    AST *ast = NULL;
+    if (reg) {
+        ast = NewAST(AST_RANGEREF, reg, range);
+    }
+    return ast;
 }
 
 AST *
@@ -83,6 +94,7 @@ AST *AstCharItem(int c)
 %token BAS_ASM        "asm"
 %token BAS_BYTE       "byte"
 %token BAS_CLASS      "class"
+%token BAS_CONST      "const"
 %token BAS_CONTINUE   "continue"
 %token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
@@ -168,6 +180,13 @@ topstatement:
   | topdecl
 ;
 
+pinrange:
+  expr
+    { $$ = NewAST(AST_RANGE, $1, NULL); }
+  | expr BAS_TO expr
+    { $$ = NewAST(AST_RANGE, $1, $3); }
+;
+
 statement:
   BAS_IDENTIFIER ':'
     { $$ = NewAST(AST_LABEL, $1, NULL); }
@@ -175,19 +194,21 @@ statement:
     { $$ = AstAssign($1, $3); }
   | BAS_IDENTIFIER '(' expr ')' '=' expr eoln
     { $$ = AstAssign(BASICArrayRef($1, $3), $6); }
-  | BAS_OUTPUT '(' expr ')' '=' expr eoln
+  | BAS_OUTPUT '(' pinrange ')' '=' expr eoln
     {
-        AST *outa = GetIORegister("outa");
-        AST *lhs;
-        lhs = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
-        $$ = AstAssign(lhs, $6);
+        $$ = AstAssign(GetPinRange("outa", $3), $6);
     }
-  | BAS_DIRECTION '(' expr ')' '=' expr eoln
+  | BAS_DIRECTION '(' pinrange ')' '=' expr eoln
     {
-        AST *reg = GetIORegister("dira");
-        AST *lhs;
-        lhs = NewAST(AST_RANGEREF, reg, NewAST(AST_RANGE, $3, NULL));
-        $$ = AstAssign(lhs, $6);
+        $$ = AstAssign(GetPinRange("dira", $3), $6);
+    }
+  | BAS_DIRECTION '(' pinrange ')' '=' BAS_INPUT eoln
+    {
+        $$ = AstAssign(GetPinRange("dira", $3), AstInteger(0));
+    }
+  | BAS_DIRECTION '(' pinrange ')' '=' BAS_OUTPUT eoln
+    {
+        $$ = AstAssign(GetPinRange("dira", $3), AstInteger(-1));
     }
   | BAS_LET BAS_IDENTIFIER '=' expr eoln
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
@@ -426,6 +447,12 @@ expr:
     { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'
     { $$ = $2; }
+  | BAS_INPUT '(' pinrange ')'
+    { $$ = GetPinRange("ina", $3); }
+  | BAS_OUTPUT '(' pinrange ')'
+    { $$ = GetPinRange("outa", $3); }
+  | BAS_DIRECTION '(' pinrange ')'
+    { $$ = GetPinRange("dira", $3); }
 ;
 
 lhs: identifier
@@ -442,8 +469,19 @@ topdecl:
   | funcdecl
   | classdecl
   | dimension
+  | constdecl
   | pindecl
   ;
+
+constdecl:
+  BAS_CONST BAS_IDENTIFIER '=' expr
+  {
+      AST *decl;
+      decl = AstAssign($2, $4);
+      decl = CommentedListHolder(decl);
+      $$ = current->conblock = AddToList(current->conblock, decl);
+  }
+;
 
 subdecl:
   BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
