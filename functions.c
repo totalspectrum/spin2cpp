@@ -70,25 +70,33 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
 }
 
 int
-EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int offset)
+EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offset)
 {
     AST *lower;
     AST *ast;
     Symbol *sym;
+    AST *actualtype;
     int size;
-    int typesize = symtype ? TypeSize(symtype) : 4;
-
+    int typesize;
+    
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
+            if (ast->kind == AST_DECLARE_LOCAL) {
+                actualtype = ast->left;
+                ast = ast->right;
+            } else {
+                actualtype = defaulttype;
+            }
+            typesize = actualtype ? TypeSize(actualtype) : 4;
             switch (ast->kind) {
             case AST_IDENTIFIER:
-                sym = EnterVariable(kind, stab, ast, symtype);
+                sym = EnterVariable(kind, stab, ast, actualtype);
                 if (sym) sym->offset = offset;
                 offset += typesize;
                 break;
             case AST_ARRAYDECL:
-                sym = EnterVariable(kind, stab, ast->left, NewAST(AST_ARRAYTYPE, symtype, ast->right));
+                sym = EnterVariable(kind, stab, ast->left, NewAST(AST_ARRAYTYPE, actualtype, ast->right));
                 size = EvalConstExpr(ast->right);
                 if (sym) sym->offset = offset;
                 offset += size * typesize;

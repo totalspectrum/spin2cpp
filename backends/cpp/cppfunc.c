@@ -36,6 +36,9 @@ PrintParameterList(Flexbuf *f, Function *func)
             return;
         }
         ast = list->left;
+        if (ast->kind == AST_DECLARE_LOCAL) {
+            ast = ast->right;
+        }
         if (ast->kind != AST_IDENTIFIER) {
             ERROR(ast, "Internal error: expected identifier in function parameter list");
             return;

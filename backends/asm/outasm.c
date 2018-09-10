@@ -804,7 +804,6 @@ NewFunctionTempRegister()
     return GetFunctionTempRegister(f, fdata->curtempreg);
 }
 
-/* if "size" is negative it indicates a signed load */
 static Operand *
 SizedHubMemRef(int size, Operand *addr, int offset)
 {
@@ -814,10 +813,6 @@ SizedHubMemRef(int size, Operand *addr, int offset)
         temp = NewOperand(BYTE_REF, (char *)addr, offset);
     } else if (size == 2) {
         temp = NewOperand(WORD_REF, (char *)addr, offset);
-    } else if (size == -1) {
-        temp = NewOperand(SBYTE_REF, (char *)addr, offset);
-    } else if (size == -2) {
-        temp = NewOperand(SWORD_REF, (char *)addr, offset);
     } else {
         temp = NewOperand(LONG_REF, (char *)addr, offset);
         if (size != 4) {
@@ -832,7 +827,7 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
     int size;
     
-    while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_MODIFIER_CONST)) {
+    while (type && (type->kind == AST_ARRAYTYPE || type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE)) {
         type = type->left;
     }
     if (!type) {
@@ -841,9 +836,6 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
         size = 4;
     } else {
         size = EvalConstExpr(type->left);
-        if (type->kind == AST_INTTYPE) {
-            if (size < 4) size = -size;
-        }
     }
     return SizedHubMemRef(size, addr, offset);
 }
@@ -1077,6 +1069,9 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             ast = astlist->left;
             astlist = astlist->right;
 
+            if (ast->kind == AST_DECLARE_LOCAL) {
+                ast = ast->right;
+            }
             src = GetFunctionParameterForCall(irl, func, n++);
             dst = CompileIdentifierForFunc(irl, ast, func);
             EmitMove(irl, dst, src);
@@ -2127,8 +2122,6 @@ IsCogMem(Operand *addr)
     case LONG_REF:
     case WORD_REF:
     case BYTE_REF:
-    case SWORD_REF:
-    case SBYTE_REF:
         return false;
     default:
         return COG_DATA;
@@ -2183,12 +2176,10 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         shift = 2;
         break;
     case WORD_REF:
-    case SWORD_REF:
         siz = 2;
         shift = 1;
         break;
     case BYTE_REF:
-    case SBYTE_REF:
         siz = 1;
         shift = 0;
         break;
@@ -2826,7 +2817,6 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     }
     if (IsMemRef(src)) {
         int off = src->val;
-        int signextend = 0;
         Operand *where;
         
         // if we are reading into a register, no need for
@@ -2850,25 +2840,12 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         case LONG_REF:
             ir = EmitOp2(irl, OPC_RDLONG, where, src);
             break;
-        case SWORD_REF:
-            signextend = 16;
-            // fall through
         case WORD_REF:
             ir = EmitOp2(irl, OPC_RDWORD, where, src);
             break;
-            ir = EmitOp2(irl, OPC_RDWORD, where, src);
-            break;
-        case SBYTE_REF:
-            signextend = 32 - 8;
-            // fall through
         case BYTE_REF:
             ir = EmitOp2(irl, OPC_RDBYTE, where, src);
             break;
-        }
-        if (signextend) {
-            Operand *sh = NewImmediate(signextend);
-            EmitOp2(irl, OPC_SHL, where, sh);
-            EmitOp2(irl, OPC_SAR, where, sh);
         }
         if (off) {
             EmitAddSub(irl, src, -off);
@@ -2898,11 +2875,9 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         case LONG_REF:
             ir = EmitOp2(irl, OPC_WRLONG, src, dst);
             break;
-        case SWORD_REF:
         case WORD_REF:
             ir = EmitOp2(irl, OPC_WRWORD, src, dst);
             break;
-        case SBYTE_REF:
         case BYTE_REF:
             ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
             break;

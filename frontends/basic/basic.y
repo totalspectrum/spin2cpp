@@ -325,18 +325,25 @@ statementlist:
     { $$ = AddToList($1, NewCommentedStatement($2)); }
   ;
 
-identifierlist:
+paramdecl:
   /* empty */
     { $$ = NULL; }
-  | identifierlist1
+  | paramdecl1
     { $$ = $1; }
 ;
-identifierlist1:
-  identifier
+paramdecl1:
+  paramitem
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
-  | identifierlist1 ',' identifier
+  | paramdecl1 ',' paramitem
   { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
+
+paramitem:
+  identifier
+    { $$ = NewAST(AST_DECLARE_LOCAL, InferTypeFromName($1), $1); }
+  | identifier BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_LOCAL, $3, $1); }
+;
 
 iorange:
   BAS_OUTPUT '(' expr ')'
@@ -439,7 +446,7 @@ topdecl:
   ;
 
 subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' identifierlist ')' eoln subbody
+  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
@@ -456,7 +463,7 @@ subdecl:
   ;
 
 funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' identifierlist ')' eoln funcbody
+  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
   {
     AST *name = $2;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
