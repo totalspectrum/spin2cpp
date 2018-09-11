@@ -259,7 +259,7 @@ AstAssign(AST *left, AST *right)
 AST *
 AstDeclareLocal(AST *left, AST *right)
 {
-    AST *ast = NewAST(AST_DECLARE_LOCAL, left, right);
+    AST *ast = NewAST(AST_DECLARE_VAR, left, right);
     return ast;
 }
 
@@ -457,8 +457,8 @@ static const char *astnames[] = {
 
     "tupletype",
     "srccomment",
-    "declare_local",
-    "declare_global",
+    "declare_var",
+    "declare_var_weak",
 
     "label",
     "goto",

@@ -430,7 +430,8 @@ DeclareVariablesOfSize(Module *P, int basetypesize, int offset)
             curtypesize = 4;
             idlist = ast->left;
             break;
-        case AST_DECLARE_GLOBAL:
+        case AST_DECLARE_VAR:
+        case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
             curtypesize = TypeSize(curtype);
@@ -505,7 +506,7 @@ MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
     
     if (!AstUses(P->varblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
-        AST *newdecl = NewAST(AST_DECLARE_GLOBAL, typ, iddecl);
+        AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
         P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
     }
 }

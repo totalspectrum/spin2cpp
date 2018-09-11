@@ -150,8 +150,8 @@ enum astkind {
 
     AST_TUPLETYPE = 100,
     AST_SRCCOMMENT,
-    AST_DECLARE_LOCAL,
-    AST_DECLARE_GLOBAL,
+    AST_DECLARE_VAR,
+    AST_DECLARE_VAR_WEAK, // like AST_DECLARE_VAR, but no error if already defined
 
     AST_LABEL = 104,
     AST_GOTO,

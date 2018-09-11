@@ -82,7 +82,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
-            if (ast->kind == AST_DECLARE_LOCAL) {
+            if (ast->kind == AST_DECLARE_VAR) {
                 actualtype = ast->left;
                 ast = ast->right;
             } else {
@@ -159,6 +159,62 @@ TranslateToExprList(AST *listholder)
     return head;
 }
 
+//
+// FIXME: someday we should implement scopes other 
+// than function scope
+//
+static void
+findLocalsAndDeclare(Function *func, AST *ast)
+{
+    AST *identlist;
+    AST *ident;
+    AST *name;
+    AST *datatype;
+    AST *seq = NULL; // sequence for variable initialization
+    bool skipDef;
+    
+    if (!ast) return;
+    switch(ast->kind) {
+    case AST_DECLARE_VAR:
+    case AST_DECLARE_VAR_WEAK:
+        identlist = ast->left;
+        datatype = ast->right;
+        while (identlist) {
+            ident = identlist->left;
+            identlist = identlist->right;
+            if (ident->kind == AST_ASSIGN) {
+                // write out an initialization for the variable
+                seq = AddToList(seq, NewAST(AST_LISTHOLDER, ident, NULL));
+                ident = ident->right;
+            }
+            if (ident->kind == AST_ARRAYDECL) {
+                name = ident->left;
+            } else {
+                name = ident;
+            }
+            if (ast->kind == AST_DECLARE_VAR_WEAK) {
+                skipDef = 0 != LookupSymbol(name->d.string);
+            } else {
+                skipDef = false;
+            }
+            if (!skipDef) {
+                AddLocalVariable(func, name, datatype, SYM_LOCALVAR);
+            }
+        }
+        // now we can overwrite the original variable declaration
+        if (seq) {
+            *ast = *seq;
+        } else {
+            AstNullify(ast);
+        }
+        return;
+    default:
+        break;
+    }
+    findLocalsAndDeclare(func, ast->left);
+    findLocalsAndDeclare(func, ast->right);
+}
+
 static void
 doDeclareFunction(AST *funcblock)
 {
@@ -167,13 +223,14 @@ doDeclareFunction(AST *funcblock)
     AST *body;
     AST *annotation;
     Function *fdef;
+    Function *oldcur = curfunc;
     AST *vars;
     AST *src;
     AST *comment;
     AST *defparams;
     AST *retinfo;
     int is_public;
-    
+
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
     annotation = funcblock->right;
@@ -267,6 +324,8 @@ doDeclareFunction(AST *funcblock)
         }
         fdef->defaultparams = defparams;
     }
+
+    curfunc = fdef;
     
     // the symbol value is the type, which we will discover via inference
     // so initialize it to NULL
@@ -274,7 +333,7 @@ doDeclareFunction(AST *funcblock)
     fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
 
     // if there are default values for the parameters, use those to initialize
-    // the symbol types
+    // the symbol types (only if we need to)
     if (fdef->defaultparams) {
         AST *vals = fdef->defaultparams;
         AST *params = fdef->params;
@@ -287,7 +346,7 @@ doDeclareFunction(AST *funcblock)
             vals = vals->right;
             if (id->kind == AST_IDENTIFIER) {
                 Symbol *sym = FindSymbol(&fdef->localsyms, id->d.string);
-                if (sym && sym->type == SYM_PARAMETER) {
+                if (sym && sym->type == SYM_PARAMETER && !sym->val) {
                     sym->val = (void *)ExprType(defval);
                 }
             }
@@ -296,6 +355,12 @@ doDeclareFunction(AST *funcblock)
     
     fdef->body = body;
 
+    /* declare any local variables in the function */
+    findLocalsAndDeclare(fdef, body);
+
+    // restore function symbol environment (if applicable)
+    curfunc = oldcur;
+    
     /* define the function itself */
     AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
 }
@@ -444,10 +509,12 @@ Symbol *VarSymbol(Function *func, AST *ast)
  * add a local variable to a function
  */
 void
-AddLocalVariable(Function *func, AST *var, int symtype)
+AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-    EnterVars(symtype, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
+
+    if (!vartype) vartype = ast_type_long;
+    EnterVars(symtype, &func->localsyms, vartype, varlist, func->numlocals * LONG_SIZE);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     func->numlocals++;
     if (func->localarray) {
@@ -463,7 +530,7 @@ AstTempLocalVariable(const char *prefix)
 
     name = NewTemporaryVariable(prefix);
     ast->d.string = name;
-    AddLocalVariable(curfunc, ast, SYM_TEMPVAR);
+    AddLocalVariable(curfunc, ast, NULL, SYM_TEMPVAR);
     return ast;
 }
 

@@ -36,7 +36,7 @@ PrintParameterList(Flexbuf *f, Function *func)
             return;
         }
         ast = list->left;
-        if (ast->kind == AST_DECLARE_LOCAL) {
+        if (ast->kind == AST_DECLARE_VAR) {
             ast = ast->right;
         }
         if (ast->kind != AST_IDENTIFIER) {

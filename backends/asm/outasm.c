@@ -1069,7 +1069,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             ast = astlist->left;
             astlist = astlist->right;
 
-            if (ast->kind == AST_DECLARE_LOCAL) {
+            if (ast->kind == AST_DECLARE_VAR) {
                 ast = ast->right;
             }
             src = GetFunctionParameterForCall(irl, func, n++);

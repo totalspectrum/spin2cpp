@@ -382,7 +382,7 @@ int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int star
 Symbol *VarSymbol(Function *func, AST *ast);
 
 // add a local variable to a function
-void AddLocalVariable(Function *func, AST *var, int type);
+void AddLocalVariable(Function *func, AST *var, AST *vartype, int symbolkind);
 
 // find the size of a type
 int TypeSize(AST *ast);

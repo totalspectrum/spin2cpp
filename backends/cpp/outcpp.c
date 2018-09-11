@@ -195,7 +195,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             typ = NULL;
             idlist = ast->left;
             break;
-        case AST_DECLARE_GLOBAL:
+        case AST_DECLARE_VAR:
             typ = ast->left;
             astsiz = TypeSize(typ);
             idlist = ast->right;

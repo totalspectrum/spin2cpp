@@ -1479,6 +1479,17 @@ ExprType(AST *expr)
                 return ast_type_generic;
             }
             return NULL;
+        case K_NEGATE:
+        case '*':
+        case '/':
+        case K_ABS:
+        case K_SQRT:
+            ltype = ExprType(expr->left);
+            rtype = ExprType(expr->right);
+            if (IsFloatType(ltype) || IsFloatType(rtype)) {
+                return ast_type_float;
+            }
+            return ast_type_long;
         default:
             return ast_type_long;
         }

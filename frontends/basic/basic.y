@@ -369,9 +369,9 @@ paramdecl1:
 
 paramitem:
   identifier
-    { $$ = NewAST(AST_DECLARE_LOCAL, InferTypeFromName($1), $1); }
+    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
   | identifier BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_LOCAL, $3, $1); }
+    { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
 ;
 
 iorange:
@@ -543,11 +543,11 @@ classdecl:
 
 dimension:
   BAS_DIM identlist BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_GLOBAL, $2, $4); }
+    { $$ = NewAST(AST_DECLARE_VAR, $2, $4); }
   | BAS_DIM BAS_AS typename identlist
-    { $$ = NewAST(AST_DECLARE_GLOBAL, $4, $3); }
+    { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
   | BAS_DIM identlist
-    { $$ = NewAST(AST_DECLARE_GLOBAL, $2, NULL); } 
+    { $$ = NewAST(AST_DECLARE_VAR, $2, NULL); } 
   ;
 
 pindecl:
