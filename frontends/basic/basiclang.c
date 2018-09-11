@@ -176,6 +176,9 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     force = force || (lsize != rsize);
     
     if (lsize < 4 && force) {
+        if (IsConstExpr(ast->right)) {
+            return lefttype;
+        }
         if (leftunsigned) {
             ast->left = dopromote(ast->left, lsize, K_ZEROEXTEND);
             lefttype = ast_type_unsigned_long;
@@ -186,6 +189,9 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
         rettype = righttype;
     }
     if (rsize < 4 && force) {
+        if (IsConstExpr(ast->left)) {
+            return righttype;
+        }
         if (rightunsigned) {
             ast->right = dopromote(ast->right, rsize, K_ZEROEXTEND);
             righttype = ast_type_unsigned_long;
@@ -205,6 +211,12 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     //assert(ast->kind == AST_OPERATOR)
+    if (!ast->left) {
+        return righttype;
+    }
+    if (!ast->right) {
+        return righttype;
+    }
     switch(ast->d.ival) {
     case K_SAR:
         if (!BothIntegers(ast, lefttype, righttype, "shift"))
@@ -223,11 +235,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         return ast_type_long;
     case K_ZEROEXTEND:
         return ast_type_unsigned_long;
-    case K_NEGATE:
-        if (IsFloatType(righttype) || IsIntType(righttype))
-            return righttype;
-        ERROR(ast, "Expected arithmetic type\n");
-        return NULL;
     default:
         if (!BothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;

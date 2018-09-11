@@ -89,6 +89,10 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 actualtype = defaulttype;
             }
             typesize = actualtype ? TypeSize(actualtype) : 4;
+            if (kind == SYM_LOCALVAR || kind == SYM_TEMPVAR) {
+                // keep things in registers, generally
+                if (typesize < 4) typesize = 4;
+            }
             switch (ast->kind) {
             case AST_IDENTIFIER:
                 sym = EnterVariable(kind, stab, ast, actualtype);
@@ -440,10 +444,10 @@ Symbol *VarSymbol(Function *func, AST *ast)
  * add a local variable to a function
  */
 void
-AddLocalVariable(Function *func, AST *var, int type)
+AddLocalVariable(Function *func, AST *var, int symtype)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-    EnterVars(type, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
+    EnterVars(symtype, &func->localsyms, ast_type_long, varlist, func->numlocals * LONG_SIZE);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     func->numlocals++;
     if (func->localarray) {

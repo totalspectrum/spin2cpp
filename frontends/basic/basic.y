@@ -48,10 +48,14 @@ AST *GetPinRange(const char *name, AST *range)
 }
 
 AST *
-DeclareBasicVariables(AST *idlist, AST *typ)
+DeclareGlobalBasicVariables(AST *ast)
 {
+    AST *idlist, *typ;
     AST *ident;
-    
+
+    if (!ast) return ast;
+    idlist = ast->left;
+    typ = ast->right;
     while (idlist) {
         ident = idlist->left;
         MaybeDeclareGlobal(current, ident, typ);
@@ -342,7 +346,11 @@ optstep:
 statementlist:
   statement
     { $$ = NewCommentedStatement($1); }
+  | dimension
+    { $$ = NewCommentedStatement($1); }
   | statementlist statement
+    { $$ = AddToList($1, NewCommentedStatement($2)); }
+  | statementlist dimension
     { $$ = AddToList($1, NewCommentedStatement($2)); }
   ;
 
@@ -469,6 +477,7 @@ topdecl:
   | funcdecl
   | classdecl
   | dimension
+    { $$ = DeclareGlobalBasicVariables($1); }
   | constdecl
   | pindecl
   ;
@@ -534,11 +543,11 @@ classdecl:
 
 dimension:
   BAS_DIM identlist BAS_AS typename
-    { $$ = DeclareBasicVariables($2, $4); }
-   | BAS_DIM BAS_AS typename identlist
-    { $$ = DeclareBasicVariables($4, $3); }
-   | BAS_DIM identlist
-    { $$ = DeclareBasicVariables($2, NULL); } 
+    { $$ = NewAST(AST_DECLARE_GLOBAL, $2, $4); }
+  | BAS_DIM BAS_AS typename identlist
+    { $$ = NewAST(AST_DECLARE_GLOBAL, $4, $3); }
+  | BAS_DIM identlist
+    { $$ = NewAST(AST_DECLARE_GLOBAL, $2, NULL); } 
   ;
 
 pindecl:
