@@ -74,7 +74,9 @@ CompileInlineInstr(IRList *irl, AST *ast)
     uint32_t opimm[MAX_OPERANDS];
     int i;
     uint32_t effectFlags = 0;
-
+    uint32_t ival;
+    uint32_t condbits;
+    
     while (ast && ast->kind != AST_INSTR) {
         ast = ast->right;
     }
@@ -87,9 +89,43 @@ CompileInlineInstr(IRList *irl, AST *ast)
     ir->instr = instr;
 
     /* parse operands and put them in place */
-    numoperands = DecodeAsmOperands(instr, ast, operands, opimm, NULL, &effectFlags);
-
+    ival = instr->binary;
+    ival |= (gl_p2) ? (0xf<<28) : (0xf<<18); // set initial condition flags
+    
+    numoperands = DecodeAsmOperands(instr, ast, operands, opimm, &ival, &effectFlags);
     ir->flags = effectFlags;
+    // check for conditional execution
+    if (gl_p2) {
+        condbits = ival >> 28;
+    } else {
+        condbits = (ival >> 18) & 0xf;
+    }
+    switch (condbits) {
+    case 0xf:
+        ir->cond = COND_TRUE;
+        break;
+    case 0xe:
+        ir->cond = COND_LE;
+        break;
+    case 0xc:
+        ir->cond = COND_LT;
+        break;
+    case 0xa:
+        ir->cond = COND_EQ;
+        break;
+    case 0x5:
+        ir->cond = COND_NE;
+        break;
+    case 0x3:
+        ir->cond = COND_GE;
+        break;
+    case 0x1:
+        ir->cond = COND_GT;
+        break;
+    default:
+        ERROR(ast, "Cannot handle this condition on instruction in inline asm");
+        break;
+    }
     
     if (numoperands < 0) {
         return;
