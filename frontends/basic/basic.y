@@ -183,7 +183,7 @@ topstatement:
 pinrange:
   expr
     { $$ = NewAST(AST_RANGE, $1, NULL); }
-  | expr BAS_TO expr
+  | expr ',' expr
     { $$ = NewAST(AST_RANGE, $1, $3); }
 ;
 
