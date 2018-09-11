@@ -67,7 +67,7 @@ doBasicTransform(AST **astptr)
             AST *typ;
         
             typ = ExprType(left);
-            if (typ && typ->kind == AST_ARRAYTYPE) {
+            if (typ && (IsPointerType(typ) || IsArrayType(typ))) {
                 ast->kind = AST_ARRAYREF;
                 if (!index || index->kind != AST_EXPRLIST) {
                     ERROR(ast, "Internal error: expected expression list in array subscript");

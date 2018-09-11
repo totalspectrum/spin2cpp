@@ -59,6 +59,7 @@ mod
 next
 or
 output
+pointer
 print
 program
 rem

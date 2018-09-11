@@ -826,7 +826,7 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
             PrintExpr(f, expr->right, flags);
             flexbuf_printf(f, "]");
         } else {
-            if (sym && !IsArraySymbol(sym)) {
+            if (sym && (!IsArrayOrPointerSymbol(sym))) {
 //                ERROR(expr, "array dereference of bad symbol %s", sym->name);
                 flexbuf_printf(f, "(&");
                 PrintLHS(f, expr->left, flags | PRINTEXPR_ISREF);
@@ -1172,7 +1172,7 @@ PrintLookExpr(Flexbuf *f, const char *name, AST *ev, AST *table)
 static void
 PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags)
 {
-    int isArray = IsArraySymbol(objsym);
+    int isArray = IsArrayOrPointerSymbol(objsym);
 
     if (objsym->type != SYM_OBJECT) {
         ERROR(expr, "Internal error, expecting an object symbol\n");

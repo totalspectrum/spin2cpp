@@ -1077,6 +1077,7 @@ struct reservedword basic_keywords[] = {
   { "not", BAS_NOT },
   { "or", BAS_OR },
   { "output", BAS_OUTPUT },
+  { "pointer", BAS_POINTER },
   { "print", BAS_PRINT },
   { "program", BAS_PROGRAM },
   { "return", BAS_RETURN },

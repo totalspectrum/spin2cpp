@@ -47,8 +47,7 @@ float    intAsFloat(int32_t i);
 
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);
-int IsArraySymbol(Symbol *);
-int ArrayTypeSize(AST *typ);
+int IsArrayOrPointerSymbol(Symbol *);
 int TypeAlignment(AST *typ);
 int PointerTypeIncrement(AST *typ);
 
@@ -65,6 +64,9 @@ Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 
 AST *ExprType(AST *ast);
+
+// the type underlying an array or pointer
+AST *BaseType(AST *ast);
 
 AST *TransformRangeAssign(AST *dst, AST *src, int toplevel);
 AST *TransformRangeUse(AST *src);

@@ -924,7 +924,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           ValidateObjbase();
           if (COG_DATA) {
               // COG memory
-              size = ArrayTypeSize((AST *)sym->val);
+              size = TypeSize((AST *)sym->val);
               return GetSizedGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0, size);
           } else {
               // HUB memory
@@ -958,11 +958,11 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           if (stype == SYM_RESULT) {
               size = LONG_SIZE;
           } else {
-              size = ArrayTypeSize((AST *)sym->val);
+              size = TypeSize((AST *)sym->val);
           }
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
       case SYM_TEMPVAR:
-          size = ArrayTypeSize((AST *)sym->val);
+          size = TypeSize((AST *)sym->val);
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
@@ -2016,7 +2016,7 @@ CompileFunccall(IRList *irl, AST *expr)
           ERROR(call, "Internal error: expected method reference");
       }
       if (call->kind == AST_ARRAYREF) {
-          if (IsArraySymbol(objsym)) {
+          if (IsArrayOrPointerSymbol(objsym)) {
               // add the index * sizeof(object) into the array offset
               Module *objModule = GetObjectPtr(objsym);
               AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
@@ -2712,12 +2712,20 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *base;
       Operand *offset;
-
-      if (!expr->right) {
+      AST *baseType;
+      
+      if (!expr->right || !expr->left) {
           ERROR(expr, "Array ref with no index?");
           return NewOperand(REG_REG, "???", 0);
       }
+      baseType = ExprType(expr->left);
       base = CompileExpression(irl, expr->left, NULL);
+      if (IsPointerType(baseType)) {
+          // make sure "base" is in a register
+          base = Dereference(irl, base);
+          // now make a pointer out of it
+          base = TypedHubMemRef(BaseType(baseType), base, 0);
+      }
       offset = CompileExpression(irl, expr->right, NULL);
       return ApplyArrayIndex(irl, base, offset);
   }

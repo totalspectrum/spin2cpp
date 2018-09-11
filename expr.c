@@ -1179,12 +1179,23 @@ FoldIfConst(AST *expr)
     return expr;
 }
 
+// remove modifiers from a type
+static AST *
+removeModifiers(AST *ast)
+{
+    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE)) {
+        ast = ast->left;
+    }
+    return ast;
+}
+
 /*
  * check a type declaration to see if it is an array type
  */
 int
 IsArrayType(AST *ast)
 {
+    ast = removeModifiers(ast);
     if (!ast) return 0;
     switch (ast->kind) {
     case AST_ARRAYTYPE:
@@ -1193,6 +1204,8 @@ IsArrayType(AST *ast)
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
+    case AST_PTRTYPE:
+    case AST_VOIDTYPE:
         return 0;
     default:
         ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
@@ -1201,9 +1214,10 @@ IsArrayType(AST *ast)
     return 0;
 }
 
-/* find size of an array type */
+/* find size of a type */
+/* for arrays, returns the whole size of the array */
 /* returns size of 1 item for non-array types */
-int ArrayTypeSize(AST *typ)
+int TypeSize(AST *typ)
 {
     int size;
     if (!typ) {
@@ -1212,10 +1226,10 @@ int ArrayTypeSize(AST *typ)
     switch (typ->kind) {
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
-        return ArrayTypeSize(typ->left);
+        return TypeSize(typ->left);
     case AST_ARRAYTYPE:
         size = EvalConstExpr(typ->right);
-        return size * ArrayTypeSize(typ->left);
+        return size * TypeSize(typ->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
@@ -1233,12 +1247,27 @@ int ArrayTypeSize(AST *typ)
         return typ->d.ival * 4;
     }
     default:
-        ERROR(typ, "Internal error: unknown type %d passed to ArrayTypeSize",
+        ERROR(typ, "Internal error: unknown type %d passed to TypeSize",
               typ->kind);
         return 1;
     }
 }
-    
+
+/* find base type for an array or pointer */
+AST *BaseType(AST *typ)
+{
+    typ = removeModifiers(typ);
+    if (!typ) return typ;
+    switch (typ->kind) {
+    case AST_ARRAYTYPE:
+        return typ->right;
+    case AST_PTRTYPE:
+        return typ->left;
+    default:
+        return typ;
+    }
+}
+
 /* find alignment for a type */
 /* returns size of 1 item for non-array types */
 int TypeAlignment(AST *typ)
@@ -1264,13 +1293,16 @@ int TypeAlignment(AST *typ)
 }
 
 int
-IsArraySymbol(Symbol *sym)
+IsArrayOrPointerSymbol(Symbol *sym)
 {
     AST *type = NULL;
     if (!sym) return 0;
     switch (sym->type) {
     case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
     case SYM_VARIABLE:
+    case SYM_PARAMETER:
+    case SYM_RESULT:
         type = (AST *)sym->val;
         break;
     case SYM_OBJECT:
@@ -1281,7 +1313,7 @@ IsArraySymbol(Symbol *sym)
     default:
         return 0;
     }
-    return IsArrayType(type);
+    return IsArrayType(type) || IsPointerType(type);
 }
 
 /* find function symbol in a function call */
@@ -1318,10 +1350,8 @@ FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
 int
 IsFloatType(AST *type)
 {
+    type = removeModifiers(type);
     if (!type) return 0;
-    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
-        type = type->left;
-    }
     if (type->kind == AST_FLOATTYPE)
         return 1;
     return 0;
@@ -1330,10 +1360,9 @@ IsFloatType(AST *type)
 int
 IsPointerType(AST *type)
 {
+    type = removeModifiers(type);
     if (!type) return 0;
-    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
-        type = type->left;
-    }
+    
     if (type->kind == AST_PTRTYPE)
         return 1;
     return 0;
@@ -1351,16 +1380,14 @@ PointerTypeIncrement(AST *type)
 int
 IsGenericType(AST *type)
 {
-    return type->kind == AST_GENERICTYPE;
+    return type && type->kind == AST_GENERICTYPE;
 }
 
 int
 IsIntType(AST *type)
 {
+    type = removeModifiers(type);
     if (!type) return 0;
-    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
-        type = type->left;
-    }
     if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE)
         return 1;
     return 0;
@@ -1369,10 +1396,8 @@ IsIntType(AST *type)
 int
 IsNumericType(AST *type)
 {
+    type = removeModifiers(type);
     if (!type) return 0;
-    while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
-        type = type->left;
-    }
     if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE || type->kind == AST_FLOATTYPE)
         return 1;
     return 0;
@@ -1515,36 +1540,6 @@ ExprType(AST *expr)
     default:
         return NULL;
     }
-}
-
-/*
- * calculate the size of a type
- */
-int TypeSize(AST *ast)
-{
-#if 1
-    return ArrayTypeSize(ast);
-#else
-    while ( ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE) ) {
-        ast = ast->left;
-    }
-    if (!ast)
-        return 4;  // type is unknown at the moment
-    if (ast->kind == AST_ARRAYTYPE) {
-        return TypeSize(ast->left)*EvalConstExpr(ast->right);
-    }
-    if (ast->kind == AST_PTRTYPE) {
-        return 4; // all pointers are the same size
-    }
-    if (ast->kind == AST_FLOATTYPE) {
-        return 4;
-    }
-    if (ast->kind == AST_INTTYPE || ast->kind == AST_UNSIGNEDTYPE || ast->kind == AST_GENERICTYPE) {
-        return EvalConstExpr(ast->left);
-    }
-    ERROR(ast, "internal error: bad type kind %d", ast->kind);
-    return 0;
-#endif
 }
 
 /* check for two types the same */

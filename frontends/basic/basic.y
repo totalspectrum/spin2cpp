@@ -123,6 +123,7 @@ AST *AstCharItem(int c)
 %token BAS_NOT        "not"
 %token BAS_OR         "or"
 %token BAS_OUTPUT     "output"
+%token BAS_POINTER    "pointer"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
 %token BAS_RETURN     "return"
@@ -594,6 +595,10 @@ typename:
     { $$ = ast_type_string; }
   | BAS_TYPENAME
     { $$ = $1; }
+  | typename BAS_POINTER
+    { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
+  | typename BAS_CONST
+    { $$ = NewAST(AST_MODIFIER_CONST, $1, NULL); }
 ;
 
 %%
