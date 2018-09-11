@@ -172,6 +172,20 @@ Similarly, to set pin 2 as input and read it:
   x = input(2)
 ```
 
+##### Pin Ranges
+
+Ranges of pins may be specified with `hi,lo` or `lo,hi`. The first form is preferred; if you do
+```
+  output(2, 0) = x
+```
+then the bottom 3 bits of x are copied directly to the first 3 output pins. If you use the other form
+```
+  output(0, 2) = x     ' note: x is reversed!
+  output(0, 2) = &b110 ' sets bits 0 and 1 to 1, and bit 2 to 0
+```
+then the lower 3 bits are reversed; this is useful if you're directly coding a binary constant, but
+otherwise is probably not what you want.
+
 ### Propeller Specific Functions
 
 #### getcnt
