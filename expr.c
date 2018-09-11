@@ -1453,7 +1453,7 @@ ExprType(AST *expr)
             return ast_type_long;
         case SYM_LABEL:
             lab = (Label *)sym->val;
-            return NewAST(AST_PTRTYPE, lab->type, NULL);
+            return NewAST(AST_ARRAYTYPE, lab->type, AstInteger(1));
         case SYM_FLOAT_CONSTANT:
             return ast_type_float;
         case SYM_VARIABLE:

@@ -304,11 +304,30 @@ AST *CheckTypes(AST *ast)
         return ast_type_long;
     case AST_STRING:
         return ast_type_string;
+    case AST_ARRAYREF:
+        {
+            AST *lefttype = ExprType(ast->left);
+            AST *basetype;
+            if (!lefttype) {
+                return NULL;
+            }
+            basetype = BaseType(lefttype);
+            if (IsPointerType(lefttype)) {
+                // force this to have a memory dereference
+                AST *deref = NewAST(AST_MEMREF, basetype, ast->left);
+                ast->left = deref;
+            } else if (IsArrayType(lefttype)) {
+            } else {
+                ERROR(ast, "Array dereferences a non-array object");
+                return NULL;
+            }
+            return basetype;
+        }
+        break;
     case AST_EXPRLIST:
     case AST_SEQUENCE:
     case AST_FUNCCALL:
     case AST_METHODREF:
-    case AST_ARRAYREF:
     case AST_IDENTIFIER:
         return ExprType(ast);
     default:

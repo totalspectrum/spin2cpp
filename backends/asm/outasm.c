@@ -822,6 +822,10 @@ SizedHubMemRef(int size, Operand *addr, int offset)
     return temp;
 }
 
+//
+// FIXME: should this use TypeSize()? It seems to have slightly different
+// requirements
+//
 static Operand *
 TypedHubMemRef(AST *type, Operand *addr, int offset)
 {
@@ -2587,6 +2591,21 @@ EmitDebugComment(IRList *irl, AST *ast)
 {
 }
 
+static bool
+validateArrayRef(AST *ast)
+{
+    if (!ast) {
+        return false;
+    }
+    switch (ast->kind) {
+    case AST_MEMREF:
+        return true;
+    case AST_IDENTIFIER:
+        return IsArrayType(ExprType(ast));
+    default:
+        return validateArrayRef(ast->left) || validateArrayRef(ast->right);
+    }
+}
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
@@ -2712,20 +2731,15 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *base;
       Operand *offset;
-      AST *baseType;
       
       if (!expr->right || !expr->left) {
-          ERROR(expr, "Array ref with no index?");
+          ERROR(expr, "Bad array reference");
           return NewOperand(REG_REG, "???", 0);
       }
-      baseType = ExprType(expr->left);
-      base = CompileExpression(irl, expr->left, NULL);
-      if (IsPointerType(baseType)) {
-          // make sure "base" is in a register
-          base = Dereference(irl, base);
-          // now make a pointer out of it
-          base = TypedHubMemRef(BaseType(baseType), base, 0);
+      if (!validateArrayRef(expr->left)) {
+          ERROR(expr, "Item is not an array");
       }
+      base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
       return ApplyArrayIndex(irl, base, offset);
   }
