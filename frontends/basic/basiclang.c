@@ -208,6 +208,40 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     }
 }
 
+static AST *
+domakefloat(AST *ast)
+{
+    AST *ret;
+    if (gl_fixedreal) {
+        ret = AstOperator(K_SHL, ast, AstInteger(16));
+        return ret;
+    }
+    ERROR(ast, "Cannot handle float expressions yet");
+    return ast;
+}
+
+static AST *
+HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
+{
+    int isfloat = 0;
+    if (IsFloatType(lefttype)) {
+        if (!IsFloatType(righttype)) {
+            ast->right = domakefloat(ast->right);
+        }
+        isfloat = 1;
+    } else if (IsFloatType(righttype)) {
+        ast->left = domakefloat(ast->left);
+        isfloat = 1;
+    }
+    if (isfloat) {
+        // FIXME need to call appropriate funcs here
+        return ast_type_float;
+    }
+    if (!BothIntegers(ast, lefttype, righttype, "operator"))
+        return NULL;
+    return MatchIntegerTypes(ast, lefttype, righttype, 0);
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     //assert(ast->kind == AST_OPERATOR)
@@ -230,7 +264,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '^':
         if (!BothIntegers(ast, lefttype, righttype, "bit operation"))
             return NULL;
-        
+        return lefttype;
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         return ast_type_long;
     case K_ZEROEXTEND:
