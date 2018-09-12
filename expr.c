@@ -710,6 +710,61 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
 }
 
 static int32_t
+EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
+{
+    
+    switch (op) {
+    case '+':
+        return lval + rval;
+    case '-':
+        return lval - rval;
+    case '/':
+        return lval / rval;
+    case '*':
+        return (lval * (int64_t)rval) >> G_FIXPOINT;
+    case '|':
+        return lval | rval;
+    case '&':
+        return lval & rval;
+    case '^':
+        return lval ^ rval;
+    case K_HIGHMULT:
+        return (lval*(int64_t)rval) >> (G_FIXPOINT + 32);
+    case K_SHL:
+        return lval << (rval >> G_FIXPOINT);
+    case K_SHR:
+        return ((uint32_t)lval) >> (rval >> G_FIXPOINT);
+    case K_SAR:
+        return lval >> (rval >> G_FIXPOINT);
+    case '<':
+        return (-(lval < rval));
+    case '>':
+        return (-(lval > rval));
+    case K_LE:
+        return (-(lval <= rval));
+    case K_GE:
+        return (-(lval >= rval));
+    case K_NE:
+        return (-(lval != rval));
+    case K_EQ:
+        return (-(lval == rval));
+    case K_NEGATE:
+        return -rval;
+    case K_ABS:
+        return (rval < 0) ? -rval : rval;
+    case K_SQRT:
+        rval = ((1<<G_FIXPOINT)*sqrtf((float)rval / (1<<G_FIXPOINT)));
+        return rval;
+    default:
+        if (valid)
+            *valid = 0;
+        else
+            ERROR(NULL, "invalid floating point operator %d\n", op);
+        return 0;
+    }
+}
+
+static int32_t
 EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 {
     
@@ -801,7 +856,11 @@ static ExprVal
 EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 {
     if (IsFloatType(le.type) || IsFloatType(re.type)) {
-        return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
+        if (gl_fixedreal) {
+            return floatExpr(EvalFixedOperator(op, le.val, re.val, valid));
+        } else {
+            return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
+        }
     }
     return intExpr(EvalIntOperator(op, le.val, re.val, valid));
 }
@@ -874,22 +933,31 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         if ( !IsIntOrGenericType(lval.type)) {
             ERROR(expr, "applying float to a non integer expression");
         }
-        return floatExpr((float)(lval.val));
-
+        if (gl_fixedreal) {
+            return floatExpr((lval.val) << G_FIXPOINT);
+        } else {
+            return floatExpr((float)(lval.val));
+        }
     case AST_TRUNC:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying trunc to a non float expression");
         }
-        return intExpr((int)intAsFloat(lval.val));
-
+        if (gl_fixedreal) {
+            return intExpr(lval.val >> G_FIXPOINT);
+        } else {
+            return intExpr((int)intAsFloat(lval.val));
+        }
     case AST_ROUND:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!IsFloatType(lval.type)) {
             ERROR(expr, "applying round to a non float expression");
         }
-        return intExpr((int)roundf(intAsFloat(lval.val)));
-
+        if (gl_fixedreal) {
+            return intExpr( (lval.val + (1<<(G_FIXPOINT-1))) >> G_FIXPOINT);
+        } else {
+            return intExpr((int)roundf(intAsFloat(lval.val)));
+        }
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid, depth+1);
     case AST_CONSTREF:
@@ -920,7 +988,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             case SYM_FLOAT_CONSTANT:
             {
                 ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
-                return floatExpr(intAsFloat(e.val));
+                if (gl_fixedreal) {
+                    return floatExpr(e.val);
+                } else {
+                    return floatExpr(intAsFloat(e.val));
+                }
             }
             case SYM_LABEL:
                 if (flags & PASM_FLAG) {

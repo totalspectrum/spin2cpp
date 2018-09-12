@@ -1308,7 +1308,7 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
     Operand *lhs = CompileExpression(irl, expr->left, NULL);
     Operand *rhs = CompileExpression(irl, expr->right, NULL);
-    Operand *temp = dest ? dest : NewFunctionTempRegister();
+    Operand *temp = NewFunctionTempRegister();
 
     g_NeedMulHi |= gethi;
     

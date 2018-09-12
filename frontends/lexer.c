@@ -378,7 +378,11 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         } else if (exponent != 0) {
             f *= powf(10.0f, (float)exponent);
         }
-        uval = floatAsInt(f);
+        if (gl_fixedreal) {
+            uval = (1<<G_FIXPOINT) * f;
+        } else {
+            uval = floatAsInt(f);
+        }
         kind = SP_FLOATNUM;
     }
 donefloat:

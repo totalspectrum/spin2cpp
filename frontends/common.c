@@ -53,6 +53,7 @@ int gl_dat_offset;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
 int gl_listing = 0;
+int gl_fixedreal = 0;
 
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit

@@ -16,6 +16,11 @@ DAT
 		pushb #2
 		wrlong y, PTRA++
 		pusha y
+
+		rdlong y, ++PTRA
+		popa   y
+		rdlong a, ++PTRB
+		popb   a
 		
 		lutson
 		setluts	#1

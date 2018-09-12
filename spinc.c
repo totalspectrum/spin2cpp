@@ -275,6 +275,27 @@ const char common_spincode[] =
     "    _basic_print_char(\"-\")\n"
     "    x := -x\n"
     "  _basic_print_unsigned(x)\n"
+    
+    "pri _basic_print_fixed(x) | i, f\n"
+    "  if (x < 0)\n"
+    "    _basic_print_char(\"-\")\n"
+    "    x := -x\n"
+    "  i := x >> 16\n"
+    "  f := x & $ffff\n"
+    "  ' now i is integer part, f is fractional\n"
+    "  ' round f off: 0.00005 ~= 3 in 16.16\n"
+    "  f := f + 2\n" 
+    "  if (f > $ffff)\n"
+    "    i++\n"
+    "    f -= $10000\n"
+    "  _basic_print_unsigned(i)\n"
+    "  _basic_print_char(\".\")\n"
+    "  repeat 4\n"
+    "    f := f * 10\n"
+    "    i := f >> 16\n"
+    "    f := f & $ffff\n"
+    "    _basic_print_char(i + \"0\")\n"
+    "  return\n"
     "pri _basic_print_float(x)\n"
     "  return\n"
     "pri _basic_print_nl\n"
@@ -673,6 +694,11 @@ ParseFile(const char *name)
       }
     } else {
       langptr = ".spin";
+    }
+    if (language == LANG_BASIC) {
+        gl_fixedreal = 1;
+    } else {
+        gl_fixedreal = 0;
     }
     if (current)
       fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
