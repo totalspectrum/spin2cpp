@@ -1641,6 +1641,10 @@ instr_p2[] = {
     { "rdword", 0x0ae00000, P2_RDWR_OPERANDS, OPC_RDWORD, FLAG_P2_STD },
     { "rdlong", 0x0b000000, P2_RDWR_OPERANDS, OPC_RDLONG, FLAG_P2_STD },
 
+    // some aliases from rdlong x, ++ptra
+    { "popa",  0x0b000141, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+    { "popb",  0x0b0001c1, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+    
     { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti1",  0x0b3bfff5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
