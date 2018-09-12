@@ -1261,7 +1261,7 @@ AST *BaseType(AST *typ)
     if (!typ) return typ;
     switch (typ->kind) {
     case AST_ARRAYTYPE:
-        return typ->right;
+        return typ->left;
     case AST_PTRTYPE:
         return typ->left;
     default:
@@ -1491,7 +1491,8 @@ ExprType(AST *expr)
         case SYM_PARAMETER:
             return (AST *)sym->val;
         case SYM_FUNCTION:
-            return ((Function *)sym->val)->rettype;
+            return NULL; // we actually want a function type here
+//            return ((Function *)sym->val)->rettype;
         default:
             return NULL;
         }            
