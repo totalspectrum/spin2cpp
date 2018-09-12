@@ -378,8 +378,9 @@ Init()
     ast_type_ptr_word = NewAST(AST_PTRTYPE, ast_type_word, NULL);
     ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
-    
-    ast_type_string = NewAST(AST_MODIFIER_CONST, ast_type_ptr_byte, NULL);
+
+    // string is pointer to const byte
+    ast_type_string = NewAST(AST_PTRTYPE, NewAST(AST_MODIFIER_CONST, ast_type_byte, NULL), NULL);
 
     initSpinLexer(gl_p2);
 
