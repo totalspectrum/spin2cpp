@@ -857,7 +857,7 @@ EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
 {
     if (IsFloatType(le.type) || IsFloatType(re.type)) {
         if (gl_fixedreal) {
-            return floatExpr(EvalFixedOperator(op, le.val, re.val, valid));
+            return fixedExpr(EvalFixedOperator(op, le.val, re.val, valid));
         } else {
             return floatExpr(EvalFloatOperator(op, intAsFloat(le.val), intAsFloat(re.val), valid));
         }
@@ -918,7 +918,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         return intExpr(expr->d.ival);
 
     case AST_FLOAT:
-        return floatExpr(intAsFloat(expr->d.ival));
+        if (gl_fixedreal) {
+            return fixedExpr(expr->d.ival);
+        } else {
+            return floatExpr(intAsFloat(expr->d.ival));
+        }
 
     case AST_STRING:
     {
@@ -934,7 +938,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             ERROR(expr, "applying float to a non integer expression");
         }
         if (gl_fixedreal) {
-            return floatExpr((lval.val) << G_FIXPOINT);
+            return fixedExpr((lval.val) << G_FIXPOINT);
         } else {
             return floatExpr((float)(lval.val));
         }
@@ -989,7 +993,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             {
                 ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
                 if (gl_fixedreal) {
-                    return floatExpr(e.val);
+                    return fixedExpr(e.val);
                 } else {
                     return floatExpr(intAsFloat(e.val));
                 }
@@ -1204,6 +1208,14 @@ ExprVal floatExpr(float f)
     ExprVal e;
     e.type = ast_type_float;
     e.val = floatAsInt(f);
+    return e;
+}
+
+ExprVal fixedExpr(int32_t f)
+{
+    ExprVal e;
+    e.type = ast_type_float;
+    e.val = f;
     return e;
 }
 

@@ -42,6 +42,7 @@ union float_or_int {
 
 ExprVal intExpr(int32_t x);
 ExprVal floatExpr(float f);
+ExprVal fixedExpr(int32_t f);
 int32_t  floatAsInt(float f);
 float    intAsFloat(int32_t i);
 

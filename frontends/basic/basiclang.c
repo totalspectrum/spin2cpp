@@ -17,6 +17,11 @@ static AST *basic_print_unsigned;
 static AST *basic_print_char;
 static AST *basic_print_nl;
 
+static AST *float_add;
+static AST *float_sub;
+static AST *float_mul;
+static AST *float_div;
+
 static AST *
 addPrintCall(AST *seq, AST *func, AST *expr)
 {
@@ -148,11 +153,6 @@ bool IsUnsignedType(AST *typ) {
     return typ && typ->kind == AST_UNSIGNEDTYPE;
 }
 
-bool BothIntegers(AST *astForError, AST *ltyp, AST *rtyp, const char *opname)
-{
-    return VerifyIntegerType(astForError, ltyp, opname) && VerifyIntegerType(astForError, rtyp, opname);
-}
-
 static AST *dopromote(AST *expr, int numbytes, int operator)
 {
     int shiftbits = numbytes * 8;
@@ -212,12 +212,56 @@ static AST *
 domakefloat(AST *ast)
 {
     AST *ret;
+    if (!ast) return ast;
     if (gl_fixedreal) {
         ret = AstOperator(K_SHL, ast, AstInteger(16));
         return ret;
     }
     ERROR(ast, "Cannot handle float expressions yet");
     return ast;
+}
+
+static AST *
+dofloatToInt(AST *ast)
+{
+    AST *ret;
+    if (gl_fixedreal) {
+        // FIXME: should we round here??
+        ret = AstOperator(K_SAR, ast, AstInteger(16));
+        return ret;
+    }
+    ERROR(ast, "Cannot handle float expressions yet");
+    return ast;
+}
+
+bool BothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
+{
+    if (IsFloatType(ltyp)) {
+        ast->left = dofloatToInt(ast->left);
+        ltyp = ast_type_long;
+    }
+    if (IsFloatType(rtyp)) {
+        ast->right = dofloatToInt(ast->right);
+        rtyp = ast_type_long;
+    }
+    return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
+}
+
+// call function func with parameters ast->left, ast->right
+static void
+NewOperatorCall(AST *ast, AST *func)
+{
+    AST *call;
+    AST *params = NULL;
+
+    if (ast->left) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, ast->left, NULL));
+    }
+    if (ast->right) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, ast->right, NULL));
+    }
+    call = NewAST(AST_FUNCCALL, func, params);
+    *ast = *call;
 }
 
 static AST *
@@ -235,6 +279,27 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     }
     if (isfloat) {
         // FIXME need to call appropriate funcs here
+        switch (op) {
+        case '+':
+            if (!gl_fixedreal) {
+                NewOperatorCall(ast, float_add);
+            }
+            break;
+        case '-':
+            if (!gl_fixedreal) {
+                NewOperatorCall(ast, float_sub);
+            }
+            break;
+        case '*':
+            NewOperatorCall(ast, float_mul);
+            break;
+        case '/':
+            NewOperatorCall(ast, float_div);
+            break;
+        default:
+            ERROR(ast, "internal error unhandled operator");
+            break;
+        }
         return ast_type_float;
     }
     if (!BothIntegers(ast, lefttype, righttype, "operator"))
@@ -242,6 +307,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     return MatchIntegerTypes(ast, lefttype, righttype, 0);
 }
 
+    
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     //assert(ast->kind == AST_OPERATOR)
@@ -253,17 +319,24 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     }
     switch(ast->d.ival) {
     case K_SAR:
-        if (!BothIntegers(ast, lefttype, righttype, "shift"))
-            return NULL;
-        if (lefttype && IsUnsignedType(lefttype)) {
-            ast->d.ival = K_SHR;
-        }
-        return lefttype;
+    case K_SHL:
     case '&':
     case '|':
     case '^':
-        if (!BothIntegers(ast, lefttype, righttype, "bit operation"))
+        if (lefttype && IsFloatType(lefttype)) {
+            ast->left = dofloatToInt(ast->left);
+            lefttype = ast_type_long;
+        }
+        if (righttype && IsFloatType(righttype)) {
+            ast->right = dofloatToInt(ast->right);
+            righttype = ast_type_long;
+        }
+        if (!BothIntegers(ast, lefttype, righttype, "bit operation")) {
             return NULL;
+        }
+        if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
+            ast->d.ival = K_SHR;
+        }
         return lefttype;
     case '+':
     case '-':
@@ -271,8 +344,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '/':
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case K_SIGNEXTEND:
+        VerifyIntegerType(ast, righttype, "sign extension");
         return ast_type_long;
     case K_ZEROEXTEND:
+        VerifyIntegerType(ast, righttype, "zero extension");
         return ast_type_unsigned_long;
     default:
         if (!BothIntegers(ast, lefttype, righttype, "operator")) {
@@ -401,6 +476,8 @@ BasicTransform(Module *Q)
 
     if (gl_fixedreal) {
         basic_print_float = getBasicPrimitive("_basic_print_fixed");
+        float_mul = getBasicPrimitive("_fixed_mul");
+        float_div = getBasicPrimitive("_fixed_div");
     } else {
         basic_print_float = getBasicPrimitive("_basic_print_float");
     }
@@ -409,7 +486,7 @@ BasicTransform(Module *Q)
     basic_print_string = getBasicPrimitive("_basic_print_string");
     basic_print_char = getBasicPrimitive("_basic_print_char");
     basic_print_nl = getBasicPrimitive("_basic_print_nl");
-    
+
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
