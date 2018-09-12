@@ -307,7 +307,33 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     return MatchIntegerTypes(ast, lefttype, righttype, 0);
 }
 
+void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
+{
+    int isfloat = 0;
     
+    if (IsFloatType(lefttype)) {
+        if (!IsFloatType(righttype)) {
+            ast->right = domakefloat(ast->right);
+        }
+        isfloat = 1;
+    } else if (IsFloatType(righttype)) {
+        ast->left = domakefloat(ast->left);
+        isfloat = 1;
+    }
+    if (isfloat) {
+        if (gl_fixedreal) {
+            // we're good
+        } else {
+            ERROR(ast, "Internal error with floats");
+        }
+        return;
+    }
+    if (!BothIntegers(ast, lefttype, righttype, "comparison")) {
+        return;
+    }
+    // should handle unsigned/signed comparisons here
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     //assert(ast->kind == AST_OPERATOR)
@@ -349,6 +375,14 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_ZEROEXTEND:
         VerifyIntegerType(ast, righttype, "zero extension");
         return ast_type_unsigned_long;
+    case '<':
+    case K_LE:
+    case K_EQ:
+    case K_NE:
+    case K_GE:
+    case '>':
+        CompileComparison(ast->d.ival, ast, lefttype, righttype);
+        return ast_type_long;
     default:
         if (!BothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;
