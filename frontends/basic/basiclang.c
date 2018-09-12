@@ -252,6 +252,12 @@ AST *CoerceAssignTypes(AST *ast, AST *desttype, AST *srctype)
         ERROR(ast, "incompatible types in assignment");
         return desttype;
     }
+    if (IsConstType(desttype)) {
+        WARNING(ast, "assignment to const object");
+    }
+    if (IsPointerType(srctype) && IsConstType(BaseType(srctype)) && !IsConstType(BaseType(desttype))) {
+        WARNING(ast, "assignment discards const attribute from pointer");
+    }
     if (IsIntType(desttype)) {
         if (IsIntType(srctype)) {
             int lsize = TypeSize(desttype);
@@ -303,6 +309,7 @@ AST *CheckTypes(AST *ast)
     case AST_CONSTANT:
         return ast_type_long;
     case AST_STRING:
+    case AST_STRINGPTR:
         return ast_type_string;
     case AST_ARRAYREF:
         {

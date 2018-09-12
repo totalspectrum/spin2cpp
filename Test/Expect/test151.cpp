@@ -7,7 +7,7 @@ int32_t test151::Countspaces(const char *A)
   int32_t 	N, C;
   N = 0;
   while (1) {
-    C = ((char *)(A++))[0];
+    C = (A++)[0];
     if (C == 0) {
       break;
     }

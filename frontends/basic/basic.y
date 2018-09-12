@@ -575,6 +575,15 @@ identlist:
   ;
 
 typename:
+  basetypename
+    { $$ = $1; }
+  | basetypename BAS_POINTER
+    { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
+  | basetypename BAS_CONST BAS_POINTER
+    { $$ = NewAST(AST_MODIFIER_CONST, NewAST(AST_PTRTYPE, $1, NULL), NULL); }
+  ;
+
+basetypename:
   BAS_UBYTE
     { $$ = ast_type_byte; }
   | BAS_USHORT
@@ -599,9 +608,7 @@ typename:
     { $$ = ast_type_string; }
   | BAS_TYPENAME
     { $$ = $1; }
-  | typename BAS_POINTER
-    { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
-  | BAS_CONST typename
+  | BAS_CONST basetypename
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
 ;
 

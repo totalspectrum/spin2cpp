@@ -1407,6 +1407,12 @@ IsNumericType(AST *type)
     return 0;
 }
 
+int
+IsConstType(AST *type)
+{
+    return type && type->kind == AST_MODIFIER_CONST;
+}
+
 //
 // find the wider of the numeric types "left" and "right"
 // if one type is unsigned and the other is signed, return ast_type_long
@@ -1588,6 +1594,9 @@ CompatibleTypes(AST *A, AST *B)
     bool typesOK = (current != NULL && current->language != LANG_SPIN);
     bool skipfloats = !typesOK;
     
+    A = removeModifiers(A);
+    B = removeModifiers(B);
+    
     // FIXME: eventually float types should be
     // fully supported, but for now treat them
     // as generic
@@ -1605,8 +1614,12 @@ CompatibleTypes(AST *A, AST *B)
     if (typesOK && (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
         return 1;
     }
-    if (A->kind != B->kind) return 0;
-    return SameTypes(A->left, B->left);
+    if (A->kind != B->kind) {
+        return 0;
+    }
+    // both A and B are pointers (or perhaps arrays)
+    // they are compatible if they are both pointers to the same thing
+    return SameTypes(removeModifiers(A->left), removeModifiers(B->left));
 }
 
 //
