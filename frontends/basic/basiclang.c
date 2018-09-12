@@ -396,6 +396,13 @@ AST *CoerceAssignTypes(AST *ast, AST *desttype, AST *srctype)
     if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
         return desttype;
     }
+    if (IsFloatType(desttype)) {
+        if (IsIntType(srctype)) {
+            ast->right = domakefloat(ast->right);
+            srctype = ast_type_float;
+        }
+    }
+
     if (!CompatibleTypes(desttype, srctype)) {
         ERROR(ast, "incompatible types in assignment");
         return desttype;
