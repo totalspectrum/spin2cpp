@@ -123,7 +123,11 @@ void
 PrintFloat(Flexbuf *f, int32_t v, int flags)
 {
     if ((current && current->language != LANG_SPIN) || (flags & PRINTEXPR_USEFLOATS)) {
-        flexbuf_printf(f, "%f", intAsFloat(v));
+        if (gl_fixedreal) {
+            flexbuf_printf(f, "%f", (float)(v)/(float)(1<<G_FIXPOINT));
+        } else {
+            flexbuf_printf(f, "%f", intAsFloat(v));
+        }
         return;
     }
     if (v < 0)

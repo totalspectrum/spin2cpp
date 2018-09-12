@@ -5,12 +5,12 @@ DAT
 entry
 
 _start
-	rdlong	start_tmp001_, #0
-	mov	_start__cse__0013, start_tmp001_
-	shl	_start__cse__0013, #2
-	add	_start__cse__0013, start_tmp001_
+	rdlong	start_tmp002_, #0
+	mov	_start__cse__0014, start_tmp002_
+	shl	_start__cse__0014, #2
+	add	_start__cse__0014, start_tmp002_
 	mov	arg1, CNT
-	add	arg1, _start__cse__0013
+	add	arg1, _start__cse__0014
 	waitcnt	arg1, #0
 _start_ret
 	ret
@@ -20,10 +20,10 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_start__cse__0013
+_start__cse__0014
 	res	1
 arg1
 	res	1
-start_tmp001_
+start_tmp002_
 	res	1
 	fit	496
