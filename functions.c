@@ -18,7 +18,7 @@ NumExprItemsOnStack(AST *expr)
 {
     Function *f;
     if (expr->kind == AST_FUNCCALL) {
-        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
+        Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 1);
         if (sym && sym->type == SYM_FUNCTION) {
             f = (Function *)sym->val;
             return f->numresults;
@@ -1056,7 +1056,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
-        sym = FindFuncSymbol(ast, NULL, NULL);
+        sym = FindFuncSymbol(ast, NULL, NULL, 1);
         expectArgs = 0;
         if (sym) {
             fname = sym->name;
@@ -1324,7 +1324,7 @@ InferTypesFunccall(AST *callast)
 
 
     list = callast->right;
-    sym = FindFuncSymbol(callast, NULL, NULL);
+    sym = FindFuncSymbol(callast, NULL, NULL, 0);
     if (!sym || sym->type != SYM_FUNCTION) return 0;
     
     func = (Function *)sym->val;
@@ -1599,7 +1599,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
     switch(body->kind) {
     case AST_FUNCCALL:
         ref->is_leaf = 0;
-        sym = FindFuncSymbol(body, NULL, NULL);
+        sym = FindFuncSymbol(body, NULL, NULL, 0);
         if (!sym) return false;
         if (sym->type != SYM_FUNCTION) return false;
         func = (Function *)sym->val;

@@ -439,7 +439,7 @@ Function *IsSpinCoginit(AST *body);
 void SetFunctionType(Function *func, AST *type);
 
 /* find function symbol in a function call; optionally returns the object ref */
-Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr);
+Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr, int errflag);
 
 /* get full name for FILE directive */
 AST *GetFullFileName(AST *baseString);

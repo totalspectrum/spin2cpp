@@ -32,6 +32,7 @@ For example, the following are all ways to represent the decimal number `10`:
 Keywords are always treated specially by the compiler, and no identifier may be
 named the same as a keyword. The keyword `rem` is special, in that those 3 characters start a comment, so no identifier may start with `rem`.
 ```
+abs
 and
 as
 asm
@@ -66,6 +67,7 @@ rem
 return
 shared
 single
+sqrt
 step
 sub
 then
@@ -186,6 +188,33 @@ then the bottom 3 bits of x are copied directly to the first 3 output pins. If y
 ```
 then the lower 3 bits are reversed; this is useful if you're directly coding a binary constant, but
 otherwise is probably not what you want.
+
+## Alphabetical List of Keywords
+
+### ABS
+
+```
+  y = abs x
+```
+Returns the absolute value of x. If x is a floating point number then so will be the result; if x is an unsigned number then it will be unchanged; otherwise the result will be an Integer.
+
+### CONST
+
+At the beginning of a line, CONST declares a constant value. For example:
+```
+  const x = 1
+```
+declares x to be the integer 1. Only integer constants may be declared this way.
+
+Inside a type name, CONST signifies that variables of this type may not be modified. This is mainly useful for indicating that pointers should be treated as read-only.
+```
+   sub trychange(s as const ubyte ptr)
+     s(1) = 0  '' illegal, s points to const ubytes
+     if (s(1) = 2) then '' OK, s may be read
+       print "it was 2"
+     end if
+   end sub
+```
 
 ### Propeller Specific Functions
 

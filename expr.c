@@ -66,6 +66,7 @@ LookupSymbol(const char *name)
 /*
  * look up an AST that should be a symbol; print an error
  * message if it is not found
+ * if there's no message pointer, do not print a message
  */
 Symbol *
 LookupAstSymbol(AST *ast, const char *msg)
@@ -86,7 +87,7 @@ LookupAstSymbol(AST *ast, const char *msg)
         return NULL;
     }
     sym = LookupSymbol(id->d.string);
-    if (!sym) {
+    if (!sym && msg) {
         ERROR(id, "unknown identifier %s used in %s", id->d.string, msg);
     }
     return sym;
@@ -189,7 +190,7 @@ IsSpinCoginit(AST *params)
     }
     if (func->kind == AST_FUNCCALL) {
         /* FIXME? Spin requires that it be a local method; do we care? */
-        sym = FindFuncSymbol(func, NULL, NULL);
+        sym = FindFuncSymbol(func, NULL, NULL, 1);
         if (sym) {
             if (sym->type == SYM_BUILTIN) {
                 return NULL;
@@ -1317,8 +1318,9 @@ IsArrayOrPointerSymbol(Symbol *sym)
 }
 
 /* find function symbol in a function call */
+/* if errflag is nonzero, print errors for identifiers not found */
 Symbol *
-FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
+FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr, int errflag)
 {
     AST *objref = NULL;
     Symbol *objsym = NULL;
@@ -1327,20 +1329,22 @@ FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr)
     if (expr->left && expr->left->kind == AST_METHODREF) {
         const char *thename;
         objref = expr->left->left;
-        objsym = LookupAstSymbol(objref, "object reference");
+        objsym = LookupAstSymbol(objref, errflag ? "object reference" : NULL);
         if (!objsym) return NULL;
         if (objsym->type != SYM_OBJECT) {
-            ERROR(expr, "%s is not an object", objsym->name);
+            if (errflag)
+                ERROR(expr, "%s is not an object", objsym->name);
             return NULL;
         }
         thename = expr->left->right->d.string;
         sym = LookupObjSymbol(expr, objsym, thename);
         if (!sym || sym->type != SYM_FUNCTION) {
-            ERROR(expr, "%s is not a method of %s", thename, objsym->name);
+            if (errflag)
+                ERROR(expr, "%s is not a method of %s", thename, objsym->name);
             return NULL;
         }
     } else {
-        sym = LookupAstSymbol(expr->left, "function call");
+        sym = LookupAstSymbol(expr->left, errflag ? "function call" : NULL);
     }
     if (objsymPtr) *objsymPtr = objsym;
     if (objrefPtr) *objrefPtr = objref;
@@ -1494,7 +1498,7 @@ ExprType(AST *expr)
     case AST_FUNCCALL:
     case AST_METHODREF:
     {
-        Symbol *sym = FindFuncSymbol(expr, NULL, NULL);
+        Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 0);
         if (sym) {
             if (sym->type == SYM_FUNCTION) {
                 return ((Function *)sym->val)->rettype;

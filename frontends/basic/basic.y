@@ -93,6 +93,7 @@ AST *AstCharItem(int c)
 %token BAS_TYPENAME   "class name"
 
 /* keywords */
+%token BAS_ABS        "abs"
 %token BAS_AND        "and"
 %token BAS_AS         "as"
 %token BAS_ASM        "asm"
@@ -130,6 +131,7 @@ AST *AstCharItem(int c)
 %token BAS_SHARED     "shared"
 %token BAS_SHORT      "short"
 %token BAS_SINGLE     "single"
+%token BAS_SQRT       "sqrt"
 %token BAS_STEP       "step"
 %token BAS_STRING_KW  "string"
 %token BAS_STRUCT     "struct"
@@ -452,6 +454,8 @@ expr:
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
     }
+  | BAS_ABS expr
+    { $$ = AstOperator(K_ABS, NULL, $2); }  
   | '@' expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'
@@ -597,8 +601,8 @@ typename:
     { $$ = $1; }
   | typename BAS_POINTER
     { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
-  | typename BAS_CONST
-    { $$ = NewAST(AST_MODIFIER_CONST, $1, NULL); }
+  | BAS_CONST typename
+    { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
 ;
 
 %%

@@ -1994,7 +1994,7 @@ CompileFunccall(IRList *irl, AST *expr)
 
   /* compile the function operands */
   objsym = NULL;
-  sym = FindFuncSymbol(expr, NULL, &objsym);
+  sym = FindFuncSymbol(expr, NULL, &objsym, 1);
   if (!sym || sym->type != SYM_FUNCTION) {
     ERROR(expr, "expected function symbol");
     return NULL;

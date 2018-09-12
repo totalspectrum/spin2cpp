@@ -280,7 +280,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             int n;
             
             // scan through parameters, adjusting for expected return types
-            Symbol *calledSym = FindFuncSymbol(body, NULL, NULL);
+            Symbol *calledSym = FindFuncSymbol(body, NULL, NULL, 1);
             if (calledSym && calledSym->type == SYM_FUNCTION) {
                 Function *calledFunc = (Function *)calledSym->val;
                 AST *calledParam = calledFunc->params;
@@ -407,7 +407,7 @@ doSpinTransform(AST **astptr, int level)
         if (level == 0) {
             /* check for void functions here; if one is called,
                pretend it returned 0 */
-            sym = FindFuncSymbol(ast, NULL, NULL);
+            sym = FindFuncSymbol(ast, NULL, NULL, 0);
             if (sym && sym->type == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (f->rettype == ast_type_void) {
