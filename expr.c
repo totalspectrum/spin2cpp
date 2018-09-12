@@ -1403,6 +1403,26 @@ IsNumericType(AST *type)
     return 0;
 }
 
+//
+// find the wider of the numeric types "left" and "right"
+// if one type is unsigned and the other is signed, return ast_type_long
+//
+AST *
+WidestType(AST *left, AST *right)
+{
+    int lsize, rsize;
+    left = removeModifiers(left);
+    right = removeModifiers(right);
+    if (!left) return right;
+    if (!right) return left;
+    if (left->kind != right->kind) {
+        return ast_type_long;
+    }
+    lsize = TypeSize(left);
+    rsize = TypeSize(right);
+    if (lsize < rsize) return right;
+    return left;
+}
 
 /*
  * figure out an expression's type
@@ -1498,10 +1518,13 @@ ExprType(AST *expr)
             if (!ltype) ltype = rtype;
             if (ltype) {
                 if (IsIntOrGenericType(ltype)) return ltype;
-                if (IsPointerType(ltype) && PointerTypeIncrement(ltype) == 1) {
-                    return ltype;
+                if (IsPointerType(ltype)) {
+                    if (PointerTypeIncrement(ltype) == 1) {
+                        return ltype;
+                    }
+                    return ast_type_generic;
                 }
-                return ast_type_generic;
+                return WidestType(ltype, rtype);
             }
             return NULL;
         case K_NEGATE:
@@ -1514,7 +1537,7 @@ ExprType(AST *expr)
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
-            return ast_type_long;
+            return WidestType(ltype, rtype);
         default:
             return ast_type_long;
         }
