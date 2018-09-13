@@ -36,5 +36,9 @@
 #define K_UNS_MOD    0x11d
 #define K_SIGNEXTEND 0x11e
 #define K_ZEROEXTEND 0x11f
+#define K_LTU       0x120
+#define K_LEU       0x121
+#define K_GTU       0x122
+#define K_GEU       0x123
 
 #endif

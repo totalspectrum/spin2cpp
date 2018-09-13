@@ -193,7 +193,11 @@ bool IsUnsignedType(AST *typ) {
 static AST *dopromote(AST *expr, int numbytes, int operator)
 {
     int shiftbits = numbytes * 8;
-    AST *promote = AstOperator(operator, expr, AstInteger(shiftbits));
+    AST *promote;
+    if (shiftbits == 32) {
+        return expr; // nothing to do
+    }
+    promote = AstOperator(operator, expr, AstInteger(shiftbits));
     return promote;
 }
 // force a promotion from a small integer type to a full 32 bits
@@ -387,9 +391,22 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     return MatchIntegerTypes(ast, lefttype, righttype, 0);
 }
 
+bool IsUnsignedConst(AST *ast)
+{
+    if (!IsConstExpr(ast)) {
+        return false;
+    }
+    if (EvalConstExpr(ast) < 0) {
+        return false;
+    }
+    return true;
+}
+
 void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
 {
     int isfloat = 0;
+    int leftUnsigned = 0;
+    int rightUnsigned = 0;
     
     if (IsFloatType(lefttype)) {
         if (!IsFloatType(righttype)) {
@@ -411,7 +428,48 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
         return;
     }
-    // should handle unsigned/signed comparisons here
+    // need to widen the types
+    ast->left = forcepromote(lefttype, ast->left);
+    ast->right = forcepromote(righttype, ast->right);
+    
+    //
+    // handle unsigned/signed comparisons here
+    //
+    leftUnsigned = IsUnsignedType(lefttype);
+    rightUnsigned = IsUnsignedType(righttype);
+    
+    if (leftUnsigned || rightUnsigned) {
+        if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))
+             || (rightUnsigned && IsUnsignedConst(ast->left)) )
+        {
+            switch (op) {
+            case '<':
+                ast->d.ival = K_LTU;
+                break;
+            case '>':
+                ast->d.ival = K_GTU;
+                break;
+            case K_LE:
+                ast->d.ival = K_LEU;
+                break;
+            case K_GE:
+                ast->d.ival = K_GEU;
+                break;
+            default:
+                break;
+            }
+        } else {
+            // cannot do unsigned comparison
+            // signed comparison will work if the sizes are < 32 bits
+            // if both are 32 bits, we need to do something else
+            int lsize = TypeSize(lefttype);
+            int rsize = TypeSize(righttype);
+            if (lsize == 4 && rsize == 4) {
+                WARNING(ast, "signed/unsigned comparison may not work properly");
+            }
+        }
+    }
+
 }
 
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)

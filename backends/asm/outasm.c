@@ -1439,12 +1439,16 @@ CondFromExpr(int kind)
   case K_EQ:
     return COND_EQ;
   case K_GE:
+  case K_GEU:
     return COND_GE;
   case K_LE:
+  case K_LEU:
     return COND_LE;
   case '<':
+  case K_LTU:
     return COND_LT;
   case '>':
+  case K_GTU:
     return COND_GT;
   default:
     break;
@@ -1494,13 +1498,20 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   int opkind;
   IR *ir;
   int flags;
-
+  int isUnsigned = 0;
+  
   if (expr->kind == AST_OPERATOR) {
     opkind = (int)expr->d.ival;
   } else {
     opkind = -1;
   }
   switch(opkind) {
+  case K_GEU:
+  case K_GTU:
+  case K_LEU:
+  case K_LTU:
+      isUnsigned = 1;
+      /* fall through */
   case K_NE:
   case K_EQ:
   case '<':
@@ -1536,7 +1547,11 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   }
   lhs = Dereference(irl, lhs);
   rhs = Dereference(irl, rhs);
-  ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
+  if (isUnsigned) {
+      ir = EmitOp2(irl, OPC_CMP, lhs, rhs);
+  } else {
+      ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
+  }
   ir->flags |= flags;
   return cond;
 }

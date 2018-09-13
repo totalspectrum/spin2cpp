@@ -32,9 +32,13 @@ isBooleanOperator(AST *expr)
     case K_BOOL_AND:
     case K_BOOL_OR:
     case K_LE:
+    case K_LEU:
     case '<':
+    case K_LTU:
     case K_GE:
+    case K_GEU:
     case '>':
+    case K_GTU:
     case K_EQ:
     case K_NE:
         return 1;
@@ -508,10 +512,18 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintMacroExpr(f, "Highmult__", left, right, flags);
         break;
     case K_LE:
+    case K_LEU:
         PrintInOp(f, "<=", left, right, flags);
         break;
     case K_GE:
+    case K_GEU:
         PrintInOp(f, ">=", left, right, flags);
+        break;
+    case K_LTU:
+        PrintInOp(f, "<", left, right, flags);
+        break;
+    case K_GTU:
+        PrintInOp(f, ">", left, right, flags);
         break;
     case K_EQ:
         PrintInOp(f, "==", left, right, flags);
