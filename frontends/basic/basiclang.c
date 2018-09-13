@@ -344,7 +344,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             isalreadyfixed = 1;
             if (op == '/') {
                 // int / fixed requires additional scaling
-                scale = AstInteger(32);
+                scale = AstInteger(2*G_FIXPOINT);
             }
         } else {
             ast->left = domakefloat(ast->left);
@@ -371,7 +371,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         case '/':
             if (gl_fixedreal) {
                 if (!isalreadyfixed) {
-                    scale = AstInteger(16);
+                    scale = AstInteger(G_FIXPOINT);
                 }
             }
             NewOperatorCall(ast, float_div, scale);
