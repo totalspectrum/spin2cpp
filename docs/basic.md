@@ -34,6 +34,7 @@ named the same as a keyword. The keyword `rem` is special, in that those 3 chara
 ```
 abs
 and
+any
 as
 asm
 byte
@@ -197,6 +198,22 @@ otherwise is probably not what you want.
   y = abs x
 ```
 Returns the absolute value of x. If x is a floating point number then so will be the result; if x is an unsigned number then it will be unchanged; otherwise the result will be an Integer.
+
+### AND
+
+```
+  a = x and y
+```
+Returns the bit-wise AND of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed.
+
+### ANY
+
+```
+  dim x as any
+```
+Declares x as a generic type 32 bit variable compatible with any other type. Basically this is a way to treat a variable as a raw 32 bit value. Note that no type checking at all is performed on variables declared with type `any`, nor are any conversions applied to them. This means that the compiler will not be able to catch many common errors.
+
+`any` should be used only in exceptional circumstances.
 
 ### CONST
 

@@ -153,11 +153,24 @@ bool IsUnsignedType(AST *typ) {
     return typ && typ->kind == AST_UNSIGNEDTYPE;
 }
 
+// do a promotion when we already know the size of the original type
 static AST *dopromote(AST *expr, int numbytes, int operator)
 {
     int shiftbits = numbytes * 8;
     AST *promote = AstOperator(operator, expr, AstInteger(shiftbits));
     return promote;
+}
+// force a promotion from a small integer type to a full 32 bits
+static AST *forcepromote(AST *type, AST *expr)
+{
+    int tsize;
+    int op;
+    if (!IsIntType(type)) {
+        ERROR(expr, "internal error in forcecpromote");
+    }
+    tsize = TypeSize(type);
+    op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
+    return dopromote(expr, tsize, op);
 }
 
 //
@@ -234,7 +247,7 @@ dofloatToInt(AST *ast)
     return ast;
 }
 
-bool BothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
+bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
 {
     if (IsFloatType(ltyp)) {
         ast->left = dofloatToInt(ast->left);
@@ -302,7 +315,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
         return ast_type_float;
     }
-    if (!BothIntegers(ast, lefttype, righttype, "operator"))
+    if (!MakeBothIntegers(ast, lefttype, righttype, "operator"))
         return NULL;
     return MatchIntegerTypes(ast, lefttype, righttype, 0);
 }
@@ -328,7 +341,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         }
         return;
     }
-    if (!BothIntegers(ast, lefttype, righttype, "comparison")) {
+    if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
         return;
     }
     // should handle unsigned/signed comparisons here
@@ -336,14 +349,15 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
 
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
+    AST *rettype = lefttype;
+    int op;
+    
     //assert(ast->kind == AST_OPERATOR)
     if (!ast->left) {
-        return righttype;
+        rettype = righttype;
     }
-    if (!ast->right) {
-        return righttype;
-    }
-    switch(ast->d.ival) {
+    op = ast->d.ival;
+    switch(op) {
     case K_SAR:
     case K_SHL:
     case '&':
@@ -357,7 +371,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             ast->right = dofloatToInt(ast->right);
             righttype = ast_type_long;
         }
-        if (!BothIntegers(ast, lefttype, righttype, "bit operation")) {
+        if (!MakeBothIntegers(ast, lefttype, righttype, "bit operation")) {
             return NULL;
         }
         if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
@@ -383,8 +397,30 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '>':
         CompileComparison(ast->d.ival, ast, lefttype, righttype);
         return ast_type_long;
+    case K_ABS:
+    case K_NEGATE:
+        if (IsFloatType(rettype)) {
+            if (!gl_fixedreal) {
+                if (op == K_ABS) {
+                    *ast = *AstOperator('&', ast->right, AstInteger(0x7fffffff));
+                } else {
+                    *ast = *AstOperator('^', ast->right, AstInteger(0x80000000));
+                }
+                return rettype;
+            }
+            return rettype;
+        } else {
+            if (!VerifyIntegerType(ast, rettype, "abs"))
+                return NULL;
+            ast->right = forcepromote(rettype, ast->right);
+            if (IsUnsignedType(rettype) && op == K_ABS) {
+                *ast = *ast->right; // ignore the ABS
+                return ast_type_unsigned_long;
+            }
+            return ast_type_long;
+        }
     default:
-        if (!BothIntegers(ast, lefttype, righttype, "operator")) {
+        if (!MakeBothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;
         }
         return MatchIntegerTypes(ast, lefttype, righttype, 1);

@@ -95,6 +95,7 @@ AST *AstCharItem(int c)
 /* keywords */
 %token BAS_ABS        "abs"
 %token BAS_AND        "and"
+%token BAS_ANY        "any"
 %token BAS_AS         "as"
 %token BAS_ASM        "asm"
 %token BAS_BYTE       "byte"
@@ -606,6 +607,8 @@ basetypename:
     { $$ = ast_type_float; }
   | BAS_STRING_KW
     { $$ = ast_type_string; }
+  | BAS_ANY
+    { $$ = ast_type_generic; }
   | BAS_TYPENAME
     { $$ = $1; }
   | BAS_CONST basetypename
