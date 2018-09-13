@@ -298,7 +298,7 @@ bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
 
 // call function func with parameters ast->left, ast->right
 static void
-NewOperatorCall(AST *ast, AST *func)
+NewOperatorCall(AST *ast, AST *func, AST *extraArg)
 {
     AST *call;
     AST *params = NULL;
@@ -309,6 +309,9 @@ NewOperatorCall(AST *ast, AST *func)
     if (ast->right) {
         params = AddToList(params, NewAST(AST_EXPRLIST, ast->right, NULL));
     }
+    if (extraArg) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
+    }
     call = NewAST(AST_FUNCCALL, func, params);
     *ast = *call;
 }
@@ -318,22 +321,31 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
 {
     int isfloat = 0;
     int isalreadyfixed = 0;
+    AST *scale = NULL;
     
     if (IsFloatType(lefttype)) {
         isfloat = 1;
         if (!IsFloatType(righttype)) {
-            if (gl_fixedreal && op == '*') {
+            if (gl_fixedreal && (op == '*' || op == '/')) {
                 // no need for fixed point mul, just do regular mul
                 isalreadyfixed = 1;
+                if (op == '/') {
+                    // fixed / int requires no scale
+                    scale = AstInteger(0);
+                }
             } else {
                 ast->right = domakefloat(ast->right);
             }
         }
     } else if (IsFloatType(righttype)) {
         isfloat = 1;
-        if (gl_fixedreal && op == '*') {
+        if (gl_fixedreal && (op == '*' || op == '/')) {
             // no need for fixed point mul, regular mul works
             isalreadyfixed = 1;
+            if (op == '/') {
+                // int / fixed requires additional scaling
+                scale = AstInteger(32);
+            }
         } else {
             ast->left = domakefloat(ast->left);
         }
@@ -343,21 +355,26 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         switch (op) {
         case '+':
             if (!gl_fixedreal) {
-                NewOperatorCall(ast, float_add);
+                NewOperatorCall(ast, float_add, NULL);
             }
             break;
         case '-':
             if (!gl_fixedreal) {
-                NewOperatorCall(ast, float_sub);
+                NewOperatorCall(ast, float_sub, NULL);
             }
             break;
         case '*':
             if (!isalreadyfixed) {
-                NewOperatorCall(ast, float_mul);
+                NewOperatorCall(ast, float_mul, NULL);
             }
             break;
         case '/':
-            NewOperatorCall(ast, float_div);
+            if (gl_fixedreal) {
+                if (!isalreadyfixed) {
+                    scale = AstInteger(16);
+                }
+            }
+            NewOperatorCall(ast, float_div, scale);
             break;
         default:
             ERROR(ast, "internal error unhandled operator");

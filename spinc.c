@@ -311,23 +311,22 @@ const char common_spincode[] =
     "  hi := x ** y\n"
     "  return (hi << 16) | (lo >> 16)\n"
 
-    // for divide, we want (x / y) << 16, but
+    // for divide, we want (x / y) << N, but
     // we have to do it in parts:
     // 
-    "pri _fixed_div(x, y) | n, sign\n"
+    "pri _fixed_div(x, y, n) | sign\n"
     "  sign := (x^y) >> 31\n"
     "  x := ||x\n"
     "  y := ||y\n"
     "  ' figure out how far left we can shift x\n"
-    "  n := 16\n"
     "  repeat while (x > 0 and n > 0)\n"
     "    x <<= 1\n"
     "    --n\n"
-    "  y := y >> n\n"
+    "  y := y\n"
     "  x := (x +/ y)\n"
     "  if (sign)\n"
     "    x := -x\n"
-    "  return x\n"
+    "  return x << n\n"
 ;
 
 // code for P2

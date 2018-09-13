@@ -33,7 +33,27 @@ s = &b0011
 
 print r; " and "; s, r and s, rawbits(r and s)
 
-doexit
+''
+'' now test fixed point multiply and divide
+''
+const FACTOR = 10
+
+let bot# = FACTOR
+let scale# = 1.0 / bot#
+sub doscale(x as integer)
+  print "x, scaled", x, x * scale#, x / bot#, bot# / x
+end sub
+
+let n% = 1
+for i = 1 to 6
+  doscale(n%)
+  n% = n% * 10
+next i
+
+''
+'' done
+''
+doexit(0)
 
 ''
 '' send a special exit status for propeller-load
@@ -41,7 +61,7 @@ doexit
 ''
 dim xit(3) as ubyte
 
-sub doexit(status as ubyte)
+sub doexit(status)
   xit(1) = 255
   xit(2) = 0
   xit(3) = status
