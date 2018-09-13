@@ -1051,7 +1051,9 @@ struct reservedword {
 };
 
 struct reservedword basic_keywords[] = {
+  { "abs", BAS_ABS },
   { "and", BAS_AND },
+  { "any", BAS_ANY },
   { "as", BAS_AS },
   { "asm", BAS_ASM },
   { "byte", BAS_BYTE },
@@ -1263,6 +1265,7 @@ Builtin builtinfuncs[] = {
     { "_basic_print_integer", 1, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
     { "_basic_print_unsigned", 1, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
     { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
+    { "_basic_print_fixed", 1, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
     { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
     
     { "_basic_strcpy", 2, defaultBuiltin, "basic_strcpy", NULL, 0, NULL },
@@ -1646,8 +1649,8 @@ instr_p2[] = {
     { "rdlong", 0x0b000000, P2_RDWR_OPERANDS, OPC_RDLONG, FLAG_P2_STD },
 
     // some aliases from rdlong x, ++ptra
-    { "popa",  0x0b000141, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
-    { "popb",  0x0b0001c1, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+    { "popa",  0x0b00015f, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
+    { "popb",  0x0b0001df, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
     
     { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
