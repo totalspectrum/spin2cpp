@@ -317,14 +317,26 @@ static AST *
 HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
 {
     int isfloat = 0;
+    int isalreadyfixed = 0;
+    
     if (IsFloatType(lefttype)) {
+        isfloat = 1;
         if (!IsFloatType(righttype)) {
-            ast->right = domakefloat(ast->right);
+            if (gl_fixedreal && op == '*') {
+                // no need for fixed point mul, just do regular mul
+                isalreadyfixed = 1;
+            } else {
+                ast->right = domakefloat(ast->right);
+            }
         }
-        isfloat = 1;
     } else if (IsFloatType(righttype)) {
-        ast->left = domakefloat(ast->left);
         isfloat = 1;
+        if (gl_fixedreal && op == '*') {
+            // no need for fixed point mul, regular mul works
+            isalreadyfixed = 1;
+        } else {
+            ast->left = domakefloat(ast->left);
+        }
     }
     if (isfloat) {
         // FIXME need to call appropriate funcs here
@@ -340,7 +352,9 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             }
             break;
         case '*':
-            NewOperatorCall(ast, float_mul);
+            if (!isalreadyfixed) {
+                NewOperatorCall(ast, float_mul);
+            }
             break;
         case '/':
             NewOperatorCall(ast, float_div);
