@@ -17,9 +17,9 @@ DAT
 		wrlong y, PTRA++
 		pusha y
 
-		rdlong y, ++PTRA
+		rdlong y, --PTRA
 		popa   y
-		rdlong a, ++PTRB
+		rdlong a, --PTRB
 		popb   a
 		
 		lutson
