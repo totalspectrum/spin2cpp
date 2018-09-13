@@ -395,7 +395,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     uint32_t val;
     int subval = 0;
     int negsubval = 0;
-
+    
     if (opimm) {
         // user provided an immediate value; make sure it
         // fits in $00-$ff
@@ -405,32 +405,39 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
         }
     }
     val = 0;
+
+    // handle ptra++[INDEX], which is parsed as (ptra++)[INDEX]
+    if (ast->kind == AST_ARRAYREF) {
+        subval = EvalPasmExpr(ast->right);
+        ast = ast->left;
+    }
+    
+    // other things
     if (ast->kind == AST_OPERATOR && (ast->d.ival == K_INCREMENT
                                       || ast->d.ival == K_DECREMENT))
     {
+        if (!subval) subval = 1;
         if (ast->d.ival == K_INCREMENT) {
             if (ast->left) {
                 ast = ast->left;
                 // a++: x110 0001
                 val = 0x60;
-                subval = 1;
             } else {
                 // ++a: x100 0001
                 ast = ast->right;
                 val = 0x40;
-                subval = 1;
             }
         } else {
             if (ast->left) {
                 ast = ast->left;
                 // a--
                 val = 0x60;
-                subval = -1;
+                subval = -subval;
             } else {
                 // --a: x101 1111
                 ast = ast->right;
                 val = 0x40;
-                subval = -1;
+                subval = -subval;
             }
         }
     }
@@ -444,10 +451,6 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
                 return 0;
             }
             subval = EvalPasmExpr(idx->left) * negsubval;
-            if (subval < -16 || subval > 15) {
-                ERROR(ast, "ptr index out of range");
-                subval = 0;
-            }
             ast = ast->left;
         } else {
             ERROR(ast, "bad ptr expression");
@@ -471,6 +474,10 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     } else if (val) {
         ERROR(ast, "bad rdlong/wrlong pointer reference");
         return 0;
+    }
+    if (subval < -32 || subval > 31) {
+        ERROR(ast, "ptr index out of range");
+        subval = 0;
     }
     return val | (subval & 0x1f);
 }

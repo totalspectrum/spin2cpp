@@ -37,3 +37,5 @@ DAT
 		
 y		long	0
 a		long	1
+
+		wrbyte  y,ptra++[17]
