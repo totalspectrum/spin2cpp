@@ -263,7 +263,7 @@ domakefloat(AST *ast)
     AST *ret;
     if (!ast) return ast;
     if (gl_fixedreal) {
-        ret = AstOperator(K_SHL, ast, AstInteger(16));
+        ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
         return ret;
     }
     ERROR(ast, "Cannot handle float expressions yet");
@@ -276,7 +276,7 @@ dofloatToInt(AST *ast)
     AST *ret;
     if (gl_fixedreal) {
         // FIXME: should we round here??
-        ret = AstOperator(K_SAR, ast, AstInteger(16));
+        ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
         return ret;
     }
     ERROR(ast, "Cannot handle float expressions yet");
