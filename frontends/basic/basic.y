@@ -113,6 +113,7 @@ AST *AstCharItem(int c)
 %token BAS_EXIT       "exit"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
+%token BAS_GET        "get"
 %token BAS_GOTO       "goto"
 %token BAS_IF         "if"
 %token BAS_INPUT      "input"
@@ -128,6 +129,7 @@ AST *AstCharItem(int c)
 %token BAS_POINTER    "pointer"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
+%token BAS_PUT        "put"
 %token BAS_RETURN     "return"
 %token BAS_SHARED     "shared"
 %token BAS_SHORT      "short"
@@ -237,6 +239,10 @@ statement:
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
+  | BAS_PUT expr
+    { $$ = NewAST(AST_PRINT,
+                  NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
+                  NULL); }
   | ifstmt
     { $$ = $1; }
   | whilestmt
@@ -303,14 +309,14 @@ endwhile:
   ;
 
 doloopstmt:
-  BAS_DO eoln statementlist BAS_LOOP eoln
+  BAS_DO eoln optstatementlist BAS_LOOP eoln
     { AST *body = CheckYield($3);
       AST *one = AstInteger(1);
       $$ = NewCommentedAST(AST_WHILE, one, body, $1);
     }
-  | BAS_DO eoln statementlist BAS_LOOP BAS_WHILE expr eoln
+  | BAS_DO eoln optstatementlist BAS_LOOP BAS_WHILE expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, $6, CheckYield($3), $1); }
-  | BAS_DO eoln statementlist BAS_LOOP BAS_UNTIL expr eoln
+  | BAS_DO eoln optstatementlist BAS_LOOP BAS_UNTIL expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $6), CheckYield($3), $1); }
   ;
 
@@ -345,6 +351,13 @@ optstep:
     { $$ = AstInteger(1); }
   | BAS_STEP expr
     { $$ = $2; }
+;
+
+optstatementlist:
+  /* nothing */
+    { $$ = NULL; }
+  | statementlist
+    { $$ = $1; }
 ;
 
 statementlist:

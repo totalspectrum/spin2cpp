@@ -16,6 +16,7 @@ static AST *basic_print_integer;
 static AST *basic_print_unsigned;
 static AST *basic_print_char;
 static AST *basic_print_nl;
+static AST *basic_put;
 
 static AST *float_add;
 static AST *float_sub;
@@ -28,6 +29,27 @@ addPrintCall(AST *seq, AST *func, AST *expr)
     AST *elem;
     AST *funccall = NewAST(AST_FUNCCALL, func,
                            expr ? NewAST(AST_EXPRLIST, expr, NULL) : NULL);
+    elem = NewAST(AST_SEQUENCE, funccall, NULL);
+    return AddToList(seq, elem);
+}
+
+static AST *
+addPutCall(AST *seq, AST *func, AST *expr, int size)
+{
+    AST *elem;
+    AST *params;
+    AST *sizexpr = AstInteger(size);
+    // take the address of expr (or of expr[0] for arrays)
+    if (IsArrayType(ExprType(expr))) {
+        expr = NewAST(AST_ARRAYREF, expr, AstInteger(0));
+    }
+    expr = NewAST(AST_ADDROF, expr, NULL);
+    // pass it to the basic_put function
+    params = NewAST(AST_EXPRLIST, expr, NULL);
+    params = AddToList(params,
+                       NewAST(AST_EXPRLIST, sizexpr, NULL));
+    
+    AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
     return AddToList(seq, elem);
 }
@@ -101,8 +123,22 @@ doBasicTransform(AST **astptr)
             AST *exprlist = ast->left;
             AST *expr;
             while (exprlist) {
+                if (exprlist->kind != AST_EXPRLIST) {
+                    ERROR(exprlist, "internal error in print list");
+                }
                 expr = exprlist->left;
                 exprlist = exprlist->right;
+                // PUT gets translated to a PRINT with an AST_HERE node
+                // this requests that we write out the literal bytes of
+                // an expression
+                if (expr->kind == AST_HERE) {
+                    // request to put literal data
+                    int size;
+                    expr = expr->left;
+                    size = TypeSize(ExprType(expr));
+                    seq = addPutCall(seq, basic_put, expr, size);
+                    continue;
+                }
                 if (expr->kind == AST_CHAR) {
                     expr = expr->left;
                     if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
@@ -563,6 +599,7 @@ BasicTransform(Module *Q)
     basic_print_string = getBasicPrimitive("_basic_print_string");
     basic_print_char = getBasicPrimitive("_basic_print_char");
     basic_print_nl = getBasicPrimitive("_basic_print_nl");
+    basic_put = getBasicPrimitive("_basic_put");
 
     current = Q;
     for (func = Q->functions; func; func = func->next) {

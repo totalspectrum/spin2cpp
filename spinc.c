@@ -262,6 +262,10 @@ const char common_spincode[] =
     "pri _basic_print_string(ptr)|c\n"
     "  repeat while ((c := byte[ptr++]) <> 0)\n"
     "    _basic_print_char(c)\n"
+
+    "pri _basic_put(ptr, siz)|c\n"
+    "  repeat while (siz-- > 0)\n"
+    "    _basic_print_char(byte[ptr++])\n"
     
     "pri _basic_print_unsigned(x) | d\n"
     "  d := x +// 10  ' unsigned modulus\n"

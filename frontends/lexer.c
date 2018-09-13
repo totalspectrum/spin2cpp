@@ -1071,6 +1071,7 @@ struct reservedword basic_keywords[] = {
   { "exit", BAS_EXIT },
   { "for", BAS_FOR },
   { "function", BAS_FUNCTION },
+  { "get", BAS_GET },
   { "goto", BAS_GOTO },
   { "if", BAS_IF },
   { "input", BAS_INPUT },
@@ -1086,6 +1087,7 @@ struct reservedword basic_keywords[] = {
   { "pointer", BAS_POINTER },
   { "print", BAS_PRINT },
   { "program", BAS_PROGRAM },
+  { "put", BAS_PUT },
   { "return", BAS_RETURN },
   { "shared", BAS_SHARED },
   { "shl", BAS_SHL },
@@ -1267,6 +1269,7 @@ Builtin builtinfuncs[] = {
     { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
     { "_basic_print_fixed", 1, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
     { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
+    { "_basic_put", 2, defaultBuiltin, "basic_put", NULL, 0, NULL },
     
     { "_basic_strcpy", 2, defaultBuiltin, "basic_strcpy", NULL, 0, NULL },
     { "_basic_strcat", 2, defaultBuiltin, "basic_strcat", NULL, 0, NULL },
