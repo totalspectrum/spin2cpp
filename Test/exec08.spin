@@ -5,6 +5,9 @@ CON
 OBJ
   fds : "FullDuplexSerial.spin"
 
+VAR
+  long x
+  
 PUB demo | a, b
 
   '' start up the serial port
@@ -18,6 +21,13 @@ PUB demo | a, b
   fds.str(string("b="))
   fds.hex(b, 8)
   fds.str(string(13,10))
+
+  x.long[0] := $11223344
+  x.byte[1] := $aa
+  fds.str(string("x="))
+  fds.hex(x, 8)
+  fds.str(string(13,10))
+
   exit
 
 PUB getvar1
