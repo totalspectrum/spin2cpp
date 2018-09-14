@@ -1,6 +1,29 @@
 # Fastspin BASIC
 
+## WARNING:
+
+BASIC support in fastspin is very much incomplete, and not usable for production
+right now. Missing features include:
+
+(1) Documentation; the manual below is just a start, much is incomplete.
+
+(2) String support is very limited; strings may be assigned and printed, but that's about all for now. Still to be implemented are string comparisons, concatenation, and other string functions.
+
+(3) Floating point support is incomplete. The "single" datatype is currently represented by 16.16 fixed point numbers. These are fast, but the very limited range is a problem. Eventually we will have proper IEEE floating point, with the fixed point kept as an option.
+
+(4) Parameter passing is incomplete; parameters are not properly promoted (e.g. an integer passed to a parameter of type single will get the wrong bit pattern).
+
+(5) Function return type aren't checked, and you can't give a non-default return type for a function.
+
+(6) Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
+
+(7) There are no functions yet for starting BASIC code on other COGs.
+
+## Introduction
+
 Fastspin BASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
+
+fastspin recognizes the language in a file by the extension. If a file has a ".bas" extension it is assumed to be BASIC. Otherwise it is assumed to be Spin.
 
 ## Language Syntax
 
