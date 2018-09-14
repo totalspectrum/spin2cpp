@@ -25,21 +25,37 @@
 #define YYERROR_VERBOSE 1
 #define BASICYYSTYPE AST*
 
-AST *GetIORegister(const char *name)
+    
+AST *GetIORegisterPair(const char *name1, const char *name2)
 {
-    Symbol *sym = FindSymbol(&basicReservedWords, name);
-    AST *reg = NewAST(AST_HWREG, NULL, NULL);
+    Symbol *sym = FindSymbol(&basicReservedWords, name1);
+    AST *reg1, *reg2;
     if (!sym) {
-        ERROR(NULL, "Unknown ioregister %s", name);
+        ERROR(NULL, "Unknown ioregister %s", name1);
         return NULL;
     }
-    reg->d.ptr = sym->val;
-    return reg;
+    reg1 = NewAST(AST_HWREG, NULL, NULL);
+    reg2 = NULL;
+    
+    reg1->d.ptr = sym->val;
+    if (name2 && gl_p2) {
+        // for now, only use the register pairs on P2 (where it matters)
+        // (FIXME? it could also come into play for P1V on FPGA...)
+        sym = FindSymbol(&basicReservedWords, name2);
+        if (sym) {
+            reg2 = NewAST(AST_HWREG, NULL, NULL);
+            reg2->d.ptr = sym->val;
+        }
+    }
+    if (reg2) {
+        reg1 = NewAST(AST_REGPAIR, reg1, reg2);
+    }
+    return reg1;
 }
 
-AST *GetPinRange(const char *name, AST *range)
+AST *GetPinRange(const char *name1, const char *name2, AST *range)
 {
-    AST *reg = GetIORegister(name);
+    AST *reg = GetIORegisterPair(name1, name2);
     AST *ast = NULL;
     if (reg) {
         ast = NewAST(AST_RANGEREF, reg, range);
@@ -206,19 +222,19 @@ statement:
     { $$ = AstAssign(BASICArrayRef($1, $3), $6); }
   | BAS_OUTPUT '(' pinrange ')' '=' expr eoln
     {
-        $$ = AstAssign(GetPinRange("outa", $3), $6);
+        $$ = AstAssign(GetPinRange("outa", "outb", $3), $6);
     }
   | BAS_DIRECTION '(' pinrange ')' '=' expr eoln
     {
-        $$ = AstAssign(GetPinRange("dira", $3), $6);
+        $$ = AstAssign(GetPinRange("dira", "dirb", $3), $6);
     }
   | BAS_DIRECTION '(' pinrange ')' '=' BAS_INPUT eoln
     {
-        $$ = AstAssign(GetPinRange("dira", $3), AstInteger(0));
+        $$ = AstAssign(GetPinRange("dira", "dirb", $3), AstInteger(0));
     }
   | BAS_DIRECTION '(' pinrange ')' '=' BAS_OUTPUT eoln
     {
-        $$ = AstAssign(GetPinRange("dira", $3), AstInteger(-1));
+        $$ = AstAssign(GetPinRange("dira", "dirb", $3), AstInteger(-1));
     }
   | BAS_LET BAS_IDENTIFIER '=' expr eoln
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
@@ -391,13 +407,6 @@ paramitem:
     { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
 ;
 
-iorange:
-  BAS_OUTPUT '(' expr ')'
-  {   AST *outa = GetIORegister("outa");
-      $$ = NewAST(AST_RANGEREF, outa, NewAST(AST_RANGE, $3, NULL));
-  }
-;
-
 exprlist:
   expritem
  | exprlist ',' expritem
@@ -475,11 +484,11 @@ expr:
   | '(' expr ')'
     { $$ = $2; }
   | BAS_INPUT '(' pinrange ')'
-    { $$ = GetPinRange("ina", $3); }
+    { $$ = GetPinRange("ina", "inb", $3); }
   | BAS_OUTPUT '(' pinrange ')'
-    { $$ = GetPinRange("outa", $3); }
+    { $$ = GetPinRange("outa", "outb", $3); }
   | BAS_DIRECTION '(' pinrange ')'
-    { $$ = GetPinRange("dira", $3); }
+    { $$ = GetPinRange("dira", "dirb", $3); }
 ;
 
 lhs: identifier
@@ -498,7 +507,6 @@ topdecl:
   | dimension
     { $$ = DeclareGlobalBasicVariables($1); }
   | constdecl
-  | pindecl
   ;
 
 constdecl:
@@ -567,11 +575,6 @@ dimension:
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
   | BAS_DIM identlist
     { $$ = NewAST(AST_DECLARE_VAR, $2, NULL); } 
-  ;
-
-pindecl:
-  BAS_DECLARE BAS_IDENTIFIER BAS_AS iorange
-    { ERROR($1, "pin declarations not implemented yet"); }
   ;
 
 identdecl:

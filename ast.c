@@ -464,6 +464,8 @@ static const char *astnames[] = {
     "goto",
     "print",
     "char",
+
+    "regpair",
 };
 
 //
@@ -508,10 +510,6 @@ static void doASTDump(AST *ast, int indent)
         break;
     case AST_STRING:
         sprintf(buf, "<string %s/>", ast->d.string);
-        leaf = 1;
-        break;        
-    case AST_CHAR:
-        sprintf(buf, "<char %d/>", ast->d.ival);
         leaf = 1;
         break;        
     case AST_HWREG:

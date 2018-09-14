@@ -297,6 +297,7 @@ RangeXor(AST *dst, AST *src)
     AST *maskexpr;
     AST *loexpr;
     AST *hiexpr = NULL;
+    AST *hwreg = NULL;
     
     AstReportAs(dst);
     if (dst->right->right == NULL) {
@@ -311,8 +312,13 @@ RangeXor(AST *dst, AST *src)
             AST *maskexpr;
             if (srcval == -1 || srcval == 0) {
                 maskexpr = AstOperator(K_SHL, AstInteger(1), loexpr);
-                return AstAssign(dst->left,
-                                 AstOperator('^', dst->left, maskexpr));
+                hwreg = dst->left;
+                if (hwreg->kind == AST_HWREG) {
+                    return AstAssign(hwreg,
+                                     AstOperator('^', hwreg, maskexpr));
+                } else {
+                    ERROR(hwreg, "unable to handle reg pair");
+                }
             }
         }
     } else {
@@ -382,8 +388,9 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
 
 /*
  * special code for printing a range expression
- * src->left is the hardware register
- * src->right is an AST_RANGE with left being the start, right the end
+ * dst->left is the hardware register; or, it may be an AST_REGPAIR
+ *      holding two paired registers
+ * dst->right is an AST_RANGE with left being the start, right the end
  *
  * outa[2..1] := foo
  * should evaluate to:
@@ -393,6 +400,9 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
  *  outa[2..1] := outa[2..1] ^ -1, for example
  *
  * toplevel is "1" if we are at top level and can emit if statements
+ *
+ * if we have an AST_REGPAIR then we need to output two sets of assignments
+ * and make them conditional
  */
 AST *
 TransformRangeAssign(AST *dst, AST *src, int toplevel)
@@ -401,13 +411,56 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AST *loexpr;
     AST *revsrc;
     AST *maskexpr;
+    AST *hwreg;
+    AST *hwreg2 = NULL;
 
-    if (dst->right->kind != AST_RANGE) {
+    if (!dst) return dst;
+    if (!dst->right || dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
         return 0;
     }
     AstReportAs(dst);  // set up error messages as if coming from "dst"
-    
+
+    hwreg = dst->left;
+    if (hwreg->kind == AST_REGPAIR) {
+        AST *assign, *assign2;
+        AST *cond;
+        hwreg2 = hwreg->right;
+        hwreg = hwreg->left;
+
+        hwreg = NewAST(AST_RANGEREF, hwreg, dst->right);
+        hwreg2 = NewAST(AST_RANGEREF, hwreg2, dst->right);
+        
+        assign = TransformRangeAssign(hwreg, src, toplevel);
+        assign2 = TransformRangeAssign(hwreg2, src, toplevel);
+        if (dst->right->right && IsConstExpr(dst->right->right)) {
+            cond = AstOperator(K_LTU, dst->right->right, AstInteger(32));
+        } else {
+            cond = AstOperator(K_LTU, dst->right->left, AstInteger(32));
+        }
+        if (IsConstExpr(cond)) {
+            int x = EvalConstExpr(cond);
+            if (x) return assign;
+            return assign2;
+        } 
+        // here we don't know which set of pins to use, so
+        // we have to generate an IF statement
+        if (!toplevel) {
+            ERROR(dst, "cannot handle unknown pins yet except at top level");
+            return assign;
+        }
+        // wrap the sides of the IF in statement lists
+        assign = NewAST(AST_STMTLIST, assign, NULL);
+        assign2 = NewAST(AST_STMTLIST, assign2, NULL);
+        assign = NewAST(AST_IF, cond, NewAST(AST_THENELSE, assign, assign2));
+        assign = NewAST(AST_STMTLIST, assign, NULL);
+        return assign;
+    } else if (hwreg->kind == AST_HWREG) {
+        // OK
+    } else {
+        ERROR(dst, "internal error in range assign");
+        return NULL;
+    }
     /* special case logical operators */
 
     /* doing a NOT on the whole thing */
@@ -417,10 +470,9 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         return RangeXor(dst, AstInteger(0xffffffff));
     }
     /* now handle the ordinary case */
-    /* if the "range" is just a single item it does not have to
-       be constant, but for a real range we need constants on each end
-    */
+    /* dst->right is the range of bits we're setting */
     if (dst->right->right == NULL) {
+        /* just a single item in dst->right->left */
         nbits = AstInteger(1);
         loexpr = dst->right->left;
         /* special case flipping a bit */
@@ -507,7 +559,11 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         // insert the mask assignment at the beginning of the function
         maskassign->right = curfunc->body;
         curfunc->body = maskassign;
-            
+
+        /* dst->left is the destination assignment */
+        /* it may be an AST_LISTHOLDER, in which case it
+           represents a pair of registers */
+        
         ifcond = AstOperator('&', src, AstInteger(1));
         ifpart = AstOperator('|', dst->left, maskvar);
         ifpart = AstAssign(dst->left, ifpart);
@@ -539,18 +595,6 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
             maskexpr = ReplaceExprWithVariable("mask_", maskexpr);
         }
 
-#if 0
-        andexpr = AstOperator(K_SHL, maskexpr, loexpr);
-        andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
-        andexpr = FoldIfConst(andexpr);
-        andexpr = AstOperator('&', dst->left, andexpr);
-
-        orexpr = FoldIfConst(AstOperator('&', src, maskexpr));
-        orexpr = AstOperator(K_SHL, orexpr, loexpr);
-        orexpr = FoldIfConst(orexpr);
-        orexpr = AstOperator('|', andexpr, orexpr);
-
-#else
         andexpr = AstOperator(K_SHL, maskexpr, loexpr);
         andexpr = AstOperator(K_BIT_NOT, NULL, andexpr);
         andexpr = FoldIfConst(andexpr);
@@ -560,14 +604,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = FoldIfConst(orexpr);
         
         orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
-      
-#endif        
         return AstAssign(dst->left, orexpr);
     }
 }
 
 /*
  * print a range use
+ * src->right should be an AST_RANGE
+ * src->left is a hardware register
  */
 AST *
 TransformRangeUse(AST *src)
@@ -578,18 +622,48 @@ TransformRangeUse(AST *src)
     AST *test;
     AST *hi;
     AST *lo;
-
+    AST *range;
+    
     if (!curfunc) {
         ERROR(src, "Internal error, could not find function");
         return AstInteger(0);
     }
+    if (!src) return src;
+    if (src->kind != AST_RANGEREF) {
+        ERROR(src, "internal error in rangeref");
+        return src;
+    }
+    range = src->right;
+    if (range->kind != AST_RANGE) {
+        ERROR(src, "internal error: expecting range");
+        return src;
+    }
+    if (src->left->kind == AST_REGPAIR) {
+        AST *rega, *regb;
+        AST *cond;
+        // create new range references like outa[range], outb[range]
+        rega = NewAST(AST_RANGEREF, src->left->left, src->right);
+        regb = NewAST(AST_RANGEREF, src->left->right, src->right);
+        // and dereference them
+        rega = TransformRangeUse(rega);
+        regb = TransformRangeUse(regb);
+        if (range->right && IsConstExpr(range->right)) {
+            cond = AstOperator(K_LTU, range->right, AstInteger(32));
+        } else {
+            cond = AstOperator(K_LTU, range->left, AstInteger(32));
+        }
+        if (IsConstExpr(cond)) {
+            int x = EvalConstExpr(cond);
+            if (x) return rega;
+            return regb;
+        }
+        return NewAST(AST_CONDRESULT,
+                      cond,
+                      NewAST(AST_THENELSE, rega, regb));
+    }
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
         return AstInteger(0);
-    }
-    if (src->right->kind != AST_RANGE) {
-        ERROR(src, "internal error: expecting range");
-        return src;
     }
     AstReportAs(src);
     /* now handle the ordinary case */
@@ -683,12 +757,16 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
     case K_SAR:
         return intAsFloat(((int32_t)floatAsInt(lval)) >> floatAsInt(rval));
     case '<':
+    case K_LTU:
         return intAsFloat(-(lval < rval));
     case '>':
+    case K_GTU:
         return intAsFloat(-(lval > rval));
     case K_LE:
+    case K_LEU:
         return intAsFloat(-(lval <= rval));
     case K_GE:
+    case K_GEU:
         return intAsFloat(-(lval >= rval));
     case K_NE:
         return intAsFloat(-(lval != rval));
@@ -744,6 +822,14 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
         return (-(lval <= rval));
     case K_GE:
         return (-(lval >= rval));
+    case K_LTU:
+        return (-((uint32_t)lval < (uint32_t)rval));
+    case K_GTU:
+        return (-((uint32_t)lval > (uint32_t)rval));
+    case K_LEU:
+        return (-((uint32_t)lval <= (uint32_t)rval));
+    case K_GEU:
+        return (-((uint32_t)lval >= (uint32_t)rval));
     case K_NE:
         return (-(lval != rval));
     case K_EQ:
@@ -792,11 +878,11 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_HIGHMULT:
         return (int)(((long long)lval * (long long)rval) >> 32LL);
     case K_SHL:
-        return lval << rval;
+        return lval << (rval & 0x1f);
     case K_SHR:
-        return ((uint32_t)lval) >> rval;
+        return ((uint32_t)lval) >> (rval & 0x1f);
     case K_SAR:
-        return ((int32_t)lval) >> rval;
+        return ((int32_t)lval) >> (rval & 0x1f);
     case K_ROTL:
         return ((uint32_t)lval << rval) | ((uint32_t) lval) >> (32-rval);
     case K_ROTR:
@@ -809,6 +895,14 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return -(lval <= rval);
     case K_GE:
         return -(lval >= rval);
+    case K_LTU:
+        return (-((uint32_t)lval < (uint32_t)rval));
+    case K_GTU:
+        return (-((uint32_t)lval > (uint32_t)rval));
+    case K_LEU:
+        return (-((uint32_t)lval <= (uint32_t)rval));
+    case K_GEU:
+        return (-((uint32_t)lval >= (uint32_t)rval));
     case K_NE:
         return -(lval != rval);
     case K_EQ:
