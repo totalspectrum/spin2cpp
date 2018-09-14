@@ -1,3 +1,12 @@
+Version 3.9.1
+- Fixed some bugs in common subexpression elimination
+- Fixed conditional instructions in inline assembly
+- Improved loop strength reduction optimizations
+- Added missing popa instruction for P2, also missing rd/wr address mode
+- Added +/ and +// unsigned division operators to Spin
+- Started work on BASIC support. This is not complete yet (it won't be
+  until 4.0.0).
+  
 Version 3.8.7
 - Improved constant propagation for REP instructions
 - Fixed addresses for listing in P1 mode
