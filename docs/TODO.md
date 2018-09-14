@@ -25,8 +25,6 @@ Take advantage of commutative operators to improve optimization.
 Put more commonly used functions in COG RAM, and/or FCACHE whole functions
 if they are called a lot.
 
-Allow system functions to go into HUB RAM to free up COG space.
-
 Better fcache loading code.
 
 
@@ -37,4 +35,5 @@ Implement a spin bytecode back end.
 
 Implement a Tachyon bytecode back end.
 
-Implement a Basic front-end.
+Implement a BASIC front-end (started).
+
