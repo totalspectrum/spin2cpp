@@ -3777,15 +3777,19 @@ static const char *builtin_div_p1 =
 "\tlong\t0\n"
 ;
 static const char *builtin_div_p2 =
+"\nunsdivide_\n"
+"       setq    #0\n"
+"       qdiv    muldiva_, muldivb_\n"
+"       getqx   muldivb_\n"  // get quotient
+"       getqy   muldiva_\n"  // get remainder
+"       reta\n"
+    
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
-"       setq    #0\n"
-"       qdiv    muldiva_, muldivb_\n"
-"       getqx   muldivb_\n"  // get quotient
-"       getqy   muldiva_\n"  // get remainder
+"       call    #unsdivide_\n"
 "       test    itmp2_,#1        wc       'restore sign, remainder\n"
 "       negc    muldiva_,muldiva_ \n"
 "       test    itmp2_,#%10      wc       'restore sign, division result\n"
