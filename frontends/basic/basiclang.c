@@ -205,6 +205,9 @@ static AST *forcepromote(AST *type, AST *expr)
 {
     int tsize;
     int op;
+    if (!type) {
+        return expr;
+    }
     if (!IsIntType(type)) {
         ERROR(expr, "internal error in forcecpromote");
     }
