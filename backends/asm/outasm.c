@@ -2943,18 +2943,8 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 void
 FreeTempRegisters(IRList *irl, int starttempreg)
 {
-    int endtempreg;
-    Operand *op;
-
     /* release temporaries we used */
-    endtempreg = FuncData(curfunc)->curtempreg;
     FuncData(curfunc)->curtempreg = starttempreg;
-
-    /* and mark them as dead */
-    while (endtempreg > starttempreg) {
-      op = GetFunctionTempRegister(curfunc, endtempreg);
-      --endtempreg;
-    }
 }
 
 //
