@@ -9,8 +9,8 @@ _set
 	rdlong	_var_02, objptr
 	add	objptr, #4
 	add	_var_02, objptr
-	sub	objptr, #8
 	wrbyte	arg1, _var_02
+	sub	objptr, #8
 _set_ret
 	ret
 

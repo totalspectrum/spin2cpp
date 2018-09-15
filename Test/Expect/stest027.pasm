@@ -5,13 +5,12 @@ DAT
 entry
 
 _hyp
-	mov	_var_02, arg2
 	mov	muldiva_, arg1
 	mov	muldivb_, arg1
 	call	#multiply_
 	mov	_var_03, muldiva_
-	mov	muldiva_, _var_02
-	mov	muldivb_, _var_02
+	mov	muldiva_, arg2
+	mov	muldivb_, arg2
 	call	#multiply_
 	add	_var_03, muldiva_
 	mov	result1, _var_03
@@ -44,8 +43,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
-	res	1
 _var_03
 	res	1
 arg1

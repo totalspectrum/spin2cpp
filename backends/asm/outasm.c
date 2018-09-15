@@ -375,11 +375,6 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
-        if (ir->opc == OPC_DEAD) {
-            // remove all dead notes, etc. from the original inline
-            ir = ir->next;
-            continue;
-        }
         newir = DupIR(ir);
         newir->flags |= FLAG_INSTR_NEW;
         if (newir->opc == OPC_LABEL) {
@@ -2072,7 +2067,6 @@ CompileFunccall(IRList *irl, AST *expr)
       while (n > 0) {
           --n;
           reg = GetFunctionParameterForCall(irl, func, n);
-          EmitOp1(irl, OPC_DEAD, reg);
       }
   }
 
@@ -2943,12 +2937,6 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             ir = EmitOp2(irl, OPC_MOV, dst, src);
         }
     }
-    if (temp) {
-        EmitOp1(irl, OPC_DEAD, temp);
-    }
-    if (temp2) {
-        EmitOp1(irl, OPC_DEAD, temp2);
-    }
     return ir;
 }
 
@@ -2965,7 +2953,6 @@ FreeTempRegisters(IRList *irl, int starttempreg)
     /* and mark them as dead */
     while (endtempreg > starttempreg) {
       op = GetFunctionTempRegister(curfunc, endtempreg);
-      EmitOp1(irl, OPC_DEAD, op);
       --endtempreg;
     }
 }

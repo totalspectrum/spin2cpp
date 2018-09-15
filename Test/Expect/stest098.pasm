@@ -30,15 +30,15 @@ _dounpack_x
 LR__0001
 	shl	_tmp003_, #1 wc
  if_nc	djnz	_tmp002_, #LR__0001
-	sub	_tmp002_, #23
 	mov	_var_05, _tmp002_
+	sub	_var_05, #23
 	mov	_var_03, _var_05
 	mov	_var_11, #7
 	sub	_var_11, _var_05
 	shl	arg1, _var_11
 LR__0002
-	sub	_var_03, #127
 	cmps	arg2, #0 wz
+	sub	_var_03, #127
  if_ne	mov	result1, _var_03
  if_e	mov	result1, arg1
 _dounpack_x_ret

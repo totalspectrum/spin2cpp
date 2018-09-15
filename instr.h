@@ -120,8 +120,6 @@ typedef enum IROpcode {
     /* pseudo-instruction to load FCACHE */
     OPC_FCACHE,
     
-    /* special flag to indicate a dead register */
-    OPC_DEAD,
     /* special flag to indicate a register is used/modified */
     /* used for cases like array accesses where the optimizer may
        not be able to figure it out */

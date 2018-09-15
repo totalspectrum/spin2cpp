@@ -5,15 +5,13 @@ DAT
 entry
 
 _calc1
-	mov	_var_01, arg1
-	mov	_var_02, arg2
-	mov	muldiva_, _var_01
-	mov	muldivb_, _var_02
+	mov	muldiva_, arg1
+	mov	muldivb_, arg2
 	call	#divide_
 	wrlong	muldivb_, objptr
-	add	_var_02, #1
-	mov	muldiva_, _var_01
-	mov	muldivb_, _var_02
+	add	arg2, #1
+	mov	muldiva_, arg1
+	mov	muldivb_, arg2
 	call	#divide_
 	add	objptr, #4
 	wrlong	muldiva_, objptr
@@ -100,10 +98,6 @@ COG_BSS_START
 objmem
 	long	0[3]
 	org	COG_BSS_START
-_var_01
-	res	1
-_var_02
-	res	1
 arg1
 	res	1
 arg2

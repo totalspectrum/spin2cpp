@@ -26,9 +26,8 @@ _set2
 	mov	fp, sp
 	add	sp, #12
 	add	fp, #4
-	mov	_var_02, fp
+	wrlong	fp, objptr
 	sub	fp, #4
-	wrlong	_var_02, objptr
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
@@ -50,6 +49,4 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_var_02
-	res	1
 	fit	496

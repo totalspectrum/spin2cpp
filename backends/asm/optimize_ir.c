@@ -25,7 +25,6 @@ bool IsDummy(IR *op)
   switch(op->opc) {
   case OPC_COMMENT:
   case OPC_LITERAL:
-  case OPC_DEAD:
   case OPC_CONST:
   case OPC_DUMMY:
     return true;
@@ -351,6 +350,17 @@ IsMathInstr(IR *ir)
     }
 }
 
+extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
+
+
+static bool FuncDoesNotUseArg(Operand *func, Operand *arg)
+{
+    if (func == mulfunc || func == divfunc || func == unsdivfunc) {
+        return arg != muldiva && arg != muldivb;
+    }
+    return false;
+}
+
 /*
  * return TRUE if the operand's value does not need to be preserved
  * after instruction instr
@@ -364,10 +374,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
 {
   IR *ir;
   int i;
-  
-  if (instr->opc == OPC_DEAD && op == instr->dst) {
-    return true;
-  }
+
   if (op->kind == REG_HW) {
       // hardware registers are never dead
       return false;
@@ -377,9 +384,6 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
       return false;
   }
   for (ir = instr->next; ir; ir = ir->next) {
-    if (ir->opc == OPC_DEAD && op == ir->dst) {
-      return true;
-    }
     for (i = 0; i < level; i++) {
         if (ir == stack[i]) {
             // we've come around a loop
@@ -445,22 +449,14 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
       return IsLocalOrArg(op);
     } else if (ir->opc == OPC_CALL) {
         if (!IsLocal(op)) {
-            return false;
-        }
-    } else if (IsJump(ir)) {
-        if (IsForwardJump(ir)) {
-            // FIXME
-            // special case: sometimes we add .dead notes right after a branch
-            // so look here in case that happened
-            IR *irdead;
-            irdead = ir->next;
-            while (irdead && irdead->opc == OPC_DEAD) {
-                if (irdead->dst == op) {
-                    return true;
-                }
-                irdead = irdead->next;
+            // we know of some special cases where argN is not used
+            if (IsArg(op) && FuncDoesNotUseArg(ir->dst, op)) {
+                /* OK to continue */
+            } else {
+                return false;
             }
         }
+    } else if (IsJump(ir)) {
         // if the jump is to an unknown place give up
         if (!ir->aux) {
             return false;
@@ -570,11 +566,6 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return NULL;
   }
   for (ir = first_ir; ir; ir = ir->next) {
-    if (ir->opc == OPC_DEAD) {
-        if (ir->dst == orig) {
-            return ir;
-        }
-    }
     if (IsDummy(ir)) {
 	continue;
     }
@@ -585,14 +576,16 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         // as orig is a local register (not an ARG!)
         if (!IsLocal(orig)) return NULL;
         if (IsArg(replace)) {
-            // if there are any more references to orig then
-            // replacement will fail (since arg gets changed
-            // by the call)
-            return IsDeadAfter(ir, orig) ? ir : NULL;
+            if (!FuncDoesNotUseArg(ir->dst, replace)) {
+                // if there are any more references to orig then
+                // replacement will fail (since arg gets changed
+                // by the call)
+                return IsDeadAfter(ir, orig) ? ir : NULL;
+            }
         } else if (!IsLocal(replace)) {
             return NULL;
         }
-    } else if (IsBranch(ir)) {
+    } else if (IsJump(ir)) {
         // forward branches (or branches to code we've
         // already seen) are safe; others we should assume
         // will cause problems
@@ -639,7 +632,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return NULL;
     }
     if (InstrModifies(ir, orig)) {
-        // we do not want to end up changing "replace" if it is still live
+        if (!InstrUses(ir, orig) && assignments_are_safe) {
+            // we are completely re-setting "orig" here, so we can just
+            // leave now
+            return last_ir;
+        }
+        // we do not want to end accidentally modifying "replace" if it is still live
         // note that IsDeadAfter(first_ir, replace) gives a more accurate
         // view than IsDeadAfter(ir, replace), because it can look back
         // further (and we've already verified that replace is not doing
@@ -663,15 +661,6 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
-    if (IsDummy(ir)) {
-        if (ir->opc == OPC_DEAD && ir->dst == replace) {
-            ir->opc = OPC_DUMMY;
-        }
-        if (ir->opc == OPC_DEAD && ir->dst == orig) {
-            ir->opc = OPC_DUMMY;
-        }
-        continue;
-    }
     if (ir->opc == OPC_LABEL) {
       break;
     }
@@ -692,21 +681,12 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 {
   IR *ir;
   for (ir = instr; ir; ir = ir->next) {
-    if (IsDummy(ir)) {
-        if (ir->opc == OPC_DEAD && ir->dst == replace) {
-            ir->opc = OPC_DUMMY;
-        }
-        if (ir->opc == OPC_DEAD && ir->dst == orig) {
-            ir->opc = OPC_DUMMY;
-        }
-    } else {
-        if (ir->src == orig) {
-            ir->src = replace;
-        }
-        if (ir->dst == orig) {
-            ir->dst = replace;
-        }
-    }
+      if (ir->src == orig) {
+          ir->src = replace;
+      }
+      if (ir->dst == orig) {
+          ir->dst = replace;
+      }
     if (ir == stop_ir) break;
   }
 }
@@ -846,7 +826,7 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
     if (ir->opc == OPC_CALL) {
         return change;
     }
-    if (IsBranch(ir) && !JumpIsAfterOrEqual(instr, ir)) {
+    if (IsJump(ir) && !JumpIsAfterOrEqual(instr, ir)) {
       return change;
     }
     if (ir->dst == orig) {
@@ -861,8 +841,6 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
   }
   return change;
 }
-
-extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
 static bool
 DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand *opb)
@@ -1000,7 +978,12 @@ HasSideEffects(IR *ir)
         return true;
     }
     if (IsBranch(ir)) {
-      return true;
+        if (ir->opc == OPC_CALL &&
+            (ir->dst == mulfunc || ir->dst == divfunc || ir->dst == unsdivfunc))
+        {
+            return false;
+        }
+        return true;
     }
     if (InstrIsVolatile(ir)) {
       return true;
@@ -1942,9 +1925,6 @@ OptimizeIncDec(IRList *irl)
                 // the code may look ugly if we do
                 if (stepir->cond != COND_TRUE)
                     break;
-                // and break on DEAD notes
-                if (stepir->opc == OPC_DEAD)
-                    break;
                 placeir = stepir;
                 stepir = stepir->next;
             }
@@ -2178,7 +2158,9 @@ restart_check:
             dst1 = ir->dst;
             base = ir->src;
             nextread = FindNextRead(ir, dst1, base);
-            if (nextread) {
+            if (nextread && nextread->cond == ir->cond) {
+                // wrlong a, b ... rdlong c, b  -> mov c, a
+                // rdlong a, b ... rdlong c, b  -> mov c, a
                 nextread->src = dst1;
                 ReplaceOpcode(nextread, OPC_MOV);
                 change = 1;
@@ -2190,19 +2172,11 @@ restart_check:
         if (IsReadWrite(ir) && IsReadWrite(next_ir) && IsNonReadWriteOpcode(prev_ir)) {
             if (CanSwap(ir, prev_ir)) {
                 // want to swap prev_ir and ir here
-                IR *tail = prev_ir->next;
                 DeleteIR(irl, prev_ir);  // remove prev_ir from list
                 prev_ir->next = NULL;
                 InsertAfterIR(irl, ir, prev_ir); // move it to later
                 ir = prev_ir;
                 change = 1;
-                // get rid of any .dead notes
-                while (tail && tail != ir) {
-                    if (tail->opc == OPC_DEAD) {
-                        tail->opc = OPC_DUMMY;
-                    }
-                    tail = tail->next;
-                }
                 goto restart_check;
             }
         }
@@ -2264,7 +2238,7 @@ OptimizeIRGlobal(IRList *irl)
     ir = irl->head;
     while (ir) {
         ir_next = ir->next;
-        if (ir->opc == OPC_DEAD || ir->opc == OPC_DUMMY) {
+        if (ir->opc == OPC_DUMMY) {
             DeleteIR(irl, ir);
         }
         ir = ir_next;

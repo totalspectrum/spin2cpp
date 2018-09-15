@@ -15,9 +15,9 @@ LR__0001
 	rdbyte	_tmp008_, arg2
 	add	arg2, #1
 	wrbyte	_tmp008_, arg1
-	add	arg1, #1
 	add	_var_04, _tmp002_
 	cmps	_var_04, arg3 wz
+	add	arg1, #1
  if_ne	jmp	#LR__0001
 _copy1_ret
 	ret

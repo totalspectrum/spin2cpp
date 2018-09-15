@@ -15,8 +15,8 @@ _serchar
 	or	OUTA, imm_1073741824_
 	or	DIRA, imm_1073741824_
 	or	arg1, #256
-	shl	arg1, #1
 	mov	_serchar_val, arg1
+	shl	_serchar_val, #1
 	mov	_serchar_waitcycles, CNT
 	mov	_serchar__idx__0001, #10
 LR__0001
