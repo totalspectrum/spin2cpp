@@ -353,12 +353,12 @@ IsMathInstr(IR *ir)
 extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 
 
-static bool FuncDoesNotUseArg(Operand *func, Operand *arg)
+static bool FuncUsesArg(Operand *func, Operand *arg)
 {
     if (func == mulfunc || func == divfunc || func == unsdivfunc) {
-        return arg != muldiva && arg != muldivb;
+        return arg == muldiva || arg == muldivb;
     }
-    return false;
+    return true;
 }
 
 /*
@@ -450,7 +450,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     } else if (ir->opc == OPC_CALL) {
         if (!IsLocal(op)) {
             // we know of some special cases where argN is not used
-            if (IsArg(op) && FuncDoesNotUseArg(ir->dst, op)) {
+            if (IsArg(op) && !FuncUsesArg(ir->dst, op)) {
                 /* OK to continue */
             } else {
                 return false;
@@ -574,9 +574,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     } else if (ir->opc == OPC_CALL) {
         // it's OK to replace forward over a call as long
         // as orig is a local register (not an ARG!)
-        if (!IsLocal(orig)) return NULL;
+        if (IsArg(orig)) {
+            if (FuncUsesArg(ir->dst, orig)) {
+                return NULL;
+            }
+        } else if (!IsLocal(orig)) {
+            return NULL;
+        }
         if (IsArg(replace)) {
-            if (!FuncDoesNotUseArg(ir->dst, replace)) {
+            if (FuncUsesArg(ir->dst, replace)) {
                 // if there are any more references to orig then
                 // replacement will fail (since arg gets changed
                 // by the call)
@@ -647,9 +653,11 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         }
         orig_modified = true;
     }
+#if 0
     if (InstrUses(ir, replace) && ir != first_ir) {
       return NULL;
     }
+#endif
     last_ir = ir;
   }
   return IsLocalOrArg(orig) ? last_ir : NULL;
