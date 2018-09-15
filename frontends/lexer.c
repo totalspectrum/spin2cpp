@@ -379,7 +379,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             f *= powf(10.0f, (float)exponent);
         }
         if (gl_fixedreal) {
-            uval = (1<<G_FIXPOINT) * f;
+            uval = ((1<<G_FIXPOINT) * f) + 0.5;
         } else {
             uval = floatAsInt(f);
         }
