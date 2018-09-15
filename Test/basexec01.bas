@@ -50,6 +50,14 @@ for i = 1 to 6
   n% = n% * 10
 next i
 
+'' printing values in a loop
+dim x# as single
+x# = 1.0
+while x# > 0.0
+  x# = x# / 10
+  print x#
+wend
+
 ''
 '' done
 ''
