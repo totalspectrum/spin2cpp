@@ -546,6 +546,15 @@ funcdecl:
     AST *rettype = InferTypeFromName(name);
     DeclareFunction(rettype, 1, funcdef, $7, NULL, $1);
   }
+  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+  {
+    AST *name = $2;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    AST *rettype = $7;
+    DeclareFunction(rettype, 1, funcdef, $9, NULL, $1);
+  }
   ;
 
 subbody:

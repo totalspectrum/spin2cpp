@@ -6,6 +6,7 @@
 class btest002 {
 public:
   void 	init(void);
+  static uint32_t 	getcycles(void);
 private:
   int32_t 	x;
   int32_t 	y;

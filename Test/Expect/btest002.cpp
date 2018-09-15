@@ -9,3 +9,8 @@ void btest002::init(void)
   w_R = -2.000000;
 }
 
+uint32_t btest002::getcycles(void)
+{
+  return cnt;
+}
+
