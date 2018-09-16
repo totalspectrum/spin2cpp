@@ -58,10 +58,14 @@ while x# > 0.0
   print x#
 wend
 
-''
-'' done
-''
-doexit(0)
+function checkasc(s as string)
+  if asc(s) = asc("@") then
+    return 1
+  end if
+  return 0
+end function
+
+print "asc: "; checkasc("@123"); ", "; checkasc("hello")
 
 ''
 '' send a special exit status for propeller-load
@@ -79,3 +83,9 @@ sub doexit(status)
   do
   loop
 end sub
+
+''
+'' done
+''
+doexit(0)
+

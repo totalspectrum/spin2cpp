@@ -238,6 +238,38 @@ Declares x as a generic type 32 bit variable compatible with any other type. Bas
 
 `any` should be used only in exceptional circumstances.
 
+Example: a subroutine to print the raw bit pattern of a floating point
+number:
+```
+  sub printbits(x as single)
+    dim a as any
+    dim u as uinteger
+    '' just plain u=x would convert x from single to unsigned
+    '' instead go through an ANY type, which will do no conversion
+    a = x
+    u = a
+    print u
+  end sub
+```
+
+### AS
+
+`as` is a keyword that introduces a type for a function, function parameter, or
+dimensioned variable.
+
+```
+  ' declare a function with an integer parameter that returns a string
+  function(x as integer) as string
+  ...
+```
+### ASC
+
+```
+  i = ASC(s$)
+```
+returns the integer (ASCII) value of the first character of a string. If the
+argument is not a string it is an error.
+
 ### CONST
 
 At the beginning of a line, CONST declares a constant value. For example:

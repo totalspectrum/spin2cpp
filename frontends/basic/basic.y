@@ -113,6 +113,7 @@ AST *AstCharItem(int c)
 %token BAS_AND        "and"
 %token BAS_ANY        "any"
 %token BAS_AS         "as"
+%token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
 %token BAS_BYTE       "byte"
 %token BAS_CLASS      "class"
@@ -477,8 +478,10 @@ expr:
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
     }
-  | BAS_ABS expr
-    { $$ = AstOperator(K_ABS, NULL, $2); }  
+  | BAS_ABS '(' expr ')'
+    { $$ = AstOperator(K_ABS, NULL, $3); }  
+  | BAS_ASC '(' expr ')'
+    { $$ = AstOperator(K_ASC, NULL, $3); }  
   | '@' expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'

@@ -1055,6 +1055,7 @@ struct reservedword basic_keywords[] = {
   { "and", BAS_AND },
   { "any", BAS_ANY },
   { "as", BAS_AS },
+  { "asc", BAS_ASC },
   { "asm", BAS_ASM },
   { "byte", BAS_BYTE },
   { "class", BAS_CLASS },

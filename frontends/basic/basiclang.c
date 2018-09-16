@@ -547,6 +547,21 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
             return ast_type_long;
         }
+    case K_ASC:
+        if (!CompatibleTypes(righttype, ast_type_string)) {
+            ERROR(ast, "expected string argument to ASC");
+        } else {
+            AST *newast;
+            if (ast->right && ast->right->kind == AST_STRING) {
+                // literal: fix it up here
+                newast = AstInteger(ast->right->d.string[0]);
+                *ast = *newast;
+            } else {
+                newast = NewAST(AST_MEMREF, ast_type_byte, ast->right);
+                *ast = *newast;
+            }
+        }
+        return ast_type_long;
     default:
         if (!MakeBothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;

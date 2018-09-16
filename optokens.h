@@ -40,5 +40,6 @@
 #define K_LEU       0x121
 #define K_GTU       0x122
 #define K_GEU       0x123
+#define K_ASC       0x124
 
 #endif
