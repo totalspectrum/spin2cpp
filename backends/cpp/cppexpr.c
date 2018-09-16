@@ -126,7 +126,18 @@ PrintInteger(Flexbuf *f, int32_t v, int flags)
 void
 PrintFloat(Flexbuf *f, int32_t v, int flags)
 {
-    if ((current && current->language != LANG_SPIN) || (flags & PRINTEXPR_USEFLOATS)) {
+    bool printAsFloat;
+
+    if (flags & PRINTEXPR_USEFLOATS) {
+        printAsFloat = true;
+    } else if (gl_fixedreal) {
+        printAsFloat = false;
+    } else if (current->language == LANG_SPIN) {
+        printAsFloat = false;
+    } else {
+        printAsFloat = true;
+    }
+    if (printAsFloat) {
         if (gl_fixedreal) {
             flexbuf_printf(f, "%f", (float)(v)/(float)(1<<G_FIXPOINT));
         } else {
@@ -723,7 +734,7 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         break;
     case AST_FLOATTYPE:
         size = EvalConstExpr(typedecl->left);
-        if (current->language == LANG_SPIN) {
+        if (current->language == LANG_SPIN || gl_fixedreal) {
             // eventually we will want to really support float operands
             // but for now, treat floats as ints
             if (size == 4) {
