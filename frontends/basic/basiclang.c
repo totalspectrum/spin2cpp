@@ -570,27 +570,39 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     }
 }
 
-AST *CoerceAssignTypes(AST *ast, AST *desttype, AST *srctype)
+//
+// modifies *astptr, originally of type srctype,
+// to have type desttype by introducing any
+// necessary casts
+//
+AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
 {
+    AST *expr = *astptr;
+    const char *msg;
+    
     if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
         return desttype;
     }
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
-            ast->right = domakefloat(ast->right);
+            *astptr = domakefloat(expr);
             srctype = ast_type_float;
         }
     }
-
+    if (kind == AST_RETURN) {
+        msg = "return";
+    } else {
+        msg = "assignment";
+    }
     if (!CompatibleTypes(desttype, srctype)) {
-        ERROR(ast, "incompatible types in assignment");
+        ERROR(expr, "incompatible types in %s", msg);
         return desttype;
     }
-    if (IsConstType(desttype)) {
-        WARNING(ast, "assignment to const object");
+    if (IsConstType(desttype) && kind == AST_ASSIGN) {
+        WARNING(expr, "assignment to const object");
     }
     if (IsPointerType(srctype) && IsConstType(BaseType(srctype)) && !IsConstType(BaseType(desttype))) {
-        WARNING(ast, "assignment discards const attribute from pointer");
+        WARNING(expr, "%s discards const attribute from pointer", msg);
     }
     if (IsIntType(desttype)) {
         if (IsIntType(srctype)) {
@@ -598,14 +610,14 @@ AST *CoerceAssignTypes(AST *ast, AST *desttype, AST *srctype)
             int rsize = TypeSize(srctype);
             if (lsize > rsize) {
                 if (IsUnsignedType(srctype)) {
-                    ast->right = dopromote(ast->right, rsize, K_ZEROEXTEND);
+                    *astptr = dopromote(expr, rsize, K_ZEROEXTEND);
                 } else {
-                    ast->right = dopromote(ast->right, rsize, K_SIGNEXTEND);
+                    *astptr = dopromote(expr, rsize, K_SIGNEXTEND);
                 }
             }
         }
         if (IsFloatType(srctype)) {
-            ERROR(ast, "cannot assign float to integer");
+            ERROR(expr, "cannot assign float to integer");
         }
     }
     return desttype;
@@ -630,7 +642,14 @@ AST *CheckTypes(AST *ast)
         ltype = CoerceOperatorTypes(ast, ltype, rtype);
         break;
     case AST_ASSIGN:
-        ltype = CoerceAssignTypes(ast, ltype, rtype);
+        ltype = CoerceAssignTypes(AST_ASSIGN, &ast->right, ltype, rtype);
+        break;
+    case AST_RETURN:
+        {
+            ltype = curfunc->rettype;
+            rtype = CheckTypes(ast->left);
+            ltype = CoerceAssignTypes(AST_RETURN, &ast->left, ltype, rtype);
+        }
         break;
     case AST_FLOAT:
     case AST_TRUNC:
