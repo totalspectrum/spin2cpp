@@ -65,6 +65,17 @@ end function
 
 print "asc: "; checkasc("@123"); ", "; checkasc("hello")
 
+print "string tests:"
+
+sub reportstr(a$, b$)
+  print a$, b$, "< = >: ";
+  print a$ < b$, a$ = b$, a$ > b$
+end sub
+
+reportstr("abc", "abc")
+reportstr "abc", "a"
+reportstr "def", "zzz"
+
 ''
 '' send a special exit status for propeller-load
 '' FF 00 xx, where xx is the exit status

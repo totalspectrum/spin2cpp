@@ -11,13 +11,11 @@ right now. Missing features include:
 
 (3) Floating point support is incomplete. The "single" datatype is currently represented by 16.16 fixed point numbers. These are fast, but the very limited range is a problem. Eventually we will have proper IEEE floating point, with the fixed point kept as an option.
 
-(4) Parameter passing is incomplete; parameters are not properly promoted (e.g. an integer passed to a parameter of type single will get the wrong bit pattern).
+(4) Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
 
-(5) Function return type aren't checked, and you can't give a non-default return type for a function.
+(5) There is no way to initialize an array.
 
-(6) Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
-
-(7) There are no functions yet for starting BASIC code on other COGs.
+(6) There are no functions yet for starting BASIC code on other COGs.
 
 ## Introduction
 
@@ -166,6 +164,56 @@ There are two kinds of variables: global variables and local variables. Global v
 
 
 ## Language features
+
+### Types
+
+There are a number of data types built in to the Fastspin BASIC language.
+
+#### Unsigned integer types
+
+`ubyte`, `ushort`, and `uinteger` are the names for 8 bit, 16 bit, and 32 bit unsigned integers, respectively. The Propeller load instructions do not sign extend by default, so `ubyte` and `ushort` are the preferred names for 8 and 16 bit integers on the Propeller.
+
+#### Signed integer types
+
+`byte`, `short`, and `integer` are 8 bit, 16 bit, and 32 bit signed integers.
+
+#### Floating point types
+
+single is, by default, a 32 bit IEEE floating point number. There is an option to use a 16.16 fixed point number instead; this results in much faster calculations, but at the cost of much less precision and range.
+
+#### Pointer types
+
+Pointers to any other type may be declared.
+
+#### String type
+
+The `string` type is a special pointer. Functionally it is almost the same as a `const ubyte pointer`, but there is one big difference; comparisons involving a string compare the pointed to data, rather than the pointer itself. For example:
+```
+sub cmpstrings(a as string, b as string)
+  if (a = b) then
+    print "strings equal"
+  else
+    print "strings differ"
+  end if
+end sub
+
+sub cmpptrs(a as const ubyte pointer, b as const ubyte pointer)
+  if (a = b) then
+    print "pointers equal"
+  else
+    print "pointers differ"
+  end if
+end sub
+
+dim x as string
+dim y as string
+
+x = "hello"
+y = "he" + "llo"
+cmpstrings(x, y)
+cmpptrs(x, y)
+```
+will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison (and while the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
 
 ### Function declarations
 

@@ -22,6 +22,20 @@ static AST *float_add;
 static AST *float_sub;
 static AST *float_mul;
 static AST *float_div;
+static AST *float_cmp;
+
+static AST *string_cmp;
+
+static int
+IsBasicString(AST *typ)
+{
+    if (typ == NULL) return 0;
+    if (typ == ast_type_string) return 1;
+    if (typ->kind == AST_MODIFIER_CONST || typ->kind == AST_MODIFIER_VOLATILE) {
+        return IsBasicString(typ->left);
+    }
+    return 0;
+}
 
 static AST *
 addPrintCall(AST *seq, AST *func, AST *expr)
@@ -299,24 +313,25 @@ bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
     return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
 }
 
-// call function func with parameters ast->left, ast->right
-static void
-NewOperatorCall(AST *ast, AST *func, AST *extraArg)
+// create a call to function func with parameters ast->left, ast->right
+// there is an optional 3rd argument too
+static AST *
+MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
 {
     AST *call;
     AST *params = NULL;
 
-    if (ast->left) {
-        params = AddToList(params, NewAST(AST_EXPRLIST, ast->left, NULL));
+    if (left) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, left, NULL));
     }
-    if (ast->right) {
-        params = AddToList(params, NewAST(AST_EXPRLIST, ast->right, NULL));
+    if (right) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, right, NULL));
     }
     if (extraArg) {
         params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
     }
     call = NewAST(AST_FUNCCALL, func, params);
-    *ast = *call;
+    return call;
 }
 
 static AST *
@@ -358,17 +373,17 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         switch (op) {
         case '+':
             if (!gl_fixedreal) {
-                NewOperatorCall(ast, float_add, NULL);
+                *ast = *MakeOperatorCall(float_add, ast->left, ast->right, NULL);
             }
             break;
         case '-':
             if (!gl_fixedreal) {
-                NewOperatorCall(ast, float_sub, NULL);
+                *ast = *MakeOperatorCall(float_sub, ast->left, ast->right, NULL);
             }
             break;
         case '*':
             if (!isalreadyfixed) {
-                NewOperatorCall(ast, float_mul, NULL);
+                *ast = *MakeOperatorCall(float_mul, ast->left, ast->right, NULL);
             }
             break;
         case '/':
@@ -377,7 +392,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                     scale = AstInteger(G_FIXPOINT);
                 }
             }
-            NewOperatorCall(ast, float_div, scale);
+            *ast = *MakeOperatorCall(float_div, ast->left, ast->right, scale);
             break;
         default:
             ERROR(ast, "internal error unhandled operator");
@@ -420,10 +435,21 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         if (gl_fixedreal) {
             // we're good
         } else {
-            ERROR(ast, "Internal error with floats");
+            ERROR(ast, "Internal error with floats; cannot compare");
         }
         return;
     }
+    // allow for string comparison
+    if (IsBasicString(lefttype) || IsBasicString(righttype)) {
+        if (!CompatibleTypes(lefttype, righttype)) {
+            ERROR(ast, "illegal comparison with string");
+            return;
+        }
+        ast->left = MakeOperatorCall(string_cmp, ast->left, ast->right, NULL);
+        ast->right = AstInteger(0);
+        return;
+    }
+    
     if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
         return;
     }
@@ -757,6 +783,7 @@ BasicTransform(Module *Q)
         float_div = getBasicPrimitive("_fixed_div");
     } else {
         basic_print_float = getBasicPrimitive("_basic_print_float");
+        float_cmp = getBasicPrimitive("_float_cmp");
     }
     basic_print_integer = getBasicPrimitive("_basic_print_integer");
     basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
@@ -765,6 +792,8 @@ BasicTransform(Module *Q)
     basic_print_nl = getBasicPrimitive("_basic_print_nl");
     basic_put = getBasicPrimitive("_basic_put");
 
+    string_cmp = getBasicPrimitive("_string_cmp");
+    
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;

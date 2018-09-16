@@ -1271,10 +1271,8 @@ Builtin builtinfuncs[] = {
     { "_basic_print_fixed", 1, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
     { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
     { "_basic_put", 2, defaultBuiltin, "basic_put", NULL, 0, NULL },
-    
-    { "_basic_strcpy", 2, defaultBuiltin, "basic_strcpy", NULL, 0, NULL },
-    { "_basic_strcat", 2, defaultBuiltin, "basic_strcat", NULL, 0, NULL },
-    { "_basic_tmpstr", 1, defaultBuiltin, "basic_tmpstr", NULL, 0, NULL },
+
+    { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, 0, NULL },
 
     { "_fixed_div", 3, defaultBuiltin, "fixed_div", NULL, 0, NULL },
     { "_fixed_mul", 2, defaultBuiltin, "fixed_mul", NULL, 0, NULL },

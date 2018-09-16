@@ -327,6 +327,14 @@ const char common_spincode[] =
     "  if (sign)\n"
     "    x := -x\n"
     "  return x << n\n"
+
+    "pri _string_cmp(x, y) | xc, yc, d\n"
+    "  repeat\n"
+    "    xc := byte[x++]\n"
+    "    yc := byte[y++]\n"
+    "    d := xc - yc\n"
+    "  while (d==0) and xc and yc\n"
+    "  return d\n"
 ;
 
 // code for P2
