@@ -6,9 +6,7 @@ dim as single r, s
 dim as integer i, j
 dim as uinteger u
 
-function rawbits(x as single)
-  dim y as any
-  y = x
+function rawbits(y as any)
   return y
 end function
 

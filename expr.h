@@ -54,6 +54,7 @@ int PointerTypeIncrement(AST *typ);
 
 int IsFloatType(AST *typ);
 int IsIntType(AST *typ);
+int IsUnsignedType(AST *typ);
 int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 #define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))

@@ -2056,6 +2056,31 @@ OptimizeP2(IRList *irl)
 }
 
 //
+// find the next IR after orig that uses dest
+//
+static IR* FindNextUse(IR *ir, Operand *dst)
+{
+    ir = ir->next;
+    while (ir) {
+        if (InstrUses(ir, dst)) {
+            return ir;
+        }
+        if (InstrModifies(ir, dst)) {
+            // modifies but does not use? abort
+            return NULL;
+        }
+        if (IsJump(ir)) {
+            return NULL;
+        }
+        if (ir->opc == OPC_LABEL) {
+            return NULL;
+        }
+        ir = ir->next;
+    }
+    return NULL;
+}
+
+//
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
 // or a branch
@@ -2143,6 +2168,10 @@ CanSwap(IR *a, IR *b)
 // can become
 //   rdlong a, b
 //   mov    c, a
+// also in:
+//   rdbyte a, b
+//   and a, #255
+// we can skip the "and"
 
 static int
 OptimizeReadWrite(IRList *irl)
@@ -2173,6 +2202,19 @@ restart_check:
                 ReplaceOpcode(nextread, OPC_MOV);
                 change = 1;
                 goto get_next;
+            }
+        } else if (ir->opc == OPC_RDBYTE) {
+            dst1 = ir->dst;
+            nextread = FindNextUse(ir, dst1);
+            if (nextread
+                && nextread->opc == OPC_AND
+                && nextread->dst == dst1
+                && IsImmediate(nextread->src)
+                && !InstrSetsAnyFlags(nextread)
+                && nextread->src->val == 255)
+            {
+                // don't need zero extend after rdbyte
+                nextread->opc = OPC_DUMMY;
             }
         }
 #if 1

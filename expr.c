@@ -1576,6 +1576,16 @@ IsIntType(AST *type)
 }
 
 int
+IsUnsignedType(AST *type)
+{
+    type = removeModifiers(type);
+    if (!type) return 0;
+    if (type->kind == AST_UNSIGNEDTYPE)
+        return 1;
+    return 0;
+}
+
+int
 IsNumericType(AST *type)
 {
     type = removeModifiers(type);

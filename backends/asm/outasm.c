@@ -1742,10 +1742,14 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       } else {
           int shift = 32 - EvalConstExpr(rhs);
           left = CompileExpression(irl, lhs, temp);
-          right = NewImmediate(shift);
           EmitMove(irl, temp, left);
-          EmitOp2(irl, OPC_SHL, temp, right);
-          EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
+          if (op == K_ZEROEXTEND && shift == 24) {
+              EmitOp2(irl, OPC_AND, temp, NewImmediate(255));
+          } else {
+              right = NewImmediate(shift);
+              EmitOp2(irl, OPC_SHL, temp, right);
+              EmitOp2(irl, (op == K_ZEROEXTEND) ? OPC_SHR : OPC_SAR, temp, right);
+          }
       }
       return temp;
     // commutative ops 

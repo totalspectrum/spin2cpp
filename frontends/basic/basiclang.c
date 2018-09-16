@@ -185,10 +185,6 @@ bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
     return false;
 }
 
-bool IsUnsignedType(AST *typ) {
-    return typ && typ->kind == AST_UNSIGNEDTYPE;
-}
-
 // do a promotion when we already know the size of the original type
 static AST *dopromote(AST *expr, int numbytes, int operator)
 {
@@ -591,6 +587,8 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
     }
     if (kind == AST_RETURN) {
         msg = "return";
+    } else if (kind == AST_FUNCCALL) {
+        msg = "parameter passing";
     } else {
         msg = "assignment";
     }
@@ -635,6 +633,7 @@ AST *CheckTypes(AST *ast)
 {
     AST *ltype, *rtype;
     if (!ast) return NULL;
+
     ltype = CheckTypes(ast->left);
     rtype = CheckTypes(ast->right);
     switch (ast->kind) {
@@ -646,9 +645,46 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_RETURN:
         {
+            rtype = ltype; // type of actual expression
             ltype = curfunc->rettype;
-            rtype = CheckTypes(ast->left);
             ltype = CoerceAssignTypes(AST_RETURN, &ast->left, ltype, rtype);
+        }
+        break;
+    case AST_FUNCCALL:
+        {
+            AST *actualParamList = ast->right;
+            AST *calledParamList;
+            AST *expectType, *passedType;
+            Function *func;
+            Symbol *calledSym = FindFuncSymbol(ast, NULL, NULL, 1);
+            if (calledSym && calledSym->type == SYM_FUNCTION) {
+                func = (Function *)calledSym->val;
+                calledParamList = func->params;
+                while (calledParamList && actualParamList) {
+                    AST *paramId = calledParamList->left;
+                    AST *actualParam = actualParamList->left;
+                    expectType = NULL;
+                    passedType = ExprType(actualParam);
+                    if (paramId) {
+                        if (paramId->kind == AST_IDENTIFIER) {
+                            Symbol *paramSym = FindSymbol(&func->localsyms, paramId->d.string);
+                            if (paramSym && paramSym->type == SYM_PARAMETER) {
+                                expectType = (AST *)paramSym->val;
+                            }
+                        } else if (paramId->kind == AST_DECLARE_VAR) {
+                            expectType = paramId->left;
+                        }
+                    }
+                    if (expectType) {
+                        CoerceAssignTypes(AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                    }
+                    calledParamList = calledParamList->right;
+                    actualParamList = actualParamList->right;
+                }
+                ltype = func->rettype;
+            } else {
+                //WARNING(ast, "Unable to find function");
+            }
         }
         break;
     case AST_FLOAT:
@@ -676,7 +712,10 @@ AST *CheckTypes(AST *ast)
                 // force this to have a memory dereference
                 AST *deref = NewAST(AST_MEMREF, basetype, ast->left);
                 ast->left = deref;
+            } else if (ast->kind == AST_MEMREF) {
+                // nothing to do
             } else if (IsArrayType(lefttype)) {
+                // nothing to do here
             } else {
                 ERROR(ast, "Array dereferences a non-array object");
                 return NULL;
@@ -686,7 +725,6 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_EXPRLIST:
     case AST_SEQUENCE:
-    case AST_FUNCCALL:
     case AST_METHODREF:
     case AST_IDENTIFIER:
         return ExprType(ast);
