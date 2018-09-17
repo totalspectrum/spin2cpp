@@ -261,6 +261,12 @@ Spin2cpp accepts the following options:
   Print a list of the .cpp (or .c) files that were produced by
   spin2cpp. Useful for tracking object dependencies.
 
+`--fixed`
+  Use 16.16 fixed point in place of IEEE floating point. In Spin this
+  just affects the data format used for floats, but in BASIC this also
+  changes the internal runtime routines. Fixed point is much faster, but
+  has a fixed, smaller precision.
+
 `--fcache=N`
   Sets the size of the FCACHE area, in instructions. On the P1 when
   code is placed in HUB, some small loops are compiled to be loaded

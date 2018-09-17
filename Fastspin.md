@@ -146,6 +146,7 @@ which may modify the compilation:
   [ -w ]             produce Spin wrappers for PASM code
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
+  [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
 ```
 The `-2` option is new: it is for compiling for the Propeller 2 (v32
 FPGA version). It is still somewhat experimental, but works well enough
