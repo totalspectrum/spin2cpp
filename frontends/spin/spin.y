@@ -22,18 +22,6 @@
 
     extern AST *last_ast;
     
-/* fetch pending comments and wrap the AST up with them */
-AST *
-WrapASTWithComments(AST *ast)
-{
-    AST *comment = GetComments();
-    if (comment) {
-//        printf("got a comment: %s\n", comment->d.string);
-        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
-    }
-    return ast;
-}
-
 AST *
 NewCommentedInstr(AST *instr)
 {
