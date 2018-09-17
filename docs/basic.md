@@ -7,7 +7,7 @@ right now. Missing features include:
 
 (1) Documentation; the manual below is just a start, much is incomplete.
 
-(2) String support is very limited; strings may be assigned and printed, but that's about all for now. Still to be implemented are string comparisons, concatenation, and other string functions.
+(2) String support is very limited; strings may be assigned and printed, but that's about all for now. Still to be implemented are string concatenation and other string functions.
 
 (3) Floating point support is incomplete. The "single" datatype is currently represented by 16.16 fixed point numbers. These are fast, but the very limited range is a problem. Eventually we will have proper IEEE floating point, with the fixed point kept as an option.
 
@@ -345,6 +345,21 @@ Inside a type name, CONST signifies that variables of this type may not be modif
   x = getcnt()
 ```
 Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
+
+#### waitcnt
+
+Waits until the cycle counter is a specific value
+```
+  waitcnt(getcnt() + clkfreq) ' wait one second
+```
+
+#### waitpeq
+
+Waits for pins to have a specific value
+
+#### waitpne
+
+Waits for pins to have a specific value
 
 ### Propeller Specific Variables
 
