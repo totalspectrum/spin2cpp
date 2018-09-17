@@ -49,7 +49,7 @@ done
 for i in btest*.bas
 do
   j=`basename $i .bas`
-  $PROG --ctypes --noheader -DCOUNT=4 $i
+  $PROG --fixed --noheader -DCOUNT=4 $i
   if  diff -ub Expect/$j.h $j.h && diff -ub Expect/$j.cpp $j.cpp
   then
       rm -f $j.h $j.cpp

@@ -51,9 +51,11 @@ next i
 '' printing values in a loop
 dim x# as single
 x# = 1.0
-while x# > 0.0
+n% = 8
+while x# > 0.0 and n% > 0
   x# = x# / 10
   print x#
+  n% = n% - 1
 wend
 
 function checkasc(s as string)
