@@ -739,6 +739,9 @@ AST *CheckTypes(AST *ast)
     case AST_STRING:
     case AST_STRINGPTR:
         return ast_type_string;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        return NewAST(AST_PTRTYPE, ltype, NULL);
     case AST_ARRAYREF:
         {
             AST *lefttype = ExprType(ast->left);

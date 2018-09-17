@@ -61,6 +61,7 @@ Usage(void)
     fprintf(stderr, "  --eeprom:  create EEPROM binary file for download\n");
     fprintf(stderr, "  --elf:     create executable ELF file with propgcc\n");
     fprintf(stderr, "  --files:   print list of .cpp files to stdout\n");
+    fprintf(stderr, "  --fixed:   use 16.16 fixed point in place of float\n");
     fprintf(stderr, "  --fcache=N: set size of FCACHE area\n");
     fprintf(stderr, "  --gas:     create inline assembly out of DAT area;\n");
     fprintf(stderr, "             with --dat, create gas .S file from DAT area\n");
@@ -372,6 +373,9 @@ main(int argc, char **argv)
             if (gl_fcache_size < 8) {
                 gl_fcache_size = 0;
             }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--fixed", 7)) {
+            gl_fixedreal = 1;
             argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    char *opt;

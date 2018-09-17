@@ -112,6 +112,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
+    fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
     fflush(stderr);
     exit(2);
 }
@@ -265,6 +266,9 @@ main(int argc, char **argv)
             if (gl_fcache_size < 8) {
                 gl_fcache_size = 0;
             }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--fixed", 7)) {
+            gl_fixedreal = 1;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--code=", 7)) {
             if (!strcmp(argv[0]+7, "cog")) {
