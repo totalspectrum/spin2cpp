@@ -9,7 +9,7 @@ else
 fi
 
 PROG_C="$SPIN2CPP -I../Lib"
-PROG_ASM="$FASTSPIN -I../Lib --fixed"
+PROG_ASM="$FASTSPIN -I../Lib"
 
 CC=propeller-elf-gcc
 ok="ok"
