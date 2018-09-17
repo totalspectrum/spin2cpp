@@ -62,6 +62,8 @@ LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
 OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o
 
+SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h
+
 all: $(BUILD) $(PROGS)
 
 $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
@@ -72,6 +74,8 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
 	$(YACC) -t -b $(BUILD)/basic -d frontends/basic/basic.y
+
+$(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 
 preproc: preprocess.c $(UTIL)
 	$(CC) $(CFLAGS) -DTESTPP -o $@ $^ $(LIBS)
@@ -117,6 +121,14 @@ $(BUILD)/basic.tab.o: $(BUILD)/basic.tab.c $(HEADERS)
 
 $(BUILD)/%.o: %.c $(HEADERS)
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
+
+#
+# convert a .spin file to a header file
+# note that xxd does not 0 terminate its generated string,
+# which is what the sed script will do
+#
+sys/%.spin.h: sys/%.spin
+	xxd -i $< | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > $@
 
 #
 # automatic dependencies
