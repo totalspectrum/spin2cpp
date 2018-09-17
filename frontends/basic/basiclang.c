@@ -26,6 +26,8 @@ static AST *float_cmp;
 static AST *float_fromuns;
 static AST *float_fromint;
 static AST *float_toint;
+static AST *float_abs;
+static AST *float_neg;
 
 static AST *string_cmp;
 
@@ -565,9 +567,9 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         if (IsFloatType(rettype)) {
             if (!gl_fixedreal) {
                 if (op == K_ABS) {
-                    *ast = *AstOperator('&', ast->right, AstInteger(0x7fffffff));
+                    *ast = *MakeOperatorCall(float_abs, ast->right, NULL, NULL);
                 } else {
-                    *ast = *AstOperator('^', ast->right, AstInteger(0x80000000));
+                    *ast = *MakeOperatorCall(float_neg, ast->right, NULL, NULL);
                 }
                 return rettype;
             }
@@ -807,6 +809,8 @@ BasicTransform(Module *Q)
         float_fromuns = getBasicPrimitive("_float_fromuns");
         float_fromint = getBasicPrimitive("_float_fromint");
         float_toint = getBasicPrimitive("_float_trunc");
+        float_abs = getBasicPrimitive("_float_abs");
+        float_neg = getBasicPrimitive("_float_negate");
     }
     basic_print_integer = getBasicPrimitive("_basic_print_integer");
     basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
