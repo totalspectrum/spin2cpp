@@ -17,14 +17,10 @@ print r, abs(r)
 s = r + 3
 print s, abs(s), abs(-s)
 
-u = rawbits(r)
-print u, abs(u), abs(-u)
-
 print "bit tests"
 
 r = 7.9
 print r, ">> 1 =", r>>1
-print "raw bits: r, r>>1", rawbits(r), rawbits(r)>>1
 
 r = &b1010
 s = &b0011

@@ -8,8 +8,9 @@ CON
 
 OBJ
   ''fp: "F32.spin"
-  fp: "Float32Full"
+  ''fp: "Float32Full"
   ''fp: "FloatMath"
+  fp: "FloatMathSimple"
   fds: "FullDuplexSerial"
   fstr: "FloatString"
 
@@ -33,10 +34,5 @@ PUB demo | x, start, end, us
   fds.str(string(" cycles", 13, 10))
 
 PUB series(n) : sum | i, term, two
-  sum := 0
-  two := 2.0
-  term := constant(1.0)
-  repeat i from 1 to n
-    term := fp.FDiv(term, two)
-    sum := fp.FAdd(sum, term)
+  sum := fp.FAdd(-1.0, 2.0)
   

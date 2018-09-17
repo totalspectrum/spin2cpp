@@ -309,6 +309,7 @@ domakefloat(AST *typ, AST *ast)
 {
     AST *ret;
     if (!ast) return ast;
+    if (IsGenericType(typ)) return ast;
     if (gl_fixedreal) {
         ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
         return ret;

@@ -9,7 +9,8 @@ CON
 OBJ
   ''fp: "F32.spin"
   ''fp: "Float32Full"
-  fp: "FloatMath"
+''  fp: "FloatMath"
+  fp: "FloatMathSimple"
   fds: "FullDuplexSerial"
   fstr: "FloatString"
 
