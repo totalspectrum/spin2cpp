@@ -601,6 +601,8 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         if (!JumpIsAfterOrEqual(first_ir, ir)) {
             return NULL;
         }
+    } else if (ir->cond != COND_TRUE) {
+        assignments_are_safe = false;
     }
     if (ir->opc == OPC_LABEL) {
         IR *comefrom;
@@ -629,6 +631,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       //  branch might still use "replace", so punt and give up
       if (assignments_are_safe && !InstrUses(ir, replace) && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
 	return ir;
+      }
+      if (ir->cond != COND_TRUE) {
+          return NULL;
       }
       if (!orig_modified && last_ir && IsDeadAfter(last_ir, orig)) {
           // orig never actually got changed, and neither did replace (up
