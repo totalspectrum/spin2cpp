@@ -62,7 +62,7 @@ LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
 OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o
 
-SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h
+SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h sys/float.spin.h
 
 all: $(BUILD) $(PROGS)
 

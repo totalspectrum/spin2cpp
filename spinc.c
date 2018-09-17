@@ -89,6 +89,7 @@ makeClassNameSafe(Module *P)
 #include "sys/p1_code.spin.h"
 #include "sys/p2_code.spin.h"
 #include "sys/common.spin.h"
+#include "sys/float.spin.h"
 
 void
 InitGlobalModule(void)
@@ -121,6 +122,8 @@ InitGlobalModule(void)
         strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
         strToLex(&globalModule->L, (const char *)sys_common_spin, "_common_");
+        spinyyparse();
+        strToLex(&globalModule->L, (const char *)sys_float_spin, "_float_");
         spinyyparse();
         
         ProcessModule(globalModule);
@@ -407,11 +410,6 @@ ParseFile(const char *name)
       }
     } else {
       langptr = ".spin";
-    }
-    if (language == LANG_BASIC) {
-        gl_fixedreal = 1;
-    } else {
-        gl_fixedreal = 0;
     }
     if (current)
       fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);

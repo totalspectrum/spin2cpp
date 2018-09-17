@@ -23,6 +23,9 @@ static AST *float_sub;
 static AST *float_mul;
 static AST *float_div;
 static AST *float_cmp;
+static AST *float_fromuns;
+static AST *float_fromint;
+static AST *float_toint;
 
 static AST *string_cmp;
 
@@ -199,6 +202,31 @@ bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
     return false;
 }
 
+// create a call to function func with parameters ast->left, ast->right
+// there is an optional 3rd argument too
+static AST *
+MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
+{
+    AST *call;
+    AST *params = NULL;
+
+    if (!func) {
+        ERROR(left, "Internal error, NULL parameter");
+        return AstInteger(0);
+    }
+    if (left) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, left, NULL));
+    }
+    if (right) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, right, NULL));
+    }
+    if (extraArg) {
+        params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
+    }
+    call = NewAST(AST_FUNCCALL, func, params);
+    return call;
+}
+
 // do a promotion when we already know the size of the original type
 static AST *dopromote(AST *expr, int numbytes, int operator)
 {
@@ -275,7 +303,7 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
 }
 
 static AST *
-domakefloat(AST *ast)
+domakefloat(AST *typ, AST *ast)
 {
     AST *ret;
     if (!ast) return ast;
@@ -283,8 +311,13 @@ domakefloat(AST *ast)
         ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
         return ret;
     }
-    ERROR(ast, "Cannot handle float expressions yet");
-    return ast;
+    ast = forcepromote(typ, ast);
+    if (IsUnsignedType(typ)) {
+        ret = MakeOperatorCall(float_fromuns, ast, NULL, NULL);
+    } else {
+        ret = MakeOperatorCall(float_fromint, ast, NULL, NULL);
+    }
+    return ret;
 }
 
 static AST *
@@ -296,7 +329,7 @@ dofloatToInt(AST *ast)
         ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
         return ret;
     }
-    ERROR(ast, "Cannot handle float expressions yet");
+    ast = MakeOperatorCall(float_toint, ast, NULL, NULL);
     return ast;
 }
 
@@ -311,27 +344,6 @@ bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
         rtyp = ast_type_long;
     }
     return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
-}
-
-// create a call to function func with parameters ast->left, ast->right
-// there is an optional 3rd argument too
-static AST *
-MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
-{
-    AST *call;
-    AST *params = NULL;
-
-    if (left) {
-        params = AddToList(params, NewAST(AST_EXPRLIST, left, NULL));
-    }
-    if (right) {
-        params = AddToList(params, NewAST(AST_EXPRLIST, right, NULL));
-    }
-    if (extraArg) {
-        params = AddToList(params, NewAST(AST_EXPRLIST, extraArg, NULL));
-    }
-    call = NewAST(AST_FUNCCALL, func, params);
-    return call;
 }
 
 static AST *
@@ -352,7 +364,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                     scale = AstInteger(0);
                 }
             } else {
-                ast->right = domakefloat(ast->right);
+                ast->right = domakefloat(righttype, ast->right);
             }
         }
     } else if (IsFloatType(righttype)) {
@@ -365,7 +377,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                 scale = AstInteger(2*G_FIXPOINT);
             }
         } else {
-            ast->left = domakefloat(ast->left);
+            ast->left = domakefloat(lefttype, ast->left);
         }
     }
     if (isfloat) {
@@ -424,18 +436,19 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     
     if (IsFloatType(lefttype)) {
         if (!IsFloatType(righttype)) {
-            ast->right = domakefloat(ast->right);
+            ast->right = domakefloat(righttype, ast->right);
         }
         isfloat = 1;
     } else if (IsFloatType(righttype)) {
-        ast->left = domakefloat(ast->left);
+        ast->left = domakefloat(righttype, ast->left);
         isfloat = 1;
     }
     if (isfloat) {
         if (gl_fixedreal) {
             // we're good
         } else {
-            ERROR(ast, "Internal error with floats; cannot compare");
+            ast->left = MakeOperatorCall(float_cmp, ast->left, ast->right, NULL);
+            ast->right = AstInteger(0);
         }
         return;
     }
@@ -607,7 +620,7 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
     }
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
-            *astptr = domakefloat(expr);
+            *astptr = domakefloat(srctype, expr);
             srctype = ast_type_float;
         }
     }
@@ -784,6 +797,13 @@ BasicTransform(Module *Q)
     } else {
         basic_print_float = getBasicPrimitive("_basic_print_float");
         float_cmp = getBasicPrimitive("_float_cmp");
+        float_add = getBasicPrimitive("_float_add");
+        float_sub = getBasicPrimitive("_float_sub");
+        float_mul = getBasicPrimitive("_float_mul");
+        float_div = getBasicPrimitive("_float_div");
+        float_fromuns = getBasicPrimitive("_float_fromuns");
+        float_fromint = getBasicPrimitive("_float_fromint");
+        float_toint = getBasicPrimitive("_float_trunc");
     }
     basic_print_integer = getBasicPrimitive("_basic_print_integer");
     basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
