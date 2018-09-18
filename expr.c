@@ -947,9 +947,32 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 }
 
 static ExprVal
-EvalOperator(int op, ExprVal le, ExprVal re, int *valid)
+convToFloat(ExprVal intval)
 {
-    if (IsFloatType(le.type) || IsFloatType(re.type)) {
+    if (gl_fixedreal) {
+        return fixedExpr((intval.val)<<G_FIXPOINT);
+    } else {
+        return floatExpr((float)intval.val);
+    }
+}
+
+static ExprVal
+EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
+{
+    ExprVal le = left;
+    ExprVal re = right;
+    int isFloat = 0;
+    
+    if (IsFloatType(le.type)) {
+        if (!IsFloatType(re.type)) {
+            re = convToFloat(re);
+        }
+        isFloat = 1;
+    } else if (IsFloatType(re.type)) {
+        le = convToFloat(le);
+        isFloat = 1;
+    }
+    if (isFloat) {
         if (gl_fixedreal) {
             return fixedExpr(EvalFixedOperator(op, le.val, re.val, valid));
         } else {
@@ -1031,11 +1054,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         if ( !IsIntOrGenericType(lval.type)) {
             ERROR(expr, "applying float to a non integer expression");
         }
-        if (gl_fixedreal) {
-            return fixedExpr((lval.val) << G_FIXPOINT);
-        } else {
-            return floatExpr((float)(lval.val));
-        }
+        return convToFloat(lval);
     case AST_TRUNC:
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (!IsFloatType(lval.type)) {
