@@ -59,6 +59,7 @@ any
 as
 asm
 byte
+case
 class
 continue
 declare
@@ -68,9 +69,11 @@ do
 double
 else
 end
+endif
 enum
 exit
 for
+from
 function
 goto
 if
@@ -80,6 +83,7 @@ long
 loop
 mod
 next
+open
 or
 output
 pointer
@@ -87,6 +91,7 @@ print
 program
 rem
 return
+select
 shared
 single
 sqrt
@@ -95,6 +100,7 @@ sub
 then
 to
 until
+var
 wend
 while
 with
@@ -317,6 +323,30 @@ dimensioned variable.
 ```
 returns the integer (ASCII) value of the first character of a string. If the
 argument is not a string it is an error.
+
+### CLASS
+
+A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object. In fact, Spin objects may be directly imported as classes:
+```
+   dim ser as class from "FullDuplexSerial.spin"
+```
+creates an object `ser` based on the Spin file "FullDuplexSerial.spin"; this is the same as the Spin declaration:
+```
+   OBJ ser: "FullDuplexSerial"
+```
+BASIC files may also be used as classes. When they are, all the functions and subroutines in the BASIC file are exposed as methods (there are no private methods in BASIC yet). Any BASIC code that is not in a function or subroutine is not accessible.
+
+#### Abstract classes
+
+Another way to define an object is to first declare an abstract `class` with a name, and then use that name in the `dim` statement:
+```
+  ' create abstract class fds representing Spin FullDuplexSerial
+  class fds from "FullDuplexSerial.spin"
+  ' create a variable of that type
+  dim ser as fds
+```
+This is more convenient if there are many references to the class, or if you want to pass pointers to the class to functions.
+
 
 ### CONST
 

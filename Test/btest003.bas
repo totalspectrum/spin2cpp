@@ -1,4 +1,4 @@
-class FDS input "FullDuplexSerial.spin"
+class FDS from "FullDuplexSerial.spin"
 
 dim ser as FDS
 dim i as ubyte
