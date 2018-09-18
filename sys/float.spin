@@ -240,12 +240,13 @@ PRI _float_Pack(s, x, m) : single
 '' calculate biggest power of 10 that is < x (so 1.0 <= x / F < 10.0f)
 '' special case: if x == 0 just return 1
 ''
-PRI _float_getpowten(x) | midf, lo, hi, mid, t
+PRI _float_getpowten(x) | midf, lo, hi, mid, t, sanity
   if (x == 0)
     return (1.0, 0)
   lo := -38
   hi := 38
-  repeat while lo < hi
+  sanity := 0
+  repeat while lo < hi and (sanity++ < 100)
     mid := (lo + hi) / 2
     midf := _float_pow_n(10.0, mid)
     t := _float_div(x, midf)
@@ -308,10 +309,10 @@ PRI _basic_print_float(f) | numdigits, i, lastf, exp, u, maxu, needpoint, needex
     u := u * 10
     digit := u +/ maxu
     u := u +// maxu
-    _basic_print_char("0" + digit)
-    --needpoint
     if (needpoint == 0)
       _basic_print_char(".")
+    _basic_print_char("0" + digit)
+    --needpoint
 
   if (needexp)
     _basic_print_char("E")

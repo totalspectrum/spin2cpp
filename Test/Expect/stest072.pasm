@@ -7,11 +7,11 @@ DAT
 entry
 
 _demo
-	mov	result1, ptr_L__0016_
+	mov	result1, ptr_L__0018_
 _demo_ret
 	ret
 
-ptr_L__0016_
+ptr_L__0018_
 	long	@@@LR__0001
 result1
 	long	0
