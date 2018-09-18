@@ -137,6 +137,30 @@ PRI _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 
   return _float_Pack(sa, xa, ma)              'pack result
 
+''
+'' compute a^n, where a is a float and n is an integer
+'' keeps as many bits of precision as possible
+''
+PRI _float_pow_n(a, n) : r | sgnflag, invflag
+  if (n < 0)
+    invflag := 1
+    n := -n
+  else
+    invflag := 0
+  if (a < 0)
+    sgnflag := n & 1
+  else
+    sgnflag := 0
+  r := 1.0
+  repeat while (n > 0)
+    if (n & 1)
+      r := _float_mul(r, a)
+    n := n >> 1
+    a := _float_mul(a, a)
+  if (invflag)
+    r := _float_div(1.0, r)
+  if (sgnflag)
+    r := -r
 
 ''
 '' compare a and b;
@@ -211,6 +235,95 @@ PRI _float_Pack(s, x, m) : single
       x~                        '..exponent is now 0
 
     return s << 31 | x << 23 | m >> 9 'pack result
+
+''
+'' calculate biggest power of 10 that is < x (so 1.0 <= x / F < 10.0f)
+'' special case: if x == 0 just return 1
+''
+PRI _float_getpowten(x) | midf, lo, hi, mid, t
+  if (x == 0)
+    return (1.0, 0)
+  lo := -38
+  hi := 38
+  repeat while lo < hi
+    mid := (lo + hi) / 2
+    midf := _float_pow_n(10.0, mid)
+    t := _float_div(x, midf)
+    if (_float_cmp(t, 10.0) => 0)
+      lo := mid
+    elseif (_float_cmp(t, 1.0) < 0)
+      hi := mid
+    else
+      return (midf, mid)
+  return (_float_pow_n(10.0, hi), hi)
+
+PRI _basic_print_float(f) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
+  needexp := 0
+  numdigits := 5 '' later this should be a parameter  
+  if (f < 0)
+    _basic_print_char("-")
+    f := _float_negate(f)
+  (lastf, exp) := _float_getpowten(f)
+  f := _float_div(f, lastf)
+  if (_float_cmp(f, 10.0) > 0)
+    _basic_print_char("i")
+    _basic_print_char("n")
+    _basic_print_char("f")
+    return
+
+  ''
+  '' sanity checks
+  '' 
+  if (numdigits > 7)
+    numdigits := 7
+  elseif (numdigits < 1)
+    numdigits := 1
+  lastf := _float_pow_n(10.0, numdigits)
+  f := _float_mul(f, lastf)
+  maxu := _float_trunc(lastf)
+  u := _float_round(f)
+
+  if (exp < 0)
+    numzeros := -exp
+    needpoint := 1
+    if numzeros > (numdigits - 2)
+      needexp := 1
+      --exp
+    else
+      repeat i from 0 to numzeros
+        u := (u + 5) +/ 10
+  else
+    if (numdigits =< exp)
+      needpoint := 1
+      needexp := 1
+    else
+      needpoint := exp+1
+
+  repeat while (u => maxu)
+    u := (u + 5) +/ 10
+    exp++
+
+  repeat while numdigits > 0
+    --numdigits
+    u := u * 10
+    digit := u +/ maxu
+    u := u +// maxu
+    _basic_print_char("0" + digit)
+    --needpoint
+    if (needpoint == 0)
+      _basic_print_char(".")
+
+  if (needexp)
+    _basic_print_char("E")
+    if (exp < 0)
+      _basic_print_char("-")
+      exp := -exp
+    else
+      _basic_print_char("+")
+    u := exp +/ 10
+    exp := exp +// 10
+    _basic_print_char(u + "0")
+    _basic_print_char(exp + "0")
 
 {{
 

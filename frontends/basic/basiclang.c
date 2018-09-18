@@ -618,6 +618,14 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
     AST *expr = *astptr;
     const char *msg;
     
+    if (kind == AST_RETURN) {
+        msg = "return";
+    } else if (kind == AST_FUNCCALL) {
+        msg = "parameter passing";
+    } else {
+        msg = "assignment";
+    }
+
     if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
         return desttype;
     }
@@ -627,13 +635,18 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
             srctype = ast_type_float;
         }
     }
-    if (kind == AST_RETURN) {
-        msg = "return";
-    } else if (kind == AST_FUNCCALL) {
-        msg = "parameter passing";
-    } else {
-        msg = "assignment";
+    // allow floats to be cast as ints
+    if (IsIntType(desttype) && IsFloatType(srctype)) {
+        if (IsUnsignedType(desttype)) {
+            expr = MakeOperatorCall(float_fromuns, expr, NULL, NULL);
+        } else {
+            expr = MakeOperatorCall(float_fromint, expr, NULL, NULL);
+        }
+        *astptr = expr;
+        return desttype;
     }
+        
+    // 
     if (!CompatibleTypes(desttype, srctype)) {
         ERROR(expr, "incompatible types in %s", msg);
         return desttype;

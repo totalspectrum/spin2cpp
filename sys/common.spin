@@ -118,10 +118,7 @@ pri _basic_print_fixed(x) | i, f
     f := f & $ffff
     _basic_print_char(i + "0")
   return
-pri _basic_print_float(x) | i
-  i := _float_round(_float_mul(x, 65536.0))
-  _basic_print_fixed(i)
-  return
+
 pri _basic_print_nl
   _basic_print_char(13)
   _basic_print_char(10)

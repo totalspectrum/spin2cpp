@@ -2233,9 +2233,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        if (c != '_') {
-            flexbuf_addchar(&fb, tolower(c));
-	}
+        flexbuf_addchar(&fb, tolower(c));
         c = lexgetc(L);
     }
     // allow trailing $, %, #
