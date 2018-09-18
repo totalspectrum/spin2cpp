@@ -336,6 +336,37 @@ Inside a type name, CONST signifies that variables of this type may not be modif
    end sub
 ```
 
+### PRINT
+
+`print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud.
+
+More than one item may appear in a print statement. If items are separated by commas, a tab character is printed between them. If they are separated by semicolons, nothing is printed between them, not even a space; this differs from some other BASICs.
+
+If the print statement ends in a comma, a tab is printed at the end. If it ends in a semicolon, nothing is printed at the end. Otherwise, a newline (carriage return plus line feed) is printed.
+
+As a special case, if a backslash character `\` appears in front of an expression, the value of that expression is printed as a single byte character.
+
+Examples
+```
+   ' basic one item print
+   print "hello, world!"
+   ' two items separated by a tab
+   print "hello", "world!"
+   ' two items with no separator
+   print "hello"; "world"
+   ' an integer, with no newline
+   print 1;
+   ' a string and then an integer, nothing between them
+   print "then "; 2
+```
+prints
+```
+hello, world!
+hello  world
+helloworld
+1then 2
+```
+
 ### Propeller Specific Functions
 
 #### getcnt

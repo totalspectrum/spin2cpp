@@ -78,13 +78,9 @@ reportstr "def", "zzz"
 '' send a special exit status for propeller-load
 '' FF 00 xx, where xx is the exit status
 ''
-dim xit(3) as ubyte
 
 sub doexit(status)
-  xit(1) = 255
-  xit(2) = 0
-  xit(3) = status
-  put xit
+  print \255; \0; \status;
   ' just loop here so that quickstart board does not
   ' let the pins float
   do
@@ -95,4 +91,3 @@ end sub
 '' done
 ''
 doexit(0)
-

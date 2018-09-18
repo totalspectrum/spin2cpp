@@ -272,12 +272,19 @@ statement:
     { $$ = NULL; }
 ;
 
+printitem:
+  expr
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | '\\' expr
+    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_CHAR, $2, NULL), NULL); }
+;
+
 rawprintlist:
-  | expritem
+  | printitem
   { $$ = $1; }
-  | rawprintlist ';' expritem
+  | rawprintlist ';' printitem
   { $$ = AddToList($1, $3); }
-  | rawprintlist ',' expritem
+  | rawprintlist ',' printitem
   { $$ = AddToList(AddToList($1, AstCharItem('\t')), $3); }
 ;
 printlist:
