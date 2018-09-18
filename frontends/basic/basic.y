@@ -214,7 +214,7 @@ pinrange:
     { $$ = NewAST(AST_RANGE, $1, $3); }
 ;
 
-statement:
+nonemptystatement:
   BAS_IDENTIFIER ':'
     { $$ = NewAST(AST_LABEL, $1, NULL); }
   | BAS_IDENTIFIER '=' expr eoln
@@ -268,6 +268,11 @@ statement:
     { $$ = $1; }
   | forstmt
     { $$ = $1; }
+;
+
+statement:
+    nonemptystatement
+    { $$ = $1; }
   | eoln
     { $$ = NULL; }
 ;
@@ -299,20 +304,23 @@ printlist:
 ;
 
 ifstmt:
-  BAS_IF expr BAS_THEN eoln elseblock
+  BAS_IF expr BAS_THEN eoln thenelseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
-  | BAS_IF expr statement
+  | BAS_IF expr nonemptystatement
     {
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
         $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
 ;
-elseblock:
+
+thenelseblock:
   statementlist endif
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
   | statementlist BAS_ELSE eoln statementlist endif
     { $$ = NewAST(AST_THENELSE, $1, $4); }
+  | statementlist BAS_ELSE nonemptystatement
+    { $$ = NewAST(AST_THENELSE, $1, NewCommentedStatement($3)); }
 ;
 
 endif:

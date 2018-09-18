@@ -336,6 +336,44 @@ Inside a type name, CONST signifies that variables of this type may not be modif
    end sub
 ```
 
+### IF
+
+An IF statement introduces some code that should be executed only if a
+condition is true:
+```
+if x = y then
+  print "x and y are the same"
+else
+  print "x and y are different"
+end if
+```
+
+There are two forms of `if`. A "simple if" occupies just one line, executes one statement if the condition is true, and has no `else` clause. Simple ifs do not have a `then`:
+```
+' simple if example
+if x = y print "they are equal"
+```
+
+Regular or compound if statements have a `then` and continue on until the next matching `else` or `end if`. If you want to have an `else` condition then you will have to use this form of if:
+```
+if x = y then
+  print "they are equal"
+else
+  print "they differ"
+end if
+```
+You may also put an if statement after an else:
+```
+if x = y then
+  print "x and y are the same"
+  print "I don't know about z"
+else if x = z
+  print "x and z are the same, and different from y"
+else
+  print "x does not equal either of the others"
+end if
+```
+
 ### PRINT
 
 `print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud.
