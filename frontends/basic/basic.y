@@ -126,9 +126,11 @@ AST *AstCharItem(int c)
 %token BAS_DOUBLE     "double"
 %token BAS_ELSE       "else"
 %token BAS_END        "end"
+%token BAS_ENDIF      "endif"
 %token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
 %token BAS_FOR        "for"
+%token BAS_FROM       "from"
 %token BAS_FUNCTION   "function"
 %token BAS_GET        "get"
 %token BAS_GOTO       "goto"
@@ -163,6 +165,7 @@ AST *AstCharItem(int c)
 %token BAS_ULONG      "ulong"
 %token BAS_USHORT     "ushort"
 %token BAS_UNTIL      "until"
+%token BAS_VAR        "var"
 %token BAS_WEND       "wend"
 %token BAS_WITH       "with"
 %token BAS_WHILE      "while"
@@ -326,6 +329,7 @@ thenelseblock:
 endif:
   BAS_END eoln
   | BAS_END BAS_IF eoln
+  | BAS_ENDIF eoln
 ;
 
 whilestmt:
@@ -338,6 +342,7 @@ whilestmt:
 endwhile:
   BAS_WEND eoln
   | BAS_END BAS_WHILE eoln
+  | BAS_END eoln
   ;
 
 doloopstmt:
@@ -586,7 +591,7 @@ funcbody:
   ;
 
 classdecl:
-  BAS_CLASS BAS_IDENTIFIER BAS_INPUT BAS_STRING eoln
+  BAS_CLASS BAS_IDENTIFIER BAS_FROM BAS_STRING eoln
     {
         AST *newobj = NewAbstractObject( $2, $4 );
         DeclareObjects(newobj);
@@ -656,6 +661,26 @@ basetypename:
     { $$ = $1; }
   | BAS_CONST basetypename
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
+  | BAS_CLASS BAS_FROM BAS_STRING
+    {
+        AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
+        const char *name = NewTemporaryVariable("_class_");
+        AST *newobj;
+        Symbol *sym;
+
+        tempnam->d.string = name;
+        newobj = NewAbstractObject( tempnam, $3 );        
+        DeclareObjects(newobj);
+        current->objblock = AddToList(current->objblock, newobj);
+        sym = FindSymbol(&current->objsyms, tempnam->d.string);
+        if (!sym || sym->type != SYM_OBJECT) {
+            ERROR(NULL, "internal error in type check");
+            newobj = NULL;
+        } else {
+            newobj = (AST *)sym->val;
+        }
+        $$ = newobj;
+    }
 ;
 
 %%
