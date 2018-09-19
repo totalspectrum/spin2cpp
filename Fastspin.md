@@ -162,7 +162,7 @@ you can use fastspin with the PropellerIDE by renaming `bstc.exe` to
 Extensions
 ----------
 
-fastspin supports a number of few extensions to the Spin language, including a preprocessor (also found in some other Spin compilers), multiple values in return and assignments, conditional assignment, inline assembly, and abstract function pointers.
+fastspin supports a number of extensions to the Spin language, including a preprocessor (also found in some other Spin compilers), multiple values in return and assignments, conditional assignment, inline assembly, and abstract function pointers.
 
 See the `spin.md` file in the `docs` directory for more details.
 
