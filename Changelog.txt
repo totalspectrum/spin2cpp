@@ -1,4 +1,5 @@
 Version 3.9.2
+- Fixed a regression in object pointers
 - Fixed operator precedence of the boolean "NOT" operator in Spin
 - Fixed an over-agressive optimization
 - Implemented floating point for BASIC, plus various other BASIC

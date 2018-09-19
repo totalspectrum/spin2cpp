@@ -765,6 +765,12 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
     case AST_VOIDTYPE:
         flexbuf_printf(f, "void%s", space);
         break;
+    case AST_OBJECT:
+        {
+            Module *P = (Module *)typedecl->d.ptr;
+            flexbuf_printf(f, "%s%s", P->classname, space);
+        }
+        break;                           
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;

@@ -132,6 +132,13 @@ doBasicTransform(AST **astptr)
             }
         }
         break;
+    case AST_METHODREF:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        if (IsPointerType(ast->left)) {
+            WARNING(ast, "Needs a pointer dereference");
+        }
+        break;
     case AST_PRINT:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);

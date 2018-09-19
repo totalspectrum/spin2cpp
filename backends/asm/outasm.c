@@ -833,6 +833,10 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
         size = 4;
     } else if (type->kind == AST_TUPLETYPE || type->kind == AST_PTRTYPE ) {
         size = 4;
+    } else if (type->kind == AST_OBJECT) {
+        Module *Q = type->d.ptr;
+        size = Q->varsize;
+        if (size > 4) size = 4; // FIXME: is this necessary??
     } else {
         size = EvalConstExpr(type->left);
     }
@@ -913,21 +917,28 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   }
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
+      AST *exprtype;
       stype = sym->type;
       switch (stype) {
       case SYM_VARIABLE:
+      case SYM_OBJECT:
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);
               return NewOperand(LONG_REF, (char *)addr, 0);
           }
           ValidateObjbase();
+          if (stype == SYM_VARIABLE) {
+              exprtype = (AST *)sym->val;
+          } else {
+              exprtype = (AST *)sym->val;
+          }
           if (COG_DATA) {
               // COG memory
-              size = TypeSize((AST *)sym->val);
+              size = TypeSize(exprtype);
               return GetSizedGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0, size);
           } else {
               // HUB memory
-              return TypedHubMemRef((AST *)sym->val, objbase, (int)sym->offset);
+              return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
           ERROR(expr, "Internal error: identifier without FUNCCALL wrapper");

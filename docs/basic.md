@@ -253,7 +253,7 @@ Similarly, to set pin 2 as input and read it:
   x = input(2)
 ```
 
-##### Pin Ranges
+#### Pin Ranges
 
 Ranges of pins may be specified with `hi,lo` or `lo,hi`. The first form is preferred; if you do
 ```
@@ -266,6 +266,12 @@ then the bottom 3 bits of x are copied directly to the first 3 output pins. If y
 ```
 then the lower 3 bits are reversed; this is useful if you're directly coding a binary constant, but
 otherwise is probably not what you want.
+
+### Hardware registers
+
+The builtin Propeller hardware registers are available with their usual names, unless they are redeclared. For example, the OUTA register is available as "outa" (or "OUTA", or "Outa"; case does not matter).
+
+The hardware registers are not keywords, so they are not reserved to the system. Thus, it is possible to use `dim` to declare variables with the same name. Of course, if that is done then the original hardware register will not be accessible in the scope of the variable name.
 
 ## Alphabetical List of Keywords
 
