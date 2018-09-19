@@ -354,6 +354,16 @@ doloopstmt:
       AST *one = AstInteger(1);
       $$ = NewCommentedAST(AST_WHILE, one, body, $1);
     }
+  | BAS_DO BAS_WHILE expr eoln optstatementlist BAS_LOOP eoln
+    { AST *body = CheckYield($5);
+      AST *cond = $3;
+      $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
+    }
+  | BAS_DO BAS_UNTIL expr eoln optstatementlist BAS_LOOP eoln
+    { AST *body = CheckYield($5);
+      AST *cond = AstOperator(K_BOOL_NOT, NULL, $3);
+      $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
+    }
   | BAS_DO eoln optstatementlist BAS_LOOP BAS_WHILE expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, $6, CheckYield($3), $1); }
   | BAS_DO eoln optstatementlist BAS_LOOP BAS_UNTIL expr eoln
@@ -588,14 +598,24 @@ funcdecl:
   ;
 
 subbody:
-  statementlist BAS_END BAS_SUB eoln
+  statementlist endsub
   { $$ = $1; }
   ;
 
+endsub:
+  BAS_END eoln
+  | BAS_END BAS_SUB eoln
+;
+
 funcbody:
-  statementlist BAS_END BAS_FUNCTION eoln
+  statementlist endfunc
   { $$ = $1; }
   ;
+
+endfunc:
+  BAS_END eoln
+  | BAS_END BAS_FUNCTION eoln
+;
 
 classdecl:
   BAS_CLASS BAS_IDENTIFIER BAS_FROM BAS_STRING eoln

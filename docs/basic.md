@@ -289,6 +289,13 @@ Returns the absolute value of x. If x is a floating point number then so will be
 ```
 Returns the bit-wise AND of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed.
 
+Also useful in boolean operations. The comparison operators return 0 for false conditions and all bits set for true conditions, so you can do things like:
+```
+  if (x < y AND x = z) then
+    ' code that runs if both conditions are true
+  end if
+```
+
 ### ANY
 
 ```
@@ -329,6 +336,18 @@ dimensioned variable.
 ```
 returns the integer (ASCII) value of the first character of a string. If the
 argument is not a string it is an error.
+
+### ASM
+
+Introduces inline assembly. This is not implemented yet.
+
+### BYTE
+
+A signed 8 bit integer, occupying one byte of computer memory. The unsigned version of this is `ubyte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### CASE
+
+Used in a `select` statement. Not implemented yet.
 
 ### CLASS
 
@@ -372,6 +391,63 @@ Inside a type name, CONST signifies that variables of this type may not be modif
    end sub
 ```
 
+### CONTINUE
+
+Used to resume loop execution early. Not implemented yet.
+
+### DECLARE
+
+Keyword reserved for future use.
+
+### DIM
+
+Define variables and allocate memory for them.
+
+### DIRECTION
+
+Pseudo-array of bits describing the direction (input or output) of pins. In Propeller 1 this array is 32 bits long, in Propeller 2 it is 64 bits.
+
+```
+  direction(2) = input ' set pin 2 as input
+  direction(6,4) = output ' set pins 6, 5, 4 as outputs
+```
+
+### DO
+
+Main loop construct. A `do` loop may have the loop test either at the beginning or end, and it may run the loop while a condition is true or until a condition is true. For example:
+```
+  do
+    x = input(9)
+  loop until x = 0
+```
+will wait until pin 9 is 0.
+
+See also WHILE.
+
+### DOUBLE
+
+The type for a double precision floating point number. `double` is not actually implemented in the compiler, and is treated the same as `single`.
+
+### ELSE
+
+See IF
+
+### END
+
+Used to mark the end of most blocks. For example, `end function` marks the end of a function declaration, and `end if` the end of a multi-line `if` statement. In most cases the name after the `end` is optional.
+
+### ENDIF
+
+Marks the end of a multi-line `if` statement. Same as `end if`.
+
+### ENUM
+
+Reserved for future use.
+
+### EXIT
+
+Exit early from a `for`, `do`, or `while` loop. Not implemented yet.
+
 ### IF
 
 An IF statement introduces some code that should be executed only if a
@@ -410,6 +486,28 @@ else
 end if
 ```
 
+### NOT
+```
+  a = NOT b
+```
+Inverts all bits in the destination. This is basically the same as `b xor -1`.
+
+In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+
+### OR
+
+```
+  a = x or y
+```
+Returns the bit-wise inclusive OR of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed.
+
+Also useful in boolean operations. The comparison operators return 0 for false conditions and all bits set for true conditions, so you can do things like:
+```
+  if (x < y OR x = z) then
+    ' code that runs if either condition is true
+  end if
+```
+
 ### PRINT
 
 `print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud.
@@ -440,6 +538,43 @@ hello  world
 helloworld
 1then 2
 ```
+
+### UBYTE
+
+An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### WHILE
+
+Begins a loop which continues as long as a specified condition is true.
+```
+  ' wait for pin to go low
+  loopcount = 0
+  while input(1) <> 0
+    loopcount = loopcount + 1
+  wend
+  print "waited "; loopcount; " times until pin went high"
+```
+The end of the repeated code may be terminated either with `wend` or with `end while`.
+
+The `while` loop may also be written as `do while`:
+```
+  do while input(1) <> 0
+    loopcount = loopcount + 1
+  loop
+```
+or
+```
+  do until input(1) = 0
+    loopcount = loopcount + 1
+  loop
+```
+
+### XOR
+
+```
+  a = x xor y
+```
+Returns the bit-wise exclusive or of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed. `xor` is often used for flipping bits.
 
 ### Propeller Specific Functions
 
