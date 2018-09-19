@@ -9,7 +9,7 @@ right now. Missing features include:
 
 (2) String support is very limited; strings may be assigned and printed, but that's about all for now. Still to be implemented are string concatenation and other string functions.
 
-(3) Floating point support is incomplete. The "single" datatype is currently represented by 16.16 fixed point numbers. These are fast, but the very limited range is a problem. Eventually we will have proper IEEE floating point, with the fixed point kept as an option.
+(3) There are some missing floating point functions, like sin and cos.
 
 (4) Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
 
@@ -43,7 +43,7 @@ For example, the following are all ways to represent the decimal number `10`:
 ```
    10
    1_0
-   0hA
+   0xA
    &h_a
    &B1010
 ```
@@ -51,7 +51,7 @@ For example, the following are all ways to represent the decimal number `10`:
 ### Keywords
 
 Keywords are always treated specially by the compiler, and no identifier may be
-named the same as a keyword. The keyword `rem` is special, in that those 3 characters start a comment, so no identifier may start with `rem`.
+named the same as a keyword.
 ```
 abs
 and
