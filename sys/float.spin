@@ -1,3 +1,4 @@
+
 ''***************************************
 ''*  Floating-Point Math                *
 ''*  Single-precision IEEE-754          *
@@ -8,19 +9,32 @@
 ''*  See end of file for terms of use.  *
 ''***************************************
 
-PRI _float_fromint(integer) : single | s, x, m
+PRI _float_fromuns(integer) | s, x, m
 
 ''Convert integer to float    
 
-  if m := ||integer             'absolutize mantissa, if 0, result 0
-    s := integer >> 31          'get sign
+  if m := integer               'absolutize mantissa, if 0, result 0
+    s := 0                      'get sign
     x := >|m - 1                'get exponent
     m <<= 31 - x                'msb-justify mantissa
     m >>= 2                     'bit29-justify mantissa
 
     return _float_Pack(s, x, m)             'pack result
-   
+  else
+    return 0
+    
+PRI _float_fromint(integer) : single | negate
 
+''Convert integer to float    
+  if integer < 0
+    integer := -integer
+    negate := 1
+  else
+    negate := 0
+  single := _float_fromuns(integer)
+  if (negate)  
+    single := _float_negate(single)
+   
 PRI _float_round(single) : integer
 
 ''Convert float to rounded integer

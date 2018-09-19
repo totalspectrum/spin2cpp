@@ -286,7 +286,10 @@ JumpIsAfterOrEqual(IR *ir, IR *jmp)
     // ptr to jump destination gets stored in aux
     if (jmp->aux) {
         IR *label = (IR *)jmp->aux;
-        return (label->addr >= ir->addr);
+        if (label->addr >= ir->addr) {
+            return true;
+        }
+        return false;
     }
     if (curfunc && (
            JumpDest(jmp) == FuncData(curfunc)->asmretname
@@ -597,11 +600,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         // will cause problems
         // Note though that if we do branch ahead then
         // we cannot assume that assignments are safe!
-        assignments_are_safe = false;
         if (!JumpIsAfterOrEqual(first_ir, ir)) {
             return NULL;
         }
-    } else if (ir->cond != COND_TRUE) {
         assignments_are_safe = false;
     }
     if (ir->opc == OPC_LABEL) {
@@ -629,11 +630,14 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       //      value is being put into it
       //  if "assignments_are_safe" is false then we don't know if another
       //  branch might still use "replace", so punt and give up
-      if (assignments_are_safe && !InstrUses(ir, replace) && IsDeadAfter(ir, orig) && ir->cond == COND_TRUE) {
-	return ir;
-      }
       if (ir->cond != COND_TRUE) {
           return NULL;
+      }
+      if (!assignments_are_safe) {
+          return NULL;
+      }
+      if (!InstrUses(ir, replace) && IsDeadAfter(ir, orig)) {
+	return ir;
       }
       if (!orig_modified && last_ir && IsDeadAfter(last_ir, orig)) {
           // orig never actually got changed, and neither did replace (up
@@ -643,6 +647,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return NULL;
     }
     if (InstrModifies(ir, orig)) {
+        if (ir->cond != COND_TRUE) {
+            assignments_are_safe = false;
+        }
         if (!InstrUses(ir, orig) && assignments_are_safe) {
             // we are completely re-setting "orig" here, so we can just
             // leave now
@@ -658,11 +665,6 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         }
         orig_modified = true;
     }
-#if 0
-    if (InstrUses(ir, replace) && ir != first_ir) {
-      return NULL;
-    }
-#endif
     last_ir = ir;
   }
   return IsLocalOrArg(orig) ? last_ir : NULL;
@@ -1565,7 +1567,12 @@ AssignTemporaryAddresses(IRList *irl)
     unsigned addr = 0;
     for (ir = irl->head; ir; ir = ir->next) {
         ir->flags &= ~FLAG_OPTIMIZER;
-        ir->addr = addr++;
+        ir->addr = addr;
+        if (IsDummy(ir) || IsLabel(ir)) {
+            // do not increment
+        } else {
+            addr++;
+        }
         if (IsJump(ir) || IsLabel(ir)) {
             ir->aux = NULL;
         }
