@@ -1,4 +1,5 @@
 Version 3.9.2
+- Made -l option work properly with DAT
 - Fixed a regression in object pointers
 - Fixed operator precedence of the boolean "NOT" operator in Spin
 - Fixed an over-agressive optimization

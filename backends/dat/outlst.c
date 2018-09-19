@@ -14,7 +14,9 @@ static void initOutput(Module *P)
     inCog = 0;
     cogPc = 0;
     hubPc = gl_dat_offset;
-
+    if (hubPc == (uint32_t)-1) {
+        hubPc = 0;
+    }
     bytesOnLine = 0;
     current_lex = &P->L;
     current_lex->lineCounter = 0;
