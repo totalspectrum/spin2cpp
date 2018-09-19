@@ -179,6 +179,7 @@ main(int argc, char **argv)
     time_t timep;
     int i;
     const char *outname = NULL;
+    const char *listFile = NULL;
     int wantcse = -1;
     
     /* Initialize the global preprocessor; we need to do this here
@@ -556,10 +557,13 @@ main(int argc, char **argv)
     }
 
     if (P) {
-        /* do type checking and deduction */
         Module *Q;
         if (gl_errors > 0) {
             exit(1);
+        }
+        /* set up output file names */
+        if (gl_listing) {
+            listFile = ReplaceExtension(P->fullname, ".lst");
         }
         if (outputDat) {
             outname = gl_outname;
@@ -579,6 +583,9 @@ main(int argc, char **argv)
                     } else {
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
+                }
+                if (listFile) {
+                    OutputLstFile(listFile, P);
                 }
                 OutputDatFile(outname, P, outputBin);
                 if (outputBin) {
@@ -613,11 +620,17 @@ main(int argc, char **argv)
             if (compile) {
                 if (gl_errors > 0) {
                     remove(binname);
+                    if (listFile) {
+                        remove(listFile);
+                    }
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
                 Q = ParseTopFile(asmname, 1);
                 if (gl_errors == 0) {
+                    if (listFile) {
+                        OutputLstFile(listFile, Q);
+                    }
                     OutputDatFile(binname, Q, 1);
                     DoPropellerChecksum(binname, eepromSize);
                 }

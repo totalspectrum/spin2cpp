@@ -475,7 +475,6 @@ main(int argc, char **argv)
     }
     
     if (P) {
-        /* do type checking and deduction */
         Module *Q;
 
         if (gl_errors > 0) {
@@ -501,8 +500,6 @@ main(int argc, char **argv)
                         } else {
                             outname = ReplaceExtension(P->fullname, ".binary");
                         }
-                    } else if (listFile) {
-                        outname = ReplaceExtension(P->fullname, ".lst");
                     } else {
                         outname = ReplaceExtension(P->fullname, ".dat");
                     }
