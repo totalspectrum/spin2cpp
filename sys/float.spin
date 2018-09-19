@@ -12,16 +12,16 @@
 PRI _float_fromuns(integer) | s, x, m
 
 ''Convert integer to float    
+  m := integer
+  if (m == 0)
+    return m
 
-  if m := integer               'absolutize mantissa, if 0, result 0
-    s := 0                      'get sign
-    x := >|m - 1                'get exponent
-    m <<= 31 - x                'msb-justify mantissa
-    m >>= 2                     'bit29-justify mantissa
-
-    return _float_Pack(s, x, m)             'pack result
-  else
-    return 0
+  s := 0                      'get sign
+  x := >|m - 1                'get exponent
+  m <<= 31 - x                'msb-justify mantissa
+  m >>= 2                     'bit29-justify mantissa
+  m := _float_Pack(s, x, m)
+  return m
     
 PRI _float_fromint(integer) : single | negate
 
@@ -238,7 +238,7 @@ PRI _float_Pack(s, x, m) : single
     x += 3 - result             'adjust exponent
 
     m += $00000100              'round up mantissa by 1/2 lsb
-    if not m & $FFFFFF00        'if rounding overflow,
+    if not (m & $FFFFFF00)        'if rounding overflow,
       x++                       '..increment exponent
     
     x := x + 127 #> -23 <# 255  'bias and limit exponent

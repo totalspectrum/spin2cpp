@@ -85,11 +85,13 @@ pri _basic_put(ptr, siz)|c
   repeat while (siz-- > 0)
     _basic_print_char(byte[ptr++])
     
-pri _basic_print_unsigned(x) | d
-  d := x +// 10  ' unsigned modulus
-  x := x +/ 10  ' unsigned divide
+pri _basic_print_unsigned(x, base=10) | d
+  d := x +// base  ' unsigned modulus
+  x := x +/ base  ' unsigned divide
   if (x)
-    _basic_print_unsigned(x)
+    _basic_print_unsigned(x, base)
+  if (d > 9)
+    d := (d - 10) + ("a" - "0") 
   _basic_print_char(d + "0")
     
 pri _basic_print_integer(x)

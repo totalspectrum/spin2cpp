@@ -1,3 +1,9 @@
+Version 3.9.2
+- Fixed operator precedence of the boolean "NOT" operator in Spin
+- Fixed an over-agressive optimization
+- Implemented floating point for BASIC, plus various other BASIC
+  improvements
+
 Version 3.9.1
 - Fixed some bugs in common subexpression elimination
 - Fixed conditional instructions in inline assembly
