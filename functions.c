@@ -310,9 +310,14 @@ doDeclareFunction(AST *funcblock)
         
         defparams = NULL;
         for (a = fdef->params; a; a = a->right) {
+            AST **aptr = &a->left;
             p = a->left;
+            if (p->kind == AST_DECLARE_VAR) {
+                aptr = &p->right;
+                p = p->right;
+            }
             if (p->kind == AST_ASSIGN) {
-                a->left = p->left;
+                *aptr = p->left;
                 defval = p->right;
                 if (!IsConstExpr(defval) && !IsStringConst(defval)) {
                     ERROR(defval, "default parameter value must be constant");

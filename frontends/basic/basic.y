@@ -427,8 +427,12 @@ paramdecl1:
 paramitem:
   identifier
     { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
+  | identifier '=' expr
+    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), AstAssign($1, $3)); }
   | identifier BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
+  | identifier '=' expr BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
 ;
 
 exprlist:
