@@ -9,3 +9,4 @@ Backward test
 check called x=000A y=000B
 check called x=0001 y=000B
 check called x=0001 y=0002
+overflow correctly detected

@@ -5,6 +5,9 @@ CON
 OBJ
   fds: "FullDuplexSerial"
 
+VAR
+  long m
+  
 PUB demo | x,y
 
   fds.start(31, 30, 0, 115200)
@@ -26,7 +29,14 @@ PUB demo | x,y
   check
   check(1)
   check(1,2)
-  
+
+  ' check operator precedence
+  m := $ff
+  m := m + 1
+  if not m & $00ff
+    fds.str(string("overflow correctly detected", 13, 10))
+  else
+    fds.str(string("operator precedence problem", 13, 10))  
   exit
 
 PUB check(x = $a, y = $b)
