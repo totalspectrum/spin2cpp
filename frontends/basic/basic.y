@@ -63,13 +63,18 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
     return ast;
 }
 
-AST *
+void
 DeclareGlobalBasicVariables(AST *ast)
 {
     AST *idlist, *typ;
     AST *ident;
 
-    if (!ast) return ast;
+    if (!ast) return;
+    if (ast->kind == AST_SEQUENCE) {
+        DeclareGlobalBasicVariables(ast->left);
+        DeclareGlobalBasicVariables(ast->right);
+        return;
+    }
     idlist = ast->left;
     typ = ast->right;
     while (idlist) {
@@ -77,7 +82,7 @@ DeclareGlobalBasicVariables(AST *ast)
         MaybeDeclareGlobal(current, ident, typ);
         idlist = idlist->right;
     }
-    return NULL;
+    return;
 }
 
 AST *BASICArrayRef(AST *id, AST *expr)
@@ -545,7 +550,7 @@ topdecl:
   | funcdecl
   | classdecl
   | dimension
-    { $$ = DeclareGlobalBasicVariables($1); }
+    { DeclareGlobalBasicVariables($1); }
   | constdecl
   ;
 
@@ -628,14 +633,25 @@ classdecl:
   ;
 
 dimension:
-  BAS_DIM identlist BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $2, $4); }
+  BAS_DIM dimlist
+    { $$ = $2; }
   | BAS_DIM BAS_AS typename identlist
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
-  | BAS_DIM identlist
-    { $$ = NewAST(AST_DECLARE_VAR, $2, NULL); } 
   ;
 
+dimitem:
+  identlist BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $1, $3); }
+  | identlist
+    { $$ = NewAST(AST_DECLARE_VAR, $1, NULL); }
+;
+
+dimlist:
+  dimitem
+    { $$ = $1; }
+  | dimlist ',' dimitem
+    { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+;
 identdecl:
   identifier
     { $$ = $1; }

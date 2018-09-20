@@ -78,6 +78,7 @@ function
 goto
 if
 input
+integer
 let
 long
 loop
@@ -99,12 +100,17 @@ step
 sub
 then
 to
+ubyte
+uinteger
+ulong
 until
+ushort
 var
 wend
 while
 with
 word
+xor
 ```
 
 ### Variable, Subroutine, and Function names
@@ -401,7 +407,25 @@ Keyword reserved for future use.
 
 ### DIM
 
-Define variables and allocate memory for them.
+Define variables and allocate memory for them. `dim` is the most common way to declare that variables exist. The simplest form just lists the variable names and (optionally) array sizes. The variable types are inferred from the names. For example, you can declare an array `a` of 10 integers, a single integer `b`, and a string `c$` with:
+```
+dim a(10), b, c$
+```
+It's also possible to give explicit types with `as`:
+```
+dim a(10) as integer, b as ubyte, s as string
+```
+If you give an explicit type, it will apply to all the previous variables without an explicit type:
+```
+' this makes all the variables singles, despite their names
+dim a(10), b%, c$, d as single
+```
+It's probably better (clearer) in this case to put the `as` first:
+```
+dim as single a(10), b%, c$, d
+```
+
+Variables declared inside a function or subroutine are "local" to that function or subroutine, and are not available outside or to other functions or subroutines. Variables dimensioned at the top level may be used by all functions and subroutines in the file.
 
 ### DIRECTION
 
@@ -448,6 +472,14 @@ Reserved for future use.
 
 Exit early from a `for`, `do`, or `while` loop. Not implemented yet.
 
+### FOR
+
+Repeat a loop while incrementing (or decrementing) a variable.
+
+### FROM
+
+Reserved.
+
 ### IF
 
 An IF statement introduces some code that should be executed only if a
@@ -486,6 +518,10 @@ else
 end if
 ```
 
+### INTEGER
+
+A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
+
 ### NOT
 ```
   a = NOT b
@@ -507,6 +543,10 @@ Also useful in boolean operations. The comparison operators return 0 for false c
     ' code that runs if either condition is true
   end if
 ```
+
+### OPEN
+
+Reserved for future implementation.
 
 ### PRINT
 
