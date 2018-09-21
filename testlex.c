@@ -21,6 +21,7 @@ Function *curfunc;
 AST *ast_type_long, *ast_type_word, *ast_type_byte, *ast_type_float;
 AST *ast_type_string, *ast_type_generic;
 AST *ast_type_ptr_byte;
+AST *ast_type_unsigned_long;
 
 int gl_p2 = 0;
 int gl_output = 0;
@@ -172,7 +173,7 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 static int tokens0[] = { SP_NUM, '+', SP_NUM, SP_EOLN, SP_EOF };
 static int tokens1[] = { SP_IDENTIFIER, '-', SP_NUM, '+', SP_IDENTIFIER, SP_EOLN, SP_EOF };
 static int tokens2[] = { SP_CON, SP_CON, SP_IDENTIFIER, SP_CON, SP_NUM, SP_EOLN, SP_EOF };
-static int tokens3[] = { SP_LIMITMAX, SP_LIMITMIN, '<', SP_LE, SP_GE, '>', SP_EQ, '=', '+', '<' };
+static int tokens3[] = { SP_LIMITMAX, SP_LIMITMIN, '<', SP_LE, SP_GE, '>', SP_EQ, '=', '&', '<' };
 
 static const char *token4test = "pub \r\n  if\n    foo\n  bar\n";
 static int tokens4[] = { SP_PUB, SP_EOLN, SP_IF, SP_EOLN, SP_INDENT, SP_IDENTIFIER, SP_EOLN, SP_OUTDENT, SP_IDENTIFIER, SP_EOLN };
@@ -229,7 +230,7 @@ main()
     testTokenStream("x-1+y", tokens1, N_ELEM(tokens1));
     testTokenStream("_x0{some comment 1} - 1 + y_99", tokens1, N_ELEM(tokens1));
     testTokenStream("con CON con99 Con 99", tokens2, N_ELEM(tokens2));
-    testTokenStream("<# #> < =< => > == = +<", tokens3, N_ELEM(tokens3));
+    testTokenStream("<# #> < =< => > == = &<", tokens3, N_ELEM(tokens3));
     testTokenStream(token4test, tokens4, N_ELEM(tokens4));
     testTokenStream(token5test, tokens5, N_ELEM(tokens5));
     testTokenStream(token6test, tokens6, N_ELEM(tokens6));

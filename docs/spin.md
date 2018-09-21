@@ -174,6 +174,10 @@ fastspin has some new operators for treating values as unsigned
 ```
   a +/ b   is the unsigned quotient of a and b (treating both as unsigned)
   a +// b  is the unsigned remainder of a and b
+  a +< b   is an unsigned version of <
+  a +> b   is an unsigned version of >
+  a +=< b  is an unsigned version of =<
+  a +=> b  is an unsigned version of =>
 ```
 
 

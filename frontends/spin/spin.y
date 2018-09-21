@@ -156,6 +156,10 @@ CheckYield(AST *body)
 %token SP_AND        "AND"
 %token SP_GE         "=>"
 %token SP_LE         "=<"
+%token SP_GEU        "+=>"
+%token SP_LEU        "+=<"
+%token SP_GTU        "+>"
+%token SP_LTU        "+<"
 %token SP_NE         "<>"
 %token SP_EQ         "=="
 %token SP_SGNCOMP    "<=>"
@@ -197,7 +201,7 @@ CheckYield(AST *body)
 %left SP_OR SP_XOR
 %left SP_AND
 %left SP_NOT
-%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP
+%left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
 %left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSDIV SP_UNSMOD
@@ -751,6 +755,14 @@ expr:
     { $$ = AstOperator(K_GE, $1, $3); }
   | expr SP_LE expr
     { $$ = AstOperator(K_LE, $1, $3); }
+  | expr SP_GEU expr
+    { $$ = AstOperator(K_GEU, $1, $3); }
+  | expr SP_LEU expr
+    { $$ = AstOperator(K_LEU, $1, $3); }
+  | expr SP_GTU expr
+    { $$ = AstOperator(K_GTU, $1, $3); }
+  | expr SP_LTU expr
+    { $$ = AstOperator(K_LTU, $1, $3); }
   | expr SP_NE expr
     { $$ = AstOperator(K_NE, $1, $3); }
   | expr SP_EQ expr

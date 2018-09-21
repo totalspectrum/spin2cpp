@@ -1758,6 +1758,8 @@ ExprType(AST *expr)
                 return ast_type_float;
             }
             return WidestType(ltype, rtype);
+        case K_ZEROEXTEND:
+            return ast_type_unsigned_long;
         default:
             return ast_type_long;
         }

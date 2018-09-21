@@ -1,9 +1,10 @@
 Version 3.9.2
-- Made -l option work properly with DAT
-- Fixed a regression in object pointers
+- Made -l option work properly with DAT output
+- Fixed a regression in Spin object pointers
 - Fixed operator precedence of the boolean "NOT" operator in Spin
 - Fixed an over-agressive optimization
-- Implemented floating point for BASIC, plus various other BASIC
+- Added +< and similar unsigned comparison operators to Spin
+- Implemented floating point for BASIC, plus many other BASIC
   improvements
 
 Version 3.9.1

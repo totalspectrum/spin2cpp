@@ -1813,6 +1813,10 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_GE:
   case '<':
   case '>':
+  case K_LTU:
+  case K_GTU:
+  case K_LEU:
+  case K_GEU:
   {
       Operand *zero = NewImmediate(0);
       Operand *skiplabel = NewCodeLabel();

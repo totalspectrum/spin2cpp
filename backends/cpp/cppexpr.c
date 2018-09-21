@@ -523,18 +523,22 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintMacroExpr(f, "Highmult__", left, right, flags);
         break;
     case K_LE:
-    case K_LEU:
         PrintInOp(f, "<=", left, right, flags);
         break;
     case K_GE:
-    case K_GEU:
         PrintInOp(f, ">=", left, right, flags);
         break;
+    case K_LEU:
+        PrintInOp(f, "<=", left, right, flags | PRINTEXPR_FORCE_UNS);
+        break;
+    case K_GEU:
+        PrintInOp(f, ">=", left, right, flags | PRINTEXPR_FORCE_UNS);
+        break;
     case K_LTU:
-        PrintInOp(f, "<", left, right, flags);
+        PrintInOp(f, "<", left, right, flags | PRINTEXPR_FORCE_UNS);
         break;
     case K_GTU:
-        PrintInOp(f, ">", left, right, flags);
+        PrintInOp(f, ">", left, right, flags | PRINTEXPR_FORCE_UNS);
         break;
     case K_EQ:
         PrintInOp(f, "==", left, right, flags);
@@ -1613,7 +1617,8 @@ PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
     AST *et;
     bool addZero = false;
     bool needCloseParen = false;
-
+    bool needCast = false;
+    
     et = ExprType(expr);
     if (flags & PRINTEXPR_GAS) {
         PrintExpr(f, expr, flags);
@@ -1623,7 +1628,17 @@ PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags)
         addZero = true;
         et = NULL;
     }
-    if (!CompatibleTypes(et, casttype)) {
+
+    if ( (flags & PRINTEXPR_FORCE_UNS) ) {
+        if (!casttype) {
+            casttype = ast_type_unsigned_long;
+        }
+        if (!et || !IsUnsignedType(et)) {
+            needCast = true;
+        }
+    }
+
+    if (!CompatibleTypes(et, casttype) || needCast) {
         needCloseParen = !(flags & PRINTEXPR_TOPLEVEL);
 	if (needCloseParen) {
 	    flexbuf_printf(f, "(");

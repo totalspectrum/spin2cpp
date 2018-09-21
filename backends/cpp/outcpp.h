@@ -71,6 +71,7 @@ void PrintFunctionBodies(Flexbuf *f, Module *P);
 #define PRINTEXPR_TOPLEVEL   0x0080  /* leave out parens around operators */
 #define PRINTEXPR_USEFLOATS  0x0100  /* print  expression as floats if appropriate */
 #define PRINTEXPR_INLINESYM  0x0200  /* printing symbols in inline assembly */
+#define PRINTEXPR_FORCE_UNS  0x0400  /* force arguments to be unsigned */
 
 /* printing functions */
 void PrintTypedExpr(Flexbuf *f, AST *casttype, AST *expr, int flags);

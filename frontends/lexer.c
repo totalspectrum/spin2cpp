@@ -1019,7 +1019,10 @@ struct reservedword {
     { "=<", SP_LE },
     { "=>", SP_GE },
     { "<=>", SP_SGNCOMP },
-    
+    { "+>", SP_GTU },
+    { "+<", SP_LTU },
+    { "+=>", SP_GEU },
+    { "+=<", SP_LEU },
     { "=", '=' },
     { "==", SP_EQ },
     { "<>", SP_NE },
