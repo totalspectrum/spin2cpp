@@ -680,6 +680,15 @@ TransformCountRepeat(AST *ast)
     if (IsConstExpr(stepval)) {
         knownStepVal = EvalConstExpr(stepval);
     }
+    if (current->language != LANG_SPIN) {
+        // only Spin does the weirdness where
+        // repeat i from a to b step 1
+        // walks backwards if a > b; other languages
+        // just count up if the step is constant
+        if (knownStepVal) {
+            knownStepDir = (knownStepVal > 0) ? 1 : -1;
+        }
+    }
     
     body = ast->right;
 
