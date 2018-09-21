@@ -155,6 +155,7 @@ AST *AstCharItem(int c)
 %token BAS_POINTER    "pointer"
 %token BAS_PRINT      "print"
 %token BAS_PROGRAM    "program"
+%token BAS_PTR        "ptr"
 %token BAS_PUT        "put"
 %token BAS_RETURN     "return"
 %token BAS_SELECT     "select"
@@ -679,10 +680,14 @@ identlist:
 typename:
   basetypename
     { $$ = $1; }
-  | basetypename BAS_POINTER
+  | basetypename ptrdef
     { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
-  | basetypename BAS_CONST BAS_POINTER
+  | basetypename BAS_CONST ptrdef
     { $$ = NewAST(AST_MODIFIER_CONST, NewAST(AST_PTRTYPE, $1, NULL), NULL); }
+  ;
+
+ptrdef:
+  BAS_POINTER | BAS_PTR
   ;
 
 basetypename:

@@ -90,6 +90,8 @@ output
 pointer
 print
 program
+ptr
+put
 rem
 return
 select
