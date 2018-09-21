@@ -251,6 +251,13 @@ nonemptystatement:
   | BAS_LET BAS_IDENTIFIER '=' expr eoln
     { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
+  | BAS_VAR BAS_IDENTIFIER '=' expr eoln
+    {
+      AST *name = $2;
+      AST *assign = AstAssign(name, $4);
+      assign = NewAST(AST_LISTHOLDER, assign, NULL);
+      $$ = NewAST(AST_DECLARE_VAR, assign, NULL);
+    }
   | BAS_IDENTIFIER '(' optexprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
   | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')' eoln
@@ -374,7 +381,10 @@ doloopstmt:
   | BAS_DO eoln optstatementlist BAS_LOOP BAS_UNTIL expr eoln
     { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $6), CheckYield($3), $1); }
   ;
-
+//
+// AST_FOR consists of:
+// (AST_FOR (initstmt) (AST_TO (condtest (AST_STEP step body))))
+//
 forstmt:
   BAS_FOR BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
     {

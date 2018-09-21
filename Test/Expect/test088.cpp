@@ -6,7 +6,8 @@
 
 int32_t test088::Sum(void)
 {
-  int32_t 	R, X;
+  int32_t 	R;
+  int32_t 	X;
   R = 0;
   for(X = 0; X < 5; X++) {
     R = R + X;

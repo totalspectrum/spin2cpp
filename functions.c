@@ -170,6 +170,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
     AST *ident;
     AST *name;
     AST *datatype;
+    AST *basetype;
+    AST *expr;
     AST *seq = NULL; // sequence for variable initialization
     bool skipDef;
     
@@ -178,14 +180,20 @@ findLocalsAndDeclare(Function *func, AST *ast)
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
         identlist = ast->left;
-        datatype = ast->right;
+        if (identlist->kind != AST_LISTHOLDER) {
+            ERROR(ast, "Internal error: expected list of identifiers");
+            return;
+        }
+        basetype = ast->right;
         while (identlist) {
+            datatype = expr = NULL;
             ident = identlist->left;
             identlist = identlist->right;
             if (ident->kind == AST_ASSIGN) {
                 // write out an initialization for the variable
-                seq = AddToList(seq, NewAST(AST_LISTHOLDER, ident, NULL));
-                ident = ident->right;
+                seq = AddToList(seq, NewAST(AST_SEQUENCE, ident, NULL));
+                expr = ident->right;
+                ident = ident->left;
             }
             if (ident->kind == AST_ARRAYDECL) {
                 name = ident->left;
@@ -198,6 +206,16 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 skipDef = false;
             }
             if (!skipDef) {
+                if (basetype) {
+                    datatype = basetype;
+                } else {
+                    if (expr) {
+                        datatype = ExprType(expr);
+                    }
+                }
+                if (!datatype) {
+                    datatype = InferTypeFromName(name);
+                }
                 AddLocalVariable(func, name, datatype, SYM_LOCALVAR);
             }
         }

@@ -4,7 +4,8 @@
 #line 1 "gtest02.spin"
 void gtest02::run(void)
 {
-  int32_t 	i, now, elapsed, x;
+  int32_t 	i;
+  int32_t 	now, elapsed, x;
 #line 8 "gtest02.spin"
   for(i = 1; i < 16; i++) {
 #line 4 "gtest02.spin"

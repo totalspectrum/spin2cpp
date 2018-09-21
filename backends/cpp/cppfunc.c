@@ -147,20 +147,21 @@ PrintPrivateFunctionDecls(Flexbuf *f, Module *parse)
 
 /* returns the number of variables printed */
 int
-PrintVarList(Flexbuf *f, AST *curtype, AST *ast, int flags)
+PrintVarList(Flexbuf *f, AST *origtype, AST *ast, int flags)
 {
     AST *decl;
     int needcomma = 0;
     int count = 0;
     AST *lasttype = NULL;
     int isfirst = 1;
-
+    AST *curtype;
     while (ast != NULL) {
         if (ast->kind != AST_LISTHOLDER) {
             ERROR(ast, "Expected variable list element\n");
             return count;
         }
         decl = ast->left;
+        curtype = origtype;
 	if (!curtype) {
 	    curtype = ExprType(decl);
 	    if (!curtype) {

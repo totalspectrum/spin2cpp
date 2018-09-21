@@ -3,7 +3,8 @@
 
 void test048::Setcolors(char *Colorptr)
 {
-  int32_t 	I, Fore, Back;
+  int32_t 	I, Fore;
+  int32_t 	Back;
   for(I = 0; I < 8; I++) {
     Fore = Colorptr[(I << 1)] << 2;
     OUTA = (OUTA & 0xffffff00) | ((Fore & 0xff) << 0);

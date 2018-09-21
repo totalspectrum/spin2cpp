@@ -427,6 +427,8 @@ dim as single a(10), b%, c$, d
 
 Variables declared inside a function or subroutine are "local" to that function or subroutine, and are not available outside or to other functions or subroutines. Variables dimensioned at the top level may be used by all functions and subroutines in the file.
 
+See also VAR.
+
 ### DIRECTION
 
 Pseudo-array of bits describing the direction (input or output) of pins. In Propeller 1 this array is 32 bits long, in Propeller 2 it is 64 bits.
@@ -522,6 +524,18 @@ end if
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
 
+### LET
+
+Variable assignment:
+```
+  let a = b
+```
+sets `a` to be equal to `b`. This can usually be written as:
+```
+  a = b
+```
+the only difference is that in the `let` form if `a` does not already exist it is created as a global variable (one accessible in all functions). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
+
 ### NOT
 ```
   a = NOT b
@@ -582,6 +596,17 @@ helloworld
 ### UBYTE
 
 An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### VAR
+
+Declare a local variable:
+```
+VAR i = 2
+VAR msg$ = "hello"
+```
+`var` creates and initializes a new local variable (only available inside the function in which it is declared. The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
+
+`var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates shared variables that may be used by functions or subroutines).
 
 ### WHILE
 
