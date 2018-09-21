@@ -420,7 +420,7 @@ void ERROR_UNKNOWN_SYMBOL(AST *);
 
 /* just prints the start of the error message, formatted appropriately
    with file name and line number */
-void ERRORHEADER(const char *fileName, int lineno);
+void ERRORHEADER(const char *fileName, int lineno, const char *msg);
 
 /* return a new object */
 AST *NewObject(AST *identifier, AST *string);

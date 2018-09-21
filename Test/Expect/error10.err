@@ -1,1 +1,1 @@
-error10.spin:10: error: Do not use RESULT in functions returning multiple values
+error10.spin(10) error: Do not use RESULT in functions returning multiple values

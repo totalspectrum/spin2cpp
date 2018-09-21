@@ -1,4 +1,4 @@
-error14.bas:3: warning: assignment discards const attribute from pointer
-error14.bas:7: warning: assignment to const object
-error14.bas:12: warning: assignment to const object
-error14.bas:13: warning: assignment to const object
+error14.bas(3) warning: assignment discards const attribute from pointer
+error14.bas(7) warning: assignment to const object
+error14.bas(12) warning: assignment to const object
+error14.bas(13) warning: assignment to const object

@@ -399,7 +399,7 @@ forstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
       // validate the "next i"
       if (closeident && !AstMatch(ident, closeident)) {
-          fprintf(stderr, "%s:%d: error: ", current->L.fileName, current->L.lineCounter);
+          ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
       }
     }
@@ -748,7 +748,7 @@ basicyyerror(const char *msg)
     extern int saved_basicyychar;
     int yychar = saved_basicyychar;
     
-    ERRORHEADER(current->L.fileName, current->L.lineCounter);
+    ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
 
     // massage bison's error messages to make them easier to understand
     while (*msg) {

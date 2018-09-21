@@ -1,1 +1,1 @@
-error09.spin:5: error: Expected to assign 2 items but found 3
+error09.spin(5) error: Expected to assign 2 items but found 3

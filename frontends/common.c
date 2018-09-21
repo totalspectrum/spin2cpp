@@ -306,12 +306,12 @@ NewAbstractObject(AST *identifier, AST *string)
 }
 
 void
-ERRORHEADER(const char *fileName, int lineno)
+ERRORHEADER(const char *fileName, int lineno, const char *msg)
 {
     if (fileName && lineno)
-        fprintf(stderr, "%s:%d: error: ", fileName, lineno);
+        fprintf(stderr, "%s(%d) %s: ", fileName, lineno, msg);
     else
-        fprintf(stderr, "error: ");
+        fprintf(stderr, "%s: ", msg);
 
 }
 
@@ -322,9 +322,9 @@ ERROR(AST *instr, const char *msg, ...)
     LineInfo *info = GetLineInfo(instr);
 
     if (info)
-        ERRORHEADER(info->fileName, info->lineno);
+        ERRORHEADER(info->fileName, info->lineno, "error");
     else
-        ERRORHEADER(NULL, 0);
+        ERRORHEADER(NULL, 0, "error");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -340,9 +340,9 @@ WARNING(AST *instr, const char *msg, ...)
     LineInfo *info = GetLineInfo(instr);
 
     if (info)
-        fprintf(stderr, "%s:%d: warning: ", info->fileName, info->lineno);
+        ERRORHEADER(info->fileName, info->lineno, "warning");
     else
-        fprintf(stderr, "warning: ");
+        ERRORHEADER(NULL, 0, "warning: ");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);

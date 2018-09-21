@@ -222,7 +222,8 @@ static void default_errfunc(void *dummy, const char *filename, int line, const c
 {
     const char *level = (const char *)dummy;
 
-    fprintf(stderr, "%s:%d: %s: ", filename, line, level);
+    // FIXME: is there any way we could use ERRORHEADER here??
+    fprintf(stderr, "%s(%d) %s: ", filename, line, level);
     fprintf(stderr, "%s", msg);
     fprintf(stderr, "\n");
 }

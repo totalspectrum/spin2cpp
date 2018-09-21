@@ -1,2 +1,2 @@
 WARNING: EOF seen inside comment
-error04.spin:8: error: syntax error, unexpected $end
+error04.spin(8) error: syntax error, unexpected $end
