@@ -1,6 +1,6 @@
 //
 // Simple lexical analyzer for a language where indentation
-// is significant
+// may be significant (Spin); also contains a lexer for BASIC
 //
 // Copyright (c) 2011-2018 Total Spectrum Software Inc.
 //
@@ -1076,7 +1076,6 @@ struct reservedword basic_keywords[] = {
   { "enum", BAS_ENUM },
   { "exit", BAS_EXIT },
   { "for", BAS_FOR },
-  { "from", BAS_FROM },
   { "function", BAS_FUNCTION },
   { "get", BAS_GET },
   { "goto", BAS_GOTO },
@@ -1115,6 +1114,7 @@ struct reservedword basic_keywords[] = {
   { "uinteger", BAS_UINTEGER },
   { "until", BAS_UNTIL },
   { "ushort", BAS_USHORT },
+  { "using", BAS_USING },
   { "var", BAS_VAR },
   { "wend", BAS_WEND },
   { "while", BAS_WHILE },

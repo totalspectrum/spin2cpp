@@ -73,7 +73,6 @@ endif
 enum
 exit
 for
-from
 function
 goto
 if
@@ -107,6 +106,7 @@ uinteger
 ulong
 until
 ushort
+using
 var
 wend
 while
@@ -361,7 +361,7 @@ Used in a `select` statement. Not implemented yet.
 
 A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object. In fact, Spin objects may be directly imported as classes:
 ```
-   dim ser as class from "FullDuplexSerial.spin"
+   dim ser as class using "FullDuplexSerial.spin"
 ```
 creates an object `ser` based on the Spin file "FullDuplexSerial.spin"; this is the same as the Spin declaration:
 ```
@@ -374,7 +374,7 @@ BASIC files may also be used as classes. When they are, all the functions and su
 Another way to define an object is to first declare an abstract `class` with a name, and then use that name in the `dim` statement:
 ```
   ' create abstract class fds representing Spin FullDuplexSerial
-  class fds from "FullDuplexSerial.spin"
+  class fds using "FullDuplexSerial.spin"
   ' create a variable of that type
   dim ser as fds
 ```
@@ -479,10 +479,6 @@ Exit early from a `for`, `do`, or `while` loop. Not implemented yet.
 ### FOR
 
 Repeat a loop while incrementing (or decrementing) a variable.
-
-### FROM
-
-Reserved.
 
 ### IF
 
@@ -598,6 +594,10 @@ helloworld
 ### UBYTE
 
 An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### USING
+
+Keyword intended for use in PRINT statements, and also to indicate the file to be used for a CLASS.
 
 ### VAR
 

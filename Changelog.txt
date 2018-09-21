@@ -1,4 +1,7 @@
 Version 3.9.2
+- Error messages are now formatted as:
+    filename.spin(#) error: xxxx
+  which is more like openspin and matches FreeBASIC
 - Made -l option work properly with DAT output
 - Fixed a regression in Spin object pointers
 - Fixed operator precedence of the boolean "NOT" operator in Spin

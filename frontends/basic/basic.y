@@ -136,7 +136,6 @@ AST *AstCharItem(int c)
 %token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
 %token BAS_FOR        "for"
-%token BAS_FROM       "from"
 %token BAS_FUNCTION   "function"
 %token BAS_GET        "get"
 %token BAS_GOTO       "goto"
@@ -172,8 +171,9 @@ AST *AstCharItem(int c)
 %token BAS_UBYTE      "ubyte"
 %token BAS_UINTEGER   "uinteger"
 %token BAS_ULONG      "ulong"
-%token BAS_USHORT     "ushort"
 %token BAS_UNTIL      "until"
+%token BAS_USHORT     "ushort"
+%token BAS_USING      "using"
 %token BAS_VAR        "var"
 %token BAS_WEND       "wend"
 %token BAS_WITH       "with"
@@ -634,7 +634,7 @@ endfunc:
 ;
 
 classdecl:
-  BAS_CLASS BAS_IDENTIFIER BAS_FROM BAS_STRING eoln
+  BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING eoln
     {
         AST *newobj = NewAbstractObject( $2, $4 );
         DeclareObjects(newobj);
@@ -719,7 +719,7 @@ basetypename:
     { $$ = $1; }
   | BAS_CONST basetypename
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
-  | BAS_CLASS BAS_FROM BAS_STRING
+  | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
         const char *name = NewTemporaryVariable("_class_");
