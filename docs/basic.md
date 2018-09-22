@@ -83,6 +83,7 @@ long
 loop
 mod
 next
+not
 open
 or
 output
@@ -439,6 +440,11 @@ Pseudo-array of bits describing the direction (input or output) of pins. In Prop
   direction(2) = input ' set pin 2 as input
   direction(6,4) = output ' set pins 6, 5, 4 as outputs
 ```
+Note that pin ranges may not cross a 32 bit boundary; that is,
+```
+  direction(33, 30) = input
+```
+is illegal and produces undefined behavior.
 
 ### DO
 
@@ -478,7 +484,37 @@ Exit early from a `for`, `do`, or `while` loop. Not implemented yet.
 
 ### FOR
 
-Repeat a loop while incrementing (or decrementing) a variable.
+Repeat a loop while incrementing (or decrementing) a variable. The default step value is 1, but if an explicit `step` is given this is used instead:
+```
+' print 1 to 10
+for i = 1 to 10
+  print i
+next i
+' print 1, 3, 5, ..., 9
+for i = 1 to 10 step 2
+  print i
+next i
+```
+
+If the variable given in the loop is not already defined, it is created as a variable shared by all functions in the module. This tends to be inefficient, so it is better to explicitly dimension the variable as a local variable rather than letting `for` create it as a shared.
+
+### FUNCTION
+
+Defines a new function. The type of the function may be given explicitly with an `as` _type_ clause; if no such clause exists the function's type is deduced from its name. For example, a function whose name ends in `$` is assumed to return a string unless an `as` is given.
+
+Functions have a fixed number and type of arguments, but the last arguments may be given default values with an initializer. For example,
+```
+  function inc(n as integer, delta = 1 as integer) as integer
+    return n + delta
+  end function
+```
+defines a function which adds two integers and returns an integer result. Since the default type of variables is integer, this could also be written as:
+```
+  function inc(n, delta = 1)
+    return n+delta
+  end function
+```
+In this case because the final argument `delta` is given a default value of 1, callers may omit this argument. That is, a call `inc(x)` is exactly equivalent to `inc(x, 1)`.
 
 ### IF
 
@@ -518,6 +554,10 @@ else
 end if
 ```
 
+### INPUT
+
+A pseudo-array of bits representing the state of input bits. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
+
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
@@ -534,6 +574,30 @@ sets `a` to be equal to `b`. This can usually be written as:
 ```
 the only difference is that in the `let` form if `a` does not already exist it is created as a global variable (one accessible in all functions). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
 
+### LONG
+
+Reserved for future use; not implemented yet.
+
+### LOOP
+
+Marks the end of a loop introduced by `do`. See DO for details.
+
+### MOD
+
+`x mod y` finds the integer remainder when `x` is divided by `y`.
+
+Note that if both the quotient and remainder are desired, it is best to put the calculations close together; that way the compiler may be able to combine the two operations into one (since the software division code produces both quotient and remainder). For example:
+```
+  q = x / y
+  r = x mod y
+```
+
+### NEXT
+
+Indicates the end of a `for` loop. The variable used in the loop may be placed after the `next` keyword, but this is not mandatory. If a variable is present though then it must match the loop.
+
+See FOR.
+
 ### NOT
 ```
   a = NOT b
@@ -541,6 +605,10 @@ the only difference is that in the `let` form if `a` does not already exist it i
 Inverts all bits in the destination. This is basically the same as `b xor -1`.
 
 In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+
+### OPEN
+
+Reserved for future use.
 
 ### OR
 
@@ -590,6 +658,10 @@ hello  world
 helloworld
 1then 2
 ```
+
+### SINGLE
+
+Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
 
 ### UBYTE
 
