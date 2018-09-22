@@ -34,10 +34,8 @@ endif
 
 INC=-I. -I$(BUILD)
 
-#
-# WARNING: byacc probably will not work!
-#
-#YACC = byacc
+# byacc will fail some of the error tests, but mostly works
+#YACC = byacc -s
 YACC = bison
 CFLAGS = -g -Wall $(INC)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC)
@@ -70,10 +68,10 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
-	$(YACC) -t -b $(BUILD)/spin -d frontends/spin/spin.y
+	$(YACC) -p spinyy -t -b $(BUILD)/spin -d frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
-	$(YACC) -t -b $(BUILD)/basic -d frontends/basic/basic.y
+	$(YACC) -p basicyy -t -b $(BUILD)/basic -d frontends/basic/basic.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 

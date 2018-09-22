@@ -19,7 +19,17 @@
 #define EOF (-1)
 #endif
 
+// have to work around bison problems with -p
+// instead of #defines bison outputs an enum yytokentype,
+// which is a problem if we use -p to create multiple parsers;
+// the bison 3.x solution is %api.prefix, but we want to work with
+// older bisons and byacc too
+#undef YYTOKENTYPE
+#define yytokentype spinyytokentype
 #include "spin.tab.h"
+#undef YYTOKENTYPE
+#undef yytokentype
+#define yytokentype basicyytokentype
 #include "basic.tab.h"
 
 struct preprocess gl_pp;

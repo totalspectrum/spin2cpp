@@ -4,7 +4,7 @@
  * See the file COPYING for terms of use.
  */
 
-%define api.prefix {spinyy}
+/* %define api.prefix {spinyy} */
 
 %{
 #include <stdio.h>
@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include "spinc.h"
     
-#define SPINYYSTYPE AST*
+#define YYSTYPE AST*
     
 /* Yacc functions */
     void spinyyerror(const char *);

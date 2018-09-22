@@ -4,7 +4,7 @@
  * See the file COPYING for terms of use.
  */
 
-%define api.prefix {basicyy}
+/* %define api.prefix {basicyy} */
 
 %{
 #include <stdio.h>
@@ -23,7 +23,7 @@
     extern AST *CommentedListHolder(AST *); // in spin.y
     
 #define YYERROR_VERBOSE 1
-#define BASICYYSTYPE AST*
+#define YYSTYPE AST*
 
     
 AST *GetIORegisterPair(const char *name1, const char *name2)
