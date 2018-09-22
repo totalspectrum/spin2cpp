@@ -573,6 +573,18 @@ end if
 
 A pseudo-array of bits representing the state of input bits. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
 
+Bits in `input` may be read with an array-like syntax:
+```
+   x = input(0)    ' read pin 0
+   y = input(4,2)  ' read pins 4,3,2
+```
+Note that usually you will want to read the pins with the larger pin number first, as the bits are labelled with bit 31 at the high bit and bit 0 as the low bit.
+
+Also note that before using a pin as input its direction should be set as input somewhere in the program:
+```
+   direction(4,0) = input  ' set pins 4-0 as inputs
+```
+
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.

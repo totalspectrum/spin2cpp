@@ -1398,8 +1398,8 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
       lhs = Dereference(irl, lhs);
       if (isSigned) {
           ir = EmitOp2(irl, OPC_ABS, temp, lhs);
+          ir->flags |= FLAG_WC; // carry will have the original sign bit
       }
-      ir->flags |= FLAG_WC; // carry will have the original sign bit
       if (getmod) {
           EmitOp2(irl, OPC_AND, temp, NewImmediate(val-1));
       } else {

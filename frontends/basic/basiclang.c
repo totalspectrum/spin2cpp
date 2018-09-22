@@ -714,7 +714,7 @@ AST *CheckTypes(AST *ast)
     case AST_GOTO:
         {
             AST *id = ast->left;
-            if (!id || !id->kind == AST_IDENTIFIER) {
+            if (!id || id->kind != AST_IDENTIFIER) {
                 ERROR(ast, "Expected identifier in goto");
             } else {
                 Symbol *sym = FindSymbol(&curfunc->localsyms, id->d.string);
