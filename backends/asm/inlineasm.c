@@ -1,8 +1,8 @@
 #include "spinc.h"
 #include "outasm.h"
 
-static Operand *
-GetLabel(const char *name)
+Operand *
+GetLabelOperand(const char *name)
 {
     Operand *op;
     if (curfunc && !curfunc->cog_code) {
@@ -11,6 +11,21 @@ GetLabel(const char *name)
         op = NewOperand(IMM_COG_LABEL, name, 0);
     }
     return op;
+}
+
+Operand *
+GetLabelFromSymbol(AST *where, const char *name)
+{
+    Symbol *sym;
+    sym = FindSymbol(&curfunc->localsyms, name);
+    if (!sym || sym->type != SYM_LOCALLABEL) {
+        ERROR(where, "%s is not a label in this function", name);
+        return NULL;
+    }
+    if (!sym->val) {
+        sym->val = (void *)GetLabelOperand(name);
+    }
+    return (Operand *)sym->val;
 }
 
 //
@@ -171,8 +186,8 @@ CompileInlineAsm(IRList *irl, AST *origtop)
             ast = ast->left;
         }
         if (ast->kind == AST_IDENTIFIER) {
-            Operand *labelop = GetLabel(ast->d.string);
-            AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, (void *)labelop);
+            void *labelop = (void *)GetLabelOperand(ast->d.string);
+            AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop);
         }
     }
     
@@ -191,11 +206,16 @@ CompileInlineAsm(IRList *irl, AST *origtop)
             CompileInlineInstr(irl, ast->left);
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
+            Operand *op;
             if (!sym || sym->type != SYM_LOCALLABEL) {
                 ERROR(ast, "%s is not a label or is multiply defined", ast->d.string);
                 break;
             }
-            EmitLabel(irl, (Operand *)sym->val);
+            if (!sym->val) {
+                sym->val = GetLabelOperand(sym->name);
+            }
+            op = (Operand *)sym->val;
+            EmitLabel(irl, op);
         } else if (ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
         } else {

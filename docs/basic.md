@@ -516,6 +516,21 @@ defines a function which adds two integers and returns an integer result. Since 
 ```
 In this case because the final argument `delta` is given a default value of 1, callers may omit this argument. That is, a call `inc(x)` is exactly equivalent to `inc(x, 1)`.
 
+### GOTO
+
+`goto x` jumps to a label `x`, which must be defined in the same function.
+Labels are defined by giving an identifier followed by a `:`. For example:
+```
+  if (x=y) goto xyequal
+  print "x differs from y"
+  goto done
+xyequal:
+  print "x and y are equal"
+done:
+```
+Note that in most cases code written with a `goto` could better be written with
+`if` or `do` (for instance the example above would be easier to read if written with `if` ... `then` ... `else`). `goto` should be used sparingly.
+
 ### IF
 
 An IF statement introduces some code that should be executed only if a

@@ -3155,13 +3155,17 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     case AST_LABEL:
         EmitDebugComment(irl, ast);
-        op = NewNamedCodeLabel(ast->left->d.string);
-        EmitLabel(irl, op);
+        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        if (op) {
+            EmitLabel(irl, op);
+        }
         break;
     case AST_GOTO:
         EmitDebugComment(irl, ast);
-        op = NewNamedCodeLabel(ast->left->d.string);
-        EmitJump(irl, COND_TRUE, op);
+        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        if (op) {
+            EmitJump(irl, COND_TRUE, op);
+        }
         break;
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);

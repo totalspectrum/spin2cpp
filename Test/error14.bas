@@ -13,3 +13,10 @@ sub fillstring3(s as const ubyte const pointer)
   s = "hello"  ' assignment to const object
 end sub
 
+function sum(x, y)
+  if (x=y) goto here
+  return x+y
+end function
+
+here:
+  print "out of functions"

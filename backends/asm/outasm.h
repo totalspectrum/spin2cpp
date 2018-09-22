@@ -141,4 +141,7 @@ Operand *GetOneHub(Operandkind kind, const char *name, intptr_t value);
 
 void InitAsmCode();
 
+Operand *GetLabelOperand(const char *name);
+Operand *GetLabelFromSymbol(AST *where, const char *name);
+
 #endif

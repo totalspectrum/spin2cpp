@@ -194,6 +194,18 @@ doBasicTransform(AST **astptr)
             *astptr = ast = seq;
         }
         break;
+    case AST_LABEL:
+        if (!ast->left || ast->left->kind != AST_IDENTIFIER) {
+            ERROR(ast, "Label is not an identifier");
+        } else {
+            const char *name = ast->left->d.string;
+            Symbol *sym = FindSymbol(&curfunc->localsyms, name);
+            if (sym) {
+                WARNING(ast, "Redefining %s as a label", name);
+            }
+            AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, 0);
+        }
+        break;
     default:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
@@ -699,6 +711,19 @@ AST *CheckTypes(AST *ast)
     ltype = CheckTypes(ast->left);
     rtype = CheckTypes(ast->right);
     switch (ast->kind) {
+    case AST_GOTO:
+        {
+            AST *id = ast->left;
+            if (!id || !id->kind == AST_IDENTIFIER) {
+                ERROR(ast, "Expected identifier in goto");
+            } else {
+                Symbol *sym = FindSymbol(&curfunc->localsyms, id->d.string);
+                if (!sym || sym->type != SYM_LOCALLABEL) {
+                    ERROR(id, "%s is not a local label", id->d.string);
+                }
+            }
+        }
+        return NULL;
     case AST_OPERATOR:
         ltype = CoerceOperatorTypes(ast, ltype, rtype);
         break;
