@@ -96,6 +96,7 @@ rem
 return
 select
 shared
+short
 single
 sqrt
 step
@@ -112,7 +113,6 @@ var
 wend
 while
 with
-word
 xor
 ```
 
@@ -651,6 +651,22 @@ Also useful in boolean operations. The comparison operators return 0 for false c
   end if
 ```
 
+### OUTPUT
+
+A pseudo-array of bits representing the state of output bits. On the Propeller 1 this is the 32 bit OUTA register, but on Propeller 2 it is 64 bits.
+
+Bits in `output` may be read and written an array-like syntax:
+```
+   output(0) = not output(0)   ' toggle pin 0
+   output(4,2) = 1  ' set pins 4 and 3 to 0 and pin 2 to 1
+```
+Note that usually you will want to access the pins with the larger pin number first, as the bits are labelled with bit 31 at the high bit and bit 0 as the low bit.
+
+Also note that before using a pin as output its direction should be set as output somewhere in the program:
+```
+   direction(4,0) = output  ' set pins 4-0 as outputs
+```
+
 ### OPEN
 
 Reserved for future implementation.
@@ -686,13 +702,53 @@ helloworld
 1then 2
 ```
 
+### PROGRAM
+
+This keyword is reserved for future use.
+
+The statements in the top level of the file (not inside any subroutine or function) are placed in a method called `program`. This is only really useful for calling them from another language (for example a Spin program using a BASIC program as an object).
+
+### REM
+
+Introduces a comment, which continues until the end of the line. A single quote character `'` may also be used for this.
+
+### RETURN
+
+Return from a subroutine or function. If this statement occurs inside a function, then the `return` keyword must be followed by an expression giving the value to return; this expression should have a type compatible with the function's return value.
+
+### SHORT
+
+A signed 16 bit integer, occupying two bytes of computer memory. The unsigned version of this is `ushort`. The difference arises with the treatment of the upper bit. Both `short` and `ushort` treat 0-32767 the same, but for `short` 32768 to 65535 are considered equivalent to -32768 to -1 respectively (that is, when a `short` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ushort` the new bits are filled with 0 instead).
+
 ### SINGLE
 
 Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
 
+### STEP
+
+Gives the increment to apply in a FOR loop.
+```
+for i = 2 to 8 step 2
+  print i
+next
+```
+will print 2, 4, 6, and 8 on separate lines.
+
+### THEN
+
+Introduces a multi-line series of statements for an `if` statement. See IF for details.
+
+### TO
+
+A syntactical element typically used for giving ranges of items.
+
 ### UBYTE
 
 An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### USHORT
+
+An unsigned 16 bit integer, occupying two bytes of computer memory. The signed version of this is `short`. The difference arises with the treatment of the upper bit. Both `short` and `ushort` treat 0-32767 the same, but for `short` 32768 to 65535 are considered equivalent to -32768 to -1 respectively (that is, when a `short` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ushort` the new bits are filled with 0 instead).
 
 ### USING
 
@@ -761,11 +817,11 @@ Waits until the cycle counter is a specific value
 
 #### waitpeq
 
-Waits for pins to have a specific value
+Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpeq` routine.
 
 #### waitpne
 
-Waits for pins to have a specific value
+Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpne` routine.
 
 ### Propeller Specific Variables
 
@@ -791,7 +847,7 @@ let mscycles = clkfreq / 1000
 direction(pin) = output
 
 do
-  output(pin) = output(pin) xor 1
+  output(pin) = not output(pin)
   pausems 1000
 loop
 

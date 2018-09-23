@@ -489,7 +489,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 {
   IR *ir;
   int usecount = 0;
-  
+
   if (SrcOnlyHwReg(replace))
       return false;
   for (ir = instr; ir; ir = ir->prev) {
@@ -1962,7 +1962,7 @@ OptimizeIncDec(IRList *irl)
 
 /* the code generator produces some obviously silly sequences
  * like:  mov T, A; op T, B; mov A, T
- * replace those with op A, B
+ * replace those with op A, B... but ONLY if T is dead after the 3rd one
  */
 static int
 OptimizeSimpleAssignments(IRList *irl)
@@ -1983,6 +1983,7 @@ OptimizeSimpleAssignments(IRList *irl)
             && !InstrSetsAnyFlags(ir)
             && !InstrSetsAnyFlags(ir_prev)
             && !InstrSetsAnyFlags(ir_next)
+            && IsDeadAfter(ir_next, ir_next->src)
             )
         {
             ir->dst = ir_next->dst;

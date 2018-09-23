@@ -12,8 +12,10 @@ _copy1
  if_be	neg	_tmp002_, #1
 	add	arg3, _tmp002_
 LR__0001
+	mov	_tmp007_, arg2
+	add	_tmp007_, #1
 	rdbyte	_tmp008_, arg2
-	add	arg2, #1
+	mov	arg2, _tmp007_
 	wrbyte	_tmp008_, arg1
 	add	_var_04, _tmp002_
 	cmps	_var_04, arg3 wz
@@ -26,8 +28,10 @@ _copy2
 	cmps	arg3, #0 wz
  if_e	jmp	#LR__0003
 LR__0002
+	mov	_tmp004_, arg2
+	add	_tmp004_, #1
 	rdbyte	_tmp005_, arg2
-	add	arg2, #1
+	mov	arg2, _tmp004_
 	wrbyte	_tmp005_, arg1
 	add	arg1, #1
 	djnz	arg3, #LR__0002
@@ -40,7 +44,11 @@ COG_BSS_START
 	org	COG_BSS_START
 _tmp002_
 	res	1
+_tmp004_
+	res	1
 _tmp005_
+	res	1
+_tmp007_
 	res	1
 _tmp008_
 	res	1
