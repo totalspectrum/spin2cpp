@@ -1,3 +1,8 @@
+Version 3.9.3
+- Fixed handling of '(expr)[N]' in PASM blocks
+- Fixed lookup of files which have extensions different from .spin
+- Fixed an overlooked check for dead registers in optimization
+
 Version 3.9.2
 - Error messages are now formatted as:
     filename.spin(#) error: xxxx

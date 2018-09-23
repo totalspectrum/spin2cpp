@@ -943,6 +943,8 @@ lhs: identifier
     }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+  | '(' expr ')' '[' expr ']'
+    { $$ = NewAST(AST_ARRAYREF, $2, $5); }
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
