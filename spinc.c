@@ -407,6 +407,8 @@ ParseFile(const char *name)
 	language = LANG_BASIC;
       } else if (!strcmp(langptr, ".c")) {
 	language = LANG_C;
+      } else {
+        langptr = ".spin";
       }
     } else {
       langptr = ".spin";
