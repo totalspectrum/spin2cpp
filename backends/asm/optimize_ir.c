@@ -2265,9 +2265,6 @@ OptimizeIRLocal(IRList *irl)
     if (!(gl_optimize_flags & OPT_BASIC_ASM)) return;
     if (!irl->head) return;
 
-    // get some low hanging fruit before any other optimizations happen
-    OptimizeSimpleAssignments(irl);
-    
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
     OptimizeMulDiv(irl);
@@ -2277,6 +2274,7 @@ OptimizeIRLocal(IRList *irl)
         change |= CheckLabelUsage(irl);
         change |= EliminateDeadCode(irl);
         change |= OptimizeReadWrite(irl);
+        change |= OptimizeSimpleAssignments(irl);
         change |= OptimizeMoves(irl);
         change |= OptimizeImmediates(irl);
         change |= OptimizeCompares(irl);
