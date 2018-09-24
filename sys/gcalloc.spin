@@ -1,5 +1,4 @@
 
-
 {{
   Garbage collecting allocator
 
@@ -91,34 +90,41 @@ CON
   
 DAT
 _gc_heap_base
-	long 0		'' points to our heap
-heap_end
-        long 0          '' end of heap
+	long 0[256]	'' this is our heap, for now
+_gc_heap_end
+
 	
-PRI _gc_init(base, size)
-  _gc_heap_base := base
-  heap_end := base + size
-  
-  word[base + OFF_SIZE] := 1 
-  word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_RESERVED
-  word[base + OFF_PREV] := 0
-  word[base + OFF_LINK] := 1
-  base += pagesize
-  word[base + OFF_SIZE] := (size / pagesize) - 1
-  word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
-  word[base + OFF_PREV] := 0
-  word[base + OFF_LINK] := 0
+''
+'' return gc pointers
+'' if called before gc pointers are set up, initialize
+'' the heap
+''
+PRI _gc_ptrs | base, end, size
+  base := @_gc_heap_base
+  end := @_gc_heap_end
+  if (long[base] == 0)
+    size := end - base
+    word[base + OFF_SIZE] := 1 
+    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_RESERVED
+    word[base + OFF_PREV] := 0
+    word[base + OFF_LINK] := 1
+    base += pagesize
+    word[base + OFF_SIZE] := (size / pagesize) - 1
+    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
+    word[base + OFF_PREV] := 0
+    word[base + OFF_LINK] := 0
+  return (base, end)
   
 { return a pointer to page i in the heap }
-PRI _gc_pageptr(i)
+PRI _gc_pageptr(heapbase, i)
   if (i == 0)
     return 0
-  return _gc_heap_base + (i << pagesizeshift)
+  return heapbase + (i << pagesizeshift)
 
-PRI _gc_pageindex(ptr)
+PRI _gc_pageindex(heapbase, ptr)
   if (ptr == 0)
     return 0
-  return (ptr - _gc_heap_base) >> pagesizeshift
+  return (ptr - heapbase) >> pagesizeshift
   
 PRI _gc_isFree(ptr)
   return word[ptr + OFF_FLAGS] == GC_MAGIC + GC_FLAG_FREE
@@ -127,11 +133,12 @@ PRI _gc_isFree(ptr)
 PRI _gc_nextBlockPtr(ptr)
   return ptr + (word[ptr + OFF_SIZE] << pagesizeshift)
   
-PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr
-  ptr := _gc_heap_base
+PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end
+  (heap_base, heap_end) := _gc_ptrs
+  ptr := heap_base
   repeat
     lastptr := ptr
-    ptr := _gc_pageptr(word[ptr+OFF_LINK])
+    ptr := _gc_pageptr(heap_base, word[ptr+OFF_LINK])
     availsize := word[ptr+OFF_SIZE]
   while ptr and size > availsize
 
@@ -158,8 +165,8 @@ PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr
   word[ptr + OFF_FLAGS] := GC_MAGIC | reserveflag | cogid
   
   '' link us to the used list
-  word[ptr + OFF_LINK] := word[_gc_heap_base + OFF_USED_LINK]
-  word[_gc_heap_base + OFF_USED_LINK] := _gc_pageindex(ptr)
+  word[ptr + OFF_LINK] := word[heap_base + OFF_USED_LINK]
+  word[heap_base + OFF_USED_LINK] := _gc_pageindex(heap_base, ptr)
   
   '' and return
   ptr += headersize
@@ -198,14 +205,13 @@ PRI _gc_doalloc(size, reserveflag) | ptr
 ' otherwise returns the start of the block it
 ' points to
 '
-PRI _gc_isvalidptr(ptr) | t, base
+PRI _gc_isvalidptr(base, heap_end, ptr) | t
   ' make sure the poiter came from alloc
   if (ptr & POINTER_MAGIC_MASK) <> POINTER_MAGIC
     return 0
   ' step back to the header
   ptr := (ptr - headersize) & (!POINTER_MAGIC_MASK)
   ' make sure it is in the heap
-  base := _gc_heap_base
   if (ptr < base) or (ptr => heap_end)
     return 0
 
@@ -222,16 +228,18 @@ PRI _gc_isvalidptr(ptr) | t, base
 '
 ' free a pointer previously returned by alloc
 '
-PRI _gc_free(ptr)
-  ptr := _gc_isvalidptr(ptr)
+PRI _gc_free(ptr) | heapbase, heapend
+  (heapbase, heapend) := _gc_ptrs
+  ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
     _gc_dofree(ptr)
 
 '
 ' un-reserve a pointer previously returned by alloc
 '
-PRI _gc_manage(ptr)
-  ptr := _gc_isvalidptr(ptr)
+PRI _gc_manage(ptr) | heapbase, heapend
+  (heapbase, heapend) := _gc_ptrs
+  ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
     word[ptr + OFF_FLAGS] &= !GC_FLAG_RESERVED
     
@@ -241,30 +249,31 @@ PRI _gc_manage(ptr)
 ' returns a pointer to the next non-free block(useful for
 ' garbage collection, to handle cases where memory is coalesced)
 '
-PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr
+PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend
+  (heapbase, heapend) := _gc_ptrs
   word[ptr + OFF_FLAGS] := GC_MAGIC + GC_FLAG_FREE
   prevptr := ptr
   nextptr := _gc_nextBlockPtr(ptr)
   repeat
     '' walk back the chain to the last previous free block
-    prevptr := _gc_pageptr(word[prevptr + OFF_PREV])
+    prevptr := _gc_pageptr(heapbase, word[prevptr + OFF_PREV])
   until prevptr == 0 or _gc_isFree(prevptr)
   if (prevptr == 0)
-    prevptr := _gc_heap_base
+    prevptr := heapbase
     
   word[ptr + OFF_LINK] := word[prevptr + OFF_LINK]
-  word[prevptr + OFF_LINK] := _gc_pageindex(ptr)
+  word[prevptr + OFF_LINK] := _gc_pageindex(heapbase, ptr)
 
   ' see if we should merge with the previous block
-  if (prevptr <> _gc_heap_base)
+  if (prevptr <> heapbase)
     tmpptr := _gc_nextBlockPtr(prevptr)
     if (tmpptr == ptr)
       word[prevptr + OFF_SIZE] += word[ptr + OFF_SIZE]
       word[ptr + OFF_FLAGS] := 0
       ' adjust prev link in next block
       tmpptr := _gc_nextBlockPtr(ptr)
-      if (tmpptr < heap_end)
-        word[tmpptr + OFF_PREV] := _gc_pageindex(prevptr)
+      if (tmpptr < heapend)
+        word[tmpptr + OFF_PREV] := _gc_pageindex(heapbase, prevptr)
       word[prevptr + OFF_LINK] := word[ptr + OFF_LINK]
       word[ptr + OFF_LINK] := 0
       ptr := prevptr
@@ -272,7 +281,7 @@ PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr
       
   '' see if we should merge with following block
   tmpptr := _gc_nextBlockPtr(ptr)
-  if (tmpptr < heap_end) and _gc_isFree(tmpptr)
+  if (tmpptr < heapend) and _gc_isFree(tmpptr)
     prevptr := ptr
     ptr := tmpptr
     word[prevptr + OFF_SIZE] += word[ptr + OFF_SIZE]
@@ -280,8 +289,8 @@ PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr
     word[ptr + OFF_FLAGS] := $AA
     word[ptr + OFF_LINK] := 0
     nextptr := _gc_nextBlockPtr(ptr)
-    if (nextptr < heap_end)
-      word[nextptr + OFF_PREV] := _gc_pageindex(prevptr)
+    if (nextptr < heapend)
+      word[nextptr + OFF_PREV] := _gc_pageindex(heapbase, prevptr)
 
   return nextptr
    
@@ -291,11 +300,11 @@ PRI __topofstack(ptr)
 ''
 '' actual garbage collection routine
 ''
-PRI _gc_collect | ptr, nextptr, endheap, flags, ourid
+PRI _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
 
+  (startheap, endheap) := _gc_ptrs
   ' clear the "IN USE" flags for all blocks
-  ptr := _gc_nextBlockPtr(_gc_heap_base)
-  endheap := heap_end
+  ptr := _gc_nextBlockPtr(startheap)
   ourid := cogid
   repeat while ptr < endheap
     word[ptr + OFF_FLAGS] &= !GC_FLAG_INUSE
@@ -317,7 +326,7 @@ PRI _gc_collect | ptr, nextptr, endheap, flags, ourid
   ' or reserved (or under another COG's control)
   ' go from back to front so the merging of free blocks
   ' is predictable??
-  nextptr := _gc_nextBlockPtr(_gc_heap_base)
+  nextptr := _gc_nextBlockPtr(startheap)
   repeat 
     ptr := nextptr
     nextptr := _gc_nextBlockPtr(ptr)
@@ -332,20 +341,22 @@ PRI _gc_collect | ptr, nextptr, endheap, flags, ourid
 '
 ' mark as used any pointers found in HUB between startaddr and endaddr
 '
-PRI _gc_markhub(startaddr, endaddr) | ptr, flags
+PRI _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
+  (heap_base, heap_end) := _gc_ptrs
   repeat while (startaddr < endaddr)
     ptr := long[startaddr]
     startaddr += 4
-    ptr := _gc_isvalidptr(ptr)
+    ptr := _gc_isvalidptr(heap_base, heap_end, ptr)
     if ptr
       flags := word[ptr + OFF_FLAGS]
       flags &= !GC_OWNER_MASK
       flags |= GC_FLAG_INUSE | GC_OWNER_HUB
       word[ptr + OFF_FLAGS] := flags
 
-PRI _gc_markcog | cogaddr, ptr
+PRI _gc_markcog | cogaddr, ptr, heap_base, heap_end
+  (heap_base, heap_end) := _gc_ptrs
   repeat cogaddr from 0 to 495
     ptr := spr[496 - cogaddr]
-    ptr := _gc_isvalidptr(ptr)
+    ptr := _gc_isvalidptr(heap_base, heap_end, ptr)
       if ptr
         word[ptr + OFF_FLAGS] |= GC_FLAG_INUSE

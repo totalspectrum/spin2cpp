@@ -639,13 +639,13 @@ FixupCode(Module *P, int isBinary)
         Function *pf;
         bool need_heap = false;
         for (pf = globalModule->functions; pf; pf = pf->next) {
-            if (!strcasecmp(pf->name, "_gc_tryalloc")) {
+            if (!strcasecmp(pf->name, "_gc_init")) {
                 need_heap = true;
                 break;
             }
         }
         if (need_heap) {
-            ERROR(NULL, "Unfinished: need to add a heap");
+            WARNING(NULL, "Unfinished: need to add a heap");
         }
     }
     AssignObjectOffsets(P);

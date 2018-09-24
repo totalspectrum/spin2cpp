@@ -4520,7 +4520,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
-
+    VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
+    
     // only the top level variable space is needed
     EmitVarSection(&hubdata, P);
     

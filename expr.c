@@ -962,7 +962,11 @@ EvalOperator(int op, ExprVal left, ExprVal right, int *valid)
     ExprVal le = left;
     ExprVal re = right;
     int isFloat = 0;
-    
+
+    if (IsStringType(le.type)) {
+        *valid = 0;
+        return intExpr(0);
+    }
     if (IsFloatType(le.type)) {
         if (!IsFloatType(re.type)) {
             re = convToFloat(re);
@@ -1744,6 +1748,9 @@ ExprType(AST *expr)
             rtype = ExprType(expr->right);
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
+            }
+            if (expr->d.ival == '+' && IsStringType(ltype)) {
+                return ltype;
             }
             if (!ltype) ltype = rtype;
             if (ltype) {
