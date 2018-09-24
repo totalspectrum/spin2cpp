@@ -647,7 +647,7 @@ NewNamedCodeLabel(const char *id)
   Operand *label;
   char temp[1024];
   if (curfunc) {
-      snprintf(temp, sizeof(temp)-1, "Label_%s_%s", curfunc->name, id);
+      snprintf(temp, sizeof(temp)-1, "Label_%s_%s", curfunc->name, cleanname(id));
       id = temp;
   }
   id = strdup(id);
@@ -760,7 +760,7 @@ NewImmediatePtr(const char *name, Operand *val)
 {
     char temp[1024];
     if (!name) {
-        sprintf(temp, "ptr_%s_", val->name);
+        sprintf(temp, "ptr_%s_", cleanname(val->name));
         name = strdup(temp);
     }
     if (val->kind == IMM_COG_LABEL) {
@@ -779,9 +779,9 @@ GetFunctionTempRegister(Function *f, int n)
       // leaf functions can share a set of temporary registers
       snprintf(buf, sizeof(buf)-1, "_tmp%03d_", n);
   } else if (IsTopLevel(P)) {
-      snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", f->name, n);
+      snprintf(buf, sizeof(buf)-1, "%s_tmp%03d_", cleanname(f->name), n);
   } else {
-      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, f->name, n);
+      snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, cleanname(f->name), n);
   }
   return GetOneGlobal(REG_LOCAL, strdup(buf), 0);
 }
