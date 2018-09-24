@@ -184,6 +184,15 @@ doBasicTransform(AST **astptr)
                     seq = addPrintCall(seq, basic_print_float, expr);
                 } else if (IsStringType(type)) {
                     seq = addPrintCall(seq, basic_print_string, expr);
+                } else if (IsGenericType(type)) {
+                    // create a hex call
+                    AST *ast;
+                    AST *params;
+
+                    params = NewAST(AST_EXPRLIST, expr,
+                                    NewAST(AST_EXPRLIST, AstInteger(16), NULL));
+                    ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
+                    seq = AddToList(seq, NewAST(AST_SEQUENCE, ast, NULL));
                 } else if (IsUnsignedType(type)) {
                     seq = addPrintCall(seq, basic_print_unsigned, expr);
                 } else if (IsIntType(type)) {

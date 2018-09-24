@@ -133,7 +133,7 @@ PRI _gc_isFree(ptr)
 PRI _gc_nextBlockPtr(ptr)
   return ptr + (word[ptr + OFF_SIZE] << pagesizeshift)
   
-PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end
+PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr
   (heap_base, heap_end) := _gc_ptrs
   ptr := heap_base
   repeat
@@ -152,11 +152,13 @@ PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
     nextptr := ptr + (size<<pagesizeshift)
     word[nextptr + OFF_SIZE] := availsize - size
     word[nextptr + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
-    word[nextptr + OFF_PREV] := word[lastptr + OFF_LINK]
+    word[nextptr + OFF_PREV] := _gc_pageindex(heap_base, ptr)
     word[nextptr + OFF_LINK] := word[ptr + OFF_LINK]
     '' advance to next in chain
-    nextptr += (availsize - size) << pagesizeshift
-    word[nextptr + OFF_PREV] += size
+    saveptr := nextptr
+    nextptr := _gc_nextBlockPtr(nextptr)
+    if (nextptr <  heap_end)
+      word[nextptr + OFF_PREV] := _gc_pageindex(heap_base, saveptr)
     
   '' now unlink us from the free list
   word[lastptr + OFF_LINK] += size
