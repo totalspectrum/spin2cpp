@@ -1294,6 +1294,8 @@ Builtin builtinfuncs[] = {
 
     { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, 0, NULL },
 
+    { "_string_concat", 2, defaultBuiltin, "_string_concat", NULL, 0, NULL },
+
     { "_fixed_div", 3, defaultBuiltin, "fixed_div", NULL, 0, NULL },
     { "_fixed_mul", 2, defaultBuiltin, "fixed_mul", NULL, 0, NULL },
 };

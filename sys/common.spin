@@ -159,3 +159,13 @@ pri _string_cmp(x, y) | xc, yc, d
     d := xc - yc
   while (d==0) and xc and yc
   return d
+
+pri _string_concat(x, y) | lenx, leny, ptr
+  lenx := strsize(x)
+  leny := strsize(y)
+  ptr := _gc_alloc_managed(lenx + leny + 1)
+  if ptr
+    bytemove(ptr, x, lenx)
+    bytemove(ptr + lenx, y, leny)
+    byte[ptr + lenx + leny] := 0
+  return ptr

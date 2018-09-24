@@ -52,6 +52,7 @@ int IsArrayOrPointerSymbol(Symbol *);
 int TypeAlignment(AST *typ);
 int PointerTypeIncrement(AST *typ);
 
+int IsStringType(AST *typ);
 int IsFloatType(AST *typ);
 int IsIntType(AST *typ);
 int IsUnsignedType(AST *typ);

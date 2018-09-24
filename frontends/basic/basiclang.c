@@ -30,6 +30,7 @@ static AST *float_abs;
 static AST *float_neg;
 
 static AST *string_cmp;
+static AST *string_concat;
 
 static int
 IsBasicString(AST *typ)
@@ -179,14 +180,14 @@ doBasicTransform(AST **astptr)
                     ERROR(ast, "Unknown type in print");
                     continue;
                 }
-                if (type == ast_type_float) {
+                if (IsFloatType(type)) {
                     seq = addPrintCall(seq, basic_print_float, expr);
-                } else if (type == ast_type_string) {
+                } else if (IsStringType(type)) {
                     seq = addPrintCall(seq, basic_print_string, expr);
-                } else if (type->kind == AST_INTTYPE) {
-                    seq = addPrintCall(seq, basic_print_integer, expr);
-                } else if (type->kind == AST_UNSIGNEDTYPE) {
+                } else if (IsUnsignedType(type)) {
                     seq = addPrintCall(seq, basic_print_unsigned, expr);
+                } else if (IsIntType(type)) {
+                    seq = addPrintCall(seq, basic_print_integer, expr);
                 } else {
                     ERROR(ast, "Unable to print expression of this type");
                 }
@@ -564,6 +565,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
         return lefttype;
     case '+':
+        if (IsStringType(lefttype) && IsStringType(righttype)) {
+            *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
+            return lefttype;
+        }
     case '-':
     case '*':
     case '/':
@@ -866,6 +871,7 @@ BasicTransform(Module *Q)
     basic_put = getBasicPrimitive("_basic_put");
 
     string_cmp = getBasicPrimitive("_string_cmp");
+    string_concat = getBasicPrimitive("_string_concat");
     
     current = Q;
     for (func = Q->functions; func; func = func->next) {

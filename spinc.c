@@ -639,7 +639,7 @@ FixupCode(Module *P, int isBinary)
         Function *pf;
         bool need_heap = false;
         for (pf = globalModule->functions; pf; pf = pf->next) {
-            if (!strncmp(pf->name, "_gc_alloc", 9)) {
+            if (!strcasecmp(pf->name, "_gc_tryalloc")) {
                 need_heap = true;
                 break;
             }
