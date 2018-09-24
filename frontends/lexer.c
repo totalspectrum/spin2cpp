@@ -429,8 +429,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     c = lexgetc(L);
-    while (isIdentifierChar(c)) {
+    while (isIdentifierChar(c) || c == '`') {
         //flexbuf_addchar(&fb, tolower(c));
+        if (c == '`') {
+            c = lexgetc(L);
+        }
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
@@ -548,10 +551,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 
 is_identifier:
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    /* make sure identifiers do not conflict with C keywords */
-    if (gl_normalizeIdents || Is_C_Reserved(idstr)) {
+
+    if (gl_normalizeIdents) {
         NormalizeIdentifier(idstr);
     }
+
     ast->d.string = idstr;
     *ast_ptr = ast;
     return SP_IDENTIFIER;

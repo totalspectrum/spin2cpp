@@ -202,6 +202,14 @@ I2C, SPI and similar functions.
 
 ## Symbols
 
+### Special characters in identifiers
+
+Special characters like `$` may be included in Spin function and variable names
+by preceding them with a backquote, e.g. to define a function `chr$` do:
+```
+  pub chr`$(x)
+    return x
+```
 
 ### Opcodes
 In regular Spin opcodes like `TEST` are always reserved.

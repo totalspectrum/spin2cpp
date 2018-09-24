@@ -169,3 +169,10 @@ pri _string_concat(x, y) | lenx, leny, ptr
     bytemove(ptr + lenx, y, leny)
     byte[ptr + lenx + leny] := 0
   return ptr
+
+pri chr`$(x) | ptr
+  ptr := _gc_alloc_managed(2)
+  if (ptr)
+    byte[ptr+0] := x
+    byte[ptr+1] := 0
+  return ptr

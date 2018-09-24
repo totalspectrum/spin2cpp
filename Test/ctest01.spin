@@ -17,6 +17,6 @@ PUB dec
 PUB Get
   return cntr
 
-PUB double(x)
+PUB Double(x)
   return x * x
 

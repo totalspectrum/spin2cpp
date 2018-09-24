@@ -111,6 +111,8 @@ InitGlobalModule(void)
 
     /* compile inline assembly */
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
+        int old_normalize = gl_normalizeIdents;
+        
         /* set up temporary variable processing */
         oldtmpnum = SetTempVariableBase(90000, 0);
 
@@ -120,6 +122,7 @@ InitGlobalModule(void)
         } else {
             syscode = (const char *)sys_p1_code_spin;
         }
+        gl_normalizeIdents = 0;
         strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
         strToLex(&globalModule->L, (const char *)sys_common_spin, "_common_");
@@ -134,6 +137,7 @@ InitGlobalModule(void)
         curfunc = NULL;
         /* restore temp variable base */
         (void)SetTempVariableBase(oldtmpnum, 89999);
+        gl_normalizeIdents = old_normalize;
     }
 
 }

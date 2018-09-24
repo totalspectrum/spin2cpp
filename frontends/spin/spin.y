@@ -69,6 +69,19 @@ CheckYield(AST *body)
     return AddToList(body, AstYield());
 }
 
+AST *
+SpinRetType(AST *funcdef)
+{
+    if (funcdef->kind != AST_FUNCDEF) return NULL;
+    funcdef = funcdef->left;
+    if (funcdef->kind != AST_FUNCDECL) return NULL;
+    funcdef = funcdef ->left;
+    if (funcdef->kind != AST_IDENTIFIER) return NULL;
+    if (strrchr(funcdef->d.string, '$') != NULL)
+        return ast_type_string;
+    return NULL;
+}
+
 #define YYERROR_VERBOSE 1
 %}
 
@@ -247,13 +260,13 @@ topelement:
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
   | SP_PUB funcdef funcbody
-    { DeclareFunction(NULL, 1, $2, $3, NULL, $1); }
+    { DeclareFunction(SpinRetType($2), 1, $2, $3, NULL, $1); }
   | SP_PRI funcdef funcbody
-    { DeclareFunction(NULL, 0, $2, $3, NULL, $1); }
+    { DeclareFunction(SpinRetType($2), 0, $2, $3, NULL, $1); }
   | SP_PUB annotation funcdef funcbody
-    { DeclareFunction(NULL, 1, $3, $4, $2, $1); }
+    { DeclareFunction(SpinRetType($3), 1, $3, $4, $2, $1); }
   | SP_PRI annotation funcdef funcbody
-    { DeclareFunction(NULL, 0, $3, $4, $2, $1); }
+    { DeclareFunction(SpinRetType($3), 0, $3, $4, $2, $1); }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;

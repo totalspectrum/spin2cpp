@@ -127,6 +127,8 @@ $(BUILD)/%.o: %.c $(HEADERS)
 #
 sys/%.spin.h: sys/%.spin
 	xxd -i $< | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > $@
+sys/%.bas.h: sys/%.bas
+	xxd -i $< | sed 's/\([0-9a-f]\)$$/\0, 0x00/' > $@
 
 #
 # automatic dependencies

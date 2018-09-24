@@ -1,4 +1,5 @@
 Version 3.9.3
+- Allow backquote (`) to quote special characters in Spin identifiers
 - Fixed handling of '(expr)[N]' in PASM blocks
 - Fixed lookup of files which have extensions different from .spin
 - Fixed an overlooked check for dead registers in optimization

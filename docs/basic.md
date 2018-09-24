@@ -5,17 +5,15 @@
 BASIC support in fastspin is very much incomplete, and not usable for production
 right now. Missing features include:
 
-(1) Documentation; the manual below is just a start, much is incomplete.
+ - Documentation; the manual below is just a start, much is incomplete.
 
-(2) String support is very limited; strings may be assigned and printed, but that's about all for now. Still to be implemented are string concatenation and other string functions.
+ - There are some missing floating point functions, like sin and cos.
 
-(3) There are some missing floating point functions, like sin and cos.
+ - Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
 
-(4) Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
+ - There is no way to initialize an array.
 
-(5) There is no way to initialize an array.
-
-(6) There are no functions yet for starting BASIC code on other COGs.
+ - There are no functions yet for starting BASIC code on other COGs.
 
 ## Introduction
 
@@ -357,6 +355,15 @@ A signed 8 bit integer, occupying one byte of computer memory. The unsigned vers
 ### CASE
 
 Used in a `select` statement. Not implemented yet.
+
+### CHR$
+
+Not actually a reserved word, but a built-in function. Converts an ascii
+value to a string (so the reverse of ASC). For example:
+```
+print chr$(65)
+```
+prints `A` (the character whose ASCII value is 65)
 
 ### CLASS
 

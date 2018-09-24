@@ -16,10 +16,10 @@ LR__0002
 _demo_ret
 	ret
 
-_Exit
+_exit
 LR__0003
 	jmp	#LR__0003
-_Exit_ret
+_exit_ret
 	ret
 
 _PauseABit
