@@ -90,6 +90,7 @@ makeClassNameSafe(Module *P)
 #include "sys/p2_code.spin.h"
 #include "sys/common.spin.h"
 #include "sys/float.spin.h"
+#include "sys/gcalloc.spin.h"
 
 void
 InitGlobalModule(void)
@@ -124,6 +125,8 @@ InitGlobalModule(void)
         strToLex(&globalModule->L, (const char *)sys_common_spin, "_common_");
         spinyyparse();
         strToLex(&globalModule->L, (const char *)sys_float_spin, "_float_");
+        spinyyparse();
+        strToLex(&globalModule->L, (const char *)sys_gcalloc_spin, "_gc_");
         spinyyparse();
         
         ProcessModule(globalModule);
@@ -630,6 +633,20 @@ FixupCode(Module *P, int isBinary)
     RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
+    }
+    // see if we need a heap for garbage collection
+    {
+        Function *pf;
+        bool need_heap = false;
+        for (pf = globalModule->functions; pf; pf = pf->next) {
+            if (!strncmp(pf->name, "_gc_alloc", 9)) {
+                need_heap = true;
+                break;
+            }
+        }
+        if (need_heap) {
+            ERROR(NULL, "Unfinished: need to add a heap");
+        }
     }
     AssignObjectOffsets(P);
 }
