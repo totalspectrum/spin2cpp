@@ -575,3 +575,51 @@ CheckVersion(const char *str)
     fprintf(stderr, "ERROR: required version %d.%d.%d but current version is %s\n", majorVersion, minorVersion, revVersion, VERSIONSTR);
     exit(1);
 }
+
+AST *
+NewCommentedInstr(AST *instr)
+{
+    AST *comment = GetComments();
+    AST *ast;
+
+    ast = NewAST(AST_INSTRHOLDER, instr, NULL);
+    if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    return ast;
+}
+
+/* add a list element together with accumulated comments */
+AST *
+CommentedListHolder(AST *ast)
+{
+    AST *comment;
+
+    if (!ast)
+        return ast;
+
+    comment = GetComments();
+
+    if (comment) {
+        ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+    }
+    ast = NewAST(AST_LISTHOLDER, ast, NULL);
+    return ast;
+}
+
+/* determine whether a loop needs a yield, and if so, insert one */
+AST *
+CheckYield(AST *body)
+{
+    AST *ast = body;
+
+    if (!body)
+        return AstYield();
+    while (ast) {
+        if (ast->left)
+            return body;
+        ast = ast->right;
+    }
+    return AddToList(body, AstYield());
+}
+

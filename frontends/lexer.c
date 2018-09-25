@@ -2274,11 +2274,50 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     idstr = flexbuf_get(&fb);
     lexungetc(L, c);  
 
+    // check for ASM
+    /* check for reserved words */
+    if (InDatBlock(L)) {
+        sym = FindSymbol(&pasmWords, idstr);
+        if (sym) {
+            free(idstr);
+            if (sym->type == SYM_INSTR) {
+                ast = NewAST(AST_INSTR, NULL, NULL);
+                ast->d.ptr = sym->val;
+                if (comment_chain) {
+                    ast = AddToList(comment_chain, ast);
+                    comment_chain = NULL;
+                }
+                *ast_ptr = ast;
+                return BAS_INSTR;
+            }
+            if (sym->type == SYM_INSTRMODIFIER) {
+                ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return BAS_INSTRMODIFIER;
+            }
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+        }
+    }
+
     // check for keywords
     sym = FindSymbol(&basicReservedWords, idstr);
     if (sym != NULL) {
       if (sym->type == SYM_RESERVED) {
 	c = INTVAL(sym);
+        /* check for special handling */
+        switch(c) {
+        case BAS_ASM:
+            if (InDatBlock(L)) {
+                // leave the inline assembly
+                L->in_block = SP_PUB;
+            } else {
+                L->in_block = SP_ASM;
+            }
+            break;
+        default:
+            break;
+        }
 	if (!ast) {
 	  ast = GetComments();
 	  *ast_ptr = ast;

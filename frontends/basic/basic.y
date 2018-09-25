@@ -12,7 +12,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "frontends/common.h"
-  
+#include "frontends/lexer.h"
+    
 /* Yacc functions */
     void basicyyerror(const char *);
     int basicyylex();
@@ -112,6 +113,11 @@ AST *AstCharItem(int c)
 %token BAS_EOLN       "end of line"
 %token BAS_EOF        "end of file"
 %token BAS_TYPENAME   "class name"
+%token BAS_INSTR      "asm instruction"
+%token BAS_INSTRMODIFIER "asm instruction modifier"
+%token BAS_ALIGNL     "alignl"
+%token BAS_ALIGNW     "alignw"
+%token BAS_WORD       "word"
 
 /* keywords */
 %token BAS_ABS        "abs"
@@ -286,6 +292,8 @@ nonemptystatement:
   | doloopstmt
     { $$ = $1; }
   | forstmt
+    { $$ = $1; }
+  | asmstmt
     { $$ = $1; }
 ;
 
@@ -740,6 +748,107 @@ basetypename:
         $$ = newobj;
     }
 ;
+
+asmstmt:
+  BAS_ASM eoln asmlist BAS_END BAS_ASM eoln
+  { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+  ;
+
+asmlist:
+  asmline
+  { $$ = $1; }
+  | asmlist asmline
+  { $$ = AddToList($1, $2); }
+  ;
+
+asmline:
+  basedatline
+  | identifier basedatline
+    {   AST *linebreak;
+        AST *comment = GetComments();
+        AST *ast;
+        ast = $1;
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        }
+        ast = AddToList(ast, $2);
+        ast = AddToList(linebreak, ast);
+        $$ = ast;
+    }
+  ;
+
+basedatline:
+  BAS_EOLN
+    { $$ = NULL; }
+  | error BAS_EOLN
+    { $$ = NULL; }
+  | BAS_BYTE BAS_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
+  | BAS_BYTE exprlist BAS_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
+  | BAS_WORD BAS_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
+  | BAS_WORD exprlist BAS_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
+  | BAS_LONG BAS_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
+  | BAS_LONG exprlist BAS_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
+  | instruction BAS_EOLN
+    { $$ = NewCommentedInstr($1); }
+  | instruction operandlist BAS_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction modifierlist BAS_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction operandlist modifierlist BAS_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
+  | BAS_ALIGNL BAS_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
+  | BAS_ALIGNW BAS_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  ;
+
+operand:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+ | '#' expr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
+ | '#' '#' expr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
+ | expr '[' expr ']'
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+;
+
+operandlist:
+   operand
+   { $$ = $1; }
+ | operandlist ',' operand
+   { $$ = AddToList($1, $3); }
+ ;
+
+instruction:
+  BAS_INSTR
+  { $$ = $1; }
+  | instrmodifier instruction
+  { $$ = AddToList($2, $1); }
+;
+ 
+instrmodifier:
+  BAS_INSTRMODIFIER
+  { $$ = $1; }
+;
+
+modifierlist:
+  instrmodifier
+    { $$ = $1; }
+  | modifierlist instrmodifier
+    { $$ = AddToList($1, $2); }
+  | modifierlist ',' instrmodifier
+    { $$ = AddToList($1, $3); }
+  ;
+
 
 %%
 void

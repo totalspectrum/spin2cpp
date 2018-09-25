@@ -516,5 +516,16 @@ void MaybeDeclareGlobal(Module *P, AST *ident, AST *typ);
 // type inference based on BASIC name (e.g. A$ is a string)
 AST *InferTypeFromName(AST *identifier);
 
+/* determine whether a loop needs a yield, and if so, insert one */
+AST *CheckYield(AST *body);
+
+/* add a list element together with accumulated comments */
+AST *CommentedListHolder(AST *ast);
+
+/* add an instruction together with comments */
+AST *NewCommentedInstr(AST *instr);
+
+/* fetch pending comments from the lexer */
+AST *GetComments(void);
 
 #endif

@@ -346,7 +346,18 @@ argument is not a string it is an error.
 
 ### ASM
 
-Introduces inline assembly. This is not implemented yet.
+Introduces inline assembly. The block between ASM and END ASM is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers.
+
+Inside inline assembly any instructions may be used, but the only legal operands are integer constants and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+
+Example: to implement a wait (like the built-in `waitcnt`:
+```
+sub wait_until_cycle(x as uinteger)
+  asm
+    waitcnt x
+  end asm
+end sub
+```
 
 ### BYTE
 
