@@ -176,3 +176,28 @@ pri chr`$(x) | ptr
     byte[ptr+0] := x
     byte[ptr+1] := 0
   return ptr
+
+pri left`$(x, n) | ptr, i, m
+  if (n =< 0)
+    return ""
+  m := strsize(x)
+  if (m =< n)
+    return x
+  ptr := _gc_alloc_managed(n+1)
+  if ptr
+    bytemove(ptr, x, n)
+    byte[ptr+n] := 0
+  return ptr
+  
+pri right`$(x, n) | ptr, i, m
+  if (n =< 0)
+    return ""
+  m := strsize(x)
+  if (m =< n)
+    return x
+
+  ptr := _gc_alloc_managed(n+1)
+  if ptr
+    i := m-n
+    bytemove(ptr, x+i, n+1)
+  return ptr

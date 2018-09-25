@@ -523,6 +523,16 @@ defines a function which adds two integers and returns an integer result. Since 
 ```
 In this case because the final argument `delta` is given a default value of 1, callers may omit this argument. That is, a call `inc(x)` is exactly equivalent to `inc(x, 1)`.
 
+#### GETCNT
+
+Propeller specific builtin function.
+
+```
+  function getcnt() as uinteger
+  x = getcnt()
+```
+Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
+
 ### GOTO
 
 `goto x` jumps to a label `x`, which must be defined in the same function.
@@ -595,6 +605,10 @@ Also note that before using a pin as input its direction should be set as input 
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
+
+### LEFT$
+
+A predefined string function. `left$(s, n)` returns the left-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns NULL (0).
 
 ### LET
 
@@ -723,6 +737,10 @@ Introduces a comment, which continues until the end of the line. A single quote 
 
 Return from a subroutine or function. If this statement occurs inside a function, then the `return` keyword must be followed by an expression giving the value to return; this expression should have a type compatible with the function's return value.
 
+### RIGHT$
+
+A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns NULL (0).
+
 ### SHORT
 
 A signed 16 bit integer, occupying two bytes of computer memory. The unsigned version of this is `ushort`. The difference arises with the treatment of the upper bit. Both `short` and `ushort` treat 0-32767 the same, but for `short` 32768 to 65535 are considered equivalent to -32768 to -1 respectively (that is, when a `short` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ushort` the new bits are filled with 0 instead).
@@ -772,6 +790,22 @@ VAR msg$ = "hello"
 
 `var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates shared variables that may be used by functions or subroutines).
 
+### WAITCNT
+
+Propeller specific builtin function. Waits until the cycle counter is a specific value
+```
+  waitcnt(getcnt() + clkfreq) ' wait one second
+```
+
+#### WAITPEQ
+
+Propeller specific builtin function. Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpeq` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
+
+#### WAITPNE
+
+Propeller specific builtin function. Waits for pins to not have a specific value (given by a bit mask). Same as the Spin `waitpne` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
+
+
 ### WHILE
 
 Begins a loop which continues as long as a specified condition is true.
@@ -804,31 +838,6 @@ or
   a = x xor y
 ```
 Returns the bit-wise exclusive or of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed. `xor` is often used for flipping bits.
-
-### Propeller Specific Functions
-
-#### getcnt
-
-```
-  function getcnt() as uinteger
-  x = getcnt()
-```
-Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
-
-#### waitcnt
-
-Waits until the cycle counter is a specific value
-```
-  waitcnt(getcnt() + clkfreq) ' wait one second
-```
-
-#### waitpeq
-
-Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpeq` routine.
-
-#### waitpne
-
-Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpne` routine.
 
 ### Propeller Specific Variables
 

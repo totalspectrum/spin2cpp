@@ -87,6 +87,15 @@ sub doexit(status)
   loop
 end sub
 
+sub testlr(str as string, n as integer)
+  print "str,n: "; str; ","; n
+  print "  left: "; left$(str, n);
+  print " right: "; right$(str, n)
+end sub
+
+testlr "hello", 7
+testlr "goodbye", 3
+
 ''
 '' done
 ''

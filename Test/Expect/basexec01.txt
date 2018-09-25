@@ -23,3 +23,7 @@ string tests:
 abc	abc	< = >: 0	-1	0
 abc	a	< = >: 0	0	-1
 def	zzz	< = >: -1	0	0
+str,n: hello,7
+  left: hello right: hello
+str,n: goodbye,3
+  left: goo right: bye
