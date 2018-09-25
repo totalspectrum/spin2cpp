@@ -333,7 +333,7 @@ dimensioned variable.
 
 ```
   ' declare a function with an integer parameter that returns a string
-  function(x as integer) as string
+  function f(x as integer) as string
   ...
 ```
 ### ASC
@@ -428,7 +428,7 @@ Keyword reserved for future use.
 
 ### DIM
 
-Define variables and allocate memory for them. `dim` is the most common way to declare that variables exist. The simplest form just lists the variable names and (optionally) array sizes. The variable types are inferred from the names. For example, you can declare an array `a` of 10 integers, a single integer `b`, and a string `c$` with:
+Dimension variables. This defines variables and allocate memory for them. `dim` is the most common way to declare that variables exist. The simplest form just lists the variable names and (optionally) array sizes. The variable types are inferred from the names. For example, you can declare an array `a` of 10 integers, a single integer `b`, and a string `c$` with:
 ```
 dim a(10), b, c$
 ```
