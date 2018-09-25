@@ -27,3 +27,9 @@ str,n: hello,7
   left: hello right: hello
 str,n: goodbye,3
   left: goo right: bye
+backwards:
+10
+8
+6
+4
+2

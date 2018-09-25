@@ -719,7 +719,9 @@ TransformCountRepeat(AST *ast)
 
         fromi = EvalConstExpr(fromval);
         toi = EvalConstExpr(toval);
-        knownStepDir = (fromi > toi) ? -1 : 1;
+        if (!knownStepDir) {
+            knownStepDir = (fromi > toi) ? -1 : 1;
+        }
         if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
             loopkind = AST_FORATLEASTONCE;
         }
@@ -752,7 +754,7 @@ TransformCountRepeat(AST *ast)
 
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
-        if (knownStepDir < 0) {
+        if (knownStepDir < 0 && current->language == LANG_SPIN) {
             stepval = AstOperator(K_NEGATE, NULL, stepval);
             knownStepVal = -knownStepVal;
         }

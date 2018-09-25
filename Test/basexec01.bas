@@ -96,6 +96,12 @@ end sub
 testlr "hello", 7
 testlr "goodbye", 3
 
+'' test backwards for loop
+print "backwards: "
+for i = 10 to 1 step -2
+  print i
+next i
+
 ''
 '' done
 ''
