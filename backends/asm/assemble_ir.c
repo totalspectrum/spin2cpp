@@ -510,7 +510,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                         if (needcomma) {
                             flexbuf_addstr(fb, ", ");
                         }
-                        flexbuf_addstr(fb, ast->d.string);
+                        flexbuf_addstr(fb, VarName(ast));
                         needcomma = 1;
                         list = list->right;
                     }
@@ -526,7 +526,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 flexbuf_addstr(fb, "  __lock\n");
                 list = f->params;
                 while (list) {
-                    flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, list->left->d.string);
+                    flexbuf_printf(fb, "  __mbox[%d] := %s\n", paramnum, VarName(list->left));
                     list = list->right;
                     paramnum++;
                 }

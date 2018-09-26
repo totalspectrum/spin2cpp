@@ -144,4 +144,7 @@ void InitAsmCode();
 Operand *GetLabelOperand(const char *name);
 Operand *GetLabelFromSymbol(AST *where, const char *name);
 
+// find the variable name in a variable or AST_DECLARE_VAR tree
+const char *VarName(AST *ast);
+
 #endif

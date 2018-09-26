@@ -909,11 +909,12 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       } else {
           name = "result";
       }
-  } else if (expr->kind == AST_IDENTIFIER) {
-      name = expr->d.string;
   } else {
-      ERROR(expr, "Internal error, unexpected expression type for identifier");
-      return NewImmediate(0);
+      name = VarName(expr);
+      if (!name) {
+          ERROR(expr, "Internal error, unexpected expression type for identifier");
+          return NewImmediate(0);
+      }
   }
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
@@ -1096,9 +1097,6 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             ast = astlist->left;
             astlist = astlist->right;
 
-            if (ast->kind == AST_DECLARE_VAR) {
-                ast = ast->right;
-            }
             src = GetFunctionParameterForCall(irl, func, n++);
             dst = CompileIdentifierForFunc(irl, ast, func);
             EmitMove(irl, dst, src);
