@@ -426,7 +426,23 @@ Used to resume loop execution early. Not implemented yet.
 
 ### CPU
 
-Reserved word.
+Used to start a subroutine running on another CPU. The parameters are the subroutine call to execute, and a stack for the other CPU to use. For example:
+```
+' blink a pin at a given frequency
+sub blink(pin, freq)
+  direction(pin) = output
+  do
+    output(pin) = not output(pin)
+    waitcnt(getcnt() + freq)
+  loop
+end sub
+...
+dim stack(8) ' small stack, blink does not call many other functions
+
+' start the blinking up on another CPU
+var a = cpu(blink(LED, 80_000_000), @stack(1))
+```
+`cpu` returns the cpu id ("cog id") of the CPU that the new function is running on.
 
 ### DECLARE
 
