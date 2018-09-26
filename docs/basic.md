@@ -60,6 +60,7 @@ byte
 case
 class
 continue
+cpu
 declare
 dim
 direction
@@ -111,6 +112,7 @@ var
 wend
 while
 with
+word
 xor
 ```
 
@@ -421,6 +423,10 @@ Inside a type name, CONST signifies that variables of this type may not be modif
 ### CONTINUE
 
 Used to resume loop execution early. Not implemented yet.
+
+### CPU
+
+Reserved word.
 
 ### DECLARE
 
@@ -842,6 +848,10 @@ or
     loopcount = loopcount + 1
   loop
 ```
+
+### WORD
+
+An alias for `ushort`, a 16 bit unsigned word.
 
 ### XOR
 

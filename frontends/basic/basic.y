@@ -117,7 +117,6 @@ AST *AstCharItem(int c)
 %token BAS_INSTRMODIFIER "asm instruction modifier"
 %token BAS_ALIGNL     "alignl"
 %token BAS_ALIGNW     "alignw"
-%token BAS_WORD       "word"
 
 /* keywords */
 %token BAS_ABS        "abs"
@@ -131,6 +130,7 @@ AST *AstCharItem(int c)
 %token BAS_CLASS      "class"
 %token BAS_CONST      "const"
 %token BAS_CONTINUE   "continue"
+%token BAS_CPU        "cpu"
 %token BAS_DECLARE    "declare"
 %token BAS_DIM        "dim"
 %token BAS_DIRECTION  "direction"
@@ -184,6 +184,7 @@ AST *AstCharItem(int c)
 %token BAS_WEND       "wend"
 %token BAS_WITH       "with"
 %token BAS_WHILE      "while"
+%token BAS_WORD       "word"
 %token BAS_XOR        "xor"
 %token BAS_LE         "<="
 %token BAS_GE         ">="
@@ -553,6 +554,14 @@ expr:
     { $$ = GetPinRange("outa", "outb", $3); }
   | BAS_DIRECTION '(' pinrange ')'
     { $$ = GetPinRange("dira", "dirb", $3); }
+  | BAS_CPU '(' exprlist ')'
+    {
+        AST *elist;
+        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
+        elist = NewAST(AST_EXPRLIST, immval, NULL);
+        elist = AddToList(elist, $3);
+        $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
 ;
 
 lhs: identifier
@@ -702,6 +711,8 @@ basetypename:
   BAS_UBYTE
     { $$ = ast_type_byte; }
   | BAS_USHORT
+    { $$ = ast_type_word; }
+  | BAS_WORD
     { $$ = ast_type_word; }
   | BAS_LONG
     { $$ = ast_type_long; }

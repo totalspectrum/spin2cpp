@@ -983,6 +983,20 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   return GetOneGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
 }
 
+const char *
+VarName(AST *ast)
+{
+    if (ast->kind == AST_DECLARE_VAR) {
+        // left is type, right is name
+        ast = ast->right;
+    }
+    if (ast->kind != AST_IDENTIFIER) {
+        ERROR(ast, "Internal error, expected identifier");
+        return "<null>";
+    }
+    return ast->d.string;
+}
+
 //
 // utility function: get a pointer to where we should put the n'th argument
 // for function f when we call it
@@ -998,19 +1012,22 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
         AST *ast;
 
         while (astlist != NULL) {
+            const char *name;
             ast = astlist->left;
             astlist = astlist->right;
             if (n == 0) {
-                Symbol *sym = FindSymbol(&func->localsyms, ast->d.string);
+                Symbol *sym;
+                name = VarName(ast);
+                sym = FindSymbol(&func->localsyms, name);
                 if (!sym) {
-                    ERROR(NULL, "Internal error: symbol %s not found", ast->d.string);
+                    ERROR(NULL, "Internal error: symbol %s not found", name);
                     return NewImmediate(0);
                 }
                 // we have to leave space for:
                 // return address
                 // old frame pointer
                 // result value
-                return StackRef(3*LONG_SIZE + sym->offset);
+                return StackRef((2 + func->numresults)*LONG_SIZE + sym->offset);
             }
             --n;
         }
@@ -2456,8 +2473,10 @@ CompileCoginit(IRList *irl, AST *expr)
         EmitMove(irl, newstacktop, NewImmediate(0));
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // provide space for result
-        EmitMove(irl, newstacktop, NewImmediate(0));
-        EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        if (remote->numresults > 0) {
+            EmitMove(irl, newstacktop, NewImmediate(0));
+            EmitOp2(irl, OPC_ADD, newstackptr, const4);
+        }
         // now the parameters
         plist = CompileExprList(irl, params);
         while (plist) {

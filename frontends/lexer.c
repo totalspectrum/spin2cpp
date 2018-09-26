@@ -1079,6 +1079,7 @@ struct reservedword basic_keywords[] = {
   { "class", BAS_CLASS },
   { "const", BAS_CONST },
   { "continue", BAS_CONTINUE },
+  { "cpu", BAS_CPU },
   { "declare", BAS_DECLARE },
   { "dim", BAS_DIM },
   { "direction", BAS_DIRECTION },
@@ -1133,6 +1134,7 @@ struct reservedword basic_keywords[] = {
   { "wend", BAS_WEND },
   { "while", BAS_WHILE },
   { "with", BAS_WITH },
+  { "word", BAS_WORD },
   { "xor", BAS_XOR },
 };
 

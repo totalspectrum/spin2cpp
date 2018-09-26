@@ -78,6 +78,7 @@ static void
 doBasicTransform(AST **astptr)
 {
     AST *ast = *astptr;
+    Function *func;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -214,6 +215,14 @@ doBasicTransform(AST **astptr)
                 WARNING(ast, "Redefining %s as a label", name);
             }
             AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, 0);
+        }
+        break;
+    case AST_COGINIT:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        if (0 != (func = IsSpinCoginit(ast))) {
+            func->cog_task = 1;
+            func->force_static = 1;
         }
         break;
     default:
@@ -738,6 +747,9 @@ AST *CheckTypes(AST *ast)
             }
         }
         return NULL;
+    case AST_COGINIT:
+        ltype = ast_type_long;
+        break;
     case AST_OPERATOR:
         ltype = CoerceOperatorTypes(ast, ltype, rtype);
         break;
