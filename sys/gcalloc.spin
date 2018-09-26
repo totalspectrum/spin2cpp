@@ -87,10 +87,11 @@ CON
   ' more easily
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
+  __REAL_HEAPSIZE__ = 64  ' redefined based on user options
   
 DAT
 _gc_heap_base
-	long 0[64]	'' this is our heap, for now; eventually this could be replaced at compile time
+	long 0[__REAL_HEAPSIZE__]
 _gc_heap_end
 
 	

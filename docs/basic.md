@@ -246,6 +246,14 @@ function Add(a as integer, b as integer) as integer
 end function
 ```
 
+### Memory allocation
+
+Fastspin BASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size, but this may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
+
+Garbage collection works by scanning memory for pointers that were returned from the memory allocation function. As long as references to the original pointers returned by functions like `left$` or `right$` exist, the memory will not be re-used for anything else.
+
+Note that a CPU ("COG" in Spin terms) cannot scan the internal memory of other CPUs, so memory allocated by one CPU will only be garbage collected by that same CPU. This can lead to an out of memory situation even if in fact there is memory available to be claimed. For this reason we suggest that all allocation of temporary memory be done in one CPU only.
+
 ## Propeller Specific Features
 
 ### Input, Output, and Direction
@@ -580,6 +588,12 @@ done:
 ```
 Note that in most cases code written with a `goto` could better be written with
 `if` or `do` (for instance the example above would be easier to read if written with `if` ... `then` ... `else`). `goto` should be used sparingly.
+
+### HEAPSIZE
+```
+  const HEAPSIZE = 256
+```
+Declares the amount of space to be used for internal memory allocation by things like string functions. The default is 256 bytes, but if your program does a lot of string manipulation and/or needs to hold on to the allocations for a long time, you may need to increase this by explicitly declaring `const HEAPSIZE` with a larger value.
 
 ### IF
 

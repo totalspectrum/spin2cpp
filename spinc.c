@@ -649,13 +649,38 @@ FixupCode(Module *P, int isBinary)
         Function *pf;
         bool need_heap = false;
         for (pf = globalModule->functions; pf; pf = pf->next) {
-            if (!strcasecmp(pf->name, "_gc_init")) {
+            if (!strcasecmp(pf->name, "_gc_ptrs")) {
                 need_heap = true;
                 break;
             }
         }
         if (need_heap) {
-            WARNING(NULL, "Unfinished: need to add a heap");
+            Symbol *sym = FindSymbol(&P->objsyms, "heapsize");
+            uint32_t heapsize = 0;
+            AST *heapAst;
+            if (sym) {
+                if (sym->type != SYM_CONSTANT) {
+                    WARNING(NULL, "heapsize is not a constant");
+                } else {
+                    heapsize = EvalConstExpr((AST *)sym->val);
+                }
+            }
+            if (heapsize != 0) {
+                // user changed heap size
+                if (heapsize < 64) {
+                    WARNING(NULL, "heapsize of %u is too small, using 64", heapsize);
+                    heapsize = 64;
+                }
+                heapsize = (heapsize+3)/4; // convert to longs
+                heapAst = AstInteger(heapsize);
+                sym = FindSymbol(&globalModule->objsyms, "__REAL_HEAPSIZE__");
+                if (!sym || sym->type != SYM_CONSTANT) {
+                    ERROR(NULL, "Internal error, could not find __REAL_HEAPSIZE__");
+                } else {
+                    // reset the size
+                    sym->val = heapAst;
+                }
+            }
         }
     }
     AssignObjectOffsets(P);
