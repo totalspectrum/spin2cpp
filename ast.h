@@ -159,6 +159,7 @@ enum astkind {
     AST_CHAR,
 
     AST_REGPAIR = 108,
+    AST_METHODPTR,
 };
 
 /* forward reference */
