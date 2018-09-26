@@ -752,6 +752,14 @@ ApplyConditionAfter(IR *instr, int val)
   }
 }
 
+static bool
+SameImmediate(Operand *a, Operand *b)
+{
+    if (a->kind != IMM_INT || b->kind != IMM_INT)
+        return 0;
+    return a->val == b->val;
+}
+    
 // try to transform an operation with a destination that is
 // known to be the constant "imm"
 // if the src is also constant, convert it to a move immediate
@@ -844,14 +852,28 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
     if (IsJump(ir) && !JumpIsAfterOrEqual(instr, ir)) {
       return change;
     }
-    if (ir->dst == orig) {
-      // we can perhaps replace the operation with a mov
-      change |= TransformConstDst(ir, imm);
-      // but our register has changed, so we must stop
-      return change;
+    if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, imm)) {
+        if ( ir->dst == orig ) {
+            // updating same register, so kill it
+            ir->opc = OPC_DUMMY;
+            change = 1;
+        } else {
+            // it would be nice here to substitute forward the
+            // register "dst" with "orig", so as to eliminate some
+            // redundant register usage; but my original attempt to
+            // do this ran into infinite loops, so putting that on hold
+            // for now
+        }
+    } else if (ir->dst == orig) {
+        // we can perhaps replace the operation with a mov
+        change |= TransformConstDst(ir, imm);
     } else if (ir->src == orig) {
       ir->src = imm;
       change = 1;
+    }
+    if (InstrModifies(ir, orig)) {
+      // our register has changed, so we must stop
+      return change;
     }
   }
   return change;
