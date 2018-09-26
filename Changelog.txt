@@ -1,3 +1,6 @@
+Version 3.9.4
+- Fixed an optimizer bug that could cause the compiler to crash
+
 Version 3.9.3
 - Allow backquote (`) to quote special characters in Spin identifiers
 - Fixed handling of '(expr)[N]' in PASM blocks

@@ -1916,6 +1916,7 @@ OptimizeIncDec(IRList *irl)
         if (ir->opc == OPC_MOV
             && IsLocal(ir->dst)
             && ir->cond == COND_TRUE
+            && ir_next
             && (ir_next->opc == OPC_ADD || ir_next->opc == OPC_SUB)
             && ir_next->dst == ir->src
             && IsImmediate(ir_next->src)
