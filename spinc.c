@@ -620,13 +620,19 @@ FixupCode(Module *P, int isBinary)
     }
     
     for (Q = allparse; Q; Q = Q->next) {
+        int last_errors = gl_errors;
         if (Q->language == LANG_SPIN) {
             SpinTransform(Q);
         } else if (Q->language == LANG_BASIC) {
             BasicTransform(Q);
         }
-        ProcessFuncs(Q);
+        if (gl_errors == last_errors) {
+            ProcessFuncs(Q);
+        }
+        last_errors = gl_errors;
     }
+    if (gl_errors > 0)
+        return;
     do {
         changes = 0;
         for (Q = allparse; Q; Q = Q->next) {

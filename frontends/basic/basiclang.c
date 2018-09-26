@@ -754,7 +754,9 @@ AST *CheckTypes(AST *ast)
         ltype = CoerceOperatorTypes(ast, ltype, rtype);
         break;
     case AST_ASSIGN:
-        ltype = CoerceAssignTypes(AST_ASSIGN, &ast->right, ltype, rtype);
+        if (rtype) {
+            ltype = CoerceAssignTypes(AST_ASSIGN, &ast->right, ltype, rtype);
+        }
         break;
     case AST_RETURN:
         {
@@ -796,7 +798,7 @@ AST *CheckTypes(AST *ast)
                 }
                 ltype = func->rettype;
             } else {
-                //WARNING(ast, "Unable to find function");
+                return NULL;
             }
         }
         break;
