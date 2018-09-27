@@ -137,6 +137,9 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             flexbuf_printf(fb, "--");
         }
         flexbuf_addstr(fb, RemappedName(reg->name));
+        if ( (reg->kind == REG_HW || reg->kind == IMM_COG_LABEL) && reg->val != 0) {
+            flexbuf_printf(fb, " + %d", reg->val);
+        }
         if (effect == OPEFFECT_POSTINC) {
             flexbuf_printf(fb, "++");
         } else if (effect == OPEFFECT_POSTDEC) {

@@ -34,7 +34,7 @@ static IRList hubdata;
 Operand *mulfunc, *muldiva, *muldivb;
 Operand *divfunc, *unsdivfunc;
 
-static Operand *putcogreg;
+Operand *putcogreg;
 
 static Operand *abortfunc;
 static Operand *catchfunc;

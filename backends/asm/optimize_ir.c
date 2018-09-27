@@ -770,11 +770,19 @@ TransformConstDst(IR *ir, Operand *imm)
   intptr_t val1, val2;
   int setsResult = 1;
 
-  if (ir->src == NULL || ir->src->kind != IMM_INT || imm->kind != IMM_INT)
+  if (ir->src == NULL || ir->src->kind != IMM_INT)
     {
       return 0;
     }
-
+  if (imm->kind == IMM_COG_LABEL && ir->opc == OPC_ADD && ir->flags == 0) {
+      Operand *newlabel = NewOperand(IMM_COG_LABEL, imm->name, imm->val + ir->src->val);
+      ir->src = newlabel;
+      ReplaceOpcode(ir, OPC_MOV);
+      return 1;
+  }
+  if (imm->kind != IMM_INT) {
+      return 0;
+  }
   if (ir->flags & FLAG_WC) {
     // we don't know how to set the WC flag for anything other
     // than cmps
@@ -1983,6 +1991,69 @@ OptimizeIncDec(IRList *irl)
     return change;
 }
 
+/* optimizer for COG memory accesses
+ * if we see something like:
+ *   movs wrcog, #x
+ *   movd wrcog, #y
+ *   call #wrcog
+ * we can replace it with
+ *   mov x, y
+ */
+extern Operand *putcogreg;
+
+static int
+OptimizeCogWrites(IRList *irl)
+{
+    IR *ir, *ir_next, *ir_prev;
+    int change = 0;
+    ir = irl->head;
+    ir_prev = NULL;
+    while (ir) {
+        ir_next = ir->next;
+        if (ir->opc == OPC_MOVS
+            && ir->dst == putcogreg
+            && ir->src->kind == IMM_COG_LABEL
+            && ir_next
+            && ir_next->opc == OPC_MOVD
+            && ir_next->dst == putcogreg
+            && ir_next->src->kind == IMM_COG_LABEL
+            && ir_next->next
+            && ir_next->next->opc == OPC_CALL
+            && ir_next->next->dst == putcogreg
+            && ir_prev && ir_prev->opc == OPC_LIVE
+            )
+        {
+            Operand *src = ir->src;
+            Operand *dst = ir_next->src;
+
+            if (!strcmp(src->name, ir_prev->dst->name)) {
+                src = ir_prev->dst;
+            }
+            if (!strcmp(dst->name, ir_prev->dst->name)) {
+                dst = ir_prev->dst;
+            }
+            if (dst->kind == IMM_COG_LABEL) {
+                dst = NewOperand(REG_HW, dst->name, dst->val);
+            }
+            if (src->kind == IMM_COG_LABEL) {
+                src = NewOperand(REG_HW, src->name, src->val);
+            }
+            if (1) {
+                ReplaceOpcode(ir, OPC_MOV);
+                ir->dst = dst;
+                ir->src = src;
+                ir_prev->opc = OPC_DUMMY;
+                ir_next->opc = OPC_DUMMY;
+                ir_next->next->opc = OPC_DUMMY;
+                change = 1;
+            }
+        }
+        ir_prev = ir;
+        ir = ir_next;
+    }
+    return change;
+}
+
 /* the code generator produces some obviously silly sequences
  * like:  mov T, A; op T, B; mov A, T
  * replace those with op A, B... but ONLY if T is dead after the 3rd one
@@ -2297,6 +2368,7 @@ OptimizeIRLocal(IRList *irl)
         change |= CheckLabelUsage(irl);
         change |= EliminateDeadCode(irl);
         change |= OptimizeReadWrite(irl);
+        change |= OptimizeCogWrites(irl);
         change |= OptimizeSimpleAssignments(irl);
         change |= OptimizeMoves(irl);
         change |= OptimizeImmediates(irl);
