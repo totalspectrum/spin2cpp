@@ -79,6 +79,7 @@ static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 static Operand *CogMemRef(Operand *addr, int offset);
+static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset);
 
 typedef struct AsmVariable {
     Operand *op;
@@ -991,6 +992,9 @@ VarName(AST *ast)
         // left is type, right is name
         ast = ast->right;
     }
+    if (ast->kind == AST_ARRAYDECL) {
+        ast = ast->left;
+    }
     if (ast->kind != AST_IDENTIFIER) {
         ERROR(ast, "Internal error, expected identifier");
         return "<null>";
@@ -1083,11 +1087,13 @@ static int LocalSize(Function *func)
 static void EmitFunctionProlog(IRList *irl, Function *func)
 {
     int n = 0;
+    int i, size;
     AST *astlist;
     AST *ast;
     Operand *src;
     Operand *dst;
-
+    Operand *basedst;
+    
     if (IS_FAST_CALL(func)) {
         //
         // move parameters into local registers
@@ -1096,10 +1102,24 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         while (astlist != NULL) {
             ast = astlist->left;
             astlist = astlist->right;
-
-            src = GetFunctionParameterForCall(irl, func, n++);
-            dst = CompileIdentifierForFunc(irl, ast, func);
-            EmitMove(irl, dst, src);
+            if (ast->kind == AST_DECLARE_VAR) {
+                ast = ast->right;
+            }
+            if (ast->kind == AST_ARRAYDECL) {
+                size = EvalConstExpr(ast->right);
+            } else {
+                size = 1;
+            }
+            basedst = CompileIdentifierForFunc(irl, ast, func);
+            for (i = 0; i < size; i++) {
+                src = GetFunctionParameterForCall(irl, func, n++);
+                if (size > 1) {
+                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i));
+                } else {
+                    dst = basedst;
+                }
+                EmitMove(irl, dst, src);
+            }
         }
     }
 }
@@ -2175,6 +2195,7 @@ IsCogMem(Operand *addr)
     case REG_HW:
     case REG_REG:
     case REG_LOCAL:
+    case REG_ARG:
         return true;
     case IMM_HUB_LABEL:
     case IMM_STRING:

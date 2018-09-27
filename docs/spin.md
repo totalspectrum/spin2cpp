@@ -126,6 +126,20 @@ PUB quad64(ahi, alo)
   return dbl64(dbl64(ahi, alo))
 ```
 
+### Array parameters
+
+fastspin allows method parameters to be small arrays; in this case, the caller must supply one argument for each element of the array. For example:
+```
+pub selector(n, a[4])
+  return a[n]
+
+pub tryit
+  return selector(n, 1, 2, 3, 4)
+```
+This particular example could be achieved via `lookup`, but there are other cases where it might be convenient to bundle parameters together in an array.
+
+This feature is still incomplete, and may not work properly for C/C++ output.
+
 ### Default function parameters
 
 fastspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
