@@ -2106,9 +2106,15 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         
         EmitMove(irl, temp1, ptr1);
         EmitMove(irl, temp2, ptr2);
-        *objptr = temp1;
-        *funcptr = temp2;
-        *offsetptr = NULL;
+        if (objptr) {
+            *objptr = temp1;
+        }
+        if (funcptr) {
+            *funcptr = temp2;
+        }
+        if (offsetptr) {
+            *offsetptr = NULL;
+        }
         return NULL;
     }
     func = (Function *)sym->val;
@@ -2118,7 +2124,11 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     offset = NULL;
     objaddr = NULL;
     if (objsym) {
-        call = expr->left;
+        if (expr->kind == AST_METHODREF) {
+            call = expr;
+        } else {
+            call = expr->left;
+        }
         if (call->kind == AST_METHODREF) {
             call = call->left;
         } else {
@@ -2139,9 +2149,15 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             offset = NewImmediate(objsym->offset);
         }
     }
-    *objptr = objaddr;
-    *offsetptr = offset;
-    *funcptr = FuncData(func)->asmname;
+    if (objptr) {
+        *objptr = objaddr;
+    }
+    if (offsetptr) {
+        *offsetptr = offset;
+    }
+    if (funcptr) {
+        *funcptr = FuncData(func)->asmname;
+    }
     return func;
 }
 
@@ -2697,7 +2713,9 @@ GetAddressOf(IRList *irl, AST *expr)
     }
     case AST_METHODREF:
     {
-        return NewImmediate(99);
+        Operand *funcoperand;
+        CompileGetFunctionInfo(irl, expr, NULL, NULL, &funcoperand, NULL);
+        return funcoperand;
     }
     default:
         ERROR(expr, "Cannot take address of expression");
@@ -3942,12 +3960,18 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     "hubretptr\n"
     "    long @@@hub_ret_to_cog\n"
+    "LMM_NEW_PC\n"
+    "    long   0\n"
+    "    ' fall through\n"
     "LMM_CALL\n"
+    "    rdlong LMM_NEW_PC, pc\n"
+    "LMM_CALL_PTR\n"
     "    mov    lr, pc\n"
     "    add    lr, #4\n"
     "    wrlong lr, sp\n"
     "    add    sp, #4\n"
-    "    ' fall through\n"
+    "    mov    pc, LMM_NEW_PC\n"
+    "    jmp    #LMM_LOOP\n"
     "LMM_JUMP\n"
     "    rdlong pc, pc\n"
     "    jmp    #LMM_LOOP\n"

@@ -649,6 +649,16 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;
+            } else if (IsLocalOrArg(ir->dst)) {
+                if (lmmMode) {
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "mov\tLMM_NEW_PC, ");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_addstr(fb, "\n");
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "jmp\t#LMM_CALL_PTR\n");
+                    return;
+                }
             }
             break;
         case OPC_DJNZ:

@@ -750,6 +750,8 @@ BuildMethodPointer(AST *ast)
     }
     if (objast == NULL) {
         objast = NewAST(AST_SELF, NULL, NULL);
+    } else {
+        objast = NewAST(AST_ADDROF, objast, NULL);
     }
     // save off the current @ node
     funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);

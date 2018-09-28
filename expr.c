@@ -1523,35 +1523,40 @@ IsArrayOrPointerSymbol(Symbol *sym)
 /* find function symbol in a function call */
 /* if errflag is nonzero, print errors for identifiers not found */
 Symbol *
-FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr, int errflag)
+FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
 {
     AST *objref = NULL;
     Symbol *objsym = NULL;
     Symbol *sym = NULL;
-
-    if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF) {
-        ERROR(expr, "Internal error expecting function call");
-        return NULL;
+    AST *expr = ast;
+    
+    if (expr->kind != AST_METHODREF) {       
+        if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF) {
+            ERROR(expr, "Internal error expecting function call");
+            return NULL;
+        }
+        expr = expr->left;
     }
-    if (expr->left && expr->left->kind == AST_METHODREF) {
+        
+    if (expr && expr->kind == AST_METHODREF) {
         const char *thename;
-        objref = expr->left->left;
+        objref = expr->left;
         objsym = LookupAstSymbol(objref, errflag ? "object reference" : NULL);
         if (!objsym) return NULL;
         if (objsym->type != SYM_OBJECT) {
             if (errflag)
-                ERROR(expr, "%s is not an object", objsym->name);
+                ERROR(ast, "%s is not an object", objsym->name);
             return NULL;
         }
-        thename = expr->left->right->d.string;
-        sym = LookupObjSymbol(expr, objsym, thename);
+        thename = expr->right->d.string;
+        sym = LookupObjSymbol(ast, objsym, thename);
         if (!sym || sym->type != SYM_FUNCTION) {
             if (errflag)
-                ERROR(expr, "%s is not a method of %s", thename, objsym->name);
+                ERROR(ast, "%s is not a method of %s", thename, objsym->name);
             return NULL;
         }
     } else {
-        sym = LookupAstSymbol(expr->left, errflag ? "function call" : NULL);
+        sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
     }
     if (objsymPtr) *objsymPtr = objsym;
     if (objrefPtr) *objrefPtr = objref;
@@ -1897,12 +1902,19 @@ CompatibleTypes(AST *A, AST *B)
         return 0;
     }
     if (A->kind == AST_FUNCTYPE) {
+        if (FuncNumResults(A) != FuncNumResults(B)) {
+            return 0;
+        }
         // the return types have to be compatible
         if (!CompatibleTypes(A->left, B->left)) {
             return 0;
         }
         // and the parameters have to be compatible
-        // fixme... deal with that later
+        if (AstListLen(A->right) != AstListLen(B->right)) {
+            // different number of parameters, bad
+            return 0;
+        }
+        // FIXME: deal with actual parameter checks later
         return 1;
     }
     // both A and B are pointers (or perhaps arrays)
@@ -2018,6 +2030,10 @@ FuncNumResults(AST *functype)
 {
     functype = functype->left;
     if (functype == ast_type_void) {
+        return 0;
+    }
+    if (!functype) {
+        WARNING(functype, "Internal error, NULL ptr in FuncNumResults");
         return 0;
     }
     return (TypeSize(functype) + 3) / 4;

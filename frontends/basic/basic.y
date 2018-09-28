@@ -743,6 +743,8 @@ basetypename:
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
   | BAS_FUNCTION '(' paramdecl ')' BAS_AS basetypename
     { $$ = NewAST(AST_FUNCTYPE, $6, $3); }
+  | BAS_SUB '(' paramdecl ')'
+    { $$ = NewAST(AST_FUNCTYPE, ast_type_void, $3); }
   | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
