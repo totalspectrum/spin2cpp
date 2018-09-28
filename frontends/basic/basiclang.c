@@ -673,7 +673,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 // to have type desttype by introducing any
 // necessary casts
 //
-AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
 {
     AST *expr = *astptr;
     const char *msg;
@@ -708,14 +708,14 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
         
     // 
     if (!CompatibleTypes(desttype, srctype)) {
-        ERROR(expr, "incompatible types in %s", msg);
+        ERROR(line, "incompatible types in %s", msg);
         return desttype;
     }
     if (IsConstType(desttype) && kind == AST_ASSIGN) {
-        WARNING(expr, "assignment to const object");
+        WARNING(line, "assignment to const object");
     }
     if (IsPointerType(srctype) && IsConstType(BaseType(srctype)) && !IsConstType(BaseType(desttype))) {
-        WARNING(expr, "%s discards const attribute from pointer", msg);
+        WARNING(line, "%s discards const attribute from pointer", msg);
     }
     if (IsIntType(desttype)) {
         if (IsIntType(srctype)) {
@@ -730,7 +730,7 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
             }
         }
         if (IsFloatType(srctype)) {
-            ERROR(expr, "cannot assign float to integer");
+            ERROR(line, "cannot assign float to integer");
         }
     }
     return desttype;
@@ -796,14 +796,14 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_ASSIGN:
         if (rtype) {
-            ltype = CoerceAssignTypes(AST_ASSIGN, &ast->right, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype);
         }
         break;
     case AST_RETURN:
         {
             rtype = ltype; // type of actual expression
             ltype = GetFunctionReturnType(curfunc);
-            ltype = CoerceAssignTypes(AST_RETURN, &ast->left, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype);
         }
         break;
     case AST_FUNCCALL:
@@ -832,7 +832,7 @@ AST *CheckTypes(AST *ast)
                         }
                     }
                     if (expectType) {
-                        CoerceAssignTypes(AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
                     }
                     calledParamList = calledParamList->right;
                     actualParamList = actualParamList->right;

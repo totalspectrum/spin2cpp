@@ -2097,12 +2097,14 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     if (sym->type != SYM_FUNCTION) {
         Operand *base;
+        Operand *tempbase = NewFunctionTempRegister();
         Operand *temp1 = NewFunctionTempRegister();
         Operand *temp2 = NewFunctionTempRegister();
         Operand *ptr1, *ptr2;
         base = CompileSymbolForFunc(irl, sym, curfunc);
-        ptr1 = SizedHubMemRef(LONG_SIZE, base, 0);
-        ptr2 = SizedHubMemRef(LONG_SIZE, base, 4);
+        EmitMove(irl, tempbase, base);
+        ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
+        ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);
         
         EmitMove(irl, temp1, ptr1);
         EmitMove(irl, temp2, ptr2);
@@ -3965,10 +3967,9 @@ static const char *builtin_lmm_p1 =
     "    ' fall through\n"
     "LMM_CALL\n"
     "    rdlong LMM_NEW_PC, pc\n"
+    "    add    pc, #4\n"
     "LMM_CALL_PTR\n"
-    "    mov    lr, pc\n"
-    "    add    lr, #4\n"
-    "    wrlong lr, sp\n"
+    "    wrlong pc, sp\n"
     "    add    sp, #4\n"
     "    mov    pc, LMM_NEW_PC\n"
     "    jmp    #LMM_LOOP\n"

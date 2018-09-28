@@ -613,24 +613,26 @@ ProcessLanguage(int language, void (*func)(Module *))
         int last_errors = gl_errors;
         if (Q->language == language) {
             func(Q);
-        }
-        if (gl_errors == last_errors) {
-            ProcessFuncs(Q);
+            if (gl_errors == last_errors) {
+                ProcessFuncs(Q);
+            }
         }
         last_errors = gl_errors;
     }
     if (gl_errors > 0)
         return;
 
-    // do type inference for some languages
-    if (language == LANG_SPIN) {
-        do {
-            changes = 0;
-            for (Q = allparse; Q; Q = Q->next) {
+    // do type inference; we do that even for BASIC
+    // because there are some things (like static-ness
+    // of functions) that C wants to know about
+    do {
+        changes = 0;
+        for (Q = allparse; Q; Q = Q->next) {
+            if (Q->language == language) {
                 changes += InferTypes(Q);
             }
-        } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
-    }
+        }
+    } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
 }
 
 static void
