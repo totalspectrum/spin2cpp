@@ -603,11 +603,40 @@ RemoveUnusedMethods(int isBinary)
 #define MAX_TYPE_PASSES 4
 
 static void
+ProcessLanguage(int language, void (*func)(Module *))
+{
+    int tries = 0;
+    int changes;
+    Module *Q;
+    
+    for (Q = allparse; Q; Q = Q->next) {
+        int last_errors = gl_errors;
+        if (Q->language == language) {
+            func(Q);
+        }
+        if (gl_errors == last_errors) {
+            ProcessFuncs(Q);
+        }
+        last_errors = gl_errors;
+    }
+    if (gl_errors > 0)
+        return;
+
+    // do type inference for some languages
+    if (language == LANG_SPIN) {
+        do {
+            changes = 0;
+            for (Q = allparse; Q; Q = Q->next) {
+                changes += InferTypes(Q);
+            }
+        } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
+    }
+}
+
+static void
 FixupCode(Module *P, int isBinary)
 {
     Module *Q, *LastQ;
-    int changes;
-    int tries = 0;
 
     // append the global module to the list
     if (allparse)
@@ -619,27 +648,9 @@ FixupCode(Module *P, int isBinary)
         LastQ->next = globalModule;
     }
     
-    for (Q = allparse; Q; Q = Q->next) {
-        int last_errors = gl_errors;
-        if (Q->language == LANG_SPIN) {
-            SpinTransform(Q);
-        } else if (Q->language == LANG_BASIC) {
-            BasicTransform(Q);
-        }
-        if (gl_errors == last_errors) {
-            ProcessFuncs(Q);
-        }
-        last_errors = gl_errors;
-    }
-    if (gl_errors > 0)
-        return;
-    do {
-        changes = 0;
-        for (Q = allparse; Q; Q = Q->next) {
-            changes += InferTypes(Q);
-        }
-    } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
-
+    ProcessLanguage(LANG_SPIN, SpinTransform);
+    ProcessLanguage(LANG_BASIC, BasicTransform);
+    
     RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
