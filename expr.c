@@ -2012,3 +2012,13 @@ IsStringConst(AST *expr)
     }
     return false;
 }
+
+int
+FuncNumResults(AST *functype)
+{
+    functype = functype->left;
+    if (functype == ast_type_void) {
+        return 0;
+    }
+    return (TypeSize(functype) + 3) / 4;
+}

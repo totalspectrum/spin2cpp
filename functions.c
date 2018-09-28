@@ -1220,6 +1220,7 @@ ProcessFuncs(Module *P)
                 pf->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
             }
             pf->overalltype->left = ast_type_void;
+            pf->numresults = 0;
             pf->resultexpr = NULL;
         } else {
             if (!pf->result_used) {

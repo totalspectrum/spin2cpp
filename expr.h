@@ -84,4 +84,7 @@ AST *SimpleOptimizeExpr(AST *);
 // return 1 if an expression can have side effects
 int ExprHasSideEffects(AST *);
 
+// number of results from a function
+int FuncNumResults(AST *functype);
+
 #endif

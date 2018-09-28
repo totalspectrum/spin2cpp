@@ -21,8 +21,8 @@
 #define COG_DATA (gl_outputflags & OUTFLAG_COG_DATA)
 #define HUB_DATA (!COG_DATA)
 
-#define IS_FAST_CALL(f) (FuncData(f)->convention == FAST_CALL)
-#define IS_STACK_CALL(f) (FuncData(f)->convention == STACK_CALL)
+#define IS_FAST_CALL(f) (f && FuncData(f)->convention == FAST_CALL)
+#define IS_STACK_CALL(f) (f == 0 || FuncData(f)->convention == STACK_CALL)
 
 /* lists of instructions in hub and cog */
 static IRList cogcode;
@@ -898,28 +898,11 @@ LabelRef(IRList *irl, Symbol *sym)
 }
 
 static Operand *
-CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
+CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
 {
-  Module *P = func->module;
-  Symbol *sym;
-  const char *name;
   int stype;
   int size;
-  
-  if (expr->kind == AST_RESULT) {
-      if (func->resultexpr && func->resultexpr->kind == AST_IDENTIFIER) {
-          name = func->resultexpr->d.string;
-      } else {
-          name = "result";
-      }
-  } else {
-      name = VarName(expr);
-      if (!name) {
-          ERROR(expr, "Internal error, unexpected expression type for identifier");
-          return NewImmediate(0);
-      }
-  }
-  sym = LookupSymbolInFunc(func, name);
+  Module *P = func->module;
   if (sym) {
       AST *exprtype;
       stype = sym->type;
@@ -945,7 +928,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
-          ERROR(expr, "Internal error: identifier without FUNCCALL wrapper");
+          ERROR(NULL, "Internal error: identifier without FUNCCALL wrapper");
           return NewImmediate(0);
       case SYM_HWREG:
       {
@@ -957,7 +940,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
               /* do nothing, this is OK */
               stype = SYM_RESULT;
           } else {
-              ERROR(expr, "Symbol %s is of a type not handled by PASM output yet", name);
+              ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->name);
           }
           /* fall through */
       case SYM_LOCALVAR:
@@ -974,13 +957,39 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
           } else {
               size = TypeSize((AST *)sym->val);
           }
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
+          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
       case SYM_TEMPVAR:
           size = TypeSize((AST *)sym->val);
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0, size);
+          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       }
+  }
+  return NULL;
+}
+
+static Operand *
+CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
+{
+  Symbol *sym;
+  const char *name;
+  
+  if (expr->kind == AST_RESULT) {
+      if (func->resultexpr && func->resultexpr->kind == AST_IDENTIFIER) {
+          name = func->resultexpr->d.string;
+      } else {
+          name = "result";
+      }
+  } else {
+      name = VarName(expr);
+      if (!name) {
+          ERROR(expr, "Internal error, unexpected expression type for identifier");
+          return NewImmediate(0);
+      }
+  }
+  sym = LookupSymbolInFunc(func, name);
+  if (sym) {
+      return CompileSymbolForFunc(irl, sym, func);
   } else {
       ERROR_UNKNOWN_SYMBOL(expr);
   }
@@ -1008,37 +1017,52 @@ VarName(AST *ast)
 // utility function: get a pointer to where we should put the n'th argument
 // for function f when we call it
 //
-static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, int n)
+static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *functype, int n)
 {
     if (IS_FAST_CALL(func)) {
         char temp[20];
         sprintf(temp, "arg%d", n+1);
         return GetOneGlobal(REG_ARG, strdup(temp), 0);
     } else {
-        AST *astlist = func->params;
+        AST *astlist;
         AST *ast;
-
+        int numresults;
+        int offset;
+        
+        if (!IsFunctionType(functype)) {
+            ERROR(functype, "Expected function type");
+            return NewImmediate(0);
+        }
+        numresults = FuncNumResults(functype);
+        astlist = functype->right;
+        offset = 0;
         while (astlist != NULL) {
             const char *name;
             ast = astlist->left;
             astlist = astlist->right;
             if (n == 0) {
-                Symbol *sym;
                 name = VarName(ast);
-                sym = FindSymbol(&func->localsyms, name);
-                if (!sym) {
-                    ERROR(NULL, "Internal error: symbol %s not found", name);
-                    return NewImmediate(0);
+                if (func) {
+                    Symbol *sym;
+                    sym = FindSymbol(&func->localsyms, name);
+                    if (!sym) {
+                        ERROR(NULL, "Internal error: symbol %s not found", name);
+                        return NewImmediate(0);
+                    }
+                    if (sym->offset != offset) {
+                        ERROR(NULL, "Internal error: offset %d is not sym offset %d", offset, sym->offset);
+                    }
                 }
                 // we have to leave space for:
                 // return address
                 // old frame pointer
                 // result value
-                return StackRef((2 + func->numresults)*LONG_SIZE + sym->offset);
+                return StackRef((2 + numresults)*LONG_SIZE + offset);
             }
             --n;
+            offset += 4;
         }
-        ERROR(NULL, "Too many parameters to function %s", func->name);
+        ERROR(NULL, "Too many parameters to function %s", func ? func->name : "");
         return GetOneGlobal(REG_ARG, "dummyArg", 0);
     }
 }
@@ -1114,7 +1138,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             }
             basedst = CompileIdentifierForFunc(irl, ast, func);
             for (i = 0; i < size; i++) {
-                src = GetFunctionParameterForCall(irl, func, n++);
+                src = GetFunctionParameterForCall(irl, func, func->overalltype, n++);
                 if (size > 1) {
                     dst = ApplyArrayIndex(irl, basedst, NewImmediate(i));
                 } else {
@@ -2013,7 +2037,7 @@ CompileExprList(IRList *irl, AST *fromlist)
 }
 
 static void
-EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
+EmitParameterList(IRList *irl, OperandList *oplist, Function *func, AST *functype)
 {
     Operand *op;
     Operand *dst;
@@ -2023,7 +2047,7 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func)
         op = oplist->op;
         oplist = oplist->next;
 
-        dst = GetFunctionParameterForCall(irl, func, n++);
+        dst = GetFunctionParameterForCall(irl, func, functype, n++);
         EmitMove(irl, dst, op);
     }
 }
@@ -2050,20 +2074,41 @@ CompileFunccallFirstResult(IRList *irl, AST *expr)
  * returns function, or NULL
  */
 Function *
-CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offsetptr, Operand **funcptr)
+CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offsetptr, Operand **funcptr, AST **ftypeptr)
 {
     Operand *objaddr, *offset;
     Symbol *objsym, *sym;
     Function *func;
     AST *call;
     
+    if (ftypeptr) {
+        AST *ftype;
+        if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF) {
+            ftype = ExprType(expr->left);
+        } else {
+            ftype = NULL;
+        }
+        *ftypeptr = ftype;
+    }
     objsym = NULL;
     sym = FindFuncSymbol(expr, NULL, &objsym, 1);
     if (!sym) {
         ERROR(expr, "expected function symbol");
     }
     if (sym->type != SYM_FUNCTION) {
-        ERROR(expr, "Can't handle indirect calls yet");
+        Operand *base;
+        Operand *temp1 = NewFunctionTempRegister();
+        Operand *temp2 = NewFunctionTempRegister();
+        Operand *ptr1, *ptr2;
+        base = CompileSymbolForFunc(irl, sym, curfunc);
+        ptr1 = SizedHubMemRef(LONG_SIZE, base, 0);
+        ptr2 = SizedHubMemRef(LONG_SIZE, base, 4);
+        
+        EmitMove(irl, temp1, ptr1);
+        EmitMove(irl, temp2, ptr2);
+        *objptr = temp1;
+        *funcptr = temp2;
+        *offsetptr = NULL;
         return NULL;
     }
     func = (Function *)sym->val;
@@ -2108,6 +2153,7 @@ static OperandList *
 CompileFunccall(IRList *irl, AST *expr)
 {
   Function *func;
+  AST *functype;
   AST *params;
   Operand *offset;
   Operand *absobjaddr;
@@ -2115,10 +2161,11 @@ CompileFunccall(IRList *irl, AST *expr)
   OperandList *temp;
   OperandList *results = NULL;
   Operand *reg;
+  int numresults;
   IR *ir;
   int i;
 
-  func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr);
+  func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
   
   params = expr->right;
   temp = CompileExprList(irl, params);
@@ -2126,7 +2173,7 @@ CompileFunccall(IRList *irl, AST *expr)
   /* now copy the parameters into place (have to do this in case there are
      function calls within the parameters)
    */
-  EmitParameterList(irl, temp, func);
+  EmitParameterList(irl, temp, func, functype);
 
   if (offset || absobjaddr) {
       Operand *temp = NULL;
@@ -2154,7 +2201,11 @@ CompileFunccall(IRList *irl, AST *expr)
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
   */
-  for (i = 0; i < func->numresults; i++) {
+  numresults = FuncNumResults(functype);
+  if (func && func->numresults != numresults) {
+      ERROR(NULL, "Internal assert failure: func numresults inconsistent");
+  }
+  for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
       EmitMove(irl, reg, GetResultReg(i));
       AppendOperand(&results, reg);
@@ -2643,7 +2694,11 @@ GetAddressOf(IRList *irl, AST *expr)
       res = ApplyArrayIndex(irl, base, offset);
       tmp = GetLea(irl, res);
       return tmp;
-    }    
+    }
+    case AST_METHODREF:
+    {
+        return NewImmediate(99);
+    }
     default:
         ERROR(expr, "Cannot take address of expression");
         break;

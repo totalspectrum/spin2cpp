@@ -117,7 +117,8 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
     case BYTE_REF:
     case WORD_REF:
     case LONG_REF:
-        ERROR(NULL, "Internal error: tried to use memory directly");
+        WARNING(NULL, "Internal error: tried to use memory directly");
+        flexbuf_addstr(fb, "#@@@#");
         break;
     case IMM_HUB_LABEL:
         if (gl_p2 && useimm) {
