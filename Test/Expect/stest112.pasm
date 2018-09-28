@@ -5,17 +5,17 @@ DAT
 entry
 
 _preclock
-	mov	_var_02, #1
-	shl	_var_02, arg1
-	or	OUTA, _var_02
-	or	OUTA, _var_02
+	mov	_var_01, #1
+	shl	_var_01, arg1
+	or	OUTA, _var_01
+	or	OUTA, _var_01
 _preclock_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
+_var_01
 	res	1
 arg1
 	res	1

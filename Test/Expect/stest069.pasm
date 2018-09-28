@@ -31,8 +31,6 @@ _PauseABit_ret
 
 imm_40000000_
 	long	40000000
-result1
-	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

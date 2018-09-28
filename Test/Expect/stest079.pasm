@@ -5,11 +5,11 @@ DAT
 entry
 
 _tx
-	mov	_var_02, #4
+	mov	_var_01, #4
 LR__0001
 	mov	OUTA, arg1
 	add	arg1, #1
-	djnz	_var_02, #LR__0001
+	djnz	_var_01, #LR__0001
 _tx_ret
 	ret
 
@@ -26,8 +26,6 @@ LR__0003
 _str_ret
 	ret
 
-result1
-	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
@@ -35,7 +33,7 @@ _str_c
 	res	1
 _str_s
 	res	1
-_var_02
+_var_01
 	res	1
 arg1
 	res	1

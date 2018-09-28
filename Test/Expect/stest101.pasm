@@ -5,15 +5,15 @@ DAT
 entry
 
 _checkcmd
-	mov	_var_01, #1
+	mov	_var_00, #1
 LR__0001
 LR__0002
-	cmps	_var_01, #0 wz
+	cmps	_var_00, #0 wz
  if_ne	jmp	#LR__0002
 	rdlong	_tmp002_, objptr
 	add	_tmp002_, #1
 	wrlong	_tmp002_, objptr
-	mov	_var_01, #0
+	mov	_var_00, #0
 	jmp	#LR__0001
 _checkcmd_ret
 	ret
@@ -35,7 +35,7 @@ objmem
 	org	COG_BSS_START
 _tmp002_
 	res	1
-_var_01
+_var_00
 	res	1
 arg1
 	res	1

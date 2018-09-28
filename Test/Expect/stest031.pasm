@@ -10,16 +10,16 @@ _clear0_ret
 	ret
 
 _clearpin
-	mov	_var_02, #1
-	shl	_var_02, arg1
-	andn	OUTA, _var_02
+	mov	_var_01, #1
+	shl	_var_01, arg1
+	andn	OUTA, _var_01
 _clearpin_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
+_var_01
 	res	1
 arg1
 	res	1

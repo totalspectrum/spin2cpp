@@ -5,14 +5,14 @@ DAT
 entry
 
 _inc
-	mov	_var_03, objptr
-	mov	_var_02, #10
+	mov	_var_02, objptr
+	mov	_var_01, #10
 LR__0001
-	rdlong	_var_04, _var_03
-	add	_var_04, arg1
-	wrlong	_var_04, _var_03
-	add	_var_03, #4
-	djnz	_var_02, #LR__0001
+	rdlong	_var_03, _var_02
+	add	_var_03, arg1
+	wrlong	_var_03, _var_02
+	add	_var_02, #4
+	djnz	_var_01, #LR__0001
 _inc_ret
 	ret
 
@@ -23,11 +23,11 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
+_var_01
+	res	1
 _var_02
 	res	1
 _var_03
-	res	1
-_var_04
 	res	1
 arg1
 	res	1

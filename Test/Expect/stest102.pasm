@@ -24,10 +24,8 @@ _set2
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
-	add	sp, #12
-	add	fp, #4
+	add	sp, #8
 	wrlong	fp, objptr
-	sub	fp, #4
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp

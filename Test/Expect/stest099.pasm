@@ -5,7 +5,7 @@ DAT
 entry
 
 _copy1
-	mov	_var_04, #0
+	mov	_var_03, #0
 	sub	arg3, #1
 	cmps	arg3, #0 wc,wz
  if_a	mov	_tmp002_, #1
@@ -17,8 +17,8 @@ LR__0001
 	rdbyte	_tmp008_, arg2
 	mov	arg2, _tmp007_
 	wrbyte	_tmp008_, arg1
-	add	_var_04, _tmp002_
-	cmps	_var_04, arg3 wz
+	add	_var_03, _tmp002_
+	cmps	_var_03, arg3 wz
 	add	arg1, #1
  if_ne	jmp	#LR__0001
 _copy1_ret
@@ -52,7 +52,7 @@ _tmp007_
 	res	1
 _tmp008_
 	res	1
-_var_04
+_var_03
 	res	1
 arg1
 	res	1

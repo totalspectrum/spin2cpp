@@ -5,12 +5,12 @@ DAT
 entry
 
 _test
-	mov	_var_05, arg1
-	or	_var_05, arg2
-	wrlong	_var_05, objptr
-	or	_var_05, arg3
+	mov	_var_04, arg1
+	or	_var_04, arg2
+	wrlong	_var_04, objptr
+	or	_var_04, arg3
 	add	objptr, #4
-	wrlong	_var_05, objptr
+	wrlong	_var_04, objptr
 	add	arg1, #1
 	or	arg1, arg2
 	add	objptr, #4
@@ -29,7 +29,7 @@ COG_BSS_START
 objmem
 	long	0[4]
 	org	COG_BSS_START
-_var_05
+_var_04
 	res	1
 arg1
 	res	1

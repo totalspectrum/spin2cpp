@@ -40,18 +40,16 @@ _sendchar_abstract_ret
 	ret
 
 _simplepin_tx
-	mov	_var_02, #1
+	mov	_var_01, #1
 	rdlong	_tmp002_, objptr
-	shl	_var_02, _tmp002_
+	shl	_var_01, _tmp002_
 	test	arg1, #1 wz
-	muxnz	OUTA, _var_02
+	muxnz	OUTA, _var_01
 _simplepin_tx_ret
 	ret
 
 objptr
 	long	@@@objmem
-result1
-	long	0
 COG_BSS_START
 	fit	496
 objmem
@@ -61,7 +59,7 @@ _sendchar_abstract_fds
 	res	1
 _tmp002_
 	res	1
-_var_02
+_var_01
 	res	1
 arg1
 	res	1
