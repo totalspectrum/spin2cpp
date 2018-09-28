@@ -201,3 +201,10 @@ pri right`$(x, n) | ptr, i, m
     i := m-n
     bytemove(ptr, x+i, n+1)
   return ptr
+
+pri _make_methodptr(o, func) | ptr
+  ptr := _gc_alloc_managed(8)
+  if (ptr)
+    long[ptr] := o
+    long[ptr+4] := func
+  return ptr

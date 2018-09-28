@@ -19,13 +19,13 @@ _sendchar2_ret
 	ret
 
 _sendchar_index
-	mov	sendchar_index_tmp002_, arg1
+	shl	arg1, #2
+	mov	sendchar_index_tmp001_, arg1
+	add	sendchar_index_tmp001_, #8
 	mov	arg1, arg2
-	shl	sendchar_index_tmp002_, #2
-	add	sendchar_index_tmp002_, #8
-	add	objptr, sendchar_index_tmp002_
+	add	objptr, sendchar_index_tmp001_
 	call	#_simplepin_tx
-	sub	objptr, sendchar_index_tmp002_
+	sub	objptr, sendchar_index_tmp001_
 _sendchar_index_ret
 	ret
 
@@ -69,6 +69,6 @@ arg2
 	res	1
 sendchar_abstract_tmp002_
 	res	1
-sendchar_index_tmp002_
+sendchar_index_tmp001_
 	res	1
 	fit	496

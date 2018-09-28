@@ -456,6 +456,12 @@ var a = cpu(blink(LED, 80_000_000), @stack(1))
 
 Keyword reserved for future use.
 
+### DELETE
+
+Free memory allocated by `new` or by one of the string functions (`+`, `left$`, `right$`, etc.).
+
+Use of `delete` is a nice hint and makes sure the memory is free, but it is not strictly necessary since the memory is garbage collected automatically.
+
 ### DIM
 
 Dimension variables. This defines variables and allocate memory for them. `dim` is the most common way to declare that variables exist. The simplest form just lists the variable names and (optionally) array sizes. The variable types are inferred from the names. For example, you can declare an array `a` of 10 integers, a single integer `b`, and a string `c$` with:
@@ -686,6 +692,21 @@ Note that if both the quotient and remainder are desired, it is best to put the 
   q = x / y
   r = x mod y
 ```
+
+### NEW
+
+Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array size:
+```
+  var x = new ubyte(10)  ' allocate 10 bytes and return a pointer to it
+  x(1) = 1               ' set a variable in it
+  
+  class FDS using "FullDuplexSerial.spin"
+  var ser = new FDS      ' allocate space for a new full duplex serial object
+  ser.start(31, 30, 0, 115_200) ' start up the new object
+```
+See the discussion of memory allocation for tips on using `new`. Note that the default heap is rather small, so you will probably need to declare a larger `HEAPSIZE` if you use `new` a lot.
+
+Memory allocated by `new` may be explicitly freed with `delete`; or, it may left to be garbage collected automatically.
 
 ### NEXT
 

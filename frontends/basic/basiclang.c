@@ -31,6 +31,7 @@ static AST *float_neg;
 
 static AST *string_cmp;
 static AST *string_concat;
+static AST *make_methodptr;
 
 static int
 IsBasicString(AST *typ)
@@ -102,6 +103,23 @@ doBasicTransform(AST **astptr)
         break;
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
+        break;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        {
+            // taking the address of a function may restrict how
+            // we can call it (stack vs. register calling)
+            Symbol *sym;
+            Function *f = NULL;
+            sym = FindFuncSymbol(ast, NULL, NULL, 0);
+            if (sym && sym->type == SYM_FUNCTION) {
+                f = (Function *)sym->val;
+            }
+            if (f) {
+                f->used_as_ptr = 1;
+                f->callSites++;
+            }
+        }
         break;
     case AST_FUNCCALL:
         doBasicTransform(&ast->left);
@@ -718,6 +736,27 @@ AST *CoerceAssignTypes(int kind, AST **astptr, AST *desttype, AST *srctype)
     return desttype;
 }
 
+static void
+BuildMethodPointer(AST *ast)
+{
+    Symbol *sym;
+    AST *objast;
+    AST *funcaddr;
+    
+    sym = FindFuncSymbol(ast, &objast, 0, 0);
+    if (!sym || sym->type != SYM_FUNCTION) {
+        ERROR(ast, "Internal error, unable to find function address");
+        return;
+    }
+    if (objast == NULL) {
+        objast = NewAST(AST_SELF, NULL, NULL);
+    }
+    // save off the current @ node
+    funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
+    // create a call
+    *ast = *MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
+}
+
 //
 // function for doing type checking and various kinds of
 // type related manipulations. for example:
@@ -761,7 +800,7 @@ AST *CheckTypes(AST *ast)
     case AST_RETURN:
         {
             rtype = ltype; // type of actual expression
-            ltype = curfunc->rettype;
+            ltype = GetFunctionReturnType(curfunc);
             ltype = CoerceAssignTypes(AST_RETURN, &ast->left, ltype, rtype);
         }
         break;
@@ -796,7 +835,7 @@ AST *CheckTypes(AST *ast)
                     calledParamList = calledParamList->right;
                     actualParamList = actualParamList->right;
                 }
-                ltype = func->rettype;
+                ltype = GetFunctionReturnType(func);
             } else {
                 return NULL;
             }
@@ -817,6 +856,10 @@ AST *CheckTypes(AST *ast)
         return ast_type_string;
     case AST_ADDROF:
     case AST_ABSADDROF:
+        if (IsFunctionType(ltype)) {
+            BuildMethodPointer(ast);
+            return ltype;
+        }
         return NewAST(AST_PTRTYPE, ltype, NULL);
     case AST_ARRAYREF:
         {
@@ -895,6 +938,7 @@ BasicTransform(Module *Q)
 
     string_cmp = getBasicPrimitive("_string_cmp");
     string_concat = getBasicPrimitive("_string_concat");
+    make_methodptr = getBasicPrimitive("_make_methodptr");
     
     current = Q;
     for (func = Q->functions; func; func = func->next) {

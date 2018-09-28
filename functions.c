@@ -278,20 +278,20 @@ doDeclareFunction(AST *funcblock)
         fdef->doccomment = comment;
     }
     fdef->is_public = is_public;
-    fdef->rettype = NULL;
+    fdef->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
     retinfo = src->right;
     if (retinfo->kind == AST_RETURN) {
         src = retinfo; // so src->right holds returned variables
-        fdef->rettype = retinfo->left;
+        fdef->overalltype->left = retinfo->left;
     } else {
         ERROR(funcdef, "Internal error in function declaration structure");
     }
     fdef->numresults = 1;
-    if (fdef->rettype) {
-        if (fdef->rettype == ast_type_void) {
+    if (fdef->overalltype->left) {
+        if (fdef->overalltype->left == ast_type_void) {
             fdef->numresults = 0;
-        } else if (fdef->rettype->kind == AST_TUPLETYPE) {
-            fdef->numresults = fdef->rettype->d.ival;
+        } else if (fdef->overalltype->left->kind == AST_TUPLETYPE) {
+            fdef->numresults = fdef->overalltype->left->d.ival;
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {
@@ -302,10 +302,12 @@ doDeclareFunction(AST *funcblock)
         if (src->right->kind == AST_IDENTIFIER) {
             AddSymbol(&fdef->localsyms, src->right->d.string, SYM_RESULT, NULL);
         } else if (src->right->kind == AST_LISTHOLDER) {
+            AST *rettype;
             fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, src->right, 0) / LONG_SIZE;
             AstReportAs(src);
-            fdef->rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
-            fdef->rettype->d.ival = fdef->numresults;
+            rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
+            rettype->d.ival = fdef->numresults;
+            fdef->overalltype->left = rettype;
             fdef->resultexpr = TranslateToExprList(fdef->resultexpr);
         } else {
             ERROR(funcdef, "Internal error: bad contents of return value field");
@@ -320,7 +322,9 @@ doDeclareFunction(AST *funcblock)
     /* enter the variables into the local symbol table */
     fdef->params = vars->left;
     fdef->locals = vars->right;
-
+    /* and into the parameter list */
+    fdef->overalltype->right = fdef->params;
+    
     /* set up default values for parameters, if any present */
     {
         AST *a, *p;
@@ -1010,14 +1014,14 @@ CheckRetStatement(Function *func, AST *ast)
         break;
     case AST_RETURN:
         if (ast->left) {
-            SetFunctionType(func, ForceExprType(ast->left));
+            SetFunctionReturnType(func, ForceExprType(ast->left));
         }
         sawreturn = 1;
         break;
     case AST_ABORT:
         if (ast->left) {
             (void)CheckRetStatement(func, ast->left);
-            SetFunctionType(func, ForceExprType(ast->left));
+            SetFunctionReturnType(func, ForceExprType(ast->left));
         }
         break;
     case AST_IF:
@@ -1038,7 +1042,7 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left; // count variable
         if (lhs) {
             if (IsResultVar(func, lhs)) {
-                SetFunctionType(func, ast_type_long);
+                SetFunctionReturnType(func, ast_type_long);
             }
         }
         ast = ast->right; // from value
@@ -1054,7 +1058,7 @@ CheckRetStatement(Function *func, AST *ast)
         lhs = ast->left;
         rhs = ast->right;
         if (IsResultVar(func, lhs)) {
-            SetFunctionType(func, ForceExprType(rhs));
+            SetFunctionReturnType(func, ForceExprType(rhs));
         }
         sawreturn = 0;
         break;
@@ -1101,8 +1105,12 @@ CheckFunctionCalls(AST *ast)
                 f = (Function *)sym->val;
                 expectArgs = f->numparams;
             } else {
-                ERROR(ast, "Unexpected function type");
-                return;
+                AST *ftype = ExprType(ast->left);
+                if (!IsFunctionType(ftype)) {
+                    ERROR(ast, "Expected function type");
+                    return;
+                }
+                expectArgs = AstListLen(ftype->right);
             }
         }
         gotArgs = 0;
@@ -1200,13 +1208,18 @@ ProcessFuncs(Module *P)
         
         /* check for void functions */
         sawreturn = CheckRetStatementList(pf, pf->body);
-        if (pf->rettype == NULL && pf->result_used) {
+        if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
             /* there really is a return type */
-            SetFunctionType(pf, ast_type_generic);
+            SetFunctionReturnType(pf, ast_type_generic);
         }
         curfunc = savecurfunc;
-        if (pf->rettype == NULL || pf->rettype == ast_type_void) {
-            pf->rettype = ast_type_void;
+        if (GetFunctionReturnType(pf) == NULL || GetFunctionReturnType(pf) == ast_type_void) {
+            if (!pf->overalltype) {
+                // this can happen for functions declared via annotations
+                // (i.e. that don't really exist)
+                pf->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
+            }
+            pf->overalltype->left = ast_type_void;
             pf->resultexpr = NULL;
         } else {
             if (!pf->result_used) {
@@ -1265,7 +1278,7 @@ InferTypesStmt(AST *ast)
       sub = curfunc->resultexpr;
     }
     if (sub && sub->kind != AST_TUPLETYPE && sub->kind != AST_EXPRLIST) {
-      changes = InferTypesExpr(sub, curfunc->rettype);
+        changes = InferTypesExpr(sub, GetFunctionReturnType(curfunc));
     }
     return changes;
   case AST_IF:
@@ -1586,14 +1599,14 @@ MarkUsed(Function *f)
 }
 
 void
-SetFunctionType(Function *f, AST *typ)
+SetFunctionReturnType(Function *f, AST *typ)
 {
-    if (typ && !f->rettype) {
+    if (typ && !f->overalltype->left) {
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
         if (typ && typ->kind == AST_TUPLETYPE) {
-            f->rettype = typ;
+            f->overalltype->left = typ;
             if (f->numresults > 1) {
                 if (f->numresults != typ->d.ival) {
                     ERROR(NULL, "inconsistent return values from function %s", f->name);
@@ -1601,9 +1614,9 @@ SetFunctionType(Function *f, AST *typ)
             }
             f->numresults = typ->d.ival;
         } else if (gl_infer_ctypes) {
-            f->rettype = typ;
+            f->overalltype->left = typ;
         } else {
-            f->rettype = ast_type_generic;
+            f->overalltype->left = ast_type_generic;
         }
     }
     if (typ && typ->kind == AST_TUPLETYPE) {

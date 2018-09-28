@@ -1408,6 +1408,7 @@ IsArrayType(AST *ast)
     case AST_FLOATTYPE:
     case AST_PTRTYPE:
     case AST_VOIDTYPE:
+    case AST_FUNCTYPE:
         return 0;
     default:
         ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
@@ -1438,6 +1439,7 @@ int TypeSize(AST *typ)
     case AST_FLOATTYPE:
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
+    case AST_FUNCTYPE:
         return 4; // all pointers are 4 bytes
     case AST_OBJECT:
     {
@@ -1526,7 +1528,11 @@ FindFuncSymbol(AST *expr, AST **objrefPtr, Symbol **objsymPtr, int errflag)
     AST *objref = NULL;
     Symbol *objsym = NULL;
     Symbol *sym = NULL;
-    
+
+    if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF) {
+        ERROR(expr, "Internal error expecting function call");
+        return NULL;
+    }
     if (expr->left && expr->left->kind == AST_METHODREF) {
         const char *thename;
         objref = expr->left->left;
@@ -1609,6 +1615,16 @@ IsUnsignedType(AST *type)
 }
 
 int
+IsFunctionType(AST *type)
+{
+    type = removeModifiers(type);
+    if (!type) return 0;
+    if (type->kind == AST_FUNCTYPE)
+        return 1;
+    return 0;
+}
+
+int
 IsStringType(AST *type)
 {
     type = removeModifiers(type);
@@ -1653,6 +1669,15 @@ WidestType(AST *left, AST *right)
     rsize = TypeSize(right);
     if (lsize < rsize) return right;
     return left;
+}
+
+// for historical reasons SetFunctionReturnType is in functions.c
+AST *
+GetFunctionReturnType(Function *f)
+{
+    if (!f->overalltype)
+        return NULL;
+    return f->overalltype->left;
 }
 
 /*
@@ -1714,8 +1739,7 @@ ExprType(AST *expr)
         case SYM_OBJECT:
             return (AST *)sym->val;
         case SYM_FUNCTION:
-            return NULL; // we actually want a function type here
-//            return ((Function *)sym->val)->rettype;
+            return ((Function *)sym->val)->overalltype;
         default:
             return NULL;
         }            
@@ -1726,15 +1750,41 @@ ExprType(AST *expr)
         if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE)) return NULL;
         return sub->left;
     case AST_FUNCCALL:
-    case AST_METHODREF:
     {
         Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 0);
         if (sym) {
             if (sym->type == SYM_FUNCTION) {
-                return ((Function *)sym->val)->rettype;
+                return GetFunctionReturnType(((Function *)sym->val));
             }
         }
         return NULL;
+    }
+    case AST_METHODREF:
+    {
+        AST *objref = expr->left;
+        Symbol *objsym = NULL;
+        Symbol *sym = NULL;
+        const char *methodname;
+        Function *func;
+        
+        objsym = LookupAstSymbol(objref, NULL);
+        if (!objsym) return NULL;
+        if (objsym->type != SYM_OBJECT) {
+            ERROR(expr, "Expecting object");
+            return NULL;
+        }
+        if (expr->right->kind != AST_IDENTIFIER) {
+            ERROR(expr, "Expecting identifier after '.'");
+            return NULL;
+        }
+        methodname = expr->right->d.string;
+        sym = LookupObjSymbol(expr, objsym, methodname);
+        if (!sym || sym->type != SYM_FUNCTION) {
+            ERROR(expr, "%s is not a method of %s", methodname, objsym->name);
+            return NULL;
+        }
+        func = (Function *)sym->val;
+        return func->overalltype;
     }
     case AST_OPERATOR:
     {
@@ -1845,6 +1895,15 @@ CompatibleTypes(AST *A, AST *B)
     }
     if (A->kind != B->kind) {
         return 0;
+    }
+    if (A->kind == AST_FUNCTYPE) {
+        // the return types have to be compatible
+        if (!CompatibleTypes(A->left, B->left)) {
+            return 0;
+        }
+        // and the parameters have to be compatible
+        // fixme... deal with that later
+        return 1;
     }
     // both A and B are pointers (or perhaps arrays)
     // they are compatible if they are both pointers to the same thing

@@ -132,6 +132,7 @@ AST *AstCharItem(int c)
 %token BAS_CONTINUE   "continue"
 %token BAS_CPU        "cpu"
 %token BAS_DECLARE    "declare"
+%token BAS_DELETE     "delete"
 %token BAS_DIM        "dim"
 %token BAS_DIRECTION  "direction"
 %token BAS_DO         "do"
@@ -152,6 +153,7 @@ AST *AstCharItem(int c)
 %token BAS_LONG       "long"
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
+%token BAS_NEW        "new"
 %token BAS_NEXT       "next"
 %token BAS_NOT        "not"
 %token BAS_OPEN       "open"
@@ -201,6 +203,7 @@ AST *AstCharItem(int c)
 %left BAS_SHL BAS_SHR
 %left BAS_NEGATE
 %left '@'
+%left '.'
 
 %%
 toplist:
@@ -534,11 +537,11 @@ expr:
     { $$ = AstOperator(K_NEGATE, NULL, $2); }
   | BAS_NOT expr
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
-  | BAS_IDENTIFIER '(' optexprlist ')'
+  | expr '(' optexprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')'
+  | expr '.' BAS_IDENTIFIER
     { 
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+        $$ = NewAST(AST_METHODREF, $1, $3);
     }
   | BAS_ABS '(' expr ')'
     { $$ = AstOperator(K_ABS, NULL, $3); }  
@@ -738,6 +741,8 @@ basetypename:
     { $$ = $1; }
   | BAS_CONST basetypename
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
+  | BAS_FUNCTION '(' paramdecl ')' BAS_AS basetypename
+    { $$ = NewAST(AST_FUNCTYPE, $6, $3); }
   | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);

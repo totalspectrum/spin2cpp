@@ -838,6 +838,8 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
         Module *Q = type->d.ptr;
         size = Q->varsize;
         if (size > 4) size = 4; // FIXME: is this necessary??
+    } else if (type->kind == AST_FUNCTYPE) {
+        size = 4;
     } else {
         size = EvalConstExpr(type->left);
     }
@@ -2040,30 +2042,84 @@ CompileFunccallFirstResult(IRList *irl, AST *expr)
 }
 
 /*
+ * get operands for:
+ *  object pointer to use (NULL for the default one)
+ *  offset to that object pointer (NULL if non-default)
+ *  function to call
+ * "expr" is either an "@func" or a funccall
+ * returns function, or NULL
+ */
+Function *
+CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offsetptr, Operand **funcptr)
+{
+    Operand *objaddr, *offset;
+    Symbol *objsym, *sym;
+    Function *func;
+    AST *call;
+    
+    objsym = NULL;
+    sym = FindFuncSymbol(expr, NULL, &objsym, 1);
+    if (!sym) {
+        ERROR(expr, "expected function symbol");
+    }
+    if (sym->type != SYM_FUNCTION) {
+        ERROR(expr, "Can't handle indirect calls yet");
+        return NULL;
+    }
+    func = (Function *)sym->val;
+    if (func) {
+        func->callSites |= 1; // internal functions may not have been marked earlier
+    }
+    offset = NULL;
+    objaddr = NULL;
+    if (objsym) {
+        call = expr->left;
+        if (call->kind == AST_METHODREF) {
+            call = call->left;
+        } else {
+            ERROR(call, "Internal error: expected method reference");
+            return NULL;
+        }
+        if (call->kind == AST_ARRAYREF) {
+            if (IsArrayOrPointerSymbol(objsym)) {
+                // add the index * sizeof(object) into the array offset
+                Module *objModule = GetObjectPtr(objsym);
+                AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
+                arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
+                offset = CompileExpression(irl, arrayderef, NULL);
+            } else {
+                objaddr = CompileExpression(irl, call->right, NULL);
+            }
+        } else {
+            offset = NewImmediate(objsym->offset);
+        }
+    }
+    *objptr = objaddr;
+    *offsetptr = offset;
+    *funcptr = FuncData(func)->asmname;
+    return func;
+}
+
+/*
  * compile a function call
  * returns a list of the things the function returns
  */
 static OperandList *
 CompileFunccall(IRList *irl, AST *expr)
 {
-  Symbol *sym;
   Function *func;
   AST *params;
-  Symbol *objsym;
+  Operand *offset;
+  Operand *absobjaddr;
+  Operand *funcaddr;
   OperandList *temp;
   OperandList *results = NULL;
   Operand *reg;
   IR *ir;
-  int i, n;
+  int i;
 
-  /* compile the function operands */
-  objsym = NULL;
-  sym = FindFuncSymbol(expr, NULL, &objsym, 1);
-  if (!sym || sym->type != SYM_FUNCTION) {
-    ERROR(expr, "expected function symbol");
-    return NULL;
-  }
-  func = (Function *)sym->val;
+  func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr);
+  
   params = expr->right;
   temp = CompileExprList(irl, params);
 
@@ -2072,58 +2128,28 @@ CompileFunccall(IRList *irl, AST *expr)
    */
   EmitParameterList(irl, temp, func);
 
-  /* emit the call */
-  if (objsym) {
-      Operand *offset = NULL;
-      Operand *absaddr = NULL;
-      Operand *saveobj = NULL;
-      AST *call = expr->left;
-      if (call->kind == AST_METHODREF) {
-          call = call->left;
-      } else {
-          ERROR(call, "Internal error: expected method reference");
-      }
-      if (call->kind == AST_ARRAYREF) {
-          if (IsArrayOrPointerSymbol(objsym)) {
-              // add the index * sizeof(object) into the array offset
-              Module *objModule = GetObjectPtr(objsym);
-              AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
-              arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
-              offset = CompileExpression(irl, arrayderef, NULL);
-          } else {
-              absaddr = CompileExpression(irl, call->right, NULL);
-          }
-      } else {
-          offset = NewImmediate(objsym->offset);
-      }
+  if (offset || absobjaddr) {
+      Operand *temp = NULL;
       ValidateObjbase();
       if (offset) {
           EmitOp2(irl, OPC_ADD, objbase, offset);
       } else {
-          saveobj = NewFunctionTempRegister();
-          EmitMove(irl, saveobj, objbase);
-          EmitMove(irl, objbase, absaddr);
+          temp = NewFunctionTempRegister();
+          EmitMove(irl, temp, objbase);
+          EmitMove(irl, objbase, absobjaddr);
       }
-      ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+      ir = EmitOp1(irl, OPC_CALL, funcaddr);
       if (offset) {
           EmitOp2(irl, OPC_SUB, objbase, offset);
-      } else {
-          EmitMove(irl, objbase, saveobj);
+      } else if (temp) {
+          EmitMove(irl, objbase, temp);
       }
   } else {
-      ir = EmitOp1(irl, OPC_CALL, FuncData(func)->asmname);
+      ir = EmitOp1(irl, OPC_CALL, funcaddr);
   }
+  
   ir->aux = (void *)func; // remember the function for optimization purposes
-  func->callSites |= 1;      // internal functions may not have been marked earlier
-  if (IS_FAST_CALL(func)) {
-      /* mark parameters as dead */
-      n = AstListLen(params);
-      while (n > 0) {
-          --n;
-          reg = GetFunctionParameterForCall(irl, func, n);
-      }
-  }
-
+  
   /* now get the results */
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
@@ -3546,7 +3572,7 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
-        if (f->local_address_taken || f->cog_task) {
+        if (f->local_address_taken || f->cog_task || f->used_as_ptr) {
             FuncData(f)->convention = STACK_CALL;
         } else if (f->cog_code) {
             FuncData(f)->convention = FAST_CALL;

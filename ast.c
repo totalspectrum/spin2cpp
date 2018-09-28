@@ -466,7 +466,9 @@ static const char *astnames[] = {
     "char",
 
     "regpair",
-    "methodptr",
+    "functype",
+    "self",
+    "nil",
 };
 
 //

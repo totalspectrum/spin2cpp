@@ -171,7 +171,7 @@ typedef struct funcdef {
     int is_public;
     const char *name;
     AST *decl;        /* always filled in with the line numbers of the declaration */
-    AST *rettype;     /* the function return type, normally long */
+    AST *overalltype; /* the type of the function, including types of parameters */
     AST *annotations; /* any annotations for the function (section, etc.) */
     AST *doccomment;  /* documentation comments */
     int numparams;
@@ -206,6 +206,7 @@ typedef struct funcdef {
     unsigned force_static:1; // 1 if the function is forced to be static
     unsigned cog_code:1;     // 1 if function should always be placed in cog
     unsigned cog_task:1;     // 1 if function is started in another cog
+    unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
     unsigned no_inline:1;    // 1 if function cannot be inlined
     unsigned is_leaf:1;      // 1 if function is a leaf function
@@ -438,7 +439,10 @@ void OutputAsmCode(const char *name, Module *P, int printMain);
 Function *IsSpinCoginit(AST *body);
 
 /* set a function type, checking for errors */
-void SetFunctionType(Function *func, AST *type);
+void SetFunctionReturnType(Function *func, AST *type);
+
+/* get the return type for a function */
+AST *GetFunctionReturnType(Function *func);
 
 /* find function symbol in a function call; optionally returns the object ref */
 Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr, int errflag);

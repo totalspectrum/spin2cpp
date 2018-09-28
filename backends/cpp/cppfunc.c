@@ -99,13 +99,13 @@ PrintFunctionDecl(Flexbuf *f, Function *func, int isLocal)
         PrintAnnotationList(f, func->annotations, ' ');
     }
     if (gl_output == OUTPUT_C) {
-        PrintType(f, func->rettype, 0);
+        PrintType(f, GetFunctionReturnType(func), 0);
         flexbuf_printf(f, "%s_", current->classname);
     } else {
         if (func->is_static) {
             flexbuf_printf(f, "static ");
         }
-        PrintType(f, func->rettype, 0);
+        PrintType(f, GetFunctionReturnType(func), 0);
         flexbuf_printf(f, "\t");
     }
     CppPrintName(f, func->name, 0);
@@ -268,7 +268,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
     if (!func->result_in_parmarray && func->resultexpr) {
         if (func->resultexpr->kind == AST_IDENTIFIER) {
             flexbuf_printf(f, "  ");
-            PrintType(f, func->rettype, 0);
+            PrintType(f, GetFunctionReturnType(func), 0);
             CppPrintName(f, func->resultexpr->d.string, 0);
             flexbuf_printf(f, " = 0;");
             PrintNewline(f);
@@ -585,7 +585,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
                 PrintExprList(f, retval, PRINTEXPR_DEFAULT, NULL);
                 flexbuf_printf(f, "})");
             } else {
-                PrintTypedExpr(f, curfunc->rettype, retval, PRINTEXPR_DEFAULT);
+                PrintTypedExpr(f, GetFunctionReturnType(curfunc), retval, PRINTEXPR_DEFAULT);
             }
         } else {
             flexbuf_printf(f, "%*creturn", indent, ' ');
@@ -805,11 +805,11 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
             if (!pf->is_public) {
                 flexbuf_printf(f, "static ");
             }
-            PrintType(f, pf->rettype, 0);
+            PrintType(f, GetFunctionReturnType(pf), 0);
             flexbuf_printf(f, "%s_", parse->classname);
 
         } else {
-            PrintType(f, pf->rettype, 0);
+            PrintType(f, GetFunctionReturnType(pf), 0);
             flexbuf_printf(f, "%s::", parse->classname);
         }
         CppPrintName(f, pf->name, 0);

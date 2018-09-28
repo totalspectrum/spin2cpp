@@ -410,7 +410,7 @@ doSpinTransform(AST **astptr, int level)
             sym = FindFuncSymbol(ast, NULL, NULL, 0);
             if (sym && sym->type == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
-                if (f->rettype == ast_type_void) {
+                if (GetFunctionReturnType(f) == ast_type_void) {
                     AST *seq = NewAST(AST_SEQUENCE, ast, AstInteger(0));
                     *astptr = seq;
                 }

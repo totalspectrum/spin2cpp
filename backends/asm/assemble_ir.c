@@ -397,6 +397,7 @@ StringFor(IROpcode opc)
 void
 EmitSpinMethods(struct flexbuf *fb, Module *P)
 {
+    AST *rettype;
     if (!P) return;
     if (gl_output == OUTPUT_COGSPIN) {
         int varlen = P->varsize;
@@ -535,7 +536,8 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 }
                 // if there's a result from the function, make this call
                 // synchronous
-                if (f->rettype && f->rettype->kind == AST_VOIDTYPE)
+                rettype = GetFunctionReturnType(f);
+                if (rettype && rettype->kind == AST_VOIDTYPE)
                     synchronous = 0;
                 else
                     synchronous = 1;
