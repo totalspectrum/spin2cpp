@@ -928,8 +928,10 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
               return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
           }
       case SYM_FUNCTION:
-          ERROR(NULL, "Internal error: identifier without FUNCCALL wrapper");
-          return NewImmediate(0);
+      {
+          Function *calledf = (Function *)sym->val;
+          return FuncData(calledf)->asmname;
+      }
       case SYM_HWREG:
       {
           HwReg *hw = sym->val;
@@ -2492,6 +2494,8 @@ GetLea(IRList *irl, Operand *src)
             EmitAddSub(irl, src, -off);
         }
         return dst;
+    } else if (src->kind == IMM_HUB_LABEL) {
+        return NewImmediatePtr(NULL, src);
     } else {
         ERROR(NULL, "Load Effective Address on a non-memory reference");
         return NULL;
@@ -2862,6 +2866,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         r = dest;
     }
     return r;
+  case AST_SELF:
+      ValidateObjbase();
+      return objbase;
   case AST_HWREG:
     return CompileHWReg(irl, expr);
   case AST_OPERATOR:
