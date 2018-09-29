@@ -346,7 +346,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
             }
             if (runlen > 4) {
                 /* output as long as we can */
-                if (0 == (runlen & 3)) {
+                if (0 == (runlen & 3) && lastdata == 0) {
                     flexbuf_printf(fb, "\tlong\t$%08x[%d]\n", lastdata, runlen/4);
                 } else {
                     flexbuf_printf(fb, "\tbyte\t$%02x[%d]\n", lastdata, runlen);

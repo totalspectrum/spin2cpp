@@ -256,6 +256,37 @@ Garbage collection works by scanning memory for pointers that were returned from
 
 Note that a CPU ("COG" in Spin terms) cannot scan the internal memory of other CPUs, so memory allocated by one CPU will only be garbage collected by that same CPU. This can lead to an out of memory situation even if in fact there is memory available to be claimed. For this reason we suggest that all allocation of temporary memory be done in one CPU only.
 
+#### new and delete
+
+The `new` operator may be used to allocate memory. `new` returns a pointer to enough memory to hold objects, or `nil` if not enough space is available for the allocation. For example, to allocate 40 bytes one can do:
+```
+  var ptr = new ubyte(40)
+  if ptr then
+    '' do stuff with the allocated memory
+    ...
+    '' now free it (this is optional)
+    delete ptr
+  else
+    print "not enough memory"
+  endif
+```
+The memory allocated by `new` is managed by the garbage collector, so it will ber reclaimed when all references to it have been removed. One may also explicitly free it with `delete`.
+
+#### String functions
+
+String functions and operators like `left$`, `right$`, and `+` (string concatenation) also work with allocated memory. If there is not enough memory to allocate for a string, these functions/operators will return `nil`.
+
+#### Function pointers
+
+Pointers to functions require 8 bytes of memory to be allocated at run time (to hold information about the object to be called). So for example in:
+```
+  '' create a Spin FullDuplexSerial object
+  dim ser as class using "FullDuplexSerial.spin"
+  '' get a pointer to its transmit function
+  var tx = @ser.tx
+```
+the variable `tx` holds a pointer both to the `ser` object and to the particular method `tx` within it. Since this is dynamically allocated, it is possible for the `@` operator to fail and return `nil`.
+
 ## Propeller Specific Features
 
 ### Input, Output, and Direction
