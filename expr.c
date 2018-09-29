@@ -1036,6 +1036,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     kind = expr->kind;
     switch (kind) {
     case AST_INTEGER:
+    case AST_BITVALUE:
         return intExpr(expr->d.ival);
 
     case AST_FLOAT:
@@ -1431,7 +1432,12 @@ int TypeSize(AST *typ)
     case AST_MODIFIER_VOLATILE:
         return TypeSize(typ->left);
     case AST_ARRAYTYPE:
-        size = EvalConstExpr(typ->right);
+        if (!IsConstExpr(typ->right)) {
+            ERROR(typ, "Unable to determine size of array");
+            size = 1;
+        } else {
+            size = EvalConstExpr(typ->right);
+        }
         return size * TypeSize(typ->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -1702,6 +1708,8 @@ ExprType(AST *expr)
     case AST_HWREG:
     case AST_ISBETWEEN:
         return ast_type_long;
+    case AST_BITVALUE:
+        return ast_type_generic;
     case AST_FLOAT:
     case AST_TRUNC:
     case AST_ROUND:
@@ -1854,6 +1862,8 @@ ExprType(AST *expr)
         }
         return ExprType(expr);
     }
+    case AST_NEW:
+        return BaseType(expr->left);
     default:
         return NULL;
     }

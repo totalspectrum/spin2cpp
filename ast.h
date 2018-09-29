@@ -161,7 +161,10 @@ enum astkind {
     AST_REGPAIR = 108,
     AST_FUNCTYPE,
     AST_SELF,
-    AST_NIL,
+    AST_BITVALUE, // a generic bit value, e.g. NIL is BITVALUE(0)
+
+    AST_NEW = 112,
+    AST_DELETE,
 };
 
 /* forward reference */
@@ -185,6 +188,7 @@ void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
 AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);
 AST *AstInteger(long intval);
+AST *AstBitValue(long intval);
 AST *AstIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);

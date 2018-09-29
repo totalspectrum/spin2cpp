@@ -155,6 +155,7 @@ AST *AstCharItem(int c)
 %token BAS_MOD        "mod"
 %token BAS_NEW        "new"
 %token BAS_NEXT       "next"
+%token BAS_NIL        "nil"
 %token BAS_NOT        "not"
 %token BAS_OPEN       "open"
 %token BAS_OR         "or"
@@ -166,6 +167,7 @@ AST *AstCharItem(int c)
 %token BAS_PUT        "put"
 %token BAS_RETURN     "return"
 %token BAS_SELECT     "select"
+%token BAS_SELF       "self"
 %token BAS_SHARED     "shared"
 %token BAS_SHORT      "short"
 %token BAS_SINGLE     "single"
@@ -281,11 +283,13 @@ nonemptystatement:
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN expr eoln
     { $$ = AstReturn($2, $1); }
+  | BAS_DELETE expr eoln
+    { $$ = NewAST(AST_DELETE, $2, NULL); }
   | BAS_GOTO BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
-  | BAS_PUT expr
+  | BAS_PUT expr eoln
     { $$ = NewAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                   NULL); }
@@ -496,6 +500,8 @@ expr:
     { $$ = $1; }
   | BAS_FLOAT
     { $$ = $1; }
+  | BAS_NIL
+    { $$ = AstBitValue(0); } 
   | BAS_STRING
     { $$ = NewAST(AST_STRINGPTR,
                   NewAST(AST_EXPRLIST, $1, NULL), NULL); }
@@ -564,6 +570,22 @@ expr:
         elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
+  | BAS_NEW typename
+    {
+        AST *numElements;
+        AST *baseType;
+        baseType = $2;
+        if (baseType->kind == AST_ARRAYTYPE) {
+            int size = TypeSize(baseType->left);
+            (void)size;
+            numElements = baseType->right;
+            baseType = baseType->left;
+        } else {
+            numElements = AstInteger(1);
+        }
+        baseType = NewAST(AST_PTRTYPE, baseType, NULL);
+        $$ = NewAST(AST_NEW, baseType, numElements);
     }
 ;
 
@@ -704,6 +726,10 @@ typename:
     { $$ = NewAST(AST_PTRTYPE, $1, NULL); }
   | basetypename BAS_CONST ptrdef
     { $$ = NewAST(AST_MODIFIER_CONST, NewAST(AST_PTRTYPE, $1, NULL), NULL); }
+  | '(' typename ')'
+    { $$ = $2; }
+  | basetypename '(' expr ')'
+    { $$ = NewAST(AST_ARRAYTYPE, $1, $3); }
   ;
 
 ptrdef:

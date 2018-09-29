@@ -32,6 +32,8 @@ static AST *float_neg;
 static AST *string_cmp;
 static AST *string_concat;
 static AST *make_methodptr;
+static AST *gc_alloc;
+static AST *gc_free;
 
 static int
 IsBasicString(AST *typ)
@@ -851,8 +853,9 @@ AST *CheckTypes(AST *ast)
     case AST_INTEGER:
     case AST_HWREG:
     case AST_CONSTREF:
-    case AST_CONSTANT:
         return ast_type_long;
+    case AST_BITVALUE:
+        return ast_type_generic;
     case AST_STRING:
     case AST_STRINGPTR:
         return ast_type_string;
@@ -886,10 +889,33 @@ AST *CheckTypes(AST *ast)
             return basetype;
         }
         break;
+    case AST_NEW:
+        // turn this into an alloc
+        {
+            AST *sizeExpr;
+            AST *basetype;
+            int baseSize;
+            ltype = ast->left;
+            basetype = BaseType(ltype);
+            baseSize = TypeSize(basetype);
+            if (IsConstExpr(ast->right)) {
+                baseSize *= EvalConstExpr(ast->right);
+                sizeExpr = AstInteger(baseSize);
+            } else {
+                sizeExpr = AstOperator('*', ast->right, AstInteger(baseSize));
+            }
+            *ast = *MakeOperatorCall(gc_alloc, sizeExpr, NULL, NULL);
+        }
+        break;
+    case AST_DELETE:
+        *ast = *MakeOperatorCall(gc_free, ast->left, NULL, NULL);
+        ltype = ast_type_void;
+        break;
     case AST_EXPRLIST:
     case AST_SEQUENCE:
     case AST_METHODREF:
     case AST_IDENTIFIER:
+    case AST_CONSTANT:
         return ExprType(ast);
     default:
         break;
@@ -914,34 +940,37 @@ BasicTransform(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
 
-    if (gl_fixedreal) {
-        basic_print_float = getBasicPrimitive("_basic_print_fixed");
-        float_mul = getBasicPrimitive("_fixed_mul");
-        float_div = getBasicPrimitive("_fixed_div");
-    } else {
-        basic_print_float = getBasicPrimitive("_basic_print_float");
-        float_cmp = getBasicPrimitive("_float_cmp");
-        float_add = getBasicPrimitive("_float_add");
-        float_sub = getBasicPrimitive("_float_sub");
-        float_mul = getBasicPrimitive("_float_mul");
-        float_div = getBasicPrimitive("_float_div");
-        float_fromuns = getBasicPrimitive("_float_fromuns");
-        float_fromint = getBasicPrimitive("_float_fromint");
-        float_toint = getBasicPrimitive("_float_trunc");
-        float_abs = getBasicPrimitive("_float_abs");
-        float_neg = getBasicPrimitive("_float_negate");
-    }
-    basic_print_integer = getBasicPrimitive("_basic_print_integer");
-    basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
-    basic_print_string = getBasicPrimitive("_basic_print_string");
-    basic_print_char = getBasicPrimitive("_basic_print_char");
-    basic_print_nl = getBasicPrimitive("_basic_print_nl");
-    basic_put = getBasicPrimitive("_basic_put");
+    if (!basic_print_integer) {
+        if (gl_fixedreal) {
+            basic_print_float = getBasicPrimitive("_basic_print_fixed");
+            float_mul = getBasicPrimitive("_fixed_mul");
+            float_div = getBasicPrimitive("_fixed_div");
+        } else {
+            basic_print_float = getBasicPrimitive("_basic_print_float");
+            float_cmp = getBasicPrimitive("_float_cmp");
+            float_add = getBasicPrimitive("_float_add");
+            float_sub = getBasicPrimitive("_float_sub");
+            float_mul = getBasicPrimitive("_float_mul");
+            float_div = getBasicPrimitive("_float_div");
+            float_fromuns = getBasicPrimitive("_float_fromuns");
+            float_fromint = getBasicPrimitive("_float_fromint");
+            float_toint = getBasicPrimitive("_float_trunc");
+            float_abs = getBasicPrimitive("_float_abs");
+            float_neg = getBasicPrimitive("_float_negate");
+        }
+        basic_print_integer = getBasicPrimitive("_basic_print_integer");
+        basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
+        basic_print_string = getBasicPrimitive("_basic_print_string");
+        basic_print_char = getBasicPrimitive("_basic_print_char");
+        basic_print_nl = getBasicPrimitive("_basic_print_nl");
+        basic_put = getBasicPrimitive("_basic_put");
 
-    string_cmp = getBasicPrimitive("_string_cmp");
-    string_concat = getBasicPrimitive("_string_concat");
-    make_methodptr = getBasicPrimitive("_make_methodptr");
-    
+        string_cmp = getBasicPrimitive("_string_cmp");
+        string_concat = getBasicPrimitive("_string_concat");
+        make_methodptr = getBasicPrimitive("_make_methodptr");
+        gc_alloc = getBasicPrimitive("_gc_alloc");
+        gc_free = getBasicPrimitive("_gc_free");
+    }
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;

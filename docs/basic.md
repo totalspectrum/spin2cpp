@@ -82,6 +82,7 @@ long
 loop
 mod
 next
+nil
 not
 open
 or
@@ -94,6 +95,7 @@ put
 rem
 return
 select
+self
 shared
 short
 single
@@ -714,6 +716,10 @@ Indicates the end of a `for` loop. The variable used in the loop may be placed a
 
 See FOR.
 
+### NIL
+
+A special pointer value that indicates an invalid pointer. `nil` may be returned from any string function or other function that allocates memory if there is not enough space to fulfil the request. `nil` is of type `any` and may be assigned to any variable. When assigned to a numeric variable it will cause the variable to become 0.
+
 ### NOT
 ```
   a = NOT b
@@ -808,6 +814,10 @@ Return from a subroutine or function. If this statement occurs inside a function
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns NULL (0).
+
+### SELF
+
+Indicates the current object. Not implemented yet.
 
 ### SHORT
 

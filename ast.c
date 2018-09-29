@@ -196,6 +196,15 @@ AstInteger(long ival)
     return ast;
 }
 
+/* create an untyped bitvalue */
+AST *
+AstBitValue(long ival)
+{
+    AST *ast = NewAST(AST_BITVALUE, NULL, NULL);
+    ast->d.ival = ival;
+    return ast;
+}
+
 /* create an identifier */
 AST *
 AstIdentifier(const char *name)
@@ -468,7 +477,10 @@ static const char *astnames[] = {
     "regpair",
     "functype",
     "self",
-    "nil",
+    "bitvalue",
+
+    "new",
+    "delete",
 };
 
 //
@@ -505,6 +517,10 @@ static void doASTDump(AST *ast, int indent)
         break;
     case AST_INTEGER:
         sprintf(buf, "<integer %d/>", ast->d.ival);
+        leaf = 1;
+        break;
+    case AST_BITVALUE:
+        sprintf(buf, "<bitvalue 0x%x/>", ast->d.ival);
         leaf = 1;
         break;
     case AST_FLOAT:
