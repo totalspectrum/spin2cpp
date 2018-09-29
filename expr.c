@@ -1863,7 +1863,7 @@ ExprType(AST *expr)
         return ExprType(expr);
     }
     case AST_NEW:
-        return BaseType(expr->left);
+        return expr->left;
     default:
         return NULL;
     }
