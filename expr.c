@@ -1546,6 +1546,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
         
     if (expr && expr->kind == AST_METHODREF) {
         const char *thename;
+        Function *f;
         objref = expr->left;
         objsym = LookupAstSymbol(objref, errflag ? "object reference" : NULL);
         if (!objsym) return NULL;
@@ -1560,6 +1561,10 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
             if (errflag)
                 ERROR(ast, "%s is not a method of %s", thename, objsym->name);
             return NULL;
+        }
+        f = (Function *)sym->val;
+        if (!f->is_public) {
+            ERROR(ast, "%s is a private method of %s", thename, objsym->name);
         }
     } else {
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
@@ -1792,12 +1797,21 @@ ExprType(AST *expr)
         }
         methodname = expr->right->d.string;
         sym = LookupObjSymbol(expr, objsym, methodname);
-        if (!sym || sym->type != SYM_FUNCTION) {
-            ERROR(expr, "%s is not a method of %s", methodname, objsym->name);
+        if (!sym) {
+            ERROR(expr, "%s is not a member of %s", methodname, objsym->name);
             return NULL;
         }
-        func = (Function *)sym->val;
-        return func->overalltype;
+        switch (sym->type) {
+        case SYM_FUNCTION:
+            func = (Function *)sym->val;
+            return func->overalltype;
+        case SYM_VARIABLE:
+            return (AST *)sym->val;
+        case SYM_CONSTANT:
+        default:
+            ERROR(expr, "Unable to handle member %s", methodname);
+            return NULL;
+        }
     }
     case AST_OPERATOR:
     {
