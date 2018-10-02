@@ -442,6 +442,38 @@ Another way to define an object is to first declare an abstract `class` with a n
 ```
 This is more convenient if there are many references to the class, or if you want to pass pointers to the class to functions.
 
+#### Class Example in BASIC
+
+`Counter.bas` (the class) contains:
+```
+dim x as integer
+
+sub reset
+  x = 0
+end sub
+
+sub inc(n = 1)
+  x = x + n
+end sub
+
+function get()
+  return x
+end function
+```
+
+`Main.bas` (the main program) contains:
+```
+  dim cnt as class using "Counter.bas"
+
+  cnt.reset
+  cnt.inc
+  cnt.inc
+  print cnt.get() ' prints 2
+```
+This is compiled with:
+```
+  fastspin main.bas
+```
 
 ### CONST
 
