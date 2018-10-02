@@ -1408,6 +1408,30 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintAssign(f, expr->left, expr->right, flags);
         flexbuf_printf(f, ")");
         break;
+    case AST_METHODREF:
+        {
+            const char *thename;
+            objref = expr->left;
+            objsym = LookupAstSymbol(objref, "object reference");
+            if (!objsym) return;
+            if (objsym->type != SYM_OBJECT) {
+                ERROR(expr, "%s is not an object", objsym->name);
+                return;
+            }
+            thename = expr->right->d.string;
+            sym = LookupObjSymbol(expr, objsym, thename);
+            if (!sym) {
+                ERROR(expr, "%s is not a member of %s", thename, objsym->name);
+                return;
+            }
+            if (sym->type == SYM_FUNCTION && gl_ccode) {
+                flexbuf_printf(f, "%s_", ObjClassName(objsym));
+            } else {
+                PrintObjectSym(f, objsym, objref, flags);
+                flexbuf_printf(f, ".%s", thename);
+            }
+        }
+        break;
     case AST_FUNCCALL:
         if (expr->left && expr->left->kind == AST_METHODREF) {
             const char *thename;
@@ -1420,8 +1444,8 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             }
             thename = expr->left->right->d.string;
             sym = LookupObjSymbol(expr, objsym, thename);
-            if (!sym || sym->type != SYM_FUNCTION) {
-                ERROR(expr, "%s is not a method of %s", thename, objsym->name);
+            if (!sym) {
+                ERROR(expr, "%s is not a member of %s", thename, objsym->name);
                 return;
             }
             if (gl_ccode) {
