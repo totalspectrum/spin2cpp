@@ -835,7 +835,9 @@ CheckSimpleLoop(AST *stmt)
 
     updateTestOp = condtest->d.ival;
     updateLimit = condtest->right;
-    if (updateTestOp == K_LE || updateTestOp == '<') {
+    if (updateTestOp == K_LE || updateTestOp == '<'
+        || updateTestOp == K_LEU || updateTestOp == K_LTU)
+    {
         newInitial = GetRevisedLimit(updateTestOp, updateLimit);
     } else {
         return;

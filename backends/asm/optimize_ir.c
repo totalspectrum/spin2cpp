@@ -1806,7 +1806,8 @@ OptimizePeepholes(IRList *irl)
 		ReplaceOpcode(ir, OPC_TEST);
                 changed = 1;
             }
-        } else if (opc == OPC_SHR && !InstrSetsFlags(ir, FLAG_WC)
+        } else if ( (opc == OPC_SHR || opc == OPC_SAR)
+		   && !InstrSetsFlags(ir, FLAG_WC)
                    && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
                    && IsImmediateVal(ir->src, 1))
         {
@@ -1845,7 +1846,7 @@ OptimizePeepholes(IRList *irl)
                 }
                 if (changeok) {
                     /* ok, let's go ahead and change it */
-                    ReplaceOpcode(previr, OPC_SHR);
+                    ReplaceOpcode(previr, opc);
                     previr->flags &= ~(FLAG_WZ|FLAG_WC);
                     previr->flags |= irflags;
                     for (testir = previr->next; testir && testir != lastir;
