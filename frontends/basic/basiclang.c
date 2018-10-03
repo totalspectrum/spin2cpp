@@ -258,6 +258,10 @@ bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
         return true;
     if (IsIntType(typ))
         return true;
+    // for now, accept generic types too as if they were integer
+    // perhaps this should give a warning?
+    if (IsGenericType(typ))
+        return true;
     ERROR(astForError, "Expected integer type for parameter of %s", opname);
     return false;
 }
