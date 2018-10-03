@@ -5,7 +5,7 @@ DAT
 entry
 
 _ismagic
-	cmps	arg1, #511 wz
+	cmp	arg1, #511 wz
  if_e	mov	_var_02, #1
  if_ne	mov	_var_02, #0
 	mov	result1, _var_02

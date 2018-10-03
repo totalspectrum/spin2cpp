@@ -7,7 +7,7 @@ entry
 _test1
 	mov	_var_01, arg1 wz
  if_e	jmp	#LR__0001
-	cmps	arg2, #0 wz
+	cmp	arg2, #0 wz
  if_ne	mov	result1, arg3
  if_ne	jmp	#_test1_ret
 LR__0001

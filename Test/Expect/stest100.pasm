@@ -5,7 +5,7 @@ DAT
 entry
 
 _xorbytes
-	cmps	arg3, #0 wz
+	cmp	arg3, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
 	rdbyte	_tmp003_, arg1

@@ -5,7 +5,7 @@ DAT
 entry
 
 _sumit
-	cmps	arg1, arg2 wz
+	cmp	arg1, arg2 wz
  if_ne	mov	result1, arg3
  if_ne	jmp	#_sumit_ret
 same

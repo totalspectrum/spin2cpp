@@ -33,7 +33,7 @@ __float_fromint
 	mov	arg1, __float_fromint_integer
 	call	#__float_fromuns
 	mov	__float_fromint_single, result1
-	cmps	__float_fromint_negate, #0 wz
+	cmp	__float_fromint_negate, #0 wz
  if_e	jmp	#LR__0002
 	mov	__float_fromint_integer, __float_fromint_single
 	mov	arg1, __float_fromint_integer

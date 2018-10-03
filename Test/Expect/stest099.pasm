@@ -18,14 +18,14 @@ LR__0001
 	mov	arg2, _tmp007_
 	wrbyte	_tmp008_, arg1
 	add	_var_03, _tmp002_
-	cmps	_var_03, arg3 wz
+	cmp	_var_03, arg3 wz
 	add	arg1, #1
  if_ne	jmp	#LR__0001
 _copy1_ret
 	ret
 
 _copy2
-	cmps	arg3, #0 wz
+	cmp	arg3, #0 wz
  if_e	jmp	#LR__0003
 LR__0002
 	mov	_tmp004_, arg2

@@ -12,7 +12,7 @@ _zcount
 LR__0001
 	mov	OUTA, arg1
 	add	arg1, _tmp001_
-	cmps	arg1, arg2 wz
+	cmp	arg1, arg2 wz
  if_ne	jmp	#LR__0001
 _zcount_ret
 	ret

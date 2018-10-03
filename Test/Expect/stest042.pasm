@@ -5,7 +5,7 @@ DAT
 entry
 
 _select
-	cmps	arg1, #0 wz
+	cmp	arg1, #0 wz
  if_ne	mov	_tmp001_, arg2
  if_e	mov	_tmp001_, arg3
  if_e	add	_tmp001_, #2

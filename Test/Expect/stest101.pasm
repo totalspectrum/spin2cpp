@@ -8,7 +8,7 @@ _checkcmd
 	mov	_var_00, #1
 LR__0001
 LR__0002
-	cmps	_var_00, #0 wz
+	cmp	_var_00, #0 wz
  if_ne	jmp	#LR__0002
 	rdlong	_tmp002_, objptr
 	add	_tmp002_, #1

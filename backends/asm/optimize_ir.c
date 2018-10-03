@@ -990,6 +990,11 @@ OptimizeMoves(IRList *irl)
                     change = 1;
                 } else if (IsImmediate(ir->src)) {
                     int sawchange;
+                    if (ir->flags == FLAG_WZ) {
+                        // because this is a mov immediate, we know how
+                        // WZ will be set
+                        ApplyConditionAfter(ir, ir->src->val);
+                    }
                     change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
                     if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
                         // we no longer need the original mov
@@ -1020,7 +1025,15 @@ HasSideEffects(IR *ir)
         return true;
     }
     if (InstrSetsAnyFlags(ir)) {
-        return true;
+        // if the flags might possibly be used, we have to assume there
+        // are side effects
+        IR *irnext;
+        int flagsSet = ir->flags & (FLAG_WZ|FLAG_WC);
+        for (irnext = ir->next; irnext; irnext = irnext->next) {
+            if (InstrUsesFlags(irnext, flagsSet)) {
+                return true;
+            }
+        }
     }
     if (IsBranch(ir)) {
         if (ir->opc == OPC_CALL &&

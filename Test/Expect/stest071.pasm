@@ -7,7 +7,7 @@ entry
 _blink
 	mov	_var_04, #1
 	shl	_var_04, arg1
-	cmps	arg2, #0 wz
+	cmp	arg2, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
 	xor	OUTA, _var_04

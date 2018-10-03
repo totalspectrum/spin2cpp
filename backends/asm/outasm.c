@@ -1616,7 +1616,7 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   }
   lhs = Dereference(irl, lhs);
   rhs = Dereference(irl, rhs);
-  if (isUnsigned) {
+  if (isUnsigned || flags == FLAG_WZ) {
       ir = EmitOp2(irl, OPC_CMP, lhs, rhs);
   } else {
       ir = EmitOp2(irl, OPC_CMPS, lhs, rhs);
@@ -2821,7 +2821,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       EmitMove(irl, arg1, stackptr);
       EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
       EmitOp1(irl, OPC_CALL, catchfunc);
-      ir = EmitOp2(irl, OPC_CMPS, abortcalled, NewImmediate(0));
+      ir = EmitOp2(irl, OPC_CMP, abortcalled, NewImmediate(0));
       ir->flags |= FLAG_WZ;
       // if (abortcalled) {
       //   result := result1
@@ -4369,7 +4369,7 @@ EmitMain_P2(IRList *irl, Module *P)
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
-    ir = EmitOp2(irl, OPC_CMPS, stackptr, NewImmediate(0));
+    ir = EmitOp2(irl, OPC_CMP, stackptr, NewImmediate(0));
     ir->flags |= FLAG_WZ;
     EmitJump(irl, COND_NE, spinlabel);
     if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) ) {

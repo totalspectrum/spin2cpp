@@ -38,7 +38,7 @@ LR__0001
 	shl	arg1, _var_11
 LR__0002
 	sub	_var_03, #127
-	cmps	arg2, #0 wz
+	cmp	arg2, #0 wz
  if_ne	mov	result1, _var_03
  if_e	mov	result1, arg1
 _dounpack_x_ret

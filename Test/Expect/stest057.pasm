@@ -5,7 +5,7 @@ DAT
 entry
 
 _myfill
-	cmps	arg3, #0 wz
+	cmp	arg3, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
 	wrlong	arg2, arg1
