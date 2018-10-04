@@ -18,7 +18,7 @@ NumExprItemsOnStack(AST *expr)
 {
     Function *f;
     if (expr->kind == AST_FUNCCALL) {
-        Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 1);
+        Symbol *sym = FindCalledFuncSymbol(expr, NULL, 1);
         if (sym && sym->type == SYM_FUNCTION) {
             f = (Function *)sym->val;
             return f->numresults;
@@ -1094,7 +1094,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
-        sym = FindFuncSymbol(ast, NULL, NULL, 1);
+        sym = FindCalledFuncSymbol(ast, NULL, 1);
         expectArgs = 0;
         if (sym) {
             fname = sym->name;
@@ -1372,7 +1372,7 @@ InferTypesFunccall(AST *callast)
 
 
     list = callast->right;
-    sym = FindFuncSymbol(callast, NULL, NULL, 0);
+    sym = FindCalledFuncSymbol(callast, NULL, 0);
     if (!sym || sym->type != SYM_FUNCTION) return 0;
     
     func = (Function *)sym->val;
@@ -1525,8 +1525,10 @@ UseInternal(const char *name)
 static void
 MarkUsedBody(AST *body)
 {
-    Symbol *sym, *objsym;
+    Symbol *sym;
     AST *objref;
+    AST *objtype;
+    Module *P;
     
     if (!body) return;
     switch(body->kind) {
@@ -1539,13 +1541,13 @@ MarkUsedBody(AST *body)
         break;
     case AST_METHODREF:
         objref = body->left;
-        objsym = LookupAstSymbol(objref, "object reference");
-        if (!objsym) return;
-        if (objsym->type != SYM_OBJECT) {
-            ERROR(body, "%s is not an object", objsym->name);
+        objtype = BaseType(ExprType(objref));
+        if (!objtype || objtype->kind != AST_OBJECT) {
+            //ERROR(body, "%s is not an object", objsym->name);
             return;
         }
-        sym = LookupObjSymbol(body, objsym, body->right->d.string);
+        P = GetClassPtr(objtype);
+        sym = FindSymbol(&P->objsyms, body->right->d.string);
         if (!sym || sym->type != SYM_FUNCTION) {
             return;
         }
@@ -1647,7 +1649,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
     switch(body->kind) {
     case AST_FUNCCALL:
         ref->is_leaf = 0;
-        sym = FindFuncSymbol(body, NULL, NULL, 0);
+        sym = FindCalledFuncSymbol(body, NULL, 0);
         if (!sym) return false;
         if (sym->type != SYM_FUNCTION) return false;
         func = (Function *)sym->val;

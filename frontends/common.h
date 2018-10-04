@@ -447,6 +447,9 @@ AST *GetFunctionReturnType(Function *func);
 /* find function symbol in a function call; optionally returns the object ref */
 Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr, int errflag);
 
+/* find function symbol in a function call; new version that can work on abstract types */
+Symbol *FindCalledFuncSymbol(AST *funccall, AST **objrefPtr, int errflag);
+
 /* get full name for FILE directive */
 AST *GetFullFileName(AST *baseString);
     
@@ -454,6 +457,9 @@ Symbol *LookupSymbolInFunc(Function *func, const char *name);
 
 // find an object pointer given an object symbol
 Module *GetObjectPtr(Symbol *sym);
+
+/* convert an object type to a class */
+Module *GetClassPtr(AST *objtype);
 
 /*
  * see if an AST refers to a parameter of this function, and return

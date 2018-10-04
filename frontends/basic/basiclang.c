@@ -113,7 +113,7 @@ doBasicTransform(AST **astptr)
             // we can call it (stack vs. register calling)
             Symbol *sym;
             Function *f = NULL;
-            sym = FindFuncSymbol(ast, NULL, NULL, 0);
+            sym = FindCalledFuncSymbol(ast, NULL, 0);
             if (sym && sym->type == SYM_FUNCTION) {
                 f = (Function *)sym->val;
             }
@@ -749,7 +749,7 @@ BuildMethodPointer(AST *ast)
     AST *objast;
     AST *funcaddr;
     
-    sym = FindFuncSymbol(ast, &objast, 0, 0);
+    sym = FindCalledFuncSymbol(ast, &objast, 0);
     if (!sym || sym->type != SYM_FUNCTION) {
         ERROR(ast, "Internal error, unable to find function address");
         return;
@@ -818,7 +818,7 @@ AST *CheckTypes(AST *ast)
             AST *calledParamList;
             AST *expectType, *passedType;
             Function *func;
-            Symbol *calledSym = FindFuncSymbol(ast, NULL, NULL, 1);
+            Symbol *calledSym = FindCalledFuncSymbol(ast, NULL, 1);
             if (calledSym && calledSym->type == SYM_FUNCTION) {
                 func = (Function *)calledSym->val;
                 calledParamList = func->params;
