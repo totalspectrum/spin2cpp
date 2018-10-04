@@ -94,6 +94,28 @@ LookupAstSymbol(AST *ast, const char *msg)
 }
 
 /*
+ * look up an object member given the object type
+ */
+Symbol *
+LookupMemberSymbol(AST *expr, AST *objtype, const char *name)
+{
+    Module *P;
+    Symbol *sym;
+    objtype = BaseType(objtype);
+    if (objtype->kind != AST_OBJECT) {
+        ERROR(expr, "expected an object");
+        return NULL;
+    }
+    P = (Module *)objtype->d.ptr;
+    
+    sym = FindSymbol(&P->objsyms, name);
+    if (!sym) {
+        ERROR(expr, "unknown identifier %s in class %s", name, P->classname);
+    }
+    return sym;
+}
+
+/*
  * look up an object method or constant
  * "expr" is the context (for error messages)
  */
@@ -129,6 +151,16 @@ ObjClassName(Symbol *obj)
     }
     objstate = GetObjectPtr(obj);
     return objstate->classname;
+}
+
+const char *
+TypeName(AST *type)
+{
+    if (type->kind == AST_OBJECT) {
+        Module *P = (Module *)type->d.ptr;
+        return P->classname;
+    }
+    return "that type";
 }
 
 /*
@@ -1780,14 +1812,13 @@ ExprType(AST *expr)
     case AST_METHODREF:
     {
         AST *objref = expr->left;
-        Symbol *objsym = NULL;
+        AST *objtype = NULL;
         Symbol *sym = NULL;
         const char *methodname;
         Function *func;
         
-        objsym = LookupAstSymbol(objref, NULL);
-        if (!objsym) return NULL;
-        if (objsym->type != SYM_OBJECT) {
+        objtype = BaseType(ExprType(objref));
+        if (!objtype || objtype->kind != AST_OBJECT) {
             ERROR(expr, "Expecting object");
             return NULL;
         }
@@ -1796,9 +1827,9 @@ ExprType(AST *expr)
             return NULL;
         }
         methodname = expr->right->d.string;
-        sym = LookupObjSymbol(expr, objsym, methodname);
+        sym = LookupMemberSymbol(expr, objtype, methodname);
         if (!sym) {
-            ERROR(expr, "%s is not a member of %s", methodname, objsym->name);
+            ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));
             return NULL;
         }
         switch (sym->type) {
