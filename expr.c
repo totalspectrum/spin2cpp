@@ -136,12 +136,26 @@ LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
 {
     Symbol *sym;
     Module *objstate;
-
-    if (obj->type != SYM_OBJECT) {
+    AST *symtype;
+    
+    switch (obj->type) {
+    case SYM_VARIABLE:
+    case SYM_LOCALVAR:
+    case SYM_PARAMETER:
+        symtype = BaseType((AST *)obj->val);
+        if (symtype->kind != AST_OBJECT) {
+            ERROR(expr, "%s is not an object", obj->name);
+            return NULL;
+        }
+        objstate = GetClassPtr(symtype);
+        break;
+    case SYM_OBJECT:
+        objstate = GetObjectPtr(obj);
+        break;
+    default:
         ERROR(expr, "expected an object");
         return NULL;
     }
-    objstate = GetObjectPtr(obj);
     sym = FindSymbol(&objstate->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in %s", name, obj->name);
@@ -1594,7 +1608,13 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
         objref = expr->left;
         objsym = LookupAstSymbol(objref, errflag ? "object reference" : NULL);
         if (!objsym) return NULL;
-        if (objsym->type != SYM_OBJECT) {
+        switch (objsym->type) {
+        case SYM_OBJECT:
+        case SYM_VARIABLE:
+        case SYM_LOCALVAR:
+        case SYM_PARAMETER:
+            break; // everything OK
+        default:
             if (errflag)
                 ERROR(ast, "%s is not an object", objsym->name);
             return NULL;

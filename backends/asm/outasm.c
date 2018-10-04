@@ -2127,7 +2127,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     offset = NULL;
     objaddr = NULL;
-    if (objsym) {
+    if (objsym && objsym->type == SYM_OBJECT) {
         if (expr->kind == AST_METHODREF) {
             call = expr;
         } else {
@@ -2151,6 +2151,14 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             }
         } else {
             offset = NewImmediate(objsym->offset);
+        }
+    } else if (objsym) {
+        call = expr->left;
+        if (call && call->kind == AST_METHODREF) {
+            call = call->left;
+            objaddr = CompileExpression(irl, call, NULL);
+        } else {
+            ERROR(expr, "Internal error, expected method reference");
         }
     }
     if (objptr) {
