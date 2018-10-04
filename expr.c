@@ -1879,6 +1879,10 @@ ExprType(AST *expr)
     case AST_ARRAYREF:
         sub = ExprType(expr->left);
         if (!sub) return NULL;
+        if (sub->kind == AST_OBJECT) {
+            // HACK for now: object arrays are declared funny
+            return sub;
+        }
         if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE)) return NULL;
         return sub->left;
     case AST_FUNCCALL:
