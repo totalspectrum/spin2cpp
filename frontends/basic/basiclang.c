@@ -47,17 +47,24 @@ IsBasicString(AST *typ)
 }
 
 static AST *
-addPrintCall(AST *seq, AST *func, AST *expr)
+addPrintCall(AST *seq, AST *handle, AST *func, AST *expr)
 {
     AST *elem;
-    AST *funccall = NewAST(AST_FUNCCALL, func,
-                           expr ? NewAST(AST_EXPRLIST, expr, NULL) : NULL);
+    AST *params;
+
+    if (expr) {
+        params = NewAST(AST_EXPRLIST, expr, NULL);
+    } else {
+        params = NULL;
+    }
+    params = NewAST(AST_EXPRLIST, handle, params);
+    AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
     return AddToList(seq, elem);
 }
 
 static AST *
-addPutCall(AST *seq, AST *func, AST *expr, int size)
+addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
 {
     AST *elem;
     AST *params;
@@ -71,7 +78,7 @@ addPutCall(AST *seq, AST *func, AST *expr, int size)
     params = NewAST(AST_EXPRLIST, expr, NULL);
     params = AddToList(params,
                        NewAST(AST_EXPRLIST, sizexpr, NULL));
-    
+    params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
     return AddToList(seq, elem);
@@ -170,6 +177,7 @@ doBasicTransform(AST **astptr)
             AST *type;
             AST *exprlist = ast->left;
             AST *expr;
+            AST *handle = AstInteger(0);
             while (exprlist) {
                 if (exprlist->kind != AST_EXPRLIST) {
                     ERROR(exprlist, "internal error in print list");
@@ -184,15 +192,15 @@ doBasicTransform(AST **astptr)
                     int size;
                     expr = expr->left;
                     size = TypeSize(ExprType(expr));
-                    seq = addPutCall(seq, basic_put, expr, size);
+                    seq = addPutCall(seq, handle, basic_put, expr, size);
                     continue;
                 }
                 if (expr->kind == AST_CHAR) {
                     expr = expr->left;
                     if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
-                        seq = addPrintCall(seq, basic_print_nl, NULL);
+                        seq = addPrintCall(seq, handle, basic_print_nl, NULL);
                     } else {
-                        seq = addPrintCall(seq, basic_print_char, expr);
+                        seq = addPrintCall(seq, handle, basic_print_char, expr);
                     }
                     continue;
                 }
@@ -202,22 +210,23 @@ doBasicTransform(AST **astptr)
                     continue;
                 }
                 if (IsFloatType(type)) {
-                    seq = addPrintCall(seq, basic_print_float, expr);
+                    seq = addPrintCall(seq, handle, basic_print_float, expr);
                 } else if (IsStringType(type)) {
-                    seq = addPrintCall(seq, basic_print_string, expr);
+                    seq = addPrintCall(seq, handle, basic_print_string, expr);
                 } else if (IsGenericType(type)) {
                     // create a hex call
                     AST *ast;
                     AST *params;
 
-                    params = NewAST(AST_EXPRLIST, expr,
-                                    NewAST(AST_EXPRLIST, AstInteger(16), NULL));
+                    params = NewAST(AST_EXPRLIST, handle,
+                                    NewAST(AST_EXPRLIST, expr,
+                                           NewAST(AST_EXPRLIST, AstInteger(16), NULL)));
                     ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
                     seq = AddToList(seq, NewAST(AST_SEQUENCE, ast, NULL));
                 } else if (IsUnsignedType(type)) {
-                    seq = addPrintCall(seq, basic_print_unsigned, expr);
+                    seq = addPrintCall(seq, handle, basic_print_unsigned, expr);
                 } else if (IsIntType(type)) {
-                    seq = addPrintCall(seq, basic_print_integer, expr);
+                    seq = addPrintCall(seq, handle, basic_print_integer, expr);
                 } else {
                     ERROR(ast, "Unable to print expression of this type");
                 }

@@ -8,11 +8,11 @@ void btest007::program(void)
   x = "hello";
   y = 2;
   z = y * y;
-  basic_print_string(x);
-  basic_print_char(9);
-  basic_print_integer(y);
-  basic_print_char(9);
-  basic_print_integer(z);
-  basic_print_nl();
+  basic_print_string(0, x);
+  basic_print_char(0, 9);
+  basic_print_integer(0, y);
+  basic_print_char(0, 9);
+  basic_print_integer(0, z);
+  basic_print_nl(0);
 }
 

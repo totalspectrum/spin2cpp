@@ -272,18 +272,18 @@ PRI _float_getpowten(x) | midf, lo, hi, mid, t, sanity
       return (midf, mid)
   return (_float_pow_n(10.0, hi), hi)
 
-PRI _basic_print_float(f) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
+PRI _basic_print_float(h, f) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
   needexp := 0
   numdigits := 5 '' later this should be a parameter  
   if (f < 0)
-    _basic_print_char("-")
+    _basic_print_char(h, "-")
     f := _float_negate(f)
   (lastf, exp) := _float_getpowten(f)
   f := _float_div(f, lastf)
   if (_float_cmp(f, 10.0) > 0)
-    _basic_print_char("i")
-    _basic_print_char("n")
-    _basic_print_char("f")
+    _basic_print_char(h, "i")
+    _basic_print_char(h, "n")
+    _basic_print_char(h, "f")
     return
 
   ''
@@ -324,21 +324,21 @@ PRI _basic_print_float(f) | numdigits, i, lastf, exp, u, maxu, needpoint, needex
     digit := u +/ maxu
     u := u +// maxu
     if (needpoint == 0)
-      _basic_print_char(".")
-    _basic_print_char("0" + digit)
+      _basic_print_char(h, ".")
+    _basic_print_char(h, "0" + digit)
     --needpoint
 
   if (needexp)
-    _basic_print_char("E")
+    _basic_print_char(h, "E")
     if (exp < 0)
-      _basic_print_char("-")
+      _basic_print_char(h, "-")
       exp := -exp
     else
-      _basic_print_char("+")
+      _basic_print_char(h, "+")
     u := exp +/ 10
     exp := exp +// 10
-    _basic_print_char(u + "0")
-    _basic_print_char(exp + "0")
+    _basic_print_char(h, u + "0")
+    _basic_print_char(h, exp + "0")
 
 {{
 

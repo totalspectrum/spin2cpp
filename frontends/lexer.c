@@ -1293,14 +1293,14 @@ Builtin builtinfuncs[] = {
     { "getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
 
     // BASIC compiler builtins
-    { "_basic_print_nl", 0, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
-    { "_basic_print_string", 1, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
-    { "_basic_print_integer", 1, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
-    { "_basic_print_unsigned", 1, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
-    { "_basic_print_float", 1, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
-    { "_basic_print_fixed", 1, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
-    { "_basic_print_char", 1, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
-    { "_basic_put", 2, defaultBuiltin, "basic_put", NULL, 0, NULL },
+    { "_basic_print_nl", 1, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
+    { "_basic_print_string", 2, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
+    { "_basic_print_integer", 2, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
+    { "_basic_print_unsigned", 2, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
+    { "_basic_print_float", 2, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
+    { "_basic_print_fixed", 2, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
+    { "_basic_print_char", 2, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
+    { "_basic_put", 3, defaultBuiltin, "basic_put", NULL, 0, NULL },
 
     { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, 0, NULL },
 

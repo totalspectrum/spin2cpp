@@ -74,35 +74,56 @@ pri _lfsr_backward(x) | a
     endasm
   return x
 
-pri _basic_print_char(c)
-  return _tx(c)
-    
-pri _basic_print_string(ptr)|c
-  repeat while ((c := byte[ptr++]) <> 0)
-    _basic_print_char(c)
+dat
+tx_method
+   long 0
+   long 0
+   
+bas_handles
+   long tx_method, 0, 0
+   long 0[7*3]
+   
+pri _basic_print_charx(n, c) | saveobj, t, f, o
+  n := n*3
+  t := bas_handles[n]
+  o := long[t]
+  f := long[t+4]
+  asm
+    mov saveobj, objptr
+    mov objptr, o
+    call f
+    mov objptr, saveobj
+  endasm
 
-pri _basic_put(ptr, siz)|c
+pri _basic_print_char(n, c)
+  _tx(c)
+  
+pri _basic_print_string(n, ptr)|c
+  repeat while ((c := byte[ptr++]) <> 0)
+    _basic_print_char(n, c)
+
+pri _basic_put(n, ptr, siz)|c
   repeat while (siz-- > 0)
-    _basic_print_char(byte[ptr++])
+    _basic_print_char(n, byte[ptr++])
     
-pri _basic_print_unsigned(x, base=10) | d
+pri _basic_print_unsigned(n, x, base=10) | d
   d := x +// base  ' unsigned modulus
   x := x +/ base  ' unsigned divide
   if (x)
-    _basic_print_unsigned(x, base)
+    _basic_print_unsigned(n, x, base)
   if (d > 9)
     d := (d - 10) + ("a" - "0") 
-  _basic_print_char(d + "0")
+  _basic_print_char(n, d + "0")
     
-pri _basic_print_integer(x)
+pri _basic_print_integer(n, x)
   if (x < 0)
-    _basic_print_char("-")
+    _basic_print_char(n, "-")
     x := -x
-  _basic_print_unsigned(x)
+  _basic_print_unsigned(n, x)
     
-pri _basic_print_fixed(x) | i, f
+pri _basic_print_fixed(n, x) | i, f
   if (x < 0)
-    _basic_print_char("-")
+    _basic_print_char(n, "-")
     x := -x
   i := x >> 16
   f := x & $ffff
@@ -112,18 +133,18 @@ pri _basic_print_fixed(x) | i, f
   if (f > $ffff)
     i++
     f -= $10000
-  _basic_print_unsigned(i)
-  _basic_print_char(".")
+  _basic_print_unsigned(n, i)
+  _basic_print_char(n, ".")
   repeat 4
     f := f * 10
     i := f >> 16
     f := f & $ffff
-    _basic_print_char(i + "0")
+    _basic_print_char(n, i + "0")
   return
 
-pri _basic_print_nl
-  _basic_print_char(13)
-  _basic_print_char(10)
+pri _basic_print_nl(h)
+  _basic_print_char(h, 13)
+  _basic_print_char(h, 10)
 
 ''
 '' fixed point multiply
