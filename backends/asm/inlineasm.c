@@ -28,6 +28,11 @@ GetLabelFromSymbol(AST *where, const char *name)
     return (Operand *)sym->val;
 }
 
+extern void ValidateStackptr(void);
+extern Operand *stackptr;
+extern void ValidateObjbase(void);
+extern Operand *objbase;
+
 //
 // compile an expression as an inine asm operand
 //
@@ -42,6 +47,15 @@ CompileInlineOperand(IRList *irl, AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
 	 Symbol *sym = LookupSymbol(expr->d.string);
 	 if (!sym) {
+             // check for special symbols "objptr" and "sp"
+             if (!strcmp(expr->d.string, "objptr")) {
+                 ValidateObjbase();
+                 return objbase;
+             }
+             if (!strcmp(expr->d.string, "sp")) {
+                 ValidateStackptr();
+                 return stackptr;
+             }
              ERROR(expr, "Undefined symbol %s", expr->d.string);
              return NewImmediate(0);
 	 }

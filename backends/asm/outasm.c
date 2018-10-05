@@ -46,10 +46,10 @@ static Operand *abortcalled;
 static Operand *nextlabel;
 static Operand *quitlabel;
 
-static Operand *objbase;
+Operand *objbase;
 static Operand *objlabel;
 
-static Operand *stackptr;
+Operand *stackptr;
 static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
@@ -188,7 +188,7 @@ IdentifierGlobalName(Module *P, const char *name)
     return strdup(temp);
 }
 
-static void
+void
 ValidateObjbase(void)
 {
     if (!objbase) {
@@ -197,7 +197,7 @@ ValidateObjbase(void)
     }
 }
 
-static void
+void
 ValidateStackptr(void)
 {
     if (!stackptr) {

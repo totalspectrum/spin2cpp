@@ -76,18 +76,27 @@ pri _lfsr_backward(x) | a
 
 dat
 tx_method
-   long 0
-   long 0
-   
+   long 0	'  objptr does not matter
+   long 0	' special tag for _tx function
+
+  '' 8 possible open files
+  '' each one has 3 method pointers
+  '' sendchar, recvchar, close
+  ''
 bas_handles
-   long tx_method, 0, 0
+   long @@@tx_method, 0, 0
    long 0[7*3]
    
-pri _basic_print_charx(n, c) | saveobj, t, f, o
+pri _basic_print_char(n, c) | saveobj, t, f, o
   n := n*3
   t := bas_handles[n]
+  if t == 0
+    return
   o := long[t]
   f := long[t+4]
+  if f == 0
+    _tx(c)
+    return
   asm
     mov saveobj, objptr
     mov objptr, o
@@ -95,9 +104,6 @@ pri _basic_print_charx(n, c) | saveobj, t, f, o
     mov objptr, saveobj
   endasm
 
-pri _basic_print_char(n, c)
-  _tx(c)
-  
 pri _basic_print_string(n, ptr)|c
   repeat while ((c := byte[ptr++]) <> 0)
     _basic_print_char(n, c)
