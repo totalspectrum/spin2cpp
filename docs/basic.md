@@ -9,7 +9,7 @@ right now. Missing features include:
 
  - There are some missing floating point functions, like sin and cos.
 
- - Input and output isn't implemented yet, except for a basic PRINT statement. Eventually we will have re-directable PRINT, and a similar INPUT.
+ - Input and output isn't fully implemented yet, except for a basic PRINT statement.
 
  - There is no way to initialize an array.
 
@@ -59,6 +59,7 @@ asm
 byte
 case
 class
+close
 continue
 cpu
 declare
@@ -475,6 +476,14 @@ This is compiled with:
   fastspin main.bas
 ```
 
+### CLOSE
+
+Closes a file previously opened by `open`. This causes the `close` method specified in the device driver (if any) to be called, and then invalidates the handle so that it may not be used for further I/O operations. Any attempt to use a closed handle produces no result.
+```
+  close #2  ' close handle #2
+```
+Note that handles 0 and 1 are reserved by the system; closing them may produce undefined results.
+
 ### CONST
 
 At the beginning of a line, CONST declares a constant value. For example:
@@ -793,7 +802,17 @@ In logical (boolean) conditions, since the TRUE condition is all 1 bits set, thi
 
 ### OPEN
 
-Reserved for future use.
+Open a handle for input and/or output. The general form is:
+```
+  open device as #n
+```
+where `device` is a device driver structure returned by a system function such as `SendRecvDevice`, and `n` evaluates to an integer between 2 and 7. (Handles 0 and 1 also exist, but are reserved for system use.)
+
+Example:
+```
+  open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
+```
+Here the `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
 
 ### OR
 
@@ -881,6 +900,10 @@ A predefined string function. `right$(s, n)` returns the right-most `n` characte
 ### SELF
 
 Indicates the current object. Not implemented yet.
+
+### SENDRECVDEVICE
+
+A built-in function rather than a keyword. `SendRecvDevice(sendf, recvf, closef)` constructs a simple device driver based on three functions: `sendf` to send a single byte, `recvf` to receive a byte (or return -1 if no byte is available), and `closef`. The value(s) returned by `SendRecvDevice` is only useful for passing directly to the `open` statement, and should not be used in any other context (at least not at this time).
 
 ### SHORT
 

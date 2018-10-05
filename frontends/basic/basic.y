@@ -128,6 +128,7 @@ AST *AstCharItem(int c)
 %token BAS_BYTE       "byte"
 %token BAS_CASE       "case"
 %token BAS_CLASS      "class"
+%token BAS_CLOSE      "close"
 %token BAS_CONST      "const"
 %token BAS_CONTINUE   "continue"
 %token BAS_CPU        "cpu"
@@ -297,6 +298,19 @@ nonemptystatement:
     { $$ = NewAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                   NULL); }
+  | BAS_OPEN expr BAS_AS '#' expr
+    {
+        $$ = NewAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open"),
+                NewAST(AST_EXPRLIST, $5,
+                       NewAST(AST_EXPRLIST, $2, NULL)));
+    }
+  | BAS_CLOSE '#' expr
+    {
+        $$ = NewAST(AST_FUNCCALL,
+                    AstIdentifier("_basic_close"),
+                    NewAST(AST_EXPRLIST, $3, NULL));
+    }
   | ifstmt
     { $$ = $1; }
   | whilestmt

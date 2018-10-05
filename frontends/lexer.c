@@ -1077,6 +1077,7 @@ struct reservedword basic_keywords[] = {
   { "byte", BAS_BYTE },
   { "case", BAS_CASE },
   { "class", BAS_CLASS },
+  { "close", BAS_CLOSE },
   { "const", BAS_CONST },
   { "continue", BAS_CONTINUE },
   { "cpu", BAS_CPU },

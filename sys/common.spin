@@ -94,7 +94,29 @@ pri _basic_open(n, sendf, recvf, closef)
   bas_handles[n] := sendf
   bas_handles[n+1] := recvf
   bas_handles[n+2] := closef
+
+pri _basic_close(n) | ptr, closef, f, o
+  if (n +> 7)
+    return
+  n := n*3
+  bas_handles[n] := 0
+  bas_handles[n+1] := 0
+  closef := bas_handles[n+2]
+  bas_handles[n+2] := 0
+  if closef == 0
+    return
+  '' unpack the function pointer
+  o := long[closef]
+  f := long[closef+4]
   
+  asm
+    add sp, #4
+    mov ptr, objptr
+    mov objptr, o
+    call f
+    mov objptr, ptr
+  endasm
+
 pri _basic_print_char(n, c) | saveobj, t, f, o
   n := n*3
   t := bas_handles[n]
@@ -246,3 +268,6 @@ pri _make_methodptr(o, func) | ptr
     long[ptr] := o
     long[ptr+4] := func
   return ptr
+
+pri SendRecvDevice(sendf, recvf = 0, closef = 0)
+  return (sendf, recvf, closef)
