@@ -289,6 +289,10 @@ nonemptystatement:
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
+  | BAS_PRINT '#' expr
+    { $$ = NewAST(AST_PRINT, AstCharItem('\n'), $3); }
+  | BAS_PRINT '#' expr ',' printlist
+    { $$ = NewAST(AST_PRINT, $5, $3); }
   | BAS_PUT expr eoln
     { $$ = NewAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),

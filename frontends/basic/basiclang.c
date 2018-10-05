@@ -177,7 +177,10 @@ doBasicTransform(AST **astptr)
             AST *type;
             AST *exprlist = ast->left;
             AST *expr;
-            AST *handle = AstInteger(0);
+            AST *handle = ast->right;
+            if (!handle) {
+                handle = AstInteger(0);
+            }
             while (exprlist) {
                 if (exprlist->kind != AST_EXPRLIST) {
                     ERROR(exprlist, "internal error in print list");

@@ -86,7 +86,15 @@ tx_method
 bas_handles
    long @@@tx_method, 0, 0
    long 0[7*3]
-   
+
+pri _basic_open(n, sendf, recvf, closef)
+  if (n +> 7)
+    return
+  n := n*3
+  bas_handles[n] := sendf
+  bas_handles[n+1] := recvf
+  bas_handles[n+2] := closef
+  
 pri _basic_print_char(n, c) | saveobj, t, f, o
   n := n*3
   t := bas_handles[n]
@@ -98,6 +106,9 @@ pri _basic_print_char(n, c) | saveobj, t, f, o
     _tx(c)
     return
   asm
+    add  sp, #8
+    wrlong c, sp
+    sub  sp, #8
     mov saveobj, objptr
     mov objptr, o
     call f
