@@ -1,0 +1,5 @@
+hello, world!
+HELLO, WORLD!
+
+GOODBYE!
+closed handle
