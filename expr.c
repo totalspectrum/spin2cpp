@@ -91,7 +91,7 @@ LookupAstSymbol(AST *ast, const char *msg)
     } else if (ast->kind == AST_ARRAYREF) {
         id = ast->left;
     } else {
-        ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
+        //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
         return NULL;
     }
     if (id->kind != AST_IDENTIFIER) {
