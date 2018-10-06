@@ -111,11 +111,15 @@ doBasicTransform(AST **astptr)
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_RANGEREF:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
+            doBasicTransform(&ast->left);
+            doBasicTransform(&ast->right);
             // taking the address of a function may restrict how
             // we can call it (stack vs. register calling)
             Symbol *sym;
