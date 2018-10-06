@@ -87,22 +87,22 @@ bas_handles
    long @@@tx_method, 0, 0
    long 0[7*3]
 
-pri _basic_open(n, sendf, recvf, closef)
-  if (n +> 7)
+pri _basic_open(h, sendf, recvf, closef)
+  if (h +> 7)
     return
-  n := n*3
-  bas_handles[n] := sendf
-  bas_handles[n+1] := recvf
-  bas_handles[n+2] := closef
+  h := h*3
+  bas_handles[h] := sendf
+  bas_handles[h+1] := recvf
+  bas_handles[h+2] := closef
 
-pri _basic_close(n) | ptr, closef, f, o
-  if (n +> 7)
+pri _basic_close(h) | ptr, closef, f, o
+  if (h +> 7)
     return
-  n := n*3
-  bas_handles[n] := 0
-  bas_handles[n+1] := 0
-  closef := bas_handles[n+2]
-  bas_handles[n+2] := 0
+  h := h*3
+  bas_handles[h] := 0
+  bas_handles[h+1] := 0
+  closef := bas_handles[h+2]
+  bas_handles[h+2] := 0
   if closef == 0
     return
   '' unpack the function pointer
@@ -117,9 +117,9 @@ pri _basic_close(n) | ptr, closef, f, o
     mov objptr, ptr
   endasm
 
-pri _basic_print_char(n, c) | saveobj, t, f, o
-  n := n*3
-  t := bas_handles[n]
+pri _basic_print_char(h, c) | saveobj, t, f, o
+  h := h*3
+  t := bas_handles[h]
   if t == 0
     return
   o := long[t]
@@ -137,32 +137,32 @@ pri _basic_print_char(n, c) | saveobj, t, f, o
     mov objptr, saveobj
   endasm
 
-pri _basic_print_string(n, ptr)|c
+pri _basic_print_string(h, ptr)|c
   repeat while ((c := byte[ptr++]) <> 0)
-    _basic_print_char(n, c)
+    _basic_print_char(h, c)
 
-pri _basic_put(n, ptr, siz)|c
+pri _basic_put(h, ptr, siz)|c
   repeat while (siz-- > 0)
-    _basic_print_char(n, byte[ptr++])
+    _basic_print_char(h, byte[ptr++])
     
-pri _basic_print_unsigned(n, x, base=10) | d
+pri _basic_print_unsigned(h, x, base=10) | d
   d := x +// base  ' unsigned modulus
   x := x +/ base  ' unsigned divide
   if (x)
-    _basic_print_unsigned(n, x, base)
+    _basic_print_unsigned(h, x, base)
   if (d > 9)
     d := (d - 10) + ("a" - "0") 
-  _basic_print_char(n, d + "0")
+  _basic_print_char(h, d + "0")
     
-pri _basic_print_integer(n, x)
+pri _basic_print_integer(h, x)
   if (x < 0)
-    _basic_print_char(n, "-")
+    _basic_print_char(h, "-")
     x := -x
-  _basic_print_unsigned(n, x)
+  _basic_print_unsigned(h, x)
     
-pri _basic_print_fixed(n, x) | i, f
+pri _basic_print_fixed(h, x) | i, f
   if (x < 0)
-    _basic_print_char(n, "-")
+    _basic_print_char(h, "-")
     x := -x
   i := x >> 16
   f := x & $ffff
@@ -172,13 +172,13 @@ pri _basic_print_fixed(n, x) | i, f
   if (f > $ffff)
     i++
     f -= $10000
-  _basic_print_unsigned(n, i)
-  _basic_print_char(n, ".")
+  _basic_print_unsigned(h, i)
+  _basic_print_char(h, ".")
   repeat 4
     f := f * 10
     i := f >> 16
     f := f & $ffff
-    _basic_print_char(n, i + "0")
+    _basic_print_char(h, i + "0")
   return
 
 pri _basic_print_nl(h)
@@ -271,3 +271,35 @@ pri _make_methodptr(o, func) | ptr
 
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
+
+pri _basic_get_char(n) | t, o, f, saveobj
+  n := n*3
+  t := bas_handles[n+1]
+  if t == 0
+    return -1
+  o := long[t]
+  f := long[t+4]
+  if f == 0
+    return -1
+  asm
+    add sp, #4
+    mov saveobj, objptr
+    mov objptr, o
+    call f
+    mov objptr, saveobj
+    mov t, result1
+  endasm
+  return t
+
+'' read n characters from handle h
+pri input`$(n, h=0) | c, i, s
+  s := _gc_alloc_managed(n+1)
+  if s == 0
+    return s
+  repeat i from 0 to n-1 
+    repeat
+      c := _basic_get_char(h)
+    until c => 0
+    byte[s+i] := c
+  byte[s+n] := 0
+  return s

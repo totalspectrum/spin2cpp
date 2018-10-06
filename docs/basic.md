@@ -9,11 +9,11 @@ right now. Missing features include:
 
  - There are some missing floating point functions, like sin and cos.
 
- - Input and output isn't fully implemented yet, except for a basic PRINT statement.
+ - Input and output isn't fully implemented yet.
 
  - There is no way to initialize an array.
 
- - There are no functions yet for starting BASIC code on other COGs.
+ - There are only limited functions for starting BASIC code on other COGs.
 
 ## Introduction
 
@@ -478,7 +478,7 @@ This is compiled with:
 
 ### CLOSE
 
-Closes a file previously opened by `open`. This causes the `close` method specified in the device driver (if any) to be called, and then invalidates the handle so that it may not be used for further I/O operations. Any attempt to use a closed handle produces no result.
+Closes a file previously opened by `open`. This causes the `closef` function specified in the device driver (if any) to be called, and then invalidates the handle so that it may not be used for further I/O operations. Any attempt to use a closed handle produces no result.
 ```
   close #2  ' close handle #2
 ```
@@ -729,13 +729,17 @@ Also note that before using a pin as input its direction should be set as input 
    direction(4,0) = input  ' set pins 4-0 as inputs
 ```
 
+### INPUT$
+
+A predefined string function. `input$(n, h)` reads `n` characters from handle `h`, as created by an `open device as #h` statement.
+
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
 
 ### LEFT$
 
-A predefined string function. `left$(s, n)` returns the left-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns NULL (0).
+A predefined string function. `left$(s, n)` returns the left-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
 
 ### LET
 
@@ -895,7 +899,7 @@ Return from a subroutine or function. If this statement occurs inside a function
 
 ### RIGHT$
 
-A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns NULL (0).
+A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
 
 ### SELF
 
@@ -903,7 +907,7 @@ Indicates the current object. Not implemented yet.
 
 ### SENDRECVDEVICE
 
-A built-in function rather than a keyword. `SendRecvDevice(sendf, recvf, closef)` constructs a simple device driver based on three functions: `sendf` to send a single byte, `recvf` to receive a byte (or return -1 if no byte is available), and `closef`. The value(s) returned by `SendRecvDevice` is only useful for passing directly to the `open` statement, and should not be used in any other context (at least not at this time).
+A built-in function rather than a keyword. `SendRecvDevice(sendf, recvf, closef)` constructs a simple device driver based on three functions: `sendf` to send a single byte, `recvf` to receive a byte (or return -1 if no byte is available), and `closef` to be called when the device is closed. The value(s) returned by `SendRecvDevice` is only useful for passing directly to the `open` statement, and should not be used in any other context (at least not at this time).
 
 ### SHORT
 
