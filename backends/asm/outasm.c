@@ -2557,10 +2557,22 @@ CompileCoginit(IRList *irl, AST *expr)
             return NewImmediate(0);
         }
         exprlist = expr->left;
+        if (!exprlist) {
+            ERROR(expr, "Missing cog parameter for coginit/cognew");
+            return NewImmediate(0);
+        }
         cogid = exprlist->left;
         exprlist = exprlist->right;
+        if (!exprlist) {
+            ERROR(expr, "Missing function parameter for coginit/cognew");
+            return NewImmediate(0);
+        }
         func = exprlist->left;
         exprlist = exprlist->right;
+        if (!exprlist) {
+            ERROR(expr, "Missing stack parameter for coginit/cognew");
+            return NewImmediate(0);
+        }
         stack = exprlist->left;
         if (exprlist->right != NULL) {
             ERROR(expr, "Too many parameters to coginit/cognew");
