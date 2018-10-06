@@ -345,6 +345,16 @@ rawprintlist:
   | rawprintlist ',' printitem
   { $$ = AddToList(AddToList($1, AstCharItem('\t')), $3); }
 ;
+
+usingprintlist:
+  | printitem
+  { $$ = $1; }
+  | usingprintlist ';' printitem
+  { $$ = AddToList($1, $3); }
+  | usingprintlist ',' printitem
+  { $$ = AddToList($1, $3); }
+;
+
 printlist:
   eoln
     { $$ = AstCharItem('\n'); }
@@ -354,6 +364,10 @@ printlist:
     { $$ = AddToList($1, AstCharItem('\t')); }
   | rawprintlist ';' eoln
     { $$ = $1; }
+  | BAS_USING BAS_STRING ';' usingprintlist eoln
+    { $$ = NewAST(AST_USING, $2, AddToList($4, AstCharItem('\n'))); }
+  | BAS_USING BAS_STRING ';' usingprintlist ';' eoln
+    { $$ = NewAST(AST_USING, $2, $4); }
 ;
 
 ifstmt:

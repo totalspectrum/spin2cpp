@@ -145,21 +145,52 @@ pri _basic_print_string(h, ptr)|c
 pri _basic_put(h, ptr, siz)|c
   repeat while (siz-- > 0)
     _basic_print_char(h, byte[ptr++])
-    
-pri _basic_print_unsigned(h, x, base=10) | d
-  d := x +// base  ' unsigned modulus
-  x := x +/ base  ' unsigned divide
-  if (x)
-    _basic_print_unsigned(h, x, base)
-  if (d > 9)
-    d := (d - 10) + ("a" - "0") 
-  _basic_print_char(h, d + "0")
-    
-pri _basic_print_integer(h, x)
+
+pri _basic_digit(d)
+  return (d < 10) ? d + "0" : (d-10) + "A"
+
+pri _basic_fmt_instr(u, x, base, mindigits, maxdigits, fillchar) | digit, i
+  if maxdigits == 1
+    if x => base
+      byte[u] := "*"
+    else
+      byte[u] := _basic_digit(x)
+    return 1
+
+  digit := x +// base
+  x := x +/ base
+  digit := _basic_digit(digit)
+  if (x > 0) or (mindigits > 1)
+    if mindigits > 1
+      mindigits := mindigits - 1
+      if x == 0 and digit == 0
+        digit := fillchar
+    i := _basic_fmt_instr(u, x, base, mindigits, maxdigits-1, fillchar)
+  else
+    i := 0
+  byte[u + i] := digit
+  return i+1
+  
+pri _basic_fmt_uinteger(x, base=10, mindigits=1, maxdigits=32, fillchar=$20) | u, r
+  u := _gc_alloc_managed(maxdigits+1)
+  if u == 0
+    return u
+  r := _basic_fmt_instr(u, x, base, mindigits, maxdigits, fillchar)
+  byte[u+r] := 0
+  return u
+  
+pri _basic_print_unsigned(h, x, base=10, mindigits=1, maxdigits=32, fillchar=$20) | ptr
+  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, fillchar)
+  _basic_print_string(h, ptr)
+  _gc_free(ptr)
+  
+pri _basic_print_integer(h, x, base=10, mindigits=1, maxdigits=32, fillchar=$20, signchar=0)
   if (x < 0)
     _basic_print_char(h, "-")
     x := -x
-  _basic_print_unsigned(h, x)
+'  elseif signchar > 0
+'    _basic_print_char(h, "x")
+  _basic_print_unsigned(h, x, base, mindigits, maxdigits, fillchar)
     
 pri _basic_print_fixed(h, x) | i, f
   if (x < 0)

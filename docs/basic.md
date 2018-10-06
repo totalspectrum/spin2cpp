@@ -887,6 +887,12 @@ helloworld
 1then 2
 ```
 
+`print` may be redirected. For example,
+```
+print #2, "hello, world"
+```
+prints its message to the device previously `open`ed as device #2.
+
 ### PROGRAM
 
 This keyword is reserved for future use.

@@ -165,6 +165,7 @@ enum astkind {
 
     AST_NEW = 112,
     AST_DELETE,
+    AST_USING,
 };
 
 /* forward reference */
