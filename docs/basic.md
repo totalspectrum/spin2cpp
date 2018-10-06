@@ -848,9 +848,13 @@ Also note that before using a pin as output its direction should be set as outpu
    direction(4,0) = output  ' set pins 4-0 as outputs
 ```
 
-### OPEN
+### PAUSEMS
 
-Reserved for future implementation.
+
+A built-in subroutine to pause for a number of milliseconds. For example, to pause for 2 seconds, do
+```
+  pausems 2000
+```
 
 ### PRINT
 
@@ -1038,8 +1042,4 @@ do
   output(pin) = not output(pin)
   pausems 1000
 loop
-
-sub pausems(ms)
-  waitcnt(getcnt() + ms * mscycles)
-end sub
 ```

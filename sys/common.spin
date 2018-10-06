@@ -328,3 +328,7 @@ pri input`$(n, h=0) | c, i, s
     byte[s+i] := c
   byte[s+n] := 0
   return s
+
+'' pause for m milliseconds
+pri pausems(m)
+  waitcnt(getcnt + m * (clkfreq / 1000))
