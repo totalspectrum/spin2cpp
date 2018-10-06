@@ -1,6 +1,6 @@
-pub myfill(ptr, val, count)
+pub myfill(ptr, v, count)
   repeat count
-    long[ptr] := val
+    long[ptr] := v
     ptr += 4
 
 PUB fillzero(ptr, count)

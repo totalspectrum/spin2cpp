@@ -96,6 +96,11 @@ end sub
 testlr "hello", 7
 testlr "goodbye", 3
 
+var a$ = "saturday morning"
+print mid$(a$, 6, 3)
+print mid$(a$, 1, 8)
+print mid$(a$, 10)
+
 '' test backwards for loop
 print "backwards: "
 for i = 10 to 1 step -2

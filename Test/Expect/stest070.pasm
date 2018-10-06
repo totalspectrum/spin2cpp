@@ -6,11 +6,11 @@ entry
 
 _start
 	rdlong	start_tmp002_, #0
-	mov	_start__cse__0021, start_tmp002_
-	shl	_start__cse__0021, #2
-	add	_start__cse__0021, start_tmp002_
+	mov	_start__cse__0022, start_tmp002_
+	shl	_start__cse__0022, #2
+	add	_start__cse__0022, start_tmp002_
 	mov	arg1, CNT
-	add	arg1, _start__cse__0021
+	add	arg1, _start__cse__0022
 	waitcnt	arg1, #0
 _start_ret
 	ret
@@ -18,7 +18,7 @@ _start_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_start__cse__0021
+_start__cse__0022
 	res	1
 arg1
 	res	1

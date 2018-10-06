@@ -9,17 +9,15 @@ CON
   txmask = (1<<txpin)
   bitcycles = _clkfreq / baud  
    
-PUB serchar(c) | val, waitcycles
+PUB serchar(c) | v, waitcycles
   OUTA |= txmask
   DIRA |= txmask
-  val := (c | 256) << 1
+  v := (c | 256) << 1
   waitcycles := CNT
   repeat 10
      waitcnt(waitcycles += bitcycles)
-     if (val & 1)
+     if (v & 1)
        OUTA |= txmask
      else
        OUTA &= !txmask
-     val >>= 1
-
-
+     v >>= 1

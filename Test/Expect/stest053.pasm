@@ -12,18 +12,18 @@ DAT
 entry
 
 _serchar
-	mov	_serchar_val, arg1
+	mov	_serchar_v, arg1
 	or	OUTA, imm_1073741824_
 	or	DIRA, imm_1073741824_
-	or	_serchar_val, #256
-	shl	_serchar_val, #1
+	or	_serchar_v, #256
+	shl	_serchar_v, #1
 	mov	_serchar_waitcycles, CNT
 	mov	_serchar__idx__0001, #10
 LR__0001
 	add	_serchar_waitcycles, imm_694_
 	mov	arg1, _serchar_waitcycles
 	waitcnt	arg1, #0
-	shr	_serchar_val, #1 wc
+	shr	_serchar_v, #1 wc
 	muxc	OUTA, imm_1073741824_
 	djnz	_serchar__idx__0001, #LR__0001
 _serchar_ret
@@ -38,7 +38,7 @@ COG_BSS_START
 	org	COG_BSS_START
 _serchar__idx__0001
 	res	1
-_serchar_val
+_serchar_v
 	res	1
 _serchar_waitcycles
 	res	1

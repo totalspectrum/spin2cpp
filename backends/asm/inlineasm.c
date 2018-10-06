@@ -32,6 +32,7 @@ extern void ValidateStackptr(void);
 extern Operand *stackptr;
 extern void ValidateObjbase(void);
 extern Operand *objbase;
+extern Operand *resultreg[];
 
 //
 // compile an expression as an inine asm operand
@@ -55,6 +56,9 @@ CompileInlineOperand(IRList *irl, AST *expr)
              if (!strcmp(expr->d.string, "sp")) {
                  ValidateStackptr();
                  return stackptr;
+             }
+             if (!strcmp(expr->d.string, "result1")) {
+                 return resultreg[0];
              }
              ERROR(expr, "Undefined symbol %s", expr->d.string);
              return NewImmediate(0);

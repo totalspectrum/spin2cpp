@@ -40,7 +40,7 @@ static Operand *abortfunc;
 static Operand *catchfunc;
 static Operand *arg1;
 static Operand *arg2;
-static Operand *resultreg[MAX_TUPLE];
+Operand *resultreg[MAX_TUPLE];
 static Operand *abortcalled;
 
 static Operand *nextlabel;

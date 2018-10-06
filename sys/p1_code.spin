@@ -93,6 +93,7 @@ pri _sqrt(a) | r, bit, tmp
   return r
 
 con
+ _rxpin = 31
  _txpin = 30
  _bitcycles = 80_000_000 / 115_200
 
@@ -105,3 +106,16 @@ pri _tx(c) | val, nextcnt
     waitcnt(nextcnt += _bitcycles)
     OUTA[_txpin] := val
     val >>= 1
+
+pri _rx | val, rxmask, waitcycles, i
+  DIRA[_rxpin] := 0
+  rxmask := 1<<_rxpin
+  waitpeq(0, rxmask)
+  waitcycles := cnt + (_bitcycles>>1)
+  val := 0
+  repeat 8
+    waitcnt(waitcycles += _bitcycles)
+    val := (INA[_rxpin] << 7) | (val>>1)
+  waitcnt(waitcycles + _bitcycles)
+  _tx(val)
+  return val

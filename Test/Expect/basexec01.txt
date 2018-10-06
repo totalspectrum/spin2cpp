@@ -27,6 +27,9 @@ str,n: hello,7
   left: hello right: hello
 str,n: goodbye,3
   left: goo right: bye
+day
+saturday
+morning
 backwards:
 10
 8

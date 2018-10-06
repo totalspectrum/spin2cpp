@@ -75,16 +75,17 @@ pri _lfsr_backward(x) | a
   return x
 
 dat
+rx_method
 tx_method
    long 0	'  objptr does not matter
-   long 0	' special tag for _tx function
+   long 0	' special tag for _tx/_rx function
 
   '' 8 possible open files
   '' each one has 3 method pointers
   '' sendchar, recvchar, close
   ''
 bas_handles
-   long @@@tx_method, 0, 0
+   long @@@tx_method, @@@rx_method, 0
    long 0[7*3]
 
 pri _basic_open(h, sendf, recvf, closef)
@@ -262,6 +263,30 @@ pri right`$(x, n) | ptr, i, m
     bytemove(ptr, x+i, n+1)
   return ptr
 
+pri mid`$(x, i, j=9999999) | ptr, m, n
+  if (j =< 0)
+    return ""
+  --i ' convert from 1 based to 0 based
+  m := strsize(x)
+  if (m < i)
+    return ""
+  ' calculate number of chars we will copy
+  n := (m-i)
+  n := (n > j) ? j : n
+  ptr := _gc_alloc_managed(n+1)
+  bytemove(ptr, x+i, n)
+  byte[ptr+n] := 0
+  return ptr
+  
+pri val(s) : r | c
+  r := 0
+  repeat
+    c := byte[s++]
+    if (c => "0") and (c =< "9")
+      r := 10 * r + (c - "0")
+    else
+      return r
+      
 pri _make_methodptr(o, func) | ptr
   ptr := _gc_alloc_managed(8)
   if (ptr)
@@ -280,7 +305,7 @@ pri _basic_get_char(n) | t, o, f, saveobj
   o := long[t]
   f := long[t+4]
   if f == 0
-    return -1
+    return _rx
   asm
     add sp, #4
     mov saveobj, objptr
