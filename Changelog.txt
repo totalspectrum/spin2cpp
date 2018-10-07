@@ -1,3 +1,6 @@
+Version 3.9.5
+- Updated BASIC I/O functions
+
 Version 3.9.4
 - Report errors for use of private methods
 - Fixed an optimizer bug that could cause the compiler to crash
