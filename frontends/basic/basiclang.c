@@ -94,16 +94,17 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
 // to be prefixed with an AST_USING with an AST_INTEGER left side "fmtparam"
 // "fmtparam" has the following fields:
 //   bit 0-7: width 0-255; 0 means "no particular width"
-//   bit 8-13: minimum number of digits (0 to 63)
-//   bit 14-15: 0=left justify, 1=right justify, 2=center
-//   bit 16-17: sign field: 0 = print nothing for positive sign, 1 = print space, 2 = print +
+//   bit 8-9: 0=left justify, 1=right justify, 2=center
+//   bits 10-15: reserved
+//   bit 16-21: minimum number of digits to show
+//   bits 22-23: sign field: 0 = print nothing for positive sign, 1 = print space, 2 = print +
 //
 
 #define FMTPARAM_WIDTH(w) (w)
-#define FMTPARAM_MINDIGITS(x) ((x)<<8)
+#define FMTPARAM_MINDIGITS(x) ((x)<<16)
 #define FMTPARAM_LEFTJUSTIFY (0)
-#define FMTPARAM_RIGHTJUSTIFY (1<<14)
-#define FMTPARAM_SPACEPLUS (1<<16)
+#define FMTPARAM_RIGHTJUSTIFY (1<<8)
+#define FMTPARAM_SPACEPLUS (1<<22)
 
 static AST *
 harvest(AST *exprlist, Flexbuf *fb)
@@ -117,11 +118,27 @@ harvest(AST *exprlist, Flexbuf *fb)
     }
     return exprlist;
 }
-   
+
+static AST *
+NextParam(AST **params)
+{
+    AST *p = *params;
+    AST *r = NULL;
+    if (p) {
+        r = p;
+        p = p->right;
+        r->right = NULL;
+        *params = p;
+    }
+    return r->left;
+}
+
 static AST *
 TransformUsing(const char *usestr, AST *params)
 {
     AST *exprlist = NULL;
+    AST *using = NULL;
+    AST *lastFormat = AstInteger(0);
     Flexbuf fb;
     int c;
     int width;
@@ -149,12 +166,16 @@ TransformUsing(const char *usestr, AST *params)
             exprlist = harvest(exprlist, &fb);
             
             // reset format to default
-            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(0), NULL));
+            lastFormat = AstInteger(0);
+            using = NewAST(AST_USING, lastFormat, NextParam(&params)); 
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
         case '!':
             exprlist = harvest(exprlist, &fb);
             // reset format to width 1
-            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(1), NULL));
+            lastFormat = AstInteger(1);
+            using = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
             
         case '%':
@@ -169,14 +190,9 @@ TransformUsing(const char *usestr, AST *params)
                 minwidth = width;
             }
             fmtparam = FMTPARAM_WIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | FMTPARAM_SPACEPLUS | FMTPARAM_RIGHTJUSTIFY;
-            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(fmtparam), NULL));
-            if (params) {
-                // harvest the next parameter for this field
-                AST *tmp = params;
-                params = params->right;
-                tmp->right = NULL;
-                exprlist = AddToList(exprlist, tmp);
-            }
+            lastFormat = AstInteger(fmtparam);
+            using = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
         case '*':
         case '^':
@@ -191,6 +207,7 @@ TransformUsing(const char *usestr, AST *params)
         }
     }
     exprlist = harvest(exprlist, &fb);
+
     if (params) {
         exprlist = AddToList(exprlist, params);
     }
@@ -283,8 +300,7 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
         if (ast->left && ast->left->kind == AST_STRING) {
-            ast->right = TransformUsing(ast->left->d.string, ast->right);
-            ast->left = NULL;
+            *ast = *TransformUsing(ast->left->d.string, ast->right);
         } else {
             WARNING(ast, "Unexpected using method");
         }
@@ -306,28 +322,22 @@ doBasicTransform(AST **astptr)
             AST *exprlist = ast->left;
             AST *expr;
             AST *handle = ast->right;
-            AST *fmtAst = AstInteger(0);
+            AST *defaultFmt = AstInteger(0);
+            AST *fmtAst;
             if (!handle) {
                 handle = AstInteger(0);
             }
             while (exprlist) {
-                if (exprlist->kind == AST_USING) {
-                    AST *useAst = exprlist->left;
-                    if (useAst) {
-                        if (useAst->kind != AST_INTEGER) {
-                            ERROR(ast, "Internal error: print using not converted");
-                        } else {
-                            fmtAst = useAst;
-                        }
-                    }
-                    exprlist = exprlist->right;
-                    continue;
-                }
+                fmtAst = defaultFmt;
                 if (exprlist->kind != AST_EXPRLIST) {
                     ERROR(exprlist, "internal error in print list");
                 }
                 expr = exprlist->left;
                 exprlist = exprlist->right;
+                if (expr->kind == AST_USING) {
+                    fmtAst = expr->left;
+                    expr = expr->right;
+                }
                 // PUT gets translated to a PRINT with an AST_HERE node
                 // this requests that we write out the literal bytes of
                 // an expression
