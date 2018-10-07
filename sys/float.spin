@@ -272,7 +272,7 @@ PRI _float_getpowten(x) | midf, lo, hi, mid, t, sanity
       return (midf, mid)
   return (_float_pow_n(10.0, hi), hi)
 
-PRI _basic_print_float(h, f) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
+PRI _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
   needexp := 0
   numdigits := 5 '' later this should be a parameter  
   if (f < 0)

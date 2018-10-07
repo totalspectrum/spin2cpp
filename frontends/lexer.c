@@ -1295,11 +1295,11 @@ Builtin builtinfuncs[] = {
 
     // BASIC compiler builtins
     { "_basic_print_nl", 1, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
-    { "_basic_print_string", 2, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
-    { "_basic_print_integer", 2, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
-    { "_basic_print_unsigned", 2, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
-    { "_basic_print_float", 2, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
-    { "_basic_print_fixed", 2, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
+    { "_basic_print_string", 3, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
+    { "_basic_print_integer", 3, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
+    { "_basic_print_unsigned", 3, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
+    { "_basic_print_float", 3, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
+    { "_basic_print_fixed", 3, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
     { "_basic_print_char", 2, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
     { "_basic_put", 3, defaultBuiltin, "basic_put", NULL, 0, NULL },
 

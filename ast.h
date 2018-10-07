@@ -190,6 +190,7 @@ AST *DupAST(AST *ast);
 AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);
 AST *AstInteger(long intval);
 AST *AstBitValue(long intval);
+AST *AstStringLiteral(const char *string);
 AST *AstIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);
 AST *AstOperator(int32_t intval, AST *left, AST *right);

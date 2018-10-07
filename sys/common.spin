@@ -138,9 +138,10 @@ pri _basic_print_char(h, c) | saveobj, t, f, o
     mov objptr, saveobj
   endasm
 
-pri _basic_print_string(h, ptr)|c
-  repeat while ((c := byte[ptr++]) <> 0)
-    _basic_print_char(h, c)
+pri _basic_print_string(h, ptr, fmt = 0) | c, len, w
+    repeat while ((c := byte[ptr++]) <> 0)
+      _basic_print_char(h, c)
+    return
 
 pri _basic_put(h, ptr, siz)|c
   repeat while (siz-- > 0)
@@ -149,7 +150,7 @@ pri _basic_put(h, ptr, siz)|c
 pri _basic_digit(d)
   return (d < 10) ? d + "0" : (d-10) + "A"
 
-pri _basic_fmt_instr(u, x, base, mindigits, maxdigits, fillchar) | digit, i
+pri _basic_fmt_instr(u, x, base, mindigits, maxdigits) | digit, i
   if maxdigits == 1
     if x => base
       byte[u] := "*"
@@ -163,36 +164,34 @@ pri _basic_fmt_instr(u, x, base, mindigits, maxdigits, fillchar) | digit, i
   if (x > 0) or (mindigits > 1)
     if mindigits > 1
       mindigits := mindigits - 1
-      if x == 0 and digit == 0
-        digit := fillchar
-    i := _basic_fmt_instr(u, x, base, mindigits, maxdigits-1, fillchar)
+    i := _basic_fmt_instr(u, x, base, mindigits, maxdigits-1)
   else
     i := 0
   byte[u + i] := digit
   return i+1
   
-pri _basic_fmt_uinteger(x, base=10, mindigits=1, maxdigits=32, fillchar=$20) | u, r
+pri _basic_fmt_uinteger(x, base=10, mindigits = 1, maxdigits = 32) | u, r
   u := _gc_alloc_managed(maxdigits+1)
   if u == 0
     return u
-  r := _basic_fmt_instr(u, x, base, mindigits, maxdigits, fillchar)
+  r := _basic_fmt_instr(u, x, base, mindigits, maxdigits)
   byte[u+r] := 0
   return u
   
-pri _basic_print_unsigned(h, x, base=10, mindigits=1, maxdigits=32, fillchar=$20) | ptr
-  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, fillchar)
+pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
+  mindigits := 1
+  maxdigits := fmt & $ff
+  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits)
   _basic_print_string(h, ptr)
   _gc_free(ptr)
   
-pri _basic_print_integer(h, x, base=10, mindigits=1, maxdigits=32, fillchar=$20, signchar=0)
+pri _basic_print_integer(h, x, fmt, base=10)
   if (x < 0)
     _basic_print_char(h, "-")
     x := -x
-'  elseif signchar > 0
-'    _basic_print_char(h, "x")
-  _basic_print_unsigned(h, x, base, mindigits, maxdigits, fillchar)
+  _basic_print_unsigned(h, x, fmt, base)
     
-pri _basic_print_fixed(h, x) | i, f
+pri _basic_print_fixed(h, x, fmt) | i, f
   if (x < 0)
     _basic_print_char(h, "-")
     x := -x
@@ -204,7 +203,7 @@ pri _basic_print_fixed(h, x) | i, f
   if (f > $ffff)
     i++
     f -= $10000
-  _basic_print_unsigned(h, i)
+  _basic_print_unsigned(h, i, fmt)
   _basic_print_char(h, ".")
   repeat 4
     f := f * 10

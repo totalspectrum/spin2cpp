@@ -213,6 +213,15 @@ AstIdentifier(const char *name)
     ast->d.string = name;
     return ast;
 }
+/* create a string literal */
+AST *
+AstStringLiteral(const char *name)
+{
+    AST *ast = NewAST(AST_STRING, NULL, NULL);
+    ast->d.string = name;
+    return NewAST(AST_STRINGPTR, ast, NULL);
+}
+
 /*
  * create an instruction modifier with a specific bit pattern
  */

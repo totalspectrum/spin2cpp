@@ -47,15 +47,18 @@ IsBasicString(AST *typ)
 }
 
 static AST *
-addPrintCall(AST *seq, AST *handle, AST *func, AST *expr)
+addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 {
     AST *elem;
     AST *params;
 
-    if (expr) {
-        params = NewAST(AST_EXPRLIST, expr, NULL);
+    if (fmt) {
+        params = NewAST(AST_EXPRLIST, fmt, NULL);
     } else {
         params = NULL;
+    }
+    if (expr) {
+        params = NewAST(AST_EXPRLIST, expr, params);
     }
     params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
@@ -82,6 +85,117 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
     return AddToList(seq, elem);
+}
+
+//
+// transform the expressions in a "print using" clause into a form
+// that's easier to print
+// each field discovered in the string causes the corresponding parameter
+// to be prefixed with an AST_USING with an AST_INTEGER left side "fmtparam"
+// "fmtparam" has the following fields:
+//   bit 0-7: width 0-255; 0 means "no particular width"
+//   bit 8-13: minimum number of digits (0 to 63)
+//   bit 14-15: 0=left justify, 1=right justify, 2=center
+//   bit 16-17: sign field: 0 = print nothing for positive sign, 1 = print space, 2 = print +
+//
+
+#define FMTPARAM_WIDTH(w) (w)
+#define FMTPARAM_MINDIGITS(x) ((x)<<8)
+#define FMTPARAM_LEFTJUSTIFY (0)
+#define FMTPARAM_RIGHTJUSTIFY (1<<14)
+#define FMTPARAM_SPACEPLUS (1<<16)
+
+static AST *
+harvest(AST *exprlist, Flexbuf *fb)
+{
+    const char *str;
+
+    if (flexbuf_curlen(fb) > 0) {
+        flexbuf_addchar(fb, 0);
+        str = flexbuf_get(fb);
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstStringLiteral(strdup(str)), NULL));
+    }
+    return exprlist;
+}
+   
+static AST *
+TransformUsing(const char *usestr, AST *params)
+{
+    AST *exprlist = NULL;
+    Flexbuf fb;
+    int c;
+    int width;
+    int minwidth;
+    unsigned fmtparam;
+    
+    // scan through the use str until we find a special character
+    flexbuf_init(&fb, 80);
+    for(;;) {
+        c = *usestr++;
+        if (!c) {
+            break;
+        }
+        switch (c) {
+        case '_':
+            // next character is escaped
+            c = *usestr++;
+            if (c) {
+                flexbuf_addchar(&fb, c);
+            } else {
+                --usestr;
+            }
+            break;
+        case '&':
+            exprlist = harvest(exprlist, &fb);
+            
+            // reset format to default
+            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(0), NULL));
+            break;
+        case '!':
+            exprlist = harvest(exprlist, &fb);
+            // reset format to width 1
+            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(1), NULL));
+            break;
+            
+        case '%':
+        case '#':
+            exprlist = harvest(exprlist, &fb);
+            width = minwidth = 1;
+            while (*usestr && *usestr == c) {
+                usestr++;
+                width++;
+            }
+            if (c == '%') {
+                minwidth = width;
+            }
+            fmtparam = FMTPARAM_WIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | FMTPARAM_SPACEPLUS | FMTPARAM_RIGHTJUSTIFY;
+            exprlist = AddToList(exprlist, NewAST(AST_USING, AstInteger(fmtparam), NULL));
+            if (params) {
+                // harvest the next parameter for this field
+                AST *tmp = params;
+                params = params->right;
+                tmp->right = NULL;
+                exprlist = AddToList(exprlist, tmp);
+            }
+            break;
+        case '*':
+        case '^':
+        case '$':
+        case '.':
+        case '\\':
+            ERROR(params, "Unimplemented print using character '%c'", c);
+            return exprlist;
+        default:
+            flexbuf_addchar(&fb, c);
+            break;
+        }
+    }
+    exprlist = harvest(exprlist, &fb);
+    if (params) {
+        exprlist = AddToList(exprlist, params);
+    }
+    flexbuf_delete(&fb);
+    return exprlist;
 }
 
 static void
@@ -165,6 +279,16 @@ doBasicTransform(AST **astptr)
             }
         }
         break;
+    case AST_USING:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        if (ast->left && ast->left->kind == AST_STRING) {
+            ast->right = TransformUsing(ast->left->d.string, ast->right);
+            ast->left = NULL;
+        } else {
+            WARNING(ast, "Unexpected using method");
+        }
+        break;
     case AST_METHODREF:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
@@ -182,10 +306,23 @@ doBasicTransform(AST **astptr)
             AST *exprlist = ast->left;
             AST *expr;
             AST *handle = ast->right;
+            AST *fmtAst = AstInteger(0);
             if (!handle) {
                 handle = AstInteger(0);
             }
             while (exprlist) {
+                if (exprlist->kind == AST_USING) {
+                    AST *useAst = exprlist->left;
+                    if (useAst) {
+                        if (useAst->kind != AST_INTEGER) {
+                            ERROR(ast, "Internal error: print using not converted");
+                        } else {
+                            fmtAst = useAst;
+                        }
+                    }
+                    exprlist = exprlist->right;
+                    continue;
+                }
                 if (exprlist->kind != AST_EXPRLIST) {
                     ERROR(exprlist, "internal error in print list");
                 }
@@ -205,9 +342,9 @@ doBasicTransform(AST **astptr)
                 if (expr->kind == AST_CHAR) {
                     expr = expr->left;
                     if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
-                        seq = addPrintCall(seq, handle, basic_print_nl, NULL);
+                        seq = addPrintCall(seq, handle, basic_print_nl, NULL, NULL);
                     } else {
-                        seq = addPrintCall(seq, handle, basic_print_char, expr);
+                        seq = addPrintCall(seq, handle, basic_print_char, expr, NULL);
                     }
                     continue;
                 }
@@ -217,9 +354,9 @@ doBasicTransform(AST **astptr)
                     continue;
                 }
                 if (IsFloatType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_float, expr);
+                    seq = addPrintCall(seq, handle, basic_print_float, expr, fmtAst);
                 } else if (IsStringType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_string, expr);
+                    seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
                 } else if (IsGenericType(type)) {
                     // create a hex call
                     AST *ast;
@@ -227,13 +364,14 @@ doBasicTransform(AST **astptr)
 
                     params = NewAST(AST_EXPRLIST, handle,
                                     NewAST(AST_EXPRLIST, expr,
-                                           NewAST(AST_EXPRLIST, AstInteger(16), NULL)));
+                                           NewAST(AST_EXPRLIST, AstInteger(16),
+                                                  NewAST(AST_EXPRLIST, fmtAst, NULL))));
                     ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
                     seq = AddToList(seq, NewAST(AST_SEQUENCE, ast, NULL));
                 } else if (IsUnsignedType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_unsigned, expr);
+                    seq = addPrintCall(seq, handle, basic_print_unsigned, expr, fmtAst);
                 } else if (IsIntType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_integer, expr);
+                    seq = addPrintCall(seq, handle, basic_print_integer, expr, fmtAst);
                 } else {
                     ERROR(ast, "Unable to print expression of this type");
                 }
