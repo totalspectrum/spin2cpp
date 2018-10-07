@@ -150,7 +150,7 @@ pri _basic_put(h, ptr, siz)|c
 pri _basic_digit(d)
   return (d < 10) ? d + "0" : (d-10) + "A"
 
-pri _basic_fmt_instr(u, x, base, mindigits, maxdigits) | digit, i
+pri _basic_fmt_in_str(u, x, base, mindigits, maxdigits) | digit, i
   if maxdigits == 1
     if x => base
       byte[u] := "*"
@@ -164,7 +164,7 @@ pri _basic_fmt_instr(u, x, base, mindigits, maxdigits) | digit, i
   if (x > 0) or (mindigits > 1)
     if mindigits > 1
       mindigits := mindigits - 1
-    i := _basic_fmt_instr(u, x, base, mindigits, maxdigits-1)
+    i := _basic_fmt_in_str(u, x, base, mindigits, maxdigits-1)
   else
     i := 0
   byte[u + i] := digit
@@ -174,21 +174,33 @@ pri _basic_fmt_uinteger(x, base=10, mindigits = 1, maxdigits = 32) | u, r
   u := _gc_alloc_managed(maxdigits+1)
   if u == 0
     return u
-  r := _basic_fmt_instr(u, x, base, mindigits, maxdigits)
+  r := _basic_fmt_in_str(u, x, base, mindigits, maxdigits)
   byte[u+r] := 0
   return u
   
 pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
-  mindigits := 1
   maxdigits := fmt & $ff
+  mindigits := (fmt>>16) & $1f
+  if mindigits == 0
+    mindigits := 1
   ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits)
   _basic_print_string(h, ptr)
   _gc_free(ptr)
   
-pri _basic_print_integer(h, x, fmt, base=10)
+pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits
+  maxdigits := fmt & $ff
+  mindigits := (fmt>>16) & $1f
+  if mindigits == 0
+    mindigits := 1
+    
   if (x < 0)
     _basic_print_char(h, "-")
-    x := -x
+    if maxdigits
+      maxdigits--
+      if maxdigits == 0
+        return
+      x := -x
+  fmt := (mindigits << 16) | maxdigits
   _basic_print_unsigned(h, x, fmt, base)
     
 pri _basic_print_fixed(h, x, fmt) | i, f
