@@ -104,6 +104,7 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
 #define FMTPARAM_MINDIGITS(x) ((x)<<16)
 #define FMTPARAM_LEFTJUSTIFY (0)
 #define FMTPARAM_RIGHTJUSTIFY (1<<8)
+#define FMTPARAM_CENTER (2<<8)
 #define FMTPARAM_SPACEPLUS (1<<22)
 
 static AST *

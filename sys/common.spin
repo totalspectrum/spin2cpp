@@ -138,10 +138,21 @@ pri _basic_print_char(h, c) | saveobj, t, f, o
     mov objptr, saveobj
   endasm
 
-pri _basic_print_string(h, ptr, fmt = 0) | c, len, w
-    repeat while ((c := byte[ptr++]) <> 0)
-      _basic_print_char(h, c)
-    return
+pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify
+  w := fmt & $ff
+  justify := (fmt >> 8) & 3
+  len := strsize(ptr)
+  if (w > 0 and len < w and justify == 1)
+    ' right justify
+    len := w - len
+    repeat len
+      _basic_print_char(h, " ")
+  if w == 0
+    w := $ffff
+  repeat while ((c := byte[ptr++]) <> 0 and w > 0)
+    _basic_print_char(h, c)
+    --w
+  return
 
 pri _basic_put(h, ptr, siz)|c
   repeat while (siz-- > 0)
@@ -170,38 +181,42 @@ pri _basic_fmt_in_str(u, x, base, mindigits, maxdigits) | digit, i
   byte[u + i] := digit
   return i+1
   
-pri _basic_fmt_uinteger(x, base=10, mindigits = 1, maxdigits = 32) | u, r
-  u := _gc_alloc_managed(maxdigits+1)
-  if u == 0
-    return u
+pri _basic_fmt_uinteger(x, base=10, mindigits = 1, maxdigits = 32, signchar = 0) | ptr, u, r
+  ptr := u := _gc_alloc_managed(maxdigits+1)
+  if ptr == 0
+    return ptr
+  if (signchar)
+    maxdigits--
+    byte[u++] := signchar
+    if maxdigits == 0
+      return ptr
   r := _basic_fmt_in_str(u, x, base, mindigits, maxdigits)
   byte[u+r] := 0
-  return u
+  return ptr
   
 pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
   maxdigits := fmt & $ff
   mindigits := (fmt>>16) & $1f
   if mindigits == 0
     mindigits := 1
-  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits)
-  _basic_print_string(h, ptr)
+  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, 0)
+  _basic_print_string(h, ptr, fmt)
   _gc_free(ptr)
   
-pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits
+pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, ptr
   maxdigits := fmt & $ff
   mindigits := (fmt>>16) & $1f
   if mindigits == 0
     mindigits := 1
     
   if (x < 0)
-    _basic_print_char(h, "-")
-    if maxdigits
-      maxdigits--
-      if maxdigits == 0
-        return
-      x := -x
-  fmt := (mindigits << 16) | maxdigits
-  _basic_print_unsigned(h, x, fmt, base)
+    signchar := "-"
+    x := -x
+  else
+    signchar := 0
+  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, signchar)
+  _basic_print_string(h, ptr, fmt)
+  _gc_free(ptr)
     
 pri _basic_print_fixed(h, x, fmt) | i, f
   if (x < 0)
