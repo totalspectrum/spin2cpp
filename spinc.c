@@ -477,6 +477,7 @@ ParseFile(const char *name)
     if (gl_preprocess) {
         void *defineState;
 
+        SetPreprocessorLanguage(language);
         pp_push_file(&gl_pp, fname);
         defineState = pp_get_define_state(&gl_pp);
         pp_run(&gl_pp);

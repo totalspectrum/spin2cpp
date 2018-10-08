@@ -661,6 +661,49 @@ docomment:
 }
 
 //
+// check for start of multi-line comment
+//
+static bool
+commentBlockStart(int language, int c, LexStream *L)
+{
+    if (language == LANG_SPIN) {
+        return c == '{';
+    }
+    if (language == LANG_BASIC) {
+        if (c != '/') {
+            return false;
+        }
+        c = lexgetc(L);
+        if (c != '\'') {
+            lexungetc(L, c);
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool
+commentBlockEnd(int language, int c, LexStream *L)
+{
+    if (language == LANG_SPIN) {
+        return c == '}';
+    }
+    if (language == LANG_BASIC) {
+        if (c != '\'') {
+            return false;
+        }
+        c = lexgetc(L);
+        if (c != '/') {
+            lexungetc(L, c);
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+//
 // skip over comments and spaces
 // return first non-comment non-space character
 // if we are inside a function, emit SP_INDENT when
@@ -701,16 +744,25 @@ again:
 
     /* ignore completely empty lines or ones with just comments */
     c = checkCommentedLine(&cb, L, c, language);
-    if (c == '{') {
+    if (commentBlockStart(language, c, L)) {
         struct flexbuf anno;
         int annotate = 0;
         int directive = 0;
 	int doccomment = 0;
+        int doccommentchar;
+        int allowNestedComments;
         
         startcol = L->colCounter;
         startline = L->lineCounter;
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
+        if (language == LANG_SPIN) {
+            doccommentchar = '{';
+            allowNestedComments = 1;
+        } else {
+            doccommentchar = '*';
+            allowNestedComments = 0;
+        }
         /* check for special comments {++... } which indicate 
            inline C code
            We also set up the preprocessor to emit {#line xx} directives when
@@ -726,17 +778,18 @@ again:
         } else if (c == '#') {
             c = lexgetc(L);
             directive = 1;
-        } else if (c == '{') {
+        } else if (c == doccommentchar) {
 	    c = lexgetc(L);
 	    doccomment = 1;
+            allowNestedComments = 0;
 	}
         lexungetc(L, c);
         for(;;) {
             c = lexgetc(L);
-            if (c == '{' && !doccomment)
+            if (allowNestedComments && commentBlockStart(language, c, L)) {
                 commentNest++;
-            else if (c == '}') {
-	        if (doccomment) {
+            } else if (commentBlockEnd(language, c, L)) {
+	        if (doccomment && language == LANG_SPIN) {
 	            int peekc;
 		    peekc = lexgetc(L);
 		    if (peekc == '}') {
@@ -1393,10 +1446,20 @@ struct constants p2_constants[] = {
 void InitPreprocessor()
 {
     pp_init(&gl_pp);
-    pp_setcomments(&gl_pp, "\'", "{", "}");
-    pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+    SetPreprocessorLanguage(LANG_SPIN);
 }
 
+void SetPreprocessorLanguage(int language)
+{
+    if (language == LANG_BASIC) {
+        pp_setcomments(&gl_pp, "\'", "/'", "'/");
+        //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
+        pp_setlinedirective(&gl_pp, "");   
+    } else {
+        pp_setcomments(&gl_pp, "\'", "{", "}");
+        pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+    }
+}
 
 void
 initSpinLexer(int flags)

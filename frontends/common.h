@@ -496,6 +496,7 @@ int DoPropellerChecksum(const char *fname, size_t eepromSize);
 // initialization functions
 void Init();
 void InitPreprocessor();
+void SetPreprocessorLanguage(int language);
 
 // perform common sub-expression elimination on a function
 void PerformCSE(Module *P);
