@@ -138,20 +138,31 @@ pri _basic_print_char(h, c) | saveobj, t, f, o
     mov objptr, saveobj
   endasm
 
-pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify
+pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify, wright, wleft
   w := fmt & $ff
   justify := (fmt >> 8) & 3
   len := strsize(ptr)
-  if (w > 0 and len < w and justify == 1)
-    ' right justify
-    len := w - len
-    repeat len
+  wleft := wright := 0
+  if (w > 0 and len < w) 
+    if justify == 0 ' left justify
+      wright := w - len
+    elseif justify == 1 ' right justify
+      wleft := w - len
+    else
+      wleft := (w - len)/2
+      wright := (w - len) - wleft
+
+    repeat while wleft > 0
       _basic_print_char(h, " ")
+      --wleft
   if w == 0
     w := $ffff
   repeat while ((c := byte[ptr++]) <> 0 and w > 0)
     _basic_print_char(h, c)
     --w
+  repeat while wright > 0
+    _basic_print_char(h, " ")
+    --wright
   return
 
 pri _basic_put(h, ptr, siz)|c

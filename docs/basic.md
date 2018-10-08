@@ -893,6 +893,35 @@ print #2, "hello, world"
 ```
 prints its message to the device previously `open`ed as device #2.
 
+### PRINT USING
+
+Formats output using a string. The general form of this is:
+```
+  print using STRING; expr [,expr...] [;]
+```
+where `STRING` is a string literal and `expr` is one or more expressions.
+
+Within the string literal output fields are specified by special forms, which are replaced by the various expressions.
+
+`&` indicates a variable width field, within which the numbers or strings are printed with the minimum number of characters.
+
+`#` starts a numeric field with space padding; the number of `#` characters indicates the width of the field. The numeric value is printed right-justified within the field. If it cannot fit, the first digit which will fit is replaced with '#' and the rest are printed normally. If the field is preceded by a `-` or `+` the sign is printed there; otherwise, if the value is negative then the `-` sign is included in the digits to print.
+
+`%` starts a numeric field with 0 padding; the number of `%` characters indicates the width of the field. Leading zeros are explicitly printed. If the number cannot fit in the indicated number of digits, the first digit which will fit is replaced with '#' and the rest are printed normally.
+
+`+` indicates that a place should be reserved for a sign character (`+` for non-negative, `-` for negative). `+` must immediately be followed by a numeric field. If the argument is an unsigned integer, instead of `+` a space is always printed.
+
+`-` indicates that a place should be reserved for a sign character (space for non-negative, `-` for negative). `-` must immediately be followed by a numeric field. If the argument is an unsigned integer, a space is always printed.
+
+`!` indicates to print a single character (the first character of the string argument).
+
+`\` indicates a string field, which continues until the next `\`. The width of the field is the total number of characters, including the beginning and ending `\`. The string will be printed left justified within the field. Centering or right justification may be achieved for fields of length 3 or more by using `=` or '>' characters, respectively, as fillers between `\`. If the string is too long to fit within the field, only the first `N` characters of the string are printed.
+
+
+```
+print using "%%%%"; x
+```
+
 ### PROGRAM
 
 This keyword is reserved for future use.

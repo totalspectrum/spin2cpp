@@ -131,6 +131,8 @@ NextParam(AST **params)
         p = p->right;
         r->right = NULL;
         *params = p;
+    } else {
+        return r;
     }
     return r->left;
 }
@@ -211,11 +213,34 @@ TransformUsing(const char *usestr, AST *params)
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
+        case '\\':
+            exprlist = harvest(exprlist, &fb);
+            width = 1;
+            fmtparam = 0;
+            while (*usestr && *usestr != c) {
+                if (*usestr == '<') {
+                    fmtparam = FMTPARAM_LEFTJUSTIFY;
+                } else if (*usestr == '>') {
+                    fmtparam = FMTPARAM_RIGHTJUSTIFY;
+                } else if (*usestr == '=') {
+                    fmtparam = FMTPARAM_CENTER;
+                }
+                usestr++;
+                width++;
+            }
+            if (*usestr == c) {
+                width++;
+                usestr++;
+            }
+            fmtparam |= FMTPARAM_WIDTH(width);
+            lastFormat = AstInteger(fmtparam);
+            using = NewAST(AST_USING, lastFormat, NextParam(&params));
+            exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            break;
         case '*':
         case '^':
         case '$':
         case '.':
-        case '\\':
             ERROR(params, "Unimplemented print using character '%c'", c);
             return exprlist;
         default:
@@ -354,6 +379,9 @@ doBasicTransform(AST **astptr)
                 if (expr->kind == AST_USING) {
                     fmtAst = expr->left;
                     expr = expr->right;
+                }
+                if (!expr) {
+                    continue;
                 }
                 // PUT gets translated to a PRINT with an AST_HERE node
                 // this requests that we write out the literal bytes of
