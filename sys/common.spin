@@ -206,6 +206,7 @@ pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
 pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, ptr
   maxdigits := fmt & $ff
   mindigits := (fmt>>16) & $1f
+  signchar := (fmt >> 22) & 3
   if mindigits == 0
     mindigits := 1
     
@@ -213,7 +214,13 @@ pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, p
     signchar := "-"
     x := -x
   else
-    signchar := 0
+    if signchar == 1
+      signchar := " "
+    elseif signchar == 2
+      signchar := "+"
+    else
+      signchar := 0
+      
   ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, signchar)
   _basic_print_string(h, ptr, fmt)
   _gc_free(ptr)

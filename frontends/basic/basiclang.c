@@ -105,7 +105,8 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
 #define FMTPARAM_LEFTJUSTIFY (0)
 #define FMTPARAM_RIGHTJUSTIFY (1<<8)
 #define FMTPARAM_CENTER (2<<8)
-#define FMTPARAM_SPACEPLUS (1<<22)
+#define FMTPARAM_SIGNSPACE (1<<22)
+#define FMTPARAM_SIGNPLUS  (2<<22)
 
 static AST *
 harvest(AST *exprlist, Flexbuf *fb)
@@ -145,6 +146,7 @@ TransformUsing(const char *usestr, AST *params)
     int width;
     int minwidth;
     unsigned fmtparam;
+    unsigned signchar = 0;
     
     // scan through the use str until we find a special character
     flexbuf_init(&fb, 80);
@@ -162,6 +164,7 @@ TransformUsing(const char *usestr, AST *params)
             } else {
                 --usestr;
             }
+            signchar = 0;
             break;
         case '&':
             exprlist = harvest(exprlist, &fb);
@@ -170,6 +173,7 @@ TransformUsing(const char *usestr, AST *params)
             lastFormat = AstInteger(0);
             using = NewAST(AST_USING, lastFormat, NextParam(&params)); 
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
+            signchar = 0;
             break;
         case '!':
             exprlist = harvest(exprlist, &fb);
@@ -178,19 +182,31 @@ TransformUsing(const char *usestr, AST *params)
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
-            
+
+        case '+':
+        case '-':
+            exprlist = harvest(exprlist, &fb);
+            signchar = (c == '-') ? FMTPARAM_SIGNSPACE : FMTPARAM_SIGNPLUS;
+            width = 1;
+            minwidth = 0;
+            c = *usestr;
+            if (c == '#' || c == '%') {
+                goto handlenumeric;
+            }
+            ERROR(params, "+ or - in print using must be followed by numeric format");
+            return exprlist;
         case '%':
         case '#':
+            signchar = 0;
             exprlist = harvest(exprlist, &fb);
             width = minwidth = 1;
+        handlenumeric:
             while (*usestr && *usestr == c) {
                 usestr++;
                 width++;
+                if (c == '%') minwidth++;
             }
-            if (c == '%') {
-                minwidth = width;
-            }
-            fmtparam = FMTPARAM_WIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | FMTPARAM_SPACEPLUS | FMTPARAM_RIGHTJUSTIFY;
+            fmtparam = FMTPARAM_WIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
