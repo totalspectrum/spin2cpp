@@ -90,11 +90,11 @@ Usage(FILE *f, int bstcMode)
     if (bstcMode) {
         fprintf(f, "Program usage :- %s (Options) Filename[.spin]\n", gl_progname);
     } else {
-        fprintf(f, "usage: %s\n", gl_progname);
+        fprintf(f, "usage: %s [options] filename.spin | filename.bas\n", gl_progname);
     }
     fprintf(f, "  [ -h ]              display this help\n");
     fprintf(f, "  [ -L or -I <path> ] add a directory to the include path\n");
-    fprintf(f, "  [ -o ]             output filename\n");
+    fprintf(f, "  [ -o <name> ]      set output filename to <name>\n");
     fprintf(f, "  [ -b ]             output binary file format\n");
     fprintf(f, "  [ -e ]             output eeprom file format\n");
     fprintf(f, "  [ -c ]             output only DAT sections\n");

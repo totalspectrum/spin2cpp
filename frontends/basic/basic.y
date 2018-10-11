@@ -179,6 +179,7 @@ AST *AstCharItem(int c)
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
 %token BAS_TO         "to"
+%token BAS_TYPE       "type"
 %token BAS_UBYTE      "ubyte"
 %token BAS_UINTEGER   "uinteger"
 %token BAS_ULONG      "ulong"
@@ -637,6 +638,7 @@ topdecl:
   | dimension
     { DeclareGlobalBasicVariables($1); }
   | constdecl
+  | typedecl
   ;
 
 constdecl:
@@ -647,6 +649,12 @@ constdecl:
       decl = CommentedListHolder(decl);
       $$ = current->conblock = AddToList(current->conblock, decl);
   }
+;
+typedecl:
+  BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln
+    {
+        AddSymbol(&current->objsyms, $2->d.string, SYM_TYPEDEF, $4);
+    }
 ;
 
 subdecl:

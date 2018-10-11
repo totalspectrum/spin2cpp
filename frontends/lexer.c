@@ -1183,8 +1183,10 @@ struct reservedword basic_keywords[] = {
   { "subroutine", BAS_SUB },
   { "then", BAS_THEN },
   { "to", BAS_TO },
+  { "type", BAS_TYPE },
   { "ubyte", BAS_UBYTE },
   { "uinteger", BAS_UINTEGER },
+  { "ulong", BAS_ULONG },
   { "until", BAS_UNTIL },
   { "ushort", BAS_USHORT },
   { "using", BAS_USING },
@@ -2398,10 +2400,16 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     // check for a defined class or similar type
     if (current) {
         sym = FindSymbol(&current->objsyms, idstr);
-        if (sym && sym->type == SYM_OBJECT) {
-            ast = (AST *)sym->val;
-            // check for an abstract object declaration
-            if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
+        if (sym) {
+            if (sym->type == SYM_OBJECT) {
+                ast = (AST *)sym->val;
+                // check for an abstract object declaration
+                if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
+                    *ast_ptr = ast;
+                    return BAS_TYPENAME;
+                }
+            } else if (sym->type == SYM_TYPEDEF) {
+                ast = (AST *)sym->val;
                 *ast_ptr = ast;
                 return BAS_TYPENAME;
             }

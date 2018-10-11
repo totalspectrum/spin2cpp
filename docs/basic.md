@@ -105,6 +105,7 @@ step
 sub
 then
 to
+type
 ubyte
 uinteger
 ulong
@@ -973,6 +974,14 @@ Introduces a multi-line series of statements for an `if` statement. See IF for d
 ### TO
 
 A syntactical element typically used for giving ranges of items.
+
+### TYPE
+
+Creates an alias for a type. For example,
+```
+  type uptr as ubyte ptr
+```
+creates a new type name `uptr` which is a pointer to a `ubyte`. You may use the new type name anywhere a type is required.
 
 ### UBYTE
 
