@@ -972,6 +972,9 @@ PrintStringList(Flexbuf *f, AST *ast)
     flexbuf_printf(f, "\"");
     while (ast) {
         elem = ast->left;
+        if (!elem && ast->kind == AST_STRING) {
+            elem = ast;
+        }
         if (!elem) {
             ERROR(ast, "internal error in string list");
             break;
