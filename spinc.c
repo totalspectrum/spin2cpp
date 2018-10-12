@@ -143,7 +143,7 @@ InitGlobalModule(void)
 }
 
 static int
-DeclareVariablesOfSize(Module *P, int basetypesize, int offset)
+DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
 {
     AST *upper;
     AST *ast;
@@ -178,7 +178,15 @@ DeclareVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
-            curtypesize = TypeSize(curtype);
+            if (curtype->kind == AST_ASSIGN) {
+                if (basetypesize == 4) {
+                    ERROR(ast, "Member variables cannot have initial values");
+                    return offset;
+                }
+                curtypesize = 4;
+            } else {
+                curtypesize = TypeSize(curtype);
+            }
             break;
         case AST_COMMENT:
             /* skip */
@@ -228,7 +236,7 @@ InferTypeFromName(AST *identifier)
 }
 
 void
-MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
     if (!typ) {
         typ = InferTypeFromName(identifier);
@@ -256,15 +264,15 @@ MaybeDeclareGlobal(Module *P, AST *identifier, AST *typ)
 }
 
 void
-DeclareVariables(Module *P)
+DeclareMemberVariables(Module *P)
 {
     int offset = 0;
 
     // FIXME: Spin always declares longs first, then words, then bytes
     // but other languages may have other preferences
-    offset = DeclareVariablesOfSize(P, 4, offset); // also declares >= 4
-    offset = DeclareVariablesOfSize(P, 2, offset);
-    offset = DeclareVariablesOfSize(P, 1, offset);
+    offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
+    offset = DeclareMemberVariablesOfSize(P, 2, offset);
+    offset = DeclareMemberVariablesOfSize(P, 1, offset);
 
     // round up to next LONG boundary
     offset = (offset + 3) & ~3;
@@ -372,7 +380,7 @@ ProcessModule(Module *P)
     
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);
-    DeclareVariables(P);
+    DeclareMemberVariables(P);
     DeclareLabels(P);
     DeclareFunctions(P);
 }

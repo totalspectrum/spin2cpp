@@ -521,8 +521,8 @@ void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename);
 
-/* declare a global variable if it does not already exist */
-void MaybeDeclareGlobal(Module *P, AST *ident, AST *typ);
+/* declare a member variable of P if it does not already exist */
+void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);
 
 // type inference based on BASIC name (e.g. A$ is a string)
 AST *InferTypeFromName(AST *identifier);

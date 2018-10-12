@@ -65,15 +65,15 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
 }
 
 void
-DeclareGlobalBasicVariables(AST *ast)
+DeclareBASICMemberVariables(AST *ast)
 {
     AST *idlist, *typ;
     AST *ident;
 
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
-        DeclareGlobalBasicVariables(ast->left);
-        DeclareGlobalBasicVariables(ast->right);
+        DeclareBASICMemberVariables(ast->left);
+        DeclareBASICMemberVariables(ast->right);
         return;
     }
     idlist = ast->left;
@@ -81,11 +81,37 @@ DeclareGlobalBasicVariables(AST *ast)
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
-            MaybeDeclareGlobal(current, ident, typ);
+            MaybeDeclareMemberVar(current, ident, typ);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareGlobal(current, idlist, typ);
+        MaybeDeclareMemberVar(current, idlist, typ);
+    }
+    return;
+}
+
+void
+DeclareBASICGlobalVariables(AST *ast)
+{
+    AST *idlist, *typ;
+    AST *ident;
+
+    if (!ast) return;
+    if (ast->kind == AST_SEQUENCE) {
+        DeclareBASICGlobalVariables(ast->left);
+        DeclareBASICGlobalVariables(ast->right);
+        return;
+    }
+    idlist = ast->left;
+    typ = ast->right;
+    if (idlist->kind == AST_LISTHOLDER) {
+        while (idlist) {
+            ident = idlist->left;
+            DeclareOneGlobalVar(current, ident, typ);
+            idlist = idlist->right;
+        }
+    } else {
+        DeclareOneGlobalVar(current, idlist, typ);
     }
     return;
 }
@@ -268,7 +294,7 @@ nonemptystatement:
         $$ = AstAssign(GetPinRange("dira", "dirb", $3), AstInteger(-1));
     }
   | BAS_LET BAS_IDENTIFIER '=' expr eoln
-    { MaybeDeclareGlobal(current, $2, InferTypeFromName($2));
+    { MaybeDeclareMemberVar(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
   | BAS_VAR BAS_IDENTIFIER '=' expr eoln
     {
@@ -445,7 +471,7 @@ forstmt:
       AST *from, *to, *step;
       AST *ident = $2;
       AST *closeident = $10;
-      MaybeDeclareGlobal(current, ident, InferTypeFromName(ident));
+      MaybeDeclareMemberVar(current, ident, InferTypeFromName(ident));
       step = NewAST(AST_STEP, $7, $9);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
@@ -640,7 +666,9 @@ topdecl:
   | funcdecl
   | classdecl
   | dimension
-    { DeclareGlobalBasicVariables($1); }
+    { DeclareBASICMemberVariables($1); }
+  | dimshared
+    { DeclareBASICGlobalVariables($1); }
   | constdecl
   | typedecl
   ;
@@ -734,6 +762,9 @@ dimension:
     { $$ = $2; }
   | BAS_DIM BAS_AS typename identlist
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
+;
+
+dimshared:
   | BAS_DIM BAS_SHARED dimlist
     { $$ = $3; }
   | BAS_DIM BAS_SHARED BAS_AS typename identlist

@@ -157,10 +157,12 @@ declarations:
   dim a(10)
   rem same thing but more verbose
   dim b(10) as integer
+  rem or even more verbose
+  dim c(1 to 10) as integer
   rem an array of 10 strings
   dim a$(10)
   rem another array of strings
-  dim c(10) as string
+  dim d(10) as string
 ```
 
 Arrays are always indexed starting at 1. That is, if `a` is an array, then
@@ -177,9 +179,58 @@ to 0 could look like:
    end sub
 ```
 
-#### Variable Scope
+The array definition may have an explicit lower bound given, for example:
+```
+   dim a(1 to 10)
+```
+This is for compatibility with FreeBasic. Note that at the present time the lower bound must always be a constant that evaluates to 1. So
+```
+   dim a(0 to 9) ' this gives an error!
+```
+would not work.
 
-There are two kinds of variables: global variables and local variables. Global variables may be accessed from anywhere in the program, and exist for the duration of the program. Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called.
+#### Global, Member, and Local variables.
+
+There are three kinds of variables: global variables, member variables, and local variables.
+
+Global (shared) variables may be accessed from anywhere in the program, and exist for the duration of the program. They are created with the `dim shared` declaration, and may be given an initial value. For example,
+```
+   dim shared x = 2
+```
+creates a global variable with a value of 2.
+
+A global variable is shared by all instances of the object that creates it. For example, if "foo.bas" contains
+```
+   dim shared ctr as integer
+
+   function set_ctr(x)
+     ctr = x
+   end function
+   function get_ctr()
+     return ctr
+   end function
+   function inc_ctr()
+     ctr = ctr + 1
+   end function
+```
+then a program like:
+```
+   dim x as class using "foo.bas"
+   dim y as class using "foo.bas"
+
+   x.set_ctr(0)
+   y.set_ctr(1)
+   print y.get_ctr()
+   y.inc_ctr()
+   print x.get_ctr()
+```
+will print 1 and then 2, because `x.ctr` and `y.ctr` are the same (shared) global variable.
+
+Member variables, on the other hand, are unique to each instance of a class. They are created with regular `dim` outside of any function or subroutine. If we modified the sample above to remove the `shared` from the declaration of `ctr`, then the program would print 1 and then 0, because the `y.inc_ctr()`  invocation would not affect the value of `x.ctr`.
+
+Member variables are automatically initialized to 0, and may not be initialized to any other value.
+
+Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called. Local variables may be initialized to values, but this initialization is done at run time so it has some overhead.
 
 
 ## Language features
