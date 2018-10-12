@@ -180,15 +180,16 @@ findLocalsAndDeclare(Function *func, AST *ast)
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
         identlist = ast->left;
-        if (identlist->kind != AST_LISTHOLDER) {
-            ERROR(ast, "Internal error: expected list of identifiers");
-            return;
-        }
         basetype = ast->right;
         while (identlist) {
             datatype = expr = NULL;
-            ident = identlist->left;
-            identlist = identlist->right;
+            if (identlist->kind == AST_LISTHOLDER) {
+                ident = identlist->left;
+                identlist = identlist->right;
+            } else {
+                ident = identlist;
+                identlist = NULL;
+            }
             if (ident->kind == AST_ASSIGN) {
                 // write out an initialization for the variable
                 seq = AddToList(seq, NewAST(AST_SEQUENCE, ident, NULL));

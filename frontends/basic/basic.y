@@ -78,10 +78,14 @@ DeclareGlobalBasicVariables(AST *ast)
     }
     idlist = ast->left;
     typ = ast->right;
-    while (idlist) {
-        ident = idlist->left;
-        MaybeDeclareGlobal(current, ident, typ);
-        idlist = idlist->right;
+    if (idlist->kind == AST_LISTHOLDER) {
+        while (idlist) {
+            ident = idlist->left;
+            MaybeDeclareGlobal(current, ident, typ);
+            idlist = idlist->right;
+        }
+    } else {
+        MaybeDeclareGlobal(current, idlist, typ);
     }
     return;
 }
@@ -730,12 +734,18 @@ dimension:
     { $$ = $2; }
   | BAS_DIM BAS_AS typename identlist
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
+  | BAS_DIM BAS_SHARED dimlist
+    { $$ = $3; }
+  | BAS_DIM BAS_SHARED BAS_AS typename identlist
+    { $$ = NewAST(AST_DECLARE_VAR, $5, $4); }
   ;
 
 dimitem:
-  identlist BAS_AS typename
+  identdecl BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $1, $3); }
-  | identlist
+  | identdecl BAS_AS typename '=' expr
+    { $$ = NewAST(AST_DECLARE_VAR, $1, AstAssign($1, $3)); }
+  | identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, NULL); }
 ;
 
@@ -750,6 +760,17 @@ identdecl:
     { $$ = $1; }
   | identifier '(' expr ')'
     { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+  | identifier '(' expr BAS_TO expr ')'
+    {
+        AST *base = $3;
+        
+        if (!IsConstExpr(base) || EvalConstExpr(base) != 1) {
+            ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
+            fprintf(stderr, "Array dimension base must be 1");
+            gl_errors++;
+        }
+        $$ = NewAST(AST_ARRAYDECL, $1, $5);
+    }
 ;
 
 identlist:

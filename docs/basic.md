@@ -756,7 +756,7 @@ the only difference is that in the `let` form if `a` does not already exist it i
 
 ### LONG
 
-Reserved for future use; not implemented yet.
+A signed 32 bit integer. An alias for `integer`. The unsigned version of this is `ulong`.
 
 ### LOOP
 
@@ -986,6 +986,14 @@ creates a new type name `uptr` which is a pointer to a `ubyte`. You may use the 
 ### UBYTE
 
 An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### UINTEGER
+
+An unsigned 32 bit integer.
+
+### ULONG
+
+An unsigned 32 bit integer, occupying four bytes of computer memory. The signed version of this is `long`.
 
 ### USHORT
 
