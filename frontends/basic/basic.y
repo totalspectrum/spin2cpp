@@ -666,9 +666,14 @@ topdecl:
   | funcdecl
   | classdecl
   | dimension
-    { DeclareBASICMemberVariables($1); }
-  | dimshared
-    { DeclareBASICGlobalVariables($1); }
+    {
+        AST *ast = $1;
+        if (ast->kind == AST_GLOBALVARS) {
+            DeclareBASICGlobalVariables(ast->left);
+        } else {
+            DeclareBASICMemberVariables(ast);
+        }
+    }
   | constdecl
   | typedecl
   ;
@@ -762,13 +767,10 @@ dimension:
     { $$ = $2; }
   | BAS_DIM BAS_AS typename identlist
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
-;
-
-dimshared:
   | BAS_DIM BAS_SHARED dimlist
-    { $$ = $3; }
+    { $$ = NewAST(AST_GLOBALVARS, $3, NULL); }
   | BAS_DIM BAS_SHARED BAS_AS typename identlist
-    { $$ = NewAST(AST_DECLARE_VAR, $5, $4); }
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $4), NULL); }
   ;
 
 dimitem:

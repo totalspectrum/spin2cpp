@@ -524,6 +524,9 @@ Module *ParseFile(const char *filename);
 /* declare a member variable of P if it does not already exist */
 void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);
 
+/* declare a single global variable */
+void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ);
+
 // type inference based on BASIC name (e.g. A$ is a string)
 AST *InferTypeFromName(AST *identifier);
 

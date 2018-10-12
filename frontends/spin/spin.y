@@ -533,7 +533,7 @@ datblock:
   datline
     {
         AST *dat = $1;
-        $$ = dat;
+        $$ = dat; //NewAST(AST_LISTHOLDER, dat, NULL);
     }
   | datblock datline
     { $$ = AddToList($1, $2); }

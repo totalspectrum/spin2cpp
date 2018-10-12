@@ -236,6 +236,12 @@ InferTypeFromName(AST *identifier)
 }
 
 void
+DeclareOneGlobalVar(Module *P, AST *ident, AST *typ)
+{
+    /* for now, do nothing */
+}
+
+void
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
     if (!typ) {

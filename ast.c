@@ -491,6 +491,7 @@ static const char *astnames[] = {
     "new",
     "delete",
     "using",
+    "globalvars",
 };
 
 //
