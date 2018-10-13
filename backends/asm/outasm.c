@@ -210,7 +210,10 @@ ValidateStackptr(void)
             if (gl_p2) {
                 stackptr = GetOneGlobal(REG_HW, "ptra", 0);
             } else if (gl_optimize_flags & OPT_REMOVE_HUB_BSS) {
-                stackptr = GetOneGlobal(REG_REG, "sp", current->varsize);
+                Module *P;
+                // get the top level module
+                P = allparse;
+                stackptr = GetOneGlobal(REG_REG, "sp", P->varsize);
             } else {
                 stackptr = NewImmediatePtr("sp", stacklabel);
             }

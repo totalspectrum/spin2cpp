@@ -1,4 +1,6 @@
 Version 3.9.5
+- Fixed stack allocation when HUB bss is removed (-O2 option)
+- Implemented global variables
 - Updated BASIC I/O functions
 
 Version 3.9.4
