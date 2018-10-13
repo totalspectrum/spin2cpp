@@ -185,7 +185,7 @@ PRI _gc_alloc(size)
 PRI _gc_alloc_managed(size)
   return _gc_doalloc(size, 0)
   
-PRI _gc_doalloc(size, reserveflag) | ptr
+PRI _gc_doalloc(size, reserveflag) | ptr, zptr
   if (size == 0)
     return 0
 
@@ -197,14 +197,19 @@ PRI _gc_doalloc(size, reserveflag) | ptr
 
   ' try to find a free block big enough
   ptr := _gc_tryalloc(size, reserveflag)
-  if (ptr)
-    return ptr
-
-  '' run garbage collection here
-  _gc_collect
+  if (ptr == 0)
+    '' run garbage collection here
+    _gc_collect
   
-  ' see if gc freed up enough space
-  ptr := _gc_tryalloc(size, reserveflag)
+    ' see if gc freed up enough space
+    ptr := _gc_tryalloc(size, reserveflag)
+  if ptr
+    ' zero the returned memory
+    size := ((size << pagesizeshift) - 8)/4
+    zptr := ptr ' skip the header
+    repeat size
+      long[zptr] := 0
+      zptr += 4
   return ptr
 
 '
@@ -256,7 +261,7 @@ PRI _gc_manage(ptr) | heapbase, heapend
 ' returns a pointer to the next non-free block(useful for
 ' garbage collection, to handle cases where memory is coalesced)
 '
-PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend
+PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
   (heapbase, heapend) := _gc_ptrs
   word[ptr + OFF_FLAGS] := GC_MAGIC + GC_FLAG_FREE
   prevptr := ptr

@@ -5,11 +5,11 @@ DAT
 entry
 
 _foo
-	mov	result1, ptr_L__0022_
+	mov	result1, ptr_L__0023_
 _foo_ret
 	ret
 
-ptr_L__0022_
+ptr_L__0023_
 	long	@@@LR__0001
 result1
 	long	0
