@@ -337,17 +337,20 @@ DeclareLabels(Module *P)
             {
                 AST *type = ast->right;
                 AST *ident = ast->left;
-                int typalign = TypeAlign(type);
-                int typsize = TypeSize(type);
+                int typalign;
+                int typsize;
                 MAYBEALIGNPC(typalign);
                 if (ident->kind == AST_ASSIGN) {
                     ident = ident->left;
                 }
-                if (ident->kind == AST_ARRAYDECL) {
+                while (ident && ident->kind == AST_ARRAYDECL) {
+                    type = NewAST(AST_ARRAYTYPE, type, ident->right);
                     ident = ident->left;
                 }
+                typalign = TypeAlign(type);
+                typsize = TypeSize(type);
                 if (ident->kind != AST_IDENTIFIER) {
-                    ERROR(ast, "Internal error in DECLAR_VAR: expected identifier");
+                    ERROR(ast, "Internal error in DECLARE_VAR: expected identifier");
                 } else {
                     pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ident, NULL));
                 }

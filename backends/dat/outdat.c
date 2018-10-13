@@ -1159,18 +1159,28 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     int typalign;
     int elemsize = 0;
     
+    ast = ast->left;
+    if (ast->kind == AST_ASSIGN) {
+        initval = ast->right;
+        ast = ast->left;
+    }
+    while (ast && ast->kind == AST_ARRAYDECL) {
+        type = NewAST(AST_ARRAYTYPE, type, ast->right);
+        ast = ast->left;
+    }
     typalign = TypeAlign(type);
     typsize = TypeSize(type);
     AlignPc(f, typalign);
 
-    ast = ast->left;
-    if (ast->kind == AST_ASSIGN) {
-        initval = ast->right;
-    }
     // we only know how to initialize basic types right now
     do {
         type = RemoveTypeModifiers(type);
-    } while (type && type->kind == AST_ARRAYTYPE);
+        if (type->kind == AST_ARRAYTYPE) {
+            type = type->left;
+        } else {
+            break;
+        }
+    } while (type);
     
     if (!type) {
         ERROR(ast, "Unknown type in global variable");

@@ -238,9 +238,13 @@ InferTypeFromName(AST *identifier)
 void
 DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
 {
-    /* for now, do nothing */
     AST *ast;
-    AST *declare = NewAST(AST_DECLARE_VAR, ident, type);
+    AST *declare;
+
+    if (!type) {
+        type = InferTypeFromName(ident);
+    }
+    declare = NewAST(AST_DECLARE_VAR, ident, type);
     ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
     P->datblock = AddToList(P->datblock, ast);
 }
