@@ -777,7 +777,7 @@ dimitem:
   identdecl BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $1, $3); }
   | identdecl BAS_AS typename '=' expr
-    { $$ = NewAST(AST_DECLARE_VAR, $1, AstAssign($1, $3)); }
+    { $$ = NewAST(AST_DECLARE_VAR, AstAssign($1, $5), $3); }
   | identdecl
     { $$ = NewAST(AST_DECLARE_VAR, $1, NULL); }
 ;

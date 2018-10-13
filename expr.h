@@ -46,6 +46,11 @@ ExprVal fixedExpr(int32_t f);
 int32_t  floatAsInt(float f);
 float    intAsFloat(int32_t i);
 
+AST *RemoveTypeModifiers(AST *typ);
+
+int TypeSize(AST *typ);
+int TypeAlign(AST *typ);
+
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);
 int IsArrayOrPointerSymbol(Symbol *);

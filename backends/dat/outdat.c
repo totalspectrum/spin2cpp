@@ -249,6 +249,64 @@ IsRelocatable(AST *sub, int32_t *offset)
     return 0;
 }
 
+/* output a single data item element */
+void
+outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
+{
+    uint32_t origval, val;
+    int i;
+
+    if (item) {
+        origval = EvalPasmExpr(item);
+    } else {
+        origval = 0;
+    }
+    while (reps > 0) {
+        val = origval;
+        for (i = 0; i < elemsize; i++) {
+            outputByte(f, val & 0xff);
+            val = val >> 8;
+        }
+        --reps;
+    }
+}
+
+/* output a variable initializer list */
+/* returns the number of elements output */
+int
+outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs)
+{
+    int n = 0;
+    if (!initval) {
+        outputInitItem(f, elemsize, NULL, numelems, relocs);
+        return numelems;
+    }
+    if (initval->kind == AST_EXPRLIST) {
+        AST *item;
+        while (initval) {
+            item = initval->left;
+            initval = initval->right;
+            n += outputInitList(f, elemsize, item, 1, relocs);
+        }
+    } else {
+        outputInitItem(f, elemsize, initval, 1, relocs);
+        return 1;
+    }
+    return n;
+}
+
+void
+outputInitializer(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs)
+{
+    int n = outputInitList(f, elemsize, initval, numelems, relocs);
+    if (n < numelems) {
+        outputInitList(f, elemsize, NULL, numelems - n, relocs);
+    } else if (n > numelems) {
+        ERROR(initval, "Too many elements found in initializer");
+    }
+}
+
+/* output a data list as found in PASM "long", "byte", etc. */
 void
 outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
@@ -319,6 +377,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
         ast = ast->right;
     }
 }
+
 
 #define BIG_IMM_SRC 0x01
 #define BIG_IMM_DST 0x02
@@ -1091,6 +1150,46 @@ SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
     return ast;
 }
 
+static void
+outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
+{
+    AST *initval = NULL;
+    AST *type = ast->right;
+    int typsize;
+    int typalign;
+    int elemsize = 0;
+    
+    typalign = TypeAlign(type);
+    typsize = TypeSize(type);
+    AlignPc(f, typalign);
+
+    ast = ast->left;
+    if (ast->kind == AST_ASSIGN) {
+        initval = ast->right;
+    }
+    // we only know how to initialize basic types right now
+    do {
+        type = RemoveTypeModifiers(type);
+    } while (type && type->kind == AST_ARRAYTYPE);
+    
+    if (!type) {
+        ERROR(ast, "Unknown type in global variable");
+        return;
+    }
+    switch (type->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_GENERICTYPE:
+    case AST_FLOATTYPE:
+        elemsize = TypeSize(type);
+        break;
+    default:
+        ERROR(ast, "Cannot initialize global variables of this type");
+        break;
+    }
+    outputInitializer(f, elemsize, initval, typsize / elemsize, relocs);
+}
+
 /*
  * print out a data block
  */
@@ -1159,6 +1258,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             break;
         case AST_IDENTIFIER:
             /* just skip labels */
+            break;
+        case AST_DECLARE_VAR:
+            outputVarDeclare(f, ast, relocs);
             break;
         case AST_FILE:
             assembleFile(f, ast->left);

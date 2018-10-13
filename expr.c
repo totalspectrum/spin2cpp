@@ -1441,8 +1441,8 @@ FoldIfConst(AST *expr)
 }
 
 // remove modifiers from a type
-static AST *
-removeModifiers(AST *ast)
+AST *
+RemoveTypeModifiers(AST *ast)
 {
     while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE)) {
         ast = ast->left;
@@ -1456,7 +1456,7 @@ removeModifiers(AST *ast)
 int
 IsArrayType(AST *ast)
 {
-    ast = removeModifiers(ast);
+    ast = RemoveTypeModifiers(ast);
     if (!ast) return 0;
     switch (ast->kind) {
     case AST_ARRAYTYPE:
@@ -1474,6 +1474,37 @@ IsArrayType(AST *ast)
               ast->kind);
     }
     return 0;
+}
+
+/* find minimum alignment for a type */
+int TypeAlign(AST *typ)
+{
+    typ = RemoveTypeModifiers(typ);
+    while (typ && typ->kind == AST_ARRAYTYPE) {
+        typ = RemoveTypeModifiers(typ->left);
+    }
+    if (!typ) {
+        return 4;
+    }
+    switch (typ->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_GENERICTYPE:
+    case AST_FLOATTYPE:
+        return EvalConstExpr(typ->left);
+    case AST_PTRTYPE:
+    case AST_FUNCTYPE:
+    default:
+        return 4; // all pointers are 4 bytes
+    case AST_OBJECT:
+        {
+            Module *P = (Module *)typ->d.ptr;
+            if (P->varsize < 3) {
+                return P->varsize;
+            }
+            return 4;
+        }
+    }
 }
 
 /* find size of a type */
@@ -1524,7 +1555,7 @@ int TypeSize(AST *typ)
 /* find base type for an array or pointer */
 AST *BaseType(AST *typ)
 {
-    typ = removeModifiers(typ);
+    typ = RemoveTypeModifiers(typ);
     if (!typ) return typ;
     switch (typ->kind) {
     case AST_ARRAYTYPE:
@@ -1691,7 +1722,7 @@ FindCalledFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 int
 IsFloatType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_FLOATTYPE)
         return 1;
@@ -1701,7 +1732,7 @@ IsFloatType(AST *type)
 int
 IsPointerType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     
     if (type->kind == AST_PTRTYPE)
@@ -1727,7 +1758,7 @@ IsGenericType(AST *type)
 int
 IsIntType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE)
         return 1;
@@ -1737,7 +1768,7 @@ IsIntType(AST *type)
 int
 IsUnsignedType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_UNSIGNEDTYPE)
         return 1;
@@ -1747,7 +1778,7 @@ IsUnsignedType(AST *type)
 int
 IsFunctionType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_FUNCTYPE)
         return 1;
@@ -1757,7 +1788,7 @@ IsFunctionType(AST *type)
 int
 IsStringType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type == ast_type_string)
         return 1;
@@ -1767,7 +1798,7 @@ IsStringType(AST *type)
 int
 IsNumericType(AST *type)
 {
-    type = removeModifiers(type);
+    type = RemoveTypeModifiers(type);
     if (!type) return 0;
     if (type->kind == AST_INTTYPE || type->kind == AST_UNSIGNEDTYPE || type->kind == AST_FLOATTYPE)
         return 1;
@@ -1788,8 +1819,8 @@ AST *
 WidestType(AST *left, AST *right)
 {
     int lsize, rsize;
-    left = removeModifiers(left);
-    right = removeModifiers(right);
+    left = RemoveTypeModifiers(left);
+    right = RemoveTypeModifiers(right);
     if (!left) return right;
     if (!right) return left;
     if (left->kind != right->kind) {
@@ -1854,6 +1885,7 @@ ExprType(AST *expr)
     {
         Symbol *sym = LookupSymbol(expr->d.string);
         Label *lab;
+        AST *typ;
         if (!sym) return NULL;
         switch (sym->type) {
         case SYM_CONSTANT:
@@ -1861,7 +1893,11 @@ ExprType(AST *expr)
             return ast_type_long;
         case SYM_LABEL:
             lab = (Label *)sym->val;
-            return NewAST(AST_ARRAYTYPE, lab->type, AstInteger(1));
+            typ = lab->type;
+            if (current->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
+                return NewAST(AST_ARRAYTYPE, typ, AstInteger(1));
+            }
+            return typ;
         case SYM_FLOAT_CONSTANT:
             return ast_type_float;
         case SYM_VARIABLE:
@@ -2019,8 +2055,8 @@ CompatibleTypes(AST *A, AST *B)
     bool typesOK = (current != NULL && current->language != LANG_SPIN);
     bool skipfloats = !typesOK;
     
-    A = removeModifiers(A);
-    B = removeModifiers(B);
+    A = RemoveTypeModifiers(A);
+    B = RemoveTypeModifiers(B);
     
     // FIXME: eventually float types should be
     // fully supported, but for now treat them
@@ -2060,7 +2096,7 @@ CompatibleTypes(AST *A, AST *B)
     }
     // both A and B are pointers (or perhaps arrays)
     // they are compatible if they are both pointers to the same thing
-    return SameTypes(removeModifiers(A->left), removeModifiers(B->left));
+    return SameTypes(RemoveTypeModifiers(A->left), RemoveTypeModifiers(B->left));
 }
 
 //

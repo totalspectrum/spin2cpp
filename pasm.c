@@ -333,6 +333,28 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, lasttype, lastOrg, inHub);
             ALIGNPC(EvalPasmExpr(ast->left));
             break;
+        case AST_DECLARE_VAR:
+            {
+                AST *type = ast->right;
+                AST *ident = ast->left;
+                int typalign = TypeAlign(type);
+                int typsize = TypeSize(type);
+                MAYBEALIGNPC(typalign);
+                if (ident->kind == AST_ASSIGN) {
+                    ident = ident->left;
+                }
+                if (ident->kind == AST_ARRAYDECL) {
+                    ident = ident->left;
+                }
+                if (ident->kind != AST_IDENTIFIER) {
+                    ERROR(ast, "Internal error in DECLAR_VAR: expected identifier");
+                } else {
+                    pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ident, NULL));
+                }
+                pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, type, lastOrg, inHub);
+                INCPC(typsize);
+            }
+            break;
         default:
             ERROR(ast, "unknown element %d in data block", ast->kind);
             break;
