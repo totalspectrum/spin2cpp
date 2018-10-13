@@ -419,8 +419,8 @@ doBasicTransform(AST **astptr)
 
                     params = NewAST(AST_EXPRLIST, handle,
                                     NewAST(AST_EXPRLIST, expr,
-                                           NewAST(AST_EXPRLIST, AstInteger(16),
-                                                  NewAST(AST_EXPRLIST, fmtAst, NULL))));
+                                           NewAST(AST_EXPRLIST, fmtAst,
+                                                  NewAST(AST_EXPRLIST, AstInteger(16), NULL))));
                     ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
                     seq = AddToList(seq, NewAST(AST_SEQUENCE, ast, NULL));
                 } else if (IsUnsignedType(type)) {
