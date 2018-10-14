@@ -8,3 +8,4 @@ closed handle
  +99:+099:  99: 099: 99:099
  x   xx   xxxxxxx   xxxxxx   xxxxxxx
 [a] [ab] [abc    ] [   abc] [  abc  ]
+-2 -3

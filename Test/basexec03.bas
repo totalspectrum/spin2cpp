@@ -18,6 +18,8 @@ close #2
 
 print #2, "this should be ignored"
 
+dim shared as integer x=-2, y=-3
+
 /' this is a test '/
 
 type myint as long
@@ -31,6 +33,8 @@ testint(99)
 var a$ = "abc"
 print       " x   xx   xxxxxxx   xxxxxx   xxxxxxx"
 print using "[!] [\\] [\<<<<<\] [\>>>>\] [\=====\]"; a$, a$, a$, a$, a$
+
+print x; " "; y
 
 ''
 '' send the magic propload status code
