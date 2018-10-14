@@ -72,8 +72,7 @@ DeclareBASICMemberVariables(AST *ast)
 
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
-        DeclareBASICMemberVariables(ast->left);
-        DeclareBASICMemberVariables(ast->right);
+        ERROR(ast, "Internal error, unexpected sequence");
         return;
     }
     idlist = ast->left;
@@ -98,8 +97,7 @@ DeclareBASICGlobalVariables(AST *ast)
 
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
-        DeclareBASICGlobalVariables(ast->left);
-        DeclareBASICGlobalVariables(ast->right);
+        ERROR(ast, "Internal error, unexpected sequence");
         return;
     }
     idlist = ast->left;
@@ -764,30 +762,30 @@ classdecl:
 
 dimension:
   BAS_DIM dimlist
-    { $$ = $2; }
-  | BAS_DIM BAS_AS typename identlist
+    { $$ = NewAST(AST_DECLARE_VAR, $2, NULL); }
+  | BAS_DIM dimlist BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $2, $4); }
+  | BAS_DIM BAS_AS typename dimlist
     { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
   | BAS_DIM BAS_SHARED dimlist
     { $$ = NewAST(AST_GLOBALVARS, $3, NULL); }
-  | BAS_DIM BAS_SHARED BAS_AS typename identlist
+  | BAS_DIM BAS_SHARED BAS_AS typename dimlist
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $4), NULL); }
   ;
-
-dimitem:
-  identdecl BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $1, $3); }
-  | identdecl BAS_AS typename '=' expr
-    { $$ = NewAST(AST_DECLARE_VAR, AstAssign($1, $5), $3); }
-  | identdecl
-    { $$ = NewAST(AST_DECLARE_VAR, $1, NULL); }
-;
 
 dimlist:
   dimitem
     { $$ = $1; }
   | dimlist ',' dimitem
-    { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+    { $$ = AddToList($1, $3); }
 ;
+dimitem:
+  identdecl
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identdecl '=' expr
+    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
+;
+
 identdecl:
   identifier
     { $$ = $1; }
@@ -806,12 +804,6 @@ identdecl:
     }
 ;
 
-identlist:
-  identdecl
-  { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
-  | identlist ',' identdecl
-  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
-  ;
 
 typename:
   basetypename

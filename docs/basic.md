@@ -596,14 +596,17 @@ dim a(10), b, c$
 ```
 It's also possible to give explicit types with `as`:
 ```
-dim a(10) as integer, b as ubyte, s as string
+dim a(10) as integer
+dim b as ubyte
+dim s as string
 ```
-If you give an explicit type, it will apply to all the previous variables without an explicit type:
+Only one explicit type may be given per line (this is different from FreeBASIC). If you give an explicit type, it will apply to all the variables on the line:
 ```
 ' this makes all the variables singles, despite their names
+' (probably NOT a good idea!)
 dim a(10), b%, c$, d as single
 ```
-It's probably better (clearer) in this case to put the `as` first:
+If you want to be compatible with FreeBASIC, put the `as` first:
 ```
 dim as single a(10), b%, c$, d
 ```
@@ -676,7 +679,7 @@ for i = 1 to 10 step 2
 next i
 ```
 
-If the variable given in the loop is not already defined, it is created as a variable shared by all functions in the module. This tends to be inefficient, so it is better to explicitly dimension the variable as a local variable rather than letting `for` create it as a shared.
+If the variable given in the loop is not already defined, it is created as a variable shared by all functions in the module. This tends to be inefficient, so it is better to explicitly dimension the variable as a local variable rather than letting `for` create it automatically.
 
 ### FUNCTION
 
@@ -803,7 +806,7 @@ sets `a` to be equal to `b`. This can usually be written as:
 ```
   a = b
 ```
-the only difference is that in the `let` form if `a` does not already exist it is created as a global variable (one accessible in all functions). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
+the only difference is that in the `let` form if `a` does not already exist it is created as a member variable (one accessible in all functions of this file). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
 
 ### LONG
 
@@ -1063,7 +1066,7 @@ VAR msg$ = "hello"
 ```
 `var` creates and initializes a new local variable (only available inside the function in which it is declared. The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
 
-`var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates shared variables that may be used by functions or subroutines).
+`var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates member variables that may be used by functions or subroutines in this file).
 
 ### WAITCNT
 
