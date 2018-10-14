@@ -707,49 +707,68 @@ ReplaceForward(IR *instr, Operand *orig, Operand *replace, IR *stop_ir)
 }
 
 //
+// Apply a new condition code based on val being compared to 0
 //
-//
-void
+int
 ApplyConditionAfter(IR *instr, int val)
 {
   IR *ir;
   IRCond newcond;
-
+  int change = 0;
+  int setz = instr->flags & FLAG_WZ;
+  int setc = instr->flags & FLAG_WC;
+  
   for (ir = instr->next; ir; ir = ir->next) {
     if (IsDummy(ir)) continue;
-    switch (ir->cond) {
+    newcond = ir->cond;
+    switch (newcond) {
     case COND_TRUE:
-      newcond = COND_TRUE;
-      break;
     case COND_FALSE:
-      newcond = COND_FALSE;
-      break;
+        /* no change */
+        break;
     case COND_EQ:
-      newcond = (val == 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setz) {
+            newcond = (val == 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     case COND_NE:
-      newcond = (val != 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setz) {
+            newcond = (val != 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     case COND_LT:
-      newcond = (val < 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setc) {
+            newcond = (val < 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     case COND_GT:
-      newcond = (val > 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setc && setz) {
+            newcond = (val > 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     case COND_LE:
-      newcond = (val <= 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setc && setz) {
+            newcond = (val <= 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     case COND_GE:
-      newcond = (val >= 0) ? COND_TRUE : COND_FALSE;
-      break;
+        if (setc) {
+            newcond = (val >= 0) ? COND_TRUE : COND_FALSE;
+        }
+        break;
     default:
-      ERROR(NULL, "Internal error, unhandled condition");
-      return;
+        ERROR(NULL, "Internal error, unhandled condition");
+        return 0;
     }
-    ir->cond = newcond;
-    if (InstrSetsAnyFlags(ir))
-      return;
+    if (ir->cond != newcond) {
+        change = 1;
+        ir->cond = newcond;
+    }
+    if (InstrSetsAnyFlags(ir)) {
+        break;
+    }
   }
+  return change;
 }
 
 static bool
@@ -993,7 +1012,7 @@ OptimizeMoves(IRList *irl)
                     if (ir->flags == FLAG_WZ) {
                         // because this is a mov immediate, we know how
                         // WZ will be set
-                        ApplyConditionAfter(ir, ir->src->val);
+                        change |= ApplyConditionAfter(ir, ir->src->val);
                     }
                     change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
                     if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
