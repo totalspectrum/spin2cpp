@@ -26,6 +26,8 @@ typedef enum IROpcode {
     /* note that actual machine instructions must come first */
     OPC_ABS,
     OPC_ADD,
+    OPC_ALTD,
+    OPC_ALTS,
     OPC_AND,
     OPC_ANDN,
     OPC_CALL,

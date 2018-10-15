@@ -3012,28 +3012,49 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 {
     Operand *dstimm;
-    if (!putcogreg) {
-        putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
-    }
+    Operand *zero = NewImmediate(0);
     EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
-    dstimm = GetLea(irl, dst);
-    EmitOp2(irl, OPC_MOVS, putcogreg, src);
-    EmitOp2(irl, OPC_MOVD, putcogreg, dstimm);
-    return EmitOp1(irl, OPC_CALL, putcogreg);
+    if (gl_p2) {
+        IR *ir;
+        ir = EmitOp2(irl, OPC_ALTS, src, zero);
+        ir->flags |= FLAG_KEEP_INSTR;
+        ir = EmitOp2(irl, OPC_MOV, dst, src);
+        ir->flags |= FLAG_KEEP_INSTR;
+        return ir;
+    } else {
+        if (!putcogreg) {
+            putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
+        }
+        dstimm = GetLea(irl, dst);
+        EmitOp2(irl, OPC_MOVS, putcogreg, src);
+        EmitOp2(irl, OPC_MOVD, putcogreg, dstimm);
+        return EmitOp1(irl, OPC_CALL, putcogreg);
+    }
 }
 
 static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 {
     Operand *srcimm;
-    if (!putcogreg) {
-        putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
-    }
+    Operand *zero = NewImmediate(0);
+    IR *ir;
+    
     EmitOp1(irl, OPC_LIVE, src);
     src = Dereference(irl, src);
-    srcimm = GetLea(irl, src);
-    EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
-    EmitOp2(irl, OPC_MOVD, putcogreg, dst);
-    return EmitOp1(irl, OPC_CALL, putcogreg);
+    if (gl_p2) {
+        ir = EmitOp2(irl, OPC_ALTD, dst, zero);
+        ir->flags |= FLAG_KEEP_INSTR;
+        ir = EmitOp2(irl, OPC_MOV, dst, src);
+        ir->flags |= FLAG_KEEP_INSTR;
+        return ir;
+    } else {
+        if (!putcogreg) {
+            putcogreg = NewOperand(IMM_COG_LABEL, "wrcog", 0);
+        }
+        srcimm = GetLea(irl, src);
+        EmitOp2(irl, OPC_MOVS, putcogreg, srcimm);
+        EmitOp2(irl, OPC_MOVD, putcogreg, dst);
+        return EmitOp1(irl, OPC_CALL, putcogreg);
+    }
 }
 
 static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
