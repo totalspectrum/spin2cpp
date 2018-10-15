@@ -855,7 +855,7 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
     case '-':
         return lval - rval;
     case '/':
-        return lval / rval;
+        return (int32_t)( (1<<G_FIXPOINT) * (float)lval / (float)rval);
     case '*':
         return (lval * (int64_t)rval) >> G_FIXPOINT;
     case '|':
