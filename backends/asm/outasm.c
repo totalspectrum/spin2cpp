@@ -21,8 +21,8 @@
 #define COG_DATA (gl_outputflags & OUTFLAG_COG_DATA)
 #define HUB_DATA (!COG_DATA)
 
-#define IS_FAST_CALL(f) (f && FuncData(f)->convention == FAST_CALL)
-#define IS_STACK_CALL(f) (f == 0 || FuncData(f)->convention == STACK_CALL)
+#define IS_FAST_CALL(f) ( (f == 0) || FuncData(f)->convention == FAST_CALL)
+#define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
 /* lists of instructions in hub and cog */
 static IRList cogcode;
@@ -3644,6 +3644,8 @@ ShouldSkipFunction(Function *f)
         return false;
     if (f->cog_task)
         return false; // used in another cog
+    if (f->used_as_ptr)
+        return false; // used as a pointer
     // do not skip global functions, we handle those separately
     if (IsGlobalModule(f->module))
         return false;
@@ -3657,6 +3659,8 @@ bool
 RemoveIfInlined(Function *f)
 {
     if (f->cog_task)
+        return false;
+    if (f->used_as_ptr)
         return false;
     if (ShouldSkipFunction(f))
         return true;
