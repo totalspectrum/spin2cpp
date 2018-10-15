@@ -167,6 +167,8 @@ enum astkind {
     AST_DELETE,
     AST_USING,
     AST_GLOBALVARS,
+
+    AST_LAMBDA = 116,
 };
 
 /* forward reference */

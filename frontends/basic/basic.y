@@ -648,6 +648,17 @@ expr:
         baseType = NewAST(AST_PTRTYPE, baseType, NULL);
         $$ = NewAST(AST_NEW, baseType, numElements);
     }
+  | BAS_FUNCTION '(' paramdecl ')' BAS_AS typename eoln funcbody
+  {
+      AST *name = AstIdentifier(NewTemporaryVariable("__func__"));
+      AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+      AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
+      AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+      AST *rettype = $6;
+      DeclareFunction(rettype, 1, funcdef, $8, NULL, NULL);
+      //$$ = NewAST(AST_LAMBDA, name, NULL);
+      $$ = NewAST(AST_ADDROF, name, NULL);
+  }
 ;
 
 lhs: identifier
@@ -693,14 +704,14 @@ typedecl:
 ;
 
 subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
+  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody  eoln
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     DeclareFunction(ast_type_void, 1, funcdef, $7, NULL, $1);
   }
-  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody
+  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody eoln
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
@@ -710,7 +721,7 @@ subdecl:
   ;
 
 funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
+  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody eoln
   {
     AST *name = $2;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
@@ -719,7 +730,7 @@ funcdecl:
     AST *rettype = InferTypeFromName(name);
     DeclareFunction(rettype, 1, funcdef, $7, NULL, $1);
   }
-  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody eoln
   {
     AST *name = $2;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
@@ -736,8 +747,8 @@ subbody:
   ;
 
 endsub:
-  BAS_END eoln
-  | BAS_END BAS_SUB eoln
+  BAS_END
+  | BAS_END BAS_SUB
 ;
 
 funcbody:
@@ -746,8 +757,8 @@ funcbody:
   ;
 
 endfunc:
-  BAS_END eoln
-  | BAS_END BAS_FUNCTION eoln
+  BAS_END
+  | BAS_END BAS_FUNCTION
 ;
 
 classdecl:

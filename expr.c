@@ -1924,9 +1924,23 @@ ExprType(AST *expr)
     case AST_FUNCCALL:
     {
         Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 0);
+        AST *typexpr;
         if (sym) {
-            if (sym->type == SYM_FUNCTION) {
+            switch (sym->type) {
+            case SYM_FUNCTION:
                 return GetFunctionReturnType(((Function *)sym->val));
+            case SYM_VARIABLE:
+            case SYM_PARAMETER:
+            case SYM_LOCALVAR:
+            case SYM_TEMPVAR:
+                typexpr = sym->val;
+                if (typexpr && typexpr->kind == AST_FUNCTYPE) {
+                    return typexpr->left;
+                }
+                ERROR(expr, "Object called is not a function");
+                break;
+            default:
+                return NULL;
             }
         }
         return NULL;
