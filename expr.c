@@ -1945,6 +1945,8 @@ ExprType(AST *expr)
         }
         return NULL;
     }
+    case AST_LAMBDA:
+        return expr->left;
     case AST_METHODREF:
     {
         AST *objref = expr->left;

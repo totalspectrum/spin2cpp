@@ -31,6 +31,11 @@ static IRList cogdata;
 static IRList cogbss;
 static IRList hubdata;
 
+/* max size of arguments passed to coginit/cognew */
+/* will be -1 if coginit/cognew is never used */
+static int max_coginit_args = -1;
+
+/* operands for multiply/divide */
 Operand *mulfunc, *muldiva, *muldivb;
 Operand *divfunc, *unsdivfunc;
 
@@ -1234,7 +1239,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitOp2(irl, OPC_MOVS, FuncData(func)->asmretname, linkreg);
         }
     }
-    
+
     // now the function label
     EmitLabel(irl, FuncData(func)->asmname);
 
@@ -2536,6 +2541,7 @@ CompileCoginit(IRList *irl, AST *expr)
         Operand *const4;
         Operand *funcptr;
         OperandList *plist;
+        int numparams = 0;
 
         if (!kernelptr) {
             kernelptr = NewImmediatePtr("entryptr__", NewOperand(IMM_HUB_LABEL, ENTRYNAME, 0));
@@ -2543,7 +2549,7 @@ CompileCoginit(IRList *irl, AST *expr)
         kernel = NewAST(AST_OPERAND, NULL, NULL);
         kernel->d.ptr = (void *)kernelptr;
         
-        if (!IS_STACK_CALL(remote)) {
+        if (!IS_FAST_CALL(remote)) {
             ERROR(expr, "Internal error: wrong calling convention for coginit");
             return NewImmediate(0);
         }
@@ -2610,26 +2616,24 @@ CompileCoginit(IRList *irl, AST *expr)
         funcptr = FuncData(remote)->asmname;
         EmitMove(irl, newstacktop, funcptr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
-        // provide space for frame pointer
-        EmitMove(irl, newstacktop, NewImmediate(0));
-        EmitOp2(irl, OPC_ADD, newstackptr, const4);
-        // provide space for result
-        if (remote->numresults > 0) {
-            EmitMove(irl, newstacktop, NewImmediate(0));
-            EmitOp2(irl, OPC_ADD, newstackptr, const4);
-        }
         // now the parameters
         plist = CompileExprList(irl, params);
         while (plist) {
             EmitMove(irl, newstacktop, plist->op);
             EmitOp2(irl, OPC_ADD, newstackptr, const4);
             plist = plist->next;
+            numparams++;
         }
         // OK, new stack is all set up
         // now we need to call coginit(cogid, @entry, stack)
         params = NewAST( AST_EXPRLIST, cogid,
                          NewAST(AST_EXPRLIST, kernel,
                                 NewAST(AST_EXPRLIST, stack, NULL)) );
+
+        if (numparams > max_coginit_args) {
+            ERROR(NULL, "Internal error, coginit with too many args");
+            max_coginit_args = numparams;
+        }
     }
     funccall = AstIdentifier("_coginit");
     funccall = NewAST(AST_FUNCCALL, funccall, params);
@@ -3698,7 +3702,7 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
-        if (f->local_address_taken || f->cog_task || f->used_as_ptr) {
+        if (f->local_address_taken) {
             FuncData(f)->convention = STACK_CALL;
         } else if (f->cog_code) {
             FuncData(f)->convention = FAST_CALL;
@@ -4324,9 +4328,16 @@ extern Module *globalModule;
  *         add sp, #4
  *         rdlong pc, sp
  *         add sp #4
+ *         rdlong muldiva, sp  ' number of arguments
+ *         add sp, #4
+ * arglp:
+ *         rdlong argN, sp
+ *
  *         call result1 using stackcall
  *         jmp  #exit
  */
+#define MAX_COGSPIN_ARGS 8
+
 static void
 EmitMain_P1(IRList *irl, Module *P)
 {
@@ -4335,11 +4346,22 @@ EmitMain_P1(IRList *irl, Module *P)
     const char *firstfuncname;
     Operand *spinlabel;
     Operand *const4 = NewImmediate(4);
-    Operand *arg1;
     Operand *pc = NewOperand(REG_REG, "pc", 0);
     Operand *objptr = NewOperand(REG_REG, "objptr", 0);
+    Operand *arg[MAX_COGSPIN_ARGS];
+    int maxArgs = max_coginit_args;
+    int i;
     
-    arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
+    // always need at least arg1
+    arg1 = arg[0] = GetOneGlobal(REG_ARG, "arg1", 0);
+    arg2 = arg[1] = GetOneGlobal(REG_ARG, "arg2", 0);
+
+    for (i = 2; i < maxArgs; i++) {
+        char temp[20];
+        sprintf(temp, "arg%d", i+1);
+        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
+    }
+
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
         return;  // no functions at all
@@ -4357,7 +4379,9 @@ EmitMain_P1(IRList *irl, Module *P)
     if (HUB_CODE) {
         ValidateStackptr();
         ValidateObjbase();
-        EmitJump(irl, COND_NE, spinlabel);
+        if (maxArgs >= 0) {
+            EmitJump(irl, COND_NE, spinlabel);
+        }
         if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) ) {
             EmitOp2(irl, OPC_ADD, stackptr, objbase);
         }
@@ -4372,7 +4396,9 @@ EmitMain_P1(IRList *irl, Module *P)
     EmitOp1(irl, OPC_COGID, arg1);
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
-    if (HUB_CODE) {
+    if (HUB_CODE && maxArgs >= 0) {
+        // this is the code for coginit/cognew
+        // it is not needed if maxArgs < 0
         if (COG_DATA) {
             // the stack code below will fail to compile if --data=cog
             ERROR(NULL, "The combination --code=hub --data=cog is not supported");
@@ -4385,6 +4411,18 @@ EmitMain_P1(IRList *irl, Module *P)
         EmitMove(irl, pc, stacktop);      // get address of function
         EmitMove(irl, stacktop, hubexit); // set return address
         EmitOp2(irl, OPC_ADD, stackptr, const4);
+        // now pull operands off the stack
+        for (i = 0; i < maxArgs; i++) {
+            EmitMove(irl, arg[i], stacktop);
+            if (i == maxArgs-1) {
+                int off = (maxArgs-1) * 4;
+                if (off > 0) {
+                    EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(off));
+                }
+            } else {
+                EmitOp2(irl, OPC_ADD, stackptr, const4);
+            }
+        }
         EmitJump(irl, COND_TRUE, NewOperand(IMM_COG_LABEL, "LMM_LOOP", 0));
     }
 }
@@ -4398,8 +4436,20 @@ EmitMain_P2(IRList *irl, Module *P)
     Operand *spinlabel;
     Operand *const4 = NewImmediate(4);
     Operand *result1 = GetResultReg(0);
-    
-    arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
+    Operand *arg[MAX_COGSPIN_ARGS];
+    int maxArgs = max_coginit_args;
+    int i;
+
+    // always need at least arg1
+    arg1 = arg[0] = GetOneGlobal(REG_ARG, "arg1", 0);
+    arg2 = arg[1] = GetOneGlobal(REG_ARG, "arg2", 0);
+
+    for (i = 2; i < maxArgs; i++) {
+        char temp[20];
+        sprintf(temp, "arg%d", i+1);
+        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
+    }
+
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
         return;  // no functions at all
@@ -4437,6 +4487,19 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp2(irl, OPC_RDLONG, objbase, stackptr);
     EmitOp2(irl, OPC_ADD, stackptr, const4);
     EmitOp2(irl, OPC_RDLONG, result1, stackptr);
+    EmitOp2(irl, OPC_ADD, stackptr, const4);
+    // now pull operands off the stack
+    for (i = 0; i < maxArgs; i++) {
+        EmitMove(irl, arg[i], stacktop);
+        if (i == maxArgs-1) {
+            int off = maxArgs * 4;
+            if (off > 0) {
+                EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(off));
+            }
+        } else {
+            EmitOp2(irl, OPC_ADD, stackptr, const4);
+        }
+    }
     EmitOp1(irl, OPC_CALL, result1);
     EmitJump(irl, COND_TRUE, cogexit);
 }
@@ -4445,7 +4508,6 @@ EmitMain_P2(IRList *irl, Module *P)
  * .cog.spin main program looks like:
  * 
  */
-#define MAX_COGSPIN_ARGS 16
 
 void
 EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
@@ -4596,7 +4658,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         int mboxSize;
         int stackSize = 1;
         int maxLeafSize = 0;
-        func = GetMainFunction(P);
+        func = P->functions;
 #define STACK_SIZE_NAME "__STACK_SIZE"
         stackSym = FindSymbol(&P->objsyms, STACK_SIZE_NAME);
         while (func) {
@@ -4632,6 +4694,25 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
 
         if (!stackSym) {
             EmitOp2(&cogcode, OPC_CONST, NewOperand(IMM_STRING, STACK_SIZE_NAME, stackSize), NewImmediate(stackSize));
+        }
+    }
+    /* count max parameters to coginit */
+    {
+        Module *Q;
+        Function *pf;
+        for (Q = allparse; Q; Q = Q->next) {
+            for (pf = Q->functions; pf; pf = pf->next) {
+                if (pf->cog_task) {
+                    if (pf->numparams > max_coginit_args) {
+                        if (max_coginit_args > MAX_COGSPIN_ARGS) {
+                            ERROR(NULL, "coginit function %s has too many parameters (%d), max is %d",
+                                  pf->name, pf->numparams, MAX_COGSPIN_ARGS);
+                        } else {
+                            max_coginit_args = pf->numparams;
+                        }
+                    }
+                }
+            }
         }
     }
     if (emitSpinCode) {

@@ -650,14 +650,19 @@ expr:
     }
   | BAS_FUNCTION '(' paramdecl ')' BAS_AS typename eoln funcbody
   {
-      AST *name = AstIdentifier(NewTemporaryVariable("__func__"));
-      AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-      AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
-      AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+      AST *params = $3;
       AST *rettype = $6;
-      DeclareFunction(rettype, 1, funcdef, $8, NULL, NULL);
-      //$$ = NewAST(AST_LAMBDA, name, NULL);
-      $$ = NewAST(AST_ADDROF, name, NULL);
+      AST *body = $8;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      $$ = NewAST(AST_LAMBDA, functype, body);
+  }
+  | BAS_SUB '(' paramdecl ')' eoln subbody
+  {
+      AST *params = $3;
+      AST *rettype = ast_type_void;
+      AST *body = $6;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      $$ = NewAST(AST_LAMBDA, functype, body);
   }
 ;
 

@@ -90,6 +90,9 @@ typedef struct ir_bedata {
        the Spin->PASM wrapper code needs to use
     */
     Operand *asmaltname;
+
+    /* trampoline code for calling to another COG */
+    Operand *asmtrampoline;
     
     /* function header (mostly to make sure we collect comments
        at the right time */
