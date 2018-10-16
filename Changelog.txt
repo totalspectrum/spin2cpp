@@ -1,5 +1,7 @@
 Version 3.9.6
 - Added anonymous functions and closures to BASIC
+- Clean up properly after \ is used without an abort happening
+- abort now exits if there is no \ to catch it
 
 Version 3.9.5
 - Fixed stack allocation when HUB bss is removed (-O2 option)

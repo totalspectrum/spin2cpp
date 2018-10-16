@@ -48,10 +48,12 @@ Operand *putcogreg;
 static Operand *allocfunc;
 static Operand *copyfunc;
 static Operand *abortfunc;
-static Operand *catchfunc;
+static Operand *setjmpfunc;
+static Operand *abortcalled;
+static Operand *abortchain;
+
 Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
-static Operand *abortcalled;
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -241,8 +243,9 @@ ValidateAbortFuncs(void)
 {
     if (!abortfunc) {
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
-        catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
-        abortcalled = GetOneGlobal(REG_REG, "result2", 0);
+        setjmpfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
+        abortcalled = GetResultReg(1);
+        abortchain = GetOneGlobal(REG_REG, "abortchain", 0);
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
@@ -2916,7 +2919,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       labelend = NewCodeLabel();
       EmitMove(irl, arg1, stackptr);
       EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      EmitOp1(irl, OPC_CALL, catchfunc);
+      EmitOp1(irl, OPC_CALL, setjmpfunc);
       ir = EmitOp2(irl, OPC_CMP, abortcalled, NewImmediate(0));
       ir->flags |= FLAG_WZ;
       // if (abortcalled) {
@@ -2931,6 +2934,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       EmitMove(irl, tmp, CompileExpression(irl, expr->left, NULL));
       EmitLabel(irl, labelend);
       EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+      EmitMove(irl, abortchain, stacktop);
       return tmp;
       break;
   }
@@ -4161,7 +4165,6 @@ static const char *builtin_lmm_p1 =
  * more things to be saved in abort/catch
  */
 static const char *builtin_abortcode_p1 =
-    "abortchain long 0\n"
     "__setjmp\n"
     "    wrlong abortchain, arg1\n"
     "    mov abortchain, arg1\n"
@@ -4180,7 +4183,8 @@ static const char *builtin_abortcode_p1 =
     "    ret\n"
     "__abort\n"
     "    mov  result1, arg1\n"
-    "    mov  arg1, abortchain\n"
+    "    mov  arg1, abortchain wz\n"
+    " if_z jmp #cogexit\n"
     "    rdlong abortchain, arg1\n"
     "    add arg1, #4\n"
     "    rdlong pc, arg1\n"
