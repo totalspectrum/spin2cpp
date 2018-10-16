@@ -251,7 +251,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             const char *closure_name;
             Module *C;
             AST *closure_type;
-            closure_name = "__closure__";
+            closure_name = NewTemporaryVariable("__closure__");
             C = func->closure = NewModule(closure_name, LANG_BASIC);
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
             closure_type = NewAST(AST_OBJECT, closure_type, NULL);
