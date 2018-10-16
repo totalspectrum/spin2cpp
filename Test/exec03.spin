@@ -6,8 +6,9 @@ CON
 
 OBJ
   fds: "FullDuplexSerial"
-
-PUB demo | x,y,z,i
+  sa: "setabort.spin"
+  
+PUB demo | x,y,z,i,r
 
   fds.start(31, 30, 0, 115200)
 
@@ -53,7 +54,36 @@ PUB demo | x,y,z,i
   fds.str(string("multiple parameter test", 13, 10))
   info(shl64(i64($1234, $56789ABC), i64(0, 4)))
   info(add64(i64(0, $ffffffff), 0, 3))
+  fds.str(string("abort test", 13, 10))
+  r := satest1
+  if r
+    fds.str(string("aborted", 13, 10))
+  fds.str(string("abort test2", 13, 10))
+  r := \satest2
+  if r
+    fds.str(string("aborted", 13, 10))
+  else
+    fds.str(string("done", 13, 10))
+
   exit
+
+PUB satest1
+  result := \sa.setval(2)
+  fds.dec(result)
+  newline
+  result := \sa.incval(-2)
+  fds.dec(result)
+  newline
+  result := 0
+
+PUB satest2
+  result := sa.setval(3)
+  fds.dec(result)
+  newline
+  result := sa.incval(-3)
+  fds.dec(result)
+  newline
+  result := 0
 
 PUB i64(a, b): x,y
   x := a
