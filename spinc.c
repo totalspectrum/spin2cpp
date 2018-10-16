@@ -566,7 +566,7 @@ doPruneMethods(Module *P)
     for(;;) {
         pf = *oldptr;
         if (!pf) break;
-        if (pf->callSites == 0) {
+        if (pf->callSites == 0 && pf->used_as_ptr == 0) {
             *oldptr = pf->next; // remove this function
         } else {
             oldptr = &pf->next;
@@ -670,14 +670,20 @@ ProcessLanguage(int language, void (*func)(Module *))
 static void
 FixupCode(Module *P, int isBinary)
 {
-    Module *Q, *LastQ;
+    Module *Q, *LastQ, *subQ;
 
-    // append the global module to the list
+    // insert closures into the global list after their modules
+    // and append the global module to the list
     if (allparse)
     {
         LastQ = NULL;
         for (Q = allparse; Q; Q = Q->next) {
             LastQ = Q;
+            subQ = Q->closures;
+            if (subQ) {
+                subQ->next = Q->next;
+                Q->next = subQ;
+            }
         }
         LastQ->next = globalModule;
     }

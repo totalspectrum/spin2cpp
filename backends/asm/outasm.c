@@ -45,6 +45,8 @@ Operand *divfunc, *unsdivfunc;
 
 Operand *putcogreg;
 
+static Operand *allocfunc;
+static Operand *copyfunc;
 static Operand *abortfunc;
 static Operand *catchfunc;
 Operand *resultreg[MAX_TUPLE];
@@ -961,7 +963,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       }
       case  SYM_CLOSURE:
       {
-          return frameptr;
+          return FrameRef(0);
       }
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
@@ -1022,6 +1024,28 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       ERROR_UNKNOWN_SYMBOL(expr);
   }
   return GetOneGlobal(REG_LOCAL, IdentifierLocalName(func, name), 0);
+}
+
+static Operand *
+GetSystemFunction(const char *name)
+{
+    Symbol *sym;
+    Function *calledf;
+    sym = FindSymbol(&globalModule->objsyms, name);
+    if (!sym) {
+        ERROR(NULL, "Internal error could not find %s", name);
+        return mulfunc;
+    }
+    if (sym->type != SYM_FUNCTION) {
+        ERROR(NULL, "Internal error: %s is not a function", name);
+        return mulfunc;
+    }
+    calledf = (Function *)sym->val;
+    if (!calledf || !FuncData(calledf)) {
+        ERROR(NULL, "Internal error: %s not set up", name);
+        return mulfunc;
+    }
+    return FuncData(calledf)->asmname;
 }
 
 const char *
@@ -1174,6 +1198,32 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             }
         }
     }
+    if (func->closure) {
+        // need to copy the stack frame into the heap
+        Operand *framesize = NewImmediate(LocalSize(func));
+        Operand *tmp;
+        if (!allocfunc) {
+            allocfunc = GetSystemFunction("_gc_alloc_managed");
+        }
+        if (!copyfunc) {
+            copyfunc = GetSystemFunction("bytemove");
+        }
+        tmp = GetResultReg(5); // we know this won't be used in the system functions
+        // tmp = _gc_alloc_managed(framesize)
+        EmitMove(irl, GetArgReg(0), framesize);
+        EmitOp1(irl, OPC_CALL, allocfunc);
+        EmitMove(irl, tmp, GetResultReg(0));
+        // bytemove(tmp, frameptr, framesize)
+        EmitMove(irl, GetArgReg(0), tmp);
+        EmitMove(irl, GetArgReg(1), frameptr);
+        EmitMove(irl, GetArgReg(2), framesize);
+        EmitOp1(irl, OPC_CALL, copyfunc);
+        // frameptr = tmp
+        EmitMove(irl, frameptr, tmp);
+
+        // adjust stack pointer back
+        EmitOp2(irl, OPC_SUB, stackptr, framesize);
+    }
 }
 
 //
@@ -1316,7 +1366,9 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         PopList(irl, FuncData(func)->saveregs, func);
     }
     if (VARS_ON_STACK(func)) {
-        EmitMove(irl, stackptr, frameptr);
+        if (!func->closure) {
+            EmitMove(irl, stackptr, frameptr);
+        }
         EmitPop(irl, frameptr);
     }
     EmitLabel(irl, FuncData(func)->asmretname);

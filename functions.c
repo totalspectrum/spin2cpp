@@ -159,6 +159,24 @@ TranslateToExprList(AST *listholder)
     return head;
 }
 
+static void
+MarkSystemFuncUsed(const char *name)
+{
+    Symbol *sym;
+    Function *calledf;
+    sym = FindSymbol(&globalModule->objsyms, name);
+    if (!sym) {
+        ERROR(NULL, "Internal error could not find %s", name);
+        return;
+    }
+    if (sym->type != SYM_FUNCTION) {
+        ERROR(NULL, "Internal error: %s is not a function", name);
+        return;
+    }
+    calledf = (Function *)sym->val;
+    calledf->used_as_ptr = 1;
+}
+
 //
 // FIXME: someday we should implement scopes other 
 // than function scope
@@ -242,6 +260,11 @@ findLocalsAndDeclare(Function *func, AST *ast)
 
             C->closures = func->module->closures;
             func->module->closures = C;
+
+            // we have to mark the global bytemove and _gc_alloc_managed functions
+            // as in used
+            MarkSystemFuncUsed("_gc_alloc_managed");
+            MarkSystemFuncUsed("bytemove");
         }
         {
             AST *ftype = ast->left;
@@ -265,6 +288,21 @@ findLocalsAndDeclare(Function *func, AST *ast)
     }
     findLocalsAndDeclare(func, ast->left);
     findLocalsAndDeclare(func, ast->right);
+}
+
+static void
+AddClosureSymbol(Function *f, Module *P, AST *ident)
+{
+    AST *typ = NULL;
+    if (ident->kind == AST_DECLARE_VAR) {
+        typ = ident->left;
+        ident = ident->right;
+    }
+    if (ident->kind != AST_IDENTIFIER) {
+        ERROR(ident, "internal error in closure def");
+        return;
+    }
+    MaybeDeclareMemberVar(P, ident, typ);
 }
 
 static void
@@ -419,6 +457,19 @@ doDeclareFunction(AST *funcblock)
     /* declare any local variables in the function */
     findLocalsAndDeclare(fdef, body);
 
+    // copy the local definitions over to the closure
+    if (fdef->closure) {
+        AST *varlist;
+        if (fdef->numresults > 0) {
+            AddClosureSymbol(fdef, fdef->closure, fdef->resultexpr);
+        }
+        for (varlist = fdef->params; varlist; varlist = varlist->right) {
+            AddClosureSymbol(fdef, fdef->closure, varlist->left);
+        }
+        for (varlist = fdef->locals; varlist; varlist = varlist->right) {
+            AddClosureSymbol(fdef, fdef->closure, varlist->left);
+        }
+    }
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
     

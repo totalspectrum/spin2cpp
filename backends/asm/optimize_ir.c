@@ -264,6 +264,16 @@ bool IsHubDest(Operand *dst)
     }
 }
 
+bool MaybeHubDest(Operand *dst)
+{
+    switch (dst->kind) {
+    case IMM_COG_LABEL:
+        return false;
+    default:
+        return true;
+    }
+}
+
 Operand *
 JumpDest(IR *jmp)
 {
@@ -2551,7 +2561,7 @@ LoopCanBeFcached(IRList *irl, IR *root)
         while (ir != endjmp) {
             if (ir->opc == OPC_CALL) {
                 // no calls to hub memory!
-                if (IsHubDest(ir->dst)) {
+                if (MaybeHubDest(ir->dst)) {
                     return false;
                 }
             }
