@@ -1,4 +1,5 @@
 Version 3.9.6
+- Added anonymous functions and closures to BASIC
 
 Version 3.9.5
 - Fixed stack allocation when HUB bss is removed (-O2 option)
