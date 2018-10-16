@@ -1043,9 +1043,7 @@ VarName(AST *ast)
 static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *functype, int n)
 {
     if (IS_FAST_CALL(func)) {
-        char temp[20];
-        sprintf(temp, "arg%d", n+1);
-        return GetOneGlobal(REG_ARG, strdup(temp), 0);
+        return GetArgReg(n);
     } else {
         AST *astlist;
         AST *ast;
