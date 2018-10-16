@@ -27,6 +27,7 @@
 #define IS_FAST_CALL(f) ( (f == 0) || FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
+#define VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
 /* lists of instructions in hub and cog */
 static IRList cogcode;
 static IRList hubcode;
@@ -958,6 +959,10 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           HwReg *hw = sym->val;
           return GetOneGlobal(REG_HW, hw->cname, 0);
       }
+      case  SYM_CLOSURE:
+      {
+          return frameptr;
+      }
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
               /* do nothing, this is OK */
@@ -969,7 +974,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       case SYM_LOCALVAR:
       case SYM_PARAMETER:
       case SYM_RESULT:
-          if (IS_STACK_CALL(func)) {
+          if (VARS_ON_STACK(func)) {
               int offset = sym_offset(func, sym);
               if (offset >= 0) {
                   return FrameRef(offset);
@@ -1141,7 +1146,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
     Operand *dst;
     Operand *basedst;
     
-    if (IS_FAST_CALL(func)) {
+    if (!IS_STACK_CALL(func)) {
         //
         // move parameters into local registers
         //
@@ -1255,7 +1260,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     EmitLabel(irl, FuncData(func)->asmname);
 
     // set up frame pointer for stack call functions
-    if (IS_STACK_CALL(func)) {
+    if (VARS_ON_STACK(func)) {
         int localsize;
         //
         // adjust stack as necessary
@@ -1310,7 +1315,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         // pop off all local variables
         PopList(irl, FuncData(func)->saveregs, func);
     }
-    if (IS_STACK_CALL(func)) {
+    if (VARS_ON_STACK(func)) {
         EmitMove(irl, stackptr, frameptr);
         EmitPop(irl, frameptr);
     }
@@ -2146,7 +2151,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     offset = NULL;
     objaddr = NULL;
-    if (objsym && objsym->type == SYM_OBJECT) {
+    if (objsym && (objsym->type == SYM_OBJECT || objsym->type == SYM_CLOSURE)) {
         if (expr->kind == AST_METHODREF) {
             call = expr;
         } else {
@@ -3632,6 +3637,10 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
         Q = (Module *)subobj->d.ptr;
         VisitRecursive(irl, Q, func, visitval);
     }
+    // and for closures
+    for (Q = P->closures; Q; Q = Q->closures) {
+        VisitRecursive(irl, Q, func, visitval);
+    }
     current = save;
     curfunc = savecurf;
 }
@@ -3718,7 +3727,7 @@ AssignFuncNames(IRList *irl, Module *P)
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
-        if (f->local_address_taken) {
+        if (0 && f->local_address_taken) {
             FuncData(f)->convention = STACK_CALL;
         } else if (f->cog_code) {
             FuncData(f)->convention = FAST_CALL;
@@ -3733,7 +3742,7 @@ AssignFuncNames(IRList *irl, Module *P)
             FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
         }
-        if (f->is_recursive || IS_STACK_CALL(f)) {
+        if (f->is_recursive || VARS_ON_STACK(f)) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
         } else {

@@ -714,14 +714,14 @@ subdecl:
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(ast_type_void, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, $7, NULL, $1);
   }
   | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody eoln
   {
     AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
     AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(ast_type_void, 1, funcdef, $5, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, $5, NULL, $1);
   }
   ;
 
@@ -733,7 +733,7 @@ funcdecl:
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     AST *rettype = InferTypeFromName(name);
-    DeclareFunction(rettype, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
   }
   | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody eoln
   {
@@ -742,7 +742,7 @@ funcdecl:
     AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     AST *rettype = $7;
-    DeclareFunction(rettype, 1, funcdef, $9, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
   }
   ;
 

@@ -213,13 +213,13 @@ topelement:
   { DeclareObjects($2);
     $$ = current->objblock = AddToList(current->objblock, $2); }
   | SP_PUB funcdef funcbody
-    { DeclareFunction(SpinRetType($2), 1, $2, $3, NULL, $1); }
+    { DeclareFunction(current, SpinRetType($2), 1, $2, $3, NULL, $1); }
   | SP_PRI funcdef funcbody
-    { DeclareFunction(SpinRetType($2), 0, $2, $3, NULL, $1); }
+    { DeclareFunction(current, SpinRetType($2), 0, $2, $3, NULL, $1); }
   | SP_PUB annotation funcdef funcbody
-    { DeclareFunction(SpinRetType($3), 1, $3, $4, $2, $1); }
+    { DeclareFunction(current, SpinRetType($3), 1, $3, $4, $2, $1); }
   | SP_PRI annotation funcdef funcbody
-    { DeclareFunction(SpinRetType($3), 0, $3, $4, $2, $1); }
+    { DeclareFunction(current, SpinRetType($3), 0, $3, $4, $2, $1); }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;

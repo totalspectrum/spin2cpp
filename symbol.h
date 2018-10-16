@@ -25,6 +25,7 @@ typedef enum symtype {
     SYM_TEMPVAR,         /* temporary variable in function */
     SYM_LOCALLABEL,      /* label in inline assembly or function */
     SYM_TYPEDEF,         /* a type definition */
+    SYM_CLOSURE,         /* a function's closure object */
 } Symtype;
 
 typedef struct symbol {

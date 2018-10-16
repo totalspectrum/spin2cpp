@@ -383,13 +383,16 @@ AssignObjectOffsets(Module *P)
 static void
 ProcessModule(Module *P)
 {
+    Module *lastcurrent = current;
+
+    current = P;
     P->botcomment = GetComments();
 
     if (P->body) {
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
         AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-        DeclareFunction(ast_type_void, 1, funcdef, P->body, NULL, NULL);
+        DeclareFunction(P, ast_type_void, 1, funcdef, P->body, NULL, NULL);
     }
     
     /* now declare all the symbols that weren't already declared */
@@ -397,6 +400,12 @@ ProcessModule(Module *P)
     DeclareMemberVariables(P);
     DeclareLabels(P);
     DeclareFunctions(P);
+
+    /* recursively process closures */
+    if (P->closures) {
+        ProcessModule(P->closures);
+    }
+    current = lastcurrent;
 }
 
 /*

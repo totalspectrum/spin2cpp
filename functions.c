@@ -125,7 +125,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
  */
 
 void
-DeclareFunction(AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
+DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
 {
     AST *funcblock;
     AST *holder;
@@ -143,7 +143,7 @@ DeclareFunction(AST *rettype, int is_public, AST *funcdef, AST *body, AST *annot
     retinfoholder = NewAST(AST_RETURN, rettype, funcdecl->right);
     funcdecl->right = retinfoholder;
 
-    current->funcblock = AddToList(current->funcblock, funcblock);
+    P->funcblock = AddToList(P->funcblock, funcblock);
 }
 
 static AST *
@@ -225,6 +225,39 @@ findLocalsAndDeclare(Function *func, AST *ast)
             *ast = *seq;
         } else {
             AstNullify(ast);
+        }
+        return;
+    case AST_LAMBDA:
+        // we will need a closure for this function
+        if (!func->closure) {
+            const char *closure_name;
+            Module *C;
+            AST *closure_type;
+            closure_name = "__closure__";
+            C = func->closure = NewModule(closure_name, LANG_BASIC);
+            closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
+            closure_type = NewAST(AST_OBJECT, closure_type, NULL);
+            closure_type->d.ptr = func->closure;
+            AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type);
+
+            C->closures = func->module->closures;
+            func->module->closures = C;
+        }
+        {
+            AST *ftype = ast->left;
+            AST *fbody = ast->right;
+            AST *name = AstIdentifier(NewTemporaryVariable("func_"));
+            AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+            AST *funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
+            AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+            AST *ptrref;
+            
+            // declare the lambda function
+            DeclareFunction(func->closure, ftype->left, 1, funcdef, fbody, NULL, NULL);
+            // now turn the lambda into a pointer deref
+            ptrref = NewAST(AST_METHODREF, AstIdentifier(func->closure->classname), name);
+            ptrref = NewAST(AST_ADDROF, ptrref, NULL);
+            *ast = *ptrref;
         }
         return;
     default:

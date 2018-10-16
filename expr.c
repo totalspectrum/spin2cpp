@@ -29,7 +29,7 @@ Module *
 GetObjectPtr(Symbol *sym)
 {
     AST *oval;
-    if (sym->type != SYM_OBJECT) {
+    if (sym->type != SYM_OBJECT && sym->type != SYM_CLOSURE) {
         fprintf(stderr, "internal error, not an object symbol\n");
         abort();
     }
@@ -150,6 +150,7 @@ LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
         objstate = GetClassPtr(symtype);
         break;
     case SYM_OBJECT:
+    case SYM_CLOSURE:
         objstate = GetObjectPtr(obj);
         break;
     default:
@@ -171,7 +172,7 @@ ObjClassName(Symbol *obj)
 {
     Module *objstate;
 
-    if (obj->type != SYM_OBJECT) {
+    if (obj->type != SYM_OBJECT && obj->type != SYM_CLOSURE) {
         ERROR(NULL, "expected an object");
         return NULL;
     }
@@ -1605,6 +1606,7 @@ IsArrayOrPointerSymbol(Symbol *sym)
         type = (AST *)sym->val;
         break;
     case SYM_OBJECT:
+    case SYM_CLOSURE:
         type = (AST *)sym->val;
         return type->left && type->left->kind == AST_ARRAYDECL;
     case SYM_LABEL:
@@ -1641,6 +1643,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
         if (!objsym) return NULL;
         switch (objsym->type) {
         case SYM_OBJECT:
+        case SYM_CLOSURE:
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
@@ -1905,6 +1908,7 @@ ExprType(AST *expr)
         case SYM_PARAMETER:
             return (AST *)sym->val;
         case SYM_OBJECT:
+        case SYM_CLOSURE:
             return (AST *)sym->val;
         case SYM_FUNCTION:
             return ((Function *)sym->val)->overalltype;

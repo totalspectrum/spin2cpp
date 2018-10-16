@@ -292,10 +292,18 @@ AST *
 NewObject(AST *identifier, AST *string)
 {
     AST *ast;
-    const char *filename = string->d.string;
+    const char *filename;
+
+    if (string) {
+        filename = string->d.string;
+    } else {
+        filename = NULL;
+    }
 
     ast = NewAST(AST_OBJECT, identifier, NULL);
-    ast->d.ptr = ParseFile(filename);
+    if (filename) {
+        ast->d.ptr = ParseFile(filename);
+    }
     return ast;
 }
 

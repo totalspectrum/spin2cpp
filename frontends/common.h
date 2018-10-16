@@ -220,7 +220,9 @@ typedef struct funcdef {
 
     /* back-end specific data */
     void *bedata;
-
+    
+    /* struct to hold closure data */
+    Module *closure;
 } Function;
 
 /* structure describing a builtin function */
@@ -297,6 +299,9 @@ struct modulestate {
     /* "body" (statements outside any function) */
     /* not all languages support this */
     AST *body;
+
+    /* closures/classes that are associated with this module and need processing */
+    struct modulestate *closures;
 };
 
 /* maximum number of items in a multiple assignment */
@@ -340,7 +345,7 @@ void DeclareLabels(Module *);
  "comment" is the list of comments preceding this function
  "rettype" is the return type of the function, if it is known, or NULL
 */
-void DeclareFunction(AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
+void DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 void DeclareToplevelAnnotation(AST *annotation);
 
 /* functions for printing data into a flexbuf */
