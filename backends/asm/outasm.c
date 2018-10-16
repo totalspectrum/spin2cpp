@@ -13,6 +13,9 @@
 #include "spinc.h"
 #include "outasm.h"
 
+#define MAX_COGSPIN_ARGS 8
+#define MAX_ARG_REGISTER 32
+
 #define SETJMP_BUF_SIZE (8*LONG_SIZE)
 
 #define ENTRYNAME "entry"
@@ -43,9 +46,8 @@ Operand *putcogreg;
 
 static Operand *abortfunc;
 static Operand *catchfunc;
-static Operand *arg1;
-static Operand *arg2;
 Operand *resultreg[MAX_TUPLE];
+Operand *argreg[MAX_ARG_REGISTER];
 static Operand *abortcalled;
 
 static Operand *nextlabel;
@@ -238,9 +240,6 @@ ValidateAbortFuncs(void)
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         catchfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
         abortcalled = GetOneGlobal(REG_REG, "result2", 0);
-        if (!arg1) {
-            arg1 = GetOneGlobal(REG_ARG, "arg1", 0);
-        }
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
@@ -305,6 +304,20 @@ Operand *GetResultReg(int n)
         resultreg[n] = GetOneGlobal(REG_REG, strdup(rvalname), 0);
     }
     return resultreg[n];
+}
+
+Operand *GetArgReg(int n)
+{
+    static char rvalname[32];
+    if (n < 0 || n >= MAX_ARG_REGISTER) {
+        ERROR(NULL, "Internal error exceeded arg register limit");
+        return NULL;
+    }
+    if (!argreg[n]) {
+        sprintf(rvalname, "arg%d", n+1);
+        argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
+    }
+    return argreg[n];
 }
 
 Instruction *
@@ -2838,6 +2851,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *tmp;
       Operand *labelskip, *labelend;
+      Operand *arg1 = GetArgReg(0);
       IR *ir;
       
       ValidateAbortFuncs();
@@ -3344,7 +3358,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
         ValidateAbortFuncs();
         op = CompileExpression(irl, retval, NULL);
-        EmitMove(irl, arg1, op);
+        EmitMove(irl, GetArgReg(0), op);
         EmitOp1(irl, OPC_CALL, abortfunc);
         break;
     case AST_LABEL:
@@ -4340,7 +4354,6 @@ extern Module *globalModule;
  *         call result1 using stackcall
  *         jmp  #exit
  */
-#define MAX_COGSPIN_ARGS 8
 
 static void
 EmitMain_P1(IRList *irl, Module *P)
@@ -4352,19 +4365,12 @@ EmitMain_P1(IRList *irl, Module *P)
     Operand *const4 = NewImmediate(4);
     Operand *pc = NewOperand(REG_REG, "pc", 0);
     Operand *objptr = NewOperand(REG_REG, "objptr", 0);
-    Operand *arg[MAX_COGSPIN_ARGS];
+    Operand *arg1;
     int maxArgs = max_coginit_args;
     int i;
     
     // always need at least arg1
-    arg1 = arg[0] = GetOneGlobal(REG_ARG, "arg1", 0);
-    arg2 = arg[1] = GetOneGlobal(REG_ARG, "arg2", 0);
-
-    for (i = 2; i < maxArgs; i++) {
-        char temp[20];
-        sprintf(temp, "arg%d", i+1);
-        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
-    }
+    arg1 = GetArgReg(0);
 
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
@@ -4417,7 +4423,7 @@ EmitMain_P1(IRList *irl, Module *P)
         EmitOp2(irl, OPC_ADD, stackptr, const4);
         // now pull operands off the stack
         for (i = 0; i < maxArgs; i++) {
-            EmitMove(irl, arg[i], stacktop);
+            EmitMove(irl, GetArgReg(i), stacktop);
             if (i == maxArgs-1) {
                 int off = (maxArgs-1) * 4;
                 if (off > 0) {
@@ -4440,19 +4446,9 @@ EmitMain_P2(IRList *irl, Module *P)
     Operand *spinlabel;
     Operand *const4 = NewImmediate(4);
     Operand *result1 = GetResultReg(0);
-    Operand *arg[MAX_COGSPIN_ARGS];
+    Operand *arg1 = GetArgReg(0);
     int maxArgs = max_coginit_args;
     int i;
-
-    // always need at least arg1
-    arg1 = arg[0] = GetOneGlobal(REG_ARG, "arg1", 0);
-    arg2 = arg[1] = GetOneGlobal(REG_ARG, "arg2", 0);
-
-    for (i = 2; i < maxArgs; i++) {
-        char temp[20];
-        sprintf(temp, "arg%d", i+1);
-        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
-    }
 
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
@@ -4494,7 +4490,7 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp2(irl, OPC_ADD, stackptr, const4);
     // now pull operands off the stack
     for (i = 0; i < maxArgs; i++) {
-        EmitMove(irl, arg[i], stacktop);
+        EmitMove(irl, GetArgReg(i), stacktop);
         if (i == maxArgs-1) {
             int off = maxArgs * 4;
             if (off > 0) {
@@ -4517,28 +4513,20 @@ void
 EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
 {
     IR *ir;
-    Operand *arg[MAX_COGSPIN_ARGS];
     Operand *par;
     Operand *const4 = NewImmediate(4);
     Operand *mboxptr = GetOneGlobal(REG_REG, "mboxptr", 0);
     Operand *mboxcmd = GetOneGlobal(REG_REG, "mboxcmd", 0);
     Operand *waitloop;
     Operand *pasm__init;
+    Operand *arg1 = GetArgReg(0);
+    Operand *arg2 = GetArgReg(1);
     
     int i;
     if (maxArgs > MAX_COGSPIN_ARGS) {
         ERROR(NULL, ".cog.spin functions may not have more than %d arguments", MAX_COGSPIN_ARGS);
         maxArgs = MAX_COGSPIN_ARGS;
     }
-    for (i = 0; i < maxArgs; i++) {
-        char temp[20];
-        sprintf(temp, "arg%d", i+1);
-        arg[i] = GetOneGlobal(REG_ARG, strdup(temp), 0);
-    }
-    // always have at least 2 arguments
-    arg1 = arg[0];
-    arg2 = arg[1];
-
     if (gl_p2) {
         stackptr = GetOneGlobal(REG_HW, "ptra", 0);
         objbase = GetOneGlobal(REG_REG, "objptr", 0);
@@ -4572,7 +4560,7 @@ EmitMain_CogSpin(IRList *irl, Module *p, int maxArgs, int maxResults)
     EmitJump(irl, COND_EQ, waitloop);
     for (i = 0; i < maxArgs; i++) {
         EmitOp2(irl, OPC_ADD, mboxptr, const4);
-        EmitOp2(irl, OPC_RDLONG, arg[i], mboxptr);
+        EmitOp2(irl, OPC_RDLONG, GetArgReg(i), mboxptr);
     }
     if (maxArgs > 1) {
         EmitOp2(irl, OPC_SUB, mboxptr, NewImmediate((maxArgs-1)*4));

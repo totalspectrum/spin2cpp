@@ -150,4 +150,8 @@ Operand *GetLabelFromSymbol(AST *where, const char *name);
 // find the variable name in a variable or AST_DECLARE_VAR tree
 const char *VarName(AST *ast);
 
+// get operands for argument and result registers
+Operand *GetArgReg(int n);
+Operand *GetResultReg(int n);
+
 #endif

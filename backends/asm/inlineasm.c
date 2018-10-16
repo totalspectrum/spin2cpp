@@ -33,6 +33,16 @@ extern Operand *stackptr;
 extern void ValidateObjbase(void);
 extern Operand *objbase;
 extern Operand *resultreg[];
+extern Operand *arg1, *arg2;
+
+static int isargdigit(int c)
+{
+    if (c >= '1' && c <= '9') {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 //
 // compile an expression as an inine asm operand
@@ -48,19 +58,23 @@ CompileInlineOperand(IRList *irl, AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
 	 Symbol *sym = LookupSymbol(expr->d.string);
 	 if (!sym) {
+             const char *name = expr->d.string;
              // check for special symbols "objptr" and "sp"
-             if (!strcmp(expr->d.string, "objptr")) {
+             if (!strcmp(name, "objptr")) {
                  ValidateObjbase();
                  return objbase;
              }
-             if (!strcmp(expr->d.string, "sp")) {
+             if (!strcmp(name, "sp")) {
                  ValidateStackptr();
                  return stackptr;
              }
-             if (!strcmp(expr->d.string, "result1")) {
-                 return resultreg[0];
+             if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
+                 return GetResultReg(name[6] - '1');
              }
-             ERROR(expr, "Undefined symbol %s", expr->d.string);
+             if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && !name[4]) {
+                 return GetArgReg(name[3] - '1');
+             }
+             ERROR(expr, "Undefined symbol %s", name);
              return NewImmediate(0);
 	 }
 	 switch(sym->type) {

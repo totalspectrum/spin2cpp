@@ -111,7 +111,6 @@ pri _basic_close(h) | ptr, closef, f, o
   f := long[closef+4]
   
   asm
-    add sp, #4
     mov ptr, objptr
     mov objptr, o
     call f
@@ -129,11 +128,9 @@ pri _basic_print_char(h, c) | saveobj, t, f, o
     _tx(c)
     return
   asm
-    add  sp, #8
-    wrlong c, sp
-    sub  sp, #8
     mov saveobj, objptr
     mov objptr, o
+    mov arg1, c
     call f
     mov objptr, saveobj
   endasm
@@ -382,7 +379,6 @@ pri _basic_get_char(n) | t, o, f, saveobj
   if f == 0
     return _rx
   asm
-    add sp, #4
     mov saveobj, objptr
     mov objptr, o
     call f
