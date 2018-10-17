@@ -49,7 +49,8 @@ static Operand *allocfunc;
 static Operand *copyfunc;
 static Operand *abortfunc;
 static Operand *setjmpfunc;
-static Operand *abortcalled;
+static Operand *abortresult;
+static Operand *abortcaught;
 static Operand *abortchain;
 
 Operand *resultreg[MAX_TUPLE];
@@ -244,8 +245,9 @@ ValidateAbortFuncs(void)
     if (!abortfunc) {
         abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
         setjmpfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
-        abortcalled = GetResultReg(1);
         abortchain = GetOneGlobal(REG_REG, "abortchain", 0);
+        abortcaught = GetResultReg(0);
+        abortresult = SizedHubMemRef(LONG_SIZE, abortchain, 0);
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
@@ -2906,37 +2908,27 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_MASKMOVE:
       return CompileMaskMove(irl, expr);
   case AST_CATCH:
+      ERROR(expr, "Internal error, should not see raw CATCH");
+      return NewImmediate(0);
+  case AST_SETJMP:
+      ValidateAbortFuncs();
+      EmitMove(irl, GetArgReg(0), abortchain);
+      EmitOp1(irl, OPC_CALL, setjmpfunc);
+      return abortcaught;
+  case AST_CATCHRESULT:
+      ValidateAbortFuncs();
+      return abortresult;
+  case AST_TRYENV:
   {
       Operand *tmp;
-      Operand *labelskip, *labelend;
-      Operand *arg1 = GetArgReg(0);
-      IR *ir;
-      
       ValidateAbortFuncs();
-      // save current state on the stack
-      tmp = NewFunctionTempRegister();
-      labelskip = NewCodeLabel();
-      labelend = NewCodeLabel();
-      EmitMove(irl, arg1, stackptr);
+      EmitPush(irl, abortchain);
+      EmitMove(irl, abortchain, stackptr);
       EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      EmitOp1(irl, OPC_CALL, setjmpfunc);
-      ir = EmitOp2(irl, OPC_CMP, abortcalled, NewImmediate(0));
-      ir->flags |= FLAG_WZ;
-      // if (abortcalled) {
-      //   result := result1
-      // } else {
-      //   result := compile(expr->left)
-      // }
-      EmitJump(irl, COND_EQ, labelskip);
-      EmitMove(irl, tmp, GetResultReg(0));
-      EmitJump(irl, COND_TRUE, labelend);
-      EmitLabel(irl, labelskip);
-      EmitMove(irl, tmp, CompileExpression(irl, expr->left, NULL));
-      EmitLabel(irl, labelend);
+      tmp = CompileExpression(irl, expr->left, NULL);
       EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-      EmitMove(irl, abortchain, stacktop);
+      EmitPop(irl, abortchain);
       return tmp;
-      break;
   }
   case AST_ISBETWEEN:
   {
@@ -3406,7 +3398,7 @@ static void CompileStatement(IRList *irl, AST *ast)
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
 	break;
-    case AST_ABORT:
+    case AST_THROW:
         EmitDebugComment(irl, ast);
         retval = ast->left;
         if (!retval) {
@@ -4166,9 +4158,8 @@ static const char *builtin_lmm_p1 =
  */
 static const char *builtin_abortcode_p1 =
     "__setjmp\n"
-    "    wrlong abortchain, arg1\n"
     "    mov abortchain, arg1\n"
-    "    add arg1, #4\n"
+    "    add arg1, #4\n"  /* skip over thrown error value */
     "    wrlong pc, arg1\n"
     "    add arg1, #4\n"
     "    wrlong sp, arg1\n"
@@ -4178,25 +4169,24 @@ static const char *builtin_abortcode_p1 =
     "    wrlong objptr, arg1\n"
     "    add arg1, #4\n"
     "    wrlong __setjmp_ret, arg1\n"
-    "    mov result2, #0\n"
+    "    mov result1, #0\n"
     "__setjmp_ret\n"
     "    ret\n"
     "__abort\n"
-    "    mov  result1, arg1\n"
-    "    mov  arg1, abortchain wz\n"
+    "    mov  result1, abortchain wz\n"
     " if_z jmp #cogexit\n"
-    "    rdlong abortchain, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong pc, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong sp, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong fp, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong objptr, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong __abort_ret, arg1\n"
-    "    mov result2, #1\n"
+    "    wrlong arg1, result1\n"
+    "    add result1, #4\n"
+    "    rdlong pc, result1\n"
+    "    add result1, #4\n"
+    "    rdlong sp, result1\n"
+    "    add result1, #4\n"
+    "    rdlong fp, result1\n"
+    "    add result1, #4\n"
+    "    rdlong objptr, result1\n"
+    "    add result1, #4\n"
+    "    rdlong __abort_ret, result1\n"
+    "    mov result1, #1\n"
     "__abort_ret\n"
     "    ret\n"
     ;

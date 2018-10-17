@@ -1154,7 +1154,7 @@ CheckRetStatement(Function *func, AST *ast)
         }
         sawreturn = 1;
         break;
-    case AST_ABORT:
+    case AST_THROW:
         if (ast->left) {
             (void)CheckRetStatement(func, ast->left);
             SetFunctionReturnType(func, ForceExprType(ast->left));

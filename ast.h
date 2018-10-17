@@ -104,7 +104,7 @@ enum astkind {
     AST_TOFLOAT,
 
     AST_FILE = 64,
-    AST_ABORT,
+    AST_THROW,
     AST_CATCH,
     AST_LOOKEXPR,
 
@@ -169,6 +169,9 @@ enum astkind {
     AST_GLOBALVARS,
 
     AST_LAMBDA = 116,
+    AST_SETJMP,
+    AST_TRYENV,
+    AST_CATCHRESULT,
 };
 
 /* forward reference */

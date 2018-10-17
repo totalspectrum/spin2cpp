@@ -592,7 +592,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         }
         flexbuf_printf(f, ";"); PrintNewline(f);
         break;
-    case AST_ABORT:
+    case AST_THROW:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cif (!abortChain__) abort();", indent, ' ');
         PrintNewline(f);

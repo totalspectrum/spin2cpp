@@ -355,8 +355,20 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, level);
         break;
     case AST_RETURN:
-    case AST_ABORT:
+    case AST_THROW:
         doSpinTransform(&ast->left, 0);
+        break;
+    case AST_CATCH:
+        doSpinTransform(&ast->left, level);
+        *astptr = ast = NewAST(AST_TRYENV,
+                               NewAST(AST_CONDRESULT,
+                                      AstOperator(K_EQ,
+                                                  NewAST(AST_SETJMP, NULL, NULL),
+                                                  AstInteger(0)),
+                                      NewAST(AST_THENELSE,
+                                             ast->left,
+                                             NewAST(AST_CATCHRESULT, NULL, NULL))),
+                               NULL);
         break;
     case AST_IF:
     case AST_WHILE:

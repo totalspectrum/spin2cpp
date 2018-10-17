@@ -10,7 +10,7 @@ AbortHook__ *abortChain__ __attribute__((common));
 
 int32_t test072::Top(int32_t X)
 {
-  return __extension__({ AbortHook__ *stack__ = abortChain__, here__; int32_t tmp__; abortChain__ = &here__; if (setjmp(here__.jmp) == 0) tmp__ = Sub1(X); else tmp__ = abortChain__->val; abortChain__ = stack__; tmp__; });
+  return __extension__({ AbortHook__ *stack__ = abortChain__, here__; int32_t tmp__; abortChain__ = &here__; tmp__ = ((setjmp(abortChain__->jmp) == 0) ? Sub1(X) : abortChain__->val); abortChain__ = stack__; tmp__; });
 }
 
 int32_t test072::Sub1(int32_t X)

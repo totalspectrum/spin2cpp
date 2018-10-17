@@ -207,6 +207,7 @@ AST *AstCharItem(int c)
 %token BAS_STRUCT     "struct"
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
+%token BAS_THROW      "throw"
 %token BAS_TO         "to"
 %token BAS_TRY        "try"
 %token BAS_TYPE       "type"

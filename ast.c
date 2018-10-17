@@ -700,7 +700,7 @@ AstAssignList(AST *dest, AST *expr, AST *comment)
 AST *
 AstAbort(AST *expr, AST *comment)
 {
-    return NewCommentedAST(AST_ABORT, expr, NULL, comment);
+    return NewCommentedAST(AST_THROW, expr, NULL, comment);
 }
 
 AST *

@@ -826,7 +826,8 @@ SetCppFlags(CppModData *bedata, AST *ast)
         bedata->needsYield = 1;
         break;
     case AST_CATCH:
-    case AST_ABORT:
+    case AST_THROW:
+    case AST_TRYENV:
         bedata->needsAbortdef = 1;
         bedata->needsStdlib = 1;
         break;

@@ -1196,6 +1196,7 @@ struct reservedword basic_keywords[] = {
   { "sub", BAS_SUB },
   { "subroutine", BAS_SUB },
   { "then", BAS_THEN },
+  { "throw", BAS_THROW },
   { "to", BAS_TO },
   { "try", BAS_TRY },
   { "type", BAS_TYPE },
