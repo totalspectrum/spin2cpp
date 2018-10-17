@@ -1502,7 +1502,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         flexbuf_printf(f, "%s tmp__; abortChain__ = &here__; ", gl_intstring);
         flexbuf_printf(f, "if (setjmp(here__.jmp) == 0) tmp__ = ");
         PrintExpr(f, expr->left, PRINTEXPR_DEFAULT);
-        flexbuf_printf(f, "; else tmp__ = here__.val; abortChain__ = stack__; tmp__; })");
+        flexbuf_printf(f, "; else tmp__ = abortChain__->val; abortChain__ = stack__; tmp__; })");
         break;
     case AST_TRUNC:
     case AST_ROUND:
