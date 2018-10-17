@@ -74,7 +74,11 @@ Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 
+// find expression type relative to current function
 AST *ExprType(AST *ast);
+
+// find expression type relative to some table
+AST *ExprTypeRelative(SymbolTable *table, AST *ast);
 
 // the type underlying an array or pointer
 AST *BaseType(AST *ast);

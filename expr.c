@@ -1844,12 +1844,24 @@ GetFunctionReturnType(Function *f)
     return f->overalltype->left;
 }
 
+AST *
+ExprType(AST *expr)
+{
+    SymbolTable *table;
+    if (curfunc) {
+        table = &curfunc->localsyms;
+    } else {
+        table = &current->objsyms;
+    }
+    return ExprTypeRelative(table, expr);
+}
+
 /*
  * figure out an expression's type
  * returns NULL if we can't deduce it
  */
 AST *
-ExprType(AST *expr)
+ExprTypeRelative(SymbolTable *table, AST *expr)
 {
     AST *sub;
 
@@ -1881,12 +1893,17 @@ ExprType(AST *expr)
         return expr->left; 
     case AST_ADDROF:
     case AST_ABSADDROF:
-        sub = ExprType(expr->left);
+        /* if expr->right is not NULL, then it's the final type */
+        if (expr->right) {
+            return expr->right;
+        } else {
+            sub = ExprTypeRelative(table, expr->left);
+        }
         if (!sub) sub= ast_type_generic;
         return NewAST(AST_PTRTYPE, sub, NULL);
     case AST_IDENTIFIER:
     {
-        Symbol *sym = LookupSymbol(expr->d.string);
+        Symbol *sym = LookupSymbolInTable(table, expr->d.string);
         Label *lab;
         AST *typ;
         if (!sym) return NULL;
@@ -1917,7 +1934,7 @@ ExprType(AST *expr)
         }            
     }
     case AST_ARRAYREF:
-        sub = ExprType(expr->left);
+        sub = ExprTypeRelative(table, expr->left);
         if (!sub) return NULL;
         if (sub->kind == AST_OBJECT) {
             // HACK for now: object arrays are declared funny
@@ -1959,7 +1976,7 @@ ExprType(AST *expr)
         const char *methodname;
         Function *func;
         
-        objtype = BaseType(ExprType(objref));
+        objtype = BaseType(ExprTypeRelative(table, objref));
         if (!objtype || objtype->kind != AST_OBJECT) {
             ERROR(expr, "Expecting object");
             return NULL;
@@ -1994,8 +2011,8 @@ ExprType(AST *expr)
         case '-':
         case K_INCREMENT:
         case K_DECREMENT:
-            ltype = ExprType(expr->left);
-            rtype = ExprType(expr->right);
+            ltype = ExprTypeRelative(table, expr->left);
+            rtype = ExprTypeRelative(table, expr->right);
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
@@ -2019,8 +2036,8 @@ ExprType(AST *expr)
         case '/':
         case K_ABS:
         case K_SQRT:
-            ltype = ExprType(expr->left);
-            rtype = ExprType(expr->right);
+            ltype = ExprTypeRelative(table, expr->left);
+            rtype = ExprTypeRelative(table, expr->right);
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
@@ -2047,7 +2064,7 @@ ExprType(AST *expr)
                 expr = expr->left;
             }
         }
-        return ExprType(expr);
+        return ExprTypeRelative(table, expr);
     }
     case AST_NEW:
         return expr->left;

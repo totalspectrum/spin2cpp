@@ -5,10 +5,15 @@
  *
  * code for handling functions
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "spinc.h"
+
+/* forward declaration */
+static int InferTypesStmt(AST *);
+static int InferTypesExpr(AST *expr, AST *expectedType);
 
 /*
  * how many items will this expression put on the stack?
@@ -178,6 +183,42 @@ MarkSystemFuncUsed(const char *name)
 }
 
 //
+// try to infer the return type from a lambda expression
+//
+static AST *
+GuessLambdaReturnType(AST *params, AST *body)
+{
+    AST *expr;
+    AST *r;
+    
+    if (body->kind == AST_STMTLIST) {
+        if (body->right != NULL)
+            return NULL;
+        body = body->left;
+    }
+    if (body->kind == AST_COMMENTEDNODE) {
+        body = body->left;
+    }
+    if (body->kind != AST_RETURN) {
+        return NULL;
+    }
+    expr = body->left;
+    if (!expr) {
+        return NULL;
+    }
+    // HACK: temporarily declare the parameters as symbols
+    {
+        SymbolTable *table = calloc(1, sizeof(SymbolTable));
+        table->next = &curfunc->localsyms;
+        EnterVars(SYM_PARAMETER, table, NULL, params, 0);
+        
+        r = ExprTypeRelative(table, expr);
+        free(table);
+    }
+    return r;
+}
+
+//
 // FIXME: someday we should implement scopes other 
 // than function scope
 //
@@ -213,6 +254,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 seq = AddToList(seq, NewAST(AST_SEQUENCE, ident, NULL));
                 expr = ident->right;
                 ident = ident->left;
+                // scan for lambdas?
+                findLocalsAndDeclare(func, expr);
             }
             if (ident->kind == AST_ARRAYDECL) {
                 name = ident->left;
@@ -275,13 +318,21 @@ findLocalsAndDeclare(Function *func, AST *ast)
             AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
             AST *ptrref;
             
+            // check for the return type; we may have to infer this
+            if (!ftype->left) {
+                ftype->left = GuessLambdaReturnType(ftype->right, fbody);
+            }
             // declare the lambda function
             DeclareFunction(func->closure, ftype->left, 1, funcdef, fbody, NULL, NULL);
             // now turn the lambda into a pointer deref
             ptrref = NewAST(AST_METHODREF, AstIdentifier(func->closure->classname), name);
-            ptrref = NewAST(AST_ADDROF, ptrref, NULL);
+            // AST_ADDROF can allow a type on the right, which will help
+            // ExprType() to avoid having to evaluate the ADDROF on an as
+            // yet partially defined function
+            ptrref = NewAST(AST_ADDROF, ptrref, ftype);
             *ast = *ptrref;
         }
+        // do *not* recurse into sub-parts of the lambda!
         return;
     default:
         break;
@@ -1322,10 +1373,6 @@ ProcessFuncs(Module *P)
         }
     }
 }
-
-/* forward declaration */
-static int InferTypesStmt(AST *);
-static int InferTypesExpr(AST *expr, AST *expectedType);
 
 /*
  * do type inference on a statement list
