@@ -1874,6 +1874,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     case AST_ISBETWEEN:
         return ast_type_long;
     case AST_BITVALUE:
+    case AST_CATCHRESULT:
         return ast_type_generic;
     case AST_FLOAT:
     case AST_TRUNC:

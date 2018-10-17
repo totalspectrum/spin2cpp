@@ -24,7 +24,21 @@ for i = 1 to 5
   printer(i)
   stepper
 next
-print "done"
+print "done funcs"
+
+'' now test throw/catch
+dim sa as class using "throwtest.bas"
+dim err as string
+
+try
+  print sa.setval(4)
+  print sa.incval(-2)
+  print sa.incval(-2)
+  print sa.incval(-2)
+catch err
+  print "caught error "; err
+end try
+print "done try; val = "; sa.getval()
 
 ''
 '' send the magic propload status code

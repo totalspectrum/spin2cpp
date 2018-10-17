@@ -58,6 +58,7 @@ as
 asm
 byte
 case
+catch
 class
 close
 continue
@@ -104,7 +105,9 @@ sqrt
 step
 sub
 then
+throw
 to
+try
 type
 ubyte
 uinteger
@@ -462,6 +465,10 @@ A signed 8 bit integer, occupying one byte of computer memory. The unsigned vers
 ### CASE
 
 Used in a `select` statement. Not implemented yet.
+
+### CATCH
+
+Used in a `try` statement to indicate the start of an error handling block.
 
 ### CHR$
 
@@ -1025,9 +1032,39 @@ will print 2, 4, 6, and 8 on separate lines.
 
 Introduces a multi-line series of statements for an `if` statement. See IF for details.
 
+### THROW
+
+Throws an error which may be caught by a caller's `try`/`catch` block. If none of our callers has established a `try` / `catch` block, the program is ended.
+
+The argument to `throw` may be of any type. Programmers should beware of mixing different types, as the `try` / `catch` block may need to know what type of value it should expect to receive.
+
+Example:
+```
+  if n < 0 then
+    throw "illegal negative value"
+  endif
+```
+
 ### TO
 
 A syntactical element typically used for giving ranges of items.
+
+### TRY
+
+Example:
+```
+  dim errmsg as string
+  try
+    ' run sub1, sub2, then sub3. If any one of them
+    ' throws an error, we will immediately stop execution
+    ' and jump to the catch block
+    sub1
+    sub2
+    sub3
+  catch errmsg
+    print "a subroutine reports error: " errmsg
+  end try
+```
 
 ### TYPE
 

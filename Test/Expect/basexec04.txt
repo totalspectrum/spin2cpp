@@ -8,4 +8,8 @@ try2: 3
 try2: 5
 try2: 7
 try2: 9
-done
+done funcs
+4
+2
+caught error cannot set value to 0
+done try; val = 2

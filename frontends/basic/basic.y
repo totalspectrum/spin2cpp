@@ -326,23 +326,27 @@ nonemptystatement:
   | BAS_PRINT '#' expr
     { $$ = NewAST(AST_PRINT, AstCharItem('\n'), $3); }
   | BAS_PRINT '#' expr ',' printlist
-    { $$ = NewAST(AST_PRINT, $5, $3); }
+    { $$ = NewCommentedAST(AST_PRINT, $5, $3, $1); }
   | BAS_PUT expr eoln
-    { $$ = NewAST(AST_PRINT,
+    { $$ = NewCommentedAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
-                  NULL); }
+                           NULL, $1); }
   | BAS_OPEN expr BAS_AS '#' expr
     {
-        $$ = NewAST(AST_FUNCCALL,
+        $$ = NewCommentedAST(AST_FUNCCALL,
                 AstIdentifier("_basic_open"),
                 NewAST(AST_EXPRLIST, $5,
-                       NewAST(AST_EXPRLIST, $2, NULL)));
+                       NewAST(AST_EXPRLIST, $2, NULL)), $1);
     }
   | BAS_CLOSE '#' expr
     {
-        $$ = NewAST(AST_FUNCCALL,
+        $$ = NewCommentedAST(AST_FUNCCALL,
                     AstIdentifier("_basic_close"),
-                    NewAST(AST_EXPRLIST, $3, NULL));
+                             NewAST(AST_EXPRLIST, $3, NULL), $1);
+    }
+  | BAS_THROW expr
+    {
+        $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);
     }
   | ifstmt
     { $$ = $1; }
@@ -353,6 +357,8 @@ nonemptystatement:
   | forstmt
     { $$ = $1; }
   | asmstmt
+    { $$ = $1; }
+  | trycatchstmt
     { $$ = $1; }
 ;
 
@@ -498,6 +504,32 @@ optstep:
     { $$ = AstInteger(1); }
   | BAS_STEP expr
     { $$ = $2; }
+;
+
+trycatchstmt:
+  BAS_TRY eoln statementlist BAS_CATCH identifier eoln statementlist endtry
+  {
+      AST *tryblock = $3;
+      AST *catchvar = $5;
+      AST *catchblock = $7;
+      AST *try_if;
+      AST *trytest;
+
+      catchblock = NewAST(AST_STMTLIST,
+                          AstAssign(catchvar, NewAST(AST_CATCHRESULT, NULL, NULL)),
+                          catchblock);
+      trytest = NewAST(AST_SETJMP, NULL, NULL);
+      try_if = NewAST(AST_IF,
+                      AstOperator(K_EQ, trytest, AstInteger(0)),
+                      NewAST(AST_THENELSE, tryblock, catchblock));
+      try_if = NewCommentedStatement(try_if);
+      
+      $$ = NewAST(AST_TRYENV, try_if, NULL);
+  }
+;
+
+endtry:
+  BAS_END BAS_TRY eoln
 ;
 
 optstatementlist:

@@ -3452,6 +3452,17 @@ static void CompileStatement(IRList *irl, AST *ast)
 	EmitLabel(irl, exitloop);
 	PopQuitNext();
 	break;
+    case AST_TRYENV:
+    {
+        ValidateAbortFuncs();
+        EmitPush(irl, abortchain);
+        EmitMove(irl, abortchain, stackptr);
+        EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+        CompileStatementList(irl, ast->left);
+        EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
+        EmitPop(irl, abortchain);
+        break;
+    }
     case AST_FORATLEASTONCE:
     case AST_FOR:
 	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
