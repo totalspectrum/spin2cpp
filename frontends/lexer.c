@@ -2499,15 +2499,14 @@ getBasicToken(LexStream *L, AST **ast_ptr)
         if (c2 == '<' || c2 == '>' || c2 == '=') {
             c2 += c;
             if (c2 == ('<' + '>')) {
-                c = BAS_NE;
+                // note: '<' + '>' == '=' + '=', so beware!
+                if (c != '=') c = BAS_NE;
             } else if (c2 == '<' + '<') {
                 c = BAS_SHL;
             } else if (c2 == '=' + '<') {
                 c = BAS_LE;
             } else if (c2 == '=' + '>') {
                 c = BAS_GE;
-            } else if (c2 == '=' + '=') {
-                c = '=';
             } else if (c2 == '>' + '>') {
                 c = BAS_SHR;
             } else {
