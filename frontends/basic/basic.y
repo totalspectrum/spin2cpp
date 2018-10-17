@@ -154,6 +154,7 @@ AST *AstCharItem(int c)
 %token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
 %token BAS_BYTE       "byte"
+%token BAS_CATCH      "catch"
 %token BAS_CASE       "case"
 %token BAS_CLASS      "class"
 %token BAS_CLOSE      "close"
@@ -207,6 +208,7 @@ AST *AstCharItem(int c)
 %token BAS_SUB        "sub"
 %token BAS_THEN       "then"
 %token BAS_TO         "to"
+%token BAS_TRY        "try"
 %token BAS_TYPE       "type"
 %token BAS_UBYTE      "ubyte"
 %token BAS_UINTEGER   "uinteger"
@@ -233,8 +235,9 @@ AST *AstCharItem(int c)
 %left '-' '+'
 %left '*' '/' BAS_MOD
 %left BAS_SHL BAS_SHR
-%left BAS_NEGATE
+%left BAS_NEGATE BAS_NOT
 %left '@'
+%left BAS_NEW
 %left '.'
 
 %%
@@ -648,6 +651,17 @@ expr:
         baseType = NewAST(AST_PTRTYPE, baseType, NULL);
         $$ = NewAST(AST_NEW, baseType, numElements);
     }
+  | BAS_FUNCTION '(' paramdecl ')' expr %prec BAS_NEW
+  {
+      AST *params = $3;
+      AST *rettype = NULL;
+      AST *body = $5;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+
+      body = NewCommentedStatement(AstReturn(body, NULL));
+
+      $$ = NewAST(AST_LAMBDA, functype, body);
+  }
   | BAS_FUNCTION '(' paramdecl ')' BAS_AS typename eoln funcbody
   {
       AST *params = $3;

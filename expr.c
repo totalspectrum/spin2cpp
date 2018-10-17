@@ -2230,8 +2230,10 @@ FuncNumResults(AST *functype)
         return 0;
     }
     if (!functype) {
-        WARNING(functype, "Internal error, NULL ptr in FuncNumResults");
-        return 0;
+//        WARNING(functype, "Internal error, NULL ptr in FuncNumResults");
+        // assume 1 return value
+        // we will get this with short anonymous functions
+        return 1;
     }
     return (TypeSize(functype) + 3) / 4;
 }
