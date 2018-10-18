@@ -230,6 +230,7 @@ AST *AstCharItem(int c)
 %token BAS_SHR        ">>"
 %token BAS_NEGATE     "-"
 
+%left BAS_FUNCTION
 %left BAS_OR BAS_XOR
 %left BAS_AND
 %left '<' '>' BAS_LE BAS_GE BAS_NE '='
@@ -684,7 +685,7 @@ expr:
         baseType = NewAST(AST_PTRTYPE, baseType, NULL);
         $$ = NewAST(AST_NEW, baseType, numElements);
     }
-  | BAS_FUNCTION '(' paramdecl ')' expr %prec BAS_NEW
+  | BAS_FUNCTION '(' paramdecl ')' expr %prec BAS_FUNCTION
   {
       AST *params = $3;
       AST *rettype = NULL;

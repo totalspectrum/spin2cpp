@@ -706,7 +706,61 @@ defines a function which adds two integers and returns an integer result. Since 
 ```
 In this case because the final argument `delta` is given a default value of 1, callers may omit this argument. That is, a call `inc(x)` is exactly equivalent to `inc(x, 1)`.
 
-#### GETCNT
+#### Anonymous functions
+
+`function` may also be used in expressions to specify a temporary, unnamed function. There are two forms for this. The long form is very similar to ordinary function declarations. For example, suppose we want to define a function "plusn" which itself returns a function which adds one to its argument. This would look like:
+```
+  ' define an alias for the type of a function which takes an integer
+  ' and returns another; this isn't strictly necessary, but saves typing
+  type intfunc as function(x as integer) as integer
+
+  ' plusn(n) returns a function which adds n to its argument
+  function plusn(n as integer) as intfunc
+    return function(x as integer) as integer
+              return x + n
+	   end function
+  end function
+
+  dim as intfunc f, g
+  f = plusn(1) ' function which returns 1 + its argument
+  g = plusn(7) ' function which returns 7 + its argument
+
+  ' this will print 1 2 8
+  print 1, f(1), g(1)
+```
+The long anonymous form is basically the same as an ordinary function definition, but without the function name. The major difference is that an explicit definition of the return type (e.g. `as integer`) is required, since the compiler cannot use a name to determine a default type for the function.
+
+For simple functions which just return a single expression, a short anonymous form is available. This omits the return type, which is determined by the expression itself, and puts the expression on the same line. This means we could write the `plusn` function above as:
+```
+  function plusn(n as integer) as intfunc
+    return (function(x as integer) x+n)
+  end function
+```
+
+#### Closures
+
+You'll note in the examples of anonymous functions that the anonymous function inside `plusn` is accessing the parameter `n` of its parent. This is allowed, and the value of `n` is in fact saved in a special object called a "closure". This closure is persistent, and functions are allowed to modify the variables in a closure. For example, we can implement a simple counter object as follows:
+```
+type intfunc as function() as integer
+
+' makecounter returns a counter with a given initial value and step
+function makecounter(value = 1, stepval = 1) as intfunc
+  return (function () as integer
+            var r = value
+	    value = value + stepval
+	    return r
+	  end function)
+end function
+
+var c = makecounter(7, 3)
+
+' prints 7, 10, 13, 16
+for i = 1 to 4
+  print c()
+next
+```
+
+### GETCNT
 
 Propeller specific builtin function.
 
