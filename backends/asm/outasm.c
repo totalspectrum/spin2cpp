@@ -1213,6 +1213,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         if (!copyfunc) {
             copyfunc = GetSystemFunction("bytemove");
         }
+        ValidateStackptr();
         tmp = GetResultReg(5); // we know this won't be used in the system functions
         // tmp = _gc_alloc_managed(framesize)
         EmitMove(irl, GetArgReg(0), framesize);
