@@ -747,13 +747,24 @@ topdecl:
   ;
 
 constdecl:
-  BAS_CONST BAS_IDENTIFIER '=' expr
+  BAS_CONST constlist
   {
-      AST *decl;
-      decl = AstAssign($2, $4);
-      decl = CommentedListHolder(decl);
-      $$ = current->conblock = AddToList(current->conblock, decl);
+      $$ = current->conblock = AddToList(current->conblock, $2);
   }
+;
+constitem:
+  BAS_IDENTIFIER '=' expr
+    {
+      AST *decl = AstAssign($1, $3);
+      decl = CommentedListHolder(decl);
+      $$ = decl;
+    }
+;
+constlist:
+  constlist ',' constitem
+    { $$ = AddToList($1, $3); }
+  | constitem
+    { $$ = $1; }
 ;
 typedecl:
   BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln

@@ -545,13 +545,13 @@ Note that handles 0 and 1 are reserved by the system; closing them may produce u
 
 ### CONST
 
-At the beginning of a line, CONST declares a constant value. For example:
+At the beginning of a line, `const` declares a constant value. For example:
 ```
-  const x = 1
+  const x = 1, y = 2.0
 ```
-declares x to be the integer 1. Only integer constants may be declared this way.
+declares x to be the integer 1 and y to be the floating point value 2.0. Only numeric values (integers and floats) may be declared with `const`.
 
-Inside a type name, CONST signifies that variables of this type may not be modified. This is mainly useful for indicating that pointers should be treated as read-only.
+Inside a type name, `const` signifies that variables of this type may not be modified. This is mainly useful for indicating that pointers should be treated as read-only.
 ```
    sub trychange(s as const ubyte ptr)
      s(1) = 0  '' illegal, s points to const ubytes
