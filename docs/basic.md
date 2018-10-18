@@ -857,6 +857,14 @@ A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
 
 A predefined string function. `left$(s, n)` returns the left-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
 
+### LEN
+
+A predefined function which returns the length of a string.
+```
+  var s$ = "hello"
+  var n = len(s$) ' now n = 5
+```
+  
 ### LET
 
 Variable assignment:

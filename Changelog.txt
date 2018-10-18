@@ -1,5 +1,5 @@
 Version 3.9.6
-- Added try/catch to BASIC
+- Added try/catch and LEN to BASIC
 - Added anonymous functions and closures to BASIC
 - Clean up properly after \ is used without an abort happening
 - abort now exits if there is no \ to catch it

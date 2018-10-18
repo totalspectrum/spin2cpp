@@ -403,3 +403,6 @@ pri input`$(n, h=0) | c, i, s
 '' pause for m milliseconds
 pri pausems(m)
   waitcnt(getcnt + m * (clkfreq / 1000))
+
+pri len(s)
+  return strsize(s)
