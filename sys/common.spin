@@ -393,11 +393,11 @@ pri input`$(n, h=0) | c, i, s
   if s == 0
     return s
   repeat i from 0 to n-1 
-    repeat
-      c := _basic_get_char(h)
-    until c => 0
+    c := _basic_get_char(h)
+    if c < 0
+      quit
     byte[s+i] := c
-  byte[s+n] := 0
+  byte[s+i] := 0
   return s
 
 '' pause for m milliseconds
