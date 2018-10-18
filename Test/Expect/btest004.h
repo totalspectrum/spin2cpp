@@ -9,7 +9,6 @@ public:
 private:
   int32_t 	a[10];
   int32_t 	b[10];
-  int32_t 	i;
 };
 
 #endif

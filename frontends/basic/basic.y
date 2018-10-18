@@ -480,16 +480,22 @@ forstmt:
       AST *from, *to, *step;
       AST *ident = $2;
       AST *closeident = $10;
-      MaybeDeclareMemberVar(current, ident, InferTypeFromName(ident));
+      AST *declare;
+      AST *loop;
+      
+      /* create a WEAK definition for ident (it will not override any existing definition) */
+      declare = NewAST(AST_DECLARE_VAR_WEAK, ident, InferTypeFromName(ident));
       step = NewAST(AST_STEP, $7, $9);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
-      $$ = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
+      loop = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
       // validate the "next i"
       if (closeident && !AstMatch(ident, closeident)) {
           ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
       }
+      $$ = NewAST(AST_STMTLIST, declare,
+                  NewAST(AST_STMTLIST, loop, NULL));
     }
 ;
 

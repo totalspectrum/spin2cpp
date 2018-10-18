@@ -686,7 +686,7 @@ for i = 1 to 10 step 2
 next i
 ```
 
-If the variable given in the loop is not already defined, it is created as a variable shared by all functions in the module. This tends to be inefficient, so it is better to explicitly dimension the variable as a local variable rather than letting `for` create it automatically.
+If the variable given in the loop is not already defined, it is created as a local variable (local to the current sub or function, or to the implicit program function for loops outside of any sub or function).
 
 ### FUNCTION
 
