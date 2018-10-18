@@ -1723,14 +1723,19 @@ void
 MarkUsed(Function *f)
 {
     Module *oldcurrent;
+    Function *oldfunc;
+    
     if (!f || f->callSites > CALLSITES_MANY) {
         return;
     }
     f->callSites++;
     oldcurrent = current;
+    oldfunc = curfunc;
     current = f->module;
+    curfunc = f;
     MarkUsedBody(f->body);
     current = oldcurrent;
+    curfunc = oldfunc;
 }
 
 void
