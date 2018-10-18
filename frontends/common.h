@@ -547,4 +547,7 @@ AST *NewCommentedInstr(AST *instr);
 /* fetch pending comments from the lexer */
 AST *GetComments(void);
 
+/* is an AST identifier a local variable? */
+bool IsLocalVariable(AST *ast);
+
 #endif

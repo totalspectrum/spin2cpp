@@ -14,7 +14,7 @@
 // pointers should find only arrays
 #define IsArraySymbol(s) IsArrayOrPointerSymbol(s)
 
-static bool
+bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;
     switch (ast->kind) {
@@ -360,6 +360,7 @@ doSpinTransform(AST **astptr, int level)
         break;
     case AST_CATCH:
         doSpinTransform(&ast->left, level);
+        curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
         *astptr = ast = NewAST(AST_TRYENV,
                                NewAST(AST_CONDRESULT,
                                       AstOperator(K_EQ,

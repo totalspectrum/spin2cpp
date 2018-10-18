@@ -293,6 +293,9 @@ doBasicTransform(AST **astptr)
         {
             doBasicTransform(&ast->left);
             doBasicTransform(&ast->right);
+            if (IsLocalVariable(ast->left)) {
+                curfunc->local_address_taken = 1;
+            }
             // taking the address of a function may restrict how
             // we can call it (stack vs. register calling)
             Symbol *sym;
@@ -353,6 +356,13 @@ doBasicTransform(AST **astptr)
         if (IsPointerType(ast->left)) {
             WARNING(ast, "Needs a pointer dereference");
         }
+        break;
+    case AST_TRYENV:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        // keep local variables on stack, so they will be preserved
+        // if an exception throws us back here without cleanup
+        curfunc->local_address_taken = 1;
         break;
     case AST_PRINT:
         doBasicTransform(&ast->left);

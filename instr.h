@@ -91,7 +91,9 @@ typedef enum IROpcode {
     OPC_GENERIC_BRANCH,
     
     /* place non-instructions below here */
-
+    OPC_PUSH_REGS,   /* pseudo-instruction to save registers on stack */
+    OPC_POP_REGS,    /* pseudo-instruction to pop registers off stack */
+    
     /* switch to hub mode */
     OPC_HUBMODE,
 
