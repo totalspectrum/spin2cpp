@@ -40,7 +40,7 @@ YACC = bison
 CFLAGS = -g -Wall $(INC)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC)
 LIBS = -lm
-RM = rm -f
+RM = rm -rf
 
 VPATH=.:util:frontends:frontends/basic:frontends/spin:backends:backends/asm:backends/cpp:backends/dat
 
