@@ -1289,7 +1289,6 @@ RenameLocalRegs(IRList *irl)
     Operand *replace = NULL;
     int numlocals = 0;
 
-    return numlocals;
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
