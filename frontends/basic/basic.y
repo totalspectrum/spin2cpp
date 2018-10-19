@@ -865,6 +865,8 @@ dimitem:
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | identdecl '=' expr
     { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
+  | identdecl '=' '{' exprlist '}'
+    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $4), NULL); }
 ;
 
 identdecl:

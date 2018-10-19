@@ -208,6 +208,9 @@ InferTypeFromName(AST *identifier)
 {
     const char *name;
 
+    if (identifier->kind == AST_ASSIGN) {
+        identifier = identifier->left;
+    }
     if (identifier->kind == AST_ARRAYDECL) {
         identifier = identifier->left;
     }
