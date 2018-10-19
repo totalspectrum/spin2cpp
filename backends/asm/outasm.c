@@ -1312,6 +1312,13 @@ NeedToSaveLocals(Function *func)
     if (VARS_ON_STACK(func)) {
         return false;
     }
+    if (func->is_recursive) {
+        return true;
+    }
+    if (gl_output == OUTPUT_COGSPIN) {
+        return false;
+    }
+    // maybe skip saving locals for cog functions?
     return true;
 }
 
@@ -1372,7 +1379,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitPush(irl, GetLocalReg(i));
         }
         // push return address, if we are in cog mode
-        if (func->cog_code && !gl_p2) {
+        if (func->is_recursive && func->cog_code && !gl_p2) {
             EmitPush(irl, FuncData(func)->asmretname);
         }
     }
@@ -1389,7 +1396,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
         // and the actual return
-        if (func->cog_code && !gl_p2) {
+        if (func->is_recursive && func->cog_code && !gl_p2) {
             EmitPop(irl, FuncData(func)->asmretname);
         }
         // pop off all local variables
