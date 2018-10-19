@@ -1315,7 +1315,7 @@ NeedToSaveLocals(Function *func)
     if (func->is_recursive) {
         return true;
     }
-    if (gl_output == OUTPUT_COGSPIN) {
+    if (gl_output == OUTPUT_COGSPIN || func->cog_code) {
         return false;
     }
     // maybe skip saving locals for cog functions?

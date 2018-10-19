@@ -5,32 +5,32 @@ DAT
 entry
 
 _fibo
-	wrlong	_fibo_x, sp
+	wrlong	local01, sp
 	add	sp, #4
-	wrlong	fibo_tmp003_, sp
+	wrlong	local02, sp
 	add	sp, #4
 	wrlong	_fibo_ret, sp
 	add	sp, #4
-	mov	_fibo_x, arg1
-	cmps	_fibo_x, #2 wc,wz
- if_b	mov	result1, _fibo_x
+	mov	local01, arg1
+	cmps	local01, #2 wc,wz
+ if_b	mov	result1, local01
  if_b	jmp	#LR__0001
-	mov	arg1, _fibo_x
+	mov	arg1, local01
 	sub	arg1, #1
-	sub	_fibo_x, #2
+	sub	local01, #2
 	call	#_fibo
-	mov	fibo_tmp003_, result1
-	mov	arg1, _fibo_x
+	mov	local02, result1
+	mov	arg1, local01
 	call	#_fibo
-	add	fibo_tmp003_, result1
-	mov	result1, fibo_tmp003_
+	add	local02, result1
+	mov	result1, local02
 LR__0001
 	sub	sp, #4
 	rdlong	_fibo_ret, sp
 	sub	sp, #4
-	rdlong	fibo_tmp003_, sp
+	rdlong	local02, sp
 	sub	sp, #4
-	rdlong	_fibo_x, sp
+	rdlong	local01, sp
 _fibo_ret
 	ret
 
@@ -43,10 +43,10 @@ COG_BSS_START
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_fibo_x
-	res	1
 arg1
 	res	1
-fibo_tmp003_
+local01
+	res	1
+local02
 	res	1
 	fit	496
