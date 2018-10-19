@@ -96,6 +96,8 @@ static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 static Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset);
 
+static bool IsCogMem(Operand *addr);
+
 typedef struct AsmVariable {
     Operand *op;
     intptr_t val;
@@ -1295,7 +1297,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->dst = update;
             } else if (ir->dst && ir->dst->kind == COG_REF && ir->dst->name == (char *)old) {
                 ir->dst->name = (char *)update;
-             } else if (ir->dst->kind == IMM_COG_LABEL && !strcmp(ir->dst->name, old->name)) {
+            } else if (IsCogMem(ir->dst) && !strcmp(ir->dst->name, old->name)) {
                 ir->dst->name = update->name;
             }
         }
@@ -1304,7 +1306,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->src = update;
             } else if (ir->src->kind == COG_REF && ir->src->name == (char *)old) {
                 ir->src->name = (char *)update;
-            } else if (ir->src->kind == IMM_COG_LABEL && !strcmp(ir->src->name, old->name)) {
+            } else if (IsCogMem(ir->src) && !strcmp(ir->src->name, old->name)) {
                 ir->src->name = update->name;
             }
         }
