@@ -260,6 +260,18 @@ ValidateAbortFuncs(void)
     }
 }
 
+static Operand *pushregs_, *popregs_, *count_;
+
+static void
+ValidatePushregs(void)
+{
+    if (!pushregs_) {
+        pushregs_ = NewOperand(IMM_COG_LABEL, "pushregs_", 0);
+        popregs_ = NewOperand(IMM_COG_LABEL, "popregs_", 0);
+        count_ = NewOperand(REG_REG, "COUNT_", 0);
+    }
+}
+        
 static int IsMemRef(Operand *op)
 {
     return op && (op->kind >= LONG_REF) && (op->kind <= COG_REF);
@@ -1414,8 +1426,15 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (NeedToSaveLocals(func)) {
         int i, n;
         FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func));
-        for (i = 0; i < n; i++) {
-            EmitPush(irl, GetLocalReg(i));
+        if (HUB_CODE && !gl_p2 && n > 1) {
+            // in LMM mode, call out to the pushregs_ function
+            ValidatePushregs();
+            EmitMove(irl, count_, NewImmediate(n));
+            EmitOp1(irl, OPC_CALL, pushregs_);
+        } else {
+            for (i = 0; i < n; i++) {
+                EmitPush(irl, GetLocalReg(i));
+            }
         }
         // push return address, if we are in cog mode
         if (func->is_recursive && func->cog_code && !gl_p2) {
@@ -1440,8 +1459,15 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         }
         // pop off all local variables
         n = FuncData(func)->numsavedregs;
-        for (i = n-1; i >= 0; --i) {
-            EmitPop(irl, GetLocalReg(i));
+        if (HUB_CODE && !gl_p2 && n > 1) {
+            // in LMM mode we can use popregs_
+            ValidatePushregs();
+            EmitMove(irl, count_, NewImmediate(n));
+            EmitOp1(irl, OPC_CALL, popregs_);
+        } else {            
+            for (i = n-1; i >= 0; --i) {
+                EmitPop(irl, GetLocalReg(i));
+            }
         }
     }
     if (VARS_ON_STACK(func)) {
@@ -4216,18 +4242,18 @@ static const char *builtin_lmm_p1 =
     "LMM_CALL_FROM_COG_ret\n"
     "    ret\n"
     "LMM_FCACHE_LOAD\n"
-    "    rdlong COUNT, pc\n"
+    "    rdlong COUNT_, pc\n"
     "    add    pc, #4\n"
-    "    mov    ADDR, pc\n"
-    "    sub    LMM_ADDR, pc\n"
-    "    tjz    LMM_ADDR, #a_fcachegoaddpc\n"
+    "    mov    ADDR_, pc\n"
+    "    sub    LMM_ADDR_, pc\n"
+    "    tjz    LMM_ADDR_, #a_fcachegoaddpc\n"
     "    movd   a_fcacheldlp, #LMM_FCACHE_START\n"
-    "    shr    COUNT, #2\n"
+    "    shr    COUNT_, #2\n"
     "a_fcacheldlp\n"
     "    rdlong 0-0, pc\n"
     "    add    pc, #4\n"
     "    add    a_fcacheldlp,inc_dest1\n"
-    "    djnz   COUNT,#a_fcacheldlp\n"
+    "    djnz   COUNT_,#a_fcacheldlp\n"
     // add in a JMP back out of LMM
     "    ror    a_fcacheldlp, #9\n"
     "    movd   a_fcachecopyjmp, a_fcacheldlp\n"
@@ -4235,10 +4261,10 @@ static const char *builtin_lmm_p1 =
     "a_fcachecopyjmp\n"
     "    mov    0-0, LMM_jmptop\n"
     "a_fcachego\n"
-    "    mov    LMM_ADDR, ADDR\n"
+    "    mov    LMM_ADDR_, ADDR_\n"
     "    jmpret LMM_RETREG,#LMM_FCACHE_START\n"
     "a_fcachegoaddpc\n"
-    "    add    pc, COUNT\n"
+    "    add    pc, COUNT_\n"
     "    jmp    #a_fcachego\n"
     "LMM_FCACHE_LOAD_ret\n"
     "    ret\n"
@@ -4246,12 +4272,35 @@ static const char *builtin_lmm_p1 =
     "    long (1<<9)\n"
     "LMM_LEAVE_CODE\n"
     "    jmp LMM_RETREG\n"
-    "LMM_ADDR\n"
+    "LMM_ADDR_\n"
     "    long 0\n"
-    "ADDR\n"
+    "ADDR_\n"
     "    long 0\n"
-    "COUNT\n"
+    "COUNT_\n"
     "    long 0\n"
+    "pushregs_\n"
+    "      movd  :write, #local01\n"
+    "      nop\n"
+    ":write\n"
+    "      wrlong 0-0, sp\n"
+    "      add    :write, inc_dest1\n"
+    "      add    sp, #4\n"
+    "      djnz   COUNT_, #:write\n"
+    "pushregs__ret\n"
+    "      ret\n"
+    "popregs_\n"
+    "      add   COUNT_, #local01\n"
+    "      movd  :read, COUNT_\n"
+    "      sub   COUNT_, #local01\n"
+    ":loop\n"
+    "      sub    :read, inc_dest1\n"
+    "      sub    sp, #4\n"
+    ":read\n"
+    "      rdlong 0-0, sp\n"
+    "      djnz   COUNT_, #:loop\n"
+    "popregs__ret\n"
+    "      ret\n"
+
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
