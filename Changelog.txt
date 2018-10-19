@@ -1,4 +1,7 @@
 Version 3.9.6
+- Re-use the same set of registers for all functions in LMM mode,
+  saving/restoring them on function entry/exit. This saves a *lot* of
+  COG memory, at the cost of some execution speed and HUB space.
 - Added try/catch and LEN to BASIC
 - Added anonymous functions and closures to BASIC
 - Clean up properly after \ is used without an abort happening

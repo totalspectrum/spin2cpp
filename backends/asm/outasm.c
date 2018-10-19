@@ -647,12 +647,16 @@ static IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 // emit an assembler label
 void EmitLabel(IRList *irl, Operand *op)
 {
-  EmitOp1(irl, OPC_LABEL, op);
+    if (irl) {
+        EmitOp1(irl, OPC_LABEL, op);
+    }
 }
 
 void EmitNamedCogLabel(IRList *irl, const char *name)
 {
-    EmitLabel(irl, NewOperand(IMM_COG_LABEL, name, 0));
+    if (irl) {
+        EmitLabel(irl, NewOperand(IMM_COG_LABEL, name, 0));
+    }
 }
 
 // create a new temporary label name
@@ -718,12 +722,15 @@ NewDataLabel()
   return label;
 }
 
-void EmitLong(IRList *irl, int val)
+int EmitLong(IRList *irl, int val)
 {
   Operand *op;
 
-  op = NewOperand(IMM_INT, "", val);
-  EmitOp1(irl, OPC_LONG, op);
+  if (irl) {
+      op = NewOperand(IMM_INT, "", val);
+      EmitOp1(irl, OPC_LONG, op);
+  }
+  return 4;
 }
 
 #define COG_RESERVE 0
@@ -733,53 +740,69 @@ void EmitReserve(IRList *irl, int val, int isHub)
 {
   Operand *op;
 
-  op = NewOperand(IMM_INT, "", val);
-  if (isHub) {
-      EmitOp1(irl, OPC_RESERVEH, op);
-  } else {
-      EmitOp1(irl, OPC_RESERVE, op);
+  if (irl) {
+      op = NewOperand(IMM_INT, "", val);
+      if (isHub) {
+          EmitOp1(irl, OPC_RESERVEH, op);
+      } else {
+          EmitOp1(irl, OPC_RESERVE, op);
+      }
   }
 }
 
-static void EmitLongPtr(IRList *irl, Operand *op)
+static int EmitLongPtr(IRList *irl, Operand *op)
 {
-  EmitOp1(irl, OPC_LONG, op);
+    if (irl) {
+        EmitOp1(irl, OPC_LONG, op);
+    }
+    return 4;
 }
 
-static void EmitStringNoTrailingZero(IRList *irl, AST *ast)
+static int EmitStringNoTrailingZero(IRList *irl, AST *ast)
 {
   Operand *op;
   switch (ast->kind) {
   case AST_STRING:
-      op = NewOperand(IMM_STRING, ast->d.string, 0);
-      EmitOp1(irl, OPC_STRING, op);
-      break;
+      if (irl) {
+          op = NewOperand(IMM_STRING, ast->d.string, 0);
+          EmitOp1(irl, OPC_STRING, op);
+      }
+      return strlen(ast->d.string);
   case AST_INTEGER:
-      op = NewOperand(IMM_INT, "", (int)ast->d.ival);
-      EmitOp1(irl, OPC_BYTE, op);
-      break;
+      if (irl) {
+          op = NewOperand(IMM_INT, "", (int)ast->d.ival);
+          EmitOp1(irl, OPC_BYTE, op);
+      }
+      return 1;
   default:
       if (IsConstExpr(ast)) {
-          op = NewOperand(IMM_INT, "", EvalConstExpr(ast));
-          EmitOp1(irl, OPC_BYTE, op);
+          if (irl) {
+              op = NewOperand(IMM_INT, "", EvalConstExpr(ast));
+              EmitOp1(irl, OPC_BYTE, op);
+          }
       } else {
           ERROR(ast, "Unable to emit string");
       }
-      break;
+      return 1;
   }
 }
 
-void EmitString(IRList *irl, AST *ast)
+int EmitString(IRList *irl, AST *ast)
 {
-  while (ast && ast->kind == AST_EXPRLIST) {
-      EmitStringNoTrailingZero(irl, ast->left);
-      ast = ast->right;
-  }
-  if (ast) {
-      EmitStringNoTrailingZero(irl, ast);
-  }
-  // add a trailing 0
-  EmitOp1(irl, OPC_BYTE, NewImmediate(0));
+    int count = 0;
+    while (ast && ast->kind == AST_EXPRLIST) {
+        count += EmitStringNoTrailingZero(irl, ast->left);
+        ast = ast->right;
+    }
+    if (ast) {
+        count += EmitStringNoTrailingZero(irl, ast);
+    }
+    // add a trailing 0
+    if (irl) {
+        EmitOp1(irl, OPC_BYTE, NewImmediate(0));
+        count++;
+    }
+    return count;
 }
 
 void EmitJump(IRList *irl, IRCond cond, Operand *label)
@@ -1267,14 +1290,28 @@ static void
 RenameOneReg(IR *ir, Operand *old, Operand *update)
 {
     while (ir) {
-        if (ir->dst == old) {
-            ir->dst = update;
+        if (ir->dst) {
+            if (ir->dst == old) {
+                ir->dst = update;
+            } else if (ir->dst && ir->dst->kind == COG_REF && ir->dst->name == (char *)old) {
+                ir->dst->name = (char *)update;
+             } else if (ir->dst->kind == IMM_COG_LABEL && !strcmp(ir->dst->name, old->name)) {
+                ir->dst->name = update->name;
+            }
         }
-        if (ir->src == old) {
-            ir->src = update;
+        if (ir->src) {
+            if (ir->src == old) {
+                ir->src = update;
+            } else if (ir->src->kind == COG_REF && ir->src->name == (char *)old) {
+                ir->src->name = (char *)update;
+            } else if (ir->src->kind == IMM_COG_LABEL && !strcmp(ir->src->name, old->name)) {
+                ir->src->name = update->name;
+            }
         }
         ir = ir->next;
     }
+    // now we can mark "old" as unused in the global variable table
+    old->used = 0;
 }
 
 /*
@@ -3612,9 +3649,13 @@ CompileWholeFunction(IRList *irl, Function *f)
 static Operand *newlineOp;
 static void EmitNewline(IRList *irl)
 {
-  IR *ir = NewIR(OPC_LITERAL);
-  ir->dst = newlineOp;
-  AppendIR(irl, ir);
+    IR *ir;
+
+    if (irl) {
+        ir = NewIR(OPC_LITERAL);
+        ir->dst = newlineOp;
+        AppendIR(irl, ir);
+    }
 }
 
 static int gcmpfunc(const void *a, const void *b)
@@ -3627,14 +3668,17 @@ static int gcmpfunc(const void *a, const void *b)
 #define SORT_ALPHABETICALLY 1
 #define NO_SORT 0
 
-static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int flags)
+// returns count of bytes emitted
+// if datairl or bssirl is NULL, nothing is actually output
+static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int flags)
 {
     size_t siz = flexbuf_curlen(fb) / sizeof(AsmVariable);
     size_t i;
     AsmVariable *g = (AsmVariable *)flexbuf_peek(fb);
     int varsize;
     int alphaSort = flags & SORT_ALPHABETICALLY;
-
+    int count = 0;
+    
     if (siz > 0) {
       EmitNewline(datairl);
     }
@@ -3655,18 +3699,18 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int
       switch(g[i].op->kind) {
       case STRING_DEF:
           EmitLabel(datairl, g[i].op);
-          EmitString(datairl, (AST *)g[i].val);
+          count += EmitString(datairl, (AST *)g[i].val);
           break;
       case IMM_COG_LABEL:
       case IMM_HUB_LABEL:
       case REG_HUBPTR:
       case REG_COGPTR:
           EmitLabel(datairl, g[i].op);
-          EmitLongPtr(datairl, (Operand *)g[i].val);
+          count += EmitLongPtr(datairl, (Operand *)g[i].val);
           break;
       case IMM_INT:
           EmitLabel(datairl, g[i].op);
-          EmitLong(datairl, g[i].val);
+          count += EmitLong(datairl, g[i].val);
           break;
       case REG_ARG:
       case REG_LOCAL:
@@ -3675,6 +3719,7 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int
 	      varsize = g[i].count / LONG_SIZE;
 	      if (varsize == 0) varsize = 1;
 	      EmitReserve(bssirl, varsize, COG_RESERVE);
+              count += varsize * 4;
 	      break;
 	  }
 	  // otherwise fall through
@@ -3682,17 +3727,22 @@ static void EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int
           EmitLabel(datairl, g[i].op);
           varsize = g[i].count / LONG_SIZE;
           if (varsize <= 1) {
-              EmitLong(datairl, g[i].val);
+              count += EmitLong(datairl, g[i].val);
           } else {
-              /* normally ir->src is NULL for OPC_LONG, but in this
-                 case (an array definition) it is a count */
-              EmitOp2(datairl, OPC_LONG, NewOperand(IMM_INT, "", 0),
-                      NewOperand(IMM_INT, "", varsize));
+              count += varsize * 4;
+              if (datairl) {
+                  /* normally ir->src is NULL for OPC_LONG, but in this
+                     case (an array definition) it is a count */
+                  EmitOp2(datairl, OPC_LONG, NewOperand(IMM_INT, "", 0),
+                          NewOperand(IMM_INT, "", varsize));
+              }
           }
           break;
       }
     }
+    return count;
 }
+
 static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 {
     EmitAsmVars(&cogGlobalVars, cogdata, cogbss, SORT_ALPHABETICALLY);
@@ -4710,6 +4760,55 @@ InitAsmCode()
     initDone = 1;
 }
 
+static int guess_instructions_in_literal(const char *s)
+{
+    int n = 0;
+    int line_had_data = 0;
+    int c;
+    
+    while ( (c = *s++) != 0) {
+        if (c == '\n') {
+            n += line_had_data;
+            line_had_data = 0;
+        } else if (c == ' ' || c == '\t') {
+            line_had_data = 1;
+        }
+    }
+    return n;
+}
+
+/* routine to try to guess how much room we need for fcache */
+/* this does not work very well at present, so it isn't actually used yet */
+
+static int
+GuessFcacheSize(IRList *irl)
+{
+    int n = 0;
+    int datsize;
+    
+    IR *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->opc == OPC_LITERAL) {
+            n += guess_instructions_in_literal(ir->dst->name);
+        }
+        if (IsDummy(ir)) continue;
+        if (ir->opc == OPC_LABEL) continue;
+        n++;
+    }
+
+    // now guess at variable size (this is conservative, we haven't
+    // pruned unused variables yet)
+    datsize = EmitAsmVars(&cogGlobalVars, NULL, NULL, NO_SORT);
+    n += datsize;
+    if (n < 464) {
+        n = 464 - n;
+    } else {
+        n = 0;
+    }
+    //printf("guessed fcache size = %d\n", n);
+    return n;
+}
+
 void
 OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
@@ -4869,6 +4968,12 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
 
+    // guesstimate how much space we will have for FCACHE, if
+    // a dynamic size is requested
+    if (gl_fcache_size < 0) {
+        gl_fcache_size = GuessFcacheSize(&cogcode);
+    }
+    
     if (emitSpinCode) {
         AppendIR(&cogcode, hubcode.head);
 

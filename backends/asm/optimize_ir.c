@@ -13,7 +13,8 @@
 #include "spinc.h"
 #include "outasm.h"
 
-int gl_fcache_size = 64; // 256 bytes of FCACHE
+// fcache size in longs; -1 means take a guess
+int gl_fcache_size = 96;
 
 //
 // helper functions
