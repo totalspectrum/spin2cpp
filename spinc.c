@@ -597,7 +597,7 @@ RemoveUnusedMethods(int isBinary)
     }
     
     if (isBinary) {
-        MarkUsed(GetMainFunction(allparse));
+        MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
         // mark stuff called via public functions
     }
@@ -605,9 +605,9 @@ RemoveUnusedMethods(int isBinary)
         for (pf = P->functions; pf; pf = pf->next) {
             if (pf->callSites == 0) {
                 if (pf->is_public) {
-                    MarkUsed(pf);
+                    MarkUsed(pf, "__public__");
                 } else if (pf->annotations) {
-                    MarkUsed(pf);
+                    MarkUsed(pf, "__annotations__");
                 }
             }
             

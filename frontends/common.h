@@ -223,6 +223,9 @@ typedef struct funcdef {
     
     /* struct to hold closure data */
     Module *closure;
+
+    /* name of function that called us if callSites > 0 */
+    const char *caller;
 } Function;
 
 /* structure describing a builtin function */
@@ -413,7 +416,7 @@ int InferTypes(Module *P);
 void ProcessFuncs(Module *P);
 
 /* mark a function (and all functions it references) as used */
-void MarkUsed(Function *f);
+void MarkUsed(Function *f, const char *callerName);
 
 /* check to see if a function is recursive */
 void CheckRecursive(Function *f);
