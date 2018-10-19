@@ -103,9 +103,8 @@ typedef struct ir_bedata {
        suitable for inlining */
     IRList irl;
 
-    /* list of registers that need preserving (for
-       recursive functions) */
-    OperandList *saveregs;
+    /* number of local registers that need to be pushed */
+    int numsavedregs;
     
     /* flag for whether we should inline the function */
     bool isInline;

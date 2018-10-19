@@ -15,6 +15,7 @@
 
 #define MAX_COGSPIN_ARGS 8
 #define MAX_ARG_REGISTER 32
+#define MAX_LOCAL_REGISTER 100
 
 #define SETJMP_BUF_SIZE (8*LONG_SIZE)
 
@@ -55,6 +56,7 @@ static Operand *abortchain;
 
 Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
+Operand *localreg[MAX_LOCAL_REGISTER];
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -328,6 +330,20 @@ Operand *GetArgReg(int n)
     return argreg[n];
 }
 
+Operand *GetLocalReg(int n)
+{
+    static char rvalname[32];
+    if (n < 0 || n >= MAX_LOCAL_REGISTER) {
+        ERROR(NULL, "Internal error exceeded local register limit");
+        return NULL;
+    }
+    if (!localreg[n]) {
+        sprintf(rvalname, "local%02d", n+1);
+        localreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
+    }
+    return localreg[n];
+}
+
 Instruction *
 FindInstrForOpc(IROpcode kind)
 {
@@ -399,9 +415,12 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IRList *insert = FuncIRL(func);
     IR *ir;
 
+#if 0
+    // this check is obsolete now, I think
     if (FuncData(func)->asmretname != FuncData(func)->asmreturnlabel) {
         ERROR(func->body, "Internal error, illegal inline");
     }
+#endif
     DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
@@ -1233,35 +1252,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
 }
 
 //
-// pop a list of variables, in reverse order
-// the lists are one way, so we make a local copy in revstack and
-// pop backwards from there
-//
-#define MAX_LOCAL_STACK 1024
-static void PopList(IRList *irl, OperandList *list, Function *func)
-{
-    Operand *revstack[MAX_LOCAL_STACK];
-    Operand *dst;
-    int n = 0;
-
-    for (; list; list = list->next) {
-        dst = list->op;
-        revstack[n++] = dst;
-        if (n == MAX_LOCAL_STACK) {
-            ERROR(func->locals, "Stack needed for function %s is too big", func->name);
-            return;
-        }
-    }
-    // now pop in reverse order
-    while (n > 0) {
-        --n;
-        dst = revstack[n];
-        EmitPop(irl, dst);
-    }
-}
-
-//
-// WARNING: most of the stuff placed here will be skipped over
+// WARNING: most of the stuff placed in the epilog will be skipped over
 // by any return statement!!
 //
 static void EmitFunctionEpilog(IRList *irl, Function *func)
@@ -1269,25 +1260,60 @@ static void EmitFunctionEpilog(IRList *irl, Function *func)
     FreeTempRegisters(irl, 0);
 }
 
+/*
+ * rename one operand locally
+ */
 static void
-GetLocalRegsUsed(OperandList **list, IRList *irl)
+RenameOneReg(IR *ir, Operand *old, Operand *update)
+{
+    while (ir) {
+        if (ir->dst == old) {
+            ir->dst = update;
+        }
+        if (ir->src == old) {
+            ir->src = update;
+        }
+        ir = ir->next;
+    }
+}
+
+/*
+ * rename locals so that we can re-use registers
+ * returns a count of how many unique local registers we needed
+ */
+
+static int
+RenameLocalRegs(IRList *irl)
 {
     IR *ir;
+    Operand *replace = NULL;
+    int numlocals = 0;
+
+    return numlocals;
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
-            AppendOperandUnique(list, ir->dst);
+            replace = GetLocalReg(numlocals++);
+            RenameOneReg(ir, ir->dst, replace);
         }
         if (ir->src && IsLocal(ir->src)) {
-            AppendOperandUnique(list, ir->src);
+            replace = GetLocalReg(numlocals++);
+            RenameOneReg(ir, ir->src, replace);
         }
     }
+    return numlocals;
 }
 
 static bool
 NeedToSaveLocals(Function *func)
 {
-    return func->is_recursive;
+    if (func->is_leaf) {
+        return false;
+    }
+    if (VARS_ON_STACK(func)) {
+        return false;
+    }
+    return true;
 }
 
 //
@@ -1298,8 +1324,6 @@ NeedToSaveLocals(Function *func)
 //
 static void EmitFunctionHeader(IRList *irl, Function *func)
 {
-    OperandList *oplist;
-
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
     AppendIRList(irl, &FuncData(func)->irheader);
@@ -1343,10 +1367,10 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     //
     
     if (NeedToSaveLocals(func)) {
-        GetLocalRegsUsed(&FuncData(func)->saveregs, FuncIRL(func));
-        // push scratch registers that need preserving
-        for (oplist = FuncData(func)->saveregs; oplist; oplist = oplist->next) {
-            EmitPush(irl, oplist->op);
+        int i, n;
+        FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func));
+        for (i = 0; i < n; i++) {
+            EmitPush(irl, GetLocalReg(i));
         }
         // push return address, if we are in cog mode
         if (func->cog_code && !gl_p2) {
@@ -1361,6 +1385,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         EmitLabel(irl, FuncData(func)->asmreturnlabel);
     }
     if (NeedToSaveLocals(func)) {
+        int i, n;
         // pop return address
         // do this here to avoid a hardware pipeline hazard:
         // we need at least 1 instruction between the pop
@@ -1369,7 +1394,10 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             EmitPop(irl, FuncData(func)->asmretname);
         }
         // pop off all local variables
-        PopList(irl, FuncData(func)->saveregs, func);
+        n = FuncData(func)->numsavedregs;
+        for (i = n-1; i >= 0; --i) {
+            EmitPop(irl, GetLocalReg(i));
+        }
     }
     if (VARS_ON_STACK(func)) {
         if (!func->closure) {
@@ -3562,6 +3590,7 @@ CompileFunctionBody(Function *f)
 
 /*
  * compile a function to IR and put it at the end of the IRList
+ * called late (after all optimizations have been finished)
  */
 
 static void
@@ -3803,8 +3832,10 @@ AssignFuncNames(IRList *irl, Module *P)
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
         }
         if (f->is_recursive || VARS_ON_STACK(f)) {
-            FuncData(f)->asmreturnlabel = NewCodeLabel();
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
+        }
+        if (NeedToSaveLocals(f) || VARS_ON_STACK(f)) {
+            FuncData(f)->asmreturnlabel = NewCodeLabel();
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;
         }
