@@ -1646,7 +1646,7 @@ UseInternal(const char *name)
     Symbol *sym = FindSymbol(&globalModule->objsyms, name);
     if (sym && sym->type == SYM_FUNCTION) {
         Function *func = (Function *)sym->val;
-        MarkUsed(func);
+        MarkUsed(func, "internal");
     } else {
         // don't actually error here, if we are in some modes the global modules
         // aren't compiled (e.g. C++ output)
@@ -1655,7 +1655,7 @@ UseInternal(const char *name)
 }
 
 static void
-MarkUsedBody(AST *body)
+MarkUsedBody(AST *body, const char *caller)
 {
     Symbol *sym;
     AST *objref;
@@ -1668,7 +1668,7 @@ MarkUsedBody(AST *body)
         sym = LookupSymbol(body->d.string);
         if (sym && sym->type == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
-            MarkUsed(func);
+            MarkUsed(func, sym->name);
         }
         break;
     case AST_METHODREF:
@@ -1683,7 +1683,7 @@ MarkUsedBody(AST *body)
         if (!sym || sym->type != SYM_FUNCTION) {
             return;
         }
-        MarkUsed((Function *)sym->val);
+        MarkUsed((Function *)sym->val, sym->name);
         break;
     case AST_COGINIT:
         UseInternal("_coginit");
@@ -1713,14 +1713,14 @@ MarkUsedBody(AST *body)
     default:
         break;
     }
-    MarkUsedBody(body->left);
-    MarkUsedBody(body->right);
+    MarkUsedBody(body->left, caller);
+    MarkUsedBody(body->right, caller);
 }
 
-#define CALLSITES_MANY 10
+#define CALLSITES_MANY 8
 
 void
-MarkUsed(Function *f)
+MarkUsed(Function *f, const char *caller)
 {
     Module *oldcurrent;
     Function *oldfunc;
@@ -1729,11 +1729,14 @@ MarkUsed(Function *f)
         return;
     }
     f->callSites++;
+    if (f->callSites == 1) {
+        f->caller = caller;
+    }
     oldcurrent = current;
     oldfunc = curfunc;
     current = f->module;
     curfunc = f;
-    MarkUsedBody(f->body);
+    MarkUsedBody(f->body, caller);
     current = oldcurrent;
     curfunc = oldfunc;
 }
