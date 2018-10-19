@@ -77,7 +77,7 @@ do
   if diff -ub Expect/$j.txt $j.txt
   then
     echo $j passed for C++
-    rm -f $j.out $j.txt $j.binary $j.cpp $j.h FullDuplexSerial.cpp FullDuplexSerial.h dattest.cpp dattest.h
+    rm -f $j.out $j.txt $j.binary $j.cpp $j.h FullDuplexSerial.cpp FullDuplexSerial.h dattest.cpp dattest.h setabort.cpp setabort.h
   else
     echo $j failed
     endmsg="TEST FAILURES"
