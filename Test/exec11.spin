@@ -1,8 +1,8 @@
 '' check for clock frequency setting
 
 CON
-  _clkmode = xtal1 + pll2x
-  _clkfreq = 10_000_000
+  _clkmode = xtal1 + pll4x
+  _clkfreq = 20_000_000
 ''  _clkmode = xtal1 + pll16x
 ''  _clkfreq = 80_000_000
 
@@ -14,19 +14,19 @@ PUB main | start,elapsed
   fds.start(31, 30, 0, 115200)
 
   start := CNT
-  '' transmit 1152 characters, or about 72 bits
-  '' at 115200 bps, that should take 0.1 seconds
-  '' at 80 MHz that is 8000000 cycles
-  '' at 10 MHz it is 1000000 cycles
+  '' transmit (12*10) = 120 characters, or about 1200 bits
+  '' at 115200 bps, that should take 0.01 seconds
+  '' at 80 MHz that is 800000 cycles
+  '' at 20 MHz it is 200000 cycles
 
-  repeat 16
-    fds.str(string("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH", 13, 10))
+  repeat 12
+    fds.str(string("ABCDEFGH", 13, 10))
     
   fds.txflush
   elapsed := CNT
   elapsed := elapsed - start
 
-  if elapsed < 2000000
+  if elapsed < 300000
      fds.str(string("time is short, as expected", 13, 10))
      fds.txflush
   else
