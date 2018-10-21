@@ -31,7 +31,15 @@ IsLocalVariable(AST *ast) {
         }
         break;
     case AST_ARRAYREF:
-        return IsLocalVariable(ast->left);
+        if (IsLocalVariable(ast->left)) {
+            // check for pointer dereference, which is not
+            // actually going to cause us grief
+            if (IsPointerType(ExprType(ast->left))) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     case AST_RESULT:
         return true;
     default:
