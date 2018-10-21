@@ -922,11 +922,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     // allow floats to be cast as ints
     if (IsIntType(desttype) && IsFloatType(srctype)) {
-        if (IsUnsignedType(desttype)) {
-            expr = MakeOperatorCall(float_fromuns, expr, NULL, NULL);
-        } else {
-            expr = MakeOperatorCall(float_fromint, expr, NULL, NULL);
-        }
+        expr = dofloatToInt(expr);
         *astptr = expr;
         return desttype;
     }
@@ -953,9 +949,6 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                     *astptr = dopromote(expr, rsize, K_SIGNEXTEND);
                 }
             }
-        }
-        if (IsFloatType(srctype)) {
-            ERROR(line, "cannot assign float to integer");
         }
     }
     return desttype;
