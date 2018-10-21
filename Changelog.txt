@@ -1,3 +1,11 @@
+Version 3.9.7
+- Fixed a bug in converting float values to integer
+- Fixed a bug in handling local arrays
+- Fixed an error in determining types of memory references
+- Used builtin functions to push/pop collections of variables (reduces
+  HUB size)
+- Added syntax for initializing arrays in BASIC
+
 Version 3.9.6
 - Re-use the same set of registers for all functions in LMM mode,
   saving/restoring them on function entry/exit. This saves a *lot* of
