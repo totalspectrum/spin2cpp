@@ -5,6 +5,7 @@ Version 3.9.7
 - Used builtin functions to push/pop collections of variables (reduces
   HUB size)
 - Added syntax for initializing arrays in BASIC
+- Fixed some Mac build issues (thanks to David Betz)
 
 Version 3.9.6
 - Re-use the same set of registers for all functions in LMM mode,
