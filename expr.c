@@ -1941,6 +1941,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             // HACK for now: object arrays are declared funny
             return sub;
         }
+        if (expr->left->kind == AST_MEMREF) {
+            return sub;
+        }
         if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE)) return NULL;
         return sub->left;
     case AST_FUNCCALL:
