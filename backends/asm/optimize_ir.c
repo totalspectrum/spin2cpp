@@ -614,7 +614,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         if (!JumpIsAfterOrEqual(first_ir, ir)) {
             return NULL;
         }
-        assignments_are_safe = false;
+        if (assignments_are_safe && IsForwardJump(ir) && ir->aux) {
+            IR *jmpdst = (IR *)ir->aux;
+            assignments_are_safe = IsDeadAfter(jmpdst, orig);
+        } else {
+            assignments_are_safe = false;
+        }
     }
     if (ir->opc == OPC_LABEL) {
         IR *comefrom;
