@@ -353,6 +353,8 @@ Operand *GetLocalReg(int n)
     }
     if (!localreg[n]) {
         sprintf(rvalname, "local%02d", n+1);
+        /* do not use REG_LOCAL here, that will break optimization of recursive
+           functions */
         localreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
     }
     return localreg[n];

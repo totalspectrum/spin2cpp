@@ -600,7 +600,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
                 // if there are any more references to orig then
                 // replacement will fail (since arg gets changed
                 // by the call)
-                return IsDeadAfter(ir, orig) ? ir : NULL;
+                return (assignments_are_safe && IsDeadAfter(ir, orig)) ? ir : NULL;
             }
         } else if (!IsLocal(replace)) {
             return NULL;
