@@ -902,14 +902,15 @@ again:
     if (language == LANG_BASIC) {
         // if we have an _ followed by a newline, treat it as a space
         if (c == '_') {
-            c = lexgetc(L);
-            if (c == ' ' || c == '\t' || c == '\n') {
+            int d;
+            d = lexgetc(L);
+            if (d == ' ' || d == '\t' || d == '\n') {
                 do {
                     c = lexgetc(L);
                 } while (c == ' ' || c == '\t' || c == '\n');
                 goto again;
             }
-            lexungetc(L, c);
+            lexungetc(L, d);
         }
     }
     return c;
