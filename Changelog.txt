@@ -1,3 +1,7 @@
+Version 3.9.8
+- Fixed close #n (it was losing the object pointer)
+- Fixed an optimizer bug in replacing registers
+
 Version 3.9.7
 - Fixed a bug in converting float values to integer
 - Fixed a bug in handling local arrays
