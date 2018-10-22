@@ -626,9 +626,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
         // do we know who jumps to this label?
         comefrom = (IR *)ir->aux;
         if (comefrom) {
-            // if the jumper is before our first instruction, that
-            // is bad
+            // if the jumper is before our first instruction, then
+            // we don't know what may have happened before, so
+            // replacement is dangerous
+            // however, in the special case that the register is never
+            // actually used again then it's safe
             if (comefrom->addr < first_ir->addr) {
+                if (assignments_are_safe && IsDeadAfter(ir, orig)) {
+                    return ir;
+                }
                 return NULL;
             }
             assignments_are_safe = false;

@@ -32,15 +32,8 @@ __float_fromint
  if_ae	mov	__float_fromint_negate, #0
 	mov	arg1, __float_fromint_integer
 	call	#__float_fromuns
-	mov	__float_fromint_single, result1
 	cmp	__float_fromint_negate, #0 wz
- if_e	jmp	#LR__0002
-	mov	arg1, __float_fromint_single
-	xor	arg1, imm_2147483648_
-	mov	result1, arg1
-	mov	__float_fromint_single, result1
-LR__0002
-	mov	result1, __float_fromint_single
+ if_ne	xor	result1, imm_2147483648_
 __float_fromint_ret
 	ret
 
@@ -54,8 +47,6 @@ COG_BSS_START
 __float_fromint_integer
 	res	1
 __float_fromint_negate
-	res	1
-__float_fromint_single
 	res	1
 _tmp001_
 	res	1

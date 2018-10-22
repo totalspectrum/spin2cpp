@@ -22,9 +22,7 @@ __basic_print_char
 	shl	_basic_print_char_tmp001_, #2
 	mov	_basic_print_char_tmp002_, ptr__dat__
 	add	_basic_print_char_tmp001_, _basic_print_char_tmp002_
-	mov	_basic_print_char_tmp003_, _basic_print_char_tmp001_
-	mov	__basic_print_char__cse__0023, _basic_print_char_tmp003_
-	rdlong	__basic_print_char_t, __basic_print_char__cse__0023 wz
+	rdlong	__basic_print_char_t, _basic_print_char_tmp001_ wz
  if_e	jmp	#__basic_print_char_ret
 	rdlong	__basic_print_char_o, __basic_print_char_t
 	add	__basic_print_char_t, #4
@@ -34,12 +32,9 @@ __basic_print_char
 	call	#__mytx
 	jmp	#LR__0002
 LR__0001
-	mov	_basic_print_char_tmp001_, __basic_print_char_o
-	mov	_basic_print_char_tmp002_, __basic_print_char_f
-	mov	_basic_print_char_tmp003_, __basic_print_char_c
-	mov	arg1, _basic_print_char_tmp001_
-	mov	arg2, _basic_print_char_tmp002_
-	mov	arg3, _basic_print_char_tmp003_
+	mov	arg1, __basic_print_char_o
+	mov	arg2, __basic_print_char_f
+	mov	arg3, __basic_print_char_c
 	call	#__call_method
 LR__0002
 __basic_print_char_ret
@@ -75,8 +70,6 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-__basic_print_char__cse__0023
-	res	1
 __basic_print_char_c
 	res	1
 __basic_print_char_f
@@ -90,8 +83,6 @@ __basic_print_char_t
 _basic_print_char_tmp001_
 	res	1
 _basic_print_char_tmp002_
-	res	1
-_basic_print_char_tmp003_
 	res	1
 _var_01
 	res	1

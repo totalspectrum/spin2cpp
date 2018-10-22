@@ -7,8 +7,8 @@ entry
 _select
 	cmp	arg1, #0 wz
  if_ne	mov	_tmp001_, arg2
+ if_e	add	arg3, #2
  if_e	mov	_tmp001_, arg3
- if_e	add	_tmp001_, #2
 	mov	result1, _tmp001_
 _select_ret
 	ret
