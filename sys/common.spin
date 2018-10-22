@@ -84,56 +84,66 @@ tx_method
   '' each one has 3 method pointers
   '' sendchar, recvchar, close
   ''
-bas_handles
-   long @@@tx_method, @@@rx_method, 0
-   long 0[7*3]
+bas_tx_handles
+   long @@@tx_method
+   long 0[7]
+bas_rx_handles
+   long @@@rx_method
+   long 0[7]
+bas_close_handles
+   long 0[8]
 
 pri _basic_open(h, sendf, recvf, closef)
   if (h +> 7)
     return
-  h := h*3
-  bas_handles[h] := sendf
-  bas_handles[h+1] := recvf
-  bas_handles[h+2] := closef
+  bas_tx_handles[h] := sendf
+  bas_rx_handles[h] := recvf
+  bas_close_handles[h] := closef
 
-pri _basic_close(h) | ptr, closef, f, o
+pri _call_method(o, f, x=0) | r
+  asm
+    wrlong objptr, sp
+    add    sp, #4
+    mov    objptr, o
+    mov    arg1, x
+    call   f
+    sub    sp, #4
+    rdlong objptr, sp
+    mov    r, result1
+  endasm
+  return r
+  
+pri _basic_close(h) | ptr, t, f, o
   if (h +> 7)
     return
-  h := h*3
-  bas_handles[h] := 0
-  bas_handles[h+1] := 0
-  closef := bas_handles[h+2]
-  bas_handles[h+2] := 0
-  if closef == 0
+  t := bas_close_handles[h]
+  _basic_open(h,0,0,0)
+  if t == 0
     return
-  '' unpack the function pointer
-  o := long[closef]
-  f := long[closef+4]
+  o := long[t]
+  f := long[t+4]
+  _call_method(o, f, 0)
   
-  asm
-    mov ptr, objptr
-    mov objptr, o
-    call f
-    mov objptr, ptr
-  endasm
-
 pri _basic_print_char(h, c) | saveobj, t, f, o
-  h := h*3
-  t := bas_handles[h]
+  t := bas_tx_handles[h]
   if t == 0
     return
   o := long[t]
   f := long[t+4]
   if f == 0
     _tx(c)
-    return
-  asm
-    mov saveobj, objptr
-    mov objptr, o
-    mov arg1, c
-    call f
-    mov objptr, saveobj
-  endasm
+  else
+    _call_method(o, f, c)
+
+pri _basic_get_char(h) | t, o, f, saveobj
+  t := bas_rx_handles[h]
+  if t == 0
+    return -1
+  o := long[t]
+  f := long[t+4]
+  if f == 0
+    return _rx
+  return _call_method(o, f, 0)
 
 pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify, wright, wleft
   w := fmt & $ff
@@ -368,24 +378,6 @@ pri _make_methodptr(o, func) | ptr
 
 pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
-
-pri _basic_get_char(n) | t, o, f, saveobj
-  n := n*3
-  t := bas_handles[n+1]
-  if t == 0
-    return -1
-  o := long[t]
-  f := long[t+4]
-  if f == 0
-    return _rx
-  asm
-    mov saveobj, objptr
-    mov objptr, o
-    call f
-    mov objptr, saveobj
-    mov t, result1
-  endasm
-  return t
 
 '' read n characters from handle h
 pri input`$(n, h=0) | c, i, s
