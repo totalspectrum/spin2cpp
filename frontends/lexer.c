@@ -237,7 +237,7 @@ void
 lexungetc(LexStream *L, int c)
 {
     if (L->ungot_ptr == UNGET_MAX-1) {
-        fprintf(stderr, "ERROR: unget limit exceeded\n");
+        SYNTAX_ERROR("internal error: unget limit exceeded\n");
     }
     L->ungot[L->ungot_ptr++] = c;
     if (c == 10) L->eoln = 0;
@@ -259,9 +259,8 @@ lexpeekc(LexStream *L)
 void
 EstablishIndent(LexStream *L, int level)
 {
-    AST *dummy = NewAST(AST_UNKNOWN, NULL, NULL);
     if (L->indentsp >= MAX_INDENTS-1) {
-        ERROR(dummy, "too many nested indentation levels");
+        SYNTAX_ERROR("too many nested indentation levels");
         return;
     }
     if (level < 0) {
@@ -569,15 +568,20 @@ parseString(LexStream *L, AST **ast_ptr)
     struct flexbuf fb;
     AST *ast;
 
+    ast = NewAST(AST_STRING, NULL, NULL);
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (c != '"' && c > 0 && c < 256) {
+        if (c == 10 || c == 13) {
+            // newline in mid-string, this is bad news
+            SYNTAX_ERROR("unterminated string");
+            break;
+        }
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
     flexbuf_addchar(&fb, '\0');
 
-    ast = NewAST(AST_STRING, NULL, NULL);
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
     return SP_STRING;
@@ -2511,7 +2515,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             } else if (c2 == '>' + '>') {
                 c = BAS_SHR;
             } else {
-                ERROR(NULL, "internal lexer error");
+                SYNTAX_ERROR("internal lexer error");
             }
         } else {
             lexungetc(L, c2);
@@ -2532,3 +2536,4 @@ basicyylex(BASICYYSTYPE *yval)
         return 0;
     return c;
 }
+

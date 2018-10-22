@@ -32,7 +32,7 @@ AST *GetIORegisterPair(const char *name1, const char *name2)
     Symbol *sym = FindSymbol(&basicReservedWords, name1);
     AST *reg1, *reg2;
     if (!sym) {
-        ERROR(NULL, "Unknown ioregister %s", name1);
+        SYNTAX_ERROR("Unknown ioregister %s", name1);
         return NULL;
     }
     reg1 = NewAST(AST_HWREG, NULL, NULL);
@@ -879,9 +879,7 @@ identdecl:
         AST *base = $3;
         
         if (!IsConstExpr(base) || EvalConstExpr(base) != 1) {
-            ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
-            fprintf(stderr, "Array dimension base must be 1");
-            gl_errors++;
+            SYNTAX_ERROR("Array dimension base must be 1");
         }
         $$ = NewAST(AST_ARRAYDECL, $1, $5);
     }
@@ -953,7 +951,7 @@ basetypename:
         current->objblock = AddToList(current->objblock, newobj);
         sym = FindSymbol(&current->objsyms, tempnam->d.string);
         if (!sym || sym->type != SYM_OBJECT) {
-            ERROR(NULL, "internal error in type check");
+            SYNTAX_ERROR("internal error in type check");
             newobj = NULL;
         } else {
             newobj = (AST *)sym->val;

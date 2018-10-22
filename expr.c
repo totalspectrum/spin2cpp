@@ -1469,6 +1469,7 @@ IsArrayType(AST *ast)
     case AST_PTRTYPE:
     case AST_VOIDTYPE:
     case AST_FUNCTYPE:
+    case AST_OBJECT:
         return 0;
     default:
         ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",

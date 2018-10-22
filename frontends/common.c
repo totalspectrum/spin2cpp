@@ -342,6 +342,23 @@ ERROR(AST *instr, const char *msg, ...)
 }
 
 void
+SYNTAX_ERROR(const char *msg, ...)
+{
+    va_list args;
+
+    if (current)
+        ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
+    else
+        ERRORHEADER(NULL, 0, "error");
+
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+    gl_errors++;
+}
+
+void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;

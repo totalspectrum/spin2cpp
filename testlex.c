@@ -148,6 +148,18 @@ ERROR(AST *instr, const char *msg, ...)
 }
 
 void
+SYNTAX_ERROR(const char *msg, ...)
+{
+    va_list args;
+    
+    fprintf(stderr, "Error: ");
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;

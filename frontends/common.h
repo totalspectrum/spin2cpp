@@ -427,6 +427,9 @@ void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
 void ERROR_UNKNOWN_SYMBOL(AST *);
 
+/* this one is used by the lexer */
+void SYNTAX_ERROR(const char *msg, ...);
+
 /* just prints the start of the error message, formatted appropriately
    with file name and line number */
 void ERRORHEADER(const char *fileName, int lineno, const char *msg);
