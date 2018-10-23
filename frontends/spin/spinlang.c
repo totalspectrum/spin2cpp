@@ -406,7 +406,7 @@ doSpinTransform(AST **astptr, int level)
         AST *list = ast->right;
         doSpinTransform(&ast->left, 0);
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
-            AST *var = AstTempLocalVariable("_tmp_");
+            AST *var = AstTempLocalVariable("_tmp_", NULL);
             ast->left = AstAssign(var, ast->left);
         }
         while (list) {
@@ -461,7 +461,7 @@ doSpinTransform(AST **astptr, int level)
             // at toplevel we can ignore the old result
             *astptr = AstAssign(ast->left, target);
         } else {
-            tmp = AstTempLocalVariable("_tmp_");
+            tmp = AstTempLocalVariable("_tmp_", NULL);
 
             seq1 = NewAST(AST_SEQUENCE,
                           AstAssign(tmp, ast->left),
@@ -524,13 +524,13 @@ doSpinTransform(AST **astptr, int level)
             AST *seq2 = NULL;
             AST *lhsast;
             if (ExprHasSideEffects(ast->left)) {
-                tmpx = AstTempLocalVariable("_temp_");
+                tmpx = AstTempLocalVariable("_temp_", NULL);
                 seq1 = NewAST(AST_SEQUENCE, AstAssign(tmpx, ast->left), NULL);
             } else {
                 tmpx = ast->left;
             }
             if (ExprHasSideEffects(ast->right)) {
-                tmpy = AstTempLocalVariable("_temp_");
+                tmpy = AstTempLocalVariable("_temp_", NULL);
                 seq2 = NewAST(AST_SEQUENCE, AstAssign(tmpy, ast->right), NULL);
             } else {
                 tmpy = ast->right;

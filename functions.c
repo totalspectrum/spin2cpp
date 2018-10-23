@@ -686,14 +686,14 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
 }
 
 AST *
-AstTempLocalVariable(const char *prefix)
+AstTempLocalVariable(const char *prefix, AST *type)
 {
     char *name;
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
 
     name = NewTemporaryVariable(prefix);
     ast->d.string = name;
-    AddLocalVariable(curfunc, ast, NULL, SYM_TEMPVAR);
+    AddLocalVariable(curfunc, ast, type, SYM_TEMPVAR);
     return ast;
 }
 
@@ -707,6 +707,7 @@ TransformCaseExprList(AST *var, AST *ast)
 {
     AST *listexpr = NULL;
     AST *node = NULL;
+
     while (ast) {
         AstReportAs(ast);
         if (ast->kind == AST_OTHER) {
@@ -760,6 +761,9 @@ TransformCountRepeat(AST *ast)
     AST *stepval;
     AST *body;
 
+    AST *looptype; // type of loop
+    int isIntegerLoop = 1;
+    
     // what kind of test to perform (loopvar < toval, loopvar != toval, etc.)
     // note that if not set, we haven't figured it out yet (and probably
     // need to use between)
@@ -795,6 +799,8 @@ TransformCountRepeat(AST *ast)
             return origast;
         }
     }
+    looptype = ExprType(loopvar);
+    isIntegerLoop = (looptype == NULL) || IsIntType(looptype);
     ast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
@@ -817,7 +823,7 @@ TransformCountRepeat(AST *ast)
     } else {
         stepval = AstInteger(1);
     }
-    if (IsConstExpr(stepval)) {
+    if (IsConstExpr(stepval) && isIntegerLoop) {
         knownStepVal = EvalConstExpr(stepval);
     }
     if (current->language != LANG_SPIN) {
@@ -854,7 +860,7 @@ TransformCountRepeat(AST *ast)
             }
         }
     }
-    if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+    if (IsConstExpr(fromval) && IsConstExpr(toval) && isIntegerLoop) {
         int32_t fromi, toi;
 
         fromi = EvalConstExpr(fromval);
@@ -869,11 +875,11 @@ TransformCountRepeat(AST *ast)
 
     /* get the loop variable, if we don't already have one */
     if (!loopvar) {
-        loopvar = AstTempLocalVariable("_idx_");
+        loopvar = AstTempLocalVariable("_idx_", looptype);
     }
 
     if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
-        AST *initvar = AstTempLocalVariable("_start_");
+        AST *initvar = AstTempLocalVariable("_start_", looptype);
         initstmt = AstAssign(loopvar, AstAssign(initvar, fromval));
         fromval = initvar;
     } else {
@@ -881,13 +887,13 @@ TransformCountRepeat(AST *ast)
     }
     /* set the limit variable */
     if (IsConstExpr(toval)) {
-        if (gl_expand_constants) {
+        if (gl_expand_constants && isIntegerLoop) {
             toval = AstInteger(EvalConstExpr(toval));
         }
     } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
         /* do nothing, toval is already OK */
     } else {
-        limitvar = AstTempLocalVariable("_limit_");
+        limitvar = AstTempLocalVariable("_limit_", looptype);
         initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
         toval = limitvar;
     }
@@ -899,7 +905,7 @@ TransformCountRepeat(AST *ast)
             knownStepVal = -knownStepVal;
         }
     } else {
-        AST *stepvar = AstTempLocalVariable("_step_");
+        AST *stepvar = AstTempLocalVariable("_step_", looptype);
         initstmt = NewAST(AST_SEQUENCE, initstmt,
                           AstAssign(stepvar,
                                     NewAST(AST_CONDRESULT,
@@ -941,14 +947,14 @@ TransformCountRepeat(AST *ast)
                 /* toval is constant, but step isn't, so we need to introduce
                    a variable for the limit = toval + step */
                 if (!limitvar) {
-                    limitvar = AstTempLocalVariable("_limit_");
+                    limitvar = AstTempLocalVariable("_limit_", looptype);
                 }
                 initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
                 toval = limitvar;
             }
         } else {
             if (!limitvar) {
-                limitvar = AstTempLocalVariable("_limit_");
+                limitvar = AstTempLocalVariable("_limit_", looptype);
             }
             initstmt = NewAST(AST_SEQUENCE, initstmt,
                               AstAssign(limitvar,
@@ -1260,7 +1266,7 @@ CheckFunctionCalls(AST *ast)
                 AST *newparams;
                 // many backends need the results placed in temporaries
                 for (i = 0; i < n; i++) {
-                    temps[i] = AstTempLocalVariable("_parm_");
+                    temps[i] = AstTempLocalVariable("_parm_", NULL);
                     lhsseq = AddToList(lhsseq, NewAST(AST_EXPRLIST, temps[i], NULL));
                 }
                 // create the new parameters
@@ -1848,7 +1854,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
     case AST_MEMREF:
         expr->left = ExtractSideEffects(expr->left, preseq);
         if (ExprHasSideEffects(expr->right)) {
-            temp = AstTempLocalVariable("_temp_");
+            temp = AstTempLocalVariable("_temp_", NULL);
             sideexpr = AstAssign(temp, expr->right);
             expr->right = temp;
             if (*preseq) {

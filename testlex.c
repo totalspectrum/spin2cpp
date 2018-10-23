@@ -44,7 +44,7 @@ static void EXPECTEQfn(long x, long val, int line) {
 //
 // dummy definition
 //
-AST *AstTempLocalVariable(const char *prefix)
+AST *AstTempLocalVariable(const char *prefix, AST *type)
 {
     return NULL;
 }

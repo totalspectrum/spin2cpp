@@ -336,7 +336,7 @@ ReplaceExprWithVariable(const char *prefix, AST *expr)
         }
     }
     // didn't find a variable, create a new one
-    exprvar = AstTempLocalVariable(prefix);
+    exprvar = AstTempLocalVariable(prefix, NULL);
     exprinit = NewAST(AST_STMTLIST,
                       AstAssign(exprvar, expr),
                       NULL);
@@ -611,7 +611,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         AST *maskvar;
         AST *maskassign;
 
-        maskvar = AstTempLocalVariable("_mask");
+        maskvar = AstTempLocalVariable("_mask", ast_type_unsigned_long);
         shift = AstOperator(K_SHL, AstInteger(1), loexpr);
         maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);

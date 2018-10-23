@@ -323,7 +323,7 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     if (!entry->replace) {
         AST *assign;
         AST *origexpr = entry->expr;
-        entry->replace = AstTempLocalVariable("_cse_");
+        entry->replace = AstTempLocalVariable("_cse_", NULL);
         if (origexpr->kind == AST_ARRAYREF) {
             AST *reftype = ArrayBaseType(origexpr->left);
             if (!reftype) {
