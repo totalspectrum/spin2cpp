@@ -847,7 +847,17 @@ Also note that before using a pin as input its direction should be set as input 
 
 ### INPUT$
 
-A predefined string function. `input$(n, h)` reads `n` characters from handle `h`, as created by an `open device as #h` statement.
+A predefined string function. `input$(n, h)` reads up to `n` characters from handle `h`, as created by an `open device as #h` statement. If there are not enough characters to fulfil the request then a shorter string is returned; for example, at end of file an empty string "" will be returned. If no `h` is specified (just `input$(n)` is used) then the default serial device will be used.
+
+Example:
+```
+file$ = ""           ' initialize read data
+do
+  s$ = input$(80, h) ' read up to 80 characters at a time
+  file$ = file$ + s$ ' append to the data
+until s$ = ""        ' stop at end of file
+' now the whole file is in file$
+```
 
 ### INTEGER
 
