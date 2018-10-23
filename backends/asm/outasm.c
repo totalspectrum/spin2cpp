@@ -3823,7 +3823,7 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 static bool
 IsGlobalModule(Module *P)
 {
-    return P == globalModule;
+    return P == globalModule || P == globalModule->next;
 }
 
 //
@@ -4888,7 +4888,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         
     }
     InitAsmCode();
-    CompileIntermediate(globalModule);
+    
+    CompileIntermediate(globalModule->next);  // core funcs
+    CompileIntermediate(globalModule);        // math funcs
     
     memset(&cogcode, 0, sizeof(cogcode));
     memset(&hubcode, 0, sizeof(hubcode));
@@ -5003,10 +5005,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         EmitBuiltins(&cogcode);
 
         // output global functions
-        if (HUB_CODE) {
-            CompileToIR_internal(&hubcode, globalModule);
-        } else {
-            CompileToIR_internal(&cogcode, globalModule);
+        {
+            Module *Q;
+            IRList *irlist = (HUB_CODE) ? &hubcode : &cogcode;
+            
+            for (Q = globalModule; Q; Q = Q->next) {
+                CompileToIR_internal(irlist, Q);
+            }
         }
         // now copy the hub code into place
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
@@ -5049,6 +5054,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
+    VisitRecursive(&hubdata, globalModule->next, EmitDatSection, VISITFLAG_EMITDAT);
     
     // only the top level variable space is needed
     EmitVarSection(&hubdata, P);
