@@ -91,7 +91,6 @@ makeClassNameSafe(Module *P)
 #include "sys/common.spin.h"
 #include "sys/float.spin.h"
 #include "sys/gcalloc.spin.h"
-#include "sys/math.bas.h"
 
 void
 InitGlobalModule(void)
@@ -100,10 +99,9 @@ InitGlobalModule(void)
     Symbol *sym;
     int oldtmpnum;
     const char *syscode;
-    Module *A, *B;
     
-    current = A = NewModule("_system_", LANG_SPIN);
-    table = &A->objsyms;
+    current = globalModule = NewModule("_system_", LANG_SPIN);
+    table = &globalModule->objsyms;
     sym = AddSymbol(table, "CLKFREQ", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? P2_HUB_BASE : 0;
@@ -125,27 +123,17 @@ InitGlobalModule(void)
             syscode = (const char *)sys_p1_code_spin;
         }
         gl_normalizeIdents = 0;
-        strToLex(&A->L, syscode, "_system_");
+        strToLex(&globalModule->L, syscode, "_system_");
         spinyyparse();
-        strToLex(&A->L, (const char *)sys_common_spin, "_common_");
+        strToLex(&globalModule->L, (const char *)sys_common_spin, "_common_");
         spinyyparse();
-        strToLex(&A->L, (const char *)sys_float_spin, "_float_");
+        strToLex(&globalModule->L, (const char *)sys_float_spin, "_float_");
         spinyyparse();
-        strToLex(&A->L, (const char *)sys_gcalloc_spin, "_gc_");
+        strToLex(&globalModule->L, (const char *)sys_gcalloc_spin, "_gc_");
         spinyyparse();
         
-        ProcessModule(A);
+        ProcessModule(globalModule);
 
-        curfunc = NULL;
-        current = B = NewModule("_bas_sys_", LANG_BASIC);
-        strToLex(&current->L, (const char *)sys_math_bas, "_bas_sys_");
-        basicyyparse();
-
-        B->objsyms.next = &A->objsyms;
-        B->next = A;
-        globalModule = B;
-        ProcessModule(B);
-        
         curfunc = NULL;
         /* restore temp variable base */
         (void)SetTempVariableBase(oldtmpnum, 89999);
