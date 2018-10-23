@@ -724,7 +724,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         }
         isfloat = 1;
     } else if (IsFloatType(righttype)) {
-        ast->left = domakefloat(righttype, ast->left);
+        ast->left = domakefloat(lefttype, ast->left);
         isfloat = 1;
     }
     if (isfloat) {
@@ -1095,7 +1095,7 @@ AST *CheckTypes(AST *ast)
                 // force this to have a memory dereference
                 AST *deref = NewAST(AST_MEMREF, basetype, ast->left);
                 ast->left = deref;
-            } else if (ast->kind == AST_MEMREF) {
+            } else if (ast->left->kind == AST_MEMREF) {
                 // nothing to do
             } else if (IsArrayType(lefttype)) {
                 // nothing to do here
