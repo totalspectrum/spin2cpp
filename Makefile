@@ -44,7 +44,7 @@ RM = rm -rf
 
 VPATH=.:util:frontends:frontends/basic:frontends/spin:backends:backends/asm:backends/cpp:backends/dat
 
-HEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h
+LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h ast.h frontends/common.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
 
@@ -111,13 +111,16 @@ $(BUILD)/fastspin$(EXT): fastspin.c $(OBJS)
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c $(HEADERS)
+$(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BUILD)/basic.tab.o: $(BUILD)/basic.tab.c $(HEADERS)
+$(BUILD)/basic.tab.o: $(BUILD)/basic.tab.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BUILD)/%.o: %.c $(HEADERS)
+$(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(BUILD)/%.o: %.c
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
 
 #
