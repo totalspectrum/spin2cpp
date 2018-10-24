@@ -1,4 +1,5 @@
 Version 3.9.8
+- Fixed a nasty overflow in integer prints
 - Fixed close #n (it was losing the object pointer)
 - Fixed an optimizer bug in replacing registers
 
