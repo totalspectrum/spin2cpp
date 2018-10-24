@@ -102,6 +102,8 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
 
+%token C_EOF "end of file"
+
 %start translation_unit
 %%
 
@@ -542,9 +544,13 @@ labeled_statement
 
 compound_statement
 	: '{' '}'
+            { $$ = NULL; }
 	| '{' statement_list '}'
+            { $$ = $2; }
 	| '{' declaration_list '}'
+            { $$ = $2; }
 	| '{' declaration_list statement_list '}'
+            { $$ = AddToList($2, $3); }
 	;
 
 declaration_list
@@ -554,22 +560,34 @@ declaration_list
 
 statement_list
 	: statement
+            { $$ = NewCommentedStatement($1); }
 	| statement_list statement
+            { $$ = AddToList($1, NewCommentedStatement($2)); }
 	;
 
 expression_statement
 	: ';'
+            { $$ = NULL; }
 	| expression ';'
+            { $$ = $1; }
 	;
 
 selection_statement
 	: C_IF '(' expression ')' statement
+            { $$ = NewAST(AST_IF, $3,
+                          NewAST(AST_THENELSE, $5, NULL)); }
 	| C_IF '(' expression ')' statement C_ELSE statement
+            { $$ = NewAST(AST_IF, $3,
+                          NewAST(AST_THENELSE, $5, $7)); }
 	| C_SWITCH '(' expression ')' statement
+            { $$ = NULL; }
 	;
 
 iteration_statement
 	: C_WHILE '(' expression ')' statement
+            { AST *body = CheckYield($5);
+              $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
+            }
 	| C_DO statement C_WHILE '(' expression ')' ';'
 	| C_FOR '(' expression_statement expression_statement ')' statement
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
@@ -580,7 +598,9 @@ jump_statement
 	| C_CONTINUE ';'
 	| C_BREAK ';'
 	| C_RETURN ';'
+            { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
 	| C_RETURN expression ';'
+            { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
 	;
 
 translation_unit

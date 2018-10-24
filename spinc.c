@@ -39,9 +39,11 @@
 
 extern int spinyyparse(void);
 extern int basicyyparse(void);
+extern int cgramyyparse(void);
 
 extern int spinyydebug;
 extern int basicyydebug;
+extern int cgramyydebug;
 
 // process a module after parsing it
 static void ProcessModule(Module *P);
@@ -426,6 +428,9 @@ doparse(int language)
   if (language == LANG_BASIC) {
     basicyydebug = spinyydebug;
     basicyyparse();
+  } else if (language == LANG_C) {
+    cgramyydebug = spinyydebug;
+    cgramyyparse();
   } else {
     spinyyparse();
   }

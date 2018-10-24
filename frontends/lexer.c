@@ -689,6 +689,17 @@ commentBlockStart(int language, int c, LexStream *L)
         }
         return true;
     }
+    if (language == LANG_C) {
+        if (c != '/') {
+            return false;
+        }
+        c = lexgetc(L);
+        if (c != '*') {
+            lexungetc(L, c);
+            return false;
+        }
+        return true;
+    }
     return false;
 }
 
@@ -700,6 +711,17 @@ commentBlockEnd(int language, int c, LexStream *L)
     }
     if (language == LANG_BASIC) {
         if (c != '\'') {
+            return false;
+        }
+        c = lexgetc(L);
+        if (c != '/') {
+            lexungetc(L, c);
+            return false;
+        }
+        return true;
+    }
+    if (language == LANG_C) {
+        if (c != '*') {
             return false;
         }
         c = lexgetc(L);
@@ -736,12 +758,16 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
     if (language == LANG_BASIC) {
       eoln_token = BAS_EOLN;
       eof_token = BAS_EOF;
+    } else if (language == LANG_C) {
+        eoln_token = ' ';
+        eof_token = -1;
     } else {
       eoln_token = SP_EOLN;
       eof_token = SP_EOF;
     }
     
     flexbuf_init(&cb, INCSTR);
+refetch:
     c = lexgetc(L);
 again:
     if (gl_srccomments && L->eoln) {
@@ -892,6 +918,7 @@ again:
     if (c == EOF) {
       if (!L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
+        if (eoln_token == ' ') goto refetch;
         return eoln_token;
       }
       return eof_token;
@@ -902,6 +929,7 @@ again:
     }
     if (c == '\n') {
         L->eoln = 1;
+        if (eoln_token == ' ') goto refetch;
         return eoln_token;
     }
     if (current && !current->sawToken) {
@@ -1511,6 +1539,10 @@ void SetPreprocessorLanguage(int language)
     if (language == LANG_BASIC) {
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
         pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
+        //pp_setlinedirective(&gl_pp, "");   
+    } else if (language == LANG_C) {
+        pp_setcomments(&gl_pp, "//", "/*", "*/");
+        pp_setlinedirective(&gl_pp, "/* #line %d %s */");   
         //pp_setlinedirective(&gl_pp, "");   
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
