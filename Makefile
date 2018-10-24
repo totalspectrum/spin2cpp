@@ -42,9 +42,9 @@ CFLAGS = -g -Wall $(INC)
 LIBS = -lm
 RM = rm -rf
 
-VPATH=.:util:frontends:frontends/basic:frontends/spin:backends:backends/asm:backends/cpp:backends/dat
+VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/dat
 
-LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h ast.h frontends/common.h
+LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
 PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
 
@@ -58,7 +58,7 @@ SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
-OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o
+OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 
 SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h sys/float.spin.h sys/gcalloc.spin.h
 
@@ -72,6 +72,9 @@ $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
 	$(YACC) -p basicyy -t -b $(BUILD)/basic -d frontends/basic/basic.y
+
+$(BUILD)/cgram.tab.c $(BUILD)/cgram.tab.h: frontends/c/cgram.y
+	$(YACC) -p cgramyy -t -b $(BUILD)/cgram -d frontends/c/cgram.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 
@@ -115,6 +118,9 @@ $(BUILD)/spin.tab.o: $(BUILD)/spin.tab.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BUILD)/basic.tab.o: $(BUILD)/basic.tab.c $(LEXHEADERS)
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(BUILD)/cgram.tab.o: $(BUILD)/cgram.tab.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)

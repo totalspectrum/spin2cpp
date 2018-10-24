@@ -31,6 +31,10 @@
 #undef yytokentype
 #define yytokentype basicyytokentype
 #include "basic.tab.h"
+#undef YYTOKENTYPE
+#undef yytokentype
+#define yytokentype cgramyytokentype
+#include "cgram.tab.h"
 
 struct preprocess gl_pp;
 
@@ -58,6 +62,7 @@ safe_isdigit(unsigned int x) {
 
 SymbolTable spinReservedWords;
 SymbolTable basicReservedWords;
+SymbolTable cReservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
 
@@ -1219,6 +1224,35 @@ struct reservedword basic_keywords[] = {
   { "xor", BAS_XOR },
 };
 
+struct reservedword c_keywords[] = {
+  { "case", C_CASE },
+//  { "__class", BAS_CLASS },
+  { "const", C_CONST },
+  { "continue", C_CONTINUE },
+  { "do", C_DO },
+  { "double", C_DOUBLE },
+  { "else", C_ELSE },
+  { "enum", C_ENUM },
+  { "extern", C_EXTERN },
+  { "float", C_FLOAT },
+  { "for", C_FOR },
+  { "goto", C_GOTO },
+  { "if", C_IF },
+  { "int", C_INT },
+  { "long", C_LONG },
+  { "return", C_RETURN },
+  { "short", C_SHORT },
+  { "static", C_STATIC },
+  { "struct", C_STRUCT },
+  { "switch", C_SWITCH },
+  { "typedef", C_TYPEDEF },
+  { "union", C_UNION },
+  { "unsigned", C_UNSIGNED },
+  { "void", C_VOID },
+  { "volatile", C_VOLATILE },
+  { "while", C_WHILE },
+};
+
 static char *c_words[] = {
     "abort",
     "abs",
@@ -1495,6 +1529,9 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
         AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val);
+    }
+    for (i = 0; i < N_ELEMENTS(c_keywords); i++) {
+        AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val);
     }
     
     if (gl_p2) {
@@ -2537,3 +2574,268 @@ basicyylex(BASICYYSTYPE *yval)
     return c;
 }
 
+static int
+parseCIdentifier(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    struct flexbuf fb;
+    Symbol *sym;
+    AST *ast = NULL;
+    char *idstr;
+    
+    flexbuf_init(&fb, INCSTR);
+    c = lexgetc(L);
+    while (isIdentifierChar(c)) {
+        flexbuf_addchar(&fb, tolower(c));
+        c = lexgetc(L);
+    }
+    // add a trailing 0, and make sure there is room for an extra
+    // character in case the name mangling needs it
+    flexbuf_addchar(&fb, '\0');
+    flexbuf_addchar(&fb, '\0');
+    idstr = flexbuf_get(&fb);
+    lexungetc(L, c);  
+
+    // check for ASM
+    /* check for reserved words */
+    if (InDatBlock(L)) {
+        sym = FindSymbol(&pasmWords, idstr);
+        if (sym) {
+            free(idstr);
+            if (sym->type == SYM_INSTR) {
+                ast = NewAST(AST_INSTR, NULL, NULL);
+                ast->d.ptr = sym->val;
+                if (comment_chain) {
+                    ast = AddToList(comment_chain, ast);
+                    comment_chain = NULL;
+                }
+                *ast_ptr = ast;
+                return C_INSTR;
+            }
+            if (sym->type == SYM_INSTRMODIFIER) {
+                ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return C_INSTRMODIFIER;
+            }
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+        }
+    }
+
+    // check for keywords
+    sym = FindSymbol(&cReservedWords, idstr);
+    if (sym != NULL) {
+      if (sym->type == SYM_RESERVED) {
+	c = INTVAL(sym);
+        /* check for special handling */
+        switch(c) {
+        case C_ASM:
+            if (InDatBlock(L)) {
+                // leave the inline assembly
+                L->in_block = SP_PUB;
+            } else {
+                L->in_block = SP_ASM;
+            }
+            break;
+        default:
+            break;
+        }
+	if (!ast) {
+	  ast = GetComments();
+	  *ast_ptr = ast;
+	  return c;
+	}
+      }
+    }
+    // check for a defined class or similar type
+    if (current) {
+        sym = FindSymbol(&current->objsyms, idstr);
+        if (sym) {
+            if (sym->type == SYM_OBJECT) {
+                ast = (AST *)sym->val;
+                // check for an abstract object declaration
+                if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
+                    *ast_ptr = ast;
+                    return C_TYPE_NAME;
+                }
+            } else if (sym->type == SYM_TYPEDEF) {
+                ast = (AST *)sym->val;
+                *ast_ptr = ast;
+                return C_TYPE_NAME;
+            }
+        }
+    }
+    // it's an identifier
+    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    ast->d.string = idstr;
+    *ast_ptr = ast;
+    return C_IDENTIFIER;
+}
+
+int saved_cgramyychar;
+
+static int
+getCToken(LexStream *L, AST **ast_ptr)
+{
+    int c, c2;
+    AST *ast = NULL;
+    
+    c = skipSpace(L, &ast, LANG_C);
+
+    // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
+    if (c >= 127) {
+        *ast_ptr = last_ast = ast;
+        return c;
+    }
+    if (safe_isdigit(c)) {
+        lexungetc(L,c);
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 10, &ast->d.ival);
+        if (c == SP_FLOATNUM) {
+            ast->kind = AST_FLOAT;
+	    c = C_CONSTANT;
+	} else if (ast->d.ival == 0) {
+            // check for hex or binary prefixes like 0x or 0h
+            int c2;
+            c2 = lexgetc(L);
+            if (c2 == 'h' || c2 == 'H' || c2 == 'x' || c2 == 'X') {
+                c = parseNumber(L, 16, &ast->d.ival);
+            } else if (c2 == 'b' || c2 == 'B') {
+                c = parseNumber(L, 2, &ast->d.ival);
+            } else {
+                lexungetc(L, c2);
+            }
+            c = C_CONSTANT;
+	} else {
+            c = C_CONSTANT;
+        }
+    } else if (isIdentifierStart(c)) {
+        lexungetc(L, c);
+        c = parseCIdentifier(L, &ast);
+    } else if (c == '"') {
+        parseString(L, &ast);
+	c = C_STRING_LITERAL;
+    } else if (c == '<') {
+        c2 = lexgetc(L);
+        if (c2 == '=') {
+            c = C_LE_OP;
+        } else if (c2 == '<') {
+            c2 = lexgetc(L);
+            if (c2 == '-') {
+                c = C_LEFT_ASSIGN;
+            } else {
+                lexungetc(L, c2);
+                c = C_LEFT_OP;
+            }
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '>') {
+        c2 = lexgetc(L);
+        if (c2 == '=') {
+            c = C_GE_OP;
+        } else if (c2 == '>') {
+            c2 = lexgetc(L);
+            if (c2 == '=') {
+                c = C_RIGHT_ASSIGN;
+            } else {
+                lexungetc(L, c2);
+                c = C_RIGHT_OP;
+            }
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '-') {
+        c2 = lexgetc(L);
+        if (c2 == '>') {
+            c = C_PTR_OP;
+        } else if (c == '=') {
+            c = C_SUB_ASSIGN;
+        } else if (c == '-') {
+            c = C_DEC_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '+') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_ADD_ASSIGN;
+        } else if (c == '+') {
+            c = C_INC_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '&') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_AND_ASSIGN;
+        } else if (c == '&') {
+            c = C_AND_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '|') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_OR_ASSIGN;
+        } else if (c == '|') {
+            c = C_OR_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '^') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_XOR_ASSIGN;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '*') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_MUL_ASSIGN;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '/') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_DIV_ASSIGN;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '%') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_MOD_ASSIGN;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '!') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_NE_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    } else if (c == '=') {
+        c2 = lexgetc(L);
+        if (c == '=') {
+            c = C_EQ_OP;
+        } else {
+            lexungetc(L, c2);
+        }
+    }
+    *ast_ptr = last_ast = ast;
+    return c;
+}
+
+int
+cgramyylex(CGRAMYYSTYPE *yval)
+{
+    int c;
+    saved_cgramyychar = c = getCToken(&current->L, yval);
+    if (c == BAS_EOF || c == EOF)
+        return 0;
+    return c;
+}

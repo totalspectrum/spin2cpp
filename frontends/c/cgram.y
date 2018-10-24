@@ -15,8 +15,8 @@
 #include "frontends/lexer.h"
     
 /* Yacc functions */
-    void basicyyerror(const char *);
-    int basicyylex();
+    void cgramyyerror(const char *);
+    int cgramyylex();
 
     extern int gl_errors;
 
@@ -25,6 +25,12 @@
     
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
+
+AST *
+C_ModifySignedUnsigned(AST *modifier, AST *type)
+{
+    return type;
+}
 
 %}
 
@@ -92,6 +98,10 @@
 %token C_BREAK "break"
 %token C_RETURN "return"
 
+%token C_ASM "__asm__"
+%token C_INSTR "asm instruction"
+%token C_INSTRMODIFIER "instruction modifier"
+
 %start translation_unit
 %%
 
@@ -142,7 +152,9 @@ unary_expression
 	| unary_operator cast_expression
             { $$ = $1; $$->left = $2; }
 	| C_SIZEOF unary_expression
+            { $$ = AstOperator(AST_SIZEOF, $1, NULL); }           
 	| C_SIZEOF '(' type_name ')'
+            { $$ = AstOperator(AST_SIZEOF, $1, NULL); }           
 	;
 
 unary_operator
@@ -175,7 +187,7 @@ multiplicative_expression
 	| multiplicative_expression '/' cast_expression
             { $$ = AstOperator('/', $1, $3); }
 	| multiplicative_expression '%' cast_expression
-            { $$ = AstOperator(K_MODULO, $1, $3); }
+            { $$ = AstOperator(K_MODULUS, $1, $3); }
 	;
 
 additive_expression
@@ -275,7 +287,7 @@ assignment_operator
 	| C_DIV_ASSIGN
             { $$ = AstOpAssign('/', NULL, NULL); }
 	| C_MOD_ASSIGN
-            { $$ = AstOpAssign(K_MOD, NULL, NULL); }
+            { $$ = AstOpAssign(K_MODULUS, NULL, NULL); }
 	| C_ADD_ASSIGN
             { $$ = AstOpAssign('+', NULL, NULL); }
 	| C_SUB_ASSIGN
@@ -313,9 +325,13 @@ declaration_specifiers
 	: storage_class_specifier
 	| storage_class_specifier declaration_specifiers
 	| type_specifier
+            { $$ = $1; }
 	| type_specifier declaration_specifiers
+            { $$ = C_ModifySignedUnsigned($1, $2); }
 	| type_qualifier
+            { $$ = $1; $$->left = ast_type_long; }
 	| type_qualifier declaration_specifiers
+           { $$ = $1; $$->left = $2; }
 	;
 
 init_declarator_list
@@ -338,17 +354,29 @@ storage_class_specifier
 
 type_specifier
 	: C_VOID
+            { $$ = ast_type_void; }
 	| C_CHAR
+            { $$ = ast_type_byte; }
 	| C_SHORT
+            { $$ = ast_type_signed_word; }
 	| C_INT
+            { $$ = ast_type_long; }
 	| C_LONG
+            { $$ = ast_type_long; }
 	| C_FLOAT
+            { $$ = ast_type_float; }
 	| C_DOUBLE
+            { $$ = ast_type_float; }
 	| C_SIGNED
+            { $$ = ast_type_long; }
 	| C_UNSIGNED
+            { $$ = ast_type_unsigned_long; }
 	| struct_or_union_specifier
+            { $$ = $1; }
 	| enum_specifier
+            { $$ = $1; }
 	| C_TYPE_NAME
+            { $$ = $1; }
 	;
 
 struct_or_union_specifier
@@ -407,7 +435,9 @@ enumerator
 
 type_qualifier
 	: C_CONST
+            { $$ = NewAST(AST_MODIFIER_CONST, NULL, NULL); }
 	| C_VOLATILE
+            { $$ = NewAST(AST_MODIFIER_VOLATILE, NULL, NULL); }
 	;
 
 declarator
@@ -434,7 +464,9 @@ pointer
 
 type_qualifier_list
 	: type_qualifier
+           { $$ = $1; }
 	| type_qualifier_list type_qualifier
+           { $$ = $1; $$->left = $2; }
 	;
 
 
@@ -538,7 +570,7 @@ selection_statement
 
 iteration_statement
 	: C_WHILE '(' expression ')' statement
-	| C_DO statement WHILE '(' expression ')' ';'
+	| C_DO statement C_WHILE '(' expression ')' ';'
 	| C_FOR '(' expression_statement expression_statement ')' statement
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
 	;
@@ -571,12 +603,32 @@ function_definition
 %%
 #include <stdio.h>
 
-extern char cgram_yytext[];
-extern int column;
-
-cgram_yyerror(s)
-char *s;
+void
+cgramyyerror(const char *msg)
 {
-	fflush(stdout);
-	printf("\n%*s\n%*s\n", column, "^", column, s);
+    extern int saved_cgramyychar;
+    int yychar = saved_cgramyychar;
+    
+    ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
+
+    // massage bison's error messages to make them easier to understand
+    while (*msg) {
+        // say which identifier was unexpected
+        if (!strncmp(msg, "unexpected identifier", strlen("unexpected identifier")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
+            fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
+            msg += strlen("unexpected identifier");
+        }
+        // if we get a stray character in source, sometimes bison tries to treat it as a token for
+        // error purposes, resulting in $undefined as the token
+        else if (!strncmp(msg, "$undefined", strlen("$undefined")) && yychar >= ' ' && yychar < 127) {
+            fprintf(stderr, "%c", yychar);
+            msg += strlen("$undefined");
+        }
+        else {
+            fprintf(stderr, "%c", *msg);
+            msg++;
+        }
+    }
+    fprintf(stderr, "\n");
+    gl_errors++;
 }

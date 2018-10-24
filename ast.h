@@ -172,6 +172,9 @@ enum astkind {
     AST_SETJMP,
     AST_TRYENV,
     AST_CATCHRESULT,
+
+    AST_SIZEOF = 120,
+    AST_CAST = 121,
 };
 
 /* forward reference */
