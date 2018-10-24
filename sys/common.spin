@@ -199,7 +199,7 @@ pri _basic_fmt_in_str(u, x, base, mindigits, maxdigits) | digit, i
   byte[u + i] := digit
   return i+1
   
-pri _basic_fmt_uinteger(x, base=10, mindigits = 1, maxdigits = 32, signchar = 0) | ptr, u, r
+pri _basic_fmt_uinteger(x, base, mindigits, maxdigits, signchar) | ptr, u, r
   ptr := u := _gc_alloc_managed(maxdigits+1)
   if ptr == 0
     return ptr
@@ -217,6 +217,8 @@ pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
   mindigits := (fmt>>16) & $1f
   if mindigits == 0
     mindigits := 1
+  if maxdigits == 0
+    maxdigits := 32
   ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, 0)
   _basic_print_string(h, ptr, fmt)
   _gc_free(ptr)
