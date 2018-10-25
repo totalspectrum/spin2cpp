@@ -2012,8 +2012,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     {
         AST *ltype, *rtype;
         switch (expr->d.ival) {
-        case '+':
         case '-':
+        case '+':
         case K_INCREMENT:
         case K_DECREMENT:
             ltype = ExprTypeRelative(table, expr->left);
@@ -2024,18 +2024,30 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             if (expr->d.ival == '+' && IsStringType(ltype)) {
                 return ltype;
             }
-            if (!ltype) ltype = rtype;
-            if (ltype) {
-                if (IsIntOrGenericType(ltype)) return ltype;
-                if (IsPointerType(ltype)) {
-                    if (PointerTypeIncrement(ltype) == 1) {
-                        return ltype;
+            if (current && current->language == LANG_SPIN) {
+                if (!ltype) ltype = rtype;
+                if (ltype) {
+                    if (IsIntOrGenericType(ltype)) return ltype;
+                    if (IsPointerType(ltype)) {
+                        if (PointerTypeIncrement(ltype) == 1) {
+                            return ltype;
+                        }
+                        return ast_type_generic;
                     }
-                    return ast_type_generic;
                 }
                 return WidestType(ltype, rtype);
             }
-            return NULL;
+            if (IsPointerType(ltype) && IsPointerType(rtype)) {
+                if (expr->d.ival == '-') {
+                    return ast_type_long;
+                }
+                return ltype;
+            } else if (IsPointerType(ltype) && (rtype == NULL || IsIntType(rtype))) {
+                return ltype;
+            } else if (IsPointerType(rtype) && (ltype == NULL || IsIntType(ltype))) {
+                return rtype;
+            }
+            return WidestType(ltype, rtype);
         case K_NEGATE:
         case '*':
         case '/':

@@ -46,6 +46,23 @@ do
   fi
 done
 
+for i in stest*.c
+do
+  j=`basename $i .c`
+  # NOTE: optimize 250 is all optimizations except
+  #   remove_unused_funcs (0x01)
+  #   remove_hub_bss (0x04)
+  $PROG --asm --optimize 250 --noheader $i
+  if  diff -ub Expect/$j.pasm $j.pasm
+  then
+      rm -f $j.pasm
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
 # clean up
 if [ "x$endmsg" = "x$ok" ]
 then

@@ -27,8 +27,28 @@
 #define YYSTYPE AST*
 
 static AST *
+MakeSigned(AST *type, int isSigned)
+{
+    if (!type) return type;
+    if (type->kind == AST_INTTYPE) {
+        if (isSigned) return type;
+        return NewAST(AST_UNSIGNEDTYPE, type->left, NULL);
+    }
+    if (type->kind == AST_UNSIGNEDTYPE) {
+        if (!isSigned) return type;
+        return NewAST(AST_INTTYPE, type->left, NULL);
+    }
+    type->left = MakeSigned(type->left, isSigned);
+    return type;
+}
+static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
 {
+    if (IsUnsignedType(modifier)) {
+        type = MakeSigned(type, 0);
+    } else {
+        type = MakeSigned(type, 1);
+    }
     return type;
 }
 
@@ -259,7 +279,7 @@ shift_expression
 	| shift_expression C_LEFT_OP additive_expression
             { $$ = AstOperator(K_SHL, $1, $3); }
 	| shift_expression C_RIGHT_OP additive_expression
-            { $$ = AstOperator(K_SHR, $1, $3); }
+            { $$ = AstOperator(K_SAR, $1, $3); }
 	;
 
 relational_expression
