@@ -45,7 +45,8 @@ typedef struct asmmoddata {
 #define PUBLIC 0
 #define PRIVATE 1
 #define LOCAL 2
-#define VOLATILE 4
+#define ISVOLATILE 4
+#define ISCONST 8
 int PrintVarList(Flexbuf *f, AST *typ, AST *list, int flags);
 
 void PrintAssign(Flexbuf *f, AST *left, AST *right, int flags);

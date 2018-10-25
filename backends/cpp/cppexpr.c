@@ -697,15 +697,18 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         typedecl = ast_type_generic;
     }
     if (typedecl->kind == AST_MODIFIER_VOLATILE) {
-        doPrintType(f, typedecl->left, addspace, flags | VOLATILE);
+        doPrintType(f, typedecl->left, addspace, flags | ISVOLATILE);
         return;
     }
     if (typedecl->kind == AST_MODIFIER_CONST) {
-        flexbuf_printf(f, "const ");
-        typedecl = typedecl->left;
+        doPrintType(f, typedecl->left, addspace, flags | ISCONST);
+        return;
     }
-    if (typedecl->kind != AST_PTRTYPE && (flags & VOLATILE)) {
+    if (typedecl->kind != AST_PTRTYPE && (flags & ISVOLATILE)) {
         flexbuf_printf(f, "volatile ");
+    }
+    if (typedecl->kind != AST_PTRTYPE && (flags & ISCONST)) {
+        flexbuf_printf(f, "const ");
     }
     switch (typedecl->kind) {
     case AST_GENERICTYPE:
@@ -759,8 +762,11 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
     case AST_PTRTYPE:
         doPrintType(f, typedecl->left, 1, 0);
         flexbuf_printf(f, "*");
-        if (0 != (flags & VOLATILE)) {
+        if (0 != (flags & ISVOLATILE)) {
             flexbuf_printf(f, "volatile ");
+        }
+        if (0 != (flags & ISCONST)) {
+            flexbuf_printf(f, "const ");
         }
         break;
     case AST_TUPLETYPE:

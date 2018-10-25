@@ -35,40 +35,43 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
 static AST *
 CombineTypes(AST *first, AST *second, AST **identifier)
 {
+    AST *expr, *ident;
     if (!second) {
         return first;
     }
-    if (second->kind == AST_DECLARE_VAR) {
+    switch (second->kind) {
+    case AST_DECLARE_VAR:
         first = CombineTypes(first, second->left, identifier);
         first = CombineTypes(first, second->right, identifier);
         return first;
-    }
-    if (second->kind == AST_IDENTIFIER) {
+    case AST_IDENTIFIER:
         *identifier = second;
         return first;
-    }
-    if (second->kind == AST_ARRAYDECL) {
+    case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
         return CombineTypes(first, second->left, identifier);
-    }
-    if (second->kind == AST_FUNCTYPE) {
+    case AST_FUNCTYPE:
         second->left = CombineTypes(first, second->left, identifier);
         return second;
-    }
-    if (second->kind == AST_PTRTYPE) {
+    case AST_PTRTYPE:
         second->left = CombineTypes(first, second->left, identifier);
         return second;
-    }
-    if (second->kind == AST_ASSIGN) {
-        AST *expr, *ident;
+    case AST_ASSIGN:
         expr = second->right;
         first = CombineTypes(first, second->left, &ident);
         ident = AstAssign(ident, expr);
         *identifier = ident;
         return first;
+    case AST_MODIFIER_CONST:
+    case AST_MODIFIER_VOLATILE:
+        expr = NewAST(second->kind, NULL, NULL);
+        second = CombineTypes(first, second->left, identifier);
+        expr->left = second;
+        return expr;
+    default:
+        ERROR(first, "Internal error: don't know how to combine types");
+        return first;
     }
-    ERROR(first, "Internal error: don't know how to combine types");
-    return first;
 }
 
 AST *
@@ -500,8 +503,13 @@ type_qualifier
 declarator
 	: pointer direct_declarator
             {
+                AST *q = $1;
+                while (q && q->left) {
+                    q = q->left;
+                }
+                if (q)
+                    q->left = $2;
                 $$ = $1;
-                $$->left = AddToList($$->left, $2);
             }
 	| direct_declarator
             { $$ = $1; }
@@ -528,13 +536,26 @@ pointer
 	: '*'
             { $$ = NewAST(AST_PTRTYPE, NULL, NULL); }
 	| '*' type_qualifier_list
-            { $$ = NewAST(AST_PTRTYPE, $2, NULL); }
+            {
+                AST *newptr = $2;
+                AST *q = newptr;
+                AST *ptrtype = NewAST(AST_PTRTYPE, NULL, NULL);
+                while (q && q->left) q = q->left;
+                if (q)
+                    q->left = ptrtype;
+                else
+                    newptr = ptrtype;
+                $$ = newptr;
+            }
 	| '*' pointer
             { $$ = NewAST(AST_PTRTYPE, $2, NULL); }
 	| '*' type_qualifier_list pointer
             {
+                AST *q = $2;
+                while (q && q->left)
+                    q = q->left;
+                if (q) q->left = $3;
                 $$ = NewAST(AST_PTRTYPE, $2, NULL);
-                $$ = AddToList($$, $3);
             }
 	;
 

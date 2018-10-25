@@ -317,7 +317,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
         }
     }
     if (parse->volatileVariables)
-        flags |= VOLATILE;
+        flags |= ISVOLATILE;
 
     /* print the structure definition */
     flexbuf_printf(f, "\ntypedef struct %s {\n", parse->classname);
@@ -434,7 +434,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
        vars, then 16, finally 8
     */
     if (parse->volatileVariables)
-        flags |= VOLATILE;
+        flags |= ISVOLATILE;
     flexbuf_printf(f, "private:\n");
     PrintAllVarListsOfSize(f, parse, 4, flags);
     PrintAllVarListsOfSize(f, parse, 2, flags);
