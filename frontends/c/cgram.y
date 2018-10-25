@@ -22,6 +22,8 @@
 
     extern AST *last_ast;
     extern AST *CommentedListHolder(AST *); // in spin.y
+
+    extern void DeclareBASICGlobalVariables(AST *);
     
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
@@ -756,6 +758,7 @@ translation_unit
 external_declaration
 	: function_definition
 	| declaration
+            { DeclareBASICGlobalVariables($1); }
 	;
 
 function_definition
