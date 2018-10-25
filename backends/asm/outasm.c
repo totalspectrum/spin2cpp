@@ -2113,18 +2113,35 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
     case K_DECREMENT:
     {
         AST *addone;
+        AST *stepsize;
+        AST *dest;
+        AST *desttype;
         Operand *lhs;
         Operand *temp = NULL;
         int opc = (op == K_INCREMENT) ? '+' : '-';
+        if (expr->left) {
+            dest = expr->left;
+        } else {
+            dest = expr->right;
+        }
+        desttype = ExprType(dest);
+        if (IsPointerType(desttype)) {
+            stepsize = AstInteger(TypeSize(BaseType(desttype)));
+        } else {
+            if (IsFloatType(desttype)) {
+                ERROR(expr, "Cannot handle ++ or -- for floats yet");
+            }
+            stepsize = AstInteger(1);
+        }
         if (expr->left) {  /* x++ */
-            addone = AstAssign(expr->left, AstOperator(opc, expr->left, AstInteger(1)));
+            addone = AstAssign(expr->left, AstOperator(opc, expr->left, stepsize));
             temp = NewFunctionTempRegister();
             lhs = CompileExpression(irl, expr->left, NULL);
             EmitMove(irl, temp, lhs);
             CompileExpression(irl, addone, NULL);
             return temp;
         } else {
-            addone = AstAssign(expr->right, AstOperator(opc, expr->right, AstInteger(1)));
+            addone = AstAssign(expr->right, AstOperator(opc, expr->right, stepsize));
         }
         return CompileExpression(irl, addone, NULL);
     }
