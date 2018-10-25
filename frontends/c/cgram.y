@@ -26,50 +26,49 @@
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
 
-AST *
+static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
 {
     return type;
 }
 
-//
-// extract the type and identifier from a declaration specifier and declarator
-//
-void
-ExtractTypeAndIdent(AST **typeptr, AST **identptr, AST *decl_spec, AST *declarator)
+static AST *
+CombineTypes(AST *first, AST *second, AST **identifier)
 {
-    AST *type;
-    AST *ident;
-    AST *subtype = NULL;
-    
-    type = decl_spec;
-    if (!type) {
-        type = ast_type_long;
+    if (!second) {
+        return first;
     }
-    ident = declarator;
-    if (ident->kind == AST_DECLARE_VAR) {
-        subtype = ident->right;
-        ident = ident->left;
+    if (second->kind == AST_DECLARE_VAR) {
+        first = CombineTypes(first, second->left, identifier);
+        first = CombineTypes(first, second->right, identifier);
+        return first;
     }
-    if (subtype) {
-        if (subtype->kind == AST_FUNCTYPE) {
-            subtype->left = type;
-            type = subtype;
-            subtype = NULL;
-        }
+    if (second->kind == AST_IDENTIFIER) {
+        *identifier = second;
+        return first;
     }
-    if (subtype) {
-        ERROR(subtype, "Internal error, unexpected subtype");
+    if (second->kind == AST_ARRAYDECL) {
+        first = NewAST(AST_ARRAYTYPE, first, second->right);
+        return CombineTypes(first, second->left, identifier);
     }
-    if (ident->kind == AST_PTRTYPE) {
-        subtype = ident;
-        ident = subtype->right;
-        subtype->right = NULL;
-        subtype->left = type;
-        type = subtype;
+    if (second->kind == AST_FUNCTYPE) {
+        second->left = CombineTypes(first, second->left, identifier);
+        return second;
     }
-    *typeptr = type;
-    *identptr = ident;
+    if (second->kind == AST_PTRTYPE) {
+        second->left = CombineTypes(first, second->left, identifier);
+        return second;
+    }
+    if (second->kind == AST_ASSIGN) {
+        AST *expr, *ident;
+        expr = second->right;
+        first = CombineTypes(first, second->left, &ident);
+        ident = AstAssign(ident, expr);
+        *identifier = ident;
+        return first;
+    }
+    ERROR(first, "Internal error: don't know how to combine types");
+    return first;
 }
 
 AST *
@@ -77,8 +76,9 @@ MergeDeclareVar(AST *decl_spec, AST *declarator)
 {
     AST *type, *ident;
 
-    ExtractTypeAndIdent(&type, &ident, decl_spec, declarator);
-    return NewAST(AST_DECLARE_VAR, ident, type);
+    ident = NULL;
+    type = CombineTypes(decl_spec, declarator, &ident);
+    return NewAST(AST_DECLARE_VAR, type, ident);
 }
 
 %}
@@ -369,10 +369,10 @@ constant_expression
 
 declaration
 	: declaration_specifiers ';'
-            { $$ = $1; }
+            { $$ = MergeDeclareVar(NULL, $1); }
 	| declaration_specifiers init_declarator_list ';'
             {
-                $$ = NewAST(AST_DECLARE_VAR, $1, $2);
+                $$ = MergeDeclareVar($1, $2);
             }
 	;
 
@@ -499,7 +499,10 @@ type_qualifier
 
 declarator
 	: pointer direct_declarator
-            { $$ = AddToList($1, $2); }
+            {
+                $$ = $1;
+                $$->left = AddToList($$->left, $2);
+            }
 	| direct_declarator
             { $$ = $1; }
 	;
@@ -514,11 +517,11 @@ direct_declarator
 	| direct_declarator '[' ']'
             { $$ = NewAST(AST_ARRAYDECL, $1, NULL); }
 	| direct_declarator '(' parameter_type_list ')'
-            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, $3)); }
+            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, $3), $1); }
 	| direct_declarator '(' identifier_list ')'
-            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, $3)); }
+            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, $3), $1); }
 	| direct_declarator '(' ')'
-            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, NULL)); }
+            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, NULL), $1); }
 	;
 
 pointer
@@ -671,8 +674,27 @@ iteration_statement
               $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
             }
 	| C_DO statement C_WHILE '(' expression ')' ';'
+            { AST *body = CheckYield($2);
+              $$ = NewCommentedAST(AST_DOWHILE, $5, body, $1);
+            }
 	| C_FOR '(' expression_statement expression_statement ')' statement
+            {   AST *body = CheckYield($6);
+                AST *init = $3;
+                AST *update = $4;
+                AST *cond = AstInteger(1);
+                AST *stepstmt = NewAST(AST_STEP, update, body);
+                AST *condtest = NewAST(AST_TO, cond, stepstmt);
+                $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
+            }
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
+            {   AST *body = CheckYield($7);
+                AST *init = $3;
+                AST *update = $4;
+                AST *cond = $5;
+                AST *stepstmt = NewAST(AST_STEP, update, body);
+                AST *condtest = NewAST(AST_TO, cond, stepstmt);
+                $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
+            }
 	;
 
 jump_statement
@@ -704,7 +726,7 @@ function_definition
                 AST *ident;
                 AST *body = $3;
                 int is_public = 1;
-                ExtractTypeAndIdent(&type, &ident, $1, $2);
+                type = CombineTypes($1, $2, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
             }
 	| declarator declaration_list compound_statement

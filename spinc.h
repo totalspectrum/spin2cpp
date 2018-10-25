@@ -41,6 +41,15 @@ void SpinTransform(Module *Q);
 /* ditto for BASIC */
 void BasicTransform(Module *Q);
 
+/* and C */
+void CTransform(Module *Q);
+
+/* check and possibly convert types */
+AST *CheckTypes(AST *);
+
+/* helper */
+void InitGlobalFuncs(void);
+
 /* do some optimizations on a counting repeat loop */
 AST *TransformCountRepeat(AST *);
 

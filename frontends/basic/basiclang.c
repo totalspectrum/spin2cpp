@@ -665,7 +665,6 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
     }
     if (isfloat) {
-        // FIXME need to call appropriate funcs here
         switch (op) {
         case '+':
             if (!gl_fixedreal) {
@@ -830,7 +829,21 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
             return lefttype;
         }
+        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '-':
+        if (IsPointerType(lefttype) && IsPointerType(righttype)) {
+            // we actually want to compute (a - b) / sizeof(*a)
+            if (!CompatibleTypes(lefttype, righttype)) {
+                ERROR(lefttype, "- applied to incompatible pointer types");
+            } else {
+                AST *diff;
+                diff = AstOperator('-', ast->left, ast->right);
+                diff = AstOperator(K_UNS_DIV, diff, AstInteger(TypeSize(BaseType(righttype))));
+                *ast = *diff;
+            }
+            return ast_type_unsigned_long;
+        }
+        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
     case '*':
     case '/':
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
@@ -885,6 +898,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
         }
         return ast_type_long;
+    case K_INCREMENT:
+    case K_DECREMENT:
+        if (lefttype && IsPointerType(lefttype)) {
+            return lefttype;
+        }
+        if (righttype && IsPointerType(righttype)) {
+            return righttype;
+        }
+        /* fall through */
     default:
         if (!MakeBothIntegers(ast, lefttype, righttype, "operator")) {
             return NULL;
@@ -1151,12 +1173,8 @@ getBasicPrimitive(const char *name)
 }
 
 void
-BasicTransform(Module *Q)
+InitGlobalFuncs(void)
 {
-    Module *savecur = current;
-    Function *func;
-    Function *savefunc = curfunc;
-
     if (!basic_print_integer) {
         if (gl_fixedreal) {
             basic_print_float = getBasicPrimitive("_basic_print_fixed");
@@ -1188,6 +1206,15 @@ BasicTransform(Module *Q)
         gc_alloc = getBasicPrimitive("_gc_alloc");
         gc_free = getBasicPrimitive("_gc_free");
     }
+}
+
+void
+BasicTransform(Module *Q)
+{
+    Module *savecur = current;
+    Function *func;
+    Function *savefunc = curfunc;
+
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;

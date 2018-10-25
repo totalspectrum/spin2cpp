@@ -698,6 +698,7 @@ FixupCode(Module *P, int isBinary)
     
     ProcessLanguage(LANG_SPIN, SpinTransform);
     ProcessLanguage(LANG_BASIC, BasicTransform);
+    ProcessLanguage(LANG_C, CTransform);
     
     RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
