@@ -1215,6 +1215,7 @@ BasicTransform(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
 
+    InitGlobalFuncs();
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
