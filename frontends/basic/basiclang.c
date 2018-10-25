@@ -793,6 +793,18 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
 
 }
 
+static AST *ScalePointer(AST *type, AST *val)
+{
+    int size;
+    if (!IsPointerType(type)) {
+        ERROR(val, "internal error: expected pointer type");
+        return val;
+    }
+    size = TypeSize(BaseType(type));
+    val = AstOperator('*', val, AstInteger(size));
+    return val;
+}
+       
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
@@ -829,7 +841,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
             return lefttype;
         }
-        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
+        if (IsPointerType(lefttype) && IsIntType(righttype)) {
+            ast->right = ScalePointer(lefttype, ast->right);
+            return lefttype;
+        } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
+            ast->left = ScalePointer(righttype, ast->left);
+            return righttype;
+        } else {
+            return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
+        }
     case '-':
         if (IsPointerType(lefttype) && IsPointerType(righttype)) {
             // we actually want to compute (a - b) / sizeof(*a)
@@ -843,7 +863,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
             return ast_type_unsigned_long;
         }
-        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
+        if (IsPointerType(lefttype) && IsIntType(righttype)) {
+            ast->right = ScalePointer(lefttype, ast->right);
+            return lefttype;
+        } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
+            ast->left = ScalePointer(righttype, ast->left);
+            return righttype;
+        } else {
+            return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
+        }
     case '*':
     case '/':
         return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
