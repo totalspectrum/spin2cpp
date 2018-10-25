@@ -75,8 +75,8 @@ DeclareBASICMemberVariables(AST *ast)
         ERROR(ast, "Internal error, unexpected sequence");
         return;
     }
-    idlist = ast->left;
-    typ = ast->right;
+    idlist = ast->right;
+    typ = ast->left;
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
@@ -100,8 +100,8 @@ DeclareBASICGlobalVariables(AST *ast)
         ERROR(ast, "Internal error, unexpected sequence");
         return;
     }
-    idlist = ast->left;
-    typ = ast->right;
+    idlist = ast->right;
+    typ = ast->left;
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
@@ -304,7 +304,7 @@ nonemptystatement:
       AST *name = $2;
       AST *assign = AstAssign(name, $4);
       assign = NewAST(AST_LISTHOLDER, assign, NULL);
-      $$ = NewAST(AST_DECLARE_VAR, assign, NULL);
+      $$ = NewAST(AST_DECLARE_VAR, NULL, assign);
     }
   | BAS_IDENTIFIER '(' optexprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
@@ -484,7 +484,7 @@ forstmt:
       AST *loop;
       
       /* create a WEAK definition for ident (it will not override any existing definition) */
-      declare = NewAST(AST_DECLARE_VAR_WEAK, ident, InferTypeFromName(ident));
+      declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
       step = NewAST(AST_STEP, $7, $9);
       to = NewAST(AST_TO, $6, step);
       from = NewAST(AST_FROM, $4, to);
@@ -567,7 +567,7 @@ paramdecl1:
   paramitem
     { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
   | paramdecl1 ',' paramitem
-  { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
 
 paramitem:
@@ -843,15 +843,15 @@ classdecl:
 
 dimension:
   BAS_DIM dimlist
-    { $$ = NewAST(AST_DECLARE_VAR, $2, NULL); }
+    { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
   | BAS_DIM dimlist BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $2, $4); }
+    { $$ = NewAST(AST_DECLARE_VAR, $4, $2); }
   | BAS_DIM BAS_AS typename dimlist
-    { $$ = NewAST(AST_DECLARE_VAR, $4, $3); }
+    { $$ = NewAST(AST_DECLARE_VAR, $3, $4); }
   | BAS_DIM BAS_SHARED dimlist
-    { $$ = NewAST(AST_GLOBALVARS, $3, NULL); }
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, NULL, $3), NULL); }
   | BAS_DIM BAS_SHARED BAS_AS typename dimlist
-    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $4), NULL); }
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
   ;
 
 dimlist:

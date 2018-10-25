@@ -151,6 +151,18 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
     P->funcblock = AddToList(P->funcblock, funcblock);
 }
 
+/* like DeclareFunction, but takes a function type */
+void
+DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody)
+{
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+            
+    // declare the lambda function
+    DeclareFunction(P, ftype->left, is_public, funcdef, fbody, NULL, NULL);
+}
+
 static AST *
 TranslateToExprList(AST *listholder)
 {
@@ -238,8 +250,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
     switch(ast->kind) {
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
-        identlist = ast->left;
-        basetype = ast->right;
+        identlist = ast->right;
+        basetype = ast->left;
         while (identlist) {
             datatype = expr = NULL;
             if (identlist->kind == AST_LISTHOLDER) {
@@ -313,9 +325,6 @@ findLocalsAndDeclare(Function *func, AST *ast)
             AST *ftype = ast->left;
             AST *fbody = ast->right;
             AST *name = AstIdentifier(NewTemporaryVariable("func_"));
-            AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-            AST *funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
-            AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
             AST *ptrref;
             
             // check for the return type; we may have to infer this
@@ -323,7 +332,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 ftype->left = GuessLambdaReturnType(ftype->right, fbody);
             }
             // declare the lambda function
-            DeclareFunction(func->closure, ftype->left, 1, funcdef, fbody, NULL, NULL);
+            DeclareTypedFunction(func->closure, ftype, name, 1, fbody);
             // now turn the lambda into a pointer deref
             ptrref = NewAST(AST_METHODREF, AstIdentifier(func->closure->classname), name);
             // AST_ADDROF can allow a type on the right, which will help

@@ -1255,6 +1255,7 @@ struct reservedword basic_keywords[] = {
 struct reservedword c_keywords[] = {
   { "case", C_CASE },
 //  { "__class", BAS_CLASS },
+  { "char", C_CHAR },
   { "const", C_CONST },
   { "continue", C_CONTINUE },
   { "do", C_DO },
@@ -2781,84 +2782,85 @@ getCToken(LexStream *L, AST **ast_ptr)
         c2 = lexgetc(L);
         if (c2 == '>') {
             c = C_PTR_OP;
-        } else if (c == '=') {
+        } else if (c2 == '=') {
             c = C_SUB_ASSIGN;
-        } else if (c == '-') {
+        } else if (c2 == '-') {
             c = C_DEC_OP;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '+') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_ADD_ASSIGN;
-        } else if (c == '+') {
+        } else if (c2 == '+') {
             c = C_INC_OP;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '&') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_AND_ASSIGN;
-        } else if (c == '&') {
+        } else if (c2 == '&') {
             c = C_AND_OP;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '|') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_OR_ASSIGN;
-        } else if (c == '|') {
+        } else if (c2 == '|') {
             c = C_OR_OP;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '^') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_XOR_ASSIGN;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '*') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_MUL_ASSIGN;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '/') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_DIV_ASSIGN;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '%') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_MOD_ASSIGN;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '!') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_NE_OP;
         } else {
             lexungetc(L, c2);
         }
     } else if (c == '=') {
         c2 = lexgetc(L);
-        if (c == '=') {
+        if (c2 == '=') {
             c = C_EQ_OP;
         } else {
             lexungetc(L, c2);
         }
     }
     *ast_ptr = last_ast = ast;
+//    printf("Ctoken == %d\n", c);
     return c;
 }
 
@@ -2867,7 +2869,7 @@ cgramyylex(CGRAMYYSTYPE *yval)
 {
     int c;
     saved_cgramyychar = c = getCToken(&current->L, yval);
-    if (c == BAS_EOF || c == EOF)
+    if (c == EOF)
         return 0;
     return c;
 }

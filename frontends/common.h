@@ -349,6 +349,10 @@ void DeclareLabels(Module *);
  "rettype" is the return type of the function, if it is known, or NULL
 */
 void DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
+
+/* streamlined DeclareFunction: "ftype" is the function type (return + parameters) */
+void DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body);
+                          
 void DeclareToplevelAnnotation(AST *annotation);
 
 /* functions for printing data into a flexbuf */

@@ -32,6 +32,55 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
     return type;
 }
 
+//
+// extract the type and identifier from a declaration specifier and declarator
+//
+void
+ExtractTypeAndIdent(AST **typeptr, AST **identptr, AST *decl_spec, AST *declarator)
+{
+    AST *type;
+    AST *ident;
+    AST *subtype = NULL;
+    
+    type = decl_spec;
+    if (!type) {
+        type = ast_type_long;
+    }
+    ident = declarator;
+    if (ident->kind == AST_DECLARE_VAR) {
+        subtype = ident->right;
+        ident = ident->left;
+    }
+    if (subtype) {
+        if (subtype->kind == AST_FUNCTYPE) {
+            subtype->left = type;
+            type = subtype;
+            subtype = NULL;
+        }
+    }
+    if (subtype) {
+        ERROR(subtype, "Internal error, unexpected subtype");
+    }
+    if (ident->kind == AST_PTRTYPE) {
+        subtype = ident;
+        ident = subtype->right;
+        subtype->right = NULL;
+        subtype->left = type;
+        type = subtype;
+    }
+    *typeptr = type;
+    *identptr = ident;
+}
+
+AST *
+MergeDeclareVar(AST *decl_spec, AST *declarator)
+{
+    AST *type, *ident;
+
+    ExtractTypeAndIdent(&type, &ident, decl_spec, declarator);
+    return NewAST(AST_DECLARE_VAR, ident, type);
+}
+
 %}
 
 %pure-parser
@@ -320,7 +369,11 @@ constant_expression
 
 declaration
 	: declaration_specifiers ';'
+            { $$ = $1; }
 	| declaration_specifiers init_declarator_list ';'
+            {
+                $$ = NewAST(AST_DECLARE_VAR, $1, $2);
+            }
 	;
 
 declaration_specifiers
@@ -343,7 +396,9 @@ init_declarator_list
 
 init_declarator
 	: declarator
+            { $$ = $1; }
 	| declarator '=' initializer
+            { $$ = AstAssign($1, $3); }        
 	;
 
 storage_class_specifier
@@ -444,24 +499,40 @@ type_qualifier
 
 declarator
 	: pointer direct_declarator
+            { $$ = AddToList($1, $2); }
 	| direct_declarator
+            { $$ = $1; }
 	;
 
 direct_declarator
 	: C_IDENTIFIER
+            { $$ = $1; }
 	| '(' declarator ')'
+            { $$ = $2; }
 	| direct_declarator '[' constant_expression ']'
+            { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
 	| direct_declarator '[' ']'
+            { $$ = NewAST(AST_ARRAYDECL, $1, NULL); }
 	| direct_declarator '(' parameter_type_list ')'
+            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, $3)); }
 	| direct_declarator '(' identifier_list ')'
+            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, $3)); }
 	| direct_declarator '(' ')'
+            { $$ = NewAST(AST_DECLARE_VAR, $1, NewAST(AST_FUNCTYPE, NULL, NULL)); }
 	;
 
 pointer
 	: '*'
+            { $$ = NewAST(AST_PTRTYPE, NULL, NULL); }
 	| '*' type_qualifier_list
+            { $$ = NewAST(AST_PTRTYPE, $2, NULL); }
 	| '*' pointer
+            { $$ = NewAST(AST_PTRTYPE, $2, NULL); }
 	| '*' type_qualifier_list pointer
+            {
+                $$ = NewAST(AST_PTRTYPE, $2, NULL);
+                $$ = AddToList($$, $3);
+            }
 	;
 
 type_qualifier_list
@@ -474,23 +545,32 @@ type_qualifier_list
 
 parameter_type_list
 	: parameter_list
+           { $$ = $1; }
 	| parameter_list ',' C_ELLIPSIS
+           { $$ = $1; }
 	;
 
 parameter_list
 	: parameter_declaration
+            { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
 	| parameter_list ',' parameter_declaration
+            { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
 	;
 
 parameter_declaration
 	: declaration_specifiers declarator
+            { $$ = MergeDeclareVar($1, $2); }
 	| declaration_specifiers abstract_declarator
+            { $$ = MergeDeclareVar($1, $2); }
 	| declaration_specifiers
+            { $$ = $1; }
 	;
 
 identifier_list
 	: C_IDENTIFIER
+            { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 	| identifier_list ',' C_IDENTIFIER
+            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
 	;
 
 type_name
@@ -555,21 +635,23 @@ compound_statement
 
 declaration_list
 	: declaration
+            { $$ = NewAST(AST_STMTLIST, $1, NULL); }
 	| declaration_list declaration
+            { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
 	;
 
 statement_list
 	: statement
-            { $$ = NewCommentedStatement($1); }
+            { $$ = NewAST(AST_STMTLIST, $1, NULL); }
 	| statement_list statement
-            { $$ = AddToList($1, NewCommentedStatement($2)); }
+            { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
 	;
 
 expression_statement
 	: ';'
             { $$ = NULL; }
 	| expression ';'
-            { $$ = $1; }
+            { $$ = NewAST(AST_STMTLIST, $1, NULL); }
 	;
 
 selection_statement
@@ -615,8 +697,18 @@ external_declaration
 
 function_definition
 	: declaration_specifiers declarator declaration_list compound_statement
+            { SYNTAX_ERROR("old style C function declarations are not allowed"); }
 	| declaration_specifiers declarator compound_statement
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $3;
+                int is_public = 1;
+                ExtractTypeAndIdent(&type, &ident, $1, $2);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+            }
 	| declarator declaration_list compound_statement
+            { SYNTAX_ERROR("old style C function declarations are not allowed"); }
 	| declarator compound_statement
 	;
 

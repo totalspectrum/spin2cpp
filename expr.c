@@ -2073,6 +2073,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     }
     case AST_NEW:
         return expr->left;
+    case AST_SIZEOF:
+        return ast_type_unsigned_long;
+    case AST_CAST:
+        return expr->left;
     default:
         return NULL;
     }
