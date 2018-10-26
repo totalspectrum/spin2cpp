@@ -361,6 +361,8 @@ nonemptystatement:
     { $$ = $1; }
   | trycatchstmt
     { $$ = $1; }
+  | selectstmt
+    { $$ = $1; }
 ;
 
 statement:
@@ -537,6 +539,35 @@ trycatchstmt:
 
 endtry:
   BAS_END BAS_TRY eoln
+;
+
+selectstmt:
+  BAS_SELECT BAS_CASE expr eoln casematchlist BAS_END BAS_SELECT
+    { $$ = NewCommentedAST(AST_CASE, $3, $5, $1); }
+;
+
+casematchlist:
+  casematchitem
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | casematchlist casematchitem
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+  ;
+
+casematchitem:
+  casematch eoln statementlist
+    {
+        AST *slist = $3;
+        $$ = NewAST(AST_CASEITEM, $1, slist);
+    }
+;
+
+casematch:
+  BAS_CASE expr
+    {  $$ = NewAST(AST_EXPRLIST, $2, NULL); }
+  | BAS_CASE expr BAS_TO expr
+    {  $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $2, $4), NULL); }
+  | BAS_CASE BAS_ELSE
+    { $$ = NewAST(AST_OTHER, NULL, NULL); }
 ;
 
 optstatementlist:
