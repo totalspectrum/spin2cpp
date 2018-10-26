@@ -122,6 +122,7 @@ CTransform(Module *Q)
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
 
+        SimplifyAssignments(&func->body);
         doCTransform(&func->body);
         CheckTypes(func->body);
     }
