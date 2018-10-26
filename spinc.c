@@ -761,14 +761,23 @@ ParseTopFile(const char *name, int outputBin)
 Function *
 GetMainFunction(Module *P)
 {
+    const char *mainName = NULL;
+    
     if (P->language == LANG_BASIC) {
-        // look for function named "program"
+        mainName = "program";
+    } else if (P->language == LANG_C) {
+        mainName = "main";
+    }
+
+    if (mainName) {
+        // look for function named "program" or "main"
         Function *f;
         for (f = P->functions; f; f = f->next) {
-            if (!strcmp(f->name, "program")) {
+            if (!strcmp(f->name, mainName)) {
                 return f;
             }
         }
+        ERROR(NULL, "could not find function %s", mainName);
     }
     return P->functions;
 }
