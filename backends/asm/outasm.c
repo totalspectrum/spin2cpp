@@ -4617,6 +4617,12 @@ EmitMain_P1(IRList *irl, Module *P)
         if ( (gl_optimize_flags & OPT_REMOVE_HUB_BSS) ) {
             EmitOp2(irl, OPC_ADD, stackptr, objbase);
         }
+        if (!gl_p2) {
+            // we will need local01, it is referred to in
+            // the LMM code
+            Operand *local1 = GetLocalReg(0);
+            local1->used = 1;
+        }
     }
 
     if (firstfunc->cog_code || COG_CODE) {
