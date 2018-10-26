@@ -215,7 +215,7 @@ argument_expression_list
 	: assignment_expression
             { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 	| argument_expression_list ',' assignment_expression
-            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $1, NULL)); }
+            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
 	;
 
 unary_expression
@@ -593,7 +593,11 @@ parameter_type_list
 	: parameter_list
            { $$ = $1; }
 	| parameter_list ',' C_ELLIPSIS
-           { $$ = $1; }
+            { $$ = AddToList($1,
+                             NewAST(AST_LISTHOLDER,
+                                    NewAST(AST_VARARGS, NULL, NULL),
+                                    NULL));
+            }
 	;
 
 parameter_list
@@ -664,8 +668,19 @@ statement
 
 labeled_statement
 	: C_IDENTIFIER ':' statement
+            {
+                AST *label = NewAST(AST_LABEL, $1, NULL);
+                $$ = NewAST(AST_STMTLIST, label,
+                              NewAST(AST_STMTLIST, $3, NULL));
+            }
 	| C_CASE constant_expression ':' statement
+            {
+                SYNTAX_ERROR("case not supported yet");
+            }
 	| C_DEFAULT ':' statement
+            {
+                SYNTAX_ERROR("case not supported yet");
+            }
 	;
 
 compound_statement
@@ -706,9 +721,13 @@ selection_statement
                           NewAST(AST_THENELSE, $5, NULL)); }
 	| C_IF '(' expression ')' statement C_ELSE statement
             { $$ = NewAST(AST_IF, $3,
-                          NewAST(AST_THENELSE, $5, $7)); }
+                          NewAST(AST_THENELSE, $5, $7));
+            }
 	| C_SWITCH '(' expression ')' statement
-            { $$ = NULL; }
+            {
+                SYNTAX_ERROR("switch not supported yet");
+                $$ = NULL;
+            }
 	;
 
 iteration_statement
@@ -742,8 +761,11 @@ iteration_statement
 
 jump_statement
 	: C_GOTO C_IDENTIFIER ';'
+            { $$ = NewCommentedAST(AST_GOTO, $2, NULL, $1); }
 	| C_CONTINUE ';'
+            { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
 	| C_BREAK ';'
+            { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
 	| C_RETURN ';'
             { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
 	| C_RETURN expression ';'
@@ -776,6 +798,15 @@ function_definition
 	| declarator declaration_list compound_statement
             { SYNTAX_ERROR("old style C function declarations are not allowed"); }
 	| declarator compound_statement
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $2;
+                int is_public = 1;
+                type = CombineTypes(NULL, $1, &ident);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+                SYNTAX_ERROR("dubious grammar");
+            }
 	;
 
 %%

@@ -174,7 +174,8 @@ enum astkind {
     AST_CATCHRESULT,
 
     AST_SIZEOF = 120,
-    AST_CAST = 121,
+    AST_CAST,
+    AST_VARARGS,
 };
 
 /* forward reference */

@@ -566,7 +566,7 @@ is_identifier:
 }
 
 /* parse a string */
-static int
+static void
 parseString(LexStream *L, AST **ast_ptr)
 {
     int c;
@@ -589,7 +589,59 @@ parseString(LexStream *L, AST **ast_ptr)
 
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
-    return SP_STRING;
+}
+
+/* parse a C string */
+static void
+parseCString(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    struct flexbuf fb;
+    AST *ast;
+
+    ast = NewAST(AST_STRING, NULL, NULL);
+    flexbuf_init(&fb, INCSTR);
+    c = lexgetc(L);
+    while (c != '"' && c > 0 && c < 256) {
+        if (c == 10 || c == 13) {
+            // newline in mid-string, this is bad news
+            SYNTAX_ERROR("unterminated string");
+            break;
+        }
+        if (c == '\\') {
+            c = lexgetc(L);
+            if (c < 0) {
+                SYNTAX_ERROR("end of file inside string");
+                break;
+            }
+            switch (c) {
+            case '0':
+                c = 0; break;
+            case 'a':
+                c = 7; break;
+            case 'b':
+                c = 8; break;
+            case 't':
+                c = 9; break;
+            case 'n':
+                c = 10; break;
+            case 'v':
+                c = 11; break;
+            case 'f':
+                c = 12; break;
+            case 'r':
+                c = 13; break;
+            case 'e':
+                c = 27; break;
+            }
+        }   
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
+    flexbuf_addchar(&fb, '\0');
+
+    ast->d.string = flexbuf_get(&fb);
+    *ast_ptr = ast;
 }
 
 //
@@ -1037,7 +1089,8 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         }
         c = token;
     } else if (c == '"') {
-        c = parseString(L, &ast);
+        parseString(L, &ast);
+        c = SP_STRING;
     }
     *ast_ptr = last_ast = ast;
     return c;
@@ -2747,8 +2800,21 @@ getCToken(LexStream *L, AST **ast_ptr)
         lexungetc(L, c);
         c = parseCIdentifier(L, &ast);
     } else if (c == '"') {
-        parseString(L, &ast);
+        parseCString(L, &ast);
 	c = C_STRING_LITERAL;
+    } else if (c == '.') {
+        c2 = lexgetc(L);
+        if (c2 == '.') {
+            c2 = lexgetc(L);
+            if (c2 == '.') {
+                c = C_ELLIPSIS;
+            } else {
+                lexungetc(L, c2);
+                lexungetc(L, '.');
+            }
+        } else {
+            lexungetc(L, c2);
+        }
     } else if (c == '<') {
         c2 = lexgetc(L);
         if (c2 == '=') {

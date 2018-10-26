@@ -494,6 +494,13 @@ static const char *astnames[] = {
     "globalvars",
 
     "lambda",
+    "setjmp",
+    "tryenv",
+    "catchresult",
+
+    "sizeof",
+    "cast",
+    "varargs",
 };
 
 //

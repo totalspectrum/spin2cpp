@@ -113,6 +113,8 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             case AST_ANNOTATION:
                 /* just ignore it */
                 break;
+            case AST_VARARGS:
+                break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
@@ -489,6 +491,19 @@ doDeclareFunction(AST *funcblock)
     // the symbol value is the type, which we will discover via inference
     // so initialize it to NULL
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
+    /* check for VARARGS */
+    {
+        AST *arg;
+        for (arg = fdef->params; arg; arg = arg->right) {
+            if (arg->left->kind == AST_VARARGS) {
+                if (fdef->numparams == 0) {
+                    ERROR(fdef->params, "varargs function must have at least one parameter");
+                }
+                fdef->numparams = -fdef->numparams;
+            }
+        }
+    }
+    
     fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0) / LONG_SIZE;
 
     // if there are default values for the parameters, use those to initialize
@@ -1230,6 +1245,7 @@ CheckFunctionCalls(AST *ast)
 {
     int expectArgs;
     int gotArgs;
+    int is_varargs = 0;
     Symbol *sym;
     const char *fname = "function";
     Function *f = NULL;
@@ -1263,6 +1279,10 @@ CheckFunctionCalls(AST *ast)
                 }
                 expectArgs = AstListLen(ftype->right);
             }
+        }
+        if (expectArgs < 0) {
+            expectArgs = -expectArgs;
+            is_varargs = 1;
         }
         gotArgs = 0;
         lastaptr = &ast->right;
@@ -1321,9 +1341,16 @@ CheckFunctionCalls(AST *ast)
                 }
             }
         }
-        if (gotArgs != expectArgs) {
-            ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
-            return;
+        if (is_varargs) {
+            if (gotArgs < expectArgs) {
+                ERROR(ast, "Bad number of parameters in call to %s: expected at least %d but found only %d", fname, expectArgs, gotArgs);
+                return;
+            }
+        } else {
+            if (gotArgs != expectArgs) {
+                ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+                return;
+            }
         }
         if (initseq) {
             // modify the ast to hold the sequence and then the function call
