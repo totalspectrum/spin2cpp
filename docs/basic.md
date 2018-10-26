@@ -482,7 +482,24 @@ A signed 8 bit integer, occupying one byte of computer memory. The unsigned vers
 
 ### CASE
 
-Used in a `select` statement. Not implemented yet.
+Used in a `select` statement to indicate a possible case to match. Only a subset of FreeBasic's `case` options are available. After the `case` can either be `else` (which always matches), a single  expression (which matches if the original expression equals the `case` one), or an inclusive range `a to b` which will match if the original expression is between between `a` and `b` (inclusive).
+
+Example:
+```
+select case x
+case 1
+  print "it was 1"
+case 2 to 4
+  print "it was between 2 and 4"
+  print "sorry for being vague!"
+case 8
+  print "it was 8"
+case else
+  print "it was something else"
+end select
+```
+
+All of the statements between the `case` and the next `case` (or `end select`) are executed if the `case` is the first one to match the expression in the `select case`.
 
 ### CATCH
 
@@ -1091,6 +1108,31 @@ Return from a subroutine or function. If this statement occurs inside a function
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
+
+### SELECT CASE
+
+Selects between alternatives. The expression after the initial `select case` is evaluated once, then matched against each of the `case` statements (in order) until one matches or `end select` is reached. `case else` will match anything (and hence should be placed last, since no `case` after it can ever match).
+
+In case of a match, all of the statements between the matching `case` and the next `case` (or `end select`) will be executed.
+```
+var keepgoing = -1
+do
+   print "continue? ";
+   a$ = input$(1)
+   print
+   a$ = input$(1)
+   select case a$
+   case "y"
+     keepgoing = 1
+     print "great!"
+   case "n"
+     keepgoing = 0
+     print "ok, not continuing "
+   case else
+     print "i did not understand your answer of "; a$
+   end select   
+loop while keepgoing = -1
+```
 
 ### SELF
 

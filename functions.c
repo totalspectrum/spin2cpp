@@ -847,7 +847,7 @@ TransformCountRepeat(AST *ast)
     } else {
         stepval = AstInteger(1);
     }
-    if (IsConstExpr(stepval) && isIntegerLoop) {
+    if (IsConstExpr(stepval)) {
         knownStepVal = EvalConstExpr(stepval);
     }
     if (current->language != LANG_SPIN) {
@@ -868,7 +868,7 @@ TransformCountRepeat(AST *ast)
        it also means that we don't have to do the "between" check,
        we can just count one way
     */
-    if (fromval == NULL) {
+    if (fromval == NULL && isIntegerLoop) {
         if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
             // for (i = 0; i < 10; i++) is more idiomatic
             fromval = AstInteger(0);
@@ -941,9 +941,9 @@ TransformCountRepeat(AST *ast)
 
     stepstmt = NULL;
     if (knownStepDir) {
-        if (knownStepVal == 1) {
+        if (knownStepVal == 1 && isIntegerLoop) {
             stepstmt = AstOperator(K_INCREMENT, loopvar, NULL);
-        } else if (knownStepVal == -1) {
+        } else if (knownStepVal == -1 && isIntegerLoop) {
             stepstmt = AstOperator(K_DECREMENT, NULL, loopvar);
         } else if (knownStepVal < 0) {
             stepstmt = AstAssign(loopvar, AstOperator('-', loopvar, AstInteger(-knownStepVal)));
@@ -998,8 +998,17 @@ TransformCountRepeat(AST *ast)
     
     if (!condtest) {
         /* otherwise, we have to just test for loopvar between to and from */
-        condtest = NewAST(AST_ISBETWEEN, loopvar,
-                          NewAST(AST_RANGE, fromval, toval));
+        if (isIntegerLoop) {
+            condtest = NewAST(AST_ISBETWEEN, loopvar,
+                              NewAST(AST_RANGE, fromval, toval));
+        } else if (knownStepDir > 0) {
+            condtest = AstOperator(K_LE, loopvar, toval);
+        } else if (knownStepDir < 0) {
+            condtest = AstOperator(K_GE, loopvar, toval);
+        } else {
+            condtest = AstInteger(0);
+            ERROR(fromval, "internal error, cannot find loop direction");
+        }
         if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
             loopkind = AST_FORATLEASTONCE;
         }

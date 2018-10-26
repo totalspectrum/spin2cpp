@@ -36,6 +36,10 @@ print using "[!] [\\] [\<<<<<\] [\>>>>\] [\=====\]"; a$, a$, a$, a$, a$
 
 print x; " "; y
 
+for i# = 0.3 to 1.0001 step 0.1
+  print i#
+next i#
+
 ''
 '' send the magic propload status code
 ''

@@ -1,7 +1,12 @@
 Version 3.9.8
-- Fixed a nasty overflow in integer prints
+- Added __propeller__ symbol to preprocessor
+- Added SELECT CASE to BASIC
+- Fixed a nasty buffer overflow in integer prints
 - Fixed close #n (it was losing the object pointer)
 - Fixed an optimizer bug in replacing registers
+- Fixed an assembly output bug when the input contains only leaf
+  functions
+- Make for loops with float variables work
 
 Version 3.9.7
 - Fixed a bug in converting float values to integer

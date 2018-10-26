@@ -277,6 +277,52 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
         break;
+    case AST_CASE:
+    {
+        AST *list = ast->right;
+        AST *var;
+        AST *seq = NULL;
+        AST *elseholder = NULL;
+        AST *ifholder = NULL;
+        doBasicTransform(&ast->left);
+        if (ast->left->kind == AST_IDENTIFIER) {
+            var = ast->left;
+        } else {
+            var = AstTempLocalVariable("_tmp_", ExprType(ast->left));
+            seq = AddToList(seq, NewAST(AST_STMTLIST, AstAssign(var, ast->left), NULL));
+        }
+        while (list) {
+            AST *caseitem;
+            AST *casetest;
+            AST *casebody;
+            if (list->kind != AST_LISTHOLDER) {
+                ERROR(list, "internal error, expected list holder");
+            }
+            caseitem = list->left;
+            doBasicTransform(&caseitem->left);
+            doBasicTransform(&caseitem->right);
+            casetest = caseitem->left;
+            casebody = caseitem->right;
+            if (casetest->kind == AST_RANGE) {
+                casetest = AstOperator(K_BOOL_AND,
+                                       AstOperator(K_GE, var, casetest->left),
+                                       AstOperator(K_LE, var, casetest->right));
+            } else if (casetest->kind == AST_OTHER) {
+                casetest = AstInteger(1);
+            } else {
+                casetest = AstOperator(K_EQ, var, casetest);
+            }
+            ifholder = NewAST(AST_IF, casetest, NULL);
+            if (!elseholder) {
+                seq = AddToList(seq, NewAST(AST_STMTLIST, ifholder, NULL));
+            } else {
+                elseholder->right = ifholder;
+            }
+            ifholder->left = elseholder = NewAST(AST_THENELSE, casebody, NULL);
+            list = list->right;
+        }
+        break;
+    }        
     case AST_COUNTREPEAT:
         // convert repeat count into a for loop
         doBasicTransform(&ast->left);

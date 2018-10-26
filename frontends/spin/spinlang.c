@@ -410,8 +410,13 @@ doSpinTransform(AST **astptr, int level)
             ast->left = AstAssign(var, ast->left);
         }
         while (list) {
-            doSpinTransform(&list->left->left, 0);
-            doSpinTransform(&list->left->right, level);
+            AST *caseitem;
+            if (list->kind != AST_LISTHOLDER) {
+                ERROR(list, "internal error, expected list holder");
+            }
+            caseitem = list->left;
+            doSpinTransform(&caseitem->left, 0);
+            doSpinTransform(&caseitem->right, level);
             list = list->right;
         }
         break;
