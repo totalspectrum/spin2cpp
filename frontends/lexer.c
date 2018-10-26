@@ -591,6 +591,38 @@ parseString(LexStream *L, AST **ast_ptr)
     *ast_ptr = ast;
 }
 
+/* get a character after \ */
+static int
+getEscapedChar(LexStream *L)
+{
+    int c = lexgetc(L);
+    if (c < 0) {
+        SYNTAX_ERROR("end of file inside string");
+        return c;
+    }
+    switch (c) {
+    case '0':
+        c = 0; break;
+    case 'a':
+        c = 7; break;
+    case 'b':
+        c = 8; break;
+    case 't':
+        c = 9; break;
+    case 'n':
+        c = 10; break;
+    case 'v':
+        c = 11; break;
+    case 'f':
+        c = 12; break;
+    case 'r':
+        c = 13; break;
+    case 'e':
+        c = 27; break;
+    }
+    return c;
+}
+
 /* parse a C string */
 static void
 parseCString(LexStream *L, AST **ast_ptr)
@@ -609,31 +641,8 @@ parseCString(LexStream *L, AST **ast_ptr)
             break;
         }
         if (c == '\\') {
-            c = lexgetc(L);
-            if (c < 0) {
-                SYNTAX_ERROR("end of file inside string");
-                break;
-            }
-            switch (c) {
-            case '0':
-                c = 0; break;
-            case 'a':
-                c = 7; break;
-            case 'b':
-                c = 8; break;
-            case 't':
-                c = 9; break;
-            case 'n':
-                c = 10; break;
-            case 'v':
-                c = 11; break;
-            case 'f':
-                c = 12; break;
-            case 'r':
-                c = 13; break;
-            case 'e':
-                c = 27; break;
-            }
+            c = getEscapedChar(L);
+            if (c < 0) break;
         }   
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
@@ -702,8 +711,17 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
         lexungetc(L, c2);
         return c;
     }
-    
-    if (c == '\'') {
+
+    if (language == LANG_C) {
+        if (c == '/') {
+            int c2 = lexgetc(L);
+            if (c2 == '/') {
+                c = lexgetc(L);
+                goto docomment;
+            }
+            lexungetc(L, c2);
+        }
+    } else if (c == '\'') {
         while (c == '\'') c = lexgetc(L);
         goto docomment;
     }
@@ -2802,6 +2820,17 @@ getCToken(LexStream *L, AST **ast_ptr)
     } else if (c == '"') {
         parseCString(L, &ast);
 	c = C_STRING_LITERAL;
+    } else if (c == '\'') {
+        c = lexgetc(L);
+        if (c == '\\') {
+            c = getEscapedChar(L);
+        }
+        c2  = lexgetc(L);
+        if (c2 != '\'') {
+            SYNTAX_ERROR("expected closing \' ");
+        }
+        ast = AstInteger(c);
+        c = C_CONSTANT;
     } else if (c == '.') {
         c2 = lexgetc(L);
         if (c2 == '.') {
