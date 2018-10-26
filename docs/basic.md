@@ -21,11 +21,28 @@ Fastspin BASIC is the BASIC language support of the fastspin compiler for the Pa
 
 fastspin recognizes the language in a file by the extension. If a file has a ".bas" extension it is assumed to be BASIC. Otherwise it is assumed to be Spin.
 
+## Preprocessor
+
+fastspin has a pre-processor that understands `#include`, `#define`, and
+`#ifdef / #ifndef / #else / #endif`. There are several predefined symbols:
+
+Symbol           | When Defined
+-----------------|-------------
+`__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__FASTSPIN__`   | if the `fastspin` front end is used
+`__SPINCVT__`    | always defined to the fastspin version number
+`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)
+`__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
+`__cplusplus`    | if C++ is being output (never in fastspin)
+`__P2__`         | only defined if compiling for Propeller 2
+
 ## Language Syntax
 
 ### Comments
 
 Comments start with `rem` or a single quote character, and go to the end of line. Note that you need a space or non-alphabetical character after the `rem`; the word `remark` does not start a comment.
+
+There are also multi-line comments, which start with `/'` and end with `'/`.
 
 ### Integers
 
@@ -407,7 +424,7 @@ Also useful in boolean operations. The comparison operators return 0 for false c
 ```
   dim x as any
 ```
-Declares x as a generic type 32 bit variable compatible with any other type. Basically this is a way to treat a variable as a raw 32 bit value. Note that no type checking at all is performed on variables declared with type `any`, nor are any conversions applied to them. This means that the compiler will not be able to catch many common errors.
+Declares x as a generic 32 bit variable compatible with any other type. Basically this is a way to treat a variable as a raw 32 bit value. Note that no type checking at all is performed on variables declared with type `any`, nor are any conversions applied to them. This means that the compiler will not be able to catch many common errors.
 
 `any` should be used only in exceptional circumstances.
 
@@ -435,6 +452,7 @@ dimensioned variable.
   function f(x as integer) as string
   ...
 ```
+
 ### ASC
 
 ```

@@ -15,6 +15,7 @@ fastspin has a pre-processor that understands `#include`, `#define`, and
 
 Symbol           | When Defined
 -----------------|-------------
+`__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
 `__FASTSPIN__`   | if the `fastspin` front end is used
 `__SPINCVT__`    | always defined
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)

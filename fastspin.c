@@ -427,6 +427,11 @@ main(int argc, char **argv)
     }
     /* add some predefined symbols */
     
+    if (gl_p2) {
+        pp_define(&gl_pp, "__propeller__", "2");
+    } else {
+        pp_define(&gl_pp, "__propeller__", "1");
+    }
     pp_define(&gl_pp, "__FASTSPIN__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
