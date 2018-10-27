@@ -2996,6 +2996,9 @@ validateArrayRef(AST *ast)
         return validateArrayRef(ast->left) || validateArrayRef(ast->right);
     }
 }
+
+static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
+
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
 {
@@ -3163,13 +3166,23 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_OPERAND:
       /* stashed away by other code */
       return (Operand *)expr->d.ptr;
+  case AST_STMTLIST:
+  {
+      AST *list = expr;
+      while (list && list->right) {
+          CompileStatement(irl, list->left);
+      }
+      if (list) {
+          return CompileExpression(irl, list->left, dest);
+      }
+      ERROR(expr, "expected expression at end of statement list");
+      return NewImmediate(0);
+  }
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
   }
 }
-
-static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static void
 CompileStatementList(IRList *irl, AST *ast)
@@ -3389,7 +3402,6 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     update = ast->left;
     ast = ast->right;
     body = ast;
-
     if (initstmt) {
         EmitDebugComment(irl, initstmt);
     } else if (loopcond) {
@@ -3397,7 +3409,7 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     } else if (body) {
         EmitDebugComment(irl, body);
     }
-    CompileExpression(irl, initstmt, NULL);
+    CompileStatement(irl, initstmt);
     
     toplabel = NewCodeLabel();
     nextlabel = NewCodeLabel();
