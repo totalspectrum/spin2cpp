@@ -2066,9 +2066,16 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *zero = NewImmediate(0);
       Operand *skiplabel = NewCodeLabel();
+      Operand *truevalue;
+
+      if (current->language == LANG_C) {
+          truevalue = NewImmediate(1);
+      } else {
+          truevalue = NewImmediate(-1);
+      }
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, NewImmediate(-1));
+      EmitOp2(irl, OPC_XOR, temp, truevalue);
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -3057,10 +3064,10 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Operand *zero = NewImmediate(0);
       Operand *skiplabel = NewCodeLabel();
       Operand *temp = NewFunctionTempRegister();
-      
+      Operand *truevalue = (current->language == LANG_C) ? NewImmediate(1) : NewImmediate(-1);
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
-      EmitOp2(irl, OPC_XOR, temp, NewImmediate(-1));
+      EmitOp2(irl, OPC_XOR, temp, truevalue);
       EmitLabel(irl, skiplabel);
       return temp;
   }
@@ -3169,8 +3176,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_STMTLIST:
   {
       AST *list = expr;
-      while (list && list->right) {
+      if (list && list->right) {
           CompileStatement(irl, list->left);
+          return CompileExpression(irl, list->right, dest);
       }
       if (list) {
           return CompileExpression(irl, list->left, dest);
@@ -3409,7 +3417,7 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     } else if (body) {
         EmitDebugComment(irl, body);
     }
-    CompileStatement(irl, initstmt);
+    CompileExpression(irl, initstmt, NULL);
     
     toplabel = NewCodeLabel();
     nextlabel = NewCodeLabel();
