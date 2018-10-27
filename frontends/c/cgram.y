@@ -768,8 +768,15 @@ iteration_statement
                 AST *init = $3;
                 AST *cond = $4;
                 AST *update = NULL;
-                AST *stepstmt = NewAST(AST_STEP, update, body);
-                AST *condtest = NewAST(AST_TO, cond, stepstmt);
+                AST *stepstmt, *condtest;
+                if (init && init->kind == AST_STMTLIST && !init->right) {
+                    init = init->left;
+                }
+                if (cond && cond->kind == AST_STMTLIST && !cond->right) {
+                    cond = cond->left;
+                }
+                stepstmt = NewAST(AST_STEP, update, body);
+                condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
             }
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
@@ -777,8 +784,15 @@ iteration_statement
                 AST *init = $3;
                 AST *cond = $4;
                 AST *update = $5;
-                AST *stepstmt = NewAST(AST_STEP, update, body);
-                AST *condtest = NewAST(AST_TO, cond, stepstmt);
+                AST *stepstmt, *condtest;
+                if (init && init->kind == AST_STMTLIST && !init->right) {
+                    init = init->left;
+                }
+                if (cond && cond->kind == AST_STMTLIST && !cond->right) {
+                    cond = cond->left;
+                }
+                stepstmt = NewAST(AST_STEP, update, body);
+                condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
             }
 	;
