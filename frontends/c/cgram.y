@@ -55,6 +55,19 @@ C_ModifySignedUnsigned(AST *modifier, AST *type)
 }
 
 static AST *
+CombinePointer(AST *ptr, AST *type)
+{
+    AST *q = ptr;
+    while (q && q->left) {
+        q = q->left;
+    }
+    if (q) {
+        q->left = type;
+    }
+    return ptr;
+}
+
+static AST *
 CombineTypes(AST *first, AST *second, AST **identifier)
 {
     AST *expr, *ident;
@@ -68,7 +81,9 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         first = CombineTypes(first, second->right, identifier);
         return first;
     case AST_IDENTIFIER:
-        *identifier = second;
+        if (identifier) {
+            *identifier = second;
+        }
         return first;
     case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
@@ -83,7 +98,9 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         expr = second->right;
         first = CombineTypes(first, second->left, &ident);
         ident = AstAssign(ident, expr);
-        *identifier = ident;
+        if (identifier) {
+            *identifier = ident;
+        }
         return first;
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
@@ -126,6 +143,18 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
     ident = NULL;
     type = CombineTypes(decl_spec, declarator, &ident);
     return NewAST(AST_DECLARE_VAR, type, ident);
+}
+
+static void
+DeclareCGlobalVariables(AST *slist)
+{
+    while (slist) {
+        if (slist->kind != AST_STMTLIST) {
+            ERROR(slist, "internal error in DeclareCGlobalVars");
+        }
+        DeclareBASICGlobalVariables(slist->left);
+        slist = slist->right;
+    }
 }
 
 %}
@@ -548,15 +577,7 @@ type_qualifier
 
 declarator
 	: pointer direct_declarator
-            {
-                AST *q = $1;
-                while (q && q->left) {
-                    q = q->left;
-                }
-                if (q)
-                    q->left = $2;
-                $$ = $1;
-            }
+            {  $$ = CombinePointer($1, $2); }
 	| direct_declarator
             { $$ = $1; }
 	;
@@ -583,15 +604,7 @@ pointer
             { $$ = NewAST(AST_PTRTYPE, NULL, NULL); }
 	| '*' type_qualifier_list
             {
-                AST *newptr = $2;
-                AST *q = newptr;
-                AST *ptrtype = NewAST(AST_PTRTYPE, NULL, NULL);
-                while (q && q->left) q = q->left;
-                if (q)
-                    q->left = ptrtype;
-                else
-                    newptr = ptrtype;
-                $$ = newptr;
+                $$ = CombinePointer(NewAST(AST_PTRTYPE, NULL, NULL), $2);
             }
 	| '*' pointer
             { $$ = NewAST(AST_PTRTYPE, $2, NULL); }
@@ -649,13 +662,18 @@ identifier_list
 
 type_name
 	: specifier_qualifier_list
+            { $$ = $1; }
 	| specifier_qualifier_list abstract_declarator
+        { $$ = CombineTypes($1, $2, NULL); }
 	;
 
 abstract_declarator
 	: pointer
+            { $$ = $1; }
 	| direct_abstract_declarator
+            { $$ = $1; }
 	| pointer direct_abstract_declarator
+            { $$ = CombinePointer($1, $2); }
 	;
 
 direct_abstract_declarator
@@ -818,7 +836,7 @@ translation_unit
 external_declaration
 	: function_definition
 	| declaration
-            { DeclareBASICGlobalVariables($1); }
+            { DeclareCGlobalVariables($1); }
 	;
 
 function_definition
