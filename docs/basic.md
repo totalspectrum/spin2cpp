@@ -78,9 +78,11 @@ case
 catch
 class
 close
+const
 continue
 cpu
 declare
+delete
 dim
 direction
 do
@@ -101,6 +103,7 @@ long
 loop
 mod
 next
+new
 nil
 not
 open
@@ -882,7 +885,11 @@ Also note that before using a pin as input its direction should be set as input 
 
 ### INPUT$
 
-A predefined string function. `input$(n, h)` reads up to `n` characters from handle `h`, as created by an `open device as #h` statement. If there are not enough characters to fulfil the request then a shorter string is returned; for example, at end of file an empty string "" will be returned. If no `h` is specified (just `input$(n)` is used) then the default serial device will be used.
+A predefined string function. There are two ways to use this.
+
+The first, and simpler way, is just as `input$(n)`, which reads `n` characters from the default serial port and returns a string made of those characters. `input$(1)` is thus a kind of `getchar` to read a single character.
+
+The second form, `input$(n, h)` reads up to `n` characters from handle `h`, as created by an `open device as #h` statement. If there are not enough characters to fulfil the request then a shorter string is returned; for example, at end of file an empty string "" will be returned.
 
 Example:
 ```
