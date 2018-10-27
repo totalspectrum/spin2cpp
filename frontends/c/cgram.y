@@ -277,7 +277,13 @@ unary_expression
 	| C_DEC_OP unary_expression
             { $$ = AstOperator(K_DECREMENT, NULL, $1); }
 	| unary_operator cast_expression
-            { $$ = $1; $$->left = $2; }
+            {
+                $$ = $1;
+                if ($$->right)
+                    $$->left = $2;
+                else
+                    $$->right = $2;
+            }
 	| C_SIZEOF unary_expression
             { $$ = AstOperator(AST_SIZEOF, $1, NULL); }           
 	| C_SIZEOF '(' type_name ')'
