@@ -58,6 +58,7 @@ static AST *
 CombineTypes(AST *first, AST *second, AST **identifier)
 {
     AST *expr, *ident;
+    
     if (!second) {
         return first;
     }
@@ -96,8 +97,29 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     }
 }
 
+static AST *
+MultipleDeclareVar(AST *first, AST *second)
+{
+    AST *ident, *type;
+    AST *stmtlist = NULL;
+    AST *item;
+    
+    while (second) {
+        if (second->kind != AST_LISTHOLDER) {
+            ERROR(second, "internal error in createVarDeclarations: expected listholder");
+            return stmtlist;
+        }
+        item = second->left;
+        second = second->right;
+        type = CombineTypes(first, item, &ident);
+        ident = NewAST(AST_DECLARE_VAR, type, ident);
+        stmtlist = AddToList(stmtlist, NewAST(AST_STMTLIST, ident, NULL));
+    }
+    return stmtlist;
+}
+
 AST *
-MergeDeclareVar(AST *decl_spec, AST *declarator)
+SingleDeclareVar(AST *decl_spec, AST *declarator)
 {
     AST *type, *ident;
 
@@ -394,10 +416,10 @@ constant_expression
 
 declaration
 	: declaration_specifiers ';'
-            { $$ = MergeDeclareVar(NULL, $1); }
+            { $$ = SingleDeclareVar(NULL, $1); }
 	| declaration_specifiers init_declarator_list ';'
             {
-                $$ = MergeDeclareVar($1, $2);
+                $$ = MultipleDeclareVar($1, $2);
             }
 	;
 
@@ -416,7 +438,9 @@ declaration_specifiers
 
 init_declarator_list
 	: init_declarator
+            { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
 	| init_declarator_list ',' init_declarator
+            { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
 	;
 
 init_declarator
@@ -609,9 +633,9 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator
-            { $$ = MergeDeclareVar($1, $2); }
+            { $$ = SingleDeclareVar($1, $2); }
 	| declaration_specifiers abstract_declarator
-            { $$ = MergeDeclareVar($1, $2); }
+            { $$ = SingleDeclareVar($1, $2); }
 	| declaration_specifiers
             { $$ = $1; }
 	;
@@ -742,8 +766,8 @@ iteration_statement
 	| C_FOR '(' expression_statement expression_statement ')' statement
             {   AST *body = CheckYield($6);
                 AST *init = $3;
-                AST *update = $4;
-                AST *cond = AstInteger(1);
+                AST *cond = $4;
+                AST *update = NULL;
                 AST *stepstmt = NewAST(AST_STEP, update, body);
                 AST *condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
@@ -751,8 +775,8 @@ iteration_statement
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
             {   AST *body = CheckYield($7);
                 AST *init = $3;
-                AST *update = $4;
-                AST *cond = $5;
+                AST *cond = $4;
+                AST *update = $5;
                 AST *stepstmt = NewAST(AST_STEP, update, body);
                 AST *condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
