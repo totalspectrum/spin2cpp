@@ -2850,7 +2850,7 @@ getCToken(LexStream *L, AST **ast_ptr)
             c = C_LE_OP;
         } else if (c2 == '<') {
             c2 = lexgetc(L);
-            if (c2 == '-') {
+            if (c2 == '=') {
                 c = C_LEFT_ASSIGN;
             } else {
                 lexungetc(L, c2);

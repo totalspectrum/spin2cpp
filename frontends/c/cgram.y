@@ -428,7 +428,7 @@ assignment_operator
 	| C_LEFT_ASSIGN
             { $$ = AstOpAssign(K_SHL, NULL, NULL); }
 	| C_RIGHT_ASSIGN
-            { $$ = AstOpAssign(K_SHR, NULL, NULL); }
+            { $$ = AstOpAssign(K_SAR, NULL, NULL); }
 	| C_AND_ASSIGN
             { $$ = AstOpAssign('&', NULL, NULL); }
 	| C_XOR_ASSIGN
