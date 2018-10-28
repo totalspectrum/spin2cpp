@@ -11,18 +11,17 @@ spin2cpp started off as a program to convert Spin language programs to C++.
 It has grown considerably past that now, and can perform conversions like:
 
   * Converting Spin code directly to PASM
-  * Compiling a Spin program to executable binary (using PASM instructions,
-    so *much* faster than ordinary Spin bytecodes, but also larger)
-  * Converting Spin to C++ or to plain C
+  * Converting BASIC to PASM (see basic.md for a description of the BASIC
+    dialect used)
+  * Compiling a Spin or BASIC program to executable binary (using PASM
+    instructions, so *much* faster than ordinary Spin bytecodes, but larger)
+  * Converting Spin or BASIC to C++ or to plain C
   * Extracting the binary portion of a DAT section
   * Converting PASM style assembly in a DAT section to a GAS style .s file
   * Compiling Spin programs on a PC or other platform (with some programmer help)
   
 spin2cpp should be able to deal with any Spin program; please report
 any that it cannot convert.
-
-Along with spin2cpp there is a GUI program (spinconvert) which some users
-will find more comfortable.
 
 There is also an alternate front end `fastspin` which mimics the command
 line of the `openspin` compiler, but which produces LMM binaries instead
@@ -46,19 +45,6 @@ Similarly, if you only want to use the `--asm` option of spin2cpp to
 generate PASM, then you do not need propeller-elf-gcc or anything else
 from PropGCC.
 
-The GUI tool spincvt also doesn't require anything from PropGCC,
-unless you want to convert some code to C and then compile it
-(compiling from PASM can all be done within the GUI, no external tool
-necessary).
-
-GUI USAGE
-=========
-
-Run the spincvt.exe program and then use File>Open to load a Spin file. You
-should see the converted PASM appear on the right. You can use the Options
-menu to change the output type to C or C++. See the Help menu for more
-details.
-
 COMMAND LINE USAGE
 ==================
 
@@ -68,12 +54,17 @@ fastspin
 fastspin is a simple interface to the SPIN -> PASM converter. It acts very
 much like openspin, including mimicking its console output, so that it
 can easily be used in IDEs in place of openspin. The basic usage is
-
+```
     fastspin file.spin
-
+```
 which will produce `file.binary`, an executable which may be downloaded
 to the Propeller. There are various options, use `fastspin -h` to see them
-all.
+all. Probably the most significant is `-2` to compile a Propeller 2
+executable:
+```
+   fastspin -2 file.spin
+```
+produces a `file.binary` which can be run on a Prop2 FPGA.
 
 As an alternative, fastspin can also mimic the bstc command line
 compiler, if it is named something that starts with the letters "bstc"
@@ -191,7 +182,7 @@ Spin2cpp accepts the following options:
   Produce (somewhat) readable PASM code as output. This bypasses PropGCC
   altogether. The result may be fed back into spin2cpp and compiled to
   a binary by adding the --binary flag after --asm, or by running
-  `spin2cpp --dat --binary`.
+  `spin2cpp --dat --binary` on the generated .pasm file.
   
 `--binary`
   Run the compiler and output a loadable binary file. Note that
@@ -253,9 +244,11 @@ Spin2cpp accepts the following options:
   Like `--binary`, but pads the file out to fill a 32768 byte EEPROM.
   
 `--elf`
-  Run PropGCC and output a linked executable ELF file. Note that
-  this option imples --main. Also note that after --elf you may
-  specify options to be passed to PropGCC, such as -Os or -mxmmc.
+
+  After converting to C or C++, run PropGCC on the result and output
+  a linked executable ELF file. Note that this option imples --main.
+  Also note that after --elf you may specify options to be passed to
+  PropGCC, such as -Os or -mxmmc.
 
 `--files`
   Print a list of the .cpp (or .c) files that were produced by
@@ -273,7 +266,8 @@ Spin2cpp accepts the following options:
   into a region of COG memory (the FCACHE) to improve performance. The
   default FCACHE size is 64. Larger sizes may improve performance, but
   at the risk of running out of COG memory space. The minimum size is
-  8; any size less than this disables FCACHE completely.
+  8; any size less than this disables FCACHE completely. This option only
+  affects PASM or binary output, and is ignored for C/C++ output.
   
 
 `--gas`
@@ -315,12 +309,11 @@ Spin2cpp accepts the following options:
   Normalize all identifiers so that the first letter is upper case and
   the rest are lower case. This is the way older versions of spin2cpp
   handled identifiers, and is useful for avoiding some identifier
-  conflicts. Without this flag, identifiers use the case specified in
-  their first occurence.
+  conflicts. Without this flag, identifiers are converted to all lower
+  case.
 
 `--p2`
-  Create output for Propeller 2. This is still experimental, but should
-  work. Requires v32b FPGA images.
+  Create output for Propeller 2.
   
 `--require=M.N.K`
   Require spin2cpp version M.N.K or later. If an earlier version number is
@@ -356,6 +349,8 @@ spin2cpp (and fastspin, which is just a different interface to spin2cpp)
 supports a number of extensions to the Spin language. These are documented
 in the file "spin.md".
 
+spin2cpp and fastspin support compiling BASIC files. The BASIC language
+is based on QuickBasic/FreeBasic, and is documented in the file "basic.md".
 
 LIMITATIONS
 ===========
@@ -432,10 +427,10 @@ Spin is a case-insensitive language, which means that the strings
 the other hand, is case sensitive; all of those strings would be
 different variables in C++.
 
-Normally spin2cpp will change all instances of an identifier to have the
-same case as the first occurence, unless that conflicts with a
-built-in C keyword or function; in that case it will change it so
-that the first letter is upper case and subsequent letters are lower case.
+Normally spin2cpp will convert identifiers to lower case, unless
+that conflicts with a built-in C keyword or function; in that case
+it will change it so that the first letter is upper case and subsequent
+letters are lower case.
 
 If the --normalize (or -n) flag is given, then spin2cpp
 normalizes all Spin identifiers (variable and method names) so that
