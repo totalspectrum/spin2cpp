@@ -6,7 +6,8 @@ Version 3.9.8
 - Fixed an optimizer bug in replacing registers
 - Fixed an assembly output bug when the input contains only leaf
   functions
-- Make for loops with float variables work
+- Made for loops with float variables work
+- Fixed missing _rx function for P2
 
 Version 3.9.7
 - Fixed a bug in converting float values to integer
