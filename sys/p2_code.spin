@@ -89,7 +89,7 @@ pri _tx(c) | val, nextcnt
 pri _rx | val, waitcycles, i
   DIRB[_rxpin] := 0
   repeat
-  while _INB[_rxpin] <> 0
+  while INB[_rxpin] <> 0
   waitcycles := cnt + (_bitcycles>>1)
   val := 0
   repeat 8
