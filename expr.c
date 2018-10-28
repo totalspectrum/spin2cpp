@@ -1097,7 +1097,8 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_INTEGER:
     case AST_BITVALUE:
         return intExpr(expr->d.ival);
-
+    case AST_SIZEOF:
+        return intExpr(TypeSize(ExprType(expr->left)));
     case AST_FLOAT:
         if (gl_fixedreal) {
             return fixedExpr(expr->d.ival);
@@ -2116,9 +2117,6 @@ CompatibleTypes(AST *A, AST *B)
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
     
-    // FIXME: eventually float types should be
-    // fully supported, but for now treat them
-    // as generic
     if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
         A = ast_type_generic;
     }
