@@ -522,10 +522,14 @@ prints `A` (the character whose ASCII value is 65)
 A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object. In fact, Spin objects may be directly imported as classes:
 ```
    dim ser as class using "FullDuplexSerial.spin"
+
 ```
-creates an object `ser` based on the Spin file "FullDuplexSerial.spin"; this is the same as the Spin declaration:
+creates an object `ser` based on the Spin file "FullDuplexSerial.spin"; this
+may then be used directly, e.g.:
 ```
-   OBJ ser: "FullDuplexSerial"
+   ser.str("hello, world!")
+   ser.tx(13)  ' send a carriage return
+   ser.dec(100) ' print 100 as a decimal number
 ```
 BASIC files may also be used as classes. When they are, all the functions and subroutines in the BASIC file are exposed as methods (there are no private methods in BASIC yet). Any BASIC code that is not in a function or subroutine is not accessible.
 
