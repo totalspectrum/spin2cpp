@@ -273,9 +273,9 @@ unary_expression
 	: postfix_expression
             { $$ = $1; }
 	| C_INC_OP unary_expression
-            { $$ = AstOperator(K_INCREMENT, NULL, $1); }
+            { $$ = AstOperator(K_INCREMENT, NULL, $2); }
 	| C_DEC_OP unary_expression
-            { $$ = AstOperator(K_DECREMENT, NULL, $1); }
+            { $$ = AstOperator(K_DECREMENT, NULL, $2); }
 	| unary_operator cast_expression
             {
                 $$ = $1;
