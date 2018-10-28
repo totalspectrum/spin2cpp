@@ -74,6 +74,7 @@ pri _coginit(id, code, param)
   endasm
   return id
 con
+ _rxpin = 31
  _txpin = 30
  _bitcycles = 80_000_000 / 115_200
 pri _tx(c) | val, nextcnt
@@ -85,3 +86,15 @@ pri _tx(c) | val, nextcnt
     waitcnt(nextcnt += _bitcycles)
     OUTB[_txpin] := val
     val >>= 1
+pri _rx | val, waitcycles, i
+  DIRB[_rxpin] := 0
+  repeat
+  while _INB[_rxpin] <> 0
+  waitcycles := cnt + (_bitcycles>>1)
+  val := 0
+  repeat 8
+    waitcnt(waitcycles += _bitcycles)
+    val := (INB[_rxpin] << 7) | (val>>1)
+  waitcnt(waitcycles + _bitcycles)
+  _tx(val)
+  return val
