@@ -2691,7 +2691,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        flexbuf_addchar(&fb, tolower(c));
+        flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
     // add a trailing 0, and make sure there is room for an extra
