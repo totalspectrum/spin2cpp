@@ -1,3 +1,6 @@
+Version 3.9.9
+- Fixed unsigned divide and remainder in BASIC and C
+
 Version 3.9.8
 - Added __propeller__ symbol to preprocessor
 - Added SELECT CASE to BASIC

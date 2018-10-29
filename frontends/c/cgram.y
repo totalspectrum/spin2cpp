@@ -164,7 +164,16 @@ ProcessParamList(AST *list)
     AST *entry;
     int count = 0;
     AST *orig_list = list;
-    
+
+    if (list->kind == AST_EXPRLIST) {
+        while (list) {
+            entry = list->left;
+            list->left = NewAST(AST_DECLARE_VAR, ast_type_long, entry);
+            list->kind = AST_LISTHOLDER;
+            list = list->right;
+        }
+        list = orig_list;
+    }
     while (list) {
         entry = list->left;
         list = list->right;
@@ -899,7 +908,6 @@ function_definition
                 int is_public = 1;
                 type = CombineTypes(NULL, $1, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
-                SYNTAX_ERROR("dubious grammar");
             }
 	;
 
