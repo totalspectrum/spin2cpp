@@ -157,6 +157,26 @@ DeclareCGlobalVariables(AST *slist)
     }
 }
 
+/* process a parameter list and fix it up as necessary */
+AST *
+ProcessParamList(AST *list)
+{
+    AST *entry;
+    int count = 0;
+    
+    while (list) {
+        entry = list->left;
+        list = list->right;
+        if (entry == ast_type_void) {
+            if (list || count) {
+                SYNTAX_ERROR("void should appear alone in a parameter list");
+            }
+            return NULL;
+        }
+        count++;
+    }
+    return list;
+}
 %}
 
 %pure-parser
@@ -598,9 +618,9 @@ direct_declarator
 	| direct_declarator '[' ']'
             { $$ = NewAST(AST_ARRAYDECL, $1, NULL); }
 	| direct_declarator '(' parameter_type_list ')'
-            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, $3), $1); }
+            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, ProcessParamList($3)), $1); }
 	| direct_declarator '(' identifier_list ')'
-            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, $3), $1); }
+            { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, ProcessParamList($3)), $1); }
 	| direct_declarator '(' ')'
             { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_FUNCTYPE, NULL, NULL), $1); }
 	;
