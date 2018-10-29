@@ -920,7 +920,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
     case '*':
     case '/':
-        return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
+    case K_MODULUS:
+        if (IsUnsignedType(lefttype) && IsIntType(righttype)) {
+            if (op == '/')
+                op = K_UNS_DIV;
+            else if (op == K_MODULUS)
+                op = K_UNS_MOD;
+            ast->d.ival = op;
+        }
+        return HandleTwoNumerics(op, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         VerifyIntegerType(ast, righttype, "sign extension");
         return ast_type_long;
