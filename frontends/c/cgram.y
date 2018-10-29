@@ -163,6 +163,7 @@ ProcessParamList(AST *list)
 {
     AST *entry;
     int count = 0;
+    AST *orig_list = list;
     
     while (list) {
         entry = list->left;
@@ -175,7 +176,7 @@ ProcessParamList(AST *list)
         }
         count++;
     }
-    return list;
+    return orig_list;
 }
 
 /* make sure a statement is embedded in a statement list */
