@@ -54,7 +54,7 @@ UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c cppexpr.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c
 CPPBACK = outcpp.c cppfunc.c outgas.c # cppexpr.c
-SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK)
+SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) version.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
@@ -126,8 +126,13 @@ $(BUILD)/cgram.tab.o: $(BUILD)/cgram.tab.c $(LEXHEADERS)
 $(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
+$(BUILD)/version.o: version.c version.h FORCE
+	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --always) -o $@ -c $<
+
 $(BUILD)/%.o: %.c
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
+
+.PHONY: FORCE
 
 #
 # convert a .spin file to a header file
