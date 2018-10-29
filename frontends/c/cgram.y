@@ -158,7 +158,7 @@ DeclareCGlobalVariables(AST *slist)
 }
 
 /* process a parameter list and fix it up as necessary */
-AST *
+static AST *
 ProcessParamList(AST *list)
 {
     AST *entry;
@@ -177,6 +177,17 @@ ProcessParamList(AST *list)
     }
     return list;
 }
+
+/* make sure a statement is embedded in a statement list */
+static AST *
+ForceStatementList(AST *stmt)
+{
+    if (stmt && stmt->kind != AST_STMTLIST) {
+        return NewAST(AST_STMTLIST, stmt, NULL);
+    }
+    return stmt;
+}
+
 %}
 
 %pure-parser
@@ -786,10 +797,10 @@ expression_statement
 selection_statement
 	: C_IF '(' expression ')' statement
             { $$ = NewAST(AST_IF, $3,
-                          NewAST(AST_THENELSE, $5, NULL)); }
+                          NewAST(AST_THENELSE, ForceStatementList($5), NULL)); }
 	| C_IF '(' expression ')' statement C_ELSE statement
             { $$ = NewAST(AST_IF, $3,
-                          NewAST(AST_THENELSE, $5, $7));
+                          NewAST(AST_THENELSE, ForceStatementList($5), ForceStatementList($7)));
             }
 	| C_SWITCH '(' expression ')' statement
             {
@@ -800,15 +811,15 @@ selection_statement
 
 iteration_statement
 	: C_WHILE '(' expression ')' statement
-            { AST *body = CheckYield($5);
+            { AST *body = ForceStatementList(CheckYield($5));
               $$ = NewCommentedAST(AST_WHILE, $3, body, $1);
             }
 	| C_DO statement C_WHILE '(' expression ')' ';'
-            { AST *body = CheckYield($2);
+            { AST *body = ForceStatementList(CheckYield($2));
               $$ = NewCommentedAST(AST_DOWHILE, $5, body, $1);
             }
 	| C_FOR '(' expression_statement expression_statement ')' statement
-            {   AST *body = CheckYield($6);
+            {   AST *body = ForceStatementList(CheckYield($6));
                 AST *init = $3;
                 AST *cond = $4;
                 AST *update = NULL;
@@ -824,7 +835,7 @@ iteration_statement
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
             }
 	| C_FOR '(' expression_statement expression_statement expression ')' statement
-            {   AST *body = CheckYield($7);
+            {   AST *body = ForceStatementList(CheckYield($7));
                 AST *init = $3;
                 AST *cond = $4;
                 AST *update = $5;
