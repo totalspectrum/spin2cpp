@@ -1343,6 +1343,7 @@ struct reservedword c_keywords[] = {
   { "return", C_RETURN },
   { "short", C_SHORT },
   { "signed", C_SIGNED },
+  { "sizeof", C_SIZEOF },
   { "static", C_STATIC },
   { "struct", C_STRUCT },
   { "switch", C_SWITCH },

@@ -325,10 +325,10 @@ unary_expression
                 else
                     $$->right = $2;
             }
-	| C_SIZEOF unary_expression
-            { $$ = AstOperator(AST_SIZEOF, $1, NULL); }           
 	| C_SIZEOF '(' type_name ')'
-            { $$ = AstOperator(AST_SIZEOF, $1, NULL); }           
+            { $$ = NewAST(AST_SIZEOF, $3, NULL); }           
+	| C_SIZEOF unary_expression
+            { $$ = NewAST(AST_SIZEOF, $2, NULL); }           
 	;
 
 unary_operator

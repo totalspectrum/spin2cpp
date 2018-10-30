@@ -1174,6 +1174,8 @@ AST *CheckTypes(AST *ast)
     case AST_HWREG:
     case AST_CONSTREF:
         return ast_type_long;
+    case AST_SIZEOF:
+        return ast_type_unsigned_long;
     case AST_CATCHRESULT:
     case AST_BITVALUE:
         return ast_type_generic;
