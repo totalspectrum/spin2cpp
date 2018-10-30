@@ -279,7 +279,7 @@ primary_expression
 	| C_CONSTANT
             { $$ = $1; }
 	| C_STRING_LITERAL
-            { $$ = $1; }
+            { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
 	| '(' expression ')'
             { $$ = $2; }
 	;

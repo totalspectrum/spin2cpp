@@ -1182,7 +1182,10 @@ AST *CheckTypes(AST *ast)
         return ast_type_generic;
     case AST_STRING:
     case AST_STRINGPTR:
-        return ast_type_string;
+        if (current->language == LANG_BASIC) {
+            return ast_type_string;
+        }
+        return ast_type_ptr_byte;
     case AST_ADDROF:
     case AST_ABSADDROF:
         if (IsFunctionType(ltype)) {
