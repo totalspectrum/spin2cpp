@@ -567,6 +567,31 @@ static AST *dopromote(AST *expr, int numbytes, int operator)
     promote = AstOperator(operator, expr, AstInteger(shiftbits));
     return promote;
 }
+// do a narrowing operation to convert from A bytes to B bytes
+// works by going A -> 32 bits -> B
+static AST *donarrow(AST *expr, int A, int B, int isSigned)
+{
+    int shiftbits = (A - B) * 8;
+    AST *promote;
+    AST *narrow;
+    if (shiftbits == 0) {
+        return expr; // nothing to do
+    }
+    promote = dopromote(expr, A, isSigned ? K_ZEROEXTEND : K_SIGNEXTEND);
+#if 0    
+    if (shiftbits > 0) {
+        int operator = isSigned ? K_SAR : K_SHR;
+        narrow = AstOperator(K_SHL, promote, AstInteger(shiftbits));
+        narrow = AstOperator(operator, narrow, AstInteger(shiftbits));
+    } else {
+        narrow = promote;
+    }
+#else
+    narrow = promote;
+#endif
+    return narrow;
+}
+
 // force a promotion from a small integer type to a full 32 bits
 static AST *forcepromote(AST *type, AST *expr)
 {
@@ -1059,6 +1084,70 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     return desttype;
 }
 
+/* change AST so that it casts src to desttype */
+static AST *
+doCast(AST *desttype, AST *srctype, AST *src)
+{
+    AST *expr = src;
+    
+    if (IsGenericType(srctype)) {
+        return src;
+    }
+    if (IsPointerType(desttype)) {
+        if (IsFloatType(srctype)) {
+            src = dofloatToInt(src);
+            srctype = ast_type_long;
+        }
+        if (IsPointerType(srctype)) {
+            return src;
+        }
+        if (IsIntType(srctype)) {
+            /* FIXME: should probably check size here */
+            return src;
+        }
+        ERROR(src, "unable to convert to a pointer type");
+        return NULL;
+    }
+    if (IsFloatType(desttype)) {
+        if (IsFloatType(srctype)) {
+            return src;
+        }
+        if (IsPointerType(srctype)) {
+            srctype = ast_type_long;
+        }
+        if (IsIntType(srctype)) {
+            return domakefloat(srctype, src);
+        }
+        ERROR(src, "unable to convert to a float type");
+        return NULL;
+    }
+    if (IsIntType(desttype)) {
+        if (IsFloatType(srctype)) {
+            src = dofloatToInt(src);
+            srctype = ast_type_long;
+        }
+        if (IsPointerType(srctype)) {
+            srctype = ast_type_long;
+        }
+        if (IsIntType(srctype)) {
+            int lsize = TypeSize(desttype);
+            int rsize = TypeSize(srctype);
+            if (lsize > rsize) {
+                if (IsUnsignedType(srctype)) {
+                    src = dopromote(src, rsize, K_ZEROEXTEND);
+                } else {
+                    src = dopromote(expr, rsize, K_SIGNEXTEND);
+                }
+            } else if (lsize < rsize) {
+                src = donarrow(src, rsize, lsize, IsUnsignedType(srctype));
+            }
+            return src;
+        }
+    }
+    ERROR(src, "bad cast");
+    return NULL;
+}
+
 static void
 BuildMethodPointer(AST *ast)
 {
@@ -1095,6 +1184,12 @@ AST *CheckTypes(AST *ast)
     AST *ltype, *rtype;
     if (!ast) return NULL;
 
+    if (ast->kind == AST_CAST) {
+        ltype = ast->left;
+        rtype = CheckTypes(ast->right);
+        *ast = *doCast(ltype, rtype, ast->right);
+        return ltype;
+    }        
     ltype = CheckTypes(ast->left);
     rtype = CheckTypes(ast->right);
     switch (ast->kind) {

@@ -583,9 +583,13 @@ struct_declaration
 
 specifier_qualifier_list
 	: type_specifier specifier_qualifier_list
+            { $$ = C_ModifySignedUnsigned($1, $2); }
 	| type_specifier
+            { $$ = $1; }
 	| type_qualifier specifier_qualifier_list
+            { $$ = $1; $$->left = $2; }
 	| type_qualifier
+            { $$ = $1; $$->left = ast_type_long; }
 	;
 
 struct_declarator_list
