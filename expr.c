@@ -2090,6 +2090,14 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         return ast_type_unsigned_long;
     case AST_CAST:
         return expr->left;
+    case AST_PTRTYPE:
+    case AST_ARRAYTYPE:
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_MODIFIER_CONST:
+    case AST_MODIFIER_VOLATILE:
+    case AST_OBJECT:
+        return expr;
     default:
         return NULL;
     }
