@@ -192,10 +192,40 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     case IMM_STRING:
-        flexbuf_addchar(fb, '"');
-        flexbuf_addstr(fb, reg->name);
-        flexbuf_addchar(fb, '"');
+    {
+        const char *s = reg->name;
+        int c;
+        int needquote = 1;
+        int needcomma = 0;
+        
+        while ( (c = *s++) != 0) {
+            if (c < 0x20 || c >= 0x7f) {
+                if (needquote == 0) {
+                    flexbuf_addchar(fb, '"');
+                    needquote = needcomma = 1;
+                }
+                if (needcomma == 1) {
+                    flexbuf_addchar(fb, ',');
+                }
+                flexbuf_printf(fb, "%d", c);
+                needcomma = 1;
+            } else {
+                if (needquote) {
+                    if (needcomma) {
+                        flexbuf_addchar(fb, ',');
+                        needcomma = 0;
+                    }
+                    flexbuf_addchar(fb, '"');
+                    needquote = 0;
+                }
+                flexbuf_addchar(fb, c);
+            }
+        }
+        if (needquote == 0) {
+            flexbuf_addchar(fb, '"');
+        }
         break;
+    }
     case REG_HUBPTR:
     case REG_COGPTR:
         indirect = (Operand *)reg->val;
