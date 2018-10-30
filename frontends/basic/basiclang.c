@@ -743,7 +743,15 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     }
     if (!MakeBothIntegers(ast, lefttype, righttype, "operator"))
         return NULL;
-    return MatchIntegerTypes(ast, lefttype, righttype, 0);
+    lefttype = MatchIntegerTypes(ast, lefttype, righttype, 0);
+    if (IsUnsignedType(lefttype)) {
+        if (op == K_MODULUS) {
+            ast->d.ival = K_UNS_MOD;
+        } else if (op == '/') {
+            ast->d.ival = K_UNS_DIV;
+        }
+    }
+    return lefttype;
 }
 
 bool IsUnsignedConst(AST *ast)
@@ -921,13 +929,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '*':
     case '/':
     case K_MODULUS:
-        if (IsUnsignedType(lefttype) && IsIntType(righttype)) {
-            if (op == '/')
-                op = K_UNS_DIV;
-            else if (op == K_MODULUS)
-                op = K_UNS_MOD;
-            ast->d.ival = op;
-        }
         return HandleTwoNumerics(op, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         VerifyIntegerType(ast, righttype, "sign extension");
