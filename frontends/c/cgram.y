@@ -161,7 +161,7 @@ DeclareCGlobalVariables(AST *slist)
 static AST *
 ProcessParamList(AST *list)
 {
-    AST *entry;
+    AST *entry, *type;
     int count = 0;
     AST *orig_list = list;
 
@@ -182,6 +182,15 @@ ProcessParamList(AST *list)
                 SYNTAX_ERROR("void should appear alone in a parameter list");
             }
             return NULL;
+        }
+        if (entry->kind == AST_DECLARE_VAR) {
+            type = entry->left;
+            while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
+                type = type->left;
+            }
+            if (type->kind == AST_ARRAYTYPE) {
+                type->kind = AST_PTRTYPE;
+            }
         }
         count++;
     }
@@ -741,13 +750,18 @@ direct_abstract_declarator
 
 initializer
 	: assignment_expression
+            { $$ = $1; }
 	| '{' initializer_list '}'
+            { $$ = $2; }
 	| '{' initializer_list ',' '}'
+            { $$ = $2; }
 	;
 
 initializer_list
 	: initializer
+            { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 	| initializer_list ',' initializer
+            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
 	;
 
 statement
