@@ -16,13 +16,11 @@ _blah_ret
 _main
 	neg	_main_i, #1
 LR__0001
-	cmps	_main_i, #2 wc,wz
- if_ae	jmp	#LR__0002
 	mov	arg1, _main_i
 	call	#_blah
 	add	_main_i, #1
-	jmp	#LR__0001
-LR__0002
+	cmps	_main_i, #2 wc,wz
+ if_b	jmp	#LR__0001
 _main_ret
 	ret
 

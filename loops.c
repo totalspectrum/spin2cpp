@@ -792,6 +792,8 @@ CheckSimpleLoop(AST *stmt)
     AST *updateInit = NULL;
     AST *updateLimit = NULL;
     AST *newInitial = NULL;
+    AST *ifskip = NULL;
+    AST *thenelseskip = NULL;
     Symbol *sym;
     int updateTestOp = 0;
     int32_t initVal;
@@ -845,6 +847,20 @@ CheckSimpleLoop(AST *stmt)
     if (!AstMatch(updateVar, condtest->left))
         return;
 
+    /* if this is a FOR rather than FORATLEASTONCE, we have to construct
+     * an IF to skip it if the initial condition is false
+     */
+    if (stmt->kind == AST_FOR) {
+        AST *revisedTest;
+        revisedTest = NewAST(AST_OPERATOR, NULL, NULL);
+        revisedTest->left = AstInteger(initVal);
+        revisedTest->right = condtest->right;
+        revisedTest->d.ival = condtest->d.ival;
+        thenelseskip = NewAST(AST_THENELSE, NULL, NULL);
+        ifskip = NewAST(AST_IF, revisedTest, thenelseskip);
+        stmt->kind = AST_FORATLEASTONCE;
+    }
+    
     /* check that the update is i++, and the variable is not used anywhere else */
     while (update->kind == AST_SEQUENCE) {
         if (AstUses(update->right, updateVar)) {
@@ -881,6 +897,13 @@ CheckSimpleLoop(AST *stmt)
     /* update statement */
     stmt->left = initial;
     stmt->right->left = condtest;
+
+    if (thenelseskip) {
+        AST *newstmt = NewAST(AST_FORATLEASTONCE, NULL, NULL);
+        *newstmt = *stmt;
+        thenelseskip->left = NewAST(AST_STMTLIST, newstmt, NULL);
+        *stmt = *ifskip;
+    }
 }
 
 //
