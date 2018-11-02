@@ -140,6 +140,8 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
     AST *retinfoholder;
     
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
+    holder->d.ival = P->lastLanguage;
+    
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
     funcblock->d.ptr = (void *)comment;
     funcblock = NewAST(AST_LISTHOLDER, funcblock, NULL);
@@ -382,7 +384,8 @@ doDeclareFunction(AST *funcblock)
     AST *defparams;
     AST *retinfo;
     int is_public;
-
+    int language;
+    
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
     annotation = funcblock->right;
@@ -390,6 +393,8 @@ doDeclareFunction(AST *funcblock)
     body = holder->right;
     comment = (AST *)funcblock->d.ptr;
 
+    language = holder->d.ival;
+    
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
         return;
@@ -404,6 +409,7 @@ doDeclareFunction(AST *funcblock)
     fdef->name = src->left->d.string;
     fdef->annotations = annotation;
     fdef->decl = funcdef;
+    fdef->language = language;
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");
@@ -850,7 +856,7 @@ TransformCountRepeat(AST *ast)
     if (IsConstExpr(stepval)) {
         knownStepVal = EvalConstExpr(stepval);
     }
-    if (current->language != LANG_SPIN) {
+    if (curfunc->language != LANG_SPIN) {
         // only Spin does the weirdness where
         // repeat i from a to b step 1
         // walks backwards if a > b; other languages
@@ -924,7 +930,7 @@ TransformCountRepeat(AST *ast)
 
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
-        if (knownStepDir < 0 && current->language == LANG_SPIN) {
+        if (knownStepDir < 0 && curfunc->language == LANG_SPIN) {
             stepval = AstOperator(K_NEGATE, NULL, stepval);
             knownStepVal = -knownStepVal;
         }
@@ -1378,49 +1384,41 @@ CheckFunctionCalls(AST *ast)
  * do basic processing of functions
  */
 void
-ProcessFuncs(Module *P)
+ProcessOneFunc(Function *pf)
 {
-    Function *pf;
     int sawreturn = 0;
-    Function *savecurfunc;
     
-    current = P;
-    for (pf = P->functions; pf; pf = pf->next) {
-        CheckRecursive(pf);  /* check for recursive functions */
-        pf->extradecl = NormalizeFunc(pf->body, pf);
+    CheckRecursive(pf);  /* check for recursive functions */
+    pf->extradecl = NormalizeFunc(pf->body, pf);
 
-        savecurfunc = curfunc;
-        curfunc = pf;
-        CheckFunctionCalls(pf->body);
+    CheckFunctionCalls(pf->body);
         
-        /* check for void functions */
-        sawreturn = CheckRetStatementList(pf, pf->body);
-        if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
-            /* there really is a return type */
-            SetFunctionReturnType(pf, ast_type_generic);
+    /* check for void functions */
+    sawreturn = CheckRetStatementList(pf, pf->body);
+    if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
+        /* there really is a return type */
+        SetFunctionReturnType(pf, ast_type_generic);
+    }
+    if (GetFunctionReturnType(pf) == NULL || GetFunctionReturnType(pf) == ast_type_void) {
+        if (!pf->overalltype) {
+            // this can happen for functions declared via annotations
+            // (i.e. that don't really exist)
+            pf->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
         }
-        curfunc = savecurfunc;
-        if (GetFunctionReturnType(pf) == NULL || GetFunctionReturnType(pf) == ast_type_void) {
-            if (!pf->overalltype) {
-                // this can happen for functions declared via annotations
-                // (i.e. that don't really exist)
-                pf->overalltype = NewAST(AST_FUNCTYPE, NULL, NULL);
-            }
-            pf->overalltype->left = ast_type_void;
-            pf->numresults = 0;
-            pf->resultexpr = NULL;
-        } else {
-            if (!pf->result_used) {
-                pf->resultexpr = AstInteger(0);
-                pf->result_used = 1;
-            }
-            if (!sawreturn) {
-                AST *retstmt;
-
-                AstReportAs(pf->body); // use old debug info
-                retstmt = NewAST(AST_STMTLIST, NewAST(AST_RETURN, pf->resultexpr, NULL), NULL);
-                pf->body = AddToList(pf->body, retstmt);
-            }
+        pf->overalltype->left = ast_type_void;
+        pf->numresults = 0;
+        pf->resultexpr = NULL;
+    } else {
+        if (!pf->result_used) {
+            pf->resultexpr = AstInteger(0);
+            pf->result_used = 1;
+        }
+        if (!sawreturn) {
+            AST *retstmt;
+            
+            AstReportAs(pf->body); // use old debug info
+            retstmt = NewAST(AST_STMTLIST, NewAST(AST_RETURN, pf->resultexpr, NULL), NULL);
+            pf->body = AddToList(pf->body, retstmt);
         }
     }
 }

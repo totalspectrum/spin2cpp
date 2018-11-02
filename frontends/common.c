@@ -88,7 +88,7 @@ NewModule(const char *fullname, int language)
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
-    P->language = language;
+    P->lastLanguage = language;
     
     /* set up the base file name */
     P->fullname = fullname;

@@ -226,6 +226,9 @@ typedef struct funcdef {
 
     /* name of function that called us if callSites > 0 */
     const char *caller;
+
+    /* language of this function */
+    int language;
 } Function;
 
 /* structure describing a builtin function */
@@ -296,8 +299,8 @@ struct modulestate {
     /* back end specific flags */
     void *bedata;
 
-    /* language the module was written in */
-    int language;
+    /* last language the module was presented with */
+    int lastLanguage;
 
     /* "body" (statements outside any function) */
     /* not all languages support this */
@@ -416,8 +419,8 @@ int funcParameterNum(Function *func, AST *var);
 /* returns number of new inferences (0 if nothing changed) */
 int InferTypes(Module *P);
 
-/* process functions and perform basic transformations on them */
-void ProcessFuncs(Module *P);
+/* process a function and perform basic transformations on it */
+void ProcessOneFunc(Function *pf);
 
 /* mark a function (and all functions it references) as used */
 void MarkUsed(Function *f, const char *callerName);

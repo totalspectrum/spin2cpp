@@ -132,10 +132,21 @@ PrintFloat(Flexbuf *f, int32_t v, int flags)
         printAsFloat = true;
     } else if (gl_fixedreal) {
         printAsFloat = false;
-    } else if (current->language == LANG_SPIN) {
-        printAsFloat = false;
     } else {
-        printAsFloat = true;
+        int language;
+        if (curfunc) {
+            language = curfunc->language;
+        } else if (current) {
+            language = current->lastLanguage;
+        } else {
+            ERROR(NULL, "Unable to determine language");
+            language = LANG_SPIN;
+        }
+        if (language == LANG_SPIN) {
+            printAsFloat = false;
+        } else {
+            printAsFloat = true;
+        }
     }
     if (printAsFloat) {
         if (gl_fixedreal) {
@@ -741,7 +752,7 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         break;
     case AST_FLOATTYPE:
         size = EvalConstExpr(typedecl->left);
-        if (current->language == LANG_SPIN || gl_fixedreal) {
+        if ( (curfunc && curfunc->language == LANG_SPIN) || gl_fixedreal) {
             // eventually we will want to really support float operands
             // but for now, treat floats as ints
             if (size == 4) {
@@ -1322,7 +1333,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintHere(f, expr, flags);
         break;
     case AST_STRING:
-        if (current->language == LANG_SPIN) {
+        if (curfunc->language == LANG_SPIN) {
             if (strlen(expr->d.string) > 1)  {
                 ERROR(expr, "string too long, expected a single character");
             }

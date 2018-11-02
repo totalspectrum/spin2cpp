@@ -1886,7 +1886,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         // (actually no -- "abc" is the same as "a", "b", "c")
-        if (current->language == LANG_SPIN) {
+        if (curfunc->language == LANG_SPIN) {
             return ast_type_long;
         }
         /* otherwise fall through */
@@ -1917,7 +1917,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_LABEL:
             lab = (Label *)sym->val;
             typ = lab->type;
-            if (current->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
+            if (curfunc->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
                 return NewAST(AST_ARRAYTYPE, typ, AstInteger(1));
             }
             return typ;
@@ -2025,7 +2025,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             if (expr->d.ival == '+' && IsStringType(ltype)) {
                 return ltype;
             }
-            if (current && current->language == LANG_SPIN) {
+            if (curfunc && curfunc->language == LANG_SPIN) {
                 if (!ltype) ltype = rtype;
                 if (ltype) {
                     if (IsIntOrGenericType(ltype)) return ltype;
@@ -2119,7 +2119,7 @@ SameTypes(AST *A, AST *B)
 int
 CompatibleTypes(AST *A, AST *B)
 {
-    bool typesOK = (current != NULL && current->language != LANG_SPIN);
+    bool typesOK = (curfunc != NULL && curfunc->language != LANG_SPIN);
     bool skipfloats = !typesOK;
     
     A = RemoveTypeModifiers(A);

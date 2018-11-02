@@ -1277,7 +1277,7 @@ AST *CheckTypes(AST *ast)
         return ast_type_generic;
     case AST_STRING:
     case AST_STRINGPTR:
-        if (current->language == LANG_BASIC) {
+        if (curfunc->language == LANG_BASIC) {
             return ast_type_string;
         }
         return ast_type_ptr_byte;
@@ -1392,20 +1392,10 @@ InitGlobalFuncs(void)
 }
 
 void
-BasicTransform(Module *Q)
+BasicTransform(Function *func)
 {
-    Module *savecur = current;
-    Function *func;
-    Function *savefunc = curfunc;
-
     InitGlobalFuncs();
-    current = Q;
-    for (func = Q->functions; func; func = func->next) {
-        curfunc = func;
 
-        doBasicTransform(&func->body);
-        CheckTypes(func->body);
-    }
-    curfunc = savefunc;
-    current = savecur;
+    doBasicTransform(&func->body);
+    CheckTypes(func->body);
 }

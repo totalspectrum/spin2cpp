@@ -36,13 +36,13 @@ extern int IsReservedWord(const char *str);
 void CanonicalizeIdentifier(char *idstr);
 
 /* perform useful Spin specific transformations */
-void SpinTransform(Module *Q);
+void SpinTransform(Function *f);
 
 /* ditto for BASIC */
-void BasicTransform(Module *Q);
+void BasicTransform(Function *f);
 
 /* and C */
-void CTransform(Module *Q);
+void CTransform(Function *f);
 
 /* check and possibly convert types */
 AST *CheckTypes(AST *);

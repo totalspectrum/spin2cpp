@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "spinc.h"
 #include "outcpp.h"
 
@@ -775,6 +776,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
 static void
 PrintFunctionStmts(Flexbuf *f, Function *func)
 {
+    assert(curfunc == func);
     PrintStatementList(f, func->body, 2);
 }
 

@@ -2068,7 +2068,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       Operand *skiplabel = NewCodeLabel();
       Operand *truevalue;
 
-      if (current->language == LANG_C) {
+      if (curfunc->language == LANG_C) {
           truevalue = NewImmediate(1);
       } else {
           truevalue = NewImmediate(-1);
@@ -3064,7 +3064,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Operand *zero = NewImmediate(0);
       Operand *skiplabel = NewCodeLabel();
       Operand *temp = NewFunctionTempRegister();
-      Operand *truevalue = (current->language == LANG_C) ? NewImmediate(1) : NewImmediate(-1);
+      Operand *truevalue = (curfunc->language == LANG_C) ? NewImmediate(1) : NewImmediate(-1);
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_XOR, temp, truevalue);

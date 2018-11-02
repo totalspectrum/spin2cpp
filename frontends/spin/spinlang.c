@@ -574,33 +574,23 @@ doSpinTransform(AST **astptr, int level)
 }
 
 void
-SpinTransform(Module *Q)
+SpinTransform(Function *func)
 {
-    Module *savecur = current;
-    Function *func;
-    Function *savefunc = curfunc;
-    current = Q;
-    for (func = Q->functions; func; func = func->next) {
-        curfunc = func;
-
-        // simplify assignments: this is required for some of
-        // the other passes to work
-        SimplifyAssignments(&func->body);
+    // simplify assignments: this is required for some of
+    // the other passes to work
+    SimplifyAssignments(&func->body);
         
-        // spin specific stuff
-        doSpinTransform(&func->body, 1);
+    // spin specific stuff
+    doSpinTransform(&func->body, 1);
 
-        // ScanFunctionBody is left over from older code
-        // it should probably be merged in with doSpinTransform
-        /* check for special conditions */
-        ScanFunctionBody(func, func->body, NULL, NULL);
+    // ScanFunctionBody is left over from older code
+    // it should probably be merged in with doSpinTransform
+    /* check for special conditions */
+    ScanFunctionBody(func, func->body, NULL, NULL);
 
-        /* if we put the locals into an array, record the size of that array */
-        if (func->localarray) {
-            func->localarray_len += func->numlocals;
-        }
+    /* if we put the locals into an array, record the size of that array */
+    if (func->localarray) {
+        func->localarray_len += func->numlocals;
     }
-    curfunc = savefunc;
-    current = savecur;
 }
 

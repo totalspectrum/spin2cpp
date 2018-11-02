@@ -399,7 +399,6 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
 
     /* print the constant declarations */
     flexbuf_printf(f, "class %s {\npublic:\n", parse->classname);
-
     PrintAllConstants(f, parse);
 
     /* object references */

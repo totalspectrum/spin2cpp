@@ -643,34 +643,44 @@ RemoveUnusedMethods(int isBinary)
 #define MAX_TYPE_PASSES 4
 
 static void
-ProcessLanguage(int language, void (*func)(Module *))
+ProcessLanguage(int language, void (*func)(Function *))
+{
+    Module *Q;
+    Function *pf;
+    Module *savecurrent = current;
+    Function *savecurfunc = curfunc;
+    
+    for (Q = allparse; Q; Q = Q->next) {
+        int last_errors = gl_errors;
+        current = Q;
+        for (pf = Q->functions; pf; pf = pf->next) {
+            curfunc = pf;
+            if (pf->language == language) {
+                func(pf);
+                if (gl_errors == last_errors) {
+                    ProcessOneFunc(pf);
+                }
+            }
+            last_errors = gl_errors;
+        }
+    }
+    curfunc = savecurfunc;
+    current = savecurrent;
+}
+
+static void
+doTypeInference(void)
 {
     int tries = 0;
     int changes;
     Module *Q;
-    
-    for (Q = allparse; Q; Q = Q->next) {
-        int last_errors = gl_errors;
-        if (Q->language == language) {
-            func(Q);
-            if (gl_errors == last_errors) {
-                ProcessFuncs(Q);
-            }
-        }
-        last_errors = gl_errors;
-    }
-    if (gl_errors > 0)
-        return;
-
     // do type inference; we do that even for BASIC
     // because there are some things (like static-ness
     // of functions) that C wants to know about
     do {
         changes = 0;
         for (Q = allparse; Q; Q = Q->next) {
-            if (Q->language == language) {
-                changes += InferTypes(Q);
-            }
+            changes += InferTypes(Q);
         }
     } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
 }
@@ -699,6 +709,7 @@ FixupCode(Module *P, int isBinary)
     ProcessLanguage(LANG_SPIN, SpinTransform);
     ProcessLanguage(LANG_BASIC, BasicTransform);
     ProcessLanguage(LANG_C, CTransform);
+    doTypeInference();
     
     RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
@@ -763,9 +774,9 @@ GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
     
-    if (P->language == LANG_BASIC) {
+    if (P->lastLanguage == LANG_BASIC) {
         mainName = "program";
-    } else if (P->language == LANG_C) {
+    } else if (P->lastLanguage == LANG_C) {
         mainName = "main";
     }
 

@@ -110,22 +110,11 @@ doCTransform(AST **astptr)
 }
 
 void
-CTransform(Module *Q)
+CTransform(Function *func)
 {
-    Module *savecur = current;
-    Function *func;
-    Function *savefunc = curfunc;
-
     InitGlobalFuncs();
     
-    current = Q;
-    for (func = Q->functions; func; func = func->next) {
-        curfunc = func;
-
-        SimplifyAssignments(&func->body);
-        doCTransform(&func->body);
-        CheckTypes(func->body);
-    }
-    curfunc = savefunc;
-    current = savecur;
+    SimplifyAssignments(&func->body);
+    doCTransform(&func->body);
+    CheckTypes(func->body);
 }
