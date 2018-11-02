@@ -107,6 +107,13 @@ for i = 10 to 1 step -2
   print i
 next i
 
+dim shared as integer a%(4) = { 99, 98, -4, -2 }
+dim shared as string ba$(4) = { "hello", "goodbye", "again", "done" }
+
+for i = 1 to 4
+  print a%(i); " "; ba$(i)
+next i
+
 ''
 '' done
 ''

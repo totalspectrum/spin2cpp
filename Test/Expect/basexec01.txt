@@ -36,3 +36,7 @@ backwards:
 6
 4
 2
+99 hello
+98 goodbye
+-4 again
+-2 done
