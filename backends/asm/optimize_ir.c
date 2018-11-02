@@ -2208,6 +2208,9 @@ OptimizeP2(IRList *irl)
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
                     ir->opc = OPC_REPEAT_END;
+                    ir->instr = NULL;
+                    ir->dst = ir->src;
+                    ir->src = NULL;
                     changed = 1;
                 }
             }
