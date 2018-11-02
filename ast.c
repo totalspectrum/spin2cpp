@@ -282,15 +282,21 @@ AstDeclareLocal(AST *left, AST *right)
 }
 
 AST *
-AstTempVariable(const char *prefix)
+AstTempIdentifier(const char *prefix)
 {
     char *name;
-    AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
 
     name = NewTemporaryVariable(prefix);
+    return AstIdentifier(name);
+}
+
+AST *
+AstTempVariable(const char *prefix)
+{
+    AST *ident = AstTempIdentifier(prefix);
+    const char *name = ident->d.string;
     AddSymbol(&current->objsyms, name, SYM_TEMPVAR, (void *)ast_type_long);
-    ast->d.string = name;
-    return ast;
+    return ident;
 }
 
 

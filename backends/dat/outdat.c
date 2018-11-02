@@ -254,10 +254,34 @@ void
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
 {
     uint32_t origval, val;
+    int32_t offset;
     int i;
+    int checkReloc;
 
     if (item) {
-        origval = EvalPasmExpr(item);
+        if (0 != (checkReloc = IsRelocatable(item, &offset))) {
+            if (checkReloc == -1) {
+                ERROR(item, "Illegal operation on relocatable @@@ value");
+            }
+            if (reps != 1) {
+                ERROR(item, "internal error, cannot handle reps of @@@");
+            }
+            if (relocs) {
+                Reloc r;
+                int addr = flexbuf_curlen(f);
+                if (elemsize != LONG_SIZE) {
+                    ERROR(item, "@@@ supported only on long values");
+                }
+                r.kind = RELOC_KIND_LONG;
+                r.off = addr;
+                r.val = origval = offset;
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+            } else {
+                origval = EvalPasmExpr(item);
+            }
+        } else {
+            origval = EvalPasmExpr(item);
+        }
     } else {
         origval = 0;
     }
@@ -1191,10 +1215,12 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     case AST_UNSIGNEDTYPE:
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
+    case AST_PTRTYPE:
         elemsize = TypeSize(type);
         break;
     default:
         ERROR(ast, "Cannot initialize global variables of this type");
+        elemsize = 4;
         break;
     }
     outputInitializer(f, elemsize, initval, typsize / elemsize, relocs);

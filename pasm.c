@@ -187,6 +187,98 @@ filelen(AST *ast)
     return siz;
 }
 
+static AST *
+reduceStrings(AST *orig_exprlist)
+{
+    AST *exprlist = orig_exprlist;
+    AST *elem, *next;
+    AST *first = NULL;
+    if (!exprlist || exprlist->kind != AST_EXPRLIST) {
+        ERROR(exprlist, "internal error, expected exprlist");
+        return exprlist;
+    }
+    while (exprlist) {
+        elem = exprlist->left;
+        next = exprlist->right;
+        if (elem->kind == AST_STRING) {
+            AST *ast;
+            const char *t = elem->d.string;
+            int c;
+            first = elem;
+            do {
+                c = *t++;
+                ast = AstInteger(c);
+                if (first) {
+                    *first = *ast;
+                    first = NULL;
+                } else {
+                    ast = NewAST(AST_EXPRLIST, ast, NULL);
+                    exprlist->right = ast;
+                    ast->right = next;
+                    exprlist = ast;
+                }
+            } while (c);
+        }
+        exprlist = next;
+    }
+    return orig_exprlist;
+}
+
+static void
+fixupInitializer(Module *P, AST *initializer, AST *type)
+{
+    AST *newinit;
+    AST *newident;
+    AST *subtype;
+    AST *elem;
+    type = RemoveTypeModifiers(type);
+    if (!type) {
+        return;
+    }
+    if (!initializer) {
+        return;
+    }
+    if (initializer->kind == AST_STRINGPTR) {
+        *initializer = *reduceStrings(initializer->left);
+    }
+    if (type->kind == AST_PTRTYPE) {
+        if (initializer->kind == AST_STRINGPTR) {
+            elem = initializer->left;
+        } else {
+            elem = initializer;
+        }
+        if (elem->kind == AST_EXPRLIST) {
+            AST *ast, *declare;
+
+            /* need to move it to its own declaration */
+            subtype = type->left;
+            newinit = NewAST(AST_EXPRLIST, NULL, NULL);
+            *newinit = *elem;
+            newident = AstTempIdentifier("_array_");
+            declare = AstAssign(newident, newinit);
+
+            subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(newinit)));
+            declare = NewAST(AST_DECLARE_VAR, declare, subtype);
+            ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
+            P->datblock = AddToList(P->datblock, ast);
+            *initializer = *NewAST(AST_ABSADDROF, newident, NULL);
+
+            /* add newident to P */
+        }
+    }
+    if (type->kind == AST_ARRAYTYPE) {
+        AST *elem;
+        subtype = type->left;
+        if (initializer->kind != AST_EXPRLIST) {
+            ERROR(initializer, "wrong kind of initializer for array type");
+            return;
+        }
+        for (elem = initializer; elem; elem = elem->right) {
+            fixupInitializer(P, elem->left, subtype);
+        }
+    }
+}
+
 /*
  * declare labels for a data block
  */
@@ -337,9 +429,11 @@ DeclareLabels(Module *P)
             {
                 AST *type = ast->right;
                 AST *ident = ast->left;
+                AST *initializer = NULL;
                 int typalign;
                 int typsize;
                 if (ident->kind == AST_ASSIGN) {
+                    initializer = ident->right;
                     ident = ident->left;
                 }
                 while (ident && ident->kind == AST_ARRAYDECL) {
@@ -356,6 +450,7 @@ DeclareLabels(Module *P)
                 }
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, type, lastOrg, inHub);
                 INCPC(typsize);
+                fixupInitializer(P, initializer, type);
             }
             break;
         default:
