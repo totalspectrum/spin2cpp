@@ -439,7 +439,7 @@ endif:
 ;
 
 whilestmt:
-  BAS_WHILE expr eoln statementlist endwhile
+  BAS_WHILE expr eoln optstatementlist endwhile
     { AST *body = CheckYield($4);
       $$ = NewCommentedAST(AST_WHILE, $2, body, $1);
     }
