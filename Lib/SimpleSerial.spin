@@ -121,7 +121,8 @@ PUB rx | waitcycles, cycles, mask, val, x
       if ( (x & mask) <> 0 )
         val |= $80
   '' wait for stop bit?
-  waitpeq(mask, mask, 0)
+  '' skip it for now
+  '' waitpeq(mask, mask, 0)
   return val
 
 ''
