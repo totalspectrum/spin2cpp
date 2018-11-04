@@ -939,8 +939,6 @@ basetypename:
     { $$ = ast_type_byte; }
   | BAS_USHORT
     { $$ = ast_type_word; }
-  | BAS_WORD
-    { $$ = ast_type_word; }
   | BAS_LONG
     { $$ = ast_type_long; }
   | BAS_BYTE

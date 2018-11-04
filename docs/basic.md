@@ -1292,7 +1292,7 @@ or
 
 ### WORD
 
-An alias for `ushort`, a 16 bit unsigned word.
+Reserved for use in inline assembler.
 
 ### XOR
 
