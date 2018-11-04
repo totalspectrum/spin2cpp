@@ -1143,6 +1143,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid, depth+1);
     case AST_CONSTREF:
+    case AST_METHODREF:
         if (!GetObjConstant(expr, &objsym, &sym)) {
             return intExpr(0);
         }
@@ -2004,6 +2005,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_VARIABLE:
             return (AST *)sym->val;
         case SYM_CONSTANT:
+            return ExprTypeRelative(table, (AST *)sym->val);
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
             return NULL;
