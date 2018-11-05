@@ -64,7 +64,7 @@ COG_BSS_START
 	fit	496
 	long
 _dat_
-	long	$00000000[8]
+	byte	$00[32]
 objmem
 	long	0[0]
 stackspace

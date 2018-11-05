@@ -371,16 +371,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
             /* check for a run of data */
             runlen = 0;
             lastdata = data[0];
-            while (data[runlen] == lastdata && addr < len && runlen < bytesPending) {
+            while (data[runlen] == lastdata && addr+runlen < len && runlen < bytesPending) {
                 runlen++;
             }
             if (runlen > 4) {
-                /* output as long as we can */
-                if (0 == (runlen & 3) && lastdata == 0) {
-                    flexbuf_printf(fb, "\tlong\t$%08x[%d]\n", lastdata, runlen/4);
-                } else {
-                    flexbuf_printf(fb, "\tbyte\t$%02x[%d]\n", lastdata, runlen);
-                }
+                flexbuf_printf(fb, "\tbyte\t$%02x[%d]\n", lastdata, runlen);
                 addr += runlen;
                 data += runlen;
                 continue;
