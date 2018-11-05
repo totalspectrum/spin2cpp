@@ -1,16 +1,31 @@
+const PI = 3.14159265
 const PI_2 = 1.570796327
-const PI_SCALE = (65536.0 / PI_2)
+const FIXPT_ONE = 1073741824.0
+const PI_SCALE = (FIXPT_ONE / (2.0*PI))
 
 '
 ' calculate sin(x) where x is an angle in
-' 16.16 fixed point, where a whole circle (2pi) is
-' 4.0 (so pi/2 == 1.0)
+' 2.30 fixed point, where a whole circle (2pi) is
+' 1.0
 '
 ' the ROM lookup table covers the range
 ' in the range 0 to 2048 (=0x800) (= pi/2)
 '
-' returns a value from 0 to 0xffff (1.0)
+' returns a value from -1.0 to +1.0, again in 2.30 fixed point
 '
+#ifdef __P2__
+function _isin(x as integer) as integer
+  dim cx as integer
+  dim rx, ry as integer
+  x = x<<2 ' convert to 0.32 fixed point
+  cx = (1<<30)
+  asm
+    qrotate cx, x
+    getqy ry
+  end asm
+  return ry
+end function
+#else
 function _isin(x as integer) as integer
   dim sinptr as ushort pointer
   dim a as any
@@ -22,12 +37,12 @@ function _isin(x as integer) as integer
   sinptr = a
 
   ' first get x into the correct quadrant
-  q = (x >> 16) and 3 ' quadrant 0, 1, 2, 3
+  q = (x >> 28) and 3 ' quadrant 0, 1, 2, 3
   if (q and 1) then
     x = -x
   endif
-  x = x and 0xffff ' remove extra circles
-  xfrac = x and (not 0xffe0)
+  x = (x>>12) and 0x1ffff ' reduce to 0 - 0xffff
+  xfrac = x and (not 0x1ffe0)
   x = x >> 5
   sval = sinptr(x+1)
   ' linear interpolation
@@ -38,17 +53,21 @@ function _isin(x as integer) as integer
   if (q and 2) then
     sval = -sval
   endif
-  return sval
+  ' here sval is -0xffff to +0xffff
+  ' need to convert
+  sval = (sval << 14) / 0xffff
+  return sval << 16
 end function
-
+#endif
 
 function sin(x as single) as single
   dim s as single
   x = x * PI_SCALE
   s = _isin(x)
-  return s / 0xffff
+  return s / FIXPT_ONE
 end function
   
 function cos(x as single) as single
   return sin(x + PI_2)
 end function
+
