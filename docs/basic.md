@@ -255,6 +255,20 @@ Member variables are automatically initialized to 0, and may not be initialized 
 
 Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called. Local variables may be initialized to values, but this initialization is done at run time so it has some overhead.
 
+### Extending lines
+
+It is possible to extend a long expression or array initializer over several lines. To do this, add a single `_` immediately before the end of the line. This causes the compiler to treat the end of line like a space rather than an end of line. For example:
+```
+  x = y + _
+      z
+```
+is parsed like `x = y + z`. This is especially useful for array initializers, which can often be quite long:
+```
+dim as integer a(5) = { _
+  1, 2, 3, _
+  4, 5 _
+  }
+```
 
 ## Language features
 
