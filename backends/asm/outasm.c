@@ -2036,15 +2036,20 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   case K_ENCODE:
       right = CompileExpression(irl, rhs, temp);
-      left = NewFunctionTempRegister();
-      EmitMove(irl, left, right);
-      EmitMove(irl, temp, NewImmediate(32));
-      right = NewCodeLabel();
-      EmitLabel(irl, right);
-      ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
-      ir->flags |= FLAG_WC;
-      ir = EmitOp2(irl, OPC_DJNZ, temp, right);
-      ir->cond = COND_NC;
+      if (gl_p2) {
+          EmitOp2(irl, OPC_ENCODE, temp, right);
+          EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
+      } else {
+          left = NewFunctionTempRegister();
+          EmitMove(irl, left, right);
+          EmitMove(irl, temp, NewImmediate(32));
+          right = NewCodeLabel();
+          EmitLabel(irl, right);
+          ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
+          ir->flags |= FLAG_WC;
+          ir = EmitOp2(irl, OPC_DJNZ, temp, right);
+          ir->cond = COND_NC;
+      }
       return temp;
   case K_DECODE:
       ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
