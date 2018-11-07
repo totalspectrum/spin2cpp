@@ -1,13 +1,13 @@
 #include "version.h"
 
 #ifndef BETA
-#define BETA ""
+#define BETA
 #undef GITREV
 #endif
 
 #ifndef GITREV
-#define GITREVSEP ""
-#define GITREV ""
+#define GITREVSEP
+#define GITREV
 #else
 #define GITREVSEP "-"
 #endif
