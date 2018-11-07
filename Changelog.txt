@@ -1,4 +1,5 @@
 Version 3.9.9
+- Use P2 encod instruction for >| operator
 - Allow x.y expressions to reference constants in an object
 - Removed WORD from BASIC types
 - Fixed a bug in converting DJNZ to REP in P2 code
