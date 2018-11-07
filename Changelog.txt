@@ -1,3 +1,6 @@
+Version 3.9.10
+- Fixed another REP bug in the P2 optimizer
+
 Version 3.9.9
 - Use P2 encod instruction for >| operator
 - Allow x.y expressions to reference constants in an object

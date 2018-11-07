@@ -280,7 +280,6 @@ JumpDest(IR *jmp)
 {
     switch (jmp->opc) {
     case OPC_DJNZ:
-    case OPC_REPEAT_END:
         return jmp->src;
     default:
         return jmp->dst;
