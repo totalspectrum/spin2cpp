@@ -71,6 +71,7 @@ pri _coginit(id, code, param)
   asm
     setq param
     coginit id, code wc
+ if_c neg id, #1
   endasm
   return id
 con

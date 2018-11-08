@@ -71,7 +71,8 @@ pri _coginit(id, code, param) | parm
   parm |= (code & $fffc) << 2
   parm | = id & $f
   asm
-    coginit parm wr
+      coginit parm wr, wc
+ if_c neg     parm, #1
   endasm
   return parm
 

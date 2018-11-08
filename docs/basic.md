@@ -639,7 +639,9 @@ dim stack(8) ' small stack, blink does not call many other functions
 ' start the blinking up on another CPU
 var a = cpu(blink(LED, 80_000_000), @stack(1))
 ```
-`cpu` returns the cpu id ("cog id") of the CPU that the new function is running on.
+Note that `cpu` is not a function call, it is a special form which does not evaluate its arguments in the usual way. The first parameter is actually preserved and called in the context of the new CPU.
+
+`cpu` returns the CPU id ("cog id") of the CPU that the new function is running on. If no free CPU is available, `cpu` returns -1.
 
 ### DECLARE
 
