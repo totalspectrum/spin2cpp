@@ -3429,6 +3429,9 @@ static void CompileForLoop(IRList *irl, AST *ast, int atleastonce)
     exitlabel = NewCodeLabel();
     PushQuitNext(exitlabel, nextlabel);
 
+    if (!loopcond) {
+        loopcond = AstInteger(1);
+    }
     EmitLabel(irl, toplabel);
     if (!atleastonce) {
         CompileBoolBranches(irl, loopcond, NULL, exitlabel);

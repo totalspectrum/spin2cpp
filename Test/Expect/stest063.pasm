@@ -6,12 +6,14 @@ entry
 
 _blinky
 	mov	arg2, ptr__dat__
-	mov	result1, imm_15728640_
+	mov	arg3, imm_15728640_
 	and	arg2, imm_65532_
 	shl	arg2, #2
-	or	result1, arg2
-	or	result1, #8
-	coginit	result1 wr
+	or	arg3, arg2
+	or	arg3, #8
+	coginit	arg3 wc,wr
+ if_b	neg	arg3, #1
+	mov	result1, arg3
 _blinky_ret
 	ret
 

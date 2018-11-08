@@ -807,7 +807,7 @@ CheckSimpleLoop(AST *stmt)
     updateVar = NULL;
 
     /* check initial assignment */
-    if (initial->kind != AST_ASSIGN)
+    if (!initial || initial->kind != AST_ASSIGN)
         return;
     updateVar = initial->left;
     if (updateVar->kind != AST_IDENTIFIER)
