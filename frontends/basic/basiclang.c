@@ -320,6 +320,9 @@ genPrintf(AST *ast)
                 fmt = 0;
                 thisarg = args->left;
                 args = args->right;
+                if (c == 'l' && *fmtstring) {
+                    c = *fmtstring++;
+                }
                 switch (c) {
                 case 'd':
                     seq = addPrintCall(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
@@ -1193,6 +1196,9 @@ doCast(AST *desttype, AST *srctype, AST *src)
             src = dofloatToInt(src);
             srctype = ast_type_long;
         }
+        if (IsArrayType(srctype)) {
+            return NewAST(AST_ADDROF, src, NULL);
+        }
         if (IsPointerType(srctype)) {
             return src;
         }
@@ -1280,9 +1286,13 @@ AST *CheckTypes(AST *ast)
     if (!ast) return NULL;
 
     if (ast->kind == AST_CAST) {
+        AST *cast;
         ltype = ast->left;
         rtype = CheckTypes(ast->right);
-        *ast = *doCast(ltype, rtype, ast->right);
+        cast = doCast(ltype, rtype, ast->right);
+        if (cast) {
+            *ast = *cast;
+        }
         return ltype;
     }        
     ltype = CheckTypes(ast->left);

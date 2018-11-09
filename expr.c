@@ -1918,7 +1918,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_LABEL:
             lab = (Label *)sym->val;
             typ = lab->type;
-            if (curfunc->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
+            if (curfunc && curfunc->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
                 return NewAST(AST_ARRAYTYPE, typ, AstInteger(1));
             }
             return typ;
