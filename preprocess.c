@@ -447,9 +447,9 @@ classify_char(int c)
  * returns a pointer to the last character (normally a quote)
  */
 static char *
-skip_quoted_string(char *ptr)
+skip_quoted_string(char *ptr, int lastchar)
 {
-  while (*ptr && (*ptr != '\"'))
+  while (*ptr && (*ptr != lastchar))
     ptr++;
   return ptr;
 }
@@ -474,7 +474,7 @@ static char *parse_getword(ParseState *P)
     if (!*ptr) return ptr;
 
     if (*ptr == '\"') {
-      ptr = skip_quoted_string(ptr+1);
+        ptr = skip_quoted_string(ptr+1, '\"');
       if (*ptr == '\"') ptr++;
     } else {
       state = classify_char((unsigned char)*ptr);
@@ -535,16 +535,22 @@ static char *parse_getwordafterspaces(ParseState *P)
     return parse_getword(P);
 }
 
-static char *parse_getquotedstring(ParseState *P)
+static char *parse_getincludestring(ParseState *P)
 {
     char *ptr, *start;
+    char endchar;
     parse_skipspaces(P);
     ptr = P->str;
-    if (*ptr != '\"')
+    if (*ptr == '\"') {
+        endchar = '\"';
+    } else if (*ptr == '<') {
+        endchar = '>';
+    } else {
         return NULL;
+    }
     ptr++;
     start = ptr;
-    ptr = skip_quoted_string(ptr);
+    ptr = skip_quoted_string(ptr, endchar);
     if (!*ptr)
         return NULL;
     P->save = ptr;
@@ -866,7 +872,7 @@ handle_include(struct preprocess *pp, ParseState *P)
     if (!pp_active(pp)) {
         return;
     }
-    orig_name = parse_getquotedstring(P);
+    orig_name = parse_getincludestring(P);
     if (!orig_name) {
         doerror(pp, "no string found for include");
         return;
