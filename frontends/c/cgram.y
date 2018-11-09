@@ -317,6 +317,10 @@ postfix_expression
             { $$ = AstOperator(K_INCREMENT, $1, NULL); }
 	| postfix_expression C_DEC_OP
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
+        | '(' type_name ')' '{' initializer_list '}'
+            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
+        | '(' type_name ')' '{' initializer_list ',' '}'
+            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
 	;
 
 argument_expression_list
@@ -884,6 +888,44 @@ iteration_statement
                 stepstmt = NewAST(AST_STEP, update, body);
                 condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
+            }
+	| C_FOR '(' declaration expression_statement ')' statement
+            {   AST *body = ForceStatementList(CheckYield($6));
+                AST *init = $3;
+                AST *cond = $4;
+                AST *update = NULL;
+                AST *stepstmt, *condtest;
+                if (init && init->kind == AST_STMTLIST && !init->right) {
+                    init = init->left;
+                }
+                if (cond && cond->kind == AST_STMTLIST && !cond->right) {
+                    cond = cond->left;
+                }
+                stepstmt = NewAST(AST_STEP, update, body);
+                condtest = NewAST(AST_TO, cond, stepstmt);
+                body = NewCommentedAST(AST_FOR, NULL, condtest, $1);
+                init = NewAST(AST_STMTLIST, init,
+                              NewAST(AST_STMTLIST, body, NULL));
+                $$ = NewAST(AST_SCOPE, init, NULL);
+            }
+	| C_FOR '(' declaration expression_statement expression ')' statement
+            {   AST *body = ForceStatementList(CheckYield($7));
+                AST *init = $3;
+                AST *cond = $4;
+                AST *update = $5;
+                AST *stepstmt, *condtest;
+                if (init && init->kind == AST_STMTLIST && !init->right) {
+                    init = init->left;
+                }
+                if (cond && cond->kind == AST_STMTLIST && !cond->right) {
+                    cond = cond->left;
+                }
+                stepstmt = NewAST(AST_STEP, update, body);
+                condtest = NewAST(AST_TO, cond, stepstmt);
+                body = NewCommentedAST(AST_FOR, NULL, condtest, $1);
+                init = NewAST(AST_STMTLIST, init,
+                              NewAST(AST_STMTLIST, body, NULL));
+                $$ = NewAST(AST_SCOPE, init, NULL);
             }
 	;
 
