@@ -1154,11 +1154,18 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         *astptr = expr;
         return desttype;
     }
-        
-    // 
+
+    // automatically cast arrays to pointers if necessary
+    if (IsArrayType(srctype) && IsPointerType(desttype)) {
+        srctype = NewAST(AST_PTRTYPE, srctype->left, NULL);
+    }
     if (!CompatibleTypes(desttype, srctype)) {
-        ERROR(line, "incompatible types in %s", msg);
-        return desttype;
+        if (IsPointerType(desttype) && IsPointerType(srctype)) {
+            WARNING(line, "incompatible pointer types in %s", msg);
+        } else {
+            ERROR(line, "incompatible types in %s", msg);
+            return desttype;
+        }
     }
     if (IsConstType(desttype) && kind == AST_ASSIGN) {
         WARNING(line, "assignment to const object");
