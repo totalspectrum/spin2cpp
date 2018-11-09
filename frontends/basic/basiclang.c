@@ -10,13 +10,13 @@
 #include <string.h>
 #include "spinc.h"
 
-static AST *basic_print_float;
-static AST *basic_print_string;
-static AST *basic_print_integer;
-static AST *basic_print_unsigned;
-static AST *basic_print_char;
-static AST *basic_print_nl;
-static AST *basic_put;
+AST *basic_print_float;
+AST *basic_print_string;
+AST *basic_print_integer;
+AST *basic_print_unsigned;
+AST *basic_print_char;
+AST *basic_print_nl;
+AST *basic_put;
 
 static AST *float_add;
 static AST *float_sub;
@@ -46,7 +46,7 @@ IsBasicString(AST *typ)
     return 0;
 }
 
-static AST *
+AST *
 addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 {
     AST *elem;
@@ -255,6 +255,101 @@ TransformUsing(const char *usestr, AST *params)
     }
     flexbuf_delete(&fb);
     return exprlist;
+}
+
+AST *
+genPrintf(AST *ast)
+{
+    AST *args = ast->right;
+    AST *str;
+    const char *fmtstring = NULL;
+    AST *exprlist;
+    AST *seq = NULL;
+    AST *Handle = AstInteger(0);
+    AST *Zero = AstInteger(0);
+    int c;
+    Flexbuf fb;
+    int fmt;
+    
+    flexbuf_init(&fb, 80);
+    if (!args) {
+        ERROR(ast, "Empty printf");
+        return ast;
+    }
+    if (args->kind != AST_EXPRLIST) {
+        ERROR(ast, "Expected expression list for printf");
+        return ast;
+    }
+    str = args->left;
+    args = args->right;
+    if (str && str->kind == AST_STRINGPTR) {
+        str = str->left;
+    }
+    if (str && str->kind == AST_EXPRLIST && str->left && str->left->kind == AST_STRING && str->right == NULL)
+    {
+        fmtstring = str->left->d.string;
+    }
+    if (!fmtstring) {
+        ERROR(ast, "__builtin_printf only works with a constant string");
+        return ast;
+    }
+    while (*fmtstring) {
+        c = *fmtstring++;
+        if (!c) {
+            break;
+        }
+        if (c == '%') {
+            c = *fmtstring++;
+            if (!c) {
+                ERROR(ast, "bad format in __builtin_printf");
+                break;
+            }
+            if (c == '%') {
+                flexbuf_addchar(&fb, c);
+            } else {
+                AST *thisarg;
+
+                exprlist = harvest(NULL, &fb);
+                if (exprlist) {
+                    seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
+                }
+                if (!args || args->kind != AST_EXPRLIST) {
+                    ERROR(ast, "not enough parameters for printf format string");
+                    break;
+                }
+                fmt = 0;
+                thisarg = args->left;
+                args = args->right;
+                switch (c) {
+                case 'd':
+                    seq = addPrintCall(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
+                    break;
+                case 'u':
+                    seq = addPrintCall(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
+                    break;
+                case 's':
+                    seq = addPrintCall(seq, Handle, basic_print_string, thisarg, AstInteger(fmt));
+                    break;
+                case 'c':
+                    seq = addPrintCall(seq, Handle, basic_print_char, thisarg, AstInteger(fmt));
+                    break;
+                case 'f':
+                    seq = addPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt));
+                    break;
+                default:
+                    ERROR(ast, "unknown printf format character `%c'", c);
+                    break;
+                }
+            }
+        } else {
+            flexbuf_addchar(&fb, c);
+        }
+    }
+    exprlist = harvest(NULL, &fb);
+    if (exprlist) {
+        seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
+    }
+    return seq;
 }
 
 static void

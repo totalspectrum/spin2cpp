@@ -507,6 +507,9 @@ static const char *astnames[] = {
     "sizeof",
     "cast",
     "varargs",
+    "alloca",
+
+    "scope",
 };
 
 //

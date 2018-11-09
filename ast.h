@@ -176,6 +176,9 @@ enum astkind {
     AST_SIZEOF = 120,
     AST_CAST,
     AST_VARARGS,
+    AST_ALLOCA,
+
+    AST_SCOPE = 124,
 };
 
 /* forward reference */

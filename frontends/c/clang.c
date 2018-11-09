@@ -10,6 +10,8 @@
 #include <string.h>
 #include "spinc.h"
 
+extern AST *genPrintf(AST *);
+
 static void
 doCTransform(AST **astptr)
 {
@@ -77,11 +79,6 @@ doCTransform(AST **astptr)
         // if an exception throws us back here without cleanup
         curfunc->local_address_taken = 1;
         break;
-    case AST_PRINT:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
-        ERROR(ast, "Unexpected PRINT in C code");
-        break;
     case AST_LABEL:
         if (!ast->left || ast->left->kind != AST_IDENTIFIER) {
             ERROR(ast, "Label is not an identifier");
@@ -100,6 +97,14 @@ doCTransform(AST **astptr)
         if (0 != (func = IsSpinCoginit(ast))) {
             func->cog_task = 1;
             func->force_static = 1;
+        }
+        break;
+    case AST_FUNCCALL:
+        // handle __builtin_printf(x, ...) specially
+        doCTransform(&ast->left);
+        doCTransform(&ast->right);
+        if (ast->left && ast->left->kind == AST_PRINT) {
+            *ast = *genPrintf(ast);
         }
         break;
     default:

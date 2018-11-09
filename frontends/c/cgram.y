@@ -277,6 +277,9 @@ ForceStatementList(AST *stmt)
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
 
+%token C_BUILTIN_ALLOCA
+%token C_BUILTIN_PRINTF
+
 %token C_EOF "end of file"
 
 %start translation_unit
@@ -289,6 +292,10 @@ primary_expression
             { $$ = $1; }
 	| C_STRING_LITERAL
             { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
+        | C_BUILTIN_PRINTF
+            { $$ = NewAST(AST_PRINT, NULL, NULL); }
+        | C_BUILTIN_ALLOCA
+            { $$ = NewAST(AST_ALLOCA, NULL, NULL); }
 	| '(' expression ')'
             { $$ = $2; }
 	;
