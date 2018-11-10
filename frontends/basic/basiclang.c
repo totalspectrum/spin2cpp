@@ -1158,6 +1158,10 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     // automatically cast arrays to pointers if necessary
     if (IsArrayType(srctype) && IsPointerType(desttype)) {
         srctype = NewAST(AST_PTRTYPE, srctype->left, NULL);
+        expr = NewAST(AST_ADDROF,
+                      NewAST(AST_ARRAYREF, expr, AstInteger(0)),
+                      NULL);
+        *astptr = expr;
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
