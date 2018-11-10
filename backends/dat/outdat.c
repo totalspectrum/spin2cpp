@@ -307,10 +307,14 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
     }
     if (initval->kind == AST_EXPRLIST) {
         AST *item;
-        while (initval) {
+        int elemsleft = numelems;
+        int r;
+        while (initval && elemsleft > 0) {
             item = initval->left;
             initval = initval->right;
-            n += outputInitList(f, elemsize, item, 1, relocs);
+            r = outputInitList(f, elemsize, item, 1, relocs);
+            n += r;
+            elemsleft -= r;
         }
     } else {
         outputInitItem(f, elemsize, initval, 1, relocs);
