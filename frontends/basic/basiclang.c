@@ -1082,6 +1082,9 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
                 }
                 return rettype;
             }
+            if (gl_fixedreal && op == K_SQRT) {
+                *ast = *AstOperator(K_SHL, AstOperator(op, ast->left, ast->right), AstInteger(G_FIXPOINT/2));
+            }
             return rettype;
         } else {
             const char *name;
