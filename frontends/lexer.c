@@ -1299,6 +1299,7 @@ struct reservedword basic_keywords[] = {
   { "short", BAS_SHORT },
   { "shr", BAS_SHR },
   { "single", BAS_SINGLE },
+  { "sqrt", BAS_SQRT },
   { "step", BAS_STEP },
   { "string", BAS_STRING_KW },
   { "struct", BAS_STRUCT },

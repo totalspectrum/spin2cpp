@@ -1177,6 +1177,14 @@ A signed 16 bit integer, occupying two bytes of computer memory. The unsigned ve
 
 Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
 
+### SQRT
+
+Calculate the square root of a number.
+```
+x = sqrt(y)
+```
+This is not a true function, but a pseudo-function whose result type depends on the input type. If the parameter to `sqrt` is an integer then the result will be an integer as well. If the parameter is a single then the result is a single.
+
 ### STEP
 
 Gives the increment to apply in a FOR loop.

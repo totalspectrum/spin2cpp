@@ -688,6 +688,8 @@ expr:
     { $$ = AstOperator(K_ABS, NULL, $3); }  
   | BAS_ASC '(' expr ')'
     { $$ = AstOperator(K_ASC, NULL, $3); }  
+  | BAS_SQRT '(' expr ')'
+    { $$ = AstOperator(K_SQRT, NULL, $3); }  
   | '@' expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'

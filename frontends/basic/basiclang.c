@@ -27,6 +27,7 @@ static AST *float_fromuns;
 static AST *float_fromint;
 static AST *float_toint;
 static AST *float_abs;
+static AST *float_sqrt;
 static AST *float_neg;
 
 static AST *string_cmp;
@@ -1069,10 +1070,13 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         return ast_type_long;
     case K_ABS:
     case K_NEGATE:
+    case K_SQRT:
         if (IsFloatType(rettype)) {
             if (!gl_fixedreal) {
                 if (op == K_ABS) {
                     *ast = *MakeOperatorCall(float_abs, ast->right, NULL, NULL);
+                } else if (op == K_SQRT) {
+                    *ast = *MakeOperatorCall(float_sqrt, ast->right, NULL, NULL);
                 } else {
                     *ast = *MakeOperatorCall(float_neg, ast->right, NULL, NULL);
                 }
@@ -1080,7 +1084,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             }
             return rettype;
         } else {
-            if (!VerifyIntegerType(ast, rettype, "abs"))
+            const char *name;
+            if (op == K_ABS) {
+                name = "abs";
+            } else if (op == K_SQRT) {
+                name = "sqrt";
+            } else {
+                name = "negate";
+            }
+            if (!VerifyIntegerType(ast, rettype, name))
                 return NULL;
             ast->right = forcepromote(rettype, ast->right);
             if (IsUnsignedType(rettype) && op == K_ABS) {
@@ -1490,6 +1502,7 @@ InitGlobalFuncs(void)
             float_fromint = getBasicPrimitive("_float_fromint");
             float_toint = getBasicPrimitive("_float_trunc");
             float_abs = getBasicPrimitive("_float_abs");
+            float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
         }
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
