@@ -1369,7 +1369,32 @@ AST *CheckTypes(AST *ast)
                     AST *paramId = calledParamList->left;
                     AST *actualParam = actualParamList->left;
                     expectType = NULL;
-                    passedType = ExprType(actualParam);
+                    passedType = NULL;
+                    if (actualParam && actualParam->kind == AST_FUNCCALL)
+                    {
+                        // correct for missing return type info in
+                        // Spin implementations of the float code
+                        if (actualParam->left == float_add
+                            || actualParam->left == float_sub
+                            || actualParam->left == float_div
+                            || actualParam->left == float_mul
+                            || actualParam->left == float_fromuns
+                            || actualParam->left == float_fromint
+                            || actualParam->left == float_abs
+                            || actualParam->left == float_sqrt
+                            || actualParam->left == float_neg
+                            )
+                        {
+                            passedType = ast_type_float;
+                        }
+                        else if (actualParam->left == float_toint)
+                        {
+                            passedType = ast_type_long;
+                        }
+                    }
+                    if (!passedType) {
+                        passedType = ExprType(actualParam);
+                    }
                     if (paramId) {
                         if (paramId->kind == AST_IDENTIFIER) {
                             Symbol *paramSym = FindSymbol(&func->localsyms, paramId->d.string);
