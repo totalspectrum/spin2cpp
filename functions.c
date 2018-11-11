@@ -279,7 +279,12 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 name = ident;
             }
             if (ast->kind == AST_DECLARE_VAR_WEAK) {
-                skipDef = 0 != LookupSymbol(name->d.string);
+                Symbol *sym = LookupSymbol(name->d.string);
+                skipDef = 0 != sym;
+                if (sym && sym->type == SYM_CONSTANT) {
+                    ERROR(ast, "Attempt to redefine constant %s as a variable", sym->name);
+                    skipDef = false;
+                }
             } else {
                 skipDef = false;
             }
