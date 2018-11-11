@@ -71,7 +71,13 @@ static AST *
 CombineTypes(AST *first, AST *second, AST **identifier)
 {
     AST *expr, *ident;
-    
+
+    if (second && second->kind == AST_COMMENT) {
+        second = NULL;
+    }
+    if (first && first->kind == AST_COMMENT) {
+        first = NULL;
+    }
     if (!second) {
         return first;
     }
