@@ -6,8 +6,7 @@ entry
 
 _program
 	mov	_var_00, #99
-	mov	_var_03, #0
-	add	_var_03, objptr
+	mov	_var_03, objptr
 	mov	_var_01, #100
 LR__0001
 	wrbyte	_var_00, _var_03

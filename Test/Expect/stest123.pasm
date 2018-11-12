@@ -6,9 +6,7 @@ entry
 
 _total
 	mov	_var_01, #0
-	mov	_var_04, #0
-	mov	_tmp002_, ptr__dat__
-	add	_var_04, _tmp002_
+	mov	_var_04, ptr__dat__
 	mov	_var_02, #4
 LR__0001
 	rdlong	_tmp002_, _var_04

@@ -5,8 +5,7 @@ DAT
 entry
 
 _zeroit
-	mov	_var_06, #0
-	add	_var_06, arg1
+	mov	_var_06, arg1
 	mov	_var_03, #1
 	add	arg2, #1
 LR__0001

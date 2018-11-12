@@ -5,8 +5,7 @@ DAT
 entry
 
 _init
-	mov	_var_02, #0
-	add	_var_02, objptr
+	mov	_var_02, objptr
 	mov	_var_00, #1
 LR__0001
 	wrlong	_var_00, _var_02
@@ -18,8 +17,7 @@ _init_ret
 	ret
 
 _initzero
-	mov	_var_02, #0
-	add	_var_02, objptr
+	mov	_var_02, objptr
 	mov	_var_00, #10
 LR__0002
 	mov	_tmp001_, #0

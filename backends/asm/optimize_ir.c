@@ -810,10 +810,21 @@ TransformConstDst(IR *ir, Operand *imm)
   intptr_t val1, val2;
   int setsResult = 1;
 
-  if (ir->src == NULL || ir->src->kind != IMM_INT)
-    {
+  if (ir->src == NULL) {
       return 0;
-    }
+  }
+  if (imm->kind == IMM_INT && imm->val == 0) {
+      // transform add foo, bar into mov foo, bar, if foo is known to be 0
+      if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
+          && !InstrSetsAnyFlags(ir))
+      {
+          ReplaceOpcode(ir, OPC_MOV);
+          return 1;
+      }
+  }
+  if (ir->src->kind != IMM_INT) {
+      return 0;
+  }
   if (imm->kind == IMM_COG_LABEL && ir->opc == OPC_ADD && ir->flags == 0) {
       Operand *newlabel = NewOperand(IMM_COG_LABEL, imm->name, imm->val + ir->src->val);
       ir->src = newlabel;
