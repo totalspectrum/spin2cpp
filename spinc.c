@@ -249,6 +249,16 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     if (!type) {
         type = InferTypeFromName(ident);
     }
+    // this may be a typedef
+    if (type->kind == AST_TYPEDEF) {
+        type = type->left;
+        if (ident->kind != AST_IDENTIFIER) {
+            ERROR(ident, "Internal error, expected type identifier");
+        } else {
+            AddSymbol(&P->objsyms, ident->d.string, SYM_TYPEDEF, type);
+        }
+        return;
+    }
     // if this is an array type with no size, there must be an
     // initializer
     if (type->kind == AST_ARRAYTYPE && !type->right) {

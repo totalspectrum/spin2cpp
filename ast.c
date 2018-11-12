@@ -510,6 +510,9 @@ static const char *astnames[] = {
     "alloca",
 
     "scope",
+    "extern",
+    "static",
+    "typedef",
 };
 
 //

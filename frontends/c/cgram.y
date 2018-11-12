@@ -148,6 +148,10 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
 
     ident = NULL;
     type = CombineTypes(decl_spec, declarator, &ident);
+    if (type && type->kind == AST_EXTERN) {
+        // just ignore EXTERN declarations
+        return NULL;
+    }
     return NewAST(AST_DECLARE_VAR, type, ident);
 }
 
@@ -527,7 +531,9 @@ declaration
 
 declaration_specifiers
 	: storage_class_specifier
+            { $$ = $1; }
 	| storage_class_specifier declaration_specifiers
+            { $$ = $1; if ($$) $$->left = $2; else $$ = $2; }
 	| type_specifier
             { $$ = $1; }
 	| type_specifier declaration_specifiers
@@ -554,10 +560,15 @@ init_declarator
 
 storage_class_specifier
 	: C_TYPEDEF
+            { $$ = NewAST(AST_TYPEDEF, NULL, NULL); }
 	| C_EXTERN
+            { $$ = NewAST(AST_EXTERN, NULL, NULL); }
 	| C_STATIC
+            { $$ = NewAST(AST_STATIC, NULL, NULL); }
 	| C_AUTO
+            { $$ = NULL; }
 	| C_REGISTER
+            { $$ = NULL; }
 	;
 
 type_specifier

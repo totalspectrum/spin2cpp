@@ -299,7 +299,12 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 if (!datatype) {
                     datatype = InferTypeFromName(name);
                 }
-                AddLocalVariable(func, name, datatype, SYM_LOCALVAR);
+                if (datatype && datatype->kind == AST_TYPEDEF) {
+                    datatype = datatype->left;
+                    EnterVariable(SYM_TYPEDEF, &func->localsyms, name, datatype);
+                } else {
+                    AddLocalVariable(func, name, datatype, SYM_LOCALVAR);
+                }
             }
         }
         // now we can overwrite the original variable declaration

@@ -179,6 +179,9 @@ enum astkind {
     AST_ALLOCA,
 
     AST_SCOPE = 124,
+    AST_EXTERN,
+    AST_STATIC,
+    AST_TYPEDEF,
 };
 
 /* forward reference */
