@@ -40,9 +40,18 @@ Symbol           | When Defined
 
 ### Comments
 
-Comments start with `rem` or a single quote character, and go to the end of line. Note that you need a space or non-alphabetical character after the `rem`; the word `remark` does not start a comment.
+Comments start with `rem` or a single quote character, and go to the end of line. Note that you need a space or non-alphabetical character after the `rem`; the word `remark` does not start a comment. The `rem` or single quote character may appear anywhere on the line; it does not have to be the first thing on the line.
 
 There are also multi-line comments, which start with `/'` and end with `'/`.
+
+Examples:
+```
+rem this is a comment
+' so is this
+print "hello" ' this part is a comment too
+/' here is a multi
+   line comment '/
+```
 
 ### Integers
 
