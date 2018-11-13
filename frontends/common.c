@@ -666,24 +666,15 @@ void PopCurrentTypes(void)
     }
 }
 
-/* make a declaration; if it's a type then add it to currentTypes */
-AST *
-MakeDeclaration(AST *origdecl)
+/* check a single declaration for typedefs */
+static AST *
+CheckOneDeclaration(AST *origdecl)
 {
     AST *decl = origdecl;
     AST *ident;
-    bool needStmtList = true;
-    if (!decl) return decl;
-    if (decl->kind == AST_STMTLIST) {
-        needStmtList = false;
-        if (decl->right) {
-            ERROR(decl, "Internal error, unexpected list");
-        }
-        decl = decl->left;
-    }
     if (decl->kind != AST_DECLARE_VAR) {
         ERROR(decl, "internal error, expected DECLARE_VAR");
-        return origdecl;
+        return decl;
     }
     ident = decl->right;
     decl = decl->left;
@@ -695,8 +686,27 @@ MakeDeclaration(AST *origdecl)
         }
         return NULL;
     }
-    if (needStmtList) {
-        origdecl = NewAST(AST_STMTLIST, origdecl, NULL);
+    return origdecl;
+}
+
+/* make a declaration; if it's a type then add it to currentTypes */
+AST *
+MakeDeclaration(AST *origdecl)
+{
+    AST *decl = origdecl;
+    AST *item;
+
+    if (!decl) return decl;
+    if (decl->kind != AST_STMTLIST) {
+        origdecl = decl = NewAST(AST_STMTLIST, decl, NULL);
+    }
+    while (decl && decl->kind == AST_STMTLIST) {
+        item = CheckOneDeclaration(decl->left);
+        if (!item) {
+            /* remove this from the list */
+            decl->left = NULL;
+        }
+        decl = decl->right;
     }
     return origdecl;
 }
