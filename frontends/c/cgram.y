@@ -819,21 +819,30 @@ labeled_statement
 	;
 
 compound_statement
-	: '{' '}'
+	: compound_statement_open compound_statement_close
             { $$ = NULL; }
-	| '{' statement_list '}'
+	| compound_statement_open statement_list compound_statement_close
             { $$ = $2; }
-	| '{' declaration_list '}'
+	| compound_statement_open declaration_list compound_statement_close
             { $$ = $2; }
-	| '{' declaration_list statement_list '}'
+	| compound_statement_open declaration_list statement_list compound_statement_close
             { $$ = AddToList($2, $3); }
 	;
+compound_statement_open:
+  '{'
+    { PushCurrentTypes(); }
+  ;
+
+compound_statement_close:
+  '}'
+    { PopCurrentTypes(); }
+  ;
 
 declaration_list
 	: declaration
-            { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+            { $$ = MakeDeclaration($1); }
 	| declaration_list declaration
-            { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
+            { $$ = AddToList($1, MakeDeclaration($2)); }
 	;
 
 statement_list

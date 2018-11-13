@@ -802,7 +802,7 @@ constlist:
 typedecl:
   BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln
     {
-        AddSymbol(&current->objsyms, $2->d.string, SYM_TYPEDEF, $4);
+        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4);
     }
 ;
 

@@ -564,4 +564,13 @@ AST *GetComments(void);
 /* is an AST identifier a local variable? */
 bool IsLocalVariable(AST *ast);
 
+/* push the current types identifier */
+void PushCurrentTypes(void);
+
+/* pop the current types identifier */
+void PopCurrentTypes(void);
+
+/* create a declaration list, or add a type name to currentTypes */
+AST *MakeDeclaration(AST *decl);
+
 #endif

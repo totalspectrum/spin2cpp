@@ -649,3 +649,54 @@ CheckYield(AST *body)
     return AddToList(body, AstYield());
 }
 
+
+/* push/pop current type symbols */
+void PushCurrentTypes(void)
+{
+    SymbolTable *tab = calloc(1, sizeof(SymbolTable));
+
+    tab->next = currentTypes;
+    currentTypes = tab;
+}
+
+void PopCurrentTypes(void)
+{
+    if (currentTypes) {
+        currentTypes = currentTypes->next;
+    }
+}
+
+/* make a declaration; if it's a type then add it to currentTypes */
+AST *
+MakeDeclaration(AST *origdecl)
+{
+    AST *decl = origdecl;
+    AST *ident;
+    bool needStmtList = true;
+    if (!decl) return decl;
+    if (decl->kind == AST_STMTLIST) {
+        needStmtList = false;
+        if (decl->right) {
+            ERROR(decl, "Internal error, unexpected list");
+        }
+        decl = decl->left;
+    }
+    if (decl->kind != AST_DECLARE_VAR) {
+        ERROR(decl, "internal error, expected DECLARE_VAR");
+        return origdecl;
+    }
+    ident = decl->right;
+    decl = decl->left;
+    if (decl->kind == AST_TYPEDEF) {
+        if (ident->kind != AST_IDENTIFIER) {
+            ERROR(decl, "needed identifier");
+        } else {
+            AddSymbol(currentTypes, ident->d.string, SYM_TYPEDEF, decl->left);
+        }
+        return NULL;
+    }
+    if (needStmtList) {
+        origdecl = NewAST(AST_STMTLIST, origdecl, NULL);
+    }
+    return origdecl;
+}
