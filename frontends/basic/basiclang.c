@@ -1446,8 +1446,11 @@ AST *CheckTypes(AST *ast)
         return NewAST(AST_PTRTYPE, ltype, NULL);
     case AST_ARRAYREF:
         {
-            AST *lefttype = ExprType(ast->left);
+            AST *lefttype = ltype;
             AST *basetype;
+            if (!lefttype) {
+                lefttype = ExprType(ast->left);
+            }
             if (!lefttype) {
                 return NULL;
             }
