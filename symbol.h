@@ -26,6 +26,7 @@ typedef enum symtype {
     SYM_LOCALLABEL,      /* label in inline assembly or function */
     SYM_TYPEDEF,         /* a type definition */
     SYM_CLOSURE,         /* a function's closure object */
+    SYM_ALIAS,           /* an alias for another symbol */
 } Symtype;
 
 typedef struct symbol {
@@ -63,6 +64,7 @@ unsigned SymbolHash(const char *str);
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
 Symbol *FindSymbolByOffset(SymbolTable *table, int offset);
+Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
 
 /* create a new temporary variable */
 char *NewTemporaryVariable(const char *prefix);

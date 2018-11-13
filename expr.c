@@ -41,21 +41,6 @@ GetObjectPtr(Symbol *sym)
     return (Module *)oval->d.ptr;
 }
 
-/* code to find a symbol */
-Symbol *
-LookupSymbolInTable(SymbolTable *table, const char *name)
-{
-    Symbol *sym = NULL;
-    if (!table) return NULL;
-    sym = FindSymbol(table, name);
-    if (!sym) {
-        if (table->next) {
-	   return LookupSymbolInTable(table->next, name);
-	}
-    }
-    return sym;
-}
-
 Symbol *
 LookupSymbolInFunc(Function *func, const char *name)
 {

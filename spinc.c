@@ -470,6 +470,7 @@ ParseFile(const char *name)
     char *parseString = NULL;
     char *langptr;
     int language = LANG_SPIN;
+    SymbolTable *saveCurrentTypes = NULL;
     
     // check language to process
     langptr = strrchr(name, '.');
@@ -537,7 +538,10 @@ ParseFile(const char *name)
     else
         allparse = P;
     current = P;
-
+    saveCurrentTypes = currentTypes;
+    currentTypes = calloc(1, sizeof(*currentTypes));
+    currentTypes->next = &P->objsyms;
+    
     if (gl_preprocess) {
         void *defineState;
 
@@ -584,6 +588,7 @@ ParseFile(const char *name)
     }
 
     current = save;
+    currentTypes = saveCurrentTypes;
     return P;
 }
 

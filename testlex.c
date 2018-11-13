@@ -17,6 +17,7 @@ typedef int Token;
 
 Module *current;
 Function *curfunc;
+SymbolTable *currentTypes;
 
 AST *ast_type_long, *ast_type_word, *ast_type_byte, *ast_type_float;
 AST *ast_type_string, *ast_type_generic;

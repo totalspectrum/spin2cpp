@@ -316,6 +316,7 @@ struct modulestate {
 /* the current parser state */
 extern Module *current;
 extern Function *curfunc;
+extern SymbolTable *currentTypes;
 
 /* defines given on the command line */
 struct cmddefs {

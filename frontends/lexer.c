@@ -2566,7 +2566,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     }
     // check for a defined class or similar type
     if (current) {
-        sym = FindSymbol(&current->objsyms, idstr);
+        sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
             if (sym->type == SYM_OBJECT) {
                 ast = (AST *)sym->val;
@@ -2758,7 +2758,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     }
     // check for a defined class or similar type
     if (current) {
-        sym = FindSymbol(&current->objsyms, idstr);
+        sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
             if (sym->type == SYM_OBJECT) {
                 ast = (AST *)sym->val;

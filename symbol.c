@@ -46,6 +46,23 @@ FindSymbol(SymbolTable *table, const char *name)
     return NULL;
 }
 
+/* find a symbol in a table or in any of its links */
+/* code to find a symbol */
+Symbol *
+LookupSymbolInTable(SymbolTable *table, const char *name)
+{
+    Symbol *sym = NULL;
+    if (!table) return NULL;
+    sym = FindSymbol(table, name);
+    if (!sym) {
+        if (table->next) {
+	   return LookupSymbolInTable(table->next, name);
+	}
+    }
+    return sym;
+}
+
+
 /*
  * find a symbol by offset
  * this is slow (we have to search the whole table) and
@@ -150,3 +167,4 @@ NewTemporaryVariable(const char *prefix)
     }
     return str;
 }
+

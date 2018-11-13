@@ -38,6 +38,7 @@
 Module *current;
 Module *allparse;
 Module *globalModule;
+SymbolTable *currentTypes;
 
 int gl_p2;
 int gl_errors;
