@@ -1069,7 +1069,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     int reportError = (valid == NULL);
     ExprVal ret;
     int kind;
-
+    AST *offsetExpr = NULL;
+    unsigned long offset;
+    
     if (!expr)
         return intExpr(0);
     if (depth > MAX_DEPTH) {
@@ -1244,6 +1246,16 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
            send back the offset into the dat section
         */
         expr = expr->left;
+        offset = 0;
+        if (expr->kind == AST_ARRAYREF) {
+            offsetExpr = expr->right;
+            rval = EvalExpr(offsetExpr, flags, valid, depth+1);
+            if (valid && !*valid)  {
+                return rval;
+            }
+            expr = expr->left;
+            offset = rval.val;
+        }
         if (expr->kind != AST_IDENTIFIER) {
             if (reportError)
                 ERROR(expr, "Only addresses of identifiers allowed");
@@ -1265,8 +1277,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr(0);
         } else {
             Label *lref = (Label *)sym->val;
+            if (offset) {
+                offset *= TypeSize(lref->type);
+            }
             if (gl_p2) {
-                return intExpr(lref->hubval);
+                return intExpr(lref->hubval + offset);
             }
             if (kind == AST_ABSADDROF) {
                 if (gl_dat_offset == -1) {
@@ -1277,10 +1292,11 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     }
                     return intExpr(0);
                 } else {
-                    return intExpr(lref->hubval + gl_dat_offset);
+                    offset += gl_dat_offset;
+                    return intExpr(lref->hubval + offset);
                 }
             }
-            return intExpr(lref->hubval);
+            return intExpr(lref->hubval + offset);
         }
         break;
     default:

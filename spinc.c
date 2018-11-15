@@ -299,7 +299,10 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         type = type->left;
         is_static = 1;
     }
-
+    if (type->kind == AST_FUNCTYPE) {
+        // dummy declaration...
+        return;
+    }
     if (ident->kind == AST_ASSIGN) {
         if (is_typedef) {
             ERROR(ident, "typedef cannot have initializer");
@@ -341,9 +344,6 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         if (!alias) {
             alias = NewTemporaryVariable("_static_var");
             ident = AstIdentifier(alias);
-            if (initializer) {
-                ident = AstAssign(ident, initializer);
-            }
             AddSymbol(table, name, SYM_ALIAS, (void *)alias);
         }
     }

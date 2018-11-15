@@ -363,7 +363,7 @@ unary_expression
 	| unary_operator cast_expression
             {
                 $$ = $1;
-                if ($$->right)
+                if ($$->kind == AST_ADDROF || $$->kind == AST_ARRAYREF)
                     $$->left = $2;
                 else
                     $$->right = $2;
@@ -376,7 +376,7 @@ unary_expression
 
 unary_operator
 	: '&'
-            { $$ = NewAST(AST_ADDROF, NULL, AstInteger(0)); }
+            { $$ = NewAST(AST_ADDROF, NULL, NULL); }
 	| '*'
             { $$ = NewAST(AST_ARRAYREF, NULL, AstInteger(0)); }
 	| '+'
