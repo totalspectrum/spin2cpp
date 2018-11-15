@@ -258,7 +258,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             declare = AstAssign(newident, newinit);
 
             subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(newinit)));
-            declare = NewAST(AST_DECLARE_VAR, declare, subtype);
+            declare = NewAST(AST_DECLARE_VAR, subtype, declare);
             ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
             P->datblock = AddToList(P->datblock, ast);
             *initializer = *NewAST(AST_ABSADDROF, newident, NULL);

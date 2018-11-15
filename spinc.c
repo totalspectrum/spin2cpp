@@ -307,7 +307,10 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         initializer = ident->right;
         ident = ident->left;
     }
-    
+    if (ident->kind == AST_ARRAYDECL) {
+        type = NewAST(AST_ARRAYTYPE, type, ident->right);
+        ident = ident->left;
+    }
     if (ident->kind != AST_IDENTIFIER) {
         ERROR(ident, "Internal error, expected identifier");
         return;
@@ -370,6 +373,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
             declare->right = AstAssign(AstIdentifier(name), initializer);
         }
     } else {
+        if (initializer) {
+            ident = AstAssign(ident, initializer);
+        }
         declare = NewAST(AST_DECLARE_VAR, type, ident);
         ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
         P->datblock = AddToList(P->datblock, ast);
