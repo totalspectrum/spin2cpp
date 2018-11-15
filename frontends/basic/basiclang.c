@@ -88,6 +88,22 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
     return AddToList(seq, elem);
 }
 
+static AST *
+addPrintHex(AST *seq, AST *handle, AST *expr, AST *fmtAst)
+{
+    // create a hex call
+    AST *ast;
+    AST *params;
+
+    params = NewAST(AST_EXPRLIST, handle,
+                    NewAST(AST_EXPRLIST, expr,
+                           NewAST(AST_EXPRLIST, fmtAst,
+                                  NewAST(AST_EXPRLIST, AstInteger(16), NULL))));
+    ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
+    ast = NewAST(AST_SEQUENCE, ast, NULL);
+    return AddToList(seq, ast);
+}
+
 //
 // transform the expressions in a "print using" clause into a form
 // that's easier to print
@@ -339,6 +355,9 @@ genPrintf(AST *ast)
                 case 'u':
                     seq = addPrintCall(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     break;
+                case 'x':
+                    seq = addPrintHex(seq, Handle, thisarg, AstInteger(fmt));
+                    break;
                 case 's':
                     seq = addPrintCall(seq, Handle, basic_print_string, thisarg, AstInteger(fmt));
                     break;
@@ -580,15 +599,7 @@ doBasicTransform(AST **astptr)
                     seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
                 } else if (IsGenericType(type)) {
                     // create a hex call
-                    AST *ast;
-                    AST *params;
-
-                    params = NewAST(AST_EXPRLIST, handle,
-                                    NewAST(AST_EXPRLIST, expr,
-                                           NewAST(AST_EXPRLIST, fmtAst,
-                                                  NewAST(AST_EXPRLIST, AstInteger(16), NULL))));
-                    ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
-                    seq = AddToList(seq, NewAST(AST_SEQUENCE, ast, NULL));
+                    seq = addPrintHex(seq, handle, expr, fmtAst);
                 } else if (IsUnsignedType(type)) {
                     seq = addPrintCall(seq, handle, basic_print_unsigned, expr, fmtAst);
                 } else if (IsIntType(type)) {
