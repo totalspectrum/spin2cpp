@@ -348,13 +348,12 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     // if this is an array type with no size, there must be an
     // initializer
     if (type->kind == AST_ARRAYTYPE && !type->right) {
-        if (ident->kind != AST_ASSIGN || ident->right == NULL) {
-            ERROR(ident, "global array declared with no size and no initializer");
+        if (!initializer) {
+            ERROR(ident, "global array %s declared with no size and no initializer", name);
             type->right = AstInteger(1);
         } else {
-            AST *init = ident->right;
-            if (init->kind == AST_EXPRLIST) {
-                type->right = AstInteger(AstListLen(init));
+            if (initializer->kind == AST_EXPRLIST) {
+                type->right = AstInteger(AstListLen(initializer));
             } else {
                 type->right = AstInteger(1);
             }

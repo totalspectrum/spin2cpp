@@ -67,11 +67,21 @@ CombinePointer(AST *ptr, AST *type)
     return ptr;
 }
 
+static AST *MergePrefix(AST *prefix, AST *first)
+{
+    if (prefix) {
+        prefix->left = first;
+        first = prefix;
+    }
+    return first;
+}
+
 static AST *
 CombineTypes(AST *first, AST *second, AST **identifier)
 {
     AST *expr, *ident;
-
+    AST *prefix = NULL;
+    
     if (second && second->kind == AST_COMMENT) {
         second = NULL;
     }
@@ -81,25 +91,28 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     if (!second) {
         return first;
     }
+    if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF)) {
+        prefix = first;
+        first = first->left;
+        prefix->left = NULL;
+    }
     switch (second->kind) {
     case AST_DECLARE_VAR:
         first = CombineTypes(first, second->left, identifier);
         first = CombineTypes(first, second->right, identifier);
-        return first;
+        return MergePrefix(prefix, first);
     case AST_IDENTIFIER:
         if (identifier) {
             *identifier = second;
         }
-        return first;
+        return MergePrefix(prefix, first);
     case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
-        return CombineTypes(first, second->left, identifier);
+        return MergePrefix(prefix, CombineTypes(first, second->left, identifier));
     case AST_FUNCTYPE:
-        second->left = CombineTypes(first, second->left, identifier);
-        return second;
     case AST_PTRTYPE:
         second->left = CombineTypes(first, second->left, identifier);
-        return second;
+        return MergePrefix(prefix, second);
     case AST_ASSIGN:
         expr = second->right;
         first = CombineTypes(first, second->left, &ident);
@@ -107,11 +120,11 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         if (identifier) {
             *identifier = ident;
         }
-        return first;
+        return MergePrefix(prefix, first);
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
         expr = NewAST(second->kind, NULL, NULL);
-        second = CombineTypes(first, second->left, identifier);
+        second = MergePrefix(prefix, CombineTypes(first, second->left, identifier));
         expr->left = second;
         return expr;
     default:
@@ -363,7 +376,7 @@ unary_expression
 
 unary_operator
 	: '&'
-            { $$ = NewAST(AST_ADDROF, NULL, NULL); }
+            { $$ = NewAST(AST_ADDROF, NULL, AstInteger(0)); }
 	| '*'
             { $$ = NewAST(AST_ARRAYREF, NULL, AstInteger(0)); }
 	| '+'
