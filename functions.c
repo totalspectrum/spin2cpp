@@ -159,12 +159,20 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
 void
 DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody)
 {
+    AST *funcvars, *funcdef;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
-    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-            
+    AST *type;
+
+    if (ftype->kind == AST_STATIC) {
+        is_public = 0;
+        ftype = ftype->left;
+    }
+    type = ftype->left;
+    funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
+    funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+
     // declare the lambda function
-    DeclareFunction(P, ftype->left, is_public, funcdef, fbody, NULL, NULL);
+    DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
 }
 
 static AST *

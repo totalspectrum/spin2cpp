@@ -1213,9 +1213,15 @@ static AST *
 doCast(AST *desttype, AST *srctype, AST *src)
 {
     AST *expr = src;
+    const char *name;
     
     if (IsGenericType(srctype)) {
         return src;
+    }
+    if (src && src->kind == AST_IDENTIFIER) {
+        name = src->d.string;
+    } else {
+        name = "expression";
     }
     if (IsPointerType(desttype)) {
         if (IsFloatType(srctype)) {
@@ -1232,7 +1238,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
             /* FIXME: should probably check size here */
             return src;
         }
-        ERROR(src, "unable to convert to a pointer type");
+        ERROR(src, "unable to convert %s to a pointer type", name);
         return NULL;
     }
     if (IsFloatType(desttype)) {
@@ -1245,7 +1251,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
         if (IsIntType(srctype)) {
             return domakefloat(srctype, src);
         }
-        ERROR(src, "unable to convert to a float type");
+        ERROR(src, "unable to convert %s to a float type", name);
         return NULL;
     }
     if (IsIntType(desttype)) {
@@ -1271,7 +1277,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
             return src;
         }
     }
-    ERROR(src, "bad cast");
+    ERROR(src, "bad cast of %s", name);
     return NULL;
 }
 
