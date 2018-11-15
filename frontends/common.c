@@ -672,12 +672,17 @@ CheckOneDeclaration(AST *origdecl)
 {
     AST *decl = origdecl;
     AST *ident;
+    if (!decl) return decl;
+    
     if (decl->kind != AST_DECLARE_VAR) {
         ERROR(decl, "internal error, expected DECLARE_VAR");
         return decl;
     }
     ident = decl->right;
     decl = decl->left;
+    if (!decl) {
+        return decl;
+    }
     if (decl->kind == AST_TYPEDEF) {
         if (ident->kind != AST_IDENTIFIER) {
             ERROR(decl, "needed identifier");

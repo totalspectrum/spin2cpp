@@ -48,12 +48,27 @@ FindSymbol(SymbolTable *table, const char *name)
 
 /* find a symbol in a table or in any of its links */
 /* code to find a symbol */
-Symbol *
-LookupSymbolInTable(SymbolTable *table, const char *name)
+static Symbol *
+doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
 {
     Symbol *sym = NULL;
     if (!table) return NULL;
     sym = FindSymbol(table, name);
+    if (sym && sym->type == SYM_ALIAS) {
+        // have to look it up again
+        Symbol *alias;
+        level++;
+        if (level > 32) {
+            //ERROR(NULL, "recursive definition for symbol %s", name);
+            return NULL;
+        }
+        alias = doLookupSymbolInTable(table, (const char *)sym->val, level);
+        if (alias) {
+            return alias;
+        } else {
+            return sym;
+        }
+    }
     if (!sym) {
         if (table->next) {
 	   return LookupSymbolInTable(table->next, name);
@@ -62,6 +77,13 @@ LookupSymbolInTable(SymbolTable *table, const char *name)
     return sym;
 }
 
+/* find a symbol in a table or in any of its links */
+/* code to find a symbol */
+Symbol *
+LookupSymbolInTable(SymbolTable *table, const char *name)
+{
+    return doLookupSymbolInTable(table, name, 0);
+}
 
 /*
  * find a symbol by offset

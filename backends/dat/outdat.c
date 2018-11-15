@@ -1182,12 +1182,12 @@ static void
 outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
     AST *initval = NULL;
-    AST *type = ast->right;
+    AST *type = ast->left;
     int typsize;
     int typalign;
     int elemsize = 0;
     
-    ast = ast->left;
+    ast = ast->right;
     if (ast->kind == AST_ASSIGN) {
         initval = ast->right;
         ast = ast->left;

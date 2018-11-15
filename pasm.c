@@ -427,8 +427,8 @@ DeclareLabels(Module *P)
             break;
         case AST_DECLARE_VAR:
             {
-                AST *type = ast->right;
-                AST *ident = ast->left;
+                AST *type = ast->left;
+                AST *ident = ast->right;
                 AST *initializer = NULL;
                 int typalign;
                 int typsize;

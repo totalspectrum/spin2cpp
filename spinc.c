@@ -240,25 +240,111 @@ InferTypeFromName(AST *identifier)
     }
 }
 
+//
+// find any previous declaration of name
+//
+static AST *
+FindDeclaration(AST *datlist, const char *name)
+{
+    AST *ident;
+    AST *declare;
+    
+    while (datlist) {
+        if (datlist->kind == AST_COMMENTEDNODE
+            && datlist->left
+            && datlist->left->kind == AST_DECLARE_VAR)
+        {
+            declare = datlist->left;
+            ident = declare->right;
+            if (ident->kind == AST_ASSIGN) {
+                ident = ident->left;
+            }
+            if (ident->kind == AST_IDENTIFIER) {
+                if (!strcmp(name, ident->d.string)) {
+                    return declare;
+                }
+            } else {
+                ERROR(ident, "Internal error, expected identifier while searching for %s", name);
+                return NULL;
+            }
+        }
+        datlist = datlist->right;
+    }
+    return NULL;
+}
+
 void
 DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
 {
     AST *ast;
     AST *declare;
-
+    AST *initializer = NULL;
+    Symbol *olddef;
+    SymbolTable *table = &P->objsyms;
+    const char *name = NULL;
+    const char *alias = NULL;
+    int is_static = 0;
+    int is_typedef = 0;
+    
     if (!type) {
         type = InferTypeFromName(ident);
     }
+
     // this may be a typedef
     if (type->kind == AST_TYPEDEF) {
         type = type->left;
-        if (ident->kind != AST_IDENTIFIER) {
-            ERROR(ident, "Internal error, expected type identifier");
-        } else {
-            AddSymbol(&P->objsyms, ident->d.string, SYM_TYPEDEF, type);
+        is_typedef = 1;
+    }
+    if (type->kind == AST_STATIC) {
+        type = type->left;
+        is_static = 1;
+    }
+
+    if (ident->kind == AST_ASSIGN) {
+        if (is_typedef) {
+            ERROR(ident, "typedef cannot have initializer");
         }
+        initializer = ident->right;
+        ident = ident->left;
+    }
+    
+    if (ident->kind != AST_IDENTIFIER) {
+        ERROR(ident, "Internal error, expected identifier");
         return;
     }
+    name = ident->d.string;
+    olddef = FindSymbol(table, name);
+    if (olddef) {
+        // is it an alias?
+        if (olddef->type == SYM_ALIAS) {
+            alias = name;
+            name = olddef->val;
+        }
+    }
+
+    if (is_typedef) {
+        if (alias) {
+            ERROR(ident, "Aliased typedef %s not allowed", alias);
+        } else if (olddef) {
+            ERROR(ident, "Redefining symbol %s", name);
+        }
+        AddSymbol(table, name, SYM_TYPEDEF, type);
+        return;
+    }
+    if (olddef && !alias) {
+        ERROR(ident, "Redefining symbol %s", name);
+    }
+    if (is_static) {
+        if (!alias) {
+            alias = NewTemporaryVariable("_static_var");
+            ident = AstIdentifier(alias);
+            if (initializer) {
+                ident = AstAssign(ident, initializer);
+            }
+            AddSymbol(table, name, SYM_ALIAS, (void *)alias);
+        }
+    }
+    
     // if this is an array type with no size, there must be an
     // initializer
     if (type->kind == AST_ARRAYTYPE && !type->right) {
@@ -274,9 +360,22 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
             }
         }
     }
-    declare = NewAST(AST_DECLARE_VAR, ident, type);
-    ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
-    P->datblock = AddToList(P->datblock, ast);
+    // look through the globals to see if there's already a definition
+    // if there is, and that definition has an initializer, we have a conflict
+    declare = FindDeclaration(P->datblock, name);
+    if (declare && declare->right) {
+        if (declare->right->kind == AST_ASSIGN && initializer) {
+            ERROR(initializer, "Variable %s is initialized twice",
+                  alias ? alias : name);
+        } else if (initializer) {
+            declare->right = AstAssign(AstIdentifier(name), initializer);
+        }
+    } else {
+        declare = NewAST(AST_DECLARE_VAR, type, ident);
+        ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
+        P->datblock = AddToList(P->datblock, ast);
+    }
+    return;
 }
 
 void
