@@ -271,6 +271,7 @@ genPrintf(AST *ast)
     int c;
     Flexbuf fb;
     int fmt;
+    int minwidth = 0;
     
     flexbuf_init(&fb, 80);
     if (!args) {
@@ -321,8 +322,15 @@ genPrintf(AST *ast)
                 fmt = 0;
                 thisarg = args->left;
                 args = args->right;
+                while ( (c >= '0' && c <= '9') && *fmtstring) {
+                     minwidth = minwidth * 10 + (c - '0');
+                    c = *fmtstring++;
+               }
                 if (c == 'l' && *fmtstring) {
                     c = *fmtstring++;
+                }
+                if (minwidth) {
+                    fmt = FMTPARAM_MINDIGITS(minwidth);
                 }
                 switch (c) {
                 case 'd':
@@ -346,6 +354,9 @@ genPrintf(AST *ast)
                 }
             }
         } else {
+            if (c == '\n') {
+                flexbuf_addchar(&fb, '\r');
+            }
             flexbuf_addchar(&fb, c);
         }
     }
