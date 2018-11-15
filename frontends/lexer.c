@@ -1619,7 +1619,7 @@ void SetPreprocessorLanguage(int language)
         //pp_setlinedirective(&gl_pp, "");   
     } else if (language == LANG_C) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
-        pp_setlinedirective(&gl_pp, "/* #line %d %s */");   
+        pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
         //pp_setlinedirective(&gl_pp, "");   
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
