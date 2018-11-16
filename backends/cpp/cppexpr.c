@@ -771,6 +771,7 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
         }
         break;
     case AST_PTRTYPE:
+    case AST_ARRAYTYPE:
         doPrintType(f, typedecl->left, 1, 0);
         flexbuf_printf(f, "*");
         if (0 != (flags & ISVOLATILE)) {
@@ -791,7 +792,7 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             Module *P = (Module *)typedecl->d.ptr;
             flexbuf_printf(f, "%s%s", P->classname, space);
         }
-        break;                           
+        break;
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;
