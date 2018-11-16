@@ -6,7 +6,8 @@ Version 3.9.10
 - Fixed another REP bug in the P2 optimizer
 - Fixed cognew/coginit return value when no free cog is available
 - Fixed another CSE bug
-- Fixed a floating print bug (E notation was off by one)
+- Fixed a floating point display bug (E notation was off by one)
+- #ifdef/#endif around #include was broken, fixed now
 - Many improvements to the C frontend
 
 Version 3.9.9
