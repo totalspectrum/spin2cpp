@@ -208,7 +208,7 @@ GetAddrOffset(AST *ast)
 // then we return -1
 
 static int
-IsRelocatable(AST *sub, int32_t *offset)
+IsRelocatable(AST *sub, int32_t *offset, bool isInitVal)
 {
     int32_t myoff;
     int r1 , r2;
@@ -217,13 +217,13 @@ IsRelocatable(AST *sub, int32_t *offset)
         *offset = 0;
         return 0;
     }
-    if (sub->kind == AST_ABSADDROF || sub->kind == AST_ADDROF) {
+    if (sub->kind == AST_ABSADDROF || (isInitVal && sub->kind == AST_ADDROF) ) {
         *offset = GetAddrOffset(sub->left);
         return 1;
     }
     if (sub->kind == AST_OPERATOR) {
-        r1 = IsRelocatable(sub->left, offset);
-        r2 = IsRelocatable(sub->right, &myoff);
+        r1 = IsRelocatable(sub->left, offset, isInitVal);
+        r2 = IsRelocatable(sub->right, &myoff, isInitVal);
         if (r1 || r2) {
             // if one side has an error, return an error
             if ( -1 == (r1|r2) ) {
@@ -273,7 +273,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
     int checkReloc;
 
     if (item) {
-        if (0 != (checkReloc = IsRelocatable(item, &offset))) {
+        if (0 != (checkReloc = IsRelocatable(item, &offset, true))) {
             if (checkReloc == -1) {
                 ERROR(item, "Illegal operation on relocatable @@@ value");
             }
@@ -386,7 +386,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 start++;
             }
             reps = 0;
-        } else if ( 0 != (checkReloc = IsRelocatable(sub, &offset)) ) {
+        } else if ( 0 != (checkReloc = IsRelocatable(sub, &offset, false)) ) {
             if (checkReloc == -1) {
                 ERROR(ast, "Illegal operation on relocatable @@@ value");
             }
