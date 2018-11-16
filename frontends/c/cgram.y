@@ -302,6 +302,7 @@ ForceStatementList(AST *stmt)
 
 %token C_BUILTIN_ALLOCA
 %token C_BUILTIN_PRINTF
+%token C_BUILTIN_REV
 
 %token C_EOF "end of file"
 
@@ -326,6 +327,22 @@ primary_expression
 postfix_expression
 	: primary_expression
             { $$ = $1; }
+        | C_BUILTIN_REV '(' argument_expression_list ')'
+            {
+                AST *arg1, *arg2;
+                
+                arg1 = $3;
+                if (!arg1 || !arg1->left || !arg1->right
+                    || arg1->right->right)
+                {
+                    SYNTAX_ERROR("__builtin_rev needs exactly 2 arguments");
+                }
+                arg2 = arg1->right->left;
+                arg1 = arg1->left;
+                // PropGCC defines __builtin_rev to match the ASM instruction,
+                // not the >< operator, hence the 32 - arg2
+                $$ = AstOperator(K_REV, arg1, AstOperator('-', AstInteger(32), arg2));
+            }
 	| postfix_expression '[' expression ']'
             { $$ = NewAST(AST_ARRAYREF, $1, $3); }
 	| postfix_expression '(' ')'
