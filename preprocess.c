@@ -342,10 +342,14 @@ void pp_pop_file(struct preprocess *pp)
 
     while (pp->ifs) {
         I = pp->ifs;
+        if (I->fil != pp->fil) {
+            break;
+        }
         pp->ifs = I->next;
         doerror(pp, "Unterminated #if starting at line %d", I->linenum);
         free(I);
     }
+
     A = pp->fil;
     if (A) {
         pp->fil = A->next;
@@ -621,6 +625,7 @@ handle_ifdef(struct preprocess *pp, ParseState *P, int invert)
         return;
     }
     I->next = pp->ifs;
+    I->fil = pp->fil;
     if (pp->fil) {
         I->linenum = pp->fil->lineno;
     }

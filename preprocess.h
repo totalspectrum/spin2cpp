@@ -38,6 +38,7 @@ struct filestate {
 
 struct ifstate {
     struct ifstate *next;
+    struct filestate *fil; /* for the current file */
     int skip;      /* if we are currently skipping code */
     int linenum;   /* the line number it started on */
     int skiprest;  /* if we have already processed some branch */
