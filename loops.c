@@ -617,6 +617,12 @@ PlaceAssignAfter(AST *parent, AST *assign)
     return false;
 }
 
+static bool
+UsedBeforeUpdate(AST *identifier, AST *body)
+{
+    return false;
+}
+
 /*
  * actually perform loop strength reduction on a single loop body
  * "initial" is a loop value set holding potential initial values for
@@ -678,6 +684,10 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             }
             if (AstMatch(entry->name, entry->basename)) {
                 // entry depends on itself, do not update
+                continue;
+            }
+            // if value is used in a non-assignment before its update, skip
+            if (entry->flags & LVFLAG_LOOPUSED) {
                 continue;
             }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);

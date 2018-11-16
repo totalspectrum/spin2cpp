@@ -5,6 +5,8 @@ Version 3.9.10
 - Fixed a problem with passing (some) floating point parameters to functions
 - Fixed another REP bug in the P2 optimizer
 - Fixed cognew/coginit return value when no free cog is available
+- Fixed another CSE bug
+- Many improvements to the C frontend
 
 Version 3.9.9
 - Use P2 encod instruction for >| operator
