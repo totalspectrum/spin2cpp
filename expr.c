@@ -1278,7 +1278,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         } else {
             Label *lref = (Label *)sym->val;
             if (offset) {
-                offset *= TypeSize(lref->type);
+                offset *= TypeSize(BaseType(lref->type));
             }
             if (gl_p2) {
                 return intExpr(lref->hubval + offset);

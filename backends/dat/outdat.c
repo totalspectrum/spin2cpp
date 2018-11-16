@@ -168,9 +168,15 @@ initDataOutput(DataBlockOutFuncs *funcs)
 static int
 GetAddrOffset(AST *ast)
 {
+    AST *offsetExpr = NULL;
     Symbol *sym;
     Label *label;
+    int r;
     
+    if (ast->kind == AST_ARRAYREF) {
+        offsetExpr = ast->right;
+        ast = ast->left;
+    }
     if (ast->kind != AST_IDENTIFIER) {
         ERROR(ast, "@@@ supported only on identifiers");
         return 0;
@@ -185,7 +191,15 @@ GetAddrOffset(AST *ast)
         return 0;
     }
     label = (Label *)sym->val;
-    return label->hubval;
+    r = label->hubval;
+    if (offsetExpr) {
+        int offset = EvalPasmExpr(offsetExpr);
+        if (label->type) {
+            offset = offset * TypeSize(BaseType(label->type));
+        }
+        r += offset;
+    }
+    return r;
 }
 
 // figure out whether an expression is relocatable;
@@ -203,7 +217,7 @@ IsRelocatable(AST *sub, int32_t *offset)
         *offset = 0;
         return 0;
     }
-    if (sub->kind == AST_ABSADDROF) {
+    if (sub->kind == AST_ABSADDROF || sub->kind == AST_ADDROF) {
         *offset = GetAddrOffset(sub->left);
         return 1;
     }
