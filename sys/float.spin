@@ -335,6 +335,7 @@ PRI _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
       exp := -exp
     else
       _basic_print_char(h, "+")
+      --exp
     u := exp +/ 10
     exp := exp +// 10
     _basic_print_char(h, u + "0")
