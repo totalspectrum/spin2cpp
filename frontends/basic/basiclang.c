@@ -1237,7 +1237,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     AST *expr = src;
     const char *name;
     
-    if (IsGenericType(srctype)) {
+    if (!srctype || IsGenericType(srctype)) {
         return src;
     }
     if (src && src->kind == AST_IDENTIFIER) {
