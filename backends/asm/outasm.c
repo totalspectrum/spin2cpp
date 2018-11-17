@@ -3663,6 +3663,9 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_YIELD:
 	/* do nothing in assembly for YIELD */
         break;
+    case AST_SCOPE:
+        ast = ast->left;
+        /* fall through */
     case AST_STMTLIST:
         CompileStatementList(irl, ast);
         break;
