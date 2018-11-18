@@ -314,6 +314,35 @@ IsForwardJump(IR *jmp)
     return JumpIsAfterOrEqual(jmp, jmp);
 }
 
+/*
+ * find next instruction following ir
+ */
+static IR *
+NextInstruction(IR *ir)
+{
+    while (ir) {
+        ir = ir->next;
+        if (ir && !IsDummy(ir) && !IsLabel(ir)) {
+            return ir;
+        }
+    }
+    return NULL;
+}
+
+/* like NextInstruction, but follow unconditional jumps */
+static IR *
+NextInstructionFollowJumps(IR *ir)
+{
+    ir = NextInstruction(ir);
+    if (!ir || ir->opc != OPC_JUMP || ir->cond != COND_TRUE)
+        return ir;
+    if (!ir->aux) {
+        return ir;
+    }
+    ir = (IR *)ir->aux;
+    return NextInstructionFollowJumps(ir);
+}
+
 #if 0
 /*
  * return the next instruction after (or including) ir
@@ -1778,6 +1807,21 @@ ReplaceZWithNC(IR *ir)
         break;
     }
 }
+
+static bool
+IsCommutativeMath(IROpcode opc)
+{
+    switch (opc) {
+    case OPC_ADD:
+    case OPC_OR:
+    case OPC_AND:
+    case OPC_XOR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 //
 // basic peephole substitution
 //
@@ -1810,6 +1854,11 @@ ReplaceZWithNC(IR *ir)
 // mov a,b
 // mov b,a
 // we can delete the second mov
+
+// add a,b
+// mov b,a
+//   becomes add b, a, if a is dead
+
 int
 OptimizePeepholes(IRList *irl)
 {
@@ -1988,6 +2037,25 @@ OptimizePeepholes(IRList *irl)
             changed = 1;
             goto done;
         }
+
+        // check for add a,b ;; mov b,a ;; isdead a
+        // becomes add b, a
+        
+        if (IsCommutativeMath(opc) && ir_next && ir_next->opc == OPC_MOV
+            && ir->dst == ir_next->src
+            && ir->src == ir_next->dst
+            && !InstrSetsAnyFlags(ir)
+            && !InstrSetsAnyFlags(ir_next)
+            && ir->cond == ir_next->cond
+            && IsDeadAfter(ir_next, ir->dst)
+            )
+        {
+            ReplaceOpcode(ir_next, opc);
+            DeleteIR(irl, ir);
+            changed = 1;
+            goto done;
+        }
+        
     done:
         ir = ir_next;
     }
@@ -2414,13 +2482,39 @@ restart_check:
 }
 
 //
-// optimize
+// optimize for tail calls
+static int
+OptimizeTailCalls(IRList *irl, Function *f)
+{
+    IR *ir = irl->head;
+    IR *irnext;
+    int change = 0;
+    
+    if (f->local_address_taken) {
+        // &local_var; do not try to optimize
+        return change;
+    }
+    while (ir) {
+        if (ir->opc == OPC_CALL && ir->dst == FuncData(f)->asmname) {
+            irnext = NextInstructionFollowJumps(ir);
+            if (!irnext)
+            {
+                ReplaceOpcode(ir, OPC_JUMP);
+                ir->dst = FuncData(f)->asmentername;
+                change = 1;
+            }
+        }
+        ir = ir->next;
+    }
+    return change;
+}
+
 //
 
 // optimize an isolated piece of IRList
 // (typically a function)
 void
-OptimizeIRLocal(IRList *irl)
+OptimizeIRLocal(IRList *irl, Function *f)
 {
     int change;
     
@@ -2430,6 +2524,7 @@ OptimizeIRLocal(IRList *irl)
     // multiply divide optimization need only be performed once,
     // and should be done before other optimizations confuse things
     OptimizeMulDiv(irl);
+again:
     do {
         change = 0;
         AssignTemporaryAddresses(irl);
@@ -2449,6 +2544,9 @@ OptimizeIRLocal(IRList *irl)
             change |= OptimizeP2(irl);
         }
     } while (change != 0);
+    change = OptimizeTailCalls(irl, f);
+    if (change) goto again;
+    
 }
 
 //

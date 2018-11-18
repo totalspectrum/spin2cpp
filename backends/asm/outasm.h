@@ -46,7 +46,7 @@ bool CompileToIR(IRList *list, Module *P);
 void EmitLabel(IRList *list, Operand *op);
 
 // optimization functions
-void OptimizeIRLocal(IRList *irl);
+void OptimizeIRLocal(IRList *irl, Function *f);
 void OptimizeIRGlobal(IRList *irl);
 void OptimizeFcache(IRList *irl);
 bool ShouldBeInlined(Function *f);
@@ -93,6 +93,9 @@ typedef struct ir_bedata {
 
     /* trampoline code for calling to another COG */
     Operand *asmtrampoline;
+
+    /* optional label for tail-calls */
+    Operand *asmentername;
     
     /* function header (mostly to make sure we collect comments
        at the right time */

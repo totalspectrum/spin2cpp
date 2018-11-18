@@ -431,12 +431,6 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
     IRList *insert = FuncIRL(func);
     IR *ir;
 
-#if 0
-    // this check is obsolete now, I think
-    if (FuncData(func)->asmretname != FuncData(func)->asmreturnlabel) {
-        ERROR(func->body, "Internal error, illegal inline");
-    }
-#endif
     DeleteIR(irl, origir);
     ir = insert->head;
     while (ir) {
@@ -1232,7 +1226,10 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
     Operand *src;
     Operand *dst;
     Operand *basedst;
-    
+
+    if (FuncData(func)->asmentername) {
+        EmitLabel(irl, FuncData(func)->asmentername);
+    }
     if (!IS_STACK_CALL(func)) {
         //
         // move parameters into local registers
@@ -1296,6 +1293,9 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
 //
 static void EmitFunctionEpilog(IRList *irl, Function *func)
 {
+    if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname) {
+        EmitLabel(irl, FuncData(func)->asmreturnlabel);
+    }
     FreeTempRegisters(irl, 0);
 }
 
@@ -1447,9 +1447,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    if (FuncData(func)->asmreturnlabel != FuncData(func)->asmretname) {
-        EmitLabel(irl, FuncData(func)->asmreturnlabel);
-    }
     if (NeedToSaveLocals(func)) {
         int i, n;
         // pop return address
@@ -3706,7 +3703,7 @@ CompileFunctionBody(Function *f)
     //
     CompileStatementList(irl, f->body);
     EmitFunctionEpilog(irl, f);
-    OptimizeIRLocal(irl);
+    OptimizeIRLocal(irl, f);
 }
 
 /*
@@ -3930,6 +3927,7 @@ AssignFuncNames(IRList *irl, Module *P)
 	const char *fname;
         char *frname;
         char *faltname;
+        char *fentername = NULL;
         
         if (ShouldSkipFunction(f))
             continue;
@@ -3947,6 +3945,10 @@ AssignFuncNames(IRList *irl, Module *P)
         } else {
             faltname = NULL;
         }
+        if (f->is_recursive) {
+            fentername = (char *)malloc(strlen(fname) + 6);
+            sprintf(fentername, "%s_enter", fname);
+        }
         f->bedata = calloc(1, sizeof(IRFuncData));
 
         // figure out calling convention
@@ -3961,9 +3963,15 @@ AssignFuncNames(IRList *irl, Module *P)
         if (f->cog_code) {
             FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
+            if (fentername) {
+                FuncData(f)->asmentername = NewOperand(IMM_COG_LABEL, fentername, 0);
+            }
         } else {
             FuncData(f)->asmname = NewOperand(IMM_HUB_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_HUB_LABEL, frname, 0);
+            if (fentername) {
+                FuncData(f)->asmentername = NewOperand(IMM_HUB_LABEL, fentername, 0);
+            }
         }
         if (f->is_recursive || VARS_ON_STACK(f)) {
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
@@ -4061,7 +4069,7 @@ ExpandInline_internal(IRList *irl, Module *P)
             change = ExpandInlines(firl);
             if (!change) break;
             // may be new opportunities for optimization
-            OptimizeIRLocal(firl);
+            OptimizeIRLocal(firl, f);
         }
     }
 }

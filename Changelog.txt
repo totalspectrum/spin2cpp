@@ -1,3 +1,7 @@
+Version 3.9.11
+- Added tail call optimization
+- Added simple optimization based on commutative math
+
 Version 3.9.10
 - Added a peephole optimizer to replace "mov x, #0 ; add x, y" with
   "mov x, y"
