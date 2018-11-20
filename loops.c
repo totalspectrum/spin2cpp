@@ -617,12 +617,6 @@ PlaceAssignAfter(AST *parent, AST *assign)
     return false;
 }
 
-static bool
-UsedBeforeUpdate(AST *identifier, AST *body)
-{
-    return false;
-}
-
 /*
  * actually perform loop strength reduction on a single loop body
  * "initial" is a loop value set holding potential initial values for

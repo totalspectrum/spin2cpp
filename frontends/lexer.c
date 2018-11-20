@@ -36,6 +36,10 @@
 #define yytokentype cgramyytokentype
 #include "cgram.tab.h"
 
+// flag for case insensitivity
+int gl_caseSensitive;
+
+// preprocessor struct
 struct preprocess gl_pp;
 
 // used for error messages
@@ -422,6 +426,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     int startColumn = L->colCounter - 1;
     char *idstr;
     int gatherComments = 1;
+    bool forceLower = !gl_caseSensitive;
     
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
@@ -436,7 +441,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     while (isIdentifierChar(c) || c == '`') {
         if (c == '`') {
             c = lexgetc(L);
-        } else {
+        } else if (forceLower) {
             c = tolower(c);
         }
         flexbuf_addchar(&fb, c);
@@ -2507,11 +2512,15 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     Symbol *sym;
     AST *ast = NULL;
     char *idstr;
+    bool forceLower = !gl_caseSensitive;
     
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
-        flexbuf_addchar(&fb, tolower(c));
+        if (forceLower) {
+            c = tolower(c);
+        }
+        flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
     // allow trailing $, %, #

@@ -114,6 +114,8 @@ extern int gl_compressed; /* if instructions should be compressed (NOT IMPLEMENT
 extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point */
 #define G_FIXPOINT 16  /* number of bits of fraction */
 
+extern int gl_caseSensitive; /* whether Spin/PASM is case sensitive */
+
 /* types of output */
 #define OUTPUT_CPP  0
 #define OUTPUT_C    1

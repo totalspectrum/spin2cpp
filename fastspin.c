@@ -110,6 +110,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "          -O1 = basic optimization\n");
     fprintf(f, "          -O2 = all optimization\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
+    fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
@@ -294,6 +295,9 @@ main(int argc, char **argv)
             outputBin = 0;
             gl_output = OUTPUT_DAT;
             outputDat = 1;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-C")) {
+            gl_caseSensitive = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-l")) {
             gl_listing = 1;
@@ -554,6 +558,7 @@ main(int argc, char **argv)
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
+                gl_caseSensitive = 1;
                 Q = ParseTopFile(asmname, 1);
                 if (gl_errors == 0) {
                     if (listFile) {
