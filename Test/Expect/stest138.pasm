@@ -1,16 +1,16 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _foo
-	rdlong	OUTA, arg1
+	rdlong	outa, arg1
 _foo_ret
 	ret
 
 _main
-	rdlong	OUTA, ptr__dat__
+	rdlong	outa, ptr__dat__
 	mov	result1, #0
 _main_ret
 	ret

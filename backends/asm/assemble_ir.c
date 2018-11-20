@@ -431,7 +431,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         if (varlen < 1) varlen = 1;
         Function *f;
         
-        flexbuf_addstr(fb, "VAR\n");
+        flexbuf_addstr(fb, "var\n");
         flexbuf_addstr(fb, "  long __mbox[__MBOX_SIZE]   ' mailbox for communicating with remote COG\n");
         flexbuf_printf(fb, "  long __objmem[%d]          ' space for hub data in COG code\n", varlen / 4);
         flexbuf_addstr(fb, "  long __stack[__STACK_SIZE] ' stack for new COG\n");
@@ -439,7 +439,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
 
         flexbuf_addstr(fb, "'' Code to start the object running in its own COG\n");
         flexbuf_addstr(fb, "'' This must always be called before any other methods\n");
-        flexbuf_addstr(fb, "PUB __coginit(id)\n");
+        flexbuf_addstr(fb, "pub __coginit(id)\n");
         flexbuf_addstr(fb, "  if (__cognum == 0) ' if the cog isn't running yet\n");
         flexbuf_addstr(fb, "    __fixup_addresses\n");
         flexbuf_addstr(fb, "    longfill(@__mbox, 0, __MBOX_SIZE)\n");
@@ -457,11 +457,11 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "    __cognum := id + 1\n");
         flexbuf_addstr(fb, "  return id\n\n");
 
-        flexbuf_addstr(fb, "PUB __cognew\n");
+        flexbuf_addstr(fb, "pub __cognew\n");
         flexbuf_addstr(fb, "  return __coginit(-1)\n\n");
                        
         flexbuf_addstr(fb, "'' Code to stop the remote COG\n");
-        flexbuf_addstr(fb, "PUB __cogstop\n");
+        flexbuf_addstr(fb, "pub __cogstop\n");
         flexbuf_addstr(fb, "  if __cognum\n");
         flexbuf_addstr(fb, "    __lock  ' wait until everyone else is finished\n");
         flexbuf_addstr(fb, "    cogstop(__cognum~ - 1)\n");
@@ -472,7 +472,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' The idea here is that (in theory) multiple Spin bytecode threads might\n");
         flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock mackes sure they don't step on each other.\n");
         flexbuf_addstr(fb, "'' This method also makes sure the remote COG is idle and ready to receive commands.\n");
-        flexbuf_addstr(fb, "PRI __lock\n");
+        flexbuf_addstr(fb, "pri __lock\n");
         flexbuf_addstr(fb, "  repeat\n");
         flexbuf_addstr(fb, "    repeat until __mbox[0] == 0   ' wait until no other Spin code is using remote\n");
         flexbuf_addstr(fb, "    __mbox[0] := __cognum         ' try to claim it\n");
@@ -480,11 +480,11 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "  repeat until __mbox[1] == 0     ' now wait for the COG itself to be idle\n\n");
 
         flexbuf_addstr(fb, "'' Code to release access to the PASM COG\n");
-        flexbuf_addstr(fb, "PRI __unlock\n");
+        flexbuf_addstr(fb, "pri __unlock\n");
         flexbuf_addstr(fb, "  __mbox[0] := 0\n\n");
 
         flexbuf_addstr(fb, "'' Check to see if the PASM COG is busy (still working on something)\n");
-        flexbuf_addstr(fb, "PUB __busy\n");
+        flexbuf_addstr(fb, "pub __busy\n");
         flexbuf_addstr(fb, "  return __mbox[1] <> 0\n\n");
 
         flexbuf_addstr(fb, "'' Code to send a message to the remote COG asking it to perform a method\n");
@@ -492,7 +492,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' if getresult is nonzero then we wait for the remote COG to answer us with a result\n");
         flexbuf_addstr(fb, "'' if getresult is 0 then we continue without waiting (the remote COG runs in parallel\n");
         flexbuf_addstr(fb, "'' We must always call __lock before this, and set up the parameters starting in __mbox[2]\n");
-        flexbuf_addstr(fb, "PRI __invoke(func, getresult) : r\n");
+        flexbuf_addstr(fb, "pri __invoke(func, getresult) : r\n");
         flexbuf_addstr(fb, "  __mbox[1] := func - @entry     ' set the function to perform (NB: this is a HUB address)\n");
         flexbuf_addstr(fb, "  if getresult                   ' if we should wait for an answer\n");
         flexbuf_addstr(fb, "    repeat until __mbox[1] == 0  ' wait for remote COG to be idle\n");
@@ -508,7 +508,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'' relative address in the low word, and a pointer to the next fixup in the high word.\n");
         flexbuf_addstr(fb, "'' This code follows that chain and adjusts the relative addresses to absolute ones.\n");
         
-        flexbuf_addstr(fb, "PRI __fixup_addresses | ptr, nextptr, temp\n");
+        flexbuf_addstr(fb, "pri __fixup_addresses | ptr, nextptr, temp\n");
         flexbuf_addstr(fb, "  ptr := __fixup_ptr[0]\n");
         flexbuf_addstr(fb, "  repeat while (ptr)      ' the fixup chain is terminated with a 0 pointer\n");
         flexbuf_addstr(fb, "    ptr := @@ptr          ' point to next fixup\n");
@@ -532,7 +532,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
                 int needcomma = 0;
                 int synchronous;
                 int i;
-                flexbuf_printf(fb, "PUB %s", f->name);
+                flexbuf_printf(fb, "pub %s", f->name);
                 if (list) {
                     flexbuf_addstr(fb, "(");
                     while (list) {
@@ -586,7 +586,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         flexbuf_addstr(fb, "'--------------------------------------------------\n\n");
 
     } else {
-        flexbuf_addstr(fb, "PUB main\n");
+        flexbuf_addstr(fb, "pub main\n");
         flexbuf_addstr(fb, "  coginit(0, @entry, 0)\n");
     }        
 }
@@ -628,7 +628,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     if (ir->opc == OPC_CONST) {
         // handle const declaration
         if (!inCon) {
-            flexbuf_addstr(fb, "CON\n");
+            flexbuf_addstr(fb, "con\n");
             inCon = 1;
             inDat = 0;
         }
@@ -644,7 +644,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             EmitSpinMethods(fb, P);
             didPub = 1;
         }
-        flexbuf_addstr(fb, "DAT\n");
+        flexbuf_addstr(fb, "dat\n");
         inCon = 0;
         inDat = 1;
         if (!didOrg) {
@@ -942,7 +942,7 @@ IRAssemble(IRList *list, Module *P)
     RenameLabels(list);
     
     if (gl_p2 && gl_output != OUTPUT_COGSPIN) {
-        didPub = 1; // we do not want PUB declaration in P2 code
+        didPub = 1; // we do not want pub declaration in P2 code
     }
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {

@@ -1,14 +1,14 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _preclock
 	mov	_var_01, #1
 	shl	_var_01, arg1
-	or	OUTA, _var_01
-	or	OUTA, _var_01
+	or	outa, _var_01
+	or	outa, _var_01
 _preclock_ret
 	ret
 

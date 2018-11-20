@@ -1016,7 +1016,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       case SYM_HWREG:
       {
           HwReg *hw = sym->val;
-          return GetOneGlobal(REG_HW, hw->cname, 0);
+          return GetOneGlobal(REG_HW, hw->name, 0);
       }
       case  SYM_CLOSURE:
       {
@@ -1482,7 +1482,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
 Operand *
 CompileIdentifier(IRList *irl, AST *expr)
 {
-    Symbol *sym;
+    Symbol *sym = NULL;
 
     if (expr->kind == AST_IDENTIFIER) {
         sym = LookupSymbol(expr->d.string);
@@ -1506,7 +1506,7 @@ Operand *
 CompileHWReg(IRList *irl, AST *expr)
 {
   HwReg *hw = (HwReg *)expr->d.ptr;
-  return GetOneGlobal(REG_HW, hw->cname, 0);
+  return GetOneGlobal(REG_HW, hw->name, 0);
 }
 
 static int isPowerOf2(unsigned x)
@@ -3022,6 +3022,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   if (expr->kind == AST_COMMENT) return NULL;
   if (IsConstExpr(expr)) {
       switch (expr->kind) {
+      case AST_SYMBOL:
       case AST_IDENTIFIER:
           // leave symbolic constants alone
       case AST_ADDROF:
@@ -3081,6 +3082,16 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_FLOAT:
     r = NewImmediate((int32_t)expr->d.ival);
     return r;
+  case AST_SYMBOL:
+  {
+      Symbol *sym = (Symbol *)expr->d.ptr;
+      r = CompileSymbolForFunc(irl, sym, curfunc);
+      if (dest) {
+          EmitMove(irl, dest, r);
+          r = dest;
+      }
+      return r;
+  }
   case AST_RESULT:
   case AST_IDENTIFIER:
     r = CompileIdentifier(irl, expr);
@@ -3458,7 +3469,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     if (var->kind == AST_ASSIGN) {
         CompileExpression(irl, var, NULL);
         var = var->left;
-    } else if (var->kind != AST_IDENTIFIER) {
+    } else if (var->kind != AST_IDENTIFIER && var->kind != AST_SYMBOL) {
         ERROR(var, "Internal error, expected identifier in case");
         return;
     }
@@ -4503,17 +4514,23 @@ EmitBuiltins(IRList *irl)
 static void
 CompileConstant(IRList *irl, AST *ast)
 {
-    const char *name = ast->d.string;
-    Symbol *sym;
+    Symbol *sym = NULL;
     AST *expr;
     int32_t val;
     Operand *op1, *op2;
-    
+    const char *name;
+
+    if (ast->kind == AST_SYMBOL) {
+        sym = (Symbol *)ast->d.ptr;
+        name = sym->name;
+    } else {
+        name = ast->d.string;
+        sym = LookupSymbol(name);
+    }
     if (!IsConstExpr(ast)) {
         ERROR(ast, "%s is not constant", name);
         return;
     }
-    sym = LookupSymbol(name);
     if (!sym) {
         ERROR(ast, "constant symbol %s not declared??", name);
         return;
@@ -4540,6 +4557,7 @@ CompileConsts(IRList *irl, AST *conblock)
         case AST_ENUMSKIP:
             CompileConstant(irl, ast->left);
             break;
+        case AST_SYMBOL:
         case AST_IDENTIFIER:
             CompileConstant(irl, ast);
             break;

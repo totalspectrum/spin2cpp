@@ -1,11 +1,11 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _func
-	rdlong	OUTA, objptr
+	rdlong	outa, objptr
 	wrlong	arg1, objptr
 _func_ret
 	ret

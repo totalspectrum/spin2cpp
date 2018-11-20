@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -10,7 +10,7 @@ _shiftout
 	mov	_var_03, #32
 LR__0001
 	shr	arg1, #1 wc
-	muxc	OUTA, _var_02
+	muxc	outa, _var_02
 	djnz	_var_03, #LR__0001
 _shiftout_ret
 	ret

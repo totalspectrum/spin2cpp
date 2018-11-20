@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -44,7 +44,7 @@ _simplepin_tx
 	rdlong	_tmp002_, objptr
 	shl	_var_01, _tmp002_
 	test	arg1, #1 wz
-	muxnz	OUTA, _var_01
+	muxnz	outa, _var_01
 _simplepin_tx_ret
 	ret
 

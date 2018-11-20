@@ -190,20 +190,24 @@ CppPrintName(Flexbuf *f, const char *name, int flags)
     if (flags & PRINTEXPR_INLINESYM) {
         flexbuf_printf(f, "%%[", name);
     }
-    while (0 != (c = *name++)) {
-        switch (c) {
-        case '#':
-            flexbuf_printf(f, "_R");
-            break;
-        case '%':
-            flexbuf_printf(f, "_I");
-            break;
-        case '$':
-            flexbuf_printf(f, "_S");
-            break;
-        default:
-            flexbuf_addchar(f, c);
-            break;
+    if (!strcmp(name, "clkfreq")) {
+        flexbuf_printf(f, "CLKFREQ");
+    } else {
+        while (0 != (c = *name++)) {
+            switch (c) {
+            case '#':
+                flexbuf_printf(f, "_R");
+                break;
+            case '%':
+                flexbuf_printf(f, "_I");
+                break;
+            case '$':
+                flexbuf_printf(f, "_S");
+                break;
+            default:
+                flexbuf_addchar(f, c);
+                break;
+            }
         }
     }
     if (flags & PRINTEXPR_INLINESYM) {
@@ -229,7 +233,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         } else if (gl_ccode || gl_gas_dat) {
             PrintObjConstName(f, current, sym->name);
         } else {
-            flexbuf_printf(f, "%s", sym->name);
+            CppPrintName(f, sym->name, flags);
         }
         break;
     case SYM_PARAMETER:

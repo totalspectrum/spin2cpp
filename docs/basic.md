@@ -842,7 +842,7 @@ Returns the current cycle counter. This is an unsigned 32 bit value that counts 
 `goto x` jumps to a label `x`, which must be defined in the same function.
 Labels are defined by giving an identifier followed by a `:`. For example:
 ```
-  if (x=y) goto xyequal
+  if x=y goto xyequal
   print "x differs from y"
   goto done
 xyequal:

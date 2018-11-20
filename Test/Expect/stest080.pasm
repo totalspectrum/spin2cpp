@@ -1,21 +1,21 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _blah
 	and	arg1, #15
-	mov	_tmp001_, OUTA
+	mov	_tmp001_, outa
 	andn	_tmp001_, #15
 	or	_tmp001_, arg1
-	mov	OUTA, _tmp001_
+	mov	outa, _tmp001_
 _blah_ret
 	ret
 
 _onepin
 	test	arg1, #1 wz
-	muxnz	OUTA, #16
+	muxnz	outa, #16
 _onepin_ret
 	ret
 

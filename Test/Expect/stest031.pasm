@@ -1,18 +1,18 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _clear0
-	andn	OUTA, #1
+	andn	outa, #1
 _clear0_ret
 	ret
 
 _clearpin
 	mov	_var_01, #1
 	shl	_var_01, arg1
-	andn	OUTA, _var_01
+	andn	outa, _var_01
 _clearpin_ret
 	ret
 

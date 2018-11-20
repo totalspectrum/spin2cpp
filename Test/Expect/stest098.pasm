@@ -1,19 +1,19 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
-_Unpack_x
+_unpack_x
 	mov	arg2, #0
 	call	#_dounpack_x
-_Unpack_x_ret
+_unpack_x_ret
 	ret
 
-_Unpack_m
+_unpack_m
 	mov	arg2, #1
 	call	#_dounpack_x
-_Unpack_m_ret
+_unpack_m_ret
 	ret
 
 _dounpack_x

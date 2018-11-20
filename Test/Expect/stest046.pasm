@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -9,9 +9,9 @@ _ez_pulse_in
 	shl	_ez_pulse_in_r, arg1
 	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
 	waitpeq	_ez_pulse_in_r, _ez_pulse_in_r
-	neg	muldiva_, CNT
+	neg	muldiva_, cnt
 	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
-	add	muldiva_, CNT
+	add	muldiva_, cnt
 	mov	muldivb_, imm_1000000_
 	call	#divide_
 	mov	result1, muldivb_

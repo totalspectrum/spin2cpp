@@ -1,13 +1,13 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _setout
 	rdlong	_tmp002_, objptr
-	or	DIRA, _tmp002_
-	or	OUTA, _tmp002_
+	or	dira, _tmp002_
+	or	outa, _tmp002_
 _setout_ret
 	ret
 

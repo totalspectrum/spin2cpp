@@ -1,16 +1,16 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _rx
-	andn	DIRA, arg1
+	andn	dira, arg1
 LR__0001
-	mov	_tmp001_, INA
+	mov	_tmp001_, ina
 	test	_tmp001_, arg1 wz
  if_ne	jmp	#LR__0001
-	mov	result1, INA
+	mov	result1, ina
 	and	result1, arg1
 _rx_ret
 	ret

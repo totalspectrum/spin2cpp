@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include "symbol.h"
 
+#if 0
 /* do case insensitive comparisons */
 #define STRCMP strcasecmp
+#else
+#define STRCMP strcmp
+#endif
 
 /*
  * hash function
@@ -18,7 +22,6 @@ SymbolHash(const char *str)
 
     while (*str) {
         c = *str++;
-        c = toupper(c);
         hash = hash * 65537;
         hash = hash ^ c;
     }

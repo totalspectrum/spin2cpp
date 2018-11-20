@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -9,7 +9,7 @@ _start
 	mov	_start__cse__0023, start_tmp002_
 	shl	_start__cse__0023, #2
 	add	_start__cse__0023, start_tmp002_
-	mov	arg1, CNT
+	mov	arg1, cnt
 	add	arg1, _start__cse__0023
 	waitcnt	arg1, #0
 _start_ret

@@ -1,16 +1,16 @@
-CON
+con
 	pin = 0
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _start
 LR__0001
-	mov	CTRA, imm_1073741824_
-	mov	FRQA, #1
-	mov	PHSA, #0
+	mov	ctra, imm_1073741824_
+	mov	frqa, #1
+	mov	phsa, #0
 	jmp	#LR__0001
 _start_ret
 	ret

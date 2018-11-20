@@ -1,13 +1,13 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _count
 	mov	_var_00, #0
 LR__0001
-	mov	OUTA, _var_00
+	mov	outa, _var_00
 	add	_var_00, #1
 	cmp	_var_00, #4 wz
  if_ne	jmp	#LR__0001

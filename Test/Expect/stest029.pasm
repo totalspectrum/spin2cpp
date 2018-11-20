@@ -1,16 +1,16 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _setpin
-	or	OUTA, #2
+	or	outa, #2
 _setpin_ret
 	ret
 
 _clrpin
-	andn	OUTA, #2
+	andn	outa, #2
 _clrpin_ret
 	ret
 

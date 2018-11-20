@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -45,7 +45,7 @@ __mytx
 LR__0003
 	mov	_var_02, arg1
 	or	_var_02, _var_01
-	mov	OUTA, _var_02
+	mov	outa, _var_02
 	add	_var_01, #1
 	cmps	_var_01, #5 wc,wz
  if_b	jmp	#LR__0003

@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -8,8 +8,8 @@ _blah
 	mov	_var_01, arg1
 	add	_var_01, #1
 	sub	arg1, #1
-	mov	OUTA, _var_01
-	mov	DIRA, arg1
+	mov	outa, _var_01
+	mov	dira, arg1
 _blah_ret
 	ret
 

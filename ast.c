@@ -513,6 +513,8 @@ static const char *astnames[] = {
     "extern",
     "static",
     "typedef",
+
+    "symbol",
 };
 
 //

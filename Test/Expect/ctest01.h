@@ -5,12 +5,12 @@
 
 
 typedef struct ctest01 {
-  int32_t	Cntr;
+  int32_t 	cntr;
 } ctest01;
 
   void ctest01_add(ctest01 *self, int32_t x);
   void ctest01_inc(ctest01 *self);
   void ctest01_dec(ctest01 *self);
-  int32_t ctest01_Get(ctest01 *self);
-  int32_t ctest01_Double(int32_t x);
+  int32_t ctest01_get(ctest01 *self);
+  int32_t ctest01_double(int32_t x);
 #endif

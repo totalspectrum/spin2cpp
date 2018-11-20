@@ -1,13 +1,13 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _foo
 	mov	_var_01, #1
 	sub	_var_01, arg1
-	mov	OUTA, _var_01
+	mov	outa, _var_01
 _foo_ret
 	ret
 

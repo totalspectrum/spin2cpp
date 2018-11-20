@@ -71,6 +71,9 @@ LookupAstSymbol(AST *ast, const char *msg)
     Symbol *sym;
     AST *id;
 
+    if (ast->kind == AST_SYMBOL) {
+        return (Symbol *)ast->d.ptr;
+    }
     if (ast->kind == AST_IDENTIFIER) {
         id = ast;
     } else if (ast->kind == AST_ARRAYREF) {
@@ -292,7 +295,7 @@ ReplaceExprWithVariable(const char *prefix, AST *expr)
     AST *exprinit;
     AST **lastptr;
     Symbol *sym;
-    if (expr->kind == AST_IDENTIFIER)
+    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
         return expr; // already an identifier!
 
     // FIXME: need to make sure "expr" is invariant in the function,
@@ -1069,6 +1072,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     int reportError = (valid == NULL);
     ExprVal ret;
     int kind;
+    const char *name;
     AST *offsetExpr = NULL;
     unsigned long offset;
     
@@ -1139,9 +1143,16 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         return ret;
     case AST_RESULT:
         *valid = 0;
-        return intExpr(0); 
+        return intExpr(0);
+    case AST_SYMBOL:
     case AST_IDENTIFIER:
-        sym = LookupSymbol(expr->d.string);
+        if (expr->kind == AST_SYMBOL) {
+            sym = (Symbol *)expr->d.ptr;
+            name = sym->name;
+        } else {
+            name = expr->d.string;
+            sym = LookupSymbol(name);
+        }
         if (!sym) {
             if (reportError)
                 ERROR_UNKNOWN_SYMBOL(expr);
@@ -1183,7 +1194,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                 /* otherwise fall through */
             default:
                 if (reportError)
-                    ERROR(expr, "Symbol %s is not constant", expr->d.string);
+                    ERROR(expr, "Symbol %s is not constant", name);
                 else
                     *valid = 0;
                 return intExpr(0);
@@ -1256,14 +1267,18 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             expr = expr->left;
             offset = rval.val;
         }
-        if (expr->kind != AST_IDENTIFIER) {
+        if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL) {
             if (reportError)
                 ERROR(expr, "Only addresses of identifiers allowed");
             else
                 *valid = 0;
             return intExpr(0);
         }
-        sym = LookupSymbol(expr->d.string);
+        if (expr->kind == AST_SYMBOL) {
+            sym = (Symbol *)expr->d.ptr;
+        } else {
+            sym = LookupSymbol(expr->d.string);
+        }
         if (!sym || sym->type != SYM_LABEL) {
             if (reportError) {
                 if (!sym) {

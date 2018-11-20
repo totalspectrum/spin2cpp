@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -8,7 +8,7 @@ _demo
 	mov	_demo__idx__0001, #7
 LR__0001
 	mov	arg1, imm_40000000_
-	add	arg1, CNT
+	add	arg1, cnt
 	waitcnt	arg1, #0
 	djnz	_demo__idx__0001, #LR__0001
 LR__0002
@@ -22,11 +22,11 @@ LR__0003
 _exit_ret
 	ret
 
-_PauseABit
+_pauseabit
 	mov	arg1, imm_40000000_
-	add	arg1, CNT
+	add	arg1, cnt
 	waitcnt	arg1, #0
-_PauseABit_ret
+_pauseabit_ret
 	ret
 
 imm_40000000_

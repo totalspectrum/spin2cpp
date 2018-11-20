@@ -434,9 +434,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     c = lexgetc(L);
     while (isIdentifierChar(c) || c == '`') {
-        //flexbuf_addchar(&fb, tolower(c));
         if (c == '`') {
             c = lexgetc(L);
+        } else {
+            c = tolower(c);
         }
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
@@ -1532,78 +1533,77 @@ struct constants {
     int     type;
     int32_t val;
 } p1_constants[] = {
-    { "CHIPVER", SYM_CONSTANT, 1 },
-    { "TRUE", SYM_CONSTANT, -1 },
-    { "FALSE", SYM_CONSTANT, 0 },
-    { "POSX", SYM_CONSTANT, 0x7fffffff },
-    { "NEGX", SYM_CONSTANT, 0x80000000U },
-    { "RCFAST", SYM_CONSTANT, 0x00000001 },
-    { "RCSLOW", SYM_CONSTANT, 0x00000002 },
-    { "XINPUT", SYM_CONSTANT, 0x00000004 },
-    { "XTAL1", SYM_CONSTANT, 0x00000008 },
-    { "XTAL2", SYM_CONSTANT, 0x00000010 },
-    { "XTAL3", SYM_CONSTANT, 0x00000020 },
-    { "PLL1X", SYM_CONSTANT, 0x00000040 },
-    { "PLL2X", SYM_CONSTANT, 0x00000080 },
-    { "PLL4X", SYM_CONSTANT, 0x00000100 },
-    { "PLL8X", SYM_CONSTANT, 0x00000200 },
-    { "PLL16X", SYM_CONSTANT, 0x00000400 },
-    { "PI", SYM_FLOAT_CONSTANT, 0x40490fdb },
+    { "chipver", SYM_CONSTANT, 1 },
+    { "true", SYM_CONSTANT, -1 },
+    { "false", SYM_CONSTANT, 0 },
+    { "posx", SYM_CONSTANT, 0x7fffffff },
+    { "negx", SYM_CONSTANT, 0x80000000U },
+    { "rcfast", SYM_CONSTANT, 0x00000001 },
+    { "rcslow", SYM_CONSTANT, 0x00000002 },
+    { "xinput", SYM_CONSTANT, 0x00000004 },
+    { "xtal1", SYM_CONSTANT, 0x00000008 },
+    { "xtal2", SYM_CONSTANT, 0x00000010 },
+    { "xtal3", SYM_CONSTANT, 0x00000020 },
+    { "pll1x", SYM_CONSTANT, 0x00000040 },
+    { "pll2x", SYM_CONSTANT, 0x00000080 },
+    { "pll4x", SYM_CONSTANT, 0x00000100 },
+    { "pll8x", SYM_CONSTANT, 0x00000200 },
+    { "pll16x", SYM_CONSTANT, 0x00000400 },
+    { "pi", SYM_FLOAT_CONSTANT, 0x40490fdb },
 };
 
 struct constants p2_constants[] = {
-    { "CHIPVER", SYM_CONSTANT, 2 },
-    { "TRUE", SYM_CONSTANT, -1 },
-    { "FALSE", SYM_CONSTANT, 0 },
-    { "POSX", SYM_CONSTANT, 0x7fffffff },
-    { "NEGX", SYM_CONSTANT, 0x80000000U },
-    { "RCFAST", SYM_CONSTANT, 0x00000001 },
-    { "RCSLOW", SYM_CONSTANT, 0x00000002 },
-    { "XINPUT", SYM_CONSTANT, 0x00000004 },
-    { "XTAL1", SYM_CONSTANT, 0x00000008 },
-    { "XTAL2", SYM_CONSTANT, 0x00000010 },
-    { "XTAL3", SYM_CONSTANT, 0x00000020 },
-    { "PLL1X", SYM_CONSTANT, 0x00000040 },
-    { "PLL2X", SYM_CONSTANT, 0x00000080 },
-    { "PLL4X", SYM_CONSTANT, 0x00000100 },
-    { "PLL8X", SYM_CONSTANT, 0x00000200 },
-    { "PLL16X", SYM_CONSTANT, 0x00000400 },
-    { "PI", SYM_FLOAT_CONSTANT, 0x40490fdb },
+    { "chipver", SYM_CONSTANT, 2 },
+    { "true", SYM_CONSTANT, -1 },
+    { "false", SYM_CONSTANT, 0 },
+    { "posx", SYM_CONSTANT, 0x7fffffff },
+    { "negx", SYM_CONSTANT, 0x80000000U },
+    { "rcfast", SYM_CONSTANT, 0x00000001 },
+    { "rcslow", SYM_CONSTANT, 0x00000002 },
+    { "xinput", SYM_CONSTANT, 0x00000004 },
+    { "xtal1", SYM_CONSTANT, 0x00000008 },
+    { "xtal2", SYM_CONSTANT, 0x00000010 },
+    { "xtal3", SYM_CONSTANT, 0x00000020 },
+    { "pll1x", SYM_CONSTANT, 0x00000040 },
+    { "pll2x", SYM_CONSTANT, 0x00000080 },
+    { "pll4x", SYM_CONSTANT, 0x00000100 },
+    { "pll8x", SYM_CONSTANT, 0x00000200 },
+    { "pll16x", SYM_CONSTANT, 0x00000400 },
+    { "pi", SYM_FLOAT_CONSTANT, 0x40490fdb },
 
-    { "_CLR", SYM_CONSTANT, 0x0 },
-    { "_NC_AND_NZ", SYM_CONSTANT, 0x1 },
-    { "_NZ_AND_NC", SYM_CONSTANT, 0x1 },
-    { "_GT",        SYM_CONSTANT, 0x1 },
-    { "_NC_AND_Z",  SYM_CONSTANT, 0x2 },
-    { "_Z_AND_NC",  SYM_CONSTANT, 0x2 },
-    { "_NC",        SYM_CONSTANT, 0x3 },
-    { "_GE",        SYM_CONSTANT, 0x3 },
-    { "_C_AND_NZ",  SYM_CONSTANT, 0x4 },
-    { "_NZ_AND_C",  SYM_CONSTANT, 0x4 },
-    { "_NZ",        SYM_CONSTANT, 0x5 },
-    { "_NE",        SYM_CONSTANT, 0x5 },
-    { "_C_NE_Z",    SYM_CONSTANT, 0x6 },
-    { "_Z_NE_C",    SYM_CONSTANT, 0x6 },
-    { "_NZ_OR_NC",  SYM_CONSTANT, 0x7 },
-    { "_NC_OR_NZ",  SYM_CONSTANT, 0x7 },
-    
-    { "_C_AND_Z",   SYM_CONSTANT, 0x8 },
-    { "_Z_AND_C",   SYM_CONSTANT, 0x8 },
-    { "_C_EQ_Z",    SYM_CONSTANT, 0x9 },
-    { "_Z_EQ_C",    SYM_CONSTANT, 0x9 },
-    { "_Z",         SYM_CONSTANT, 0xA },
-    { "_E",         SYM_CONSTANT, 0xA },
-    { "_Z_OR_NC",   SYM_CONSTANT, 0xB },
-    { "_NC_OR_Z",   SYM_CONSTANT, 0xB },
-    { "_C",         SYM_CONSTANT, 0xC },
-    { "_LT",        SYM_CONSTANT, 0xC },
-    { "_C_OR_NZ",   SYM_CONSTANT, 0xD },
-    { "_NZ_OR_C",   SYM_CONSTANT, 0xD },
-    { "_Z_OR_C",    SYM_CONSTANT, 0xE },
-    { "_C_OR_Z",    SYM_CONSTANT, 0xE },
-    { "_LE",        SYM_CONSTANT, 0xE },
-    { "_SET",       SYM_CONSTANT, 0xF },
-    
+    { "_clr", SYM_CONSTANT, 0x0 },
+    { "_nc_and_nz", SYM_CONSTANT, 0x1 },
+    { "_nz_and_nc", SYM_CONSTANT, 0x1 },
+    { "_gt",        SYM_CONSTANT, 0x1 },
+    { "_nc_and_z",  SYM_CONSTANT, 0x2 },
+    { "_z_and_nc",  SYM_CONSTANT, 0x2 },
+    { "_nc",        SYM_CONSTANT, 0x3 },
+    { "_ge",        SYM_CONSTANT, 0x3 },
+    { "_c_and_nz",  SYM_CONSTANT, 0x4 },
+    { "_nz_and_c",  SYM_CONSTANT, 0x4 },
+    { "_nz",        SYM_CONSTANT, 0x5 },
+    { "_ne",        SYM_CONSTANT, 0x5 },
+    { "_c_ne_z",    SYM_CONSTANT, 0x6 },
+    { "_Z_ne_c",    SYM_CONSTANT, 0x6 },
+    { "_nz_or_nc",  SYM_CONSTANT, 0x7 },
+    { "_nc_or_nz",  SYM_CONSTANT, 0x7 },
+
+    { "_c_and_z",   SYM_CONSTANT, 0x8 },
+    { "_z_and_c",   SYM_CONSTANT, 0x8 },
+    { "_c_eq_z",    SYM_CONSTANT, 0x9 },
+    { "_z_eq_c",    SYM_CONSTANT, 0x9 },
+    { "_z",         SYM_CONSTANT, 0xA },
+    { "_e",         SYM_CONSTANT, 0xA },
+    { "_z_or_nc",   SYM_CONSTANT, 0xB },
+    { "_nc_or_z",   SYM_CONSTANT, 0xB },
+    { "_c",         SYM_CONSTANT, 0xC },
+    { "_lt",        SYM_CONSTANT, 0xC },
+    { "_c_or_nz",   SYM_CONSTANT, 0xD },
+    { "_nz_or_c",   SYM_CONSTANT, 0xD },
+    { "_z_or_c",    SYM_CONSTANT, 0xE },
+    { "_c_or_z",    SYM_CONSTANT, 0xE },
+    { "_le",        SYM_CONSTANT, 0xE },
+    { "_set",       SYM_CONSTANT, 0xF },
 };
 
 void InitPreprocessor()
@@ -1628,6 +1628,17 @@ void SetPreprocessorLanguage(int language)
     }
 }
 
+static char *
+NormalizedName(const char *nameOrig)
+{
+    char *name;
+    name = strdup(nameOrig);
+    if (gl_normalizeIdents) {
+        NormalizeIdentifier(name);
+    }
+    return name;
+}
+
 void
 initSpinLexer(int flags)
 {
@@ -1650,17 +1661,17 @@ initSpinLexer(int flags)
     }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i]);
+        AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i]);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val));
+            AddSymbol(&spinReservedWords, NormalizedName(p2_constants[i].name), p2_constants[i].type, AstInteger(p2_constants[i].val));
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val));
+            AddSymbol(&spinReservedWords, NormalizedName(p1_constants[i].name), p1_constants[i].type, AstInteger(p1_constants[i].val));
         }
     }
     
@@ -2417,6 +2428,7 @@ InitPasm(int flags)
     for (i = 0; hwreg[i].name != NULL; i++) {
         AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
         AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
+        AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i]);
     }
 
     /* add instructions */
@@ -2755,6 +2767,11 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
 	  *ast_ptr = ast;
 	  return c;
 	}
+      } else {
+          ast = NewAST(AST_SYMBOL, NULL, NULL);
+          ast->d.ptr = (void *)sym;
+          *ast_ptr = ast;
+          return C_IDENTIFIER;
       }
     }
     // check for a defined class or similar type

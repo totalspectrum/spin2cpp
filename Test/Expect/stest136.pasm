@@ -1,12 +1,12 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
 _main
 LR__0001
-	xor	OUTA, #1
+	xor	outa, #1
 	jmp	#LR__0001
 _main_ret
 	ret

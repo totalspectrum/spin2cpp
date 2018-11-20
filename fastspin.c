@@ -228,7 +228,7 @@ main(int argc, char **argv)
             }
         }
     }
-    gl_normalizeIdents = 1;
+    gl_normalizeIdents = 0;
     compile = 1;
     outputMain = 1;
     outputBin = 1;

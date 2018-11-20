@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -10,7 +10,7 @@ _zcount
  if_be	neg	_tmp001_, #1
 	add	arg2, _tmp001_
 LR__0001
-	mov	OUTA, arg1
+	mov	outa, arg1
 	add	arg1, _tmp001_
 	cmp	arg1, arg2 wz
  if_ne	jmp	#LR__0001

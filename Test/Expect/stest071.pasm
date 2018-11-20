@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -10,7 +10,7 @@ _blink
 	cmp	arg2, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	xor	OUTA, _var_04
+	xor	outa, _var_04
 	djnz	arg2, #LR__0001
 LR__0002
 	rdlong	result1, ptr__dat__

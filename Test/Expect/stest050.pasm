@@ -1,20 +1,20 @@
-CON
+con
 	all_pin_mask = 252
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
-_pushData
-	andn	OUTA, #252
+_pushdata
+	andn	outa, #252
 	shl	arg1, #2
-	or	OUTA, arg1
-_pushData_ret
+	or	outa, arg1
+_pushdata_ret
 	ret
 
 _all_pin_low
-	andn	OUTA, #252
+	andn	outa, #252
 _all_pin_low_ret
 	ret
 

@@ -1,6 +1,6 @@
-PUB main
+pub main
   coginit(0, @entry, 0)
-DAT
+dat
 	org	0
 entry
 
@@ -20,7 +20,7 @@ _checkcmd_ret
 
 _cmd2
 LR__0003
-	mov	OUTA, arg1
+	mov	outa, arg1
 	mov	arg1, #0
 	jmp	#LR__0003
 _cmd2_ret
