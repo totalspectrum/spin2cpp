@@ -34,6 +34,7 @@
 #include "preprocess.h"
 #include "version.h"
 #include "spin.tab.h"
+#include "mcpp/mcpp_lib.h"
 
 //#define DEBUG_YACC
 
@@ -649,12 +650,39 @@ ParseFile(const char *name)
     if (gl_preprocess) {
         void *defineState;
 
-        SetPreprocessorLanguage(language);
-        pp_push_file(&gl_pp, fname);
-        defineState = pp_get_define_state(&gl_pp);
-        pp_run(&gl_pp);
-        parseString = pp_finish(&gl_pp);
-        pp_restore_define_state(&gl_pp, defineState);
+#define MAX_MCPP_ARGC 255
+        if (language == LANG_C) {
+            /* use mcpp */
+            char *argv[MAX_MCPP_ARGC+1];
+            int argc = 0;
+            int r;
+            const char *errString;
+            argv[argc++] = "fastspin";
+            argc = pp_get_defines_as_args(&gl_pp, argc, argv, MAX_MCPP_ARGC);
+            if (argc >= MAX_MCPP_ARGC-1) {
+                ERROR(NULL, "ERROR: too many defines\n");
+            }
+            argv[argc++] = fname;
+            argv[argc] = NULL;
+            
+            mcpp_use_mem_buffers(1);
+            r = mcpp_lib_main(argc, argv);
+            errString = mcpp_get_mem_buffer(ERR);
+            parseString = mcpp_get_mem_buffer(OUT);
+            if (r != 0) {
+                ERROR(NULL, "Preprocessor errors:\n%s", errString);
+                exit(1);
+            } else if (strlen(errString)) {
+                WARNING(NULL, "Preprocessor warnings:\n%s", errString);
+            }
+        } else {
+            SetPreprocessorLanguage(language);
+            pp_push_file(&gl_pp, fname);
+            defineState = pp_get_define_state(&gl_pp);
+            pp_run(&gl_pp);
+            parseString = pp_finish(&gl_pp);
+            pp_restore_define_state(&gl_pp, defineState);
+        }
         strToLex(&current->L, parseString, fname);
 	doparse(language);
         free(parseString);

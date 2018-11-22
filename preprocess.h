@@ -16,6 +16,7 @@ struct predef {
     struct predef *next;
     const char *name;
     const char *def;
+    const char *argcdef; /* -Dname=def version, for passing to mcpp */
     int  flags;
 };
 #define PREDEF_FLAG_FREEDEFS 0x01  /* if "name" and "def" should be freed */
@@ -126,5 +127,12 @@ char *pp_finish(struct preprocess *pp);
 char *find_file_on_path(struct preprocess *pp, const char *name, const char *ext, const char *relativeto);
 
 void pp_add_to_path(struct preprocess *pp, const char *dir);
+
+/* fill argv[] starting at argc,
+ * with -Ipath for all paths in pp,
+ * and -Dname=def for all defines in pp
+ * returns updated argc
+ */
+int pp_get_defines_as_args(struct preprocess *pp, int argc, char **argv, int max_argc);
 
 #endif

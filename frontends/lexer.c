@@ -695,11 +695,31 @@ static void CheckSrcComment( LexStream *L )
     s_lastFileName = L->fileName;
 }
 
+// duplicate a file name, possibly quoted
+static char *
+getFileName(const char *orig)
+{
+    char *ptr = strdup(orig);
+    if (*ptr == '"') {
+        size_t siz = strlen(ptr);
+        if (siz >= 2) {
+            memmove(ptr, ptr+1, siz-2);
+        }
+    }
+    return ptr;
+}
+
 // check for a comment that runs to end of line
 static int
 checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
 {
     AST *ast;
+    char *commentLine;
+    
+    // look for #line directives
+    if (c == '#' && L->colCounter == 1) {
+        goto docomment;
+    }
     if (language == LANG_BASIC && (c == 'r' || c == 'R') ) {
         int c2, c3, c4;
         c2 = lexgetc(L);
@@ -739,9 +759,21 @@ docomment:
     }
     flexbuf_addchar(cbp, c);
     flexbuf_addchar(cbp, 0);
-    ast = NewAST(AST_COMMENT, NULL, NULL);
-    ast->d.string = flexbuf_get(cbp);
-    comment_chain = AddToList(comment_chain, ast);
+    commentLine = flexbuf_get(cbp);
+    if (!strncmp(commentLine, "#line ", 6)) {
+        char *ptr = commentLine + 6;
+        int lineno;
+        lineno = strtol(ptr, &ptr, 10);
+        if (lineno > 0) {
+            while (*ptr == ' ') ptr++;
+            L->lineCounter = lineno;
+            L->fileName = getFileName(ptr);
+        }
+    } else {
+        ast = NewAST(AST_COMMENT, NULL, NULL);
+        ast->d.string = commentLine;
+        comment_chain = AddToList(comment_chain, ast);
+    }
     return c;
 }
 
@@ -948,7 +980,7 @@ again:
                 lineno = strtol(ptr, &ptr, 10);
                 if (lineno > 0) {
                     if (*ptr == ' ') ptr++;
-                    L->fileName = strdup(ptr);
+                    L->fileName = getFileName(ptr);
                     L->lineCounter = lineno;
                 }
             }

@@ -1002,6 +1002,54 @@ pp_setlinedirective(struct preprocess *pp, const char *dir)
 }
 
 /*
+ * get define state into arguments (like -DXXX)
+ * returns new argc
+ */
+int
+pp_get_defines_as_args(struct preprocess *pp, int argc, char **argv, int max_argc)
+{
+    struct predef *x;
+    const char *def;
+    char *cdef;
+    int i, n;
+    char **inc_paths;;
+    int num_inc_paths;
+
+    /* first, fill out -I args for our paths */
+    num_inc_paths = flexbuf_curlen(&pp->inc_path) / sizeof(const char **);
+    inc_paths = (char **)flexbuf_peek(&pp->inc_path);
+    for (i = 0; i < num_inc_paths; i++) {
+        n = strlen(inc_paths[i]) + 4;
+        cdef = malloc(n);
+        sprintf(cdef, "-I%s", inc_paths[i]);
+        argv[argc++] = cdef;
+        if (argc >= max_argc) return argc;
+    }
+    
+    /* now, fill in all definitions */
+    x = pp->defs;
+    while (x) {
+        if (!x->argcdef) {
+            n = strlen(x->name);
+            if (x->def) {
+                def = x->def;
+            } else {
+                def = "1";
+            }
+            n += strlen(def);
+            n += 4; /* room for "-D", "=", and trailing 0 */
+            cdef = malloc(n);
+            sprintf(cdef, "-D%s=%s", x->name, def);
+            x->argcdef = cdef;
+        }
+        argv[argc++] = (char *)x->argcdef;
+        if (argc >= max_argc) return argc;
+        x = x->next;
+    }
+    return argc;
+}
+
+/*
  * get/restore define state
  * this may be used to ensure that #defines in sub files are not
  * seen in the main file

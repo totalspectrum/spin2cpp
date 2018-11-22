@@ -41,7 +41,9 @@
 #include    "internal.H"
 
 #if     HOST_SYS_FAMILY == SYS_UNIX
-#include    "unistd.h"              /* For getcwd(), readlink() */
+#define _BSD_SOURCE 1
+#include    <unistd.h>              /* For getcwd(), readlink() */
+ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
 #elif   HOST_COMPILER == MSC || HOST_COMPILER == LCC
 #include    "direct.h"
 #define getcwd( buf, size)  _getcwd( buf, size)
@@ -832,6 +834,7 @@ static void set_sys_dirs(
  * list.
  */
 {
+#ifndef FLEXSPIN_BUILD
 #if SYS_FAMILY == SYS_UNIX
     set_a_dir( "/usr/local/include");
 #endif
@@ -851,6 +854,7 @@ static void set_sys_dirs(
         set_a_dir( "/usr/include");
 #else
     set_a_dir( "/usr/include"); /* Should be placed after C_INCLUDE_DIR?    */
+#endif
 #endif
 #endif
 }

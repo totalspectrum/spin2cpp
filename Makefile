@@ -33,16 +33,17 @@ else
 endif
 
 INC=-I. -I$(BUILD)
+DEFS=-DFLEXSPIN_BUILD
 
 # byacc will fail some of the error tests, but mostly works
 #YACC = byacc -s
 YACC = bison
-CFLAGS = -g -Wall $(INC)
-#CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC)
+CFLAGS = -g -Wall $(INC) $(DEFS)
+#CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf
 
-VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/dat
+VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backends/asm:backends/cpp:backends/dat:mcpp
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
@@ -50,11 +51,13 @@ PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
 
 UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c
 
+MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_support.c
+
 # FIXME lexer should not need cppexpr.c (it belongs in CPPBACK)
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c cppexpr.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c
 CPPBACK = outcpp.c cppfunc.c outgas.c # cppexpr.c
-SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) version.c
+SPINSRCS = common.c spinc.c $(LEXSRCS) functions.c cse.c loops.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) $(MCPP) version.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
