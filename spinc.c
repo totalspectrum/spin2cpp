@@ -670,9 +670,13 @@ ParseFile(const char *name)
             errString = mcpp_get_mem_buffer(ERR);
             parseString = mcpp_get_mem_buffer(OUT);
             if (r != 0) {
-                ERROR(NULL, "Preprocessor errors:\n%s", errString);
+                if (errString) {
+                    ERROR(NULL, "Preprocessor errors:\n%s", errString);
+                } else {
+                    ERROR(NULL, "Preprocessor failed!\n");
+                }
                 exit(1);
-            } else if (strlen(errString)) {
+            } else if (errString && strlen(errString)) {
                 WARNING(NULL, "Preprocessor warnings:\n%s", errString);
             }
         } else {
