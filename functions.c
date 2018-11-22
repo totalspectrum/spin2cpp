@@ -453,8 +453,10 @@ doDeclareFunction(AST *funcblock)
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {
-        fdef->resultexpr = AstIdentifier("result");
-        AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
+        if (language == LANG_SPIN) {
+            fdef->resultexpr = AstIdentifier("result");
+            AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
+        }
     } else {
         fdef->resultexpr = src->right;
         if (src->right->kind == AST_IDENTIFIER) {
