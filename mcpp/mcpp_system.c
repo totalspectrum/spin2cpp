@@ -1072,14 +1072,14 @@ static char *   norm_path(
     }
 #endif
 
-#if SYSTEM == SYS_MINGW
+#if SYSTEM == SYS_MINGW && !defined(FLEXSPIN_BUILD)
     /* Handle the mess of MinGW's path-list */
     /* Convert to "x:/dir" style of absolute path-list  */
     if (*cp1 == PATH_DELIM && isalpha( *(cp1 + 1))
             && *(cp1 + 2) == PATH_DELIM) {          /* /c/, /d/, etc*/
         *cp1 = *(cp1 + 1);
         *(cp1 + 1) = ':';               /* Convert to c:/, d:/, etc */
-    } else if (memcmp( cp1, "/mingw", 6) == 0) {
+    } else if (memcmp( cp1, "/mingw", 6) == 0) {        
         if (! mingw_dir_len) {          /* Should be initialized    */
             mingw_dir_len = strlen( MINGW_DIRECTORY);
             mingw_dir = xmalloc( mingw_dir_len + 1);
@@ -2705,7 +2705,7 @@ void    clear_filelist( void)
 }
 
 #ifdef _WIN32
-#  include <Windows.h>
+#  include <windows.h>
 #endif
 
 FILE* mcpp_fopen(const char* filename, const char* mode)
