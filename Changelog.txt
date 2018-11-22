@@ -3,7 +3,8 @@ Version 3.9.11
 - Added simple optimization based on commutative math
 - Implemented case sensitivity for C, and an optional -C flag
   to force case sensitivity in other languages
-  
+- Added a new preprocessor (mcpp) for C
+
 Version 3.9.10
 - Added a peephole optimizer to replace "mov x, #0 ; add x, y" with
   "mov x, y"
