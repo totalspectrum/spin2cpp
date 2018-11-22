@@ -701,9 +701,10 @@ getFileName(const char *orig)
 {
     char *ptr = strdup(orig);
     if (*ptr == '"') {
-        size_t siz = strlen(ptr);
-        if (siz >= 2) {
-            memmove(ptr, ptr+1, siz-2);
+        size_t siz = strlen(ptr+1);
+        if (siz > 1) {
+            memmove(ptr, ptr+1, siz-1);
+            ptr[siz-2] = 0;
         }
     }
     return ptr;
