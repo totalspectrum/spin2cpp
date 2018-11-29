@@ -22,6 +22,9 @@ int
 NumExprItemsOnStack(AST *expr)
 {
     Function *f;
+    if (!expr) {
+        return 0;
+    }
     if (expr->kind == AST_FUNCCALL) {
         Symbol *sym = FindCalledFuncSymbol(expr, NULL, 1);
         if (sym && sym->type == SYM_FUNCTION) {
@@ -456,6 +459,9 @@ doDeclareFunction(AST *funcblock)
         if (language == LANG_SPIN) {
             fdef->resultexpr = AstIdentifier("result");
             AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
+        } else {
+            fdef->resultexpr = AstIdentifier("__result");
+            AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL);
         }
     } else {
         fdef->resultexpr = src->right;

@@ -308,9 +308,9 @@ nonemptystatement:
     }
   | BAS_IDENTIFIER '(' optexprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' optexprlist ')' eoln
+  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' exprlist ')' eoln
     { $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5); }
-  | BAS_IDENTIFIER optexprlist eoln
+  | BAS_IDENTIFIER exprlist eoln
     { $$ = NewAST(AST_FUNCCALL, $1, $2); }
   | BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
@@ -516,7 +516,7 @@ optstep:
 ;
 
 trycatchstmt:
-  BAS_TRY eoln statementlist BAS_CATCH identifier eoln statementlist endtry
+  BAS_TRY eoln statementlist BAS_CATCH BAS_IDENTIFIER eoln statementlist endtry
   {
       AST *tryblock = $3;
       AST *catchvar = $5;
@@ -602,112 +602,49 @@ paramdecl1:
   ;
 
 paramitem:
-  identifier
+  BAS_IDENTIFIER
     { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
-  | identifier '=' expr
+  | BAS_IDENTIFIER '=' expr
     { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), AstAssign($1, $3)); }
-  | identifier BAS_AS typename
+  | BAS_IDENTIFIER BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
-  | identifier '=' expr BAS_AS typename
+  | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
+;
+
+optexprlist:
+  /* nothing */
+    { $$ = NULL; }
+  | exprlist
+    { $$ = $1; }
 ;
 
 exprlist:
   expritem
+    { $$ = $1; }
  | exprlist ',' expritem
    { $$ = AddToList($1, $3); }
  ;
-
-optexprlist:
-  /* empty */
-    {  $$ = NULL; }
-  | exprlist
-    { $$ = $1; }
-;
 
 expritem:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 ;
 
-expr:
+primary_expr:
   BAS_INTEGER
     { $$ = $1; }
   | BAS_FLOAT
+    { $$ = $1; }
+  | BAS_IDENTIFIER
     { $$ = $1; }
   | BAS_NIL
     { $$ = AstBitValue(0); } 
   | BAS_STRING
     { $$ = NewAST(AST_STRINGPTR,
                   NewAST(AST_EXPRLIST, $1, NULL), NULL); }
-  | lhs
-    { $$ = $1; }
-  | expr '+' expr
-    { $$ = AstOperator('+', $1, $3); }
-  | expr '-' expr
-    { $$ = AstOperator('-', $1, $3); }
-  | expr '*' expr
-    { $$ = AstOperator('*', $1, $3); }
-  | expr '/' expr
-    { $$ = AstOperator('/', $1, $3); }
-  | expr BAS_MOD expr
-    { $$ = AstOperator(K_MODULUS, $1, $3); }
-  | expr '=' expr
-    { $$ = AstOperator(K_EQ, $1, $3); }
-  | expr BAS_NE expr
-    { $$ = AstOperator(K_NE, $1, $3); }
-  | expr BAS_LE expr
-    { $$ = AstOperator(K_LE, $1, $3); }
-  | expr BAS_GE expr
-    { $$ = AstOperator(K_GE, $1, $3); }
-  | expr '<' expr
-    { $$ = AstOperator('<', $1, $3); }
-  | expr '>' expr
-    { $$ = AstOperator('>', $1, $3); }
-  | expr BAS_AND expr
-    { $$ = AstOperator('&', $1, $3); }
-  | expr BAS_OR expr
-    { $$ = AstOperator('|', $1, $3); }
-  | expr BAS_SHL expr
-    { $$ = AstOperator(K_SHL, $1, $3); }
-  | expr BAS_SHR expr
-    { $$ = AstOperator(K_SAR, $1, $3); }
-  | expr BAS_XOR expr
-    { $$ = AstOperator('^', $1, $3); }
-  | '-' expr %prec BAS_NEGATE
-    { $$ = AstOperator(K_NEGATE, NULL, $2); }
-  | BAS_NOT expr
-    { $$ = AstOperator(K_BIT_NOT, NULL, $2); } 
-  | expr '(' optexprlist ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | expr '.' BAS_IDENTIFIER
-    { 
-        $$ = NewAST(AST_METHODREF, $1, $3);
-    }
-  | BAS_ABS '(' expr ')'
-    { $$ = AstOperator(K_ABS, NULL, $3); }  
-  | BAS_ASC '(' expr ')'
-    { $$ = AstOperator(K_ASC, NULL, $3); }  
-  | BAS_SQRT '(' expr ')'
-    { $$ = AstOperator(K_SQRT, NULL, $3); }  
-  | '@' expr
-    { $$ = NewAST(AST_ADDROF, $2, NULL); }  
   | '(' expr ')'
     { $$ = $2; }
-  | BAS_INPUT '(' pinrange ')'
-    { $$ = GetPinRange("ina", "inb", $3); }
-  | BAS_OUTPUT '(' pinrange ')'
-    { $$ = GetPinRange("outa", "outb", $3); }
-  | BAS_DIRECTION '(' pinrange ')'
-    { $$ = GetPinRange("dira", "dirb", $3); }
-  | BAS_CPU '(' exprlist ')'
-    {
-        AST *elist;
-        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
-        elist = NewAST(AST_EXPRLIST, immval, NULL);
-        elist = AddToList(elist, $3);
-        $$ = NewAST(AST_COGINIT, elist, NULL);
-    }
   | BAS_NEW typename
     {
         AST *numElements;
@@ -723,6 +660,37 @@ expr:
         }
         baseType = NewAST(AST_PTRTYPE, baseType, NULL);
         $$ = NewAST(AST_NEW, baseType, numElements);
+    }
+;
+
+postfix_expr:
+  primary_expr
+    { $$ = $1; }
+  | postfix_expr '(' ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  | postfix_expr '(' exprlist ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | postfix_expr '.' BAS_IDENTIFIER
+    { $$ = NewAST(AST_METHODREF, $1, $3); }
+  | BAS_ABS '(' expr ')'
+    { $$ = AstOperator(K_ABS, NULL, $3); }  
+  | BAS_ASC '(' expr ')'
+    { $$ = AstOperator(K_ASC, NULL, $3); }  
+  | BAS_SQRT '(' expr ')'
+    { $$ = AstOperator(K_SQRT, NULL, $3); }  
+  | BAS_INPUT '(' pinrange ')'
+    { $$ = GetPinRange("ina", "inb", $3); }
+  | BAS_OUTPUT '(' pinrange ')'
+    { $$ = GetPinRange("outa", "outb", $3); }
+  | BAS_DIRECTION '(' pinrange ')'
+    { $$ = GetPinRange("dira", "dirb", $3); }
+  | BAS_CPU '(' exprlist ')'
+    {
+        AST *elist;
+        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
+        elist = NewAST(AST_EXPRLIST, immval, NULL);
+        elist = AddToList(elist, $3);
+        $$ = NewAST(AST_COGINIT, elist, NULL);
     }
   | BAS_FUNCTION '(' paramdecl ')' expr %prec BAS_FUNCTION
   {
@@ -753,12 +721,78 @@ expr:
   }
 ;
 
-lhs: identifier
+unary_expr:
+  postfix_expr
     { $$ = $1; }
+  | '+' unary_expr
+    { $$ = $2; }
+  | '-' unary_expr
+    { $$ = AstOperator(K_NEGATE, NULL, $2); }
+  | BAS_NOT unary_expr
+    { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+  | '@' unary_expr
+    { $$ = NewAST(AST_ADDROF, $2, NULL); }
 ;
 
-identifier:
-  BAS_IDENTIFIER
+mult_expr:
+  unary_expr
+    { $$ = $1; }
+  | mult_expr '*' unary_expr
+    { $$ = AstOperator('*', $1, $3); }
+  | mult_expr '/' unary_expr
+    { $$ = AstOperator('/', $1, $3); }
+  | mult_expr BAS_MOD unary_expr
+    { $$ = AstOperator(K_MODULUS, $1, $3); }
+;
+
+add_expr:
+  mult_expr
+    { $$ = $1; }
+  | add_expr '+' mult_expr  
+    { $$ = AstOperator('+', $1, $3); }
+  | add_expr '-' mult_expr  
+    { $$ = AstOperator('-', $1, $3); }
+;
+
+shift_expr:
+  add_expr
+    { $$ = $1; }
+  | shift_expr BAS_SHL add_expr
+    { $$ = AstOperator(K_SHL, $1, $3); }
+  | shift_expr BAS_SHR add_expr
+    { $$ = AstOperator(K_SAR, $1, $3); }
+;
+
+compare_expr:
+  shift_expr
+    { $$ = $1; }
+  | shift_expr '=' shift_expr
+    { $$ = AstOperator(K_EQ, $1, $3); }
+  | shift_expr '<' shift_expr
+    { $$ = AstOperator('<', $1, $3); }
+  | shift_expr '>' shift_expr
+    { $$ = AstOperator('>', $1, $3); }
+  | shift_expr BAS_NE shift_expr
+    { $$ = AstOperator(K_EQ, $1, $3); }
+  | shift_expr BAS_LE shift_expr
+    { $$ = AstOperator(K_LE, $1, $3); }
+  | shift_expr BAS_GE shift_expr
+    { $$ = AstOperator(K_GE, $1, $3); }
+;
+
+bit_expr:
+  compare_expr
+    { $$ = $1; }
+  | bit_expr BAS_AND compare_expr
+    { $$ = AstOperator('&', $1, $3); }
+  | bit_expr BAS_OR compare_expr
+    { $$ = AstOperator('|', $1, $3); }
+  | bit_expr BAS_XOR compare_expr
+    { $$ = AstOperator('^', $1, $3); }
+;
+
+expr:
+  bit_expr
     { $$ = $1; }
 ;
 
@@ -903,11 +937,11 @@ dimitem:
 ;
 
 identdecl:
-  identifier
+  BAS_IDENTIFIER
     { $$ = $1; }
-  | identifier '(' expr ')'
+  | BAS_IDENTIFIER '(' expr ')'
     { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
-  | identifier '(' expr BAS_TO expr ')'
+  | BAS_IDENTIFIER '(' expr BAS_TO expr ')'
     {
         AST *base = $3;
         
@@ -1005,7 +1039,7 @@ asmlist:
 
 asmline:
   basedatline
-  | identifier basedatline
+  | BAS_IDENTIFIER basedatline
     {   AST *linebreak;
         AST *comment = GetComments();
         AST *ast;

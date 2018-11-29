@@ -400,8 +400,12 @@ doBasicTransform(AST **astptr)
     AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
     switch (ast->kind) {
     case AST_ASSIGN:
-        if (ast->left && ast->left->kind == AST_RANGEREF) {
-            *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+        if (ast->left) {
+            if (ast->left->kind == AST_RANGEREF) {
+                *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
+            } else if (ast->left->kind == AST_IDENTIFIER && !strcmp(ast->left->d.string, curfunc->name)) {
+                ast->left->kind = AST_RESULT;
+            }
         }
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
