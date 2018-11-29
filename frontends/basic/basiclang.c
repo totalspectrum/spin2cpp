@@ -1381,7 +1381,7 @@ AST *CheckTypes(AST *ast)
         }
         break;
     case AST_RETURN:
-        {
+        if (ast->left) {
             rtype = ltype; // type of actual expression
             ltype = GetFunctionReturnType(curfunc);
             ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype);
@@ -1449,6 +1449,8 @@ AST *CheckTypes(AST *ast)
             }
         }
         break;
+    case AST_RESULT:
+        return GetFunctionReturnType(curfunc);
     case AST_FLOAT:
     case AST_TRUNC:
     case AST_ROUND:
