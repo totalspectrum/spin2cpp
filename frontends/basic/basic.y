@@ -130,6 +130,37 @@ AST *AstCharItem(int c)
     return NewAST(AST_EXPRLIST, expr, NULL);
 }
 
+#define MAX_LOOP_NEST 256
+static int loop_stack[MAX_LOOP_NEST];
+static int loop_sp;
+
+static void
+PushLoop(int token)
+{
+    if (loop_sp >= MAX_LOOP_NEST) {
+        SYNTAX_ERROR("loops nested too deeply");
+    } else {
+        loop_stack[loop_sp++] = token;
+    }
+}
+
+static void
+PopLoop(void)
+{
+    if (loop_sp > 0) {
+        --loop_sp;
+    }
+}
+
+static int
+GetCurrentLoop(int token)
+{
+    if (loop_sp == 0 || loop_stack[loop_sp-1] != token) {
+        return 0;
+    }
+    return 1;
+}
+
 %}
 
 %pure-parser
@@ -363,6 +394,8 @@ nonemptystatement:
     { $$ = $1; }
   | selectstmt
     { $$ = $1; }
+  | exitstmt
+    { $$ = $1; }
 ;
 
 statement:
@@ -439,9 +472,10 @@ endif:
 ;
 
 whilestmt:
-  BAS_WHILE expr eoln optstatementlist endwhile
-    { AST *body = CheckYield($4);
+    BAS_WHILE expr eoln { PushLoop(BAS_WHILE); } optstatementlist endwhile
+    { AST *body = CheckYield($5);
       $$ = NewCommentedAST(AST_WHILE, $2, body, $1);
+      PopLoop();
     }
 ;
 
@@ -452,45 +486,53 @@ endwhile:
   ;
 
 doloopstmt:
-  BAS_DO eoln optstatementlist BAS_LOOP eoln
-    { AST *body = CheckYield($3);
-      AST *one = AstInteger(1);
-      $$ = NewCommentedAST(AST_WHILE, one, body, $1);
-    }
-  | BAS_DO BAS_WHILE expr eoln optstatementlist BAS_LOOP eoln
-    { AST *body = CheckYield($5);
+  BAS_DO BAS_WHILE expr eoln { PushLoop(BAS_DO); } optstatementlist BAS_LOOP eoln
+    { AST *body = CheckYield($6);
       AST *cond = $3;
       $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
+      PopLoop();
     }
-  | BAS_DO BAS_UNTIL expr eoln optstatementlist BAS_LOOP eoln
-    { AST *body = CheckYield($5);
+  | BAS_DO BAS_UNTIL expr eoln {PushLoop(BAS_DO); } optstatementlist BAS_LOOP eoln
+    { AST *body = CheckYield($6);
       AST *cond = AstOperator(K_BOOL_NOT, NULL, $3);
       $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
+      PopLoop();
     }
-  | BAS_DO eoln optstatementlist BAS_LOOP BAS_WHILE expr eoln
-    { $$ = NewCommentedAST(AST_DOWHILE, $6, CheckYield($3), $1); }
-  | BAS_DO eoln optstatementlist BAS_LOOP BAS_UNTIL expr eoln
-    { $$ = NewCommentedAST(AST_DOWHILE, AstOperator(K_BOOL_NOT, NULL, $6), CheckYield($3), $1); }
+  | BAS_DO eoln {PushLoop(BAS_DO); } optstatementlist doloopend
+    {
+        $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($4), $1);
+        PopLoop();
+    }
   ;
+
+doloopend:
+  BAS_LOOP BAS_WHILE expr eoln
+    { $$ = $3; }
+  | BAS_LOOP BAS_UNTIL expr eoln
+    { $$ = AstOperator(K_BOOL_NOT, NULL, $3); }
+  | BAS_LOOP eoln
+    { $$ = AstInteger(1); }
+;
+
 //
 // AST_FOR consists of:
 // (AST_FOR (initstmt) (AST_TO (condtest (AST_STEP step body))))
 //
 forstmt:
-  BAS_FOR BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
+    BAS_FOR { PushLoop(BAS_FOR); } BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
     {
       AST *from, *to, *step;
-      AST *ident = $2;
-      AST *closeident = $10;
+      AST *ident = $3;
+      AST *closeident = $11;
       AST *declare;
       AST *loop;
       
       /* create a WEAK definition for ident (it will not override any existing definition) */
       declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
-      step = NewAST(AST_STEP, $7, $9);
-      to = NewAST(AST_TO, $6, step);
-      from = NewAST(AST_FROM, $4, to);
-      loop = NewCommentedAST(AST_COUNTREPEAT, $2, from, $1);
+      step = NewAST(AST_STEP, $8, $10);
+      to = NewAST(AST_TO, $7, step);
+      from = NewAST(AST_FROM, $5, to);
+      loop = NewCommentedAST(AST_COUNTREPEAT, $3, from, $1);
       // validate the "next i"
       if (closeident && !AstMatch(ident, closeident)) {
           ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
@@ -498,6 +540,7 @@ forstmt:
       }
       $$ = NewAST(AST_STMTLIST, declare,
                   NewAST(AST_STMTLIST, loop, NULL));
+      PopLoop();
     }
 ;
 
@@ -539,6 +582,79 @@ trycatchstmt:
 
 endtry:
   BAS_END BAS_TRY eoln
+;
+
+exitstmt:
+  BAS_EXIT BAS_FUNCTION eoln
+    { $$ = NewAST(AST_RETURN, NULL, NULL); }
+  | BAS_EXIT BAS_SUB eoln
+    { $$ = NewAST(AST_RETURN, NULL, NULL); }
+  | BAS_EXIT BAS_FOR eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_FOR);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'exit for' is not inside a for loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_QUIT, modifier, NULL);
+    }
+  | BAS_EXIT BAS_WHILE eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_WHILE);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'exit while' is not inside a while loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_QUIT, modifier, NULL);
+    }
+  | BAS_EXIT BAS_DO eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_DO);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'exit do' is not inside a do loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_QUIT, modifier, NULL);
+    }
+  | BAS_CONTINUE BAS_FOR eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_FOR);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'continue for' is not inside a for loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_CONTINUE, modifier, NULL);
+    }
+  | BAS_CONTINUE BAS_WHILE eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_WHILE);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'continue while' is not inside a while loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_CONTINUE, modifier, NULL);
+    }
+  | BAS_CONTINUE BAS_DO eoln
+    {
+        int curLoop = GetCurrentLoop(BAS_DO);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'continue do' is not inside a do loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_CONTINUE, modifier, NULL);
+    }
 ;
 
 selectstmt:

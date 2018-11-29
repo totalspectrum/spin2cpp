@@ -619,7 +619,7 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         flexbuf_printf(f, "%*cbreak;", indent, ' ');
         PrintNewline(f);
         break;
-    case AST_NEXT:
+    case AST_CONTINUE:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*ccontinue;", indent, ' ');
         PrintNewline(f);

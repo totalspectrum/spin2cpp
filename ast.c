@@ -427,7 +427,7 @@ static const char *astnames[] = {
     "yield",
     "constant",
     "quit",
-    "next",
+    "continue",
 
     "result",
     "round",

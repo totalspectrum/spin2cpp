@@ -3637,7 +3637,7 @@ static void CompileStatement(IRList *irl, AST *ast)
 	    EmitJump(irl, COND_TRUE, quitlabel);
 	}
 	break;
-    case AST_NEXT:
+    case AST_CONTINUE:
         EmitDebugComment(irl, ast);
         if (!nextlabel) {
 	    ERROR(ast, "loop continue statement outside of loop");

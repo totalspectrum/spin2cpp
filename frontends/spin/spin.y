@@ -321,7 +321,7 @@ basicstmt:
   | SP_QUIT SP_EOLN
     { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
-    { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
+    { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
 ;
 
 multiassign:

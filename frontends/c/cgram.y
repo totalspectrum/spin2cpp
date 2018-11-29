@@ -989,7 +989,7 @@ jump_statement
 	: C_GOTO C_IDENTIFIER ';'
             { $$ = NewCommentedAST(AST_GOTO, $2, NULL, $1); }
 	| C_CONTINUE ';'
-            { $$ = NewCommentedAST(AST_NEXT, NULL, NULL, $1); }
+            { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
 	| C_BREAK ';'
             { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
 	| C_RETURN ';'
