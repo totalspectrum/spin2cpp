@@ -368,9 +368,11 @@ DeclareLabels(Module *P)
             }
             cogpc = hubpc;
             // calculate padding amount
-            if (ast->d.ival < hubpc) {
+            if (ast->d.ival <= hubpc) {
                 ast->d.ival = hubpc - ast->d.ival;
             } else {
+                ERROR(ast, "orgh address %x is less than previous address %x",
+                      hubpc, ast->d.ival);
                 ast->d.ival = 0;
             }
             lasttype = ast_type_long;

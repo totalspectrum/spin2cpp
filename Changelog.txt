@@ -4,6 +4,7 @@ Version 3.9.11
 - Implemented case sensitivity for C, and an optional -C flag
   to force case sensitivity in other languages
 - Added a new preprocessor (mcpp) for C
+- Report an error if ORGH tries to go backwards
 
 Version 3.9.10
 - Added a peephole optimizer to replace "mov x, #0 ; add x, y" with
