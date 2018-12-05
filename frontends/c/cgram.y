@@ -109,8 +109,12 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
         return MergePrefix(prefix, CombineTypes(first, second->left, identifier));
-    case AST_FUNCTYPE:
     case AST_PTRTYPE:
+        first = NewAST(AST_PTRTYPE, first, NULL);
+        second = CombineTypes(first, second->left, identifier);
+        return MergePrefix(prefix, second);
+        
+    case AST_FUNCTYPE:
         second->left = CombineTypes(first, second->left, identifier);
         return MergePrefix(prefix, second);
     case AST_ASSIGN:
