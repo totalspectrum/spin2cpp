@@ -76,7 +76,17 @@ static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect)
 {
     char temp[128];
-    
+    int usehubaddr;
+    int useabsaddr;
+
+    usehubaddr = effect & OPEFFECT_FORCEHUB;
+    effect &= ~(OPEFFECT_FORCEHUB);
+    if (gl_p2) {
+        useabsaddr = effect & OPEFFECT_FORCEABS;
+        effect &= ~OPEFFECT_FORCEABS;
+    } else {
+        useabsaddr = 0;
+    }
     if (!reg) {
         ERROR(NULL, "internal error bad operand");
         flexbuf_addstr(fb, "???");
@@ -122,13 +132,24 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         break;
     case IMM_HUB_LABEL:
         if (gl_p2 && useimm) {
-            flexbuf_addstr(fb, "#@");
+            flexbuf_addstr(fb, "#");
+            if (useabsaddr) {
+                flexbuf_addstr(fb, "\\");
+            }
+            flexbuf_addstr(fb, "@");
         }
+        
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     case IMM_COG_LABEL:
         if (useimm) {
             flexbuf_addstr(fb, "#");
+            if (useabsaddr) {
+                flexbuf_addstr(fb, "\\");
+            }
+            if (usehubaddr) {
+                flexbuf_addstr(fb, "@");
+            }
         }
         /* fall through */
     default:
@@ -767,6 +788,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         default:
             break;
         }
+    }
+
+    if (ir->dsteffect) {
+        ERROR(NULL, "internal error, unable to support destination effect");
     }
     
     if (ir->instr) {

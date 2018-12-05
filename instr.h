@@ -227,11 +227,14 @@ enum Operandkind {
 typedef enum Operandkind Operandkind;
 
 enum OperandEffect {
-    OPEFFECT_NONE,
-    OPEFFECT_PREDEC,
-    OPEFFECT_POSTDEC,
-    OPEFFECT_PREINC,
-    OPEFFECT_POSTINC,
+    OPEFFECT_NONE = 0,
+    OPEFFECT_PREDEC = 1,
+    OPEFFECT_POSTDEC = 2,
+    OPEFFECT_PREINC = 3,
+    OPEFFECT_POSTINC = 4,
+
+    OPEFFECT_FORCEABS = 0x100,
+    OPEFFECT_FORCEHUB = 0x200,
 };
 
 struct Operand {
@@ -312,6 +315,7 @@ struct IR {
     void *aux; // auxiliary data for back end
     Instruction *instr; // PASM assembler data for instruction
     enum OperandEffect srceffect; // special effect (e.g. postinc) for source
+    enum OperandEffect dsteffect; // special effect for dest
     Operand *fcache;   // if non-NULL, fcache root
 };
 

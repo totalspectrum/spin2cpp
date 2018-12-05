@@ -48,7 +48,7 @@ static int isargdigit(int c)
 // compile an expression as an inine asm operand
 //
 static Operand *
-CompileInlineOperand(IRList *irl, AST *expr)
+CompileInlineOperand(IRList *irl, AST *expr, int *effects)
 {
     Operand *r;
     int32_t v;
@@ -91,18 +91,34 @@ CompileInlineOperand(IRList *irl, AST *expr)
              v = EvalPasmExpr(expr);
              return NewImmediate(v);
          case SYM_LOCALLABEL:
-             return (Operand *)sym->val;
-             break;
+             return GetLabelFromSymbol(expr, sym->name);
+         case SYM_HWREG:
+         {
+             HwReg *hw = sym->val;
+             return GetOneGlobal(REG_HW, hw->name, 0);
+         }
 	 default:
 	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
 	      return NULL;
 	 }
     } else if (expr->kind == AST_INTEGER) {
          return NewImmediate(expr->d.ival);
-    } else {
-	 ERROR(expr, "Operand too complex for inline assembly");
-	 return NULL;
+    } else if (expr->kind == AST_ADDROF) {
+        r = CompileInlineOperand(irl, expr->left, effects);
+        if (r && effects) {
+            *effects |= OPEFFECT_FORCEHUB;
+        }
+        return r;
+    } else if (expr->kind == AST_CATCH) {
+        r = CompileInlineOperand(irl, expr->left, effects);
+        if (r && effects) {
+            *effects |= OPEFFECT_FORCEABS;
+        }
+        return r;
     }
+    
+    ERROR(expr, "Operand too complex for inline assembly");
+    return NULL;
 }
 
 //
@@ -119,6 +135,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
     int numoperands;
     AST *operands[MAX_OPERANDS];
     uint32_t opimm[MAX_OPERANDS];
+    int effects[MAX_OPERANDS];
     int i;
     uint32_t effectFlags = 0;
     uint32_t ival;
@@ -183,13 +200,16 @@ CompileInlineInstr(IRList *irl, AST *ast)
     }
     for (i = 0; i < numoperands; i++) {
         Operand *op;
-        op = CompileInlineOperand(irl, operands[i]);
+        effects[i] = 0;
+        op = CompileInlineOperand(irl, operands[i], &effects[i]);
         switch(i) {
         case 0:
             ir->dst = op;
+            ir->dsteffect = effects[0];
             break;
         case 1:
             ir->src = op;
+            ir->srceffect = effects[1];
             break;
         default:
             ERROR(ast, "Too many operands to instruction");

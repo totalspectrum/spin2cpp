@@ -1203,14 +1203,21 @@ basedatline:
   ;
 
 operand:
-  expr
+  pasmexpr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
- | '#' expr
+ | '#' pasmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
- | '#' '#' expr
+ | '#' '#' pasmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
- | expr '[' expr ']'
+ | pasmexpr '[' pasmexpr ']'
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+;
+
+pasmexpr:
+  expr
+    { $$ = $1; }
+  | '\\' expr
+    { $$ = AstCatch($2); }
 ;
 
 operandlist:
