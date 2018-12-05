@@ -780,12 +780,91 @@ AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
 }
 
 //
-// check for "simple" loops (like "repeat i from 0 to 9") these may be further
+// check for a "simple" decrement loop (counting down from N to 0
+//
+
+static bool
+CheckSimpleDecrementLoop(AST *stmt)
+{
+    AST *initial;
+    AST *condtest;
+    AST *update;
+    AST *body;
+    AST *updateparent;
+    AST *updateVar = NULL;
+    AST *updateLimit = NULL;
+    int updateTestOp = 0;
+
+    initial = stmt->left;
+    condtest = stmt->right;
+    updateparent = condtest->right;
+    condtest = condtest->left;
+    body = updateparent->right;
+    update = updateparent->left;
+    updateVar = NULL;
+
+    (void) body;
+    (void) initial;
+    
+    // check for a simple count down to 0
+    if (!condtest || condtest->kind != AST_OPERATOR) {
+        return false;
+    }
+    updateTestOp = condtest->d.ival;
+    if (updateTestOp == '>' || updateTestOp == K_GTU) {
+        int32_t ival;
+        updateVar = condtest->left;
+        if (!updateVar) {
+            return false;
+        }
+        if (updateVar->kind != AST_SYMBOL && updateVar->kind != AST_IDENTIFIER) {
+            return false;
+        }
+        updateLimit = condtest->right;
+        if (!IsConstExpr(updateLimit)) {
+            return false;
+        }
+        ival = EvalConstExpr(updateLimit);
+        if (ival != 0) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    /* check that the update is a decrement */
+    while (update->kind == AST_SEQUENCE) {
+        if (AstUses(update->right, updateVar)) {
+            return false;
+        }
+        update = update->left;
+    }
+    if (!update) return false;
+    if (update->kind != AST_OPERATOR) {
+        return false;
+    }
+    if (update->d.ival == K_DECREMENT) {    
+        if (!AstMatch(update->left, updateVar) && !AstMatch(update->right, updateVar)) {
+            return false;
+        }
+    } else {
+        return false;
+    }
+
+    if (updateTestOp == K_GTU) {
+        condtest->d.ival = K_NE;
+        return true;
+    }
+    return false;
+}
+
+//
+// check for "simple" loops using increments (like "repeat i from 0 to 9") these may be further
 // optimized into "repeat 10" if we discover that the loop index is not
 // used inside the body
 //
 static void
-CheckSimpleLoop(AST *stmt)
+CheckSimpleIncrementLoop(AST *stmt)
 {
     AST *condtest;
     AST *updateparent;
@@ -970,7 +1049,9 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             // now that we (may have) hoisted some things out of the loop,
             // see if we can rewrite the loop initial and conditions
             // to use djnz
-            CheckSimpleLoop(stmt);
+            if (!CheckSimpleDecrementLoop(stmt)) {
+                CheckSimpleIncrementLoop(stmt);
+            }
             break;
         }
         default:
