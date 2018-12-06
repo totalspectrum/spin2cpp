@@ -437,6 +437,9 @@ main(int argc, char **argv)
         pp_define(&gl_pp, "__propeller__", "1");
     }
     pp_define(&gl_pp, "__FASTSPIN__", str_(VERSION_MAJOR));
+    pp_define(&gl_pp, "__FLEXSPIN__", str_(VERSION_MAJOR));
+    pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
+    pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");

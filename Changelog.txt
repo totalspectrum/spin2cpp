@@ -1,11 +1,15 @@
 Version 3.9.11
 - Added tail call optimization
 - Added simple optimization based on commutative math
+- Optimize for loops counting down to 0
 - Implemented case sensitivity for C, and an optional -C flag
   to force case sensitivity in other languages
+- Fixed a number of type parsing problems in C
 - Added a new preprocessor (mcpp) for C
 - Report an error if ORGH tries to go backwards
 - Added support for more kinds of operands in inline assembly
+- Added -D__FLEXSPIN__, -D__FLEXBASIC__, and -D__FLEXC__ defines for
+  future compatibility (someday this tool will be renamed).
 
 Version 3.9.10
 - Added a peephole optimizer to replace "mov x, #0 ; add x, y" with
