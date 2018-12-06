@@ -881,6 +881,10 @@ mult_expr:
     { $$ = AstOperator('/', $1, $3); }
   | mult_expr BAS_MOD unary_expr
     { $$ = AstOperator(K_MODULUS, $1, $3); }
+  | mult_expr BAS_SHL unary_expr
+    { $$ = AstOperator(K_SHL, $1, $3); }
+  | mult_expr BAS_SHR unary_expr
+    { $$ = AstOperator(K_SAR, $1, $3); }
 ;
 
 add_expr:
@@ -892,29 +896,20 @@ add_expr:
     { $$ = AstOperator('-', $1, $3); }
 ;
 
-shift_expr:
+compare_expr:
   add_expr
     { $$ = $1; }
-  | shift_expr BAS_SHL add_expr
-    { $$ = AstOperator(K_SHL, $1, $3); }
-  | shift_expr BAS_SHR add_expr
-    { $$ = AstOperator(K_SAR, $1, $3); }
-;
-
-compare_expr:
-  shift_expr
-    { $$ = $1; }
-  | shift_expr '=' shift_expr
+  | add_expr '=' add_expr
     { $$ = AstOperator(K_EQ, $1, $3); }
-  | shift_expr '<' shift_expr
+  | add_expr '<' add_expr
     { $$ = AstOperator('<', $1, $3); }
-  | shift_expr '>' shift_expr
+  | add_expr '>' add_expr
     { $$ = AstOperator('>', $1, $3); }
-  | shift_expr BAS_NE shift_expr
+  | add_expr BAS_NE add_expr
     { $$ = AstOperator(K_EQ, $1, $3); }
-  | shift_expr BAS_LE shift_expr
+  | add_expr BAS_LE add_expr
     { $$ = AstOperator(K_LE, $1, $3); }
-  | shift_expr BAS_GE shift_expr
+  | add_expr BAS_GE add_expr
     { $$ = AstOperator(K_GE, $1, $3); }
 ;
 
