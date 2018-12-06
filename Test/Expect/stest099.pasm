@@ -5,20 +5,20 @@ dat
 entry
 
 _copy1
-	mov	_var_03, #0
+	mov	_var01, #0
 	sub	arg3, #1
 	cmps	arg3, #0 wc,wz
- if_a	mov	_tmp002_, #1
- if_be	neg	_tmp002_, #1
-	add	arg3, _tmp002_
+ if_a	mov	_var02, #1
+ if_be	neg	_var02, #1
+	add	arg3, _var02
 LR__0001
-	mov	_tmp007_, arg2
-	add	_tmp007_, #1
-	rdbyte	_tmp008_, arg2
-	mov	arg2, _tmp007_
-	wrbyte	_tmp008_, arg1
-	add	_var_03, _tmp002_
-	cmp	_var_03, arg3 wz
+	mov	_var03, arg2
+	add	_var03, #1
+	rdbyte	_var04, arg2
+	mov	arg2, _var03
+	wrbyte	_var04, arg1
+	add	_var01, _var02
+	cmp	_var01, arg3 wz
 	add	arg1, #1
  if_ne	jmp	#LR__0001
 _copy1_ret
@@ -28,11 +28,11 @@ _copy2
 	cmp	arg3, #0 wz
  if_e	jmp	#LR__0003
 LR__0002
-	mov	_tmp004_, arg2
-	add	_tmp004_, #1
-	rdbyte	_tmp005_, arg2
-	mov	arg2, _tmp004_
-	wrbyte	_tmp005_, arg1
+	mov	_var01, arg2
+	add	_var01, #1
+	rdbyte	_var02, arg2
+	mov	arg2, _var01
+	wrbyte	_var02, arg1
 	add	arg1, #1
 	djnz	arg3, #LR__0002
 LR__0003
@@ -42,17 +42,13 @@ _copy2_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
-_tmp004_
+_var02
 	res	1
-_tmp005_
+_var03
 	res	1
-_tmp007_
-	res	1
-_tmp008_
-	res	1
-_var_03
+_var04
 	res	1
 arg1
 	res	1

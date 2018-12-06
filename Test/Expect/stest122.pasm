@@ -5,13 +5,13 @@ dat
 entry
 
 _program
-	mov	_var_00, #99
-	mov	_var_03, objptr
-	mov	_var_01, #100
+	mov	_var01, #99
+	mov	_var02, objptr
+	mov	_var03, #100
 LR__0001
-	wrbyte	_var_00, _var_03
-	add	_var_03, #1
-	djnz	_var_01, #LR__0001
+	wrbyte	_var01, _var02
+	add	_var02, #1
+	djnz	_var03, #LR__0001
 _program_ret
 	ret
 
@@ -22,10 +22,10 @@ COG_BSS_START
 objmem
 	long	0[25]
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
-_var_01
+_var02
 	res	1
-_var_03
+_var03
 	res	1
 	fit	496

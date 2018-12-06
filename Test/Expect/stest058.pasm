@@ -8,9 +8,9 @@ _func
 	add	objptr, #8
 	rdlong	result1, objptr
 	add	objptr, #4
-	rdbyte	_tmp002_, objptr
+	rdbyte	_var01, objptr
 	sub	objptr, #12
-	add	result1, _tmp002_
+	add	result1, _var01
 _func_ret
 	ret
 
@@ -23,6 +23,6 @@ COG_BSS_START
 objmem
 	long	0[4]
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
 	fit	496

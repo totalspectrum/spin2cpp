@@ -6,12 +6,12 @@ entry
 
 _swapab
 	add	objptr, #4
-	rdlong	_tmp001_, objptr
+	rdlong	_var01, objptr
 	sub	objptr, #4
-	rdlong	_tmp002_, objptr
-	wrlong	_tmp001_, objptr
+	rdlong	_var02, objptr
+	wrlong	_var01, objptr
 	add	objptr, #4
-	wrlong	_tmp002_, objptr
+	wrlong	_var02, objptr
 	sub	objptr, #4
 _swapab_ret
 	ret
@@ -62,9 +62,9 @@ COG_BSS_START
 objmem
 	long	0[3]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_tmp002_
+_var02
 	res	1
 arg1
 	res	1

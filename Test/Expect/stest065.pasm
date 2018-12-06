@@ -6,9 +6,9 @@ entry
 
 _set
 	add	objptr, #9
-	rdbyte	_tmp001_, objptr
+	rdbyte	_var01, objptr
 	sub	objptr, #5
-	wrlong	_tmp001_, objptr
+	wrlong	_var01, objptr
 	sub	objptr, #4
 _set_ret
 	ret
@@ -20,6 +20,6 @@ COG_BSS_START
 objmem
 	long	0[3]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
 	fit	496

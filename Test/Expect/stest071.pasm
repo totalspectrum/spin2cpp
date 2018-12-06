@@ -5,12 +5,12 @@ dat
 entry
 
 _blink
-	mov	_var_04, #1
-	shl	_var_04, arg1
+	mov	_var01, #1
+	shl	_var01, arg1
 	cmp	arg2, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	xor	outa, _var_04
+	xor	outa, _var01
 	djnz	arg2, #LR__0001
 LR__0002
 	rdlong	result1, ptr__dat__
@@ -28,7 +28,7 @@ _dat_
 	byte	$44, $33, $22, $11
 	long	@@@_dat_ + 4
 	org	COG_BSS_START
-_var_04
+_var01
 	res	1
 arg1
 	res	1

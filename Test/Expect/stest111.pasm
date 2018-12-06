@@ -5,15 +5,15 @@ dat
 entry
 
 _check
-	mov	_var_01, arg1
-	cmp	_var_01, #48 wz
+	mov	_var01, arg1
+	cmp	_var01, #48 wz
  if_e	jmp	#LR__0001
-	cmp	_var_01, #49 wz
+	cmp	_var01, #49 wz
  if_e	jmp	#LR__0001
-	cmp	_var_01, #50 wz
+	cmp	_var01, #50 wz
  if_e	jmp	#LR__0001
-	rdlong	_tmp001_, objptr
-	cmp	_var_01, _tmp001_ wz
+	rdlong	_var02, objptr
+	cmp	_var01, _var02 wz
  if_ne	jmp	#LR__0002
 LR__0001
 	mov	result1, #1
@@ -32,9 +32,9 @@ COG_BSS_START
 objmem
 	long	0[1]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_var_01
+_var02
 	res	1
 arg1
 	res	1

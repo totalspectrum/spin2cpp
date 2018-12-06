@@ -7,22 +7,22 @@ dat
 entry
 
 _fillinput
-	mov	_var_01, #0
-	mov	_var_02, objptr
-	mov	_var_03, #0
-	mov	_var_05, imm_1023_
-	mov	_tmp002_, objptr
-	add	_tmp002_, imm_4096_
-	add	_var_05, _tmp002_
-	mov	_var_00, imm_1024_
+	mov	_var01, #0
+	mov	_var02, objptr
+	mov	_var03, #0
+	mov	_var04, imm_1023_
+	mov	_var05, objptr
+	add	_var05, imm_4096_
+	add	_var04, _var05
+	mov	_var06, imm_1024_
 LR__0001
-	wrlong	_var_01, _var_02
-	wrbyte	_var_03, _var_05
-	add	_var_01, #13
-	add	_var_02, #4
-	add	_var_03, #17
-	sub	_var_05, #1
-	djnz	_var_00, #LR__0001
+	wrlong	_var01, _var02
+	wrbyte	_var03, _var04
+	add	_var01, #13
+	add	_var02, #4
+	add	_var03, #17
+	sub	_var04, #1
+	djnz	_var06, #LR__0001
 _fillinput_ret
 	ret
 
@@ -39,16 +39,16 @@ COG_BSS_START
 objmem
 	long	0[1280]
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
-_var_01
+_var03
 	res	1
-_var_02
+_var04
 	res	1
-_var_03
+_var05
 	res	1
-_var_05
+_var06
 	res	1
 	fit	496

@@ -5,7 +5,7 @@ dat
 entry
 
 _test1
-	mov	_var_01, arg1 wz
+	mov	_var01, arg1 wz
  if_ne	jmp	#LR__0001
 	cmp	arg2, #0 wz
  if_e	jmp	#LR__0002
@@ -22,7 +22,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_01
+_var01
 	res	1
 arg1
 	res	1

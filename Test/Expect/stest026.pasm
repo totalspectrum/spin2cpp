@@ -5,10 +5,10 @@ dat
 entry
 
 _test1
-	mov	_tmp001_, #0
+	mov	_var01, #0
 	cmps	arg1, arg2 wc,wz
- if_b	neg	_tmp001_, #1
-	mov	result1, _tmp001_
+ if_b	neg	_var01, #1
+	mov	result1, _var01
 _test1_ret
 	ret
 
@@ -17,7 +17,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
 arg1
 	res	1

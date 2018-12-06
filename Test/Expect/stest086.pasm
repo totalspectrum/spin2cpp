@@ -5,18 +5,18 @@ dat
 entry
 
 _update
-	mov	_var_00, #0
+	mov	_var01, #0
 	add	objptr, #4
-	mov	_var_01, objptr
+	mov	_var02, objptr
 	sub	objptr, #4
 LR__0001
-	cmps	_var_00, #10 wc,wz
+	cmps	_var01, #10 wc,wz
  if_ae	jmp	#LR__0002
-	rdlong	_var_02, _var_01
-	add	_var_02, #1
-	wrlong	_var_02, _var_01
-	add	_var_00, #1
-	add	_var_01, #4
+	rdlong	_var03, _var02
+	add	_var03, #1
+	wrlong	_var03, _var02
+	add	_var01, #1
+	add	_var02, #4
 	jmp	#LR__0001
 LR__0002
 _update_ret
@@ -29,10 +29,10 @@ COG_BSS_START
 objmem
 	long	0[11]
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
-_var_01
+_var02
 	res	1
-_var_02
+_var03
 	res	1
 	fit	496

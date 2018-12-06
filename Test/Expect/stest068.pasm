@@ -5,22 +5,22 @@ dat
 entry
 
 _shiftout
-	mov	_var_02, #1
-	shl	_var_02, arg2
-	mov	_var_03, #32
+	mov	_var01, #1
+	shl	_var01, arg2
+	mov	_var02, #32
 LR__0001
 	shr	arg1, #1 wc
-	muxc	outa, _var_02
-	djnz	_var_03, #LR__0001
+	muxc	outa, _var01
+	djnz	_var02, #LR__0001
 _shiftout_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
+_var01
 	res	1
-_var_03
+_var02
 	res	1
 arg1
 	res	1

@@ -5,19 +5,19 @@ dat
 entry
 
 __float_fromuns
-	mov	_var_04, arg1 wz
+	mov	_var01, arg1 wz
  if_e	jmp	#LR__0001
-	mov	_var_02, #0
-	mov	_var_05, _var_04
-	and	_var_05, #15
-	mov	_var_03, _var_05
-	shr	_var_04, #2
-	mov	_var_07, #0
-	or	_var_07, _var_03
-	mov	_tmp001_, _var_07
-	or	_tmp001_, _var_04
-	mov	_var_08, _tmp001_
-	mov	result1, _var_08
+	mov	_var02, #0
+	mov	_var03, _var01
+	and	_var03, #15
+	mov	_var04, _var03
+	shr	_var01, #2
+	mov	_var05, #0
+	or	_var05, _var04
+	mov	_var06, _var05
+	or	_var06, _var01
+	mov	_var07, _var06
+	mov	result1, _var07
 	jmp	#__float_fromuns_ret
 LR__0001
 	mov	result1, #0
@@ -48,19 +48,19 @@ __float_fromint_integer
 	res	1
 __float_fromint_negate
 	res	1
-_tmp001_
+_var01
 	res	1
-_var_02
+_var02
 	res	1
-_var_03
+_var03
 	res	1
-_var_04
+_var04
 	res	1
-_var_05
+_var05
 	res	1
-_var_07
+_var06
 	res	1
-_var_08
+_var07
 	res	1
 arg1
 	res	1

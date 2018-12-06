@@ -5,11 +5,11 @@ dat
 entry
 
 _count
-	mov	_var_00, #0
+	mov	_var01, #0
 LR__0001
-	mov	outa, _var_00
-	add	_var_00, #1
-	cmps	_var_00, #4 wc,wz
+	mov	outa, _var01
+	add	_var01, #1
+	cmps	_var01, #4 wc,wz
  if_b	jmp	#LR__0001
 _count_ret
 	ret
@@ -17,6 +17,6 @@ _count_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
 	fit	496

@@ -6,10 +6,10 @@ entry
 
 _blah
 	and	arg1, #15
-	mov	_tmp001_, outa
-	andn	_tmp001_, #15
-	or	_tmp001_, arg1
-	mov	outa, _tmp001_
+	mov	_var01, outa
+	andn	_var01, #15
+	or	_var01, arg1
+	mov	outa, _var01
 _blah_ret
 	ret
 
@@ -22,7 +22,7 @@ _onepin_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
 arg1
 	res	1

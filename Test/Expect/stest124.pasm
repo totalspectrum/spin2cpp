@@ -41,13 +41,13 @@ __basic_print_char_ret
 	ret
 
 __mytx
-	mov	_var_01, #0
+	mov	_var01, #0
 LR__0003
-	mov	_var_02, arg1
-	or	_var_02, _var_01
-	mov	outa, _var_02
-	add	_var_01, #1
-	cmps	_var_01, #5 wc,wz
+	mov	_var02, arg1
+	or	_var02, _var01
+	mov	outa, _var02
+	add	_var01, #1
+	cmps	_var01, #5 wc,wz
  if_b	jmp	#LR__0003
 __mytx_ret
 	ret
@@ -84,9 +84,9 @@ _basic_print_char_tmp001_
 	res	1
 _basic_print_char_tmp002_
 	res	1
-_var_01
+_var01
 	res	1
-_var_02
+_var02
 	res	1
 arg1
 	res	1

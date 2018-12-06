@@ -5,10 +5,10 @@ dat
 entry
 
 _ex
-	mov	_var_00, #0
+	mov	_var01, #0
 	cmps	arg1, #0 wc,wz
- if_b	neg	_var_00, #1
-	wrlong	_var_00, objptr
+ if_b	neg	_var01, #1
+	wrlong	_var01, objptr
 	mov	result1, arg1
 _ex_ret
 	ret
@@ -22,7 +22,7 @@ COG_BSS_START
 objmem
 	long	0[1]
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
 arg1
 	res	1

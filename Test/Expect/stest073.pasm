@@ -5,34 +5,34 @@ dat
 entry
 
 _get
-	mov	_var_00, #0
-	mov	_var_01, #0
+	mov	_var01, #0
+	mov	_var02, #0
 LR__0001
-	mov	_tmp002_, #496
-	add	_tmp002_, _var_01
-	'.live	_tmp003_
-	movs	wrcog, _tmp002_
-	movd	wrcog, #_tmp003_
+	mov	_var03, #496
+	add	_var03, _var02
+	'.live	_var04
+	movs	wrcog, _var03
+	movd	wrcog, #_var04
 	call	#wrcog
-	add	_var_00, _tmp003_
-	add	_var_01, #1
-	cmps	_var_01, #10 wc,wz
+	add	_var01, _var04
+	add	_var02, #1
+	cmps	_var02, #10 wc,wz
  if_b	jmp	#LR__0001
-	mov	result1, _var_00
+	mov	result1, _var01
 _get_ret
 	ret
 
 _put
-	mov	_var_00, #0
+	mov	_var01, #0
 LR__0002
-	mov	_tmp001_, #496
-	add	_tmp001_, _var_00
-	'.live	_var_00
-	movs	wrcog, #_var_00
-	movd	wrcog, _tmp001_
+	mov	_var02, #496
+	add	_var02, _var01
+	'.live	_var01
+	movs	wrcog, #_var01
+	movd	wrcog, _var02
 	call	#wrcog
-	add	_var_00, #1
-	cmps	_var_00, #10 wc,wz
+	add	_var01, #1
+	cmps	_var01, #10 wc,wz
  if_b	jmp	#LR__0002
 _put_ret
 	ret
@@ -46,14 +46,12 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_tmp002_
+_var02
 	res	1
-_tmp003_
+_var03
 	res	1
-_var_00
-	res	1
-_var_01
+_var04
 	res	1
 	fit	496

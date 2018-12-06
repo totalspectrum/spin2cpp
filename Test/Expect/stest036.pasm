@@ -8,8 +8,8 @@ _sum2
 	add	arg1, #8
 	rdlong	result1, arg1
 	add	arg1, #4
-	rdlong	_tmp002_, arg1
-	add	result1, _tmp002_
+	rdlong	_var01, arg1
+	add	result1, _var01
 _sum2_ret
 	ret
 
@@ -18,7 +18,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
 arg1
 	res	1

@@ -17,28 +17,28 @@ _unpack_m_ret
 	ret
 
 _dounpack_x
-	mov	_var_07, arg1
-	shl	_var_07, #1
-	shr	_var_07, #24
-	mov	_var_03, _var_07 wz
+	mov	_var01, arg1
+	shl	_var01, #1
+	shr	_var01, #24
+	mov	_var02, _var01 wz
 	and	arg1, imm_8388607_
  if_ne	shl	arg1, #6
  if_ne	or	arg1, imm_536870912_
  if_ne	jmp	#LR__0002
-	mov	_tmp003_, arg1
-	mov	_tmp002_, #32
+	mov	_var03, arg1
+	mov	_var04, #32
 LR__0001
-	shl	_tmp003_, #1 wc
- if_nc	djnz	_tmp002_, #LR__0001
-	sub	_tmp002_, #23
-	mov	_var_03, _tmp002_
-	mov	_var_11, #7
-	sub	_var_11, _tmp002_
-	shl	arg1, _var_11
+	shl	_var03, #1 wc
+ if_nc	djnz	_var04, #LR__0001
+	sub	_var04, #23
+	mov	_var02, _var04
+	mov	_var05, #7
+	sub	_var05, _var04
+	shl	arg1, _var05
 LR__0002
-	sub	_var_03, #127
+	sub	_var02, #127
 	cmp	arg2, #0 wz
- if_ne	mov	result1, _var_03
+ if_ne	mov	result1, _var02
  if_e	mov	result1, arg1
 _dounpack_x_ret
 	ret
@@ -52,15 +52,15 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
-_tmp003_
+_var02
 	res	1
-_var_03
+_var03
 	res	1
-_var_07
+_var04
 	res	1
-_var_11
+_var05
 	res	1
 arg1
 	res	1

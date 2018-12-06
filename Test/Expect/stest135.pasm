@@ -5,16 +5,16 @@ dat
 entry
 
 _zero
-	mov	_var_03, arg1
+	mov	_var01, arg1
 	cmps	arg2, #0 wc,wz
  if_be	jmp	#LR__0002
-	mov	_var_02, arg2
+	mov	_var02, arg2
 LR__0001
 	mov	arg1, #0
-	wrword	arg1, _var_03
-	mov	arg1, _var_02
-	add	_var_03, #2
-	djnz	_var_02, #LR__0001
+	wrword	arg1, _var01
+	mov	arg1, _var02
+	add	_var01, #2
+	djnz	_var02, #LR__0001
 LR__0002
 _zero_ret
 	ret
@@ -22,9 +22,9 @@ _zero_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
+_var01
 	res	1
-_var_03
+_var02
 	res	1
 arg1
 	res	1

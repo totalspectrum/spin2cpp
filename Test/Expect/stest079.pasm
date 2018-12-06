@@ -5,11 +5,11 @@ dat
 entry
 
 _tx
-	mov	_var_01, #4
+	mov	_var01, #4
 LR__0001
 	mov	outa, arg1
 	add	arg1, #1
-	djnz	_var_01, #LR__0001
+	djnz	_var01, #LR__0001
 _tx_ret
 	ret
 
@@ -33,7 +33,7 @@ _str_c
 	res	1
 _str_s
 	res	1
-_var_01
+_var01
 	res	1
 arg1
 	res	1

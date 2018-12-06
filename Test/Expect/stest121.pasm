@@ -5,10 +5,10 @@ dat
 entry
 
 _demo
-	mov	_var_04, arg1
-	mov	_var_04 + 1, arg2
-	mov	_var_04 + 2, arg3
-	mov	result1, _var_04 + 1
+	mov	_demo_a, arg1
+	mov	_demo_a + 1, arg2
+	mov	_demo_a + 2, arg3
+	mov	result1, _demo_a + 1
 _demo_ret
 	ret
 wrcog
@@ -21,14 +21,14 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_01
-	res	1
-_var_02
-	res	1
-_var_03
-	res	1
-_var_04
+_demo_a
 	res	3
+_demo_x
+	res	1
+_demo_y
+	res	1
+_demo_z
+	res	1
 arg1
 	res	1
 arg2

@@ -5,15 +5,15 @@ dat
 entry
 
 _clr
-	mov	_var_00, #10
+	mov	_var01, #10
 	add	objptr, #40
-	mov	_var_01, objptr
+	mov	_var02, objptr
 	sub	objptr, #40
 LR__0001
-	sub	_var_01, #4
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, _var_01
-	djnz	_var_00, #LR__0001
+	sub	_var02, #4
+	mov	_var03, #0
+	wrlong	_var03, _var02
+	djnz	_var01, #LR__0001
 _clr_ret
 	ret
 
@@ -24,10 +24,10 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
-_var_01
+_var03
 	res	1
 	fit	496

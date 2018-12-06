@@ -6,10 +6,10 @@ entry
 
 _select
 	cmp	arg1, #0 wz
- if_ne	mov	_tmp001_, arg2
+ if_ne	mov	_var01, arg2
  if_e	add	arg3, #2
- if_e	mov	_tmp001_, arg3
-	mov	result1, _tmp001_
+ if_e	mov	_var01, arg3
+	mov	result1, _var01
 _select_ret
 	ret
 
@@ -18,7 +18,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
 arg1
 	res	1

@@ -5,10 +5,10 @@ dat
 entry
 
 _blah
-	mov	_var_01, arg1
-	add	_var_01, #1
+	mov	_var01, arg1
+	add	_var01, #1
 	sub	arg1, #1
-	mov	outa, _var_01
+	mov	outa, _var01
 	mov	dira, arg1
 _blah_ret
 	ret
@@ -29,7 +29,7 @@ COG_BSS_START
 	org	COG_BSS_START
 _main_i
 	res	1
-_var_01
+_var01
 	res	1
 arg1
 	res	1

@@ -309,7 +309,7 @@ struct modulestate {
     AST *body;
 
     /* closures/classes that are associated with this module and need processing */
-    struct modulestate *closures;
+    struct modulestate *subclasses;
 };
 
 /* maximum number of items in a multiple assignment */

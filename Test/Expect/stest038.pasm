@@ -6,13 +6,13 @@ entry
 
 _test
 LR__0001
-	mov	_var_00, ina
-	sar	_var_00, #1
-	test	_var_00, #1 wz
+	mov	_var01, ina
+	sar	_var01, #1
+	test	_var01, #1 wz
  if_ne	jmp	#LR__0002
-	mov	_tmp001_, ina
-	sar	_tmp001_, #2
-	test	_tmp001_, #1 wz
+	mov	_var02, ina
+	sar	_var02, #2
+	test	_var02, #1 wz
  if_ne	jmp	#LR__0001
 	xor	outa, #1
 	jmp	#LR__0001
@@ -23,8 +23,8 @@ _test_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
 	fit	496

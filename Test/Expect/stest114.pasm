@@ -5,25 +5,25 @@ dat
 entry
 
 _init
-	mov	_var_02, objptr
-	mov	_var_00, #1
+	mov	_var01, objptr
+	mov	_var02, #1
 LR__0001
-	wrlong	_var_00, _var_02
-	add	_var_00, #1
-	add	_var_02, #4
-	cmps	_var_00, #11 wc,wz
+	wrlong	_var02, _var01
+	add	_var02, #1
+	add	_var01, #4
+	cmps	_var02, #11 wc,wz
  if_b	jmp	#LR__0001
 _init_ret
 	ret
 
 _initzero
-	mov	_var_02, objptr
-	mov	_var_00, #10
+	mov	_var01, objptr
+	mov	_var02, #10
 LR__0002
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, _var_02
-	add	_var_02, #4
-	djnz	_var_00, #LR__0002
+	mov	_var03, #0
+	wrlong	_var03, _var01
+	add	_var01, #4
+	djnz	_var02, #LR__0002
 _initzero_ret
 	ret
 
@@ -34,10 +34,10 @@ COG_BSS_START
 objmem
 	long	0[10]
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
-_var_02
+_var03
 	res	1
 	fit	496

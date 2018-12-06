@@ -5,13 +5,13 @@ dat
 entry
 
 _strlen
-	neg	_var_02, #1
+	neg	_var01, #1
 LR__0001
-	rdbyte	_var_03, arg1 wz
+	rdbyte	_var02, arg1 wz
 	add	arg1, #1
-	add	_var_02, #1
+	add	_var01, #1
  if_ne	jmp	#LR__0001
-	mov	result1, _var_02
+	mov	result1, _var01
 _strlen_ret
 	ret
 
@@ -20,9 +20,9 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_02
+_var01
 	res	1
-_var_03
+_var02
 	res	1
 arg1
 	res	1

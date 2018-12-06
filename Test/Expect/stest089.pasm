@@ -5,14 +5,14 @@ dat
 entry
 
 _main
-	mov	_var_00, cnt
-	mov	_var_01, imm_512_
+	mov	_var01, cnt
+	mov	_var02, imm_512_
 LR__0001
 	xor	outa, #1
-	djnz	_var_01, #LR__0001
-	mov	_tmp001_, cnt
-	sub	_tmp001_, _var_00
-	mov	dira, _tmp001_
+	djnz	_var02, #LR__0001
+	mov	_var03, cnt
+	sub	_var03, _var01
+	mov	dira, _var03
 _main_ret
 	ret
 
@@ -21,10 +21,10 @@ imm_512_
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_tmp001_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
-_var_01
+_var03
 	res	1
 	fit	496

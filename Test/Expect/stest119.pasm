@@ -5,16 +5,16 @@ dat
 entry
 
 _zeroit
-	mov	_var_06, arg1
-	mov	_var_03, #1
+	mov	_var01, arg1
+	mov	_var02, #1
 	add	arg2, #1
 LR__0001
-	cmps	_var_03, arg2 wc,wz
+	cmps	_var02, arg2 wc,wz
  if_ae	jmp	#LR__0002
 	mov	arg1, #0
-	wrbyte	arg1, _var_06
-	add	_var_03, #1
-	add	_var_06, #1
+	wrbyte	arg1, _var01
+	add	_var02, #1
+	add	_var01, #1
 	jmp	#LR__0001
 LR__0002
 	mov	result1, #0
@@ -26,9 +26,9 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_03
+_var01
 	res	1
-_var_06
+_var02
 	res	1
 arg1
 	res	1

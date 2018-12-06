@@ -537,8 +537,8 @@ ProcessModule(Module *P)
     DeclareFunctions(P);
 
     /* recursively process closures */
-    if (P->closures) {
-        ProcessModule(P->closures);
+    if (P->subclasses) {
+        ProcessModule(P->subclasses);
     }
     current = lastcurrent;
 }
@@ -856,14 +856,14 @@ FixupCode(Module *P, int isBinary)
 {
     Module *Q, *LastQ, *subQ;
 
-    // insert closures into the global list after their modules
+    // insert sub-classes into the global list after their modules
     // and append the global module to the list
     if (allparse)
     {
         LastQ = NULL;
         for (Q = allparse; Q; Q = Q->next) {
             LastQ = Q;
-            subQ = Q->closures;
+            subQ = Q->subclasses;
             if (subQ) {
                 subQ->next = Q->next;
                 Q->next = subQ;

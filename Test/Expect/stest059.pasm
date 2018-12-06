@@ -6,12 +6,12 @@ entry
 
 _func
 	add	objptr, #8
-	rdlong	_var_00, objptr
+	rdlong	_var01, objptr
 	add	objptr, #4
-	rdbyte	_tmp002_, objptr
-	add	_var_00, _tmp002_
+	rdbyte	_var02, objptr
+	add	_var01, _var02
 	sub	objptr, #8
-	wrlong	_var_00, objptr
+	wrlong	_var01, objptr
 	sub	objptr, #4
 _func_ret
 	ret
@@ -23,8 +23,8 @@ COG_BSS_START
 objmem
 	long	0[4]
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
-_var_00
+_var02
 	res	1
 	fit	496

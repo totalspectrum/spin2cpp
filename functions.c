@@ -338,8 +338,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
             closure_type->d.ptr = func->closure;
             AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type);
 
-            C->closures = func->module->closures;
-            func->module->closures = C;
+            C->subclasses = func->module->subclasses;
+            func->module->subclasses = C;
 
             // we have to mark the global bytemove and _gc_alloc_managed functions
             // as in used

@@ -57,6 +57,7 @@ static Operand *abortchain;
 Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
 Operand *localreg[MAX_LOCAL_REGISTER];
+Operand *leafreg[MAX_LOCAL_REGISTER];
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -169,7 +170,7 @@ IdentifierLocalName(Function *func, const char *name)
 {
     char temp[1024];
     Module *P = func->module;
-    if (func->is_leaf) {
+    if (0 && func->is_leaf) {
         // leaf functions can share a set of local variables
         Symbol *s = FindSymbol(&func->localsyms, name);
         int offset = -1;
@@ -344,7 +345,7 @@ Operand *GetArgReg(int n)
     return argreg[n];
 }
 
-Operand *GetLocalReg(int n)
+static Operand *GetGeneralLocalReg(int n)
 {
     static char rvalname[32];
     if (n < 0 || n >= MAX_LOCAL_REGISTER) {
@@ -358,6 +359,26 @@ Operand *GetLocalReg(int n)
         localreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
     }
     return localreg[n];
+}
+static Operand *GetLeafLocalReg(int n)
+{
+    static char rvalname[32];
+    if (n < 0 || n >= MAX_LOCAL_REGISTER) {
+        ERROR(NULL, "Internal error exceeded local register limit");
+        return NULL;
+    }
+    if (!leafreg[n]) {
+        sprintf(rvalname, "_var%02d", n+1);
+        /* do not use REG_LOCAL here, that will break optimization of recursive
+           functions */
+        leafreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
+    }
+    return leafreg[n];
+}
+
+Operand *GetLocalReg(int n, int isLeaf)
+{
+    return isLeaf ? GetLeafLocalReg(n) : GetGeneralLocalReg(n);
 }
 
 Instruction *
@@ -1336,7 +1357,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
  */
 
 static int
-RenameLocalRegs(IRList *irl)
+RenameLocalRegs(IRList *irl, int isLeaf)
 {
     IR *ir;
     Operand *replace = NULL;
@@ -1345,11 +1366,11 @@ RenameLocalRegs(IRList *irl)
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
-            replace = GetLocalReg(numlocals++);
+            replace = GetLocalReg(numlocals++, isLeaf);
             RenameOneReg(ir, ir->dst, replace);
         }
         if (ir->src && IsLocal(ir->src)) {
-            replace = GetLocalReg(numlocals++);
+            replace = GetLocalReg(numlocals++, isLeaf);
             RenameOneReg(ir, ir->src, replace);
         }
     }
@@ -1427,7 +1448,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     
     if (NeedToSaveLocals(func)) {
         int i, n;
-        FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func));
+        FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func), 0);
         if (HUB_CODE && !gl_p2 && n > 1) {
             // in LMM mode, call out to the pushregs_ function
             ValidatePushregs();
@@ -1435,13 +1456,15 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitOp1(irl, OPC_CALL, pushregs_);
         } else {
             for (i = 0; i < n; i++) {
-                EmitPush(irl, GetLocalReg(i));
+                EmitPush(irl, GetLocalReg(i, 0));
             }
         }
         // push return address, if we are in cog mode
         if (func->is_recursive && func->cog_code && !gl_p2) {
             EmitPush(irl, FuncData(func)->asmretname);
         }
+    } else if (func->is_leaf) {
+        RenameLocalRegs(FuncIRL(func), 1);
     }
 }
 
@@ -1465,7 +1488,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {            
             for (i = n-1; i >= 0; --i) {
-                EmitPop(irl, GetLocalReg(i));
+                EmitPop(irl, GetLocalReg(i, 0));
             }
         }
     }
@@ -3868,8 +3891,8 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
         Q = (Module *)subobj->d.ptr;
         VisitRecursive(irl, Q, func, visitval);
     }
-    // and for closures
-    for (Q = P->closures; Q; Q = Q->closures) {
+    // and for sub-submodules
+    for (Q = P->subclasses; Q; Q = Q->subclasses) {
         VisitRecursive(irl, Q, func, visitval);
     }
     current = save;
@@ -4677,7 +4700,7 @@ EmitMain_P1(IRList *irl, Module *P)
         if (!gl_p2) {
             // we will need local01, it is referred to in
             // the LMM code
-            Operand *local1 = GetLocalReg(0);
+            Operand *local1 = GetLocalReg(0, 0);
             local1->used = 1;
         }
     }

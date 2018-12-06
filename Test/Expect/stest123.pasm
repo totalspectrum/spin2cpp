@@ -5,15 +5,15 @@ dat
 entry
 
 _total
-	mov	_var_01, #0
-	mov	_var_04, ptr__dat__
-	mov	_var_02, #4
+	mov	_var01, #0
+	mov	_var02, ptr__dat__
+	mov	_var03, #4
 LR__0001
-	rdlong	_tmp002_, _var_04
-	add	_var_01, _tmp002_
-	add	_var_04, #4
-	djnz	_var_02, #LR__0001
-	mov	result1, _var_01
+	rdlong	_var04, _var02
+	add	_var01, _var04
+	add	_var02, #4
+	djnz	_var03, #LR__0001
+	mov	result1, _var01
 _total_ret
 	ret
 
@@ -27,12 +27,12 @@ COG_BSS_START
 _dat_
 	byte	$02, $00, $00, $00, $04, $00, $00, $00, $fd, $ff, $ff, $ff, $fc, $ff, $ff, $ff
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
-_var_01
+_var02
 	res	1
-_var_02
+_var03
 	res	1
-_var_04
+_var04
 	res	1
 	fit	496

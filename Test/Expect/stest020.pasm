@@ -5,14 +5,14 @@ dat
 entry
 
 _simplemul
-	mov	_var_03, #0
-	mov	_var_00, #0
+	mov	_var01, #0
+	mov	_var02, #0
 LR__0001
-	cmps	_var_03, arg1 wc,wz
- if_b	add	_var_00, arg2
- if_b	add	_var_03, #1
+	cmps	_var01, arg1 wc,wz
+ if_b	add	_var02, arg2
+ if_b	add	_var01, #1
  if_b	jmp	#LR__0001
-	mov	result1, _var_00
+	mov	result1, _var02
 _simplemul_ret
 	ret
 
@@ -21,9 +21,9 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
-_var_03
+_var02
 	res	1
 arg1
 	res	1

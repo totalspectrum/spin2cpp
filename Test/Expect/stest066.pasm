@@ -6,10 +6,10 @@ entry
 
 _set
 	add	objptr, #4
-	rdlong	_var_01, objptr
+	rdlong	_var01, objptr
 	add	objptr, #4
-	add	_var_01, objptr
-	wrbyte	arg1, _var_01
+	add	_var01, objptr
+	wrbyte	arg1, _var01
 	sub	objptr, #8
 _set_ret
 	ret
@@ -21,7 +21,7 @@ COG_BSS_START
 objmem
 	long	0[3]
 	org	COG_BSS_START
-_var_01
+_var01
 	res	1
 arg1
 	res	1

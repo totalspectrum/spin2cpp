@@ -5,13 +5,13 @@ dat
 entry
 
 _mul
-	mov	_var_00, #0
+	mov	_var01, #0
 LR__0001
 	shr	arg2, #1 wc,wz
- if_c	add	_var_00, arg1
+ if_c	add	_var01, arg1
 	shl	arg1, #1
  if_ne	jmp	#LR__0001
-	mov	result1, _var_00
+	mov	result1, _var01
 _mul_ret
 	ret
 
@@ -20,7 +20,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
 arg1
 	res	1

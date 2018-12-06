@@ -5,9 +5,9 @@ dat
 entry
 
 _setout
-	rdlong	_tmp002_, objptr
-	or	dira, _tmp002_
-	or	outa, _tmp002_
+	rdlong	_var01, objptr
+	or	dira, _var01
+	or	outa, _var01
 _setout_ret
 	ret
 
@@ -18,6 +18,6 @@ COG_BSS_START
 objmem
 	long	0[1]
 	org	COG_BSS_START
-_tmp002_
+_var01
 	res	1
 	fit	496

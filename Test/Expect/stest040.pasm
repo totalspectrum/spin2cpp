@@ -5,16 +5,16 @@ dat
 entry
 
 _foo
-	mov	_var_00, #5
+	mov	_var01, #5
 LR__0001
 	add	outa, #1
-	djnz	_var_00, #LR__0001
+	djnz	_var01, #LR__0001
 _foo_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var_00
+_var01
 	res	1
 	fit	496
