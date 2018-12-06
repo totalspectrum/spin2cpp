@@ -105,7 +105,7 @@ pri _call_method(o, f, x=0) | r
     wrlong objptr, sp
     add    sp, #4
     mov    objptr, o
-    mov    arg1, x
+    mov    arg01, x
     call   f
     sub    sp, #4
     rdlong objptr, sp

@@ -5,18 +5,18 @@ dat
 entry
 
 _blah
-	mov	_var01, arg1
+	mov	_var01, arg01
 	add	_var01, #1
-	sub	arg1, #1
+	sub	arg01, #1
 	mov	outa, _var01
-	mov	dira, arg1
+	mov	dira, arg01
 _blah_ret
 	ret
 
 _main
 	neg	_main_i, #1
 LR__0001
-	mov	arg1, _main_i
+	mov	arg01, _main_i
 	call	#_blah
 	add	_main_i, #1
 	cmps	_main_i, #2 wc,wz
@@ -31,6 +31,6 @@ _main_i
 	res	1
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

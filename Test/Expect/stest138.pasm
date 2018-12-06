@@ -5,7 +5,7 @@ dat
 entry
 
 _foo
-	rdlong	outa, arg1
+	rdlong	outa, arg01
 _foo_ret
 	ret
 
@@ -25,6 +25,6 @@ COG_BSS_START
 _dat_
 	byte	$00, $01, $00, $00, $00, $02, $00, $00, $00, $03, $00, $00
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

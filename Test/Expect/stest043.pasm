@@ -6,9 +6,9 @@ entry
 
 _blah
 	mov	_var01, #0
-	cmps	arg1, #0 wc,wz
+	cmps	arg01, #0 wc,wz
  if_ae	jmp	#LR__0001
-	cmps	arg2, #0 wc,wz
+	cmps	arg02, #0 wc,wz
  if_b	neg	_var01, #1
 LR__0001
 	mov	result1, _var01
@@ -22,8 +22,8 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

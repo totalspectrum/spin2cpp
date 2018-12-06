@@ -5,9 +5,9 @@ dat
 entry
 
 _demo
-	mov	_demo_a, arg1
-	mov	_demo_a + 1, arg2
-	mov	_demo_a + 2, arg3
+	mov	_demo_a, arg01
+	mov	_demo_a + 1, arg02
+	mov	_demo_a + 2, arg03
 	mov	result1, _demo_a + 1
 _demo_ret
 	ret
@@ -29,10 +29,10 @@ _demo_y
 	res	1
 _demo_z
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

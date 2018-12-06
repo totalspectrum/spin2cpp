@@ -5,8 +5,8 @@ dat
 entry
 
 _indsum
-	rdlong	result1, arg1
-	rdlong	_var01, arg2
+	rdlong	result1, arg01
+	rdlong	_var01, arg02
 	add	result1, _var01
 _indsum_ret
 	ret
@@ -18,8 +18,8 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

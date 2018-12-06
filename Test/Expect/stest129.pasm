@@ -5,8 +5,8 @@ dat
 entry
 
 _dodiv
-	mov	muldiva_, arg1
-	mov	muldivb_, arg2
+	mov	muldiva_, arg01
+	mov	muldivb_, arg02
 	call	#unsdivide_
 	wrlong	muldivb_, ptr__dat__
 	add	ptr__dat__, #4
@@ -61,9 +61,9 @@ COG_BSS_START
 _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 muldiva_
 	res	1

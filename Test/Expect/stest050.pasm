@@ -8,8 +8,8 @@ entry
 
 _pushdata
 	andn	outa, #252
-	shl	arg1, #2
-	or	outa, arg1
+	shl	arg01, #2
+	or	outa, arg01
 _pushdata_ret
 	ret
 
@@ -21,6 +21,6 @@ _all_pin_low_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

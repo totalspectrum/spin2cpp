@@ -5,10 +5,10 @@ dat
 entry
 
 _select
-	cmp	arg1, #0 wz
- if_ne	mov	_var01, arg2
- if_e	add	arg3, #2
- if_e	mov	_var01, arg3
+	cmp	arg01, #0 wz
+ if_ne	mov	_var01, arg02
+ if_e	add	arg03, #2
+ if_e	mov	_var01, arg03
 	mov	result1, _var01
 _select_ret
 	ret
@@ -20,10 +20,10 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

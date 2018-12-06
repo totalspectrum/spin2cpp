@@ -5,9 +5,9 @@ dat
 entry
 
 _fetch
-	shl	arg2, #1
-	add	arg2, arg1
-	rdword	result1, arg2
+	shl	arg02, #1
+	add	arg02, arg01
+	rdword	result1, arg02
 _fetch_ret
 	ret
 
@@ -16,8 +16,8 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

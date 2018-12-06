@@ -12,7 +12,7 @@ dat
 entry
 
 _serchar
-	mov	_serchar_val, arg1
+	mov	_serchar_val, arg01
 	or	outa, imm_1073741824_
 	or	dira, imm_1073741824_
 	or	_serchar_val, #256
@@ -21,8 +21,8 @@ _serchar
 	mov	_serchar__idx__0001, #10
 LR__0001
 	add	_serchar_waitcycles, imm_694_
-	mov	arg1, _serchar_waitcycles
-	waitcnt	arg1, #0
+	mov	arg01, _serchar_waitcycles
+	waitcnt	arg01, #0
 	shr	_serchar_val, #1 wc
 	muxc	outa, imm_1073741824_
 	djnz	_serchar__idx__0001, #LR__0001
@@ -42,6 +42,6 @@ _serchar_val
 	res	1
 _serchar_waitcycles
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

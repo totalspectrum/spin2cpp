@@ -17,16 +17,16 @@ _swapab_ret
 	ret
 
 _seq3
-	mov	result2, arg1
+	mov	result2, arg01
 	add	result2, #1
-	mov	result3, arg1
+	mov	result3, arg01
 	add	result3, #2
-	mov	result1, arg1
+	mov	result1, arg01
 _seq3_ret
 	ret
 
 _setit
-	mov	arg1, #1
+	mov	arg01, #1
 	call	#_seq3
 	wrlong	result1, objptr
 	add	objptr, #4
@@ -54,6 +54,6 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

@@ -339,7 +339,7 @@ Operand *GetArgReg(int n)
         return NULL;
     }
     if (!argreg[n]) {
-        sprintf(rvalname, "arg%d", n+1);
+        sprintf(rvalname, "arg%02d", n+1);
         argreg[n] = GetOneGlobal(REG_ARG, strdup(rvalname), 0);
     }
     return argreg[n];
@@ -4400,24 +4400,24 @@ static const char *builtin_lmm_p1 =
  */
 static const char *builtin_abortcode_p1 =
     "__setjmp\n"
-    "    mov abortchain, arg1\n"
-    "    add arg1, #4\n"  /* skip over thrown error value */
-    "    wrlong pc, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong sp, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong fp, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong objptr, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong __setjmp_ret, arg1\n"
+    "    mov abortchain, arg01\n"
+    "    add arg01, #4\n"  /* skip over thrown error value */
+    "    wrlong pc, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong sp, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong __setjmp_ret, arg01\n"
     "    mov result1, #0\n"
     "__setjmp_ret\n"
     "    ret\n"
     "__abort\n"
     "    mov  result1, abortchain wz\n"
     " if_z jmp #cogexit\n"
-    "    wrlong arg1, result1\n"
+    "    wrlong arg01, result1\n"
     "    add result1, #4\n"
     "    rdlong pc, result1\n"
     "    add result1, #4\n"
@@ -4436,35 +4436,35 @@ static const char *builtin_abortcode_p1 =
 static const char *builtin_abortcode_p2 =
     "abortchain long 0\n"
     "__setjmp\n"
-    "    wrlong abortchain, arg1\n"
-    "    mov abortchain, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong pc, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong ptra, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong fp, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong objptr, arg1\n"
-    "    add arg1, #4\n"
-    "    wrlong __setjmp_ret, arg1\n"
+    "    wrlong abortchain, arg01\n"
+    "    mov abortchain, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong pc, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong ptra, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong __setjmp_ret, arg01\n"
     "    mov result2, #0\n"
     "__setjmp_ret\n"
     "    ret\n"
     "__abort\n"
-    "    mov  result1, arg1\n"
-    "    mov  arg1, abortchain\n"
-    "    rdlong abortchain, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong pc, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong ptra, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong fp, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong objptr, arg1\n"
-    "    add arg1, #4\n"
-    "    rdlong __abort_ret, arg1\n"
+    "    mov  result1, arg01\n"
+    "    mov  arg01, abortchain\n"
+    "    rdlong abortchain, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong pc, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong ptra, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong __abort_ret, arg01\n"
     "    mov result2, #1\n"
     "__abort_ret\n"
     "    ret\n"
@@ -4637,13 +4637,13 @@ extern Module *globalModule;
  * it looks something like:
  *
  * entry:
- *         mov arg1, par wz
+ *         mov arg01, par wz
  *   if_nz jmp spininit
  *         call P->firstfunc using stackcall
  * exit:
  *         cogstop(cogid)
  * spininit:
- *         mov sp, arg1
+ *         mov sp, arg01
  *         rdlong objbase, sp
  *         add sp, #4
  *         rdlong pc, sp

@@ -7,9 +7,9 @@ entry
 _mul
 	mov	_var01, #0
 LR__0001
-	shr	arg2, #1 wc,wz
- if_c	add	_var01, arg1
-	shl	arg1, #1
+	shr	arg02, #1 wc,wz
+ if_c	add	_var01, arg01
+	shl	arg01, #1
  if_ne	jmp	#LR__0001
 	mov	result1, _var01
 _mul_ret
@@ -22,8 +22,8 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

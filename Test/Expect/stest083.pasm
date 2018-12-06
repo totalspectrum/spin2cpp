@@ -9,7 +9,7 @@ _inc
 	mov	_var02, #10
 LR__0001
 	rdlong	_var03, _var01
-	add	_var03, arg1
+	add	_var03, arg01
 	wrlong	_var03, _var01
 	add	_var01, #4
 	djnz	_var02, #LR__0001
@@ -29,6 +29,6 @@ _var02
 	res	1
 _var03
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

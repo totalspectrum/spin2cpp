@@ -14,17 +14,17 @@ _fibo
 	wrlong	_fibo_ret, sp
 	add	sp, #4
 _fibo_enter
-	mov	local01, arg1
+	mov	local01, arg01
 	cmps	local01, #2 wc,wz
  if_b	mov	result1, local01
  if_b	jmp	#LR__0001
-	mov	arg1, local01
-	sub	arg1, #1
+	mov	arg01, local01
+	sub	arg01, #1
 	mov	local02, local01
 	sub	local02, #2
 	call	#_fibo
 	mov	local03, result1
-	mov	arg1, local02
+	mov	arg01, local02
 	call	#_fibo
 	add	result1, local03
 LR__0001
@@ -48,7 +48,7 @@ COG_BSS_START
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 local01
 	res	1

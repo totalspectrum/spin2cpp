@@ -5,13 +5,13 @@ dat
 entry
 
 _lockset
-	lockset	arg1
+	lockset	arg01
 _lockset_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

@@ -6,10 +6,10 @@ entry
 
 _shiftout
 	mov	_var01, #1
-	shl	_var01, arg2
+	shl	_var01, arg02
 	mov	_var02, #8
 LR__0001
-	shr	arg1, #1 wc
+	shr	arg01, #1 wc
 	muxc	outa, _var01
 	djnz	_var02, #LR__0001
 _shiftout_ret
@@ -22,8 +22,8 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

@@ -5,9 +5,9 @@ dat
 entry
 
 _sum2
-	rdlong	result1, arg1
-	add	arg1, #4
-	rdlong	_var01, arg1
+	rdlong	result1, arg01
+	add	arg01, #4
+	rdlong	_var01, arg01
 	add	result1, _var01
 _sum2_ret
 	ret
@@ -19,6 +19,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

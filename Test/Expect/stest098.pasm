@@ -5,27 +5,27 @@ dat
 entry
 
 _unpack_x
-	mov	arg2, #0
+	mov	arg02, #0
 	call	#_dounpack_x
 _unpack_x_ret
 	ret
 
 _unpack_m
-	mov	arg2, #1
+	mov	arg02, #1
 	call	#_dounpack_x
 _unpack_m_ret
 	ret
 
 _dounpack_x
-	mov	_var01, arg1
+	mov	_var01, arg01
 	shl	_var01, #1
 	shr	_var01, #24
 	mov	_var02, _var01 wz
-	and	arg1, imm_8388607_
- if_ne	shl	arg1, #6
- if_ne	or	arg1, imm_536870912_
+	and	arg01, imm_8388607_
+ if_ne	shl	arg01, #6
+ if_ne	or	arg01, imm_536870912_
  if_ne	jmp	#LR__0002
-	mov	_var03, arg1
+	mov	_var03, arg01
 	mov	_var04, #32
 LR__0001
 	shl	_var03, #1 wc
@@ -34,12 +34,12 @@ LR__0001
 	mov	_var02, _var04
 	mov	_var05, #7
 	sub	_var05, _var04
-	shl	arg1, _var05
+	shl	arg01, _var05
 LR__0002
 	sub	_var02, #127
-	cmp	arg2, #0 wz
+	cmp	arg02, #0 wz
  if_ne	mov	result1, _var02
- if_e	mov	result1, arg1
+ if_e	mov	result1, arg01
 _dounpack_x_ret
 	ret
 
@@ -62,8 +62,8 @@ _var04
 	res	1
 _var05
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

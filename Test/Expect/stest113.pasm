@@ -6,7 +6,7 @@ entry
 
 _foo
 	mov	_var01, #1
-	sub	_var01, arg1
+	sub	_var01, arg01
 	mov	outa, _var01
 _foo_ret
 	ret
@@ -16,6 +16,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

@@ -5,15 +5,15 @@ dat
 entry
 
 _maskit
-	and	arg1, #1
-	mov	result1, arg1
+	and	arg01, #1
+	mov	result1, arg01
 _maskit_ret
 	ret
 
 _mask2
-	and	arg1, arg2
-	and	arg1, #255
-	mov	result1, arg1
+	and	arg01, arg02
+	and	arg01, #255
+	mov	result1, arg01
 _mask2_ret
 	ret
 
@@ -22,8 +22,8 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

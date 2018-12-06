@@ -6,7 +6,7 @@ entry
 
 _waitcycles
 	mov	_var01, cnt
-	add	_var01, arg1
+	add	_var01, arg01
 LR__0001
 	cmps	cnt, _var01 wc,wz
  if_b	jmp	#LR__0001
@@ -18,6 +18,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

@@ -5,15 +5,15 @@ dat
 entry
 
 _mylongset
-	mov	_var01, arg1
-	cmp	arg3, #0 wz
+	mov	_var01, arg01
+	cmp	arg03, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	wrlong	arg2, _var01
+	wrlong	arg02, _var01
 	add	_var01, #4
-	djnz	arg3, #LR__0001
+	djnz	arg03, #LR__0001
 LR__0002
-	mov	result1, arg1
+	mov	result1, arg01
 _mylongset_ret
 	ret
 
@@ -24,10 +24,10 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

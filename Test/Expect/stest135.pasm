@@ -5,14 +5,14 @@ dat
 entry
 
 _zero
-	mov	_var01, arg1
-	cmps	arg2, #0 wc,wz
+	mov	_var01, arg01
+	cmps	arg02, #0 wc,wz
  if_be	jmp	#LR__0002
-	mov	_var02, arg2
+	mov	_var02, arg02
 LR__0001
-	mov	arg1, #0
-	wrword	arg1, _var01
-	mov	arg1, _var02
+	mov	arg01, #0
+	wrword	arg01, _var01
+	mov	arg01, _var02
 	add	_var01, #2
 	djnz	_var02, #LR__0001
 LR__0002
@@ -26,8 +26,8 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

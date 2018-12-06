@@ -5,16 +5,16 @@ dat
 entry
 
 _blah
-	and	arg1, #15
+	and	arg01, #15
 	mov	_var01, outa
 	andn	_var01, #15
-	or	_var01, arg1
+	or	_var01, arg01
 	mov	outa, _var01
 _blah_ret
 	ret
 
 _onepin
-	test	arg1, #1 wz
+	test	arg01, #1 wz
 	muxnz	outa, #16
 _onepin_ret
 	ret
@@ -24,6 +24,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

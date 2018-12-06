@@ -5,19 +5,19 @@ dat
 entry
 
 _test
-	mov	_var01, arg1
-	or	_var01, arg2
+	mov	_var01, arg01
+	or	_var01, arg02
 	wrlong	_var01, objptr
-	or	_var01, arg3
+	or	_var01, arg03
 	add	objptr, #4
 	wrlong	_var01, objptr
-	add	arg1, #1
-	or	arg1, arg2
+	add	arg01, #1
+	or	arg01, arg02
 	add	objptr, #4
-	wrlong	arg1, objptr
-	or	arg1, arg3
+	wrlong	arg01, objptr
+	or	arg01, arg03
 	add	objptr, #4
-	wrlong	arg1, objptr
+	wrlong	arg01, objptr
 	sub	objptr, #12
 _test_ret
 	ret
@@ -31,10 +31,10 @@ objmem
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

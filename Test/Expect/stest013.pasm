@@ -5,19 +5,19 @@ dat
 entry
 
 _prod
-	mov	muldiva_, arg1
-	mov	muldivb_, arg2
+	mov	muldiva_, arg01
+	mov	muldivb_, arg02
 	call	#multiply_
 	mov	result1, muldiva_
 _prod_ret
 	ret
 
 _cube
-	mov	cube_tmp001_, arg1
-	mov	arg2, arg1
+	mov	cube_tmp001_, arg01
+	mov	arg02, arg01
 	call	#_prod
-	mov	arg2, result1
-	mov	arg1, cube_tmp001_
+	mov	arg02, result1
+	mov	arg01, cube_tmp001_
 	call	#_prod
 _cube_ret
 	ret
@@ -48,9 +48,9 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 cube_tmp001_
 	res	1

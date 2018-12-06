@@ -5,8 +5,8 @@ dat
 entry
 
 _divmod16
-	mov	muldiva_, arg1
-	mov	muldivb_, arg2
+	mov	muldiva_, arg01
+	mov	muldivb_, arg02
 	call	#divide_
 	shl	muldivb_, #16
 	or	muldivb_, muldiva_
@@ -55,9 +55,9 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 muldiva_
 	res	1

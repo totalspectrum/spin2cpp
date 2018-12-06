@@ -5,12 +5,12 @@ dat
 entry
 
 _setup
-	shl	arg1, #2
-	add	arg1, objptr
+	shl	arg01, #2
+	add	arg01, objptr
 	add	objptr, #40
-	wrlong	arg1, objptr
+	wrlong	arg01, objptr
 	add	objptr, #4
-	wrlong	arg1, objptr
+	wrlong	arg01, objptr
 	sub	objptr, #44
 _setup_ret
 	ret
@@ -22,6 +22,6 @@ COG_BSS_START
 objmem
 	long	0[12]
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

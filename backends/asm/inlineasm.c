@@ -37,11 +37,25 @@ extern Operand *arg1, *arg2;
 
 static int isargdigit(int c)
 {
-    if (c >= '1' && c <= '9') {
+    if (c >= '0' && c <= '9') {
         return 1;
     } else {
         return 0;
     }
+}
+
+static int parseargnum(const char *n)
+{
+    int reg = 0;
+    reg = *n++ - '0';
+    if (*n) {
+        reg = 10*reg + (*n - '0');
+    }
+    if (reg < 1 || reg > 99) {
+        ERROR(NULL, "internal error; unexpected arg/result number");
+        return 0;
+    }
+    return reg-1;
 }
 
 //
@@ -69,10 +83,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
                  return stackptr;
              }
              if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
-                 return GetResultReg(name[6] - '1');
+                 return GetResultReg( parseargnum(name+6));
              }
-             if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && !name[4]) {
-                 return GetArgReg(name[3] - '1');
+             if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && isargdigit(name[4]) && !name[5])
+             {
+                 return GetArgReg( parseargnum(name+3) );
              }
              ERROR(expr, "Undefined symbol %s", name);
              return NewImmediate(0);

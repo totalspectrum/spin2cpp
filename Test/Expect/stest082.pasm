@@ -5,11 +5,11 @@ dat
 entry
 
 _incby
-	shl	arg1, #2
-	add	arg1, objptr
-	rdlong	_var01, arg1
-	add	_var01, arg2
-	wrlong	_var01, arg1
+	shl	arg01, #2
+	add	arg01, objptr
+	rdlong	_var01, arg01
+	add	_var01, arg02
+	wrlong	_var01, arg01
 _incby_ret
 	ret
 
@@ -22,8 +22,8 @@ objmem
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

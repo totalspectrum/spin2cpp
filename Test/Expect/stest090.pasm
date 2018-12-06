@@ -5,12 +5,12 @@ dat
 entry
 
 _proc1
-	sub	arg2, #1
-	mov	_var01, arg2
+	sub	arg02, #1
+	mov	_var01, arg02
 	mov	_var02, #0
-	mov	_var03, arg2
+	mov	_var03, arg02
 	shl	_var03, #2
-	mov	_var04, arg1
+	mov	_var04, arg01
 	add	_var03, _var04
 LR__0001
 	cmps	_var01, #0 wc,wz
@@ -21,8 +21,8 @@ LR__0001
 	sub	_var03, #4
 	jmp	#LR__0001
 LR__0002
-	add	_var02, arg2
-	wrlong	_var02, arg1
+	add	_var02, arg02
+	wrlong	_var02, arg01
 _proc1_ret
 	ret
 
@@ -37,8 +37,8 @@ _var03
 	res	1
 _var04
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

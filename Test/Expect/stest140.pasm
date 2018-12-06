@@ -12,16 +12,16 @@ _factorial
 	wrlong	_factorial_ret, sp
 	add	sp, #4
 _factorial_enter
-	mov	local01, arg2
-	cmps	arg1, #0 wc,wz
+	mov	local01, arg02
+	cmps	arg01, #0 wc,wz
  if_be	jmp	#LR__0001
-	mov	local02, arg1
+	mov	local02, arg01
 	sub	local02, #1
 	mov	muldiva_, local01
-	mov	muldivb_, arg1
+	mov	muldivb_, arg01
 	call	#multiply_
-	mov	arg1, local02
-	mov	arg2, muldiva_
+	mov	arg01, local02
+	mov	arg02, muldiva_
 	jmp	#_factorial_enter
 LR__0001
 	mov	result1, local01
@@ -64,9 +64,9 @@ COG_BSS_START
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 local01
 	res	1

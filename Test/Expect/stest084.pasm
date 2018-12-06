@@ -5,27 +5,27 @@ dat
 entry
 
 _update
-	wrlong	arg1, objptr
+	wrlong	arg01, objptr
 	add	objptr, #4
-	wrlong	arg2, objptr
+	wrlong	arg02, objptr
 	sub	objptr, #4
 _update_ret
 	ret
 
 _bump
-	rdlong	arg2, objptr
+	rdlong	arg02, objptr
 	add	objptr, #4
 	rdlong	bump_tmp002_, objptr
 	sub	objptr, #4
-	add	arg2, bump_tmp002_
-	mov	arg1, arg2
+	add	arg02, bump_tmp002_
+	mov	arg01, arg02
 	call	#_update
-	rdlong	arg2, objptr
+	rdlong	arg02, objptr
 	add	objptr, #4
 	rdlong	bump_tmp002_, objptr
 	sub	objptr, #4
-	add	arg2, bump_tmp002_
-	mov	arg1, arg2
+	add	arg02, bump_tmp002_
+	mov	arg01, arg02
 	call	#_update
 _bump_ret
 	ret
@@ -37,9 +37,9 @@ COG_BSS_START
 objmem
 	long	0[2]
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 bump_tmp002_
 	res	1

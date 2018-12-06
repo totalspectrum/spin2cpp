@@ -7,9 +7,9 @@ entry
 _demo
 	mov	_demo__idx__0001, #7
 LR__0001
-	mov	arg1, imm_40000000_
-	add	arg1, cnt
-	waitcnt	arg1, #0
+	mov	arg01, imm_40000000_
+	add	arg01, cnt
+	waitcnt	arg01, #0
 	djnz	_demo__idx__0001, #LR__0001
 LR__0002
 	jmp	#LR__0002
@@ -23,9 +23,9 @@ _exit_ret
 	ret
 
 _pauseabit
-	mov	arg1, imm_40000000_
-	add	arg1, cnt
-	waitcnt	arg1, #0
+	mov	arg01, imm_40000000_
+	add	arg01, cnt
+	waitcnt	arg01, #0
 _pauseabit_ret
 	ret
 
@@ -36,6 +36,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _demo__idx__0001
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

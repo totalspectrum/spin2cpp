@@ -5,14 +5,14 @@ dat
 entry
 
 _shalf
-	sar	arg1, #1
-	mov	result1, arg1
+	sar	arg01, #1
+	mov	result1, arg01
 _shalf_ret
 	ret
 
 _uhalf
-	shr	arg1, #1
-	mov	result1, arg1
+	shr	arg01, #1
+	mov	result1, arg01
 _uhalf_ret
 	ret
 
@@ -21,6 +21,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

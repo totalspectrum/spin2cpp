@@ -5,13 +5,13 @@ dat
 entry
 
 _rx
-	andn	dira, arg1
+	andn	dira, arg01
 LR__0001
 	mov	_var01, ina
-	test	_var01, arg1 wz
+	test	_var01, arg01 wz
  if_ne	jmp	#LR__0001
 	mov	result1, ina
-	and	result1, arg1
+	and	result1, arg01
 _rx_ret
 	ret
 
@@ -22,8 +22,8 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

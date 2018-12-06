@@ -6,19 +6,19 @@ entry
 
 _filllong
 loop
-	wrlong	arg2, arg1
-	add	arg1, #4
-	djnz	arg3, #loop
+	wrlong	arg02, arg01
+	add	arg01, #4
+	djnz	arg03, #loop
 _filllong_ret
 	ret
 
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

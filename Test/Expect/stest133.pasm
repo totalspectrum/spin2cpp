@@ -7,8 +7,8 @@ entry
 _foo
 	mov	_var01, #0
 LR__0001
-	rdbyte	_var02, arg1 wz
- if_ne	add	arg1, #1
+	rdbyte	_var02, arg01 wz
+ if_ne	add	arg01, #1
  if_ne	add	_var01, #1
  if_ne	jmp	#LR__0001
 	mov	result1, _var01
@@ -16,7 +16,7 @@ _foo_ret
 	ret
 
 _bar
-	mov	arg1, ptr_L__0025_
+	mov	arg01, ptr_L__0025_
 	call	#_foo
 _bar_ret
 	ret
@@ -36,6 +36,6 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

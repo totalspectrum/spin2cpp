@@ -7,17 +7,17 @@ entry
 __call_method
 	wrlong	objptr, sp
 	add	sp, #4
-	mov	objptr, arg1
-	mov	arg1, arg3
-	call	arg2
+	mov	objptr, arg01
+	mov	arg01, arg03
+	call	arg02
 	sub	sp, #4
 	rdlong	objptr, sp
 __call_method_ret
 	ret
 
 __basic_print_char
-	mov	__basic_print_char_h, arg1
-	mov	__basic_print_char_c, arg2
+	mov	__basic_print_char_h, arg01
+	mov	__basic_print_char_c, arg02
 	mov	_basic_print_char_tmp001_, __basic_print_char_h
 	shl	_basic_print_char_tmp001_, #2
 	mov	_basic_print_char_tmp002_, ptr__dat__
@@ -28,13 +28,13 @@ __basic_print_char
 	add	__basic_print_char_t, #4
 	rdlong	__basic_print_char_f, __basic_print_char_t wz
  if_ne	jmp	#LR__0001
-	mov	arg1, __basic_print_char_c
+	mov	arg01, __basic_print_char_c
 	call	#__mytx
 	jmp	#LR__0002
 LR__0001
-	mov	arg1, __basic_print_char_o
-	mov	arg2, __basic_print_char_f
-	mov	arg3, __basic_print_char_c
+	mov	arg01, __basic_print_char_o
+	mov	arg02, __basic_print_char_f
+	mov	arg03, __basic_print_char_c
 	call	#__call_method
 LR__0002
 __basic_print_char_ret
@@ -43,7 +43,7 @@ __basic_print_char_ret
 __mytx
 	mov	_var01, #0
 LR__0003
-	mov	_var02, arg1
+	mov	_var02, arg01
 	or	_var02, _var01
 	mov	outa, _var02
 	add	_var01, #1
@@ -88,10 +88,10 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

@@ -6,7 +6,7 @@ entry
 
 _func
 	rdlong	outa, objptr
-	wrlong	arg1, objptr
+	wrlong	arg01, objptr
 _func_ret
 	ret
 
@@ -17,6 +17,6 @@ COG_BSS_START
 objmem
 	long	0[1]
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

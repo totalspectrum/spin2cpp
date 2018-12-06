@@ -5,7 +5,7 @@ dat
 entry
 
 _id
-	mov	result1, arg1
+	mov	result1, arg01
 _id_ret
 	ret
 
@@ -14,6 +14,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

@@ -6,7 +6,7 @@ entry
 
 _uscmp
 	mov	_var01, #0
-	cmp	arg1, #2 wc,wz
+	cmp	arg01, #2 wc,wz
  if_e	mov	_var01, #1
 	mov	result1, _var01
 _uscmp_ret
@@ -19,6 +19,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

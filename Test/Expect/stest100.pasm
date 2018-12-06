@@ -5,16 +5,16 @@ dat
 entry
 
 _xorbytes
-	cmp	arg3, #0 wz
+	cmp	arg03, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	rdbyte	_var01, arg1
-	rdbyte	_var02, arg2
+	rdbyte	_var01, arg01
+	rdbyte	_var02, arg02
 	xor	_var01, _var02
-	wrbyte	_var01, arg1
-	add	arg1, #1
-	add	arg2, #1
-	djnz	arg3, #LR__0001
+	wrbyte	_var01, arg01
+	add	arg01, #1
+	add	arg02, #1
+	djnz	arg03, #LR__0001
 LR__0002
 _xorbytes_ret
 	ret
@@ -26,10 +26,10 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

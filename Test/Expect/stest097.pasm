@@ -6,10 +6,10 @@ entry
 
 _ex
 	mov	_var01, #0
-	cmps	arg1, #0 wc,wz
+	cmps	arg01, #0 wc,wz
  if_b	neg	_var01, #1
 	wrlong	_var01, objptr
-	mov	result1, arg1
+	mov	result1, arg01
 _ex_ret
 	ret
 
@@ -24,6 +24,6 @@ objmem
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

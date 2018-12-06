@@ -10,8 +10,8 @@ _blah_ret
 	ret
 
 _getbar
-	add	arg1, ptr__dat__
-	rdbyte	result1, arg1
+	add	arg01, ptr__dat__
+	rdbyte	result1, arg01
 _getbar_ret
 	ret
 
@@ -25,6 +25,6 @@ COG_BSS_START
 _dat_
 	byte	$01, $02, $03, $00
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

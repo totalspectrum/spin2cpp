@@ -5,7 +5,7 @@ dat
 entry
 
 _check
-	mov	_var01, arg1
+	mov	_var01, arg01
 	cmp	_var01, #48 wz
  if_e	jmp	#LR__0001
 	cmp	_var01, #49 wz
@@ -36,6 +36,6 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

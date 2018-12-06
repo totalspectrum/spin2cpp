@@ -7,9 +7,9 @@ entry
 _mylen
 	mov	__system__strsize_r, #0
 LR__0001
-	rdbyte	_tmp001_, arg1 wz
+	rdbyte	_tmp001_, arg01 wz
  if_ne	add	__system__strsize_r, #1
- if_ne	add	arg1, #1
+ if_ne	add	arg01, #1
  if_ne	jmp	#LR__0001
 	mov	result1, __system__strsize_r
 _mylen_ret
@@ -24,6 +24,6 @@ __system__strsize_r
 	res	1
 _tmp001_
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

@@ -20,14 +20,14 @@ imm_1073741824_
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
-arg4
+arg04
 	res	1
-arg5
+arg05
 	res	1
 	fit	496

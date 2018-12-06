@@ -5,15 +5,15 @@ dat
 entry
 
 _blinky
-	mov	arg2, ptr__dat__
-	mov	arg3, imm_15728640_
-	and	arg2, imm_65532_
-	shl	arg2, #2
-	or	arg3, arg2
-	or	arg3, #8
-	coginit	arg3 wc,wr
- if_b	neg	arg3, #1
-	mov	result1, arg3
+	mov	arg02, ptr__dat__
+	mov	arg03, imm_15728640_
+	and	arg02, imm_65532_
+	shl	arg02, #2
+	or	arg03, arg02
+	or	arg03, #8
+	coginit	arg03 wc,wr
+ if_b	neg	arg03, #1
+	mov	result1, arg03
 _blinky_ret
 	ret
 
@@ -34,10 +34,10 @@ _dat_
 	byte	$f1, $1f, $bc, $80, $0e, $1e, $bc, $f8, $0d, $e8, $bf, $6c, $09, $00, $7c, $5c
 	byte	$00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

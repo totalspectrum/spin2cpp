@@ -6,7 +6,7 @@ entry
 
 _ez_pulse_in
 	mov	_ez_pulse_in_r, #1
-	shl	_ez_pulse_in_r, arg1
+	shl	_ez_pulse_in_r, arg01
 	waitpne	_ez_pulse_in_r, _ez_pulse_in_r
 	waitpeq	_ez_pulse_in_r, _ez_pulse_in_r
 	neg	muldiva_, cnt
@@ -63,11 +63,11 @@ COG_BSS_START
 	org	COG_BSS_START
 _ez_pulse_in_r
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 muldiva_
 	res	1

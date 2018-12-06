@@ -5,8 +5,8 @@ dat
 entry
 
 _testit
-	test	arg1, #4 wz
- if_ne	mov	result1, arg2
+	test	arg01, #4 wz
+ if_ne	mov	result1, arg02
  if_e	mov	result1, #0
 _testit_ret
 	ret
@@ -16,8 +16,8 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

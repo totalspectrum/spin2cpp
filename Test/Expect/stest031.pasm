@@ -11,7 +11,7 @@ _clear0_ret
 
 _clearpin
 	mov	_var01, #1
-	shl	_var01, arg1
+	shl	_var01, arg01
 	andn	outa, _var01
 _clearpin_ret
 	ret
@@ -21,6 +21,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

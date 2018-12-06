@@ -5,26 +5,26 @@ dat
 entry
 
 _myfill
-	cmp	arg3, #0 wz
+	cmp	arg03, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	wrlong	arg2, arg1
-	add	arg1, #4
-	djnz	arg3, #LR__0001
+	wrlong	arg02, arg01
+	add	arg01, #4
+	djnz	arg03, #LR__0001
 LR__0002
 _myfill_ret
 	ret
 
 _fillzero
-	mov	arg3, arg2
-	mov	arg2, #0
+	mov	arg03, arg02
+	mov	arg02, #0
 	call	#_myfill
 _fillzero_ret
 	ret
 
 _fillone
-	mov	arg3, arg2
-	neg	arg2, #1
+	mov	arg03, arg02
+	neg	arg02, #1
 	call	#_myfill
 _fillone_ret
 	ret
@@ -32,10 +32,10 @@ _fillone_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

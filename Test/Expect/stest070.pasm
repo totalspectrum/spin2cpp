@@ -9,9 +9,9 @@ _start
 	mov	_start__cse__0023, start_tmp002_
 	shl	_start__cse__0023, #2
 	add	_start__cse__0023, start_tmp002_
-	mov	arg1, cnt
-	add	arg1, _start__cse__0023
-	waitcnt	arg1, #0
+	mov	arg01, cnt
+	add	arg01, _start__cse__0023
+	waitcnt	arg01, #0
 _start_ret
 	ret
 
@@ -20,7 +20,7 @@ COG_BSS_START
 	org	COG_BSS_START
 _start__cse__0023
 	res	1
-arg1
+arg01
 	res	1
 start_tmp002_
 	res	1

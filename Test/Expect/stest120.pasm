@@ -5,12 +5,12 @@ dat
 entry
 
 _sumit
-	cmp	arg1, arg2 wz
- if_ne	mov	result1, arg3
+	cmp	arg01, arg02 wz
+ if_ne	mov	result1, arg03
  if_ne	jmp	#_sumit_ret
 same
-	sub	arg1, arg2
-	mov	result1, arg1
+	sub	arg01, arg02
+	mov	result1, arg01
 _sumit_ret
 	ret
 
@@ -19,10 +19,10 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
-arg3
+arg03
 	res	1
 	fit	496

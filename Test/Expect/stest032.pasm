@@ -7,8 +7,8 @@ dat
 entry
 
 _inc
-	add	arg1, #15
-	mov	result1, arg1
+	add	arg01, #15
+	mov	result1, arg01
 _inc_ret
 	ret
 
@@ -17,6 +17,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
 	fit	496

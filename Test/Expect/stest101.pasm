@@ -20,8 +20,8 @@ _checkcmd_ret
 
 _cmd2
 LR__0003
-	mov	outa, arg1
-	mov	arg1, #0
+	mov	outa, arg01
+	mov	arg01, #0
 	jmp	#LR__0003
 _cmd2_ret
 	ret
@@ -37,6 +37,6 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

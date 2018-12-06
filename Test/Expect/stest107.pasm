@@ -5,17 +5,17 @@ dat
 entry
 
 _dbl64
-	add	arg2, arg2 wc
-	addx	arg1, arg1
-	mov	result1, arg1
-	mov	result2, arg2
+	add	arg02, arg02 wc
+	addx	arg01, arg01
+	mov	result1, arg01
+	mov	result2, arg02
 _dbl64_ret
 	ret
 
 _quad64
 	call	#_dbl64
-	mov	arg1, result1
-	mov	arg2, result2
+	mov	arg01, result1
+	mov	arg02, result2
 	call	#_dbl64
 _quad64_ret
 	ret
@@ -27,8 +27,8 @@ result2
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

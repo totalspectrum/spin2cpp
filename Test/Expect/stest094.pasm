@@ -5,14 +5,14 @@ dat
 entry
 
 _zcount
-	cmps	arg2, arg1 wc,wz
+	cmps	arg02, arg01 wc,wz
  if_a	mov	_var01, #1
  if_be	neg	_var01, #1
-	add	arg2, _var01
+	add	arg02, _var01
 LR__0001
-	mov	outa, arg1
-	add	arg1, _var01
-	cmp	arg1, arg2 wz
+	mov	outa, arg01
+	add	arg01, _var01
+	cmp	arg01, arg02 wz
  if_ne	jmp	#LR__0001
 _zcount_ret
 	ret
@@ -22,8 +22,8 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

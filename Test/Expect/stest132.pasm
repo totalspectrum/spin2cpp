@@ -5,14 +5,14 @@ dat
 entry
 
 _testdiv1
-	shl	arg1, #16
-	shr	arg1, #16
-	mov	muldiva_, arg1
-	mov	muldivb_, arg2
+	shl	arg01, #16
+	shr	arg01, #16
+	mov	muldiva_, arg01
+	mov	muldivb_, arg02
 	call	#divide_
 	wrlong	muldivb_, ptr__dat__
-	mov	muldiva_, arg2
-	mov	muldivb_, arg1
+	mov	muldiva_, arg02
+	mov	muldivb_, arg01
 	call	#divide_
 	add	ptr__dat__, #4
 	wrlong	muldiva_, ptr__dat__
@@ -21,14 +21,14 @@ _testdiv1_ret
 	ret
 
 _testdiv2
-	shl	arg1, #16
-	shr	arg1, #16
-	mov	muldiva_, arg1
-	mov	muldivb_, arg2
+	shl	arg01, #16
+	shr	arg01, #16
+	mov	muldiva_, arg01
+	mov	muldivb_, arg02
 	call	#unsdivide_
 	wrlong	muldivb_, ptr__dat__
-	mov	muldiva_, arg2
-	mov	muldivb_, arg1
+	mov	muldiva_, arg02
+	mov	muldivb_, arg01
 	call	#unsdivide_
 	add	ptr__dat__, #4
 	wrlong	muldiva_, ptr__dat__
@@ -82,9 +82,9 @@ COG_BSS_START
 _dat_
 	byte	$00, $00, $00, $00, $00, $00, $00, $00
 	org	COG_BSS_START
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 muldiva_
 	res	1

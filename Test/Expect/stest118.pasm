@@ -5,7 +5,7 @@ dat
 entry
 
 __float_fromuns
-	mov	_var01, arg1 wz
+	mov	_var01, arg01 wz
  if_e	jmp	#LR__0001
 	mov	_var02, #0
 	mov	_var03, _var01
@@ -25,12 +25,12 @@ __float_fromuns_ret
 	ret
 
 __float_fromint
-	mov	__float_fromint_integer, arg1
+	mov	__float_fromint_integer, arg01
 	cmps	__float_fromint_integer, #0 wc,wz
  if_b	neg	__float_fromint_integer, __float_fromint_integer
  if_b	mov	__float_fromint_negate, #1
  if_ae	mov	__float_fromint_negate, #0
-	mov	arg1, __float_fromint_integer
+	mov	arg01, __float_fromint_integer
 	call	#__float_fromuns
 	cmp	__float_fromint_negate, #0 wz
  if_ne	xor	result1, imm_2147483648_
@@ -62,6 +62,6 @@ _var06
 	res	1
 _var07
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

@@ -5,7 +5,7 @@ dat
 entry
 
 _ismagic
-	cmp	arg1, #511 wz
+	cmp	arg01, #511 wz
  if_e	mov	_var01, #1
  if_ne	mov	_var01, #0
 	mov	result1, _var01
@@ -19,6 +19,6 @@ COG_BSS_START
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
 	fit	496

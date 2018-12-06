@@ -6,12 +6,12 @@ entry
 
 _blink
 	mov	_var01, #1
-	shl	_var01, arg1
-	cmp	arg2, #0 wz
+	shl	_var01, arg01
+	cmp	arg02, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
 	xor	outa, _var01
-	djnz	arg2, #LR__0001
+	djnz	arg02, #LR__0001
 LR__0002
 	rdlong	result1, ptr__dat__
 _blink_ret
@@ -30,8 +30,8 @@ _dat_
 	org	COG_BSS_START
 _var01
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 	fit	496

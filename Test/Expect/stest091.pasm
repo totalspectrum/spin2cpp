@@ -19,10 +19,10 @@ _sendchar2_ret
 	ret
 
 _sendchar_index
-	shl	arg1, #2
-	mov	sendchar_index_tmp001_, arg1
+	shl	arg01, #2
+	mov	sendchar_index_tmp001_, arg01
 	add	sendchar_index_tmp001_, #8
-	mov	arg1, arg2
+	mov	arg01, arg02
 	add	objptr, sendchar_index_tmp001_
 	call	#_simplepin_tx
 	sub	objptr, sendchar_index_tmp001_
@@ -30,8 +30,8 @@ _sendchar_index_ret
 	ret
 
 _sendchar_abstract
-	mov	_sendchar_abstract_fds, arg1
-	mov	arg1, arg2
+	mov	_sendchar_abstract_fds, arg01
+	mov	arg01, arg02
 	mov	sendchar_abstract_tmp002_, objptr
 	mov	objptr, _sendchar_abstract_fds
 	call	#_simplepin_tx
@@ -43,7 +43,7 @@ _simplepin_tx
 	mov	_var01, #1
 	rdlong	_var02, objptr
 	shl	_var01, _var02
-	test	arg1, #1 wz
+	test	arg01, #1 wz
 	muxnz	outa, _var01
 _simplepin_tx_ret
 	ret
@@ -61,9 +61,9 @@ _var01
 	res	1
 _var02
 	res	1
-arg1
+arg01
 	res	1
-arg2
+arg02
 	res	1
 sendchar_abstract_tmp002_
 	res	1
