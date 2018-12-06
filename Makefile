@@ -176,7 +176,7 @@ ALLDOCS=README.md Fastspin.md $(COMMONDOCS)
 
 zip: fastspin.exe spin2cpp.exe
 	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe fastspin.exe
-	zip -r fastspin.zip fastspin.exe Fastspin.md docs
+	zip -r fastspin.zip fastspin.exe Fastspin.md docs include
 
 #
 # target to build a windows spincvt GUI
