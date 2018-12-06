@@ -212,11 +212,18 @@ main(int argc, char **argv)
     // also, if our name ends in "spin2" use Spin2 mode
     {
         const char *nameRoot;
+        char *default_include;
         size_t n;
         nameRoot = gl_progname;
         while (*nameRoot != 0) nameRoot++;
         while (nameRoot > gl_progname && nameRoot[-1] != '/' && nameRoot[-1] != '\\') --nameRoot;
-        
+        if (nameRoot > gl_progname) {
+            n = nameRoot - gl_progname;
+            default_include = malloc(n + 32);
+            strncpy(default_include, gl_progname, n);
+            strcpy(default_include+n, "../include");
+            pp_add_to_path(&gl_pp, default_include);
+        }
         if (strncmp(nameRoot, "bstc", 4) == 0) {
             bstcMode = 1;
         }

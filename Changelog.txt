@@ -10,6 +10,7 @@ Version 3.9.11
 - Added support for more kinds of operands in inline assembly
 - Added -D__FLEXSPIN__, -D__FLEXBASIC__, and -D__FLEXC__ defines for
   future compatibility (someday this tool will be renamed).
+- Look in {argv[0]}/../include for include files by default
 
 Version 3.9.10
 - Added a peephole optimizer to replace "mov x, #0 ; add x, y" with
