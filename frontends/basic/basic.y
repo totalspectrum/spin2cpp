@@ -155,7 +155,7 @@ PopLoop(void)
 static int
 GetCurrentLoop(int token)
 {
-    if (loop_sp == 0 || loop_stack[loop_sp-1] != token) {
+    if (loop_sp == 0 || (token && loop_stack[loop_sp-1] != token)) {
         return 0;
     }
     return 1;
@@ -622,6 +622,17 @@ exitstmt:
         }
         $$ = NewAST(AST_QUIT, modifier, NULL);
     }
+  | BAS_EXIT eoln
+    {
+        int curLoop = GetCurrentLoop(0);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'exit' is not inside a loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_QUIT, modifier, NULL);
+    }
   | BAS_CONTINUE BAS_FOR eoln
     {
         int curLoop = GetCurrentLoop(BAS_FOR);
@@ -650,6 +661,17 @@ exitstmt:
         AST *modifier = NULL;
         if (!curLoop) {
             SYNTAX_ERROR("'continue do' is not inside a do loop");
+        } else {
+            modifier = AstInteger(curLoop);
+        }
+        $$ = NewAST(AST_CONTINUE, modifier, NULL);
+    }
+  | BAS_CONTINUE eoln
+    {
+        int curLoop = GetCurrentLoop(0);
+        AST *modifier = NULL;
+        if (!curLoop) {
+            SYNTAX_ERROR("'continue' is not inside a loop");
         } else {
             modifier = AstInteger(curLoop);
         }

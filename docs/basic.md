@@ -628,7 +628,26 @@ Inside a type name, `const` signifies that variables of this type may not be mod
 
 ### CONTINUE
 
-Used to resume loop execution early. Not implemented yet.
+Used to resume loop execution early. The type of loop (FOR, DO, or WHILE) may optionally be given after CONTINUE. However, note that only the innermost containing loop may be continued. This is different from FreeBasic, where for example `continue for` may be placed in a `while` loop that is itself inside a `for` loop. In FlexBasic this will producean error.
+
+Example:
+```
+for i = 1 to 5
+  if (i = 3) then
+    continue for
+  end if
+  print i
+next i
+```
+will print 1, 2, 4, and 5, but will skip the 3 because the `continue for` will cause the next iteration of the `for` loop to start as soon as it is seen.
+
+The example above could be written more succinctly as:
+```
+for i = 1 to 5
+  if i = 3 continue
+  print i
+next
+```
 
 ### CPU
 
@@ -737,7 +756,43 @@ Reserved for future use.
 
 ### EXIT
 
-Exit early from a `for`, `do`, or `while` loop. Not implemented yet.
+Exit early from a loop, function, or subroutine.
+
+Just plain `exit` on its own will exit early from the innermost enclosing loop, and will produce an error if given outside a loop.
+
+The `exit` may also have an explicit `do`, `for`, or `while` after it to say what kind of loop it is exiting. In this case the innermost loop must be of the appropriate type. This is different from FreeBasic, where for example `exit while` may be used in a `for` loop that is inside a `while` loop; we do not allow that.
+
+Finally `exit function` and `exit sub` are synonyms for `return`.
+
+#### EXIT DO
+
+Exit from the innermost enclosing loop if it is a `do` loop. If it is not a `do` loop then the compiler will print an error.
+
+#### EXIT FOR
+
+Exit from the innermost enclosing loop if it is a `for` loop. If it is not a `for` loop then the compiler will print an error.
+
+#### EXIT FUNCTION
+
+Returns from the current function (just like a plain `return`). The value of the function will be the last default value established by assigning a value to the function's name, or 0 if no such value has been established. For example:
+```
+function sumif(a, x, y)
+  sumif = x + y
+  if (a <> 0)
+    exit function
+  sumif = 0
+end function
+```
+returns `x+y` if a is nonzero, and 0 otherwise.
+
+#### EXIT SUB
+
+Returns from the current subroutine. Same as the `return` statement.
+
+#### EXIT WHILE
+
+Exit from the innermost enclosing loop if it is a `while` loop. If it is not a `while` loop then the compiler will print an error.
+
 
 ### FOR
 
