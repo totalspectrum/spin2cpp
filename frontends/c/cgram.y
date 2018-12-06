@@ -92,7 +92,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         return first;
     }
     if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF)) {
-        prefix = first;
+        prefix = DupAST(first);
         first = first->left;
         prefix->left = NULL;
     }
