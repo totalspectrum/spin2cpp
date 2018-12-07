@@ -710,6 +710,17 @@ getFileName(const char *orig)
     return ptr;
 }
 
+static void
+handlePragma(LexStream *L, const char *line)
+{
+    line += 8; // skip "#pragma "
+    while (*line == ' ' || *line=='\t')
+        line++;
+    if (!strncmp(line, "flexc", 5)) {
+        SYNTAX_ERROR("unknown pragma: %s", line);
+    }
+}
+
 // check for a comment that runs to end of line
 static int
 checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
@@ -770,6 +781,8 @@ docomment:
             L->lineCounter = lineno;
             L->fileName = getFileName(ptr);
         }
+    } else if (!strncmp(commentLine, "#pragma ", 8)) {
+        handlePragma(L, commentLine);
     } else {
         ast = NewAST(AST_COMMENT, NULL, NULL);
         ast->d.string = commentLine;
