@@ -639,6 +639,8 @@ storage_class_specifier
             { $$ = NewAST(AST_STATIC, NULL, NULL); }
 	| C_AUTO
             { $$ = NULL; }
+	| C_INLINE
+            { $$ = NULL; }
 	| C_REGISTER
             { $$ = NULL; }
 	;

@@ -1,10 +1,11 @@
 Version 3.9.12
-- Added varargs to C
-- Implemented switch in C
-- Implemented enums in C
 - Fixed a BASIC operator precedence problem (<< and >> should have
   been like * and /)
 - Allowed plain EXIT and CONTINUE in BASIC
+- Added varargs to C
+- Implemented switch in C
+- Implemented enums in C
+- Added inline assembly to C
 
 Version 3.9.11
 - Added tail call optimization
