@@ -1208,6 +1208,7 @@ function sum(x, y)
   return x+y
 end function
 ```
+
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
@@ -1344,7 +1345,7 @@ Declare a local variable:
 VAR i = 2
 VAR msg$ = "hello"
 ```
-`var` creates and initializes a new local variable (only available inside the function in which it is declared. The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
+`var` creates and initializes a new local variable (only available inside the function in which it is declared). The type of the new variable is inferred from the type of the expression used to initialize it; if for some reason that cannot be determined, the type is set according to the variable suffix (if any is present).
 
 `var` is somewhat similar to `dim`, except that the type isn't given explicitly (it is determined by the initializer expression) and the variables created are always local, even if the `var` is in the main program (in the main program `dim` creates member variables that may be used by functions or subroutines in this file).
 
@@ -1419,8 +1420,6 @@ This program toggles a pin once per second.
 rem simple program to toggle a pin
 
 const pin = 16
-
-let mscycles = clkfreq / 1000
 
 direction(pin) = output
 
