@@ -1383,6 +1383,7 @@ struct reservedword basic_keywords[] = {
 struct reservedword c_keywords[] = {
   { "__asm", C_ASM },
   { "_Bool", C_BOOL },
+  { "break", C_BREAK },
   { "__builtin_alloca", C_BUILTIN_ALLOCA },
   { "__builtin_printf", C_BUILTIN_PRINTF },
   { "__builtin_propeller_rev", C_BUILTIN_REV },
@@ -1393,6 +1394,7 @@ struct reservedword c_keywords[] = {
   { "char", C_CHAR },
   { "const", C_CONST },
   { "continue", C_CONTINUE },
+  { "default", C_DEFAULT },
   { "do", C_DO },
   { "double", C_DOUBLE },
   { "else", C_ELSE },

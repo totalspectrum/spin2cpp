@@ -898,11 +898,11 @@ labeled_statement
             }
 	| C_CASE constant_expression ':' statement
             {
-                SYNTAX_ERROR("case not supported yet");
+                $$ = NewAST(AST_CASEITEM, $2, $4);
             }
 	| C_DEFAULT ':' statement
             {
-                SYNTAX_ERROR("case not supported yet");
+                $$ = NewAST(AST_OTHER, $3, NULL);
             }
 	;
 
@@ -1063,8 +1063,7 @@ selection_statement
             }
 	| C_SWITCH '(' expression ')' statement
             {
-                SYNTAX_ERROR("switch not supported yet");
-                $$ = NULL;
+                $$ = NewCommentedAST(AST_CASE, $3, $5, $1);
             }
 	;
 
