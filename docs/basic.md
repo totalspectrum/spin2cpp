@@ -1194,8 +1194,20 @@ Introduces a comment, which continues until the end of the line. A single quote 
 
 ### RETURN
 
-Return from a subroutine or function. If this statement occurs inside a function, then the `return` keyword must be followed by an expression giving the value to return; this expression should have a type compatible with the function's return value.
+Return from a subroutine or function. If this statement occurs inside a function, then the `return` keyword may be followed by an expression giving the value to return; this expression should have a type compatible with the function's return value.
 
+A `return` with a value sets the function's result value and exits. If the `return` does not have a value (or indeed if there is no `return`), then the function's result value is the last value assigned to the pseudo-variable that has the same name as the function. That is, two equivalent ways of writing a sum function are:
+```
+function sum(x, y)
+  sum = x+y
+end function
+```
+or
+```
+function sum(x, y)
+  return x+y
+end function
+```
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.

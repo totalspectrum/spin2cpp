@@ -1,3 +1,9 @@
+Version 3.9.12
+- Added varargs to C
+- Fixed a BASIC operator precedence problem (<< and >> should have
+  been like * and /)
+- Allowed plain EXIT and CONTINUE in BASIC
+
 Version 3.9.11
 - Added tail call optimization
 - Added simple optimization based on commutative math
