@@ -2203,6 +2203,7 @@ OptimizeSimpleAssignments(IRList *irl)
         if (ir_prev && ir_next
             && ir_prev->opc == OPC_MOV && ir_next->opc == OPC_MOV
             && ir_prev->dst == ir_next->src && ir_prev->src == ir_next->dst
+            && ir->dst == ir_prev->dst
             && ir_prev->cond == ir->cond
             && ir_next->cond == ir->cond
             && IsMathInstr(ir)
