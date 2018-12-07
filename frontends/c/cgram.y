@@ -304,10 +304,11 @@ ForceStatementList(AST *stmt)
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
 
-%token C_BUILTIN_ALLOCA
-%token C_BUILTIN_PRINTF
-%token C_BUILTIN_REV
-
+%token C_BUILTIN_ALLOCA "__builtin_alloca"
+%token C_BUILTIN_PRINTF "__builtin_printf"
+%token C_BUILTIN_REV    "__builtin_rev"
+%token C_BUILTIN_VA_START "__builtin_va_start"
+%token C_BUILTIN_VA_ARG   "__builtin_va_arg"
 %token C_EOF "end of file"
 
 %start translation_unit
@@ -346,6 +347,15 @@ postfix_expression
                 // PropGCC defines __builtin_rev to match the ASM instruction,
                 // not the >< operator, hence the 32 - arg2
                 $$ = AstOperator(K_REV, arg1, AstOperator('-', AstInteger(32), arg2));
+            }
+        | C_BUILTIN_VA_START '(' unary_expression ',' C_IDENTIFIER ')'
+            {
+                $$ = NewAST(AST_VA_START, $3, $5);
+            }
+        | C_BUILTIN_VA_ARG '(' expression ',' type_name ')'
+            {
+                // NOTE: like an AST_MEMREF, the type goes first
+                $$ = NewAST(AST_VA_ARG, $5, $3);
             }
 	| postfix_expression '[' expression ']'
             { $$ = NewAST(AST_ARRAYREF, $1, $3); }

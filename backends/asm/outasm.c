@@ -1088,6 +1088,8 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       } else {
           name = "result";
       }
+  } else if (expr->kind == AST_VARARGS || expr->kind == AST_VA_START) {
+      name = "__varargs";
   } else {
       name = VarName(expr);
       if (!name) {
@@ -1150,7 +1152,17 @@ VarName(AST *ast)
 static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *functype, int n)
 {
     if (IS_FAST_CALL(func)) {
-        return GetArgReg(n);
+        // check for varargs functions
+        int maxparam;
+        if (func) {
+            maxparam = func->numparams;
+        } else {
+            maxparam = FuncNumParams(functype);
+        }
+        if (maxparam >= 0 || n < -maxparam) {
+            return GetArgReg(n);
+        }
+        return NULL; // signals we have to push the parameter
     } else {
         AST *astlist;
         AST *ast;
@@ -1270,6 +1282,15 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             basedst = CompileIdentifierForFunc(irl, ast, func);
             for (i = 0; i < size; i++) {
                 src = GetFunctionParameterForCall(irl, func, func->overalltype, n++);
+                if (!src) {
+                    int maxArg = func->numparams;
+                    if (maxArg < 0) {
+                        src = GetArgReg(-maxArg);
+                    } else {
+                        ERROR(NULL, "internal error, bad varargs parsing");
+                        src = stackptr;
+                    }
+                }
                 if (size > 1) {
                     dst = ApplyArrayIndex(irl, basedst, NewImmediate(i));
                 } else {
@@ -2270,20 +2291,38 @@ CompileExprList(IRList *irl, AST *fromlist)
   return ret;
 }
 
-static void
+//
+// returns number of longs pushed onto the stack
+//
+static int
 EmitParameterList(IRList *irl, OperandList *oplist, Function *func, AST *functype)
 {
     Operand *op;
     Operand *dst;
     int n = 0;
-  
+    int stackadj = 0;
+    
     while (oplist != NULL) {
         op = oplist->op;
         oplist = oplist->next;
 
         dst = GetFunctionParameterForCall(irl, func, functype, n++);
-        EmitMove(irl, dst, op);
+        if (dst) {
+            EmitMove(irl, dst, op);
+        } else {
+            if (stackadj == 0) {
+                ValidateStackptr();
+                EmitMove(irl, GetArgReg(n-1), stackptr);
+            }
+            EmitPush(irl, op);
+            if (COG_DATA) {
+                stackadj++;
+            } else {
+                stackadj += 4;
+            }
+        }
     }
+    return stackadj; // amount to adjust the stack by after the call
 }
 
 /*
@@ -2424,7 +2463,8 @@ CompileFunccall(IRList *irl, AST *expr)
   int numresults;
   IR *ir;
   int i;
-
+  int stackadj = 0;
+  
   func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
   
   params = expr->right;
@@ -2433,7 +2473,7 @@ CompileFunccall(IRList *irl, AST *expr)
   /* now copy the parameters into place (have to do this in case there are
      function calls within the parameters)
    */
-  EmitParameterList(irl, temp, func, functype);
+  stackadj = EmitParameterList(irl, temp, func, functype);
 
   if (offset || absobjaddr) {
       Operand *temp = NULL;
@@ -2469,6 +2509,9 @@ CompileFunccall(IRList *irl, AST *expr)
       reg = NewFunctionTempRegister();
       EmitMove(irl, reg, GetResultReg(i));
       AppendOperand(&results, reg);
+  }
+  if (stackadj) {
+      EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(stackadj));
   }
   return results;
 }
@@ -3123,6 +3166,13 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         r = dest;
     }
     return r;
+  case AST_VA_START:
+  {   // va_start(x, n) -> mov x, __func__varargs
+      Operand *src = CompileIdentifier(irl, expr); // VA_START gets __func__varargs
+      r = CompileIdentifier(irl, expr->left);
+      EmitMove(irl, r, src);
+      return r;
+  }
   case AST_SELF:
       ValidateObjbase();
       return objbase;
@@ -3221,6 +3271,21 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       }
       ERROR(expr, "expected expression at end of statement list");
       return NewImmediate(0);
+  }
+  case AST_VA_ARG:
+  {
+      // x = va_arg(vl, type) should act like:
+      //  x = *(type *)vl;
+      //  vl += sizeof(type)
+      int incsize = TypeSize(expr->left);
+      Operand *temp = dest ? dest : NewFunctionTempRegister();
+      r = CompileHubref(irl, expr);
+      EmitMove(irl, temp, r);
+      (void)CompileExpression(irl,
+                              AstAssign(expr->right,
+                                        AstOperator('+', expr->right, AstInteger(incsize))),
+                              NULL);
+      return temp;
   }
   default:
     ERROR(expr, "Cannot handle expression yet");

@@ -96,4 +96,8 @@ int ExprHasSideEffects(AST *);
 // number of results from a function
 int FuncNumResults(AST *functype);
 
+// number of parameters to a function (negative for varargs, in which
+// case the absolute value is the minimum number of parameters)
+int FuncNumParams(AST *functype);
+
 #endif

@@ -379,7 +379,16 @@ WARNING(AST *instr, const char *msg, ...)
 void
 ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
-    ERROR(ast, "Unknown symbol %s", ast->d.string);
+    const char *name;
+
+    if (ast->kind == AST_IDENTIFIER) {
+        name = ast->d.string;
+    } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
+        name = "__vararg";
+    } else {
+        name = "";
+    }
+    ERROR(ast, "Unknown symbol %s", name);
     // add a definition for this symbol so we don't get this error again
     if (curfunc) {
         AddLocalVariable(curfunc, ast, NULL, SYM_LOCALVAR);

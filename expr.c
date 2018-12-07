@@ -2299,3 +2299,21 @@ FuncNumResults(AST *functype)
     }
     return (TypeSize(functype) + 3) / 4;
 }
+
+int
+FuncNumParams(AST *functype)
+{
+    AST *arglist = functype->right;
+    AST *arg;
+    int n = 0;
+    while (arglist) {
+        arg = arglist->left;
+        arglist = arglist->right;
+        if (arg->kind == AST_VARARGS) {
+            n = -n;
+            break;
+        }
+        n++;
+    }
+    return n;
+}

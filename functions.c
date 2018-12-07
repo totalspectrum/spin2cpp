@@ -68,7 +68,16 @@ static Symbol *
 EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
 {
     Symbol *sym;
-    const char *name = astname->d.string;
+    const char *name;
+
+    if (astname->kind == AST_IDENTIFIER) {
+        name = astname->d.string;
+    } else if (astname->kind == AST_VARARGS) {
+        name = "__varargs";
+    } else {
+        ERROR(astname, "Internal error, bad identifier");
+        return NULL;
+    }
     
     sym = AddSymbol(stab, name, kind, (void *)type);
     if (!sym) {
@@ -102,10 +111,13 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 if (typesize < 4) typesize = 4;
             }
             switch (ast->kind) {
+            case AST_VARARGS:
             case AST_IDENTIFIER:
                 sym = EnterVariable(kind, stab, ast, actualtype);
                 if (sym) sym->offset = offset;
-                offset += typesize;
+                if (ast->kind != AST_VARARGS) {
+                    offset += typesize;
+                }
                 break;
             case AST_ARRAYDECL:
                 sym = EnterVariable(kind, stab, ast->left, NewAST(AST_ARRAYTYPE, actualtype, ast->right));
@@ -115,8 +127,6 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 break;
             case AST_ANNOTATION:
                 /* just ignore it */
-                break;
-            case AST_VARARGS:
                 break;
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
