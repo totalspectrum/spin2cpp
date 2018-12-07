@@ -132,6 +132,9 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         expr->left = second;
         return expr;
     default:
+        if (!first) {
+            return MergePrefix(prefix, second);
+        }
         ERROR(first, "Internal error: don't know how to combine types");
         return first;
     }
@@ -178,6 +181,10 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
 static void
 DeclareCGlobalVariables(AST *slist)
 {
+    if (slist && slist->kind == AST_DECLARE_VAR) {
+        DeclareBASICGlobalVariables(slist);
+        return;
+    }
     while (slist) {
         if (slist->kind != AST_STMTLIST) {
             ERROR(slist, "internal error in DeclareCGlobalVars");
@@ -241,7 +248,7 @@ static AST *
 AddEnumerators(AST *identifier, AST *enumlist)
 {
     current->conblock = AddToList(current->conblock, enumlist);
-    return NULL;
+    return ast_type_long;
 }
 
 %}

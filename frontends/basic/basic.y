@@ -102,6 +102,9 @@ DeclareBASICGlobalVariables(AST *ast)
     }
     idlist = ast->right;
     typ = ast->left;
+    if (!idlist) {
+        return;
+    }
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
