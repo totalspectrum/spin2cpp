@@ -639,11 +639,19 @@ LineInfo *GetLineInfo(AST *ast)
 {
     LexStream *L;
     LineInfo *I;
+    int size;
+    int i;
+    
     if (!ast || !ast->lexdata) return NULL;
     L = ast->lexdata;
     I = (LineInfo *)flexbuf_peek(&L->lineInfo);
     if (I) {
-        return I + ast->lineidx;
+        i = ast->lineidx;
+        size = (flexbuf_curlen(&L->lineInfo) / sizeof(*I));
+        if (i >= size) {
+            i = size - 1;
+        }
+        return I + i;
     }
     return NULL;
 }
