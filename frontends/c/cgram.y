@@ -271,8 +271,12 @@ ForceStatementList(AST *stmt)
 %token C_STATIC "static"
 %token C_AUTO "auto"
 %token C_REGISTER "register"
+%token C_RESTRICT "__restrict"
+%token C_BOOL "_Bool"
 %token C_CHAR  "char"
 %token C_SHORT "short"
+%token C_IMAGINARY "_Imaginary"
+%token C_INLINE "inline"
 %token C_INT   "int"
 %token C_LONG  "long"
 %token C_SIGNED "signed"
@@ -627,6 +631,8 @@ type_specifier
             { $$ = ast_type_void; }
 	| C_CHAR
             { $$ = ast_type_byte; }
+	| C_BOOL
+            { $$ = ast_type_byte; }
 	| C_SHORT
             { $$ = ast_type_signed_word; }
 	| C_INT
@@ -712,6 +718,8 @@ type_qualifier
             { $$ = NewAST(AST_MODIFIER_CONST, NULL, NULL); }
 	| C_VOLATILE
             { $$ = NewAST(AST_MODIFIER_VOLATILE, NULL, NULL); }
+        | C_RESTRICT
+            { $$ = NULL; }
 	;
 
 declarator

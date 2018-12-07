@@ -1382,6 +1382,7 @@ struct reservedword basic_keywords[] = {
 
 struct reservedword c_keywords[] = {
   { "__asm", C_ASM },
+  { "_Bool", C_BOOL },
   { "__builtin_alloca", C_BUILTIN_ALLOCA },
   { "__builtin_printf", C_BUILTIN_PRINTF },
   { "__builtin_propeller_rev", C_BUILTIN_REV },
@@ -1401,8 +1402,11 @@ struct reservedword c_keywords[] = {
   { "for", C_FOR },
   { "goto", C_GOTO },
   { "if", C_IF },
+  { "_Imaginary", C_IMAGINARY },
+  { "__inline", C_INLINE },
   { "int", C_INT },
   { "long", C_LONG },
+  { "__restrict", C_RESTRICT },
   { "return", C_RETURN },
   { "short", C_SHORT },
   { "signed", C_SIGNED },
