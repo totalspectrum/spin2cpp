@@ -169,6 +169,9 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
         // just ignore EXTERN declarations
         return NULL;
     }
+    if (!ident && !type) {
+        return NULL;
+    }
     return NewAST(AST_DECLARE_VAR, type, ident);
 }
 
@@ -232,6 +235,13 @@ ForceStatementList(AST *stmt)
         return NewAST(AST_STMTLIST, stmt, NULL);
     }
     return stmt;
+}
+
+static AST *
+AddEnumerators(AST *identifier, AST *enumlist)
+{
+    current->conblock = AddToList(current->conblock, enumlist);
+    return NULL;
 }
 
 %}
@@ -699,18 +709,29 @@ struct_declarator
 
 enum_specifier
 	: C_ENUM '{' enumerator_list '}'
+            { $$ = AddEnumerators(NULL, $3); }
 	| C_ENUM C_IDENTIFIER '{' enumerator_list '}'
+            { $$ = AddEnumerators($2, $4); }
+	| C_ENUM '{' enumerator_list ',' '}'
+            { $$ = AddEnumerators(NULL, $3); }
+	| C_ENUM C_IDENTIFIER '{' enumerator_list ',' '}'
+            { $$ = AddEnumerators($2, $4); }
 	| C_ENUM C_IDENTIFIER
+            { $$ = NULL; }
 	;
 
 enumerator_list
 	: enumerator
+            { $$ = CommentedListHolder($1); }
 	| enumerator_list ',' enumerator
+            { $$ = AddToList($1, CommentedListHolder($3)); }
 	;
 
 enumerator
 	: C_IDENTIFIER
+            { $$ = $1; }
 	| C_IDENTIFIER '=' constant_expression
+            { $$ = NewAST(AST_ASSIGN, $1, $3); }
 	;
 
 type_qualifier
