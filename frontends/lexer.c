@@ -881,7 +881,11 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
       eoln_token = BAS_EOLN;
       eof_token = BAS_EOF;
     } else if (language == LANG_C) {
-        eoln_token = ' ';
+        if (L->in_block == SP_ASM) {
+            eoln_token = C_EOLN;
+        } else {
+            eoln_token = ' ';
+        }
         eof_token = -1;
     } else {
       eoln_token = SP_EOLN;
@@ -1377,6 +1381,7 @@ struct reservedword basic_keywords[] = {
 };
 
 struct reservedword c_keywords[] = {
+  { "__asm", C_ASM },
   { "__builtin_alloca", C_BUILTIN_ALLOCA },
   { "__builtin_printf", C_BUILTIN_PRINTF },
   { "__builtin_propeller_rev", C_BUILTIN_REV },
@@ -2899,6 +2904,8 @@ getCToken(LexStream *L, AST **ast_ptr)
     } else if (c == '"') {
         parseCString(L, &ast);
 	c = C_STRING_LITERAL;
+    } else if (c == '}' && InDatBlock(L)) {
+        L->in_block = SP_PUB;
     } else if (c == '\'') {
         c = lexgetc(L);
         if (c == '\\') {

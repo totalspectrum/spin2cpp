@@ -300,9 +300,16 @@ ForceStatementList(AST *stmt)
 %token C_BREAK "break"
 %token C_RETURN "return"
 
-%token C_ASM "__asm__"
+%token C_ASM "__asm"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
+
+ // asm only tokens
+%token C_WORD "word"
+%token C_BYTE "byte"
+%token C_ALIGNL "alignl"
+%token C_ALIGNW "alignw"
+%token C_EOLN "end of line"
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
 %token C_BUILTIN_PRINTF "__builtin_printf"
@@ -843,6 +850,7 @@ statement
 	| selection_statement
 	| iteration_statement
 	| jump_statement
+        | asm_statement
 	;
 
 labeled_statement
@@ -882,6 +890,112 @@ compound_statement_close:
     { PopCurrentTypes(); }
   ;
 
+asm_statement:
+  C_ASM '{' asmlist '}'
+    { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+;
+asmlist:
+  asmline
+  { $$ = $1; }
+  | asmlist asmline
+  { $$ = AddToList($1, $2); }
+  ;
+
+asmline:
+  basedatline
+  | C_IDENTIFIER basedatline
+    {   AST *linebreak;
+        AST *comment = GetComments();
+        AST *ast;
+        ast = $1;
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        }
+        ast = AddToList(ast, $2);
+        ast = AddToList(linebreak, ast);
+        $$ = ast;
+    }
+  ;
+
+basedatline:
+  C_EOLN
+    { $$ = NULL; }
+  | error C_EOLN
+    { $$ = NULL; }
+  | C_BYTE C_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
+  | C_BYTE operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
+  | C_WORD C_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
+  | C_WORD operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
+  | C_LONG C_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
+  | C_LONG operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
+  | instruction C_EOLN
+    { $$ = NewCommentedInstr($1); }
+  | instruction operandlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction modifierlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction operandlist modifierlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
+  | C_ALIGNL C_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
+  | C_ALIGNW C_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  ;
+
+operand:
+  pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+ | '#' pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
+ | '#' '#' pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
+ | pasmexpr '[' pasmexpr ']'
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+;
+
+pasmexpr:
+  conditional_expression
+    { $$ = $1; }
+  | '\\' conditional_expression
+    { $$ = AstCatch($2); }
+;
+
+operandlist:
+   operand
+   { $$ = $1; }
+ | operandlist ',' operand
+   { $$ = AddToList($1, $3); }
+ ;
+
+instruction:
+  C_INSTR
+  { $$ = $1; }
+  | instrmodifier instruction
+  { $$ = AddToList($2, $1); }
+;
+ 
+instrmodifier:
+  C_INSTRMODIFIER
+  { $$ = $1; }
+;
+
+modifierlist:
+  instrmodifier
+    { $$ = $1; }
+  | modifierlist instrmodifier
+    { $$ = AddToList($1, $2); }
+  | modifierlist ',' instrmodifier
+    { $$ = AddToList($1, $3); }
+  ;
+  
 declaration_list
 	: declaration
             { $$ = MakeDeclaration($1); }
