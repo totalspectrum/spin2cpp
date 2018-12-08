@@ -297,6 +297,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         is_typedef = 1;
     }
     if (type->kind == AST_STATIC) {
+        // FIXME: this case probably shouldn't happen any more?? 
         type = type->left;
         is_static = 1;
     }
@@ -343,7 +344,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     }
     if (is_static) {
         if (!alias) {
-            alias = NewTemporaryVariable("_static_var");
+            alias = NewTemporaryVariable("_static_");
             ident = AstIdentifier(alias);
             AddSymbol(table, name, SYM_ALIAS, (void *)alias);
         }

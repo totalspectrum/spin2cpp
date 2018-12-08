@@ -682,7 +682,10 @@ CheckOneDeclaration(AST *origdecl)
     AST *decl = origdecl;
     AST *ident;
     if (!decl) return decl;
-    
+
+    if (decl->kind == AST_DECLARE_ALIAS) {
+        return decl;
+    }
     if (decl->kind != AST_DECLARE_VAR) {
         ERROR(decl, "internal error, expected DECLARE_VAR");
         return decl;

@@ -186,6 +186,7 @@ enum astkind {
     AST_SYMBOL = 128,
     AST_VA_START,
     AST_VA_ARG,
+    AST_DECLARE_ALIAS,
 };
 
 /* forward reference */

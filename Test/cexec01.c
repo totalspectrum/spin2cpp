@@ -8,6 +8,8 @@ enum MYKIND {
 
 void testswitch(int n)
 {
+    static int cntr = 1;
+    printf("call #%d: ", cntr++);
     switch(n) {
     case 0:
         printf("zero\n");

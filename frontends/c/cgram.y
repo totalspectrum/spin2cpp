@@ -141,6 +141,51 @@ CombineTypes(AST *first, AST *second, AST **identifier)
 }
 
 static AST *
+DeclareStatics(Module *P, AST *basetype, AST *decllist)
+{
+    AST *ident;
+    AST *decl;
+    AST *name;
+    AST *globalname;
+    AST *localname;
+    AST *results = NULL;
+    
+    // go through the identifier list
+    while (decllist) {
+        if (decllist->kind == AST_LISTHOLDER) {
+            decl = decllist->left;
+            decllist = decllist->right;
+        } else {
+            decl = decllist;
+            decllist = NULL;
+        }
+        if (decl->kind == AST_ASSIGN) {
+            ident = decl->left;
+        } else {
+            ident = decl;
+        }
+        if (ident->kind == AST_ARRAYDECL) {
+            name = ident->left;
+        } else {
+            name = ident;
+        }
+        // OK, "name" is the name we want it to be known as inside
+        // the function, but we will want to create a global variable
+        // with a new name
+        globalname = AstTempIdentifier("_static_");
+        localname = AstIdentifier(strdup(name->d.string));
+        results = AddToList(results,
+                            NewAST(AST_STMTLIST,
+                                   NewAST(AST_DECLARE_ALIAS, localname, globalname),
+                                   NULL));
+        // and enter a new global definition
+        *name = *globalname;
+        DeclareOneGlobalVar(P, decl, basetype);
+    }
+    return results;
+}
+
+static AST *
 MultipleDeclareVar(AST *first, AST *second)
 {
     AST *ident, *type;
@@ -155,8 +200,12 @@ MultipleDeclareVar(AST *first, AST *second)
         item = second->left;
         second = second->right;
         type = CombineTypes(first, item, &ident);
-        ident = NewAST(AST_DECLARE_VAR, type, ident);
-        stmtlist = AddToList(stmtlist, NewAST(AST_STMTLIST, ident, NULL));
+        if (type->kind == AST_STATIC) {
+            stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
+        } else {
+            ident = NewAST(AST_DECLARE_VAR, type, ident);
+            stmtlist = AddToList(stmtlist, NewAST(AST_STMTLIST, ident, NULL));
+        }
     }
     return stmtlist;
 }

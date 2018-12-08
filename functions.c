@@ -256,6 +256,10 @@ GuessLambdaReturnType(AST *params, AST *body)
 }
 
 //
+// declare some static variables
+//
+
+//
 // FIXME: someday we should implement scopes other 
 // than function scope
 //
@@ -273,10 +277,20 @@ findLocalsAndDeclare(Function *func, AST *ast)
     
     if (!ast) return;
     switch(ast->kind) {
+    case AST_DECLARE_ALIAS:
+        name = ast->left;
+        ident = ast->right;
+        AddSymbol(&func->localsyms, name->d.string, SYM_ALIAS, (void *)ident->d.string);
+        AstNullify(ast);
+        return;
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
         identlist = ast->right;
         basetype = ast->left;
+        if (basetype && basetype->kind == AST_STATIC) {
+            ERROR(ast, "Internal error, saw STATIC");
+            return;
+        }
         while (identlist) {
             datatype = expr = NULL;
             if (identlist->kind == AST_LISTHOLDER) {

@@ -517,6 +517,7 @@ static const char *astnames[] = {
     "symbol",
     "va_start",
     "va_arg",
+    "declare_alias",
 };
 
 //
