@@ -532,7 +532,10 @@ postfix_expression
 	| postfix_expression '.' C_IDENTIFIER
             { $$ = NewAST(AST_METHODREF, $1, $3); }
 	| postfix_expression C_PTR_OP C_IDENTIFIER
-            { $$ = NewAST(AST_METHODREF, $1, $3); }
+            { $$ = NewAST(AST_METHODREF,
+                          NewAST(AST_ARRAYREF, $1, AstInteger(0)),
+                          $3);
+            }
 	| postfix_expression C_INC_OP
             { $$ = AstOperator(K_INCREMENT, $1, NULL); }
 	| postfix_expression C_DEC_OP
