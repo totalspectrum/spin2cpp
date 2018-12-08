@@ -2600,6 +2600,61 @@ CompileHubref(IRList *irl, AST *expr)
 }
 
 static Operand *
+OffsetMemory(IRList *irl, Operand *base, Operand *offset)
+{
+    Operand *basereg;
+    Operand *newbase;
+    Operand *temp;
+    int idx;
+    int shift;
+    
+    // check for COG memory references
+    if (!IsMemRef(base) && IsCogMem(base)) {
+        Operand *addr;
+        switch(base->kind) {
+        case REG_REG:
+        case REG_LOCAL:
+        case REG_ARG:
+        case REG_HW:
+            base->used = 1;
+            addr = NewOperand(IMM_COG_LABEL, base->name, 0);
+            temp = NewFunctionTempRegister();
+            EmitMove(irl, temp, addr);
+            base = CogMemRef(temp, 0);
+            break;
+        default:
+            break;
+        }
+    }
+    if (!IsMemRef(base)) {
+        ERROR(NULL, "Pointer does not reference memory");
+        return base;
+    }
+    if (base->kind == COG_REF) {
+        shift = 2;
+    } else {
+        shift = 0;
+    }
+    basereg = (Operand *)base->name;
+    if (offset->kind == IMM_INT) {
+        idx = offset->val >> shift;
+        if (idx == 0) {
+            return base;
+        }
+        newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
+        return newbase;
+    }
+    temp = NewFunctionTempRegister();
+    EmitMove(irl, temp, offset);
+    if (shift) {
+        EmitOp2(irl, OPC_SHR, temp, NewImmediate(shift));
+    }
+    newbase = GetLea(irl, base);
+    EmitOp2(irl, OPC_ADD, temp, newbase);
+    return NewOperand(base->kind, (char *)temp, 0);
+}
+
+static Operand *
 ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
 {
     Operand *basereg;
@@ -3286,6 +3341,16 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                                         AstOperator('+', expr->right, AstInteger(incsize))),
                               NULL);
       return temp;
+  }
+  case AST_METHODREF:
+  {
+      int off;
+      off = 0;
+      Operand *base;
+      
+      base = CompileExpression(irl, expr->left, NULL);
+      r = OffsetMemory(irl, base, NewImmediate(off));
+      return r;
   }
   default:
     ERROR(expr, "Cannot handle expression yet");
