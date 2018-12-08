@@ -1599,10 +1599,8 @@ static int DecomposeBits(unsigned val, int *shifts)
 static int g_NeedMulHi = 0;
 
 static Operand *
-CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
-{
-    Operand *lhs = CompileExpression(irl, expr->left, NULL);
-    Operand *rhs = CompileExpression(irl, expr->right, NULL);
+doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
+{    
     Operand *temp = NewFunctionTempRegister();
 
     g_NeedMulHi |= gethi;
@@ -1659,6 +1657,14 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
         EmitMove(irl, temp, muldiva);
     }
     return temp;
+}
+
+static Operand *
+CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
+{
+    Operand *lhs = CompileExpression(irl, expr->left, NULL);
+    Operand *rhs = CompileExpression(irl, expr->right, NULL);
+    return doCompileMul(irl, lhs, rhs, gethi, dest);
 }
 
 #define FAST_IMMEDIATE_DIVIDES
@@ -2644,9 +2650,6 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         } else {
             idx = 0;
         }
-        if (idx == 0) {
-            return base;
-        }
         newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
         newbase->size = siz;
         return newbase;
@@ -2671,7 +2674,6 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     Operand *temp;
     int idx;
     int siz;
-    int shift;
 
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
@@ -2698,25 +2700,13 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     switch (base->kind) {
     case HUBMEM_REF:
         siz = base->size;
-        if (siz == 4) {
-            shift = 2;
-        } else if (siz == 2) {
-            shift = 1;
-        } else if (siz == 1) {
-            shift = 0;
-        } else {
-            ERROR(NULL, "Bad size is array reference");
-            shift = 0;
-        }
         break;
     case COGMEM_REF:
-        siz = 1;
-        shift = 0;
+        siz = base->size / 4;
         break;
     default:
         ERROR(NULL, "Bad size in array reference");
         siz = 1;
-	shift = 0;
         break;
     }
           
@@ -2732,8 +2722,13 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     }
     temp = NewFunctionTempRegister();
     EmitMove(irl, temp, offset);
-    if (shift) {
-        EmitOp2(irl, OPC_SHL, temp, NewImmediate(shift));
+    if (siz > 1) {
+        if (siz == 4) {
+            EmitOp2(irl, OPC_SHL, temp, NewImmediate(2));
+        } else {
+            Operand *temp2 = doCompileMul(irl, temp, NewImmediate(siz), 0, temp);
+            temp = temp2;
+        }
     }
     newbase = GetLea(irl, base);
     EmitOp2(irl, OPC_ADD, temp, newbase);
