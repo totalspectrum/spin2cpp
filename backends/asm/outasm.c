@@ -3352,13 +3352,26 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_METHODREF:
   {
-      int off;
-      off = 0;
+      Symbol *sym;
       Operand *base;
       AST *type;
-
+      int off = 0;
+      Module *P;
+      const char *name;
       type = ExprType(expr);
       base = CompileExpression(irl, expr->left, NULL);
+      name = GetIdentifierName(expr->right);
+      sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
+      if (sym) {
+          switch (sym->type) {
+          case SYM_VARIABLE:
+              off = sym->offset;
+              break;
+          default:
+              ERROR(expr, "Unable to dereference symbol %s in %s", name, P->classname);
+              break;
+          }
+      }
       r = OffsetMemory(irl, base, NewImmediate(off), type);
       return r;
   }

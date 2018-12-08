@@ -69,9 +69,13 @@ int IsConstType(AST *typ);
 
 int CompatibleTypes(AST *A, AST *B);
 
+// get the name from an AST_IDENTIFIER or AST_SYMBOL
+const char *GetIdentifierName(AST *ident);
+
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
+Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module **Ptr);
 
 // find expression type relative to current function
 AST *ExprType(AST *ast);

@@ -20,7 +20,7 @@ GetIdentifierName(AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
         name = expr->d.string;
     } else {
-        ERROR(expr, "internal error, expected an identifier");
+        ERROR(expr, "expected an identifier");
     }
     return name;
 }
