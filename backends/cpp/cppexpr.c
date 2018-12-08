@@ -1510,15 +1510,13 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintLookExpr(f, "Lookdown__", expr->left, expr->right);
         break;
     case AST_CONSTREF:
-        if (!GetObjConstant(expr, &objsym, &sym, NULL))
-            return;
-        {
-            AST *objast = (AST *)objsym->val;
-            Module *P = (Module *)objast->d.ptr;
-            
-            PrintObjConstName(f, P, sym->name);
-        }
+    {
+        Module *P;
+        sym = LookupMethodRef(expr, &P);
+        
+        PrintObjConstName(f, P, sym->name);
         break;
+    }
     case AST_TRYENV:
         flexbuf_printf(f, "__extension__({ AbortHook__ *stack__ = abortChain__, here__; ");
         flexbuf_printf(f, "%s tmp__; abortChain__ = &here__; tmp__ = ", gl_intstring);

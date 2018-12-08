@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+
+/* forward declaration */
+typedef struct modulestate Module;
+
 #include "ast.h"
 #include "symbol.h"
 #include "expr.h"
@@ -163,9 +167,6 @@ typedef struct hwreg {
     uint32_t    addr;
     const char *cname;
 } HwReg;
-
-/* forward declaration */
-typedef struct modulestate Module;
 
 /* structure describing an object function (method) */
 typedef struct funcdef {

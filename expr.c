@@ -12,6 +12,19 @@
 #include <math.h>
 #include <stdlib.h>
 
+/* get the identifier name from an identifier */
+const char *
+GetIdentifierName(AST *expr)
+{
+    const char *name = "the expression";
+    if (expr->kind == AST_IDENTIFIER) {
+        name = expr->d.string;
+    } else {
+        ERROR(expr, "internal error, expected an identifier");
+    }
+    return name;
+}
+
 /* get class from object type */
 Module *
 GetClassPtr(AST *objtype)
@@ -70,7 +83,8 @@ LookupAstSymbol(AST *ast, const char *msg)
 {
     Symbol *sym;
     AST *id;
-
+    const char *name;
+    
     if (ast->kind == AST_SYMBOL) {
         return (Symbol *)ast->d.ptr;
     }
@@ -82,13 +96,10 @@ LookupAstSymbol(AST *ast, const char *msg)
         //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
         return NULL;
     }
-    if (id->kind != AST_IDENTIFIER) {
-        ERROR(id, "expected an identifier, got %d", id->kind);
-        return NULL;
-    }
-    sym = LookupSymbol(id->d.string);
+    name = GetIdentifierName(id);
+    sym = LookupSymbol(name);
     if (!sym && msg) {
-        ERROR(id, "unknown identifier %s used in %s", id->d.string, msg);
+        ERROR(id, "unknown identifier %s used in %s", name, msg);
     }
     return sym;
 }
@@ -97,7 +108,7 @@ LookupAstSymbol(AST *ast, const char *msg)
  * look up an object member given the object type
  */
 Symbol *
-LookupMemberSymbol(AST *expr, AST *objtype, const char *name)
+LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
 {
     Module *P;
     Symbol *sym;
@@ -107,12 +118,32 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name)
         return NULL;
     }
     P = (Module *)objtype->d.ptr;
-    
+    if (Ptr) {
+        *Ptr = P;
+    }
     sym = FindSymbol(&P->objsyms, name);
     if (!sym) {
         ERROR(expr, "unknown identifier %s in class %s", name, P->classname);
     }
     return sym;
+}
+
+/*
+ * look up a symbol from a method reference
+ * "expr" is the pointer to the method ref
+ * if "Ptr" is nonzero it is used to return the
+ * object referred to
+ */
+Symbol *
+LookupMethodRef(AST *expr, Module **Ptr)
+{
+    AST *type = ExprType(expr->left);
+    AST *ident = expr->right;
+    const char *name;
+    
+    name = GetIdentifierName(ident);
+    return LookupMemberSymbol(expr, type, name, Ptr);
+    
 }
 
 /*
@@ -176,52 +207,6 @@ TypeName(AST *type)
         return P->classname;
     }
     return "that type";
-}
-
-/*
- * look up an object constant reference
- * sets *objsym to the object and *sym to the symbol
- */
-
-int
-GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr, int *valid)
-{
-    Symbol *objsym, *sym;
-    objsym = LookupAstSymbol(expr->left, "object reference");
-    if (!objsym) {
-        // error already printed
-        return 0;
-    }
-    if (objsym->type != SYM_OBJECT) {
-        if (valid) {
-            *valid = 0;
-        } else {
-            ERROR(expr, "%s is not an object", objsym->name);
-        }
-        return 0;
-    }
-    if (expr->right->kind != AST_IDENTIFIER) {
-        if (valid) {
-            *valid = 0;
-        } else {
-            ERROR(expr, "expected identifier after '#'");
-        }
-        return 0;
-    }
-    sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
-    if (!sym || (sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
-        if (valid) {
-            *valid = 0;
-        } else {
-            ERROR(expr, "%s is not a constant of object %s",
-                  expr->right->d.string, objsym->name);
-        }
-        return 0;
-    }
-
-    if (objsym_ptr) *objsym_ptr = objsym;
-    if (sym_ptr) *sym_ptr = sym;
-    return 1;
 }
 
 /* code to check if a coginit invocation is for a spin method */
@@ -1078,7 +1063,7 @@ EvalExprInState(Module *P, AST *expr, unsigned flags, int *valid, int depth)
 static ExprVal
 EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 {
-    Symbol *sym, *objsym;
+    Symbol *sym;
     ExprVal lval, rval;
     ExprVal aval;
     int reportError = (valid == NULL);
@@ -1146,14 +1131,26 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid, depth+1);
     case AST_CONSTREF:
-        if (!GetObjConstant(expr, &objsym, &sym, valid)) {
+    case AST_METHODREF:
+    {
+        Module *P;
+        sym = LookupMethodRef(expr, &P);
+
+        if (!sym) {
+            return intExpr(0);
+        }
+        if ((sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
+            if (valid) {
+                *valid = 0;
+            } else {
+                ERROR(expr, "%s is not a constant of %s", GetIdentifierName(expr->right), P->classname);
+            }
             return intExpr(0);
         }
         /* while we're evaluating, use the object context */
-        ret = EvalExprInState(GetObjectPtr(objsym), (AST *)sym->val, flags, valid, depth+1);
+        ret = EvalExprInState(P, (AST *)sym->val, flags, valid, depth+1);
         return ret;
-    case AST_METHODREF:
-        
+    }
     case AST_RESULT:
         *valid = 0;
         return intExpr(0);
@@ -2037,7 +2034,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             return NULL;
         }
         methodname = expr->right->d.string;
-        sym = LookupMemberSymbol(expr, objtype, methodname);
+        sym = LookupMemberSymbol(expr, objtype, methodname, NULL);
         if (!sym) {
             ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));
             return NULL;

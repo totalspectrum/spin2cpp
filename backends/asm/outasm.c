@@ -2600,7 +2600,7 @@ CompileHubref(IRList *irl, AST *expr)
 }
 
 static Operand *
-OffsetMemory(IRList *irl, Operand *base, Operand *offset)
+OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
 {
     Operand *basereg;
     Operand *newbase;
@@ -2636,8 +2636,12 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset)
         shift = 0;
     }
     basereg = (Operand *)base->name;
-    if (offset->kind == IMM_INT) {
-        idx = offset->val >> shift;
+    if (!offset || offset->kind == IMM_INT) {
+        if (offset) {
+            idx = offset->val >> shift;
+        } else {
+            idx = 0;
+        }
         if (idx == 0) {
             return base;
         }
@@ -3347,9 +3351,11 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       int off;
       off = 0;
       Operand *base;
-      
+      AST *type;
+
+      type = ExprType(expr);
       base = CompileExpression(irl, expr->left, NULL);
-      r = OffsetMemory(irl, base, NewImmediate(off));
+      r = OffsetMemory(irl, base, NewImmediate(off), type);
       return r;
   }
   default:
