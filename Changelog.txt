@@ -7,6 +7,7 @@ Version 3.9.12
 - Implemented enums in C
 - Implemented static variables in C
 - Added inline assembly to C
+- Began implementation of structs in C
 
 Version 3.9.11
 - Added tail call optimization

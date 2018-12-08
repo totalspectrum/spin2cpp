@@ -198,7 +198,18 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return offset;
         }
-        if (basetypesize == curtypesize || (basetypesize == 4 && curtypesize >= 4)) {
+        if (basetypesize == 0) {
+            // round offset up to necessary alignment
+            if (!gl_p2) {
+                if (curtypesize == 2) {
+                    offset = (offset + 1) & ~1;
+                } else if (curtypesize >= 4) {
+                    offset = (offset + 3) & ~3;
+                }
+            }
+            // declare all the variables
+            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
+        } else if (basetypesize == curtypesize || (basetypesize == 4 && curtypesize >= 4)) {
             offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
         }
     }
@@ -418,12 +429,15 @@ DeclareMemberVariables(Module *P)
 {
     int offset = 0;
 
-    // FIXME: Spin always declares longs first, then words, then bytes
-    // but other languages may have other preferences
-    offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
-    offset = DeclareMemberVariablesOfSize(P, 2, offset);
-    offset = DeclareMemberVariablesOfSize(P, 1, offset);
-
+    if (P->lastLanguage == LANG_SPIN) {
+        // Spin always declares longs first, then words, then bytes
+        // but other languages may have other preferences
+        offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
+        offset = DeclareMemberVariablesOfSize(P, 2, offset);
+        offset = DeclareMemberVariablesOfSize(P, 1, offset);
+    } else {
+        offset = DeclareMemberVariablesOfSize(P, 0, offset);
+    }
     // round up to next LONG boundary
     offset = (offset + 3) & ~3;
     P->varsize = offset;
