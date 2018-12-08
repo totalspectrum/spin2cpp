@@ -124,10 +124,9 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             flexbuf_addstr(fb, RemappedName(reg->name));
         }
         break;
-    case BYTE_REF:
-    case WORD_REF:
-    case LONG_REF:
-        WARNING(NULL, "Internal error: tried to use memory directly");
+    case HUBMEM_REF:
+    case COGMEM_REF:
+        ERROR(NULL, "Internal error: tried to use memory directly");
         flexbuf_addstr(fb, "#@@@#");
         break;
     case IMM_HUB_LABEL:

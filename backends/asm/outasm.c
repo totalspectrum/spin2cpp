@@ -275,7 +275,7 @@ ValidatePushregs(void)
         
 static int IsMemRef(Operand *op)
 {
-    return op && (op->kind >= LONG_REF) && (op->kind <= COG_REF);
+    return op && (op->kind >= HUBMEM_REF) && (op->kind <= COGMEM_REF);
 }
 
 static Operand *
@@ -907,16 +907,12 @@ SizedHubMemRef(int size, Operand *addr, int offset)
 {
     Operand *temp;
 
-    if (size == 1) {
-        temp = NewOperand(BYTE_REF, (char *)addr, offset);
-    } else if (size == 2) {
-        temp = NewOperand(WORD_REF, (char *)addr, offset);
-    } else {
-        temp = NewOperand(LONG_REF, (char *)addr, offset);
-        if (size != 4) {
-            ERROR(NULL, "Illegal size for memory reference");
-        }
+    if (size == 0) {
+        ERROR(NULL, "bad size");
+        size = 4;
     }
+    temp = NewOperand(HUBMEM_REF, (char *)addr, offset);
+    temp->size = size;
     return temp;
 }
 
@@ -934,12 +930,13 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
     }
     if (!type) {
         size = 4;
-    } else if (type->kind == AST_TUPLETYPE || type->kind == AST_PTRTYPE ) {
+    } else if (type->kind == AST_TUPLETYPE) {
+        size = type->d.ival * 4;
+    } else if (type->kind == AST_PTRTYPE ) {
         size = 4;
     } else if (type->kind == AST_OBJECT) {
         Module *Q = type->d.ptr;
         size = Q->varsize;
-        if (size > 4) size = 4; // FIXME: is this necessary??
     } else if (type->kind == AST_FUNCTYPE) {
         size = 4;
     } else {
@@ -951,7 +948,9 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
 static Operand *
 CogMemRef(Operand *addr, int offset)
 {
-    return NewOperand(COG_REF, (char *)addr, offset);
+    Operand *ref = NewOperand(COGMEM_REF, (char *)addr, offset);
+    ref->size = 4;
+    return ref;
 }
 
 static Operand *
@@ -1013,7 +1012,10 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       case SYM_OBJECT:
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);
-              return NewOperand(LONG_REF, (char *)addr, 0);
+              Operand *ref;
+              ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
+              ref->size = LONG_SIZE;
+              return ref;
           }
           ValidateObjbase();
           if (stype == SYM_VARIABLE) {
@@ -1351,7 +1353,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
         if (ir->dst) {
             if (ir->dst == old) {
                 ir->dst = update;
-            } else if (ir->dst && ir->dst->kind == COG_REF && ir->dst->name == (char *)old) {
+            } else if (ir->dst && ir->dst->kind == COGMEM_REF && ir->dst->name == (char *)old) {
                 ir->dst->name = (char *)update;
             } else if (IsCogMem(ir->dst) && !strcmp(ir->dst->name, old->name)) {
                 ir->dst->name = update->name;
@@ -1360,7 +1362,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
         if (ir->src) {
             if (ir->src == old) {
                 ir->src = update;
-            } else if (ir->src->kind == COG_REF && ir->src->name == (char *)old) {
+            } else if (ir->src->kind == COGMEM_REF && ir->src->name == (char *)old) {
                 ir->src->name = (char *)update;
             } else if (IsCogMem(ir->src) && !strcmp(ir->src->name, old->name)) {
                 ir->src->name = update->name;
@@ -2571,7 +2573,7 @@ IsCogMem(Operand *addr)
 {
     switch (addr->kind) {
     case IMM_COG_LABEL:
-    case COG_REF:
+    case COGMEM_REF:
     case REG_HW:
     case REG_REG:
     case REG_LOCAL:
@@ -2580,9 +2582,7 @@ IsCogMem(Operand *addr)
     case IMM_HUB_LABEL:
     case IMM_STRING:
     case IMM_INT:
-    case LONG_REF:
-    case WORD_REF:
-    case BYTE_REF:
+    case HUBMEM_REF:
         return false;
     default:
         return COG_DATA;
@@ -2607,6 +2607,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     Operand *temp;
     int idx;
     int shift;
+    int siz;
     
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
@@ -2630,11 +2631,12 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         ERROR(NULL, "Pointer does not reference memory");
         return base;
     }
-    if (base->kind == COG_REF) {
+    if (base->kind == COGMEM_REF) {
         shift = 2;
     } else {
         shift = 0;
     }
+    siz = TypeSize(type);
     basereg = (Operand *)base->name;
     if (!offset || offset->kind == IMM_INT) {
         if (offset) {
@@ -2646,6 +2648,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
             return base;
         }
         newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
+        newbase->size = siz;
         return newbase;
     }
     temp = NewFunctionTempRegister();
@@ -2655,7 +2658,9 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     }
     newbase = GetLea(irl, base);
     EmitOp2(irl, OPC_ADD, temp, newbase);
-    return NewOperand(base->kind, (char *)temp, 0);
+    newbase = NewOperand(base->kind, (char *)temp, 0);
+    newbase->size = siz;
+    return newbase;
 }
 
 static Operand *
@@ -2691,19 +2696,20 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         return base;
     }
     switch (base->kind) {
-    case LONG_REF:
-        siz = 4;
-        shift = 2;
+    case HUBMEM_REF:
+        siz = base->size;
+        if (siz == 4) {
+            shift = 2;
+        } else if (siz == 2) {
+            shift = 1;
+        } else if (siz == 1) {
+            shift = 0;
+        } else {
+            ERROR(NULL, "Bad size is array reference");
+            shift = 0;
+        }
         break;
-    case WORD_REF:
-        siz = 2;
-        shift = 1;
-        break;
-    case BYTE_REF:
-        siz = 1;
-        shift = 0;
-        break;
-    case COG_REF:
+    case COGMEM_REF:
         siz = 1;
         shift = 0;
         break;
@@ -2721,6 +2727,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
             return base;
         }
         newbase = NewOperand(base->kind, (char *)basereg, idx + base->val);
+        newbase->size = siz;
         return newbase;
     }
     temp = NewFunctionTempRegister();
@@ -2730,7 +2737,9 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
     }
     newbase = GetLea(irl, base);
     EmitOp2(irl, OPC_ADD, temp, newbase);
-    return NewOperand(base->kind, (char *)temp, 0);
+    newbase = NewOperand(base->kind, (char *)temp, 0);
+    newbase->size = siz;
+    return newbase;
 }
 
 static Operand *
@@ -3464,23 +3473,24 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         if (off) {
             EmitAddSub(irl, src, off);
         }
-        switch (origsrc->kind) {
-        default:
-            ERROR(NULL, "Illegal memory reference");
-            break;
-        case COG_REF:
+        if (origsrc->kind == COGMEM_REF) {
             ir = EmitCogread(irl, where, src);
-            break;
-        case LONG_REF:
-            ir = EmitOp2(irl, OPC_RDLONG, where, src);
-            break;
-        case WORD_REF:
-            ir = EmitOp2(irl, OPC_RDWORD, where, src);
-            break;
-        case BYTE_REF:
-            ir = EmitOp2(irl, OPC_RDBYTE, where, src);
-            break;
+        } else if (origsrc->kind == HUBMEM_REF) {
+            int size = origsrc->size;
+            if (size == 4) {
+                ir = EmitOp2(irl, OPC_RDLONG, where, src);
+            } else if (size == 2) {
+                ir = EmitOp2(irl, OPC_RDWORD, where, src);
+            } else if (size == 1) {
+                ir = EmitOp2(irl, OPC_RDBYTE, where, src);
+            } else {
+                ERROR(NULL, "Cannot handle memrefs of size %d", size);
+                ir = EmitOp2(irl, OPC_RDBYTE, where, src);
+            }
+        } else {
+            ERROR(NULL, "Illegal memory reference");
         }
+
         if (off) {
             EmitAddSub(irl, src, -off);
         }
@@ -3499,22 +3509,21 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         if (off) {
             EmitAddSub(irl, dst, off);
         }
-        switch (origdst->kind) {
-        default:
-            ERROR(NULL, "Illegal memory reference");
-            break;
-        case COG_REF:
+        if (origdst->kind == COGMEM_REF) {
             ir = EmitCogwrite(irl, src, dst);
-            break;
-        case LONG_REF:
-            ir = EmitOp2(irl, OPC_WRLONG, src, dst);
-            break;
-        case WORD_REF:
-            ir = EmitOp2(irl, OPC_WRWORD, src, dst);
-            break;
-        case BYTE_REF:
-            ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
-            break;
+        } else if (origdst->kind == HUBMEM_REF) {
+            int size = origdst->size;
+            if (size == 4) {
+                ir = EmitOp2(irl, OPC_WRLONG, src, dst);
+            } else if (size == 2) {
+                ir = EmitOp2(irl, OPC_WRWORD, src, dst);
+            } else if (size == 1) {
+                ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
+            } else {
+                ERROR(NULL, "Cannot handle memref of size %d", size);
+            }
+        } else {
+            ERROR(NULL, "Illegal memory reference");
         }
         if (off) {
             EmitAddSub(irl, dst, -off);

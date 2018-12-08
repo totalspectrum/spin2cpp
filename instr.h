@@ -211,11 +211,11 @@ enum Operandkind {
     
 #define IsRegister(kind) ((kind) >= REG_HW && (kind) <= REG_ARG)
 
-    // all of these memory references must go together between LONG_REF and COG_REF
-    LONG_REF,      // register indirect memory access; val is the offset
-    WORD_REF,
-    BYTE_REF,
-    COG_REF,       // like LONG_REF but is in COG memory
+    // these memory references must go together between LONG_REF and COG_REF
+    // "val" is the offset from the register named "name"
+    // "size" is the size of the reference
+    HUBMEM_REF,      // register indirect memory access; val is the offset
+    COGMEM_REF,      // like HUBMEM_REF but is in COG memory
     
     // memory
     STRING_DEF, // data to go in memory
@@ -241,6 +241,7 @@ struct Operand {
     enum Operandkind kind;
     const char *name;
     intptr_t val;
+    int size; // only really used for MEMREFs
     int used;
 };
 
