@@ -300,6 +300,95 @@ AddEnumerators(AST *identifier, AST *enumlist)
     return ast_type_long;
 }
 
+static void
+DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
+{
+    AST *idlist, *typ;
+    AST *ident;
+    AST *ast;
+    
+    if (!astlist) return;
+    if (astlist->kind != AST_STMTLIST) {
+        ERROR(astlist, "Internal error, expected stmt list");
+        return;
+    }
+    while (astlist) {
+        ast = astlist->left;
+        astlist = astlist->right;
+        if (ast->kind == AST_DECLARE_ALIAS) {
+            AST *name, *def;
+            name = ast->left;
+            def = ast->right;
+            AddSymbol(&P->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string);
+            continue;
+        }
+        if (ast->kind != AST_DECLARE_VAR) {
+            ERROR(ast, "internal error, not DECLARE_VAR");
+            return;
+        }
+        idlist = ast->right;
+        typ = ast->left;
+        if (idlist->kind == AST_LISTHOLDER) {
+            while (idlist) {
+                ident = idlist->left;
+                MaybeDeclareMemberVar(P, ident, typ);
+                idlist = idlist->right;
+            }
+        } else {
+            MaybeDeclareMemberVar(P, idlist, typ);
+        }
+    }
+}
+
+// make a new struct
+// skind is either AST_STRUCT or AST_UNION
+// identifier is NULL or is a struct tag
+// body is the contents of the struct, or NULL
+
+static AST *
+MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
+{
+    int is_union;
+    const char *name;
+    char *typename;
+    Module *C;
+    SymbolTable *symtable = &P->objsyms;
+    AST *class_type;
+    
+    if (skind->kind == AST_STRUCT) {
+        is_union = 0;
+    } else if (skind->kind == AST_UNION) {
+        is_union = 1;
+    } else {
+        ERROR(skind, "internal error: not struct or union");
+        return NULL;
+    }
+    if (!identifier) {
+        identifier = AstTempIdentifier("_struct_");
+    }
+    if (identifier->kind != AST_IDENTIFIER) {
+        ERROR(identifier, "internal error: bad struct def");
+        return NULL;
+    }
+    name = identifier->d.string;
+    typename = malloc(strlen(name)+16);
+    strcpy(typename, "__struct_");
+    strcat(typename, name);
+
+    C = NewModule(typename, LANG_C);
+    class_type = NewAbstractObject(AstIdentifier(typename), NULL);
+    class_type = NewAST(AST_OBJECT, class_type, NULL);
+    class_type->d.ptr = C;
+    AddSymbol(symtable, typename, SYM_OBJECT, class_type);
+    C->subclasses = P->subclasses;
+    P->subclasses = C;
+
+    if (body) {
+        DeclareCMemberVariables(C, body, is_union);
+    }
+    return class_type;
+}
+
 %}
 
 %pure-parser
@@ -725,22 +814,32 @@ type_specifier
 
 struct_or_union_specifier
 	: struct_or_union C_IDENTIFIER '{' struct_declaration_list '}'
+            { $$ = MakeNewStruct(current, $1, $2, $4); }
 	| struct_or_union '{' struct_declaration_list '}'
+            { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	| struct_or_union C_IDENTIFIER
+            { $$ = MakeNewStruct(current, $1, NULL, NULL); }
 	;
 
 struct_or_union
 	: C_STRUCT
+            { $$ = NewAST(AST_STRUCT, NULL, NULL); }
 	| C_UNION
+            { $$ = NewAST(AST_UNION, NULL, NULL); }
 	;
 
 struct_declaration_list
 	: struct_declaration
+           { $$ = $1; }
 	| struct_declaration_list struct_declaration
+           { $$ = AddToList($1, $2); }
 	;
 
 struct_declaration
 	: specifier_qualifier_list struct_declarator_list ';'
+            {
+                $$ = MultipleDeclareVar($1, $2);
+            }        
 	;
 
 specifier_qualifier_list
@@ -756,13 +855,18 @@ specifier_qualifier_list
 
 struct_declarator_list
 	: struct_declarator
+            { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
 	| struct_declarator_list ',' struct_declarator
+            { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
 	;
 
 struct_declarator
 	: declarator
+            { $$ = $1; }
 	| ':' constant_expression
+            { SYNTAX_ERROR("Bitfields not supported yet"); $$ = NULL; }
 	| declarator ':' constant_expression
+            { SYNTAX_ERROR("Bitfields not supported yet"); $$ = $1; }
 	;
 
 enum_specifier
@@ -890,7 +994,7 @@ type_name
 	: specifier_qualifier_list
             { $$ = $1; }
 	| specifier_qualifier_list abstract_declarator
-        { $$ = CombineTypes($1, $2, NULL); }
+            { $$ = CombineTypes($1, $2, NULL); }
 	;
 
 abstract_declarator

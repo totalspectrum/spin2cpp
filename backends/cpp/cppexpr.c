@@ -1510,7 +1510,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         PrintLookExpr(f, "Lookdown__", expr->left, expr->right);
         break;
     case AST_CONSTREF:
-        if (!GetObjConstant(expr, &objsym, &sym))
+        if (!GetObjConstant(expr, &objsym, &sym, NULL))
             return;
         {
             AST *objast = (AST *)objsym->val;

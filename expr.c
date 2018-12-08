@@ -184,7 +184,7 @@ TypeName(AST *type)
  */
 
 int
-GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr)
+GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr, int *valid)
 {
     Symbol *objsym, *sym;
     objsym = LookupAstSymbol(expr->left, "object reference");
@@ -193,17 +193,29 @@ GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr)
         return 0;
     }
     if (objsym->type != SYM_OBJECT) {
-        ERROR(expr, "%s is not an object", objsym->name);
+        if (valid) {
+            *valid = 0;
+        } else {
+            ERROR(expr, "%s is not an object", objsym->name);
+        }
         return 0;
     }
     if (expr->right->kind != AST_IDENTIFIER) {
-        ERROR(expr, "expected identifier after '#'");
+        if (valid) {
+            *valid = 0;
+        } else {
+            ERROR(expr, "expected identifier after '#'");
+        }
         return 0;
     }
     sym = LookupObjSymbol(expr, objsym, expr->right->d.string);
     if (!sym || (sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
-        ERROR(expr, "%s is not a constant of object %s",
-              expr->right->d.string, objsym->name);
+        if (valid) {
+            *valid = 0;
+        } else {
+            ERROR(expr, "%s is not a constant of object %s",
+                  expr->right->d.string, objsym->name);
+        }
         return 0;
     }
 
@@ -1134,13 +1146,14 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_CONSTANT:
         return EvalExpr(expr->left, flags, valid, depth+1);
     case AST_CONSTREF:
-    case AST_METHODREF:
-        if (!GetObjConstant(expr, &objsym, &sym)) {
+        if (!GetObjConstant(expr, &objsym, &sym, valid)) {
             return intExpr(0);
         }
         /* while we're evaluating, use the object context */
         ret = EvalExprInState(GetObjectPtr(objsym), (AST *)sym->val, flags, valid, depth+1);
         return ret;
+    case AST_METHODREF:
+        
     case AST_RESULT:
         *valid = 0;
         return intExpr(0);

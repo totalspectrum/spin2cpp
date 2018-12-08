@@ -28,8 +28,10 @@ AST *FoldIfConst(AST *expr);
 
 /* look up an object constant reference */
 /* sets *objsym to the object and *sym to the symbol */
-/* returns 0/1 for fail/success */
-int GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr);
+/* returns 0/1 for fail/success; if valid is NULL prints an error if appropriate,
+   otherwise sets *valid to ret value
+ */
+int GetObjConstant(AST *expr, Symbol **objsym_ptr, Symbol **sym_ptr, int *valid);
 
 /* look up the class name of an object */
 const char *ObjClassName(Symbol *obj);

@@ -187,6 +187,9 @@ enum astkind {
     AST_VA_START,
     AST_VA_ARG,
     AST_DECLARE_ALIAS,
+
+    AST_STRUCT = 132,
+    AST_UNION,
 };
 
 /* forward reference */

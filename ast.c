@@ -518,6 +518,9 @@ static const char *astnames[] = {
     "va_start",
     "va_arg",
     "declare_alias",
+
+    "struct",
+    "union",
 };
 
 //
