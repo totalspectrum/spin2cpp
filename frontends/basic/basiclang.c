@@ -1008,7 +1008,7 @@ static AST *ScalePointer(AST *type, AST *val)
     val = AstOperator('*', val, AstInteger(size));
     return val;
 }
-       
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
@@ -1143,6 +1143,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
                 newast = NewAST(AST_MEMREF, ast_type_byte, ast->right);
                 *ast = *newast;
             }
+        }
+        return ast_type_long;
+    case K_BOOL_NOT:
+    case K_BOOL_AND:
+    case K_BOOL_OR:
+        if (lefttype && !IsBoolCompatibleType(lefttype)) {
+            ERROR(ast, "Expression not compatible with boolean operation");
+        } else if (righttype && !IsBoolCompatibleType(righttype)) {
+            ERROR(ast, "Expression not compatible with boolean operation");
         }
         return ast_type_long;
     case K_INCREMENT:

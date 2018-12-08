@@ -1798,6 +1798,21 @@ IsUnsignedType(AST *type)
 }
 
 int
+IsBoolCompatibleType(AST *type)
+{
+    type = RemoveTypeModifiers(type);
+    if (!type) return 1;
+    switch (type->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_PTRTYPE:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int
 IsFunctionType(AST *type)
 {
     type = RemoveTypeModifiers(type);

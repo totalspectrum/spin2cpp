@@ -582,6 +582,12 @@ static void doASTDump(AST *ast, int indent)
         } else {
             const char *opString = NULL;
             switch(ast->d.ival) {
+            case K_BOOL_OR:
+                opString = "||";
+                break;
+            case K_BOOL_AND:
+                opString = "&&";
+                break;
             case K_GE:
                 opString = ">=";
                 break;
@@ -599,6 +605,36 @@ static void doASTDump(AST *ast, int indent)
                 break;
             case K_DECREMENT:
                 opString = "--";
+                break;
+            case K_SHL:
+                opString = "<<";
+                break;
+            case K_SAR:
+                opString = ">>";
+                break;
+            case K_SHR:
+                opString = "+>>";
+                break;
+            case K_NEGATE:
+                opString = "~-";
+                break;
+            case K_BIT_NOT:
+                opString = "~";
+                break;
+            case K_BOOL_NOT:
+                opString = "!";
+                break;
+            case K_LTU:
+                opString = "+<";
+                break;
+            case K_LEU:
+                opString = "+<";
+                break;
+            case K_GTU:
+                opString = "+>";
+                break;
+            case K_GEU:
+                opString = "+=>";
                 break;
             default:
                 sprintf(buf, "<operator #%d>", ast->d.ival);
