@@ -3076,9 +3076,31 @@ GetAddressOf(IRList *irl, AST *expr)
     }
     case AST_METHODREF:
     {
-        Operand *funcoperand;
-        CompileGetFunctionInfo(irl, expr, NULL, NULL, &funcoperand, NULL);
-        return funcoperand;
+        Symbol *sym;
+        Operand *res = NULL;
+        const char *name;
+        Module *P;
+        int off;
+        
+        name = GetIdentifierName(expr->right);
+        sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
+        if (sym) {
+            if (sym->type == SYM_VARIABLE) {
+                Operand *base = CompileExpression(irl, expr->left, NULL);
+                Operand *tmp;
+                AST *type = ExprType(expr);
+                off = sym->offset;
+                tmp = OffsetMemory(irl, base, NewImmediate(off), type);
+                res = GetLea(irl, tmp);
+            } else if (sym->type == SYM_FUNCTION) {
+                CompileGetFunctionInfo(irl, expr, NULL, NULL, &res, NULL);
+            }
+        }
+        if (!res) {
+            ERROR(expr, "Internal error: cannot take address of %s", name);
+            res = NewImmediate(0);
+        }
+        return res;
     }
     default:
         ERROR(expr, "Cannot take address of expression");

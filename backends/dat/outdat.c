@@ -340,7 +340,18 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
 void
 outputInitializer(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs)
 {
-    int n = outputInitList(f, elemsize, initval, numelems, relocs);
+    int n;
+
+    
+    if ((elemsize == 3) || (elemsize > 4)) {
+        if (initval) {
+            ERROR(initval, "Cannot yet handle initializer for elements of size %d", elemsize);
+            initval = NULL;
+        }
+        numelems *= elemsize;
+        elemsize = 1;
+    }
+    n = outputInitList(f, elemsize, initval, numelems, relocs);
     if (n < numelems) {
         outputInitList(f, elemsize, NULL, numelems - n, relocs);
     } else if (n > numelems) {
@@ -1228,19 +1239,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
         ERROR(ast, "Unknown type in global variable");
         return;
     }
-    switch (type->kind) {
-    case AST_INTTYPE:
-    case AST_UNSIGNEDTYPE:
-    case AST_GENERICTYPE:
-    case AST_FLOATTYPE:
-    case AST_PTRTYPE:
-        elemsize = TypeSize(type);
-        break;
-    default:
-        ERROR(ast, "Cannot initialize global variables of this type");
-        elemsize = 4;
-        break;
-    }
+    elemsize = TypeSize(type);
     outputInitializer(f, elemsize, initval, typsize / elemsize, relocs);
 }
 
