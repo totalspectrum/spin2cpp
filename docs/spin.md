@@ -195,6 +195,11 @@ fastspin has some new operators for treating values as unsigned
   a +=> b  is an unsigned version of =>
 ```
 
+### coginit/cognew
+
+The `coginit` (and `cognew`) functions in Fastspin can start functions
+from other objects than the current. (In "regular" Spin only functions
+from the same object may be started this way.)
 
 # Compatibility with other Spin compilers
 

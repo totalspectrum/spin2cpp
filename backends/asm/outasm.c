@@ -25,7 +25,7 @@
 #define COG_DATA (gl_outputflags & OUTFLAG_COG_DATA)
 #define HUB_DATA (!COG_DATA)
 
-#define IS_FAST_CALL(f) ( (f == 0) || FuncData(f)->convention == FAST_CALL)
+#define IS_FAST_CALL(f) ( (f == 0) || !FuncData(f) || FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
 #define VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
@@ -37,8 +37,11 @@ static IRList cogbss;
 static IRList hubdata;
 
 /* max size of arguments passed to coginit/cognew */
-/* will be -1 if coginit/cognew is never used */
-static int max_coginit_args = -1;
+/* will default to 4 if coginit/cognew is never used */
+/* FIXME: this is inaccurate if coginit/cognew is called with a
+ * function pointer :(
+ */
+static int max_coginit_args = 4;
 
 /* operands for multiply/divide */
 Operand *mulfunc, *muldiva, *muldivb;
@@ -2858,43 +2861,32 @@ CompileCoginit(IRList *irl, AST *expr)
 {
     AST *funccall;
     AST *params = expr->left;
-    Function *remote;
     
-    if ( (remote = IsSpinCoginit(expr)) != NULL) {
+    if ( IsSpinCoginit(expr) )
+    {
         AST *exprlist;
         AST *func;
         AST *stack;
         AST *cogid;
         AST *kernel;
+        AST *functype;
         Operand *newstackptr;
         Operand *newstacktop;
         Operand *const4;
         Operand *funcptr;
+        Operand *fobjptr;
+        Operand *baseobjptr;
+        Operand *offset;
         OperandList *plist;
         int numparams = 0;
+        Function *remote;
 
         if (!kernelptr) {
             kernelptr = NewImmediatePtr("entryptr__", NewOperand(IMM_HUB_LABEL, ENTRYNAME, 0));
         }
         kernel = NewAST(AST_OPERAND, NULL, NULL);
         kernel->d.ptr = (void *)kernelptr;
-        
-        if (!IS_FAST_CALL(remote)) {
-            ERROR(expr, "Internal error: wrong calling convention for coginit");
-            return NewImmediate(0);
-        }
-        if (gl_output == OUTPUT_COGSPIN) {
-            ERROR(expr, "coginit/cognew of Spin objects is not permitted from COG code");
-            return NewImmediate(0);
-        }
-        if (remote->cog_code) {
-            ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
-            return NewImmediate(0);
-        }
-        if (remote->module != curfunc->module) {
-            ERROR(expr, "Coginit/cognew across objects is not supported");
-            return NewImmediate(0);
-        }
+
         exprlist = expr->left;
         if (!exprlist) {
             ERROR(expr, "Missing cog parameter for coginit/cognew");
@@ -2915,6 +2907,28 @@ CompileCoginit(IRList *irl, AST *expr)
         stack = exprlist->left;
         if (exprlist->right != NULL) {
             ERROR(expr, "Too many parameters to coginit/cognew");
+        }
+
+        remote = CompileGetFunctionInfo(irl, func, &baseobjptr, &offset, &funcptr, &functype);
+        fobjptr = NewFunctionTempRegister();
+        if (!baseobjptr) {
+            baseobjptr = objbase;
+        }
+        EmitMove(irl, fobjptr, baseobjptr);
+        if (offset) {
+            EmitOp2(irl, OPC_ADD, fobjptr, offset);
+        }
+        if (!IS_FAST_CALL(remote)) {
+            ERROR(expr, "Internal error: wrong calling convention for coginit");
+            return NewImmediate(0);
+        }
+        if (gl_output == OUTPUT_COGSPIN) {
+            ERROR(expr, "coginit/cognew of Spin objects is not permitted from COG code");
+            return NewImmediate(0);
+        }
+        if (remote && remote->cog_code) {
+            ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
+            return NewImmediate(0);
         }
         
         // we have to build the call into the new stack
@@ -2940,10 +2954,9 @@ CompileCoginit(IRList *irl, AST *expr)
             newstacktop = SizedHubMemRef(LONG_SIZE, newstackptr, 0);
             const4 = NewImmediate(4);
         }
-        EmitMove(irl, newstacktop, objbase);
+        EmitMove(irl, newstacktop, fobjptr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // push the function to call
-        funcptr = FuncData(remote)->asmname;
         EmitMove(irl, newstacktop, funcptr);
         EmitOp2(irl, OPC_ADD, newstackptr, const4);
         // now the parameters
