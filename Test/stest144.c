@@ -13,7 +13,7 @@ int getx(Foo *ptr)
 {
     return ptr[0].x;
 }
-int gety(Foo *ptr)
+int gety(struct foo *ptr)
 {
     return ptr->y;
 }
