@@ -378,16 +378,26 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 
     /* see if there is already a type with that name */
     sym = LookupSymbolInTable(symtable, typename);
-    if (sym && sym->type == SYM_OBJECT) {
+    if (sym && sym->type == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
+        if (!IsClassType(class_type)) {
+            SYNTAX_ERROR("%s is not a class", typename);
+            return NULL;
+        }
         C = class_type->d.ptr;
     } else {
-        C = NewModule(typename, LANG_C);
-        class_type = NewAbstractObject(AstIdentifier(typename), NULL);
-        class_type->d.ptr = C;
-        AddSymbol(symtable, typename, SYM_OBJECT, class_type);
-        C->subclasses = P->subclasses;
-        P->subclasses = C;
+        if (body && body->kind == AST_STRING) {
+            class_type = NewAbstractObject(AstIdentifier(typename), body);
+            body = NULL;
+            C = NULL;
+        } else {
+            C = NewModule(typename, LANG_C);
+            class_type = NewAbstractObject(AstIdentifier(typename), NULL);
+            class_type->d.ptr = C;
+            AddSymbol(symtable, typename, SYM_TYPEDEF, class_type);
+            C->subclasses = P->subclasses;
+            P->subclasses = C;
+        }
     }
     if (body) {
         DeclareCMemberVariables(C, body, is_union);
@@ -465,6 +475,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 %token C_BREAK "break"
 %token C_RETURN "return"
 
+%token C_FROMFILE "__fromfile"
 %token C_ASM "__asm"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
@@ -828,6 +839,8 @@ struct_or_union_specifier
             { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	| struct_or_union C_IDENTIFIER
             { $$ = MakeNewStruct(current, $1, $2, NULL); }
+        | struct_or_union C_FROMFILE fromfile_clause
+            { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	;
 
 struct_or_union
@@ -836,6 +849,11 @@ struct_or_union
 	| C_UNION
             { $$ = NewAST(AST_UNION, NULL, NULL); }
 	;
+
+fromfile_clause
+        : '(' C_STRING_LITERAL ')'
+            { $$ = $2; }
+        ;
 
 struct_declaration_list
 	: struct_declaration

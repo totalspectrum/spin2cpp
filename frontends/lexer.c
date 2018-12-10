@@ -1402,6 +1402,7 @@ struct reservedword c_keywords[] = {
   { "extern", C_EXTERN },
   { "float", C_FLOAT },
   { "for", C_FOR },
+  { "__fromfile", C_FROMFILE },
   { "goto", C_GOTO },
   { "if", C_IF },
   { "_Imaginary", C_IMAGINARY },
@@ -2650,7 +2651,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     if (current) {
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
-            if (sym->type == SYM_OBJECT) {
+            if (sym->type == SYM_VARIABLE) {
                 ast = (AST *)sym->val;
                 // check for an abstract object declaration
                 if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
@@ -2847,14 +2848,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     if (current) {
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
-            if (sym->type == SYM_OBJECT) {
-                ast = (AST *)sym->val;
-                // check for an abstract object declaration
-                if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
-                    *ast_ptr = ast;
-                    return C_TYPE_NAME;
-                }
-            } else if (sym->type == SYM_TYPEDEF) {
+            if (sym->type == SYM_TYPEDEF) {
                 ast = (AST *)sym->val;
                 *ast_ptr = ast;
                 return C_TYPE_NAME;

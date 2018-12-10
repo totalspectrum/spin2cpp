@@ -17,7 +17,6 @@ typedef enum symtype {
     SYM_INSTRMODIFIER,   /* effect or condition */
     SYM_BUILTIN,         /* builtin symbol */
     SYM_NAME,            /* a plain identifier */
-    SYM_OBJECT,          /* an object name */
     SYM_PARAMETER,       /* function parameter */
     SYM_FLOAT_CONSTANT,  /* floating point constant */
     SYM_RESULT,          /* result expression */

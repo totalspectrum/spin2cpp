@@ -15,7 +15,6 @@
 
 #define gl_ccode (gl_output == OUTPUT_C)
 
-static void PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags);
 static void PrintStringLiteral(Flexbuf *f, const char *s);
 
 static int
@@ -278,7 +277,7 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
    and false for object references (like bar.foo(x))
 */
 void
-PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
+PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
 {
     int is_static = 0;
     bool localMethod = false;
@@ -287,7 +286,7 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
     if (sym->type == SYM_FUNCTION) {
         func = (Function *)sym->val;
         is_static = func->is_static;
-        localMethod = (objsym == NULL) && (objref == NULL);
+        localMethod = (objtype == NULL) && (objref == NULL);
     }
     if (localMethod && curfunc && curfunc->force_static && !gl_ccode) {
         // need to call through an object
@@ -298,9 +297,9 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, Symbol *objsym, AST *objref)
     if ( (gl_ccode && !is_static)
          || (func && func->force_static)
         ) {
-        if (objsym) {
+        if (objtype) {
             flexbuf_printf(f, "&");
-            PrintObjectSym(f, objsym, objref, PRINTEXPR_DEFAULT);
+            PrintExpr(f, objref, PRINTEXPR_DEFAULT);
         } else {
             flexbuf_printf(f, "self");
         }
@@ -1230,39 +1229,6 @@ PrintLookExpr(Flexbuf *f, const char *name, AST *ev, AST *table)
     }
 }
 
-/* print an object symbol */
-static void
-PrintObjectSym(Flexbuf *f, Symbol *objsym, AST *expr, int flags)
-{
-    int isArray = IsArrayOrPointerSymbol(objsym);
-
-    if (objsym->type != SYM_OBJECT) {
-        ERROR(expr, "Internal error, expecting an object symbol\n");
-        return;
-    }
-
-    if (expr->kind == AST_ARRAYREF) {
-        if (isArray) {
-            PrintLHS(f, expr, flags);
-            return;
-        } else {
-            // treat it as a cast of the parameter contents
-//            ERROR(expr, "%s is not an array of objects", objsym->name);
-            flexbuf_printf(f, "((%s *)", ObjClassName(objsym));
-            PrintLHS(f, expr->right, flags);
-            flexbuf_printf(f, ")");
-            isArray = 1; // force the dereference
-        }
-    } else {
-        if (gl_ccode || (curfunc && curfunc->force_static) )
-            flexbuf_printf(f, "self->");
-        flexbuf_printf(f, "%s", objsym->name);
-    }
-    if (isArray) {
-        flexbuf_printf(f, "[0]");
-    }
-}
-
 void
 PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat)
 {
@@ -1300,7 +1266,7 @@ PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat)
 void
 PrintExpr(Flexbuf *f, AST *expr, int flags)
 {
-    Symbol *sym, *objsym;
+    Symbol *sym;
     AST *objref;
     int c;
 
@@ -1326,7 +1292,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         /* otherwise fall through */
     }
     objref = NULL;
-    objsym = sym = NULL;
+    sym = NULL;
     switch (expr->kind) {
     case AST_INTEGER:
         PrintInteger(f, (int32_t)expr->d.ival, flags);
@@ -1436,51 +1402,55 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     case AST_METHODREF:
         {
             const char *thename;
-            objref = expr->left;
-            objsym = LookupAstSymbol(objref, "object reference");
-            if (!objsym) return;
-            if (objsym->type != SYM_OBJECT) {
-                ERROR(expr, "%s is not an object", objsym->name);
+            AST *objtype;
+            
+            thename = GetIdentifierName(expr->right);
+            if (!thename) {
                 return;
             }
-            thename = expr->right->d.string;
-            sym = LookupObjSymbol(expr, objsym, thename);
+            objref = expr->left;
+            objtype = ExprType(objref);
+            if (!IsClassType(objtype)) {
+                ERROR(expr, "request for %s in something that is not a class", thename);
+                return;
+            }
+            sym = LookupMemberSymbol(expr, objtype, thename, NULL);
             if (!sym) {
-                ERROR(expr, "%s is not a member of %s", thename, objsym->name);
+                ERROR(expr, "%s is not a member", thename);
                 return;
             }
             if (sym->type == SYM_FUNCTION && gl_ccode) {
-                flexbuf_printf(f, "%s_", ObjClassName(objsym));
+                flexbuf_printf(f, "%s_", ObjClassName(objtype));
             } else {
-                PrintObjectSym(f, objsym, objref, flags);
+                PrintExpr(f, objref, flags | PRINTEXPR_TOPLEVEL);
                 flexbuf_printf(f, ".%s", thename);
             }
         }
         break;
     case AST_FUNCCALL:
+    {
+        const char *thename;
+        AST *objtype;
+        
         if (expr->left && expr->left->kind == AST_METHODREF) {
-            const char *thename;
-            objref = expr->left->left;
-            objsym = LookupAstSymbol(objref, "object reference");
-            if (!objsym) return;
-            if (objsym->type != SYM_OBJECT) {
-                ERROR(expr, "%s is not an object", objsym->name);
+            objref = expr->left;
+            objtype = ExprType(objref->left);
+            thename = GetIdentifierName(expr->right);
+            if (!thename) {
                 return;
             }
-            thename = expr->left->right->d.string;
-            sym = LookupObjSymbol(expr, objsym, thename);
+            objref = expr->left;
+            objtype = ExprType(objref);
+            if (!IsClassType(objtype)) {
+                ERROR(expr, "request for %s in something that is not a class", thename);
+                return;
+            }
+            sym = LookupMemberSymbol(expr, objtype, thename, NULL);
             if (!sym) {
-                ERROR(expr, "%s is not a member of %s", thename, objsym->name);
-                return;
-            }
-            if (gl_ccode) {
-                flexbuf_printf(f, "%s_", ObjClassName(objsym));
-            } else {
-                PrintObjectSym(f, objsym, objref, flags);
-                flexbuf_printf(f, ".");
+                ERROR(expr, "%s is not a member", thename);
             }
         } else {
-            objsym = NULL;
+            objtype = NULL;
             objref = NULL;
             sym = LookupAstSymbol(expr->left, "function call");
             if (gl_ccode && sym && sym->type == SYM_FUNCTION)
@@ -1492,11 +1462,12 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             Builtin *b = (Builtin *)sym->val;
             (*b->printit)(f, b, expr->right);
         } else if (sym->type == SYM_FUNCTION) {
-            PrintFuncCall(f, sym, expr->right, objsym, objref);
+            PrintFuncCall(f, sym, expr->right, objtype, objref);
         } else {
             ERROR(expr, "%s is not a function", sym->name);
         }
         break;
+    }
     case AST_COGINIT:
         PrintCogInit(f, expr);
         break;

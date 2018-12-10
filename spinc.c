@@ -443,32 +443,6 @@ DeclareMemberVariables(Module *P)
     P->varsize = offset;
 }
 
-void
-DeclareObjects(AST *newobjs)
-{
-    AST *ast;
-    AST *obj;
-
-    for (ast = newobjs; ast; ast = ast->right) {
-        if (ast->kind != AST_OBJECT) {
-            ERROR(ast, "Internal error: expected an OBJECT");
-            break;
-        }
-        obj = ast->left;
-        if (obj->kind == AST_OBJDECL) {
-            obj = obj->left;
-        }
-        if (obj->kind == AST_IDENTIFIER) {
-            AddSymbol(&current->objsyms, obj->d.string, SYM_OBJECT, ast);
-        } else if (obj->kind == AST_ARRAYDECL) {
-            AST *id = obj->left;
-            AddSymbol(&current->objsyms, id->d.string, SYM_OBJECT, ast);
-        } else {
-            ERROR(ast, "Internal error: bad object definition");
-        }
-    }
-}
-
 /* helper function for parsing pasm FILE directives */
 AST *
 GetFullFileName(AST *baseString)
@@ -480,51 +454,6 @@ GetFullFileName(AST *baseString)
     ret = NewAST(AST_STRING, NULL, NULL);
     ret->d.string = newname;
     return ret;
-}
-
-/*
- * recursively assign offsets to all objects in modules
- */
-void
-AssignObjectOffsets(Module *P)
-{
-    Module *Q;
-    AST *ast, *obj;
-    Symbol *sym = NULL;
-    int offset;
-    int count;
-    Module *save=current;
-    
-    current = P;
-    offset = P->varsize;
-    for (ast = P->objblock; ast; ast = ast->right) {
-        if (ast->kind != AST_OBJECT) {
-            ERROR(ast, "Internal error: expected an OBJECT");
-            return;
-        }
-        obj = ast->left;
-        if (obj->kind == AST_IDENTIFIER) {
-            sym = FindSymbol(&P->objsyms, obj->d.string);
-            count = 1;
-        } else if (obj->kind == AST_ARRAYDECL) {
-            sym = FindSymbol(&P->objsyms, obj->left->d.string);
-            count = EvalConstExpr(obj->right);
-        } else if (obj->kind == AST_OBJDECL) {
-            sym = FindSymbol(&P->objsyms, obj->left->d.string);
-            count = 0;
-        }
-        if (sym == NULL) {
-            ERROR(ast, "Internal error, cannot find object symbol");
-            return;
-        }
-        Q = GetObjectPtr(sym);
-        AssignObjectOffsets(Q);
-        sym->offset = offset;
-        offset += count * Q->varsize;
-    }
-    offset = (offset+3) & ~3;
-    P->varsize = offset;
-    current = save;
 }
 
 /*

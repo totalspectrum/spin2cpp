@@ -37,23 +37,6 @@ GetClassPtr(AST *objtype)
     return (Module *)objtype->d.ptr;
 }
 
-/* code to get an object pointer from an object symbol */
-Module *
-GetObjectPtr(Symbol *sym)
-{
-    AST *oval;
-    if (sym->type != SYM_OBJECT && sym->type != SYM_CLOSURE) {
-        fprintf(stderr, "internal error, not an object symbol\n");
-        abort();
-    }
-    oval = (AST *)sym->val;
-    if (oval->kind != AST_OBJECT) {
-        fprintf(stderr, "internal error, not an object AST\n");
-        abort();
-    }
-    return (Module *)oval->d.ptr;
-}
-
 Symbol *
 LookupSymbolInFunc(Function *func, const char *name)
 {
@@ -148,55 +131,32 @@ LookupMethodRef(AST *expr, Module **Ptr)
 
 /*
  * look up an object method or constant
- * "expr" is the context (for error messages)
+ * "lhs" is the left hand side of the object reference
  */
 Symbol *
-LookupObjSymbol(AST *expr, Symbol *obj, const char *name)
+LookupObjrefSymbol(AST *lhs, const char *name)
 {
-    Symbol *sym;
-    Module *objstate;
-    AST *symtype;
-    
-    switch (obj->type) {
-    case SYM_VARIABLE:
-    case SYM_LOCALVAR:
-    case SYM_PARAMETER:
-        symtype = BaseType((AST *)obj->val);
-        if (symtype->kind != AST_OBJECT) {
-            ERROR(expr, "%s is not an object", obj->name);
-            return NULL;
-        }
-        objstate = GetClassPtr(symtype);
-        break;
-    case SYM_OBJECT:
-    case SYM_CLOSURE:
-        objstate = GetObjectPtr(obj);
-        break;
-    default:
-        ERROR(expr, "expected an object");
+    AST *objtype = ExprType(lhs);
+    if (!IsClassType(objtype)) {
+        ERROR(lhs, "Expected class type for looking up %s", name);
         return NULL;
     }
-    sym = FindSymbol(&objstate->objsyms, name);
-    if (!sym) {
-        ERROR(expr, "unknown identifier %s in %s", name, obj->name);
-    }
-    return sym;
+    return LookupMemberSymbol(lhs, objtype, name, NULL);
 }
 
 /*
  * look up the class name of an object
  */
 const char *
-ObjClassName(Symbol *obj)
+ObjClassName(AST *objtype)
 {
-    Module *objstate;
-
-    if (obj->type != SYM_OBJECT && obj->type != SYM_CLOSURE) {
-        ERROR(NULL, "expected an object");
+    Module *P;
+    if (!IsClassType(objtype)) {
+        ERROR(objtype, "expected an object");
         return NULL;
     }
-    objstate = GetObjectPtr(obj);
-    return objstate->classname;
+    P = GetClassPtr(objtype);
+    return P->classname;
 }
 
 const char *
@@ -1634,10 +1594,6 @@ IsArrayOrPointerSymbol(Symbol *sym)
     case SYM_RESULT:
         type = (AST *)sym->val;
         break;
-    case SYM_OBJECT:
-    case SYM_CLOSURE:
-        type = (AST *)sym->val;
-        return type->left && type->left->kind == AST_ARRAYDECL;
     case SYM_LABEL:
         return 1;
     default:
@@ -1667,31 +1623,26 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
     if (expr && expr->kind == AST_METHODREF) {
         const char *thename;
         Function *f;
+        AST *objtype;
         objref = expr->left;
-        objsym = LookupAstSymbol(objref, errflag ? "object reference" : NULL);
-        if (!objsym) return NULL;
-        switch (objsym->type) {
-        case SYM_OBJECT:
-        case SYM_CLOSURE:
-        case SYM_VARIABLE:
-        case SYM_LOCALVAR:
-        case SYM_PARAMETER:
-            break; // everything OK
-        default:
-            if (errflag)
-                ERROR(ast, "%s is not an object", objsym->name);
+        objtype = ExprType(objref);
+        thename = GetIdentifierName(expr->right);
+        if (!thename) {
             return NULL;
         }
-        thename = expr->right->d.string;
-        sym = LookupObjSymbol(ast, objsym, thename);
+        if (!IsClassType(objtype)) {
+            ERROR(ast, "request for member %s in something that is not an object", thename);
+            return NULL;
+        }
+        sym = LookupMemberSymbol(objref, objtype, thename, NULL);
         if (!sym || sym->type != SYM_FUNCTION) {
             if (errflag)
-                ERROR(ast, "%s is not a method of %s", thename, objsym->name);
+                ERROR(ast, "%s is not a function", thename);
             return NULL;
         }
         f = (Function *)sym->val;
         if (!f->is_public) {
-            ERROR(ast, "%s is a private method of %s", thename, objsym->name);
+            ERROR(ast, "%s is a private method", thename);
         }
     } else {
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
@@ -1758,6 +1709,17 @@ IsFloatType(AST *type)
     if (!type) return 0;
     if (type->kind == AST_FLOATTYPE)
         return 1;
+    return 0;
+}
+
+int
+IsClassType(AST *type)
+{
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    if (type->kind == AST_OBJECT) {
+        return 1;
+    }
     return 0;
 }
 
@@ -1968,9 +1930,6 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
-            return (AST *)sym->val;
-        case SYM_OBJECT:
-        case SYM_CLOSURE:
             return (AST *)sym->val;
         case SYM_FUNCTION:
             return ((Function *)sym->val)->overalltype;

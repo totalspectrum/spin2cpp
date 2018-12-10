@@ -1161,19 +1161,11 @@ basetypename:
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
         const char *name = NewTemporaryVariable("_class_");
         AST *newobj;
-        Symbol *sym;
 
         tempnam->d.string = name;
         newobj = NewAbstractObject( tempnam, $3 );        
         DeclareObjects(newobj);
         current->objblock = AddToList(current->objblock, newobj);
-        sym = FindSymbol(&current->objsyms, tempnam->d.string);
-        if (!sym || sym->type != SYM_OBJECT) {
-            SYNTAX_ERROR("internal error in type check");
-            newobj = NULL;
-        } else {
-            newobj = (AST *)sym->val;
-        }
         $$ = newobj;
     }
 ;

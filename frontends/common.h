@@ -477,9 +477,6 @@ AST *GetFullFileName(AST *baseString);
     
 Symbol *LookupSymbolInFunc(Function *func, const char *name);
 
-// find an object pointer given an object symbol
-Module *GetObjectPtr(Symbol *sym);
-
 /* convert an object type to a class */
 Module *GetClassPtr(AST *objtype);
 

@@ -30,7 +30,7 @@ AST *FoldIfConst(AST *expr);
 Symbol *LookupMethodRef(AST *expr, Module **Ptr);
 
 /* look up the class name of an object */
-const char *ObjClassName(Symbol *obj);
+const char *ObjClassName(AST *objtype);
 
 /* expression utility functions */
 union float_or_int {
@@ -64,6 +64,7 @@ int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 #define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
 int IsBoolCompatibleType(AST *typ);
+int IsClassType(AST *typ);
 
 int IsConstType(AST *typ);
 
@@ -74,7 +75,6 @@ const char *GetIdentifierName(AST *ident);
 
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
-Symbol *LookupObjSymbol(AST *expr, Symbol *obj, const char *name);
 Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module **Ptr);
 
 // find expression type relative to current function

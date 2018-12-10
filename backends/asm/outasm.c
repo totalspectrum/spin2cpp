@@ -1009,7 +1009,6 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       stype = sym->type;
       switch (stype) {
       case SYM_VARIABLE:
-      case SYM_OBJECT:
           if (sym->flags & SYMF_GLOBAL) {
               Operand *addr = NewImmediate(sym->offset);
               Operand *ref;
@@ -1018,11 +1017,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
               return ref;
           }
           ValidateObjbase();
-          if (stype == SYM_VARIABLE) {
-              exprtype = (AST *)sym->val;
-          } else {
-              exprtype = (AST *)sym->val;
-          }
+          exprtype = (AST *)sym->val;
           if (COG_DATA) {
               // COG memory
               size = TypeSize(exprtype);
@@ -2406,7 +2401,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     offset = NULL;
     objaddr = NULL;
-    if (objsym && (objsym->type == SYM_OBJECT || objsym->type == SYM_CLOSURE)) {
+    if (objsym && (objsym->type == SYM_CLOSURE)) {
         if (expr->kind == AST_METHODREF) {
             call = expr;
         } else {
@@ -2421,7 +2416,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         if (call->kind == AST_ARRAYREF) {
             if (IsArrayOrPointerSymbol(objsym)) {
                 // add the index * sizeof(object) into the array offset
-                Module *objModule = GetObjectPtr(objsym);
+                Module *objModule = GetClassPtr((AST *)objsym->val);
                 AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
                 arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
                 offset = CompileExpression(irl, arrayderef, NULL);
