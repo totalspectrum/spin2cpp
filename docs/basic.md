@@ -2,8 +2,8 @@
 
 ## WARNING:
 
-BASIC support in fastspin is very much incomplete, and not usable for production
-right now. Missing features include:
+BASIC support in fastspin is incomplete, and may not usable for production
+yet. Missing features include:
 
  - Documentation; the manual below is just a start, much is incomplete.
 
@@ -11,9 +11,6 @@ right now. Missing features include:
 
  - Input and output isn't fully implemented yet.
 
- - There is no way to initialize an array.
-
- - There are only limited functions for starting BASIC code on other COGs.
 
 ## Introduction
 

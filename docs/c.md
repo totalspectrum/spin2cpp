@@ -28,13 +28,13 @@ The inline assembly syntax is similar to that of MSVC. Inline assembly blocks ar
 ```
 int getcogid() {
    int x;
-   asm {
+   __asm {
       cogid x
-   }
+   };
    return x;
 }
 ```
-The `asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
+The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 
