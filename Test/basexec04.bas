@@ -1,4 +1,6 @@
 '' closure test for BASIC
+const HEAPSIZE = 512 ' increase size of heap a bit; not strictly necessary, but tests for HEAPSIZE being recognized
+
 dim printer as sub(t as integer)
 dim stepper as sub()
 
