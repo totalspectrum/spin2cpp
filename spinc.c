@@ -864,7 +864,7 @@ FixupCode(Module *P, int isBinary)
                 }
                 heapsize = (heapsize+3)/4; // convert to longs
                 heapAst = AstInteger(heapsize);
-                sym = FindSymbol(&globalModule->objsyms, "__REAL_HEAPSIZE__");
+                sym = FindSymbol(&globalModule->objsyms, "__real_heapsize__");
                 if (!sym || sym->type != SYM_CONSTANT) {
                     ERROR(NULL, "Internal error, could not find __REAL_HEAPSIZE__");
                 } else {
