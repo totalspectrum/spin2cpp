@@ -595,9 +595,19 @@ ParseFile(const char *name)
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
-      if (!strcmp(langptr, ".bas") || !strcmp(langptr, ".basic")) {
+      if (!strcmp(langptr, ".bas")
+          || !strcmp(langptr, ".basic")
+          || !strcmp(langptr, ".bi")
+          )
+      {
 	language = LANG_BASIC;
-      } else if (!strcmp(langptr, ".c")) {
+      } else if (!strcmp(langptr, ".c")
+                 || !strcmp(langptr, ".h")
+                 || !strcmp(langptr, ".cpp")
+                 || !strcmp(langptr, ".cc")
+                 || !strcmp(langptr, ".cxx")
+          )
+      {
 	language = LANG_C;
       } else {
         langptr = ".spin";
