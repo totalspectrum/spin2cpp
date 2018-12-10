@@ -467,7 +467,7 @@ void SetFunctionReturnType(Function *func, AST *type);
 AST *GetFunctionReturnType(Function *func);
 
 /* find function symbol in a function call; optionally returns the object ref */
-Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, Symbol **objsymPtr, int errflag);
+Symbol *FindFuncSymbol(AST *funccall, AST **objrefPtr, int errflag);
 
 /* find function symbol in a function call; new version that can work on abstract types */
 Symbol *FindCalledFuncSymbol(AST *funccall, AST **objrefPtr, int errflag);
@@ -539,6 +539,9 @@ void initSpinLexer(int flags);
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename);
+
+/* declare a single member variable of P */
+void DeclareOneMemberVar(Module *P, AST *ident, AST *typ);
 
 /* declare a member variable of P if it does not already exist */
 void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);

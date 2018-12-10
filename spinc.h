@@ -61,9 +61,6 @@ Module *ParseFile(const char *name);
 // outputBin is nonzero if we are outputting binary code
 Module *ParseTopFile(const char *name, int outputBin);
 
-// recursively assign offsets to all objects in modules
-void AssignObjectOffsets(Module *P);
-
 // calculate number of expression items that may be placed on the stack
 int NumExprItemsOnStack(AST *param);
 

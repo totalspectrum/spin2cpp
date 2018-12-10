@@ -210,8 +210,9 @@ topelement:
   | SP_VAR varblock
   { $$ = current->varblock = AddToList(current->varblock, $2); }
   | SP_OBJ objblock
-  { DeclareObjects($2);
-    $$ = current->objblock = AddToList(current->objblock, $2); }
+  {
+    $$ = current->objblock = AddToList(current->objblock, $2);
+  }
   | SP_PUB funcdef funcbody
     { DeclareFunction(current, SpinRetType($2), 1, $2, $3, NULL, $1); }
   | SP_PRI funcdef funcbody
@@ -619,9 +620,19 @@ objline:
   | error  SP_EOLN
     { $$ = NULL; }
   | identdecl ':' string
-    { $$ = NewObject($1, $3); }
+    {
+        AST *typ = NewObject($1, $3);
+        DeclareOneMemberVar(current, $1, typ);
+        $$ = typ;
+    }
   | identdecl '=' string
-    { $$ = NewAbstractObject($1, $3); }
+    {
+        AST *typ = NewAbstractObject($1, $3);
+        AST *ident = $1;
+        const char *name = GetIdentifierName(ident);
+        AddSymbol(&current->objsyms, name, SYM_TYPEDEF, typ);
+        $$ = typ;
+    }
 ;
 
 varblock:

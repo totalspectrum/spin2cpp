@@ -2344,6 +2344,29 @@ CompileFunccallFirstResult(IRList *irl, AST *expr)
     return ptr->op;
 }
 
+static int
+IsDirectMemberVariable(AST *objref, Operand **offset)
+{
+    if (objref->kind == AST_IDENTIFIER) {
+        Symbol *sym;
+        AST *typ;
+        const char *name = GetIdentifierName(objref);
+        sym = LookupSymbol(name);
+        switch(sym->type) {
+        case SYM_VARIABLE:
+            typ = (AST *)sym->val;
+            if (IsClassType(typ)) {
+                *offset = NewImmediate(sym->offset);
+                return 1;
+            }
+            return 0;
+        default:
+            return 0;
+        }
+    }
+    return 0;
+}
+
 /*
  * get operands for:
  *  object pointer to use (NULL for the default one)
@@ -2356,9 +2379,9 @@ Function *
 CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offsetptr, Operand **funcptr, AST **ftypeptr)
 {
     Operand *objaddr, *offset;
-    Symbol *objsym, *sym;
+    Symbol *sym;
     Function *func;
-    AST *call;
+    AST *objref = NULL;
     
     if (ftypeptr) {
         AST *ftype;
@@ -2369,8 +2392,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         }
         *ftypeptr = ftype;
     }
-    objsym = NULL;
-    sym = FindFuncSymbol(expr, NULL, &objsym, 1);
+    sym = FindFuncSymbol(expr, &objref, 1);
     if (!sym) {
         ERROR(expr, "expected function symbol");
     }
@@ -2404,38 +2426,15 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     offset = NULL;
     objaddr = NULL;
-    if (objsym && (objsym->type == SYM_CLOSURE)) {
-        if (expr->kind == AST_METHODREF) {
-            call = expr;
+    
+    if (objref) {
+        if (IsDirectMemberVariable(objref, &offset)) {
+            // do nothing, offset is already set up
         } else {
-            call = expr->left;
-        }
-        if (call->kind == AST_METHODREF) {
-            call = call->left;
-        } else {
-            ERROR(call, "Internal error: expected method reference");
-            return NULL;
-        }
-        if (call->kind == AST_ARRAYREF) {
-            if (IsArrayOrPointerSymbol(objsym)) {
-                // add the index * sizeof(object) into the array offset
-                Module *objModule = GetClassPtr((AST *)objsym->val);
-                AST *arrayderef = AstOperator('*', call->right, AstInteger(objModule->varsize));
-                arrayderef = AstOperator('+', arrayderef, AstInteger(objsym->offset));
-                offset = CompileExpression(irl, arrayderef, NULL);
-            } else {
-                objaddr = CompileExpression(irl, call->right, NULL);
+            objaddr = CompileExpression(irl, objref, NULL);
+            if (IsClassType(objref)) {
+                objaddr = GetLea(irl, objaddr);
             }
-        } else {
-            offset = NewImmediate(objsym->offset);
-        }
-    } else if (objsym) {
-        call = expr->left;
-        if (call && call->kind == AST_METHODREF) {
-            call = call->left;
-            objaddr = CompileExpression(irl, call, NULL);
-        } else {
-            ERROR(expr, "Internal error, expected method reference");
         }
     }
     if (objptr) {
@@ -3405,6 +3404,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       r = OffsetMemory(irl, base, NewImmediate(off), type);
       return r;
   }
+  case AST_CAST:
+      return CompileExpression(irl, expr->right, dest);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);

@@ -288,7 +288,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             int n;
             
             // scan through parameters, adjusting for expected return types
-            Symbol *calledSym = FindFuncSymbol(body, NULL, NULL, 1);
+            Symbol *calledSym = FindFuncSymbol(body, NULL, 1);
             if (calledSym && calledSym->type == SYM_FUNCTION) {
                 Function *calledFunc = (Function *)calledSym->val;
                 AST *calledParam = calledFunc->params;
@@ -433,7 +433,7 @@ doSpinTransform(AST **astptr, int level)
         if (level == 0) {
             /* check for void functions here; if one is called,
                pretend it returned 0 */
-            sym = FindFuncSymbol(ast, NULL, NULL, 0);
+            sym = FindFuncSymbol(ast, NULL, 0);
             if (sym && sym->type == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (GetFunctionReturnType(f) == ast_type_void) {
@@ -496,6 +496,21 @@ doSpinTransform(AST **astptr, int level)
             curfunc->local_address_taken = 1;
         }
         break;
+    case AST_ARRAYREF:
+        // array references like T[x] may actually
+        // be casts if T is a typename
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        if (ast->left && ast->left->kind == AST_IDENTIFIER) {
+            Symbol *sym = LookupSymbol(ast->left->d.string);
+            if (sym && sym->type == SYM_TYPEDEF) {
+                // change this into a cast
+                ast->kind = AST_CAST;
+                ast->left = (AST *)sym->val;
+            }
+        }
+        break;
+        
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;

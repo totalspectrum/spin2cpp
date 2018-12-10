@@ -194,7 +194,7 @@ IsSpinCoginit(AST *params)
     }
     if (func->kind == AST_FUNCCALL) {
         /* FIXME? Spin requires that it be a local method; do we care? */
-        sym = FindFuncSymbol(func, NULL, NULL, 1);
+        sym = FindFuncSymbol(func, NULL, 1);
         if (sym) {
             if (sym->type == SYM_BUILTIN) {
                 return NULL;
@@ -1605,10 +1605,9 @@ IsArrayOrPointerSymbol(Symbol *sym)
 /* find function symbol in a function call */
 /* if errflag is nonzero, print errors for identifiers not found */
 Symbol *
-FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
+FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 {
     AST *objref = NULL;
-    Symbol *objsym = NULL;
     Symbol *sym = NULL;
     AST *expr = ast;
     
@@ -1647,7 +1646,6 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, Symbol **objsymPtr, int errflag)
     } else {
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
     }
-    if (objsymPtr) *objsymPtr = objsym;
     if (objrefPtr) *objrefPtr = objref;
     return sym;
 }
@@ -1951,7 +1949,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         return sub->left;
     case AST_FUNCCALL:
     {
-        Symbol *sym = FindFuncSymbol(expr, NULL, NULL, 0);
+        Symbol *sym = FindFuncSymbol(expr, NULL, 0);
         AST *typexpr;
         if (sym) {
             switch (sym->type) {

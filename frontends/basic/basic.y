@@ -1055,7 +1055,6 @@ classdecl:
   BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING eoln
     {
         AST *newobj = NewAbstractObject( $2, $4 );
-        DeclareObjects(newobj);
         current->objblock = AddToList(current->objblock, newobj);
         $$ = NULL;
     }
@@ -1164,7 +1163,6 @@ basetypename:
 
         tempnam->d.string = name;
         newobj = NewAbstractObject( tempnam, $3 );        
-        DeclareObjects(newobj);
         current->objblock = AddToList(current->objblock, newobj);
         $$ = newobj;
     }

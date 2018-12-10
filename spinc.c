@@ -181,14 +181,12 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
+            curtypesize = TypeSize(curtype);
             if (curtype->kind == AST_ASSIGN) {
-                if (basetypesize == 4) {
+                if (basetypesize == 4 || basetypesize == 0) {
                     ERROR(ast, "Member variables cannot have initial values");
                     return offset;
                 }
-                curtypesize = 4;
-            } else {
-                curtypesize = TypeSize(curtype);
             }
             break;
         case AST_COMMENT:
@@ -397,26 +395,24 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
 }
 
 void
+DeclareOneMemberVar(Module *P, AST *identifier, AST *typ)
+{
+    if (!typ) {
+        typ = InferTypeFromName(identifier);
+    }
+    if (1) {
+        AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
+        AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
+        P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+    }
+}
+
+void
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
     if (!typ) {
         typ = InferTypeFromName(identifier);
     }
-    if (typ->kind == AST_OBJECT) {
-        AST *newobj;
-        if (AstUses(P->objblock, identifier))
-            return;
-
-        if (typ->kind == AST_OBJDECL) {
-            typ = typ->left;
-        }
-        newobj = NewAST(AST_OBJECT, identifier, NULL);
-        newobj->d.ptr = typ->d.ptr;
-        P->objblock = AddToList(P->objblock, newobj);
-        DeclareObjects(newobj);
-        return;
-    }
-    
     if (!AstUses(P->varblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
@@ -874,7 +870,6 @@ FixupCode(Module *P, int isBinary)
             }
         }
     }
-    AssignObjectOffsets(P);
 }
 
 Module *
