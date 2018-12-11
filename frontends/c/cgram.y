@@ -388,6 +388,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     } else {
         if (body && body->kind == AST_STRING) {
             class_type = NewAbstractObject(AstIdentifier(typename), body);
+            current->objblock = AddToList(current->objblock, class_type);
             body = NULL;
             C = NULL;
         } else {
