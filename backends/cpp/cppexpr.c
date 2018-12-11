@@ -288,9 +288,14 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
         is_static = func->is_static;
         localMethod = (objtype == NULL) && (objref == NULL);
     }
-    if (localMethod && curfunc && curfunc->force_static && !gl_ccode) {
-        // need to call through an object
-        flexbuf_printf(f, "self->");
+    if (!gl_ccode) {
+        if (localMethod && curfunc && curfunc->force_static) {
+            // need to call through an object
+            flexbuf_printf(f, "self->");
+        } else if (objref && objref->left) {
+            PrintExpr(f, objref->left, PRINTEXPR_TOPLEVEL);
+            flexbuf_printf(f, ".");
+        }
     }
     /* check for object method call */
     flexbuf_printf(f, "%s(", sym->name);
