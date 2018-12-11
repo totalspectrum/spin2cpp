@@ -20,8 +20,6 @@ Add an option to get a report of method sizes and free space left.
 Optimization
 ------------
 
-Take advantage of commutative operators to improve optimization.
-
 Put more commonly used functions in COG RAM, and/or FCACHE whole functions
 if they are called a lot.
 
@@ -35,5 +33,4 @@ Implement a spin bytecode back end.
 
 Implement a Tachyon bytecode back end.
 
-Implement a BASIC front-end (started).
 
