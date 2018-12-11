@@ -9,9 +9,9 @@ public:
   static const int X = 1;
   static const int Y = (X + 1);
   static const int Z = (subtest113::B + Y);
-  subtest113	V;
-  static int32_t	Foo(int32_t Aa);
+  static int32_t 	Foo(int32_t Aa);
 private:
+  subtest113 	V;
 };
 
 #endif

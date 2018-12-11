@@ -7,9 +7,9 @@
 class test094 {
 public:
   static const int Myticks = (userdef::Ticks + 1);
-  userdef	U;
-  static int32_t	Foo(void);
+  static int32_t 	Foo(void);
 private:
+  userdef 	U;
 };
 
 #endif

@@ -96,8 +96,32 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
     Module *P;
     Symbol *sym;
     objtype = BaseType(objtype);
+
+    if (!objtype) {
+        // if a constant ref, look for the object in the current modules list of
+        // objects; this allows Spin to use constants before they are declared
+        if (expr->kind == AST_CONSTREF) {
+            AST *objident = expr->left;
+            while (objident && objident->kind != AST_IDENTIFIER) {
+                objident = objident->left;
+            }
+            if (objident) {
+                AST *a;
+                a = current->objblock;
+                while (a) {
+                    if (a->kind == AST_OBJECT) {
+                        if (AstUses(a->left, objident)) {
+                            objtype = a;
+                            break;
+                        }
+                    }
+                    a = a->right;
+                }
+            }
+        }
+    }
     if (!objtype || objtype->kind != AST_OBJECT) {
-        ERROR(expr, "expected an object");
+        ERROR(expr, "request for member %s in something not an object", name);
         return NULL;
     }
     P = (Module *)objtype->d.ptr;
@@ -1095,7 +1119,6 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     {
         Module *P;
         sym = LookupMethodRef(expr, &P);
-
         if (!sym) {
             return intExpr(0);
         }
