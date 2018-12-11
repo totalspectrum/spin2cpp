@@ -10,9 +10,9 @@ public:
   static const int Rows = 12;
   static const int Screensize = (Cols * Rows);
   static const int Lastrow = (Screensize - Cols);
-  test001	A;
-  int32_t	Getx(void);
+  int32_t 	Getx(void);
 private:
+  test001 	A;
 };
 
 #endif

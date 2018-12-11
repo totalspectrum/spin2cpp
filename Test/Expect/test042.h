@@ -6,9 +6,9 @@
 
 class test042 {
 public:
-  test001	A;
-  int32_t	Getx(void);
+  int32_t 	Getx(void);
 private:
+  test001 	A;
 };
 
 #endif

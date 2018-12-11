@@ -6,11 +6,11 @@
 
 class test135 {
 public:
-  miscdefs	Defs;
-  void	Main(void);
+  void 	Main(void);
 private:
-  int32_t	Val;
-  int32_t	Val2;
+  int32_t 	Val;
+  int32_t 	Val2;
+  miscdefs 	Defs;
 };
 
 #endif

@@ -204,7 +204,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             ERROR(ast, "Internal error: Unexpected declaration");
             return n;
         }            
-        if (astsiz == siz || (siz == 4 && astsiz >= siz)) {
+        if (astsiz == siz || ( (siz == 4 || siz == 0) && (astsiz == 0 || astsiz >= siz))) {
             if (comment)
                 PrintComment(f, comment);
             n += PrintVarList(f, typ, idlist, flags);
@@ -273,18 +273,10 @@ PrintAllConstants(Flexbuf *f, Module *parse)
     }
 }
 
-#if 0
-static void
-PrintObjectRefs(Flexbuf *f, Module *parse)
-{
-}
-#endif
-
 static void
 PrintCHeaderFile(Flexbuf *f, Module *parse)
 {
     int n;
-    AST *ast;
     int flags = PRIVATE;
     CppModData *be = ModData(parse);
 
@@ -321,33 +313,13 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
 
     /* print the structure definition */
     flexbuf_printf(f, "\ntypedef struct %s {\n", parse->classname);
-    n = PrintAllVarListsOfSize(f, parse, 4, flags);
-    n += PrintAllVarListsOfSize(f, parse, 2, flags);
-    n += PrintAllVarListsOfSize(f, parse, 1, flags);
-
-#if 0    
-    /* object references */
-    for (ast = parse->objblock; ast; ast = ast->right) {
-        Module *P = (Module *)ast->d.ptr;
-        AST *objdef = ast->left;
-        if (objdef->kind == AST_IDENTIFIER) {
-            flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
-            n++;
-        } else if (objdef->kind == AST_ARRAYDECL) {
-            AST *arrname = objdef->left;
-            AST *arrsize = objdef->right;
-            if (arrname->kind == AST_IDENTIFIER) {
-                flexbuf_printf(f, "  %s\t%s[%d];\n", P->classname,
-                        arrname->d.string,
-                        EvalConstExpr(arrsize)
-                    );
-                n++;
-            } else {
-                ERROR(objdef, "internal error in object printing");
-            }
-        }
+    if (parse->lastLanguage == LANG_SPIN) {
+        n = PrintAllVarListsOfSize(f, parse, 4, flags);
+        n += PrintAllVarListsOfSize(f, parse, 2, flags);
+        n += PrintAllVarListsOfSize(f, parse, 1, flags);
+    } else {
+        n = PrintAllVarListsOfSize(f, parse, 0, flags);
     }
-#endif
     /* needed to avoid problems with empty structures on Catalina */
     if (n == 0)
         flexbuf_printf(f, "  char dummy__;\n");
@@ -365,7 +337,6 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
 static void
 PrintCppHeaderFile(Flexbuf *f, Module *parse)
 {
-    AST *ast;
     int flags = PRIVATE;
     CppModData *be = ModData(parse);
 
@@ -402,25 +373,6 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     flexbuf_printf(f, "class %s {\npublic:\n", parse->classname);
     PrintAllConstants(f, parse);
 
-    /* object references */
-    for (ast = parse->objblock; ast; ast = ast->right) {
-        Module *P = (Module *)ast->d.ptr;
-        AST *objdef = ast->left;
-        if (objdef->kind == AST_IDENTIFIER) {
-            flexbuf_printf(f, "  %s\t%s;\n", P->classname, objdef->d.string);
-        } else if (objdef->kind == AST_ARRAYDECL) {
-            AST *arrname = objdef->left;
-            AST *arrsize = objdef->right;
-            if (arrname->kind == AST_IDENTIFIER) {
-                flexbuf_printf(f, "  %s\t%s[%d];\n", P->classname,
-                        arrname->d.string,
-                        EvalConstExpr(arrsize)
-                    );
-            } else {
-                ERROR(objdef, "internal error in object printing");
-            }
-        }
-    }
     /* data block, if applicable */
     if (parse->datblock && !gl_gas_dat) {
         flexbuf_printf(f, "  static ");
@@ -436,10 +388,13 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     if (parse->volatileVariables)
         flags |= ISVOLATILE;
     flexbuf_printf(f, "private:\n");
-    PrintAllVarListsOfSize(f, parse, 4, flags);
-    PrintAllVarListsOfSize(f, parse, 2, flags);
-    PrintAllVarListsOfSize(f, parse, 1, flags);
-
+    if (parse->lastLanguage == LANG_SPIN) {
+        PrintAllVarListsOfSize(f, parse, 4, flags);
+        PrintAllVarListsOfSize(f, parse, 2, flags);
+        PrintAllVarListsOfSize(f, parse, 1, flags);
+    } else {
+        PrintAllVarListsOfSize(f, parse, 0, flags);
+    }
     /* now the private methods */
     PrintPrivateFunctionDecls(f, parse);
     flexbuf_printf(f, "};\n\n");

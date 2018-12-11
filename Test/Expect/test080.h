@@ -6,7 +6,6 @@
 
 class test080 {
 public:
-  FullDuplexSerial	Fds;
   void 	Init(void);
 private:
   FullDuplexSerial 	Fds;

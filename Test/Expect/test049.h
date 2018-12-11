@@ -6,9 +6,9 @@
 
 class test049 {
 public:
-  test009	X;
-  void	Myfunc(void);
+  void 	Myfunc(void);
 private:
+  test009 	X;
 };
 
 #endif
