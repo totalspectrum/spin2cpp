@@ -120,11 +120,15 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 }
                 break;
             case AST_ARRAYDECL:
-                sym = EnterVariable(kind, stab, ast->left, NewAST(AST_ARRAYTYPE, actualtype, ast->right));
+            {
+                AST *arraytype = NewAST(AST_ARRAYTYPE, actualtype, ast->right);
+                arraytype->d.ptr = ast->d.ptr; // copy over the array base info
+                sym = EnterVariable(kind, stab, ast->left, arraytype);
                 size = EvalConstExpr(ast->right);
                 if (sym) sym->offset = offset;
                 offset += size * typesize;
                 break;
+            }
             case AST_ANNOTATION:
                 /* just ignore it */
                 break;

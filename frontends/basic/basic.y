@@ -64,6 +64,49 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
     return ast;
 }
 
+#define ARRAY_BASE_NAME "__array_base"
+
+static Symbol *
+GetCurArrayBase(void)
+{
+    Symbol *sym = LookupSymbolInTable(currentTypes, ARRAY_BASE_NAME);
+    if (!sym) {
+        sym = AddSymbol(currentTypes, ARRAY_BASE_NAME, SYM_CONSTANT, AstInteger(1));
+    }
+    return sym;
+}
+        
+static AST *
+HandleBASICOption(AST *optid, AST *exprlist)
+{
+    const char *name = GetIdentifierName(optid);
+    AST *expr;
+    if (!name) {
+        SYNTAX_ERROR("Error in option list");
+        return NULL;
+    }
+    if (!strcmp(name, "base")) {
+        int arrayBase;
+        Symbol *sym;
+        expr = NULL;
+        if (exprlist && exprlist->kind == AST_EXPRLIST) {
+            expr = exprlist->left;
+            exprlist = exprlist->right;
+            if (exprlist) expr = NULL;
+        }
+        if (!expr || !IsConstExpr(expr)) {
+            SYNTAX_ERROR("option base must be followed by an integer");
+            return NULL;
+        }
+        arrayBase = EvalConstExpr(expr);
+        sym = GetCurArrayBase();
+        sym->val = AstInteger(arrayBase);
+    } else {
+        SYNTAX_ERROR("Unknown option %s", name);
+    }
+    return NULL;
+}
+
 void
 DeclareBASICMemberVariables(AST *ast)
 {
@@ -137,9 +180,6 @@ DeclareBASICGlobalVariables(AST *ast)
 AST *BASICArrayRef(AST *id, AST *expr)
 {
     AST *ast;
-
-    // BASIC arrays start at 1
-    expr = AstOperator('-', expr, AstInteger(1));
     ast = NewAST(AST_ARRAYREF, id, expr);
     return ast;
 }
@@ -239,6 +279,7 @@ GetCurrentLoop(int token)
 %token BAS_NIL        "nil"
 %token BAS_NOT        "not"
 %token BAS_OPEN       "open"
+%token BAS_OPTION     "option"
 %token BAS_OR         "or"
 %token BAS_OUTPUT     "output"
 %token BAS_POINTER    "pointer"
@@ -964,6 +1005,10 @@ topdecl:
     }
   | constdecl
   | typedecl
+  | BAS_OPTION BAS_IDENTIFIER optexprlist eoln
+      {
+          $$ = HandleBASICOption($2, $3);
+      }
   ;
 
 constdecl:
@@ -1093,15 +1138,29 @@ identdecl:
   BAS_IDENTIFIER
     { $$ = $1; }
   | BAS_IDENTIFIER '(' expr ')'
-    { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *ident = $1;
+        AST *base = (AST *)sym->val;
+        AST *size = $3;
+        AST *decl;
+        size = AstOperator('+', AstOperator('-', size, base), AstInteger(1));
+        size = AstInteger(EvalConstExpr(size));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
   | BAS_IDENTIFIER '(' expr BAS_TO expr ')'
     {
+        AST *ident = $1;
         AST *base = $3;
-        
-        if (!IsConstExpr(base) || EvalConstExpr(base) != 1) {
-            SYNTAX_ERROR("Array dimension base must be 1");
-        }
-        $$ = NewAST(AST_ARRAYDECL, $1, $5);
+        AST *size = $5;
+        AST *decl;
+        size = AstOperator('+', AstOperator('-', size, base), AstInteger(1));
+        size = AstInteger(EvalConstExpr(size));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
     }
 ;
 
@@ -1116,7 +1175,11 @@ typename:
   | '(' typename ')'
     { $$ = $2; }
   | basetypename '(' expr ')'
-    { $$ = NewAST(AST_ARRAYTYPE, $1, $3); }
+    {
+        Symbol *sym = GetCurArrayBase();
+        $$ = NewAST(AST_ARRAYTYPE, $1, $3);
+        $$->d.ptr = (AST *)sym->val;
+    }
   ;
 
 ptrdef:

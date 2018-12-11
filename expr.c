@@ -1489,6 +1489,17 @@ IsArrayType(AST *ast)
     return 0;
 }
 
+/* find the base of an array, or NULL for default (0) */
+AST *
+GetArrayBase(AST *arraytype)
+{
+    arraytype = RemoveTypeModifiers(arraytype);
+    if (arraytype->kind == AST_ARRAYTYPE) {
+        return arraytype->d.ptr;
+    }
+    return NULL;
+}
+
 /* find minimum alignment for a type */
 int TypeAlign(AST *typ)
 {

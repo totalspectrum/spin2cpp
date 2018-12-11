@@ -21,6 +21,7 @@ NewAST(enum astkind kind, AST *left, AST *right)
     ast->kind = kind;
     ast->left = left;
     ast->right = right;
+    ast->d.ptr = 0;
     if (0 && s_reportas) {
         ast->lexdata = s_reportas->lexdata;
         ast->lineidx = s_reportas->lineidx;
@@ -578,7 +579,25 @@ static void doASTDump(AST *ast, int indent)
     case AST_COMMENT:
         sprintf(buf, "<comment/>"); // could print ast->d.string);
         leaf = 1;
-        break;        
+        break;
+    case AST_ARRAYDECL:
+    {
+        int arraybase = 0;
+        if (ast->d.ptr) {
+            arraybase = EvalConstExpr(ast->d.ptr);
+        }
+        sprintf(buf, "<arraydecl %d>", arraybase);
+        break;
+    }
+    case AST_ARRAYTYPE:
+    {
+        int arraybase = 0;
+        if (ast->d.ptr) {
+            arraybase = EvalConstExpr(ast->d.ptr);
+        }
+        sprintf(buf, "<arraytype %d>", arraybase);
+        break;
+    }
     case AST_OPERATOR:
         if (ast->d.ival >= 32 && ast->d.ival <= 126) {
             sprintf(buf, "<operator '%c'>", ast->d.ival);

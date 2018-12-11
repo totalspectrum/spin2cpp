@@ -114,6 +114,7 @@ new
 nil
 not
 open
+option
 or
 output
 pointer
@@ -186,7 +187,6 @@ declarations:
   rem an array of 10 integers
   dim a(10)
   rem same thing but more verbose
-  dim b(10) as integer
   rem or even more verbose
   dim c(1 to 10) as integer
   rem an array of 10 strings
@@ -195,10 +195,12 @@ declarations:
   dim d(10) as string
 ```
 
-Arrays are always indexed starting at 1. That is, if `a` is an array, then
+Arrays are by default indexed starting at 1. That is, if `a` is an array, then
 `a(1)` is the first thing in the array, `a(2)` the second, and so on. This is
 different from some other languages (such as Spin and C), where
-array indexes start at 0. For example, a subroutine to initialize an array
+array indexes start at 0.
+
+For example, a subroutine to initialize an array
 to 0 could look like:
 ```
    dim a(10) as integer
@@ -209,15 +211,18 @@ to 0 could look like:
    end sub
 ```
 
+It is possible to change the array base by using
+```
+   option base 0
+```
+
 The array definition may have an explicit lower bound given, for example:
 ```
-   dim a(1 to 10)
+   dim a(1 to 10)  ' array of 10 items
+   dim b(0 to 10)  ' array of 11 items
 ```
-This is for compatibility with FreeBasic. Note that at the present time the lower bound must always be a constant that evaluates to 1. So
-```
-   dim a(0 to 9) ' this gives an error!
-```
-would not work.
+
+Note that pointer dereferences are not affected by `option base` and are always based on `1`. This is a bug that we hope to fix in the future.
 
 #### Global, Member, and Local variables.
 
@@ -276,6 +281,7 @@ dim shared as integer a(5) = { _
   4, 5 _
   }
 ```
+Note that only shared arrays may be initialized like this.
 
 ## Language features
 
@@ -1075,6 +1081,20 @@ Example:
   open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
 ```
 Here the `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
+
+### OPTION
+
+Gives a compiler option. The following options are supported:
+
+#### OPTION BASE
+
+`option base N`, where `N` is an integer constant, causes the default base of arrays to be set to `N`. After this directive, arrays declared without an explicit base will start at `N`. Typically `N` is either `0` or `1`. The default is `1`.
+
+```
+dim a(10) as integer ' declares an array with indices 1-10
+option base 0
+dim b(5) as integer  ' declares an array with indices 0-5 (6 elements)
+```
 
 ### OR
 

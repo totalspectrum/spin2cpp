@@ -499,7 +499,7 @@ doBasicTransform(AST **astptr)
             AST *left = ast->left;
             AST *index = ast->right;
             AST *typ;
-        
+            
             typ = ExprType(left);
             if (typ && (IsPointerType(typ) || IsArrayType(typ))) {
                 ast->kind = AST_ARRAYREF;
@@ -513,9 +513,8 @@ doBasicTransform(AST **astptr)
                     return;
                 }
                 index = index->left;
-                // and now we have to convert the array reference to
-                // BASIC style (subtract one)
-                index = AstOperator('-', index, AstInteger(1));
+                // later we will have to convert the array reference to
+                // BASIC style (subtract one); that's done in the type checking
                 ast->right = index;
             }
         }
@@ -1500,12 +1499,24 @@ AST *CheckTypes(AST *ast)
             basetype = BaseType(lefttype);
             if (IsPointerType(lefttype)) {
                 // force this to have a memory dereference
-                AST *deref = NewAST(AST_MEMREF, basetype, ast->left);
+                // and in BASIC, also force 1 for the base
+                // FIXME: should use OPTION BASE here, but we no longer have it
+                AST *deref;
+                AST *base = NULL;
+                if (curfunc->language == LANG_BASIC) {
+                    base = AstInteger(1);
+                    ast->right = AstOperator('-', ast->right, base);
+                }
+                deref = NewAST(AST_MEMREF, basetype, ast->left);
                 ast->left = deref;
             } else if (ast->left->kind == AST_MEMREF) {
                 // nothing to do
             } else if (IsArrayType(lefttype)) {
-                // nothing to do here
+                // convert the array index to subtract base
+                AST *base = GetArrayBase(lefttype);
+                if (base) {
+                    ast->right = AstOperator('-', ast->right, base);
+                }
             } else {
                 ERROR(ast, "Array dereferences a non-array object");
                 return NULL;

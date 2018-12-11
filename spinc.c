@@ -323,6 +323,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     }
     if (ident->kind == AST_ARRAYDECL) {
         type = NewAST(AST_ARRAYTYPE, type, ident->right);
+        type->d.ptr = ident->d.ptr;
         ident = ident->left;
     }
     if (ident->kind != AST_IDENTIFIER) {
