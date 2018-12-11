@@ -7,9 +7,10 @@
 class test080 {
 public:
   FullDuplexSerial	Fds;
-  void	Init(void);
+  void 	Init(void);
 private:
-  char	Namebuffer[14];
+  FullDuplexSerial 	Fds;
+  char 	Namebuffer[14];
 };
 
 #endif

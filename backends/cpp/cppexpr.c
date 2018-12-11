@@ -1435,12 +1435,10 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         if (expr->left && expr->left->kind == AST_METHODREF) {
             objref = expr->left;
             objtype = ExprType(objref->left);
-            thename = GetIdentifierName(expr->right);
+            thename = GetIdentifierName(objref->right);
             if (!thename) {
                 return;
             }
-            objref = expr->left;
-            objtype = ExprType(objref);
             if (!IsClassType(objtype)) {
                 ERROR(expr, "request for %s in something that is not a class", thename);
                 return;

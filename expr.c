@@ -96,7 +96,7 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
     Module *P;
     Symbol *sym;
     objtype = BaseType(objtype);
-    if (objtype->kind != AST_OBJECT) {
+    if (!objtype || objtype->kind != AST_OBJECT) {
         ERROR(expr, "expected an object");
         return NULL;
     }

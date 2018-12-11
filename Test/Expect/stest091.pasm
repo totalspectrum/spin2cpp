@@ -20,8 +20,8 @@ _sendchar2_ret
 
 _sendchar_index
 	shl	arg01, #2
-	mov	sendchar_index_tmp001_, arg01
-	add	sendchar_index_tmp001_, #8
+	mov	sendchar_index_tmp001_, #8
+	add	sendchar_index_tmp001_, arg01
 	mov	arg01, arg02
 	add	objptr, sendchar_index_tmp001_
 	call	#_simplepin_tx

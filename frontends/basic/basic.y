@@ -1056,6 +1056,7 @@ classdecl:
     {
         AST *newobj = NewAbstractObject( $2, $4 );
         current->objblock = AddToList(current->objblock, newobj);
+        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj);
         $$ = NULL;
     }
   ;

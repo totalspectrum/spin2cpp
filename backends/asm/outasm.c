@@ -2345,18 +2345,35 @@ CompileFunccallFirstResult(IRList *irl, AST *expr)
 }
 
 static int
-IsDirectMemberVariable(AST *objref, Operand **offset)
+IsDirectMemberVariable(IRList *irl, AST *objref, Operand **offsetPtr)
 {
+    Operand *offset = NULL;
+    AST *arrayidx = NULL;
+    AST *typ;
+
+    typ = ExprType(objref);
+    if (objref->kind == AST_ARRAYREF) {
+        arrayidx = objref->right;
+        objref = objref->left;
+    }
     if (objref->kind == AST_IDENTIFIER) {
         Symbol *sym;
-        AST *typ;
         const char *name = GetIdentifierName(objref);
         sym = LookupSymbol(name);
         switch(sym->type) {
         case SYM_VARIABLE:
-            typ = (AST *)sym->val;
-            if (IsClassType(typ)) {
-                *offset = NewImmediate(sym->offset);
+            if (IsClassType(typ))
+            {
+                int offval = sym->offset;
+                if (arrayidx) {
+                    AST *expr = AstInteger(offval);
+                    expr = AstOperator('+', expr,
+                                       AstOperator('*', AstInteger(TypeSize(typ)), arrayidx));
+                    offset = CompileExpression(irl, expr, NULL);
+                } else {
+                    offset = NewImmediate(sym->offset);
+                }
+                *offsetPtr = offset;
                 return 1;
             }
             return 0;
@@ -2428,7 +2445,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     objaddr = NULL;
     
     if (objref) {
-        if (IsDirectMemberVariable(objref, &offset)) {
+        if (IsDirectMemberVariable(irl, objref, &offset)) {
             // do nothing, offset is already set up
         } else {
             objaddr = CompileExpression(irl, objref, NULL);

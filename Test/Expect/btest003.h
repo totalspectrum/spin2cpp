@@ -6,9 +6,9 @@
 
 class btest003 {
 public:
-  FullDuplexSerial	ser;
   void 	program(void);
 private:
+  FullDuplexSerial 	ser;
   char 	i;
 };
 

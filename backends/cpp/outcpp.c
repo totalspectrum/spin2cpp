@@ -325,6 +325,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
     n += PrintAllVarListsOfSize(f, parse, 2, flags);
     n += PrintAllVarListsOfSize(f, parse, 1, flags);
 
+#if 0    
     /* object references */
     for (ast = parse->objblock; ast; ast = ast->right) {
         Module *P = (Module *)ast->d.ptr;
@@ -346,7 +347,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
             }
         }
     }
-
+#endif
     /* needed to avoid problems with empty structures on Catalina */
     if (n == 0)
         flexbuf_printf(f, "  char dummy__;\n");

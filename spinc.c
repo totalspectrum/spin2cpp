@@ -207,7 +207,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             }
             // declare all the variables
             offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
-        } else if (basetypesize == curtypesize || (basetypesize == 4 && curtypesize >= 4)) {
+        } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
             offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
         }
     }
@@ -395,14 +395,18 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
 }
 
 void
-DeclareOneMemberVar(Module *P, AST *identifier, AST *typ)
+DeclareOneMemberVar(Module *P, AST *ident, AST *type)
 {
-    if (!typ) {
-        typ = InferTypeFromName(identifier);
+    if (!type) {
+        type = InferTypeFromName(ident);
+    }
+    if (ident->kind == AST_ARRAYDECL) {
+        type = NewAST(AST_ARRAYTYPE, type, ident->right);
+        ident = ident->left;
     }
     if (1) {
-        AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
-        AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
+        AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
+        AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
         P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
     }
 }
