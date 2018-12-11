@@ -271,7 +271,7 @@ It is possible to extend a long expression or array initializer over several lin
 ```
 is parsed like `x = y + z`. This is especially useful for array initializers, which can often be quite long:
 ```
-dim as integer a(5) = { _
+dim shared as integer a(5) = { _
   1, 2, 3, _
   4, 5 _
   }

@@ -128,6 +128,19 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             case AST_ANNOTATION:
                 /* just ignore it */
                 break;
+            case AST_ASSIGN:
+            {
+                AST *id = ast->left;
+                while (id && id->kind != AST_IDENTIFIER) {
+                    id = id->left;
+                }
+                if (id) {
+                    ERROR(ast, "initialization is not supported for member variable %s", GetIdentifierName(id));
+                } else {
+                    ERROR(ast, "initialization is not supported for variables of this kind");
+                }
+                return offset;
+            }
             default:
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
@@ -1339,7 +1352,7 @@ CheckFunctionCalls(AST *ast)
             } else {
                 AST *ftype = ExprType(ast->left);
                 if (!IsFunctionType(ftype)) {
-                    ERROR(ast, "Expected function type");
+                    ERROR(ast, "%s is not a function", fname);
                     return;
                 }
                 expectArgs = AstListLen(ftype->right);
