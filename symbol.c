@@ -57,6 +57,11 @@ doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
     Symbol *sym = NULL;
     if (!table) return NULL;
     sym = FindSymbol(table, name);
+    if (!sym) {
+        if (table->next) {
+           sym = doLookupSymbolInTable(table->next, name, level);
+	}
+    }
     if (sym && sym->type == SYM_ALIAS) {
         // have to look it up again
         Symbol *alias;
@@ -71,11 +76,6 @@ doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
         } else {
             return sym;
         }
-    }
-    if (!sym) {
-        if (table->next) {
-	   return LookupSymbolInTable(table->next, name);
-	}
     }
     return sym;
 }
