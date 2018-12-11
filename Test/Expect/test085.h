@@ -10,11 +10,11 @@ public:
   static const int _Clkmode = (8 + 1024);
   static const int _Clkfreq = 80000000;
   static const int Max_obj = 3;
-  FullDuplexSerial	Fds;
-  objarrtest	V[3];
-  void	Main(void);
+  void 	Main(void);
 private:
-  void	Printn(int32_t I);
+  FullDuplexSerial 	Fds;
+  objarrtest 	V[Max_obj];
+  void 	Printn(int32_t I);
 };
 
 #endif

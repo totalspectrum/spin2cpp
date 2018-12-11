@@ -1951,6 +1951,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
+        case SYM_CLOSURE:
             return (AST *)sym->val;
         case SYM_FUNCTION:
             return ((Function *)sym->val)->overalltype;
@@ -2004,16 +2005,16 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         const char *methodname;
         Function *func;
         
-        objtype = BaseType(ExprTypeRelative(table, objref));
-        if (!objtype || objtype->kind != AST_OBJECT) {
-            ERROR(expr, "Expecting object");
-            return NULL;
-        }
         if (expr->right->kind != AST_IDENTIFIER) {
             ERROR(expr, "Expecting identifier after '.'");
             return NULL;
         }
         methodname = expr->right->d.string;
+        objtype = BaseType(ExprTypeRelative(table, objref));
+        if (!IsClassType(objtype)) {
+            ERROR(expr, "Expecting object for dereference of %s", methodname);
+            return NULL;
+        }
         sym = LookupMemberSymbol(expr, objtype, methodname, NULL);
         if (!sym) {
             ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));

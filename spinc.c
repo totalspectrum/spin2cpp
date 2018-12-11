@@ -400,10 +400,6 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type)
     if (!type) {
         type = InferTypeFromName(ident);
     }
-    if (ident->kind == AST_ARRAYDECL) {
-        type = NewAST(AST_ARRAYTYPE, type, ident->right);
-        ident = ident->left;
-    }
     if (1) {
         AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);

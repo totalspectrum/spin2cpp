@@ -486,6 +486,20 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         break;
+    case AST_METHODREF:
+    case AST_CONSTREF:
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        // if we have v.x and v is an array, convert to v[0].x
+        if (ast->left && ast->left->kind == AST_IDENTIFIER) {
+            AST *objtype = ExprType(ast->left);
+            if(IsArrayType(objtype)) {
+                AST *lookup;
+                lookup = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
+                *ast = *NewAST(ast->kind, lookup, ast->right);
+            }
+        }
+        break;
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;
@@ -498,15 +512,18 @@ doSpinTransform(AST **astptr, int level)
         break;
     case AST_ARRAYREF:
         // array references like T[x] may actually
-        // be casts if T is a typename
+        // be a memory lookup if T is a typename
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
             if (sym && sym->type == SYM_TYPEDEF) {
-                // change this into a cast
-                ast->kind = AST_CAST;
-                ast->left = (AST *)sym->val;
+                // change this into a pointer cast
+                //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->val, NULL);
+                AST *ptrtype = (AST *)sym->val;
+                AST *ptrcast = NewAST(AST_MEMREF, ptrtype, ast->right);
+                AST *deref = NewAST(AST_ARRAYREF, ptrcast, AstInteger(0));
+                *ast = *deref;
             }
         }
         break;

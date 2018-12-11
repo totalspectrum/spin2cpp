@@ -2448,8 +2448,9 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         if (IsDirectMemberVariable(irl, objref, &offset)) {
             // do nothing, offset is already set up
         } else {
+            AST *objreftype = ExprType(objref);
             objaddr = CompileExpression(irl, objref, NULL);
-            if (IsClassType(objref)) {
+            if (IsClassType(objreftype)) {
                 objaddr = GetLea(irl, objaddr);
             }
         }
@@ -3345,7 +3346,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return CogMemRef(base, 0);
   }
   case AST_MEMREF:
-    return CompileHubref(irl, expr);
+  {
+      return CompileHubref(irl, expr);
+  }
   case AST_COGINIT:
     return CompileCoginit(irl, expr);
   case AST_ADDROF:

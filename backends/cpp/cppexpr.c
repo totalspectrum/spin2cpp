@@ -925,6 +925,9 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     case AST_STRING:
         PrintStringLiteral(f, expr->d.string);
         break;
+    case AST_CAST:
+        PrintTypedExpr(f, expr->left, expr->right, flags);
+        break;
     default:
         ERROR(expr, "bad target for assignment");
         break;
@@ -1519,6 +1522,9 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
             PrintExpr(f, expr->right, flags);
         }
         flexbuf_printf(f, " )");
+        break;
+    case AST_CAST:
+        PrintTypedExpr(f, expr->left, expr->right, flags);
         break;
     default:
         ERROR(expr, "Internal error, bad expression");

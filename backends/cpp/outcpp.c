@@ -199,6 +199,9 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
             typ = ast->left;
             astsiz = TypeSize(typ);
             idlist = ast->right;
+            if (IsClassType(typ)) {
+                flags &= ~ISVOLATILE;
+            }
             break;
         default:
             ERROR(ast, "Internal error: Unexpected declaration");

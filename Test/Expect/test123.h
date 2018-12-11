@@ -14,7 +14,7 @@ public:
 private:
 // Stack space for Square cog
   volatile int32_t 	Stack[64];
-  volatile FullDuplexSerial 	Fds;
+  FullDuplexSerial 	Fds;
   static void 	Hello(test123 *self);
 };
 
