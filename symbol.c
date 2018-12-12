@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include "symbol.h"
+#include "util/util.h"
 
 #if 0
 /* do case insensitive comparisons */
@@ -172,19 +173,13 @@ char *
 NewTemporaryVariable(const char *prefix)
 {
     char *str;
-    char *s;
-
+    char buf[32];
+    
     if (!prefix)
         prefix = "_tmp_";
-    s = str = (char *)malloc(strlen(prefix)+16);
-    if (!s) {
-        fprintf(stderr, "Out of memory!\n");
-        exit(1);
-    }
-    while (*prefix)
-        *s++ = *prefix++;
-    *s++ = '_';
-    sprintf(s, "%04d", tmpvarnum);
+
+    sprintf(buf, "_%04d", tmpvarnum);
+    str = strdupcat(prefix, buf);
     tmpvarnum++;
     if (tmpvarnum > tmpvarmax) {
         fprintf(stderr, "Temporary variable limit of %d exceeded", tmpvarmax);
@@ -192,4 +187,3 @@ NewTemporaryVariable(const char *prefix)
     }
     return str;
 }
-

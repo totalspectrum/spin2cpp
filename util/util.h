@@ -46,4 +46,7 @@ char* strupr(char *origstr);
 // reverse a string (in place)
 char *strrev(char *origstr);
 
+// create a new string with the concatenation of two old ones
+char *strdupcat(char *a, char *b);
+
 #endif

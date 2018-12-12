@@ -24,7 +24,7 @@ Symbol           | When Defined
 
 ### Inline Assembly
 
-The inline assembly syntax is similar to that of MSVC. Inline assembly blocks are marked with the keyword `asm`. For example, a function to get the current cog id could be written as:
+The inline assembly syntax is similar to that of MSVC. Inline assembly blocks are marked with the keyword `__asm`. For example, a function to get the current cog id could be written as:
 ```
 int getcogid() {
    int x;
@@ -38,3 +38,26 @@ The `__asm` keyword must be followed by a `{`; everything between that and the n
 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 
+### External Classes (e.g. Spin Objects)
+
+It is possible to use classes written in other languages. For example, to use the FullDuplexSerial Spin object you would do:
+```
+struct __fromfile("FullDuplexSerial.spin") fds;
+
+void main()
+{
+    fds.start(31, 30, 0, 115_200);
+    fds.str("hello, world!\r\n");
+}
+```
+This declares a struct `fds` which corresponds to a Spin OBJ, using the code in "FullDuplexSerial.spin". Spin, BASIC, and even C code may be used. IN the case of C code, something like:
+```
+struct __fromfile("myclass.c") myclass;
+```
+is basically equivalent to:
+```
+struct {
+#include "myclass.c"
+} myclass;
+```
+Note that allowing function definitions inside a struct is an extension to C (it is feature of C++).
