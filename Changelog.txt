@@ -3,6 +3,7 @@ Version 3.9.13
   objects.
 - Fixed the BASIC HEAPSIZE constant.
 - Implemented "option base" for BASIC
+- Added "struct __using" to C
 
 Version 3.9.12
 - Fixed a BASIC operator precedence problem (<< and >> should have

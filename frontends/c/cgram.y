@@ -477,6 +477,8 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 %token C_RETURN "return"
 
 %token C_FROMFILE "__fromfile"
+%token C_USING "__using"
+
 %token C_ASM "__asm"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
@@ -840,7 +842,7 @@ struct_or_union_specifier
             { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	| struct_or_union C_IDENTIFIER
             { $$ = MakeNewStruct(current, $1, $2, NULL); }
-        | struct_or_union C_FROMFILE fromfile_clause
+        | struct_or_union C_USING fromfile_clause
             { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	;
 

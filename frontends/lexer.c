@@ -629,6 +629,9 @@ getEscapedChar(LexStream *L)
     return c;
 }
 
+/* forward declaration */
+static int skipSpace(LexStream *L, AST **ast_ptr, int language);
+
 /* parse a C string */
 static void
 parseCString(LexStream *L, AST **ast_ptr)
@@ -639,6 +642,7 @@ parseCString(LexStream *L, AST **ast_ptr)
 
     ast = NewAST(AST_STRING, NULL, NULL);
     flexbuf_init(&fb, INCSTR);
+again:
     c = lexgetc(L);
     while (c != '"' && c > 0 && c < 256) {
         if (c == 10 || c == 13) {
@@ -653,8 +657,14 @@ parseCString(LexStream *L, AST **ast_ptr)
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
+    // handle "x" "y" as "xy"
+    c = skipSpace(L, NULL, LANG_C);
+    if (c == '"') {
+        goto again;
+    } else {
+        lexungetc(L, c);
+    }
     flexbuf_addchar(&fb, '\0');
-
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
 }
@@ -1422,6 +1432,7 @@ struct reservedword c_keywords[] = {
   { "typedef", C_TYPEDEF },
   { "union", C_UNION },
   { "unsigned", C_UNSIGNED },
+  { "__using", C_USING },
   { "void", C_VOID },
   { "volatile", C_VOLATILE },
   { "while", C_WHILE },

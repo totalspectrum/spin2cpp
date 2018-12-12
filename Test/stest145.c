@@ -1,4 +1,4 @@
-typedef struct __fromfile("simplepin.spin") PIN;
+typedef struct __using("simplepin.spin") PIN;
 
 PIN mypin;
 

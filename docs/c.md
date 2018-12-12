@@ -40,9 +40,9 @@ Inside inline assembly any instructions may be used, but the only legal operands
 
 ### External Classes (e.g. Spin Objects)
 
-It is possible to use classes written in other languages. For example, to use the FullDuplexSerial Spin object you would do:
+It is possible to use classes written in other languages. The syntax is similar to the BASIC `class using`, but in C this is written `struct __using`. For example, to use the FullDuplexSerial Spin object you would do:
 ```
-struct __fromfile("FullDuplexSerial.spin") fds;
+struct __using("FullDuplexSerial.spin") fds;
 
 void main()
 {
@@ -50,9 +50,9 @@ void main()
     fds.str("hello, world!\r\n");
 }
 ```
-This declares a struct `fds` which corresponds to a Spin OBJ, using the code in "FullDuplexSerial.spin". Spin, BASIC, and even C code may be used. IN the case of C code, something like:
+This declares a struct `fds` which corresponds to a Spin OBJ, using the code in "FullDuplexSerial.spin". Spin, BASIC, and even C code may be used. In the case of C code, something like:
 ```
-struct __fromfile("myclass.c") myclass;
+struct __using("myclass.c") myclass;
 ```
 is basically equivalent to:
 ```
