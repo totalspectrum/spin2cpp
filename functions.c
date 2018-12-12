@@ -201,7 +201,6 @@ DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody
     funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
     funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
-    // declare the lambda function
     DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
 }
 
@@ -431,6 +430,16 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     MaybeDeclareMemberVar(P, ident, typ);
 }
 
+static const char *
+AliasName(const char *origName)
+{
+    Symbol *sym = LookupSymbol(origName);
+    if (sym && sym->type == SYM_ALIAS) {
+        return (const char *)sym->val;
+    }
+    return origName;
+}
+
 static void
 doDeclareFunction(AST *funcblock)
 {
@@ -621,8 +630,12 @@ doDeclareFunction(AST *funcblock)
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
     
-    /* define the function itself */
-    AddSymbol(&current->objsyms, fdef->name, SYM_FUNCTION, fdef);
+    /* define the function symbol itself */
+    /* note: static functions may get alias names, so we have to look
+     * for an alias and declare under that name; that's what AliasName()
+     * does
+     */
+    AddSymbol(&current->objsyms, AliasName(fdef->name), SYM_FUNCTION, fdef);
 }
 
 void
