@@ -910,10 +910,8 @@ SizedHubMemRef(int size, Operand *addr, int offset)
 {
     Operand *temp;
 
-    if (size == 0) {
-        ERROR(NULL, "bad size");
-        size = 4;
-    }
+    // NOTE: a size of 0 is perfectly OK (it can happen for a struct
+    // which only has function members) but should never be dereferenced
     temp = NewOperand(HUBMEM_REF, (char *)addr, offset);
     temp->size = size;
     return temp;

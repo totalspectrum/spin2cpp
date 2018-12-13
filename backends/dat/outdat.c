@@ -272,6 +272,9 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
     int i;
     int checkReloc;
 
+    if (elemsize == 0) {
+        return;
+    }
     if (item) {
         if (0 != (checkReloc = IsRelocatable(item, &offset, true))) {
             if (checkReloc == -1) {
@@ -1223,6 +1226,9 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
     }
     typalign = TypeAlign(type);
     typsize = TypeSize(type);
+    if (typsize == 0) {
+        return;
+    }
     AlignPc(f, typalign);
 
     // we only know how to initialize basic types right now
