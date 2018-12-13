@@ -1400,6 +1400,10 @@ cgramyyerror(const char *msg)
             fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
             msg += strlen("unexpected identifier");
         }
+        if (!strncmp(msg, "unexpected type name", strlen("unexpected type name")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
+            fprintf(stderr, "unexpected type name `%s'", last_ast->d.string);
+            msg += strlen("unexpected type name");
+        }
         // if we get a stray character in source, sometimes bison tries to treat it as a token for
         // error purposes, resulting in $undefined as the token
         else if (!strncmp(msg, "$undefined", strlen("$undefined")) && yychar >= ' ' && yychar < 127) {

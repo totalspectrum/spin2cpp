@@ -2668,11 +2668,13 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 // check for an abstract object declaration
                 if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
                     *ast_ptr = ast;
+                    last_ast = AstIdentifier(idstr);
                     return BAS_TYPENAME;
                 }
             } else if (sym->type == SYM_TYPEDEF) {
                 ast = (AST *)sym->val;
                 *ast_ptr = ast;
+                last_ast = AstIdentifier(idstr);
                 return BAS_TYPENAME;
             }
         }
@@ -2680,7 +2682,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     // it's an identifier
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     ast->d.string = idstr;
-    *ast_ptr = ast;
+    *ast_ptr = last_ast = ast;
     return BAS_IDENTIFIER;
 }
 
@@ -2694,7 +2696,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
 
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
-        *ast_ptr = last_ast = ast;
+        *ast_ptr = ast;
         return c;
     }
     // special case: '&' followed immediately by a letter is potentially
@@ -2852,7 +2854,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
       } else {
           ast = NewAST(AST_SYMBOL, NULL, NULL);
           ast->d.ptr = (void *)sym;
-          *ast_ptr = ast;
+          *ast_ptr = last_ast = ast;
           return C_IDENTIFIER;
       }
     }
@@ -2863,14 +2865,14 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
             if (sym->type == SYM_TYPEDEF) {
                 ast = (AST *)sym->val;
                 *ast_ptr = ast;
+                last_ast = AstIdentifier(idstr);
                 return C_TYPE_NAME;
             }
         }
     }
     // it's an identifier
-    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    ast->d.string = idstr;
-    *ast_ptr = ast;
+    ast = AstIdentifier(idstr);
+    *ast_ptr = last_ast = ast;
     return C_IDENTIFIER;
 }
 
@@ -2886,7 +2888,7 @@ getCToken(LexStream *L, AST **ast_ptr)
 
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
-        *ast_ptr = last_ast = ast;
+        *ast_ptr = ast;
         return c;
     }
     if (safe_isdigit(c)) {
@@ -3054,7 +3056,7 @@ getCToken(LexStream *L, AST **ast_ptr)
             lexungetc(L, c2);
         }
     }
-    *ast_ptr = last_ast = ast;
+    *ast_ptr = ast;
 //    printf("Ctoken == %d\n", c);
     return c;
 }

@@ -346,7 +346,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         } else if (olddef) {
             ERROR(ident, "Redefining symbol %s", name);
         }
-        AddSymbol(table, name, SYM_TYPEDEF, type);
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, type);
         return;
     }
     if (olddef && !alias) {
@@ -903,6 +903,7 @@ ParseTopFiles(const char *argv[], int argc, int outputBin)
 
     while (argc > 0) {
         name = *argv++;
+        currentTypes = NULL;
         P = doParseFile(name, P, &is_dup);
         --argc;
     }
