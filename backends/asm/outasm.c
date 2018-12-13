@@ -1180,6 +1180,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
             astlist = astlist->right;
             if (n == 0) {
                 name = VarName(ast);
+                //size = TypeSize(ExprType(ast)); // FIXME we will need this
                 if (func) {
                     Symbol *sym;
                     sym = FindSymbol(&func->localsyms, name);
@@ -2309,7 +2310,6 @@ EmitParameterList(IRList *irl, OperandList *oplist, Function *func, AST *functyp
     while (oplist != NULL) {
         op = oplist->op;
         oplist = oplist->next;
-
         dst = GetFunctionParameterForCall(irl, func, functype, n++);
         if (dst) {
             EmitMove(irl, dst, op);
@@ -3778,19 +3778,17 @@ static void CompileStatement(IRList *irl, AST *ast)
                     items = NumExprItemsOnStack(retval);
                     op = CompileExpression(irl, retval, NULL);
                     if (items <= 1) {
-                        EmitMove(irl, GetResultReg(n++), op);
+                        EmitMove(irl, GetResultReg(n), op);
                         n++;
                     } else {
-                        Operand *lea = GetLea(irl, op);
-                        Operand *ptr = NewFunctionTempRegister();
-                        Operand *derefptr = Dereference(irl, ptr);
-                        Operand *step = NewImmediate(1);
-                        EmitMove(irl, ptr, lea);
+                        Operand *base = op;
+                        Operand *derefptr;
+                        int offset = 0;
                         while (items-- > 0) {
-                            EmitMove(irl, GetResultReg(n++), derefptr);
-                            if (items) {
-                                EmitOp2(irl, OPC_ADD, ptr, step);
-                            }
+                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset));
+                            EmitMove(irl, GetResultReg(n), derefptr);
+                            n++;
+                            offset++;
                         }
                     }
                 } while(retlist);
