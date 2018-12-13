@@ -203,6 +203,22 @@ IsValidDstReg(Operand *op)
     }
 }
 
+#if 0
+static bool
+IsRegister(Operand *op)
+{
+    switch(op->kind) {
+    case REG_LOCAL:
+    case REG_ARG:
+    case REG_REG:
+    case REG_HW:
+        return true;
+    default:
+        return false;
+    }
+}
+#endif
+
 static bool
 InstrSetsFlags(IR *ir, int flags)
 {
@@ -2124,6 +2140,33 @@ OptimizeIncDec(IRList *irl)
     return change;
 }
 
+/* helper function: see if we can find any registers in this IRL that
+ * use the name "name". This is needed because some indirect operations
+ * create COG labels that don't point back to the original Operand; to
+ * de-reference those and convert back to the original we need to search
+ * for it
+ */
+static Operand *
+FindNamedOperand(IRList *irl, const char *name, int val)
+{
+    IR *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (IsDummy(ir) || IsLabel(ir)) continue;
+        if (ir->dst && IsRegister(ir->dst->kind) && ir->dst->val == val) {
+            if (!strcmp(ir->dst->name, name)) {
+                return ir->dst;
+            }
+        }
+        if (ir->src && IsRegister(ir->src->kind) && ir->src->val == val) {
+            if (!strcmp(ir->src->name, name)) {
+                return ir->src;
+            }
+        }
+    }
+    // if we get here, punt
+    return NewOperand(REG_HW, name, val);
+}
+
 /* optimizer for COG memory accesses
  * if we see something like:
  *   movs wrcog, #x
@@ -2166,10 +2209,10 @@ OptimizeCogWrites(IRList *irl)
                 dst = ir_prev->dst;
             }
             if (dst->kind == IMM_COG_LABEL) {
-                dst = NewOperand(REG_HW, dst->name, dst->val);
+                dst = FindNamedOperand(irl, dst->name, dst->val);
             }
             if (src->kind == IMM_COG_LABEL) {
-                src = NewOperand(REG_HW, src->name, src->val);
+                src = FindNamedOperand(irl, src->name, src->val);
             }
             if (1) {
                 ReplaceOpcode(ir, OPC_MOV);
