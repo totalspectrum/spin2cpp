@@ -18,7 +18,7 @@ static void initOutput(Module *P)
         hubPc = 0;
     }
     bytesOnLine = 0;
-    current_lex = &P->L;
+    current_lex = P->Lptr;
     current_lex->lineCounter = 0;
 }
 

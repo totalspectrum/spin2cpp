@@ -126,13 +126,14 @@ InitGlobalModule(void)
             syscode = (const char *)sys_p1_code_spin;
         }
         gl_normalizeIdents = 0;
-        strToLex(&globalModule->L, syscode, "_system_");
+        globalModule->Lptr = malloc(sizeof(*globalModule->Lptr));
+        strToLex(globalModule->Lptr, syscode, "_system_");
         spinyyparse();
-        strToLex(&globalModule->L, (const char *)sys_common_spin, "_common_");
+        strToLex(globalModule->Lptr, (const char *)sys_common_spin, "_common_");
         spinyyparse();
-        strToLex(&globalModule->L, (const char *)sys_float_spin, "_float_");
+        strToLex(globalModule->Lptr, (const char *)sys_float_spin, "_float_");
         spinyyparse();
-        strToLex(&globalModule->L, (const char *)sys_gcalloc_spin, "_gc_");
+        strToLex(globalModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_");
         spinyyparse();
         
         ProcessModule(globalModule);
@@ -644,11 +645,11 @@ doParseFile(const char *name, Module *P, int *is_dup)
             parseString = pp_finish(&gl_pp);
             pp_restore_define_state(&gl_pp, defineState);
         }
-        strToLex(&current->L, parseString, fname);
+        strToLex(NULL, parseString, fname);
 	doparse(language);
         free(parseString);
     } else {
-        fileToLex(&current->L, f, fname);
+        fileToLex(NULL, f, fname);
         doparse(language);
     }
     fclose(f);

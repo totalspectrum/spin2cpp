@@ -391,8 +391,8 @@ casematch:
   matchexprlist ':'
   {
       $$ = $1;
-      EstablishIndent(&current->L, -1);
-      resetLineState(&current->L);
+      EstablishIndent(current->Lptr, -1);
+      resetLineState(current->Lptr);
   }
 
 matchexprlist:
@@ -1110,7 +1110,7 @@ spinyyerror(const char *msg)
     extern int saved_spinyychar;
     int yychar = saved_spinyychar;
     
-    ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
+    ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
 
     // massage bison's error messages to make them easier to understand
     while (*msg) {

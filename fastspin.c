@@ -590,7 +590,7 @@ main(int argc, const char **argv)
                         int loc = 0;
                         double now = getCurTime();
                         for (Q = allparse; Q; Q = Q->next) {
-                            loc += Q->L.lineCounter;
+                            loc += Q->Lptr->lineCounter;
                         }
                         printf("Compiled %d Lines of Code in %.3f Seconds\n", loc, now - gl_start_time);
                     }

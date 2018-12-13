@@ -270,7 +270,7 @@ struct modulestate {
     Function *functions;
 
     /* lexer state during input */
-    LexStream L;
+    LexStream *Lptr;
 
     /* the symbol table */
     SymbolTable objsyms;

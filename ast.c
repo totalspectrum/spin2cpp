@@ -26,7 +26,7 @@ NewAST(enum astkind kind, AST *left, AST *right)
         ast->lexdata = s_reportas->lexdata;
         ast->lineidx = s_reportas->lineidx;
     } else if (current) {
-        ast->lexdata = &current->L;
+        ast->lexdata = current->Lptr;
         ast->lineidx = getLineInfoIndex(ast->lexdata);
     } else {
         ast->lexdata = NULL;

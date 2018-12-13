@@ -96,6 +96,9 @@ strgetc(LexStream *L)
 /* open a stream from a string s */
 void strToLex(LexStream *L, const char *s, const char *name)
 {
+    if (!L) {
+        current->Lptr = L = malloc(sizeof(*L));
+    }
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
     L->getcf = strgetc;
@@ -173,6 +176,9 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
 {
     int c1, c2;
 
+    if (!L) {
+        current->Lptr = L = malloc(sizeof(*L));
+    }
     memset(L, 0, sizeof(*L));
     L->ptr = (void *)f;
     L->arg = NULL;
@@ -788,7 +794,7 @@ docomment:
         lineno = strtol(ptr, &ptr, 10);
         if (lineno > 0) {
             while (*ptr == ' ') ptr++;
-            L->lineCounter = lineno;
+            L->lineCounter = lineno - 1;
             L->fileName = getFileName(ptr);
         }
     } else if (!strncmp(commentLine, "#pragma ", 8)) {
@@ -2570,7 +2576,7 @@ int
 spinyylex(SPINYYSTYPE *yval)
 {
     int c;
-    saved_spinyychar = c = getSpinToken(&current->L, yval);
+    saved_spinyychar = c = getSpinToken(current->Lptr, yval);
     if (c == SP_EOF)
         return 0;
     return c;
@@ -2774,7 +2780,7 @@ int
 basicyylex(BASICYYSTYPE *yval)
 {
     int c;
-    saved_basicyychar = c = getBasicToken(&current->L, yval);
+    saved_basicyychar = c = getBasicToken(current->Lptr, yval);
     if (c == BAS_EOF || c == EOF)
         return 0;
     return c;
@@ -3065,7 +3071,7 @@ int
 cgramyylex(CGRAMYYSTYPE *yval)
 {
     int c;
-    saved_cgramyychar = c = getCToken(&current->L, yval);
+    saved_cgramyychar = c = getCToken(current->Lptr, yval);
     if (c == EOF)
         return 0;
     return c;

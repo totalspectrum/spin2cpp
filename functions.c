@@ -373,6 +373,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             AST *closure_type;
             closure_name = NewTemporaryVariable("__closure__");
             C = func->closure = NewModule(closure_name, LANG_BASIC);
+            C->Lptr = current->Lptr;
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
             closure_type = NewAST(AST_OBJECT, closure_type, NULL);
             closure_type->d.ptr = func->closure;

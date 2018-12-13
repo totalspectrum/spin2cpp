@@ -348,7 +348,7 @@ SYNTAX_ERROR(const char *msg, ...)
     va_list args;
 
     if (current)
-        ERRORHEADER(current->L.fileName, current->L.lineCounter, "error");
+        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
     else
         ERRORHEADER(NULL, 0, "error");
 
