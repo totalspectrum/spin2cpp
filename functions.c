@@ -81,7 +81,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
     
     sym = AddSymbol(stab, name, kind, (void *)type);
     if (!sym) {
-        ERROR(astname, "Duplicate definition for %s", name);
+        ERROR(astname, "duplicate definition for %s", name);
     }
     return sym;
 }
