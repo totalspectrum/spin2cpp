@@ -1115,6 +1115,8 @@ dimension:
     { $$ = NewAST(AST_DECLARE_VAR, $3, $4); }
   | BAS_DIM BAS_SHARED dimlist
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, NULL, $3), NULL); }
+  | BAS_DIM BAS_SHARED dimlist BAS_AS typename
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
   | BAS_DIM BAS_SHARED BAS_AS typename dimlist
     { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
   ;
