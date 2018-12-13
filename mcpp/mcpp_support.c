@@ -221,7 +221,13 @@ char *  mcpp_get_mem_buffer(
     OUTDEST od
 )
 {
+#if 0
     return mem_buffers[ od].buffer;
+#else
+    char *buf = mem_buffers[od].buffer;
+    mem_buffers[od].buffer = NULL;
+    return buf;
+#endif
 }
 
 
