@@ -47,6 +47,6 @@ char* strupr(char *origstr);
 char *strrev(char *origstr);
 
 // create a new string with the concatenation of two old ones
-char *strdupcat(char *a, char *b);
+char *strdupcat(const char *a, const char *b);
 
 #endif

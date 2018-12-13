@@ -2,7 +2,7 @@
 #include <string.h>
 #include "util.h"
 
-char *strdupcat(char *a, char *b)
+char *strdupcat(const char *a, const char *b)
 {
     size_t len = strlen(a) + strlen(b);
     char *c = malloc(len+1);
