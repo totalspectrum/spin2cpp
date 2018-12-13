@@ -21,19 +21,17 @@ static int InferTypesExpr(AST *expr, AST *expectedType);
 int
 NumExprItemsOnStack(AST *expr)
 {
-    Function *f;
+    AST *type;
+    int siz;
     if (!expr) {
         return 0;
     }
-    if (expr->kind == AST_FUNCCALL) {
-        Symbol *sym = FindCalledFuncSymbol(expr, NULL, 1);
-        if (sym && sym->type == SYM_FUNCTION) {
-            f = (Function *)sym->val;
-            return f->numresults;
-        }
-            
+    type = ExprType(expr);
+    if (!type) {
+        return 1;
     }
-    return 1;
+    siz = TypeSize(type);
+    return ((siz+3) & ~3) / LONG_SIZE;
 }
 
 Function *curfunc;

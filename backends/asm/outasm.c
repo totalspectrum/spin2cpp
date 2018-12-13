@@ -3755,15 +3755,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                     retval = retval->left;
                 }
             }
-            if (retval->kind == AST_EXPRLIST) {
-                int n = 0;
-                while (retval) {
-                    op = CompileExpression(irl, retval->left, NULL);
-                    EmitMove(irl, GetResultReg(n), op);
-                    n++;
-                    retval = retval->right;
-                }
-            } else if (retval->kind == AST_FUNCCALL) {
+            if (retval->kind == AST_FUNCCALL) {
                 OperandList *oplist = CompileFunccall(irl, retval);
                 int n = 0;
                 while (oplist) {
@@ -3771,9 +3763,37 @@ static void CompileStatement(IRList *irl, AST *ast)
                     n++;
                     oplist = oplist->next;
                 }
-            } else {
-                op = CompileExpression(irl, retval, NULL);
-                EmitMove(irl, GetResultReg(0), op);
+            } else if (retval) {
+                int n = 0;
+                int items;
+                AST *retlist = NULL;
+                if (retval->kind == AST_EXPRLIST) {
+                    retlist = retval;
+                }
+                do {
+                    if (retlist) {
+                        retval = retlist->left;
+                        retlist = retlist->right;
+                    }
+                    items = NumExprItemsOnStack(retval);
+                    op = CompileExpression(irl, retval, NULL);
+                    if (items <= 1) {
+                        EmitMove(irl, GetResultReg(n++), op);
+                        n++;
+                    } else {
+                        Operand *lea = GetLea(irl, op);
+                        Operand *ptr = NewFunctionTempRegister();
+                        Operand *derefptr = Dereference(irl, ptr);
+                        Operand *step = NewImmediate(1);
+                        EmitMove(irl, ptr, lea);
+                        while (items-- > 0) {
+                            EmitMove(irl, GetResultReg(n++), derefptr);
+                            if (items) {
+                                EmitOp2(irl, OPC_ADD, ptr, step);
+                            }
+                        }
+                    }
+                } while(retlist);
             }
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);
