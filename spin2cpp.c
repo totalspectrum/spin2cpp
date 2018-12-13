@@ -162,7 +162,7 @@ appendCompiler(const char *ccompiler)
 }
 
 int
-main(int argc, char **argv)
+main(int argc, const char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
@@ -381,7 +381,7 @@ main(int argc, char **argv)
             gl_fixedreal = 1;
             argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
-	    char *opt;
+	    const char *opt;
 	    opt = argv[0];
             argv++; --argc;
             if (opt[2] == 0) {
@@ -402,7 +402,7 @@ main(int argc, char **argv)
             argv++; --argc;
             gl_debug = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
-            char *opt = argv[0];
+            const char *opt = argv[0];
             char *name;
             char optchar[3];
             argv++; --argc;
@@ -424,19 +424,19 @@ main(int argc, char **argv)
                 appendToCmd(optchar);
                 appendToCmd(opt);
             }
-            opt = strdup(opt);
-            name = opt;
-            while (*opt && *opt != '=')
-                opt++;
-            if (*opt) {
-                *opt++ = 0;
+            name = strdup(opt);
+            opt = name;
+            while (*name && *name != '=')
+                name++;
+            if (*name) {
+                *name++ = 0;
             } else {
-                opt = "1";
+                name = "1";
             }
-            pp_define(&gl_pp, name, opt);
+            pp_define(&gl_pp, opt, name);
         } else if (!strncmp(argv[0], "-L", 2) || !strncmp(argv[0], "-I", 2)) {
-            char *opt = argv[0];
-            char *incpath;
+            const char *opt = argv[0];
+            const char *incpath;
             char optchar[3];
             argv++; --argc;
             // save the -L or -I
@@ -474,7 +474,7 @@ main(int argc, char **argv)
                        || !strncmp(argv[0], "-D", 2)
                 )
             {
-                char *opt = argv[0];
+                const char *opt = argv[0];
                 appendToCmd(opt); argv++; --argc;
                 if (opt[2] == 0) {
                     if (argv[0] == NULL) {
@@ -559,14 +559,15 @@ main(int argc, char **argv)
     Init();
 
     /* now actually parse the file */
-    P = ParseTopFile(argv[0], outputBin);
+    P = ParseTopFiles(&argv[0], argc, outputBin);
+#if 0    
     if (compile && argc > 1) {
         /* append the remaining arguments to the command line */
         for (i = 1; i < argc; i++) {
             appendToCmd(argv[i]);
         }
     }
-
+#endif
     if (P) {
         Module *Q;
         if (gl_errors > 0) {
@@ -637,7 +638,7 @@ main(int argc, char **argv)
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
-                Q = ParseTopFile(asmname, 1);
+                Q = ParseTopFiles(&asmname, 1, 1);
                 if (gl_errors == 0) {
                     if (listFile) {
                         OutputLstFile(listFile, Q);

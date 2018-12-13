@@ -57,9 +57,9 @@ AST *TransformCountRepeat(AST *);
 // parse a spin file
 Module *ParseFile(const char *name);
 
-// parse a top level spin file (resets global state)
+// parse top level spin files (resets global state)
 // outputBin is nonzero if we are outputting binary code
-Module *ParseTopFile(const char *name, int outputBin);
+Module *ParseTopFiles(const char *argv[], int argc, int outputBin);
 
 // calculate number of expression items that may be placed on the stack
 int NumExprItemsOnStack(AST *param);

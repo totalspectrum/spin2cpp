@@ -140,7 +140,7 @@ getCurTime()
 }
 
 int
-main(int argc, char **argv)
+main(int argc, const char **argv)
 {
     int outputMain = 0;
     int outputDat = 0;
@@ -158,8 +158,9 @@ main(int argc, char **argv)
     const char *outname = NULL;
     size_t eepromSize = 32768;
     int useEeprom = 0;
-    const char *target = NULL;
     const char *listFile = NULL;
+    const char **targetArgv = NULL;
+    int targetArgc = 0;
     
 #if 0
     printf("fastspin: arguments are:\n");
@@ -249,12 +250,9 @@ main(int argc, char **argv)
     
     while (argv[0] && argv[0][0] != 0) {
         if (argv[0][0] != '-') {
-            if (target) {
-                Usage(stderr, bstcMode);
-            }
-            target = argv[0];
-            argv++; argc--;
-            continue;
+            targetArgv = &argv[0];
+            targetArgc = argc;
+            break;
         }
         if (!strcmp(argv[0], "-y")) {
             spinyydebug = 1;
@@ -340,7 +338,7 @@ main(int argc, char **argv)
             gl_preprocess = 0;
             argv++; --argc;
 	} else if (!strncmp(argv[0], "-o", 2)) {
-	    char *opt;
+	    const char *opt;
 	    opt = argv[0];
             argv++; --argc;
             if (opt[2] == 0) {
@@ -358,7 +356,7 @@ main(int argc, char **argv)
             argv++; --argc;
             gl_debug = 1;
         } else if (!strncmp(argv[0], "-D", 2) || !strncmp(argv[0], "-C", 2)) {
-            char *opt = argv[0];
+            const char *opt = argv[0];
             char *name;
             char optchar[3];
             argv++; --argc;
@@ -375,19 +373,19 @@ main(int argc, char **argv)
             } else {
                 opt += 2;
             }
-            opt = strdup(opt);
-            name = opt;
-            while (*opt && *opt != '=')
-                opt++;
-            if (*opt) {
-                *opt++ = 0;
+            name = strdup(opt);
+            opt = name;
+            while (*name && *name != '=')
+                name++;
+            if (*name) {
+                *name++ = 0;
             } else {
-                opt = "1";
+                name = "1";
             }
-            pp_define(&gl_pp, name, opt);
+            pp_define(&gl_pp, opt, name);
         } else if (!strncmp(argv[0], "-L", 2) || !strncmp(argv[0], "-I", 2)) {
-            char *opt = argv[0];
-            char *incpath;
+            const char *opt = argv[0];
+            const char *incpath;
             char optchar[3];
             argv++; --argc;
             // save the -L or -I
@@ -428,7 +426,7 @@ main(int argc, char **argv)
     if (!quiet) {
         PrintInfo(stdout, bstcMode);
     }
-    if (target == NULL) {
+    if (targetArgv == NULL) {
         Usage(stderr, bstcMode);
     }
 
@@ -483,7 +481,7 @@ main(int argc, char **argv)
     if (!quiet) {
         gl_printprogress = 1;
     }
-    P = ParseTopFile(target, outputBin);
+    P = ParseTopFiles(targetArgv, targetArgc, outputBin);
 
     if (outputFiles) {
         Module *Q;
@@ -569,7 +567,7 @@ main(int argc, char **argv)
                 }
                 gl_output = OUTPUT_DAT;
                 gl_caseSensitive = 1;
-                Q = ParseTopFile(asmname, 1);
+                Q = ParseTopFiles(&asmname, 1, 1);
                 if (gl_errors == 0) {
                     if (listFile) {
                         OutputLstFile(listFile, Q);

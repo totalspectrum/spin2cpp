@@ -507,16 +507,17 @@ doparse(int language)
   }
 }
 
-Module *
-ParseFile(const char *name)
+static Module *
+doParseFile(const char *name, Module *P, int *is_dup)
 {
     FILE *f = NULL;
-    Module *P, *save, *Q, *LastQ;
+    Module *save, *Q, *LastQ;
     char *fname = NULL;
     char *parseString = NULL;
     char *langptr;
     int language = LANG_SPIN;
     SymbolTable *saveCurrentTypes = NULL;
+    int new_module = 0;
     
     // check language to process
     langptr = strrchr(name, '.');
@@ -554,8 +555,10 @@ ParseFile(const char *name)
         exit(1);
     }
     save = current;
-    P = NewModule(fname, language);
-
+    if (!P) {
+        P = NewModule(fname, language);
+        new_module = 1;
+    }
     if (gl_printprogress) {
         int n = gl_depth;
         const char *tail;
@@ -573,26 +576,29 @@ ParseFile(const char *name)
         gl_depth++;
     }
     
-    /* if we have already visited an object with this name, skip it */
+    /* if we have already visited this file, skip it */
     /* also finds the last element in the list, so we can append to
        the list easily */
-    LastQ = NULL;
-    for (Q = allparse; Q; Q = Q->next) {
-        if (!strcmp(P->basename, Q->basename)) {
-            free(fname);
-            free(P);
-            fclose(f);
-            if (gl_printprogress) {
-                gl_depth--;
+    if (new_module) {
+        LastQ = NULL;
+        for (Q = allparse; Q; Q = Q->next) {
+            if (!strcmp(P->basename, Q->basename)) {
+                free(fname);
+                free(P);
+                fclose(f);
+                if (gl_printprogress) {
+                    gl_depth--;
+                }
+                *is_dup = 1;
+                return Q;
             }
-            return Q;
+            LastQ = Q;
         }
-        LastQ = Q;
+        if (LastQ)
+            LastQ->next = P;
+        else
+            allparse = P;
     }
-    if (LastQ)
-        LastQ->next = P;
-    else
-        allparse = P;
     current = P;
     saveCurrentTypes = currentTypes;
     currentTypes = calloc(1, sizeof(*currentTypes));
@@ -654,21 +660,21 @@ ParseFile(const char *name)
     if (gl_printprogress) {
         gl_depth--;
     }
-    ProcessModule(P);
 
-    /* work to avoid conflicts with variables and constants */
-    makeClassNameSafe(P);
-    if (gl_gas_dat) {
-        current->datname = (char *)malloc(strlen(P->classname) + 40);
-        if (!current->datname) {
-            fprintf(stderr, "Out of memory!\n");
-            exit(2);
+    if (new_module) {
+        /* work to avoid conflicts with variables and constants */
+        makeClassNameSafe(P);
+        if (gl_gas_dat) {
+            current->datname = (char *)malloc(strlen(P->classname) + 40);
+            if (!current->datname) {
+                fprintf(stderr, "Out of memory!\n");
+                exit(2);
+            }
+            sprintf(current->datname, "_dat_%s_", P->classname);
+        } else {
+            current->datname = "dat";
         }
-        sprintf(current->datname, "_dat_%s_", P->classname);
-    } else {
-        current->datname = "dat";
     }
-
     if (gl_errors > 0) {
         free(fname);
         exit(1);
@@ -676,6 +682,19 @@ ParseFile(const char *name)
 
     current = save;
     currentTypes = saveCurrentTypes;
+    return P;
+}
+
+Module *
+ParseFile(const char *name)
+{
+    int is_dup = 0;
+    Module *P;
+
+    P = doParseFile(name, NULL, &is_dup);
+    if (!is_dup) {
+        ProcessModule(P);
+    }
     return P;
 }
 
@@ -874,11 +893,20 @@ FixupCode(Module *P, int isBinary)
 }
 
 Module *
-ParseTopFile(const char *name, int outputBin)
+ParseTopFiles(const char *argv[], int argc, int outputBin)
 {
-    Module *P;
+    const char *name;
+    Module *P = NULL;
+    int is_dup = 0; // not really used
+    
     current = allparse = NULL;
-    P = ParseFile(name);
+
+    while (argc > 0) {
+        name = *argv++;
+        P = doParseFile(name, P, &is_dup);
+        --argc;
+    }
+    ProcessModule(P);
     if (P && gl_errors == 0) {
         FixupCode(P, outputBin);
     }
