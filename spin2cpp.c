@@ -559,8 +559,9 @@ main(int argc, const char **argv)
     Init();
 
     /* now actually parse the file */
-    P = ParseTopFiles(&argv[0], argc, outputBin);
-#if 0    
+    /* NOTE: only a single file is permitted */
+    P = ParseTopFiles(&argv[0], 1, outputBin);
+#if 1
     if (compile && argc > 1) {
         /* append the remaining arguments to the command line */
         for (i = 1; i < argc; i++) {

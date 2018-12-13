@@ -139,6 +139,10 @@ getCurTime()
     return (double)tick / (double)CLOCKS_PER_SEC;
 }
 
+#define MAX_FILES_ON_CMD_LINE 1024
+int file_argc;
+const char *file_argv[MAX_FILES_ON_CMD_LINE];
+
 int
 main(int argc, const char **argv)
 {
@@ -159,8 +163,6 @@ main(int argc, const char **argv)
     size_t eepromSize = 32768;
     int useEeprom = 0;
     const char *listFile = NULL;
-    const char **targetArgv = NULL;
-    int targetArgc = 0;
     
 #if 0
     printf("fastspin: arguments are:\n");
@@ -250,9 +252,13 @@ main(int argc, const char **argv)
     
     while (argv[0] && argv[0][0] != 0) {
         if (argv[0][0] != '-') {
-            targetArgv = &argv[0];
-            targetArgc = argc;
-            break;
+            if (file_argc >= MAX_FILES_ON_CMD_LINE) {
+                fprintf(stderr, "too many input files\n");
+                exit(1);
+            }
+            file_argv[file_argc++] = argv[0];
+            --argc; ++argv;
+            continue;
         }
         if (!strcmp(argv[0], "-y")) {
             spinyydebug = 1;
@@ -426,7 +432,7 @@ main(int argc, const char **argv)
     if (!quiet) {
         PrintInfo(stdout, bstcMode);
     }
-    if (targetArgv == NULL) {
+    if (file_argc == 0) {
         Usage(stderr, bstcMode);
     }
 
@@ -481,7 +487,7 @@ main(int argc, const char **argv)
     if (!quiet) {
         gl_printprogress = 1;
     }
-    P = ParseTopFiles(targetArgv, targetArgc, outputBin);
+    P = ParseTopFiles(file_argv, file_argc, outputBin);
 
     if (outputFiles) {
         Module *Q;
