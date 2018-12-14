@@ -863,7 +863,11 @@ TransformConstDst(IR *ir, Operand *imm)
       if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB)
           && !InstrSetsAnyFlags(ir))
       {
-          ReplaceOpcode(ir, OPC_MOV);
+          if (ir->opc == OPC_ADD) {
+              ReplaceOpcode(ir, OPC_MOV);
+          } else if (ir->opc == OPC_SUB) {
+              ReplaceOpcode(ir, OPC_NEG);
+          }
           return 1;
       }
   }

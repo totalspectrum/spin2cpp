@@ -4,6 +4,7 @@ Version 3.9.13
 - Fixed the BASIC HEAPSIZE constant.
 - Implemented "option base" for BASIC
 - Added "struct __using" to C
+- Fixed an optimizer bug which affected some FullDuplexSerialversions
 
 Version 3.9.12
 - Fixed a BASIC operator precedence problem (<< and >> should have
