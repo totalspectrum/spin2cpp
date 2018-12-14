@@ -1381,7 +1381,30 @@ function_definition
                 type = CombineTypes(NULL, $1, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
             }
+	| declaration_specifiers declarator fromfile_decl
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $3;
+                int is_public = 1;
+                type = CombineTypes($1, $2, &ident);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+            }
+	| declarator fromfile_decl
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $2;
+                int is_public = 1;
+                type = CombineTypes(NULL, $1, &ident);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+            }
 	;
+
+fromfile_decl
+        : C_FROMFILE '(' C_STRING_LITERAL ')' ';'
+            {  $$ = $3; }
+        ;
 
 %%
 #include <stdio.h>
