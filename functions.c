@@ -1466,6 +1466,30 @@ void
 ProcessOneFunc(Function *pf)
 {
     int sawreturn = 0;
+    Module *savecurrent;
+    Function *savefunc;
+    int last_errors = gl_errors;
+    
+    if (pf->lang_processed)
+        return;
+    savecurrent = current;
+    savefunc = curfunc;
+    current = pf->module;
+    curfunc = pf;
+
+    switch (pf->language) {
+    case LANG_BASIC:
+        BasicTransform(pf);
+        break;
+    case LANG_C:
+        CTransform(pf);
+        break;
+    default:
+        SpinTransform(pf);
+        break;
+    }
+
+    if (last_errors != gl_errors) return;
     
     CheckRecursive(pf);  /* check for recursive functions */
     pf->extradecl = NormalizeFunc(pf->body, pf);
@@ -1500,6 +1524,9 @@ ProcessOneFunc(Function *pf)
             pf->body = AddToList(pf->body, retstmt);
         }
     }
+    pf->lang_processed = 1;
+    current = savecurrent;
+    curfunc = savefunc;
 }
 
 /*

@@ -482,6 +482,14 @@ ProcessModule(Module *P)
     if (P->subclasses) {
         ProcessModule(P->subclasses);
     }
+    /* for all functions, do any language specific stuff */
+    if (gl_errors == 0) {
+        Function *pf;
+        for (pf = P->functions; pf; pf = pf->next) {
+            ProcessOneFunc(pf);
+        }
+    }
+    
     current = lastcurrent;
 }
 
@@ -780,32 +788,6 @@ RemoveUnusedMethods(int isBinary)
 #define MAX_TYPE_PASSES 4
 
 static void
-ProcessLanguage(int language, void (*func)(Function *))
-{
-    Module *Q;
-    Function *pf;
-    Module *savecurrent = current;
-    Function *savecurfunc = curfunc;
-    
-    for (Q = allparse; Q; Q = Q->next) {
-        int last_errors = gl_errors;
-        current = Q;
-        for (pf = Q->functions; pf; pf = pf->next) {
-            curfunc = pf;
-            if (pf->language == language) {
-                func(pf);
-                if (gl_errors == last_errors) {
-                    ProcessOneFunc(pf);
-                }
-            }
-            last_errors = gl_errors;
-        }
-    }
-    curfunc = savecurfunc;
-    current = savecurrent;
-}
-
-static void
 doTypeInference(void)
 {
     int tries = 0;
@@ -843,9 +825,6 @@ FixupCode(Module *P, int isBinary)
         LastQ->next = globalModule;
     }
     
-    ProcessLanguage(LANG_SPIN, SpinTransform);
-    ProcessLanguage(LANG_BASIC, BasicTransform);
-    ProcessLanguage(LANG_C, CTransform);
     doTypeInference();
     
     RemoveUnusedMethods(isBinary);

@@ -116,6 +116,7 @@ emitPendingLabels(Module *P, AST *label, unsigned hubpc, unsigned cogpc, AST *lt
 {
     while (label) {
         EnterLabel(P, label->left, hubpc, cogpc, ltype, lastorg, inHub);
+//        printf("label: %s = %x\n", label->left->d.string, hubpc);
         label = label->right;
     }
     return NULL;
