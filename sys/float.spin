@@ -9,7 +9,7 @@
 ''*  See end of file for terms of use.  *
 ''***************************************
 
-PRI _float_fromuns(integer) | s, x, m
+pri _float_fromuns(integer) | s, x, m
 
 ''Convert integer to float    
   m := integer
@@ -23,7 +23,7 @@ PRI _float_fromuns(integer) | s, x, m
   m := _float_Pack(s, x, m)
   return m
     
-PRI _float_fromint(integer) : single | negate
+pri _float_fromint(integer) : single | negate
 
 ''Convert integer to float    
   if integer < 0
@@ -35,35 +35,35 @@ PRI _float_fromint(integer) : single | negate
   if (negate)  
     single := _float_negate(single)
    
-PRI _float_round(single) : integer
+pri _float_round(single) : integer
 
 ''Convert float to rounded integer
 
   return _float_tointeger(single, 1)    'use 1/2 to round
 
 
-PRI _float_trunc(single) : integer
+pri _float_trunc(single) : integer
 
 ''Convert float to truncated integer
 
   return _float_tointeger(single, 0)    'use 0 to round
 
 
-PRI _float_negate(singleA) : single
+pri _float_negate(singleA) : single
 
 ''Negate singleA
 
   return singleA ^ $8000_0000   'toggle sign bit
   
 
-PRI _float_abs(singleA) : single
+pri _float_abs(singleA) : single
 
 ''Absolute singleA
 
   return singleA & $7FFF_FFFF   'clear sign bit
   
 
-PRI _float_sqrt(singleA) : single | s, x, m, root
+pri _float_sqrt(singleA) : single | s, x, m, root
 
 ''Compute square root of singleA
 
@@ -84,7 +84,7 @@ PRI _float_sqrt(singleA) : single | s, x, m, root
     return _float_Pack(s, x, m)             'pack result
 
 
-PRI _float_add(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_add(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 
 ''Add singleA and singleB
 
@@ -110,14 +110,14 @@ PRI _float_add(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
   return _float_Pack(sa, xa, ma)              'pack result
 
 
-PRI _float_sub(singleA, singleB) : single
+pri _float_sub(singleA, singleB) : single
 
 ''Subtract singleB from singleA
 
   return _float_add(singleA, _float_negate(singleB))
 
              
-PRI _float_mul(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_mul(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 
 ''Multiply singleA by singleB
 
@@ -131,7 +131,7 @@ PRI _float_mul(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
   return _float_Pack(sa, xa, ma)              'pack result
 
 
-PRI _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 
 ''Divide singleA by singleB
 
@@ -155,7 +155,7 @@ PRI _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 '' compute a^n, where a is a float and n is an integer
 '' keeps as many bits of precision as possible
 ''
-PRI _float_pow_n(a, n) : r | sgnflag, invflag
+pri _float_pow_n(a, n) : r | sgnflag, invflag
   if (n < 0)
     invflag := 1
     n := -n
@@ -180,7 +180,7 @@ PRI _float_pow_n(a, n) : r | sgnflag, invflag
 '' compare a and b;
 '' return 0 if a = b, -N if a < b, +N if a > b
 ''
-PRI _float_cmp(a, b)
+pri _float_cmp(a, b)
   if (a < 0)
     if (b < 0)
       return a - b
@@ -195,7 +195,7 @@ PRI _float_cmp(a, b)
   '' in this case both are positive
   return a - b
 
-PRI _float_tointeger(a, r) : integer | s, x, m
+pri _float_tointeger(a, r) : integer | s, x, m
 
 'Convert float to rounded/truncated integer
 
@@ -210,7 +210,7 @@ PRI _float_tointeger(a, r) : integer | s, x, m
     return m                    'return integer
 
 
-PRI _float_Unpack(single) : s, x, m | tmp
+pri _float_Unpack(single) : s, x, m | tmp
 
 '_float_Unpack floating-point into (sign, exponent, mantissa) at pointer
   tmp := 0
@@ -227,7 +227,7 @@ PRI _float_Unpack(single) : s, x, m | tmp
 
   x -= 127                      'unbias exponent
   
-PRI _float_Pack(s, x, m) : single
+pri _float_Pack(s, x, m) : single
 
 '_float_Pack floating-point from (sign, exponent, mantissa) at pointer
 
@@ -254,7 +254,7 @@ PRI _float_Pack(s, x, m) : single
 '' calculate biggest power of 10 that is < x (so 1.0 <= x / F < 10.0f)
 '' special case: if x == 0 just return 1
 ''
-PRI _float_getpowten(x) | midf, lo, hi, mid, t, sanity
+pri _float_getpowten(x) | midf, lo, hi, mid, t, sanity
   if (x == 0)
     return (1.0, 0)
   lo := -38
@@ -272,7 +272,7 @@ PRI _float_getpowten(x) | midf, lo, hi, mid, t, sanity
       return (midf, mid)
   return (_float_pow_n(10.0, hi), hi)
 
-PRI _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
+pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
   needexp := 0
   numdigits := 5 '' later this should be a parameter  
   if (f < 0)

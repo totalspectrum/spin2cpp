@@ -61,7 +61,7 @@ INTERNALS
   block 0 is reserved, and serves as the anchor for the free list
 }}
 
-CON
+con
   pagesize = 16		' size of page in bytes
   pagesizeshift = 4	' log2(pagesize)
   headersize = 8 	' length of block header
@@ -87,11 +87,11 @@ CON
   ' more easily
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
-  __REAL_HEAPSIZE__ = 64  ' redefined based on user options
+  __real_heapsize__ = 64  ' redefined based on user options
   
-DAT
+dat
 _gc_heap_base
-	long 0[__REAL_HEAPSIZE__]
+	long 0[__real_heapsize__]
 _gc_heap_end
 
 	
@@ -100,7 +100,7 @@ _gc_heap_end
 '' if called before gc pointers are set up, initialize
 '' the heap
 ''
-PRI _gc_ptrs | base, end, size
+pri _gc_ptrs | base, end, size
   base := @_gc_heap_base
   end := @_gc_heap_end
   if (long[base] == 0)
@@ -118,24 +118,24 @@ PRI _gc_ptrs | base, end, size
   return (base, end)
   
 { return a pointer to page i in the heap }
-PRI _gc_pageptr(heapbase, i)
+pri _gc_pageptr(heapbase, i)
   if (i == 0)
     return 0
   return heapbase + (i << pagesizeshift)
 
-PRI _gc_pageindex(heapbase, ptr)
+pri _gc_pageindex(heapbase, ptr)
   if (ptr == 0)
     return 0
   return (ptr - heapbase) >> pagesizeshift
   
-PRI _gc_isFree(ptr)
+pri _gc_isFree(ptr)
   return word[ptr + OFF_FLAGS] == GC_MAGIC + GC_FLAG_FREE
 
 ' go to the next block in the global list of blocks
-PRI _gc_nextBlockPtr(ptr)
+pri _gc_nextBlockPtr(ptr)
   return ptr + (word[ptr + OFF_SIZE] << pagesizeshift)
   
-PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
+pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
   (heap_base, heap_end) := _gc_ptrs
   ptr := heap_base
   repeat
@@ -179,13 +179,13 @@ PRI _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   ptr += headersize
   return ptr | POINTER_MAGIC
   
-PRI _gc_alloc(size)
+pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)
 
-PRI _gc_alloc_managed(size)
+pri _gc_alloc_managed(size)
   return _gc_doalloc(size, 0)
   
-PRI _gc_doalloc(size, reserveflag) | ptr, zptr
+pri _gc_doalloc(size, reserveflag) | ptr, zptr
   if (size == 0)
     return 0
 
@@ -217,7 +217,7 @@ PRI _gc_doalloc(size, reserveflag) | ptr, zptr
 ' otherwise returns the start of the block it
 ' points to
 '
-PRI _gc_isvalidptr(base, heap_end, ptr) | t
+pri _gc_isvalidptr(base, heap_end, ptr) | t
   ' make sure the poiter came from alloc
   if (ptr & POINTER_MAGIC_MASK) <> POINTER_MAGIC
     return 0
@@ -240,7 +240,7 @@ PRI _gc_isvalidptr(base, heap_end, ptr) | t
 '
 ' free a pointer previously returned by alloc
 '
-PRI _gc_free(ptr) | heapbase, heapend
+pri _gc_free(ptr) | heapbase, heapend
   (heapbase, heapend) := _gc_ptrs
   ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
@@ -249,7 +249,7 @@ PRI _gc_free(ptr) | heapbase, heapend
 '
 ' un-reserve a pointer previously returned by alloc
 '
-PRI _gc_manage(ptr) | heapbase, heapend
+pri _gc_manage(ptr) | heapbase, heapend
   (heapbase, heapend) := _gc_ptrs
   ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
@@ -261,7 +261,7 @@ PRI _gc_manage(ptr) | heapbase, heapend
 ' returns a pointer to the next non-free block(useful for
 ' garbage collection, to handle cases where memory is coalesced)
 '
-PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
+pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
   (heapbase, heapend) := _gc_ptrs
   word[ptr + OFF_FLAGS] := GC_MAGIC + GC_FLAG_FREE
   prevptr := ptr
@@ -305,13 +305,13 @@ PRI _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
 
   return nextptr
    
-PRI __topofstack(ptr)
+pri __topofstack(ptr)
   return @ptr
   
 ''
 '' actual garbage collection routine
 ''
-PRI _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
+pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
 
   (startheap, endheap) := _gc_ptrs
   ' clear the "IN USE" flags for all blocks
@@ -353,7 +353,7 @@ PRI _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
 '
 ' mark as used any pointers found in HUB between startaddr and endaddr
 '
-PRI _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
+pri _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
   (heap_base, heap_end) := _gc_ptrs
   repeat while (startaddr < endaddr)
     ptr := long[startaddr]
@@ -365,7 +365,7 @@ PRI _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
       flags |= GC_FLAG_INUSE | GC_OWNER_HUB
       word[ptr + OFF_FLAGS] := flags
 
-PRI _gc_markcog | cogaddr, ptr, heap_base, heap_end
+pri _gc_markcog | cogaddr, ptr, heap_base, heap_end
   (heap_base, heap_end) := _gc_ptrs
   repeat cogaddr from 0 to 495
     ptr := spr[496 - cogaddr]
