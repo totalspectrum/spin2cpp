@@ -425,7 +425,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 void
 DeclareMemberVariables(Module *P)
 {
-    int offset = 0;
+    int offset = P->varsize;
 
     if (P->lastLanguage == LANG_SPIN) {
         // Spin always declares longs first, then words, then bytes
