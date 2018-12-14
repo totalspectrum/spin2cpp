@@ -200,7 +200,7 @@ PrintVarList(Flexbuf *f, AST *origtype, AST *ast, int flags)
             if (gl_expand_constants) {
                 flexbuf_printf(f, "%d", (int)EvalConstExpr(decl->right));
             } else {
-                PrintExpr(f, decl->right, PRINTEXPR_DEFAULT);
+                PrintExpr(f, SimpleOptimizeExpr(decl->right), PRINTEXPR_DEFAULT);
             }
             flexbuf_printf(f, "]");
             count++;

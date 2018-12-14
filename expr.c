@@ -2209,8 +2209,12 @@ CompatibleTypes(AST *A, AST *B)
 //
 AST *SimpleOptimizeExpr(AST *expr)
 {
-    AST *lhs = expr->left;
-    AST *rhs = expr->right;
+    AST *lhs;
+    AST *rhs;
+
+    if (!expr) return expr;
+    lhs = SimpleOptimizeExpr(expr->left);
+    rhs = SimpleOptimizeExpr(expr->right);
     if (expr->kind == AST_OPERATOR) {
         int op = expr->d.ival;
         if (op == K_NEGATE) {
@@ -2230,10 +2234,17 @@ AST *SimpleOptimizeExpr(AST *expr)
             }
         }
         // optimize integer expressions
-        if (lhs->kind == AST_INTEGER && rhs->kind == AST_INTEGER) {
-            return AstInteger(EvalConstExpr(expr));
+        if (rhs->kind == AST_INTEGER) {
+            if ( (rhs->d.ival == 0) && ((op == '+') || (op == '-')) ) {
+                return lhs;
+            }
+            if (lhs->kind == AST_INTEGER) {
+                return AstInteger(EvalConstExpr(expr));
+            }
         }
     }
+    expr->left = lhs;
+    expr->right = rhs;
     return expr;
 }
 

@@ -1146,8 +1146,8 @@ identdecl:
         AST *base = (AST *)sym->val;
         AST *size = $3;
         AST *decl;
-        size = AstOperator('+', AstOperator('-', size, base), AstInteger(1));
-        size = AstInteger(EvalConstExpr(size));
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+//        size = AstInteger(EvalConstExpr(size));
         decl = NewAST(AST_ARRAYDECL, ident, size);
         decl->d.ptr = base;
         $$ = decl;
@@ -1158,8 +1158,8 @@ identdecl:
         AST *base = $3;
         AST *size = $5;
         AST *decl;
-        size = AstOperator('+', AstOperator('-', size, base), AstInteger(1));
-        size = AstInteger(EvalConstExpr(size));
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+//        size = AstInteger(EvalConstExpr(size));
         decl = NewAST(AST_ARRAYDECL, ident, size);
         decl->d.ptr = base;
         $$ = decl;
@@ -1179,7 +1179,10 @@ typename:
   | basetypename '(' expr ')'
     {
         Symbol *sym = GetCurArrayBase();
-        $$ = NewAST(AST_ARRAYTYPE, $1, $3);
+        AST *size = $3;
+        AST *base = (AST *)sym->val;
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+        $$ = NewAST(AST_ARRAYTYPE, $1, size);
         $$->d.ptr = (AST *)sym->val;
     }
   ;
