@@ -750,17 +750,16 @@ RemoveUnusedMethods(int isBinary)
         MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
         // mark stuff called via public functions
-    }
-    for (P = allparse; P; P = P->next) {
-        for (pf = P->functions; pf; pf = pf->next) {
-            if (pf->callSites == 0) {
-                if (pf->is_public) {
-                    MarkUsed(pf, "__public__");
-                } else if (pf->annotations) {
-                    MarkUsed(pf, "__annotations__");
+        for (P = allparse; P; P = P->next) {
+            for (pf = P->functions; pf; pf = pf->next) {
+                if (pf->callSites == 0) {
+                    if (pf->is_public) {
+                        MarkUsed(pf, "__public__");
+                    } else if (pf->annotations) {
+                        MarkUsed(pf, "__annotations__");
+                    }
                 }
             }
-            
         }
     }
     // Now remove the ones that are never called
@@ -783,6 +782,18 @@ RemoveUnusedMethods(int isBinary)
         LastP = P;
         P = P->next;
     }
+}
+
+static int
+ResolveSymbols()
+{
+    static int tries = 0;
+
+    if (tries < 2) {
+        tries++;
+        return tries;
+    }
+    return 0;
 }
 
 #define MAX_TYPE_PASSES 4
@@ -808,7 +819,8 @@ static void
 FixupCode(Module *P, int isBinary)
 {
     Module *Q, *LastQ, *subQ;
-
+    int changes;
+    
     // insert sub-classes into the global list after their modules
     // and append the global module to the list
     if (allparse)
@@ -824,10 +836,14 @@ FixupCode(Module *P, int isBinary)
         }
         LastQ->next = globalModule;
     }
+
+    do {
+        RemoveUnusedMethods(isBinary);
+        changes = ResolveSymbols();
+    } while (changes);
     
     doTypeInference();
     
-    RemoveUnusedMethods(isBinary);
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }

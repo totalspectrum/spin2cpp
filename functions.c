@@ -1472,6 +1472,10 @@ ProcessOneFunc(Function *pf)
     
     if (pf->lang_processed)
         return;
+    if (pf->body && pf->body->kind == AST_STRING) {
+        // dummy declaration, return for now
+        return;
+    }
     savecurrent = current;
     savefunc = curfunc;
     current = pf->module;
