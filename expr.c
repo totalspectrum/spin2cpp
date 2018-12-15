@@ -1776,6 +1776,12 @@ PointerTypeIncrement(AST *type)
 }
 
 int
+IsVoidType(AST *type)
+{
+    return type && type->kind == AST_VOIDTYPE;
+}
+
+int
 IsGenericType(AST *type)
 {
     return type && type->kind == AST_GENERICTYPE;
@@ -2192,6 +2198,12 @@ CompatibleTypes(AST *A, AST *B)
         }
         // FIXME: deal with actual parameter checks later
         return 1;
+    }
+    if (A->kind == AST_PTRTYPE && B->kind == AST_PTRTYPE) {
+        // if one side is a void * then they are compatible
+        if (IsVoidType(A->left) || IsVoidType(B->left)) {
+            return 1;
+        }
     }
     // both A and B are pointers (or perhaps arrays)
     // they are compatible if they are both pointers to the same thing
