@@ -37,6 +37,13 @@ NumExprItemsOnStack(AST *expr)
 Function *curfunc;
 static int visitPass = 1;
 
+static void ReinitFunction(Function *f)
+{
+    f->module = current;
+    memset(&f->localsyms, 0, sizeof(f->localsyms));
+    f->localsyms.next = &current->objsyms;
+}
+
 Function *
 NewFunction(void)
 {
@@ -57,8 +64,8 @@ NewFunction(void)
             pf = pf->next;
         pf->next = f;
     }
-    f->module = current;
-    f->localsyms.next = &current->objsyms;
+    /* and initialize */
+    ReinitFunction(f);
     return f;
 }
 
@@ -455,6 +462,9 @@ doDeclareFunction(AST *funcblock)
     AST *retinfo;
     int is_public;
     int language;
+    const char *funcname;
+    AST *oldtype = NULL;
+    Symbol *sym;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
@@ -474,9 +484,50 @@ doDeclareFunction(AST *funcblock)
         ERROR(funcdef, "Internal error: no function name");
         return;
     }
+    funcname = src->left->d.string;
+    /* look for an existing definition */
+    sym = FindSymbol(&current->objsyms, AliasName(funcname));
+    if (sym) {
+        if (sym->type != SYM_FUNCTION) {
+            ERROR(funcdef, "Redefining %s as a function", funcname);
+            return;
+        }
+        fdef = (Function *)sym->val;
+        oldtype = fdef->overalltype;
+    } else {
+        fdef = NewFunction();
+        /* define the function symbol itself */
+        /* note: static functions may get alias names, so we have to look
+         * for an alias and declare under that name; that's what AliasName()
+         * does
+         */
+        sym = AddSymbol(&current->objsyms, AliasName(funcname), SYM_FUNCTION, fdef);
+    }
     
-    fdef = NewFunction();
-    fdef->name = src->left->d.string;
+    if (fdef->body) {
+        // we already saw a definition for the function; if this was just
+        // an alias then it may be OK
+        if (fdef->body->kind == AST_STRING) {
+            if (body->kind == AST_STRING) {
+                if (0 != strcmp(fdef->body->d.string, body->d.string)) {
+                    ERROR(funcdef, "different __fromfile strings for function %s", funcname);
+                }
+                return; // nothing else we need to do here
+            }
+        } else {
+            if (body->kind == AST_STRING) {
+                /* providing a __fromfile() declaration after we saw
+                   a real declaration; just ignore it */
+                return;
+            }
+        }
+        // if we get here then we are redefining a previously seen __fromfile
+        // ignore the old stub function and start with a fresh one
+        // BEWARE: there's some stuff (like fdef->next) we do not want to lose
+        ReinitFunction(fdef);
+    }
+
+    fdef->name = funcname;
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
@@ -569,8 +620,6 @@ doDeclareFunction(AST *funcblock)
 
     curfunc = fdef;
     
-    // the symbol value is the type, which we will discover via inference
-    // so initialize it to NULL
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0) / LONG_SIZE;
     /* check for VARARGS */
     {
@@ -607,7 +656,13 @@ doDeclareFunction(AST *funcblock)
             }
         }
     }
-    
+
+    /* if there was an old definition, validate it */
+    if (oldtype) {
+        if (!CompatibleTypes(oldtype, fdef->overalltype)) {
+            ERROR(funcdef, "Redefining function %s with an incompatible type");
+        }
+    }
     fdef->body = body;
 
     /* declare any local variables in the function */
@@ -629,12 +684,6 @@ doDeclareFunction(AST *funcblock)
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
     
-    /* define the function symbol itself */
-    /* note: static functions may get alias names, so we have to look
-     * for an alias and declare under that name; that's what AliasName()
-     * does
-     */
-    AddSymbol(&current->objsyms, AliasName(fdef->name), SYM_FUNCTION, fdef);
 }
 
 void

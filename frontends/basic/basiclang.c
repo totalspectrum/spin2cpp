@@ -1357,7 +1357,7 @@ AST *CheckTypes(AST *ast)
         rtype = CheckTypes(ast->right);
         cast = doCast(ltype, rtype, ast->right);
         if (cast) {
-            *ast = *cast;
+            ast->right = cast;
         }
         return ltype;
     }        

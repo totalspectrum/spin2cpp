@@ -1784,6 +1784,7 @@ IsVoidType(AST *type)
 int
 IsGenericType(AST *type)
 {
+    type = RemoveTypeModifiers(type);
     return type && type->kind == AST_GENERICTYPE;
 }
 
@@ -2201,7 +2202,14 @@ CompatibleTypes(AST *A, AST *B)
     }
     if (A->kind == AST_PTRTYPE && B->kind == AST_PTRTYPE) {
         // if one side is a void * then they are compatible
-        if (IsVoidType(A->left) || IsVoidType(B->left)) {
+        AST *subtypeA = A->left;
+        AST *subtypeB = B->left;
+        while (subtypeA && subtypeB && (subtypeA->kind == AST_MODIFIER_CONST || subtypeA->kind == AST_MODIFIER_VOLATILE)) {
+            if (subtypeB->kind != subtypeA->kind) return 0;
+            subtypeA = subtypeA->left;
+            subtypeB = subtypeB->left;
+        }
+        if (IsVoidType(subtypeA) || IsVoidType(subtypeB)) {
             return 1;
         }
     }
