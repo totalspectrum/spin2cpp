@@ -694,17 +694,22 @@ doParseFile(const char *name, Module *P, int *is_dup)
     return P;
 }
 
-Module *
-ParseFile(const char *name)
+static Module *
+LoadFileIntoModule(const char *name, Module *P)
 {
     int is_dup = 0;
-    Module *P;
 
-    P = doParseFile(name, NULL, &is_dup);
+    P = doParseFile(name, P, &is_dup);
     if (!is_dup) {
         ProcessModule(P);
     }
     return P;
+}
+
+Module *
+ParseFile(const char *name)
+{
+    return LoadFileIntoModule(name, NULL);
 }
 
 //
@@ -787,13 +792,19 @@ RemoveUnusedMethods(int isBinary)
 static int
 ResolveSymbols()
 {
-    static int tries = 0;
-
-    if (tries < 2) {
-        tries++;
-        return tries;
+    Module *Q;
+    Function *pf;
+    int changes = 0;
+    for (Q = allparse; Q; Q = Q->next) {
+        for (pf = Q->functions; pf; pf = pf->next) {
+            if ((pf->callSites > 0) && pf->body && pf->body->kind == AST_STRING) {
+                const char *name = pf->body->d.string;
+                LoadFileIntoModule(name, pf->module);
+                changes = 1;
+            }
+        }
     }
-    return 0;
+    return changes;
 }
 
 #define MAX_TYPE_PASSES 4
