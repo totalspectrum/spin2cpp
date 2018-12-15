@@ -5,13 +5,15 @@
  *
  * for gcc, the default for wchar_t is "int" and for wint_t is "unsigned int"
  */
+#pragma once
 
 #ifndef _WCHAR_T_DEFINED
 #ifndef _WCHAR_T_TYPE
 #define _WCHAR_T_TYPE int
 #endif
 #define _WCHAR_T_DEFINED _WCHAR_T_TYPE
-typedef _WCHAR_T_DEFINED wchar_t;
+//typedef _WCHAR_T_DEFINED wchar_t;
+typedef int wchar_t;
 #endif
 
 #if defined(_NEED_WINT_T) && !defined(_WINT_T_DEFINED)

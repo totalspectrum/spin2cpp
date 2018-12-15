@@ -1,10 +1,10 @@
 #ifndef _STDLIB_H
 #define _STDLIB_H
 
+#include <compiler.h>
 #include <sys/size_t.h>
 #include <sys/wchar_t.h>
 #include <sys/null.h>
-#include <compiler.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -13,10 +13,10 @@ extern "C" {
 #define EXIT_FAILURE 1
 #define EXIT_SUCCESS 0
 
-  double atof(const char *);
-  int    atoi(const char *);
-  long   atol(const char *);
-  long long atoll(const char *);
+    double atof(const char *);
+    int    atoi(const char *) _IMPL("libc/stdlib/atoi.c");
+    long   atol(const char *) _IMPL("libc/stdlib/atol.c");
+    long long atoll(const char *);
 
   long double strtold(const char *nptr, char **endptr);
   double strtod(const char *nptr, char **endptr);

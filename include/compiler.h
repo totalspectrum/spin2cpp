@@ -17,6 +17,8 @@
 #ifndef _COMPILER_H
 #define _COMPILER_H
 
+#pragma once
+
 #if defined(__GNUC__)
 #define _INT_SIZE  __SIZEOF_INT__
 #define _LONG_SIZE __SIZEOF_LONG__
@@ -87,11 +89,16 @@
 #define _WCHAR_T_TYPE __WCHAR_TYPE__
 #endif
 
+#define _IMPL(x) __fromfile(x)
+
 #else
 
 #error "compiler not yet supported"
 
 #endif
 
+#ifndef _IMPL
+#define _IMPL(x)
+#endif
 
 #endif

@@ -115,6 +115,9 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 // keep things in registers, generally
                 if (typesize < 4) typesize = 4;
             }
+            if (!ast) {
+                ast = AstTempIdentifier("_param_");
+            }
             switch (ast->kind) {
             case AST_VARARGS:
             case AST_IDENTIFIER:
@@ -604,7 +607,7 @@ doDeclareFunction(AST *funcblock)
                 aptr = &p->right;
                 p = p->right;
             }
-            if (p->kind == AST_ASSIGN) {
+            if (p && p->kind == AST_ASSIGN) {
                 *aptr = p->left;
                 defval = p->right;
                 if (!IsConstExpr(defval) && !IsStringConst(defval)) {
