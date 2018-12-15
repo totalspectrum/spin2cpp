@@ -3,6 +3,13 @@
 
 #include <compiler.h>
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
+
 /* these are temporary defines */
 #define putchar _tx
 #define getchar _rx
