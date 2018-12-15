@@ -168,7 +168,7 @@ PrintAllVarListsOfSize(Flexbuf *f, Module *parse, int siz, int flags)
     int n = 0;
     int astsiz;
     
-    for (upper = parse->varblock; upper; upper = upper->right) {
+    for (upper = parse->finalvarblock; upper; upper = upper->right) {
         if (upper->kind != AST_LISTHOLDER) {
             ERROR(upper, "internal error: expected listholder");
             return n;

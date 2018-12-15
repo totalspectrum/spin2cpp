@@ -208,7 +208,7 @@ topelement:
       $$ = current->datblock = AddToList(current->datblock, $3); 
   }
   | SP_VAR varblock
-  { $$ = current->varblock = AddToList(current->varblock, $2); }
+  { $$ = current->pendingvarblock = AddToList(current->pendingvarblock, $2); }
   | SP_OBJ objblock
   {
     $$ = current->objblock = AddToList(current->objblock, $2);

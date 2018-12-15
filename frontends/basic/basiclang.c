@@ -948,19 +948,24 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
         ast->right = AstInteger(0);
         return;
     }
-    
-    if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
-        return;
+
+    if (IsPointerType(lefttype) || IsPointerType(righttype)) {
+        /* FIXME: should handle floats and type promotion here!!! */
+        leftUnsigned = rightUnsigned = 0;
+    } else {
+        if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
+            return;
+        }
+        // need to widen the types
+        ast->left = forcepromote(lefttype, ast->left);
+        ast->right = forcepromote(righttype, ast->right);
+        leftUnsigned = IsUnsignedType(lefttype);
+        rightUnsigned = IsUnsignedType(righttype);
     }
-    // need to widen the types
-    ast->left = forcepromote(lefttype, ast->left);
-    ast->right = forcepromote(righttype, ast->right);
     
-    //
+     //
     // handle unsigned/signed comparisons here
     //
-    leftUnsigned = IsUnsignedType(lefttype);
-    rightUnsigned = IsUnsignedType(righttype);
     
     if (leftUnsigned || rightUnsigned) {
         if ( (leftUnsigned && (rightUnsigned || IsUnsignedConst(ast->right)))

@@ -261,7 +261,8 @@ struct modulestate {
     /* top level objects */
     AST *conblock;
     AST *datblock;
-    AST *varblock;
+    AST *pendingvarblock;
+    AST *finalvarblock;
     AST *objblock;
     AST *funcblock;
     AST *topcomment;

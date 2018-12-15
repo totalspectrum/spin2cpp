@@ -154,7 +154,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     AST *curtype;
     int curtypesize;
     
-    for (upper = P->varblock; upper; upper = upper->right) {
+    for (upper = P->pendingvarblock; upper; upper = upper->right) {
         AST *idlist;
         if (upper->kind != AST_LISTHOLDER) {
             ERROR(upper, "Expected list holder\n");
@@ -405,7 +405,7 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type)
     if (1) {
         AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
-        P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
     }
 }
 
@@ -415,10 +415,10 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
     if (!typ) {
         typ = InferTypeFromName(identifier);
     }
-    if (!AstUses(P->varblock, identifier)) {
+    if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
-        P->varblock = AddToList(P->varblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
     }
 }
 
@@ -439,6 +439,8 @@ DeclareMemberVariables(Module *P)
     // round up to next LONG boundary
     offset = (offset + 3) & ~3;
     P->varsize = offset;
+    P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
+    P->pendingvarblock = NULL;
 }
 
 /* helper function for parsing pasm FILE directives */
@@ -474,7 +476,7 @@ ProcessModule(Module *P)
     
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);
-    DeclareMemberVariables(P);
+    DeclareMemberVariables(P); P->pendingvarblock = NULL;
     DeclareLabels(P);
     DeclareFunctions(P);
 
@@ -777,7 +779,7 @@ RemoveUnusedMethods(int isBinary)
     LastP = NULL;
     P = allparse;
     while (P) {
-        if (!P->functions && !P->datblock && !P->conblock && !P->varblock) {
+        if (!P->functions && !P->datblock && !P->conblock && !P->finalvarblock) {
             if (LastP) {
                 LastP->next = P->next;
             } else {
