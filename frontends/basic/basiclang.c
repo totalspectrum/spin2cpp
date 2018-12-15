@@ -1551,6 +1551,18 @@ AST *CheckTypes(AST *ast)
         *ast = *MakeOperatorCall(gc_free, ast->left, NULL, NULL);
         ltype = ast_type_void;
         break;
+    case AST_CONDRESULT:
+    {
+        //AST *cond = ast->left; // not needed here
+        AST *outputs = ast->right;
+        if (!outputs) return NULL;
+        ltype = ExprType(outputs->left);
+        rtype = ExprType(outputs->right);
+        if (!CompatibleTypes(ltype, rtype)) {
+            WARNING(ast, "different types in arms of ?");
+        }
+        return ltype;
+    }
     case AST_EXPRLIST:
     case AST_SEQUENCE:
     case AST_METHODREF:
