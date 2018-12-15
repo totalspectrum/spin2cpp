@@ -792,18 +792,22 @@ RemoveUnusedMethods(int isBinary)
 static int
 ResolveSymbols()
 {
-    Module *Q;
+    Module *Q, *savecurrent;
     Function *pf;
     int changes = 0;
+
+    savecurrent = current;
     for (Q = allparse; Q; Q = Q->next) {
         for (pf = Q->functions; pf; pf = pf->next) {
             if ((pf->callSites > 0) && pf->body && pf->body->kind == AST_STRING) {
                 const char *name = pf->body->d.string;
+                current = Q;
                 LoadFileIntoModule(name, pf->module);
                 changes = 1;
             }
         }
     }
+    current = savecurrent;
     return changes;
 }
 
