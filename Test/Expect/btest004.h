@@ -7,8 +7,8 @@ class btest004 {
 public:
   void 	copy(void);
 private:
-  int32_t 	a[10];
-  int32_t 	b[10];
+  int32_t 	a[11];
+  int32_t 	b[11];
 };
 
 #endif

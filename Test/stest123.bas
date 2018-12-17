@@ -1,3 +1,4 @@
+option base 1
 dim shared aa(4) = { 2, 4, -3, -4 }
 
 function total() as integer

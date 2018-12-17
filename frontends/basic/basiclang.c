@@ -1505,12 +1505,13 @@ AST *CheckTypes(AST *ast)
             if (IsPointerType(lefttype)) {
                 // force this to have a memory dereference
                 // and in BASIC, also force 1 for the base
-                // FIXME: should use OPTION BASE here, but we no longer have it
                 AST *deref;
-                AST *base = NULL;
                 if (curfunc->language == LANG_BASIC) {
-                    base = AstInteger(1);
-                    ast->right = AstOperator('-', ast->right, base);
+                    extern Symbol *GetCurArrayBase();
+                    Symbol *sym = GetCurArrayBase();
+                    if (sym && sym->type == SYM_CONSTANT) {
+                        ast->right = AstOperator('-', ast->right, (AST *)sym->val);
+                    }
                 }
                 deref = NewAST(AST_MEMREF, basetype, ast->left);
                 ast->left = deref;

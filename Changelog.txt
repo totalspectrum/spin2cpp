@@ -2,9 +2,10 @@ Version 3.9.13
 - Allow coginit/cognew of function pointers and functions from other
   objects.
 - Fixed the BASIC HEAPSIZE constant.
-- Implemented "option base" for BASIC
-- Added "struct __using" to C
+- Implemented "option base" for BASIC, and made "option base 0" the default
+- Added "struct __using" and "__fromfile" to C
 - Fixed an optimizer bug which affected some FullDuplexSerialversions
+- Fixed a preprocessor bug where defines starting with _ were not expanded
 
 Version 3.9.12
 - Fixed a BASIC operator precedence problem (<< and >> should have

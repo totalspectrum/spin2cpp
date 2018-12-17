@@ -66,12 +66,20 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
 
 #define ARRAY_BASE_NAME "__array_base"
 
-static Symbol *
+Symbol *
 GetCurArrayBase(void)
 {
-    Symbol *sym = LookupSymbolInTable(currentTypes, ARRAY_BASE_NAME);
+#if 0
+    // this would make option base work nicely inside scopes
+    SymbolTable *symtab = currentTypes;
+#else
+    // this is more practical and keeps a value for option base that we
+    // can use later for pointer dereferences
+    SymbolTable *symtab = current ? &current->objsyms : currentTypes;
+#endif    
+    Symbol *sym = LookupSymbolInTable(symtab, ARRAY_BASE_NAME);
     if (!sym) {
-        sym = AddSymbol(currentTypes, ARRAY_BASE_NAME, SYM_CONSTANT, AstInteger(1));
+        sym = AddSymbol(symtab, ARRAY_BASE_NAME, SYM_CONSTANT, AstInteger(0));
     }
     return sym;
 }

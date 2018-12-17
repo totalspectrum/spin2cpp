@@ -5,7 +5,6 @@ dat
 entry
 
 _index
-	sub	arg02, #1
 	add	arg02, arg01
 	rdbyte	result1, arg02
 _index_ret

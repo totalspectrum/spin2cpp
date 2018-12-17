@@ -185,27 +185,26 @@ one dimensional arrays, but they may be of any type. Examples of array
 declarations:
 ```
   rem an array of 10 integers
-  dim a(10)
+  rem note that dim gives the last index
+  dim a(9)
   rem same thing but more verbose
-  rem or even more verbose
-  dim c(1 to 10) as integer
+  dim c(0 to 9) as integer
   rem an array of 10 strings
-  dim a$(10)
+  dim a$(9)
   rem another array of strings
-  dim d(10) as string
+  dim d(9) as string
 ```
 
-Arrays are by default indexed starting at 1. That is, if `a` is an array, then
-`a(1)` is the first thing in the array, `a(2)` the second, and so on. This is
-different from some other languages (such as Spin and C), where
-array indexes start at 0.
+Arrays are by default indexed starting at 0. That is, if `a` is an array, then
+`a(0)` is the first thing in the array, `a(1)` the second, and so on. This is
+similar to other languages (such as Spin and C), where array indexes start at 0.
 
 For example, a subroutine to initialize an array
 to 0 could look like:
 ```
-   dim a(10) as integer
+   dim a(9) as integer
    sub zero_a
-     for i = 1 to 10
+     for i = 0 to 9
        a(i) = 0
      next i
    end sub
@@ -213,7 +212,7 @@ to 0 could look like:
 
 It is possible to change the array base by using
 ```
-   option base 0
+   option base 1  ' make arrays start at 1 by default
 ```
 
 The array definition may have an explicit lower bound given, for example:
@@ -222,7 +221,7 @@ The array definition may have an explicit lower bound given, for example:
    dim b(0 to 10)  ' array of 11 items
 ```
 
-Note that pointer dereferences are not affected by `option base` and are always based on `1`. This is a bug that we hope to fix in the future.
+Note that pointer dereferences (using array notation) always use the last value set for `option base` in the file, since we cannot know at run time what the actual base of the pointed to object was.
 
 #### Global, Member, and Local variables.
 
@@ -1088,13 +1087,14 @@ Gives a compiler option. The following options are supported:
 
 #### OPTION BASE
 
-`option base N`, where `N` is an integer constant, causes the default base of arrays to be set to `N`. After this directive, arrays declared without an explicit base will start at `N`. Typically `N` is either `0` or `1`. The default is `1`.
+`option base N`, where `N` is an integer constant, causes the default base of arrays to be set to `N`. After this directive, arrays declared without an explicit base will start at `N`. Typically `N` is either `0` or `1`. The default is `0`.
 
 ```
-dim a(10) as integer ' declares an array with indices 1-10
-option base 0
-dim b(5) as integer  ' declares an array with indices 0-5 (6 elements)
+dim a(9) as integer  ' declares an array with indices 0-9
+option base 0        ' note: changing option base after declarations is not recommended, but works
+dim b(5) as integer  ' declares an array with indices 1-5 (5 elements)
 ```
+It is possible to use `option base` more than once in a file, but we do not recommend it. Indeed if you do use `option base` it is probably best to use it at the very beginning of the file, before any array declarations
 
 ### OR
 
