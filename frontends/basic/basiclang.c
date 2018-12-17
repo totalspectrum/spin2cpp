@@ -1179,6 +1179,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 // modifies *astptr, originally of type srctype,
 // to have type desttype by introducing any
 // necessary casts
+// returns the new type (should normally be desttype)
 //
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
 {
@@ -1193,6 +1194,18 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         msg = "assignment";
     }
 
+    if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
+        if (IsFloatType(desttype)) {
+            // no need to change 0, bitpattern works already
+            return desttype;
+        }
+        if (curfunc && curfunc->language == LANG_C) {
+            if (IsPointerType(desttype)) {
+                return desttype;
+            }
+        }
+    }
+    
     if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
         return desttype;
     }
