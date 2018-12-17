@@ -14,7 +14,7 @@ end sub
 
 sub doit
 
-  dim f as sub(x as ubyte)
+  dim f as sub(x as const ubyte ptr)
   dim g as sub()
   
   f = @ser.str

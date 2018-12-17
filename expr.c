@@ -2020,6 +2020,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         }
         return NULL;
     }
+    case AST_DECLARE_VAR:
+    case AST_DECLARE_VAR_WEAK:
+        return expr->left;
     case AST_LAMBDA:
         return expr->left;
     case AST_METHODREF:

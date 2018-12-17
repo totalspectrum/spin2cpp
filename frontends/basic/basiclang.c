@@ -1195,10 +1195,6 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
-        if (IsFloatType(desttype) && 0) {
-            // no need to change 0, bitpattern works already
-            return desttype;
-        }
         if (curfunc && curfunc->language == LANG_C) {
             if (IsPointerType(desttype)) {
                 return desttype;
@@ -1453,7 +1449,7 @@ AST *CheckTypes(AST *ast)
                     if (!passedType) {
                         passedType = ExprType(actualParam);
                     }
-                    if (paramId) {
+                    if (paramId && paramId->kind != AST_VARARGS) {
                         expectType = ExprType(paramId);
                     }
                     if (expectType) {
