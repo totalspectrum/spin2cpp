@@ -594,7 +594,7 @@ expand_macros(struct preprocess *pp, struct flexbuf *dst, char *src)
                 }
             }
             def = word;
-        } else if (isalpha((unsigned char)*word)) {
+        } else if (isalpha((unsigned char)*word) || *word == '_') {
             def = pp_getdef(pp, word);
             if (!def)
                 def = word;
