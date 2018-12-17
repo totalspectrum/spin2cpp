@@ -663,7 +663,7 @@ doDeclareFunction(AST *funcblock)
     /* if there was an old definition, validate it */
     if (oldtype) {
         if (!CompatibleTypes(oldtype, fdef->overalltype)) {
-            ERROR(funcdef, "Redefining function %s with an incompatible type");
+            WARNING(funcdef, "Redefining function %s with an incompatible type", funcname);
         }
     }
     fdef->body = body;
@@ -699,6 +699,7 @@ DeclareFunctions(Module *P)
         doDeclareFunction(ast->left);
         ast = ast->right;
     }
+    P->funcblock = NULL;
 }
 
 /*

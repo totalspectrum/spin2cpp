@@ -740,6 +740,37 @@ doPruneMethods(Module *P)
 // directly or indirectly from the main function
 // Otherwise, we mark everything accessible from public functions
 //
+static void
+CheckUnusedMethods(int isBinary)
+{
+    Module *P;
+    Function *pf;
+
+    // mark everything unused
+    for (P = allparse; P; P = P->next) {
+        for (pf = P->functions; pf; pf = pf->next) {
+            pf->callSites = 0;
+        }
+    }
+    
+    if (isBinary) {
+        MarkUsed(GetMainFunction(allparse), "__root__");
+    } else {
+        // mark stuff called via public functions
+        for (P = allparse; P; P = P->next) {
+            for (pf = P->functions; pf; pf = pf->next) {
+                if (pf->callSites != 0) {
+                    if (pf->is_public) {
+                        MarkUsed(pf, "__public__");
+                    } else if (pf->annotations) {
+                        MarkUsed(pf, "__annotations__");
+                    }
+                }
+            }
+        }
+    }
+}
+
 void
 RemoveUnusedMethods(int isBinary)
 {
@@ -805,6 +836,7 @@ ResolveSymbols()
                 const char *name = pf->body->d.string;
                 current = Q;
                 LoadFileIntoModule(name, pf->module);
+                pf->callSites++;
                 changes = 1;
             }
         }
@@ -855,10 +887,10 @@ FixupCode(Module *P, int isBinary)
     }
 
     do {
-        RemoveUnusedMethods(isBinary);
+        CheckUnusedMethods(isBinary);
         changes = ResolveSymbols();
     } while (changes);
-    
+    RemoveUnusedMethods(isBinary);
     doTypeInference();
     
     for (Q = allparse; Q; Q = Q->next) {

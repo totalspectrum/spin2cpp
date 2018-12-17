@@ -89,13 +89,50 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
 {
     const char *name;
     Label *labelref;
+    Symbol *sym;
 
+    name = origLabel->d.string;
+    sym = FindSymbol(&P->objsyms, name);
+    if (sym) {
+        // redefining a label with the exact same values is OK
+        if (sym->type != SYM_LABEL) {
+            ERROR(origLabel, "Redefining symbol %s", name);
+            return;
+        }
+        labelref = (Label *)sym->val;
+        if (labelref->hubval != hubpc) {
+            ERROR(origLabel, "Changing hub value for symbol %s", name);
+            return;
+        }
+        if (labelref->cogval != cogpc) {
+            ERROR(origLabel, "Changing cog value for symbol %s", name);
+            return;
+        }
+        if (labelref->org != lastorg) {
+            ERROR(origLabel, "Changing lastorg value for symbol %s", name);
+            return;
+        }
+        if (!CompatibleTypes(labelref->type, ltype)) {
+            ERROR(origLabel, "Changing type of symbol %s", name);
+            return;
+        }
+        if (inHub) {
+            if (!(labelref->flags & LABEL_IN_HUB)) {
+                ERROR(origLabel, "Changing inhub value of symbol %s", name);
+                return;
+            }
+        } else if (labelref->flags & LABEL_IN_HUB) {
+            ERROR(origLabel, "Changing inhub value of symbol %s", name);
+            return;
+        }
+        return;
+    }
+    
     labelref = (Label *)calloc(1, sizeof(*labelref));
     if (!labelref) {
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
-    name = origLabel->d.string;
     labelref->hubval = hubpc;
     labelref->cogval = cogpc;
     labelref->type = ltype;
