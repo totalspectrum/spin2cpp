@@ -64,9 +64,9 @@ LookupSymbol(const char *name)
 Symbol *
 LookupAstSymbol(AST *ast, const char *msg)
 {
-    Symbol *sym;
+    Symbol *sym = NULL;
     AST *id;
-    const char *name;
+    const char *name = "";
     
     if (ast->kind == AST_SYMBOL) {
         return (Symbol *)ast->d.ptr;
@@ -79,8 +79,10 @@ LookupAstSymbol(AST *ast, const char *msg)
         //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
         return NULL;
     }
-    name = GetIdentifierName(id);
-    sym = LookupSymbol(name);
+    if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
+        name = GetIdentifierName(id);
+        sym = LookupSymbol(name);
+    }
     if (!sym && msg) {
         ERROR(id, "unknown identifier %s used in %s", name, msg);
     }
@@ -1652,7 +1654,12 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         }
         expr = expr->left;
     }
-        
+    while (expr && expr->kind == AST_ARRAYREF) {
+        expr = expr->left;
+    }
+    if (expr && expr->kind == AST_MEMREF) {
+        expr = expr->right;
+    }
     if (expr && expr->kind == AST_METHODREF) {
         const char *thename;
         Function *f;

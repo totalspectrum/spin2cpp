@@ -30,6 +30,14 @@ NumExprItemsOnStack(AST *expr)
     if (!type) {
         return 1;
     }
+    if (curfunc->language == LANG_C && IsArrayType(type)) {
+        /* convert a to &a[0] */
+        AST *ref = DupAST(expr);
+        *expr = *NewAST(AST_ADDROF,
+                        NewAST(AST_ARRAYREF,
+                               ref, AstInteger(0)), NULL);
+        return 1;
+    }
     siz = TypeSize(type);
     return ((siz+3) & ~3) / LONG_SIZE;
 }
@@ -1408,7 +1416,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
-        sym = FindCalledFuncSymbol(ast, NULL, 1);
+        sym = FindFuncSymbol(ast, NULL, 1);
         expectArgs = 0;
         if (sym) {
             fname = sym->name;

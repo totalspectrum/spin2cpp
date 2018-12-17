@@ -1195,7 +1195,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
-        if (IsFloatType(desttype)) {
+        if (IsFloatType(desttype) && 0) {
             // no need to change 0, bitpattern works already
             return desttype;
         }
@@ -1418,11 +1418,11 @@ AST *CheckTypes(AST *ast)
             AST *actualParamList = ast->right;
             AST *calledParamList;
             AST *expectType, *passedType;
-            Function *func;
-            Symbol *calledSym = FindCalledFuncSymbol(ast, NULL, 1);
-            if (calledSym && calledSym->type == SYM_FUNCTION) {
-                func = (Function *)calledSym->val;
-                calledParamList = func->params;
+            AST *functype;
+
+            functype = ExprType(ast->left);
+            if (IsFunctionType(functype)) {
+                calledParamList = functype->right;
                 while (calledParamList && actualParamList) {
                     AST *paramId = calledParamList->left;
                     AST *actualParam = actualParamList->left;
@@ -1454,14 +1454,7 @@ AST *CheckTypes(AST *ast)
                         passedType = ExprType(actualParam);
                     }
                     if (paramId) {
-                        if (paramId->kind == AST_IDENTIFIER) {
-                            Symbol *paramSym = FindSymbol(&func->localsyms, paramId->d.string);
-                            if (paramSym && paramSym->type == SYM_PARAMETER) {
-                                expectType = (AST *)paramSym->val;
-                            }
-                        } else if (paramId->kind == AST_DECLARE_VAR) {
-                            expectType = paramId->left;
-                        }
+                        expectType = ExprType(paramId);
                     }
                     if (expectType) {
                         CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
@@ -1469,7 +1462,7 @@ AST *CheckTypes(AST *ast)
                     calledParamList = calledParamList->right;
                     actualParamList = actualParamList->right;
                 }
-                ltype = GetFunctionReturnType(func);
+                ltype = functype->left;
             } else {
                 return NULL;
             }
