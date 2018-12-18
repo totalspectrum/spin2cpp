@@ -1696,6 +1696,9 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 Symbol *
 FindCalledFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 {
+#if 1
+    return FindFuncSymbol(ast, objrefPtr, errflag);
+#else    
     AST *objref = NULL;
     AST *objtype = NULL;
     Symbol *sym = NULL;
@@ -1739,6 +1742,7 @@ FindCalledFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     }
     if (objrefPtr) *objrefPtr = objref;
     return sym;
+#endif    
 }
 
 int
@@ -1977,6 +1981,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
         case SYM_CLOSURE:
+        case SYM_TYPEDEF:
             return (AST *)sym->val;
         case SYM_FUNCTION:
             return ((Function *)sym->val)->overalltype;
