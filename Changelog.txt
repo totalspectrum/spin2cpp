@@ -6,6 +6,7 @@ Version 3.9.13
 - Added "struct __using" and "__fromfile" to C
 - Fixed an optimizer bug which affected some FullDuplexSerialversions
 - Fixed a preprocessor bug where defines starting with _ were not expanded
+- Fixed "dim shared" syntax to match other dim syntaxes
 
 Version 3.9.12
 - Fixed a BASIC operator precedence problem (<< and >> should have

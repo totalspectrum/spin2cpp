@@ -4,6 +4,20 @@
 
 C compiler support is not even at the "beta" stage yet; there are many features missing.
 
+### Missing Features
+
+An incomplete list of things that still need to be implemented:
+
+  * bitfields
+  * unions
+  * variable scope inside statement blocks (right now all local variables in a function share the same scope)
+  * 64 bit integers (long long)
+  * struct passing and return
+  * proper handling of large arrays on the stack
+  * most of the C standard library
+  * some c99 syntax (e.g. variable declarations mixed with statements) are not handled
+  * struct types in different files are handled incorrectly, causing spurious warnings
+  
 ## Introduction
 
 ## Preprocessor
@@ -61,3 +75,11 @@ struct {
 } myclass;
 ```
 Note that allowing function definitions inside a struct is an extension to C (it is feature of C++).
+
+### Header file external function definitions
+
+There is no linker as yet, so in order to use standard library functions we use a FlexC specific construct, `__fromfile`. The declaration:
+```
+  size_t strlen(const char *s) __fromfile("libc/string/strlen.c");
+```
+declares the `strlen` function, and also says that if it is used and no definition is given for it, the file "libc/string/strlen.c" should be added to the build. This file is searched for along the standard include path.
