@@ -428,6 +428,9 @@ int funcParameterNum(Function *func, AST *var);
 /* returns number of new inferences (0 if nothing changed) */
 int InferTypes(Module *P);
 
+/* fix up function parameter types */
+void FixupParameterTypes(Function *func);
+
 /* process a function and perform basic transformations on it */
 void ProcessOneFunc(Function *pf);
 

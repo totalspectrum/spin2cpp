@@ -853,6 +853,7 @@ doTypeInference(void)
     int tries = 0;
     int changes;
     Module *Q;
+    Function *pf;
     // do type inference; we do that even for BASIC
     // because there are some things (like static-ness
     // of functions) that C wants to know about
@@ -862,6 +863,12 @@ doTypeInference(void)
             changes += InferTypes(Q);
         }
     } while (changes != 0 && tries++ < MAX_TYPE_PASSES);
+    // now update the types
+    for (Q = allparse; Q; Q = Q->next) {
+        for (pf = Q->functions; pf; pf = pf->next) {
+            FixupParameterTypes(pf);
+        }
+    }
 }
 
 static void

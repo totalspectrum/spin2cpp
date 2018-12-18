@@ -25,9 +25,15 @@
 AST *
 SpinRetType(AST *funcdef)
 {
+    AST *resultvars = NULL;
+    
     if (funcdef->kind != AST_FUNCDEF) return NULL;
     funcdef = funcdef->left;
     if (funcdef->kind != AST_FUNCDECL) return NULL;
+    resultvars = funcdef->right;
+    if (resultvars && resultvars->kind == AST_DECLARE_VAR) {
+        return resultvars->left;
+    }
     funcdef = funcdef ->left;
     if (funcdef->kind != AST_IDENTIFIER) return NULL;
     if (strrchr(funcdef->d.string, '$') != NULL)
@@ -257,7 +263,7 @@ optparamlist:
   { $$ = $2; }
   ;
 
-resultname: ':' identlist
+resultname: ':' paramidentlist
   {
       // handle the common case of just one identifier by
       // unwrapping the list

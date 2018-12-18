@@ -1829,7 +1829,7 @@ InferTypesExpr(AST *expr, AST *expectType)
 /*
  * Fix types on parameters in the type of this function
  */
-static void
+void
 FixupParameterTypes(Function *pf)
 {
     AST *overalltype;
@@ -1861,21 +1861,13 @@ InferTypes(Module *P)
 {
     Function *pf;
     int changes = 0;
-    int thischange;
     Function *savecur = curfunc;
     
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
         curfunc = pf;
-        if (curfunc->language == LANG_SPIN) {
-            thischange = InferTypesStmtList(pf->body);
-            if (thischange) {
-                // fix up type declaration of parameter list
-                FixupParameterTypes(pf);
-                changes++;
-            }
-        }
+        changes += InferTypesStmtList(pf->body);
         if (pf->is_static) {
             continue;
         }

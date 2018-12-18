@@ -159,7 +159,7 @@ PUB main
 ```
 The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
 
-### Default string parameters
+#### Default string parameters
 
 If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically fastspin inserts a `string` operator around the literal in this case. So for example in:
 ```
@@ -174,6 +174,19 @@ the two calls to `write` will do the same thing. In regular Spin, and in fastspi
   write($68, $65, ..., 0)  ' $68 = ASCII value of "h"
 ```
 which is probably not what was intended.
+
+### Typed parameters and return values
+
+The "expression" in a default parameter may also be a type name, for example `long`, `float`, or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.
+
+Variables declared as return values may also be given type hints, which will be used to determine the type of the function.
+
+Example:
+```
+' negate a floating point value
+PUB negfloat(x = float) : r = float
+  r := x ^ $80000000
+```
 
 ### Spin2 operators
 
