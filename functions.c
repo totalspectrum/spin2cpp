@@ -1416,7 +1416,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
-        sym = FindFuncSymbol(ast, NULL, 1);
+        sym = FindCalledFuncSymbol(ast, NULL, 1);
         expectArgs = 0;
         if (sym) {
             fname = sym->name;
@@ -1827,6 +1827,31 @@ InferTypesExpr(AST *expr, AST *expectType)
 }
 
 /*
+ * Fix types on parameters in the type of this function
+ */
+static void
+FixupParameterTypes(Function *pf)
+{
+    AST *overalltype;
+    AST *a;
+    AST *arg;
+    AST *type;
+    overalltype = pf->overalltype;
+    a = overalltype->right;
+    while (a) {
+        arg = a->left;
+        if (arg->kind == AST_IDENTIFIER) {
+            type = ExprType(arg);
+            if (type) {
+                arg = NewAST(AST_DECLARE_VAR, type, arg);
+                a->left = arg;
+            }
+        }
+        a = a->right;
+    }
+}
+
+/*
  * main entry for type checking
  * returns 0 if no changes happened, nonzero if
  * some did
@@ -1836,13 +1861,21 @@ InferTypes(Module *P)
 {
     Function *pf;
     int changes = 0;
+    int thischange;
     Function *savecur = curfunc;
     
     /* scan for static definitions */
     current = P;
     for (pf = P->functions; pf; pf = pf->next) {
         curfunc = pf;
-        changes += InferTypesStmtList(pf->body);
+        if (curfunc->language == LANG_SPIN) {
+            thischange = InferTypesStmtList(pf->body);
+            if (thischange) {
+                // fix up type declaration of parameter list
+                FixupParameterTypes(pf);
+                changes++;
+            }
+        }
         if (pf->is_static) {
             continue;
         }
