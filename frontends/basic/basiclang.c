@@ -1424,6 +1424,7 @@ AST *CheckTypes(AST *ast)
                     AST *actualParam = actualParamList->left;
                     expectType = NULL;
                     passedType = NULL;
+#if 0                    
                     if (actualParam && actualParam->kind == AST_FUNCCALL)
                     {
                         // correct for missing return type info in
@@ -1446,6 +1447,7 @@ AST *CheckTypes(AST *ast)
                             passedType = ast_type_long;
                         }
                     }
+#endif                        
                     if (!passedType) {
                         passedType = ExprType(actualParam);
                     }

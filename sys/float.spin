@@ -9,7 +9,7 @@
 ''*  See end of file for terms of use.  *
 ''***************************************
 
-pri _float_fromuns(integer) | s, x, m
+pri _float_fromuns(integer = long) : m = float | s, x
 
 ''Convert integer to float    
   m := integer
@@ -23,7 +23,7 @@ pri _float_fromuns(integer) | s, x, m
   m := _float_Pack(s, x, m)
   return m
     
-pri _float_fromint(integer) : single | negate
+pri _float_fromint(integer = long) : single = float | negate
 
 ''Convert integer to float    
   if integer < 0
@@ -35,35 +35,34 @@ pri _float_fromint(integer) : single | negate
   if (negate)  
     single := _float_negate(single)
    
-pri _float_round(single) : integer
+pri _float_round(single = float) : integer = long
 
 ''Convert float to rounded integer
 
   return _float_tointeger(single, 1)    'use 1/2 to round
 
 
-pri _float_trunc(single) : integer
+pri _float_trunc(single = float) : integer = long
 
 ''Convert float to truncated integer
 
   return _float_tointeger(single, 0)    'use 0 to round
 
 
-pri _float_negate(singleA) : single
+pri _float_negate(singleA = float) : single = float
 
 ''Negate singleA
 
   return singleA ^ $8000_0000   'toggle sign bit
   
-
-pri _float_abs(singleA) : single
+pri _float_abs(singleA = float) : single = float
 
 ''Absolute singleA
 
   return singleA & $7FFF_FFFF   'clear sign bit
   
 
-pri _float_sqrt(singleA) : single | s, x, m, root
+pri _float_sqrt(singleA = float) : single = float | s, x, m, root
 
 ''Compute square root of singleA
 
@@ -84,7 +83,7 @@ pri _float_sqrt(singleA) : single | s, x, m, root
     return _float_Pack(s, x, m)             'pack result
 
 
-pri _float_add(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_add(singleA = float, singleB = float) : single = float | sa, xa, ma, sb, xb, mb
 
 ''Add singleA and singleB
 
@@ -110,14 +109,14 @@ pri _float_add(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
   return _float_Pack(sa, xa, ma)              'pack result
 
 
-pri _float_sub(singleA, singleB) : single
+pri _float_sub(singleA = float, singleB = float) : single = float
 
 ''Subtract singleB from singleA
 
   return _float_add(singleA, _float_negate(singleB))
 
              
-pri _float_mul(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_mul(singleA=float, singleB=float) : single=float | sa, xa, ma, sb, xb, mb
 
 ''Multiply singleA by singleB
 
@@ -131,7 +130,7 @@ pri _float_mul(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
   return _float_Pack(sa, xa, ma)              'pack result
 
 
-pri _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
+pri _float_div(singleA=float, singleB=float) : single=float | sa, xa, ma, sb, xb, mb
 
 ''Divide singleA by singleB
 
@@ -155,7 +154,7 @@ pri _float_div(singleA, singleB) : single | sa, xa, ma, sb, xb, mb
 '' compute a^n, where a is a float and n is an integer
 '' keeps as many bits of precision as possible
 ''
-pri _float_pow_n(a, n) : r | sgnflag, invflag
+pri _float_pow_n(a=float, n=long) : r=float | sgnflag, invflag
   if (n < 0)
     invflag := 1
     n := -n
@@ -180,7 +179,7 @@ pri _float_pow_n(a, n) : r | sgnflag, invflag
 '' compare a and b;
 '' return 0 if a = b, -N if a < b, +N if a > b
 ''
-pri _float_cmp(a, b)
+pri _float_cmp(a=float, b=float) : r=long
   if (a < 0)
     if (b < 0)
       return a - b
@@ -195,7 +194,7 @@ pri _float_cmp(a, b)
   '' in this case both are positive
   return a - b
 
-pri _float_tointeger(a, r) : integer | s, x, m
+pri _float_tointeger(a=float, r) : integer=long | s, x, m
 
 'Convert float to rounded/truncated integer
 
@@ -210,7 +209,7 @@ pri _float_tointeger(a, r) : integer | s, x, m
     return m                    'return integer
 
 
-pri _float_Unpack(single) : s, x, m | tmp
+pri _float_Unpack(single=float) : s, x, m | tmp
 
 '_float_Unpack floating-point into (sign, exponent, mantissa) at pointer
   tmp := 0

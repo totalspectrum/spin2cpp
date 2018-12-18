@@ -575,12 +575,18 @@ doDeclareFunction(AST *funcblock)
             AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL);
         }
     } else {
-        fdef->resultexpr = src->right;
-        if (src->right->kind == AST_IDENTIFIER) {
-            AddSymbol(&fdef->localsyms, src->right->d.string, SYM_RESULT, NULL);
-        } else if (src->right->kind == AST_LISTHOLDER) {
+        AST *resultexpr = src->right;
+        AST *type = NULL;
+        fdef->resultexpr = resultexpr;
+        if (resultexpr->kind == AST_DECLARE_VAR) {
+            fdef->overalltype->left = type = resultexpr->left;
+            resultexpr = resultexpr->right;
+        }
+        if (resultexpr->kind == AST_IDENTIFIER) {
+            AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type);
+        } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
-            fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, src->right, 0) / LONG_SIZE;
+            fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0) / LONG_SIZE;
             AstReportAs(src);
             rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
             rettype->d.ival = fdef->numresults;
@@ -803,6 +809,9 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_IDENTIFIER:
         rdecl = func->resultexpr;
+        if (rdecl && rdecl->kind == AST_DECLARE_VAR) {
+            rdecl = rdecl->right;
+        }
         if (rdecl && AstUses(rdecl, ast))
             func->result_used = 1;
         return NULL;
@@ -1286,7 +1295,11 @@ IsResultVar(Function *func, AST *lhs)
         return true;
     }
     if (lhs->kind == AST_IDENTIFIER) {
-        return AstMatch(lhs, func->resultexpr);
+        AST *resultexpr = func->resultexpr;
+        if (resultexpr->kind == AST_DECLARE_VAR) {
+            resultexpr = resultexpr->right;
+        }
+        return AstMatch(lhs, resultexpr);
     }
     return false;
 }

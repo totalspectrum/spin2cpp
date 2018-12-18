@@ -315,7 +315,7 @@ pri _string_concat(x, y) | lenx, leny, ptr
     byte[ptr + lenx + leny] := 0
   return ptr
 
-pri chr`$(x) | ptr
+pri chr`$(x=long) | ptr
   ptr := _gc_alloc_managed(2)
   if (ptr)
     byte[ptr+0] := x
@@ -347,7 +347,7 @@ pri right`$(x, n) | ptr, i, m
     bytemove(ptr, x+i, n+1)
   return ptr
 
-pri mid`$(x, i, j=9999999) | ptr, m, n
+pri mid`$(x, i=0, j=9999999) | ptr, m, n
   if (j =< 0)
     return ""
   --i ' convert from 1 based to 0 based
@@ -383,7 +383,7 @@ pri SendRecvDevice(sendf, recvf = 0, closef = 0)
   return (sendf, recvf, closef)
 
 '' read n characters from handle h
-pri input`$(n, h=0) | c, i, s
+pri input`$(n=long, h=0) | c, i, s
   s := _gc_alloc_managed(n+1)
   if s == 0
     return s
@@ -396,8 +396,8 @@ pri input`$(n, h=0) | c, i, s
   return s
 
 '' pause for m milliseconds
-pri pausems(m)
+pri pausems(m=long)
   waitcnt(getcnt + m * (clkfreq / 1000))
 
-pri len(s)
+pri len(s=@byte)
   return strsize(s)

@@ -1079,10 +1079,15 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
 {
   Symbol *sym;
   const char *name;
+  AST *resultexpr;
   
   if (expr->kind == AST_RESULT) {
-      if (func->resultexpr && func->resultexpr->kind == AST_IDENTIFIER) {
-          name = func->resultexpr->d.string;
+      resultexpr = func->resultexpr;
+      if (resultexpr && resultexpr->kind == AST_DECLARE_VAR) {
+          resultexpr = resultexpr->right;
+      }
+      if (resultexpr && resultexpr->kind == AST_IDENTIFIER) {
+          name = resultexpr->d.string;
       } else {
           name = "result";
       }
@@ -3424,6 +3429,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_CAST:
       return CompileExpression(irl, expr->right, dest);
+  case AST_DECLARE_VAR:
+      return CompileExpression(irl, expr->right, dest);
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
@@ -3722,6 +3729,15 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     EmitLabel(irl, labeldone);
 }
 
+static AST *GetResultExpr(AST *resultval)
+{
+    if (!resultval) return resultval;
+    if (resultval->kind == AST_DECLARE_VAR) {
+        resultval = resultval->right;
+    }
+    return resultval;
+}
+
 static void CompileStatement(IRList *irl, AST *ast)
 {
     AST *retval;
@@ -3743,7 +3759,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         EmitDebugComment(irl, ast);
         retval = ast->left;
         if (!retval) {
-            retval = curfunc->resultexpr;
+            retval = GetResultExpr(curfunc->resultexpr);
         }
 	if (retval) {
             // extract the return value if it's buried in a sequence
@@ -3800,7 +3816,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         EmitDebugComment(irl, ast);
         retval = ast->left;
         if (!retval) {
-            retval = curfunc->resultexpr;
+            retval = GetResultExpr(curfunc->resultexpr);
         }
 	if (!retval) {
             retval = AstInteger(0);
@@ -3949,8 +3965,9 @@ CompileFunctionBody(Function *f)
     // emit initializations if any required
     if (!f->result_in_parmarray && f->resultexpr && !IsConstExpr(f->resultexpr))
     {
-        if (f->resultexpr->kind == AST_IDENTIFIER) {
-            AST *resinit = AstAssign(f->resultexpr, AstInteger(0));
+        AST *init = GetResultExpr(f->resultexpr);
+        if (init && init->kind == AST_IDENTIFIER) {
+            AST *resinit = AstAssign(init, AstInteger(0));
             CompileStatement(irl, resinit);
         }
     }
