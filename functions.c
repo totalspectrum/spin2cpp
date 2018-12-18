@@ -1614,6 +1614,9 @@ static int
 InferTypesStmtList(AST *list)
 {
   int changes = 0;
+  if (list && list->kind == AST_STRING) {
+      return 0;
+  }
   while (list) {
     if (list->kind != AST_STMTLIST) {
       ERROR(list, "Internal error: expected statement list");

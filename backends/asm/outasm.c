@@ -3971,8 +3971,10 @@ CompileFunctionBody(Function *f)
             CompileStatement(irl, resinit);
         }
     }
-    //
-    CompileStatementList(irl, f->body);
+    // check for __fromfile
+    if (f->body && f->body->kind != AST_STRING) {
+        CompileStatementList(irl, f->body);
+    }
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
 }

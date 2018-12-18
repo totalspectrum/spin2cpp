@@ -1084,9 +1084,11 @@ PerformLoopOptimization(Module *Q)
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
-        InitLoopValueSet(&lv);
-        doLoopOptimizeList(&lv, func->body);
-        FreeLoopValueSet(&lv);
+        if (func->body && func->body->kind != AST_STRING) {
+            InitLoopValueSet(&lv);
+            doLoopOptimizeList(&lv, func->body);
+            FreeLoopValueSet(&lv);
+        }
     }
     curfunc = savefunc;
     current = savecur;

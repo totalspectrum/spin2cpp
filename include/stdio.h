@@ -11,8 +11,8 @@
 #endif
 
 /* these are temporary defines */
-#define putchar _tx
-#define getchar _rx
+#define putchar(x) _tx(x)
+#define getchar() _rx()
 #define printf __builtin_printf
 
 char *gets(char *data) _IMPL("libc/stdio/gets.c");
