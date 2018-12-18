@@ -70,6 +70,9 @@ int IsClassType(AST *typ);
 
 int IsConstType(AST *typ);
 
+// note that this function isn't symmetric; for pointer types,
+// it allows A to have a stricter type than B (so for example
+// it's OK to pass a "char *" to a "const char *" but not vice-versa)
 int CompatibleTypes(AST *A, AST *B);
 
 // get the name from an AST_IDENTIFIER or AST_SYMBOL

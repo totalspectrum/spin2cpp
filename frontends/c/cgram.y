@@ -344,7 +344,9 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
 // skind is either AST_STRUCT or AST_UNION
 // identifier is NULL or is a struct tag
 // body is the contents of the struct, or NULL
-
+// if no struct tag is given, we use one generated from the
+// file name and line number
+//
 static AST *
 MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 {
@@ -365,7 +367,11 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         return NULL;
     }
     if (!identifier) {
-        identifier = AstTempIdentifier("_anon_");
+        // use file name and line number
+        char buf[128];
+        unsigned int hash = SymbolHash(current->Lptr->fileName);
+        sprintf(buf, "_anon_%08x%08x", hash, current->Lptr->lineCounter);
+        identifier = AstIdentifier(strdup(buf));
     }
     if (identifier->kind != AST_IDENTIFIER) {
         ERROR(identifier, "internal error: bad struct def");

@@ -1571,6 +1571,10 @@ int TypeSize(AST *typ)
     {
         return typ->d.ival * 4;
     }
+    case AST_VOIDTYPE:
+    {
+        return 1;
+    }
     default:
         ERROR(typ, "Internal error: unknown type %d passed to TypeSize",
               typ->kind);
@@ -2173,6 +2177,10 @@ SameTypes(AST *A, AST *B)
 }
 
 /* check for compatibility of types */
+/* NOTE: this is not symmetric; we allow A to be of stricter type
+ * than B (so for example passing type B to type A is OK if B
+ * is a "char *" and A is a "const char *", but not vice-versa)
+ */
 int
 CompatibleTypes(AST *A, AST *B)
 {
@@ -2217,20 +2225,20 @@ CompatibleTypes(AST *A, AST *B)
     }
     if (A->kind == AST_PTRTYPE && B->kind == AST_PTRTYPE) {
         // if one side is a void * then they are compatible
-        AST *subtypeA = A->left;
-        AST *subtypeB = B->left;
-        while (subtypeA && subtypeB && (subtypeA->kind == AST_MODIFIER_CONST || subtypeA->kind == AST_MODIFIER_VOLATILE)) {
-            if (subtypeB->kind != subtypeA->kind) return 0;
-            subtypeA = subtypeA->left;
-            subtypeB = subtypeB->left;
-        }
-        if (IsVoidType(subtypeA) || IsVoidType(subtypeB)) {
+        AST *typeA = A->left;
+        AST *rawtypeA = RemoveTypeModifiers(typeA);
+        AST *typeB = B->left;
+        if (IsVoidType(rawtypeA))
+            return 1;
+        if (rawtypeA && typeB && CompatibleTypes(rawtypeA, typeB)
+            && TypeSize(rawtypeA) == TypeSize(typeB))
+        {
             return 1;
         }
     }
     // both A and B are pointers (or perhaps arrays)
     // they are compatible if they are both pointers to the same thing
-    return SameTypes(RemoveTypeModifiers(A->left), RemoveTypeModifiers(B->left));
+    return SameTypes(A->left, B->left);
 }
 
 //
