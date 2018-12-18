@@ -679,6 +679,16 @@ paramidentdecl:
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
   | identifier '=' expr
   { $$ = AstAssign($1, $3); }
+  | identifier '=' SP_LONG
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1); }
+  | identifier '=' SP_FLOAT
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1); }
+  | identifier '=' '@' SP_LONG
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_long, $1); }
+  | identifier '=' '@' SP_WORD
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_word, $1); }
+  | identifier '=' '@' SP_BYTE
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_byte, $1); }
   ;
 
 paramidentlist:
