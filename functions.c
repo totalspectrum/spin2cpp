@@ -2042,6 +2042,7 @@ bool
 IsCalledFrom(Function *ref, AST *body, int visitRef)
 {
     Module *oldState;
+    Function *oldCurFunc;
     Symbol *sym;
     Function *func;
     bool result;
@@ -2061,9 +2062,12 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         }
         func->visitFlag = visitRef;
         oldState = current;
+        oldCurFunc = curfunc;
         current = func->module;
+        curfunc = func;
         result = IsCalledFrom(ref, func->body, visitRef);
         current = oldState;
+        curfunc = oldCurFunc;
         return result;
     default:
         return IsCalledFrom(ref, body->left, visitRef)
