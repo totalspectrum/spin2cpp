@@ -1429,7 +1429,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
-        sym = FindCalledFuncSymbol(ast, NULL, 1);
+        sym = FindCalledFuncSymbol(ast, NULL, 0);
         expectArgs = 0;
         if (sym) {
             fname = sym->name;
@@ -1447,6 +1447,8 @@ CheckFunctionCalls(AST *ast)
                 }
                 expectArgs = AstListLen(ftype->right);
             }
+        } else {
+            goto skipcheck;
         }
         if (expectArgs < 0) {
             expectArgs = -expectArgs;
@@ -1529,6 +1531,7 @@ CheckFunctionCalls(AST *ast)
             ast->right = NULL;
         }
     }
+skipcheck:    
     CheckFunctionCalls(ast->left);
     CheckFunctionCalls(ast->right);
 }
