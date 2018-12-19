@@ -27,11 +27,16 @@ AddLabel(AST *ast)
     }
 }
 
+/*
+ * returns a list of if x goto y; statments where x is a case condition and
+ * y is the case label
+ */
 static AST *
 CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *endswitch)
 {
     AST *labelid;
     AST *label;
+again:    
     if (!stmt) {
         return switchstmt;
     }
@@ -44,7 +49,7 @@ CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *en
     {
         AST *ifgoto;
         AST *ifcond;
-
+        
         labelid = AstTempIdentifier("_case_");
         label = NewAST(AST_LABEL, labelid, NULL);
         AddLabel(label);
@@ -56,7 +61,7 @@ CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *en
         ifgoto = NewAST(AST_THENELSE, ifgoto, NULL);
         ifgoto = NewAST(AST_IF, ifcond, ifgoto);
         switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, ifgoto, NULL));
-        return switchstmt;
+        goto again;
     }
     case AST_OTHER:
         if (defaultlabel) {

@@ -100,6 +100,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             return;
         }
         labelref = (Label *)sym->val;
+#if 0        
         if (labelref->hubval != hubpc) {
             ERROR(origLabel, "Changing hub value for symbol %s", name);
             return;
@@ -126,9 +127,10 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             return;
         }
         return;
+#endif        
+    } else {
+        labelref = (Label *)calloc(1, sizeof(*labelref));
     }
-    
-    labelref = (Label *)calloc(1, sizeof(*labelref));
     if (!labelref) {
         fprintf(stderr, "out of memory\n");
         exit(1);
@@ -140,8 +142,8 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     if (inHub) {
         labelref->flags = LABEL_IN_HUB;
     }
-    if (!AddSymbol(&P->objsyms, name, SYM_LABEL, labelref)) {
-      ERROR(origLabel, "Duplicate definition of label %s", name);
+    if (!sym) {
+        sym=AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
     }
 }
 
