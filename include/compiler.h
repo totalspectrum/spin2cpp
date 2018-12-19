@@ -84,7 +84,8 @@
 #define _NORETURN
 #define _CONST
 #define _WEAK
-
+#define _CACHED
+    
 #ifndef _WCHAR_T_TYPE
 #define _WCHAR_T_TYPE __WCHAR_TYPE__
 #endif
