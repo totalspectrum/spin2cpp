@@ -69,6 +69,9 @@ Operand *objbase;
 static Operand *objlabel;
 
 Operand *stackptr;
+
+#define OPERAND_DUMMY GetArgReg(0)
+
 static Operand *stacklabel;
 static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
@@ -2415,6 +2418,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     sym = FindFuncSymbol(expr, &objref, 1);
     if (!sym) {
         ERROR(expr, "expected function symbol");
+        return NULL;
     }
     if (sym->type != SYM_FUNCTION) {
         Operand *base;
@@ -2477,12 +2481,12 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
 static OperandList *
 CompileFunccall(IRList *irl, AST *expr)
 {
-  Function *func;
-  AST *functype;
+  Function *func = NULL;
+  AST *functype = NULL;
   AST *params;
   Operand *offset;
   Operand *absobjaddr;
-  Operand *funcaddr;
+  Operand *funcaddr = NULL;
   OperandList *temp;
   OperandList *results = NULL;
   Operand *reg;
@@ -2492,7 +2496,10 @@ CompileFunccall(IRList *irl, AST *expr)
   int stackadj = 0;
   
   func = CompileGetFunctionInfo(irl, expr, &absobjaddr, &offset, &funcaddr, &functype);
-  
+
+  if (!func || !functype) {
+      return NULL;
+  }
   params = expr->right;
   temp = CompileExprList(irl, params);
 
@@ -2563,7 +2570,7 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     }
     if (!rhs) {
         ERROR(lhs, "Unexpected end of multiple assignment list");
-        return NewImmediate(0);
+        return OPERAND_DUMMY;
     }
     if (rhs->kind == AST_EXPRLIST) {
         opList = CompileExprList(irl, rhs);
@@ -2571,13 +2578,13 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
         opList = CompileFunccall(irl, rhs);
     } else {
         ERROR(rhs, "Expected multiple values");
-        return NewImmediate(0);
+        return OPERAND_DUMMY;
     }
     ptr = opList;
     while (lhs && ptr) {
         if (lhs->kind != AST_EXPRLIST) {
             ERROR(lhs, "Illegal left hand side for multiple assignment");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         r = CompileExpression(irl, lhs->left, NULL);
         EmitMove(irl, r, ptr->op);
@@ -2905,19 +2912,19 @@ CompileCoginit(IRList *irl, AST *expr)
         exprlist = expr->left;
         if (!exprlist) {
             ERROR(expr, "Missing cog parameter for coginit/cognew");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         cogid = exprlist->left;
         exprlist = exprlist->right;
         if (!exprlist) {
             ERROR(expr, "Missing function parameter for coginit/cognew");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         func = exprlist->left;
         exprlist = exprlist->right;
         if (!exprlist) {
             ERROR(expr, "Missing stack parameter for coginit/cognew");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         stack = exprlist->left;
         if (exprlist->right != NULL) {
@@ -2935,15 +2942,15 @@ CompileCoginit(IRList *irl, AST *expr)
         }
         if (!IS_FAST_CALL(remote)) {
             ERROR(expr, "Internal error: wrong calling convention for coginit");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         if (gl_output == OUTPUT_COGSPIN) {
             ERROR(expr, "coginit/cognew of Spin objects is not permitted from COG code");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         if (remote && remote->cog_code) {
             ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         
         // we have to build the call into the new stack
@@ -2953,7 +2960,7 @@ CompileCoginit(IRList *irl, AST *expr)
             params = func->right;
         } else {
             ERROR(expr, "Internal error, expected function call");
-            return NewImmediate(0);
+            return OPERAND_DUMMY;
         }
         ValidateObjbase();
         if (stack->kind != AST_ADDROF && stack->kind != AST_DATADDROF
@@ -3021,7 +3028,7 @@ CompileLookupDown(IRList *irl, AST *expr)
     ev = expr->left;
     if (ev->kind != AST_LOOKEXPR) {
         ERROR(ev, "Internal error in lookup");
-        return NewImmediate(0);
+        return OPERAND_DUMMY;
     }
     base = ev->left;
     idx = ev->right;
@@ -3058,7 +3065,7 @@ CompileLookupDown(IRList *irl, AST *expr)
         popsize = n*LONG_SIZE;
     } else {
         ERROR(table, "Internal error in lookup code");
-        return NewImmediate(0);
+        return OPERAND_DUMMY;
     }
 
     params = NewAST(AST_EXPRLIST, idx,
@@ -3126,7 +3133,7 @@ GetAddressOf(IRList *irl, AST *expr)
         }
         if (!res) {
             ERROR(expr, "Internal error: cannot take address of %s", name);
-            res = NewImmediate(0);
+            res = OPERAND_DUMMY;
         }
         return res;
     }
@@ -3220,7 +3227,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return CompileMaskMove(irl, expr);
   case AST_CATCH:
       ERROR(expr, "Internal error, should not see raw CATCH");
-      return NewImmediate(0);
+      return OPERAND_DUMMY;
   case AST_SETJMP:
       ValidateAbortFuncs();
       if (expr->left) {
@@ -3392,7 +3399,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           return CompileExpression(irl, list->left, dest);
       }
       ERROR(expr, "expected expression at end of statement list");
-      return NewImmediate(0);
+      return OPERAND_DUMMY;
   }
   case AST_VA_ARG:
   {
