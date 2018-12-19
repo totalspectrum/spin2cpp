@@ -2228,11 +2228,16 @@ CompatibleTypes(AST *A, AST *B)
         AST *typeA = A->left;
         AST *rawtypeA = RemoveTypeModifiers(typeA);
         AST *typeB = B->left;
+        AST *rawtypeB;
         if (IsVoidType(rawtypeA))
             return 1;
         if (rawtypeA && typeB && CompatibleTypes(rawtypeA, typeB)
             && TypeSize(rawtypeA) == TypeSize(typeB))
         {
+            return 1;
+        }
+        rawtypeB = RemoveTypeModifiers(typeB);
+        if (IsVoidType(rawtypeB)) {
             return 1;
         }
     }
