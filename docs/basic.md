@@ -11,7 +11,8 @@ yet. Missing features include:
 
  - Input and output isn't fully implemented yet.
 
-
+ - DATA/READ/RESTORE is not implemented yet.
+ 
 ## Introduction
 
 Fastspin BASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
@@ -603,6 +604,13 @@ This is compiled with:
   fastspin main.bas
 ```
 
+#### Interoperation with Spin
+
+Using Spin objects with `class using` is straightforward, but there are some things to watch out for:
+
+  * Spin does not have any notion of types, so most Spin functions will return type `any` and take parameters of type `any`. This can cause problems if you expect them to return something special like a pointer or float and want to use them in the middle of an expression. It's probably best to just directly assign the results of Spin methods to a typed variable, and then use that variable in the expression instead
+  * Spin treats strings differently than BASIC does. For example, in the Spin expression `ser.tx("A")`, `"A"` is an integer (a single element list). That would be written in BASIC as `ser.tx(asc("A"))`. Conversely, in Spin you have to write `ser.str(string("hello"))` where in BASIC you would write just `ser.str("hello")`.
+  
 ### CLOSE
 
 Closes a file previously opened by `open`. This causes the `closef` function specified in the device driver (if any) to be called, and then invalidates the handle so that it may not be used for further I/O operations. Any attempt to use a closed handle produces no result.
