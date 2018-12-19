@@ -502,6 +502,9 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 %token C_BUILTIN_REV    "__builtin_rev"
 %token C_BUILTIN_VA_START "__builtin_va_start"
 %token C_BUILTIN_VA_ARG   "__builtin_va_arg"
+%token C_BUILTIN_SETJMP   "__builtin_setjmp"
+%token C_BUILTIN_LONGJMP  "__builtin_longjmp"
+
 %token C_EOF "end of file"
 
 %start translation_unit
@@ -549,6 +552,14 @@ postfix_expression
             {
                 // NOTE: like an AST_MEMREF, the type goes first
                 $$ = NewAST(AST_VA_ARG, $5, $3);
+            }
+        | C_BUILTIN_SETJMP '(' expression ')'
+            {
+                $$ = NewAST(AST_SETJMP, $3, NULL);
+            }
+        | C_BUILTIN_LONGJMP '(' expression ',' expression ')'
+            {
+                $$ = NewAST(AST_THROW, $5, $3);
             }
 	| postfix_expression '[' expression ']'
             { $$ = NewAST(AST_ARRAYREF, $1, $3); }

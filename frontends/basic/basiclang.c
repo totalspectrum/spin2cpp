@@ -1482,6 +1482,8 @@ AST *CheckTypes(AST *ast)
     case AST_CATCHRESULT:
     case AST_BITVALUE:
         return ast_type_generic;
+    case AST_SETJMP:
+        return ast_type_long;
     case AST_STRING:
     case AST_STRINGPTR:
         if (curfunc->language == LANG_BASIC) {

@@ -51,7 +51,7 @@ Operand *putcogreg;
 
 static Operand *allocfunc;
 static Operand *copyfunc;
-static Operand *abortfunc;
+static Operand *longjmpfunc;
 static Operand *setjmpfunc;
 static Operand *abortresult;
 static Operand *abortcaught;
@@ -250,12 +250,12 @@ ValidateStackptr(void)
 static void
 ValidateAbortFuncs(void)
 {
-    if (!abortfunc) {
-        abortfunc = NewOperand(IMM_COG_LABEL, "__abort", 0);
+    if (!longjmpfunc) {
+        longjmpfunc = NewOperand(IMM_COG_LABEL, "__longjmp", 0);
         setjmpfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
         abortchain = GetOneGlobal(REG_REG, "abortchain", 0);
-        abortcaught = GetResultReg(0);
-        abortresult = SizedHubMemRef(LONG_SIZE, abortchain, 0);
+        abortcaught = GetResultReg(1);
+        abortresult = GetResultReg(0);
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
@@ -3223,9 +3223,16 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return NewImmediate(0);
   case AST_SETJMP:
       ValidateAbortFuncs();
-      EmitMove(irl, GetArgReg(0), abortchain);
+      if (expr->left) {
+          val = CompileExpression(irl, expr->left, NULL);
+          r = GetResultReg(0);
+      } else {
+          val = abortchain;
+          r = abortcaught;
+      }
+      EmitMove(irl, GetArgReg(0), val);
       EmitOp1(irl, OPC_CALL, setjmpfunc);
-      return abortcaught;
+      return r;
   case AST_CATCHRESULT:
       ValidateAbortFuncs();
       return abortresult;
@@ -3744,6 +3751,7 @@ static void CompileStatement(IRList *irl, AST *ast)
     Operand *op;
     Operand *botloop, *toploop;
     Operand *exitloop;
+    Operand *buf;
     int starttempreg;
     AST *pendingComments = NULL;
     
@@ -3823,8 +3831,15 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
         ValidateAbortFuncs();
         op = CompileExpression(irl, retval, NULL);
-        EmitMove(irl, GetArgReg(0), op);
-        EmitOp1(irl, OPC_CALL, abortfunc);
+        // check which buffer to use
+        if (ast->right) {
+            buf = CompileExpression(irl, ast->right, NULL);
+        } else {
+            buf = abortchain;
+        }
+        EmitMove(irl, GetArgReg(0), buf);
+        EmitMove(irl, GetArgReg(1), op);
+        EmitOp1(irl, OPC_CALL, longjmpfunc);
         break;
     case AST_LABEL:
         EmitDebugComment(irl, ast);
@@ -4639,8 +4654,9 @@ static const char *builtin_lmm_p1 =
  */
 static const char *builtin_abortcode_p1 =
     "__setjmp\n"
+    "    mov result1, #0\n"
+    "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
-    "    add arg01, #4\n"  /* skip over thrown error value */
     "    wrlong pc, arg01\n"
     "    add arg01, #4\n"
     "    wrlong sp, arg01\n"
@@ -4650,34 +4666,33 @@ static const char *builtin_abortcode_p1 =
     "    wrlong objptr, arg01\n"
     "    add arg01, #4\n"
     "    wrlong __setjmp_ret, arg01\n"
-    "    mov result1, #0\n"
     "__setjmp_ret\n"
     "    ret\n"
-    "__abort\n"
-    "    mov  result1, abortchain wz\n"
+    // __longjmp(buf, n) should jump to buf and return n
+    "__longjmp\n"
+    "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
-    "    wrlong arg01, result1\n"
-    "    add result1, #4\n"
-    "    rdlong pc, result1\n"
-    "    add result1, #4\n"
-    "    rdlong sp, result1\n"
-    "    add result1, #4\n"
-    "    rdlong fp, result1\n"
-    "    add result1, #4\n"
-    "    rdlong objptr, result1\n"
-    "    add result1, #4\n"
-    "    rdlong __abort_ret, result1\n"
-    "    mov result1, #1\n"
-    "__abort_ret\n"
+    "    mov result1, arg02\n"
+    "    mov result2, #1\n"
+    "    rdlong pc, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong sp, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong objptr, arg01\n"
+    "    add arg01, #4\n"
+    "    rdlong __longjmp_ret, arg01\n"
+    "    nop\n"
+    "__longjmp_ret\n"
     "    ret\n"
     ;
 
 static const char *builtin_abortcode_p2 =
-    "abortchain long 0\n"
     "__setjmp\n"
-    "    wrlong abortchain, arg01\n"
+    "    mov result1, #0\n"
+    "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
-    "    add arg01, #4\n"
     "    wrlong pc, arg01\n"
     "    add arg01, #4\n"
     "    wrlong ptra, arg01\n"
@@ -4686,15 +4701,15 @@ static const char *builtin_abortcode_p2 =
     "    add arg01, #4\n"
     "    wrlong objptr, arg01\n"
     "    add arg01, #4\n"
-    "    wrlong __setjmp_ret, arg01\n"
-    "    mov result2, #0\n"
-    "__setjmp_ret\n"
+    "    rdlong arg02, ptra\n" // read return value from stack
+    "    wrlong arg02, arg01\n"
     "    ret\n"
-    "__abort\n"
-    "    mov  result1, arg01\n"
-    "    mov  arg01, abortchain\n"
-    "    rdlong abortchain, arg01\n"
-    "    add arg01, #4\n"
+    // __longjmp(buf, n) should jump to buf and return n
+    "__longjmp\n"
+    "    cmp    arg01, #0 wz\n"
+    " if_z jmp #cogexit\n"
+    "    mov result1, arg02\n"
+    "    mov result2, #1\n"
     "    rdlong pc, arg01\n"
     "    add arg01, #4\n"
     "    rdlong ptra, arg01\n"
@@ -4703,9 +4718,8 @@ static const char *builtin_abortcode_p2 =
     "    add arg01, #4\n"
     "    rdlong objptr, arg01\n"
     "    add arg01, #4\n"
-    "    rdlong __abort_ret, arg01\n"
-    "    mov result2, #1\n"
-    "__abort_ret\n"
+    "    rdlong arg01,arg01\n"
+    "    wrlong arg01, ptra\n"
     "    ret\n"
     ;
 
@@ -4752,7 +4766,7 @@ EmitBuiltins(IRList *irl)
         (void)GetOneGlobal(REG_REG, "itmp2_", 0);
         (void)GetOneGlobal(REG_REG, "result1", 0);
     }
-    if (abortfunc) {
+    if (longjmpfunc) {
         Operand *loop;
 
         if (gl_p2) {
