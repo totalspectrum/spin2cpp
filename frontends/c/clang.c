@@ -76,8 +76,9 @@ again:
                             NewAST(AST_STMTLIST, stmt->left, NULL));
         } else {
             ERROR(stmt, "Internal error, got default when not expecting it");
+            return switchstmt;
         }
-        return switchstmt;
+        goto again;
     case AST_QUIT:
         if (endswitch) {
             *stmt = *NewAST(AST_GOTO, endswitch, NULL);
