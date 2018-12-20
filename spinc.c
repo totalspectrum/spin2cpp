@@ -412,8 +412,14 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type)
 void
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
+    const char *name;
     if (!typ) {
         typ = InferTypeFromName(identifier);
+    }
+    name = GetIdentifierName(identifier);
+    Symbol *sym = FindSymbol(&P->objsyms, name);
+    if (sym && sym->type == SYM_VARIABLE) {
+        return;
     }
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
