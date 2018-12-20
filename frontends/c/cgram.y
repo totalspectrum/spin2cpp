@@ -1078,9 +1078,34 @@ initializer
 initializer_list
 	: initializer
             { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+        | designation initializer
+            {
+                SYNTAX_ERROR("designators not supported yet");
+                $$ = NULL;
+            }
 	| initializer_list ',' initializer
             { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+        | initializer_list ',' designation initializer
+            {
+                SYNTAX_ERROR("designators not supported yet");
+                $$ = $1;
+            }
 	;
+
+designation
+        : designator_list '='
+            { $$ = $1; };
+        ;
+
+designator_list
+        : designator
+        | designator_list designator
+        ;
+
+designator
+         : '[' constant_expression ']'
+         | '.' C_IDENTIFIER
+         ;
 
 statement
 	: labeled_statement
@@ -1112,13 +1137,10 @@ labeled_statement
 compound_statement
 	: compound_statement_open compound_statement_close
             { $$ = NULL; }
-	| compound_statement_open statement_list compound_statement_close
+	| compound_statement_open block_item_list compound_statement_close
             { $$ = $2; }
-	| compound_statement_open declaration_list compound_statement_close
-            { $$ = $2; }
-	| compound_statement_open declaration_list statement_list compound_statement_close
-            { $$ = AddToList($2, $3); }
 	;
+
 compound_statement_open:
   '{'
     { PushCurrentTypes(); }
@@ -1129,10 +1151,28 @@ compound_statement_close:
     { PopCurrentTypes(); }
   ;
 
+block_item_list
+   : block_item
+       { $$ = $1; }
+   | block_item_list block_item
+       { $$ = AddToList($1, $2); }
+   ;
+
+block_item
+   : declaration
+       {
+           AST *decl = MakeDeclaration($1);
+           $$ = decl;
+       }
+   | statement
+       { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+   ;
+
 asm_statement:
   C_ASM '{' asmlist '}'
     { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
-;
+  ;
+
 asmlist:
   asmline
   { $$ = $1; }
@@ -1240,13 +1280,6 @@ declaration_list
             { $$ = MakeDeclaration($1); }
 	| declaration_list declaration
             { $$ = AddToList($1, MakeDeclaration($2)); }
-	;
-
-statement_list
-	: statement
-            { $$ = NewAST(AST_STMTLIST, $1, NULL); }
-	| statement_list statement
-            { $$ = AddToList($1, NewAST(AST_STMTLIST, $2, NULL)); }
 	;
 
 expression_statement
@@ -1441,7 +1474,7 @@ cgramyyerror(const char *msg)
             fprintf(stderr, "unexpected identifier `%s'", last_ast->d.string);
             msg += strlen("unexpected identifier");
         }
-        if (!strncmp(msg, "unexpected type name", strlen("unexpected type name")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
+        else if (!strncmp(msg, "unexpected type name", strlen("unexpected type name")) && last_ast && last_ast->kind == AST_IDENTIFIER) {
             fprintf(stderr, "unexpected type name `%s'", last_ast->d.string);
             msg += strlen("unexpected type name");
         }
