@@ -10,7 +10,7 @@ struct timeval {
   suseconds_t tv_usec;
 };
 
-int gettimeofday(struct timeval *tv, void *unused);
-int settimeofday(const struct timeval *tv, const void *unused);
+int gettimeofday(struct timeval *tv, void *unused) _IMPL("libc/time/gettimeofday.c");
+int settimeofday(const struct timeval *tv, const void *unused) _IMPL("libc/time/settimeofday.c");
 
 #endif
