@@ -13,10 +13,10 @@ An incomplete list of things that still need to be implemented:
   * variable scope inside statement blocks (right now all local variables in a function share the same scope)
   * 64 bit integers (long long)
   * struct passing and return
+  * struct initialization
   * proper handling of large arrays on the stack
   * most of the C standard library
   * some c99 syntax (e.g. variable declarations mixed with statements) are not handled
-  * struct types in different files are handled incorrectly, causing spurious warnings
   
 ## Introduction
 

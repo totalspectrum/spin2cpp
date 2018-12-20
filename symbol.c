@@ -16,7 +16,7 @@
  * hash function
  */
 unsigned
-SymbolHash(const char *str)
+RawSymbolHash(const char *str)
 {
     unsigned hash = 987654321;
     unsigned c;
@@ -26,6 +26,13 @@ SymbolHash(const char *str)
         hash = hash * 65537;
         hash = hash ^ c;
     }
+    return hash;
+}
+
+unsigned
+SymbolHash(const char *str)
+{
+    unsigned hash = RawSymbolHash(str);
     return hash % SYMTABLE_HASH_SIZE;
 }
 

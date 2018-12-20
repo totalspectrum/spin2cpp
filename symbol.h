@@ -59,6 +59,7 @@ typedef struct symtab {
     struct symtab *next;
 } SymbolTable;
 
+unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
