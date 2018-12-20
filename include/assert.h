@@ -14,9 +14,13 @@
 extern "C" {
 #endif
 
-_NORETURN void abort(void);
+    _NORETURN void abort(void) _IMPL("libc/stdlib/abort.c");
+#ifdef __FLEXC__
+#define __eprintf(expr, line, file) __builtin_printf("assertion %s failed at line %d of %s", expr, line, file)
+#else    
 extern void __eprintf( const char *expr, unsigned long line, const char *filename);
-
+#endif
+    
 /**
  * @brief Abort the program if the assertion is false
  * @details

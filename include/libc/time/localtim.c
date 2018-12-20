@@ -8,7 +8,7 @@
 #include <time.h>
 #include <ctype.h>
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FLEXC__)
 struct TLS {
   struct tm time_temp;
 } foo;

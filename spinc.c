@@ -412,11 +412,19 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type)
 void
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
+    AST *sub;
     const char *name;
     if (!typ) {
         typ = InferTypeFromName(identifier);
     }
-    name = GetIdentifierName(identifier);
+    sub = identifier;
+    if (sub && sub->kind == AST_ASSIGN) {
+        sub = sub->left;
+    }
+    while (sub && sub->kind == AST_ARRAYDECL) {
+        sub = sub->left;
+    }
+    name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
     if (sym && sym->type == SYM_VARIABLE) {
         return;
