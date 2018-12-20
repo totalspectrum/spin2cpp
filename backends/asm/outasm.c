@@ -2410,9 +2410,6 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         AST *ftype;
         if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF) {
             ftype = ExprType(expr->left);
-            if (!IsFunctionType(ftype)) {
-                ERROR(expr, "Internal error, expected function type");
-            }
             if (ftype && ftype->kind == AST_PTRTYPE) {
                 ftype = RemoveTypeModifiers(ftype->left);
             }
