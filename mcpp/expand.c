@@ -1289,7 +1289,7 @@ static char *   stringize(
  * Make a string literal from an argument.
  */
 {
-
+    FILEINFO *  file;
     int         stray_bsl = FALSE;          /* '\\' not in literal  */
     char *      out_p = out;
     int         token_type;
@@ -1313,6 +1313,7 @@ static char *   stringize(
         }
     }
 
+    file = unget_string( argp, NULL);
     len = strlen( infile->buffer);  /* Sequence ends with RT_END    */
     if (trace_macro) {          /* Remove suffixed argument closing magics  */
         /* There are 0 or more argument closing magic sequences and */
