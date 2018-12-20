@@ -61,6 +61,7 @@ int IsFunctionType(AST *typ);
 int IsStringType(AST *typ);
 int IsFloatType(AST *typ);
 int IsIntType(AST *typ);
+int IsVoidType(AST *typ);
 int IsUnsignedType(AST *typ);
 int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);

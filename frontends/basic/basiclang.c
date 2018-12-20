@@ -1266,6 +1266,10 @@ doCast(AST *desttype, AST *srctype, AST *src)
     AST *expr = src;
     const char *name;
     
+    if (IsVoidType(desttype)) {
+        // (void)x ignores x
+        return src;
+    }
     if (!srctype || IsGenericType(srctype)) {
         return src;
     }
