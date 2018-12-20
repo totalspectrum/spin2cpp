@@ -2905,23 +2905,41 @@ getCToken(LexStream *L, AST **ast_ptr)
     if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
-        c = parseNumber(L, 10, &ast->d.ival);
+        if (c == 0) {
+            // 0ddd is an octal number in C
+            c = parseNumber(L, 8, &ast->d.ival);
+        } else {
+            c = parseNumber(L, 10, &ast->d.ival);
+        }
         if (c == SP_FLOATNUM) {
             ast->kind = AST_FLOAT;
 	    c = C_CONSTANT;
-	} else if (ast->d.ival == 0) {
-            // check for hex or binary prefixes like 0x or 0h
-            int c2;
-            c2 = lexgetc(L);
-            if (c2 == 'h' || c2 == 'H' || c2 == 'x' || c2 == 'X') {
-                c = parseNumber(L, 16, &ast->d.ival);
-            } else if (c2 == 'b' || c2 == 'B') {
-                c = parseNumber(L, 2, &ast->d.ival);
+	} else {
+            int c2 = lexgetc(L);
+            int needunget = 1;
+            
+            if (ast->d.ival == 0) {
+                // check for hex or binary prefixes like 0x or 0h
+                if (c2 == 'x' || c2 == 'X') {
+                    c = parseNumber(L, 16, &ast->d.ival);
+                    needunget = 0;
+                } else if (c2 == 'b' || c2 == 'B') {
+                    c = parseNumber(L, 2, &ast->d.ival);
+                    needunget = 0;
+                }
             } else {
+                if (c2 == 'U' || c2 == 'u') {
+                    // unsigned flag, ignore for now
+                    c2 = lexgetc(L);
+                }
+                if (c2 == 'L' || c2 == 'l') {
+                    // long constant flag, ignore for now
+                    needunget = 0;
+                }
+            }
+            if (needunget) {
                 lexungetc(L, c2);
             }
-            c = C_CONSTANT;
-	} else {
             c = C_CONSTANT;
         }
     } else if (isIdentifierStart(c)) {
