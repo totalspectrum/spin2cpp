@@ -1226,6 +1226,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                       NULL);
         *astptr = expr;
     }
+    if (IsPointerType(desttype) && srctype && srctype->kind == AST_FUNCTYPE) {
+        srctype = NewAST(AST_PTRTYPE, srctype, NULL);
+    }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
             WARNING(line, "incompatible pointer types in %s", msg);
