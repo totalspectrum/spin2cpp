@@ -243,12 +243,10 @@ MarkSystemFuncUsed(const char *name)
         ERROR(NULL, "Internal error could not find %s", name);
         return;
     }
-    if (sym->type != SYM_FUNCTION) {
-        ERROR(NULL, "Internal error: %s is not a function", name);
-        return;
+    if (sym->type == SYM_FUNCTION) {
+        calledf = (Function *)sym->val;
+        calledf->used_as_ptr = 1;
     }
-    calledf = (Function *)sym->val;
-    calledf->used_as_ptr = 1;
 }
 
 //

@@ -1679,14 +1679,11 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             return NULL;
         }
         sym = LookupMemberSymbol(objref, objtype, thename, NULL);
-        if (!sym || sym->type != SYM_FUNCTION) {
-            if (errflag)
-                ERROR(ast, "%s is not a function", thename);
-            return NULL;
-        }
-        f = (Function *)sym->val;
-        if (!f->is_public) {
-            ERROR(ast, "%s is a private method", thename);
+        if (sym && sym->type == SYM_FUNCTION) {
+            f = (Function *)sym->val;
+            if (!f->is_public) {
+                ERROR(ast, "%s is a private method", thename);
+            }
         }
     } else {
         sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
@@ -1838,12 +1835,17 @@ IsBoolCompatibleType(AST *type)
     }
 }
 
+// also returns TRUE for pointers to functions,
+// which may be implicitly dereferenced
 int
 IsFunctionType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    if (type->kind == AST_FUNCTYPE)
+    if (type->kind == AST_PTRTYPE) {
+        type = RemoveTypeModifiers(type->left);
+    }
+    if (type && type->kind == AST_FUNCTYPE)
         return 1;
     return 0;
 }
@@ -2018,6 +2020,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
                 typexpr = sym->val;
+                if (typexpr && typexpr->kind == AST_PTRTYPE) {
+                    typexpr = RemoveTypeModifiers(typexpr->left);
+                }
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
                     return typexpr->left;
                 }

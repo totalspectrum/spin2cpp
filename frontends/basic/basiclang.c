@@ -1416,7 +1416,10 @@ AST *CheckTypes(AST *ast)
             AST *expectType, *passedType;
             AST *functype;
 
-            functype = ExprType(ast->left);
+            functype = RemoveTypeModifiers(ExprType(ast->left));
+            if (functype && functype->kind == AST_PTRTYPE) {
+                functype = RemoveTypeModifiers(functype->left);
+            }
             if (IsFunctionType(functype)) {
                 calledParamList = functype->right;
                 while (calledParamList && actualParamList) {
