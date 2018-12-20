@@ -369,7 +369,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     if (!identifier) {
         // use file name and line number
         char buf[128];
-        unsigned int hash = SymbolHash(current->Lptr->fileName);
+        unsigned int hash = RawSymbolHash(current->Lptr->fileName);
         sprintf(buf, "_anon_%08x%08x", hash, current->Lptr->lineCounter);
         identifier = AstIdentifier(strdup(buf));
     }
@@ -557,7 +557,7 @@ postfix_expression
             {
                 $$ = NewAST(AST_SETJMP, $3, NULL);
             }
-        | C_BUILTIN_LONGJMP '(' expression ',' expression ')'
+        | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);
             }
