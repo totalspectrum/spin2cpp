@@ -89,6 +89,7 @@ close
 const
 continue
 cpu
+data
 declare
 delete
 dim
@@ -123,7 +124,9 @@ print
 program
 ptr
 put
+read
 rem
+restore
 return
 select
 self
@@ -682,6 +685,10 @@ Note that `cpu` is not a function call, it is a special form which does not eval
 
 `cpu` returns the CPU id ("cog id") of the CPU that the new function is running on. If no free CPU is available, `cpu` returns -1.
 
+### DATA
+
+Keyword reserved for future use.
+
 ### DECLARE
 
 Keyword reserved for future use.
@@ -1214,9 +1221,17 @@ This keyword is reserved for future use.
 
 The statements in the top level of the file (not inside any subroutine or function) are placed in a method called `program`. This is only really useful for calling them from another language (for example a Spin program using a BASIC program as an object).
 
+### READ
+
+Keyword reserved for future use.
+
 ### REM
 
 Introduces a comment, which continues until the end of the line. A single quote character `'` may also be used for this.
+
+### RESTORE
+
+Keyword reserved for future use.
 
 ### RETURN
 
