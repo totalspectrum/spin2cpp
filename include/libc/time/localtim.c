@@ -353,9 +353,11 @@ int indst(const struct tm *t)
 }
 
 
+#ifdef __GNUC__
 /*
  * provide weak aliases (so the user can override) for gmtime_r and localtime_r
  */
 
 struct tm *gmtime_r(const time_t *t, struct tm *stm) __attribute__((weak,alias("_gmtime_r")));
 struct tm *localtime_r(const time_t *t, struct tm *stm) __attribute__((weak,alias("_localtime_r")));
+#endif
