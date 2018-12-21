@@ -20,6 +20,17 @@ VAR
 #include <stdio.h>
 #include <stdlib.h>
 }
+#else
+#ifdef __P2__
+#define DIRR DIRB   
+#define OUTR OUTB
+#define INR  INB
+#else
+#define DIRR DIRA
+#define OUTR OUTA
+#define INR  INA
+#endif
+
 #endif
 
 ''
@@ -44,28 +55,17 @@ PUB tx(c) | val, waitcycles
   putchar(c);
   }
 #else
-#ifdef __P2__
-  OUTB |= txmask
-  DIRB |= txmask
-#else
-  OUTA |= txmask
-  DIRA |= txmask
-#endif
+  OUTR |= txmask
+  DIRR |= txmask
   val := (c | 256) << 1
-  waitcycles := CNT
+  waitcycles := CNT + bitcycles
   repeat 10
-     waitcnt(waitcycles += bitcycles)
-#ifdef __P2__
+     waitcycles += bitcycles
+     waitcnt(waitcycles)
      if (val & 1)
-       OUTB |= txmask
+       OUTR |= txmask
      else
-       OUTB &= !txmask
-#else
-     if (val & 1)
-       OUTA |= txmask
-     else
-       OUTA &= !txmask
-#endif
+       OUTR &= !txmask
      val >>= 1
 #endif
 
@@ -105,24 +105,30 @@ PUB hex(val, digits) | shft, x
     tx(x)
 
 PUB rx | waitcycles, cycles, mask, val, x
+#ifdef PC
+  {++
+    val = getchar();
+  }
+#else
   mask := rxmask
   cycles := bitcycles
-  DIRA &= !mask  ' set for input
+  DIRR &= !mask  ' set for input
   '' wait for start bit
   repeat
-    x := INA
+    x := INR
   while ( (x & mask) <> 0 )
   val := $0
   waitcycles := CNT + (cycles >> 1)  '' sync for one half bit
   repeat 8
       val := val >> 1
       waitcnt(waitcycles += cycles)
-      x := INA
+      x := INR
       if ( (x & mask) <> 0 )
         val |= $80
   '' wait for stop bit?
   '' skip it for now
   '' waitpeq(mask, mask, 0)
+#endif
   return val
 
 ''
