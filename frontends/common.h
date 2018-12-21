@@ -303,6 +303,7 @@ struct modulestate {
     char codeCog; // if 1, module should be placed in COG memory
     char datHasCode; // if 1, DAT section has PASM code in it
     char gasPasm;    // if 1, output is in GAS format
+    char isUnion;    // if 1, module actually represents a union
     
     /* back end specific flags */
     void *bedata;
@@ -403,7 +404,7 @@ typedef struct Reloc {
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
-int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset);
+int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset, int isUnion);
 
 // find the variable symbol for an identifier or array decl
 Symbol *VarSymbol(Function *func, AST *ast);

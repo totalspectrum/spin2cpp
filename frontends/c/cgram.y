@@ -312,6 +312,9 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
         ERROR(astlist, "Internal error, expected stmt list");
         return;
     }
+    if (is_union) {
+        P->isUnion = 1;
+    }
     while (astlist) {
         ast = astlist->left;
         astlist = astlist->right;
@@ -338,6 +341,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             MaybeDeclareMemberVar(P, idlist, typ);
         }
     }
+
 }
 
 // make a new struct

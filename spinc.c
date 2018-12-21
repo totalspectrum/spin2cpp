@@ -207,9 +207,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 }
             }
             // declare all the variables
-            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion);
         } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
-            offset = EnterVars(SYM_VARIABLE, &current->objsyms, curtype, idlist, offset);
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion);
         }
     }
     return offset;
