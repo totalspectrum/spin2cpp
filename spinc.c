@@ -153,6 +153,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     AST *ast;
     AST *curtype;
     int curtypesize;
+    int isUnion = P->isUnion;
     
     for (upper = P->pendingvarblock; upper; upper = upper->right) {
         AST *idlist;
@@ -196,6 +197,12 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         default:
             ERROR(ast, "bad type  %d in variable list\n", ast->kind);
             return offset;
+        }
+        if (isUnion) {
+            curtypesize = (curtypesize+3) & ~3;
+            if (curtypesize > P->varsize) {
+                P->varsize = curtypesize;
+            }
         }
         if (basetypesize == 0) {
             // round offset up to necessary alignment
@@ -439,8 +446,13 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 void
 DeclareMemberVariables(Module *P)
 {
-    int offset = P->varsize;
+    int offset;
 
+    if (P->isUnion) {
+        offset = 0;
+    } else {
+        offset = P->varsize;
+    }
     if (P->lastLanguage == LANG_SPIN) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
@@ -450,9 +462,11 @@ DeclareMemberVariables(Module *P)
     } else {
         offset = DeclareMemberVariablesOfSize(P, 0, offset);
     }
-    // round up to next LONG boundary
-    offset = (offset + 3) & ~3;
-    P->varsize = offset;
+    if (!P->isUnion) {
+        // round up to next LONG boundary
+        offset = (offset + 3) & ~3;
+        P->varsize = offset;
+    }
     P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
     P->pendingvarblock = NULL;
 }
