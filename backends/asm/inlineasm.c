@@ -130,6 +130,10 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
             *effects |= OPEFFECT_FORCEABS;
         }
         return r;
+    } else {
+        if (expr->kind == AST_OPERATOR && IsConstExpr(expr)) {
+            return NewImmediate(EvalPasmExpr(expr));
+        }
     }
     
     ERROR(expr, "Operand too complex for inline assembly");
