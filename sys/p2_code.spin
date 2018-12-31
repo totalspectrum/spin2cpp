@@ -55,6 +55,10 @@ pri clkset(mode, freq)
   CLKFREQ := freq
   CLKMODE := mode
   asm
+    hubset #0
+    hubset mode
+    waitx ##20_000_000/100
+    add  mode, #3
     hubset mode
   endasm
 pri reboot
@@ -74,28 +78,36 @@ pri _coginit(id, code, param)
  if_c neg id, #1
   endasm
   return id
+
+dat
+_bitcycles long 80_000_000 / 115_200
+
+pri _setbaud(rate)
+  _bitcycles := clkfreq / rate
+  
 con
  _rxpin = 31
  _txpin = 30
- _bitcycles = 80_000_000 / 115_200
-pri _tx(c) | val, nextcnt
+pri _tx(c) | val, nextcnt, bitcycles
+  bitcycles := _bitcycles
   DIRB[_txpin] := 1
   OUTB[_txpin] := 1
   val := (c | 256) << 1
   nextcnt := cnt
   repeat 10
-    waitcnt(nextcnt += _bitcycles)
+    waitcnt(nextcnt += bitcycles)
     OUTB[_txpin] := val
     val >>= 1
-pri _rx | val, waitcycles, i
+pri _rx | val, waitcycles, i, bitcycles
+  bitcycles := _bitcycles
   DIRB[_rxpin] := 0
   repeat
   while INB[_rxpin] <> 0
-  waitcycles := cnt + (_bitcycles>>1)
+  waitcycles := cnt + (bitcycles>>1)
   val := 0
   repeat 8
-    waitcnt(waitcycles += _bitcycles)
+    waitcnt(waitcycles += bitcycles)
     val := (INB[_rxpin] << 7) | (val>>1)
-  waitcnt(waitcycles + _bitcycles)
+  waitcnt(waitcycles + bitcycles)
   _tx(val)
   return val
