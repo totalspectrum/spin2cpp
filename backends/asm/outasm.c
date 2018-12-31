@@ -5043,7 +5043,7 @@ EmitMain_P2(IRList *irl, Module *P)
     } else {
         EmitMove(irl, stackptr, stacklabel);
     }
-    EmitOp1(irl, OPC_HUBSET, NewImmediate(255));
+    //EmitOp1(irl, OPC_HUBSET, NewImmediate(0));
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {
