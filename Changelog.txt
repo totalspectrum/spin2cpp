@@ -1,4 +1,6 @@
 Version 3.9.13
+- Fixed runtime to get P2 code running on P2 EVAL boards
+- Added _setbaud function to change baud rate
 - Allow coginit/cognew of function pointers and functions from other
   objects.
 - Fixed the BASIC HEAPSIZE constant.

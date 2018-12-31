@@ -614,6 +614,20 @@ Using Spin objects with `class using` is straightforward, but there are some thi
   * Spin does not have any notion of types, so most Spin functions will return type `any` and take parameters of type `any`. This can cause problems if you expect them to return something special like a pointer or float and want to use them in the middle of an expression. It's probably best to just directly assign the results of Spin methods to a typed variable, and then use that variable in the expression instead
   * Spin treats strings differently than BASIC does. For example, in the Spin expression `ser.tx("A")`, `"A"` is an integer (a single element list). That would be written in BASIC as `ser.tx(asc("A"))`. Conversely, in Spin you have to write `ser.str(string("hello"))` where in BASIC you would write just `ser.str("hello")`.
   
+### CLKSET
+
+```
+  clkset(mode, freq)
+```
+Propeller built in function. On the P1, this acts the same as the Spin `clkset` function. On P2, this does two `hubset` instructions, the first to set the oscillator and the second (after a short delay) to actually enable it. The `mode` parameter gives the setup value for the oscillator, and the second hubset to enable the oscillator uses `mode + 0b11` as its parameter. For example:
+```
+  clkset(0x010c3f04, 160_000_000)  ' set P2 Eval board to 160 MHz
+```
+
+After a `clkset` it is usually necessary to call `_setbaud` to reset the serial baud rate correctly.
+
+Also note that no sanity check is performed on the parameters; it is up to the programmer to ensure that the frequency actually matches the mode on the board being used.
+
 ### CLOSE
 
 Closes a file previously opened by `open`. This causes the `closef` function specified in the device driver (if any) to be called, and then invalidates the handle so that it may not be used for further I/O operations. Any attempt to use a closed handle produces no result.
@@ -1286,6 +1300,14 @@ Indicates the current object. Not implemented yet.
 ### SENDRECVDEVICE
 
 A built-in function rather than a keyword. `SendRecvDevice(sendf, recvf, closef)` constructs a simple device driver based on three functions: `sendf` to send a single byte, `recvf` to receive a byte (or return -1 if no byte is available), and `closef` to be called when the device is closed. The value(s) returned by `SendRecvDevice` is only useful for passing directly to the `open` statement, and should not be used in any other context (at least not at this time).
+
+### _SETBAUD
+
+Set up the serial port baud rate, based on the current clock frequency.
+```
+  _setbaud(115_200) ' set baud rate to 115_200
+```
+The default serial rate is 115_200 baud, and assuming a clock frequency of 80_000_000. If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
 
 ### SHORT
 

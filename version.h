@@ -7,7 +7,7 @@
 #define VERSION_MAJOR 3
 #define VERSION_MINOR 9
 #define VERSION_REV   13
-#define BETA "-beta"
+//#define BETA "-beta"
 
 extern char version_string[];
 
