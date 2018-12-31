@@ -10,6 +10,7 @@ Version 3.9.13
 - Fixed a preprocessor bug where defines starting with _ were not expanded
 - Fixed "dim shared" syntax to match other dim syntaxes
 - Reserved DATA, READ, RESTORE keywords in BASIC
+- Fixed some P2 optimization bugs
 
 Version 3.9.12
 - Fixed a BASIC operator precedence problem (<< and >> should have
