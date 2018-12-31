@@ -1156,6 +1156,7 @@ HasSideEffects(IR *ir)
     case OPC_COGSTOP:
     case OPC_COGID:
     case OPC_ADDCT1:
+    case OPC_HUBSET:
         return true;
     default:
         return false;
