@@ -533,7 +533,8 @@ void PerformLoopOptimization(Module *P);
 // simplify statments like a^=b to a = a^b
 void SimplifyAssignments(AST **astptr);
 
-#define P2_HUB_BASE 0x400
+//#define P2_HUB_BASE 0x400 // hmmm, 0x400 should work, but we must have a bug
+#define P2_HUB_BASE 0x800
 
 /*
  * functions to initialize lexers

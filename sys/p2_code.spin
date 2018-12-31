@@ -111,3 +111,15 @@ pri _rx | val, waitcycles, i, bitcycles
   waitcnt(waitcycles + bitcycles)
   _tx(val)
   return val
+pri _call_method(o, f, x=0) | r
+  asm
+    wrlong objptr, ptra
+    add	   ptra, #4
+    mov    objptr, o
+    mov    arg01, x
+    calla  f
+    sub	   ptra, #4
+    rdlong objptr, ptra
+    mov    r, result1
+  endasm
+  return r

@@ -4539,7 +4539,7 @@ static const char *builtin_div_p2 =
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
-"       call    #unsdivide_\n"
+"       calla   #unsdivide_\n"
 "       test    itmp2_,#1        wc       'restore sign, remainder\n"
 "       negc    muldiva_,muldiva_ \n"
 "       test    itmp2_,#%10      wc       'restore sign, division result\n"

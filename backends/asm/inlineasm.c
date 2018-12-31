@@ -124,14 +124,17 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
             *effects |= OPEFFECT_FORCEHUB;
         }
         return r;
+    } else if (expr->kind == AST_HWREG) {
+        HwReg *hw = expr->d.ptr;
+        return GetOneGlobal(REG_HW, hw->name, 0);
     } else if (expr->kind == AST_CATCH) {
         r = CompileInlineOperand(irl, expr->left, effects);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEABS;
         }
         return r;
-    } else {
-        if (expr->kind == AST_OPERATOR && IsConstExpr(expr)) {
+    } else if (expr->kind == AST_OPERATOR) {
+        if (IsConstExpr(expr)) {
             return NewImmediate(EvalPasmExpr(expr));
         }
     }

@@ -100,18 +100,6 @@ pri _basic_open(h, sendf, recvf, closef)
   bas_rx_handles[h] := recvf
   bas_close_handles[h] := closef
 
-pri _call_method(o, f, x=0) | r
-  asm
-    wrlong objptr, sp
-    add    sp, #4
-    mov    objptr, o
-    mov    arg01, x
-    call   f
-    sub    sp, #4
-    rdlong objptr, sp
-    mov    r, result1
-  endasm
-  return r
   
 pri _basic_close(h) | ptr, t, f, o
   if (h +> 7)

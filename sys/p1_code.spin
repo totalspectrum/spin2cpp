@@ -127,3 +127,16 @@ pri _rx | val, rxmask, waitcycles, i, bitcycles
 
 pri _setbaud(rate)
   _bitcycles := clkfreq / rate
+
+pri _call_method(o, f, x=0) | r
+  asm
+    wrlong objptr, sp
+    add    sp, #4
+    mov    objptr, o
+    mov    arg01, x
+    call   f
+    sub    sp, #4
+    rdlong objptr, sp
+    mov    r, result1
+  endasm
+  return r
