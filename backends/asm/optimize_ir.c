@@ -58,7 +58,6 @@ InstrReadsDst(IR *ir)
   case OPC_RDBYTE:
   case OPC_RDWORD:
   case OPC_RDLONG:
-  case OPC_REPEAT_END: // this is a dummy
     return false;
   default:
     break;
@@ -78,7 +77,6 @@ InstrSetsDst(IR *ir)
   case OPC_WRLONG:
   case OPC_WRWORD:
   case OPC_WRBYTE:
-  case OPC_REPEAT_END:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
@@ -523,7 +521,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
             return false;
         }
-        if (ir->cond == COND_TRUE && (ir->opc == OPC_JUMP || ir->opc == OPC_REPEAT_END)) {
+        if (ir->cond == COND_TRUE && ir->opc == OPC_JUMP) {
             return true;
         }
     }
