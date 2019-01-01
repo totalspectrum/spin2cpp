@@ -1570,8 +1570,8 @@ static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 // the C version of the name
 // an alternate form to use
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "CLKFREQ", NULL, 0, NULL },
-    { "clkmode", 0, defaultVariable, "CLKMODE", NULL, 0, NULL },
+    { "clkfreq", 0, defaultVariable, "_clkfreq", NULL, 0, NULL },
+    { "clkmode", 0, defaultVariable, "_clkmode", NULL, 0, NULL },
     { "clkset", 2, defaultBuiltin, "clkset", "_clkset", 0, NULL },
 
     { "cogstop", 1, defaultBuiltin, "cogstop", "__builtin_propeller_cogstop", 0, NULL },

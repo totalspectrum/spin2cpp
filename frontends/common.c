@@ -74,6 +74,51 @@ const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
 char *gl_header2 = NULL;
 
+typedef struct alias {
+    const char *name;
+    const char *alias;
+} Aliases;
+
+Aliases spinalias[] = {
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
+    { NULL, NULL },
+};
+Aliases basicalias[] = {
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
+    { NULL, NULL },
+};
+Aliases calias[] = {
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
+    { NULL, NULL },
+};
+
+//
+// create aliases appropriate to the language
+//
+static void
+initSymbols(Module *P, int language)
+{
+    Aliases *A;
+    switch (language) {
+    case LANG_BASIC:
+        A = basicalias;
+        break;
+    case LANG_C:
+        A = calias;
+        break;
+    default:
+        A = spinalias;
+        break;
+    }
+    while (A && A->name) {
+        AddSymbol(&P->objsyms, A->name, SYM_ALIAS, (void *)A->alias);
+        A++;
+    }
+}
+
 /*
  * allocate a new parser state
  */ 
@@ -115,9 +160,12 @@ NewModule(const char *fullname, int language)
         P->objsyms.next = &globalModule->objsyms;
     } else if (language == LANG_BASIC) {
         P->objsyms.next = &basicReservedWords;
+    } else if (language == LANG_C) {
+        P->objsyms.next = &cReservedWords;
     } else {
         P->objsyms.next = &spinReservedWords;
     }
+    initSymbols(P, language);
     P->body = NULL;
     return P;
 }

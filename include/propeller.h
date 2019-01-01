@@ -10,4 +10,6 @@
 #include <propeller1.h>
 #endif
 
+#define CLKFREQ _clkfreq
+
 #endif
