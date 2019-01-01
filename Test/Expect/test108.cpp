@@ -3,13 +3,13 @@
 
 void test108::Main(void)
 {
-  DIRA |= (255 << 16);
+  _DIRA |= (255 << 16);
   Show(12);
-  OUTA ^= 0xff0000;
+  _OUTA ^= 0xff0000;
 }
 
 void test108::Show(int32_t X)
 {
-  OUTA = (OUTA & 0xff00ffff) | ((X & 0xff) << 16);
+  _OUTA = (_OUTA & 0xff00ffff) | ((X & 0xff) << 16);
 }
 

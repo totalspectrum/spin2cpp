@@ -6,7 +6,7 @@ char test073::dat[] = {
 };
 int32_t test073::Flip(int32_t X)
 {
-  OUTA = (OUTA & 0xfffffff0) | 0xc;
+  _OUTA = (_OUTA & 0xfffffff0) | 0xc;
   return ((int32_t *)&dat[0])[0];
 }
 

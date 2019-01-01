@@ -8,14 +8,14 @@ void test047::Test(int32_t C)
     switch(C) {
     case 9:
       do {
-        OUTA = Cols++;
+        _OUTA = Cols++;
       } while (Cols & 0x7);
       break;
     case 13:
-      OUTA = C;
+      _OUTA = C;
       break;
     default:
-      OUTA = Flag;
+      _OUTA = Flag;
       break;
     }
     break;

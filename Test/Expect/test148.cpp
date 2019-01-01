@@ -3,7 +3,7 @@
 
 void test148::Func(int32_t Y)
 {
-  OUTA = Y;
+  _OUTA = Y;
 }
 
 void test148::Setclr(void)

@@ -9,9 +9,9 @@ void gtest02::run(void)
 #line 8 "gtest02.spin"
   for(i = 1; i < 16; i++) {
 #line 4 "gtest02.spin"
-    now = CNT;
+    now = _CNT;
     x = fibo(i);
-    elapsed = CNT - now;
+    elapsed = _CNT - now;
   }
 }
 

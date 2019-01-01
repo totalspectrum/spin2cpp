@@ -3,6 +3,6 @@
 
 void test101::Foo(void)
 {
-  OUTA = (int32_t)0xbf800000;
+  _OUTA = (int32_t)0xbf800000;
 }
 

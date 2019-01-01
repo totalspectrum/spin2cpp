@@ -3,6 +3,6 @@
 
 int32_t test124::Getval(void)
 {
-  return (__builtin_propeller_rev(((OUTA >> 2) & 0x3), 32 - 2));
+  return (__builtin_propeller_rev(((_OUTA >> 2) & 0x3), 32 - 2));
 }
 

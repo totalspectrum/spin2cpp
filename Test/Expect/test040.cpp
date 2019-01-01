@@ -4,7 +4,7 @@
 
 void test040::Tx(int32_t Character)
 {
-  OUTA = Character;
+  _OUTA = Character;
 }
 
 int32_t test040::Dec(int32_t Value)

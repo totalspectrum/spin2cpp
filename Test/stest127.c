@@ -5,8 +5,8 @@ void blah(int i)
     x = i + 1;
     y = i - 1;
 
-    OUTA = x;
-    DIRA = y;
+    _OUTA = x;
+    _DIRA = y;
 }
 
 void main()

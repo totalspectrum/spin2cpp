@@ -3,6 +3,6 @@
 
 int32_t test052::Func(void)
 {
-  return ((INA >> 1) & 0x3);
+  return ((_INA >> 1) & 0x3);
 }
 

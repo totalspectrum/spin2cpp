@@ -13,6 +13,6 @@ int32_t test071::Blah(void)
 
 void test071::Foo(int32_t *M, int32_t *N)
 {
-  OUTA |= (1 << ((int32_t)N));
+  _OUTA |= (1 << ((int32_t)N));
 }
 

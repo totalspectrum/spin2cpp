@@ -1,6 +1,6 @@
 void main(void)
 {
     for(;;) {
-        OUTA ^= 1;
+        _OUTA ^= 1;
     }       
 }

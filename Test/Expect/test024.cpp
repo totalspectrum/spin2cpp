@@ -4,6 +4,6 @@
 void test024::Unlock(void)
 {
   int32_t	_tmp__0001;
-  OUTA = ( ( (_tmp__0001 = X), (X = 0) ), _tmp__0001 );
+  _OUTA = ( ( (_tmp__0001 = X), (X = 0) ), _tmp__0001 );
 }
 

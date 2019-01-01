@@ -18,6 +18,6 @@ void test136::Doone(int32_t X)
 
 void test136::Dotwo(int32_t X)
 {
-  OUTA = X;
+  _OUTA = X;
 }
 

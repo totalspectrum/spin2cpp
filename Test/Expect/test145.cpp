@@ -52,7 +52,7 @@ void test145::Incr1(void)
 
 void test145::Sfunc(int32_t X)
 {
-  OUTA = X;
+  _OUTA = X;
 }
 
 void test145::Subfunc(test145 *self, int32_t X)

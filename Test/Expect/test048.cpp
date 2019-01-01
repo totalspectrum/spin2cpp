@@ -7,12 +7,12 @@ void test048::Setcolors(char *Colorptr)
   int32_t 	Back;
   for(I = 0; I < 8; I++) {
     Fore = Colorptr[(I << 1)] << 2;
-    OUTA = (OUTA & 0xffffff00) | ((Fore & 0xff) << 0);
+    _OUTA = (_OUTA & 0xffffff00) | ((Fore & 0xff) << 0);
   }
 }
 
 void test048::Stop(void)
 {
-  OUTA &= (~(255 << 0));
+  _OUTA &= (~(255 << 0));
 }
 

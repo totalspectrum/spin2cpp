@@ -8,6 +8,6 @@ void test082::Flip(void)
 
 void test082::Toggle(int32_t Pin)
 {
-  OUTA ^= (1 << Pin);
+  _OUTA ^= (1 << Pin);
 }
 

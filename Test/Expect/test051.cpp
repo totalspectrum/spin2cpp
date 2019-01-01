@@ -3,7 +3,7 @@
 
 void test051::Run(void)
 {
-  OUTA = Len("hello, world\r\n");
+  _OUTA = Len("hello, world\r\n");
 }
 
 int32_t test051::Len(const char *Stringptr)

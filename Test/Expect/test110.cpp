@@ -9,8 +9,8 @@
 
 void test110::Main(void)
 {
-  DIRA |= (1 << 0);
-  OUTA |= (1 << 0);
+  _DIRA |= (1 << 0);
+  _OUTA |= (1 << 0);
 }
 
 /* 

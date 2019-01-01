@@ -42,7 +42,7 @@ void test128::Square(int32_t Xaddr)
   // Square the value at XAddr
   while (1) {
     ((int32_t *)Xaddr)[0] = ((int32_t *)Xaddr)[0] * ((int32_t *)Xaddr)[0];
-    waitcnt((80000000 + CNT));
+    waitcnt((80000000 + _CNT));
   }
 }
 

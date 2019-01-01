@@ -3,6 +3,6 @@
 
 void test008::Init(void)
 {
-  OUTA = 1;
+  _OUTA = 1;
 }
 

@@ -3,11 +3,11 @@
 
 void test086::Set1(void)
 {
-  OUTA |= (1 << 1);
+  _OUTA |= (1 << 1);
 }
 
 void test086::Set(int32_t Pin)
 {
-  OUTA |= (1 << Pin);
+  _OUTA |= (1 << Pin);
 }
 
