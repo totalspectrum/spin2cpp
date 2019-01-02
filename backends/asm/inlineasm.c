@@ -290,7 +290,7 @@ CompileInlineAsm(IRList *irl, AST *origtop)
             }
             op = (Operand *)sym->val;
             EmitLabel(irl, op);
-        } else if (ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
+        } else if (ast->kind == AST_LINEBREAK || ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
         } else {
             ERROR(ast, "inline assembly of this item not supported yet");
