@@ -1,6 +1,7 @@
 Version 3.9.14
 - Fixed a bug where function parameters to Spin functions without type
 specifiers could be coerced to the wrong type
+- Improved C compatibility of various register declarations
 
 Version 3.9.13
 - Fixed runtime to get P2 code running on P2 EVAL boards

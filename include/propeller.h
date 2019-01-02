@@ -4,6 +4,10 @@
 #pragma once
 #include <cog.h>
 
+#ifdef __P2__
+#define __PROPELLER2__
+#endif
+
 #ifdef __PROPELLER2__
 #include <propeller2.h>
 #else

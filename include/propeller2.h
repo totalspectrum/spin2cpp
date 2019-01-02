@@ -11,3 +11,5 @@
 /// Use to set output pin states when corresponding DIRA bits are 1.
 #define OUTA    _OUTA
 #define OUTB    _OUTB
+
+#define CNT getcnt()
