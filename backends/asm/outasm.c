@@ -3469,7 +3469,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       ValidateStackptr();
       // we have to keep the stack long aligned
       alignexpr = AstOperator('&',
-                              AstOperator('+', expr->left, AstInteger(3)),
+                              AstOperator('+', expr->right, AstInteger(3)),
                               AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
       r = CompileExpression(irl, alignexpr, NULL);
       temp = dest ? dest : NewFunctionTempRegister();

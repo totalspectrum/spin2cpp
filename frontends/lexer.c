@@ -1321,6 +1321,7 @@ struct reservedword basic_keywords[] = {
   { "as", BAS_AS },
   { "asc", BAS_ASC },
   { "asm", BAS_ASM },
+  { "__builtin_alloca", BAS_ALLOCA },
   { "byte", BAS_BYTE },
   { "case", BAS_CASE },
   { "catch", BAS_CATCH },

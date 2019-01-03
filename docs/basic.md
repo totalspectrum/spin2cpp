@@ -81,6 +81,7 @@ and
 any
 as
 asm
+__builtin_alloca
 byte
 case
 catch
@@ -393,6 +394,10 @@ Pointers to functions require 8 bytes of memory to be allocated at run time (to 
 ```
 the variable `tx` holds a pointer both to the `ser` object and to the particular method `tx` within it. Since this is dynamically allocated, it is possible for the `@` operator to fail and return `nil`.
 
+#### __builtin_alloca
+
+Instead of `new`, which allocates persistent memory on the heap, it is possible to allocate temporary memory with the `__builtin_alloca` operator. Memory allocated in this way may only be used during the lifetime of the function which allocated it, and may not be returned from that function or assigned to a global variable. Almost always it is better to use `new` than `__builtin_alloca`, but the latter is more efficient (but dangerous, because the pointer becomes invalid after the function that uses `__builtin_alloca` exits).
+
 ## Propeller Specific Features
 
 ### Input, Output, and Direction
@@ -508,6 +513,18 @@ sub wait_until_cycle(x as uinteger)
   end asm
 end sub
 ```
+
+### __BUILTIN_ALLOCA
+
+Allocates memory on the stack. The argument is an integer specifying how much memory to allocate. For example:
+```
+   dim as integer ptr x = alloca(256)
+```
+creates an array of 64 integers (which needs 256 bytes) and makes `x` into a pointer to it.
+
+The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable or be returned from the function.
+
+`__builtin_alloca` is awkward to work with, and dangerous. Almost always you should use `new` instead. The only advantages of `__builtin_alloca` is that it is slightly more efficient than `new`, and does not use up heap space.
 
 ### BYTE
 

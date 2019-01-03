@@ -179,7 +179,7 @@ doCTransform(AST **astptr)
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ALLOCA:
-        doCTransform(&ast->left);
+        doCTransform(&ast->right);
         curfunc->uses_alloca = 1;
         break;
     case AST_ADDROF:

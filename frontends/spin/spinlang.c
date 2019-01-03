@@ -504,7 +504,7 @@ doSpinTransform(AST **astptr, int level)
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ALLOCA:
-        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
         curfunc->uses_alloca = 1;
         break;
     case AST_ADDROF:

@@ -252,6 +252,7 @@ GetCurrentLoop(int token)
 %token BAS_AS         "as"
 %token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
+%token BAS_ALLOCA     "__builtin_alloca"
 %token BAS_BYTE       "byte"
 %token BAS_CATCH      "catch"
 %token BAS_CASE       "case"
@@ -870,6 +871,10 @@ primary_expr:
         }
         baseType = NewAST(AST_PTRTYPE, baseType, NULL);
         $$ = NewAST(AST_NEW, baseType, numElements);
+    }
+  | BAS_ALLOCA '(' expr ')'
+    {
+        $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3);
     }
 ;
 

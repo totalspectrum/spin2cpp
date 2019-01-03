@@ -560,7 +560,7 @@ postfix_expression
                 $$ = NewAST(AST_SETJMP, $3, NULL);
             }
         | C_BUILTIN_ALLOCA '(' assignment_expression ')'
-            { $$ = NewAST(AST_ALLOCA, $3, NULL); }
+            { $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3); }
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);
