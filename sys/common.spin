@@ -187,16 +187,15 @@ pri _basic_fmt_in_str(u, x, base, mindigits, maxdigits) | digit, i
   byte[u + i] := digit
   return i+1
   
-pri _basic_fmt_uinteger(x, base, mindigits, maxdigits, signchar) | ptr, u, r
-  if maxdigits == 0
-    maxdigits := (base < 10) ? 33 : 11
-  ptr := u := _gc_alloc_managed(maxdigits+1)
+pri _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, signchar) | u, r
+  u := ptr
   if ptr == 0
     return ptr
   if (signchar)
     maxdigits--
     byte[u++] := signchar
     if maxdigits == 0
+      byte[u++] := 0
       return ptr
   r := _basic_fmt_in_str(u, x, base, mindigits, maxdigits)
   byte[u+r] := 0
@@ -207,9 +206,11 @@ pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
   mindigits := (fmt>>16) & $1f
   if mindigits == 0
     mindigits := 1
-  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, 0)
+  if maxdigits == 0
+     maxdigits := (base < 10) ? 33 : 11
+  ptr := __builtin_alloca(maxdigits+1)
+  _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, 0)
   _basic_print_string(h, ptr, fmt)
-  _gc_free(ptr)
   
 pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, ptr
   maxdigits := fmt & $ff
@@ -217,7 +218,7 @@ pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, p
   signchar := (fmt >> 22) & 3
   if mindigits == 0
     mindigits := 1
-    
+
   if (x < 0)
     signchar := "-"
     x := -x
@@ -229,9 +230,11 @@ pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, p
     else
       signchar := 0
       
-  ptr := _basic_fmt_uinteger(x, base, mindigits, maxdigits, signchar)
+  if maxdigits == 0
+    maxdigits := (base < 10) ? 33 : 11
+  ptr := __builtin_alloca(maxdigits+1)
+  _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, signchar)
   _basic_print_string(h, ptr, fmt)
-  _gc_free(ptr)
     
 pri _basic_print_fixed(h, x, fmt) | i, f
   if (x < 0)

@@ -1198,6 +1198,8 @@ struct reservedword {
     { "abs", SP_ABS },
     { "and", SP_AND },
     { "asm", SP_ASM },
+
+    { "__builtin_alloca", SP_ALLOCA },
     { "byte", SP_BYTE },
 
     { "case", SP_CASE },
