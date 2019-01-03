@@ -503,6 +503,10 @@ doSpinTransform(AST **astptr, int level)
     case AST_RANGEREF:
         *astptr = ast = TransformRangeUse(ast);
         break;
+    case AST_ALLOCA:
+        doSpinTransform(&ast->left, 0);
+        curfunc->uses_alloca = 1;
+        break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         doSpinTransform(&ast->left, 0);

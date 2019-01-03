@@ -523,8 +523,6 @@ primary_expression
             { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
-        | C_BUILTIN_ALLOCA
-            { $$ = NewAST(AST_ALLOCA, NULL, NULL); }
 	| '(' expression ')'
             { $$ = $2; }
 	;
@@ -552,15 +550,17 @@ postfix_expression
             {
                 $$ = NewAST(AST_VA_START, $3, $5);
             }
-        | C_BUILTIN_VA_ARG '(' expression ',' type_name ')'
+        | C_BUILTIN_VA_ARG '(' assignment_expression ',' type_name ')'
             {
                 // NOTE: like an AST_MEMREF, the type goes first
                 $$ = NewAST(AST_VA_ARG, $5, $3);
             }
-        | C_BUILTIN_SETJMP '(' expression ')'
+        | C_BUILTIN_SETJMP '(' assignment_expression ')'
             {
                 $$ = NewAST(AST_SETJMP, $3, NULL);
             }
+        | C_BUILTIN_ALLOCA '(' assignment_expression ')'
+            { $$ = NewAST(AST_ALLOCA, $3, NULL); }
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);

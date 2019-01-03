@@ -467,6 +467,10 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->right);
         *astptr = ast = TransformRangeUse(ast);
         break;
+    case AST_ALLOCA:
+        doBasicTransform(&ast->left);
+        curfunc->uses_alloca = 1;
+        break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
@@ -1558,6 +1562,10 @@ AST *CheckTypes(AST *ast)
             WARNING(ast, "different types in arms of ?");
         }
         return ltype;
+    }
+    case AST_ALLOCA:
+    {
+        return ast_type_ptr_void;
     }
     case AST_EXPRLIST:
     case AST_SEQUENCE:

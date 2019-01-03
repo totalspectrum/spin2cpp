@@ -1424,6 +1424,18 @@ NeedToSaveLocals(Function *func)
     return true;
 }
 
+static bool
+NeedFramePointer(Function *func)
+{
+    if (VARS_ON_STACK(func)) {
+        return true;
+    }
+    if (func->uses_alloca) {
+        return true;
+    }
+    return false;
+}
+
 //
 // the header/footer are code that should only be emitted for
 // non-inline function invocations, at the beginning and
@@ -1448,16 +1460,18 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     EmitLabel(irl, FuncData(func)->asmname);
 
     // set up frame pointer for stack call functions
-    if (VARS_ON_STACK(func)) {
-        int localsize;
-        //
-        // adjust stack as necessary
-        //
+    if (NeedFramePointer(func)) {
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
         EmitPush(irl, frameptr);
         EmitMove(irl, frameptr, stackptr);
+    }
+    if (VARS_ON_STACK(func)) {
+        int localsize;
+        //
+        // adjust stack as necessary
+        //
         localsize = LocalSize(func);
         if (COG_DATA) {
             EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(localsize / LONG_SIZE));
@@ -1520,7 +1534,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             }
         }
     }
-    if (VARS_ON_STACK(func)) {
+    if (NeedFramePointer(func)) {
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
@@ -3448,6 +3462,21 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       return CompileExpression(irl, expr->right, dest);
   case AST_DECLARE_VAR:
       return CompileExpression(irl, expr->right, dest);
+  case AST_ALLOCA:
+  {
+      Operand *temp;
+      AST *alignexpr;
+      ValidateStackptr();
+      // we have to keep the stack long aligned
+      alignexpr = AstOperator('&',
+                              AstOperator('+', expr->left, AstInteger(3)),
+                              AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
+      r = CompileExpression(irl, alignexpr, NULL);
+      temp = dest ? dest : NewFunctionTempRegister();
+      EmitMove(irl, dest, stackptr);
+      EmitOp2(irl, OPC_ADD, stackptr, r);
+      return temp;
+  }
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);

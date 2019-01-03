@@ -213,7 +213,8 @@ typedef struct funcdef {
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
     unsigned no_inline:1;    // 1 if function cannot be inlined
     unsigned is_leaf:1;      // 1 if function is a leaf function
-
+    unsigned uses_alloca:1;  // 1 if function uses alloca
+    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;
