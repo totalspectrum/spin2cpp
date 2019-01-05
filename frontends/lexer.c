@@ -1432,6 +1432,7 @@ struct reservedword c_keywords[] = {
   { "if", C_IF },
   { "_Imaginary", C_IMAGINARY },
   { "__inline", C_INLINE },
+  { "__inline__", C_INLINE },
   { "inline", C_INLINE },
   { "int", C_INT },
   { "long", C_LONG },
