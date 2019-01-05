@@ -84,6 +84,37 @@ Aliases spinalias[] = {
     { "clkmode", "_clkmode" },
     { NULL, NULL },
 };
+Aliases spin2alias[] = {
+    { "dirl_", "__builtin_propeller_dirl" },
+    { "dirh_", "__builtin_propeller_dirh" },
+    { "dirrnd_", "__builtin_propeller_dirrnd" },
+    { "dirnot_", "__builtin_propeller_dirnot" },
+    { "dir_", "__builtin_propeller_dir" },
+
+    { "drvl_", "__builtin_propeller_drvl" },
+    { "drvh_", "__builtin_propeller_drvh" },
+    { "drvrnd_", "__builtin_propeller_drvrnd" },
+    { "drvnot_", "__builtin_propeller_drvnot" },
+    { "drv_", "__builtin_propeller_drv" },
+
+    { "outl_", "__builtin_propeller_outl" },
+    { "outh_", "__builtin_propeller_outh" },
+    { "outrnd_", "__builtin_propeller_outrnd" },
+    { "outnot_", "__builtin_propeller_outnot" },
+    { "out_", "__builtin_propeller_out" },
+
+    { "fltl_", "__builtin_propeller_fltl" },
+    { "flth_", "__builtin_propeller_flth" },
+    { "fltrnd_", "__builtin_propeller_fltrnd" },
+    { "fltnot_", "__builtin_propeller_fltnot" },
+    { "flt_", "__builtin_propeller_flt" },
+
+    { "waitx_", "__builtin_propeller_waitx" },
+    { "wrpin_", "__builtin_propeller_wrpin" },
+    { "wxpin_", "__builtin_propeller_wxpin" },
+    { "wypin_", "__builtin_propeller_wypin" },
+    { NULL, NULL },
+};
 Aliases basicalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
@@ -99,6 +130,15 @@ Aliases calias[] = {
 // create aliases appropriate to the language
 //
 static void
+addAliases(SymbolTable *tab, Aliases *A)
+{
+    while (A && A->name) {
+        AddSymbol(tab, A->name, SYM_ALIAS, (void *)A->alias);
+        A++;
+    }
+}
+
+static void
 initSymbols(Module *P, int language)
 {
     Aliases *A;
@@ -113,9 +153,9 @@ initSymbols(Module *P, int language)
         A = spinalias;
         break;
     }
-    while (A && A->name) {
-        AddSymbol(&P->objsyms, A->name, SYM_ALIAS, (void *)A->alias);
-        A++;
+    addAliases(&P->objsyms, A);
+    if (gl_p2 && language != LANG_C) {
+        addAliases(&P->objsyms, spin2alias);
     }
 }
 

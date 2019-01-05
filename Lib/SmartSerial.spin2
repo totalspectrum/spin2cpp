@@ -14,22 +14,18 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode
   tx_pin := txpin
   txmode := _txmode
   rxmode := _rxmode
-  asm
-    wrpin txmode, txpin
-    wxpin bitperiod, txpin
-    dirh  txpin
-    wrpin rxmode, rxpin
-    wxpin bitperiod, rxpin
-    dirh  rxpin
-  endasm
+  wrpin_(txmode, txpin)
+  wxpin_(bitperiod, txpin)
+  dirh_(txpin)
+  wrpin_(rxmode, rxpin)
+  wxpin_(bitperiod, rxpin)
+  dirh_(rxpin)
   return 1
   
 PUB tx(val) | txpin, z
   txpin := tx_pin
-  asm
-    wypin val, txpin
-    waitx #1
-  endasm
+  wypin_(val, txpin)
+  waitx_(1)
   z := 1
   repeat while z <> 0
     asm

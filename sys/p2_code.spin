@@ -61,8 +61,6 @@ pri clkset(mode, freq, xsel = 3)
     add  mode, xsel
     hubset mode
   endasm
-pri reboot
-  clkset($80, 0)
 pri _sqrt(a) | r
   if (a =< 0)
     return 0
@@ -123,3 +121,108 @@ pri _call_method(o, f, x=0) | r
     mov    r, result1
   endasm
   return r
+  
+pri __builtin_propeller_dirl(pin)
+  asm
+    dirl pin
+  endasm
+pri __builtin_propeller_dirh(pin)
+  asm
+    dirh pin
+  endasm
+pri __builtin_propeller_dirnot(pin)
+  asm
+    dirnot pin
+  endasm
+pri __builtin_propeller_dirrnd(pin)
+  asm
+    dirrnd pin
+  endasm
+pri __builtin_propeller_dir(pin, c)
+  asm
+    test   pin,#1 wc
+    dirc pin
+  endasm
+
+pri __builtin_propeller_drvl(pin)
+  asm
+    drvl pin
+  endasm
+pri __builtin_propeller_drvh(pin)
+  asm
+    drvh pin
+  endasm
+pri __builtin_propeller_drvnot(pin)
+  asm
+    drvnot pin
+  endasm
+pri __builtin_propeller_drvrnd(pin)
+  asm
+    drvnot pin
+  endasm
+pri __builtin_propeller_drv(pin, c)
+  asm
+    test   pin,#1 wc
+    drvc pin
+  endasm
+
+pri __builtin_propeller_outl(pin)
+  asm
+    outl pin
+  endasm
+pri __builtin_propeller_outh(pin)
+  asm
+    outh pin
+  endasm
+pri __builtin_propeller_outnot(pin)
+  asm
+    outnot pin
+  endasm
+pri __builtin_propeller_outrnd(pin)
+  asm
+    outnot pin
+  endasm
+pri __builtin_propeller_out(pin, c)
+  asm
+    test   pin,#1 wc
+    outc pin
+  endasm
+
+pri __builtin_propeller_fltl(pin)
+  asm
+    fltl pin
+  endasm
+pri __builtin_propeller_flth(pin)
+  asm
+    flth pin
+  endasm
+pri __builtin_propeller_fltnot(pin)
+  asm
+    fltnot pin
+  endasm
+pri __builtin_propeller_fltrnd(pin)
+  asm
+    fltnot pin
+  endasm
+pri __builtin_propeller_flt(pin, c)
+  asm
+    test   pin,#1 wc
+    fltc pin
+  endasm
+
+pri __builtin_propeller_wrpin(val, pin)
+  asm
+    wrpin val, pin
+  endasm
+pri __builtin_propeller_wxpin(val, pin)
+  asm
+    wxpin val, pin
+  endasm
+pri __builtin_propeller_wypin(val, pin)
+  asm
+    wypin val, pin
+  endasm
+pri __builtin_propeller_waitx(tim)
+  asm
+    waitx tim
+  endasm

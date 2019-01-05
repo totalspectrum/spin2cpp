@@ -7,6 +7,7 @@ Version 3.9.14
 - Implemented DEFSNG and DEFINT in BASIC
 - Added optional xsel parameter to P2 clkset function
 - Fixed a bug with types in function closures
+- Added dirh_, drvh_, flth_, outh_, and similar functions to Spin in P2 mode
 
 Version 3.9.13
 - Fixed runtime to get P2 code running on P2 EVAL boards
