@@ -3,6 +3,7 @@ Version 3.9.14
 specifiers could be coerced to the wrong type
 - Improved C compatibility of various register declarations
 - Implemented __builtin_alloca
+- Improved optimization of P2 pin functions
 
 Version 3.9.13
 - Fixed runtime to get P2 code running on P2 EVAL boards

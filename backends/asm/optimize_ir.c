@@ -854,6 +854,11 @@ TransformConstDst(IR *ir, Operand *imm)
   int setsResult = 1;
 
   if (ir->src == NULL) {
+      // this may be a case where we can replace dst with src
+      if (ir->instr && ir->instr->ops == P2_DST_CONST_OK) {
+          ir->dst = imm;
+          return 1;
+      }
       return 0;
   }
   if (imm->kind == IMM_INT && imm->val == 0) {
@@ -1093,7 +1098,7 @@ OptimizeMoves(IRList *irl)
                         // WZ will be set
                         change |= ApplyConditionAfter(ir, ir->src->val);
                     }
-                    change |= (sawchange =PropagateConstForward(ir_next, ir->dst, ir->src));
+                    change |= (sawchange = PropagateConstForward(ir_next, ir->dst, ir->src));
                     if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
                         // we no longer need the original mov
                         DeleteIR(irl, ir);
