@@ -1,10 +1,12 @@
 Version 3.9.14
-- Fixed a bug where function parameters to Spin functions without type
-specifiers could be coerced to the wrong type
+- Fixed a bug where function parameters to Spin functions without type specifiers could be coerced to the wrong type
 - Improved C compatibility of various register declarations
 - Implemented __builtin_alloca
 - Improved optimization of P2 pin functions
 - Support multiple statements per line in BASIC
+- Implemented DEFSNG and DEFINT in BASIC
+- Added optional xsel parameter to P2 clkset function
+- Fixed a bug with types in function closures
 
 Version 3.9.13
 - Fixed runtime to get P2 code running on P2 EVAL boards

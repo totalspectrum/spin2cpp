@@ -227,7 +227,8 @@ AST *
 InferTypeFromName(AST *identifier)
 {
     const char *name;
-
+    const char *suffix;
+    
     if (identifier->kind == AST_ASSIGN) {
         identifier = identifier->left;
     }
@@ -238,15 +239,15 @@ InferTypeFromName(AST *identifier)
         ERROR(identifier, "Internal error, expected identifier");
         return NULL;
     }
-    name = identifier->d.string;
+    suffix = name = identifier->d.string;
     if (!*name) {
         ERROR(identifier, "Internal error, empty identifier");
         return NULL;
     }
-    while (name[1] != 0) {
-        name++;
+    while (suffix[1] != 0) {
+        suffix++;
     }
-    switch(name[0]) {
+    switch(suffix[0]) {
     case '$':
         return ast_type_string;
     case '%':
@@ -254,7 +255,27 @@ InferTypeFromName(AST *identifier)
     case '#':
         return ast_type_float;
     default:
-        return ast_type_long;
+        {
+            Symbol *sym = GetCurImplicitTypes();
+            uint32_t typemask = 0;
+            uint32_t firstlet;
+            uint32_t checkmask;
+            firstlet = toupper(name[0]);
+            if (firstlet >= 'A' && firstlet <= 'Z') {
+                checkmask = 1U << (firstlet - 'A');
+            } else {
+                return ast_type_long;
+            }
+            if (sym->type != SYM_CONSTANT) {
+                ERROR(identifier, "bad default type information");
+            } else {
+                typemask = EvalConstExpr(sym->val);
+            }
+            if (typemask & checkmask) {
+                return ast_type_float;
+            }
+            return ast_type_long;
+        }
     }
 }
 

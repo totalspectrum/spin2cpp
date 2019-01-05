@@ -27,13 +27,13 @@ fastspin has a pre-processor that understands `#include`, `#define`, and
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__P2__`         | only defined if compiling for Propeller 2
+`__FLEXBASIC__`  | always defined to the fastspin version number
 `__FASTSPIN__`   | if the `fastspin` front end is used
 `__SPINCVT__`    | always defined to the fastspin version number
-`__FLEXBASIC__`  | always defined to the fastspin version number
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)
 `__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
 `__cplusplus`    | if C++ is being output (never in fastspin)
-`__P2__`         | only defined if compiling for Propeller 2
 
 ## Language Syntax
 
@@ -92,6 +92,8 @@ continue
 cpu
 data
 declare
+defint
+defsng
 delete
 dim
 direction
@@ -160,7 +162,7 @@ xor
 
 Names of variables, subroutines, or functions ("identifiers") consist of a letter or underscore, followed by any sequence of letters, underscores, or digits. Names beginning with an underscore are reserved for system use. Case is ignored; thus the names `avar`, `aVar`, `AVar`, `AVAR`, etc. all refer to the same variable.
 
-Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers. the first is a string variable. If no type specifier is appended, the identifier is assumed to be an integer.
+Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers. the first is a string variable. If no type specifier is appended, the identifier is assumed to be an integer. This may be overridden with the `defsng` directive, which specifies that variables starting with certain letters are to be assumed to be single precision floating point.
 
 Variable or function types may also be explicitly given, and in this case the type overrides any implicit type defined by the name. However, we strongly recommend that you not use type specifiers like `$` for variables (or functions) that you give an explicit type to.
 
@@ -646,9 +648,11 @@ Using Spin objects with `class using` is straightforward, but there are some thi
 ### CLKSET
 
 ```
-  clkset(mode, freq)
+  clkset(mode, freq, xsel)
 ```
-Propeller built in function. On the P1, this acts the same as the Spin `clkset` function. On P2, this does two `hubset` instructions, the first to set the oscillator and the second (after a short delay) to actually enable it. The `mode` parameter gives the setup value for the oscillator, and the second hubset to enable the oscillator uses `mode + 0b11` as its parameter. For example:
+Propeller built in function. On the P1, this acts the same as the Spin `clkset` function. On P2, this does two `hubset` instructions, the first to set the oscillator and the second (after a short delay) to actually enable it. The `mode` parameter gives the setup value for the oscillator, and the second hubset to enable the oscillator uses `mode + xsel` as its parameter. If `xsel` is omitted, it defaults to `3`.
+
+For example:
 ```
   clkset(0x010c3f04, 160_000_000)  ' set P2 Eval board to 160 MHz
 ```
@@ -735,6 +739,28 @@ Keyword reserved for future use.
 ### DECLARE
 
 Keyword reserved for future use.
+
+### DEFINT
+
+Dictates the default type for variable names starting with certain letters.
+```
+defint i-j
+```
+says that variables starting with the letters `i` through `j` are assumed to be integers. 
+
+The default setting is `defint a-z` (i.e. all variables are assumed to be integer unless given an explicit suffix or type in their declaration). A combination of `defsng` and `defint` may be used to modify this.
+
+### DEFSNG
+
+Dictates the default type for variable names starting with certain letters.
+```
+defsng a-f
+```
+says that variables starting with the letters `a` through `f` are assumed to be floating point. 
+
+The default setting is `defint a-z` (i.e. all variables are assumed to be integer unless given an explicit suffix or type in their declaration). A combination of `defsng` and `defint` may be used to modify this.
+
+Putting `defsng a-z` at the start of a file may be useful for porting legacy BASIC code.
 
 ### DELETE
 

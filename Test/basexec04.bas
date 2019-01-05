@@ -1,3 +1,13 @@
+' default most things to float
+defsng a-z
+' except for i-k
+defint i-k
+
+let a = 1
+let i = 2
+
+print a, i
+
 '' closure test for BASIC
 const HEAPSIZE = 512 ' increase size of heap a bit; not strictly necessary, but tests for HEAPSIZE being recognized
 

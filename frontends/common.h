@@ -588,4 +588,7 @@ void PopCurrentTypes(void);
 /* create a declaration list, or add a type name to currentTypes */
 AST *MakeDeclaration(AST *decl);
 
+/* find the symbol containing a mask for implicit types, as defined by DEFINT and DEFSNG */
+Symbol *GetCurImplicitTypes(void);
+
 #endif

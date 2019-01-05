@@ -444,6 +444,9 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
         ERROR(ident, "internal error in closure def");
         return;
     }
+    if (!typ) {
+        typ = ExprTypeRelative(&f->localsyms, ident);
+    }
     MaybeDeclareMemberVar(P, ident, typ);
 }
 

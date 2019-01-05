@@ -4,7 +4,7 @@ function getval()
   return val
 end function
 
-function setval(n)
+function setval(n as integer)
   if n == 0 then
     throw "cannot set value to 0"
   endif
@@ -12,6 +12,6 @@ function setval(n)
   return val
 end function
 
-function incval(n)
+function incval(n as integer)
   return setval(val + n)
 end function

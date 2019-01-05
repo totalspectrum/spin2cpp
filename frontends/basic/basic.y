@@ -65,6 +65,7 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
 }
 
 #define ARRAY_BASE_NAME "__array_base"
+#define IMPLICIT_TYPE_NAME "__implicit_types"
 
 Symbol *
 GetCurArrayBase(void)
@@ -84,6 +85,17 @@ GetCurArrayBase(void)
     return sym;
 }
         
+Symbol *
+GetCurImplicitTypes(void)
+{
+    SymbolTable *symtab = current ? &current->objsyms : currentTypes;
+    Symbol *sym = LookupSymbolInTable(symtab, IMPLICIT_TYPE_NAME);
+    if (!sym) {
+        sym = AddSymbol(symtab, IMPLICIT_TYPE_NAME, SYM_CONSTANT, AstInteger(0));
+    }
+    return sym;
+}
+
 static AST *
 HandleBASICOption(AST *optid, AST *exprlist)
 {
@@ -112,6 +124,60 @@ HandleBASICOption(AST *optid, AST *exprlist)
     } else {
         SYNTAX_ERROR("Unknown option %s", name);
     }
+    return NULL;
+}
+
+AST *
+DefineDefaultVarTypes(AST *deflist, AST *type)
+{
+    Symbol *sym = GetCurImplicitTypes();
+    AST *entry;
+    const char *first, *last;
+    uint32_t flags;
+    uint32_t low, high;
+    uint32_t mask;
+
+    flags = EvalConstExpr( (AST *)sym->val );
+    if (IsIntType(type)) {
+        mask = 0;
+    } else if (IsFloatType(type)) {
+        mask = 1;
+    } else {
+        SYNTAX_ERROR("defXXX is supported only for int and sng");
+        return NULL;
+    }
+    while (deflist) {
+        entry = deflist->left;
+        deflist = deflist->right;
+        if (entry->kind != AST_SEQUENCE) {
+            SYNTAX_ERROR("Internal error, expected AST_SEQUENCE");
+            return NULL;
+        }
+        if (!entry->left || !entry->right) {
+            SYNTAX_ERROR("Internal error in defvar parsing");
+            return NULL;
+        }
+        first = GetIdentifierName(entry->left);
+        last = GetIdentifierName(entry->right);
+        low = toupper(first[0]) - 'A';
+        high = toupper(last[0]) - 'A';
+        if (strlen(first) != 1 || strlen(last) != 1 || low < 0 || high > 25) {
+            SYNTAX_ERROR("defXXX requires single letters in patterns");
+            return NULL;
+        }
+        if (high < low) {
+            WARNING(NULL, "range `%c' - `%c' is empty", low, high);
+        }
+        while (low <= high) {
+            if (mask) {
+                flags |= (1U << low);
+            } else {
+                flags &= ~(1U << low);
+            }
+            low++;
+        }
+    }
+    sym->val = AstInteger(flags);
     return NULL;
 }
 
@@ -263,6 +329,8 @@ GetCurrentLoop(int token)
 %token BAS_CPU        "cpu"
 %token BAS_DATA       "data"
 %token BAS_DECLARE    "declare"
+%token BAS_DEFINT     "defint"
+%token BAS_DEFSNG     "defsng"
 %token BAS_DELETE     "delete"
 %token BAS_DIM        "dim"
 %token BAS_DIRECTION  "direction"
@@ -1026,8 +1094,29 @@ topdecl:
       {
           $$ = HandleBASICOption($2, $3);
       }
+  | BAS_DEFSNG deflist
+      {
+          $$ = DefineDefaultVarTypes($2, ast_type_float);
+      }  
+  | BAS_DEFINT deflist
+      {
+          $$ = DefineDefaultVarTypes($2, ast_type_long);
+      }  
   ;
 
+defitem:
+  BAS_IDENTIFIER '-' BAS_IDENTIFIER
+     { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+;
+
+deflist:
+  defitem
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | deflist ',' defitem
+    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+;
+
+      
 constdecl:
   BAS_CONST constlist
   {
