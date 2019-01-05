@@ -51,14 +51,14 @@ pri lockret(id)
     lockret id
   endasm
   return 0
-pri clkset(mode, freq)
+pri clkset(mode, freq, xsel = 3)
   CLKFREQ := freq
   CLKMODE := mode
   asm
     hubset #0
     hubset mode
     waitx ##20_000_000/100
-    add  mode, #3
+    add  mode, xsel
     hubset mode
   endasm
 pri reboot
