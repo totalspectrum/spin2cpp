@@ -287,6 +287,18 @@ dim shared as integer a(5) = { _
 ```
 Note that only shared arrays may be initialized like this.
 
+### Multiple statements per line
+
+Generally speaking, you may place multiple statements on one line if you separate them with a colon (`:`). For example, these two bits of code are the same:
+```
+   x = 1
+   y = 2
+```
+and
+```
+   x = 1 : y = 2
+```
+
 ## Language features
 
 ### Types
@@ -955,6 +967,22 @@ done:
 ```
 Note that in most cases code written with a `goto` could better be written with
 `if` or `do` (for instance the example above would be easier to read if written with `if` ... `then` ... `else`). `goto` should be used sparingly.
+
+Also note that a label must be the only thing on the line; that is:
+```
+   foo: bar
+```
+is interpreted as two statements
+```
+   foo
+   bar
+```
+whereas
+```
+   foo:
+   bar
+```
+is a label `foo` followed by a statement `bar`.
 
 ### HEAPSIZE
 ```
