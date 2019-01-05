@@ -22,8 +22,7 @@ print "bit tests"
 r = 7.9
 print r, ">> 1 =", r>>1
 
-r = &b1010
-s = &b0011
+r = &b1010 : s = &b0011
 
 print r; " and "; s, r and s, rawbits(r and s)
 
@@ -40,8 +39,7 @@ end sub
 
 let n% = 1
 for i = 1 to 6
-  doscale(n%)
-  n% = n% * 10
+  doscale(n%) :  n% = n% * 10
 next i
 
 '' printing values in a loop
@@ -102,10 +100,11 @@ print mid$(a$, 1, 8)
 print mid$(a$, 10)
 
 '' test backwards for loop
-print "backwards: "
+print "backwards: ";
 for i = 10 to 1 step -2
-  print i
+  print : print i;
 next i
+print
 
 dim shared as integer a%(3) = { 99, 98, -4, -2 }
 dim shared as string ba$(3) = { "hello", "goodbye", "again", "done" }
