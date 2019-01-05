@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -588,8 +588,8 @@ doParseFile(const char *name, Module *P, int *is_dup)
 
     f = fopen(fname, "r");
     if (!f) {
-        fprintf(stderr, "ParseFile: ");
-        perror(name);
+        fprintf(stderr, "Unable to open file `%s': ", fname);
+        perror("");
         free(fname);
         exit(1);
     }
