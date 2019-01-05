@@ -4,7 +4,7 @@ specifiers could be coerced to the wrong type
 - Improved C compatibility of various register declarations
 - Implemented __builtin_alloca
 - Improved optimization of P2 pin functions
-- Support multiple statements per line in BASIC functions
+- Support multiple statements per line in BASIC
 
 Version 3.9.13
 - Fixed runtime to get P2 code running on P2 EVAL boards
