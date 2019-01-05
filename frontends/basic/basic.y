@@ -359,6 +359,7 @@ toplist1:
 
 eoln:
   BAS_EOLN
+  | ':'
   ;
 
 topstatement:
@@ -378,7 +379,7 @@ pinrange:
 ;
 
 nonemptystatement:
-  BAS_IDENTIFIER ':'
+  BAS_IDENTIFIER ':' BAS_EOLN
     { $$ = NewAST(AST_LABEL, $1, NULL); }
   | BAS_IDENTIFIER '=' expr eoln
     { $$ = AstAssign($1, $3); }
