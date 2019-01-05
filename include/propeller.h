@@ -3,6 +3,7 @@
 
 #pragma once
 #include <cog.h>
+#include <stdint.h>
 
 #ifdef __P2__
 #define __PROPELLER2__

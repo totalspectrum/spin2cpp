@@ -33,4 +33,72 @@
 /// Video Scale register for setting pixel and frame clocks.
 #define VSCL    _VSCL
 
+/**
+ * @brief CNT register accessor.
+ *
+ * @details P1 provides a COG accessible CNT register.
+ *
+ * This macro is a convenience for portability between P1/P2 code.
+ *
+ * @returns the global CNT value.
+ */
 #define getcnt() _CNT
+
+/**
+ * @brief getpin accessor used to read the state of a pin.
+ *
+ * @details P1 provides pin access via registers only.
+ * This inline macro provides access to read a given pin.
+ *
+ * This macro is a convenience for portability between P1/P2 code.
+ *
+ * @param pin Pin to read in the range 0:31.
+ * @returns State of the requested pin with range 0:1.
+ */
+static __inline__ int getpin(int pin)
+{
+    uint32_t mask = 1 << pin;
+    _DIRA &= ~mask;
+    return _INA & mask ? 1 : 0;
+}
+
+/**
+ * @brief setpin accessor used to write the state of a pin.
+ *
+ * @details P1 provides pin access via registers only.
+ * This inline macro provides access to write the value to a given pin.
+ *
+ * This macro is a convenience for portability between P1/P2 code.
+ *
+ * @param pin Pin to read in the range 0:31.
+ * @param value The value to set to the pin 0:1
+ * @returns Nothing.
+ */
+static __inline__ void setpin(int pin, int value)
+{
+    uint32_t mask = 1 << pin;
+    if (value)
+        _OUTA |= mask;
+    else
+        _OUTA &= ~mask;
+    _DIRA |= mask;
+}
+
+/**
+ * @brief togglepin accessor used to toggle the state of a pin.
+ *
+ * @details P1 provides pin access via registers only.
+ * This inline macro provides access to toggle the value of a given pin.
+ * Toggle means to set the opposite of the existing state.
+ *
+ * This macro is a convenience for portability between P1/P2 code.
+ *
+ * @param pin Pin to read in the range 0:31.
+ * @returns Nothing.
+ */
+static __inline__ void togglepin(int pin)
+{
+    uint32_t mask = 1 << pin;
+    _OUTA ^= mask;
+    _DIRA |= mask;
+}
