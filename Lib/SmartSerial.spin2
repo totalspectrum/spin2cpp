@@ -1,5 +1,7 @@
 '
-' simple smart pin serial demo for P2 Eval board
+' SmartSerial.spin2
+' simple smart pin serial object for P2 eval board
+' implements a subset of FullDuplexSerial functionality
 '
 CON
   _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
