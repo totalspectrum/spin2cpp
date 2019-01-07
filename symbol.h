@@ -26,6 +26,7 @@ typedef enum symtype {
     SYM_TYPEDEF,         /* a type definition */
     SYM_CLOSURE,         /* a function's closure object */
     SYM_ALIAS,           /* an alias for another symbol */
+    SYM_FILE,            /* name of a file included in the object */
 } Symtype;
 
 typedef struct symbol {

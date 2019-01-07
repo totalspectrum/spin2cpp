@@ -591,4 +591,7 @@ AST *MakeDeclaration(AST *decl);
 /* find the symbol containing a mask for implicit types, as defined by DEFINT and DEFSNG */
 Symbol *GetCurImplicitTypes(void);
 
+/* create a "normalized" form of a file name that we can use for comparison */
+char *NormalizePath(const char *path);
+
 #endif

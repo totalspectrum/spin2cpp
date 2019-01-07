@@ -578,7 +578,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     int language = LANG_SPIN;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
-    
+
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
@@ -602,11 +602,29 @@ doParseFile(const char *name, Module *P, int *is_dup)
     } else {
       langptr = ".spin";
     }
-    if (current)
-      fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
-    if (!fname)
-      fname = strdup(name);
-
+    if (current) {
+        fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
+    }
+    if (!fname) {
+        fname = NormalizePath(name);
+    } else {
+        fname = NormalizePath(fname);
+    }
+    // check for file already included
+    if (P) {
+        Symbol *sym = FindSymbol(&P->objsyms, fname);
+        if (sym) {
+            if (sym->type != SYM_FILE) {
+                ERROR(NULL, "Expected FILE type for symbol %s", fname);
+                return P;
+            }
+            if (is_dup) {
+                *is_dup = 1;
+            }
+            return P;
+        }
+    }
+    
     f = fopen(fname, "r");
     if (!f) {
         fprintf(stderr, "Unable to open file `%s': ", fname);
@@ -663,6 +681,8 @@ doParseFile(const char *name, Module *P, int *is_dup)
     saveCurrentTypes = currentTypes;
     currentTypes = calloc(1, sizeof(*currentTypes));
     currentTypes->next = &P->objsyms;
+
+    AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0);
     
     if (gl_preprocess) {
         void *defineState;
@@ -886,7 +906,7 @@ ResolveSymbols()
                 current = Q;
                 LoadFileIntoModule(name, pf->module);
                 pf->callSites++;
-                changes = 1;
+                if (pf->body->kind != AST_STRING) changes = 1;
             }
         }
     }

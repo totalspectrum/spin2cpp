@@ -905,6 +905,14 @@ static void set_a_dir(
     *incend++ = norm_name;
 }
 
+char *NormalizePath(const char *path)
+{
+    if (is_full_path(path)) {
+        return path;
+    }
+    return norm_path("", path, FALSE, FALSE);
+}
+
 static char *   norm_dir(
     const char *    dirname,        /* Directory path to normalize  */
     int             framework       /* Setting a framework directory*/
