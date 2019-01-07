@@ -26,10 +26,10 @@ extern "C" {
     char * strdup (const char *s1);
 
     void * memchr(const void *s, int c, size_t n);
-    char * strchr(const char *, int);
+    char * strchr(const char *, int) _IMPL("libc/string/strchr.c");
     size_t strcspn(const char *s1, const char *s2);
     char * strpbrk(const char *str, const char *accept);
-    char * strrchr(const char *, int);
+    char * strrchr(const char *, int) _IMPL("libc/string/strrchr.c");
     size_t strspn(const char *, const char *);
     char * strstr(const char *src, const char *pattern);
     char * strtok(char * __restrict str, const char * __restrict delim);
