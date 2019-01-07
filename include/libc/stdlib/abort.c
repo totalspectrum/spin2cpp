@@ -4,8 +4,8 @@
 void
 _Exit(int c)
 {
+    // FIXME: does not use c
     __asm {
-        mov return1, c
         cogid arg01
         cogstop arg01
     }
