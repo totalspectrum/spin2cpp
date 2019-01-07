@@ -123,10 +123,26 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 // keep things in registers, generally
                 if (typesize < 4) typesize = 4;
             }
+            
             if (!ast) {
                 ast = AstTempIdentifier("_param_");
             }
             switch (ast->kind) {
+            case AST_INTTYPE:
+            case AST_UNSIGNEDTYPE:
+            case AST_ARRAYTYPE:
+            case AST_PTRTYPE:
+            case AST_FLOATTYPE:
+            case AST_VOIDTYPE:
+            case AST_GENERICTYPE:
+            case AST_MODIFIER_CONST:
+            case AST_MODIFIER_VOLATILE:
+            case AST_FUNCTYPE:
+            case AST_OBJECT:
+                // a type with no associated variable
+                actualtype = ast;
+                ast = AstTempIdentifier("_param_");
+                // fall through
             case AST_VARARGS:
             case AST_IDENTIFIER:
                 sym = EnterVariable(kind, stab, ast, actualtype);
@@ -164,6 +180,8 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 return offset;
             }
             default:
+                /* this may be a type with no variable */
+                
                 ERROR(ast, "Internal error: bad AST value %d", ast->kind);
                 break;
             }
