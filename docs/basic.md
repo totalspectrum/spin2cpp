@@ -12,6 +12,8 @@ yet. Missing features include:
  - Input and output isn't fully implemented yet.
 
  - DATA/READ/RESTORE is not implemented yet.
+
+ - ON x GOTO is not implemented yet.
  
 ## Introduction
 
