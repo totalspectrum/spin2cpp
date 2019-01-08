@@ -902,11 +902,15 @@ ResolveSymbols()
     for (Q = allparse; Q; Q = Q->next) {
         for (pf = Q->functions; pf; pf = pf->next) {
             if ((pf->callSites > 0) && pf->body && pf->body->kind == AST_STRING) {
-                const char *name = pf->body->d.string;
+                const char *filename = pf->body->d.string;
                 current = Q;
-                LoadFileIntoModule(name, pf->module);
+                LoadFileIntoModule(filename, pf->module);
                 pf->callSites++;
-                if (pf->body->kind != AST_STRING) changes = 1;
+                if (pf->body->kind == AST_STRING) {
+                    ERROR(NULL, "No implementation for `%s' found in `%s'", pf->name, filename);
+                } else {
+                    changes = 1;
+                }
             }
         }
     }
