@@ -113,3 +113,10 @@ int isalpha(int c)
 {
   return __isctype(c, _CTalpha);
 }
+
+#undef isblank
+
+int isblank(int c)
+{
+  return __isctype(c, _CTb);
+}
