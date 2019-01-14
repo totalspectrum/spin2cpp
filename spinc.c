@@ -610,6 +610,9 @@ doParseFile(const char *name, Module *P, int *is_dup)
     } else {
         fname = NormalizePath(fname);
     }
+    if (!fname) {
+        fname = strdup(name);
+    }
     // check for file already included
     if (P) {
         Symbol *sym = FindSymbol(&P->objsyms, fname);
