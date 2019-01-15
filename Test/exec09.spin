@@ -2,17 +2,31 @@
 '' serial port demo
 ''
 CON
+#ifdef __P2__
+  _clkmode = $010c3f04
+  _clkfreq = 160_000_000
+#else
   _clkfreq = 80_000_000
   _clkmode = xtal1 + pll16x
+#endif
 
 VAR
   long i
   
 OBJ
+#ifdef __P2__
+ ser: "SmartSerial.spin2"
+#else
  ser: "FullDuplexSerial"
+#endif
 
 PUB demo
+#ifdef __P2__
+  clkset(_clkmode, _clkfreq)
+  ser.start(63, 62, 0, 2000000)
+#else
   ser.start(31, 30, 0, 115200)
+#endif
   repeat i from 0 to 5
     if not \mytest
       ser.str(string("abort called", 13, 10))

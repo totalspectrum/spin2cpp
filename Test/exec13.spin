@@ -1,16 +1,30 @@
 CON
+#ifdef __P2__
+  _clkmode = $010c3f04
+  _clkfreq = 160_000_000
+#else
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
+#endif
 
 VAR
   long SqStack[64]	' Stack space for Square cog
   
 OBJ
-  fds: "FullDuplexSerial"
+#ifdef __P2__
+  ser: "SmartSerial.spin2"
+#else
+  ser: "FullDuplexSerial"
+#endif
 
 PUB demo | x,y
 
-  fds.start(31, 30, 0, 115200)
+#ifdef __P2__
+  clkset(_clkmode, _clkfreq)
+  ser.start(63, 62, 0, 2000000)
+#else
+  ser.start(31, 30, 0, 115200)
+#endif
 
   x := 2
   cognew(Square(@X), @SqStack)
@@ -20,9 +34,9 @@ PUB demo | x,y
   exit
 
 PUB Report(n)
-  fds.str(string("x = "))
-  fds.dec(n)
-  fds.str(string(13, 10))
+  ser.str(string("x = "))
+  ser.dec(n)
+  ser.str(string(13, 10))
 
 PUB Square(XAddr)
  ' Square the value at XAddr
@@ -34,10 +48,12 @@ PUB exit
 '' send an exit sequence which propeller-load recognizes:
 '' FF 00 xx, where xx is the exit status
 ''
-  fds.tx($ff)
-  fds.tx($00)
-  fds.tx($00) '' the exit status
-  fds.txflush
+  ser.tx($ff)
+  ser.tx($00)
+  ser.tx($00) '' the exit status
+#ifndef __P2__
+  ser.txflush
+#endif
   repeat
 
 PUB PauseABit
