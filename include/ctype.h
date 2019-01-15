@@ -37,15 +37,15 @@ extern "C" {
     int isalnum(int c) _IMPL("libc/misc/ctype.c");
     int isalpha(int c) _IMPL("libc/misc/ctype.c");
     int isblank(int c) _IMPL("libc/misc/ctype.c");
-    int iscntrl(int c) _IMPL("libc/misc/ctype.c");
+    int iscntrl(int c) _IMPL("libc/misc/iscntrl.c");
     int isdigit(int c) _IMPL("libc/misc/ctype.c");
-    int isgraph(int c) _IMPL("libc/misc/ctype.c");
+    int isgraph(int c) _IMPL("libc/misc/isgraph.c");
     int islower(int c) _IMPL("libc/misc/ctype.c");
-    int isprint(int c) _IMPL("libc/misc/ctype.c");
-    int ispunct(int c) _IMPL("libc/misc/ctype.c");
+    int isprint(int c) _IMPL("libc/misc/isprint.c");
+    int ispunct(int c) _IMPL("libc/misc/ispunct.c");
     int isspace(int c) _IMPL("libc/misc/ctype.c");
     int isupper(int c) _IMPL("libc/misc/ctype.c");
-    int isxdigit(int c) _IMPL("libc/misc/ctype.c");
+    int isxdigit(int c) _IMPL("libc/misc/isxdigit.c");
 
     int tolower(int c) _IMPL("libc/misc/ctype.c");
     int toupper(int c) _IMPL("libc/misc/ctype.c");

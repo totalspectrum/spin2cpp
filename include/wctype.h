@@ -23,7 +23,7 @@ extern "C" {
     int iswalnum(wint_t wc) _IMPL("libc/wchar/iswalnum.c");
     int iswalpha(wint_t wc) _IMPL("libc/wchar/iswalpha.c");
     int iswblank(wint_t wc) _IMPL("libc/wchar/iswblank.c");
-    int iswcntrl(wint_t wc) _IMPL("libc/wchar/iswblank.c");
+    int iswcntrl(wint_t wc) _IMPL("libc/wchar/iswcntrl.c");
     int iswdigit(wint_t wc) _IMPL("libc/wchar/iswdigit.c");
     int iswgraph(wint_t wc) _IMPL("libc/wchar/iswgraph.c");
     int iswlower(wint_t wc) _IMPL("libc/wchar/iswlower.c");
