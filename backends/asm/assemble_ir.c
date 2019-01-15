@@ -219,7 +219,7 @@ PrintOperandAsValue(struct flexbuf *fb, Operand *reg)
         int needcomma = 0;
         
         while ( (c = *s++) != 0) {
-            if (c < 0x20 || c >= 0x7f) {
+            if (c < 0x20 || c >= 0x7f || c == '\"') {
                 if (needquote == 0) {
                     flexbuf_addchar(fb, '"');
                     needquote = needcomma = 1;
