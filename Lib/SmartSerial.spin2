@@ -24,10 +24,14 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode
   dirh_(rxpin)
   return 1
   
-PUB tx(val) | txpin, z
+PUB tx(val) | txpin
   txpin := tx_pin
   wypin_(val, txpin)
   waitx_(1)
+  txflush
+
+PUB txflush | txpin, z
+  txpin := tx_pin
   z := 1
   repeat while z <> 0
     asm
