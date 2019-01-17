@@ -1764,7 +1764,7 @@ static bool
 IsTemporaryLabel(Operand *op)
 {
     const char *name = op->name;
-    if (name && (name[0] == 'L' && name[1] == '_' && name[2] == '_' && isdigit(name[3]))) {
+    if (name && (name[0] == 'L' && name[1] == '_' && name[2] == '_')) {
         return true;
     }
     return false;
@@ -1784,7 +1784,7 @@ CheckLabelUsage(IRList *irl)
         ir_next = ir->next;
         if (ir->opc == OPC_LABEL) {
             MarkLabelUses(irl, ir);
-            if (IsTemporaryLabel(ir->dst) && !(ir->flags & FLAG_LABEL_USED)) {
+            if ( IsTemporaryLabel(ir->dst) && !(ir->flags & FLAG_LABEL_USED)) {
                 DeleteIR(irl, ir);
                 change = 1;
             }

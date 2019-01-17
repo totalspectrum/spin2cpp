@@ -7,16 +7,16 @@ entry
 _foo
 	mov	_var01, #99
 	mov	_var02, arg01 wz
- if_e	jmp	#_foo__case__0003
+ if_e	jmp	#LR__0001
 	cmp	_var02, #1 wz
- if_e	jmp	#_foo__case__0004
-	jmp	#_foo__case__0005
-_foo__case__0003
-_foo__case__0004
+ if_e	jmp	#LR__0002
+	jmp	#LR__0003
+LR__0001
+LR__0002
 	mov	_var01, #2
-	jmp	#_foo__endswitch_0002
-_foo__case__0005
-_foo__endswitch_0002
+	jmp	#LR__0004
+LR__0003
+LR__0004
 	mov	result1, _var01
 _foo_ret
 	ret

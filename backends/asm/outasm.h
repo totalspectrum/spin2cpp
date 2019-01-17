@@ -12,6 +12,7 @@
 // functions for producing local identifiers
 const char *IdentifierLocalName(Function *func, const char *name);
 const char *IdentifierModuleName(Module *P, const char *name);
+char *NewTempLabelName();
 
 //
 // functions for manipulating IR lists

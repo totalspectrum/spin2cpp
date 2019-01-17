@@ -5,10 +5,10 @@ dat
 entry
 
 _filllong
-_filllong_loop
+LR__0001
 	wrlong	arg02, arg01
 	add	arg01, #4
-	djnz	arg03, #_filllong_loop
+	djnz	arg03, #LR__0001
 _filllong_ret
 	ret
 
