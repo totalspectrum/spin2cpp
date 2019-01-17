@@ -8,7 +8,7 @@ _sumit
 	cmp	arg01, arg02 wz
  if_ne	mov	result1, arg03
  if_ne	jmp	#_sumit_ret
-same
+_sumit_same
 	sub	arg01, arg02
 	mov	result1, arg01
 _sumit_ret

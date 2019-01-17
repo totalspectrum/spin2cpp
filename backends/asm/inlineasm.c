@@ -5,6 +5,9 @@ Operand *
 GetLabelOperand(const char *name)
 {
     Operand *op;
+    if (curfunc) {
+        name = IdentifierLocalName(curfunc, name);
+    }
     if (curfunc && !curfunc->cog_code) {
         op = NewOperand(IMM_HUB_LABEL, name, 0);
     } else {

@@ -1,3 +1,9 @@
+Version 3.9.15
+- Fixed abort/catch in P2
+- Fixed a problem with quotes in strings
+- Fixed potential name conflict with labels
+- Added some more C library functions
+
 Version 3.9.14
 - Fixed a bug where function parameters to Spin functions without type specifiers could be coerced to the wrong type
 - Improved C compatibility of various register declarations

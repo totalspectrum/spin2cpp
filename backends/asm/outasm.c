@@ -171,36 +171,22 @@ static char *cleanname(const char *name)
     return temp;
 }
 
-static const char *
+const char *
 IdentifierLocalName(Function *func, const char *name)
 {
     char temp[1024];
     Module *P = func->module;
-    if (0 && func->is_leaf) {
-        // leaf functions can share a set of local variables
-        Symbol *s = FindSymbol(&func->localsyms, name);
-        int offset = -1;
-        if (s) {
-            offset = sym_offset(func, s);
-        }
-        if (offset >= 0) {
-            snprintf(temp, sizeof(temp)-1, "_var_%02d", offset / LONG_SIZE);
-        } else {
-            snprintf(temp, sizeof(temp)-1, "_var_%s", cleanname(name));
-        }
+    if (IsTopLevel(P)) {
+        snprintf(temp, sizeof(temp)-1, "_%s_", cleanname(func->name));
     } else {
-        if (IsTopLevel(P)) {
-            snprintf(temp, sizeof(temp)-1, "_%s_", cleanname(func->name));
-        } else {
-            snprintf(temp, sizeof(temp)-1, "_%s_%s_", P->classname, cleanname(func->name));
-        }
-        strncat(temp, cleanname(name), sizeof(temp)-1);
+        snprintf(temp, sizeof(temp)-1, "_%s_%s_", P->classname, cleanname(func->name));
     }
+    strncat(temp, cleanname(name), sizeof(temp)-1);
     return strdup(temp);
 }
 
-static const char *
-IdentifierGlobalName(Module *P, const char *name)
+const char *
+IdentifierModuleName(Module *P, const char *name)
 {
     char temp[1024];
     if (IsTopLevel(P)) {
@@ -983,7 +969,7 @@ ValidateDatBase(Module *P)
 {
     AsmModData *PD = ModData(P);
     if (!PD->datbase) {
-        PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierGlobalName(P, "dat_"), 0);
+        PD->datlabel = NewOperand(IMM_HUB_LABEL, IdentifierModuleName(P, "dat_"), 0);
         PD->datbase = NewImmediatePtr(NULL, PD->datlabel);
     }
     return PD->datbase;
@@ -1025,7 +1011,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           if (COG_DATA) {
               // COG memory
               size = TypeSize(exprtype);
-              return GetSizedGlobal(REG_REG, IdentifierGlobalName(P, sym->name), 0, size);
+              return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->name), 0, size);
           } else {
               // HUB memory
               return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
@@ -4267,7 +4253,7 @@ AssignFuncNames(IRList *irl, Module *P)
         // COG memory, so we still have the capability to put code
         // into COG on a per-function basis; may be useful later
         f->cog_code = COG_CODE ? 1 : 0;
-        fname = IdentifierGlobalName(P, f->name);
+        fname = IdentifierModuleName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
         if (gl_output == OUTPUT_COGSPIN && f->cog_code && f->is_public) {
@@ -4736,8 +4722,6 @@ static const char *builtin_abortcode_p2 =
     "    mov result1, #0\n"
     "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
-    "    wrlong pc, arg01\n"
-    "    add arg01, #4\n"
     "    wrlong ptra, arg01\n"
     "    add arg01, #4\n"
     "    wrlong fp, arg01\n"
@@ -4746,15 +4730,13 @@ static const char *builtin_abortcode_p2 =
     "    add arg01, #4\n"
     "    rdlong arg02, ptra\n" // read return value from stack
     "    wrlong arg02, arg01\n"
-    "    ret\n"
+    "    reta\n"
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
     "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
     "    mov result1, arg02\n"
     "    mov result2, #1\n"
-    "    rdlong pc, arg01\n"
-    "    add arg01, #4\n"
     "    rdlong ptra, arg01\n"
     "    add arg01, #4\n"
     "    rdlong fp, arg01\n"
@@ -4763,7 +4745,7 @@ static const char *builtin_abortcode_p2 =
     "    add arg01, #4\n"
     "    rdlong arg01,arg01\n"
     "    wrlong arg01, ptra\n"
-    "    ret\n"
+    "    reta\n"
     ;
 
 const char *builtin_wrcog =
@@ -4975,7 +4957,7 @@ EmitMain_P1(IRList *irl, Module *P)
         return;  // no functions at all
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
-    firstfuncname = IdentifierGlobalName(P, firstfunc->name);
+    firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
@@ -5059,7 +5041,7 @@ EmitMain_P2(IRList *irl, Module *P)
         return;  // no functions at all
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
-    firstfuncname = IdentifierGlobalName(P, firstfunc->name);
+    firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     ValidateStackptr();
     ValidateObjbase();
