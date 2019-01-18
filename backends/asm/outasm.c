@@ -5038,6 +5038,9 @@ EmitMain_P2(IRList *irl, Module *P)
 
     firstfunc = GetMainFunction(P);
     if (!firstfunc) {
+        // no functions present; this is pure ASM code
+        // force gl_no_coginit to 1 so we don't emit a header
+        gl_no_coginit = 1;
         return;  // no functions at all
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
@@ -5266,7 +5269,10 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         emitSpinCode = false;
         P->bedata = calloc(sizeof(AsmModData), 1);
         ValidateDatBase(P); // include DAT even though no labels referenced
-        
+        if (gl_p2) {
+            gl_no_coginit = 1;
+            gl_hub_base = 0;
+        }
     }
     InitAsmCode();
     CompileIntermediate(globalModule);
@@ -5394,8 +5400,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         if (gl_p2) {
             // on P2, make room for CLKFREQ and CLKMODE
             if (!GetClkFreq(P, &clkfreq, &clkreg)) {
-                clkfreq = 80000000;
-                clkreg = 0x64;
+                clkfreq = 160000000;
+                clkreg = 0x010c3f04;
             }
             EmitLong(&cogcode, clkfreq);
             EmitLong(&cogcode, clkreg);
