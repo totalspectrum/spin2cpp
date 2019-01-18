@@ -728,7 +728,7 @@ static AST *forcepromote(AST *type, AST *expr)
     if (!type) {
         return expr;
     }
-    if (!IsIntType(type)) {
+    if (!IsIntType(type) && !IsGenericType(type)) {
         ERROR(expr, "internal error in forcecpromote");
     }
     tsize = TypeSize(type);
