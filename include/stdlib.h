@@ -15,7 +15,7 @@ extern "C" {
 
     double atof(const char *);
     int    atoi(const char *) _IMPL("libc/stdlib/atoi.c");
-    long   atol(const char *) _IMPL("libc/stdlib/atol.c");
+    long   atol(const char *) _IMPL("libc/stdlib/atoi.c");
     long long atoll(const char *);
 
   long double strtold(const char *nptr, char **endptr);
