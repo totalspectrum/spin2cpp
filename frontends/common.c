@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -55,7 +55,8 @@ int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
 int gl_listing = 0;
 int gl_fixedreal = 0;
-unsigned int gl_p2_hub_base = 0x400;
+unsigned int gl_hub_base = 0x400;
+int gl_no_coginit = 0;
 
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit

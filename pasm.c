@@ -346,6 +346,11 @@ DeclareLabels(Module *P)
     const char *tmpName;
 
     P->gasPasm = gl_gas_dat;
+    if (gl_no_coginit && gl_output == OUTPUT_DAT) {
+        // insert an implicit orgh P2_HUB_BASE
+        hubpc = gl_hub_base;
+        inHub = 1;
+    }
     for (top = P->datblock; top; top = top->right) {
         ast = top;
         while (ast && ast->kind == AST_COMMENTEDNODE) {

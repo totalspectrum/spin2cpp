@@ -1,6 +1,6 @@
 Fastspin
 ========
-(Fastspin is copyright 2011-2018 Total Spectrum Software Inc.,
+(Fastspin is copyright 2011-2019 Total Spectrum Software Inc.,
 and is distributed under the terms of the MIT License (see the
 end of this file for details)
 
@@ -144,13 +144,13 @@ which may modify the compilation:
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2
   [ -w ]             produce Spin wrappers for PASM code
+  [ -H nnnn ]        change the base HUB address (see below)
+  [ -E ]             omit any coginit header
   [ --code=cog  ]    compile to run in COG memory instead of HUB
   [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
   [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
 ```
-The `-2` option is new: it is for compiling for the Propeller 2 (v32
-FPGA version). It is still somewhat experimental, but works well enough
-to compile the Prop2 boot ROM.
+The `-2` option is new: it is for compiling for the Propeller 2.
 
 `fastspin.exe` checks the name it was invoked by. If the name starts
 with the string "bstc" (case matters) then its output messages mimic
@@ -158,6 +158,19 @@ that of the bstc compiler; otherwise it tries to match openspin's
 messages. This is for compatibility with Propeller IDE. For example,
 you can use fastspin with the PropellerIDE by renaming `bstc.exe` to
 `bstc.orig.exe` and then copying `fastspin.exe` to `bstc.exe`.
+
+### Changing Hub address
+
+In P2 mode, you may want to change the base hub address for the binary. Normally P2 binaries start at the standard offset of `0x400`. But if you want, for example, to load a fastspin compiled program from TAQOZ or some similar program, you may want to start at a different address (TAQOZ uses the first 64K of RAM). To do this, you may use some combination of the `-H` and `-E` flags.
+
+`-H nnnn` changes the base HUB address from `0x400` to `nnnn`, where `nnnn` is either a decimal number like `65536` or a hex number prefixed with `0x`. By default the binary still expects to be loaded at address 0, so it starts with a `coginit #0, ##nnnn` instruction and then zero padding until the hub start. To skip the `coginit` and padding, add the `-E` flag.
+
+#### Example
+
+To compile a program to start at address 65536 (at the 64K boundary), do:
+```
+fastspin -2 -H 0x10000 -E fibo.bas
+```
 
 Extensions
 ----------

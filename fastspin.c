@@ -109,6 +109,8 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
     fprintf(f, "          -O2 = all optimization\n");
+    fprintf(f, "  [ -H nnnn ]        set starting hub address\n");
+    fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
@@ -310,6 +312,9 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-C")) {
             gl_caseSensitive = 1;
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-E")) {
+            gl_no_coginit = 1;
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-l")) {
             gl_listing = 1;
             argv++; --argc;
@@ -421,6 +426,21 @@ main(int argc, const char **argv)
                 gl_optimize_flags = DEFAULT_ASM_OPTS;
             } else {
                 gl_optimize_flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "-H", 2)) {
+            // set ub address
+            const char *addr;
+            if (argv[0][2] != 0) {
+                addr = &argv[0][2];
+            } else {
+                argv++;
+                --argc;
+                addr = argv[0];
+            }
+            gl_hub_base = strtoul(addr, NULL, 0);
+            if (gl_hub_base == 0) {
+                fprintf(stderr, "Warning: hub base set to 0\n");
             }
             argv++; --argc;
         } else {

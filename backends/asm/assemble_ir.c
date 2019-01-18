@@ -668,6 +668,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         inCon = 0;
         inDat = 1;
         if (!didOrg) {
+            if (gl_p2 && !gl_no_coginit) {
+                flexbuf_addstr(fb, "\tcogid\t$100\n");
+                flexbuf_printf(fb, "\tcoginit\t$100,##$%x\n", P2_HUB_BASE);
+                flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
+            }
             flexbuf_addstr(fb, "\torg\t0\n");
             didOrg = 1;
         }
@@ -918,7 +923,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         break;
     case OPC_HUBMODE:
         if (gl_p2) {
-            flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
+            flexbuf_printf(fb, "\torgh\n");
         }
         lmmMode = 1;
         break;

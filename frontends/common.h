@@ -119,6 +119,7 @@ extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point
 #define G_FIXPOINT 16  /* number of bits of fraction */
 
 extern int gl_caseSensitive; /* whether Spin/PASM is case sensitive */
+extern int gl_no_coginit;    /* skip coginit code */
 
 /* types of output */
 #define OUTPUT_CPP  0
@@ -535,8 +536,8 @@ void PerformLoopOptimization(Module *P);
 // simplify statments like a^=b to a = a^b
 void SimplifyAssignments(AST **astptr);
 
-extern unsigned int gl_p2_hub_base;
-#define P2_HUB_BASE gl_p2_hub_base
+extern unsigned int gl_hub_base;
+#define P2_HUB_BASE gl_hub_base
 
 /*
  * functions to initialize lexers

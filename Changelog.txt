@@ -1,7 +1,8 @@
 Version 3.9.15
 - Fixed abort/catch in P2
 - Fixed a problem with quotes in strings
-- Fixed potential name conflict with labels
+- Fixed potential name conflict with labels, and improved optimization of branches as a side benefit
+- Added -H and -E flags to fastspin to allow changing HUB start address. For example, `fastspin -2 -H 0x10000 -E foo.bas` compiles a program to load and execute at address 65536. If the `-E` is left off then it still loads at 0, but is padded to start executing at 0x10000.
 - Added some more C library functions
 
 Version 3.9.14
