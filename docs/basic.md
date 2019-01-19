@@ -23,8 +23,68 @@ fastspin recognizes the language in a file by the extension. If a file has a ".b
 
 ## Preprocessor
 
-fastspin has a pre-processor that understands `#include`, `#define`, and
-`#ifdef / #ifndef / #else / #endif`. There are several predefined symbols:
+fastspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
+
+### Directives
+
+#### DEFINE
+```
+#define FOO hello
+```
+Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
+
+Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted.
+
+If no value is given, e.g.
+```
+#define BAR
+```
+then the symbol is defined as the string `1`.
+
+#### IFDEF
+
+Introduces a conditional compilation section, which is only compiled if
+the symbol after the `#ifdef` is in fact defined.
+
+#### IFNDEF
+
+Introduces a conditional compilation section, which is only compiled if
+the symbol after the `#ifndef` is *not* defined.
+
+#### ELSE
+
+Switches the meaning of conditional compilation.
+
+#### ELSEIFDEF
+
+A combination of `#else` and `#ifdef`.
+
+#### ELSEIFNDEF
+
+A combination of `#else` and `#ifndef`.
+
+#### ERROR
+
+Prints an error message. Mainly used in conditional compilation to report an unhandled condition. Everything after the `#error` directive is printed.
+
+#### INCLUDE
+
+Includes a file.
+
+#### WARN
+
+Prints a warning message.
+
+#### UNDEF
+
+Removes the definition of a symbol, e.g. to undefine `FOO` do:
+```
+#undef FOO
+```
+
+### Predefined Symbols
+
+There are several predefined symbols:
 
 Symbol           | When Defined
 -----------------|-------------
