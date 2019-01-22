@@ -696,14 +696,30 @@ MakeOperatorCall(AST *func, AST *left, AST *right, AST *extraArg)
 }
 
 // do a promotion when we already know the size of the original type
-static AST *dopromote(AST *expr, int numbytes, int operator)
+static AST *dopromote(AST *expr, int srcbytes, int destbytes, int operator)
 {
-    int shiftbits = numbytes * 8;
+    int shiftbits = srcbytes * 8;
     AST *promote;
-    if (shiftbits == 32) {
+
+    if (shiftbits == 32 && destbytes < 8) {
         return expr; // nothing to do
     }
     promote = AstOperator(operator, expr, AstInteger(shiftbits));
+    if (destbytes == 8) {
+        // at this point "promote" will contain a 4 byte value
+        // now we need to convert it to an 8 byte value
+        AST *highword;
+        if (operator == K_ZEROEXTEND) {
+            highword = AstInteger(0);
+        } else {
+            highword = AstOperator(K_SAR, promote, AstInteger(31));
+        }
+        promote = NewAST(AST_EXPRLIST,
+                         promote,
+                         NewAST(AST_EXPRLIST,
+                                highword,
+                                NULL));
+    }
     return promote;
 }
 // do a narrowing operation to convert from A bytes to B bytes
@@ -716,7 +732,7 @@ static AST *donarrow(AST *expr, int A, int B, int isSigned)
     if (shiftbits == 0) {
         return expr; // nothing to do
     }
-    promote = dopromote(expr, A, isSigned ? K_ZEROEXTEND : K_SIGNEXTEND);
+    promote = dopromote(expr, A, LONG_SIZE, isSigned ? K_ZEROEXTEND : K_SIGNEXTEND);
 #if 0    
     if (shiftbits > 0) {
         int operator = isSigned ? K_SAR : K_SHR;
@@ -744,7 +760,7 @@ static AST *forcepromote(AST *type, AST *expr)
     }
     tsize = TypeSize(type);
     op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
-    return dopromote(expr, tsize, op);
+    return dopromote(expr, tsize, LONG_SIZE, op);
 }
 
 //
@@ -759,31 +775,32 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     AST *rettype = lefttype;
     int leftunsigned = IsUnsignedType(lefttype);
     int rightunsigned = IsUnsignedType(righttype);
+    int finalsize = 4;
     
     force = force || (lsize != rsize);
     
-    if (lsize < 4 && force) {
+    if (lsize < finalsize && force) {
         if (IsConstExpr(ast->right)) {
             return lefttype;
         }
         if (leftunsigned) {
-            ast->left = dopromote(ast->left, lsize, K_ZEROEXTEND);
+            ast->left = dopromote(ast->left, lsize, finalsize, K_ZEROEXTEND);
             lefttype = ast_type_unsigned_long;
         } else {
-            ast->left = dopromote(ast->left, lsize, K_SIGNEXTEND);
+            ast->left = dopromote(ast->left, lsize, finalsize, K_SIGNEXTEND);
             lefttype = ast_type_long;
         }
         rettype = righttype;
     }
-    if (rsize < 4 && force) {
+    if (rsize < finalsize && force) {
         if (IsConstExpr(ast->left)) {
             return righttype;
         }
         if (rightunsigned) {
-            ast->right = dopromote(ast->right, rsize, K_ZEROEXTEND);
+            ast->right = dopromote(ast->right, rsize, finalsize, K_ZEROEXTEND);
             righttype = ast_type_unsigned_long;
         } else {
-            ast->right = dopromote(ast->right, rsize, K_SIGNEXTEND);
+            ast->right = dopromote(ast->right, rsize, finalsize, K_SIGNEXTEND);
             righttype = ast_type_long;
         }
         rettype = lefttype;
@@ -1264,9 +1281,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             int rsize = TypeSize(srctype);
             if (lsize > rsize) {
                 if (IsUnsignedType(srctype)) {
-                    *astptr = dopromote(expr, rsize, K_ZEROEXTEND);
+                    *astptr = dopromote(expr, rsize, lsize, K_ZEROEXTEND);
                 } else {
-                    *astptr = dopromote(expr, rsize, K_SIGNEXTEND);
+                    *astptr = dopromote(expr, rsize, lsize, K_SIGNEXTEND);
                 }
             }
         }
@@ -1336,10 +1353,11 @@ doCast(AST *desttype, AST *srctype, AST *src)
             int lsize = TypeSize(desttype);
             int rsize = TypeSize(srctype);
             if (lsize > rsize) {
+                int finalsize = (lsize < LONG_SIZE) ? LONG_SIZE : lsize;
                 if (IsUnsignedType(srctype)) {
-                    src = dopromote(src, rsize, K_ZEROEXTEND);
+                    src = dopromote(src, rsize, finalsize, K_ZEROEXTEND);
                 } else {
-                    src = dopromote(expr, rsize, K_SIGNEXTEND);
+                    src = dopromote(expr, rsize, finalsize, K_SIGNEXTEND);
                 }
             } else if (lsize < rsize) {
                 src = donarrow(src, rsize, lsize, IsUnsignedType(srctype));

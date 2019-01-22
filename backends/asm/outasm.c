@@ -2582,7 +2582,7 @@ CompileFunccall(IRList *irl, AST *expr)
   */
   numresults = FuncNumResults(functype);
   if (func && func->numresults != numresults) {
-      ERROR(NULL, "Internal assert failure: func numresults inconsistent");
+      WARNING(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
   }
   for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
@@ -3315,7 +3315,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_SEQUENCE:
       r = CompileExpression(irl, expr->left, NULL);
-      r = CompileExpression(irl, expr->right, NULL);
+      if (expr->right) {
+          r = CompileExpression(irl, expr->right, NULL);
+      }
       return r;
   case AST_INTEGER:
   case AST_FLOAT:
