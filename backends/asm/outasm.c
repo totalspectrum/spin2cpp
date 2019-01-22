@@ -28,7 +28,9 @@
 #define IS_FAST_CALL(f) ( (f == 0) || !FuncData(f) || FuncData(f)->convention == FAST_CALL)
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
-#define VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
+#define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
+#define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->large_local )
+
 /* lists of instructions in hub and cog */
 static IRList cogcode;
 static IRList hubcode;
@@ -196,6 +198,18 @@ IdentifierModuleName(Module *P, const char *name)
         snprintf(temp, sizeof(temp)-1, "_%s_%s", P->classname, cleanname(name));
     }
     return strdup(temp);
+}
+
+static bool
+PutVarOnStack(Function *func, Symbol *sym, int size)
+{
+    if (ALL_VARS_ON_STACK(func)) {
+        return true;
+    }
+    if (func->large_local && size > LARGE_SIZE_THRESHOLD) {
+        return true;
+    }
+    return false;
 }
 
 void
@@ -944,7 +958,7 @@ CogMemRef(Operand *addr, int offset)
 }
 
 static Operand *
-FrameRef(int offset)
+FrameRef(int offset, int typesize)
 {
     if (!frameptr) {
         frameptr = GetOneGlobal(REG_REG, "fp", 0);
@@ -952,7 +966,7 @@ FrameRef(int offset)
     if (COG_DATA) {
         return CogMemRef(frameptr, offset / LONG_SIZE);
     }
-    return SizedHubMemRef(LONG_SIZE, frameptr, offset);
+    return SizedHubMemRef(typesize, frameptr, offset);
 }
 static Operand *
 StackRef(int offset)
@@ -1028,7 +1042,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       }
       case  SYM_CLOSURE:
       {
-          return FrameRef(0);
+          return FrameRef(0, LONG_SIZE);
       }
       default:
           if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
@@ -1041,16 +1055,16 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
       case SYM_LOCALVAR:
       case SYM_PARAMETER:
       case SYM_RESULT:
-          if (VARS_ON_STACK(func)) {
-              int offset = sym_offset(func, sym);
-              if (offset >= 0) {
-                  return FrameRef(offset);
-              }
-          }
           if (stype == SYM_RESULT) {
               size = LONG_SIZE;
           } else {
               size = TypeSize((AST *)sym->val);
+          }
+          if (PutVarOnStack(func, sym, size)) {
+              int offset = sym_offset(func, sym);
+              if (offset >= 0) {
+                  return FrameRef(offset, TypeSize(BaseType((AST *)sym->val)));
+              }
           }
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
       case SYM_TEMPVAR:
@@ -1233,9 +1247,30 @@ static void EmitPop(IRList *irl, Operand *src)
 //
 // the size of local variables
 //
+static int AddSize(Symbol *sym, void *arg)
+{
+    int *ptr = (int *)arg;
+    int size;
+    switch (sym->type) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_PARAMETER:
+        size = TypeSize(sym->val);
+        size = (size + LONG_SIZE - 1) & ~(LONG_SIZE - 1);
+        *ptr += size;
+        break;
+    default:
+        break;
+    }
+    return 1;
+}
+
 static int LocalSize(Function *func)
 {
-    return LONG_SIZE * (func->numlocals + func->numparams + func->numresults);
+    int size = LONG_SIZE * (func->numresults);
+    // iterate over local variables, incrementing the size
+    IterateOverSymbols(&func->localsyms, AddSize, (void *)&size);
+    return size;
 }
 
 //
@@ -1397,7 +1432,7 @@ NeedToSaveLocals(Function *func)
     if (func->is_leaf) {
         return false;
     }
-    if (VARS_ON_STACK(func)) {
+    if (ALL_VARS_ON_STACK(func)) {
         return false;
     }
     if (func->is_recursive) {
@@ -1413,7 +1448,7 @@ NeedToSaveLocals(Function *func)
 static bool
 NeedFramePointer(Function *func)
 {
-    if (VARS_ON_STACK(func)) {
+    if (ANY_VARS_ON_STACK(func)) {
         return true;
     }
     if (func->uses_alloca) {
@@ -1456,8 +1491,8 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (NeedToSaveLocals(func)) {
         int i, n;
 
-        if (VARS_ON_STACK(func)) {
-            ERROR(NULL, "Internal error: VARS_ON_STACK function saving locals, frame pointer will be wrong");
+        if (ANY_VARS_ON_STACK(func)) {
+            WARNING(NULL, "Internal error: VARS_ON_STACK function %s saving locals, frame pointer will be wrong", func->name);
         }
         FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func), 0);
         if (HUB_CODE && !gl_p2 && n > 1) {
@@ -1485,7 +1520,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         EmitPush(irl, frameptr);
         EmitMove(irl, frameptr, stackptr);
     }
-    if (VARS_ON_STACK(func)) {
+    if (ANY_VARS_ON_STACK(func)) {
         int localsize;
         //
         // adjust stack as necessary
@@ -4290,10 +4325,10 @@ AssignFuncNames(IRList *irl, Module *P)
                 FuncData(f)->asmentername = NewOperand(IMM_HUB_LABEL, fentername, 0);
             }
         }
-        if (f->is_recursive || VARS_ON_STACK(f)) {
+        if (f->is_recursive || ANY_VARS_ON_STACK(f)) {
             f->no_inline = 1; // cannot inline these, they need special setup/shutdown
         }
-        if (NeedToSaveLocals(f) || VARS_ON_STACK(f)) {
+        if (NeedToSaveLocals(f) || ANY_VARS_ON_STACK(f)) {
             FuncData(f)->asmreturnlabel = NewCodeLabel();
         } else {
             FuncData(f)->asmreturnlabel = FuncData(f)->asmretname;

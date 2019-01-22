@@ -151,7 +151,7 @@ static void
 doCTransform(AST **astptr)
 {
     AST *ast = *astptr;
-    Function *func;
+    Function *func = NULL;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -243,6 +243,17 @@ doCTransform(AST **astptr)
         AstReportAs(ast->left);
         *ast = *CreateSwitch(ast->left, ast->right);
         break;
+    case AST_IDENTIFIER:
+    {
+        AST *typ;
+        if (IsLocalVariable(ast)) {
+            typ = ExprType(ast);
+            if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
+                curfunc->large_local = 1;
+            }
+        }
+        break;
+    }
     default:
         doCTransform(&ast->left);
         doCTransform(&ast->right);
