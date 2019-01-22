@@ -14,6 +14,10 @@
 #include "frontends/common.h"
 #include "frontends/lexer.h"
     
+/* special flag */
+    AST *ast_type_c_signed = NULL;
+    AST *ast_type_c_long = NULL;
+    
 /* Yacc functions */
     void cgramyyerror(const char *);
     int cgramyylex();
@@ -44,12 +48,35 @@ MakeSigned(AST *type, int isSigned)
     return type;
 }
 static AST *
+LengthenType(AST *type)
+{
+    if (!type) {
+        return ast_type_c_long;
+    }
+    if (type == ast_type_c_long) {
+        // "long long" -> 8 byte type
+        return NewAST(AST_INTTYPE, AstInteger(8), NULL);
+    }
+    if (type->kind == AST_FLOATTYPE) {
+        // "long double" -> 8 byte double
+        return NewAST(AST_FLOATTYPE, AstInteger(8), NULL);
+    }
+    // otherwise make sure it is 4 bytes long
+    return NewAST(type->kind, AstInteger(4), NULL);
+}
+
+static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
 {
-    if (IsUnsignedType(modifier)) {
-        type = MakeSigned(type, 0);
-    } else {
+    if (modifier == ast_type_c_signed) {
         type = MakeSigned(type, 1);
+    } else if (modifier == ast_type_unsigned_long) {
+        type = MakeSigned(type, 0);
+    }
+    // we need to be able to distinguish between
+    // "long long" and "long int"
+    if (modifier == ast_type_c_long) {
+        type = LengthenType(type);
     }
     return type;
 }
@@ -840,13 +867,27 @@ type_specifier
 	| C_INT
             { $$ = ast_type_long; }
 	| C_LONG
-            { $$ = ast_type_long; }
+            {
+                if (!ast_type_c_long) {
+                    // same as ast_type_long, but a distinct memory address
+                    // so we can distinguish it
+                    ast_type_c_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
+                }
+                $$ = ast_type_c_long;
+            }
 	| C_FLOAT
             { $$ = ast_type_float; }
 	| C_DOUBLE
             { $$ = ast_type_float; }
 	| C_SIGNED
-            { $$ = ast_type_long; }
+            {
+                if (!ast_type_c_signed) {
+                    // same as ast_type_long, but a distinct memory address
+                    // so we can distinguish it
+                    ast_type_c_signed = NewAST(AST_INTTYPE, AstInteger(4), NULL);
+                }
+                $$ = ast_type_c_signed;
+            }
 	| C_UNSIGNED
             { $$ = ast_type_unsigned_long; }
 	| struct_or_union_specifier
