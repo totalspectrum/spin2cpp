@@ -39,6 +39,7 @@
 
 #include    "system.H"
 #include    "internal.H"
+extern char *strdup(const char *);
 
 #if     HOST_SYS_FAMILY == SYS_UNIX
 #define _BSD_SOURCE 1
@@ -908,7 +909,7 @@ static void set_a_dir(
 char *NormalizePath(const char *path)
 {
     if (is_full_path(path)) {
-        return path;
+        return strdup(path);
     }
     return norm_path("", path, FALSE, FALSE);
 }
