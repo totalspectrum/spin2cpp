@@ -1288,6 +1288,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
     int i, size;
     AST *astlist;
     AST *ast;
+    AST *type;
     Operand *src;
     Operand *dst;
     Operand *basedst;
@@ -1303,13 +1304,20 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
         while (astlist != NULL) {
             ast = astlist->left;
             astlist = astlist->right;
+            type = NULL;
+            size = 1;
             if (ast->kind == AST_DECLARE_VAR) {
+                type = ast->left;
                 ast = ast->right;
             }
             if (ast->kind == AST_ARRAYDECL) {
                 size = EvalConstExpr(ast->right);
-            } else {
-                size = 1;
+            }
+            // how many longs will we need?
+            if (type) {
+                int tsize = size * TypeSize(type);
+                tsize = (tsize + LONG_SIZE - 1) & ~(LONG_SIZE-1);
+                size = tsize / LONG_SIZE;
             }
             basedst = CompileIdentifierForFunc(irl, ast, func);
             for (i = 0; i < size; i++) {
