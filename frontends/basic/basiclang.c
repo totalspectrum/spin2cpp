@@ -638,6 +638,17 @@ doBasicTransform(AST **astptr)
             func->force_static = 1;
         }
         break;
+    case AST_IDENTIFIER:
+    {
+        AST *typ;
+        if (IsLocalVariable(ast)) {
+            typ = ExprType(ast);
+            if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
+                curfunc->large_local = 1;
+            }
+        }
+        break;
+    }
     default:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);

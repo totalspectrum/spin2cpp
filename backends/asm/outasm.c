@@ -1063,7 +1063,11 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           if (PutVarOnStack(func, sym, size)) {
               int offset = sym_offset(func, sym);
               if (offset >= 0) {
-                  return FrameRef(offset, TypeSize(BaseType((AST *)sym->val)));
+                  AST *typ = sym->val;
+                  if (IsArrayType(typ)) {
+                      size = TypeSize(BaseType(typ));
+                  }
+                  return FrameRef(offset, size);
               }
           }
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
