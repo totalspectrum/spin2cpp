@@ -116,6 +116,27 @@ FindSymbolByOffset(SymbolTable *table, int offset)
     }
     return NULL;
 }
+
+/*
+ * iterate over all symbols in a table
+ */
+void
+IterateOverSymbols(SymbolTable *table, SymbolFunc func, void *arg)
+{
+    Symbol *sym;
+    int hash;
+    int more;
+    
+    for (hash = 0; hash < SYMTABLE_HASH_SIZE; hash++) {
+        sym = table->hash[hash];
+        while (sym) {
+            more = func(sym, arg);
+            if (!more) return;
+            sym = sym->next;
+        }
+    }
+}
+
 /*
  * create a new symbol
  */

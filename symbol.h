@@ -75,4 +75,11 @@ char *NewTemporaryVariable(const char *prefix);
 /* returns the old base */
 int SetTempVariableBase(int base, int max);
 
+/*
+ * iterate over all symbols in a function
+ * "func" returns nonzero if we should continue, 0 if we are done
+ */
+typedef int (*SymbolFunc)(Symbol *sym, void *arg);
+
+void  IterateOverSymbols(SymbolTable *table, SymbolFunc func, void *arg);    
 #endif
