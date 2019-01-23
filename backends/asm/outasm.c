@@ -2516,6 +2516,9 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             }
         }
     }
+    if (func && func->is_static) {
+        offset = NULL; // no need to update object
+    }
     if (objptr) {
         *objptr = objaddr;
     }
