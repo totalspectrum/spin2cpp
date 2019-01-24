@@ -9,14 +9,11 @@ C compiler support is not even at the "beta" stage yet; there are many features 
 An incomplete list of things that still need to be implemented:
 
   * bitfields
-  * unions
   * variable scope inside statement blocks (right now all local variables in a function share the same scope)
   * 64 bit integers (long long)
   * struct passing and return
   * struct initialization
-  * proper handling of large arrays on the stack
   * most of the C standard library
-  * some c99 syntax (e.g. variable declarations mixed with statements) are not handled
   
 ## Introduction
 
@@ -83,3 +80,27 @@ There is no linker as yet, so in order to use standard library functions we use 
   size_t strlen(const char *s) __fromfile("libc/string/strlen.c");
 ```
 declares the `strlen` function, and also says that if it is used and no definition is given for it, the file "libc/string/strlen.c" should be added to the build. This file is searched for along the standard include path.
+
+## Builtin functions
+
+### ABS
+
+```
+  x = __builtin_abs(y)
+```
+Calculates the absolute value of `y`. This is not like a normal C function in that the result type depends on the input type. If the input is an integer, the result is an integer. If the input is a float, the result is a float.
+
+### ALLOCA
+
+```
+  ptr = __builtin_alloca(size)
+```
+Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
+
+### SQRT
+
+```
+  x = __builtin_sqrt(y)
+```
+Calculates the square root of `y`. This is not like a normal C function in that the result type depends on the input type. If the input is an integer, the result is an integer. If the input is a float, the result is a float.
+

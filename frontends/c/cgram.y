@@ -528,7 +528,11 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 %token C_ALIGNW "alignw"
 %token C_EOLN "end of line"
 
+%token C_BUILTIN_ABS    "__builtin_abs"
+%token C_BUILTIN_SQRT   "__builtin_sqrt"
+
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
+%token C_BUILTIN_COGSTART "__builtin_cogstart"
 %token C_BUILTIN_PRINTF "__builtin_printf"
 %token C_BUILTIN_REV    "__builtin_rev"
 %token C_BUILTIN_VA_START "__builtin_va_start"
@@ -557,6 +561,10 @@ primary_expression
 postfix_expression
 	: primary_expression
             { $$ = $1; }
+        | C_BUILTIN_ABS '(' assignment_expression ')'
+            { $$ = AstOperator(K_ABS, NULL, $3); }
+        | C_BUILTIN_SQRT '(' assignment_expression ')'
+            { $$ = AstOperator(K_SQRT, NULL, $3); }
         | C_BUILTIN_REV '(' argument_expression_list ')'
             {
                 AST *arg1, *arg2;
