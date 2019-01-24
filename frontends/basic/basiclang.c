@@ -729,6 +729,16 @@ static AST *donarrow(AST *expr, int A, int B, int isSigned)
     int shiftbits = (A - B) * 8;
     AST *promote;
     AST *narrow;
+
+    if (A == 8 && B <= 4) {
+        // have to narrow
+        if (expr->kind != AST_EXPRLIST) {
+            return expr;
+        }
+        expr = expr->left;
+        A = 4;
+    }
+    shiftbits = (A - B) * 8;
     if (shiftbits == 0) {
         return expr; // nothing to do
     }
@@ -1285,6 +1295,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                 } else {
                     *astptr = dopromote(expr, rsize, lsize, K_SIGNEXTEND);
                 }
+            } else if (rsize == 8 && lsize < rsize) {
+                // narrowing cast
+                *astptr = donarrow(expr, rsize, lsize, IsUnsignedType(srctype));
             }
         }
     }
