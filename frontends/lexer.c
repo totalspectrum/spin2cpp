@@ -1703,8 +1703,18 @@ struct constants p2_constants[] = {
 
 void InitPreprocessor()
 {
+    const char *envpath;
     pp_init(&gl_pp);
     SetPreprocessorLanguage(LANG_SPIN);
+
+    // check for environment variables
+    envpath = getenv("FLEXCC_INCLUDE_PATH");
+    if (!envpath) {
+        envpath = getenv("FASTSPIN_INCLUDE_PATH");
+    }
+    if (envpath) {
+        pp_add_to_path(&gl_pp, envpath);
+    }
 }
 
 void SetPreprocessorLanguage(int language)
