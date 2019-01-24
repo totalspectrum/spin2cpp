@@ -659,7 +659,7 @@ static void doASTDump(AST *ast, int indent)
                 opString = "+=>";
                 break;
             default:
-                sprintf(buf, "<operator #%d>", ast->d.ival);
+                sprintf(buf, "<operator #0x%x>", ast->d.ival);
                 break;
             }
             if (opString) {
