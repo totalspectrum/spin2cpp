@@ -187,7 +187,7 @@ main(int argc, const char **argv)
        symbols. The rest of initialization happens after command line
        options have been parsed
     */
-    InitPreprocessor();
+    InitPreprocessor(argv);
     
     /* save our command line arguments and comments describing
        how we were run

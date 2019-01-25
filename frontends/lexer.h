@@ -6,6 +6,12 @@
 #include "optokens.h"
 #include "util/flexbuf.h"
 
+#if defined(__linux__)
+#define LINUX 1
+#elif defined(__MINGW32__) || defined(__MINGW64__)
+#define MINGW 1
+#endif
+
 extern int lexgetc(LexStream *L);
 extern void lexungetc(LexStream *L, int c);
 extern void EstablishIndent(LexStream *L, int level);

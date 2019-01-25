@@ -166,13 +166,6 @@ main(int argc, const char **argv)
     int useEeprom = 0;
     const char *listFile = NULL;
     
-#if 0
-    printf("fastspin: arguments are:\n");
-    for (i = 0; i < argc; i++) {
-        printf("[%s]\n", argv[i]);
-    }
-    fflush(stdout);
-#endif    
     gl_start_time = getCurTime();
     
     /* Initialize the global preprocessor; we need to do this here
@@ -180,7 +173,7 @@ main(int argc, const char **argv)
        symbols. The rest of initialization happens after command line
        options have been parsed
     */
-    InitPreprocessor();
+    InitPreprocessor(argv);
 
     /* save our command line arguments and comments describing
        how we were run

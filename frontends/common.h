@@ -528,7 +528,7 @@ int DoPropellerChecksum(const char *fname, size_t eepromSize);
 
 // initialization functions
 void Init();
-void InitPreprocessor();
+void InitPreprocessor(const char *argv[]);
 void SetPreprocessorLanguage(int language);
 
 // perform common sub-expression elimination on a function

@@ -1703,12 +1703,89 @@ struct constants p2_constants[] = {
     { "_set",       SYM_CONSTANT, 0xF },
 };
 
-void InitPreprocessor()
+#if defined(WIN32)
+#include <windows.h>
+#include <psapi.h>
+#endif
+
+#if defined(MACOSX)
+#include <mach-o/dyld.h>
+#endif
+
+#if defined(LINUX)
+#include <unistd.h>
+#endif
+
+#if defined(WIN32)
+#define PATH_SEP    ';'
+#define DIR_SEP     '\\'
+#define DIR_SEP_STR "\\"
+#else
+#define PATH_SEP    ':'
+#define DIR_SEP     '/'
+#define DIR_SEP_STR "/"
+#endif
+
+int 
+getProgramPath(const char **argv, char *path, int size)
+{
+#if defined(WIN32)
+
+#if defined(Q_OS_WIN32) || defined(MINGW)
+    /* get the full path to the executable */
+    if (!GetModuleFileNameA(NULL, path, size))
+        return -1;
+#else
+    /* get the full path to the executable */
+    if (!GetModuleFileNameEx(GetCurrentProcess(), NULL, path, size))
+        return -1;
+#endif  /* Q_OS_WIN32 */
+
+#elif defined(LINUX)
+    int r;
+    r = readlink("/proc/self/exe", path, size - 1);
+    if (r >= 0)
+      path[r] = 0;
+    else
+      return -1;
+#elif defined(MACOSX)
+    uint32_t bufsize = size - 1;
+    int r = _NSGetExecutablePath(path, &bufsize);
+    if (r < 0)
+      return -1;
+#else
+    /* fall back on argv[0]... probably not the best bet, since
+       shells might not put the full path in, but it's the most portable
+    */
+    strcpy(path, argv[0]);
+#endif
+
+    return 0;
+}
+
+char gl_prognamebuf[1024];
+
+void InitPreprocessor(const char **argv)
 {
     const char *envpath;
+    char *progname;
     pp_init(&gl_pp);
     SetPreprocessorLanguage(LANG_SPIN);
 
+    // add a path relative to the executable
+    if (argv[0] != NULL) {
+        if (getProgramPath(argv, gl_prognamebuf, sizeof(gl_prognamebuf)) != 0) {
+            strcpy(gl_prognamebuf, argv[0]);
+        }
+        progname = strrchr(gl_prognamebuf, '/');
+        if (progname) {
+            progname++;
+        } else {
+            progname = gl_prognamebuf;
+        }
+        strcpy(progname, "../include");
+        pp_add_to_path(&gl_pp, progname);
+    }
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
     if (!envpath) {
