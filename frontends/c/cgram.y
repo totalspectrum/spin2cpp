@@ -596,6 +596,14 @@ postfix_expression
             }
         | C_BUILTIN_ALLOCA '(' assignment_expression ')'
             { $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3); }
+        | C_BUILTIN_COGSTART '(' argument_expression_list ')'
+            {
+                AST *elist;
+                AST *immval = AstInteger(0x1e);
+                elist = NewAST(AST_EXPRLIST, immval, NULL);
+                elist = AddToList(elist, $3);
+                $$ = NewAST(AST_COGINIT, elist, NULL);
+            }
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);
