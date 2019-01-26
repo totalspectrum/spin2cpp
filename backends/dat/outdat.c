@@ -263,6 +263,14 @@ IsRelocatable(AST *sub, int32_t *offset, bool isInitVal)
     return 0;
 }
 
+static void
+AlignPc(Flexbuf *f, int size)
+{
+        while ((datacount % size) != 0) {
+            outputByte(f, 0);
+        }
+}
+
 /* output a single data item element */
 void
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
@@ -341,18 +349,58 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
 }
 
 void
-outputInitializer(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs)
+outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
 {
     int n;
-
+    int elemsize;
+    int typealign, typesize;
+    int numelems;
+    AST *varlist;
+    Module *P;
     
-    if ((elemsize == 3) || (elemsize > 4)) {
-        if (initval) {
-            ERROR(initval, "Cannot yet handle initializer for elements of size %d", elemsize);
-            initval = NULL;
+    type = RemoveTypeModifiers(type);
+    typealign = TypeAlign(type);
+    elemsize = typesize = TypeSize(type);
+    numelems  = 1;
+
+    AlignPc(f, typealign);
+    if (!initval) {
+        // just fill with 0s
+    } else {
+        if (type->kind == AST_ARRAYTYPE) {
+            type = RemoveTypeModifiers(BaseType(type));
+            elemsize = TypeSize(type);
+            numelems = typesize / elemsize;
         }
-        numelems *= elemsize;
-        elemsize = 1;
+        switch(type->kind) {
+        case AST_INTTYPE:
+        case AST_UNSIGNEDTYPE:
+        case AST_FLOATTYPE:
+        case AST_PTRTYPE:
+            break;
+        case AST_OBJECT:
+            P = GetClassPtr(type);
+            varlist = P->finalvarblock;
+            if (initval->kind != AST_EXPRLIST) {
+                initval = NewAST(AST_EXPRLIST, initval, NULL);
+            }
+            while (varlist) {
+                AST *subtype;
+                AST *subinit = initval ? initval->left : NULL;
+                subtype = ExprType(varlist->left);
+                outputInitializer(f, subtype, subinit, relocs);
+                varlist = varlist->right;
+                if (initval) initval = initval->right;
+            }
+            if (initval) {
+                ERROR(initval, "too many initializers");
+            }
+            return;
+        default:    
+            ERROR(initval, "Unable to initialize elements of this type");
+            initval = NULL;
+            break;
+        }
     }
     n = outputInitList(f, elemsize, initval, numelems, relocs);
     if (n < numelems) {
@@ -1129,14 +1177,6 @@ instr_ok:
     outputInstrLong(f, val);
 }
 
-static void
-AlignPc(Flexbuf *f, int size)
-{
-        while ((datacount % size) != 0) {
-            outputByte(f, 0);
-        }
-}
-
 void
 outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
@@ -1211,9 +1251,6 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
 {
     AST *initval = NULL;
     AST *type = ast->left;
-    int typsize;
-    int typalign;
-    int elemsize = 0;
     
     ast = ast->right;
     if (ast->kind == AST_ASSIGN) {
@@ -1224,29 +1261,7 @@ outputVarDeclare(Flexbuf *f, AST *ast, Flexbuf *relocs)
         type = NewAST(AST_ARRAYTYPE, type, ast->right);
         ast = ast->left;
     }
-    typalign = TypeAlign(type);
-    typsize = TypeSize(type);
-    if (typsize == 0) {
-        return;
-    }
-    AlignPc(f, typalign);
-
-    // we only know how to initialize basic types right now
-    do {
-        type = RemoveTypeModifiers(type);
-        if (type->kind == AST_ARRAYTYPE) {
-            type = type->left;
-        } else {
-            break;
-        }
-    } while (type);
-    
-    if (!type) {
-        ERROR(ast, "Unknown type in global variable");
-        return;
-    }
-    elemsize = TypeSize(type);
-    outputInitializer(f, elemsize, initval, typsize / elemsize, relocs);
+    outputInitializer(f, type, initval, relocs);
 }
 
 /*
