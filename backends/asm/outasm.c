@@ -5308,7 +5308,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
     bool emitSpinCode = true;
     
-    unsigned int clkfreq, clkreg;
     const char *asmcode;
     int maxargs = 2; // initialization code wants 2 arguments
     int maxrets = 1;  // assume 1 return value is default
@@ -5449,15 +5448,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
         // now copy the hub code into place
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
-        if (gl_p2) {
-            // on P2, make room for CLKFREQ and CLKMODE
-            if (!GetClkFreq(P, &clkfreq, &clkreg)) {
-                clkfreq = 160000000;
-                clkreg = 0x010c3f04;
-            }
-            EmitLong(&cogcode, clkfreq);
-            EmitLong(&cogcode, clkreg);
-        }
     }
 
     // guesstimate how much space we will have for FCACHE, if

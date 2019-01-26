@@ -540,6 +540,7 @@ void SimplifyAssignments(AST **astptr);
 
 extern unsigned int gl_hub_base;
 #define P2_HUB_BASE gl_hub_base
+#define P2_CONFIG_BASE 0x10   /* clkfreq and such go here */
 
 /*
  * functions to initialize lexers

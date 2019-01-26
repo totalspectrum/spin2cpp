@@ -669,8 +669,17 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         inDat = 1;
         if (!didOrg) {
             if (gl_p2 && !gl_no_coginit) {
-                flexbuf_addstr(fb, "\tcogid\t$100\n");
-                flexbuf_printf(fb, "\tcoginit\t$100,##$%x\n", P2_HUB_BASE);
+                unsigned int clkfreq, clkreg;
+                // on P2, make room for CLKFREQ and CLKMODE
+                if (!GetClkFreq(P, &clkfreq, &clkreg)) {
+                    clkfreq = 160000000;
+                    clkreg = 0x010c3f04;
+                }
+                flexbuf_addstr(fb, "\tcogid\t$1d0\n");
+                flexbuf_printf(fb, "\tcoginit\t$1d0,##$%x\n", P2_HUB_BASE);
+                flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);
+                flexbuf_printf(fb, "\tlong\t%d ' clock frequency\n", clkfreq); 
+                flexbuf_printf(fb, "\tlong\t$%x ' clock mode\n", clkreg); 
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
             }
             flexbuf_addstr(fb, "\torg\t0\n");
