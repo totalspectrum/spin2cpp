@@ -1012,12 +1012,36 @@ decode_instr:
             ERROR(line, "Absolute address not valid for %s", instr->name);
             isrc = 0;
         } else if (opimm[opidx]) {
+            bool dstLut = false;
+            bool dstHub = true;
             isrc = EvalPasmExpr(operand[opidx]);
             if (isrc < 0x400) {
+                dstHub = false;
+                dstLut = (isrc >= 0x200);
                 isrc *= 4;
             }
-            isrc = isrc - (curpc+4);
-            isrc /= 4;
+            if (inHub) {
+                if (!dstHub) {
+                    if (dstLut) {
+                        ERROR(line, "%s branch crosses HUB/LUT boundary", instr->name);
+                    } else {
+                        ERROR(line, "%s branch crosses HUB/COG boundary", instr->name);
+                    }
+                    isrc = curpc;
+                }
+            } else {
+                if (dstLut && curpc < 0x200) {
+                    ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
+                    isrc = curpc;
+                } else if (!dstLut && !dstHub && curpc >= 0x200) {
+                    ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
+                    isrc = curpc;
+                } else if (dstHub) {
+                    ERROR(line, "%s branch crosses HUB/COG boundary", instr->name);
+                    isrc = curpc;
+                }
+            }
+            isrc = (isrc - (int)(curpc+4)) / 4;
             if ( (isrc < -256) || (isrc > 255) ) {
                 ERROR(line, "Source out of range for relative branch %s", instr->name);
                 isrc = 0;
