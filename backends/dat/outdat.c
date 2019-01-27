@@ -1030,10 +1030,10 @@ decode_instr:
                     isrc = curpc;
                 }
             } else {
-                if (dstLut && curpc < 0x200) {
+                if (dstLut && curpc < 0x800) {
                     ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
                     isrc = curpc;
-                } else if (!dstLut && !dstHub && curpc >= 0x200) {
+                } else if (!dstLut && !dstHub && curpc >= 0x800) {
                     ERROR(line, "%s branch crosses LUT/COG boundary", instr->name);
                     isrc = curpc;
                 } else if (dstHub) {
