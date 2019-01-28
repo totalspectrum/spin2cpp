@@ -351,7 +351,6 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
 void
 outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
 {
-    int n;
     int elemsize;
     int typealign, typesize;
     int numelems;
@@ -366,47 +365,59 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     AlignPc(f, typealign);
     if (!initval) {
         // just fill with 0s
-    } else {
-        if (type->kind == AST_ARRAYTYPE) {
-            type = RemoveTypeModifiers(BaseType(type));
-            elemsize = TypeSize(type);
-            numelems = typesize / elemsize;
-        }
-        switch(type->kind) {
-        case AST_INTTYPE:
-        case AST_UNSIGNEDTYPE:
-        case AST_FLOATTYPE:
-        case AST_PTRTYPE:
-            break;
-        case AST_OBJECT:
-            P = GetClassPtr(type);
-            varlist = P->finalvarblock;
-            if (initval->kind != AST_EXPRLIST) {
-                initval = NewAST(AST_EXPRLIST, initval, NULL);
-            }
-            while (varlist) {
-                AST *subtype;
-                AST *subinit = initval ? initval->left : NULL;
-                subtype = ExprType(varlist->left);
-                outputInitializer(f, subtype, subinit, relocs);
-                varlist = varlist->right;
-                if (initval) initval = initval->right;
-            }
-            if (initval) {
-                ERROR(initval, "too many initializers");
-            }
-            return;
-        default:    
-            ERROR(initval, "Unable to initialize elements of this type");
-            initval = NULL;
-            break;
-        }
+        outputInitList(f, elemsize, initval, numelems, relocs);
+        return;
     }
-    n = outputInitList(f, elemsize, initval, numelems, relocs);
-    if (n < numelems) {
-        outputInitList(f, elemsize, NULL, numelems - n, relocs);
-    } else if (n > numelems) {
-        ERROR(initval, "Too many elements found in initializer");
+    switch(type->kind) {
+    case AST_INTTYPE:
+    case AST_UNSIGNEDTYPE:
+    case AST_FLOATTYPE:
+    case AST_PTRTYPE:
+        outputInitList(f, elemsize, initval, numelems, relocs);
+        break;
+    case AST_ARRAYTYPE:
+    {
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (initval->kind != AST_EXPRLIST) {
+            initval = NewAST(AST_EXPRLIST, initval, NULL);
+        }
+        while (numelems > 0 && initval) {
+            --numelems;
+            outputInitializer(f, type, initval->left, relocs);
+            initval = initval->right;
+        }
+        if (numelems > 0) {
+            outputInitList(f, elemsize, NULL, numelems, relocs);
+        } else if (initval) {
+            ERROR(initval, "too many elements found in initializer");
+        }
+        break;
+    }
+    
+    case AST_OBJECT:
+        P = GetClassPtr(type);
+        varlist = P->finalvarblock;
+        if (initval->kind != AST_EXPRLIST) {
+            initval = NewAST(AST_EXPRLIST, initval, NULL);
+        }
+        while (varlist) {
+            AST *subtype;
+            AST *subinit = initval ? initval->left : NULL;
+            subtype = ExprType(varlist->left);
+            outputInitializer(f, subtype, subinit, relocs);
+            varlist = varlist->right;
+            if (initval) initval = initval->right;
+        }
+        if (initval) {
+            ERROR(initval, "too many initializers");
+        }
+        return;
+    default:    
+        ERROR(initval, "Unable to initialize elements of this type");
+        initval = NULL;
+        break;
     }
 }
 

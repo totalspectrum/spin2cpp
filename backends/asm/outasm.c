@@ -1310,7 +1310,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                 type = ast->left;
                 ast = ast->right;
             }
-            if (ast->kind == AST_ARRAYDECL) {
+            if (ast && ast->kind == AST_ARRAYDECL) {
                 size = EvalConstExpr(ast->right);
             }
             // how many longs will we need?

@@ -526,13 +526,13 @@ ProcessModule(Module *P)
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);
     DeclareMemberVariables(P); P->pendingvarblock = NULL;
-    DeclareLabels(P);
     DeclareFunctions(P);
 
     /* recursively process closures */
     if (P->subclasses) {
         ProcessModule(P->subclasses);
     }
+    DeclareLabels(P);
     /* for all functions, do any language specific stuff */
     if (gl_errors == 0) {
         Function *pf;

@@ -155,7 +155,7 @@ emitPendingLabels(Module *P, AST *label, unsigned hubpc, unsigned cogpc, AST *lt
 {
     while (label) {
         EnterLabel(P, label->left, hubpc, cogpc, ltype, lastorg, inHub);
-//        printf("label: %s = %x\n", label->left->d.string, hubpc);
+        //printf("label: %s = %x\n", label->left->d.string, hubpc);
         label = label->right;
     }
     return NULL;
@@ -301,12 +301,10 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             declare = NewAST(AST_DECLARE_VAR, subtype, declare);
             ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
             P->datblock = AddToList(P->datblock, ast);
+            //globalModule->datblock = AddToList(globalModule->datblock, ast);
             *initializer = *NewAST(AST_ABSADDROF, newident, NULL);
-
-            /* add newident to P */
         }
-    }
-    if (type->kind == AST_ARRAYTYPE) {
+    } else  if (type->kind == AST_ARRAYTYPE) {
         AST *elem;
         subtype = type->left;
         if (initializer->kind != AST_EXPRLIST) {
@@ -314,6 +312,28 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             return;
         }
         for (elem = initializer; elem; elem = elem->right) {
+            fixupInitializer(P, elem->left, subtype);
+        }
+    } else if (type->kind == AST_OBJECT) {
+        Module *Q = GetClassPtr(type);
+        AST *varlist, *elem;
+        varlist = Q->finalvarblock;
+        if (Q->pendingvarblock) {
+            ERROR(initializer, "internal error, got something in pendingvarblock");
+            return;
+        }
+        if (initializer->kind != AST_EXPRLIST) {
+            ERROR(initializer, "wrong kind of initializer for struct type");
+            return;
+        }
+        for (elem = initializer; elem; elem = elem->right) {
+            if (!varlist) {
+                ERROR(initializer, "too many initializers for struct or union");
+                return;
+            }
+            subtype = ExprType(varlist->left);
+            varlist = varlist->right;
+            if (Q->isUnion) varlist = NULL;
             fixupInitializer(P, elem->left, subtype);
         }
     }
