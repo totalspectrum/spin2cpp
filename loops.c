@@ -916,7 +916,7 @@ CheckSimpleIncrementLoop(AST *stmt)
     initVal = EvalConstExpr(updateInit);
 
     /* check condition */
-    if (condtest->kind != AST_OPERATOR)
+    if (!condtest || condtest->kind != AST_OPERATOR)
         return;
 
     updateTestOp = condtest->d.ival;
