@@ -1786,7 +1786,7 @@ void InitPreprocessor(const char **argv)
             progname = gl_prognamebuf;
         }
         strcpy(progname, "../include");
-        pp_add_to_path(&gl_pp, progname);
+        pp_add_to_path(&gl_pp, gl_prognamebuf);
     }
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
