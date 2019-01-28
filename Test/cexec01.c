@@ -1,12 +1,16 @@
+#include <propeller.h>
+
 #ifdef USE_STDIO
 #include <stdio.h>
 #define println(x) printf(x "\n")
-#define print(x) printf(x)
+#define print(x) printf("%s", x)
+#define printdec(x) printf("%d", x)
 #else
 struct __using("FullDuplexSerial.spin") fds;
 #define println(x) fds.str(x "\r\n")
 #define print(x) fds.str(x)
 #define putchar(c) fds.tx(c)
+#define printdec(x) fds.dec(x)
 #endif
 
 enum MYKIND {
@@ -18,13 +22,9 @@ enum MYKIND {
 void testswitch(int n)
 {
     static int cntr = 1;
-#ifdef USE_STDIO
-    printf("call #%d: ", cntr++);
-#else
-    fds.str("call #");
-    fds.dec(cntr++);
-    fds.str(": ");
-#endif
+    print("call #");
+    printdec(cntr++);
+    print(": ");
     switch(n) {
     case 0:
         println("zero");
@@ -43,11 +43,21 @@ void myexit(int n)
     putchar(0xff);
     putchar(0x0);
     putchar(n);
+    waitcnt(getcnt() + 80000000);
     __asm {
         cogid n
         cogstop n
     }
 }
+
+struct blah {
+    const char *name;
+    short num;
+} mytab[3] = {
+    { "the first string", 1 },
+    { "the second string", 2 },
+    { 0, 0 },
+};
 
 void main()
 {
@@ -57,5 +67,13 @@ void main()
     testswitch(1);
     testswitch(0);
     testswitch(2);
+
+    for (int i = 0; ; i++) {
+        if (!mytab[i].name) break;
+        printdec(i);
+        print(": ");
+        print(mytab[i].name);
+        println("");
+    }
     myexit(0);
 }

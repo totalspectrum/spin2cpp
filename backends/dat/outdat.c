@@ -413,6 +413,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         if (initval) {
             ERROR(initval, "too many initializers");
         }
+        // objects are padded to a long boundary
+        AlignPc(f, LONG_SIZE);
         return;
     default:    
         ERROR(initval, "Unable to initialize elements of this type");
