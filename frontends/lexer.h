@@ -10,6 +10,8 @@
 #define LINUX 1
 #elif defined(__MINGW32__) || defined(__MINGW64__)
 #define MINGW 1
+#elif defined(__APPLE__)
+#define MACOSX 1
 #endif
 
 extern int lexgetc(LexStream *L);
