@@ -36,6 +36,8 @@ static AST *make_methodptr;
 static AST *gc_alloc;
 static AST *gc_free;
 
+static AST *BuildMethodPointer(AST *ast);
+
 static int
 IsBasicString(AST *typ)
 {
@@ -1270,6 +1272,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (IsPointerType(desttype) && srctype && srctype->kind == AST_FUNCTYPE) {
         srctype = NewAST(AST_PTRTYPE, srctype, NULL);
+        expr = NewAST(AST_ADDROF, expr, NULL);
+        expr = BuildMethodPointer(expr);
+        *astptr = expr;
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
@@ -1382,19 +1387,24 @@ doCast(AST *desttype, AST *srctype, AST *src)
     return NULL;
 }
 
-static void
+static AST *
 BuildMethodPointer(AST *ast)
 {
     Symbol *sym;
     AST *objast;
     AST *funcaddr;
+    AST *result;
+    Function *func;
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
     if (!sym || sym->type != SYM_FUNCTION) {
         ERROR(ast, "Internal error, unable to find function address");
-        return;
+        return ast;
     }
-    if (objast == NULL) {
+    func = (Function *)sym->val;
+    if (func->is_static) {
+        objast = AstInteger(0);
+    } else if (objast == NULL) {
         objast = NewAST(AST_SELF, NULL, NULL);
     } else {
         objast = NewAST(AST_ADDROF, objast, NULL);
@@ -1402,7 +1412,8 @@ BuildMethodPointer(AST *ast)
     // save off the current @ node
     funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
     // create a call
-    *ast = *MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
+    result = MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
+    return result;
 }
 
 //
@@ -1528,7 +1539,7 @@ AST *CheckTypes(AST *ast)
     case AST_ADDROF:
     case AST_ABSADDROF:
         if (IsFunctionType(ltype)) {
-            BuildMethodPointer(ast);
+            *ast = *BuildMethodPointer(ast);
             return ltype;
         }
         return NewAST(AST_PTRTYPE, ltype, NULL);
