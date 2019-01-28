@@ -97,6 +97,26 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
+### COGSTART
+
+Starts a function running in another COG. This builtin is more of a macro than a traditional function, because it does not immediately evaluate its first parameter (which should be a function call); instead, it causes that function call to run in a new COG. For example:
+```
+  static long stack[32];
+  id = __builtin_cogstart(somefunc(a, b), &stack[0]);
+```
+runs `somefunc` with parameters `a` and `b` in a new COG, using the given stack space.
+
+The amount of space required for the stack depends on the complexity of the code to run, but must be at least 16 longs (64 bytes).
+
+`__builtin_cogstart` returns the identifier of the new COG, or -1 if no COGs are free.
+
+### REV
+
+```
+x = __builtin_rev(y, n)
+```
+Reverses the bits of `y` and then shifts the result right by `32-n` places. This effectively means that the bottom `n` bits of `y` are reversed, and 0 placed in the remaining bits.
+
 ### SQRT
 
 ```
