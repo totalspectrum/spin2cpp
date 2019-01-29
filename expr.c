@@ -1309,6 +1309,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr(lref->hubval + offset);
         }
         break;
+    case AST_CAST:
+    {
+        lval = EvalExpr(expr->right, flags, valid, depth+1);
+        // FIXME: need to actually apply cast here
+        return lval;
+    }
     default:
         break;
     }

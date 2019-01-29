@@ -271,26 +271,31 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     AST *newident;
     AST *subtype;
     AST *elem;
+    AST *initval = initializer;
+    
     type = RemoveTypeModifiers(type);
     if (!type) {
         return;
     }
-    if (!initializer) {
+    while (initval && initval->kind == AST_CAST) {
+        initval = initval->right;
+    }
+    if (!initval) {
         return;
     }
-    if (initializer->kind == AST_STRINGPTR) {
+    if (initval->kind == AST_STRINGPTR) {
         *initializer = *reduceStrings(initializer->left);
     }
-    if (initializer->kind == AST_SIMPLEFUNCPTR) {
+    if (initval->kind == AST_SIMPLEFUNCPTR) {
         return;
     }
     if (type->kind == AST_PTRTYPE) {
-        if (initializer->kind == AST_STRINGPTR) {
-            elem = initializer->left;
+        if (initval->kind == AST_STRINGPTR) {
+            elem = initval->left;
         } else {
             AST *typ = ExprType(initializer);
             if (IsFunctionType(typ)) {
-                elem = initializer;
+                elem = initval;
                 while (elem && elem->kind == AST_ADDROF) {
                     elem = elem->left;
                 }
@@ -300,7 +305,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
                               NewAST(AST_EXPRLIST, elem, NULL));
                 type = ast_type_ptr_long;
             } else {
-                elem = initializer;
+                elem = initval;
             }
         }
         if (elem->kind == AST_EXPRLIST) {
