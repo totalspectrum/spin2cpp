@@ -281,23 +281,43 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     if (initializer->kind == AST_STRINGPTR) {
         *initializer = *reduceStrings(initializer->left);
     }
+    if (initializer->kind == AST_SIMPLEFUNCPTR) {
+        return;
+    }
     if (type->kind == AST_PTRTYPE) {
         if (initializer->kind == AST_STRINGPTR) {
             elem = initializer->left;
         } else {
-            elem = initializer;
+            AST *typ = ExprType(initializer);
+            if (IsFunctionType(typ)) {
+                elem = initializer;
+                while (elem && elem->kind == AST_ADDROF) {
+                    elem = elem->left;
+                }
+                elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
+                elem = NewAST(AST_EXPRLIST,
+                              AstInteger(0),
+                              NewAST(AST_EXPRLIST, elem, NULL));
+                type = ast_type_ptr_long;
+            } else {
+                elem = initializer;
+            }
         }
         if (elem->kind == AST_EXPRLIST) {
             AST *ast, *declare;
 
             /* need to move it to its own declaration */
-            subtype = type->left;
+            if (elem->kind == AST_EXPRLIST) {
+                subtype = type->left;
+                subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(elem)));
+            } else {
+                subtype = ast_type_ptr_void;
+            }
             newinit = NewAST(AST_EXPRLIST, NULL, NULL);
             *newinit = *elem;
             newident = AstTempIdentifier("_array_");
             declare = AstAssign(newident, newinit);
 
-            subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(newinit)));
             declare = NewAST(AST_DECLARE_VAR, subtype, declare);
             ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
             P->datblock = AddToList(P->datblock, ast);

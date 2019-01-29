@@ -1219,6 +1219,15 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     }
 }
 
+static bool
+IsSymbol(AST *expr)
+{
+    if (!expr) return false;
+    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
+        return true;
+    return false;
+}
+
 //
 // modifies *astptr, originally of type srctype,
 // to have type desttype by introducing any
@@ -1263,7 +1272,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     // automatically cast arrays to pointers if necessary
-    if (IsArrayType(srctype) && IsPointerType(desttype)) {
+    if (IsArrayType(srctype) && IsPointerType(desttype) && IsSymbol(expr)) {
         srctype = NewAST(AST_PTRTYPE, srctype->left, NULL);
         expr = NewAST(AST_ADDROF,
                       NewAST(AST_ARRAYREF, expr, AstInteger(0)),
@@ -1272,9 +1281,11 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (IsPointerType(desttype) && srctype && srctype->kind == AST_FUNCTYPE) {
         srctype = NewAST(AST_PTRTYPE, srctype, NULL);
-        expr = NewAST(AST_ADDROF, expr, NULL);
-        expr = BuildMethodPointer(expr);
-        *astptr = expr;
+        if (IsSymbol(expr)) {
+            expr = NewAST(AST_ADDROF, expr, NULL);
+            expr = BuildMethodPointer(expr);
+            *astptr = expr;
+        }
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {

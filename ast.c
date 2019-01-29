@@ -522,6 +522,7 @@ static const char *astnames[] = {
 
     "struct",
     "union",
+    "simplefuncptr",
 };
 
 //

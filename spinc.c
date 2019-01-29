@@ -843,12 +843,41 @@ CheckUnusedMethods(int isBinary)
     }
 }
 
+static void
+MarkStaticFunctionPointers(AST *list)
+{
+    AST *sub;
+    Symbol *sym;
+    if (!list) {
+        return;
+    }
+    switch (list->kind) {
+    case AST_SIMPLEFUNCPTR:
+        sub = list->left;
+        sym = LookupAstSymbol(sub, NULL);
+        if (sym) {
+            Function *f;
+            if (sym->type != SYM_FUNCTION) {
+                ERROR(list, "%s is not a function", sym->name);
+                return;
+            }
+            f = (Function *)sym->val;
+            MarkUsed(f, "static func");
+        }
+        return;
+    default:
+        MarkStaticFunctionPointers(list->left);
+        MarkStaticFunctionPointers(list->right);
+    }
+}
+
 void
 RemoveUnusedMethods(int isBinary)
 {
     Module *P, *LastP;
     Function *pf;
-
+    Module *saveCur;
+    
     // mark everything unused
     for (P = allparse; P; P = P->next) {
         for (pf = P->functions; pf; pf = pf->next) {
@@ -871,6 +900,14 @@ RemoveUnusedMethods(int isBinary)
                 }
             }
         }
+    }
+    // and check for function pointers in data
+    for (P = allparse; P; P = P->next) {
+        saveCur = current;
+        current = P;
+        MarkStaticFunctionPointers(P->datblock);
+        current = saveCur;
+        
     }
     // Now remove the ones that are never called
     for (P = allparse; P; P = P->next) {

@@ -208,18 +208,30 @@ GetAddrOffset(AST *ast)
 // then we return -1
 
 static int
-IsRelocatable(AST *sub, int32_t *offset, bool isInitVal)
+IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
 {
-    int32_t myoff;
+    intptr_t myoff;
     int r1 , r2;
+    int kind;
     
     if (!sub) {
         *offset = 0;
-        return 0;
+        return RELOC_KIND_NONE;
     }
-    if (sub->kind == AST_ABSADDROF || (isInitVal && sub->kind == AST_ADDROF) ) {
+    kind = sub->kind;
+    if (kind == AST_SIMPLEFUNCPTR) {
+        Symbol *sym = LookupAstSymbol(sub->left, "pointer address");
+        if (!sym || sym->type != SYM_FUNCTION) {
+            ERROR(sub, "Bad function pointer");
+            *offset = 0;
+            return RELOC_KIND_NONE;
+        }
+        *offset = (intptr_t)sym;
+        return RELOC_KIND_SYM;
+    }
+    if (kind == AST_ABSADDROF || (isInitVal && kind == AST_ADDROF) ) {
         *offset = GetAddrOffset(sub->left);
-        return 1;
+        return RELOC_KIND_LONG;
     }
     if (sub->kind == AST_OPERATOR) {
         r1 = IsRelocatable(sub->left, offset, isInitVal);
@@ -229,6 +241,9 @@ IsRelocatable(AST *sub, int32_t *offset, bool isInitVal)
             if ( -1 == (r1|r2) ) {
                 return -1;
             }
+            if (r1 == RELOC_KIND_SYM || r2 == RELOC_KIND_SYM) {
+                return -1;
+            }
             // only certain kinds of math we can do on relocations
             switch (sub->d.ival) {
             case '+':
@@ -236,17 +251,17 @@ IsRelocatable(AST *sub, int32_t *offset, bool isInitVal)
                     return -1;
                 }
                 *offset += myoff;
-                return 1;
+                return RELOC_KIND_LONG;
             case '-':
                 if (r1 && r2) {
                     // difference of absolute relocations
                     // this is fine
-                    return 0;
+                    return RELOC_KIND_NONE;
                 }
                 if (r1) {
                     // reloc - offset
                     *offset -= myoff;
-                    return 1;
+                    return RELOC_KIND_LONG;
                 }
                 // offset - reloc
                 // not implemented
@@ -275,8 +290,8 @@ AlignPc(Flexbuf *f, int size)
 void
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
 {
-    uint32_t origval, val;
-    int32_t offset;
+    uintptr_t origval, val;
+    intptr_t offset;
     int i;
     int checkReloc;
 
@@ -284,7 +299,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
         return;
     }
     if (item) {
-        if (0 != (checkReloc = IsRelocatable(item, &offset, true))) {
+        if (RELOC_KIND_NONE != (checkReloc = IsRelocatable(item, &offset, true))) {
             if (checkReloc == -1) {
                 ERROR(item, "Illegal operation on relocatable @@@ value");
             }
@@ -297,7 +312,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
                 if (elemsize != LONG_SIZE) {
                     ERROR(item, "@@@ supported only on long values");
                 }
-                r.kind = RELOC_KIND_LONG;
+                r.kind = checkReloc;
                 r.off = addr;
                 r.val = origval = offset;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
@@ -431,7 +446,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
     int i, reps;
     int checkReloc;
     AST *sub;
-    int32_t offset = 0;
+    intptr_t offset = 0;
     
     origval = 0;
     while (ast) {

@@ -190,6 +190,7 @@ enum astkind {
 
     AST_STRUCT = 132,
     AST_UNION,
+    AST_SIMPLEFUNCPTR,
 };
 
 /* forward reference */

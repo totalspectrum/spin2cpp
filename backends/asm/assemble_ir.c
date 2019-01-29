@@ -369,6 +369,21 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                     --relocs;
                     continue;
                 }
+                if (nextreloc->kind == RELOC_KIND_SYM) {
+                    Symbol *sym;
+                    if (bytesPending < 4) {
+                        ERROR(NULL, "internal error: not enough space for reloc");
+                        return;
+                    }
+                    flexbuf_printf(fb, "\tlong\t");
+                    sym = (Symbol *)nextreloc->val;
+                    flexbuf_printf(fb, "@@@%s\n", IdentifierModuleName(current, sym->name));
+                    data += 4;
+                    addr += 4;
+                    nextreloc++;
+                    --relocs;
+                    continue;
+                }
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->val;
                     if (info && info->linedata) {

@@ -404,8 +404,10 @@ typedef struct Reloc {
     intptr_t val;     // value to add to dat base, or pointer to LineInfo
 } Reloc;
 
-#define RELOC_KIND_LONG  0
-#define RELOC_KIND_DEBUG 1
+#define RELOC_KIND_NONE  0 // no relocation, should not produce an entry
+#define RELOC_KIND_LONG  1
+#define RELOC_KIND_DEBUG 2
+#define RELOC_KIND_SYM   3
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
