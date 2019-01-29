@@ -1934,7 +1934,7 @@ OptimizePeepholes(IRList *irl)
         }
         if (opc == OPC_AND && InstrSetsAnyFlags(ir)) {
             previr = FindPrevSetterForReplace(ir, ir->dst);
-            if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst) && !SrcOnlyHwReg(previr->src)) {
+            if (previr && previr->opc == OPC_MOV && IsDeadAfter(ir, ir->dst) && !SrcOnlyHwReg(previr->src) && IsRegister(previr->src->kind)) {
 	        ReplaceOpcode(ir, OPC_TEST);
                 ir->dst = previr->src;
                 DeleteIR(irl, previr);
