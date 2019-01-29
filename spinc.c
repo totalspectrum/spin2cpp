@@ -862,6 +862,7 @@ MarkStaticFunctionPointers(AST *list)
                 return;
             }
             f = (Function *)sym->val;
+            f->used_as_ptr = 1;
             MarkUsed(f, "static func");
         }
         return;
