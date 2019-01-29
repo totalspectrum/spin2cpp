@@ -5,7 +5,9 @@ Version 3.9.16
 - Moved P2 CLKFREQ and CLKMODE longs down to initial hub memory; fixes a memory corruption issue with coginit/cognew
 - Implemented struct initialization for C
 - Implemented initializing function pointers
+- Implemented __builtin_cogstart in C
 - Fixed some bugs in indexing arrays of large types
+- Fixed problems with using @RESULT in Spin
 - Removed use of _wfopen_s in the C preprocessor for Windows
 
 Version 3.9.15
