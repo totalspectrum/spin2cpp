@@ -1840,6 +1840,7 @@ IsCommutativeMath(IROpcode opc)
     case OPC_OR:
     case OPC_AND:
     case OPC_XOR:
+    case OPC_TEST:
         return true;
     default:
         return false;
