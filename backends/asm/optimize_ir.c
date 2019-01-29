@@ -111,6 +111,18 @@ static bool IsBranch(IR *ir)
     return IsJump(ir) || ir->opc == OPC_CALL;
 }
 
+static bool IsWrite(IR *ir) {
+    switch (ir->opc) {
+    case OPC_WRLONG:
+    case OPC_WRWORD:
+    case OPC_WRBYTE:
+    case OPC_GENERIC:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static bool
 IsLabel(IR *ir)
 {
@@ -2379,7 +2391,7 @@ static IR* FindNextUse(IR *ir, Operand *dst)
 //
 // find the next rdlong that uses src
 // returns NULL if we spot anything that changes src, dest,
-// or a branch
+// memory, or a branch
 //
 static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
 {
@@ -2399,6 +2411,9 @@ static IR* FindNextRead(IR *irorig, Operand *dest, Operand *src)
             return ir;
         }
         if (InstrModifies(ir, dest) || InstrModifies(ir, src)) {
+            return NULL;
+        }
+        if (IsWrite(ir)) {
             return NULL;
         }
     }
