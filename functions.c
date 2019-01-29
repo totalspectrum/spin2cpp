@@ -1466,6 +1466,9 @@ CheckFunctionCalls(AST *ast)
                     ERROR(ast, "%s is not a function", fname);
                     return;
                 }
+                if (ftype->kind == AST_PTRTYPE) {
+                    ftype = ftype->left;
+                }
                 expectArgs = AstListLen(ftype->right);
             }
         } else {
