@@ -289,11 +289,11 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     if (initval->kind == AST_SIMPLEFUNCPTR) {
         return;
     }
-    if (type->kind == AST_PTRTYPE) {
+    if (type->kind == AST_PTRTYPE || IsIntType(type)) {
         if (initval->kind == AST_STRINGPTR) {
             elem = initval->left;
         } else {
-            AST *typ = ExprType(initializer);
+            AST *typ = ExprType(initval);
             if (IsFunctionType(typ)) {
                 elem = initval;
                 while (elem && elem->kind == AST_ADDROF) {
