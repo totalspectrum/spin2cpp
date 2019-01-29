@@ -2719,7 +2719,7 @@ void    clear_filelist( void)
 
 FILE* mcpp_fopen(const char* filename, const char* mode)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && 0
     FILE* f = 0;
     if(filename && mode)
     {
@@ -2735,7 +2735,7 @@ FILE* mcpp_fopen(const char* filename, const char* mode)
                 {
                     if(MultiByteToWideChar(CP_UTF8, 0, mode, -1, wmode, wmodeLength))
                     {
-                        _wfopen_s(&f, wfilename, wmode);
+                        f = _wfopen(wfilename, wmode);
                     }
                     free(wmode);
                 }
