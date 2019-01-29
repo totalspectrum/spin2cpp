@@ -2593,7 +2593,7 @@ CompileFunccall(IRList *irl, AST *expr)
   */
   numresults = FuncNumResults(functype);
   if (func && func->numresults != numresults) {
-      WARNING(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
+      ERROR(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
   }
   for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
@@ -4066,10 +4066,10 @@ CompileFunctionBody(Function *f)
     
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
-    if (!f->result_in_parmarray && f->resultexpr && !IsConstExpr(f->resultexpr))
+    if (f->resultexpr && !IsConstExpr(f->resultexpr))
     {
         AST *init = GetResultExpr(f->resultexpr);
-        if (init && init->kind == AST_IDENTIFIER) {
+        if (init && (init->kind == AST_IDENTIFIER || init->kind == AST_RESULT)) {
             AST *resinit = AstAssign(init, AstInteger(0));
             CompileStatement(irl, resinit);
         }

@@ -585,6 +585,10 @@ doDeclareFunction(AST *funcblock)
             fdef->numresults = 0;
         } else if (fdef->overalltype->left->kind == AST_TUPLETYPE) {
             fdef->numresults = fdef->overalltype->left->d.ival;
+        } else {
+            int siz = TypeSize(fdef->overalltype->left);
+            siz = (siz + 3) & ~3;
+            fdef->numresults = siz / 4;
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {
