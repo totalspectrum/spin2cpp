@@ -6,6 +6,7 @@ Version 3.9.16
 - Implemented struct initialization for C
 - Implemented initializing function pointers
 - Fixed some bugs in indexing arrays of large types
+- Removed use of _wfopen_s in the C preprocessor for Windows
 
 Version 3.9.15
 - Fixed abort/catch in P2
