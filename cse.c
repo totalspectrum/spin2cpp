@@ -325,10 +325,9 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         AST *origexpr = entry->expr;
         entry->replace = AstTempLocalVariable("_cse_", NULL);
         if (origexpr->kind == AST_ARRAYREF) {
-            AST *reftype = ArrayBaseType(origexpr->left);
+            AST *reftype = ExprType(origexpr);
             if (!reftype) {
-                ERROR(origexpr, "Internal error, array expression too complicated");
-                return NULL;
+                reftype = ast_type_generic;
             }
             origexpr = NewAST(AST_ADDROF, origexpr, NULL);
             assign = AstAssign(entry->replace, origexpr);

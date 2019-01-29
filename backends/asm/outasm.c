@@ -103,7 +103,7 @@ static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 static Operand *CogMemRef(Operand *addr, int offset);
-static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset);
+static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
 
 static bool IsCogMem(Operand *addr);
 
@@ -1332,7 +1332,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                     }
                 }
                 if (size > 1) {
-                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i));
+                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), 0);
                 } else {
                     dst = basedst;
                 }
@@ -2749,13 +2749,12 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
 }
 
 static Operand *
-ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
+ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
 {
     Operand *basereg;
     Operand *newbase;
     Operand *temp;
     int idx;
-    int siz;
 
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
@@ -2779,12 +2778,17 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset)
         ERROR(NULL, "Array does not reference memory");
         return base;
     }
+
+    if (siz == 0) {
+        siz = base->size;
+    } else {
+        base->size = siz;
+    }
     switch (base->kind) {
     case HUBMEM_REF:
-        siz = base->size;
         break;
     case COGMEM_REF:
-        siz = base->size / 4;
+        siz = siz / 4;
         break;
     default:
         ERROR(NULL, "Bad size in array reference");
@@ -3155,14 +3159,16 @@ GetAddressOf(IRList *irl, AST *expr)
     {
       Operand *base;
       Operand *offset;
-
+      int siz;
+      
       if (!expr->right) {
           ERROR(expr, "Array ref with no index?");
           return NewOperand(REG_REG, "???", 0);
       }
       base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
-      res = ApplyArrayIndex(irl, base, offset);
+      siz = TypeSize(ExprType(expr));
+      res = ApplyArrayIndex(irl, base, offset, siz);
       tmp = GetLea(irl, res);
       return tmp;
     }
@@ -3398,7 +3404,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Operand *base;
       Operand *offset;
-      
+      int siz;
       if (!expr->right || !expr->left) {
           ERROR(expr, "Bad array reference");
           return NewOperand(REG_REG, "???", 0);
@@ -3408,7 +3414,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       }
       base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
-      return ApplyArrayIndex(irl, base, offset);
+      siz = TypeSize(ExprType(expr));
+      return ApplyArrayIndex(irl, base, offset, siz);
   }
   case AST_SPRREF:
   {
@@ -3890,7 +3897,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                         Operand *derefptr;
                         int offset = 0;
                         while (items-- > 0) {
-                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset));
+                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), 0);
                             EmitMove(irl, GetResultReg(n), derefptr);
                             n++;
                             offset++;

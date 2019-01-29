@@ -4,6 +4,7 @@ Version 3.9.16
 - Added register keyword for C
 - Moved P2 CLKFREQ and CLKMODE longs down to initial hub memory; fixes a memory corruption issue with coginit/cognew
 - Implemented struct initialization for C
+- Fixed some bugs in indexing arrays of large types
 
 Version 3.9.15
 - Fixed abort/catch in P2

@@ -2093,6 +2093,19 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         current = oldState;
         curfunc = oldCurFunc;
         return result;
+    case AST_COGINIT:
+        ref->is_leaf = 0;
+        break;
+    case AST_OPERATOR:
+        switch (body->d.ival) {
+        case K_SQRT:
+        case '?':
+            // can produce an internal function call
+            ref->is_leaf = 0;
+            break;
+        default:
+            break;
+        }
     default:
         return IsCalledFrom(ref, body->left, visitRef)
             || IsCalledFrom(ref, body->right, visitRef);
