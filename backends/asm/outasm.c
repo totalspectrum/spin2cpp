@@ -1503,9 +1503,12 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (NeedToSaveLocals(func)) {
         int i, n;
 
+#if 0
+        // why was this here?? I don't think it's true any more
         if (ANY_VARS_ON_STACK(func)) {
             WARNING(NULL, "Internal error: VARS_ON_STACK function %s saving locals, frame pointer will be wrong", func->name);
         }
+#endif        
         FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func), 0);
         if (HUB_CODE && !gl_p2 && n > 1) {
             // in LMM mode, call out to the pushregs_ function
