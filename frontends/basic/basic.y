@@ -64,6 +64,14 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
     return ast;
 }
 
+AST *IntegerLabel(AST *num)
+{
+    int x = EvalConstExpr(num);
+    char *name = calloc(1, 32);
+    sprintf(name, "LINE_%d", x);
+    return AstIdentifier(name);
+}
+
 #define ARRAY_BASE_NAME "__array_base"
 #define IMPLICIT_TYPE_NAME "__implicit_types"
 
@@ -345,6 +353,7 @@ GetCurrentLoop(int token)
 %token BAS_FUNCTION   "function"
 %token BAS_GET        "get"
 %token BAS_GOTO       "goto"
+%token BAS_GOSUB      "gosub"
 %token BAS_IF         "if"
 %token BAS_INPUT      "input"
 %token BAS_INTEGER_KW "integer"
@@ -437,6 +446,14 @@ topstatement:
         current->body = AddToList(current->body, stmtholder);
     }
   | topdecl
+    { $$ = $1; }
+  | BAS_INTEGER statement
+    {
+        AST *label = NewAST(AST_LABEL, IntegerLabel($1), NULL);
+        AST *stmtholder = NewAST(AST_STMTLIST, label,
+                                 NewAST(AST_STMTLIST, $2, NULL));
+        current->body = AddToList(current->body, stmtholder);
+    }
 ;
 
 pinrange:
@@ -495,6 +512,8 @@ nonemptystatement:
     { $$ = NewAST(AST_DELETE, $2, NULL); }
   | BAS_GOTO BAS_IDENTIFIER eoln
     { $$ = NewAST(AST_GOTO, $2, NULL); }
+  | BAS_GOTO BAS_INTEGER eoln
+    { $$ = NewAST(AST_GOTO, IntegerLabel($2), NULL); }
   | BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
   | BAS_PRINT '#' expr
@@ -590,6 +609,13 @@ printlist:
 ifstmt:
   BAS_IF expr BAS_THEN eoln thenelseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
+  | BAS_IF expr BAS_THEN BAS_INTEGER
+    {
+        AST *stmtlist = NewCommentedStatement(
+            NewAST(AST_GOTO, IntegerLabel($4), NULL));
+        AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
+        $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
+    }
   | BAS_IF expr nonemptystatement
     {
         AST *stmtlist = NewCommentedStatement($3);

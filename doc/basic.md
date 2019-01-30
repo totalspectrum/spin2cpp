@@ -168,6 +168,7 @@ enum
 exit
 for
 function
+gosub
 goto
 if
 input
@@ -1040,6 +1041,10 @@ Propeller specific builtin function.
   x = getcnt()
 ```
 Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
+
+### GOSUB
+
+Reserved for future use.
 
 ### GOTO
 

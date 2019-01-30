@@ -3,6 +3,7 @@ Version 3.9.17
 - Fixed indirect calls involving structure members
 - Fixed promotion of word and byte arguments to functions
 - Fixed a typo in the printf code for handling width
+- Accept line numbers in BASIC programs
 
 Version 3.9.16
 - Check environment variable FLEXCC_INCLUDE_PATH for included files
