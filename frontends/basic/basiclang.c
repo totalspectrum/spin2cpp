@@ -1255,7 +1255,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     
-    if (!desttype || !srctype || IsGenericType(desttype) || IsGenericType(srctype)) {
+    if (!desttype || !srctype) {
         return desttype;
     }
     if (IsFloatType(desttype)) {
@@ -1299,9 +1299,11 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         WARNING(line, "assignment to const object");
     }
     if (IsPointerType(srctype) && IsConstType(BaseType(srctype)) && !IsConstType(BaseType(desttype))) {
-        WARNING(line, "%s discards const attribute from pointer", msg);
+        if (desttype != ast_type_const_generic) {
+            WARNING(line, "%s discards const attribute from pointer", msg);
+        }
     }
-    if (IsIntType(desttype)) {
+    if (IsIntType(desttype) || IsGenericType(desttype)) {
         if (IsIntType(srctype)) {
             int lsize = TypeSize(desttype);
             int rsize = TypeSize(srctype);
@@ -1498,9 +1500,10 @@ AST *CheckTypes(AST *ast)
             }
             if (IsFunctionType(functype)) {
                 calledParamList = functype->right;
-                while (calledParamList && actualParamList) {
-                    AST *paramId = calledParamList->left;
+                while (actualParamList) {
+                    AST *paramId = calledParamList ? calledParamList->left : NULL;
                     AST *actualParam = actualParamList->left;
+                    
                     expectType = NULL;
                     passedType = NULL;
                     if (!passedType) {
@@ -1512,10 +1515,15 @@ AST *CheckTypes(AST *ast)
                             expectType = ExprType(paramId);
                         }
                     }
-                    if (expectType) {
-                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                    if (!expectType) {
+                        // we use const generic to avoid lots of warning
+                        // messages about passing strings to printf
+                        expectType = ast_type_const_generic;
                     }
-                    calledParamList = calledParamList->right;
+                    CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                    if (calledParamList) {
+                        calledParamList = calledParamList->right;
+                    }
                     actualParamList = actualParamList->right;
                 }
                 ltype = functype->left;

@@ -50,13 +50,31 @@ void myexit(int n)
     }
 }
 
+void msg(const char *msg, int n)
+{
+    print(msg);
+    printdec(n);
+    println("");
+}
+
+void fhello(int n)
+{
+    msg("hello ", n);
+}
+static void fgoodbye(int n)
+{
+    msg("goodbye ", n);
+}
+typedef void (*Fptr)(int);
+
 struct blah {
     const char *name;
+    Fptr func;
     short num;
 } mytab[3] = {
-    { "the first string", 1 },
-    { "the second string", 2 },
-    { 0, 0 },
+    { "the first string", &fhello, 1 },
+    { "the second string", &fgoodbye, -2 },
+    { 0, 0, 0 },
 };
 
 void main()
@@ -73,7 +91,8 @@ void main()
         printdec(i);
         print(": ");
         print(mytab[i].name);
-        println("");
+        print("->");
+        (*mytab[i].func)(mytab[i].num);
     }
     myexit(0);
 }

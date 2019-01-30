@@ -70,6 +70,7 @@ AST *ast_type_ptr_word;
 AST *ast_type_ptr_byte;
 AST *ast_type_ptr_void;
 AST *ast_type_generic;
+AST *ast_type_const_generic;
 AST *ast_type_void;
 
 const char *gl_progname = "spin2cpp";
@@ -498,6 +499,7 @@ Init()
 
     ast_type_float = NewAST(AST_FLOATTYPE, AstInteger(4), NULL);
     ast_type_generic = NewAST(AST_GENERICTYPE, AstInteger(4), NULL);
+    ast_type_const_generic = NewAST(AST_MODIFIER_CONST, ast_type_generic, NULL);
     ast_type_void = NewAST(AST_VOIDTYPE, AstInteger(0), NULL);
 
     ast_type_ptr_long = NewAST(AST_PTRTYPE, ast_type_long, NULL);

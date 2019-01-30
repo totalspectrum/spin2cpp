@@ -3417,6 +3417,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       }
       base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
+      if (IsFunctionType(ExprType(expr->left))) {
+          return base;
+      }
       siz = TypeSize(ExprType(expr));
       return ApplyArrayIndex(irl, base, offset, siz);
   }
@@ -3433,6 +3436,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_MEMREF:
   {
+      if (IsFunctionType(ExprType(expr->right))) {
+          return CompileExpression(irl, expr->right, dest);
+      }
       return CompileHubref(irl, expr);
   }
   case AST_COGINIT:
