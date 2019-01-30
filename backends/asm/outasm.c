@@ -2482,7 +2482,8 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         Operand *temp1 = NewFunctionTempRegister();
         Operand *temp2 = NewFunctionTempRegister();
         Operand *ptr1, *ptr2;
-        base = CompileSymbolForFunc(irl, sym, curfunc);
+        
+        base = CompileExpression(irl, expr->left, tempbase);
         EmitMove(irl, tempbase, base);
         ptr1 = SizedHubMemRef(LONG_SIZE, tempbase, 0);
         ptr2 = SizedHubMemRef(LONG_SIZE, tempbase, 4);

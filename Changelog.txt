@@ -1,5 +1,6 @@
 Version 3.9.17
 - Fixed a serious unsigned / unsigned division bug
+- Fixed indirect calls involving structure members
 
 Version 3.9.16
 - Check environment variable FLEXCC_INCLUDE_PATH for included files
