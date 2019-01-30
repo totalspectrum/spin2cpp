@@ -338,6 +338,7 @@ genPrintf(AST *ast)
                     break;
                 }
                 fmt = 0;
+                minwidth = 0;
                 thisarg = args->left;
                 args = args->right;
                 while ( (c >= '0' && c <= '9') && *fmtstring) {
