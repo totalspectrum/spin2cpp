@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -369,14 +369,14 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
 static int
 ElementSize(AST *typ)
 {
-    typ = RemoveTypeModifiers(typ);
-    while (typ && typ->kind == AST_ARRAYTYPE) {
-        typ = RemoveTypeModifiers(typ->left);
-    }
     if (!typ) {
         typ = ast_type_generic;
     }
-    return EvalConstExpr(RemoveTypeModifiers(typ->left));
+    typ = RemoveTypeModifiers(typ);
+    if (typ->kind == AST_ARRAYTYPE) {
+        typ = typ->left;
+    }
+    return TypeSize(typ);
 }
 
 static AST *
