@@ -1572,7 +1572,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         if (HUB_CODE && !gl_p2 && n > 1) {
             // in LMM mode we can use popregs_
             ValidatePushregs();
-            EmitMove(irl, count_, NewImmediate(n));
+            // EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {            
             for (i = n-1; i >= 0; --i) {
@@ -4729,15 +4729,22 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     "pushregs_\n"
     "      movd  :write, #local01\n"
-    "      nop\n"
+    "      mov   ADDR_, COUNT_ wz\n"
+    "  if_z jmp  #pushregs_done_\n"
     ":write\n"
     "      wrlong 0-0, sp\n"
     "      add    :write, inc_dest1\n"
     "      add    sp, #4\n"
     "      djnz   COUNT_, #:write\n"
+    "pushregs_done_\n"
+    "      wrlong ADDR_, sp\n"
+    "      add    sp, #4\n"
     "pushregs__ret\n"
     "      ret\n"
     "popregs_\n"
+    "      sub   sp, #4\n"
+    "      rdlong COUNT_, sp wz\n"
+    "  if_z jmp  #popregs__ret\n"
     "      add   COUNT_, #local01\n"
     "      movd  :read, COUNT_\n"
     "      sub   COUNT_, #local01\n"
