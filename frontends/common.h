@@ -543,7 +543,14 @@ void SimplifyAssignments(AST **astptr);
 
 extern unsigned int gl_hub_base;
 #define P2_HUB_BASE gl_hub_base
-#define P2_CONFIG_BASE 0x10   /* clkfreq and such go here */
+#define P2_CONFIG_BASE 0x0   /* clkfreq and such go here */
+/* we use the same layout as TAQOZ for config:
+   0x10 == crystal frequency (not used by fastspin)
+   0x14 == CPU frequency
+   0x18 == CLKSET mode setting
+   0x1c == baud rate
+   0x20 - 0x30 (VGA settings (not used by fastspin)
+*/
 
 /*
  * functions to initialize lexers

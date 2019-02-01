@@ -82,6 +82,7 @@ _bitcycles long 80_000_000 / 115_200
 
 pri _setbaud(rate)
   _bitcycles := clkfreq / rate
+  _baudrate := rate '' update global config area
   
 con
  _rxpin = 31
