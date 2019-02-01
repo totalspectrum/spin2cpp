@@ -1553,13 +1553,11 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
     if (NeedFramePointer(func)) {
+        int i, n;
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
         EmitPop(irl, frameptr);
-    }
-    if (NeedToSaveLocals(func)) {
-        int i, n;
         // pop return address
         n = FuncData(func)->numsavedregs;
         if (HUB_CODE && !gl_p2) {
