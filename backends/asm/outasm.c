@@ -1508,7 +1508,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // are used only after the first call
     //
     
-    if (NeedToSaveLocals(func)) {
+    if (NeedFramePointer(func)) {
         int i, n;
 
         if (NeedToSaveLocals(func)) {
@@ -1527,16 +1527,13 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
                 EmitPush(irl, GetLocalReg(i, 0));
             }
         }
-    } else if (func->is_leaf) {
-        RenameLocalRegs(FuncIRL(func), 1);
-    }
-    // set up frame pointer for stack call functions
-    if (NeedFramePointer(func)) {
         if (!frameptr) {
             frameptr = GetOneGlobal(REG_REG, "fp", 0);
         }
         EmitPush(irl, frameptr);
         EmitMove(irl, frameptr, stackptr);
+    } else if (func->is_leaf) {
+        RenameLocalRegs(FuncIRL(func), 1);
     }
     if (ANY_VARS_ON_STACK(func)) {
         int localsize;
