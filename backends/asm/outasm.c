@@ -2599,7 +2599,10 @@ CompileFunccall(IRList *irl, AST *expr)
   */
   numresults = FuncNumResults(functype);
   if (func && func->numresults != numresults) {
-      ERROR(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
+#if 1  
+      WARNING(NULL, "Internal assert failure: func numresults inconsistent for function %s", func->name);
+      func->numresults = numresults;
+#endif      
   }
   for (i = 0; i < numresults; i++) {
       reg = NewFunctionTempRegister();
