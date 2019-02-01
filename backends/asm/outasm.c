@@ -1466,6 +1466,9 @@ NeedFramePointer(Function *func)
     if (func->uses_alloca) {
         return true;
     }
+    if (NeedToSaveLocals(func)) {
+        return true;
+    }
     return false;
 }
 
@@ -1492,6 +1495,11 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // now the function label
     EmitLabel(irl, FuncData(func)->asmname);
 
+    // push return address, if we are in cog mode
+    if (func->is_recursive && func->cog_code && !gl_p2) {
+        EmitPush(irl, FuncData(func)->asmretname);
+    }
+    
     //
     // if recursive function, push all local registers
     // we also have to push any local temporary registers that
@@ -1503,14 +1511,13 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (NeedToSaveLocals(func)) {
         int i, n;
 
-#if 0
-        // why was this here?? I don't think it's true any more
-        if (ANY_VARS_ON_STACK(func)) {
-            WARNING(NULL, "Internal error: VARS_ON_STACK function %s saving locals, frame pointer will be wrong", func->name);
+        if (NeedToSaveLocals(func)) {
+            n = RenameLocalRegs(FuncIRL(func), 0);
+        } else {
+            n = 0;
         }
-#endif        
-        FuncData(func)->numsavedregs = n = RenameLocalRegs(FuncIRL(func), 0);
-        if (HUB_CODE && !gl_p2 && n > 1) {
+        FuncData(func)->numsavedregs = n;
+        if (HUB_CODE && !gl_p2) {
             // in LMM mode, call out to the pushregs_ function
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
@@ -1519,10 +1526,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             for (i = 0; i < n; i++) {
                 EmitPush(irl, GetLocalReg(i, 0));
             }
-        }
-        // push return address, if we are in cog mode
-        if (func->is_recursive && func->cog_code && !gl_p2) {
-            EmitPush(irl, FuncData(func)->asmretname);
         }
     } else if (func->is_leaf) {
         RenameLocalRegs(FuncIRL(func), 1);
@@ -1561,15 +1564,8 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
     if (NeedToSaveLocals(func)) {
         int i, n;
         // pop return address
-        // do this here to avoid a hardware pipeline hazard:
-        // we need at least 1 instruction between the pop
-        // and the actual return
-        if (func->is_recursive && func->cog_code && !gl_p2) {
-            EmitPop(irl, FuncData(func)->asmretname);
-        }
-        // pop off all local variables
         n = FuncData(func)->numsavedregs;
-        if (HUB_CODE && !gl_p2 && n > 1) {
+        if (HUB_CODE && !gl_p2) {
             // in LMM mode we can use popregs_
             ValidatePushregs();
             // EmitMove(irl, count_, NewImmediate(n));
@@ -1579,6 +1575,15 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
                 EmitPop(irl, GetLocalReg(i, 0));
             }
         }
+    }
+    if (func->is_recursive && func->cog_code && !gl_p2) {
+        IR *ir;
+        EmitPop(irl, FuncData(func)->asmretname);
+        // WARNING: 
+        // we need at least 1 instruction between the pop
+        // and the actual return
+        ir = EmitOp1(irl, OPC_NOP, NULL);
+        ir->flags |= FLAG_KEEP_INSTR;
     }
     EmitLabel(irl, FuncData(func)->asmretname);
     EmitOp0(irl, OPC_RET);
