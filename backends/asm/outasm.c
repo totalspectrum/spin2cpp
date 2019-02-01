@@ -1450,9 +1450,14 @@ NeedToSaveLocals(Function *func)
     if (func->is_recursive) {
         return true;
     }
-    if (gl_output == OUTPUT_COGSPIN || func->cog_code) {
+    if (gl_output == OUTPUT_COGSPIN) {
         return false;
     }
+#if 0
+    if (func->cog_code) {
+        return false;
+    }
+#endif    
     // maybe skip saving locals for cog functions?
     return true;
 }
@@ -1517,8 +1522,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             n = 0;
         }
         FuncData(func)->numsavedregs = n;
-        if (HUB_CODE && !gl_p2) {
-            // in LMM mode, call out to the pushregs_ function
+        if (!gl_p2) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, pushregs_);
@@ -1560,8 +1564,8 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         EmitPop(irl, frameptr);
         // pop return address
         n = FuncData(func)->numsavedregs;
-        if (HUB_CODE && !gl_p2) {
-            // in LMM mode we can use popregs_
+        if (!gl_p2) {
+            // pop registers off stack
             ValidatePushregs();
             // EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, popregs_);
@@ -4725,19 +4729,22 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     "ADDR_\n"
     "    long 0\n"
+    ;
+
+const char *builtin_pushregs_p1 = 
     "COUNT_\n"
     "    long 0\n"
     "pushregs_\n"
     "      movd  :write, #local01\n"
-    "      mov   ADDR_, COUNT_ wz\n"
+    "      mov   cnt, COUNT_ wz\n"
     "  if_z jmp  #pushregs_done_\n"
     ":write\n"
     "      wrlong 0-0, sp\n"
     "      add    :write, inc_dest1\n"
     "      add    sp, #4\n"
-    "      djnz   COUNT_, #:write\n"
+    "      djnz   cnt, #:write\n"
     "pushregs_done_\n"
-    "      wrlong ADDR_, sp\n"
+    "      wrlong COUNT_, sp\n"
     "      add    sp, #4\n"
     "pushregs__ret\n"
     "      ret\n"
@@ -4842,6 +4849,11 @@ EmitBuiltins(IRList *irl)
     if (HUB_CODE && !gl_p2) {
         const char *builtin_lmm = builtin_lmm_p1;
         Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
+        EmitOp1(irl, OPC_LITERAL, loop);
+    }
+    if (pushregs_) {
+        const char *builtin_pushregs = builtin_pushregs_p1;
+        Operand *loop = NewOperand(IMM_STRING, builtin_pushregs, 0);
         EmitOp1(irl, OPC_LITERAL, loop);
     }
     if (mulfunc) {
