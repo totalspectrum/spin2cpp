@@ -1386,6 +1386,7 @@ CheckRetStatement(Function *func, AST *ast)
             (void)CheckRetStatement(func, ast->left);
             SetFunctionReturnType(func, ForceExprType(ast->left));
         }
+        func->has_throw = 1;
         break;
     case AST_IF:
         ast = ast->right;
