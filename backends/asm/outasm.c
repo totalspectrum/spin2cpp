@@ -1541,7 +1541,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     FuncData(func)->numsavedregs = n;
     if (needFrame) {
         ValidateFrameptr();
-        if (HUB_CODE && !gl_p2) {
+        if (HUB_CODE) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, pushregs_);
@@ -4803,7 +4803,40 @@ const char *builtin_pushregs_p1 =
     "      djnz   COUNT_, #:loop\n"
     "popregs__ret\n"
     "      ret\n"
+    ;
 
+const char *builtin_pushregs_p2 =
+    "COUNT_\n"
+    "    long 0\n"
+    "RETADDR_\n"
+    "    long 0\n"
+    "pushregs_\n"
+    "    rdlong RETADDR_, --ptra\n"
+    "    cmp  COUNT_, #0 wz\n"
+    " if_z jmp #pushregs_done_\n"
+    "    setq COUNT_\n"
+    "    wrlong local01, ptra\n"
+    "pushregs_done_\n"
+    "    shl  COUNT_, #2\n"
+    "    add  ptra, COUNT_\n"
+    "    shr  COUNT_, #2\n"
+    "    wrlong COUNT_, ptra++\n"
+    "    wrlong fp, ptra++\n"
+    "    mov    fp, ptra\n"
+    "    jmp RETADDR_\n"
+
+    " popregs_\n"
+    "    rdlong RETADDR_, --ptra\n"
+    "    rdlong fp, --ptra\n"
+    "    rdlong COUNT_, --ptra wz\n"
+    " if_z jmp #popregs__ret\n"
+    "    shl    COUNT_, #2\n"
+    "    sub    ptra, COUNT_\n"
+    "    shr    COUNT_, #2\n"
+    "    setq   COUNT_\n"
+    "    rdlong local01, ptra\n"
+    "popregs__ret\n"
+    "    jmp    RETADDR_\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
@@ -4905,7 +4938,7 @@ EmitBuiltins(IRList *irl)
         EmitOp1(irl, OPC_LITERAL, loop);
     }
     if (pushregs_) {
-        const char *builtin_pushregs = builtin_pushregs_p1;
+        const char *builtin_pushregs = (gl_p2 ? builtin_pushregs_p2 : builtin_pushregs_p1);
         Operand *loop = NewOperand(IMM_STRING, builtin_pushregs, 0);
         EmitOp1(irl, OPC_LITERAL, loop);
     }

@@ -107,14 +107,14 @@ InitGlobalModule(void)
     table = &globalModule->objsyms;
     sym = AddSymbol(table, "_clkfreq", SYM_VARIABLE, ast_type_long);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x14) : 0;
+    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x4) : 0;
     sym = AddSymbol(table, "_clkmode", SYM_VARIABLE, ast_type_byte);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x18) : 4;
+    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x8) : 4;
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte);
         sym->flags |= SYMF_GLOBAL;
-        sym->offset = P2_CONFIG_BASE+0x1c;
+        sym->offset = P2_CONFIG_BASE+0xc;
     }
     
     /* compile inline assembly */
