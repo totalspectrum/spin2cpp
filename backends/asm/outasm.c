@@ -4810,10 +4810,11 @@ const char *builtin_pushregs_p2 =
     "    long 0\n"
     "pushregs_\n"
     "    rdlong RETADDR_, --ptra\n"
-    "    cmp  COUNT_, #0 wz\n"
-    " if_z jmp #pushregs_done_\n"
+    "    tjz  COUNT_, #pushregs_done_\n"
+    "    sub  COUNT_, #1\n"  // adjust for setq/wrlong
     "    setq COUNT_\n"
     "    wrlong local01, ptra\n"
+    "    add  COUNT_, #1\n"
     "pushregs_done_\n"
     "    shl  COUNT_, #2\n"
     "    add  ptra, COUNT_\n"
@@ -4827,12 +4828,13 @@ const char *builtin_pushregs_p2 =
     "    rdlong RETADDR_, --ptra\n"
     "    rdlong fp, --ptra\n"
     "    rdlong COUNT_, --ptra\n"
-    " popregs_loop\n"
     "    tjz    COUNT_, #popregs__ret\n"
-    "    sub    COUNT_, #1\n"
-    "    altd   COUNT_, #local01\n"  // next dest = local01 + COUNT
-    "    rdlong 0-0, --ptra\n"
-    "    jmp    #popregs_loop\n"
+    "    shl    COUNT_, #2\n"
+    "    sub    ptra, COUNT_\n"
+    "    shr    COUNT_, #2\n"
+    "    sub    COUNT_, #1\n" // adjust for setq/rdlong
+    "    setq   COUNT_\n"
+    "    rdlong local01, ptra\n"
     "popregs__ret\n"
     "    jmp    RETADDR_\n"
     ;
