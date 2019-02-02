@@ -249,10 +249,21 @@ ValidateStackptr(void)
         }
     }
 }
+static void
+ValidateFrameptr(void)
+{
+    if (!frameptr) {
+        frameptr = GetOneGlobal(REG_REG, "fp", 0);
+    }
+    ValidateStackptr();
+}
 
 static void
 ValidateAbortFuncs(void)
 {
+    if (0 == (gl_features_used & FEATURE_LONGJMP_USED)) {
+        ERROR(NULL, "Using longjmp/setjmp but feature not marked\n");
+    }
     if (!longjmpfunc) {
         longjmpfunc = NewOperand(IMM_COG_LABEL, "__longjmp", 0);
         setjmpfunc = NewOperand(IMM_COG_LABEL, "__setjmp", 0);
@@ -1450,20 +1461,21 @@ NeedToSaveLocals(Function *func)
     if (func->is_recursive) {
         return true;
     }
+    if (0 != (gl_features_used & FEATURE_LONGJMP_USED)) {
+        return true;
+    }
     if (gl_output == OUTPUT_COGSPIN) {
         return false;
     }
-#if 0
+    // maybe skip saving locals for cog functions?
     if (func->cog_code) {
         return false;
     }
-#endif    
-    // maybe skip saving locals for cog functions?
     return true;
 }
 
 static bool
-NeedFramePointer(Function *func)
+NeedsFramePointer(Function *func)
 {
     if (ANY_VARS_ON_STACK(func)) {
         return true;
@@ -1485,6 +1497,9 @@ NeedFramePointer(Function *func)
 //
 static void EmitFunctionHeader(IRList *irl, Function *func)
 {
+    bool needFrame = false;
+    int i, n;
+    
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
     AppendIRList(irl, &FuncData(func)->irheader);
@@ -1512,20 +1527,21 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // FIXME: can probably optimize this to skip temporaries that
     // are used only after the first call
     //
-    
-    if (NeedFramePointer(func)) {
-        int i, n;
 
-        if (!frameptr) {
-            frameptr = GetOneGlobal(REG_REG, "fp", 0);
-        }
-        if (NeedToSaveLocals(func)) {
-            n = RenameLocalRegs(FuncIRL(func), 0);
-        } else {
+    n = 0;
+    if (NeedsFramePointer(func)) {
+        // n is number to push; for a leaf, that is 0
+        n = RenameLocalRegs(FuncIRL(func), func->is_leaf);
+        if (func->is_leaf) {
             n = 0;
         }
-        FuncData(func)->numsavedregs = n;
-        if (!gl_p2) {
+        needFrame = true;
+    }
+    FuncData(func)->numsavedregs = n;
+
+    if (needFrame) {
+        ValidateFrameptr();
+        if (HUB_CODE && !gl_p2 && n > 0) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, pushregs_);
@@ -1556,20 +1572,28 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    if (NeedFramePointer(func)) {
-        int i, n;
+    int i, n;
+    bool hasFrame = ANY_VARS_ON_STACK(func);
+    
+    n = 0;
+    if (NeedsFramePointer(func)) {
+        n = FuncData(func)->numsavedregs;
+        hasFrame = true;
+    }
+    if (hasFrame) {
+        ValidateFrameptr();
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
-        EmitPop(irl, frameptr);
         // pop return address
         n = FuncData(func)->numsavedregs;
-        if (!gl_p2) {
+        if (HUB_CODE && !gl_p2 && n > 0) {
             // pop registers off stack
             ValidatePushregs();
             // EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {            
+            EmitPop(irl, frameptr);
             for (i = n-1; i >= 0; --i) {
                 EmitPop(irl, GetLocalReg(i, 0));
             }
@@ -4761,6 +4785,8 @@ const char *builtin_pushregs_p1 =
     "pushregs__ret\n"
     "      ret\n"
     "popregs_\n"
+    "      sub   sp, #4\n"
+    "      rdlong fp, sp\n"
     "      sub   sp, #4\n"
     "      rdlong COUNT_, sp wz\n"
     "  if_z jmp  #popregs__ret\n"

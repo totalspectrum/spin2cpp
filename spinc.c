@@ -885,6 +885,7 @@ RemoveUnusedMethods(int isBinary)
     Module *saveCur;
     
     // mark everything unused
+    gl_features_used = 0;
     for (P = allparse; P; P = P->next) {
         for (pf = P->functions; pf; pf = pf->next) {
             pf->callSites = 0;

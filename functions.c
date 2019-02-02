@@ -11,6 +11,10 @@
 #include <string.h>
 #include "spinc.h"
 
+// marked in MarkUsed(); checks for things like try()/catch() that
+// may affect global code generation
+int gl_features_used;
+
 /* forward declaration */
 static int InferTypesStmt(AST *);
 static int InferTypesExpr(AST *expr, AST *expectedType);
@@ -2001,6 +2005,13 @@ MarkUsedBody(AST *body, const char *caller)
         default:
             break;
         }
+        break;
+    case AST_SETJMP:
+    case AST_THROW:
+    case AST_CATCH:
+    case AST_TRYENV:
+    case AST_CATCHRESULT:
+        gl_features_used |= FEATURE_LONGJMP_USED;
         break;
     default:
         break;

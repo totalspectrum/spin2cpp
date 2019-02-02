@@ -133,6 +133,11 @@ extern int gl_no_coginit;    /* skip coginit code */
 #define OUTFLAG_COG_DATA 0x02
 #define OUTFLAGS_DEFAULT (OUTFLAG_COG_CODE)
 
+/* various global feature flags */
+/* set in MarkUsed() in spinc.c */
+extern int gl_features_used;
+#define FEATURE_LONGJMP_USED 0x01
+
 /* types */
 extern AST *ast_type_long;
 extern AST *ast_type_word;
