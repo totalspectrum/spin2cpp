@@ -5,6 +5,9 @@ dat
 entry
 
 _set
+	mov	_tmp001_, #0
+	wrlong	_tmp001_, sp
+	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -12,21 +15,25 @@ _set
 	add	fp, #4
 	wrlong	arg01, fp
 	sub	fp, #4
-	mov	_var01, #0
-	wrlong	_var01, fp
+	mov	_tmp001_, #0
+	wrlong	_tmp001_, fp
 	add	fp, #4
-	rdlong	_var01, fp
+	rdlong	_tmp001_, fp
 	sub	fp, #4
-	wrlong	_var01, fp
+	wrlong	_tmp001_, fp
 	wrlong	fp, objptr
 	rdlong	result1, fp
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
+	sub	sp, #4
 _set_ret
 	ret
 
 _set2
+	mov	_tmp001_, #0
+	wrlong	_tmp001_, sp
+	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -36,6 +43,7 @@ _set2
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
+	sub	sp, #4
 _set2_ret
 	ret
 
@@ -54,7 +62,7 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_var01
+_tmp001_
 	res	1
 arg01
 	res	1

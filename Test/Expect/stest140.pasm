@@ -5,12 +5,18 @@ dat
 entry
 
 _factorial
+	wrlong	_factorial_ret, sp
+	add	sp, #4
 	wrlong	local01, sp
 	add	sp, #4
 	wrlong	local02, sp
 	add	sp, #4
-	wrlong	_factorial_ret, sp
+	mov	factorial_tmp001_, #2
+	wrlong	factorial_tmp001_, sp
 	add	sp, #4
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
 _factorial_enter
 	mov	local01, arg02
 	cmps	arg01, #0 wc,wz
@@ -25,12 +31,17 @@ _factorial_enter
 	jmp	#_factorial_enter
 LR__0001
 	mov	result1, local01
+	mov	sp, fp
 	sub	sp, #4
-	rdlong	_factorial_ret, sp
+	rdlong	fp, sp
+	sub	sp, #4
 	sub	sp, #4
 	rdlong	local02, sp
 	sub	sp, #4
 	rdlong	local01, sp
+	sub	sp, #4
+	rdlong	_factorial_ret, sp
+	nop
 _factorial_ret
 	ret
 
@@ -51,6 +62,8 @@ mul_lp_
 multiply__ret
 	ret
 
+fp
+	long	0
 itmp1_
 	long	0
 itmp2_
@@ -67,6 +80,8 @@ stackspace
 arg01
 	res	1
 arg02
+	res	1
+factorial_tmp001_
 	res	1
 local01
 	res	1

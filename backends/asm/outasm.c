@@ -1459,11 +1459,9 @@ NeedToSaveLocals(Function *func)
     if (gl_output == OUTPUT_COGSPIN) {
         return false;
     }
-#if 0
     if (func->cog_code) {
         return false;
     }
-#endif    
     // maybe skip saving locals for cog functions?
     return true;
 }
@@ -1533,7 +1531,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     n = 0;
     needFrame = NeedFramePointer(func);
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
-        ValidateFrameptr();
         if (NeedToSaveLocals(func)) {
             n = RenameLocalRegs(FuncIRL(func), func->is_leaf);
         }
@@ -1543,6 +1540,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     }
     FuncData(func)->numsavedregs = n;
     if (needFrame) {
+        ValidateFrameptr();
         if (HUB_CODE && !gl_p2) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
@@ -1589,7 +1587,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
-        if (!gl_p2) {
+        if (HUB_CODE && !gl_p2) {
             // pop registers off stack
             ValidatePushregs();
             // EmitMove(irl, count_, NewImmediate(n));

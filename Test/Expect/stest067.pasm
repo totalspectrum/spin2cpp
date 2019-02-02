@@ -5,14 +5,20 @@ dat
 entry
 
 _fibo
+	wrlong	_fibo_ret, sp
+	add	sp, #4
 	wrlong	local01, sp
 	add	sp, #4
 	wrlong	local02, sp
 	add	sp, #4
 	wrlong	local03, sp
 	add	sp, #4
-	wrlong	_fibo_ret, sp
+	mov	fibo_tmp001_, #3
+	wrlong	fibo_tmp001_, sp
 	add	sp, #4
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
 _fibo_enter
 	mov	local01, arg01
 	cmps	local01, #2 wc,wz
@@ -28,17 +34,24 @@ _fibo_enter
 	call	#_fibo
 	add	result1, local03
 LR__0001
+	mov	sp, fp
 	sub	sp, #4
-	rdlong	_fibo_ret, sp
+	rdlong	fp, sp
+	sub	sp, #4
 	sub	sp, #4
 	rdlong	local03, sp
 	sub	sp, #4
 	rdlong	local02, sp
 	sub	sp, #4
 	rdlong	local01, sp
+	sub	sp, #4
+	rdlong	_fibo_ret, sp
+	nop
 _fibo_ret
 	ret
 
+fp
+	long	0
 result1
 	long	0
 sp
@@ -49,6 +62,8 @@ stackspace
 	long	0[1]
 	org	COG_BSS_START
 arg01
+	res	1
+fibo_tmp001_
 	res	1
 local01
 	res	1

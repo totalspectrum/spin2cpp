@@ -5,14 +5,15 @@ dat
 entry
 
 _demo
-	wrlong	local01, sp
+	mov	demo_tmp001_, #0
+	wrlong	demo_tmp001_, sp
 	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
 	add	sp, #8
-	mov	local01, #0
-	wrlong	local01, fp
+	mov	demo_tmp001_, #0
+	wrlong	demo_tmp001_, fp
 	mov	arg02, #1
 	wrbyte	arg02, fp
 	rdlong	result1, fp
@@ -20,7 +21,6 @@ _demo
 	sub	sp, #4
 	rdlong	fp, sp
 	sub	sp, #4
-	rdlong	local01, sp
 _demo_ret
 	ret
 
@@ -44,6 +44,6 @@ arg01
 	res	1
 arg02
 	res	1
-local01
+demo_tmp001_
 	res	1
 	fit	496
