@@ -1587,11 +1587,9 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
-        if (HUB_CODE && !gl_p2) {
+        if (HUB_CODE) {
             // pop registers off stack
             ValidatePushregs();
-            // EmitMove(irl, count_, NewImmediate(n));
-            //EmitPop(irl, frameptr);
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {
             EmitPop(irl, frameptr);
@@ -4828,13 +4826,13 @@ const char *builtin_pushregs_p2 =
     " popregs_\n"
     "    rdlong RETADDR_, --ptra\n"
     "    rdlong fp, --ptra\n"
-    "    rdlong COUNT_, --ptra wz\n"
-    " if_z jmp #popregs__ret\n"
-    "    shl    COUNT_, #2\n"
-    "    sub    ptra, COUNT_\n"
-    "    shr    COUNT_, #2\n"
-    "    setq   COUNT_\n"
-    "    rdlong local01, ptra\n"
+    "    rdlong COUNT_, --ptra\n"
+    " popregs_loop\n"
+    "    tjz    COUNT_, #popregs__ret\n"
+    "    sub    COUNT_, #1\n"
+    "    altd   COUNT_, #local01\n"  // next dest = local01 + COUNT
+    "    rdlong 0-0, --ptra\n"
+    "    jmp    #popregs_loop\n"
     "popregs__ret\n"
     "    jmp    RETADDR_\n"
     ;
