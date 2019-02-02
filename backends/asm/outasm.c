@@ -1516,6 +1516,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (NeedFramePointer(func)) {
         int i, n;
 
+        if (!frameptr) {
+            frameptr = GetOneGlobal(REG_REG, "fp", 0);
+        }
         if (NeedToSaveLocals(func)) {
             n = RenameLocalRegs(FuncIRL(func), 0);
         } else {
@@ -1530,12 +1533,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             for (i = 0; i < n; i++) {
                 EmitPush(irl, GetLocalReg(i, 0));
             }
+            EmitPush(irl, frameptr);
+            EmitMove(irl, frameptr, stackptr);
         }
-        if (!frameptr) {
-            frameptr = GetOneGlobal(REG_REG, "fp", 0);
-        }
-        EmitPush(irl, frameptr);
-        EmitMove(irl, frameptr, stackptr);
     } else if (func->is_leaf) {
         RenameLocalRegs(FuncIRL(func), 1);
     }
@@ -4731,6 +4731,15 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     ;
 
+//
+// pushregs sets up a frame
+// the frame pointer is the last thing pushed before the new frame
+// pointer is established
+// so when sp == fp the stack looks like:
+//    oldfp <- top of stack
+//    count <- next thing on stack, count of locals to pop (may be 0)
+//    locals <- 1..count locals
+
 const char *builtin_pushregs_p1 = 
     "COUNT_\n"
     "    long 0\n"
@@ -4746,6 +4755,9 @@ const char *builtin_pushregs_p1 =
     "pushregs_done_\n"
     "      wrlong COUNT_, sp\n"
     "      add    sp, #4\n"
+    "      wrlong fp, sp\n"
+    "      add    sp, #4\n"
+    "      mov    fp, sp\n"
     "pushregs__ret\n"
     "      ret\n"
     "popregs_\n"
@@ -4774,33 +4786,48 @@ static const char *builtin_abortcode_p1 =
     "    mov result1, #0\n"
     "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
+    "    wrlong fp, arg01\n"
+    "    add arg01, #4\n"
     "    wrlong pc, arg01\n"
     "    add arg01, #4\n"
     "    wrlong sp, arg01\n"
-    "    add arg01, #4\n"
-    "    wrlong fp, arg01\n"
     "    add arg01, #4\n"
     "    wrlong objptr, arg01\n"
     "    add arg01, #4\n"
     "    wrlong __setjmp_ret, arg01\n"
     "__setjmp_ret\n"
     "    ret\n"
+    // unwind_stack(curfp, lastfp) walks the frame pointer list and restores everything
+    // until it reaches lastfp
+    "__unwind_stack\n"
+    "   cmp  arg01, arg02 wz\n"
+    "  if_z jmp #__unwind_stack_ret\n"
+    "   mov   sp, arg01\n"
+    "   sub   sp, #4\n"
+    "   rdlong fp, sp\n"  // get old fp
+    "   call  #popregs_\n"
+    "   mov   arg01, fp\n"
+    "   jmp   #__unwind_stack\n"
+    "__unwind_stack_ret\n"
+    "   ret\n"
+
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
     "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
     "    mov result1, arg02\n"
     "    mov result2, #1\n"
+    "    rdlong arg02, arg01\n"  // new target for fp
+    "    add arg01, #4\n"
     "    rdlong pc, arg01\n"
     "    add arg01, #4\n"
     "    rdlong sp, arg01\n"
     "    add arg01, #4\n"
-    "    rdlong fp, arg01\n"
-    "    add arg01, #4\n"
     "    rdlong objptr, arg01\n"
     "    add arg01, #4\n"
     "    rdlong __longjmp_ret, arg01\n"
-    "    nop\n"
+    "    mov arg01, fp\n"
+    "    call #__unwind_stack\n"
     "__longjmp_ret\n"
     "    ret\n"
     ;
