@@ -270,10 +270,7 @@ ValidateAbortFuncs(void)
         abortchain = GetOneGlobal(REG_REG, "abortchain", 0);
         abortcaught = GetResultReg(1);
         abortresult = GetResultReg(0);
-        if (!frameptr) {
-            frameptr = GetOneGlobal(REG_REG, "fp", 0);
-        }
-        ValidateStackptr();
+        ValidateFrameptr();
         ValidateObjbase();
     }
 }
@@ -1471,19 +1468,27 @@ NeedToSaveLocals(Function *func)
     return true;
 }
 
-static bool
+// see if a function needs a frame pointer
+#define FRAME_NO 0
+#define FRAME_MAYBE 1
+#define FRAME_YES 2
+
+static int
 NeedFramePointer(Function *func)
 {
     if (ANY_VARS_ON_STACK(func)) {
-        return true;
+        return FRAME_YES;
     }
     if (func->uses_alloca) {
-        return true;
+        return FRAME_YES;
+    }
+    if (func->is_recursive) {
+        return FRAME_YES;
     }
     if (NeedToSaveLocals(func)) {
-        return true;
+        return FRAME_MAYBE;
     }
-    return false;
+    return FRAME_NO;
 }
 
 //
@@ -1495,6 +1500,8 @@ NeedFramePointer(Function *func)
 static void EmitFunctionHeader(IRList *irl, Function *func)
 {
     int i, n;
+    int needFrame = 0;
+    
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
     AppendIRList(irl, &FuncData(func)->irheader);
@@ -1522,15 +1529,20 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // FIXME: can probably optimize this to skip temporaries that
     // are used only after the first call
     //
-    
-    if (NeedFramePointer(func)) {
+
+    n = 0;
+    needFrame = NeedFramePointer(func);
+    if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         ValidateFrameptr();
         if (NeedToSaveLocals(func)) {
-            n = RenameLocalRegs(FuncIRL(func), 0);
-        } else {
-            n = 0;
+            n = RenameLocalRegs(FuncIRL(func), func->is_leaf);
         }
-        FuncData(func)->numsavedregs = n;
+    }
+    if (needFrame == FRAME_MAYBE) {
+        needFrame = (n > 0) ? FRAME_YES : FRAME_NO;
+    }
+    FuncData(func)->numsavedregs = n;
+    if (needFrame) {
         if (HUB_CODE && !gl_p2) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
@@ -1563,14 +1575,20 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    if (NeedFramePointer(func)) {
-        int i, n;
+    int i, n;
+    int needFrame;
+
+    needFrame = NeedFramePointer(func);
+    n = FuncData(func)->numsavedregs;
+    if (needFrame == FRAME_MAYBE) {
+        needFrame = (n > 0) ? FRAME_YES : FRAME_NO;
+    }
+    
+    if (needFrame) {
         ValidateFrameptr();
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
-        // pop return address
-        n = FuncData(func)->numsavedregs;
         if (!gl_p2) {
             // pop registers off stack
             ValidatePushregs();
