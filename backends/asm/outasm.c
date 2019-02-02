@@ -262,7 +262,7 @@ static void
 ValidateAbortFuncs(void)
 {
     if (0 == (gl_features_used & FEATURE_LONGJMP_USED)) {
-        ERROR(NULL, "Using longjmp/setjmp but feature not marked\n");
+        ERROR(NULL, "Internal error: using longjmp/setjmp but feature not marked\n");
     }
     if (!longjmpfunc) {
         longjmpfunc = NewOperand(IMM_COG_LABEL, "__longjmp", 0);
@@ -971,9 +971,7 @@ CogMemRef(Operand *addr, int offset)
 static Operand *
 FrameRef(int offset, int typesize)
 {
-    if (!frameptr) {
-        frameptr = GetOneGlobal(REG_REG, "fp", 0);
-    }
+    ValidateFrameptr();
     if (COG_DATA) {
         return CogMemRef(frameptr, offset / LONG_SIZE);
     }
@@ -1461,21 +1459,20 @@ NeedToSaveLocals(Function *func)
     if (func->is_recursive) {
         return true;
     }
-    if (0 != (gl_features_used & FEATURE_LONGJMP_USED)) {
-        return true;
-    }
     if (gl_output == OUTPUT_COGSPIN) {
         return false;
     }
-    // maybe skip saving locals for cog functions?
+#if 0
     if (func->cog_code) {
         return false;
     }
+#endif    
+    // maybe skip saving locals for cog functions?
     return true;
 }
 
 static bool
-NeedsFramePointer(Function *func)
+NeedFramePointer(Function *func)
 {
     if (ANY_VARS_ON_STACK(func)) {
         return true;
@@ -1497,9 +1494,7 @@ NeedsFramePointer(Function *func)
 //
 static void EmitFunctionHeader(IRList *irl, Function *func)
 {
-    bool needFrame = false;
     int i, n;
-    
     // earlier we put the appropriate comments into func->irheader
     // copy them out now
     AppendIRList(irl, &FuncData(func)->irheader);
@@ -1527,21 +1522,16 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     // FIXME: can probably optimize this to skip temporaries that
     // are used only after the first call
     //
-
-    n = 0;
-    if (NeedsFramePointer(func)) {
-        // n is number to push; for a leaf, that is 0
-        n = RenameLocalRegs(FuncIRL(func), func->is_leaf);
-        if (func->is_leaf) {
+    
+    if (NeedFramePointer(func)) {
+        ValidateFrameptr();
+        if (NeedToSaveLocals(func)) {
+            n = RenameLocalRegs(FuncIRL(func), 0);
+        } else {
             n = 0;
         }
-        needFrame = true;
-    }
-    FuncData(func)->numsavedregs = n;
-
-    if (needFrame) {
-        ValidateFrameptr();
-        if (HUB_CODE && !gl_p2 && n > 0) {
+        FuncData(func)->numsavedregs = n;
+        if (HUB_CODE && !gl_p2) {
             ValidatePushregs();
             EmitMove(irl, count_, NewImmediate(n));
             EmitOp1(irl, OPC_CALL, pushregs_);
@@ -1549,6 +1539,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             for (i = 0; i < n; i++) {
                 EmitPush(irl, GetLocalReg(i, 0));
             }
+            EmitPush(irl, NewImmediate(n));
             EmitPush(irl, frameptr);
             EmitMove(irl, frameptr, stackptr);
         }
@@ -1572,28 +1563,23 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
 
 static void EmitFunctionFooter(IRList *irl, Function *func)
 {
-    int i, n;
-    bool hasFrame = ANY_VARS_ON_STACK(func);
-    
-    n = 0;
-    if (NeedsFramePointer(func)) {
-        n = FuncData(func)->numsavedregs;
-        hasFrame = true;
-    }
-    if (hasFrame) {
+    if (NeedFramePointer(func)) {
+        int i, n;
         ValidateFrameptr();
         if (!func->closure) {
             EmitMove(irl, stackptr, frameptr);
         }
         // pop return address
         n = FuncData(func)->numsavedregs;
-        if (HUB_CODE && !gl_p2 && n > 0) {
+        if (!gl_p2) {
             // pop registers off stack
             ValidatePushregs();
             // EmitMove(irl, count_, NewImmediate(n));
+            //EmitPop(irl, frameptr);
             EmitOp1(irl, OPC_CALL, popregs_);
-        } else {            
+        } else {
             EmitPop(irl, frameptr);
+            EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
             for (i = n-1; i >= 0; --i) {
                 EmitPop(irl, GetLocalReg(i, 0));
             }
@@ -4829,8 +4815,6 @@ static const char *builtin_abortcode_p1 =
     "   cmp  arg01, arg02 wz\n"
     "  if_z jmp #__unwind_stack_ret\n"
     "   mov   sp, arg01\n"
-    "   sub   sp, #4\n"
-    "   rdlong fp, sp\n"  // get old fp
     "   call  #popregs_\n"
     "   mov   arg01, fp\n"
     "   jmp   #__unwind_stack\n"
