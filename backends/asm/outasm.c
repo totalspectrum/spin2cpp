@@ -4892,34 +4892,52 @@ static const char *builtin_abortcode_p1 =
     ;
 
 static const char *builtin_abortcode_p2 =
+    "__pc long 0\n"
     "__setjmp\n"
+    "    rdlong __pc, --ptra\n"
     "    mov result1, #0\n"
     "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
-    "    wrlong ptra, arg01\n"
-    "    add arg01, #4\n"
     "    wrlong fp, arg01\n"
+    "    add arg01, #4\n"
+    "    wrlong ptra, arg01\n"
     "    add arg01, #4\n"
     "    wrlong objptr, arg01\n"
     "    add arg01, #4\n"
-    "    rdlong arg02, ptra\n" // read return value from stack
-    "    wrlong arg02, arg01\n"
-    "    reta\n"
+    "    wrlong __pc, arg01\n"
+    "    jmp __pc\n"
+
+    // unwind_stack(curfp, lastfp) walks the frame pointer list and restores everything
+    // NOTE: call this with "call", not "calla"!
+    // until it reaches lastfp
+    "__unwind_stack\n"
+    "   cmp  arg01, arg02 wz\n"
+    "  if_z jmp #__unwind_stack_ret\n"
+    "   mov   ptra, arg01\n"
+    "   calla #popregs_\n"
+    "   mov   arg01, fp\n"
+    "   jmp   #__unwind_stack\n"
+    "__unwind_stack_ret\n"
+    "   ret\n"
+
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
+    "    rdlong __pc, --ptra\n"
     "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
     "    mov result1, arg02\n"
     "    mov result2, #1\n"
-    "    rdlong ptra, arg01\n"
+    "    rdlong arg02, arg01\n"  // new target for fp
     "    add arg01, #4\n"
-    "    rdlong fp, arg01\n"
+    "    rdlong ptra, arg01\n"
     "    add arg01, #4\n"
     "    rdlong objptr, arg01\n"
     "    add arg01, #4\n"
-    "    rdlong arg01,arg01\n"
-    "    wrlong arg01, ptra\n"
-    "    reta\n"
+    "    rdlong __pc, arg01\n"
+    "    mov arg01, fp\n"
+    "    call #__unwind_stack\n"
+    "__longjmp_ret\n"
+    "    jmp  __pc\n"
     ;
 
 const char *builtin_wrcog =

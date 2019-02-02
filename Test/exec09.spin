@@ -23,7 +23,7 @@ OBJ
 PUB demo
 #ifdef __P2__
   clkset(_clkmode, _clkfreq)
-  ser.start(63, 62, 0, 2000000)
+  ser.start(63, 62, 0, 230400)
 #else
   ser.start(31, 30, 0, 115200)
 #endif
