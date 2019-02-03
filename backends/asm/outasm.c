@@ -5583,8 +5583,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitLabel(&hubcode, hubexit);
             EmitJump(&hubcode, COND_TRUE, cogexit);
         }
-        EmitBuiltins(&cogcode);
-
         // output global functions
         if (HUB_CODE) {
             CompileToIR_internal(&hubcode, globalModule);
@@ -5592,6 +5590,8 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             CompileToIR_internal(&cogcode, globalModule);
         }
         // now copy the hub code into place
+        EmitBuiltins(&cogcode);
+
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     }
 
