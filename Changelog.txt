@@ -6,6 +6,7 @@ Version 3.9.17
 - Fixed catch/throw/setjmp/longjmp to correctly restore local variables
 - Accept line numbers in BASIC programs
 - Added <sys/p2_clock.h> for calculating P2 clock frequency
+- Changed location of _clkfreq and _clkmode variables to match TAQOZ
 
 Version 3.9.16
 - Check environment variable FLEXCC_INCLUDE_PATH for included files
