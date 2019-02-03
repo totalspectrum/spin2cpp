@@ -3,7 +3,9 @@ Version 3.9.17
 - Fixed indirect calls involving structure members
 - Fixed promotion of word and byte arguments to functions
 - Fixed a typo in the printf code for handling width
+- Fixed catch/throw/setjmp/longjmp to correctly restore local variables
 - Accept line numbers in BASIC programs
+- Added <sys/p2_clock.h> for calculating P2 clock frequency
 
 Version 3.9.16
 - Check environment variable FLEXCC_INCLUDE_PATH for included files

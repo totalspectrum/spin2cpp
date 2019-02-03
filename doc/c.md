@@ -31,6 +31,26 @@ Symbol           | When Defined
 `__cplusplus`    | if C++ is being output (not currently implemented)
 `__P2__`         | only defined if compiling for Propeller 2
 
+
+## Runtime Environment
+
+### P1 Clock Frequency
+
+In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal and `xtal1 + pll16x` clock mode. This is a common configuration. You may override it with the `clkset` macro from `<propeller.h>`, which works the same as the Spin `clkset` function.
+
+### P2 Clock Frequency
+
+The P2 does not have a default clock frequency. You may set up the frequency with the loader (loadp2), but it is probably best to explicitly set it using `clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+
+Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 160 MHz you would do:
+```
+#define P2_TARGET_MHZ 160
+#include <sys/p2es_clock.h>
+...
+clkset(_SETFREQ, _CLOCKFREQ);
+```
+The macros `_SETFREQ` and `_CLOCKFREQ` are not special in any way, and this whole mechanism is just provided as a convenience. You may completely ignore it and calculate the mode bits and frequency setting to pass to `clkset` yourself.
+
 ## Extensions to C
 
 ### Inline Assembly
