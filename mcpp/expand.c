@@ -1314,6 +1314,7 @@ static char *   stringize(
     }
 
     file = unget_string( argp, NULL);
+    (void)file; // silence compiler warning
     len = strlen( infile->buffer);  /* Sequence ends with RT_END    */
     if (trace_macro) {          /* Remove suffixed argument closing magics  */
         /* There are 0 or more argument closing magic sequences and */
