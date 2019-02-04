@@ -74,9 +74,10 @@ AST *IntegerLabel(AST *num)
 
 #define ARRAY_BASE_NAME "__array_base"
 #define IMPLICIT_TYPE_NAME "__implicit_types"
+#define EXPLICIT_DECL_NAME "__explicit_declares_required"
 
 Symbol *
-GetCurArrayBase(void)
+GetCurOptionSymbol(const char *name)
 {
 #if 0
     // this would make option base work nicely inside scopes
@@ -86,22 +87,23 @@ GetCurArrayBase(void)
     // can use later for pointer dereferences
     SymbolTable *symtab = current ? &current->objsyms : currentTypes;
 #endif    
-    Symbol *sym = LookupSymbolInTable(symtab, ARRAY_BASE_NAME);
+    Symbol *sym = LookupSymbolInTable(symtab, name);
     if (!sym) {
-        sym = AddSymbol(symtab, ARRAY_BASE_NAME, SYM_CONSTANT, AstInteger(0));
+        sym = AddSymbol(symtab, name, SYM_CONSTANT, AstInteger(0));
     }
     return sym;
+}
+
+Symbol *
+GetCurArrayBase(void)
+{
+    return GetCurOptionSymbol(ARRAY_BASE_NAME);
 }
         
 Symbol *
 GetCurImplicitTypes(void)
 {
-    SymbolTable *symtab = current ? &current->objsyms : currentTypes;
-    Symbol *sym = LookupSymbolInTable(symtab, IMPLICIT_TYPE_NAME);
-    if (!sym) {
-        sym = AddSymbol(symtab, IMPLICIT_TYPE_NAME, SYM_CONSTANT, AstInteger(0));
-    }
-    return sym;
+    return GetCurOptionSymbol(IMPLICIT_TYPE_NAME);
 }
 
 static AST *
@@ -109,13 +111,13 @@ HandleBASICOption(AST *optid, AST *exprlist)
 {
     const char *name = GetIdentifierName(optid);
     AST *expr;
+    Symbol *sym;
     if (!name) {
         SYNTAX_ERROR("Error in option list");
         return NULL;
     }
     if (!strcmp(name, "base")) {
         int arrayBase;
-        Symbol *sym;
         expr = NULL;
         if (exprlist && exprlist->kind == AST_EXPRLIST) {
             expr = exprlist->left;
@@ -129,6 +131,12 @@ HandleBASICOption(AST *optid, AST *exprlist)
         arrayBase = EvalConstExpr(expr);
         sym = GetCurArrayBase();
         sym->val = AstInteger(arrayBase);
+    } else if (!strcmp(name, "explicit")) {
+        sym = GetCurOptionSymbol(EXPLICIT_DECL_NAME);
+        sym->val = AstInteger(255);
+    } else if (!strcmp(name, "implicit")) {
+        sym = GetCurOptionSymbol(EXPLICIT_DECL_NAME);
+        sym->val = AstInteger(0);
     } else {
         SYNTAX_ERROR("Unknown option %s", name);
     }
