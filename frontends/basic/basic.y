@@ -317,12 +317,13 @@ GetCurrentLoop(int token)
 
 %token BAS_IDENTIFIER "identifier"
 %token BAS_LABEL      "label"
+%token BAS_FUNCNAME   "function name"
 %token BAS_INTEGER    "integer number"
 %token BAS_FLOAT      "number"
 %token BAS_STRING     "literal string"
 %token BAS_EOLN       "end of line"
 %token BAS_EOF        "end of file"
-%token BAS_TYPENAME   "class name"
+%token BAS_TYPENAME   "type name"
 %token BAS_INSTR      "asm instruction"
 %token BAS_INSTRMODIFIER "asm instruction modifier"
 %token BAS_ALIGNL     "alignl"
@@ -633,7 +634,9 @@ usingprintlist:
 ;
 
 printlist:
-  rawprintlist
+/* empty */
+    { $$ = AstCharItem('\n'); }
+  | rawprintlist
     { $$ = AddToList($1, AstCharItem('\n')); }
   | rawprintlist ','
     { $$ = AddToList($1, AstCharItem('\t')); }
@@ -706,7 +709,7 @@ doloopstmt:
       $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
       PopLoop();
     }
-  | BAS_DO eoln {PushLoop(BAS_DO); } statementlist doloopend
+  | BAS_DO eoln {PushLoop(BAS_DO); } optstatementlist doloopend
     {
         $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($4), $1);
         PopLoop();
@@ -1247,7 +1250,7 @@ constlist:
 ;
 
 typedecl:
-  BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln
+  BAS_TYPE BAS_IDENTIFIER BAS_AS typename
     {
         AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4);
     }
