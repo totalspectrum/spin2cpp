@@ -447,7 +447,11 @@ topitem:
     /* empty */
     { $$ = NULL; }
   | labelled_stmt
-    { $$ = $1; }
+    {
+        AST *stmtholder = $1;
+        current->body = AddToList(current->body, stmtholder);
+        $$ = stmtholder;
+    }
   | topdecl
     { $$ = $1; }
 ;
@@ -485,6 +489,8 @@ stmtlistitem:
     { $$ = $1; }
   | dimension
     { $$ = $1; }
+  | BAS_LABEL
+    { $$ = NewAST(AST_LABEL, $1, NULL); }
 ;
 statementlist:
   stmtlistitem
@@ -522,8 +528,6 @@ statement:
     { $$ = $1; }
   | trycatchstmt
     { $$ = $1; }
-  | exitstmt
-    { $$ = $1; }
   | selectstmt
     { $$ = $1; }
 ;
@@ -536,7 +540,8 @@ assign_statement:
 ;
 
 branchstmt:
-  BAS_RETURN
+  exitstmt
+  | BAS_RETURN
     { $$ = AstReturn(NULL, $1); }
   | BAS_RETURN expr
     { $$ = AstReturn($2, $1); }
@@ -624,11 +629,12 @@ ifstmt:
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
         $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
-  | BAS_IF expr statement
+  | BAS_IF expr branchstmt
     {
+        AST *condition = $2;
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
-        $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
+        $$ = NewCommentedAST(AST_IF, condition, elseblock, $1);
     }
 ;
 
@@ -929,7 +935,7 @@ varexpr:
   BAS_IDENTIFIER
     { $$ = $1; }
   | '(' expr ')'
-    { $$ = $3; }
+    { $$ = $2; }
   | varexpr '(' ')'
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | varexpr '(' exprlist ')'
