@@ -439,8 +439,13 @@ toplist:
  | toplist eoln topitem
 ;
 
-eoln: BAS_EOLN
+eoln: eolnseq
 | ':'
+;
+
+eolnseq:
+BAS_EOLN
+| eolnseq BAS_EOLN
 ;
 
 topitem:
@@ -479,9 +484,9 @@ labelled_stmt:
 
 optstatementlist:
   /* empty */
-  { $$ = NULL; }
-| statementlist
-  { $$ = $1; }
+    { $$ = NULL; }
+  | statementlist
+    { $$ = $1; }
 ;
 
 stmtlistitem:
@@ -492,7 +497,15 @@ stmtlistitem:
   | BAS_LABEL
     { $$ = NewAST(AST_LABEL, $1, NULL); }
 ;
+
 statementlist:
+  realstatementlist
+    { $$ = $1; }
+  | eoln statementlist
+    { $$ = $1; }
+;
+
+realstatementlist:
   stmtlistitem
     { $$ = NewAST(AST_STMTLIST, $1, NULL); }
   | stmtlistitem eoln optstatementlist
@@ -502,9 +515,17 @@ statementlist:
 statement:
   assign_statement
     { $$ = $1; }
+/*  | BAS_IDENTIFIER exprlist
+    {
+        AST *params;
+        params = $2;
+        $$ = NewAST(AST_FUNCCALL, $1, params);
+    }
+*/
   | BAS_LET BAS_IDENTIFIER '=' expr
     { MaybeDeclareMemberVar(current, $2, InferTypeFromName($2));
-      $$ = AstAssign($2, $4); }
+      $$ = AstAssign($2, $4);
+    }
   | BAS_VAR BAS_IDENTIFIER '=' expr
     {
       AST *name = $2;
@@ -537,6 +558,11 @@ assign_statement:
     { $$ = AstAssign($1, $3); }
   | register_expr '=' expr
     { $$ = AstAssign($1, $3); }
+  | register_expr '=' BAS_INPUT
+    { $$ = AstAssign($1, AstInteger(0)); }
+  | register_expr '=' BAS_OUTPUT
+    { $$ = AstAssign($1, AstInteger(-1)); }
+  
 ;
 
 branchstmt:
