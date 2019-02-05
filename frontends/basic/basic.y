@@ -474,11 +474,11 @@ labelled_stmt:
         AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
         $$ = stmtholder;
     }
-  | BAS_LABEL labelled_stmt
+  | BAS_LABEL
     {
         AST *ilab = NewAST(AST_LABEL, $1, NULL);
         AST *label = NewAST(AST_STMTLIST, ilab, NULL);
-        AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
+        AST *stmtholder = NewAST(AST_STMTLIST, label, NULL);
         $$ = stmtholder;
     }
 ;
