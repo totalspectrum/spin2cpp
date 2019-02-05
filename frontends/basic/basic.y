@@ -1,6 +1,6 @@
 /*
- * Spin compiler parser
- * Copyright (c) 2011-2018 Total Spectrum Software Inc.
+ * BASIC compiler parser
+ * Copyright (c) 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -316,6 +316,7 @@ GetCurrentLoop(int token)
 %pure-parser
 
 %token BAS_IDENTIFIER "identifier"
+%token BAS_LABEL      "label"
 %token BAS_INTEGER    "integer number"
 %token BAS_FLOAT      "number"
 %token BAS_STRING     "literal string"
@@ -432,103 +433,131 @@ GetCurrentLoop(int token)
 %left '.'
 
 %%
+
 toplist:
- /* empty */
- | toplist1
+ topitem
+ | toplist eoln topitem
 ;
 
-toplist1:
- topstatement
- | toplist1 topstatement
+eoln: BAS_EOLN
+| ':'
 ;
 
-eoln:
-  BAS_EOLN
-  | ':'
-  ;
-
-topstatement:
-  statement
-    {
-        AST *stmtholder = NewCommentedStatement($1);
-        current->body = AddToList(current->body, stmtholder);
-    }
+topitem:
+    /* empty */
+    { $$ = NULL; }
+  | labelled_stmt
+    { $$ = $1; }
   | topdecl
     { $$ = $1; }
-  | BAS_INTEGER statement
+;
+
+labelled_stmt:
+  statement
     {
-        AST *label = NewAST(AST_LABEL, IntegerLabel($1), NULL);
-        AST *stmtholder = NewAST(AST_STMTLIST, label,
-                                 NewAST(AST_STMTLIST, $2, NULL));
-        current->body = AddToList(current->body, stmtholder);
+        $$ = NewAST(AST_STMTLIST, $1, NULL);
+    }
+  | BAS_INTEGER labelled_stmt
+    {
+        AST *ilab = NewAST(AST_LABEL, IntegerLabel($1), NULL);
+        AST *label = NewAST(AST_STMTLIST, ilab, NULL);
+        AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
+        $$ = stmtholder;
+    }
+  | BAS_LABEL labelled_stmt
+    {
+        AST *ilab = NewAST(AST_LABEL, $1, NULL);
+        AST *label = NewAST(AST_STMTLIST, ilab, NULL);
+        AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
+        $$ = stmtholder;
     }
 ;
 
-pinrange:
-  expr
-    { $$ = NewAST(AST_RANGE, $1, NULL); }
-  | expr ',' expr
-    { $$ = NewAST(AST_RANGE, $1, $3); }
+optstatementlist:
+  /* empty */
+  { $$ = NULL; }
+| statementlist
+  { $$ = $1; }
 ;
 
-nonemptystatement:
-  BAS_IDENTIFIER ':' BAS_EOLN
-    { $$ = NewAST(AST_LABEL, $1, NULL); }
-  | BAS_IDENTIFIER '=' expr eoln
-    { $$ = AstAssign($1, $3); }
-  | BAS_IDENTIFIER '(' expr ')' '=' expr eoln
-    { $$ = AstAssign(BASICArrayRef($1, $3), $6); }
-  | BAS_OUTPUT '(' pinrange ')' '=' expr eoln
-    {
-        $$ = AstAssign(GetPinRange("outa", "outb", $3), $6);
-    }
-  | BAS_DIRECTION '(' pinrange ')' '=' expr eoln
-    {
-        $$ = AstAssign(GetPinRange("dira", "dirb", $3), $6);
-    }
-  | BAS_DIRECTION '(' pinrange ')' '=' BAS_INPUT eoln
-    {
-        $$ = AstAssign(GetPinRange("dira", "dirb", $3), AstInteger(0));
-    }
-  | BAS_DIRECTION '(' pinrange ')' '=' BAS_OUTPUT eoln
-    {
-        $$ = AstAssign(GetPinRange("dira", "dirb", $3), AstInteger(-1));
-    }
-  | BAS_LET BAS_IDENTIFIER '=' expr eoln
+stmtlistitem:
+  statement
+    { $$ = $1; }
+  | dimension
+    { $$ = $1; }
+;
+statementlist:
+  stmtlistitem
+    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+  | stmtlistitem eoln optstatementlist
+    { $$ = NewAST(AST_STMTLIST, $1, $3); }
+;
+
+statement:
+  assign_statement
+    { $$ = $1; }
+  | BAS_LET BAS_IDENTIFIER '=' expr
     { MaybeDeclareMemberVar(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4); }
-  | BAS_VAR BAS_IDENTIFIER '=' expr eoln
+  | BAS_VAR BAS_IDENTIFIER '=' expr
     {
       AST *name = $2;
       AST *assign = AstAssign(name, $4);
       assign = NewAST(AST_LISTHOLDER, assign, NULL);
       $$ = NewAST(AST_DECLARE_VAR, NULL, assign);
     }
-  | BAS_IDENTIFIER '(' optexprlist ')' eoln
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | BAS_IDENTIFIER '.' BAS_IDENTIFIER '(' exprlist ')' eoln
-    { $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5); }
-  | BAS_IDENTIFIER exprlist eoln
-    { $$ = NewAST(AST_FUNCCALL, $1, $2); }
-  | BAS_IDENTIFIER eoln
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-  | BAS_RETURN eoln
+  | varexpr
+    { $$ = $1; }
+  | iostmt
+    { $$ = $1; }
+  | branchstmt
+    { $$ = $1; }
+  | ifstmt
+    { $$ = $1; }
+  | whilestmt
+    { $$ = $1; }
+  | doloopstmt
+    { $$ = $1; }
+  | forstmt
+    { $$ = $1; }
+  | trycatchstmt
+    { $$ = $1; }
+  | exitstmt
+    { $$ = $1; }
+  | selectstmt
+    { $$ = $1; }
+;
+
+assign_statement:
+  varexpr '=' expr
+    { $$ = AstAssign($1, $3); }
+  | register_expr '=' expr
+    { $$ = AstAssign($1, $3); }
+;
+
+branchstmt:
+  BAS_RETURN
     { $$ = AstReturn(NULL, $1); }
-  | BAS_RETURN expr eoln
+  | BAS_RETURN expr
     { $$ = AstReturn($2, $1); }
-  | BAS_DELETE expr eoln
-    { $$ = NewAST(AST_DELETE, $2, NULL); }
-  | BAS_GOTO BAS_IDENTIFIER eoln
+  | BAS_GOTO BAS_IDENTIFIER
     { $$ = NewAST(AST_GOTO, $2, NULL); }
-  | BAS_GOTO BAS_INTEGER eoln
+  | BAS_GOTO BAS_INTEGER
     { $$ = NewAST(AST_GOTO, IntegerLabel($2), NULL); }
-  | BAS_PRINT printlist
+  | BAS_THROW expr
+    {
+      $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);
+    }
+;
+
+iostmt:
+  BAS_PRINT printlist
     { $$ = NewAST(AST_PRINT, $2, NULL); }
   | BAS_PRINT '#' expr
     { $$ = NewAST(AST_PRINT, AstCharItem('\n'), $3); }
   | BAS_PRINT '#' expr ',' printlist
     { $$ = NewCommentedAST(AST_PRINT, $5, $3, $1); }
-  | BAS_PUT expr eoln
+  | BAS_PUT expr
     { $$ = NewCommentedAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                            NULL, $1); }
@@ -545,33 +574,6 @@ nonemptystatement:
                     AstIdentifier("_basic_close"),
                              NewAST(AST_EXPRLIST, $3, NULL), $1);
     }
-  | BAS_THROW expr
-    {
-        $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);
-    }
-  | ifstmt
-    { $$ = $1; }
-  | whilestmt
-    { $$ = $1; }
-  | doloopstmt
-    { $$ = $1; }
-  | forstmt
-    { $$ = $1; }
-  | asmstmt
-    { $$ = $1; }
-  | trycatchstmt
-    { $$ = $1; }
-  | selectstmt
-    { $$ = $1; }
-  | exitstmt
-    { $$ = $1; }
-;
-
-statement:
-    nonemptystatement
-    { $$ = $1; }
-  | eoln
-    { $$ = NULL; }
 ;
 
 printitem:
@@ -582,7 +584,7 @@ printitem:
 ;
 
 rawprintlist:
-  | printitem
+  printitem
   { $$ = $1; }
   | rawprintlist ';' printitem
   { $$ = AddToList($1, $3); }
@@ -591,7 +593,7 @@ rawprintlist:
 ;
 
 usingprintlist:
-  | printitem
+  printitem
   { $$ = $1; }
   | usingprintlist ';' printitem
   { $$ = AddToList($1, $3); }
@@ -600,17 +602,15 @@ usingprintlist:
 ;
 
 printlist:
-  eoln
-    { $$ = AstCharItem('\n'); }
-  | rawprintlist eoln
+  rawprintlist
     { $$ = AddToList($1, AstCharItem('\n')); }
-  | rawprintlist ',' eoln
+  | rawprintlist ','
     { $$ = AddToList($1, AstCharItem('\t')); }
-  | rawprintlist ';' eoln
+  | rawprintlist ';'
     { $$ = $1; }
-  | BAS_USING BAS_STRING ';' usingprintlist eoln
+  | BAS_USING BAS_STRING ';' usingprintlist
     { $$ = NewAST(AST_USING, $2, AddToList($4, AstCharItem('\n'))); }
-  | BAS_USING BAS_STRING ';' usingprintlist ';' eoln
+  | BAS_USING BAS_STRING ';' usingprintlist ';'
     { $$ = NewAST(AST_USING, $2, $4); }
 ;
 
@@ -624,7 +624,7 @@ ifstmt:
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
         $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
-  | BAS_IF expr nonemptystatement
+  | BAS_IF expr statement
     {
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
@@ -637,14 +637,14 @@ thenelseblock:
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
   | statementlist BAS_ELSE eoln statementlist endif
     { $$ = NewAST(AST_THENELSE, $1, $4); }
-  | statementlist BAS_ELSE nonemptystatement
+  | statementlist BAS_ELSE statement
     { $$ = NewAST(AST_THENELSE, $1, NewCommentedStatement($3)); }
 ;
 
 endif:
-  BAS_END eoln
-  | BAS_END BAS_IF eoln
-  | BAS_ENDIF eoln
+  BAS_END
+  | BAS_END BAS_IF
+  | BAS_ENDIF
 ;
 
 whilestmt:
@@ -656,25 +656,25 @@ whilestmt:
 ;
 
 endwhile:
-  BAS_WEND eoln
-  | BAS_END BAS_WHILE eoln
-  | BAS_END eoln
+  BAS_WEND
+  | BAS_END BAS_WHILE
+  | BAS_END
   ;
 
 doloopstmt:
-  BAS_DO BAS_WHILE expr eoln { PushLoop(BAS_DO); } optstatementlist BAS_LOOP eoln
+  BAS_DO BAS_WHILE expr eoln { PushLoop(BAS_DO); } optstatementlist BAS_LOOP
     { AST *body = CheckYield($6);
       AST *cond = $3;
       $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
       PopLoop();
     }
-  | BAS_DO BAS_UNTIL expr eoln {PushLoop(BAS_DO); } optstatementlist BAS_LOOP eoln
+  | BAS_DO BAS_UNTIL expr eoln {PushLoop(BAS_DO); } optstatementlist BAS_LOOP
     { AST *body = CheckYield($6);
       AST *cond = AstOperator(K_BOOL_NOT, NULL, $3);
       $$ = NewCommentedAST(AST_WHILE, cond, body, $1);
       PopLoop();
     }
-  | BAS_DO eoln {PushLoop(BAS_DO); } optstatementlist doloopend
+  | BAS_DO eoln {PushLoop(BAS_DO); } statementlist doloopend
     {
         $$ = NewCommentedAST(AST_DOWHILE, $5, CheckYield($4), $1);
         PopLoop();
@@ -682,12 +682,41 @@ doloopstmt:
   ;
 
 doloopend:
-  BAS_LOOP BAS_WHILE expr eoln
+  BAS_LOOP BAS_WHILE expr
     { $$ = $3; }
-  | BAS_LOOP BAS_UNTIL expr eoln
+  | BAS_LOOP BAS_UNTIL expr
     { $$ = AstOperator(K_BOOL_NOT, NULL, $3); }
-  | BAS_LOOP eoln
+  | BAS_LOOP
     { $$ = AstInteger(1); }
+;
+
+selectstmt:
+  BAS_SELECT BAS_CASE expr eoln casematchlist BAS_END BAS_SELECT
+    { $$ = NewCommentedAST(AST_CASE, $3, $5, $1); }
+;
+
+casematchlist:
+  casematchitem
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | casematchlist casematchitem
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+  ;
+
+casematchitem:
+  casematch eoln statementlist
+    {
+        AST *slist = $3;
+        $$ = NewAST(AST_CASEITEM, $1, slist);
+    }
+;
+
+casematch:
+  BAS_CASE expr
+    {  $$ = NewAST(AST_EXPRLIST, $2, NULL); }
+  | BAS_CASE expr BAS_TO expr
+    {  $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $2, $4), NULL); }
+  | BAS_CASE BAS_ELSE
+    { $$ = NewAST(AST_OTHER, NULL, NULL); }
 ;
 
 //
@@ -721,9 +750,9 @@ forstmt:
 ;
 
 endfor:
-  BAS_NEXT eoln
+  BAS_NEXT
     { $$ = NULL; }
-  | BAS_NEXT BAS_IDENTIFIER eoln
+  | BAS_NEXT BAS_IDENTIFIER
     { $$ = $2; }
 ;
 
@@ -757,15 +786,15 @@ trycatchstmt:
 ;
 
 endtry:
-  BAS_END BAS_TRY eoln
+  BAS_END BAS_TRY
 ;
 
 exitstmt:
-  BAS_EXIT BAS_FUNCTION eoln
+  BAS_EXIT BAS_FUNCTION
     { $$ = NewAST(AST_RETURN, NULL, NULL); }
-  | BAS_EXIT BAS_SUB eoln
+  | BAS_EXIT BAS_SUB
     { $$ = NewAST(AST_RETURN, NULL, NULL); }
-  | BAS_EXIT BAS_FOR eoln
+  | BAS_EXIT BAS_FOR
     {
         int curLoop = GetCurrentLoop(BAS_FOR);
         AST *modifier = NULL;
@@ -776,7 +805,7 @@ exitstmt:
         }
         $$ = NewAST(AST_QUIT, modifier, NULL);
     }
-  | BAS_EXIT BAS_WHILE eoln
+  | BAS_EXIT BAS_WHILE
     {
         int curLoop = GetCurrentLoop(BAS_WHILE);
         AST *modifier = NULL;
@@ -787,7 +816,7 @@ exitstmt:
         }
         $$ = NewAST(AST_QUIT, modifier, NULL);
     }
-  | BAS_EXIT BAS_DO eoln
+  | BAS_EXIT BAS_DO
     {
         int curLoop = GetCurrentLoop(BAS_DO);
         AST *modifier = NULL;
@@ -798,7 +827,7 @@ exitstmt:
         }
         $$ = NewAST(AST_QUIT, modifier, NULL);
     }
-  | BAS_EXIT eoln
+  | BAS_EXIT
     {
         int curLoop = GetCurrentLoop(0);
         AST *modifier = NULL;
@@ -809,7 +838,7 @@ exitstmt:
         }
         $$ = NewAST(AST_QUIT, modifier, NULL);
     }
-  | BAS_CONTINUE BAS_FOR eoln
+  | BAS_CONTINUE BAS_FOR
     {
         int curLoop = GetCurrentLoop(BAS_FOR);
         AST *modifier = NULL;
@@ -820,7 +849,7 @@ exitstmt:
         }
         $$ = NewAST(AST_CONTINUE, modifier, NULL);
     }
-  | BAS_CONTINUE BAS_WHILE eoln
+  | BAS_CONTINUE BAS_WHILE
     {
         int curLoop = GetCurrentLoop(BAS_WHILE);
         AST *modifier = NULL;
@@ -831,7 +860,7 @@ exitstmt:
         }
         $$ = NewAST(AST_CONTINUE, modifier, NULL);
     }
-  | BAS_CONTINUE BAS_DO eoln
+  | BAS_CONTINUE BAS_DO
     {
         int curLoop = GetCurrentLoop(BAS_DO);
         AST *modifier = NULL;
@@ -842,7 +871,7 @@ exitstmt:
         }
         $$ = NewAST(AST_CONTINUE, modifier, NULL);
     }
-  | BAS_CONTINUE eoln
+  | BAS_CONTINUE
     {
         int curLoop = GetCurrentLoop(0);
         AST *modifier = NULL;
@@ -855,110 +884,90 @@ exitstmt:
     }
 ;
 
-selectstmt:
-  BAS_SELECT BAS_CASE expr eoln casematchlist BAS_END BAS_SELECT
-    { $$ = NewCommentedAST(AST_CASE, $3, $5, $1); }
-;
-
-casematchlist:
-  casematchitem
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
-  | casematchlist casematchitem
-    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
-  ;
-
-casematchitem:
-  casematch eoln statementlist
+topdecl:
+  BAS_DEFSNG deflist
     {
-        AST *slist = $3;
-        $$ = NewAST(AST_CASEITEM, $1, slist);
+      $$ = DefineDefaultVarTypes($2, ast_type_float);
+    }  
+  | BAS_DEFINT deflist
+    {
+      $$ = DefineDefaultVarTypes($2, ast_type_long);
     }
-;
-
-casematch:
-  BAS_CASE expr
-    {  $$ = NewAST(AST_EXPRLIST, $2, NULL); }
-  | BAS_CASE expr BAS_TO expr
-    {  $$ = NewAST(AST_EXPRLIST, NewAST(AST_RANGE, $2, $4), NULL); }
-  | BAS_CASE BAS_ELSE
-    { $$ = NewAST(AST_OTHER, NULL, NULL); }
-;
-
-optstatementlist:
-  /* nothing */
-    { $$ = NULL; }
-  | statementlist
-    { $$ = $1; }
-;
-
-statementlist:
-  statement
-    { $$ = NewCommentedStatement($1); }
   | dimension
-    { $$ = NewCommentedStatement($1); }
-  | statementlist statement
-    { $$ = AddToList($1, NewCommentedStatement($2)); }
-  | statementlist dimension
-    { $$ = AddToList($1, NewCommentedStatement($2)); }
-  ;
-
-paramdecl:
-  /* empty */
-    { $$ = NULL; }
-  | paramdecl1
-    { $$ = $1; }
+    {
+        AST *ast = $1;
+        if (ast->kind == AST_GLOBALVARS) {
+            DeclareBASICGlobalVariables(ast->left);
+        } else {
+            DeclareBASICMemberVariables(ast);
+        }
+    }
+  | BAS_OPTION BAS_IDENTIFIER optexprlist
+    {
+      $$ = HandleBASICOption($2, $3);
+    }
+  | classdecl
+  | typedecl
+  | funcdecl
+  | subdecl
+  | constdecl
 ;
-paramdecl1:
-  paramitem
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
-  | paramdecl1 ',' paramitem
-    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
-  ;
 
-paramitem:
+defitem:
+  BAS_IDENTIFIER '-' BAS_IDENTIFIER
+     { $$ = NewAST(AST_SEQUENCE, $1, $3); }
+;
+
+deflist:
+  defitem
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | deflist ',' defitem
+    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+;
+
+varexpr:
   BAS_IDENTIFIER
-    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
-  | BAS_IDENTIFIER '=' expr
-    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), AstAssign($1, $3)); }
-  | BAS_IDENTIFIER BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
-  | BAS_IDENTIFIER '=' expr BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
+    { $$ = $1; }
+  | '(' expr ')'
+    { $$ = $3; }
+  | varexpr '(' ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  | varexpr '(' exprlist ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | varexpr '.' BAS_IDENTIFIER
+    { $$ = NewAST(AST_METHODREF, $1, $3); }
 ;
 
-optexprlist:
-  /* nothing */
-    { $$ = NULL; }
-  | exprlist
-    { $$ = $1; }
-;
-
-exprlist:
-  expritem
-    { $$ = $1; }
- | exprlist ',' expritem
-   { $$ = AddToList($1, $3); }
- ;
-
-expritem:
+pinrange:
   expr
-   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+    { $$ = NewAST(AST_RANGE, $1, NULL); }
+  | expr ',' expr
+    { $$ = NewAST(AST_RANGE, $1, $3); }
+;
+
+register_expr:
+  BAS_INPUT '(' pinrange ')'
+    { $$ = GetPinRange("ina", "inb", $3); }
+  | BAS_OUTPUT '(' pinrange ')'
+    { $$ = GetPinRange("outa", "outb", $3); }
+  | BAS_DIRECTION '(' pinrange ')'
+    { $$ = GetPinRange("dira", "dirb", $3); }
 ;
 
 primary_expr:
-  BAS_INTEGER
+  varexpr
+    { $$ = $1; }
+  | register_expr
+    { $$ = $1; }
+  | BAS_INTEGER
     { $$ = $1; }
   | BAS_FLOAT
     { $$ = $1; }
-  | BAS_IDENTIFIER
-    { $$ = $1; }
   | BAS_NIL
-    { $$ = AstBitValue(0); } 
+    { $$ = AstBitValue(0); }
   | BAS_STRING
     { $$ = NewAST(AST_STRINGPTR,
                   NewAST(AST_EXPRLIST, $1, NULL), NULL); }
-  | '(' expr ')'
-    { $$ = $2; }
   | BAS_NEW typename
     {
         AST *numElements;
@@ -981,66 +990,8 @@ primary_expr:
     }
 ;
 
-postfix_expr:
-  primary_expr
-    { $$ = $1; }
-  | postfix_expr '(' ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
-  | postfix_expr '(' exprlist ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | postfix_expr '.' BAS_IDENTIFIER
-    { $$ = NewAST(AST_METHODREF, $1, $3); }
-  | BAS_ABS '(' expr ')'
-    { $$ = AstOperator(K_ABS, NULL, $3); }  
-  | BAS_ASC '(' expr ')'
-    { $$ = AstOperator(K_ASC, NULL, $3); }  
-  | BAS_SQRT '(' expr ')'
-    { $$ = AstOperator(K_SQRT, NULL, $3); }  
-  | BAS_INPUT '(' pinrange ')'
-    { $$ = GetPinRange("ina", "inb", $3); }
-  | BAS_OUTPUT '(' pinrange ')'
-    { $$ = GetPinRange("outa", "outb", $3); }
-  | BAS_DIRECTION '(' pinrange ')'
-    { $$ = GetPinRange("dira", "dirb", $3); }
-  | BAS_CPU '(' exprlist ')'
-    {
-        AST *elist;
-        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
-        elist = NewAST(AST_EXPRLIST, immval, NULL);
-        elist = AddToList(elist, $3);
-        $$ = NewAST(AST_COGINIT, elist, NULL);
-    }
-  | BAS_FUNCTION '(' paramdecl ')' expr %prec BAS_FUNCTION
-  {
-      AST *params = $3;
-      AST *rettype = NULL;
-      AST *body = $5;
-      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
-
-      body = NewCommentedStatement(AstReturn(body, NULL));
-
-      $$ = NewAST(AST_LAMBDA, functype, body);
-  }
-  | BAS_FUNCTION '(' paramdecl ')' BAS_AS typename eoln funcbody
-  {
-      AST *params = $3;
-      AST *rettype = $6;
-      AST *body = $8;
-      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
-      $$ = NewAST(AST_LAMBDA, functype, body);
-  }
-  | BAS_SUB '(' paramdecl ')' eoln subbody
-  {
-      AST *params = $3;
-      AST *rettype = ast_type_void;
-      AST *body = $6;
-      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
-      $$ = NewAST(AST_LAMBDA, functype, body);
-  }
-;
-
 unary_expr:
-  postfix_expr
+  primary_expr
     { $$ = $1; }
   | '+' unary_expr
     { $$ = $2; }
@@ -1050,6 +1001,50 @@ unary_expr:
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
   | '@' unary_expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
+  | BAS_ABS unary_expr
+    { $$ = AstOperator(K_ABS, NULL, $2); }
+  | BAS_ASC unary_expr
+    { $$ = AstOperator(K_ASC, NULL, $2); }
+  | BAS_SQRT unary_expr
+    { $$ = AstOperator(K_SQRT, NULL, $2); }
+  | BAS_CPU '(' exprlist ')'
+    {
+        AST *elist;
+        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
+        elist = NewAST(AST_EXPRLIST, immval, NULL);
+        elist = AddToList(elist, $3);
+        $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
+;
+
+lambdaexpr:
+  BAS_FUNCTION '(' paramdecl ')' expr
+    {
+      AST *params = $3;
+      AST *rettype = NULL;
+      AST *body = $5;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+
+      body = NewCommentedStatement(AstReturn(body, NULL));
+
+      $$ = NewAST(AST_LAMBDA, functype, body);
+    }
+  | BAS_FUNCTION '(' paramdecl ')' BAS_AS typename eoln funcbody
+    {
+      AST *params = $3;
+      AST *rettype = $6;
+      AST *body = $8;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      $$ = NewAST(AST_LAMBDA, functype, body);
+    }
+  | BAS_SUB '(' paramdecl ')' eoln subbody
+    {
+      AST *params = $3;
+      AST *rettype = ast_type_void;
+      AST *body = $6;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      $$ = NewAST(AST_LAMBDA, functype, body);
+    }
 ;
 
 mult_expr:
@@ -1107,114 +1102,28 @@ bit_expr:
 expr:
   bit_expr
     { $$ = $1; }
-;
-
-topdecl:
-  subdecl
-  | funcdecl
-  | classdecl
-  | dimension
-    {
-        AST *ast = $1;
-        if (ast->kind == AST_GLOBALVARS) {
-            DeclareBASICGlobalVariables(ast->left);
-        } else {
-            DeclareBASICMemberVariables(ast);
-        }
-    }
-  | constdecl
-  | typedecl
-  | BAS_OPTION BAS_IDENTIFIER optexprlist eoln
-      {
-          $$ = HandleBASICOption($2, $3);
-      }
-  | BAS_DEFSNG deflist
-      {
-          $$ = DefineDefaultVarTypes($2, ast_type_float);
-      }  
-  | BAS_DEFINT deflist
-      {
-          $$ = DefineDefaultVarTypes($2, ast_type_long);
-      }  
-  ;
-
-defitem:
-  BAS_IDENTIFIER '-' BAS_IDENTIFIER
-     { $$ = NewAST(AST_SEQUENCE, $1, $3); }
-;
-
-deflist:
-  defitem
-    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
-  | deflist ',' defitem
-    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
-;
-
-      
-constdecl:
-  BAS_CONST constlist
-  {
-      $$ = current->conblock = AddToList(current->conblock, $2);
-  }
-;
-constitem:
-  BAS_IDENTIFIER '=' expr
-    {
-      AST *decl = AstAssign($1, $3);
-      decl = CommentedListHolder(decl);
-      $$ = decl;
-    }
-;
-constlist:
-  constlist ',' constitem
-    { $$ = AddToList($1, $3); }
-  | constitem
+  | lambdaexpr
     { $$ = $1; }
 ;
-typedecl:
-  BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln
-    {
-        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4);
-    }
+
+optexprlist:
+    /* empty */
+    { $$ = NULL; }
+  | exprlist
+    { $$ = $1; }
 ;
 
-subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody  eoln
-  {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
-    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $7, NULL, $1);
-  }
-  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody eoln
-  {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
-    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $5, NULL, $1);
-  }
-  ;
+exprlist:
+  expritem
+    { $$ = $1; }
+ | exprlist ',' expritem
+   { $$ = AddToList($1, $3); }
+ ;
 
-funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody eoln
-  {
-    AST *name = $2;
-    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
-    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    AST *rettype = InferTypeFromName(name);
-    DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
-  }
-  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody eoln
-  {
-    AST *name = $2;
-    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
-    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    AST *rettype = $7;
-    DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
-  }
-  ;
+expritem:
+  expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+;
 
 subbody:
   statementlist endsub
@@ -1236,8 +1145,46 @@ endfunc:
   | BAS_END BAS_FUNCTION
 ;
 
+subdecl:
+  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
+  {
+    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(current, ast_type_void, 1, funcdef, $7, NULL, $1);
+  }
+  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody
+  {
+    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    DeclareFunction(current, ast_type_void, 1, funcdef, $5, NULL, $1);
+  }
+  ;
+
+funcdecl:
+  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
+  {
+    AST *name = $2;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    AST *rettype = InferTypeFromName(name);
+    DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
+  }
+  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+  {
+    AST *name = $2;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    AST *rettype = $7;
+    DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
+  }
+  ;
+
 classdecl:
-  BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING eoln
+  BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING
     {
         AST *newobj = NewAbstractObject( $2, $4 );
         current->objblock = AddToList(current->objblock, newobj);
@@ -1246,67 +1193,33 @@ classdecl:
     }
   ;
 
-dimension:
-  BAS_DIM dimlist
-    { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
-  | BAS_DIM dimlist BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, $4, $2); }
-  | BAS_DIM BAS_AS typename dimlist
-    { $$ = NewAST(AST_DECLARE_VAR, $3, $4); }
-  | BAS_DIM BAS_SHARED dimlist
-    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, NULL, $3), NULL); }
-  | BAS_DIM BAS_SHARED dimlist BAS_AS typename
-    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
-  | BAS_DIM BAS_SHARED BAS_AS typename dimlist
-    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
-  ;
-
-dimlist:
-  dimitem
-    { $$ = $1; }
-  | dimlist ',' dimitem
+constdecl:
+  BAS_CONST constlist
+  {
+      $$ = current->conblock = AddToList(current->conblock, $2);
+  }
+;
+constitem:
+  BAS_IDENTIFIER '=' expr
+    {
+      AST *decl = AstAssign($1, $3);
+      decl = CommentedListHolder(decl);
+      $$ = decl;
+    }
+;
+constlist:
+  constlist ',' constitem
     { $$ = AddToList($1, $3); }
-;
-dimitem:
-  identdecl
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
-  | identdecl '=' expr
-    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
-  | identdecl '=' '{' exprlist '}'
-    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $4), NULL); }
-;
-
-identdecl:
-  BAS_IDENTIFIER
+  | constitem
     { $$ = $1; }
-  | BAS_IDENTIFIER '(' expr ')'
-    {
-        Symbol *sym = GetCurArrayBase();
-        AST *ident = $1;
-        AST *base = (AST *)sym->val;
-        AST *size = $3;
-        AST *decl;
-        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
-//        size = AstInteger(EvalConstExpr(size));
-        decl = NewAST(AST_ARRAYDECL, ident, size);
-        decl->d.ptr = base;
-        $$ = decl;
-    }
-  | BAS_IDENTIFIER '(' expr BAS_TO expr ')'
-    {
-        AST *ident = $1;
-        AST *base = $3;
-        AST *size = $5;
-        AST *decl;
-        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
-//        size = AstInteger(EvalConstExpr(size));
-        decl = NewAST(AST_ARRAYDECL, ident, size);
-        decl->d.ptr = base;
-        $$ = decl;
-    }
 ;
 
-
+typedecl:
+  BAS_TYPE BAS_IDENTIFIER BAS_AS typename eoln
+    {
+        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4);
+    }
+;
 typename:
   basetypename
     { $$ = $1; }
@@ -1377,113 +1290,89 @@ basetypename:
     }
 ;
 
-asmstmt:
-  BAS_ASM eoln asmlist BAS_END BAS_ASM eoln
-  { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
-  ;
-
-asmlist:
-  asmline
-  { $$ = $1; }
-  | asmlist asmline
-  { $$ = AddToList($1, $2); }
-  ;
-
-asmline:
-  basedatline
-  | BAS_IDENTIFIER basedatline
-    {   AST *linebreak;
-        AST *comment = GetComments();
-        AST *ast;
-        ast = $1;
-        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
-            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
-        } else {
-            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
-        }
-        ast = AddToList(ast, $2);
-        ast = AddToList(linebreak, ast);
-        $$ = ast;
-    }
-  ;
-
-basedatline:
-  BAS_EOLN
+paramdecl:
+  /* empty */
     { $$ = NULL; }
-  | error BAS_EOLN
-    { $$ = NULL; }
-  | BAS_BYTE BAS_EOLN
-    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | BAS_BYTE exprlist BAS_EOLN
-    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
-  | BAS_WORD BAS_EOLN
-    { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | BAS_WORD exprlist BAS_EOLN
-    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
-  | BAS_LONG BAS_EOLN
-    { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | BAS_LONG exprlist BAS_EOLN
-    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
-  | instruction BAS_EOLN
-    { $$ = NewCommentedInstr($1); }
-  | instruction operandlist BAS_EOLN
-    { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction modifierlist BAS_EOLN
-    { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction operandlist modifierlist BAS_EOLN
-    { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
-  | BAS_ALIGNL BAS_EOLN
-    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
-  | BAS_ALIGNW BAS_EOLN
-    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  | paramdecl1
+    { $$ = $1; }
+;
+paramdecl1:
+  paramitem
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | paramdecl1 ',' paramitem
+    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
   ;
 
-operand:
-  pasmexpr
-   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
- | '#' pasmexpr
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
- | '#' '#' pasmexpr
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
- | pasmexpr '[' pasmexpr ']'
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+paramitem:
+  BAS_IDENTIFIER
+    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
+  | BAS_IDENTIFIER '=' expr
+    { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), AstAssign($1, $3)); }
+  | BAS_IDENTIFIER BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
+  | BAS_IDENTIFIER '=' expr BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
 ;
 
-pasmexpr:
-  expr
+dimension:
+  BAS_DIM dimlist
+    { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+  | BAS_DIM dimlist BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, $4, $2); }
+  | BAS_DIM BAS_AS typename dimlist
+    { $$ = NewAST(AST_DECLARE_VAR, $3, $4); }
+  | BAS_DIM BAS_SHARED dimlist
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, NULL, $3), NULL); }
+  | BAS_DIM BAS_SHARED dimlist BAS_AS typename
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $5, $3), NULL); }
+  | BAS_DIM BAS_SHARED BAS_AS typename dimlist
+    { $$ = NewAST(AST_GLOBALVARS, NewAST(AST_DECLARE_VAR, $4, $5), NULL); }
+  ;
+
+dimlist:
+  dimitem
     { $$ = $1; }
-  | '\\' expr
-    { $$ = AstCatch($2); }
-;
-
-operandlist:
-   operand
-   { $$ = $1; }
- | operandlist ',' operand
-   { $$ = AddToList($1, $3); }
- ;
-
-instruction:
-  BAS_INSTR
-  { $$ = $1; }
-  | instrmodifier instruction
-  { $$ = AddToList($2, $1); }
-;
- 
-instrmodifier:
-  BAS_INSTRMODIFIER
-  { $$ = $1; }
-;
-
-modifierlist:
-  instrmodifier
-    { $$ = $1; }
-  | modifierlist instrmodifier
-    { $$ = AddToList($1, $2); }
-  | modifierlist ',' instrmodifier
+  | dimlist ',' dimitem
     { $$ = AddToList($1, $3); }
-  ;
+;
+dimitem:
+  identdecl
+    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+  | identdecl '=' expr
+    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $3), NULL); }
+  | identdecl '=' '{' exprlist '}'
+    { $$ = NewAST(AST_LISTHOLDER, AstAssign($1, $4), NULL); }
+;
 
+identdecl:
+  BAS_IDENTIFIER
+    { $$ = $1; }
+  | BAS_IDENTIFIER '(' expr ')'
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *ident = $1;
+        AST *base = (AST *)sym->val;
+        AST *size = $3;
+        AST *decl;
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+//        size = AstInteger(EvalConstExpr(size));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
+  | BAS_IDENTIFIER '(' expr BAS_TO expr ')'
+    {
+        AST *ident = $1;
+        AST *base = $3;
+        AST *size = $5;
+        AST *decl;
+        size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
+//        size = AstInteger(EvalConstExpr(size));
+        decl = NewAST(AST_ARRAYDECL, ident, size);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
+;
 
 %%
 void
