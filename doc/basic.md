@@ -1155,6 +1155,13 @@ until s$ = ""        ' stop at end of file
 ' now the whole file is in file$
 ```
 
+### INT
+
+Convert float to int. Any fractional parts are truncated.
+```
+  i = int(3.1415) ' now i will be set to 3
+```
+
 ### INTEGER
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
@@ -1454,6 +1461,10 @@ A signed 16 bit integer, occupying two bytes of computer memory. The unsigned ve
 ### SINGLE
 
 Single precision floating point data type. By default this is an IEEE 32 bit single precision float, but compiler options may change this (for example to a 16.16 fixed point number).
+
+### SQR
+
+An alias for `sqrt`, for compatibility with older BASICs.
 
 ### SQRT
 

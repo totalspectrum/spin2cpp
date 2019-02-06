@@ -365,6 +365,7 @@ GetCurrentLoop(int token)
 %token BAS_GOSUB      "gosub"
 %token BAS_IF         "if"
 %token BAS_INPUT      "input"
+%token BAS_CAST_INT   "int"
 %token BAS_INTEGER_KW "integer"
 %token BAS_LET        "let"
 %token BAS_LONG       "long"
@@ -1059,15 +1060,12 @@ unary_op:
     { $$ = AstOperator(K_SQRT, NULL, NULL); }
 ;
 
-unary_expr:
-  primary_expr
-    { $$ = $1; }
-  | '+' unary_expr
-    { $$ = $2; }
-  | unary_op unary_expr
-    { $$ = $1; $$->right = $2; }
-  | '@' unary_expr
-    { $$ = NewAST(AST_ADDROF, $2, NULL); }
+pseudofunc_expr:
+  BAS_CAST_INT '(' expr ')'
+    {
+        AST *orig = $3;
+        $$ = NewAST(AST_CAST, ast_type_long, orig);
+    }
   | BAS_CPU '(' exprlist ')'
     {
         AST *elist;
@@ -1076,25 +1074,30 @@ unary_expr:
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
     }
+  | '@' unary_expr
+    { $$ = NewAST(AST_ADDROF, $2, NULL); }
+;
+
+unary_expr:
+  primary_expr
+    { $$ = $1; }
+  | pseudofunc_expr
+    { $$ = $1; }
+  | '+' unary_expr
+    { $$ = $2; }
+  | unary_op unary_expr
+    { $$ = $1; $$->right = $2; }
 ;
 
 np_unary_expr:
   np_primary_expr
     { $$ = $1; }
+  | pseudofunc_expr
+    { $$ = $1; }  
   | '+' unary_expr
     { $$ = $2; }
   | unary_op unary_expr
     { $$ = $1; $$->right = $2; }
-  | '@' unary_expr
-    { $$ = NewAST(AST_ADDROF, $2, NULL); }
-  | BAS_CPU '(' exprlist ')'
-    {
-        AST *elist;
-        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
-        elist = NewAST(AST_EXPRLIST, immval, NULL);
-        elist = AddToList(elist, $3);
-        $$ = NewAST(AST_COGINIT, elist, NULL);
-    }
 ;
 
 lambdaexpr:

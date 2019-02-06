@@ -2,6 +2,7 @@ Version 3.9.18
 - Improved BASIC parser to permit more complex expressions
 (e.g. multi-dimensional array references)
 - Support getword and getbyte instructions in inline assembly
+- Added SQR and INT to BASIC
 - Added some more C library functions
 
 Version 3.9.17
