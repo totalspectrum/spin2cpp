@@ -1121,7 +1121,16 @@ else
 end if
 ```
 
-### INPUT
+### INPUT (serial I/O)
+
+The `input` keyword when used as a command acts to read data from a handle. It is followed by a list of variables. The data are separated by commas.
+```
+  print "enter a string and a number: ";
+  input s$, n
+  print "you entered: ", s, "and", n
+```
+
+### INPUT (pins)
 
 A pseudo-array of bits representing the state of input bits. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
 

@@ -10,6 +10,10 @@
 #include <string.h>
 #include "spinc.h"
 
+AST *basic_read_float;
+AST *basic_read_string;
+AST *basic_read_integer;
+
 AST *basic_print_float;
 AST *basic_print_string;
 AST *basic_print_integer;
@@ -66,6 +70,19 @@ addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
     params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
+    return AddToList(seq, elem);
+}
+
+AST *
+addReadCall(AST *seq, AST *handle, AST *func, AST *var)
+{
+    AST *elem;
+    AST *params;
+    AST *funccall;
+    
+    params = NewAST(AST_EXPRLIST, handle, NULL);
+    funccall = NewAST(AST_FUNCCALL, func, params);
+    elem = NewAST(AST_SEQUENCE, AstAssign(var, funccall), NULL);
     return AddToList(seq, elem);
 }
 
@@ -548,6 +565,36 @@ doBasicTransform(AST **astptr)
         // keep local variables on stack, so they will be preserved
         // if an exception throws us back here without cleanup
         curfunc->local_address_taken = 1;
+        break;
+    case AST_READ:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        {
+            // convert to a series of calls to _basic_getstr, etc.
+            AST *exprlist = ast->left;
+            AST *handle = ast->right;
+            AST *var, *type;
+            AST *seq = NULL;
+            
+            if (!handle) {
+                handle = AstInteger(0);
+            }
+            while (exprlist) {
+                var = exprlist->left;
+                exprlist = exprlist->right;
+                type = ExprType(var);
+                if (IsFloatType(type)) {
+                    seq = addReadCall(seq, handle, basic_read_float, var);
+                } else if (IsStringType(type)) {
+                    seq = addReadCall(seq, handle, basic_read_string, var);
+                } else if (IsIntType(type)) {
+                    seq = addReadCall(seq, handle, basic_read_integer, var);
+                } else {
+                    ERROR(ast, "Unable to read variables of this type");
+                }
+            }
+            *astptr = ast = seq;
+        }
         break;
     case AST_PRINT:
         doBasicTransform(&ast->left);
@@ -1673,6 +1720,7 @@ InitGlobalFuncs(void)
             float_div = getBasicPrimitive("_fixed_div");
         } else {
             basic_print_float = getBasicPrimitive("_basic_print_float");
+            basic_read_float = getBasicPrimitive("_basic_read_float");
             float_cmp = getBasicPrimitive("_float_cmp");
             float_add = getBasicPrimitive("_float_add");
             float_sub = getBasicPrimitive("_float_sub");
@@ -1685,6 +1733,9 @@ InitGlobalFuncs(void)
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
         }
+        basic_read_integer = getBasicPrimitive("_basic_read_integer");
+        basic_read_string = getBasicPrimitive("_basic_read_string");
+
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
         basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
         basic_print_string = getBasicPrimitive("_basic_print_string");

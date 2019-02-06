@@ -387,7 +387,7 @@ pri input`$(n=long, h=0) | c, i, s
   return s
 
 '' read a string from handle h
-pri inputstr`$(h=0) | c, i, s, s2, n
+pri _basic_read_string(h=0) | c, i, s, s2, n
   n := 16
   i := 0
   s := _gc_alloc_managed(8)
@@ -413,6 +413,14 @@ pri inputstr`$(h=0) | c, i, s, s2, n
       s := s2
   byte[s+i] := 0
   return s
+
+'' read an integer from handle h
+pri _basic_read_integer(h=0) : r=long
+  r := __builtin_atoi(_basic_read_string(h))
+
+'' read a float from handle h
+pri _basic_read_float(h=0) : r=float
+  r := __builtin_atof(_basic_read_string(h))
 
 '' pause for m milliseconds
 pri pausems(m=long)

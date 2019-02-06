@@ -610,6 +610,8 @@ iostmt:
     { $$ = NewCommentedAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                            NULL, $1); }
+  | BAS_INPUT inputlist
+    { $$ = NewCommentedAST(AST_READ, $2, NULL, $1); }
   | BAS_OPEN expr BAS_AS '#' expr
     {
         $$ = NewCommentedAST(AST_FUNCCALL,
@@ -625,6 +627,18 @@ iostmt:
     }
 ;
 
+inputitem:
+  varexpr
+    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+;
+
+inputlist:
+  inputitem
+    { $$ = $1; }
+  | inputlist ',' inputitem
+    { $$ = AddToList($1, $3); }
+  ;
+
 printitem:
   expr
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
@@ -634,11 +648,11 @@ printitem:
 
 rawprintlist:
   printitem
-  { $$ = $1; }
+    { $$ = $1; }
   | rawprintlist ';' printitem
-  { $$ = AddToList($1, $3); }
+    { $$ = AddToList($1, $3); }
   | rawprintlist ',' printitem
-  { $$ = AddToList(AddToList($1, AstCharItem('\t')), $3); }
+    { $$ = AddToList(AddToList($1, AstCharItem('\t')), $3); }
 ;
 
 usingprintlist:
