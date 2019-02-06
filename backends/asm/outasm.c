@@ -3986,6 +3986,13 @@ static void CompileStatement(IRList *irl, AST *ast)
             EmitJump(irl, COND_TRUE, op);
         }
         break;
+    case AST_GOSUB:
+        EmitDebugComment(irl, ast);
+        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        if (op) {
+            EmitOp1(irl, OPC_CALL, op);
+        }
+        break;
     case AST_WHILE:
         EmitDebugComment(irl, ast->left);
         toploop = NewCodeLabel();

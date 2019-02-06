@@ -192,6 +192,8 @@ enum astkind {
     AST_UNION,
     AST_SIMPLEFUNCPTR,
     AST_READ,
+
+    AST_GOSUB = 136,
 };
 
 /* forward reference */

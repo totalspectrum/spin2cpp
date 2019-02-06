@@ -2799,10 +2799,19 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     {
         c = lexgetc(L);
         if (c == ':') {
-            int c2;
+            int c2, c3;
             c2 = lexgetc(L);
-            lexungetc(L, c2);
-            if (c2 == ' ' || c2 == '\n') {
+            if (c2 == ' ' || c2 == '\t') {
+                do {
+                    c3 = lexgetc(L);
+                } while (c3 == ' ' || c3 == '\t');
+                lexungetc(L, c3);
+                lexungetc(L, ' ');
+                c2 = c3;
+            } else {
+                lexungetc(L, c2);
+            }
+            if (c2 == '\n') {
                 return BAS_LABEL;
             }
         }

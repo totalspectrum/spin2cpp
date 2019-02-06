@@ -1504,11 +1504,13 @@ AST *CheckTypes(AST *ast)
     ltype = CheckTypes(ast->left);
     rtype = CheckTypes(ast->right);
     switch (ast->kind) {
+    case AST_GOSUB:
+        /* FIXME: should check here for top level function */
     case AST_GOTO:
         {
             AST *id = ast->left;
             if (!id || id->kind != AST_IDENTIFIER) {
-                ERROR(ast, "Expected identifier in goto");
+                ERROR(ast, "Expected identifier in goto/gosub");
             } else {
                 Symbol *sym = FindSymbol(&curfunc->localsyms, id->d.string);
                 if (!sym || sym->type != SYM_LOCALLABEL) {

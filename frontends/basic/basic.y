@@ -593,6 +593,10 @@ branchstmt:
     { $$ = NewAST(AST_GOTO, $2, NULL); }
   | BAS_GOTO BAS_INTEGER
     { $$ = NewAST(AST_GOTO, IntegerLabel($2), NULL); }
+  | BAS_GOSUB BAS_IDENTIFIER
+    { $$ = NewAST(AST_GOSUB, $2, NULL); }
+  | BAS_GOSUB BAS_INTEGER
+    { $$ = NewAST(AST_GOSUB, IntegerLabel($2), NULL); }
   | BAS_THROW expr
     {
       $$ = NewCommentedAST(AST_THROW, $2, NULL, $1);

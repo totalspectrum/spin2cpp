@@ -524,6 +524,7 @@ static const char *astnames[] = {
     "union",
     "simplefuncptr",
     "read",
+    "gosub",
 };
 
 //
