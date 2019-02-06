@@ -5076,7 +5076,7 @@ EmitDatSection(IRList *irl, Module *P)
   Flexbuf *relocs;
   Operand *op;
 
-  if (!ModData(P)->datbase)
+  if (!ModData(P) || !ModData(P)->datbase)
       return;
   fb = (Flexbuf *)calloc(1, sizeof(*fb));
   relocs = (Flexbuf *)calloc(1, sizeof(*relocs));

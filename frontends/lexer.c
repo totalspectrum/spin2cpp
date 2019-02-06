@@ -2792,6 +2792,20 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     ast = NewAST(AST_IDENTIFIER, NULL, NULL);
     ast->d.string = idstr;
     *ast_ptr = last_ast = ast;
+
+    // if the next character is ':' then it may be a label
+    {
+        c = lexgetc(L);
+        if (c == ':') {
+            int c2;
+            c2 = lexgetc(L);
+            lexungetc(L, c2);
+            if (c2 == ' ' || c2 == '\n') {
+                return BAS_LABEL;
+            }
+        }
+        lexungetc(L, c);
+    }
     return BAS_IDENTIFIER;
 }
 
