@@ -419,8 +419,9 @@ GetCurrentLoop(int token)
 %token BAS_NE         "<>"
 %token BAS_SHL        "<<"
 %token BAS_SHR        ">>"
-%token BAS_NEGATE     "-"
 
+
+%left BAS_EOLN
 %left BAS_FUNCTION
 %left BAS_OR BAS_XOR
 %left BAS_AND
@@ -432,6 +433,7 @@ GetCurrentLoop(int token)
 %left '@'
 %left BAS_NEW
 %left '.'
+%left '('
 
 %%
 
@@ -440,14 +442,15 @@ toplist:
  | toplist eoln topitem
 ;
 
-eoln: eolnseq
-| ':'
+eoln:
+  ':'
+  | eolnseq
 ;
 
 eolnseq:
-BAS_EOLN
-| eolnseq BAS_EOLN
-;
+  BAS_EOLN
+  | eolnseq BAS_EOLN
+  ;
 
 topitem:
     /* empty */
@@ -516,13 +519,12 @@ realstatementlist:
 statement:
   assign_statement
     { $$ = $1; }
-/*  | BAS_IDENTIFIER exprlist
+  | BAS_IDENTIFIER noparen_exprlist
     {
         AST *params;
         params = $2;
         $$ = NewAST(AST_FUNCCALL, $1, params);
     }
-*/
   | BAS_LET BAS_IDENTIFIER '=' expr
     { MaybeDeclareMemberVar(current, $2, InferTypeFromName($2));
       $$ = AstAssign($2, $4);
@@ -535,7 +537,18 @@ statement:
       $$ = NewAST(AST_DECLARE_VAR, NULL, assign);
     }
   | varexpr
-    { $$ = $1; }
+    {
+        AST *top = $1;
+        AST *ast = top;
+        while (ast && ast->kind == AST_COMMENTEDNODE) {
+            ast = ast->left;
+        }
+        if (ast && ast->kind != AST_FUNCCALL) {
+            $$ = NewAST(AST_FUNCCALL, ast, NULL);
+        } else {
+            $$ = top;
+        }
+    }
   | iostmt
     { $$ = $1; }
   | branchstmt
@@ -963,8 +976,6 @@ deflist:
 varexpr:
   BAS_IDENTIFIER
     { $$ = $1; }
-  | '(' expr ')'
-    { $$ = $2; }
   | varexpr '(' ')'
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | varexpr '(' exprlist ')'
@@ -989,7 +1000,7 @@ register_expr:
     { $$ = GetPinRange("dira", "dirb", $3); }
 ;
 
-primary_expr:
+noparen_primary_expr:
   varexpr
     { $$ = $1; }
   | register_expr
@@ -1023,6 +1034,12 @@ primary_expr:
     {
         $$ = NewAST(AST_ALLOCA, ast_type_ptr_void, $3);
     }
+
+primary_expr:
+  noparen_primary_expr
+    { $$ = $1; }
+  | '(' expr ')'
+    { $$ = $2; }
 ;
 
 unary_expr:
@@ -1158,6 +1175,17 @@ exprlist:
 expritem:
   expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+;
+
+noparen_expritem:
+  noparen_primary_expr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+;
+noparen_exprlist:
+  noparen_expritem
+    { $$ = $1; }
+  | noparen_expritem ',' exprlist
+    { $$ = AddToList($1, $3); }
 ;
 
 subbody:
