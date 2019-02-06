@@ -223,6 +223,8 @@ typedef struct funcdef {
     unsigned uses_alloca:1;  // 1 if function uses alloca
     unsigned large_local:1;  // 1 if function has a "large" local (size > LARGE_SIZE_THRESHOLD)
     unsigned has_throw:1;    // 1 if function has a "throw" in it
+    unsigned toplevel:1;     // 1 if function is top level
+    
 #define LARGE_SIZE_THRESHOLD (8)
     
     /* number of places this function is called from */

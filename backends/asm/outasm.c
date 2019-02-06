@@ -1447,7 +1447,7 @@ RenameLocalRegs(IRList *irl, int isLeaf)
 static bool
 NeedToSaveLocals(Function *func)
 {
-    if (func->is_leaf) {
+    if (func->is_leaf || func->toplevel) {
         return false;
     }
     if (ALL_VARS_ON_STACK(func)) {
@@ -5161,6 +5161,7 @@ EmitMain_P1(IRList *irl, Module *P)
         return;  // no functions at all
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
+    firstfunc->toplevel = 1;  // does not need to save registers
     firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
@@ -5248,6 +5249,7 @@ EmitMain_P2(IRList *irl, Module *P)
         return;  // no functions at all
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
+    firstfunc->toplevel = 1;
     firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     ValidateStackptr();
