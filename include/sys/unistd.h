@@ -2,6 +2,7 @@
 #define _SYS_UNISTD_H
 
 #include <sys/types.h>
+#include <compiler.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -24,7 +25,7 @@ extern "C" {
   int chdir(const char *path);
   int rmdir(const char *path);
 
-  unsigned int sleep(unsigned int seconds);
+    unsigned int sleep(unsigned int seconds) _IMPL("libc/time/sleep.c");
   int usleep(useconds_t usec);
 
   char *_mktemp(char *templ);

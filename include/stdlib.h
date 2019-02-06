@@ -28,8 +28,8 @@ extern "C" {
   unsigned long long strtoull(const char *nptr, char **endptr, int base);
 
 #define RAND_MAX    0x7fff
-  int rand(void);
-  void srand(unsigned int seed);
+    int rand(void) _IMPL("libc/stdlib/rand.c");
+    void srand(unsigned int seed) _IMPL("libc/stdlib/rand.c");
 
   void *malloc(size_t n);
   void *calloc(size_t, size_t);

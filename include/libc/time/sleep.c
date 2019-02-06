@@ -1,9 +1,9 @@
 #include <time.h>
-#include <sys/thread.h>
 #include <propeller.h>
+#include <unistd.h>
 #include "cog.h"
 
-void
+unsigned int
 sleep(unsigned int n)
 {
   unsigned waitcycles;
@@ -13,7 +13,8 @@ sleep(unsigned int n)
   while (n > 0) 
     {
       waitcycles += second;
-      __napuntil(waitcycles);
+      waitcnt(waitcycles);
       --n;
     }
+  return 0;
 }
