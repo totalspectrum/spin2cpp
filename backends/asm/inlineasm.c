@@ -223,10 +223,6 @@ CompileInlineInstr(IRList *irl, AST *ast)
     if (numoperands < 0) {
         return;
     }
-    if (numoperands == 3) {
-        ERROR(ast, "Cannot yet handle instruction %s in inline asm", instr->name);
-        return;
-    }
     for (i = 0; i < numoperands; i++) {
         Operand *op;
         effects[i] = 0;
@@ -239,6 +235,9 @@ CompileInlineInstr(IRList *irl, AST *ast)
         case 1:
             ir->src = op;
             ir->srceffect = effects[1];
+            break;
+        case 2:
+            ir->src2 = op;
             break;
         default:
             ERROR(ast, "Too many operands to instruction");

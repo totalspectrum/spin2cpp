@@ -309,6 +309,7 @@ struct IR {
     enum IRCond cond;
     Operand *dst;
     Operand *src;
+    Operand *src2; // for a very few instructions like getword
     int flags;
     IR *prev;
     IR *next;

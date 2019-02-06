@@ -846,6 +846,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             PrintOperand(fb, ir->dst);
             flexbuf_addstr(fb, ", ");
             PrintOperandSrc(fb, ir->src, ir->srceffect);
+            if (ir->src2) {
+                flexbuf_addstr(fb, ", ");
+                PrintOperandSrc(fb, ir->src2, OPEFFECT_NONE);
+            }
             break;
         }
         ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);
