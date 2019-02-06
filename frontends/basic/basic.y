@@ -519,7 +519,7 @@ realstatementlist:
 statement:
   assign_statement
     { $$ = $1; }
-  | BAS_IDENTIFIER noparen_exprlist
+  | BAS_IDENTIFIER np_exprlist /* np means "no parentheses" */
     {
         AST *params;
         params = $2;
@@ -1000,7 +1000,8 @@ register_expr:
     { $$ = GetPinRange("dira", "dirb", $3); }
 ;
 
-noparen_primary_expr:
+/* expressions that do not start with '(' */
+np_primary_expr:
   varexpr
     { $$ = $1; }
   | register_expr
@@ -1036,10 +1037,23 @@ noparen_primary_expr:
     }
 
 primary_expr:
-  noparen_primary_expr
+  np_primary_expr
     { $$ = $1; }
   | '(' expr ')'
     { $$ = $2; }
+;
+
+unary_op:
+  '-'
+    { $$ = AstOperator(K_NEGATE, NULL, NULL); }
+  | BAS_NOT
+    { $$ = AstOperator(K_BIT_NOT, NULL, NULL); }
+  | BAS_ABS
+    { $$ = AstOperator(K_ABS, NULL, NULL); }
+  | BAS_ASC
+    { $$ = AstOperator(K_ASC, NULL, NULL); }
+  | BAS_SQRT
+    { $$ = AstOperator(K_SQRT, NULL, NULL); }
 ;
 
 unary_expr:
@@ -1047,18 +1061,29 @@ unary_expr:
     { $$ = $1; }
   | '+' unary_expr
     { $$ = $2; }
-  | '-' unary_expr
-    { $$ = AstOperator(K_NEGATE, NULL, $2); }
-  | BAS_NOT unary_expr
-    { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+  | unary_op unary_expr
+    { $$ = $1; $$->right = $2; }
   | '@' unary_expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
-  | BAS_ABS unary_expr
-    { $$ = AstOperator(K_ABS, NULL, $2); }
-  | BAS_ASC unary_expr
-    { $$ = AstOperator(K_ASC, NULL, $2); }
-  | BAS_SQRT unary_expr
-    { $$ = AstOperator(K_SQRT, NULL, $2); }
+  | BAS_CPU '(' exprlist ')'
+    {
+        AST *elist;
+        AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
+        elist = NewAST(AST_EXPRLIST, immval, NULL);
+        elist = AddToList(elist, $3);
+        $$ = NewAST(AST_COGINIT, elist, NULL);
+    }
+;
+
+np_unary_expr:
+  np_primary_expr
+    { $$ = $1; }
+  | '+' unary_expr
+    { $$ = $2; }
+  | unary_op unary_expr
+    { $$ = $1; $$->right = $2; }
+  | '@' unary_expr
+    { $$ = NewAST(AST_ADDROF, $2, NULL); }
   | BAS_CPU '(' exprlist ')'
     {
         AST *elist;
@@ -1099,19 +1124,38 @@ lambdaexpr:
     }
 ;
 
+mult_op:
+  '*'
+    { $$ = AstOperator('*', NULL, NULL); }
+  | '/'
+    { $$ = AstOperator('/', NULL, NULL); }
+  | BAS_MOD
+    { $$ = AstOperator(K_MODULUS, NULL, NULL); }
+  | BAS_SHL
+    { $$ = AstOperator(K_SHL, NULL, NULL); }
+  | BAS_SHR
+    { $$ = AstOperator(K_SAR, NULL, NULL); }
+;
+
 mult_expr:
   unary_expr
     { $$ = $1; }
-  | mult_expr '*' unary_expr
-    { $$ = AstOperator('*', $1, $3); }
-  | mult_expr '/' unary_expr
-    { $$ = AstOperator('/', $1, $3); }
-  | mult_expr BAS_MOD unary_expr
-    { $$ = AstOperator(K_MODULUS, $1, $3); }
-  | mult_expr BAS_SHL unary_expr
-    { $$ = AstOperator(K_SHL, $1, $3); }
-  | mult_expr BAS_SHR unary_expr
-    { $$ = AstOperator(K_SAR, $1, $3); }
+  | mult_expr mult_op unary_expr
+    {
+        $$ = $2;
+        $$->left = $1;
+        $$->right = $3;
+    }
+;
+np_mult_expr:
+  np_unary_expr
+    { $$ = $1; }
+  | np_mult_expr mult_op unary_expr
+    {
+        $$ = $2;
+        $$->left = $1;
+        $$->right = $3;
+    }
 ;
 
 add_expr:
@@ -1120,6 +1164,15 @@ add_expr:
   | add_expr '+' mult_expr  
     { $$ = AstOperator('+', $1, $3); }
   | add_expr '-' mult_expr  
+    { $$ = AstOperator('-', $1, $3); }
+;
+
+np_add_expr:
+  np_mult_expr
+    { $$ = $1; }
+  | np_add_expr '+' mult_expr  
+    { $$ = AstOperator('+', $1, $3); }
+  | np_add_expr '-' mult_expr  
     { $$ = AstOperator('-', $1, $3); }
 ;
 
@@ -1177,14 +1230,14 @@ expritem:
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 ;
 
-noparen_expritem:
-  noparen_primary_expr
+np_expritem:
+  np_add_expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 ;
-noparen_exprlist:
-  noparen_expritem
+np_exprlist:
+  np_expritem
     { $$ = $1; }
-  | noparen_expritem ',' exprlist
+  | np_expritem ',' exprlist
     { $$ = AddToList($1, $3); }
 ;
 
