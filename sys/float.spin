@@ -340,6 +340,63 @@ pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
     _basic_print_char(h, u + "0")
     _basic_print_char(h, exp + "0")
 
+' convert string to float
+pri __builtin_atoi(s = "0") : r | c, negate
+  negate := 0
+  c := byte[s]
+  if c == "-"
+    s++
+    negate := 1
+    
+  repeat
+    c := byte[s++]
+    if (c => "0") and (c =< "9")
+      r := 10 * r + (c - "0")
+    else
+      quit
+      
+  if negate
+    r := -r
+
+pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
+  r := 0
+  scaleexp := 0
+  exp := 0
+  negate := 0
+  sawpoint := 0
+  repeat while byte[s] == " "
+    s++
+  c := byte[s]
+  if c == "+"
+    s++
+  elseif c == "-"
+    s++
+    negate := 1
+  repeat
+    c := byte[s++]
+    if (c == 0)
+      quit
+    if c => "0" and c =< "9"
+      r := _float_mul(r, 10.0)
+      r := _float_add(r, _float_fromuns( c - "0" ))
+      if sawpoint
+        scaleexp -= 1
+    elseif c == "."
+      if sawpoint
+        quit
+      sawpoint := 1
+    else
+      quit
+  if c == "E" or c == "e"
+    ' need an exponent
+    exp := __builtin_atoi(s) + scaleexp
+  else
+    exp := scaleexp
+    
+  exp := _float_pow_n(10.0, exp)
+  r := _float_mul(r, exp)
+  if negate
+    r := _float_negate(r)
 {{
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐

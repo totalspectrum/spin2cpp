@@ -184,7 +184,7 @@ pri _gc_alloc(size)
 
 pri _gc_alloc_managed(size)
   return _gc_doalloc(size, 0)
-  
+
 pri _gc_doalloc(size, reserveflag) | ptr, zptr
   if (size == 0)
     return 0

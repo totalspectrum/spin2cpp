@@ -386,6 +386,34 @@ pri input`$(n=long, h=0) | c, i, s
   byte[s+i] := 0
   return s
 
+'' read a string from handle h
+pri inputstr`$(h=0) | c, i, s, s2, n
+  n := 16
+  i := 0
+  s := _gc_alloc_managed(8)
+  if s == 0
+    return s
+  repeat
+    c := _basic_get_char(h)
+    if c < 0
+      quit
+    if (c == 13) or (c==10)
+      quit
+    if (c == ",")
+      quit
+    byte[s+i] := c
+    i := i + 1
+    if i == n
+      s2 := _gc_alloc_managed(n+8)
+      if s2 == 0
+        return s2
+      longmove(s2, s, n/4)
+      n += 8
+      _gc_free(s)
+      s := s2
+  byte[s+i] := 0
+  return s
+
 '' pause for m milliseconds
 pri pausems(m=long)
   waitcnt(getcnt + m * (clkfreq / 1000))

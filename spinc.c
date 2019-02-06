@@ -1043,6 +1043,8 @@ FixupCode(Module *P, int isBinary)
                 } else {
                     heapsize = EvalConstExpr((AST *)sym->val);
                 }
+            } else if (gl_p2) {
+                heapsize = 4096;
             }
             if (heapsize != 0) {
                 // user changed heap size
