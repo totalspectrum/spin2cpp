@@ -111,10 +111,13 @@ In the latter form the parentheses around `a` are mandatory to avoid confusion w
 
 ### Inline assembly
 
-fastspin accepts inline assembly in `PUB` and `PRI` sections. Inline
-assembly starts with `asm` and ends with `endasm`. The inline assembly
-is still somewhat limited; the only operands permitted are local
-variables of the containing function.
+fastspin accepts inline assembly in `PUB` and `PRI` sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly is still somewhat limited; the only operands permitted are immediate values, registers, local variables (including parameters and result values) of the containing function, or labels of that function. (Spin doesn't support goto and labels, but you can define labels in `asm` blocks and jump to them from other `asm` blocks that are in the same function. Some other languages supported by fastspin do have labels.)
+
+Branching inside the function should work, but trying to return from it or to otherwise jump outside the function will almost certainly cause you to come to grief, even if the compiler allows it. Calling subroutines is also not permitted.
+
+All non-branch instructions should work properly in inline assembly, as long as the operands satisfy the constraints above. Conditional execution is allowed, and flag bits may be set and tested.
+
+If you need temporary variables inside some inline assembly, declare them as locals in the enclosing function.
 
 Example:
 ```
