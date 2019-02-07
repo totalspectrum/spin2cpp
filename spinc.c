@@ -645,10 +645,6 @@ doParseFile(const char *name, Module *P, int *is_dup)
     }
     if (current) {
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
-    }
-    if (!fname) {
-        fname = NormalizePath(name);
-    } else {
         fname = NormalizePath(fname);
     }
     if (!fname) {
