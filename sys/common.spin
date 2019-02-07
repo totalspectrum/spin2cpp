@@ -397,7 +397,8 @@ pri _basic_read_string(h=0) | c, i, s, s2, n
     c := _basic_get_char(h)
     if c < 0
       quit
-    if (c == 13) or (c==10)
+    if (c == 13)
+      _basic_print_char(h, 10)
       quit
     if (c == ",")
       quit
