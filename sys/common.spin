@@ -402,10 +402,13 @@ pri _basic_read_line(h=0) | c, ptr, s, n, maxn
       quit
     if (c == 10)
       quit
+    if (c == 127) ' backspace on some systems
+      _basic_print_char(h, 8)
+      c := 8
     if (c == 8)  ' backspace
       if n > 0
         --n
-      continue
+      next
     byte[ptr+n] := c
     n++
     if n == maxn
