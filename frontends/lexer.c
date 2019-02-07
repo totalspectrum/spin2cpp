@@ -797,10 +797,10 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
             c3 = lexgetc(L);
             if (c3 == 'm' || c3 == 'M') {
                 c4 = lexgetc(L);
+                lexungetc(L, c4);
                 if (!safe_isalpha(c4)) {
                     goto docomment;
                 }
-                lexungetc(L, c4);
             }
             lexungetc(L, c3);
         }
@@ -1102,6 +1102,9 @@ again:
     if (c == EOF) {
       if (!L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
+        if (language == LANG_BASIC) {
+            L->firstNonBlank = 0;
+        }
         if (eoln_token == ' ') goto refetch;
         return eoln_token;
       }
