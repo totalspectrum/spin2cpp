@@ -908,10 +908,12 @@ static void set_a_dir(
 
 char *NormalizePath(const char *path)
 {
+    char curpath[PATHMAX];
     if (is_full_path(path)) {
         return strdup(path);
     }
-    return norm_path("", path, FALSE, FALSE);
+    getcwd(curpath, PATHMAX);
+    return norm_path(curpath, path, FALSE, FALSE);
 }
 
 static char *   norm_dir(
