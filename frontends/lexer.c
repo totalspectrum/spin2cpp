@@ -1,8 +1,8 @@
 //
 // Simple lexical analyzer for a language where indentation
-// may be significant (Spin); also contains a lexer for BASIC
+// may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2018 Total Spectrum Software Inc.
+// Copyright (c) 2011-2019 Total Spectrum Software Inc.
 //
 #include <string.h>
 #include <ctype.h>
@@ -577,6 +577,38 @@ is_identifier:
     return SP_IDENTIFIER;
 }
 
+/* parse the rest of the line as a string */
+static void
+parseLineAsString(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    struct flexbuf fb;
+    AST *ast;
+    
+    ast = NewAST(AST_STRING, NULL, NULL);
+    flexbuf_init(&fb, INCSTR);
+
+    // skip leading spaces
+    do {
+        c = lexgetc(L);
+    } while (c == ' ');
+    
+    while (c > 0 && c < 256) {
+        if (c == 10 || c == 13) {
+            // newline in mid-string, this is what we want
+            lexungetc(L, c);
+            break;
+        }
+        flexbuf_addchar(&fb, c);
+        c = lexgetc(L);
+    }
+    flexbuf_addchar(&fb, 10);
+    flexbuf_addchar(&fb, '\0');
+
+    ast->d.string = flexbuf_get(&fb);
+    *ast_ptr = ast;
+}
+
 /* parse a string */
 static void
 parseString(LexStream *L, AST **ast_ptr)
@@ -592,6 +624,7 @@ parseString(LexStream *L, AST **ast_ptr)
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
             SYNTAX_ERROR("unterminated string");
+            lexungetc(L, c);
             break;
         }
         flexbuf_addchar(&fb, c);
@@ -654,6 +687,7 @@ again:
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
             SYNTAX_ERROR("unterminated string");
+            lexungetc(L, c);
             break;
         }
         if (c == '\\') {
@@ -2873,6 +2907,9 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
         c = parseBasicIdentifier(L, &ast);
+        if (c == BAS_DATA) {
+            parseLineAsString(L, &ast);
+        }
     } else if (c == '"') {
         parseString(L, &ast);
 	c = BAS_STRING;

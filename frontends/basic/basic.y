@@ -463,6 +463,11 @@ topitem:
     }
   | topdecl
     { $$ = $1; }
+  | BAS_DATA
+    {
+        AST *list = NewAST(AST_EXPRLIST, $1, NULL);
+        current->bas_data = AddToList(current->bas_data, list);
+    }
 ;
 
 labelled_stmt:

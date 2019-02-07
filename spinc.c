@@ -511,6 +511,37 @@ GetFullFileName(AST *baseString)
 }
 
 /*
+ * initialize BASIC data block; copies the data into the datblock
+ * section, and adds a RESTORE call to the start of the main program
+ */
+void
+InitBasicData(Module *P)
+{
+    AST *labeldef = AstIdentifier("__basic_data");
+    AST *labelref = AstIdentifier("__basic_data");
+    AST *varname = AstIdentifier("__basic_data_ptr");
+    AST *datinfo;
+    AST *init;
+    AST *zero;
+
+    zero = NewAST(AST_BYTELIST, NewAST(AST_EXPRLIST, AstInteger(0), NULL),
+                  NULL);
+    datinfo = NewAST(AST_BYTELIST, P->bas_data, zero);
+    datinfo = AddToList(labeldef, datinfo);
+    datinfo = AddToList(NewAST(AST_LINEBREAK, NULL, NULL), datinfo);
+    P->datblock = AddToList(datinfo, P->datblock);
+
+    // Add a definition for __basic_data_ptr
+    MaybeDeclareMemberVar(P, varname, ast_type_string);
+    
+    // now add in an initializer
+    init = AstAssign(varname,
+                     NewAST(AST_ADDROF, labelref, NULL));
+    init = NewAST(AST_STMTLIST, init, NULL);
+    P->body = AddToList(init, P->body);
+}
+
+/*
  * process a parsed module
  */
 static void
@@ -525,6 +556,11 @@ ProcessModule(Module *P)
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);
         AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+
+        /* if there is a basic DATA block, add an initializer */
+        if (P->bas_data) {
+            InitBasicData(P);
+        }
         DeclareFunction(P, ast_type_void, 1, funcdef, P->body, NULL, NULL);
     }
     

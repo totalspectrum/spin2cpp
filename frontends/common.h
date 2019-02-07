@@ -281,7 +281,7 @@ struct modulestate {
     AST *topcomment;
     AST *botcomment;
 
-    /* helpers for AddToList */
+    /* helpers for AddToListEx */
     AST *datblock_tail;
     AST *conblock_tail;
     AST *parse_tail;
@@ -289,6 +289,9 @@ struct modulestate {
     /* annotations for the DAT block */
     AST *datannotations;
 
+    /* BASIC data section */
+    AST *bas_data;
+    
     /* list of methods */
     Function *functions;
 
