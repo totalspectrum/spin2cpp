@@ -266,6 +266,14 @@ lexpeekc(LexStream *L)
     return c;
 }
 
+AST *IntegerLabel(AST *num)
+{
+    int x = EvalConstExpr(num);
+    char *name = calloc(1, 32);
+    sprintf(name, "LINE_%d", x);
+    return AstIdentifier(name);
+}
+
 //
 // establish an indent level
 // if the line is indented more than this, aa SP_INDENT will
@@ -2883,7 +2891,11 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             lexungetc(L, c2);
         }
     } else if (safe_isdigit(c)) {
+        int is_label = 0;
         lexungetc(L,c);
+        if (L->firstNonBlank == 0) {
+            is_label = 1;
+        }
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
         if (c == SP_FLOATNUM) {
@@ -2902,7 +2914,13 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             }
             c = BAS_INTEGER;
 	} else {
-            c = BAS_INTEGER;
+            if (is_label) {
+                ast = IntegerLabel(ast);
+                c = BAS_LABEL;
+                L->firstNonBlank = L->colCounter;
+            } else {
+                c = BAS_INTEGER;
+            }
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
@@ -2935,6 +2953,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             lexungetc(L, c2);
         }
     }
+    L->firstNonBlank = L->colCounter;
     *ast_ptr = last_ast = ast;
     return c;
 }

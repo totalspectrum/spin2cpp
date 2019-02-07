@@ -26,6 +26,7 @@
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
 
+extern AST *IntegerLabel(AST *);
     
 AST *GetIORegisterPair(const char *name1, const char *name2)
 {
@@ -62,14 +63,6 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
         ast = NewAST(AST_RANGEREF, reg, range);
     }
     return ast;
-}
-
-AST *IntegerLabel(AST *num)
-{
-    int x = EvalConstExpr(num);
-    char *name = calloc(1, 32);
-    sprintf(name, "LINE_%d", x);
-    return AstIdentifier(name);
 }
 
 #define ARRAY_BASE_NAME "__array_base"
@@ -455,7 +448,7 @@ eolnseq:
 topitem:
     /* empty */
     { $$ = NULL; }
-  | labelled_stmt
+  | wrapped_stmt
     {
         AST *stmtholder = $1;
         current->body = AddToList(current->body, stmtholder);
@@ -463,13 +456,6 @@ topitem:
     }
   | topdecl
     { $$ = $1; }
-  | BAS_INTEGER topdecl
-      {
-          AST *label = NewAST(AST_LABEL, IntegerLabel($1), NULL);
-          AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
-          current->body = AddToList(current->body, stmtholder);
-          $$ = $2;
-      }
   | BAS_DATA
     {
         AST *list = NewAST(AST_EXPRLIST, $1, NULL);
@@ -477,25 +463,22 @@ topitem:
     }
 ;
 
-labelled_stmt:
+wrapped_stmt:
   statement
     {
         $$ = NewAST(AST_STMTLIST, $1, NULL);
     }
-  | BAS_INTEGER labelled_stmt
+  | BAS_LABEL wrapped_stmt
     {
-        AST *ilab = NewAST(AST_LABEL, IntegerLabel($1), NULL);
-        AST *label = NewAST(AST_STMTLIST, ilab, NULL);
-        AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
-        $$ = stmtholder;
+        AST *label = NewAST(AST_LABEL, $1, NULL);
+        $$ = NewAST(AST_STMTLIST, label, $2);
     }
-  | BAS_LABEL
+  | BAS_LABEL BAS_EOLN wrapped_stmt
     {
-        AST *ilab = NewAST(AST_LABEL, $1, NULL);
-        AST *label = NewAST(AST_STMTLIST, ilab, NULL);
-        AST *stmtholder = NewAST(AST_STMTLIST, label, NULL);
-        $$ = stmtholder;
+        AST *label = NewAST(AST_LABEL, $1, NULL);
+        $$ = NewAST(AST_STMTLIST, label, $3);
     }
+  
 ;
 
 optstatementlist:
@@ -506,12 +489,19 @@ optstatementlist:
 ;
 
 stmtlistitem:
-  statement
+  wrapped_stmt
     { $$ = $1; }
   | dimension
-    { $$ = $1; }
+    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
   | BAS_LABEL
-    { $$ = NewAST(AST_LABEL, $1, NULL); }
+    { $$ = NewAST(AST_STMTLIST, NewAST(AST_LABEL, $1, NULL), NULL); }
+  | BAS_LABEL dimension
+      {
+        AST *label = NewAST(AST_STMTLIST, NewAST(AST_LABEL, $1, NULL), NULL);
+        AST *dim = NewAST(AST_STMTLIST, $2, label);
+        $$ = dim;
+      }
+
 ;
 
 statementlist:
@@ -523,9 +513,9 @@ statementlist:
 
 realstatementlist:
   stmtlistitem
-    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+    { $$ = $1; }
   | stmtlistitem eoln optstatementlist
-    { $$ = NewAST(AST_STMTLIST, $1, $3); }
+    { $$ = AddToList($1, $3); }
 ;
 
 statement:
