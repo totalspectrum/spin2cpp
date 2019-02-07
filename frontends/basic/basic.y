@@ -620,6 +620,8 @@ iostmt:
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                            NULL, $1); }
   | BAS_INPUT inputlist
+    { $$ = NewCommentedAST(AST_READ, $2, AstInteger(0), $1); }
+  | BAS_READ inputlist
     { $$ = NewCommentedAST(AST_READ, $2, NULL, $1); }
   | BAS_OPEN expr BAS_AS '#' expr
     {

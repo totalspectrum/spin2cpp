@@ -10,9 +10,10 @@
 #include <string.h>
 #include "spinc.h"
 
-AST *basic_read_float;
-AST *basic_read_string;
-AST *basic_read_integer;
+AST *basic_get_float;
+AST *basic_get_string;
+AST *basic_get_integer;
+AST *basic_read_line;
 
 AST *basic_print_float;
 AST *basic_print_string;
@@ -74,15 +75,19 @@ addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 }
 
 AST *
-addReadCall(AST *seq, AST *handle, AST *func, AST *var)
+addReadCall(AST *seq, AST *lineptr, AST *func, AST *var)
 {
     AST *elem;
     AST *params;
     AST *funccall;
-    
-    params = NewAST(AST_EXPRLIST, handle, NULL);
+    AST *results;
+
+    results = NewAST(AST_EXPRLIST,
+                     var,
+                     NewAST(AST_EXPRLIST, lineptr, NULL));
+    params = NewAST(AST_EXPRLIST, lineptr, NULL);
     funccall = NewAST(AST_FUNCCALL, func, params);
-    elem = NewAST(AST_SEQUENCE, AstAssign(var, funccall), NULL);
+    elem = NewAST(AST_SEQUENCE, AstAssign(results, funccall), NULL);
     return AddToList(seq, elem);
 }
 
@@ -575,22 +580,35 @@ doBasicTransform(AST **astptr)
             AST *handle = ast->right;
             AST *var, *type;
             AST *seq = NULL;
+            AST *lineptr = NULL;
+            AST *read_lineptr;
             
-            if (!handle) {
-                handle = AstInteger(0);
+            if (handle) {
+                lineptr = AstTempLocalVariable("_tmp_", ast_type_string);
+                read_lineptr = AstAssign(lineptr,
+                                         NewAST(AST_FUNCCALL,
+                                                basic_read_line,
+                                                NewAST(AST_EXPRLIST,
+                                                       handle,
+                                                       NULL)));
+                seq = NewAST(AST_SEQUENCE, read_lineptr, NULL);
+            } else {
+                lineptr = AstIdentifier("__basic_data_ptr");
+                seq = NULL;
             }
             while (exprlist) {
                 var = exprlist->left;
                 exprlist = exprlist->right;
                 type = ExprType(var);
                 if (IsFloatType(type)) {
-                    seq = addReadCall(seq, handle, basic_read_float, var);
+                    seq = addReadCall(seq, lineptr, basic_get_float, var);
                 } else if (IsStringType(type)) {
-                    seq = addReadCall(seq, handle, basic_read_string, var);
+                    seq = addReadCall(seq, lineptr, basic_get_string, var);
                 } else if (IsIntType(type)) {
-                    seq = addReadCall(seq, handle, basic_read_integer, var);
+                    seq = addReadCall(seq, lineptr, basic_get_integer, var);
                 } else {
-                    ERROR(ast, "Unable to read variables of this type");
+                    const char *name = GetVarNameForError(var);
+                    ERROR(ast, "Type of %s is %s", name, type ? "invalid for reading" : "unknown");
                 }
             }
             *astptr = ast = seq;
@@ -1722,7 +1740,7 @@ InitGlobalFuncs(void)
             float_div = getBasicPrimitive("_fixed_div");
         } else {
             basic_print_float = getBasicPrimitive("_basic_print_float");
-            basic_read_float = getBasicPrimitive("_basic_read_float");
+            basic_get_float = getBasicPrimitive("_basic_get_float");
             float_cmp = getBasicPrimitive("_float_cmp");
             float_add = getBasicPrimitive("_float_add");
             float_sub = getBasicPrimitive("_float_sub");
@@ -1735,9 +1753,10 @@ InitGlobalFuncs(void)
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
         }
-        basic_read_integer = getBasicPrimitive("_basic_read_integer");
-        basic_read_string = getBasicPrimitive("_basic_read_string");
-
+        basic_get_integer = getBasicPrimitive("_basic_get_integer");
+        basic_get_string = getBasicPrimitive("_basic_get_string");
+        basic_read_line = getBasicPrimitive("_basic_read_line");
+        
         basic_print_integer = getBasicPrimitive("_basic_print_integer");
         basic_print_unsigned = getBasicPrimitive("_basic_print_unsigned");
         basic_print_string = getBasicPrimitive("_basic_print_string");

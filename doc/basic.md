@@ -11,7 +11,7 @@ yet. Missing features include:
 
  - Input and output isn't fully implemented yet.
 
- - DATA/READ/RESTORE is not implemented yet.
+ - RESTORE is not implemented yet.
 
  - ON x GOTO is not implemented yet.
  
@@ -797,7 +797,21 @@ Note that `cpu` is not a function call, it is a special form which does not eval
 
 ### DATA
 
-Keyword reserved for future use.
+Introduces raw data to be read via the `read` keyword. This is usually used for initializing arrays or other data structures. The calculations for converting values from strings to integers or floats are done at run time, so consider using array initializers instead (which are more efficient).
+
+Unlike in some other BASICs, no parsing at all is done of the information following the `data` keyword; it is simply dumped into memory as a raw string. Subsequent `read` commands will read the bytes from memory and convert them to the appropriate type, as if they were `input` by the user.
+
+Unlike most other statements, the `data` statement always extends to the end of the line; any colons (for example) within the data are treated as data.
+```
+dim x as integer, y as string, z as single
+read x, y, z
+print x, y, z
+data 1.1, hello
+data 2.2
+```
+will print `1` (`x` is an integer, so the fractional part is ignored), `hello`, and `2.2000`.
+
+The order of `data` statements matters, but they may be intermixed with other statements. `data` statements should only appear at the top level, not within functions or subroutines.
 
 ### DECLARE
 
@@ -1391,7 +1405,7 @@ The statements in the top level of the file (not inside any subroutine or functi
 
 ### READ
 
-Keyword reserved for future use.
+`read` reads data items declared by `data`. All of the strings following `data` keywords are lumped together, and then parsed by `read` in the same way as `input` parses data typed by the user.
 
 ### REM
 

@@ -79,6 +79,10 @@ int CompatibleTypes(AST *A, AST *B);
 // get the name from an AST_IDENTIFIER or AST_SYMBOL
 const char *GetIdentifierName(AST *ident);
 
+// get the name to use for printing error messages about assignments and such
+const char *GetVarNameForError(AST *expr);
+
+// various symbol lookup utilities
 Symbol *LookupSymbol(const char *name);
 Symbol *LookupAstSymbol(AST *ast, const char *msg);
 Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module **Ptr);

@@ -12,6 +12,20 @@
 #include <math.h>
 #include <stdlib.h>
 
+/* get an identifier name, or find the root name if an array reference */
+
+const char *
+GetVarNameForError(AST *expr)
+{
+    while (expr && expr->kind == AST_ARRAYREF) {
+        expr = expr->left;
+    }
+    if (expr->kind == AST_IDENTIFIER) {
+        return expr->d.string;
+    }
+    return "variable";
+}
+        
 /* get the identifier name from an identifier */
 const char *
 GetIdentifierName(AST *expr)
