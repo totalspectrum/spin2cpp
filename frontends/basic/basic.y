@@ -463,6 +463,13 @@ topitem:
     }
   | topdecl
     { $$ = $1; }
+  | BAS_INTEGER topdecl
+      {
+          AST *label = NewAST(AST_LABEL, IntegerLabel($1), NULL);
+          AST *stmtholder = NewAST(AST_STMTLIST, label, $2);
+          current->body = AddToList(current->body, stmtholder);
+          $$ = $2;
+      }
   | BAS_DATA
     {
         AST *list = NewAST(AST_EXPRLIST, $1, NULL);
