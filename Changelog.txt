@@ -6,6 +6,7 @@ Version 3.9.18
 - Added SQR and INT to BASIC
 - Added some more C library functions
 - Increased default heap size to 4K for P2
+- Improved assembly speed when large data structures are included.
 
 Version 3.9.17
 - Fixed a serious unsigned / unsigned division bug

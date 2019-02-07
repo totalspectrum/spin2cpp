@@ -54,6 +54,24 @@ AddToList(AST *list, AST *newelement)
     p->right = newelement;
     return list;
 }
+/* accelerator for AddToList; keeps track of tail */
+AST *AddToListEx(AST *head, AST *newelem, AST **tailptr)
+{
+    AST *tail;
+
+    if (!head)
+        return newelem;
+    if (!newelem)
+        return head;
+    tail = *tailptr;
+    if (tail) {
+        AddToList(tail, newelem);
+    } else {
+        AddToList(head, newelem);
+    }
+    *tailptr = newelem;
+    return head;
+}
 
 /*
  * duplicate an AST

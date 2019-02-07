@@ -213,6 +213,7 @@ struct AST {
 /* function declarations */
 AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
+AST *AddToListEx(AST *list, AST *newelement, AST **tail);
 void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
 AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);

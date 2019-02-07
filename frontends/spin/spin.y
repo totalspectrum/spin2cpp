@@ -207,13 +207,13 @@ emptylines:
 
 topelement:
   SP_CON conblock
-  { $$ = current->conblock = AddToList(current->conblock, $2); }
+  { $$ = current->conblock = AddToListEx(current->conblock, $2, &current->conblock_tail); }
   | SP_DAT datblock
-  { $$ = current->datblock = AddToList(current->datblock, $2); }
+  { $$ = current->datblock = AddToListEx(current->datblock, $2, &current->datblock_tail); }
   | SP_DAT annotation datblock
   {
       current->datannotations = AddToList(current->datannotations, $2);
-      $$ = current->datblock = AddToList(current->datblock, $3); 
+      $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); 
   }
   | SP_VAR varblock
   { $$ = current->pendingvarblock = AddToList(current->pendingvarblock, $2); }
@@ -543,9 +543,10 @@ datblock:
     {
         AST *dat = $1;
         $$ = dat; //NewAST(AST_LISTHOLDER, dat, NULL);
+        current->parse_tail = NULL;
     }
   | datblock datline
-    { $$ = AddToList($1, $2); }
+    { $$ = AddToListEx($1, $2, &current->parse_tail); }
   ;
 
 datline:
