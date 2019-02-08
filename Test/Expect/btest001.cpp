@@ -1,6 +1,6 @@
 // this is a comment
 //
-// rand this is a comment too
+// and this is a comment too
 #include <propeller.h>
 #include "btest001.h"
 

@@ -1,4 +1,4 @@
-// rsimple program to toggle a pin
+// simple program to toggle a pin
 #include <propeller.h>
 #include "btest005.h"
 

@@ -797,10 +797,11 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
             c3 = lexgetc(L);
             if (c3 == 'm' || c3 == 'M') {
                 c4 = lexgetc(L);
-                lexungetc(L, c4);
                 if (!safe_isalpha(c4)) {
+                    c = c4;
                     goto docomment;
                 }
+                lexungetc(L, c4);
             }
             lexungetc(L, c3);
         }
