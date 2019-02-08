@@ -8,6 +8,8 @@ Version 3.9.18
 - Increased default heap size to 4K for P2
 - Improved assembly speed when large data structures are included.
 - Fixed a bug in looking for files when multiple .. are given
+- Fixed <> operator in BASIC
+- Fixed array indexing with floats (they need to be converted to int)
 
 Version 3.9.17
 - Fixed a serious unsigned / unsigned division bug
