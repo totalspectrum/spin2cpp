@@ -1239,7 +1239,7 @@ compare_expr:
   | add_expr '>' add_expr
     { $$ = AstOperator('>', $1, $3); }
   | add_expr BAS_NE add_expr
-    { $$ = AstOperator(K_EQ, $1, $3); }
+    { $$ = AstOperator(K_NE, $1, $3); }
   | add_expr BAS_LE add_expr
     { $$ = AstOperator(K_LE, $1, $3); }
   | add_expr BAS_GE add_expr
