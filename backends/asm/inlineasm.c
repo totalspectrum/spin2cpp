@@ -69,11 +69,14 @@ static int parseargnum(const char *n)
 // compile an expression as an inine asm operand
 //
 static Operand *
-CompileInlineOperand(IRList *irl, AST *expr, int *effects)
+CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
 {
-    Operand *r;
+    Operand *r = NULL;
+    int r_address = 0;
     int32_t v;
+    
     if (expr->kind == AST_IMMHOLDER || expr->kind == AST_BIGIMMHOLDER) {
+        immflag = 1;
         expr = expr->left;
     }
     if (expr->kind == AST_IDENTIFIER) {
@@ -83,22 +86,28 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
              // check for special symbols "objptr" and "sp"
              if (!strcmp(name, "objptr")) {
                  ValidateObjbase();
-                 return objbase;
+                 r = objbase;
+                 r_address = immflag;
              }
-             if (!strcmp(name, "sp")) {
+             else if (!strcmp(name, "sp")) {
                  ValidateStackptr();
-                 return stackptr;
+                 r = stackptr;
+                 r_address = immflag;
              }
-             if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
-                 return GetResultReg( parseargnum(name+6));
+             else if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
+                 r = GetResultReg( parseargnum(name+6));
+                 r_address = immflag;
              }
-             if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && isargdigit(name[4]) && !name[5])
+             else if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && isargdigit(name[4]) && !name[5])
              {
-                 return GetArgReg( parseargnum(name+3) );
+                 r = GetArgReg( parseargnum(name+3) );
+                 r_address = immflag;
+             } else {
+                 ERROR(expr, "Undefined symbol %s", name);
+                 return NewImmediate(0);
              }
-             ERROR(expr, "Undefined symbol %s", name);
-             return NewImmediate(0);
 	 }
+         if (!r) {
 	 switch(sym->type) {
 	 case SYM_PARAMETER:
 	 case SYM_RESULT:
@@ -107,26 +116,50 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
 	      r = CompileIdentifier(irl, expr);
               if (!r) {
                   ERROR(expr, "Bad identifier expression %s", sym->name);
+                  return NewImmediate(0);
               }
-              return r;
+              r_address = immflag;
+              break;
          case SYM_CONSTANT:
              v = EvalPasmExpr(expr);
-             return NewImmediate(v);
+             if (!immflag) {
+                 ERROR(expr, "must use an immediate with constants in inline asm");
+             }
+             r = NewImmediate(v);
+             break;
          case SYM_LOCALLABEL:
-             return GetLabelFromSymbol(expr, sym->name);
+             if (!immflag) {
+                 ERROR(expr, "must use an immediate with labels in inline asm");
+             }
+             r = GetLabelFromSymbol(expr, sym->name);
+             immflag = 0;
+             break;
          case SYM_HWREG:
          {
              HwReg *hw = sym->val;
-             return GetOneGlobal(REG_HW, hw->name, 0);
+             r = GetOneGlobal(REG_HW, hw->name, 0);
+             break;
          }
 	 default:
 	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
 	      return NULL;
 	 }
+         }
+         if (r_address) {
+             WARNING(expr, "Using # on registers in inline assembly may confuse the optimizer");
+             return GetLea(irl, r);
+         }
+         return r;
     } else if (expr->kind == AST_INTEGER) {
-         return NewImmediate(expr->d.ival);
+        if (immflag) {
+            return NewImmediate(expr->d.ival);
+        } else {
+            char buf[100];
+            sprintf(buf, "%d", expr->d.ival);
+            return NewOperand(REG_HW, strdup(buf), 0);
+        }
     } else if (expr->kind == AST_ADDROF) {
-        r = CompileInlineOperand(irl, expr->left, effects);
+        r = CompileInlineOperand(irl, expr->left, effects, 0);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEHUB;
         }
@@ -135,7 +168,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects)
         HwReg *hw = expr->d.ptr;
         return GetOneGlobal(REG_HW, hw->name, 0);
     } else if (expr->kind == AST_CATCH) {
-        r = CompileInlineOperand(irl, expr->left, effects);
+        r = CompileInlineOperand(irl, expr->left, effects, 0);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEABS;
         }
@@ -226,7 +259,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
     for (i = 0; i < numoperands; i++) {
         Operand *op;
         effects[i] = 0;
-        op = CompileInlineOperand(irl, operands[i], &effects[i]);
+        op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
         switch(i) {
         case 0:
             ir->dst = op;

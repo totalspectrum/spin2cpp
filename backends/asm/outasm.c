@@ -94,8 +94,6 @@ static OperandList *CompileFunccall(IRList *irl, AST *expr);
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
-//static void EmitLea(IRList *irl, Operand *dst, Operand *src);
-static Operand *GetLea(IRList *irl, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
@@ -2929,7 +2927,7 @@ CompileMaskMove(IRList *irl, AST *expr)
 // get the effective address of "src"
 // this may require us to emit instructions
 //
-static Operand *
+Operand *
 GetLea(IRList *irl, Operand *src)
 {
     // check for COG memory references

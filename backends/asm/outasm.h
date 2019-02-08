@@ -161,6 +161,9 @@ const char *VarName(AST *ast);
 Operand *GetArgReg(int n);
 Operand *GetResultReg(int n);
 
+// convert to an effective address
+Operand *GetLea(IRList *irl, Operand *src);
+
 // instruction emitting stuff
 IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
