@@ -38,4 +38,6 @@ DAT
 y		long	0
 a		long	1
 
-		wrbyte  y,ptra++[17]
+		wrbyte  y,ptra++[15]
+		setbyte a
+		setbyte 0, a, #0

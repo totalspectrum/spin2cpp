@@ -850,9 +850,18 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
         }
     }
     if (expectops == 3 && numoperands == 1) {
-        // SETNIB reg/# -> SETNIB reg/#, 0, #0
-        operand[1] = AstInteger(0);
-        opimm[1] = 0;
+        // SETNIB reg/# -> SETNIB 0, reg/#, #0
+        // but GETBYTE reg -> GETBYTE reg, 0, #0
+
+        if (!strncmp(instr->name, "set", 3)) {
+            operand[1] = operand[0];
+            opimm[1] = opimm[0];
+            operand[0] = AstInteger(0);
+            opimm[0] = 0;
+        } else {
+            operand[1] = AstInteger(0);
+            opimm[1] = 0;
+        }
         operand[2] = AstInteger(0);
         opimm[2] = DUMMY_MASK;
         numoperands = 3;
