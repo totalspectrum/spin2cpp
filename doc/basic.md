@@ -580,13 +580,15 @@ argument is not a string it is an error.
 
 Introduces inline assembly. The block between ASM and END ASM is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers.
 
-Inside inline assembly any instructions may be used, but the only legal operands are integer constants and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+Inside inline assembly any instructions may be used, but the only legal operands are integer constants, registers, and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function. Any attempt to leave the function, either by jumping out of it or returning, will cause undefined behavior. In other words, don't do that!
+
+If you need temporary variables inside some inline assembly, `dim` them as locals in the enclosing function.
 
 Example: to implement a wait (like the built-in `waitcnt`:
 ```
 sub wait_until_cycle(x as uinteger)
   asm
-    waitcnt x
+    waitcnt x, #0
   end asm
 end sub
 ```
@@ -601,7 +603,7 @@ creates an array of 64 integers (which needs 256 bytes) and makes `x` into a poi
 
 The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable or be returned from the function.
 
-`__builtin_alloca` is awkward to work with, and dangerous. Almost always you should use `new` instead. The only advantages of `__builtin_alloca` is that it is slightly more efficient than `new`, and does not use up heap space.
+`__builtin_alloca` is awkward to work with, and dangerous. Almost always you should use `new` instead. The only advantages of `__builtin_alloca` is that it is slightly more efficient than `new`, and does not use up heap space (but uses stack space instead).
 
 ### BYTE
 
