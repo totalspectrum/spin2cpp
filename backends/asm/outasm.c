@@ -97,12 +97,10 @@ static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
 //static void EmitLea(IRList *irl, Operand *dst, Operand *src);
 static Operand *GetLea(IRList *irl, Operand *src);
 static void EmitBuiltins(IRList *irl);
-static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
-static IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 static void CompileConsts(IRList *irl, AST *consts);
 static void EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
-static Operand *CogMemRef(Operand *addr, int offset);
+Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
 
 static bool IsCogMem(Operand *addr);
@@ -671,7 +669,7 @@ static IR *EmitOp0(IRList *irl, IROpcode code)
 }
 
 // emit a machine instruction with one operand
-static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op)
+IR *EmitOp1(IRList *irl, IROpcode code, Operand *op)
 {
   IR *ir = NewIR(code);
   ir->dst = op;
@@ -680,7 +678,7 @@ static IR *EmitOp1(IRList *irl, IROpcode code, Operand *op)
 }
 
 // emit a machine instruction with two operands
-static IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
+IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 {
   IR *ir = NewIR(code);
   ir->dst = d;
@@ -957,7 +955,7 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
     return SizedHubMemRef(size, addr, offset);
 }
 
-static Operand *
+Operand *
 CogMemRef(Operand *addr, int offset)
 {
     Operand *ref = NewOperand(COGMEM_REF, (char *)addr, offset);

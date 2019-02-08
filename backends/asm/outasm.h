@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016 Total Spectrum Software Inc.
+ * Copyright 2016-2019 Total Spectrum Software Inc.
  * PASM output routines
  */
 
@@ -35,7 +35,7 @@ Operand *NewImmediate(int32_t val);
 Operand *NewImmediatePtr(const char *name, Operand *val);
 Operand *NewCodeLabel();  // use only while compiling a function
 Operand *NewHubLabel();
-
+Operand *CogMemRef(Operand *addr, int offset);
 void FreeTempRegisters(IRList *irl, int starttempreg);
 
 // utility functions
@@ -160,5 +160,9 @@ const char *VarName(AST *ast);
 // get operands for argument and result registers
 Operand *GetArgReg(int n);
 Operand *GetResultReg(int n);
+
+// instruction emitting stuff
+IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
+IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 
 #endif
