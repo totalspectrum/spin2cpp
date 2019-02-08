@@ -581,7 +581,10 @@ ProcessModule(Module *P)
             ProcessOneFunc(pf);
         }
     }
-    
+
+    /* restore the default language */
+    /* (we may have temporarily loaded functions written in another language) */
+    P->curLanguage = P->mainLanguage;
     current = lastcurrent;
 }
 
