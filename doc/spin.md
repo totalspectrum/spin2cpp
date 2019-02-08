@@ -170,6 +170,8 @@ pub test
   ser.dec(atoi(x))
 ```
 
+Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
+
 
 ### Multiple return values and assignments
 

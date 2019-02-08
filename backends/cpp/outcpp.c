@@ -316,7 +316,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
 
     /* print the structure definition */
     flexbuf_printf(f, "\ntypedef struct %s {\n", parse->classname);
-    if (parse->lastLanguage == LANG_SPIN) {
+    if (parse->mainLanguage == LANG_SPIN) {
         n = PrintAllVarListsOfSize(f, parse, 4, flags);
         n += PrintAllVarListsOfSize(f, parse, 2, flags);
         n += PrintAllVarListsOfSize(f, parse, 1, flags);
@@ -391,7 +391,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     if (parse->volatileVariables)
         flags |= ISVOLATILE;
     flexbuf_printf(f, "private:\n");
-    if (parse->lastLanguage == LANG_SPIN) {
+    if (parse->mainLanguage == LANG_SPIN) {
         PrintAllVarListsOfSize(f, parse, 4, flags);
         PrintAllVarListsOfSize(f, parse, 2, flags);
         PrintAllVarListsOfSize(f, parse, 1, flags);

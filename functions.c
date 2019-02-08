@@ -210,7 +210,7 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
     AST *retinfoholder;
     
     holder = NewAST(AST_FUNCHOLDER, funcdef, body);
-    holder->d.ival = P->lastLanguage;
+    holder->d.ival = P->curLanguage;
     
     funcblock = NewAST(is_public ? AST_PUBFUNC : AST_PRIFUNC, holder, annotation);
     funcblock->d.ptr = (void *)comment;

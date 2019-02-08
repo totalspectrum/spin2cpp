@@ -479,7 +479,7 @@ DeclareMemberVariables(Module *P)
     } else {
         offset = P->varsize;
     }
-    if (P->lastLanguage == LANG_SPIN) {
+    if (P->mainLanguage == LANG_SPIN) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
         offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
@@ -677,6 +677,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
         P = NewModule(fname, language);
         new_module = 1;
     }
+    P->curLanguage = language;
     if (gl_printprogress) {
         int n = gl_depth;
         const char *tail;
@@ -1125,9 +1126,9 @@ GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
     
-    if (P->lastLanguage == LANG_BASIC) {
+    if (P->mainLanguage == LANG_BASIC) {
         mainName = "program";
-    } else if (P->lastLanguage == LANG_C) {
+    } else if (P->mainLanguage == LANG_C) {
         mainName = "main";
     }
 

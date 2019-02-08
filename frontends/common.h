@@ -329,8 +329,11 @@ struct modulestate {
     /* back end specific flags */
     void *bedata;
 
-    /* last language the module was presented with */
-    int lastLanguage;
+    /* "main" language for the module */
+    int mainLanguage;
+    
+    /* current language we are processing */
+    int curLanguage;
 
     /* "body" (statements outside any function) */
     /* not all languages support this */

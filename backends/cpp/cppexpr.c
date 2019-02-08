@@ -136,7 +136,7 @@ PrintFloat(Flexbuf *f, int32_t v, int flags)
         if (curfunc) {
             language = curfunc->language;
         } else if (current) {
-            language = current->lastLanguage;
+            language = current->curLanguage;
         } else {
             ERROR(NULL, "Unable to determine language");
             language = LANG_SPIN;
