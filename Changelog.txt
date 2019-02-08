@@ -2,9 +2,11 @@ Version 3.9.18
 - Improved BASIC parser to permit more complex expressions
 (e.g. multi-dimensional array references)
 - Support getword and getbyte instructions in inline assembly
-- Added INPUT and READ commands to BASIC
+- Added INPUT, DATA and READ commands to BASIC
+- Added GOSUB support to BASIC
 - Added SQR and INT to BASIC
 - Added some more C library functions
+- Added PUB FILE and PRI FILE to Spin
 - Increased default heap size to 4K for P2
 - Improved assembly speed when large data structures are included.
 - Fixed a bug in looking for files when multiple .. are given

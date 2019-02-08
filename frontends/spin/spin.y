@@ -229,6 +229,10 @@ topelement:
     { DeclareFunction(current, SpinRetType($3), 1, $3, $4, $2, $1); }
   | SP_PRI annotation funcdef funcbody
     { DeclareFunction(current, SpinRetType($3), 0, $3, $4, $2, $1); }
+  | SP_PUB SP_FILE SP_STRING funcdef
+    { DeclareFunction(current, SpinRetType($4), 1, $4, $3, NULL, $1); }
+  | SP_PRI SP_FILE SP_STRING funcdef
+    { DeclareFunction(current, SpinRetType($4), 0, $4, $3, NULL, $1); }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;
@@ -287,7 +291,7 @@ funcbody:
   { $$ = NULL; }
 | stmtlist
   { $$ = $1; }
-  ;
+;
 
 stmtlist:
   stmt

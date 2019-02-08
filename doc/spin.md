@@ -147,6 +147,30 @@ PUB doprint22
   print(@aFullDuplexSerialObj, 22)
 ```
 
+### PUB FILE and PRI FILE
+
+A `pub` or `pri` function declaration may include a `file` directive which gives the file which contains the actual definition of the function. This looks like:
+```
+  pub file "utils.spin" myfunc(x, y)
+```
+This declares a function `myfunc` with two parameters, which will be loaded from the file "utils.spin". The function will be a public function of the object. This provides an easy way to import the same function (e.g. a decimal conversion routine) into many different objects.
+
+`pub file` and `pri file` differ from the `obj` directive in that they do not create a new object; the functions defined in the new file are part of the current object.
+
+Note that there is no need for a body to the function (it is an error to give one). The number of parameters and return values, however, should be specified; they must match the number given in the final definition contained in the file.
+
+The function body need not be in Spin. For example, to use the C `atoi` function in a Spin object, you could do:
+```
+obj ser: "spin/FullDuplexSerial.spin"
+pub file "libc/stdlib/atoi.c" atoi(str)
+
+pub test
+  ser.start(31, 30, 0, 115_200)
+  x := string("1234")
+  ser.dec(atoi(x))
+```
+
+
 ### Multiple return values and assignments
 
 fastspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
