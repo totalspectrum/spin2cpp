@@ -445,12 +445,20 @@ eolnseq:
   | eolnseq BAS_EOLN
   ;
 
+toplabel: BAS_LABEL
+  {
+        AST *label = NewAST(AST_LABEL, $1, NULL);
+        AST *stmt = NewAST(AST_STMTLIST, label, NULL);
+        current->body = AddToList(current->body, stmt);
+  }
+;
+
 topitem:
     /* empty */
     { $$ = NULL; }
-  | wrapped_stmt
+  | statement
     {
-        AST *stmtholder = $1;
+        AST *stmtholder = NewAST(AST_STMTLIST, $1, NULL);
         current->body = AddToList(current->body, stmtholder);
         $$ = stmtholder;
     }
@@ -460,6 +468,10 @@ topitem:
     {
         AST *list = NewAST(AST_EXPRLIST, $1, NULL);
         current->bas_data = AddToList(current->bas_data, list);
+    }
+  | toplabel topitem
+    {
+        $$ = $2;
     }
 ;
 
