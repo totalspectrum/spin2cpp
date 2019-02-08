@@ -1642,6 +1642,7 @@ Builtin builtinfuncs[] = {
     { "lockret", 1, defaultBuiltin, "lockret", "__builtin_propeller_lockret", 0, lockhook },
 
     { "strsize", 1, str1Builtin, "strlen", NULL, 0, NULL },
+    { "__builtin_strlen", 1, str1Builtin, "strlen", NULL, 0, NULL },
     { "strcomp", 2, strcompBuiltin, "strcmp", NULL, 0, NULL },
     { "waitcnt", 1, defaultBuiltin, "waitcnt", "_waitcnt", 0, NULL },
     { "waitpeq", 3, waitpeqBuiltin, "waitpeq", "__builtin_propeller_waitpeq", 0, NULL },

@@ -85,6 +85,7 @@ typedef struct alias {
 Aliases spinalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
+    { "strsize", "__builtin_strlen" },
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
@@ -121,6 +122,8 @@ Aliases spin2alias[] = {
 Aliases basicalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
+    { "len", "__builtin_strlen" },
+    { "val", "__builtin_atoi" },
     { NULL, NULL },
 };
 Aliases calias[] = {

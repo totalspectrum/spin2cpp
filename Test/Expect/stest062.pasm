@@ -5,13 +5,13 @@ dat
 entry
 
 _mylen
-	mov	__system__strsize_r, #0
+	mov	__system____builtin_strlen_r, #0
 LR__0001
 	rdbyte	_tmp001_, arg01 wz
- if_ne	add	__system__strsize_r, #1
+ if_ne	add	__system____builtin_strlen_r, #1
  if_ne	add	arg01, #1
  if_ne	jmp	#LR__0001
-	mov	result1, __system__strsize_r
+	mov	result1, __system____builtin_strlen_r
 _mylen_ret
 	ret
 
@@ -20,7 +20,7 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-__system__strsize_r
+__system____builtin_strlen_r
 	res	1
 _tmp001_
 	res	1

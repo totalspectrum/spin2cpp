@@ -29,7 +29,7 @@ pri bytemove(dst, src, count)
     byte[dst] := byte[src]
     dst += 1
     src += 1
-pri strsize(str) : r
+pri __builtin_strlen(str) : r
   r := 0
   repeat while byte[str] <> 0
     r++
@@ -136,7 +136,7 @@ pri _basic_get_char(h) | t, o, f, saveobj
 pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify, wright, wleft
   w := fmt & $ff
   justify := (fmt >> 8) & 3
-  len := strsize(ptr)
+  len := __builtin_strlen(ptr)
   wleft := wright := 0
   if (w > 0 and len < w) 
     if justify == 0 ' left justify
@@ -297,8 +297,8 @@ pri _string_cmp(x, y) | xc, yc, d
   return d
 
 pri _string_concat(x, y) | lenx, leny, ptr
-  lenx := strsize(x)
-  leny := strsize(y)
+  lenx := __builtin_strlen(x)
+  leny := __builtin_strlen(y)
   ptr := _gc_alloc_managed(lenx + leny + 1)
   if ptr
     bytemove(ptr, x, lenx)
@@ -316,7 +316,7 @@ pri chr`$(x=long) | ptr
 pri left`$(x, n) | ptr, i, m
   if (n =< 0)
     return ""
-  m := strsize(x)
+  m := __builtin_strlen(x)
   if (m =< n)
     return x
   ptr := _gc_alloc_managed(n+1)
@@ -354,15 +354,6 @@ pri mid`$(x, i=0, j=9999999) | ptr, m, n
     byte[ptr+n] := 0
   return ptr
   
-pri val(s) : r | c
-  r := 0
-  repeat
-    c := byte[s++]
-    if (c => "0") and (c =< "9")
-      r := 10 * r + (c - "0")
-    else
-      return r
-      
 pri _make_methodptr(o, func) | ptr
   ptr := _gc_alloc_managed(8)
   if (ptr)
@@ -409,6 +400,3 @@ pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 '' pause for m milliseconds
 pri pausems(m=long)
   waitcnt(getcnt + m * (clkfreq / 1000))
-
-pri len(s=@byte)
-  return strsize(s)

@@ -3,7 +3,7 @@ Version 3.9.18
 (e.g. multi-dimensional array references)
 - Support getword and getbyte instructions in inline assembly
 - Added INPUT, DATA and READ commands to BASIC
-- Added GOSUB support to BASIC
+- Added GOSUB support to BASIC (can only GOSUB to a local label)
 - Added SQR and INT to BASIC
 - Added some more C library functions
 - Added PUB FILE and PRI FILE to Spin

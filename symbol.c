@@ -161,12 +161,18 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
     sym = table->hash[hash];
     while (sym) {
         if (!STRCMP(sym->name, name)) {
+            if (sym->type == SYM_ALIAS) {
+                // it's OK to override aliases
+                break;
+            }
             return NULL;
         }
         sym = sym->next;
     }
 
-    sym = NewSymbol();
+    if (!sym) {
+        sym = NewSymbol();
+    }
     sym->name = name;
     sym->type = (Symtype)type;
     sym->val = val;
