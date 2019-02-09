@@ -4021,7 +4021,11 @@ static void CompileStatement(IRList *irl, AST *ast)
         EmitPush(irl, abortchain);
         EmitMove(irl, abortchain, stackptr);
         EmitOp2(irl, OPC_ADD, stackptr, NewImmediate(SETJMP_BUF_SIZE));
-        CompileStatementList(irl, ast->left);
+        if (ast->left && ast->left->kind != AST_STMTLIST) {
+            (void)CompileExpression(irl, ast->left, NULL);
+        } else {
+            CompileStatementList(irl, ast->left);
+        }
         EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(SETJMP_BUF_SIZE));
         EmitPop(irl, abortchain);
         break;
