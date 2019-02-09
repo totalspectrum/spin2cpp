@@ -513,7 +513,6 @@ stmtlistitem:
         AST *dim = NewAST(AST_STMTLIST, $2, label);
         $$ = dim;
       }
-
 ;
 
 statementlist:
@@ -528,6 +527,13 @@ realstatementlist:
     { $$ = $1; }
   | stmtlistitem eoln optstatementlist
     { $$ = AddToList($1, $3); }
+;
+
+ifline:
+  statement
+    { $$ = NewAST(AST_STMTLIST, $1, NULL); }
+  | ifline ':' statement
+    { $$ = AddToList($1, NewAST(AST_STMTLIST, $3, NULL)); }
 ;
 
 statement:
@@ -713,7 +719,7 @@ printlist:
 ;
 
 ifstmt:
-  BAS_IF expr BAS_THEN eoln thenelseblock
+  BAS_IF expr BAS_THEN BAS_EOLN thenelseblock
     { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
   | BAS_IF expr BAS_THEN BAS_INTEGER
     {
@@ -722,12 +728,17 @@ ifstmt:
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
         $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
-  | BAS_IF expr branchstmt
+  | BAS_IF expr statement
     {
         AST *condition = $2;
         AST *stmtlist = NewCommentedStatement($3);
         AST *elseblock = NewAST(AST_THENELSE, stmtlist, NULL);
         $$ = NewCommentedAST(AST_IF, condition, elseblock, $1);
+    }
+  | BAS_IF expr BAS_THEN ifline
+    {
+        AST *elseblock = NewAST(AST_THENELSE, $4, NULL);
+        $$ = NewCommentedAST(AST_IF, $2, elseblock, $1);
     }
 ;
 
