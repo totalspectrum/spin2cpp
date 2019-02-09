@@ -23,7 +23,7 @@ NewAST(enum astkind kind, AST *left, AST *right)
     ast->left = left;
     ast->right = right;
     ast->d.ptr = 0;
-    if (s_reportas_lexdata) {
+    if (0 && s_reportas_lexdata) {
         ast->lexdata = s_reportas_lexdata;
         ast->lineidx = s_reportas_lineidx;
     } else if (current) {
