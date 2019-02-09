@@ -349,6 +349,7 @@ doSpinTransform(AST **astptr, int level)
     AST *ast = *astptr;
     Symbol *sym;
     Function *func;
+    AST *temp;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -369,6 +370,7 @@ doSpinTransform(AST **astptr, int level)
     case AST_CATCH:
         doSpinTransform(&ast->left, level);
         curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
+        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
         *astptr = ast = NewAST(AST_TRYENV,
                                NewAST(AST_CONDRESULT,
                                       AstOperator(K_EQ,
@@ -395,6 +397,7 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, level);
 
         /* now fix it up */
+        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_STMTLIST:
@@ -405,6 +408,7 @@ doSpinTransform(AST **astptr, int level)
     {
         AST *list = ast->right;
         doSpinTransform(&ast->left, 0);
+        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
             AST *var = AstTempLocalVariable("_tmp_", NULL);
             ast->left = AstAssign(var, ast->left);

@@ -6,7 +6,8 @@
 #include <string.h>
 #include "spinc.h"
 
-static AST *s_reportas;
+static LexStream *s_reportas_lexdata;
+static int s_reportas_lineidx;
 
 AST *
 NewAST(enum astkind kind, AST *left, AST *right)
@@ -22,9 +23,9 @@ NewAST(enum astkind kind, AST *left, AST *right)
     ast->left = left;
     ast->right = right;
     ast->d.ptr = 0;
-    if (0 && s_reportas) {
-        ast->lexdata = s_reportas->lexdata;
-        ast->lineidx = s_reportas->lineidx;
+    if (s_reportas_lexdata) {
+        ast->lexdata = s_reportas_lexdata;
+        ast->lineidx = s_reportas_lineidx;
     } else if (current) {
         ast->lexdata = current->Lptr;
         ast->lineidx = getLineInfoIndex(ast->lexdata);
@@ -369,7 +370,17 @@ RemoveFromList(AST **listptr, AST *elem)
 
 void AstReportAs(AST *old)
 {
-    s_reportas = old;
+    if (old) {
+        s_reportas_lexdata = old->lexdata;
+        s_reportas_lineidx = old->lineidx;
+    } else {
+        s_reportas_lexdata = NULL;
+    }
+}
+
+AST *AstGetReportState()
+{
+    return NewAST(AST_COMMENTEDNODE, NULL, NULL);
 }
 
 static const char *astnames[] = {
