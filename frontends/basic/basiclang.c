@@ -416,21 +416,23 @@ doBasicTransform(AST **astptr)
 {
     AST *ast = *astptr;
     Function *func;
+    ASTReportInfo saveinfo;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
         ast = *astptr;
     }
     if (!ast) return;
-    AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
     switch (ast->kind) {
     case AST_ASSIGN:
         if (ast->left) {
+            AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             if (ast->left->kind == AST_RANGEREF) {
                 *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
             } else if (ast->left->kind == AST_IDENTIFIER && !strcmp(ast->left->d.string, curfunc->name)) {
                 ast->left->kind = AST_RESULT;
             }
+            AstReportDone(&saveinfo);
         }
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
@@ -443,6 +445,7 @@ doBasicTransform(AST **astptr)
         AST *elseholder = NULL;
         AST *ifholder = NULL;
         doBasicTransform(&ast->left);
+        AstReportAs(ast, &saveinfo);
         if (ast->left->kind == AST_IDENTIFIER) {
             var = ast->left;
         } else {
@@ -479,6 +482,7 @@ doBasicTransform(AST **astptr)
             ifholder->left = elseholder = NewAST(AST_THENELSE, casebody, NULL);
             list = list->right;
         }
+        AstReportDone(&saveinfo);
         break;
     }        
     case AST_COUNTREPEAT:

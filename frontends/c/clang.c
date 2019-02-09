@@ -36,11 +36,11 @@ CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *en
 {
     AST *labelid;
     AST *label;
+    ASTReportInfo saveinfo;
 again:    
     if (!stmt) {
         return switchstmt;
     }
-    AstReportAs(stmt);
     switch (stmt->kind) {
     case AST_CASE:
         ERROR(stmt, "Internal error, case not transformed");
@@ -50,6 +50,7 @@ again:
         AST *ifgoto;
         AST *ifcond;
         
+        AstReportAs(stmt, &saveinfo);
         labelid = AstTempIdentifier("_case_");
         label = NewAST(AST_LABEL, labelid, NULL);
         AddLabel(label);
@@ -61,9 +62,11 @@ again:
         ifgoto = NewAST(AST_THENELSE, ifgoto, NULL);
         ifgoto = NewAST(AST_IF, ifcond, ifgoto);
         switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, ifgoto, NULL));
+        AstReportDone(&saveinfo);
         goto again;
     }
     case AST_OTHER:
+        AstReportAs(stmt, &saveinfo);
         if (defaultlabel) {
             if (*defaultlabel) {
                 ERROR(stmt, "Switch already has a default label");
@@ -78,11 +81,14 @@ again:
             ERROR(stmt, "Internal error, got default when not expecting it");
             return switchstmt;
         }
+        AstReportDone(&saveinfo);
         goto again;
     case AST_QUIT:
+        AstReportAs(stmt, &saveinfo);
         if (endswitch) {
             *stmt = *NewAST(AST_GOTO, endswitch, NULL);
         }
+        AstReportDone(&saveinfo);
         return switchstmt;
     // for loops, "break" cannot have special meaning any more
     case AST_WHILE:
@@ -120,8 +126,9 @@ CreateSwitch(AST *expr, AST *stmt)
     AST *defaultlabel = NULL;
     AST *gostmt;
     AST *endlabel;
-
-    AstReportAs(stmt);
+    ASTReportInfo saveinfo;
+    
+    AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);
     tmpvar = AstTempLocalVariable("_tmp_", casetype);
     endswitch = AstTempIdentifier("_endswitch");
@@ -144,6 +151,7 @@ CreateSwitch(AST *expr, AST *stmt)
     switchstmt = AddToList(switchstmt, stmt);
     switchstmt = AddToList(switchstmt,
                            NewAST(AST_STMTLIST, endlabel, NULL));
+    AstReportDone(&saveinfo);
     return switchstmt;
 }
 
@@ -158,7 +166,6 @@ doCTransform(AST **astptr)
         ast = *astptr;
     }
     if (!ast) return;
-    AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
     switch (ast->kind) {
     case AST_ASSIGN:
         if (ast->left && ast->left->kind == AST_RANGEREF) {
@@ -240,7 +247,6 @@ doCTransform(AST **astptr)
     case AST_CASE:
         doCTransform(&ast->left);
         doCTransform(&ast->right);
-        AstReportAs(ast->left);
         *ast = *CreateSwitch(ast->left, ast->right);
         break;
     case AST_IDENTIFIER:

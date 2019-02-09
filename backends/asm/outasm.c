@@ -2221,17 +2221,22 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_SQRT:
   {
       AST *fcall;
-      AstReportAs(expr);
+      ASTReportInfo saveinfo;
+      
+      AstReportAs(expr, &saveinfo);
       fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
                      NewAST(AST_EXPRLIST, expr->right, NULL));
-      return CompileFunccallFirstResult(irl, fcall);
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
   }
   case '?':
   {
       AST *fcall;
       AST *var;
+      ASTReportInfo saveinfo;
       const char *fname;
-      AstReportAs(expr);
+      AstReportAs(expr, &saveinfo);
       if (expr->left) {
           fname = "_lfsr_forward";
           var = expr->left;
@@ -2242,7 +2247,9 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       fcall = NewAST(AST_FUNCCALL, AstIdentifier(fname),
                      NewAST(AST_EXPRLIST, var, NULL));
       fcall = AstAssign(var, fcall);
-      return CompileExpression(irl, fcall, NULL);
+      left = CompileExpression(irl, fcall, NULL);
+      AstReportDone(&saveinfo);
+      return left;
   }
   default:
     ERROR(lhs, "Unsupported operator %d", op);

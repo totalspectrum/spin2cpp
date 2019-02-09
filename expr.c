@@ -342,8 +342,10 @@ RangeXor(AST *dst, AST *src)
     AST *loexpr;
     AST *hiexpr = NULL;
     AST *hwreg = NULL;
+    ASTReportInfo saveinfo;
+    AST *result = NULL;
     
-    AstReportAs(dst);
+    AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
         loexpr = FoldIfConst(dst->right->left);
         nbits = AstInteger(1);
@@ -358,8 +360,10 @@ RangeXor(AST *dst, AST *src)
                 maskexpr = AstOperator(K_SHL, AstInteger(1), loexpr);
                 hwreg = dst->left;
                 if (hwreg->kind == AST_HWREG) {
-                    return AstAssign(hwreg,
+                    result = AstAssign(hwreg,
                                      AstOperator('^', hwreg, maskexpr));
+                    AstReportDone(&saveinfo);
+                    return result;
                 } else {
                     ERROR(hwreg, "unable to handle reg pair");
                 }
@@ -386,8 +390,10 @@ RangeXor(AST *dst, AST *src)
     maskexpr = AstOperator('&', maskexpr, src);
     maskexpr = AstOperator(K_ROTL, maskexpr, loexpr);
     maskexpr = FoldIfConst(maskexpr);
-    return AstAssign(dst->left,
+    result = AstAssign(dst->left,
                      AstOperator('^', dst->left, maskexpr));
+    AstReportDone(&saveinfo);
+    return result;
 }
 
 /*
@@ -408,8 +414,10 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
 {
     AST *loexpr;
     AST *maskexpr;
+    AST *result;
+    ASTReportInfo saveinfo;
     
-    AstReportAs(dst);
+    AstReportAs(dst, &saveinfo);
     if (dst->right->right == NULL) {
         loexpr = dst->right->left;
     } else {
@@ -421,13 +429,15 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
     }
     maskexpr = AstOperator(K_SHL, AstInteger(mask), loexpr);
     if (bitset) {
-        return AstAssign(dst->left,
+        result = AstAssign(dst->left,
                          AstOperator('|', dst->left, maskexpr));
     } else {
         maskexpr = AstOperator(K_BIT_NOT, NULL, maskexpr);
-        return AstAssign(dst->left,
+        result = AstAssign(dst->left,
                          AstOperator('&', dst->left, maskexpr));
     }
+    AstReportDone(&saveinfo);
+    return result;
 }
 
 /*
@@ -457,13 +467,15 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     AST *maskexpr;
     AST *hwreg;
     AST *hwreg2 = NULL;
-
+    ASTReportInfo saveinfo;
+    AST *result;
+    
     if (!dst) return dst;
     if (!dst->right || dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
         return 0;
     }
-    AstReportAs(dst);  // set up error messages as if coming from "dst"
+    AstReportAs(dst, &saveinfo);  // set up error messages as if coming from "dst"
 
     hwreg = dst->left;
     if (hwreg->kind == AST_REGPAIR) {
@@ -484,6 +496,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         }
         if (IsConstExpr(cond)) {
             int x = EvalConstExpr(cond);
+            AstReportDone(&saveinfo);
             if (x) return assign;
             return assign2;
         } 
@@ -491,6 +504,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         // we have to generate an IF statement
         if (!toplevel) {
             ERROR(dst, "cannot handle unknown pins yet except at top level");
+            AstReportDone(&saveinfo);
             return assign;
         }
         // wrap the sides of the IF in statement lists
@@ -498,11 +512,13 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         assign2 = NewAST(AST_STMTLIST, assign2, NULL);
         assign = NewAST(AST_IF, cond, NewAST(AST_THENELSE, assign, assign2));
         assign = NewAST(AST_STMTLIST, assign, NULL);
+        AstReportDone(&saveinfo);
         return assign;
     } else if (hwreg->kind == AST_HWREG) {
         // OK
     } else {
         ERROR(dst, "internal error in range assign");
+        AstReportDone(&saveinfo);
         return NULL;
     }
     /* special case logical operators */
@@ -511,7 +527,9 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     if (src->kind == AST_OPERATOR && src->d.ival == K_BIT_NOT
         && AstMatch(dst, src->right))
     {
-        return RangeXor(dst, AstInteger(0xffffffff));
+        result = RangeXor(dst, AstInteger(0xffffffff));
+        AstReportDone(&saveinfo);
+        return result;
     }
     /* now handle the ordinary case */
     /* dst->right is the range of bits we're setting */
@@ -525,7 +543,9 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
             && IsConstExpr(src->right)
             && EvalConstExpr(src->right) == 1)
         {
-            return RangeXor(dst, AstInteger(0xffffffff));
+            result = RangeXor(dst, AstInteger(0xffffffff));
+            AstReportDone(&saveinfo);
+            return result;
         }
     } else {
         AST *hiexpr;
@@ -571,11 +591,15 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         int bitset = EvalConstExpr(src);
         int mask = EvalConstExpr(maskexpr);
         if (bitset == 0 || (bitset&mask) == mask) {
-            return RangeBitSet(dst, mask, bitset);
+            result = RangeBitSet(dst, mask, bitset);
+            AstReportDone(&saveinfo);
+            return result;
         }
     }
     if (IsConstExpr(nbits) && EvalConstExpr(nbits) >= 32) {
-        return AstAssign(dst->left, FoldIfConst(src));
+        result = AstAssign(dst->left, FoldIfConst(src));
+        AstReportDone(&saveinfo);
+        return result;
     }
 
     /*
@@ -621,6 +645,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         stmt = NewAST(AST_THENELSE, ifpart, elsepart);
         ifstmt = NewAST(AST_IF, ifcond, stmt);
         ifstmt = NewAST(AST_STMTLIST, ifstmt, NULL);
+        AstReportDone(&saveinfo);
         return ifstmt;
     }
                              
@@ -648,7 +673,9 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         orexpr = FoldIfConst(orexpr);
         
         orexpr = NewAST(AST_MASKMOVE, dst->left, AstOperator('|', andexpr, orexpr));
-        return AstAssign(dst->left, orexpr);
+        result = AstAssign(dst->left, orexpr);
+        AstReportDone(&saveinfo);
+        return result;
     }
 }
 
@@ -667,6 +694,7 @@ TransformRangeUse(AST *src)
     AST *hi;
     AST *lo;
     AST *range;
+    ASTReportInfo saveinfo;
     
     if (!curfunc) {
         ERROR(src, "Internal error, could not find function");
@@ -709,7 +737,7 @@ TransformRangeUse(AST *src)
         ERROR(src, "range not applied to hardware register");
         return AstInteger(0);
     }
-    AstReportAs(src);
+    AstReportAs(src, &saveinfo);
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
         hi = lo = src->right->left;
@@ -770,6 +798,7 @@ TransformRangeUse(AST *src)
                             revval,
                             val));
     }
+    AstReportDone(&saveinfo);
     return val;
 }
 

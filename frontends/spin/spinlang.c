@@ -78,8 +78,8 @@ TransformLongMove(AST **astptr, AST *ast)
     int srcoff, dstoff;
     int n;
     SymbolTable *srctab, *dsttab;
+    ASTReportInfo saveinfo;
     
-    AstReportAs(ast);
     ast = ast->right; // ast->left is the longmove function
     dst = ast->left; ast = ast->right;
     if (!ast || !dst) return false;
@@ -126,7 +126,7 @@ TransformLongMove(AST **astptr, AST *ast)
     default:
         return false;
     }
-    AstReportAs(dst);
+    AstReportAs(dst, &saveinfo);
     srcoff = syms->offset;
     dstoff = symd->offset;
     sequence = NULL;
@@ -141,6 +141,7 @@ TransformLongMove(AST **astptr, AST *ast)
         symd = FindSymbolByOffset(dsttab, dstoff);
         syms = FindSymbolByOffset(srctab, srcoff);
         if (!symd || !syms) {
+            AstReportDone(&saveinfo);
             return false;
         }
     }
@@ -148,6 +149,7 @@ TransformLongMove(AST **astptr, AST *ast)
     /* the longmove probably indicates a COG will be reading these
        variables */
     current->volatileVariables = 1;
+    AstReportDone(&saveinfo);
     return true;
 }
 
@@ -251,13 +253,15 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             // identifier
             if (sym->type == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL) {
                 AST *funccall;
-                AstReportAs(body);
+                ASTReportInfo saveinfo;
+                AstReportAs(body, &saveinfo);
                 funccall = NewAST(AST_FUNCCALL, body, NULL);
                 if (body == upper->left) {
                     upper->left = funccall;
                 } else if (body == upper->right) {
                     upper->right = funccall;
                 }
+                AstReportDone(&saveinfo);
             }
         }
         break;
@@ -271,10 +275,12 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             if (expectType && IsPointerType(expectType)) {
                 if (upper->left == body) {
                     AST *newString;
-                    AstReportAs(body);
+                    ASTReportInfo saveinfo;
+                    AstReportAs(body, &saveinfo);
                     newString = NewAST(AST_STRINGPTR,
                                        NewAST(AST_EXPRLIST, body, NULL),
                                        NULL);
+                    AstReportDone(&saveinfo);
                     upper->left = newString;
                 }
             }
@@ -349,14 +355,14 @@ doSpinTransform(AST **astptr, int level)
     AST *ast = *astptr;
     Symbol *sym;
     Function *func;
-    AST *temp;
+    ASTReportInfo saveinfo;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
         ast = *astptr;
     }
     if (!ast) return;
-    AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
+
     switch (ast->kind) {
     case AST_EXPRLIST:
     case AST_THENELSE:
@@ -370,7 +376,7 @@ doSpinTransform(AST **astptr, int level)
     case AST_CATCH:
         doSpinTransform(&ast->left, level);
         curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
-        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
+        AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
         *astptr = ast = NewAST(AST_TRYENV,
                                NewAST(AST_CONDRESULT,
                                       AstOperator(K_EQ,
@@ -380,6 +386,7 @@ doSpinTransform(AST **astptr, int level)
                                              ast->left,
                                              NewAST(AST_CATCHRESULT, NULL, NULL))),
                                NULL);
+        AstReportDone(&saveinfo);
         break;
     case AST_IF:
     case AST_WHILE:
@@ -397,7 +404,6 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, level);
 
         /* now fix it up */
-        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_STMTLIST:
@@ -408,7 +414,7 @@ doSpinTransform(AST **astptr, int level)
     {
         AST *list = ast->right;
         doSpinTransform(&ast->left, 0);
-        AstReportAs(ast); // any newly created AST nodes should reflect debug info from this one
+        AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
             AST *var = AstTempLocalVariable("_tmp_", NULL);
             ast->left = AstAssign(var, ast->left);
@@ -423,6 +429,7 @@ doSpinTransform(AST **astptr, int level)
             doSpinTransform(&caseitem->right, level);
             list = list->right;
         }
+        AstReportDone(&saveinfo);
         break;
     }
     case AST_COGINIT:

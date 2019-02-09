@@ -23,7 +23,7 @@ NewAST(enum astkind kind, AST *left, AST *right)
     ast->left = left;
     ast->right = right;
     ast->d.ptr = 0;
-    if (0 && s_reportas_lexdata) {
+    if (s_reportas_lexdata) {
         ast->lexdata = s_reportas_lexdata;
         ast->lineidx = s_reportas_lineidx;
     } else if (current) {
@@ -368,8 +368,12 @@ RemoveFromList(AST **listptr, AST *elem)
     }
 }
 
-void AstReportAs(AST *old)
+void AstReportAs(AST *old, ASTReportInfo *save)
 {
+    if (save) {
+        save->lexdata = s_reportas_lexdata;
+        save->lineidx = s_reportas_lineidx;
+    }
     if (old) {
         s_reportas_lexdata = old->lexdata;
         s_reportas_lineidx = old->lineidx;
@@ -378,9 +382,12 @@ void AstReportAs(AST *old)
     }
 }
 
-AST *AstGetReportState()
+void AstReportDone(ASTReportInfo *save)
 {
-    return NewAST(AST_COMMENTEDNODE, NULL, NULL);
+    if (save) {
+        s_reportas_lexdata = save->lexdata;
+        s_reportas_lineidx = save->lineidx;
+    }
 }
 
 static const char *astnames[] = {

@@ -535,6 +535,7 @@ AstUsesMemory(AST *ast)
     case AST_CONSTREF:
         return false;
     case AST_FUNCCALL:
+    case AST_GOSUB:
         return true;
     case AST_IDENTIFIER:
     {
@@ -860,6 +861,25 @@ CheckSimpleDecrementLoop(AST *stmt)
 }
 
 //
+// check for branches
+// function calls are OK, I think, because we already reject loop
+// transforms that can affect variables in memory
+//
+static bool
+HasBranch(AST *body)
+{
+    if (!body) return false;
+    switch (body->kind) {
+    case AST_GOTO:
+    case AST_GOSUB:
+    case AST_LABEL:
+        return true;
+    default:
+        return HasBranch(body->left) || HasBranch(body->right);
+    }
+}
+
+//
 // check for "simple" loops using increments (like "repeat i from 0 to 9") these may be further
 // optimized into "repeat 10" if we discover that the loop index is not
 // used inside the body
@@ -881,6 +901,7 @@ CheckSimpleIncrementLoop(AST *stmt)
     Symbol *sym;
     int updateTestOp = 0;
     int32_t initVal;
+    ASTReportInfo saveinfo;
     
     initial = stmt->left;
     condtest = stmt->right;
@@ -962,8 +983,11 @@ CheckSimpleIncrementLoop(AST *stmt)
     if (AstUses(body, updateVar)) {
         return;
     }
-    
-    AstReportAs(update); // new ASTs should be associated with the "update" line
+    /* similarly if there are gotos or gosubs */
+    if (HasBranch(body)) {
+        return;
+    }
+    AstReportAs(update, &saveinfo); // new ASTs should be associated with the "update" line
     /* flip the update to -- */
     update->d.ival = K_DECREMENT;
     /* change the initialization */
@@ -988,6 +1012,7 @@ CheckSimpleIncrementLoop(AST *stmt)
         thenelseskip->left = NewAST(AST_STMTLIST, newstmt, NULL);
         *stmt = *ifskip;
     }
+    AstReportDone(&saveinfo);
 }
 
 //
@@ -1035,8 +1060,10 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             AST *update;
             AST *body;
             AST *initial;
+            ASTReportInfo saveinfo;
+            
             initial = stmt->left;
-            AstReportAs(initial);
+            AstReportAs(initial, &saveinfo);
             condtest = stmt->right;
             updateparent = condtest->right;
             condtest = condtest->left;
@@ -1053,6 +1080,7 @@ doLoopOptimizeList(LoopValueSet *lvs, AST *list)
             if (!CheckSimpleDecrementLoop(stmt)) {
                 CheckSimpleIncrementLoop(stmt);
             }
+            AstReportDone(&saveinfo);
             break;
         }
         default:

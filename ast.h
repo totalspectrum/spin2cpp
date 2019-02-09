@@ -210,6 +210,11 @@ struct AST {
     int lineidx;        /* index within the lexer LineInfo struct */
 };
 
+typedef struct ASTReportInfo {
+    LexStream *lexdata;
+    int lineidx;
+} ASTReportInfo;
+
 /* function declarations */
 AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
@@ -245,8 +250,8 @@ int AstListLen(AST *a);
 
 /* mark new ASTs to be created to have the same line as AST old */
 /* used when we're transforming ASTs */
-void AstReportAs(AST *old);
-AST *AstGetReportState();
+void AstReportAs(AST *old, ASTReportInfo *save);
+void AstReportDone(ASTReportInfo *save);
 
 /* print out an AST */
 void DumpAST(AST *);

@@ -130,7 +130,6 @@ InitGlobalModule(void)
         } else {
             syscode = (const char *)sys_p1_code_spin;
         }
-        AstReportAs(NULL); // reset error tracking
         gl_normalizeIdents = 0;
         globalModule->Lptr = malloc(sizeof(*globalModule->Lptr));
         strToLex(globalModule->Lptr, syscode, "_system_");
@@ -601,8 +600,9 @@ int gl_depth = 0;
 static void
 doparse(int language)
 {
-    AST *curReportState = AstGetReportState();
-    AstReportAs(NULL); // reset error tracking
+    ASTReportInfo saveinfo;
+    
+    AstReportAs(NULL, &saveinfo); // reset error tracking
     if (language == LANG_BASIC) {
         basicyydebug = spinyydebug;
         basicyyparse();
@@ -612,8 +612,7 @@ doparse(int language)
     } else {
         spinyyparse();
     }
-    AstReportAs(curReportState);
-    free(curReportState);
+    AstReportDone(&saveinfo);
 }
 
 static Module *

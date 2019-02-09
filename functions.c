@@ -616,7 +616,6 @@ doDeclareFunction(AST *funcblock)
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
             fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0) / LONG_SIZE;
-            AstReportAs(src);
             rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
             rettype->d.ival = fdef->numresults;
             fdef->overalltype->left = rettype;
@@ -915,11 +914,15 @@ TransformCaseExprList(AST *var, AST *ast)
 {
     AST *listexpr = NULL;
     AST *node = NULL;
-
+    ASTReportInfo saveinfo;
+    AST *result;
+    
     while (ast) {
-        AstReportAs(ast);
+        AstReportAs(ast, &saveinfo);
         if (ast->kind == AST_OTHER) {
-            return AstInteger(1);
+            result = AstInteger(1);
+            AstReportDone(&saveinfo);
+            return result;
         }
         if (ast->left->kind == AST_RANGE) {
             node = NewAST(AST_ISBETWEEN, var, ast->left);
@@ -951,6 +954,7 @@ TransformCaseExprList(AST *var, AST *ast)
             listexpr = node;
         }
         ast = ast->right;
+        AstReportDone(&saveinfo);
     }
     return listexpr;
 }
@@ -994,8 +998,10 @@ TransformCountRepeat(AST *ast)
 
     AST *limitvar = NULL;
 
+    ASTReportInfo saveinfo;
+    
     /* create new ast elements using this ast's line info, at least for now */
-    AstReportAs(ast);
+    AstReportAs(ast, &saveinfo);
 
     if (ast->left) {
         if (ast->left->kind == AST_IDENTIFIER) {
@@ -1012,18 +1018,21 @@ TransformCountRepeat(AST *ast)
     ast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
+        AstReportDone(&saveinfo);
         return origast;
     }
     fromval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_TO) {
         ERROR(ast, "expected TO");
+        AstReportDone(&saveinfo);
         return origast;
     }
     toval = ast->left;
     ast = ast->right;
     if (ast->kind != AST_STEP) {
         ERROR(ast, "expected STEP");
+        AstReportDone(&saveinfo);
         return origast;
     }
     if (ast->left) {
@@ -1203,6 +1212,7 @@ TransformCountRepeat(AST *ast)
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);
     forast->lineidx = origast->lineidx;
     forast->lexdata = origast->lexdata;
+    AstReportDone(&saveinfo);
     return forast;
 }
 
@@ -1450,12 +1460,13 @@ CheckFunctionCalls(AST *ast)
     int i, n;
     AST *initseq = NULL;
     AST *temps[MAX_TUPLE];
+    ASTReportInfo saveinfo;
     
     if (!ast) {
         return;
     }
     // we may need to create temporaries
-    AstReportAs(ast);
+    AstReportAs(ast, &saveinfo);
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
@@ -1567,6 +1578,7 @@ CheckFunctionCalls(AST *ast)
 skipcheck:    
     CheckFunctionCalls(ast->left);
     CheckFunctionCalls(ast->right);
+    AstReportDone(&saveinfo);
 }
 
 /*
@@ -1632,9 +1644,10 @@ ProcessOneFunc(Function *pf)
         }
         if (!sawreturn) {
             AST *retstmt;
-            
-            AstReportAs(pf->body); // use old debug info
+            ASTReportInfo saveinfo;
+            AstReportAs(pf->body, &saveinfo); // use old debug info
             retstmt = NewAST(AST_STMTLIST, NewAST(AST_RETURN, pf->resultexpr, NULL), NULL);
+            AstReportDone(&saveinfo);
             pf->body = AddToList(pf->body, retstmt);
         }
     }
@@ -1671,7 +1684,6 @@ InferTypesStmt(AST *ast)
   int changes = 0;
 
   if (!ast) return 0;
-  AstReportAs(ast);
   switch(ast->kind) {
   case AST_COMMENTEDNODE:
     return InferTypesStmt(ast->left);
@@ -2208,7 +2220,8 @@ SimplifyAssignments(AST **astptr)
         }
         else if (op != K_ASSIGN)
         {
-            AstReportAs(ast);
+            ASTReportInfo saveinfo;
+            AstReportAs(ast, &saveinfo);
             if (ExprHasSideEffects(lhs)) {
                 lhs = ExtractSideEffects(lhs, &preseq);
             }
@@ -2216,6 +2229,7 @@ SimplifyAssignments(AST **astptr)
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);
             }
+            AstReportDone(&saveinfo);
             *astptr = ast;
         }
     }
