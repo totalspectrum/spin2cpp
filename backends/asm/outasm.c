@@ -1052,6 +1052,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
               stype = SYM_RESULT;
           } else {
               ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->name);
+              return NewImmediate(0);
           }
           /* fall through */
       case SYM_LOCALVAR:
