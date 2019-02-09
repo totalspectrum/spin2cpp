@@ -86,20 +86,21 @@ Aliases spinalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
     { "strsize", "__builtin_strlen" },
+    { "dirl_", "__builtin_propeller_dirl" },
+    { "dirh_", "__builtin_propeller_dirh" },
+    { "dirnot_", "__builtin_propeller_dirnot" },
+    { "dir_", "__builtin_propeller_dir" },
+    { "drvl_", "__builtin_propeller_drvl" },
+    { "drvh_", "__builtin_propeller_drvh" },
+    { "drvnot_", "__builtin_propeller_drvnot" },
+    { "drv_", "__builtin_propeller_drv" },
+    { "waitx_", "__builtin_propeller_waitx" },
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
-    { "dirl_", "__builtin_propeller_dirl" },
-    { "dirh_", "__builtin_propeller_dirh" },
     { "dirrnd_", "__builtin_propeller_dirrnd" },
-    { "dirnot_", "__builtin_propeller_dirnot" },
-    { "dir_", "__builtin_propeller_dir" },
 
-    { "drvl_", "__builtin_propeller_drvl" },
-    { "drvh_", "__builtin_propeller_drvh" },
     { "drvrnd_", "__builtin_propeller_drvrnd" },
-    { "drvnot_", "__builtin_propeller_drvnot" },
-    { "drv_", "__builtin_propeller_drv" },
 
     { "outl_", "__builtin_propeller_outl" },
     { "outh_", "__builtin_propeller_outh" },
@@ -113,7 +114,6 @@ Aliases spin2alias[] = {
     { "fltnot_", "__builtin_propeller_fltnot" },
     { "flt_", "__builtin_propeller_flt" },
 
-    { "waitx_", "__builtin_propeller_waitx" },
     { "wrpin_", "__builtin_propeller_wrpin" },
     { "wxpin_", "__builtin_propeller_wxpin" },
     { "wypin_", "__builtin_propeller_wypin" },
@@ -124,6 +124,10 @@ Aliases basicalias[] = {
     { "clkmode", "_clkmode" },
     { "len", "__builtin_strlen" },
     { "val", "__builtin_atoi" },
+    { "pinlo", "__builtin_propeller_drvl" },
+    { "pinhi", "__builtin_propeller_drvh" },
+    { "pintoggle", "__builtin_propeller_drvnot" },
+    { "pinset", "__builtin_propeller_drv" },
     { NULL, NULL },
 };
 Aliases calias[] = {

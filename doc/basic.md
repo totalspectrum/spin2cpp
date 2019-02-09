@@ -1341,6 +1341,34 @@ A built-in subroutine to pause for a number of milliseconds. For example, to pau
   pausems 2000
 ```
 
+### PINLO
+
+Force a pin to be output as 0.
+```
+  pinlo(p)
+```
+
+### PINHI
+
+Force a pin to be output as 1.
+```
+  pinhi(p)
+```
+
+### PINSET
+
+Force a pin to be an output, and set its value (new value must be either 0 or 1).
+```
+  pinset(p, v)
+```
+
+### PINTOGGLE
+
+Force a pin to be an output, and invert its current value.
+```
+  pintoggle(p)
+```
+
 ### PRINT
 
 `print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud.

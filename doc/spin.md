@@ -303,6 +303,32 @@ The `coginit` (and `cognew`) functions in Fastspin can start functions
 from other objects than the current. (In "regular" Spin only functions
 from the same object may be started this way.)
 
+## New intrinsics
+
+Fastspin supports some new builtin functions. These typically end with an underscore to avoid confusion with existing variable names.
+
+### DRV_
+
+`drv_(p, c)` forces `p` to be an output and sets it to 0 if `c` is 0 or 1 if `c` is 1. If c is any other value the result is undefined. Supported for both P1 and P2
+
+### DRVL_
+
+`drvl_(p)` drives pin `p` low, i.e. it forces `p` to be an output and sets it to 0. This is supported for both P1 and P2.
+
+### DRVH_
+
+`drvh_(p)` drives pin `p` high, i.e. it forces `p` to be an output and sets it to 1. This is supported for both P1 and P2.
+
+### DRVNOT_
+
+`drvnot_(p)` forces `p` to be an output and inverts it. This is supported for both P1 and P2.
+
+### WAITX_
+
+`waitx_(n)` waits for `n` cycles, plus the cycle time required for the instruction. This is 2 cycles on P2, and 8 cycles on P1.
+
+
+
 # Compatibility with other Spin compilers
 
 ## Limitations

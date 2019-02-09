@@ -7,12 +7,14 @@ Version 3.9.18
 - Added SQR and INT to BASIC
 - Added some more C library functions
 - Added PUB FILE and PRI FILE to Spin
+- Added PINLO, PINHI, PINSET, PINTOGGLE functions to BASIC
 - Increased default heap size to 4K for P2
 - Improved assembly speed when large data structures are included.
 - Fixed a bug in looking for files when multiple .. are given
 - Fixed <> operator in BASIC
 - Fixed array indexing with floats (they need to be converted to int)
 - Fixed setbyte/setword/setnib abbreviations
+- Improved error handling
 
 Version 3.9.17
 - Fixed a serious unsigned / unsigned division bug

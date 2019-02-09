@@ -140,3 +140,51 @@ pri _call_method(o, f, x=0) | r
     mov    r, result1
   endasm
   return r
+
+pri __builtin_propeller_dirl(pin) | mask
+  mask := 1<<pin
+  DIRA &= !mask
+
+pri __builtin_propeller_dirh(pin) | mask
+  mask := 1<<pin
+  DIRA |= mask
+
+pri __builtin_propeller_dirnot(pin) | mask
+  mask := 1<<pin
+  DIRA ^= mask
+
+pri __builtin_propeller_dir(pin, c) | mask
+  mask := 1<<pin
+  if (c)
+    DIRA |= mask
+  else
+    DIRA &= !mask
+
+pri __builtin_propeller_drvl(pin) | mask
+  mask := 1<<pin
+  DIRA |= mask
+  OUTA &= !mask
+
+pri __builtin_propeller_drvh(pin) | mask
+  mask := 1<<pin
+  DIRA |= mask
+  OUTA |= mask
+
+pri __builtin_propeller_drvnot(pin) | mask
+  mask := 1<<pin
+  DIRA |= mask
+  OUTA ^= mask
+
+pri __builtin_propeller_drv(pin, c) | mask
+  mask := 1<<pin
+  DIRA |= mask
+  if (c)
+    OUTA |= mask
+  else
+    OUTA &= !mask
+
+pri __builtin_propeller_waitx(tim)
+  asm
+    add  tim, CNT
+    waitcnt tim
+  endasm
