@@ -1111,13 +1111,21 @@ else
 end if
 ```
 
-There are two forms of `if`. A "simple if" occupies just one line, executes one statement if the condition is true, and has no `else` clause. Simple ifs do not have a `then`:
+There are several forms of `if`.
+
+A "simple if" executes just one statement if the condition is true, and has no `else` clause. Simple ifs do not have a `then`:
 ```
 ' simple if example
 if x = y print "they are equal"
 ```
 
-Regular or compound if statements have a `then` and continue on until the next matching `else` or `end if`. If you want to have an `else` condition then you will have to use this form of if:
+A one line if executes the rest of the statements on the current line if the condition is true. This form of `if` has a `then` that is followed by one or more statements, seperated by `:`. For example:
+```
+if x = y then print "they are equal" : print "they are still equal"
+```
+which will print "they are equal" followed by "they are still equal" if `x` equals `y`, but which will print nothing if they are not equal. This form of `if` is provided for compatibility with old code, but is not recommended for use in new code.
+
+Compound if statements have a `then` which ends the line. These statements continue on until the next matching `else` or `end if`. If you want to have an `else` condition then you will have to use this form of if:
 ```
 if x = y then
   print "they are equal"
