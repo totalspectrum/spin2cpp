@@ -812,15 +812,15 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
       int c;
       last = 0;
       while ( (c = *test) != 0 ) {
-          if (c == '/' || c == '\\') {
-              last = test;
+          if (c == '\\') {
+              *test = '/';
           }
           test++;
       }
   }
-#else
-  last = strrchr(ret, '/');
 #endif
+  last = strrchr(ret, '/');
+
   if (trimname) {
       if (last) {
           last[1] = 0;
@@ -838,6 +838,7 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
     strcat(ret, ext);
     f = fopen(ret, "r");
   }
+  //printf("... trying %s\n", ret);
   if (!f) {
     /* give up */
     free(ret);
@@ -855,7 +856,7 @@ find_file_on_path(struct preprocess *pp, const char *name, const char *ext, cons
     size_t num_abs_paths;
     size_t i;
     const char **abs_paths;
-    
+
     r = find_file_relative(pp, name, ext, relpath, NULL);
     if (r) return r;
     /* not found yet; look along the include path */

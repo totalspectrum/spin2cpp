@@ -68,9 +68,18 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
 #define ARRAY_BASE_NAME "__array_base"
 #define IMPLICIT_TYPE_NAME "__implicit_types"
 #define EXPLICIT_DECL_NAME "__explicit_declares_required"
+/* __explicit_declares_required is a bitmask saying which kinds of things
+ * require explicit declarations:
+ *  1 == assignment statements without LET
+ *  2 == assignment statements with LET
+ *  4 == read statements
+ *  8 == for loop variables
+ */
+ #define DEFAULT_EXPLICIT_DECLARES 0x5
+#define GetExplicitDeclares() GetCurOptionSymbol(EXPLICIT_DECL_NAME, DEFAULT_EXPLICIT_DECLARES)
 
 Symbol *
-GetCurOptionSymbol(const char *name)
+GetCurOptionSymbol(const char *name, int defval)
 {
 #if 0
     // this would make option base work nicely inside scopes
@@ -82,7 +91,7 @@ GetCurOptionSymbol(const char *name)
 #endif    
     Symbol *sym = LookupSymbolInTable(symtab, name);
     if (!sym) {
-        sym = AddSymbol(symtab, name, SYM_CONSTANT, AstInteger(0));
+        sym = AddSymbol(symtab, name, SYM_CONSTANT, AstInteger(defval));
     }
     return sym;
 }
@@ -90,13 +99,13 @@ GetCurOptionSymbol(const char *name)
 Symbol *
 GetCurArrayBase(void)
 {
-    return GetCurOptionSymbol(ARRAY_BASE_NAME);
+    return GetCurOptionSymbol(ARRAY_BASE_NAME, 0);
 }
-        
+
 Symbol *
 GetCurImplicitTypes(void)
 {
-    return GetCurOptionSymbol(IMPLICIT_TYPE_NAME);
+    return GetCurOptionSymbol(IMPLICIT_TYPE_NAME, 0);
 }
 
 static AST *
@@ -125,10 +134,10 @@ HandleBASICOption(AST *optid, AST *exprlist)
         sym = GetCurArrayBase();
         sym->val = AstInteger(arrayBase);
     } else if (!strcmp(name, "explicit")) {
-        sym = GetCurOptionSymbol(EXPLICIT_DECL_NAME);
+        sym = GetExplicitDeclares();
         sym->val = AstInteger(255);
     } else if (!strcmp(name, "implicit")) {
-        sym = GetCurOptionSymbol(EXPLICIT_DECL_NAME);
+        sym = GetExplicitDeclares();
         sym->val = AstInteger(0);
     } else {
         SYNTAX_ERROR("Unknown option %s", name);
@@ -433,6 +442,7 @@ GetCurrentLoop(int token)
 toplist:
  topitem
  | toplist eoln topitem
+ | toplist BAS_END BAS_EOLN
 ;
 
 eoln:
@@ -538,16 +548,14 @@ ifline:
 
 statement:
   assign_statement
-    { $$ = $1; }
+    {
+        $$ = $1;
+    }
   | BAS_IDENTIFIER np_exprlist /* np means "no parentheses" */
     {
         AST *params;
         params = $2;
         $$ = NewAST(AST_FUNCCALL, $1, params);
-    }
-  | BAS_LET BAS_IDENTIFIER '=' expr
-    { MaybeDeclareMemberVar(current, $2, InferTypeFromName($2));
-      $$ = AstAssign($2, $4);
     }
   | BAS_VAR BAS_IDENTIFIER '=' expr
     {
@@ -591,7 +599,7 @@ statement:
     { $$ = $1; }
 ;
 
-assign_statement:
+simple_assign_statement:
   varexpr '=' expr
     { $$ = AstAssign($1, $3); }
   | register_expr '=' expr
@@ -600,7 +608,32 @@ assign_statement:
     { $$ = AstAssign($1, AstInteger(0)); }
   | register_expr '=' BAS_OUTPUT
     { $$ = AstAssign($1, AstInteger(-1)); }
-  
+;
+assign_statement:
+  simple_assign_statement
+    {
+        AST *assign = $1;
+        AST *ident;
+        Symbol *sym = GetExplicitDeclares();
+        int explicit = EvalConstExpr(sym->val);
+        if (0 == (explicit & 0x1) ) {
+            ident = assign->left;
+            MaybeDeclareMemberVar(current, ident, NULL);
+        }
+        $$ = assign;
+    }
+  | BAS_LET simple_assign_statement
+    {
+        AST *assign = $2;
+        AST *ident;
+        Symbol *sym = GetExplicitDeclares();
+        int explicit = EvalConstExpr(sym->val);
+        if (0 == (explicit & 0x2) ) {
+            ident = assign->left;
+            MaybeDeclareMemberVar(current, ident, NULL);
+        }
+        $$ = assign;
+    }
 ;
 
 branchstmt:
@@ -692,14 +725,23 @@ iostmt:
 
 inputitem:
   varexpr
-    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+    {
+        Symbol *sym = GetExplicitDeclares();
+        int explicit = EvalConstExpr(sym->val);
+        if (0 == (explicit & 0x4)) {
+            MaybeDeclareMemberVar(current, $1, NULL);
+        }
+        $$ = NewAST(AST_EXPRLIST, $1, NULL);
+    }
 ;
 
 inputlist:
   inputitem
     { $$ = $1; }
   | inputlist ',' inputitem
-    { $$ = AddToList($1, $3); }
+    {
+        $$ = AddToList($1, $3);
+    }
   ;
 
 printitem:

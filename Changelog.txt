@@ -1,6 +1,8 @@
+Version 3.9.19
+- Fixed problems with path searches
+
 Version 3.9.18
-- Improved BASIC parser to permit more complex expressions
-(e.g. multi-dimensional array references)
+- Improved BASIC parser to permit more complex expressions (e.g. multi-dimensional array references)
 - Support getword and getbyte instructions in inline assembly
 - Added INPUT, DATA, READ, and RESTORE commands to BASIC
 - Added GOSUB support to BASIC (can only GOSUB to a local label)

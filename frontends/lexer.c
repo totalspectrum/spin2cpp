@@ -2874,7 +2874,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     
     c = skipSpace(L, &ast, LANG_BASIC);
-
+again:
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
         *ast_ptr = ast;
@@ -2894,6 +2894,14 @@ getBasicToken(LexStream *L, AST **ast_ptr)
             c = BAS_INTEGER;
         } else {
             lexungetc(L, c2);
+        }
+    } else if (c == '.') {
+        int c2 = lexgetc(L);
+        lexungetc(L, c2);
+        if (safe_isdigit(c2)) {
+            lexungetc(L, c);
+            c = '0';
+            goto again;
         }
     } else if (safe_isdigit(c)) {
         int is_label = 0;

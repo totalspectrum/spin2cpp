@@ -447,9 +447,6 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
 {
     AST *sub;
     const char *name;
-    if (!typ) {
-        typ = InferTypeFromName(identifier);
-    }
     sub = identifier;
     if (sub && sub->kind == AST_ASSIGN) {
         sub = sub->left;
@@ -457,10 +454,16 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
     while (sub && sub->kind == AST_ARRAYDECL) {
         sub = sub->left;
     }
+    if (!sub || sub->kind != AST_IDENTIFIER) {
+        return;
+    }
     name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
     if (sym && sym->type == SYM_VARIABLE) {
         return;
+    }
+    if (!typ) {
+        typ = InferTypeFromName(identifier);
     }
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
@@ -652,7 +655,9 @@ doParseFile(const char *name, Module *P, int *is_dup)
     }
     if (current) {
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
-        fname = NormalizePath(fname);
+        if (fname) {
+            fname = NormalizePath(fname);
+        }
     }
     if (!fname) {
         fname = strdup(name);
