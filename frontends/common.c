@@ -123,11 +123,12 @@ Aliases basicalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
     { "len", "__builtin_strlen" },
-    { "val", "__builtin_atoi" },
     { "pinlo", "__builtin_propeller_drvl" },
     { "pinhi", "__builtin_propeller_drvh" },
-    { "pintoggle", "__builtin_propeller_drvnot" },
     { "pinset", "__builtin_propeller_drv" },
+    { "pintoggle", "__builtin_propeller_drvnot" },
+    { "rnd", "_basic_rnd" },
+    { "val", "__builtin_atoi" },
     { NULL, NULL },
 };
 Aliases calias[] = {

@@ -396,7 +396,17 @@ pri file "libsys/readdata.spin" _basic_get_integer(src = "") : r=long, ptr
 
 '' read a float from a string
 pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
-  
+
 '' pause for m milliseconds
 pri pausems(m=long)
   waitcnt(getcnt + m * (clkfreq / 1000))
+
+'' get some random bits 0-$FFFFFF
+pri file "libsys/random.c" _randbits : r=long
+
+'' get a random float x with 0.0 <= x < 1.0
+pri file "libsys/random.c" _randfloat : r=float
+
+'' basic RND function
+pri file "libsys/random.c" _basic_rnd(x=long) : r=float
+  
