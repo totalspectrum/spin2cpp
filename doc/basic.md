@@ -1153,10 +1153,16 @@ The `input` keyword when used as a command acts to read data from a handle. It i
   input s$, n
   print "you entered: ", s, "and", n
 ```
+The input may optionally be preceded by a prompt string, so the above could be re-written as:
+```
+   input "enter a string and a number: ", s$, n
+   print "you entered: ", s, "and", n
+```
+If the prompt string is separated from the variables by a semicolon `;` rather than a comma, then `"? "` is automatically appended to the prompt.
 
 ### INPUT (pins)
 
-A pseudo-array of bits representing the state of input bits. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
+A pseudo-array of bits representing the state of input pins. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
 
 Bits in `input` may be read with an array-like syntax:
 ```
@@ -1451,7 +1457,7 @@ Introduces a comment, which continues until the end of the line. A single quote 
 
 ### RESTORE
 
-Keyword reserved for future use.
+Resets the internal pointer for `read` so that it starts again at the first `data` statement.
 
 ### RETURN
 
@@ -1473,6 +1479,14 @@ end function
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
+
+### RND
+
+A predefined function which returns a random floating point number `x` such that `0.0 <= x and x < 1.0`. A single argument `n` is given. If `n` is negative, then it is used as the seed for the random number sequence. If `n` is 0, a new sequence is started with a random seed. If `n` is positive, the next value in the sequence is returned.
+```
+  f = rnd(0) ' start a new sequence
+  i = int(rnd(1)*6) + 1 ' generate random between 1 and 6
+```
 
 ### SELECT CASE
 
