@@ -1309,6 +1309,15 @@ dim b(5) as integer  ' declares an array with indices 1-5 (5 elements)
 ```
 It is possible to use `option base` more than once in a file, but we do not recommend it. Indeed if you do use `option base` it is probably best to use it at the very beginning of the file, before any array declarations
 
+#### OPTION EXPLICIT
+
+Requires that all variables be explicitly declared before use. The default is to allow variables in LET and FOR statements to be implicitly declared.
+
+#### OPTION IMPLICIT
+
+Allows variables to be automatically declared in any assignment statement, `read`, or `input`. The type of the variable will be inferred from its name if it has not already been declared.
+
+
 ### OR
 
 ```
