@@ -636,7 +636,7 @@ iostmt:
                            NULL, $1); }
   | BAS_INPUT inputlist
     { $$ = NewCommentedAST(AST_READ, $2, AstInteger(0), $1); }
-  | BAS_INPUT BAS_STRING ';' inputlist
+  | BAS_INPUT BAS_STRING ',' inputlist
     {
         AST *string = NewAST(AST_STRINGPTR,
                              NewAST(AST_EXPRLIST, $2, NULL), NULL);
@@ -649,8 +649,32 @@ iostmt:
                       NewAST(AST_STMTLIST, inpstmt, NULL));
         $$ = stmt;
     }
+  | BAS_INPUT BAS_STRING ';' inputlist
+    {
+        AST *question = NewAST(AST_EXPRLIST,
+                               AstInteger(63),
+                               NewAST(AST_EXPRLIST, AstInteger(32), NULL));
+        AST *string = NewAST(AST_STRINGPTR,
+                             NewAST(AST_EXPRLIST, $2, question), NULL);
+        AST *printlist = NewAST(AST_EXPRLIST, string, NULL);
+        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, NULL, $1);
+        AST *inpstmt = NewAST(AST_READ, $4, AstInteger(0));
+        AST *stmt;
+        stmt = NewAST(AST_STMTLIST,
+                      printstmt,
+                      NewAST(AST_STMTLIST, inpstmt, NULL));
+        $$ = stmt;
+    }
   | BAS_READ inputlist
     { $$ = NewCommentedAST(AST_READ, $2, NULL, $1); }
+  | BAS_RESTORE
+    {
+      AST *varname = AstIdentifier("__basic_data_ptr");
+      AST *labelref = AstIdentifier("__basic_data");
+      AST *init;
+      init = AstAssign(varname, NewAST(AST_ADDROF, labelref, NULL));
+      $$ = init;
+    }
   | BAS_OPEN expr BAS_AS '#' expr
     {
         $$ = NewCommentedAST(AST_FUNCCALL,
