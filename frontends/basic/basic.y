@@ -1267,7 +1267,7 @@ lambdaexpr:
       AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
       $$ = NewAST(AST_LAMBDA, functype, body);
     }
-  | '[' paramdecl ':' optstatementlist BAS_GE expr ']'
+  | '[' paramdecl ':' optstatementlist BAS_GE expr opttype ']'
     {
       AST *params = $2;
       AST *rettype = NULL;
@@ -1277,6 +1277,12 @@ lambdaexpr:
       body = AddToList(body, retstmt);
       $$ = NewAST(AST_LAMBDA, functype, body);
     }
+;
+opttype:
+  /* nothing */
+    { $$ = NULL; }
+  | BAS_AS typename
+    { $$ = $2; }
 ;
 
 mult_op:
