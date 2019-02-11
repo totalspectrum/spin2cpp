@@ -996,7 +996,7 @@ In this case because the final argument `delta` is given a default value of 1, c
 
 #### Anonymous functions
 
-`function` may also be used in expressions to specify a temporary, unnamed function. There are two forms for this. The long form is very similar to ordinary function declarations. For example, suppose we want to define a function "plusn" which itself returns a function which adds one to its argument. This would look like:
+`function` may also be used in expressions to specify a temporary, unnamed function. There are three forms for this. The long form is very similar to ordinary function declarations. For example, suppose we want to define a function "plusn" which itself returns a function which adds one to its argument. This would look like:
 ```
   ' define an alias for the type of a function which takes an integer
   ' and returns another; this isn't strictly necessary, but saves typing
@@ -1018,12 +1018,20 @@ In this case because the final argument `delta` is given a default value of 1, c
 ```
 The long anonymous form is basically the same as an ordinary function definition, but without the function name. The major difference is that an explicit definition of the return type (e.g. `as integer`) is required, since the compiler cannot use a name to determine a default type for the function.
 
-For simple functions which just return a single expression, a short anonymous form is available. This omits the return type, which is determined by the expression itself, and puts the expression on the same line. This means we could write the `plusn` function above as:
+For simple functions which just return a single expression, an abbreviated anonymous form is available. This omits the return type, which is determined by the expression itself, and puts the expression on the same line. This means we could write the `plusn` function above as:
 ```
   function plusn(n as integer) as intfunc
     return (function(x as integer) x+n)
   end function
 ```
+
+The long and abbreviated forms are compatible with QBasic and some other PC BASICs. FlexBasic also supports a much more convenient short form. This short form starts with `[`, followed by the function parameter list, followed by ':', the statements in the anonymous function, and finally `=>` and a result expression. This sounds more complicated than it is. The above `plusn` function in short notation is:
+```
+  function plusn(n as integer) as intfunc
+    return [x:=>x+n]
+  end function
+```
+This short form is much easier to write for many inline uses, and is very flexible, but is not compatible with other BASICs.
 
 #### Closures
 
