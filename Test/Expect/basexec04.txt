@@ -14,3 +14,14 @@ done funcs
 2
 caught error cannot set value to 0
 done try; val = 2
+0    12	  0
+1    11	  11
+2    10	  20
+3    9	  27
+4    8	  32
+5    7	  35
+6    6	  36
+7    5	  35
+8    4	  32
+9    3	  27
+10   2	  20

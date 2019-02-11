@@ -9,7 +9,7 @@ let i = 2
 print a, i
 
 '' closure test for BASIC
-const HEAPSIZE = 512 ' increase size of heap a bit; not strictly necessary, but tests for HEAPSIZE being recognized
+const HEAPSIZE = 6000
 
 dim printer as sub(t as integer)
 dim stepper as sub()
@@ -51,6 +51,31 @@ catch err
   print "caught error "; err
 end try
 print "done try; val = "; sa.getval()
+
+' define a type of function integer -> integer
+type IntFunc as function(x as integer) as integer
+
+' given a function f, return a new function that does
+' f(f(f(...f(x)))) n times (f^n(x))
+
+function funcpow(n as integer, f as IntFunc) as IntFunc
+  return [x%: var r=x%: var i=n: while i > 0: r=f(r): i=i-1: wend:=>r]
+end function
+
+' a slow way to do multiplication
+function slowtimes(a as integer, b as integer) as integer
+  dim as IntFunc f
+  f = funcpow(a, [x%:=>x%+b])
+  return f(0)
+end function
+
+' now some test code
+dim i,j as integer
+
+for i = 0 to 10
+  j = 12-i
+  print i, j, slowtimes(i, j)
+next i
 
 ''
 '' send the magic propload status code
