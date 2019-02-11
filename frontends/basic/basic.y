@@ -1252,6 +1252,24 @@ lambdaexpr:
       AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
       $$ = NewAST(AST_LAMBDA, functype, body);
     }
+  | '[' paramdecl ':' statementlist ']'
+    {
+      AST *params = $2;
+      AST *rettype = ast_type_void;
+      AST *body = $4;
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      $$ = NewAST(AST_LAMBDA, functype, body);
+    }
+  | '[' paramdecl ':' optstatementlist BAS_GE expr ']'
+    {
+      AST *params = $2;
+      AST *rettype = NULL;
+      AST *body = $4;
+      AST *retstmt = NewCommentedStatement(AstReturn($6, NULL));
+      AST *functype = NewAST(AST_FUNCTYPE, rettype, params);
+      body = AddToList(body, retstmt);
+      $$ = NewAST(AST_LAMBDA, functype, body);
+    }
 ;
 
 mult_op:
@@ -1341,6 +1359,11 @@ expr:
     { $$ = $1; }
 ;
 
+np_expr: 
+  np_add_expr
+  | lambdaexpr
+  ;
+
 optexprlist:
     /* empty */
     { $$ = NULL; }
@@ -1361,7 +1384,7 @@ expritem:
 ;
 
 np_expritem:
-  np_add_expr
+  np_expr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
 ;
 np_exprlist:
