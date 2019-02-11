@@ -1089,6 +1089,7 @@ FixupCode(Module *P, int isBinary)
                     heapsize = EvalConstExpr((AST *)sym->val);
                 }
             } else if (gl_p2) {
+                // if no symbol and we are on p2 change the default heap size
                 heapsize = 4096;
             }
             if (heapsize != 0) {
