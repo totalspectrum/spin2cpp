@@ -87,12 +87,12 @@ con
   ' more easily
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
-  __real_heapsize__ = 64  ' redefined based on user options
+  __real_heapsize__ = 256  ' redefined based on user options
   
 dat
+        long
 _gc_heap_base
-	long 0[__real_heapsize__]
-_gc_heap_end
+	byte 0[__real_heapsize__]
 
 	
 ''
@@ -102,7 +102,7 @@ _gc_heap_end
 ''
 pri _gc_ptrs | base, end, size
   base := @_gc_heap_base
-  end := @_gc_heap_end
+  end := base + __real_heapsize__
   if (long[base] == 0)
     size := end - base
     word[base + OFF_SIZE] := 1 
