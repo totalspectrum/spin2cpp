@@ -534,7 +534,7 @@ doBasicTransform(AST **astptr)
             AST *typ;
             
             typ = ExprType(left);
-            if (typ && (IsPointerType(typ) || IsArrayType(typ))) {
+            if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ))) {
                 ast->kind = AST_ARRAYREF;
                 if (!index || index->kind != AST_EXPRLIST) {
                     ERROR(ast, "Internal error: expected expression list in array subscript");

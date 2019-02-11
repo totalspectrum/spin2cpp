@@ -257,6 +257,13 @@ DeclareBASICGlobalVariables(AST *ast)
     if (typ && typ->kind == AST_EXTERN) {
         return;
     }
+    if (current->curLanguage == LANG_BASIC) {
+        // BASIC does not require pointer notation for pointers to functions
+        AST *subtype = RemoveTypeModifiers(typ);
+        if (subtype && subtype->kind == AST_FUNCTYPE) {
+            typ = NewAST(AST_PTRTYPE, typ, NULL);
+        }
+    }
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
@@ -1543,9 +1550,9 @@ basetypename:
   | BAS_CONST basetypename
     { $$ = NewAST(AST_MODIFIER_CONST, $2, NULL); }
   | BAS_FUNCTION '(' paramdecl ')' BAS_AS basetypename
-    { $$ = NewAST(AST_FUNCTYPE, $6, $3); }
+    { $$ = NewAST(AST_PTRTYPE, NewAST(AST_FUNCTYPE, $6, $3), NULL); }
   | BAS_SUB '(' paramdecl ')'
-    { $$ = NewAST(AST_FUNCTYPE, ast_type_void, $3); }
+    { $$ = NewAST(AST_PTRTYPE, NewAST(AST_FUNCTYPE, ast_type_void, $3), NULL); }
   | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);

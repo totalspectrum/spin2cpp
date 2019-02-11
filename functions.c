@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -327,15 +327,20 @@ findLocalsAndDeclare(Function *func, AST *ast)
     AST *basetype;
     AST *expr;
     AST *seq = NULL; // sequence for variable initialization
+    int kind;
     bool skipDef;
     
     if (!ast) return;
-    switch(ast->kind) {
+    kind = ast->kind;
+    switch(kind) {
     case AST_DECLARE_ALIAS:
         name = ast->left;
         ident = ast->right;
         AddSymbol(&func->localsyms, name->d.string, SYM_ALIAS, (void *)ident->d.string);
         AstNullify(ast);
+        return;
+    case AST_GLOBALVARS:
+        ERROR(ast, "global variable declarations not allowed in functions");
         return;
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
@@ -367,7 +372,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             } else {
                 name = ident;
             }
-            if (ast->kind == AST_DECLARE_VAR_WEAK) {
+            if (kind == AST_DECLARE_VAR_WEAK) {
                 Symbol *sym = LookupSymbol(name->d.string);
                 skipDef = 0 != sym;
                 if (sym && sym->type == SYM_CONSTANT) {

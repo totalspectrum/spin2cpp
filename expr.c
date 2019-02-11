@@ -2004,7 +2004,11 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     case AST_ABSADDROF:
         /* if expr->right is not NULL, then it's the final type */
         if (expr->right) {
-            return expr->right;
+            AST *type = expr->right;
+            if (type->kind == AST_FUNCTYPE) {
+                type = NewAST(AST_PTRTYPE, type, NULL);
+            }
+            return type;
         } else {
             sub = ExprTypeRelative(table, expr->left);
         }
@@ -2084,7 +2088,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     case AST_DECLARE_VAR_WEAK:
         return expr->left;
     case AST_LAMBDA:
-        return expr->left;
+//        return expr->left;
+        return NewAST(AST_PTRTYPE, expr->left, NULL);
     case AST_METHODREF:
     {
         AST *objref = expr->left;
