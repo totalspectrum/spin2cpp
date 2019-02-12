@@ -50,6 +50,18 @@ GetClassPtr(AST *objtype)
     }
     return (Module *)objtype->d.ptr;
 }
+/* get object type from module */
+AST *
+ClassType(Module *P)
+{
+    if (!P->type) {
+        AST *ast;
+        ast = NewAST(AST_OBJECT, NULL, NULL);
+        ast->d.ptr = (void *)P;
+        P->type = ast;
+    }
+    return P->type;
+}
 
 Symbol *
 LookupSymbolInFunc(Function *func, const char *name)
@@ -1954,12 +1966,17 @@ AST *
 ExprType(AST *expr)
 {
     SymbolTable *table;
+    Module *P;
+
+    if (!expr) return NULL;
     if (curfunc) {
         table = &curfunc->localsyms;
+        P = curfunc->module;
     } else {
+        P = current;
         table = &current->objsyms;
     }
-    return ExprTypeRelative(table, expr);
+    return ExprTypeRelative(table, expr, P);
 }
 
 /*
@@ -1967,11 +1984,14 @@ ExprType(AST *expr)
  * returns NULL if we can't deduce it
  */
 AST *
-ExprTypeRelative(SymbolTable *table, AST *expr)
+ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
 {
     AST *sub;
 
     if (!expr) return NULL;
+    if (!P) {
+        P = current;
+    }
     switch (expr->kind) {
     case AST_INTEGER:
     case AST_CONSTANT:
@@ -1988,6 +2008,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
     case AST_TRUNC:
     case AST_ROUND:
         return ast_type_float;
+    case AST_SELF:
+        return NewAST(AST_PTRTYPE, ClassType(P), NULL);
+    case AST_SUPER:
+        return NewAST(AST_PTRTYPE, ClassType(P->superclass), NULL);        
     case AST_STRING:
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
@@ -2010,7 +2034,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             }
             return type;
         } else {
-            sub = ExprTypeRelative(table, expr->left);
+            sub = ExprTypeRelative(table, expr->left, P);
         }
         if (!sub) sub= ast_type_generic;
         return NewAST(AST_PTRTYPE, sub, NULL);
@@ -2046,7 +2070,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         }            
     }
     case AST_ARRAYREF:
-        sub = ExprTypeRelative(table, expr->left);
+        sub = ExprTypeRelative(table, expr->left, P);
         if (!sub) return NULL;
         if (sub->kind == AST_OBJECT) {
             // HACK for now: object arrays are declared funny
@@ -2103,7 +2127,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
             return NULL;
         }
         methodname = expr->right->d.string;
-        objtype = BaseType(ExprTypeRelative(table, objref));
+        objtype = BaseType(ExprTypeRelative(table, objref, P));
+        if (!objtype) return NULL;
         if (!IsClassType(objtype)) {
             ERROR(expr, "Expecting object for dereference of %s", methodname);
             return NULL;
@@ -2120,7 +2145,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case SYM_VARIABLE:
             return (AST *)sym->val;
         case SYM_CONSTANT:
-            return ExprTypeRelative(table, (AST *)sym->val);
+            return ExprTypeRelative(table, (AST *)sym->val, P);
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
             return NULL;
@@ -2134,8 +2159,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case '+':
         case K_INCREMENT:
         case K_DECREMENT:
-            ltype = ExprTypeRelative(table, expr->left);
-            rtype = ExprTypeRelative(table, expr->right);
+            ltype = ExprTypeRelative(table, expr->left, P);
+            rtype = ExprTypeRelative(table, expr->right, P);
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
@@ -2171,8 +2196,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
         case '/':
         case K_ABS:
         case K_SQRT:
-            ltype = ExprTypeRelative(table, expr->left);
-            rtype = ExprTypeRelative(table, expr->right);
+            ltype = ExprTypeRelative(table, expr->left, P);
+            rtype = ExprTypeRelative(table, expr->right, P);
             if (IsFloatType(ltype) || IsFloatType(rtype)) {
                 return ast_type_float;
             }
@@ -2199,7 +2224,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr)
                 expr = expr->left;
             }
         }
-        return ExprTypeRelative(table, expr);
+        return ExprTypeRelative(table, expr, P);
     }
     case AST_NEW:
         return expr->left;

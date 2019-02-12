@@ -341,6 +341,12 @@ struct modulestate {
 
     /* closures/classes that are associated with this module and need processing */
     struct modulestate *subclasses;
+
+    /* superclass of this one */
+    struct modulestate *superclass;
+
+    /* type of this class */
+    AST *type;
 };
 
 /* maximum number of items in a multiple assignment */
@@ -515,6 +521,9 @@ Symbol *LookupSymbolInFunc(Function *func, const char *name);
 
 /* convert an object type to a class */
 Module *GetClassPtr(AST *objtype);
+
+/* convert a class to an object type */
+AST *ClassType(Module *P);
 
 /*
  * see if an AST refers to a parameter of this function, and return

@@ -303,7 +303,7 @@ GuessLambdaReturnType(AST *params, AST *body)
         table->next = &curfunc->localsyms;
         EnterVars(SYM_PARAMETER, table, NULL, params, 0, 0);
         
-        r = ExprTypeRelative(table, expr);
+        r = ExprTypeRelative(table, expr, NULL);
         free(table);
     }
     return r;
@@ -413,6 +413,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
         if (!func->closure) {
             const char *closure_name;
             Module *C;
+            Module *Parent = func->module;
             AST *closure_type;
             closure_name = NewTemporaryVariable("__closure__");
             C = func->closure = NewModule(closure_name, current->curLanguage);
@@ -422,9 +423,10 @@ findLocalsAndDeclare(Function *func, AST *ast)
             closure_type->d.ptr = func->closure;
             AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type);
 
-            C->subclasses = func->module->subclasses;
-            func->module->subclasses = C;
-
+            C->subclasses = Parent->subclasses;
+            Parent->subclasses = C;
+            C->superclass = Parent;
+            
             // we have to mark the global bytemove and _gc_alloc_managed functions
             // as in used
             MarkSystemFuncUsed("_gc_alloc_managed");
@@ -472,7 +474,7 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
         return;
     }
     if (!typ) {
-        typ = ExprTypeRelative(&f->localsyms, ident);
+        typ = ExprTypeRelative(&f->localsyms, ident, P);
     }
     MaybeDeclareMemberVar(P, ident, typ);
 }
@@ -721,6 +723,7 @@ doDeclareFunction(AST *funcblock)
     // copy the local definitions over to the closure
     if (fdef->closure) {
         AST *varlist;
+        AST *superclass;
         if (fdef->numresults > 0) {
             AddClosureSymbol(fdef, fdef->closure, fdef->resultexpr);
         }
@@ -730,6 +733,14 @@ doDeclareFunction(AST *funcblock)
         for (varlist = fdef->locals; varlist; varlist = varlist->right) {
             AddClosureSymbol(fdef, fdef->closure, varlist->left);
         }
+        // finally add a definition for the super class
+        superclass = AstIdentifier("__super");
+        superclass = NewAST(AST_DECLARE_VAR,
+                            NewAST(AST_PTRTYPE,
+                                   ClassType(fdef->module), 
+                                   NULL),
+                            superclass);
+        AddClosureSymbol(fdef, fdef->closure, superclass);
     }
     // restore function symbol environment (if applicable)
     curfunc = oldcur;

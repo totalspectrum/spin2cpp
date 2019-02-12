@@ -91,7 +91,7 @@ Symbol *LookupMemberSymbol(AST *topexpr, AST *objtype, const char *name, Module 
 AST *ExprType(AST *ast);
 
 // find expression type relative to some table
-AST *ExprTypeRelative(SymbolTable *table, AST *ast);
+AST *ExprTypeRelative(SymbolTable *table, AST *ast, Module *P);
 
 // the type underlying an array or pointer
 AST *BaseType(AST *ast);
