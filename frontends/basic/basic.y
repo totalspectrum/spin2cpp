@@ -1657,7 +1657,7 @@ identdecl:
 ;
 
 asmstmt:
-  BAS_ASM eoln asmlist BAS_END BAS_ASM eoln
+  BAS_ASM eoln asmlist BAS_END BAS_ASM
   { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
   ;
 
