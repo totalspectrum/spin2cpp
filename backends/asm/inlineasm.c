@@ -79,77 +79,95 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         immflag = 1;
         expr = expr->left;
     }
-    if (expr->kind == AST_IDENTIFIER) {
-	 Symbol *sym = LookupSymbol(expr->d.string);
-	 if (!sym) {
-             const char *name = expr->d.string;
-             // check for special symbols "objptr" and "sp"
-             if (!strcmp(name, "objptr")) {
-                 ValidateObjbase();
-                 r = objbase;
-                 r_address = immflag;
-             }
-             else if (!strcmp(name, "sp")) {
-                 ValidateStackptr();
-                 r = stackptr;
-                 r_address = immflag;
-             }
-             else if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
-                 r = GetResultReg( parseargnum(name+6));
-                 r_address = immflag;
-             }
-             else if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && isargdigit(name[4]) && !name[5])
-             {
-                 r = GetArgReg( parseargnum(name+3) );
-                 r_address = immflag;
-             } else {
-                 ERROR(expr, "Undefined symbol %s", name);
-                 return NewImmediate(0);
-             }
-	 }
-         if (!r) {
-	 switch(sym->type) {
-	 case SYM_PARAMETER:
-	 case SYM_RESULT:
-	 case SYM_LOCALVAR:
-	 case SYM_TEMPVAR:
-	      r = CompileIdentifier(irl, expr);
-              if (!r) {
-                  ERROR(expr, "Bad identifier expression %s", sym->name);
-                  return NewImmediate(0);
-              }
-              r_address = immflag;
-              break;
-         case SYM_CONSTANT:
-             v = EvalPasmExpr(expr);
-             if (!immflag) {
-                 ERROR(expr, "must use an immediate with constants in inline asm");
-             }
-             r = NewImmediate(v);
-             break;
-         case SYM_LOCALLABEL:
-             if (!immflag) {
-                 ERROR(expr, "must use an immediate with labels in inline asm");
-             }
-             r = GetLabelFromSymbol(expr, sym->name);
-             immflag = 0;
-             break;
-         case SYM_HWREG:
-         {
-             HwReg *hw = sym->val;
-             r = GetOneGlobal(REG_HW, hw->name, 0);
-             break;
-         }
-	 default:
-	      ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
-	      return NULL;
-	 }
-         }
-         if (r_address) {
-             WARNING(expr, "Using # on registers in inline assembly may confuse the optimizer");
-             return GetLea(irl, r);
-         }
-         return r;
+    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_RESULT) {
+        Symbol *sym;
+        const char *name;
+        if (expr->kind == AST_RESULT) {
+            name = "result";
+        } else {
+            name = expr->d.string;
+        }
+        sym = LookupSymbol(name);
+        if (!sym) {
+            // check for special symbols "objptr" and "sp"
+            if (!strcmp(name, "objptr")) {
+                ValidateObjbase();
+                r = objbase;
+                r_address = immflag;
+            }
+            else if (!strcmp(name, "sp")) {
+                ValidateStackptr();
+                r = stackptr;
+                r_address = immflag;
+            }
+            else if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {
+                r = GetResultReg( parseargnum(name+6));
+                r_address = immflag;
+            }
+            else if (!strncmp(name, "arg", 3) && isargdigit(name[3]) && isargdigit(name[4]) && !name[5])
+            {
+                r = GetArgReg( parseargnum(name+3) );
+                r_address = immflag;
+            } else {
+                ERROR(expr, "Undefined symbol %s", name);
+                return NewImmediate(0);
+            }
+        }
+        if (!r) {
+            switch(sym->type) {
+            case SYM_PARAMETER:
+            case SYM_RESULT:
+            case SYM_LOCALVAR:
+            case SYM_TEMPVAR:
+                r = CompileIdentifier(irl, expr);
+                if (!r) {
+                    ERROR(expr, "Bad identifier expression %s", sym->name);
+                    return NewImmediate(0);
+                }
+                r_address = immflag;
+                break;
+            case SYM_CONSTANT:
+                v = EvalPasmExpr(expr);
+                if (!immflag) {
+                    ERROR(expr, "must use an immediate with constants in inline asm");
+                }
+                r = NewImmediate(v);
+                break;
+            case SYM_LOCALLABEL:
+                if (!immflag) {
+                    ERROR(expr, "must use an immediate with labels in inline asm");
+                }
+                r = GetLabelFromSymbol(expr, sym->name);
+                immflag = 0;
+                break;
+            case SYM_HWREG:
+            {
+                HwReg *hw = sym->val;
+                r = GetOneGlobal(REG_HW, hw->name, 0);
+                break;
+            }
+            case SYM_FUNCTION:
+            {
+                if (curfunc && !strcmp(curfunc->name, sym->name) && curfunc->language == LANG_BASIC) {
+                    // BASIC lets you write the function name to indicate the
+                    // function result; allow that in inline asm too
+                    // this is just like result1
+                    r = GetResultReg(0);
+                    r_address = immflag;
+                    break;
+                }
+                /* otherwise fall through */
+            }
+            default:
+                ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
+                return NULL;
+            }
+        }
+        if (r_address) {
+            WARNING(expr, "Using # on registers in inline assembly may confuse the optimizer");
+            return GetLea(irl, r);
+        }
+        return r;
     } else if (expr->kind == AST_INTEGER) {
         if (immflag) {
             return NewImmediate(expr->d.ival);
