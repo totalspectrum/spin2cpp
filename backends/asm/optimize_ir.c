@@ -2641,6 +2641,15 @@ OptimizeIRGlobal(IRList *irl)
     CheckUsage(irl);
 }
 
+static bool
+NeverInline(Function *f)
+{
+    if (f->no_inline) return true;
+    if (f->uses_alloca) return true;
+    if (f->large_local) return true;
+    if (f->closure) return true;
+    return false;
+}
 
 //
 // check a function to see if it should be inlined
@@ -2656,7 +2665,9 @@ ShouldBeInlined(Function *f)
     if (!(gl_optimize_flags & (OPT_INLINE_SMALLFUNCS|OPT_INLINE_SINGLEUSE))) {
         return false;
     }
-    if (f->no_inline) return false;
+    if (NeverInline(f)) {
+        return false;
+    }
     for (ir = FuncIRL(f)->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         // we have to re-label any labels and branches

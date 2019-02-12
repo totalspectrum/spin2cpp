@@ -5170,6 +5170,7 @@ EmitMain_P1(IRList *irl, Module *P)
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfunc->toplevel = 1;  // does not need to save registers
+    firstfunc->callSites += 1;
     firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
@@ -5258,6 +5259,7 @@ EmitMain_P2(IRList *irl, Module *P)
     }
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfunc->toplevel = 1;
+    firstfunc->callSites += 1;
     firstfuncname = IdentifierModuleName(P, firstfunc->name);
     
     ValidateStackptr();
