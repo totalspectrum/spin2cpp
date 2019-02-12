@@ -2585,7 +2585,8 @@ void
 OptimizeIRLocal(IRList *irl, Function *f)
 {
     int change;
-    
+
+    if (gl_errors > 0) return;
     if (!(gl_optimize_flags & OPT_BASIC_ASM)) return;
     if (!irl->head) return;
 
