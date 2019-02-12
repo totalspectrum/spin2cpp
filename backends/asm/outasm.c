@@ -3533,14 +3533,19 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   {
       Symbol *sym;
       Operand *base;
-      AST *type;
+      AST *finaltype;
+      AST *objtype;
       int off = 0;
       Module *P;
       const char *name;
-      type = ExprType(expr);
-      base = CompileExpression(irl, expr->left, NULL);
+      objtype = ExprType(expr->left);
       name = GetIdentifierName(expr->right);
-      sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
+      if (!IsClassType(objtype)) {
+          ERROR(expr, "Request for member %s in something that is not a class", name);
+          return NewImmediate(0);
+      }
+      base = CompileExpression(irl, expr->left, NULL);
+      sym = LookupMemberSymbol(expr, objtype, name, &P);
       if (sym) {
           switch (sym->type) {
           case SYM_VARIABLE:
@@ -3551,7 +3556,8 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
               break;
           }
       }
-      r = OffsetMemory(irl, base, NewImmediate(off), type);
+      finaltype = ExprType(expr);
+      r = OffsetMemory(irl, base, NewImmediate(off), finaltype);
       return r;
   }
   case AST_CAST:
