@@ -424,6 +424,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type);
 
             C->subclasses = Parent->subclasses;
+            C->objsyms.next = &Parent->objsyms;
             Parent->subclasses = C;
             C->superclass = Parent;
             

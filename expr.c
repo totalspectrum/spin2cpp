@@ -30,11 +30,11 @@ GetVarNameForError(AST *expr)
 const char *
 GetIdentifierName(AST *expr)
 {
-    const char *name = "the expression";
+    const char *name;
     if (expr->kind == AST_IDENTIFIER) {
         name = expr->d.string;
     } else {
-        ERROR(expr, "expected an identifier");
+        name = "expression";
     }
     return name;
 }
@@ -54,6 +54,9 @@ GetClassPtr(AST *objtype)
 AST *
 ClassType(Module *P)
 {
+    if (!P) {
+        return NULL;
+    }
     if (!P->type) {
         AST *ast;
         ast = NewAST(AST_OBJECT, NULL, NULL);
@@ -1998,6 +2001,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_CONSTREF:
     case AST_HWREG:
     case AST_ISBETWEEN:
+    case AST_COGINIT:
         return ast_type_long;
     case AST_ALLOCA:
         return expr->left;
