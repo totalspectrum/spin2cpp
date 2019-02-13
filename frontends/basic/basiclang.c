@@ -59,7 +59,9 @@ addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 {
     AST *elem;
     AST *params;
+    ASTReportInfo saveinfo;
 
+    AstReportAs(fmt, &saveinfo);
     if (fmt) {
         params = NewAST(AST_EXPRLIST, fmt, NULL);
     } else {
@@ -71,6 +73,7 @@ addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
     params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, funccall, NULL);
+    AstReportDone(&saveinfo);
     return AddToList(seq, elem);
 }
 
@@ -81,13 +84,16 @@ addReadCall(AST *seq, AST *lineptr, AST *func, AST *var)
     AST *params;
     AST *funccall;
     AST *results;
+    ASTReportInfo saveinfo;
 
+    AstReportAs(lineptr, &saveinfo);
     results = NewAST(AST_EXPRLIST,
                      var,
                      NewAST(AST_EXPRLIST, lineptr, NULL));
     params = NewAST(AST_EXPRLIST, lineptr, NULL);
     funccall = NewAST(AST_FUNCCALL, func, params);
     elem = NewAST(AST_SEQUENCE, AstAssign(results, funccall), NULL);
+    AstReportDone(&saveinfo);
     return AddToList(seq, elem);
 }
 
@@ -190,6 +196,9 @@ TransformUsing(const char *usestr, AST *params)
     int minwidth;
     unsigned fmtparam;
     unsigned signchar = 0;
+    ASTReportInfo saveinfo;
+
+    AstReportAs(params, &saveinfo);
     
     // scan through the use str until we find a special character
     flexbuf_init(&fb, 80);
@@ -237,6 +246,7 @@ TransformUsing(const char *usestr, AST *params)
                 goto handlenumeric;
             }
             ERROR(params, "+ or - in print using must be followed by numeric format");
+            AstReportDone(&saveinfo);
             return exprlist;
         case '%':
         case '#':
@@ -283,6 +293,7 @@ TransformUsing(const char *usestr, AST *params)
         case '$':
         case '.':
             ERROR(params, "Unimplemented print using character '%c'", c);
+            AstReportDone(&saveinfo);
             return exprlist;
         default:
             flexbuf_addchar(&fb, c);
@@ -295,6 +306,7 @@ TransformUsing(const char *usestr, AST *params)
         exprlist = AddToList(exprlist, params);
     }
     flexbuf_delete(&fb);
+    AstReportDone(&saveinfo);
     return exprlist;
 }
 
@@ -1306,9 +1318,10 @@ IsSymbol(AST *expr)
 //
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
 {
+    ASTReportInfo saveinfo;
     AST *expr = *astptr;
     const char *msg;
-    
+
     if (kind == AST_RETURN) {
         msg = "return";
     } else if (kind == AST_FUNCCALL) {
@@ -1330,6 +1343,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     if (!desttype || !srctype) {
         return desttype;
     }
+    AstReportAs(expr, &saveinfo);
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
             *astptr = domakefloat(srctype, expr);
@@ -1340,6 +1354,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     if (IsIntType(desttype) && IsFloatType(srctype)) {
         expr = dofloatToInt(expr);
         *astptr = expr;
+        AstReportDone(&saveinfo);
         return desttype;
     }
 
@@ -1391,6 +1406,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             }
         }
     }
+    AstReportDone(&saveinfo);
     return desttype;
 }
 
@@ -1400,6 +1416,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
 {
     AST *expr = src;
     const char *name;
+    ASTReportInfo saveinfo;
     
     if (IsVoidType(desttype)) {
         // (void)x ignores x
@@ -1408,6 +1425,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     if (!srctype || IsGenericType(srctype)) {
         return src;
     }
+    AstReportAs(src, &saveinfo);
     if (src && src->kind == AST_IDENTIFIER) {
         name = src->d.string;
     } else {
@@ -1429,19 +1447,24 @@ doCast(AST *desttype, AST *srctype, AST *src)
             return src;
         }
         ERROR(src, "unable to convert %s to a pointer type", name);
+        AstReportDone(&saveinfo);
         return NULL;
     }
     if (IsFloatType(desttype)) {
         if (IsFloatType(srctype)) {
+            AstReportDone(&saveinfo);
             return src;
         }
         if (IsPointerType(srctype)) {
             srctype = ast_type_long;
         }
         if (IsIntType(srctype)) {
-            return domakefloat(srctype, src);
+            AST *r = domakefloat(srctype, src);
+            AstReportDone(&saveinfo);
+            return r;
         }
         ERROR(src, "unable to convert %s to a float type", name);
+        AstReportDone(&saveinfo);
         return NULL;
     }
     if (IsIntType(desttype)) {
@@ -1465,9 +1488,11 @@ doCast(AST *desttype, AST *srctype, AST *src)
             } else if (lsize < rsize) {
                 src = donarrow(src, rsize, lsize, IsUnsignedType(srctype));
             }
+            AstReportDone(&saveinfo);
             return src;
         }
     }
+    AstReportDone(&saveinfo);
     ERROR(src, "bad cast of %s", name);
     return NULL;
 }
@@ -1526,7 +1551,9 @@ AST *CheckTypes(AST *ast)
         return ltype;
     }        
     ltype = CheckTypes(ast->left);
-    rtype = CheckTypes(ast->right);
+    if (ast->kind != AST_METHODREF) {
+        rtype = CheckTypes(ast->right);
+    }
     switch (ast->kind) {
     case AST_GOSUB:
         /* FIXME: should check here for top level function */
@@ -1720,10 +1747,55 @@ AST *CheckTypes(AST *ast)
     {
         return ast->left ? ast->left : ast_type_ptr_void;
     }
+    case AST_METHODREF:
+        if (!IsClassType(ltype)) {
+            ERROR(ast, "Method reference on non-class %s", GetIdentifierName(ast->left));
+            return ltype;
+        }
+        return ExprType(ast);
+    case AST_IDENTIFIER:
+    case AST_SYMBOL:
+        // add super class lookups if necessary
+        {
+            Module *P;
+            AST *supers = NULL;
+            AST *superref = NULL;
+            Symbol *sym = LookupAstSymbol(ast, NULL);
+            if (!sym) {
+                return NULL;
+            }
+            ltype = ExprType(ast);
+            if (sym->type == SYM_VARIABLE || sym->type == SYM_FUNCTION) {
+                const char *name = sym->name;
+                P = current;
+                while (P) {
+                    sym = FindSymbol(&P->objsyms, name);
+                    if (sym) {
+                        break;
+                    }
+                    if (!superref) {
+                        superref = AstIdentifier("__super");
+                    }
+                    if (supers) {
+                        supers = NewAST(AST_METHODREF, supers, superref);
+                    } else {
+                        supers = superref;
+                    }
+                    supers = NewAST(AST_ARRAYREF,
+                                    NewAST(AST_MEMREF,
+                                           ClassType(P->superclass),
+                                           supers),
+                                    AstInteger(0));
+                    P = P->superclass;
+                }
+                if (sym && supers) {
+                    *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                }
+            }
+            return ltype;
+        }
     case AST_EXPRLIST:
     case AST_SEQUENCE:
-    case AST_METHODREF:
-    case AST_IDENTIFIER:
     case AST_CONSTANT:
         return ExprType(ast);
     default:
