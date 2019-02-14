@@ -2,6 +2,7 @@ Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object
 - Fixed some parsing problems with inline assembly
 - Fixed incorrect inlining of some functions in -O2
+- Fixed some C parser errors
 
 Version 3.9.19
 - Fixed problems with path searches

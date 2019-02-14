@@ -118,7 +118,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     if (!second) {
         return first;
     }
-    if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF)) {
+    if (first && (first->kind == AST_STATIC || first->kind == AST_TYPEDEF || first->kind == AST_EXTERN)) {
         prefix = DupAST(first);
         first = first->left;
         prefix->left = NULL;
@@ -176,7 +176,12 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
     AST *globalname;
     AST *localname;
     AST *results = NULL;
-    
+
+    // ignore static declarations like
+    //   static int blah[]
+    if (basetype && basetype->kind == AST_ARRAYTYPE && !basetype->right) {
+        return NULL;
+    }
     // go through the identifier list
     while (decllist) {
         if (decllist->kind == AST_LISTHOLDER) {
