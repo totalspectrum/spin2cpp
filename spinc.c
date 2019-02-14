@@ -344,7 +344,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         type = type->left;
         is_static = 1;
     }
-    if (type->kind == AST_FUNCTYPE) {
+    if (type->kind == AST_FUNCTYPE && !is_typedef) {
         // dummy declaration...
         return;
     }
