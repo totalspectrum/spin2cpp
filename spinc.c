@@ -508,6 +508,9 @@ GetFullFileName(AST *baseString)
     char *newname;
     AST *ret;
     newname = find_file_on_path(&gl_pp, basename, NULL, current->fullname);
+    if (!newname) {
+        newname = strdup(basename);
+    }
     ret = NewAST(AST_STRING, NULL, NULL);
     ret->d.string = newname;
     return ret;
