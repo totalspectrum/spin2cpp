@@ -911,20 +911,35 @@ type_specifier
 	| enum_specifier
             { $$ = $1; }
 	| C_TYPE_NAME
-            { $$ = $1; }
+            {
+                AST *ident = $1;
+                Symbol *sym = LookupSymbolInTable(currentTypes, ident->d.string);
+                if (sym && sym->type == SYM_TYPEDEF) {
+                    $$ = (AST *)sym->val;
+                } else {
+                    SYNTAX_ERROR("Internal error, bad typename %s", ident->d.string);
+                    $$ = NULL;
+                }
+            }
 	;
 
 struct_or_union_specifier
-	: struct_or_union C_IDENTIFIER '{' struct_declaration_list '}'
+	: struct_or_union any_identifier '{' struct_declaration_list '}'
             { $$ = MakeNewStruct(current, $1, $2, $4); }
 	| struct_or_union '{' struct_declaration_list '}'
             { $$ = MakeNewStruct(current, $1, NULL, $3); }
-	| struct_or_union C_IDENTIFIER
+	| struct_or_union any_identifier
             { $$ = MakeNewStruct(current, $1, $2, NULL); }
         | struct_or_union C_USING fromfile_clause
             { $$ = MakeNewStruct(current, $1, NULL, $3); }
 	;
 
+any_identifier
+        : C_IDENTIFIER
+            { $$ = $1; }
+        | C_TYPE_NAME
+            { $$ = $1; }
+;
 struct_or_union
 	: C_STRUCT
             { $$ = NewAST(AST_STRUCT, NULL, NULL); }
@@ -981,13 +996,13 @@ struct_declarator
 enum_specifier
 	: C_ENUM '{' enumerator_list '}'
             { $$ = AddEnumerators(NULL, $3); }
-	| C_ENUM C_IDENTIFIER '{' enumerator_list '}'
+	| C_ENUM any_identifier '{' enumerator_list '}'
             { $$ = AddEnumerators($2, $4); }
 	| C_ENUM '{' enumerator_list ',' '}'
             { $$ = AddEnumerators(NULL, $3); }
-	| C_ENUM C_IDENTIFIER '{' enumerator_list ',' '}'
+	| C_ENUM any_identifier '{' enumerator_list ',' '}'
             { $$ = AddEnumerators($2, $4); }
-	| C_ENUM C_IDENTIFIER
+	| C_ENUM any_identifier
             { $$ = NULL; }
 	;
 

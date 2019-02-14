@@ -3066,9 +3066,8 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
             if (sym->type == SYM_TYPEDEF) {
-                ast = (AST *)sym->val;
+                last_ast = ast = AstIdentifier(idstr);
                 *ast_ptr = ast;
-                last_ast = AstIdentifier(idstr);
                 return C_TYPE_NAME;
             }
         }
