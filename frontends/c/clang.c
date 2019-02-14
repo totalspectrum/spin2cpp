@@ -231,7 +231,7 @@ doCTransform(AST **astptr)
     case AST_COGINIT:
         doCTransform(&ast->left);
         doCTransform(&ast->right);
-        if (0 != (func = IsSpinCoginit(ast))) {
+        if (IsSpinCoginit(ast, &func) && func) {
             func->cog_task = 1;
             func->force_static = 1;
         }

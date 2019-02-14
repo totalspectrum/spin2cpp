@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -467,7 +467,7 @@ PrintCogInit(Flexbuf *f, AST *params)
         ERROR(params, "coginit/cognew requires parameters");
         return;
     }
-    if (IsSpinCoginit(params))  {
+    if (IsSpinCoginit(params, NULL))  {
         PrintSpinCoginit(f, params);
     } else {
         PrintLabelCoginit(f, params);

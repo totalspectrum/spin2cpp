@@ -499,8 +499,8 @@ void OutputGasFile(const char *name, Module *P);
 void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
 
-/* detect coginit/cognew calls that are for spin methods, return pointer to method */
-Function *IsSpinCoginit(AST *body);
+/* detect coginit/cognew calls that are for spin methods, return pointer to method involved */
+bool IsSpinCoginit(AST *body, Function **thefunc);
 
 /* set a function type, checking for errors */
 void SetFunctionReturnType(Function *func, AST *type);

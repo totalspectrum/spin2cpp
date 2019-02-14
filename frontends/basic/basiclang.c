@@ -717,7 +717,7 @@ doBasicTransform(AST **astptr)
     case AST_COGINIT:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
-        if (0 != (func = IsSpinCoginit(ast))) {
+        if (IsSpinCoginit(ast, &func) && func) {
             func->cog_task = 1;
             func->force_static = 1;
         }
@@ -1759,12 +1759,18 @@ AST *CheckTypes(AST *ast)
         {
             Module *P;
             AST *supers = NULL;
-            AST *superref = NULL;
+            static AST *superref = NULL;
             Symbol *sym = LookupAstSymbol(ast, NULL);
             if (!sym) {
                 return NULL;
             }
             ltype = ExprType(ast);
+            if (sym->type == SYM_FUNCTION) {
+                Function *f = (Function *)sym->val;
+                if (f->module == current || f->module == globalModule) {
+                    return ltype;
+                }
+            }
             if (sym->type == SYM_VARIABLE || sym->type == SYM_FUNCTION) {
                 const char *name = sym->name;
                 P = current;

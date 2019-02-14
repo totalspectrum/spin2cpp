@@ -433,7 +433,7 @@ doSpinTransform(AST **astptr, int level)
         break;
     }
     case AST_COGINIT:
-        if (0 != (func = IsSpinCoginit(ast))) {
+        if (IsSpinCoginit(ast, &func) && func) {
             func->cog_task = 1;
             func->force_static = 1;
         }

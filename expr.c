@@ -225,26 +225,31 @@ TypeName(AST *type)
 }
 
 /* code to check if a coginit invocation is for a spin method */
-/* if it is, returns a pointer to the spin method */
-Function *
-IsSpinCoginit(AST *params)
+/* if it is, returns a pointer to the method doing the invocation */
+bool
+IsSpinCoginit(AST *params, Function **methodptr)
 {
     AST *exprlist, *func;
     Symbol *sym = NULL;
+
+    if (methodptr) {
+        *methodptr = NULL;
+    }
     if (!params || !params->left || params->kind != AST_COGINIT) {
-        return 0;
+        return false;
     }
     exprlist = params->left;
     exprlist = exprlist->right; // skip over cog id
     if (exprlist->kind != AST_EXPRLIST || !exprlist->left) {
         ERROR(params, "coginit/cognew expected expression");
-        return 0;
+        return false;
     }
     func = exprlist->left;
     if (func->kind == AST_IDENTIFIER) {
         sym = LookupAstSymbol(func, "coginit/cognew");
         if (sym && sym->type == SYM_FUNCTION) {
-            return (Function *)sym->val;
+            if (methodptr) *methodptr = (Function *)sym->val;
+            return true;
         }
     }
     if (func->kind == AST_FUNCCALL) {
@@ -252,12 +257,23 @@ IsSpinCoginit(AST *params)
         sym = FindFuncSymbol(func, NULL, 1);
         if (sym) {
             if (sym->type == SYM_BUILTIN) {
-                return NULL;
+                return false;
             }
-            return (Function *)sym->val;
+            if (sym->type == SYM_FUNCTION) {
+                if (methodptr) {
+                    *methodptr = (Function *)sym->val;
+                }
+                return true;
+            }
+            // hmmm, interesting situation here; we've got an indirect
+            // call via a variable
+            if (sym->type == SYM_LABEL) {
+                return false;
+            }
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 /*

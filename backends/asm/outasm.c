@@ -2986,7 +2986,7 @@ CompileCoginit(IRList *irl, AST *expr)
     AST *funccall;
     AST *params = expr->left;
     
-    if ( IsSpinCoginit(expr) )
+    if ( IsSpinCoginit(expr, NULL) )
     {
         AST *exprlist;
         AST *func;
