@@ -805,7 +805,9 @@ Unlike in some other BASICs, no parsing at all is done of the information follow
 
 Unlike most other statements, the `data` statement always extends to the end of the line; any colons (for example) within the data are treated as data.
 ```
-dim x as integer, y as string, z as single
+dim x as integer
+dim y as string
+dim z as single
 read x, y, z
 print x, y, z
 data 1.1, hello
