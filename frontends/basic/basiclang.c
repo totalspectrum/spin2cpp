@@ -1446,6 +1446,9 @@ doCast(AST *desttype, AST *srctype, AST *src)
             /* FIXME: should probably check size here */
             return src;
         }
+        if (srctype->kind == AST_FUNCTYPE) {
+            return NewAST(AST_ADDROF, src, NULL);
+        }
         ERROR(src, "unable to convert %s to a pointer type", name);
         AstReportDone(&saveinfo);
         return NULL;
