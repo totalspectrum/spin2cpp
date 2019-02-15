@@ -2387,8 +2387,8 @@ instr_p2[] = {
     { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setcfrq",0x0d60003b, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setcmod",0x0d60003c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpix", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpiv", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setpiv", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setpix", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
     { "testp",  0x0d600040, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_CZTEST },

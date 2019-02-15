@@ -4,6 +4,7 @@ Version 3.9.20
 - Fixed incorrect inlining of some functions in -O2
 - Fixed some C parser errors
 - Fixed some C type conversion errors
+- Fixed encodings of setpiv and setpix instructions
 
 Version 3.9.19
 - Fixed problems with path searches
