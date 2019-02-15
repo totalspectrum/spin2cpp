@@ -3,6 +3,7 @@ Version 3.9.20
 - Fixed some parsing problems with inline assembly
 - Fixed incorrect inlining of some functions in -O2
 - Fixed some C parser errors
+- Fixed some C type conversion errors
 
 Version 3.9.19
 - Fixed problems with path searches
