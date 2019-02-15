@@ -1366,12 +1366,19 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
                       NULL);
         *astptr = expr;
     }
-    if (IsPointerType(desttype) && srctype && srctype->kind == AST_FUNCTYPE) {
-        srctype = NewAST(AST_PTRTYPE, srctype, NULL);
-        if (IsSymbol(expr)) {
+    if (IsPointerType(desttype) && srctype) {
+        if (srctype->kind == AST_FUNCTYPE) {
+            srctype = NewAST(AST_PTRTYPE, srctype, NULL);
+            if (IsSymbol(expr)) {
+                expr = NewAST(AST_ADDROF, expr, NULL);
+                expr = BuildMethodPointer(expr);
+                *astptr = expr;
+            }
+        } else if (IsArrayType(srctype)) {
+            // automatically cast arrays to pointers
             expr = NewAST(AST_ADDROF, expr, NULL);
-            expr = BuildMethodPointer(expr);
             *astptr = expr;
+            srctype = NewAST(AST_PTRTYPE, BaseType(srctype), NULL);
         }
     }
     if (!CompatibleTypes(desttype, srctype)) {
