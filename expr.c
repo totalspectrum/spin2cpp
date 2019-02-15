@@ -1750,7 +1750,9 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             return NULL;
         }
         if (!IsClassType(objtype)) {
-            ERROR(ast, "request for member %s in something that is not an object", thename);
+            if (errflag) {
+                ERROR(ast, "request for member %s in something that is not an object", thename);
+            }
             return NULL;
         }
         sym = LookupMemberSymbol(objref, objtype, thename, NULL);
