@@ -1139,11 +1139,46 @@ static AST *ScalePointer(AST *type, AST *val)
     return val;
 }
 
+// return the address of an array
+AST *ArrayAddress(AST *expr)
+{
+    return NewAST(AST_ABSADDROF,
+                  NewAST(AST_ARRAYREF, expr, AstInteger(0)),
+                  NULL);
+}
+
+//
+// cast an array to a pointer type;
+//
+AST *ArrayToPointerType(AST *type)
+{
+    AST *modifier;
+    if (type->kind == AST_ARRAYTYPE) {
+        type = NewAST(AST_PTRTYPE, type->left, NULL);
+    } else {
+        modifier = NewAST(type->kind, NULL, NULL);
+        modifier->left = ArrayToPointerType(type->left);
+        type = modifier;
+    }
+    return type;
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
     int op;
-    
+
+    // hmmm, should we automatically convert arrays to pointers here?
+    // for current languages yes, eventually maybe not if we want
+    // to support array arithmetic
+    if (IsArrayType(lefttype)) {
+        ast->left = ArrayAddress(ast->left);
+        lefttype = ArrayToPointerType(lefttype);
+    }
+    if (IsArrayType(righttype)) {
+        ast->right = ArrayAddress(ast->right);
+        righttype = ArrayToPointerType(righttype);
+    }
     //assert(ast->kind == AST_OPERATOR)
     if (!ast->left) {
         rettype = righttype;
@@ -1360,25 +1395,23 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
 
     // automatically cast arrays to pointers if necessary
     if (IsArrayType(srctype) && IsPointerType(desttype) && IsSymbol(expr)) {
-        srctype = NewAST(AST_PTRTYPE, srctype->left, NULL);
-        expr = NewAST(AST_ADDROF,
-                      NewAST(AST_ARRAYREF, expr, AstInteger(0)),
-                      NULL);
+        srctype = ArrayToPointerType(srctype);
+        expr = ArrayAddress(expr);
         *astptr = expr;
     }
     if (IsPointerType(desttype) && srctype) {
         if (srctype->kind == AST_FUNCTYPE) {
             srctype = NewAST(AST_PTRTYPE, srctype, NULL);
             if (IsSymbol(expr)) {
-                expr = NewAST(AST_ADDROF, expr, NULL);
+                expr = NewAST(AST_ABSADDROF, expr, NULL);
                 expr = BuildMethodPointer(expr);
                 *astptr = expr;
             }
         } else if (IsArrayType(srctype)) {
             // automatically cast arrays to pointers
-            expr = NewAST(AST_ADDROF, expr, NULL);
+            expr = ArrayAddress(expr);
             *astptr = expr;
-            srctype = NewAST(AST_PTRTYPE, BaseType(srctype), NULL);
+            srctype = ArrayToPointerType(srctype);
         }
     }
     if (!CompatibleTypes(desttype, srctype)) {
@@ -1444,7 +1477,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
             srctype = ast_type_long;
         }
         if (IsArrayType(srctype)) {
-            return NewAST(AST_ADDROF, src, NULL);
+            return ArrayAddress(src);
         }
         if (IsPointerType(srctype)) {
             return src;
