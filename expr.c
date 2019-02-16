@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -472,6 +472,49 @@ RangeBitSet(AST *dst, uint32_t mask, int bitset)
 }
 
 /*
+ * transform an assignment chain
+ *  A := B := C
+ * => SEQ(T:=C, B:=T, A:=T)
+ * this is necessary in cases where A, B, or C is a range expression
+ * otherwise the returned value will incorrectly not be a range expression
+ */
+AST *
+TransformAssignChain(AST *dst, AST *src)
+{
+    AST *seq = NULL;
+    AST *final;
+    AST *temp;
+    ASTReportInfo saveinfo;
+
+    if (!src) {
+        ERROR(dst, "Internal error in assign chain");
+        return src;
+    }
+    AstReportAs(src, &saveinfo);
+    switch (src->kind) {
+    case AST_ASSIGN:
+        seq = TransformAssignChain(src->left, src->right);
+        final = seq->left;
+        if (final->kind == AST_ASSIGN) {
+            final = final->left;
+        }
+        break;
+    case AST_INTEGER:
+        seq = NewAST(AST_SEQUENCE, src, NULL);
+        final = src;
+        break;
+    default:
+        temp = AstTempLocalVariable("_temp", ast_type_unsigned_long);
+        seq = NewAST(AST_SEQUENCE, AstAssign(temp, src), NULL);
+        final = temp;
+        break;
+    }
+    seq = AddToList(seq, NewAST(AST_SEQUENCE, AstAssign(dst, final), NULL));
+    AstReportDone(&saveinfo);
+    return seq;
+}
+
+/*
  * special code for printing a range expression
  * dst->left is the hardware register; or, it may be an AST_REGPAIR
  *      holding two paired registers
@@ -505,6 +548,11 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     if (!dst->right || dst->right->kind != AST_RANGE) {
         ERROR(dst, "internal error: expecting range");
         return 0;
+    }
+    if (src && src->kind == AST_ASSIGN) {
+        // watch out for assignment chains
+        result = TransformAssignChain(dst, src);
+        return result;
     }
     AstReportAs(dst, &saveinfo);  // set up error messages as if coming from "dst"
 

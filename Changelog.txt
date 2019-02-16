@@ -5,6 +5,7 @@ Version 3.9.20
 - Fixed some C parser errors
 - Fixed some C type conversion errors
 - Fixed encodings of setpiv and setpix instructions
+- Fixed a bug in chained assignments of register ranges
 
 Version 3.9.19
 - Fixed problems with path searches
