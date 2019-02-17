@@ -1,3 +1,6 @@
+Version 3.9.21
+- Fixed automatic conversion of arrays to pointers
+
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object
 - Fixed some parsing problems with inline assembly

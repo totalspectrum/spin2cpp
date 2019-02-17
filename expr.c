@@ -1775,7 +1775,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     AST *expr = ast;
     
     if (expr->kind != AST_METHODREF) {       
-        if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF) {
+        if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF && expr->kind != AST_ABSADDROF) {
             ERROR(expr, "Internal error expecting function call");
             return NULL;
         }
