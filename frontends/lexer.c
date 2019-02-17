@@ -2914,7 +2914,7 @@ again:
         if (c == SP_FLOATNUM) {
             ast->kind = AST_FLOAT;
 	    c = BAS_FLOAT;
-	} else if (ast->d.ival == 0) {
+	} else if (ast->d.ival == 0 && !is_label) {
             // check for hex or binary prefixes like 0x or 0h
             int c2;
             c2 = lexgetc(L);
