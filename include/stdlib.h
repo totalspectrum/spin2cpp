@@ -22,8 +22,8 @@ extern "C" {
   double strtod(const char *nptr, char **endptr);
   float  strtof(const char *nptr, char **endptr);
 
-  long strtol(const char *nptr, char **endptr, int base);
-  unsigned long strtoul(const char *nptr, char **endptr, int base);
+    long strtol(const char *nptr, char **endptr, int base) _IMPL("libc/stdlib/strtol.c");
+    unsigned long strtoul(const char *nptr, char **endptr, int base) _IMPL("libc/stdlib/strtoul.c");
   long long strtoll(const char *nptr, char **endptr, int base);
   unsigned long long strtoull(const char *nptr, char **endptr, int base);
 
