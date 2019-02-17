@@ -296,7 +296,10 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             AST *typ = ExprType(initval);
             if (IsFunctionType(typ)) {
                 elem = initval;
-                while (elem && elem->kind == AST_ADDROF) {
+                if (initval->kind == AST_IDENTIFIER || initval->kind == AST_SYMBOL) {
+                    *initval = *NewAST(AST_ABSADDROF, DupAST(initval), NULL);
+                }
+                while (elem && (elem->kind == AST_ADDROF || elem->kind == AST_ABSADDROF)) {
                     elem = elem->left;
                 }
                 elem = NewAST(AST_SIMPLEFUNCPTR, elem, NULL);
