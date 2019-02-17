@@ -47,8 +47,8 @@ extern "C" {
     int isupper(int c) _IMPL("libc/misc/ctype.c");
     int isxdigit(int c) _IMPL("libc/misc/isxdigit.c");
 
-    int tolower(int c) _IMPL("libc/misc/ctype.c");
-    int toupper(int c) _IMPL("libc/misc/ctype.c");
+    int tolower(int c) _IMPL("libc/misc/tolower.c");
+    int toupper(int c) _IMPL("libc/misc/toupper.c");
 
 
 #define __isctype(c, x) (__ctype_get(c) & x)
