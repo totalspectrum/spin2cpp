@@ -101,6 +101,7 @@ again:
     case AST_IF:
     case AST_SEQUENCE:
     case AST_COMMENTEDNODE:
+    case AST_THENELSE:
         switchstmt = CreateGotos(tmpvar, switchstmt, stmt->left, defaultlabel, endswitch);
         return CreateGotos(tmpvar, switchstmt, stmt->right, defaultlabel, endswitch);
     default:
