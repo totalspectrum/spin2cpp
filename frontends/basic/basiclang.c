@@ -1471,6 +1471,10 @@ doCast(AST *desttype, AST *srctype, AST *src)
     } else {
         name = "expression";
     }
+    if (IsArrayType(srctype)) {
+        src = ArrayAddress(src);
+        srctype = ast_type_ptr_void;
+    }
     if (IsPointerType(desttype)) {
         if (IsFloatType(srctype)) {
             src = dofloatToInt(src);
@@ -1846,6 +1850,7 @@ AST *CheckTypes(AST *ast)
     case AST_EXPRLIST:
     case AST_SEQUENCE:
     case AST_CONSTANT:
+    case AST_VA_ARG:
         return ExprType(ast);
     default:
         break;

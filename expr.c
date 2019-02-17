@@ -2301,6 +2301,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_SIZEOF:
         return ast_type_unsigned_long;
     case AST_CAST:
+    case AST_VA_ARG:
         return expr->left;
     case AST_PTRTYPE:
     case AST_ARRAYTYPE:
