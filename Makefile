@@ -15,7 +15,7 @@
 
 ifeq ($(CROSS),win32)
 #  CC=i586-mingw32msvc-gcc
-  CC=i686-w64-mingw32-gcc
+  CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000
   EXT=.exe
   BUILD=./build-win32
 else ifeq ($(CROSS),rpi)
