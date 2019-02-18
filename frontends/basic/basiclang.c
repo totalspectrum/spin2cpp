@@ -1029,6 +1029,15 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     return lefttype;
 }
 
+static bool
+IsSymbol(AST *expr)
+{
+    if (!expr) return false;
+    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
+        return true;
+    return false;
+}
+
 bool IsUnsignedConst(AST *ast)
 {
     if (!IsConstExpr(ast)) {
@@ -1147,6 +1156,21 @@ AST *ArrayAddress(AST *expr)
                   NULL);
 }
 
+// return the address of a function
+AST *FunctionAddress(AST *expr)
+{
+    if (IsSymbol(expr)) {
+        expr = NewAST(AST_ABSADDROF, expr, NULL);
+        expr = BuildMethodPointer(expr);
+    }
+    return expr;
+}
+
+AST *FunctionPointerType(AST *typ)
+{
+    return NewAST(AST_PTRTYPE, typ, NULL);
+}
+
 //
 // cast an array to a pointer type;
 //
@@ -1178,6 +1202,14 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     if (IsArrayType(righttype)) {
         ast->right = ArrayAddress(ast->right);
         righttype = ArrayToPointerType(righttype);
+    }
+    if (IsFunctionType(lefttype) && !IsPointerType(lefttype)) {
+        ast->left = FunctionAddress(ast->left);
+        lefttype = FunctionPointerType(lefttype);
+    }
+    if (IsFunctionType(righttype) && !IsPointerType(righttype)) {
+        ast->right = FunctionAddress(ast->right);
+        righttype = FunctionPointerType(righttype);
     }
     //assert(ast->kind == AST_OPERATOR)
     if (!ast->left) {
@@ -1336,15 +1368,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     }
 }
 
-static bool
-IsSymbol(AST *expr)
-{
-    if (!expr) return false;
-    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
-        return true;
-    return false;
-}
-
 //
 // modifies *astptr, originally of type srctype,
 // to have type desttype by introducing any
@@ -1401,12 +1424,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (IsPointerType(desttype) && srctype) {
         if (srctype->kind == AST_FUNCTYPE) {
-            srctype = NewAST(AST_PTRTYPE, srctype, NULL);
-            if (IsSymbol(expr)) {
-                expr = NewAST(AST_ABSADDROF, expr, NULL);
-                expr = BuildMethodPointer(expr);
-                *astptr = expr;
-            }
+            srctype = FunctionPointerType(srctype);
+            expr = FunctionAddress(expr);
+            *astptr = expr;
         } else if (IsArrayType(srctype)) {
             // automatically cast arrays to pointers
             expr = ArrayAddress(expr);
