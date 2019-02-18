@@ -4386,7 +4386,7 @@ AssignFuncNames(IRList *irl, Module *P)
             faltname = NULL;
         }
         if (f->is_recursive) {
-            fentername = (char *)malloc(strlen(fname) + 6);
+            fentername = (char *)malloc(strlen(fname) + 16);
             sprintf(fentername, "%s_enter", fname);
         }
         f->bedata = calloc(1, sizeof(IRFuncData));

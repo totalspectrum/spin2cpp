@@ -406,7 +406,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
             /* check for a run of data */
             runlen = 0;
             lastdata = data[0];
-            while (data[runlen] == lastdata && addr+runlen < len && runlen < bytesPending) {
+            while (addr+runlen < len && runlen < bytesPending && data[runlen] == lastdata) {
                 runlen++;
             }
             if (runlen > 4) {
