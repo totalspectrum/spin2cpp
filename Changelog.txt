@@ -1,6 +1,7 @@
 Version 3.9.21
 - Fixed automatic conversion of arrays to pointers
 - Increased stack size on Windows to prevent a crash
+- Added if_00, if_same, and other missing P2 conditions
 
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object
