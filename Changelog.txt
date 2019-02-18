@@ -1,5 +1,6 @@
 Version 3.9.21
 - Fixed automatic conversion of arrays to pointers
+- Increased stack size on Windows to prevent a crash
 
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object
