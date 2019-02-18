@@ -473,7 +473,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
             free(idstr);
-            if (sym->type == SYM_INSTR) {
+            if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
                 if (comment_chain) {
@@ -483,18 +483,18 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 *ast_ptr = ast;
                 return SP_INSTR;
             }
-            if (sym->type == SYM_INSTRMODIFIER) {
+            if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return SP_INSTRMODIFIER;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
     }
     sym = FindSymbol(&spinReservedWords, idstr);
     if (sym != NULL) {
-        if (sym->type == SYM_BUILTIN)
+        if (sym->kind == SYM_BUILTIN)
         {
             /* run any parse hooks */
             Builtin *b = (Builtin *)sym->val;
@@ -503,13 +503,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             }
             goto is_identifier;
         }
-        if (sym->type == SYM_CONSTANT
-            || sym->type == SYM_FLOAT_CONSTANT)
+        if (sym->kind == SYM_CONSTANT
+            || sym->kind == SYM_FLOAT_CONSTANT)
         {
             goto is_identifier;
         }
         free(idstr);
-        if (sym->type == SYM_RESERVED) {
+        if (sym->kind == SYM_RESERVED) {
             c = INTVAL(sym);
             /* check for special handling */
             switch(c) {
@@ -564,13 +564,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             *ast_ptr = ast;
             return c;
         }
-        if (sym->type == SYM_HWREG) {
+        if (sym->kind == SYM_HWREG) {
             ast = NewAST(AST_HWREG, NULL, NULL);
             ast->d.ptr = sym->val;
             *ast_ptr = ast;
             return SP_HWREG;
         }
-        fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->type);
+        fprintf(stderr, "Internal error: Unknown symbol type %d\n", sym->kind);
     }
 
 is_identifier:
@@ -1882,38 +1882,38 @@ initSpinLexer(int flags)
 
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
-        AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val);
+        AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
-        AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val);
+        AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(c_keywords); i++) {
-        AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val);
+        AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val, NULL);
     }
     
     if (gl_p2) {
-        AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL);
-        AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW);
+        AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL, NULL);
+        AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW, NULL);
     }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i]);
+        AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p2_constants[i].name), p2_constants[i].type, AstInteger(p2_constants[i].val));
+            AddSymbol(&spinReservedWords, NormalizedName(p2_constants[i].name), p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p1_constants[i].name), p1_constants[i].type, AstInteger(p1_constants[i].val));
+            AddSymbol(&spinReservedWords, NormalizedName(p1_constants[i].name), p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
     
     /* C keywords */
     for (i = 0; i < N_ELEMENTS(c_words); i++) {
-        AddSymbol(&ckeywords, c_words[i], SYM_RESERVED, NULL);
+        AddSymbol(&ckeywords, c_words[i], SYM_RESERVED, NULL, NULL);
     }
 
     /* add the PASM instructions */
@@ -2676,19 +2676,19 @@ InitPasm(int flags)
 
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
-        AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
-        AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i]);
-        AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i]);
+        AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
     }
 
     /* add instructions */
     for (i = 0; instr[i].name != NULL; i++) {
-        AddSymbol(&pasmWords, instr[i].name, SYM_INSTR, (void *)&instr[i]);
+        AddSymbol(&pasmWords, instr[i].name, SYM_INSTR, (void *)&instr[i], NULL);
     }
 
     /* instruction modifiers */
     for (i = 0; modifiers[i].name != NULL; i++) {
-        AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)&modifiers[i]);
+        AddSymbol(&pasmWords, modifiers[i].name, SYM_INSTRMODIFIER, (void *)&modifiers[i], NULL);
     }
 
 }
@@ -2705,7 +2705,7 @@ Is_C_Reserved(const char *name)
     Symbol *s;
     const char *ptr;
     s = FindSymbol(&ckeywords, name);
-    if (s && !strcmp(name, s->name))
+    if (s && !strcmp(name, s->our_name))
         return true;
     if (strlen(name) < 3)
         return false;
@@ -2786,7 +2786,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
             free(idstr);
-            if (sym->type == SYM_INSTR) {
+            if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
                 if (comment_chain) {
@@ -2796,20 +2796,20 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 *ast_ptr = ast;
                 return BAS_INSTR;
             }
-            if (sym->type == SYM_INSTRMODIFIER) {
+            if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return BAS_INSTRMODIFIER;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
     }
 
     // check for keywords
     sym = FindSymbol(&basicReservedWords, idstr);
     if (sym != NULL) {
-      if (sym->type == SYM_RESERVED) {
+      if (sym->kind == SYM_RESERVED) {
 	c = INTVAL(sym);
         /* check for special handling */
         switch(c) {
@@ -2835,7 +2835,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     if (current) {
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
-            if (sym->type == SYM_VARIABLE) {
+            if (sym->kind == SYM_VARIABLE) {
                 ast = (AST *)sym->val;
                 // check for an abstract object declaration
                 if (ast->left && ast->left->kind == AST_OBJDECL && ast->left->left->kind == AST_IDENTIFIER && !strcmp(idstr, ast->left->left->d.string)) {
@@ -2843,7 +2843,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                     last_ast = AstIdentifier(idstr);
                     return BAS_TYPENAME;
                 }
-            } else if (sym->type == SYM_TYPEDEF) {
+            } else if (sym->kind == SYM_TYPEDEF) {
                 ast = (AST *)sym->val;
                 *ast_ptr = ast;
                 last_ast = AstIdentifier(idstr);
@@ -3025,7 +3025,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
         sym = FindSymbol(&pasmWords, idstr);
         if (sym) {
             free(idstr);
-            if (sym->type == SYM_INSTR) {
+            if (sym->kind == SYM_INSTR) {
                 ast = NewAST(AST_INSTR, NULL, NULL);
                 ast->d.ptr = sym->val;
                 if (comment_chain) {
@@ -3035,20 +3035,20 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
                 *ast_ptr = ast;
                 return C_INSTR;
             }
-            if (sym->type == SYM_INSTRMODIFIER) {
+            if (sym->kind == SYM_INSTRMODIFIER) {
                 ast = NewAST(AST_INSTRMODIFIER, NULL, NULL);
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return C_INSTRMODIFIER;
             }
-            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->type);
+            fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
     }
 
     // check for keywords
     sym = FindSymbol(&cReservedWords, idstr);
     if (sym != NULL) {
-      if (sym->type == SYM_RESERVED) {
+      if (sym->kind == SYM_RESERVED) {
 	c = INTVAL(sym);
         /* check for special handling */
         switch(c) {
@@ -3079,7 +3079,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     if (current) {
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
-            if (sym->type == SYM_TYPEDEF) {
+            if (sym->kind == SYM_TYPEDEF) {
                 last_ast = ast = AstIdentifier(idstr);
                 *ast_ptr = ast;
                 return C_TYPE_NAME;

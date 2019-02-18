@@ -126,11 +126,11 @@ IsTopLevel(Module *P)
 static int sym_offset(Function *func, Symbol *s)
 {
     int offset = -1;
-    if (s->type == SYM_RESULT) {
+    if (s->kind == SYM_RESULT) {
         offset = s->offset;
-    } else if (s->type == SYM_PARAMETER) {
+    } else if (s->kind == SYM_PARAMETER) {
         offset = LONG_SIZE*func->numresults + s->offset;
-    } else if (s->type == SYM_LOCALVAR || s->type == SYM_TEMPVAR) {
+    } else if (s->kind == SYM_LOCALVAR || s->kind == SYM_TEMPVAR) {
         offset = LONG_SIZE*(func->numresults + func->numparams) + s->offset;
     }
     return offset;
@@ -1012,7 +1012,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
   Module *P = func->module;
   if (sym) {
       AST *exprtype;
-      stype = sym->type;
+      stype = sym->kind;
       switch (stype) {
       case SYM_VARIABLE:
           if (sym->flags & SYMF_GLOBAL) {
@@ -1027,7 +1027,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           if (COG_DATA) {
               // COG memory
               size = TypeSize(exprtype);
-              return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->name), 0, size);
+              return GetSizedGlobal(REG_REG, IdentifierModuleName(P, sym->our_name), 0, size);
           } else {
               // HUB memory
               return TypedHubMemRef(exprtype, objbase, (int)sym->offset);
@@ -1047,11 +1047,11 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           return FrameRef(0, LONG_SIZE);
       }
       default:
-          if (sym->type == SYM_RESERVED && !strcmp(sym->name, "result")) {
+          if (sym->kind == SYM_RESERVED && !strcmp(sym->our_name, "result")) {
               /* do nothing, this is OK */
               stype = SYM_RESULT;
           } else {
-              ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->name);
+              ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->user_name);
               return NewImmediate(0);
           }
           /* fall through */
@@ -1073,10 +1073,10 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
                   return FrameRef(offset, size);
               }
           }
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
+          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_TEMPVAR:
           size = TypeSize((AST *)sym->val);
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->name), 0, size);
+          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       }
@@ -1129,7 +1129,7 @@ GetSystemFunction(const char *name)
         ERROR(NULL, "Internal error could not find %s", name);
         return mulfunc;
     }
-    if (sym->type != SYM_FUNCTION) {
+    if (sym->kind != SYM_FUNCTION) {
         ERROR(NULL, "Internal error: %s is not a function", name);
         return mulfunc;
     }
@@ -1258,7 +1258,7 @@ static int AddSize(Symbol *sym, void *arg)
 {
     int *ptr = (int *)arg;
     int size;
-    switch (sym->type) {
+    switch (sym->kind) {
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
     case SYM_PARAMETER:
@@ -1616,7 +1616,7 @@ CompileIdentifier(IRList *irl, AST *expr)
 
     if (expr->kind == AST_IDENTIFIER) {
         sym = LookupSymbol(expr->d.string);
-        if (sym && (sym->type == SYM_CONSTANT || sym->type == SYM_FLOAT_CONSTANT)) {
+        if (sym && (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT)) {
             AST *symexpr = (AST *)sym->val;
             int val = EvalConstExpr(symexpr);
             if (val >= 0 && val < 512) {
@@ -2454,7 +2454,7 @@ IsDirectMemberVariable(IRList *irl, AST *objref, Operand **offsetPtr)
         Symbol *sym;
         const char *name = GetIdentifierName(objref);
         sym = LookupSymbol(name);
-        switch(sym->type) {
+        switch(sym->kind) {
         case SYM_VARIABLE:
             if (IsClassType(typ))
             {
@@ -2511,7 +2511,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         ERROR(expr, "expected function symbol");
         return NULL;
     }
-    if (sym->type != SYM_FUNCTION) {
+    if (sym->kind != SYM_FUNCTION) {
         Operand *base;
         Operand *tempbase = NewFunctionTempRegister();
         Operand *temp1 = NewFunctionTempRegister();
@@ -3224,14 +3224,14 @@ GetAddressOf(IRList *irl, AST *expr)
         name = GetIdentifierName(expr->right);
         sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
         if (sym) {
-            if (sym->type == SYM_VARIABLE) {
+            if (sym->kind == SYM_VARIABLE) {
                 Operand *base = CompileExpression(irl, expr->left, NULL);
                 Operand *tmp;
                 AST *type = ExprType(expr);
                 off = sym->offset;
                 tmp = OffsetMemory(irl, base, NewImmediate(off), type);
                 res = GetLea(irl, tmp);
-            } else if (sym->type == SYM_FUNCTION) {
+            } else if (sym->kind == SYM_FUNCTION) {
                 CompileGetFunctionInfo(irl, expr, NULL, NULL, &res, NULL);
             }
         }
@@ -3547,7 +3547,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       base = CompileExpression(irl, expr->left, NULL);
       sym = LookupMemberSymbol(expr, objtype, name, &P);
       if (sym) {
-          switch (sym->type) {
+          switch (sym->kind) {
           case SYM_VARIABLE:
               off = sym->offset;
               break;
@@ -4451,7 +4451,7 @@ AssignFuncNames(IRList *irl, Module *P)
                     break;
                 }
                 sym = FindSymbol(&P->objsyms, name->d.string);
-                if (!sym || sym->type != SYM_TEMPVAR) {
+                if (!sym || sym->kind != SYM_TEMPVAR) {
                     ERROR(name, "Internal error: unable to find symbol");
                     break;
                 }
@@ -4465,7 +4465,7 @@ AssignFuncNames(IRList *irl, Module *P)
                 label = (Label *)calloc(sizeof(*label), 1);
                 sym->offset = label->hubval = P->datsize;
                 label->type = ast_type_long;
-                sym->type = SYM_LABEL;
+                sym->kind = SYM_LABEL;
                 sym->val = (void *)label;
                 table = NewAST(AST_LONGLIST, table, NULL);
                 P->datblock = AddToList(P->datblock, table);
@@ -5043,7 +5043,7 @@ CompileConstant(IRList *irl, AST *ast)
 
     if (ast->kind == AST_SYMBOL) {
         sym = (Symbol *)ast->d.ptr;
-        name = sym->name;
+        name = sym->user_name;
     } else {
         name = ast->d.string;
         sym = LookupSymbol(name);

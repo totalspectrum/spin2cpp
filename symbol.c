@@ -47,7 +47,7 @@ FindSymbol(SymbolTable *table, const char *name)
     hash = SymbolHash(name);
     sym = table->hash[hash];
     while (sym) {
-        if (!STRCMP(sym->name, name)) {
+        if (!STRCMP(sym->our_name, name)) {
             return sym;
         }
         sym = sym->next;
@@ -70,7 +70,7 @@ doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
            sym = doLookupSymbolInTable(table->next, name, level);
 	}
     }
-    if (sym && sym->type == SYM_ALIAS) {
+    if (sym && sym->kind == SYM_ALIAS) {
         // have to look it up again
         Symbol *alias;
         level++;
@@ -152,7 +152,7 @@ NewSymbol(void)
  * returns NULL if there was a conflict
  */
 Symbol *
-AddSymbol(SymbolTable *table, const char *name, int type, void *val)
+AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name)
 {
     unsigned hash;
     Symbol *sym;
@@ -160,8 +160,8 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
     hash = SymbolHash(name);
     sym = table->hash[hash];
     while (sym) {
-        if (!STRCMP(sym->name, name)) {
-            if (sym->type == SYM_ALIAS) {
+        if (!STRCMP(sym->our_name, name)) {
+            if (sym->kind == SYM_ALIAS) {
                 // it's OK to override aliases
                 break;
             }
@@ -173,8 +173,9 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val)
     if (!sym) {
         sym = NewSymbol();
     }
-    sym->name = name;
-    sym->type = (Symtype)type;
+    sym->our_name = name;
+    sym->user_name = user_name ? user_name : name;
+    sym->kind = (Symtype)type;
     sym->val = val;
     sym->next = table->hash[hash];
     table->hash[hash] = sym;

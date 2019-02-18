@@ -55,7 +55,7 @@ FindSymbolExact(SymbolTable *S, const char *name)
     Symbol *sym = FindSymbol(S, name);
     if (!sym)
         return 0;
-    if (!strcmp(sym->name, name))
+    if (!strcmp(sym->our_name, name))
         return 1;
     return 0;
 }
@@ -105,14 +105,14 @@ InitGlobalModule(void)
     
     current = globalModule = NewModule("_system_", LANG_SPIN);
     table = &globalModule->objsyms;
-    sym = AddSymbol(table, "_clkfreq", SYM_VARIABLE, ast_type_long);
+    sym = AddSymbol(table, "_clkfreq", SYM_VARIABLE, ast_type_long, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x4) : 0;
-    sym = AddSymbol(table, "_clkmode", SYM_VARIABLE, ast_type_byte);
+    sym = AddSymbol(table, "_clkmode", SYM_VARIABLE, ast_type_byte, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x8) : 4;
     if (gl_p2) {
-        sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte);
+        sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
         sym->flags |= SYMF_GLOBAL;
         sym->offset = P2_CONFIG_BASE+0xc;
     }
@@ -271,7 +271,7 @@ InferTypeFromName(AST *identifier)
             } else {
                 return ast_type_long;
             }
-            if (sym->type != SYM_CONSTANT) {
+            if (sym->kind != SYM_CONSTANT) {
                 ERROR(identifier, "bad default type information");
             } else {
                 typemask = EvalConstExpr(sym->val);
@@ -364,11 +364,12 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         ERROR(ident, "Internal error, expected identifier");
         return;
     }
+#warning we need to look carefully here    
     name = ident->d.string;
     olddef = FindSymbol(table, name);
     if (olddef) {
         // is it an alias?
-        if (olddef->type == SYM_ALIAS) {
+        if (olddef->kind == SYM_ALIAS) {
             alias = name;
             name = olddef->val;
         }
@@ -380,7 +381,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         } else if (olddef) {
             ERROR(ident, "Redefining symbol %s", name);
         }
-        AddSymbol(currentTypes, name, SYM_TYPEDEF, type);
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, type, NULL);
         return;
     }
     if (olddef && !alias) {
@@ -390,7 +391,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         if (!alias) {
             alias = NewTemporaryVariable("_static_");
             ident = AstIdentifier(alias);
-            AddSymbol(table, name, SYM_ALIAS, (void *)alias);
+            AddSymbol(table, name, SYM_ALIAS, (void *)alias, NULL);
         }
     }
     
@@ -459,7 +460,7 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
     }
     name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
-    if (sym && sym->type == SYM_VARIABLE) {
+    if (sym && sym->kind == SYM_VARIABLE) {
         return;
     }
     if (!typ) {
@@ -669,7 +670,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     if (P) {
         Symbol *sym = FindSymbol(&P->objsyms, fname);
         if (sym) {
-            if (sym->type != SYM_FILE) {
+            if (sym->kind != SYM_FILE) {
                 ERROR(NULL, "Expected FILE type for symbol %s", fname);
                 return P;
             }
@@ -738,7 +739,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     currentTypes = calloc(1, sizeof(*currentTypes));
     currentTypes->next = &P->objsyms;
 
-    AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0);
+    AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0, NULL);
     
     if (gl_preprocess) {
         void *defineState;
@@ -910,8 +911,8 @@ MarkStaticFunctionPointers(AST *list)
         sym = LookupAstSymbol(sub, NULL);
         if (sym) {
             Function *f;
-            if (sym->type != SYM_FUNCTION) {
-                ERROR(list, "%s is not a function", sym->name);
+            if (sym->kind != SYM_FUNCTION) {
+                ERROR(list, "%s is not a function", sym->user_name);
                 return;
             }
             f = (Function *)sym->val;
@@ -1086,7 +1087,7 @@ FixupCode(Module *P, int isBinary)
             uint32_t heapsize = 0;
             AST *heapAst;
             if (sym) {
-                if (sym->type != SYM_CONSTANT) {
+                if (sym->kind != SYM_CONSTANT) {
                     WARNING(NULL, "heapsize is not a constant");
                 } else {
                     heapsize = EvalConstExpr((AST *)sym->val);
@@ -1104,7 +1105,7 @@ FixupCode(Module *P, int isBinary)
                 heapsize = (heapsize+3)/4; // convert to longs
                 heapAst = AstInteger(heapsize);
                 sym = FindSymbol(&globalModule->objsyms, "__real_heapsize__");
-                if (!sym || sym->type != SYM_CONSTANT) {
+                if (!sym || sym->kind != SYM_CONSTANT) {
                     ERROR(NULL, "Internal error, could not find __REAL_HEAPSIZE__");
                 } else {
                     // reset the size

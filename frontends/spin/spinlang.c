@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2018 Total Spectrum Software Inc.
+ * Copyright 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -21,7 +21,7 @@ IsLocalVariable(AST *ast) {
     case AST_IDENTIFIER:
         sym = LookupSymbol(ast->d.string);
         if (!sym) return false;
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_RESULT:
         case SYM_LOCALVAR:
         case SYM_PARAMETER:
@@ -104,7 +104,7 @@ TransformLongMove(AST **astptr, AST *ast)
     symd = LookupSymbol(dst->d.string);
     if (!syms || !symd) return false;
 
-    switch(syms->type) {
+    switch(syms->kind) {
     case SYM_VARIABLE:
         srctab = &current->objsyms;
         break;
@@ -115,7 +115,7 @@ TransformLongMove(AST **astptr, AST *ast)
     default:
         return false;
     }
-    switch(symd->type) {
+    switch(symd->kind) {
     case SYM_VARIABLE:
         dsttab = &current->objsyms;
         break;
@@ -131,8 +131,8 @@ TransformLongMove(AST **astptr, AST *ast)
     dstoff = symd->offset;
     sequence = NULL;
     for(;;) {
-        assign = AstAssign(AstIdentifier(symd->name),
-                           AstIdentifier(syms->name));
+        assign = AstAssign(AstIdentifier(symd->our_name),
+                           AstIdentifier(syms->our_name));
         sequence = AddToList(sequence, NewAST(AST_SEQUENCE, assign, NULL));
         --n;
         if (n == 0) break;
@@ -179,12 +179,12 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
         if (ast->kind == AST_IDENTIFIER) {
             sym = FindSymbol(&fdef->localsyms, ast->d.string);
             if (sym) {
-                if (sym->type == SYM_PARAMETER) {
+                if (sym->kind == SYM_PARAMETER) {
                     if (!fdef->parmarray) {
                         fdef->parmarray = NewTemporaryVariable("_parm_");
                     }
                     fdef->localarray = fdef->parmarray;
-                } else if (sym->type == SYM_LOCALVAR && IsAddrRef(body, sym) ) {
+                } else if (sym->kind == SYM_LOCALVAR && IsAddrRef(body, sym) ) {
                     if (!fdef->localarray) {
                         fdef->localarray = NewTemporaryVariable("_local_");
                     }
@@ -192,9 +192,9 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             } else {
                 /* Taking the address of an object variable? That will make the object volatile. */
                 sym = LookupSymbol(ast->d.string);
-                if (sym && sym->type == SYM_VARIABLE && IsAddrRef(body, sym)) {
+                if (sym && sym->kind == SYM_VARIABLE && IsAddrRef(body, sym)) {
                     current->volatileVariables = 1;
-                } else if (sym && sym->type == SYM_LABEL && upper->kind == AST_MEMREF) {
+                } else if (sym && sym->kind == SYM_LABEL && upper->kind == AST_MEMREF) {
                     Label *lab = (Label *)sym->val;
                     int refalign = TypeAlignment(upper->left);
                     int labalign = TypeAlignment(lab->type);
@@ -229,12 +229,12 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             sym = LookupSymbol(body->d.string);
         }
         if (sym) {
-            if (sym->type == SYM_LABEL) {
+            if (sym->kind == SYM_LABEL) {
                 Label *L = (Label *)sym->val;
                 L->flags |= LABEL_USED_IN_SPIN;
             }
             // convert plain foo into foo[0] if foo is an array
-            if (IsArraySymbol(sym) && (sym->type == SYM_VARIABLE || sym->type == SYM_LOCALVAR || sym->type == SYM_LABEL))
+            if (IsArraySymbol(sym) && (sym->kind == SYM_VARIABLE || sym->kind == SYM_LOCALVAR || sym->kind == SYM_LABEL))
             {
                 if (upper && !(upper->kind == AST_ARRAYREF && upper->left == body)) {
                     AST *deref = NewAST(AST_ARRAYREF, body, AstInteger(0));
@@ -251,7 +251,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             }
             // convert plain IDENTIFIER into a FUNCCALL if it is a function
             // identifier
-            if (sym->type == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL) {
+            if (sym->kind == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL) {
                 AST *funccall;
                 ASTReportInfo saveinfo;
                 AstReportAs(body, &saveinfo);
@@ -295,7 +295,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             
             // scan through parameters, adjusting for expected return types
             Symbol *calledSym = FindFuncSymbol(body, NULL, 1);
-            if (calledSym && calledSym->type == SYM_FUNCTION) {
+            if (calledSym && calledSym->kind == SYM_FUNCTION) {
                 Function *calledFunc = (Function *)calledSym->val;
                 AST *calledParam = calledFunc->params;
                 while (calledParam && actualParamList) {
@@ -305,7 +305,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     paramType = NULL;
                     if (paramId && paramId->kind == AST_IDENTIFIER) {
                         Symbol *paramSym = FindSymbol(&calledFunc->localsyms, paramId->d.string);
-                        if (paramSym && paramSym->type == SYM_PARAMETER) {
+                        if (paramSym && paramSym->kind == SYM_PARAMETER) {
                             // symbol value is its expected type
                             paramType = (AST *)paramSym->val; 
                         }
@@ -445,7 +445,7 @@ doSpinTransform(AST **astptr, int level)
             /* check for void functions here; if one is called,
                pretend it returned 0 */
             sym = FindFuncSymbol(ast, NULL, 0);
-            if (sym && sym->type == SYM_FUNCTION) {
+            if (sym && sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (GetFunctionReturnType(f) == ast_type_void) {
                     AST *seq = NewAST(AST_SEQUENCE, ast, AstInteger(0));
@@ -532,7 +532,7 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, 0);
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
-            if (sym && sym->type == SYM_TYPEDEF) {
+            if (sym && sym->kind == SYM_TYPEDEF) {
                 // change this into a pointer cast
                 //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->val, NULL);
                 AST *ptrtype = (AST *)sym->val;

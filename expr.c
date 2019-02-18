@@ -247,7 +247,7 @@ IsSpinCoginit(AST *params, Function **methodptr)
     func = exprlist->left;
     if (func->kind == AST_IDENTIFIER) {
         sym = LookupAstSymbol(func, "coginit/cognew");
-        if (sym && sym->type == SYM_FUNCTION) {
+        if (sym && sym->kind == SYM_FUNCTION) {
             if (methodptr) *methodptr = (Function *)sym->val;
             return true;
         }
@@ -256,10 +256,10 @@ IsSpinCoginit(AST *params, Function **methodptr)
         /* FIXME? Spin requires that it be a local method; do we care? */
         sym = FindFuncSymbol(func, NULL, 1);
         if (sym) {
-            if (sym->type == SYM_BUILTIN) {
+            if (sym->kind == SYM_BUILTIN) {
                 return false;
             }
-            if (sym->type == SYM_FUNCTION) {
+            if (sym->kind == SYM_FUNCTION) {
                 if (methodptr) {
                     *methodptr = (Function *)sym->val;
                 }
@@ -267,7 +267,7 @@ IsSpinCoginit(AST *params, Function **methodptr)
             }
             // hmmm, interesting situation here; we've got an indirect
             // call via a variable
-            if (sym->type == SYM_LABEL) {
+            if (sym->kind == SYM_LABEL) {
                 return false;
             }
             return true;
@@ -345,7 +345,7 @@ ReplaceExprWithVariable(const char *prefix, AST *expr)
         // make sure this is an internal variable
         // (user variables may be modified before we use them)
         sym = LookupSymbol(exprvar->d.string);
-        if (!sym || sym->type != SYM_TEMPVAR) break;
+        if (!sym || sym->kind != SYM_TEMPVAR) break;
         if (AstMatch(ast->right, expr)) {
             // use this variable, no need for a new one
             return exprvar;
@@ -1246,7 +1246,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         if (!sym) {
             return intExpr(0);
         }
-        if ((sym->type != SYM_CONSTANT && sym->type != SYM_FLOAT_CONSTANT)) {
+        if ((sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)) {
             if (valid) {
                 *valid = 0;
             } else {
@@ -1265,7 +1265,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_IDENTIFIER:
         if (expr->kind == AST_SYMBOL) {
             sym = (Symbol *)expr->d.ptr;
-            name = sym->name;
+            name = sym->user_name;
         } else {
             name = expr->d.string;
             sym = LookupSymbol(name);
@@ -1277,7 +1277,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                 *valid = 0;
             return intExpr(0);
         } else {
-            switch (sym->type) {
+            switch (sym->kind) {
             case SYM_CONSTANT:
             {
                 ExprVal e = EvalExpr((AST *)sym->val, 0, NULL, depth+1);
@@ -1300,7 +1300,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     }
                     if (lref->cogval & 0x03) {
                         if (reportError) {
-                            ERROR(expr, "label %s in COG memory not on longword boundary", sym->name);
+                            ERROR(expr, "label %s in COG memory not on longword boundary", sym->user_name);
                         } else {
                             *valid = 0;
                         }
@@ -1396,7 +1396,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         } else {
             sym = LookupSymbol(expr->d.string);
         }
-        if (!sym || sym->type != SYM_LABEL) {
+        if (!sym || sym->kind != SYM_LABEL) {
             if (reportError) {
                 if (!sym) {
                     ERROR(expr, "Unknown symbol %s", expr->d.string);
@@ -1557,9 +1557,9 @@ IsArray(AST *expr)
     sym = LookupSymbol(expr->d.string);
     if (!sym)
         return 0;
-    if (sym->type == SYM_LABEL)
+    if (sym->kind == SYM_LABEL)
         return 1;
-    if (sym->type != SYM_VARIABLE && sym->type != SYM_LOCALVAR)
+    if (sym->kind != SYM_VARIABLE && sym->kind != SYM_LOCALVAR)
         return 0;
     type = (AST *)sym->val;
     if (type && type->kind == AST_ARRAYTYPE)
@@ -1749,7 +1749,7 @@ IsArrayOrPointerSymbol(Symbol *sym)
 {
     AST *type = NULL;
     if (!sym) return 0;
-    switch (sym->type) {
+    switch (sym->kind) {
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
     case SYM_VARIABLE:
@@ -1804,7 +1804,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             return NULL;
         }
         sym = LookupMemberSymbol(objref, objtype, thename, NULL);
-        if (sym && sym->type == SYM_FUNCTION) {
+        if (sym && sym->kind == SYM_FUNCTION) {
             f = (Function *)sym->val;
             if (!f->is_public) {
                 ERROR(ast, "%s is a private method", thename);
@@ -1854,7 +1854,7 @@ FindCalledFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         P = GetClassPtr(objtype);
         thename = expr->right->d.string;
         sym = FindSymbol(&P->objsyms, thename);
-        if (!sym || sym->type != SYM_FUNCTION) {
+        if (!sym || sym->kind != SYM_FUNCTION) {
             if (errflag)
                 ERROR(ast, "%s is not a method of %s", thename, P->classname);
             return NULL;
@@ -2114,7 +2114,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         Label *lab;
         AST *typ;
         if (!sym) return NULL;
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_CONSTANT:
         case SYM_HW_REG:
             return ast_type_long;
@@ -2156,7 +2156,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         Symbol *sym = FindFuncSymbol(expr, NULL, 0);
         AST *typexpr;
         if (sym) {
-            switch (sym->type) {
+            switch (sym->kind) {
             case SYM_FUNCTION:
                 return GetFunctionReturnType(((Function *)sym->val));
             case SYM_VARIABLE:
@@ -2208,7 +2208,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));
             return NULL;
         }
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_FUNCTION:
             func = (Function *)sym->val;
             return func->overalltype;

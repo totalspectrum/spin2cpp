@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2018 Total Spectrum Software Inc.
+// Copyright 2012-2019 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -186,7 +186,7 @@ GetAddrOffset(AST *ast)
         ERROR(ast, "Unknown symbol %s", ast->d.string);
         return 0;
     }
-    if (sym->type != SYM_LABEL) {
+    if (sym->kind != SYM_LABEL) {
         ERROR(ast, "@@@ supported only on labels");
         return 0;
     }
@@ -221,7 +221,7 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
     kind = sub->kind;
     if (kind == AST_SIMPLEFUNCPTR) {
         Symbol *sym = LookupAstSymbol(sub->left, "pointer address");
-        if (!sym || sym->type != SYM_FUNCTION) {
+        if (!sym || sym->kind != SYM_FUNCTION) {
             ERROR(sub, "Bad function pointer");
             *offset = 0;
             return RELOC_KIND_NONE;
@@ -1451,7 +1451,7 @@ GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
         return 0;  // nothing to do
     }
     ast = (AST *)clkmodesym->val;
-    if (clkmodesym->type != SYM_CONSTANT) {
+    if (clkmodesym->kind != SYM_CONSTANT) {
         WARNING(ast, "_clkmode is not a constant");
         return 0;
     }
@@ -1460,7 +1460,7 @@ GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     clkfreq = 0;
     sym = FindSymbol(&P->objsyms, "_clkfreq");
     if (sym) {
-        if (sym->type == SYM_CONSTANT) {
+        if (sym->kind == SYM_CONSTANT) {
             clkfreq = EvalConstExpr((AST*)sym->val);
         } else {
             WARNING((AST*)sym->val, "_clkfreq is not a constant");
@@ -1469,7 +1469,7 @@ GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     xinfreq = 0;
     sym = FindSymbol(&P->objsyms, "_xinfreq");
     if (sym) {
-        if (sym->type == SYM_CONSTANT) {
+        if (sym->kind == SYM_CONSTANT) {
             xinfreq = EvalConstExpr((AST*)sym->val);
         } else {
             WARNING((AST*)sym->val, "_xinfreq is not a constant");

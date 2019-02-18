@@ -96,7 +96,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
         return NULL;
     }
     
-    sym = AddSymbol(stab, name, kind, (void *)type);
+    sym = AddSymbol(stab, name, kind, (void *)type, NULL);
     if (!sym) {
         ERROR(astname, "duplicate definition for %s", name);
     }
@@ -267,7 +267,7 @@ MarkSystemFuncUsed(const char *name)
         ERROR(NULL, "Internal error could not find %s", name);
         return;
     }
-    if (sym->type == SYM_FUNCTION) {
+    if (sym->kind == SYM_FUNCTION) {
         calledf = (Function *)sym->val;
         calledf->used_as_ptr = 1;
     }
@@ -336,7 +336,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
     case AST_DECLARE_ALIAS:
         name = ast->left;
         ident = ast->right;
-        AddSymbol(&func->localsyms, name->d.string, SYM_ALIAS, (void *)ident->d.string);
+        AddSymbol(&func->localsyms, name->d.string, SYM_ALIAS, (void *)ident->d.string, NULL);
         AstNullify(ast);
         return;
     case AST_GLOBALVARS:
@@ -375,8 +375,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
             if (kind == AST_DECLARE_VAR_WEAK) {
                 Symbol *sym = LookupSymbol(name->d.string);
                 skipDef = 0 != sym;
-                if (sym && sym->type == SYM_CONSTANT) {
-                    ERROR(ast, "Attempt to redefine constant %s as a variable", sym->name);
+                if (sym && sym->kind == SYM_CONSTANT) {
+                    ERROR(ast, "Attempt to redefine constant %s as a variable", sym->user_name);
                     skipDef = false;
                 }
             } else {
@@ -421,7 +421,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
             closure_type = NewAST(AST_OBJECT, closure_type, NULL);
             closure_type->d.ptr = func->closure;
-            AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type);
+            AddSymbol(&func->localsyms, closure_name, SYM_CLOSURE, closure_type, NULL);
 
             C->subclasses = Parent->subclasses;
             C->objsyms.next = &Parent->objsyms;
@@ -484,7 +484,7 @@ static const char *
 AliasName(const char *origName)
 {
     Symbol *sym = LookupSymbol(origName);
-    if (sym && sym->type == SYM_ALIAS) {
+    if (sym && sym->kind == SYM_ALIAS) {
         return (const char *)sym->val;
     }
     return origName;
@@ -532,7 +532,7 @@ doDeclareFunction(AST *funcblock)
     /* look for an existing definition */
     sym = FindSymbol(&current->objsyms, AliasName(funcname));
     if (sym) {
-        if (sym->type != SYM_FUNCTION) {
+        if (sym->kind != SYM_FUNCTION) {
             ERROR(funcdef, "Redefining %s as a function", funcname);
             return;
         }
@@ -545,7 +545,7 @@ doDeclareFunction(AST *funcblock)
          * for an alias and declare under that name; that's what AliasName()
          * does
          */
-        sym = AddSymbol(&current->objsyms, AliasName(funcname), SYM_FUNCTION, fdef);
+        sym = AddSymbol(&current->objsyms, AliasName(funcname), SYM_FUNCTION, fdef, NULL);
     }
     
     if (fdef->body) {
@@ -606,10 +606,10 @@ doDeclareFunction(AST *funcblock)
     if (!src->right || src->right->kind == AST_RESULT) {
         if (language == LANG_SPIN) {
             fdef->resultexpr = AstIdentifier("result");
-            AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL);
+            AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL);
         } else {
             fdef->resultexpr = AstIdentifier("__result");
-            AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL);
+            AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL, NULL);
         }
     } else {
         AST *resultexpr = src->right;
@@ -620,7 +620,7 @@ doDeclareFunction(AST *funcblock)
             resultexpr = resultexpr->right;
         }
         if (resultexpr->kind == AST_IDENTIFIER) {
-            AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type);
+            AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL);
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
             fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0) / LONG_SIZE;
@@ -703,7 +703,7 @@ doDeclareFunction(AST *funcblock)
             vals = vals->right;
             if (id->kind == AST_IDENTIFIER) {
                 Symbol *sym = FindSymbol(&fdef->localsyms, id->d.string);
-                if (sym && sym->type == SYM_PARAMETER && !sym->val) {
+                if (sym && sym->kind == SYM_PARAMETER && !sym->val) {
                     sym->val = (void *)ExprType(defval);
                 }
             }
@@ -1295,11 +1295,11 @@ CheckForStatic(Function *fdef, AST *body)
             sym = LookupSymbol(body->d.string);
         }
         if (sym) {
-            if (sym->type == SYM_VARIABLE) {
+            if (sym->kind == SYM_VARIABLE) {
                 fdef->is_static = 0;
                 return;
             }
-            if (sym->type == SYM_FUNCTION) {
+            if (sym->kind == SYM_FUNCTION) {
                 Function *func = (Function *)sym->val;
                 if (func) {
                     fdef->is_static = fdef->is_static && func->is_static;
@@ -1490,11 +1490,11 @@ CheckFunctionCalls(AST *ast)
         sym = FindCalledFuncSymbol(ast, NULL, 0);
         expectArgs = 0;
         if (sym) {
-            fname = sym->name;
-            if (sym->type == SYM_BUILTIN) {
+            fname = sym->user_name;
+            if (sym->kind == SYM_BUILTIN) {
                 Builtin *b = (Builtin *)sym->val;
                 expectArgs = b->numparameters;
-            } else if (sym->type == SYM_FUNCTION) {
+            } else if (sym->kind == SYM_FUNCTION) {
                 f = (Function *)sym->val;
                 expectArgs = f->numparams;
             } else {
@@ -1772,7 +1772,7 @@ SetSymbolType(Symbol *sym, AST *newType)
   if (!sym) return 0;
   if (!gl_infer_ctypes) return 0;
   
-  switch(sym->type) {
+  switch(sym->kind) {
   case SYM_VARIABLE:
   case SYM_LOCALVAR:
   case SYM_PARAMETER:
@@ -1806,7 +1806,7 @@ InferTypesFunccall(AST *callast)
 
     list = callast->right;
     sym = FindCalledFuncSymbol(callast, NULL, 0);
-    if (!sym || sym->type != SYM_FUNCTION) return 0;
+    if (!sym || sym->kind != SYM_FUNCTION) return 0;
     
     func = (Function *)sym->val;
     typelist = func->params;
@@ -1819,7 +1819,7 @@ InferTypesFunccall(AST *callast)
             typelist = typelist->right;
             if (paramid && paramid->kind == AST_IDENTIFIER) {
                 sym = FindSymbol(&func->localsyms, paramid->d.string);
-                if (sym && sym->type == SYM_PARAMETER) {
+                if (sym && sym->kind == SYM_PARAMETER) {
                     paramtype = (AST *)sym->val;
                 }
             }
@@ -1970,7 +1970,7 @@ static void
 UseInternal(const char *name)
 {
     Symbol *sym = FindSymbol(&globalModule->objsyms, name);
-    if (sym && sym->type == SYM_FUNCTION) {
+    if (sym && sym->kind == SYM_FUNCTION) {
         Function *func = (Function *)sym->val;
         MarkUsed(func, "internal");
     } else {
@@ -1992,9 +1992,9 @@ MarkUsedBody(AST *body, const char *caller)
     switch(body->kind) {
     case AST_IDENTIFIER:
         sym = LookupSymbol(body->d.string);
-        if (sym && sym->type == SYM_FUNCTION) {
+        if (sym && sym->kind == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
-            MarkUsed(func, sym->name);
+            MarkUsed(func, sym->our_name);
         }
         break;
     case AST_METHODREF:
@@ -2006,10 +2006,10 @@ MarkUsedBody(AST *body, const char *caller)
         }
         P = GetClassPtr(objtype);
         sym = FindSymbol(&P->objsyms, body->right->d.string);
-        if (!sym || sym->type != SYM_FUNCTION) {
+        if (!sym || sym->kind != SYM_FUNCTION) {
             return;
         }
-        MarkUsed((Function *)sym->val, sym->name);
+        MarkUsed((Function *)sym->val, sym->our_name);
         break;
     case AST_COGINIT:
         UseInternal("_coginit");
@@ -2125,7 +2125,7 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         ref->is_leaf = 0;
         sym = FindCalledFuncSymbol(body, NULL, 0);
         if (!sym) return false;
-        if (sym->type != SYM_FUNCTION) return false;
+        if (sym->kind != SYM_FUNCTION) return false;
         func = (Function *)sym->val;
         if (ref == func) return true;
         if (func->visitFlag == visitRef) {

@@ -95,7 +95,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     sym = FindSymbol(&P->objsyms, name);
     if (sym) {
         // redefining a label with the exact same values is OK
-        if (sym->type != SYM_LABEL) {
+        if (sym->kind != SYM_LABEL) {
             ERROR(origLabel, "Redefining symbol %s", name);
             return;
         }
@@ -143,7 +143,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
         labelref->flags = LABEL_IN_HUB;
     }
     if (!sym) {
-        sym=AddSymbol(&P->objsyms, name, SYM_LABEL, labelref);
+        sym=AddSymbol(&P->objsyms, name, SYM_LABEL, labelref, NULL);
     }
 }
 
@@ -447,7 +447,7 @@ DeclareLabels(Module *P)
                 cogpc = 0;
             }
             tmpName = NewOrgName();
-            lastOrg = AddSymbol(&current->objsyms, tmpName, SYM_CONSTANT, AstInteger(cogpc));
+            lastOrg = AddSymbol(&current->objsyms, tmpName, SYM_CONSTANT, AstInteger(cogpc), NULL);
             lasttype = ast_type_long;
             ast->d.ptr = (void *)lastOrg;
             inHub = 0;

@@ -1,6 +1,6 @@
 /*
- * Spin compiler parser
- * Copyright (c) 2011-2018 Total Spectrum Software Inc.
+ * C compiler parser
+ * Copyright (c) 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -354,7 +354,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             AST *name, *def;
             name = ast->left;
             def = ast->right;
-            AddSymbol(&P->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string);
+            AddSymbol(&P->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
             continue;
         }
         if (ast->kind != AST_DECLARE_VAR) {
@@ -420,7 +420,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 
     /* see if there is already a type with that name */
     sym = LookupSymbolInTable(symtable, typename);
-    if (sym && sym->type == SYM_TYPEDEF) {
+    if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
         if (!IsClassType(class_type)) {
             SYNTAX_ERROR("%s is not a class", typename);
@@ -438,7 +438,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             C->Lptr = current->Lptr;
             class_type = NewAbstractObject(AstIdentifier(typename), NULL);
             class_type->d.ptr = C;
-            AddSymbol(symtable, typename, SYM_TYPEDEF, class_type);
+            AddSymbol(symtable, typename, SYM_TYPEDEF, class_type, NULL);
             C->subclasses = P->subclasses;
             P->subclasses = C;
         }
@@ -919,7 +919,7 @@ type_specifier
             {
                 AST *ident = $1;
                 Symbol *sym = LookupSymbolInTable(currentTypes, ident->d.string);
-                if (sym && sym->type == SYM_TYPEDEF) {
+                if (sym && sym->kind == SYM_TYPEDEF) {
                     $$ = (AST *)sym->val;
                 } else {
                     SYNTAX_ERROR("Internal error, bad typename %s", ident->d.string);

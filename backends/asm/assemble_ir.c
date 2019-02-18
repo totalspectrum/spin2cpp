@@ -377,7 +377,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                     }
                     flexbuf_printf(fb, "\tlong\t");
                     sym = (Symbol *)nextreloc->val;
-                    flexbuf_printf(fb, "@@@%s\n", IdentifierModuleName(current, sym->name));
+                    flexbuf_printf(fb, "@@@%s\n", IdentifierModuleName(current, sym->our_name));
                     data += 4;
                     addr += 4;
                     nextreloc++;
@@ -974,7 +974,7 @@ RenameLabels(IRList *list)
             if (mayRemap(name)) {
                 sym = FindSymbol(&localLabelMap, ir->dst->name);
                 if (!sym) {
-                    sym = AddSymbol(&localLabelMap, ir->dst->name, SYM_UNKNOWN, (void *)0);
+                    sym = AddSymbol(&localLabelMap, ir->dst->name, SYM_UNKNOWN, (void *)0, NULL);
                 }
                 sym->val = (void *)(labelValue++);
             }
