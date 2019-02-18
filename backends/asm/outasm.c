@@ -2496,7 +2496,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     
     if (ftypeptr) {
         AST *ftype;
-        if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF) {
+        if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF || expr->kind == AST_ABSADDROF) {
             ftype = ExprType(expr->left);
             if (ftype && ftype->kind == AST_PTRTYPE) {
                 ftype = RemoveTypeModifiers(ftype->left);
