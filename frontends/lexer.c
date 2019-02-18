@@ -2582,49 +2582,63 @@ InstrModifier modifiers_p2[] = {
     { "if_gt",           COND_MASK_P2 | (0x1<<28), 0 },
     { "if_nc_and_nz",   COND_MASK_P2 | (0x1<<28), 0 },
     { "if_nz_and_nc",   COND_MASK_P2 | (0x1<<28), 0 },
+    { "if_00",           COND_MASK_P2 | (0x1<<28), 0 },
 
     { "if_nc_and_z",    COND_MASK_P2 | (0x2<<28), 0 },
     { "if_z_and_nc",    COND_MASK_P2 | (0x2<<28), 0 },
+    { "if_01",           COND_MASK_P2 | (0x2<<28), 0 },
 
     { "if_ae",     COND_MASK_P2 | (0x3<<28), 0 },
     { "if_ge",     COND_MASK_P2 | (0x3<<28), 0 },
     { "if_nc",     COND_MASK_P2 | (0x3<<28), 0 },
+    { "if_0x",           COND_MASK_P2 | (0x3<<28), 0 },
 
     { "if_c_and_nz",    COND_MASK_P2 | (0x4<<28), 0 },
     { "if_nz_and_c",    COND_MASK_P2 | (0x4<<28), 0 },
+    { "if_10",    COND_MASK_P2 | (0x4<<28), 0 },
 
     { "if_ne",     COND_MASK_P2 | (0x5<<28), 0 },
     { "if_nz",     COND_MASK_P2 | (0x5<<28), 0 },
+    { "if_x0",     COND_MASK_P2 | (0x5<<28), 0 },
 
     { "if_c_ne_z", COND_MASK_P2 | (0x6<<28), 0 },
     { "if_z_ne_c", COND_MASK_P2 | (0x6<<28), 0 },
+    { "if_diff", COND_MASK_P2 | (0x6<<28), 0 },
 
     { "if_nc_or_nz", COND_MASK_P2 | (0x7<<28), 0 },
     { "if_nz_or_nc", COND_MASK_P2 | (0x7<<28), 0 },
+    { "if_not_11", COND_MASK_P2 | (0x7<<28), 0 },
 
     { "if_c_and_z", COND_MASK_P2 | (0x8<<28), 0 },
     { "if_z_and_c", COND_MASK_P2 | (0x8<<28), 0 },
+    { "if_11", COND_MASK_P2 | (0x8<<28), 0 },
 
     { "if_c_eq_z", COND_MASK_P2 | (0x9<<28), 0 },
     { "if_z_eq_c", COND_MASK_P2 | (0x9<<28), 0 },
+    { "if_same", COND_MASK_P2 | (0x9<<28), 0 },
 
     { "if_e",      COND_MASK_P2 | (0xa<<28), 0 },
     { "if_z",      COND_MASK_P2 | (0xa<<28), 0 },
+    { "if_x1",      COND_MASK_P2 | (0xa<<28), 0 },
 
     { "if_nc_or_z", COND_MASK_P2 | (0xb<<28), 0 },
     { "if_z_or_nc", COND_MASK_P2 | (0xb<<28), 0 },
+    { "if_not_10", COND_MASK_P2 | (0xb<<28), 0 },
 
     { "if_b",      COND_MASK_P2 | (0xc<<28), 0 },
     { "if_c",      COND_MASK_P2 | (0xc<<28), 0 },
     { "if_lt",      COND_MASK_P2 | (0xc<<28), 0 },
+    { "if_x1",      COND_MASK_P2 | (0xc<<28), 0 },
 
     { "if_c_or_nz", COND_MASK_P2 | (0xd<<28), 0 },
     { "if_nz_or_c", COND_MASK_P2 | (0xd<<28), 0 },
+    { "if_not_01", COND_MASK_P2 | (0xd<<28), 0 },
 
     { "if_be",     COND_MASK_P2 | (0xe<<28), 0 },
     { "if_le",     COND_MASK_P2 | (0xe<<28), 0 },
     { "if_c_or_z", COND_MASK_P2 | (0xe<<28), 0 },
     { "if_z_or_c", COND_MASK_P2 | (0xe<<28), 0 },
+    { "if_not_00", COND_MASK_P2 | (0xe<<28), 0 },
 
 
     { "wz", (1<<19), FLAG_WZ },
