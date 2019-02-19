@@ -43,6 +43,30 @@ typedef struct LoopValueSet {
 } LoopValueSet;
 
 /*
+ * utility functions
+ */
+bool AstMatchName(AST *expr, AST *name)
+{
+    if (expr && expr->kind == AST_LOCAL_IDENTIFIER) {
+        expr = expr->left;
+    }
+    if (name && name->kind == AST_LOCAL_IDENTIFIER) {
+        name = name->left;
+    }
+    return AstMatch(expr, name);
+}
+bool AstUsesName(AST *expr, AST *name)
+{
+    if (expr && expr->kind == AST_LOCAL_IDENTIFIER) {
+        expr = expr->left;
+    }
+    if (name && name->kind == AST_LOCAL_IDENTIFIER) {
+        name = name->left;
+    }
+    return AstUses(expr, name);
+}
+
+/*
  * initialize a LoopValueSet
  */
 static void
@@ -91,9 +115,8 @@ static LoopValueEntry *
 FindName(LoopValueSet *lvs, AST *name)
 {
     LoopValueEntry *entry;
-
     for (entry = lvs->head; entry; entry = entry->next) {
-        if (AstMatch(entry->name, name)) {
+        if (AstMatchName(entry->name, name)) {
             return entry;
         }
     }
@@ -137,9 +160,6 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
 {
     LoopValueEntry *entry;
 
-    if (name->kind == AST_LOCAL_IDENTIFIER) {
-        name = name->left;
-    }
     switch (name->kind) {
     case AST_EXPRLIST:
     {
@@ -160,6 +180,7 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
         return NULL;
     }
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
         break;
     default:
         // unexpected item, bail
@@ -346,10 +367,7 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         if (IsIdentifier(ast)) return false;
         if (ast->kind == AST_ARRAYREF) {
             if (ast->left) {
-                if (ast->left->kind == AST_LOCAL_IDENTIFIER) {
-                    ast = ast->left;
-                }
-                if (ast->left->kind == AST_IDENTIFIER) {
+                if (IsIdentifier(ast->left)) {
                     return IsLoopDependent(lvs, ast->right);
                 } else if (ast->left->kind == AST_MEMREF) {
                     return IsLoopDependent(lvs, ast->right) || IsLoopDependent(lvs, ast->left);
@@ -398,8 +416,6 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
     if (!val) return NULL;
     switch(val->kind) {
     case AST_LOCAL_IDENTIFIER:
-        val = val->left;
-        /* fall through */
     case AST_IDENTIFIER:
         newval = val;
         for(;;) {
@@ -408,28 +424,28 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             if (entry->hits != 1) return NULL;
             newval = entry->value;
             if (!newval) return NULL;
-            if (newval->kind != AST_IDENTIFIER) break;
+            if (!IsIdentifier(newval)) break;
         }
-        if (AstUses(newval, val)) {
+        if (AstUsesName(newval, val)) {
             AST *increment = NULL;
             if (newval->kind == AST_OPERATOR && newval->d.ival == '+') {
-                if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
+                if (AstMatchName(val, newval->left) && IsConstExpr(newval->right)) {
                     increment = newval->right;
                 }
             } else if (newval->kind == AST_OPERATOR && newval->d.ival == '-') {
-                if (AstMatch(val, newval->left) && IsConstExpr(newval->right)) {
+                if (AstMatchName(val, newval->left) && IsConstExpr(newval->right)) {
                     increment = AstOperator(K_NEGATE, NULL, newval->right);
                 }
-            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_INCREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_INCREMENT && (AstMatchName(val, newval->left) || AstMatchName(val, newval->right))) {
                 increment = AstInteger(1);
-            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_DECREMENT && (AstMatch(val, newval->left) || AstMatch(val, newval->right))) {
+            } else if (newval->kind == AST_OPERATOR && newval->d.ival == K_DECREMENT && (AstMatchName(val, newval->left) || AstMatchName(val, newval->right))) {
                 increment = AstOperator(K_NEGATE, NULL, AstInteger(1));
             }
             if (increment) {
                 if (*basename == NULL) {
                     *basename = val;
                 } else {
-                    if (!AstMatch(val, *basename)) {
+                    if (!AstMatchName(val, *basename)) {
                         return NULL;
                     }
                 }
@@ -579,7 +595,7 @@ MarkDependencies(LoopValueSet *lvs)
     // mark any self-dependent entries
     for (entry = lvs->head; entry; entry = entry->next) {
         if (!entry->value) continue;
-        if (AstUses(entry->value, entry->name)) {
+        if (AstUsesName(entry->value, entry->name)) {
             entry->flags |= LVFLAG_LOOPDEPEND;
         }
         if (AstUsesMemory(entry->value) || AstUsesMemory(entry->name)) {
@@ -690,7 +706,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (!lastAssign) {
                 continue;
             }
-            if (AstMatch(entry->name, entry->basename)) {
+            if (AstMatchName(entry->name, entry->basename)) {
                 // entry depends on itself, do not update
                 continue;
             }
@@ -848,7 +864,7 @@ CheckSimpleDecrementLoop(AST *stmt)
 
     /* check that the update is a decrement */
     while (update->kind == AST_SEQUENCE) {
-        if (AstUses(update->right, updateVar)) {
+        if (AstUsesName(update->right, updateVar)) {
             return false;
         }
         update = update->left;
@@ -858,7 +874,7 @@ CheckSimpleDecrementLoop(AST *stmt)
         return false;
     }
     if (update->d.ival == K_DECREMENT) {    
-        if (!AstMatch(update->left, updateVar) && !AstMatch(update->right, updateVar)) {
+        if (!AstMatchName(update->left, updateVar) && !AstMatchName(update->right, updateVar)) {
             return false;
         }
     } else {
@@ -961,7 +977,7 @@ CheckSimpleIncrementLoop(AST *stmt)
     } else {
         return;
     }
-    if (!AstMatch(updateVar, condtest->left))
+    if (!AstMatchName(updateVar, condtest->left))
         return;
 
     /* if this is a FOR rather than FORATLEASTONCE, we have to construct
@@ -980,7 +996,7 @@ CheckSimpleIncrementLoop(AST *stmt)
     
     /* check that the update is i++, and the variable is not used anywhere else */
     while (update->kind == AST_SEQUENCE) {
-        if (AstUses(update->right, updateVar)) {
+        if (AstUsesName(update->right, updateVar)) {
             return;
         }
         update = update->left;
@@ -988,11 +1004,11 @@ CheckSimpleIncrementLoop(AST *stmt)
     if (update->kind != AST_OPERATOR || update->d.ival != K_INCREMENT) {
         return;
     }
-    if (!AstMatch(update->left, updateVar) && !AstMatch(update->right, updateVar)) {
+    if (!AstMatchName(update->left, updateVar) && !AstMatchName(update->right, updateVar)) {
         return;
     }
     /* if i is used inside the loop, bail */
-    if (AstUses(body, updateVar)) {
+    if (AstUsesName(body, updateVar)) {
         return;
     }
     /* similarly if there are gotos or gosubs */
@@ -1147,6 +1163,7 @@ DumpLVS(LoopValueSet *lvs)
         DumpAST(e->name);
         printf("value: ");
         DumpAST(e->value);
+        printf("hits=%d flags=0x%04x", e->hits, e->flags);
         printf("\n");
     }
 }

@@ -357,7 +357,7 @@ PrintStackWithSize(Flexbuf *f, AST *origstack)
         ERROR(stack, "coginit stack is not part of an array");
         return;
     }
-    if (!IsIdentifier(stack)) {
+    if (!IsIdentifier(stack->left)) {
         ERROR(stack, "coginit stack too complicated");
         return;
     }
