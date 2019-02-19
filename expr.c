@@ -2083,6 +2083,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     }
     switch (expr->kind) {
     case AST_INTEGER:
+        if (P->curLanguage == LANG_C && expr->d.ival == 0) {
+            return ast_type_generic;
+        }
+        return ast_type_long;
     case AST_CONSTANT:
     case AST_CONSTREF:
     case AST_HWREG:
