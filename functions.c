@@ -334,9 +334,10 @@ findLocalsAndDeclare(Function *func, AST *ast)
     kind = ast->kind;
     switch(kind) {
     case AST_DECLARE_ALIAS:
+#warning fixme this case is probably wrong        
         name = ast->left;
         ident = ast->right;
-        AddSymbol(&func->localsyms, name->d.string, SYM_ALIAS, (void *)ident->d.string, NULL);
+        AddSymbol(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL);
         AstNullify(ast);
         return;
     case AST_GLOBALVARS:
@@ -480,11 +481,12 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     MaybeDeclareMemberVar(P, ident, typ);
 }
 
+#warning probably can dispense with this when proper static support is in
 static const char *
 AliasName(const char *origName)
 {
     Symbol *sym = LookupSymbol(origName);
-    if (sym && sym->kind == SYM_ALIAS) {
+    if (sym && sym->kind == SYM_WEAK_ALIAS) {
         return (const char *)sym->val;
     }
     return origName;

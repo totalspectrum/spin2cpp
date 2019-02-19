@@ -128,6 +128,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         first = CombineTypes(first, second->left, identifier);
         first = CombineTypes(first, second->right, identifier);
         return MergePrefix(prefix, first);
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         if (identifier) {
             *identifier = second;
@@ -350,11 +351,12 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     while (astlist) {
         ast = astlist->left;
         astlist = astlist->right;
+#warning fixme probably a better way to do this        
         if (ast->kind == AST_DECLARE_ALIAS) {
             AST *name, *def;
             name = ast->left;
             def = ast->right;
-            AddSymbol(&P->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
+            AddSymbol(&P->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
             continue;
         }
         if (ast->kind != AST_DECLARE_VAR) {

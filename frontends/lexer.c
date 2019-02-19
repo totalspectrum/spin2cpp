@@ -2848,12 +2848,16 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 *ast_ptr = ast;
                 last_ast = AstIdentifier(idstr);
                 return BAS_TYPENAME;
+            } else if (sym->kind == SYM_REDEF) {
+                last_ast = AstIdentifier(idstr);
+                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->val, last_ast);
+                *ast_ptr = ast;
+                return BAS_IDENTIFIER;
             }
         }
     }
     // it's an identifier
-    ast = NewAST(AST_IDENTIFIER, NULL, NULL);
-    ast->d.string = idstr;
+    ast = AstIdentifier(idstr);
     *ast_ptr = last_ast = ast;
 
     // if the next character is ':' then it may be a label
@@ -3083,6 +3087,12 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
                 last_ast = ast = AstIdentifier(idstr);
                 *ast_ptr = ast;
                 return C_TYPE_NAME;
+            }
+            if (sym->kind == SYM_REDEF) {
+                last_ast = AstIdentifier(idstr);
+                ast = NewAST(AST_LOCAL_IDENTIFIER, (AST *)sym->val, last_ast);
+                *ast_ptr = ast;
+                return C_IDENTIFIER;
             }
         }
     }

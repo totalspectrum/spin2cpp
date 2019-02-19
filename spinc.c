@@ -369,7 +369,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     olddef = FindSymbol(table, name);
     if (olddef) {
         // is it an alias?
-        if (olddef->kind == SYM_ALIAS) {
+        if (olddef->kind == SYM_WEAK_ALIAS) {
             alias = name;
             name = olddef->val;
         }
@@ -387,11 +387,12 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     if (olddef && !alias) {
         ERROR(ident, "Redefining symbol %s", name);
     }
+#warning this needs fixing    
     if (is_static) {
         if (!alias) {
             alias = NewTemporaryVariable("_static_");
             ident = AstIdentifier(alias);
-            AddSymbol(table, name, SYM_ALIAS, (void *)alias, NULL);
+            AddSymbol(table, name, SYM_WEAK_ALIAS, (void *)alias, NULL);
         }
     }
     

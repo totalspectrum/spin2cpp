@@ -458,7 +458,7 @@ doBasicTransform(AST **astptr)
         AST *ifholder = NULL;
         doBasicTransform(&ast->left);
         AstReportAs(ast, &saveinfo);
-        if (ast->left->kind == AST_IDENTIFIER) {
+        if (IsIdentifier(ast->left)) {
             var = ast->left;
         } else {
             var = AstTempLocalVariable("_tmp_", ExprType(ast->left));
@@ -703,10 +703,10 @@ doBasicTransform(AST **astptr)
         }
         break;
     case AST_LABEL:
-        if (!ast->left || ast->left->kind != AST_IDENTIFIER) {
+        if (!ast->left || !IsIdentifier(ast->left)) {
             ERROR(ast, "Label is not an identifier");
         } else {
-            const char *name = ast->left->d.string;
+            const char *name = GetIdentifierName(ast->left);
             Symbol *sym = FindSymbol(&curfunc->localsyms, name);
             if (sym) {
                 WARNING(ast, "Redefining %s as a label", name);
@@ -722,6 +722,7 @@ doBasicTransform(AST **astptr)
             func->force_static = 1;
         }
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
         AST *typ;
@@ -1820,6 +1821,7 @@ AST *CheckTypes(AST *ast)
             return ltype;
         }
         return ExprType(ast);
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     case AST_SYMBOL:
         // add super class lookups if necessary

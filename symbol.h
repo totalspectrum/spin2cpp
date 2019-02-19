@@ -25,9 +25,12 @@ typedef enum symtype {
     SYM_LOCALLABEL,      /* label in inline assembly or function */
     SYM_TYPEDEF,         /* a type definition */
     SYM_CLOSURE,         /* a function's closure object */
-    SYM_ALIAS,           /* an alias for another symbol */
+    SYM_WEAK_ALIAS,      /* an alias for another symbol; may be overwritten */
     SYM_FILE,            /* name of a file included in the object */
+    SYM_REDEF,           /* name redefinition, used for implementing static */
 } Symtype;
+
+#define IsAlias(sym) ((sym)->kind == SYM_WEAK_ALIAS)
 
 //
 // Symbols have two names:

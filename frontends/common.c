@@ -144,7 +144,7 @@ static void
 addAliases(SymbolTable *tab, Aliases *A)
 {
     while (A && A->name) {
-        AddSymbol(tab, A->name, SYM_ALIAS, (void *)A->alias, NULL);
+        AddSymbol(tab, A->name, SYM_WEAK_ALIAS, (void *)A->alias, NULL);
         A++;
     }
 }
@@ -775,12 +775,14 @@ void PopCurrentTypes(void)
     }
 }
 
-/* check a single declaration for typedefs */
+/* check a single declaration for typedefs or renamed variables */
 static AST *
 CheckOneDeclaration(AST *origdecl)
 {
     AST *decl = origdecl;
     AST *ident;
+    AST **identptr;
+    const char *name;
     if (!decl) return decl;
 
     if (decl->kind == AST_DECLARE_ALIAS) {
@@ -791,18 +793,37 @@ CheckOneDeclaration(AST *origdecl)
         return decl;
     }
     ident = decl->right;
+    identptr = &decl->right;
     decl = decl->left;
     if (!decl) {
         return decl;
     }
-    if (decl->kind == AST_TYPEDEF) {
-        if (ident->kind != AST_IDENTIFIER) {
-            ERROR(decl, "needed identifier");
-        } else {
-            AddSymbol(currentTypes, ident->d.string, SYM_TYPEDEF, decl->left, NULL);
-        }
+    if (ident->kind == AST_ASSIGN) {
+        identptr = &ident->left;
+        ident = *identptr;
+    }
+    if (ident->kind == AST_LOCAL_IDENTIFIER) {
+        // AST_LOCALIDENTIFIER(left,right) == (alias, user_name)
+        ident = ident->right;
+    }
+    if (ident->kind != AST_IDENTIFIER) {
+        ERROR(decl, "internal error: expected identifier in declaration");
         return NULL;
     }
+    name = ident->d.string;
+    if (decl->kind == AST_TYPEDEF) {
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, decl->left, NULL);
+        return NULL;
+    } else {
+        const char *newName = NewTemporaryVariable(ident->d.string);
+        AST *newIdent = AstIdentifier(newName);
+        AddSymbol(currentTypes, name, SYM_REDEF, (void *)newIdent, newName);
+        if (identptr) {
+            *identptr = newIdent;
+        } else {
+            ERROR(decl, "internal error could not find identifier ptr");
+        }
+    }        
     return origdecl;
 }
 

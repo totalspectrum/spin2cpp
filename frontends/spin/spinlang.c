@@ -17,6 +17,10 @@
 bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;
+
+    if (ast->kind == AST_LOCAL_IDENTIFIER) {
+        ast = ast->left;
+    }
     switch (ast->kind) {
     case AST_IDENTIFIER:
         sym = LookupSymbol(ast->d.string);
@@ -94,14 +98,14 @@ TransformLongMove(AST **astptr, AST *ast)
     // check src and dst
     if (src->kind != AST_ADDROF && src->kind != AST_ABSADDROF) return false;
     src = src->left;
-    if (src->kind != AST_IDENTIFIER) return false;
+    if (!IsIdentifier(src)) return false;
     if (dst->kind != AST_ADDROF && dst->kind != AST_ABSADDROF) return false;
     dst = dst->left;
-    if (dst->kind != AST_IDENTIFIER) return false;
+    if (!IsIdentifier(dst)) return false;
 
     // ok, we have the pattern we like
-    syms = LookupSymbol(src->d.string);
-    symd = LookupSymbol(dst->d.string);
+    syms = LookupAstSymbol(src, NULL);
+    symd = LookupAstSymbol(dst, NULL);
     if (!syms || !symd) return false;
 
     switch(syms->kind) {
@@ -176,8 +180,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
     case AST_ARRAYREF:
         /* see if it's a parameter whose address is being taken */
         ast = body->left;
-        if (ast->kind == AST_IDENTIFIER) {
-            sym = FindSymbol(&fdef->localsyms, ast->d.string);
+        if (IsIdentifier(ast)) {
+            sym = FindSymbol(&fdef->localsyms, GetIdentifierName(ast));
             if (sym) {
                 if (sym->kind == SYM_PARAMETER) {
                     if (!fdef->parmarray) {
@@ -223,8 +227,9 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
         // after an @, we probably cannot rely on any typing info??
         expectType = NULL;
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
-        sym = FindSymbol(&fdef->localsyms,  body->d.string);
+        sym = FindSymbol(&fdef->localsyms,  GetIdentifierName(body));
         if (!sym) {
             sym = LookupSymbol(body->d.string);
         }

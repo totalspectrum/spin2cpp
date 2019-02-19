@@ -211,10 +211,11 @@ DeclareBASICMemberVariables(AST *ast)
         return;
     }
     if (ast->kind == AST_DECLARE_ALIAS) {
+#warning dubious code for statics
         AST *name, *def;
         name = ast->left;
         def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
+        AddSymbol(&current->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
         return;
     }
     idlist = ast->right;
@@ -243,10 +244,11 @@ DeclareBASICGlobalVariables(AST *ast)
         return;
     }
     if (ast->kind == AST_DECLARE_ALIAS) {
+#warning dubious code for statics        
         AST *name, *def;
         name = ast->left;
         def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
+        AddSymbol(&current->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
         return;
     }
     idlist = ast->right;

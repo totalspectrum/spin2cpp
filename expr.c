@@ -23,6 +23,9 @@ GetVarNameForError(AST *expr)
     if (expr->kind == AST_IDENTIFIER) {
         return expr->d.string;
     }
+    if (expr->kind == AST_LOCAL_IDENTIFIER) {
+        return expr->right->d.string;
+    }
     return "variable";
 }
         
@@ -33,6 +36,8 @@ GetIdentifierName(AST *expr)
     const char *name;
     if (expr->kind == AST_IDENTIFIER) {
         name = expr->d.string;
+    }  else if (expr->kind == AST_LOCAL_IDENTIFIER) {
+        name = expr->right->d.string;
     } else {
         name = "expression";
     }
@@ -100,7 +105,7 @@ LookupAstSymbol(AST *ast, const char *msg)
     if (ast->kind == AST_SYMBOL) {
         return (Symbol *)ast->d.ptr;
     }
-    if (ast->kind == AST_IDENTIFIER) {
+    if (ast->kind == AST_IDENTIFIER || ast->kind == AST_LOCAL_IDENTIFIER) {
         id = ast;
     } else if (ast->kind == AST_ARRAYREF) {
         id = ast->left;
@@ -108,7 +113,10 @@ LookupAstSymbol(AST *ast, const char *msg)
         //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
         return NULL;
     }
-    if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
+    if (id->kind == AST_LOCAL_IDENTIFIER) {
+        name = GetIdentifierName(id);
+        sym = LookupSymbol(ast->left->d.string);
+    } else if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
         name = GetIdentifierName(id);
         sym = LookupSymbol(name);
     }
@@ -245,7 +253,7 @@ IsSpinCoginit(AST *params, Function **methodptr)
         return false;
     }
     func = exprlist->left;
-    if (func->kind == AST_IDENTIFIER) {
+    if (func->kind == AST_IDENTIFIER || func->kind == AST_LOCAL_IDENTIFIER) {
         sym = LookupAstSymbol(func, "coginit/cognew");
         if (sym && sym->kind == SYM_FUNCTION) {
             if (methodptr) *methodptr = (Function *)sym->val;
@@ -323,7 +331,7 @@ ReplaceExprWithVariable(const char *prefix, AST *expr)
     AST *exprinit;
     AST **lastptr;
     Symbol *sym;
-    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
+    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL || expr->kind == AST_LOCAL_IDENTIFIER)
         return expr; // already an identifier!
 
     // FIXME: need to make sure "expr" is invariant in the function,
@@ -646,7 +654,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         needrev = FoldIfConst(AstOperator('<', hiexpr, loexpr));
         if (IsConstExpr(loexpr)) {
             loexpr = FoldIfConst(AstOperator(K_LIMITMAX, loexpr, hiexpr));
-        } else if (loexpr->kind != AST_IDENTIFIER) {
+        } else if (loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
             loexpr = ReplaceExprWithVariable("_lo", loexpr);
         }
         revsrc = AstOperator(K_REV, src, nbits);
@@ -736,7 +744,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
     {
         AST *andexpr;
         AST *orexpr;
-        if (!IsConstExpr(loexpr) && loexpr->kind != AST_IDENTIFIER) {
+        if (!IsConstExpr(loexpr) && loexpr->kind != AST_IDENTIFIER && loexpr->kind != AST_LOCAL_IDENTIFIER) {
             loexpr = ReplaceExprWithVariable("lo_", loexpr);
         }
         if (!IsConstExpr(maskexpr)) {
@@ -1261,11 +1269,15 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_RESULT:
         *valid = 0;
         return intExpr(0);
+    case AST_LOCAL_IDENTIFIER:
     case AST_SYMBOL:
     case AST_IDENTIFIER:
         if (expr->kind == AST_SYMBOL) {
             sym = (Symbol *)expr->d.ptr;
             name = sym->user_name;
+        } else if (expr->kind == AST_LOCAL_IDENTIFIER) {
+            name = expr->right->d.string;
+            sym = LookupSymbol(expr->left->d.string);
         } else {
             name = expr->d.string;
             sym = LookupSymbol(name);
@@ -1384,7 +1396,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             expr = expr->left;
             offset = rval.val;
         }
-        if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL) {
+        if (expr->kind != AST_IDENTIFIER && expr->kind != AST_SYMBOL && expr->kind != AST_LOCAL_IDENTIFIER) {
             if (reportError)
                 ERROR(expr, "Only addresses of identifiers allowed");
             else
@@ -1393,13 +1405,18 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         if (expr->kind == AST_SYMBOL) {
             sym = (Symbol *)expr->d.ptr;
+            name = sym->user_name;
+        } else if (expr->kind == AST_LOCAL_IDENTIFIER) {
+            sym = LookupSymbol(expr->left->d.string);
+            name = expr->right->d.string;
         } else {
-            sym = LookupSymbol(expr->d.string);
+            name = expr->d.string;
+            sym = LookupSymbol(name);
         }
         if (!sym || sym->kind != SYM_LABEL) {
             if (reportError) {
                 if (!sym) {
-                    ERROR(expr, "Unknown symbol %s", expr->d.string);
+                    ERROR(expr, "Unknown symbol %s", name);
                 } else {
                     ERROR(expr, "Only addresses of labels allowed");
                 }
@@ -1552,6 +1569,9 @@ IsArray(AST *expr)
 {
     Symbol *sym;
     AST *type;
+    if (expr && expr->kind == AST_LOCAL_IDENTIFIER) {
+        expr = expr->left;
+    }
     if (!expr || expr->kind != AST_IDENTIFIER)
         return 0;
     sym = LookupSymbol(expr->d.string);
@@ -2056,7 +2076,7 @@ AST *
 ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
 {
     AST *sub;
-
+    
     if (!expr) return NULL;
     if (!P) {
         P = current;
@@ -2109,10 +2129,20 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (!sub) sub= ast_type_generic;
         return NewAST(AST_PTRTYPE, sub, NULL);
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
     {
-        Symbol *sym = LookupSymbolInTable(table, expr->d.string);
+        Symbol *sym;
         Label *lab;
         AST *typ;
+        const char *intern_name, *user_name;
+
+        if (expr->kind == AST_LOCAL_IDENTIFIER) {
+            intern_name = expr->left->d.string;
+            user_name = expr->right->d.string;
+        } else {
+            intern_name = user_name = expr->d.string;
+        }
+        sym = LookupSymbolInTable(table, intern_name);
         if (!sym) return NULL;
         switch (sym->kind) {
         case SYM_CONSTANT:
@@ -2192,11 +2222,11 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         const char *methodname;
         Function *func;
         
-        if (expr->right->kind != AST_IDENTIFIER) {
+        if (expr->right->kind != AST_IDENTIFIER && expr->right->kind != AST_LOCAL_IDENTIFIER) {
             ERROR(expr, "Expecting identifier after '.'");
             return NULL;
         }
-        methodname = expr->right->d.string;
+        methodname = GetIdentifierName(expr->right);
         objtype = BaseType(ExprTypeRelative(table, objref, P));
         if (!objtype) return NULL;
         if (!IsClassType(objtype)) {
@@ -2472,6 +2502,7 @@ ExprHasSideEffects(AST *expr)
         }
         break;
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
         return 0;
     case AST_INTEGER:
     case AST_STRING:

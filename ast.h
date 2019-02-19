@@ -195,6 +195,7 @@ enum astkind {
 
     AST_GOSUB = 136,
     AST_SUPER,
+    AST_LOCAL_IDENTIFIER,
 };
 
 /* forward reference */
@@ -274,5 +275,7 @@ AST *CheckYield(AST *loopbody);
 
 // turn an AST into a no-op
 void AstNullify(AST *ptr);
+
+#define IsIdentifier(ast) ((ast)->kind == AST_IDENTIFIER || ((ast)->kind == AST_LOCAL_IDENTIFIER))
 
 #endif

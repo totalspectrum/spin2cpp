@@ -70,7 +70,7 @@ doLookupSymbolInTable(SymbolTable *table, const char *name, int level)
            sym = doLookupSymbolInTable(table->next, name, level);
 	}
     }
-    if (sym && sym->kind == SYM_ALIAS) {
+    if (sym && IsAlias(sym)) {
         // have to look it up again
         Symbol *alias;
         level++;
@@ -161,7 +161,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     sym = table->hash[hash];
     while (sym) {
         if (!STRCMP(sym->our_name, name)) {
-            if (sym->kind == SYM_ALIAS) {
+            if (sym->kind == SYM_WEAK_ALIAS) {
                 // it's OK to override aliases
                 break;
             }

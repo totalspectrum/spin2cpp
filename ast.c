@@ -563,6 +563,7 @@ static const char *astnames[] = {
     
     "gosub",
     "super",
+    "local_identifier",
 };
 
 //

@@ -1151,6 +1151,9 @@ VarName(AST *ast)
     if (ast->kind == AST_ARRAYDECL) {
         ast = ast->left;
     }
+    if (ast->kind == AST_LOCAL_IDENTIFIER) {
+        ast = ast->left;
+    }
     if (ast->kind != AST_IDENTIFIER) {
         ERROR(ast, "Internal error, expected identifier");
         return "<null>";
@@ -2922,6 +2925,9 @@ CompileMaskMove(IRList *irl, AST *expr)
     case AST_IDENTIFIER:
         dest = CompileIdentifier(irl, destast);
         break;
+    case AST_LOCAL_IDENTIFIER:
+        dest = CompileIdentifier(irl, destast->left);
+        break;
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
         break;
@@ -3063,7 +3069,7 @@ CompileCoginit(IRList *irl, AST *expr)
         }
         
         // we have to build the call into the new stack
-        if (func->kind == AST_IDENTIFIER) {
+        if (IsIdentifier(func)) {
             params = NULL;
         } else if (func->kind == AST_FUNCCALL) {
             params = func->right;
@@ -3200,6 +3206,7 @@ GetAddressOf(IRList *irl, AST *expr)
     switch (expr->kind) {
     case AST_RESULT:
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
         res = CompileExpression(irl, expr, NULL);
         tmp = GetLea(irl, res);
         return tmp;
@@ -3297,6 +3304,7 @@ validateArrayRef(AST *ast)
     case AST_MEMREF:
         return true;
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
         return IsArrayType(ExprType(ast));
     default:
         return validateArrayRef(ast->left) || validateArrayRef(ast->right);
@@ -3321,6 +3329,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       switch (expr->kind) {
       case AST_SYMBOL:
       case AST_IDENTIFIER:
+      case AST_LOCAL_IDENTIFIER:
           // leave symbolic constants alone
       case AST_ADDROF:
       case AST_ABSADDROF:
@@ -3400,6 +3409,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   }
   case AST_RESULT:
   case AST_IDENTIFIER:
+  case AST_LOCAL_IDENTIFIER:
     r = CompileIdentifier(irl, expr);
     if (dest) {
         EmitMove(irl, dest, r);
@@ -3856,7 +3866,7 @@ static void CompileCaseStmt(IRList *irl, AST *ast)
     if (var->kind == AST_ASSIGN) {
         CompileExpression(irl, var, NULL);
         var = var->left;
-    } else if (var->kind != AST_IDENTIFIER && var->kind != AST_SYMBOL) {
+    } else if (!IsIdentifier(var)) {
         ERROR(var, "Internal error, expected identifier in case");
         return;
     }
@@ -4140,7 +4150,7 @@ CompileFunctionBody(Function *f)
     if (f->resultexpr && !IsConstExpr(f->resultexpr))
     {
         AST *init = GetResultExpr(f->resultexpr);
-        if (init && (init->kind == AST_IDENTIFIER || init->kind == AST_RESULT)) {
+        if (init && (IsIdentifier(init) || init->kind == AST_RESULT)) {
             AST *resinit = AstAssign(init, AstInteger(0));
             CompileStatement(irl, resinit);
         }
@@ -4453,11 +4463,11 @@ AssignFuncNames(IRList *irl, Module *P)
                 name = decl->left;  // this is the array def
                 tablelen = EvalConstExpr(name->right);
                 name = name->left;
-                if (name->kind != AST_IDENTIFIER) {
+                if (!IsIdentifier(name)) {
                     ERROR(ast, "Internal error: expected identifier");
                     break;
                 }
-                sym = FindSymbol(&P->objsyms, name->d.string);
+                sym = FindSymbol(&P->objsyms, GetIdentifierName(name));
                 if (!sym || sym->kind != SYM_TEMPVAR) {
                     ERROR(name, "Internal error: unable to find symbol");
                     break;
