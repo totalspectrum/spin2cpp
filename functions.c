@@ -1992,8 +1992,9 @@ MarkUsedBody(AST *body, const char *caller)
     
     if (!body) return;
     switch(body->kind) {
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
-        sym = LookupSymbol(body->d.string);
+        sym = LookupSymbol(GetIdentifierName(body));
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);
@@ -2007,7 +2008,7 @@ MarkUsedBody(AST *body, const char *caller)
             return;
         }
         P = GetClassPtr(objtype);
-        sym = FindSymbol(&P->objsyms, body->right->d.string);
+        sym = FindSymbol(&P->objsyms, GetIdentifierName(body->right));
         if (!sym || sym->kind != SYM_FUNCTION) {
             return;
         }
