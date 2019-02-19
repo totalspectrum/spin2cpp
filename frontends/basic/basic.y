@@ -91,7 +91,7 @@ GetCurOptionSymbol(const char *name, int defval)
 #endif    
     Symbol *sym = LookupSymbolInTable(symtab, name);
     if (!sym) {
-        sym = AddSymbol(symtab, name, SYM_CONSTANT, AstInteger(defval));
+        sym = AddSymbol(symtab, name, SYM_CONSTANT, AstInteger(defval), NULL);
     }
     return sym;
 }
@@ -214,7 +214,7 @@ DeclareBASICMemberVariables(AST *ast)
         AST *name, *def;
         name = ast->left;
         def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string);
+        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
         return;
     }
     idlist = ast->right;
@@ -246,7 +246,7 @@ DeclareBASICGlobalVariables(AST *ast)
         AST *name, *def;
         name = ast->left;
         def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string);
+        AddSymbol(&current->objsyms, name->d.string, SYM_ALIAS, (void *)def->d.string, NULL);
         return;
     }
     idlist = ast->right;
@@ -1470,7 +1470,7 @@ classdecl:
     {
         AST *newobj = NewAbstractObject( $2, $4 );
         current->objblock = AddToList(current->objblock, newobj);
-        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj);
+        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
         $$ = NULL;
     }
   ;
@@ -1499,7 +1499,7 @@ constlist:
 typedecl:
   BAS_TYPE BAS_IDENTIFIER BAS_AS typename
     {
-        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4);
+        AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, $4, NULL);
     }
 ;
 typename:

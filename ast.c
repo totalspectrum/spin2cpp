@@ -315,7 +315,7 @@ AstTempVariable(const char *prefix)
 {
     AST *ident = AstTempIdentifier(prefix);
     const char *name = ident->d.string;
-    AddSymbol(&current->objsyms, name, SYM_TEMPVAR, (void *)ast_type_long);
+    AddSymbol(&current->objsyms, name, SYM_TEMPVAR, (void *)ast_type_long, name);
     return ident;
 }
 

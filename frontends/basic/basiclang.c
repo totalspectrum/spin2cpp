@@ -525,7 +525,7 @@ doBasicTransform(AST **astptr)
             Symbol *sym;
             Function *f = NULL;
             sym = FindCalledFuncSymbol(ast, NULL, 0);
-            if (sym && sym->type == SYM_FUNCTION) {
+            if (sym && sym->kind == SYM_FUNCTION) {
                 f = (Function *)sym->val;
             }
             if (f) {
@@ -711,7 +711,7 @@ doBasicTransform(AST **astptr)
             if (sym) {
                 WARNING(ast, "Redefining %s as a label", name);
             }
-            AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, 0);
+            AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, 0, NULL);
         }
         break;
     case AST_COGINIT:
@@ -1574,7 +1574,7 @@ BuildMethodPointer(AST *ast)
     Function *func;
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
-    if (!sym || sym->type != SYM_FUNCTION) {
+    if (!sym || sym->kind != SYM_FUNCTION) {
         ERROR(ast, "Internal error, unable to find function address");
         return ast;
     }
@@ -1631,7 +1631,7 @@ AST *CheckTypes(AST *ast)
                 ERROR(ast, "Expected identifier in goto/gosub");
             } else {
                 Symbol *sym = FindSymbol(&curfunc->localsyms, id->d.string);
-                if (!sym || sym->type != SYM_LOCALLABEL) {
+                if (!sym || sym->kind != SYM_LOCALLABEL) {
                     ERROR(id, "%s is not a local label", id->d.string);
                 }
             }
@@ -1755,7 +1755,7 @@ AST *CheckTypes(AST *ast)
                 if (curfunc->language == LANG_BASIC) {
                     extern Symbol *GetCurArrayBase();
                     Symbol *sym = GetCurArrayBase();
-                    if (sym && sym->type == SYM_CONSTANT) {
+                    if (sym && sym->kind == SYM_CONSTANT) {
                         ast->right = AstOperator('-', ast->right, (AST *)sym->val);
                     }
                 }
@@ -1832,14 +1832,14 @@ AST *CheckTypes(AST *ast)
                 return NULL;
             }
             ltype = ExprType(ast);
-            if (sym->type == SYM_FUNCTION) {
+            if (sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (f->module == current || f->module == globalModule) {
                     return ltype;
                 }
             }
-            if (sym->type == SYM_VARIABLE || sym->type == SYM_FUNCTION) {
-                const char *name = sym->name;
+            if (sym->kind == SYM_VARIABLE || sym->kind == SYM_FUNCTION) {
+                const char *name = sym->our_name;
                 P = current;
                 while (P) {
                     sym = FindSymbol(&P->objsyms, name);

@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2018 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2019 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -643,7 +643,7 @@ objline:
         AST *typ = NewAbstractObject($1, $3);
         AST *ident = $1;
         const char *name = GetIdentifierName(ident);
-        AddSymbol(&current->objsyms, name, SYM_TYPEDEF, typ);
+        AddSymbol(&current->objsyms, name, SYM_TYPEDEF, typ, NULL);
         $$ = typ;
     }
 ;

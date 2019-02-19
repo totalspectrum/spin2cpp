@@ -1,7 +1,7 @@
 //
 // C++ source code output for spin2cpp
 //
-// Copyright 2012-2018 Total Spectrum Software Inc.
+// Copyright 2012-2019 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 
@@ -838,7 +838,7 @@ SetCppFlags(CppModData *bedata, AST *ast)
     case AST_IDENTIFIER:
         {
             Symbol *sym = LookupSymbol(ast->d.string);
-            if (sym && sym->type == SYM_BUILTIN) {
+            if (sym && sym->kind == SYM_BUILTIN) {
                 Builtin *b = (Builtin *)sym->val;
                 if (!strncmp(b->name, "lock", 4)) {
                     bedata->needsLockFuncs = 1;

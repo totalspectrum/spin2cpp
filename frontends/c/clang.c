@@ -23,7 +23,7 @@ AddLabel(AST *ast)
         if (sym) {
             WARNING(ast, "Redefining %s as a label", name);
         }
-        AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, 0);
+        AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, NULL, NULL);
     }
 }
 
@@ -203,7 +203,7 @@ doCTransform(AST **astptr)
             Symbol *sym;
             Function *f = NULL;
             sym = FindCalledFuncSymbol(ast, NULL, 0);
-            if (sym && sym->type == SYM_FUNCTION) {
+            if (sym && sym->kind == SYM_FUNCTION) {
                 f = (Function *)sym->val;
             }
             if (f) {

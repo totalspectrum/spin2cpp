@@ -144,7 +144,7 @@ static void
 addAliases(SymbolTable *tab, Aliases *A)
 {
     while (A && A->name) {
-        AddSymbol(tab, A->name, SYM_ALIAS, (void *)A->alias);
+        AddSymbol(tab, A->name, SYM_ALIAS, (void *)A->alias, NULL);
         A++;
     }
 }
@@ -230,9 +230,9 @@ EnterConstant(const char *name, AST *expr)
     Symbol *sym;
 
     if (IsFloatConst(expr)) {
-        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr);
+        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
     } else {
-        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr);
+        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr, NULL);
     }
     return sym;
 }
@@ -799,7 +799,7 @@ CheckOneDeclaration(AST *origdecl)
         if (ident->kind != AST_IDENTIFIER) {
             ERROR(decl, "needed identifier");
         } else {
-            AddSymbol(currentTypes, ident->d.string, SYM_TYPEDEF, decl->left);
+            AddSymbol(currentTypes, ident->d.string, SYM_TYPEDEF, decl->left, NULL);
         }
         return NULL;
     }

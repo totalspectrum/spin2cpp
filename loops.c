@@ -290,7 +290,7 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
         if (!sym) {
             return true;
         }
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_PARAMETER:
         case SYM_RESULT:
         case SYM_LOCALVAR:
@@ -441,7 +441,7 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
                 if (!sym) {
                     return NULL;
                 }
-                switch (sym->type) {
+                switch (sym->kind) {
                 case SYM_VARIABLE:
                 case SYM_TEMPVAR:
                 case SYM_LOCALVAR:
@@ -543,7 +543,7 @@ AstUsesMemory(AST *ast)
         if (!sym) {
             return true;
         }
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_PARAMETER:
         case SYM_RESULT:
         case SYM_LOCALVAR:
@@ -919,7 +919,7 @@ CheckSimpleIncrementLoop(AST *stmt)
         return;
     sym = LookupSymbol(updateVar->d.string);
     if (!sym) return;
-    switch (sym->type) {
+    switch (sym->kind) {
     case SYM_PARAMETER:
     case SYM_RESULT:
     case SYM_LOCALVAR:

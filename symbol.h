@@ -29,10 +29,16 @@ typedef enum symtype {
     SYM_FILE,            /* name of a file included in the object */
 } Symtype;
 
+//
+// Symbols have two names:
+// user_name is the name that should be used for error messages and the like
+// our_name is an internal name that we use for generating code
+//
 typedef struct symbol {
     struct symbol *next;  /* next in hash table */
-    const char   *name;   /* name */
-    Symtype       type;   /* symbol type */
+    const char   *user_name;   /* name given by the user */
+    const char   *our_name;    /* internal compiler name */
+    Symtype       kind;   /* kind of symbol */
     void         *val;    /* symbol value */
     int           flags;  /* various flags */
     int           offset;  /* extra value recording symbol order within a function */
@@ -62,7 +68,7 @@ typedef struct symtab {
 
 unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);
-Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val);
+Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
 Symbol *FindSymbolByOffset(SymbolTable *table, int offset);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);

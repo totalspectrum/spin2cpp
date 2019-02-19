@@ -25,7 +25,7 @@ GetLabelFromSymbol(AST *where, const char *name)
 {
     Symbol *sym;
     sym = FindSymbol(&curfunc->localsyms, name);
-    if (!sym || sym->type != SYM_LOCALLABEL) {
+    if (!sym || sym->kind != SYM_LOCALLABEL) {
         ERROR(where, "%s is not a label in this function", name);
         return NULL;
     }
@@ -114,14 +114,14 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
         }
         if (!r) {
-            switch(sym->type) {
+            switch(sym->kind) {
             case SYM_PARAMETER:
             case SYM_RESULT:
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
                 r = CompileIdentifier(irl, expr);
                 if (!r) {
-                    ERROR(expr, "Bad identifier expression %s", sym->name);
+                    ERROR(expr, "Bad identifier expression %s", sym->user_name);
                     return NewImmediate(0);
                 }
                 r_address = immflag;
@@ -137,7 +137,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 if (!immflag) {
                     ERROR(expr, "must use an immediate with labels in inline asm");
                 }
-                r = GetLabelFromSymbol(expr, sym->name);
+                r = GetLabelFromSymbol(expr, sym->our_name);
                 immflag = 0;
                 break;
             case SYM_HWREG:
@@ -148,7 +148,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
             case SYM_FUNCTION:
             {
-                if (curfunc && !strcmp(curfunc->name, sym->name) && curfunc->language == LANG_BASIC) {
+                if (curfunc && !strcmp(curfunc->name, sym->our_name) && curfunc->language == LANG_BASIC) {
                     // BASIC lets you write the function name to indicate the
                     // function result; allow that in inline asm too
                     // this is just like result1
@@ -159,7 +159,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 /* otherwise fall through */
             }
             default:
-                ERROR(expr, "Symbol %s is not usable in inline asm", sym->name);
+                ERROR(expr, "Symbol %s is not usable in inline asm", sym->user_name);
                 return NULL;
             }
         }
@@ -318,7 +318,7 @@ CompileInlineAsm(IRList *irl, AST *origtop)
         }
         if (ast->kind == AST_IDENTIFIER) {
             void *labelop = (void *)GetLabelOperand(ast->d.string);
-            AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop);
+            AddSymbol(&curfunc->localsyms, ast->d.string, SYM_LOCALLABEL, labelop, NULL);
         }
     }
     
@@ -338,12 +338,12 @@ CompileInlineAsm(IRList *irl, AST *origtop)
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
             Operand *op;
-            if (!sym || sym->type != SYM_LOCALLABEL) {
+            if (!sym || sym->kind != SYM_LOCALLABEL) {
                 ERROR(ast, "%s is not a label or is multiply defined", ast->d.string);
                 break;
             }
             if (!sym->val) {
-                sym->val = GetLabelOperand(sym->name);
+                sym->val = GetLabelOperand(sym->our_name);
             }
             op = (Operand *)sym->val;
             EmitLabel(irl, op);

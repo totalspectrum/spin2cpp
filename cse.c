@@ -131,7 +131,7 @@ UsesMemory(AST *ast) {
     {
         Symbol *sym = LookupAstSymbol(ast, "memory reference check");
         if (!sym) return true; // assume it uses memory
-        switch (sym->type) {
+        switch (sym->kind) {
         case SYM_PARAMETER:
         case SYM_RESULT:
         case SYM_LOCALVAR:
@@ -259,7 +259,7 @@ ArrayBaseType(AST *var)
     }
     sym = LookupAstSymbol(var, "array reference");
     if (!sym) return NULL;
-    switch(sym->type) {
+    switch(sym->kind) {
     case SYM_LABEL:
         {
             Label *label = (Label *)sym->val;

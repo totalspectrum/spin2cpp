@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2016 Total Spectrum Software Inc.
+// Copyright 2012-2019 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -388,7 +388,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
                 retname = alloca(strlen(ast->d.string) + 6);
                 sprintf(retname, "%s_ret", ast->d.string);
                 sym = LookupSymbol(retname);
-                if (!sym || sym->type != SYM_LABEL) {
+                if (!sym || sym->kind != SYM_LABEL) {
                     ERROR(ast, "cannot find return label %s", retname);
                     return;
                 }
@@ -479,7 +479,7 @@ outputGasLabel(Flexbuf *f, AST *id, int inlineAsm)
     
     if (sym) {
         Label *lab;
-        if (sym->type != SYM_LABEL) {
+        if (sym->kind != SYM_LABEL) {
             ERROR(id, "expected label symbol");
         } else {
             lab = (Label *)sym->val;
@@ -510,7 +510,7 @@ DeclareLabelsGas(Flexbuf *f, Module *P, int inlineAsm)
            // GAS label declaration
            sym = LookupSymbol(name);
            if (!sym) continue;
-           if (sym->type != SYM_LABEL) continue;
+           if (sym->kind != SYM_LABEL) continue;
            lab = (Label *)sym->val;
            if (lab->flags & LABEL_USED_IN_SPIN) {
                 flexbuf_printf(f, "extern ");
@@ -593,9 +593,9 @@ outputGasOrg(Flexbuf *f, AST *ast, int inlineAsm)
     }
     sym = (Symbol *)ast->d.ptr;
     flexbuf_printf(f, "\n#undef _org_\n");
-    flexbuf_printf(f, "#define _org_ %s\n", sym->name);
+    flexbuf_printf(f, "#define _org_ %s\n", sym->user_name);
     startLine(f, inlineAsm);
-    flexbuf_printf(f, "%s_base = . + 0x%x", sym->name, val);
+    flexbuf_printf(f, "%s_base = . + 0x%x", sym->user_name, val);
     endLine(f, inlineAsm);
 }
 
@@ -612,7 +612,7 @@ outputFinalOrgs(Flexbuf *f, AST *ast[], int count, int inlineAsm)
     for (i = 0; i < count; i++) {
         sym = (Symbol *)ast[i]->d.ptr;
         startLine(f, inlineAsm);
-        flexbuf_printf(f, "  .equ %s, %s_base", sym->name, sym->name);
+        flexbuf_printf(f, "  .equ %s, %s_base", sym->user_name, sym->user_name);
         endLine(f, inlineAsm);
     }
 }
