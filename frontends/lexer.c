@@ -2619,7 +2619,7 @@ InstrModifier modifiers_p2[] = {
 
     { "if_e",      COND_MASK_P2 | (0xa<<28), 0 },
     { "if_z",      COND_MASK_P2 | (0xa<<28), 0 },
-    { "if_x1",      COND_MASK_P2 | (0xa<<28), 0 },
+    { "if_1x",      COND_MASK_P2 | (0xa<<28), 0 },
 
     { "if_nc_or_z", COND_MASK_P2 | (0xb<<28), 0 },
     { "if_z_or_nc", COND_MASK_P2 | (0xb<<28), 0 },
