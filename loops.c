@@ -137,6 +137,9 @@ AddAssignment(LoopValueSet *lvs, AST *name, AST *value, unsigned flags, AST *par
 {
     LoopValueEntry *entry;
 
+    if (name->kind == AST_LOCAL_IDENTIFIER) {
+        name = name->left;
+    }
     switch (name->kind) {
     case AST_EXPRLIST:
     {
@@ -257,11 +260,12 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
     case AST_STMTLIST:
         parent = ast;
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         // if this identifier is being used in the loop, but has not
         // yet been assigned, add an entry for it
         AddAssignment(lvs, ast, NULL, flags | LVFLAG_LOOPUSED, NULL);
-        break;
+        return;
     default:
         parent = ast; // do we really want this?
         break;
@@ -283,9 +287,10 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
     switch (expr->kind) {
     case AST_INTEGER:
         return false;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
-        Symbol *sym = LookupSymbol(expr->d.string);
+        Symbol *sym = LookupAstSymbol(expr, NULL);
         LoopValueEntry *entry;
         if (!sym) {
             return true;
@@ -338,9 +343,12 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
     {
         AST *ast = expr->left;
         if (!ast) return false;
-        if (ast->kind == AST_IDENTIFIER) return false;
+        if (IsIdentifier(ast)) return false;
         if (ast->kind == AST_ARRAYREF) {
             if (ast->left) {
+                if (ast->left->kind == AST_LOCAL_IDENTIFIER) {
+                    ast = ast->left;
+                }
                 if (ast->left->kind == AST_IDENTIFIER) {
                     return IsLoopDependent(lvs, ast->right);
                 } else if (ast->left->kind == AST_MEMREF) {
@@ -389,6 +397,9 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
     
     if (!val) return NULL;
     switch(val->kind) {
+    case AST_LOCAL_IDENTIFIER:
+        val = val->left;
+        /* fall through */
     case AST_IDENTIFIER:
         newval = val;
         for(;;) {
@@ -436,8 +447,8 @@ FindLoopStep(LoopValueSet *lvs, AST *val, AST **basename)
             if (arrayname->kind == AST_MEMREF) {
                 elementsize = ElementSize(arrayname->left);
             }
-            else if (arrayname->kind == AST_IDENTIFIER) {
-                sym = LookupSymbol(arrayname->d.string);
+            else if (IsIdentifier(arrayname)) {
+                sym = LookupAstSymbol(arrayname, NULL);
                 if (!sym) {
                     return NULL;
                 }
@@ -537,9 +548,10 @@ AstUsesMemory(AST *ast)
     case AST_FUNCCALL:
     case AST_GOSUB:
         return true;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
-        Symbol *sym = LookupSymbol(ast->d.string);
+        Symbol *sym = LookupAstSymbol(ast, NULL);
         if (!sym) {
             return true;
         }
@@ -667,7 +679,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (!entry->loopstep || !entry->basename) {
                 continue;
             }
-            if (entry->basename->kind != AST_IDENTIFIER) {
+            if (!IsIdentifier(entry->basename)) {
                 continue;
             }
             initEntry = FindName(initial, entry->basename);
@@ -752,7 +764,7 @@ doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
 //
 AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
 {
-    if (IsConstExpr(oldLimit) || oldLimit->kind == AST_IDENTIFIER) {
+    if (IsConstExpr(oldLimit) || IsIdentifier(oldLimit)) {
         // a constant expression is always good
         if (updateTestOp == K_LE) {
             oldLimit = AstOperator('+', oldLimit, AstInteger(1));
@@ -765,7 +777,7 @@ AST *GetRevisedLimit(int updateTestOp, AST *oldLimit)
     // only accept very simple expressions
     if (oldLimit->kind == AST_OPERATOR && oldLimit->d.ival == '-') {
         int32_t offset;
-        if (oldLimit->left->kind != AST_IDENTIFIER) {
+        if (!IsIdentifier(oldLimit->left)) {
             return NULL;
         }
         if (!IsConstExpr(oldLimit->right)) {
@@ -819,7 +831,7 @@ CheckSimpleDecrementLoop(AST *stmt)
         if (!updateVar) {
             return false;
         }
-        if (updateVar->kind != AST_SYMBOL && updateVar->kind != AST_IDENTIFIER) {
+        if (!IsIdentifier(updateVar)) {
             return false;
         }
         updateLimit = condtest->right;
@@ -915,9 +927,9 @@ CheckSimpleIncrementLoop(AST *stmt)
     if (!initial || initial->kind != AST_ASSIGN)
         return;
     updateVar = initial->left;
-    if (updateVar->kind != AST_IDENTIFIER)
+    if (!IsIdentifier(updateVar))
         return;
-    sym = LookupSymbol(updateVar->d.string);
+    sym = LookupAstSymbol(updateVar, NULL);
     if (!sym) return;
     switch (sym->kind) {
     case SYM_PARAMETER:

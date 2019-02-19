@@ -14,12 +14,12 @@ _blah_ret
 	ret
 
 _main
-	neg	_main_i, #1
+	neg	_main_i_0003, #1
 LR__0001
-	mov	arg01, _main_i
+	mov	arg01, _main_i_0003
 	call	#_blah
-	add	_main_i, #1
-	cmps	_main_i, #2 wc,wz
+	add	_main_i_0003, #1
+	cmps	_main_i_0003, #2 wc,wz
  if_b	jmp	#LR__0001
 _main_ret
 	ret
@@ -27,7 +27,7 @@ _main_ret
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_main_i
+_main_i_0003
 	res	1
 _var01
 	res	1

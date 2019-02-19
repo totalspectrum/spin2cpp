@@ -16,12 +16,12 @@ _foo_ret
 	ret
 
 _bar
-	mov	arg01, ptr_L__0003_
+	mov	arg01, ptr_L__0004_
 	call	#_foo
 _bar_ret
 	ret
 
-ptr_L__0003_
+ptr_L__0004_
 	long	@@@LR__0002
 result1
 	long	0

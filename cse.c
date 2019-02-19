@@ -128,6 +128,7 @@ UsesMemory(AST *ast) {
     case AST_MEMREF:
         return true;
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
     {
         Symbol *sym = LookupAstSymbol(ast, "memory reference check");
         if (!sym) return true; // assume it uses memory
@@ -198,6 +199,9 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     if (modified->kind == AST_ARRAYREF) {
         modified = modified->left;
     }
+    if (modified->kind == AST_LOCAL_IDENTIFIER) {
+        modified = modified->left;
+    }
     switch(modified->kind) {
     case AST_IDENTIFIER:
         // it's all good here
@@ -254,7 +258,7 @@ ArrayBaseType(AST *var)
     if (var->kind == AST_MEMREF) {
         return var->left ? var->left : ast_type_generic;
     }
-    if (var->kind != AST_IDENTIFIER) {
+    if (!IsIdentifier(var)) {
         return NULL;
     }
     sym = LookupAstSymbol(var, "array reference");
@@ -474,11 +478,14 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
         }
         return newflags;
     case AST_ASSIGN:
-        if (!name && ast->left->kind == AST_IDENTIFIER) {
+        if (!name && IsIdentifier(ast->left)) {
             name = ast->left;
+            if (name->kind == AST_LOCAL_IDENTIFIER) {
+                name = name->left;
+            }
         }
         // now we have to invalidate any CSE involving the destination
-        RemoveCSEUsing(cse, ast->left);
+        RemoveCSEUsing(cse, name ? name : ast->left);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
         return newflags;
@@ -573,6 +580,7 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
     case AST_STRING:
     case AST_RESULT:
     case AST_IDENTIFIER:
+    case AST_LOCAL_IDENTIFIER:
         return newflags;
     case AST_HWREG:
         return CSE_NO_REPLACE; // do not CSE expressions involving hardware

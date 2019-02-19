@@ -357,7 +357,7 @@ PrintStackWithSize(Flexbuf *f, AST *origstack)
         ERROR(stack, "coginit stack is not part of an array");
         return;
     }
-    if (stack->left->kind != AST_IDENTIFIER) {
+    if (!IsIdentifier(stack)) {
         ERROR(stack, "coginit stack too complicated");
         return;
     }
@@ -417,7 +417,7 @@ PrintSpinCoginit(Flexbuf *f, AST *body)
         return;
     }
     stack = stack->left;
-    if (func->kind == AST_IDENTIFIER) {
+    if (IsIdentifier(func)) {
         sym = LookupAstSymbol(func, "coginit/cognew");
     } else if (func->kind == AST_FUNCCALL) {
         sym = LookupAstSymbol(func->left, "coginit/cognew");
@@ -846,7 +846,8 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         }
         break;
     case AST_IDENTIFIER:
-        sym = LookupSymbol(expr->d.string);
+    case AST_LOCAL_IDENTIFIER:
+        sym = LookupAstSymbol(expr, NULL);
         if (!sym) {
             ERROR_UNKNOWN_SYMBOL(expr);
         } else {
@@ -879,8 +880,8 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_ARRAYREF:
         flags &= ~PRINTEXPR_ASSIGNMENT;
-        if (expr->left && expr->left->kind == AST_IDENTIFIER) {
-            sym = LookupSymbol(expr->left->d.string);
+        if (expr->left && IsIdentifier(expr->left)) {
+            sym = LookupAstSymbol(expr->left, NULL);
         } else {
             sym = NULL;
         }
@@ -1048,6 +1049,7 @@ PrintAsAddr(Flexbuf *f, AST *expr, int flags)
         flexbuf_printf(f, "&");
         PrintLHS(f, expr->left, flags);
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     case AST_RESULT:
     case AST_HWREG:
@@ -1377,6 +1379,7 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         flexbuf_printf(f, ") | ");
         PrintHexExpr(f, expr->right->right, flags);
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     case AST_HWREG:
     case AST_MEMREF:
@@ -1626,7 +1629,10 @@ PrintExprList(Flexbuf *f, AST *list, int flags, Function *func)
             AST *paramid = paramlist->left;
             Symbol *sym;
             paramlist = paramlist->right;
-            if (paramid && paramid->kind == AST_IDENTIFIER) {
+            if (paramid && IsIdentifier(paramid)) {
+                if (paramid->kind == AST_LOCAL_IDENTIFIER) {
+                    paramid = paramid->left;
+                }
                 sym = FindSymbol(&func->localsyms, paramid->d.string);
                 if (sym && sym->kind == SYM_PARAMETER) {
                     paramtype = (AST *)sym->val;
