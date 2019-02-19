@@ -2165,15 +2165,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   case K_BIT_NOT:
       right = CompileExpression(irl, rhs, temp);
-      EmitMove(irl, temp, right);
-      left = NewImmediate(-1);
-      EmitOp2(irl, OPC_XOR, temp, left);
+      if (gl_p2) {
+          EmitOp2(irl, OPC_NOT, temp, right);
+      } else {
+          left = NewImmediate(-1);
+          EmitOp2(irl, OPC_XOR, temp, left);
+          EmitMove(irl, temp, right);
+      }
       return temp;
   case K_ENCODE:
       right = CompileExpression(irl, rhs, temp);
       if (gl_p2) {
           IR *ir;
-          ir = EmitOp2(irl, OPC_ENCODE, temp, right);
+          ir = EmitOp2(irl, OPC_ENCOD, temp, right);
           ir->flags |= FLAG_WC;
           ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
           ir->cond = COND_LT; // if c is set, src was nonzero and add 1

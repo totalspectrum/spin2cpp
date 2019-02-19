@@ -2,6 +2,9 @@ Version 3.9.21
 - Fixed automatic conversion of arrays to pointers
 - Increased stack size on Windows to prevent a crash
 - Added if_00, if_same, and other missing P2 conditions
+- Fixed a problem with ">| 0" on P2
+- Added some P2 specific optimizations
+- Added Spin serial drivers to default include directory
 
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object

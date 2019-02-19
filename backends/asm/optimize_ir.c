@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2018 Total Spectrum Software Inc.
+// Copyright 2016-2019 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -1896,6 +1896,10 @@ IsCommutativeMath(IROpcode opc)
 // mov b,a
 //   becomes add b, a, if a is dead
 
+// mov a, #1
+// shl a, N
+// becomes decod a, N on P2
+
 int
 OptimizePeepholes(IRList *irl)
 {
@@ -2036,10 +2040,10 @@ OptimizePeepholes(IRList *irl)
         }
         else if (opc == OPC_MOV && !InstrSetsAnyFlags(ir)
                  && ir_next
-                 && ir_next->opc == OPC_SUB
-                 && ir_next->cond == ir->cond
-                 && ir_next->dst == ir->src
                  && !InstrSetsAnyFlags(ir_next)
+                 && ir_next->cond == ir->cond
+                 && ir_next->opc == OPC_SUB
+                 && ir_next->dst == ir->src
                  && 0 != (previr = FindPrevSetterForReplace(ir, ir->src))
                  && previr->cond == ir->cond
                  && previr->opc == OPC_ADD
@@ -2059,8 +2063,24 @@ OptimizePeepholes(IRList *irl)
             changed = 1;
             goto done;
         }
-        // check for mov a,b ;; mov b,a
-        
+        else if (gl_p2
+                 && opc == OPC_MOV && !InstrSetsAnyFlags(ir)
+                 && ir_next
+                 && !InstrSetsAnyFlags(ir_next)
+                 && ir_next->cond == ir->cond
+                 && ir_next->opc == OPC_SHL
+                 && ir->dst == ir_next->dst
+                 && IsImmediateVal(ir->src, 1)
+            )
+        {
+            // mov x, #1
+            // shl x, y
+            // -> decod x, y
+            ReplaceOpcode(ir_next, OPC_DECOD);
+            DeleteIR(irl, ir);
+            goto done;
+        }
+        // check for mov a,b ;; mov b,a        
         if (opc == OPC_MOV && ir_next && ir_next->opc == OPC_MOV
             && ir->dst == ir_next->src
             && ir->src == ir_next->dst

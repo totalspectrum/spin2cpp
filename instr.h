@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016 Total Spectrum Software Inc.
+ * Copyright 2016-2019 Total Spectrum Software Inc.
  * Intermediate representation definitions
  */
 
@@ -76,8 +76,10 @@ typedef enum IROpcode {
 
     /* p2 instructions */
     OPC_ADDCT1,
-    OPC_ENCODE,
+    OPC_DECOD,
+    OPC_ENCOD,
     OPC_HUBSET,
+    OPC_NOT,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     
