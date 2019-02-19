@@ -6,7 +6,7 @@
 #define print(x) printf("%s", x)
 #define printdec(x) printf("%d", x)
 #else
-struct __using("FullDuplexSerial.spin") fds;
+struct __using("spin/FullDuplexSerial.spin") fds;
 #define println(x) fds.str(x "\r\n")
 #define print(x) fds.str(x)
 #define putchar(c) fds.tx(c)
@@ -79,6 +79,8 @@ struct blah {
 
 void main()
 {
+    int v = 1;
+    
 #ifndef USE_STDIO
     fds.start(31, 30, 0, 115200);
 #endif
@@ -94,5 +96,17 @@ void main()
         print("->");
         (*mytab[i].func)(mytab[i].num);
     }
+    print("top level v=");
+    printdec(v);
+    if (1) {
+        int v;
+        v = 2;
+        print(" nested v=");
+        printdec(v);
+    }
+    print(" and top level v=");
+    printdec(v);
+    println("");
+    
     myexit(0);
 }
