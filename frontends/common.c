@@ -776,8 +776,8 @@ void PopCurrentTypes(void)
 }
 
 /* check a single declaration for typedefs or renamed variables */
-static AST *
-CheckOneDeclaration(AST *origdecl)
+AST *
+MakeOneDeclaration(AST *origdecl, SymbolTable *table)
 {
     AST *decl = origdecl;
     AST *ident;
@@ -812,12 +812,12 @@ CheckOneDeclaration(AST *origdecl)
     }
     name = ident->d.string;
     if (decl->kind == AST_TYPEDEF) {
-        AddSymbol(currentTypes, name, SYM_TYPEDEF, decl->left, NULL);
+        AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
         return NULL;
     } else {
         const char *newName = NewTemporaryVariable(ident->d.string);
         AST *newIdent = AstIdentifier(newName);
-        AddSymbol(currentTypes, name, SYM_REDEF, (void *)newIdent, newName);
+        AddSymbol(table, name, SYM_REDEF, (void *)newIdent, newName);
         if (identptr) {
             *identptr = newIdent;
         } else {
@@ -827,9 +827,10 @@ CheckOneDeclaration(AST *origdecl)
     return origdecl;
 }
 
-/* make a declaration; if it's a type then add it to currentTypes */
+/* make declarations into a symbol table; if it's a type then add it to currentTypes */
+/* returns the list of declarations that really need working on (typedefs are removed) */
 AST *
-MakeDeclaration(AST *origdecl)
+MakeDeclarations(AST *origdecl, SymbolTable *table)
 {
     AST *decl = origdecl;
     AST *item;
@@ -839,7 +840,7 @@ MakeDeclaration(AST *origdecl)
         origdecl = decl = NewAST(AST_STMTLIST, decl, NULL);
     }
     while (decl && decl->kind == AST_STMTLIST) {
-        item = CheckOneDeclaration(decl->left);
+        item = MakeOneDeclaration(decl->left, table);
         if (!item) {
             /* remove this from the list */
             decl->left = NULL;

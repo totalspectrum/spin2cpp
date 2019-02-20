@@ -627,8 +627,11 @@ void PushCurrentTypes(void);
 /* pop the current types identifier */
 void PopCurrentTypes(void);
 
+/* get one variable declaration; "table" is the place to enter any aliases */
+AST *MakeOneDeclaration(AST *decl, SymbolTable *table);
+
 /* create a declaration list, or add a type name to currentTypes */
-AST *MakeDeclaration(AST *decl);
+AST *MakeDeclarations(AST *decl, SymbolTable *table);
 
 /* find the symbol containing a mask for implicit types, as defined by DEFINT and DEFSNG */
 Symbol *GetCurImplicitTypes(void);

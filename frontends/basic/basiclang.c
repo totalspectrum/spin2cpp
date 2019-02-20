@@ -1452,7 +1452,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     if (IsIntType(desttype) || IsGenericType(desttype)) {
-        if (IsIntType(srctype)) {
+        if (IsIntType(srctype) || IsGenericType(srctype)) {
             int lsize = TypeSize(desttype);
             int rsize = TypeSize(srctype);
             if (lsize > rsize) {

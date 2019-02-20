@@ -205,6 +205,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
         // OK, "name" is the name we want it to be known as inside
         // the function, but we will want to create a global variable
         // with a new name
+        // this is done via 
         globalname = AstTempIdentifier("_static_");
         localname = AstIdentifier(strdup(name->d.string));
         results = AddToList(results,
@@ -1244,7 +1245,7 @@ block_item_list
 block_item
    : declaration
        {
-           AST *decl = MakeDeclaration($1);
+           AST *decl = MakeDeclarations($1, currentTypes);
            $$ = decl;
        }
    | statement
@@ -1360,9 +1361,9 @@ modifierlist:
   
 declaration_list
 	: declaration
-            { $$ = MakeDeclaration($1); }
+            { $$ = MakeDeclarations($1, currentTypes); }
 	| declaration_list declaration
-            { $$ = AddToList($1, MakeDeclaration($2)); }
+            { $$ = AddToList($1, MakeDeclarations($2, currentTypes)); }
 	;
 
 expression_statement
