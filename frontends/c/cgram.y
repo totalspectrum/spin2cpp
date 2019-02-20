@@ -177,14 +177,17 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
     AST *globalname;
     AST *results = NULL;
     const char *nameString;
+    int needs_initializer = 0;
+    int has_initializer;
     
     // ignore static declarations like
     //   static int blah[]
     if (basetype && basetype->kind == AST_ARRAYTYPE && !basetype->right) {
-        return NULL;
+        needs_initializer = 1;
     }
     // go through the identifier list
     while (decllist) {
+        has_initializer = 0;
         if (decllist->kind == AST_LISTHOLDER) {
             decl = decllist->left;
             decllist = decllist->right;
@@ -194,6 +197,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
         }
         if (decl->kind == AST_ASSIGN) {
             ident = decl->left;
+            has_initializer = 1;
         } else {
             ident = decl;
         }
@@ -201,6 +205,9 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
             nameAst = ident->left;
         } else {
             nameAst = ident;
+        }
+        if (needs_initializer && !has_initializer) {
+            continue;
         }
         // OK, "nameAst" is the name we want it to be known as inside
         // the function, but we will want to create a global variable
