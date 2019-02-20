@@ -575,6 +575,7 @@ doDeclareFunction(AST *funcblock)
     }
 
     fdef->name = funcname_internal;
+    fdef->user_name = funcname_user;
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
@@ -2009,7 +2010,7 @@ MarkUsedBody(AST *body, const char *caller)
             return;
         }
         P = GetClassPtr(objtype);
-        sym = FindSymbol(&P->objsyms, GetIdentifierName(body->right));
+        sym = FindSymbol(&P->objsyms, GetUserIdentifierName(body->right));
         if (!sym || sym->kind != SYM_FUNCTION) {
             return;
         }

@@ -179,7 +179,8 @@ typedef struct hwreg {
 typedef struct funcdef {
     struct funcdef *next;
     int is_public;
-    const char *name;
+    const char *name; /* internal name */
+    const char *user_name; /* name the user used; differs from "name" for static functions */
     AST *decl;        /* always filled in with the line numbers of the declaration */
     AST *overalltype; /* the type of the function, including types of parameters */
     AST *annotations; /* any annotations for the function (section, etc.) */

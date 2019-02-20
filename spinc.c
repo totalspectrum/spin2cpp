@@ -330,7 +330,6 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     SymbolTable *table = &P->objsyms;
     const char *name = NULL;
     const char *user_name = "variable";
-    int is_static = 0;
     int is_typedef = 0;
     
     if (!type) {
@@ -343,9 +342,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         is_typedef = 1;
     }
     if (type->kind == AST_STATIC) {
-        // FIXME: this case probably shouldn't happen any more?? 
+        // FIXME: this case probably shouldn't happen any more??
+        WARNING(ident, "internal error: did not expect static in code");
         type = type->left;
-        is_static = 1;
     }
     if (type->kind == AST_FUNCTYPE && !is_typedef) {
         // dummy declaration...
@@ -363,13 +362,12 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         type->d.ptr = ident->d.ptr;
         ident = ident->left;
     }
-#warning we need to look carefully here    
     if (!IsIdentifier(ident)) {
         ERROR(ident, "Internal error, expected identifier");
         return;
     }
     name = GetIdentifierName(ident);
-    user_name = GetVarNameForError(ident);
+    user_name = GetUserIdentifierName(ident);
     olddef = FindSymbol(table, name);
     if (is_typedef) {
         if (olddef) {
