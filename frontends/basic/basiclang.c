@@ -441,8 +441,8 @@ doBasicTransform(AST **astptr)
             AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
             if (ast->left->kind == AST_RANGEREF) {
                 *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
-            } else if (ast->left->kind == AST_IDENTIFIER && !strcmp(ast->left->d.string, curfunc->name)) {
-                ast->left->kind = AST_RESULT;
+            } else if (IsIdentifier(ast->left) && !strcmp(GetUserIdentifierName(ast->left), curfunc->name)) {
+                ast->left = NewAST(AST_RESULT, NULL, NULL);
             }
             AstReportDone(&saveinfo);
         }
@@ -1034,7 +1034,7 @@ static bool
 IsSymbol(AST *expr)
 {
     if (!expr) return false;
-    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_SYMBOL)
+    if (IsIdentifier(expr))
         return true;
     return false;
 }
@@ -1487,8 +1487,8 @@ doCast(AST *desttype, AST *srctype, AST *src)
         return src;
     }
     AstReportAs(src, &saveinfo);
-    if (src && src->kind == AST_IDENTIFIER) {
-        name = src->d.string;
+    if (src && IsIdentifier(src)) {
+        name = GetUserIdentifierName(src);
     } else {
         name = "expression";
     }
@@ -1628,12 +1628,12 @@ AST *CheckTypes(AST *ast)
     case AST_GOTO:
         {
             AST *id = ast->left;
-            if (!id || id->kind != AST_IDENTIFIER) {
+            if (!id || !IsIdentifier(id)) {
                 ERROR(ast, "Expected identifier in goto/gosub");
             } else {
-                Symbol *sym = FindSymbol(&curfunc->localsyms, id->d.string);
+                Symbol *sym = FindSymbol(&curfunc->localsyms, GetIdentifierName(id));
                 if (!sym || sym->kind != SYM_LOCALLABEL) {
-                    ERROR(id, "%s is not a local label", id->d.string);
+                    ERROR(id, "%s is not a local label", GetUserIdentifierName(id));
                 }
             }
         }
