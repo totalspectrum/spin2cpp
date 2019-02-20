@@ -2169,11 +2169,12 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_BIT_NOT:
       right = CompileExpression(irl, rhs, temp);
       if (gl_p2) {
+          right = Dereference(irl, right);
           EmitOp2(irl, OPC_NOT, temp, right);
       } else {
           left = NewImmediate(-1);
-          EmitOp2(irl, OPC_XOR, temp, left);
           EmitMove(irl, temp, right);
+          EmitOp2(irl, OPC_XOR, temp, left);
       }
       return temp;
   case K_ENCODE:
