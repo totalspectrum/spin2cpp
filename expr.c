@@ -1678,7 +1678,7 @@ int TypeAlign(AST *typ)
     case AST_OBJECT:
         {
             Module *P = (Module *)typ->d.ptr;
-            if (P->varsize < 3) {
+            if (P->varsize < 3 && P->varsize > 0) {
                 return P->varsize;
             }
             return 4;
