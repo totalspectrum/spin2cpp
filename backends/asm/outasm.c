@@ -2519,7 +2519,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     }
     sym = FindFuncSymbol(expr, &objref, 1);
     if (!sym) {
-        ERROR(expr, "expected function symbol");
+//        ERROR(expr, "expected function symbol"); // already printed an error
         return NULL;
     }
     if (sym->kind != SYM_FUNCTION) {
