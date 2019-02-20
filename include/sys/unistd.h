@@ -25,7 +25,7 @@ extern "C" {
   int chdir(const char *path);
   int rmdir(const char *path);
 
-    unsigned int sleep(unsigned int seconds) _IMPL("libc/time/sleep.c");
+  unsigned int sleep(unsigned int seconds) _IMPL("libc/time/sleep.c");
   int usleep(useconds_t usec);
 
   char *_mktemp(char *templ);

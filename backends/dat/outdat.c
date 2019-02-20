@@ -172,22 +172,27 @@ GetAddrOffset(AST *ast)
     Symbol *sym;
     Label *label;
     int r;
+    const char *user_name = NULL;
+    const char *internal_name;
     
     if (ast->kind == AST_ARRAYREF) {
         offsetExpr = ast->right;
         ast = ast->left;
     }
-    if (ast->kind != AST_IDENTIFIER) {
+    if (IsIdentifier(ast)) {
+        user_name = GetUserIdentifierName(ast);
+        internal_name = GetIdentifierName(ast);
+    } else {
         ERROR(ast, "@@@ supported only on identifiers");
         return 0;
     }
-    sym = LookupSymbol(ast->d.string);
+    sym = LookupSymbol(internal_name);
     if (!sym) {
-        ERROR(ast, "Unknown symbol %s", ast->d.string);
+        ERROR(ast, "Unknown symbol %s", user_name);
         return 0;
     }
     if (sym->kind != SYM_LABEL) {
-        ERROR(ast, "@@@ supported only on labels");
+        ERROR(ast, "@@@ supported only on labels and globals; %s is not one", user_name);
         return 0;
     }
     label = (Label *)sym->val;
