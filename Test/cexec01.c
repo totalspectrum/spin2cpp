@@ -1,17 +1,6 @@
-#include <propeller.h>
+#include "cexec01.h"
 
-#ifdef USE_STDIO
-#include <stdio.h>
-#define println(x) printf(x "\n")
-#define print(x) printf("%s", x)
-#define printdec(x) printf("%d", x)
-#else
 struct __using("spin/FullDuplexSerial.spin") fds;
-#define println(x) fds.str(x "\r\n")
-#define print(x) fds.str(x)
-#define putchar(c) fds.tx(c)
-#define printdec(x) fds.dec(x)
-#endif
 
 enum MYKIND {
     BIT0 = 0x1,
@@ -77,6 +66,12 @@ struct blah {
     { 0, 0, 0 },
 };
 
+static void
+internal_func(void)
+{
+    println("main internal function");
+}
+
 void main()
 {
     int v = 1;
@@ -107,6 +102,8 @@ void main()
     print(" and top level v=");
     printdec(v);
     println("");
+    internal_func();
+    external_func();
     
     myexit(0);
 }

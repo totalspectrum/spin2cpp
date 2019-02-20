@@ -4,3 +4,6 @@ call #3: other one
 0: the first string->hello 1
 1: the second string->goodbye -2
 top level v=1 nested v=2 and top level v=1
+main internal function
+helper external function
+helper internal function
