@@ -9,11 +9,9 @@ C compiler support is not even at the "beta" stage yet; there are many features 
 An incomplete list of things that still need to be implemented:
 
   * bitfields
-  * variable scope inside statement blocks (right now all local variables in a function share the same scope)
   * 64 bit integers (long long)
   * struct passing and return
-  * struct initialization
-  * most of the C standard library
+  * much of the C standard library
   
 ## Introduction
 
