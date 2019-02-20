@@ -15,5 +15,5 @@ extern struct __using("spin/FullDuplexSerial.spin") fds;
 #endif
 
 
-void external_func(void) _IMPL("cexec_helper.c");
+void external_func(void) _IMPL("sub/cexec_helper.c");
 static void internal_func(void);
