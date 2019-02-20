@@ -783,9 +783,48 @@ EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName)
     AddSymbol(table, localName, SYM_REDEF, (void *)globalName, newName);
 }
 
+/* fixup declarations in a list */
+/* basically this is to handle a case like
+     char buf[100], *p = buf
+   where the parser doesn't know that we've renamed the identifiers yet;
+   after we add a new mapping for "buf" we need to update the reference
+   to "buf" later in the list
+   replace any identifiers with user name "oldName" in the list with "newIdent"
+*/
+static void
+ReplaceIdentifiers(AST **parent, const char *oldName, AST *newIdent)
+{
+    AST *item = *parent;
+    if (!item) return;
+    if (IsIdentifier(item)) {
+        if (!strcmp(oldName, GetUserIdentifierName(item))) {
+            *parent = newIdent;
+        }
+    } else {
+        ReplaceIdentifiers(&item->left, oldName, newIdent);
+        ReplaceIdentifiers(&item->right, oldName, newIdent);
+    }
+}
+
+static void
+RemapIdentifiers(AST *list, AST *newIdent, const char *oldName)
+{
+    AST *decl;
+
+    while (list) {
+        decl = list->left;
+        list = list->right;
+
+        if (!decl) {
+            continue;
+        }
+        ReplaceIdentifiers(&decl, oldName, newIdent);
+    }
+}
+
 /* check a single declaration for typedefs or renamed variables */
-AST *
-MakeOneDeclaration(AST *origdecl, SymbolTable *table)
+static AST *
+MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
 {
     AST *decl = origdecl;
     AST *ident;
@@ -794,6 +833,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table)
     if (!decl) return decl;
 
     if (decl->kind == AST_DECLARE_ALIAS) {
+        ERROR(decl, "internal error, DECLARE_ALIAS not supported yet\n");
         return decl;
     }
     if (decl->kind != AST_DECLARE_VAR) {
@@ -832,6 +872,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table)
         AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
+            RemapIdentifiers(restOfList, newIdent, name);
         } else {
             ERROR(decl, "internal error could not find identifier ptr");
         }
@@ -852,7 +893,7 @@ MakeDeclarations(AST *origdecl, SymbolTable *table)
         origdecl = decl = NewAST(AST_STMTLIST, decl, NULL);
     }
     while (decl && decl->kind == AST_STMTLIST) {
-        item = MakeOneDeclaration(decl->left, table);
+        item = MakeOneDeclaration(decl->left, table, decl->right);
         if (!item) {
             /* remove this from the list */
             decl->left = NULL;
