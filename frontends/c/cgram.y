@@ -173,11 +173,11 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
 {
     AST *ident;
     AST *decl;
-    AST *name;
+    AST *nameAst;
     AST *globalname;
-    AST *localname;
     AST *results = NULL;
-
+    const char *nameString;
+    
     // ignore static declarations like
     //   static int blah[]
     if (basetype && basetype->kind == AST_ARRAYTYPE && !basetype->right) {
@@ -198,22 +198,19 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
             ident = decl;
         }
         if (ident->kind == AST_ARRAYDECL) {
-            name = ident->left;
+            nameAst = ident->left;
         } else {
-            name = ident;
+            nameAst = ident;
         }
-        // OK, "name" is the name we want it to be known as inside
+        // OK, "nameAst" is the name we want it to be known as inside
         // the function, but we will want to create a global variable
         // with a new name
-        // this is done via 
-        globalname = AstTempIdentifier("_static_");
-        localname = AstIdentifier(strdup(name->d.string));
-        results = AddToList(results,
-                            NewAST(AST_STMTLIST,
-                                   NewAST(AST_DECLARE_ALIAS, localname, globalname),
-                                   NULL));
+
+        nameString = GetIdentifierName(nameAst);
+        globalname = AstTempIdentifier(nameString);
+        EnterLocalAlias(currentTypes, globalname, nameString);
         // and enter a new global definition
-        *name = *globalname;
+        *nameAst = *globalname;
         DeclareOneGlobalVar(P, decl, basetype);
     }
     return results;
@@ -264,6 +261,7 @@ SingleDeclareVar(AST *decl_spec, AST *declarator)
 static void
 DeclareCGlobalVariables(AST *slist)
 {
+    AST *temp;
     if (slist && slist->kind == AST_DECLARE_VAR) {
         DeclareBASICGlobalVariables(slist);
         return;
@@ -272,7 +270,8 @@ DeclareCGlobalVariables(AST *slist)
         if (slist->kind != AST_STMTLIST) {
             ERROR(slist, "internal error in DeclareCGlobalVars");
         }
-        DeclareBASICGlobalVariables(slist->left);
+        temp = slist->left;
+        DeclareBASICGlobalVariables(temp);
         slist = slist->right;
     }
 }
@@ -352,14 +351,6 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     while (astlist) {
         ast = astlist->left;
         astlist = astlist->right;
-#warning fixme probably a better way to do this        
-        if (ast->kind == AST_DECLARE_ALIAS) {
-            AST *name, *def;
-            name = ast->left;
-            def = ast->right;
-            AddSymbol(&P->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
-            continue;
-        }
         if (ast->kind != AST_DECLARE_VAR) {
             ERROR(ast, "internal error, not DECLARE_VAR");
             return;
@@ -1489,7 +1480,7 @@ translation_unit
 external_declaration
 	: function_definition
 	| declaration
-            { DeclareCGlobalVariables($1); }
+           { DeclareCGlobalVariables($1); }
 	;
 
 function_definition

@@ -12,26 +12,22 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* get an identifier name, or find the root name if an array reference */
-
-const char *
-GetVarNameForError(AST *expr)
-{
-    while (expr && expr->kind == AST_ARRAYREF) {
-        expr = expr->left;
-    }
-    if (expr->kind == AST_IDENTIFIER) {
-        return expr->d.string;
-    }
-    if (expr->kind == AST_LOCAL_IDENTIFIER) {
-        return expr->right->d.string;
-    }
-    return "variable";
-}
-        
-/* get the identifier name from an identifier */
+/* get the internal identifier name from an identifier */
 const char *
 GetIdentifierName(AST *expr)
+{
+    const char *name;
+    if (expr->kind == AST_IDENTIFIER) {
+        name = expr->d.string;
+    }  else if (expr->kind == AST_LOCAL_IDENTIFIER) {
+        name = expr->left->d.string;
+    } else {
+        name = "expression";
+    }
+    return name;
+}
+const char *
+GetUserIdentifierName(AST *expr)
 {
     const char *name;
     if (expr->kind == AST_IDENTIFIER) {
@@ -44,6 +40,20 @@ GetIdentifierName(AST *expr)
     return name;
 }
 
+/* get an identifier name, or find the root name if an array reference */
+
+const char *
+GetVarNameForError(AST *expr)
+{
+    while (expr && expr->kind == AST_ARRAYREF) {
+        expr = expr->left;
+    }
+    if (IsIdentifier(expr)) {
+        return GetUserIdentifierName(expr);
+    }
+    return "variable";
+}
+        
 /* get class from object type */
 Module *
 GetClassPtr(AST *objtype)
@@ -187,7 +197,7 @@ LookupMethodRef(AST *expr, Module **Ptr)
     AST *ident = expr->right;
     const char *name;
     
-    name = GetIdentifierName(ident);
+    name = GetUserIdentifierName(ident);
     return LookupMemberSymbol(expr, type, name, Ptr);
     
 }
@@ -2230,7 +2240,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             ERROR(expr, "Expecting identifier after '.'");
             return NULL;
         }
-        methodname = GetIdentifierName(expr->right);
+        methodname = GetUserIdentifierName(expr->right);
         objtype = BaseType(ExprTypeRelative(table, objref, P));
         if (!objtype) return NULL;
         if (!IsClassType(objtype)) {

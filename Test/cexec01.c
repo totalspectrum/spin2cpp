@@ -1,4 +1,4 @@
-#include "cexec01.hh"
+#include "sub/cexec01.hh"
 
 struct __using("spin/FullDuplexSerial.spin") fds;
 

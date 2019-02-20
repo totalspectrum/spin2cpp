@@ -627,8 +627,8 @@ void PushCurrentTypes(void);
 /* pop the current types identifier */
 void PopCurrentTypes(void);
 
-/* get one variable declaration; "table" is the place to enter any aliases */
-AST *MakeOneDeclaration(AST *decl, SymbolTable *table);
+/* enter a local alias in a symbol table */
+void EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName);
 
 /* create a declaration list, or add a type name to currentTypes */
 AST *MakeDeclarations(AST *decl, SymbolTable *table);

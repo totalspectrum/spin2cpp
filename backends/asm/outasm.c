@@ -3235,7 +3235,7 @@ GetAddressOf(IRList *irl, AST *expr)
         Module *P;
         int off;
         
-        name = GetIdentifierName(expr->right);
+        name = GetUserIdentifierName(expr->right);
         sym = LookupMemberSymbol(expr, ExprType(expr->left), name, &P);
         if (sym) {
             if (sym->kind == SYM_VARIABLE) {
@@ -3556,7 +3556,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Module *P;
       const char *name;
       objtype = ExprType(expr->left);
-      name = GetIdentifierName(expr->right);
+      name = GetUserIdentifierName(expr->right);
       if (!IsClassType(objtype)) {
           ERROR(expr, "Request for member %s in something that is not a class", name);
           return NewImmediate(0);

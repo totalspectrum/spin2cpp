@@ -210,14 +210,6 @@ DeclareBASICMemberVariables(AST *ast)
         ERROR(ast, "Internal error, unexpected sequence");
         return;
     }
-    if (ast->kind == AST_DECLARE_ALIAS) {
-#warning dubious code for statics
-        AST *name, *def;
-        name = ast->left;
-        def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
-        return;
-    }
     idlist = ast->right;
     typ = ast->left;
     if (idlist->kind == AST_LISTHOLDER) {
@@ -241,14 +233,6 @@ DeclareBASICGlobalVariables(AST *ast)
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
         ERROR(ast, "Internal error, unexpected sequence");
-        return;
-    }
-    if (ast->kind == AST_DECLARE_ALIAS) {
-#warning dubious code for statics        
-        AST *name, *def;
-        name = ast->left;
-        def = ast->right;
-        AddSymbol(&current->objsyms, name->d.string, SYM_WEAK_ALIAS, (void *)def->d.string, NULL);
         return;
     }
     idlist = ast->right;

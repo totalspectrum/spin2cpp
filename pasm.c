@@ -538,6 +538,9 @@ DeclareLabels(Module *P)
                 typalign = TypeAlign(type);
                 typsize = TypeSize(type);
                 ALIGNPC(typalign);
+                if (ident->kind == AST_LOCAL_IDENTIFIER) {
+                    ident = ident->left;
+                }
                 if (ident->kind != AST_IDENTIFIER) {
                     ERROR(ast, "Internal error in DECLARE_VAR: expected identifier");
                 } else {

@@ -76,8 +76,10 @@ int IsConstType(AST *typ);
 // it's OK to pass a "char *" to a "const char *" but not vice-versa)
 int CompatibleTypes(AST *A, AST *B);
 
-// get the name from an AST_IDENTIFIER or AST_SYMBOL
+// get the internal name from an AST_IDENTIFIER or AST_SYMBOL
 const char *GetIdentifierName(AST *ident);
+// get the user visible name from an AST_IDENTIFIER or AST_SYMBOL
+const char *GetUserIdentifierName(AST *ident);
 
 // get the name to use for printing error messages about assignments and such
 const char *GetVarNameForError(AST *expr);

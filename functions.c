@@ -86,19 +86,23 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
 {
     Symbol *sym;
     const char *name;
+    const char *username;
 
-    if (astname->kind == AST_IDENTIFIER) {
-        name = astname->d.string;
+    if (astname->kind == AST_LOCAL_IDENTIFIER) {
+        name = astname->left->d.string;
+        username = astname->right->d.string;
+    } else if (astname->kind == AST_IDENTIFIER) {
+        name = username = astname->d.string;
     } else if (astname->kind == AST_VARARGS) {
-        name = "__varargs";
+        name = username = "__varargs";
     } else {
         ERROR(astname, "Internal error, bad identifier");
         return NULL;
     }
     
-    sym = AddSymbol(stab, name, kind, (void *)type, NULL);
+    sym = AddSymbol(stab, name, kind, (void *)type, username);
     if (!sym) {
-        ERROR(astname, "duplicate definition for %s", name);
+        ERROR(astname, "duplicate definition for %s", username);
     }
     return sym;
 }
@@ -149,6 +153,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 // fall through
             case AST_VARARGS:
             case AST_IDENTIFIER:
+            case AST_LOCAL_IDENTIFIER:
                 sym = EnterVariable(kind, stab, ast, actualtype);
                 if (sym) sym->offset = offset;
                 if (ast->kind != AST_VARARGS && !isUnion) {
@@ -334,7 +339,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
     kind = ast->kind;
     switch(kind) {
     case AST_DECLARE_ALIAS:
-#warning fixme this case is probably wrong        
+        /* this case may be obsolete now */
         name = ast->left;
         ident = ast->right;
         AddSymbol(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL);
@@ -481,17 +486,6 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     MaybeDeclareMemberVar(P, ident, typ);
 }
 
-#warning probably can dispense with this when proper static support is in
-static const char *
-AliasName(const char *origName)
-{
-    Symbol *sym = LookupSymbol(origName);
-    if (sym && sym->kind == SYM_WEAK_ALIAS) {
-        return (const char *)sym->val;
-    }
-    return origName;
-}
-
 static void
 doDeclareFunction(AST *funcblock)
 {
@@ -499,6 +493,7 @@ doDeclareFunction(AST *funcblock)
     AST *funcdef;
     AST *body;
     AST *annotation;
+    AST *srcname;
     Function *fdef;
     Function *oldcur = curfunc;
     AST *vars;
@@ -508,7 +503,8 @@ doDeclareFunction(AST *funcblock)
     AST *retinfo;
     int is_public;
     int language;
-    const char *funcname;
+    const char *funcname_internal;
+    const char *funcname_user;
     AST *oldtype = NULL;
     Symbol *sym;
     
@@ -526,16 +522,21 @@ doDeclareFunction(AST *funcblock)
         return;
     }
     src = funcdef->left;
-    if (src->left->kind != AST_IDENTIFIER) {
+    srcname = src->left;
+    if (srcname->kind == AST_LOCAL_IDENTIFIER) {
+        funcname_internal = srcname->left->d.string;
+        funcname_user = srcname->right->d.string;
+    } else if (srcname->kind == AST_IDENTIFIER) {
+        funcname_internal = funcname_user = srcname->d.string;
+    } else {
         ERROR(funcdef, "Internal error: no function name");
         return;
     }
-    funcname = src->left->d.string;
     /* look for an existing definition */
-    sym = FindSymbol(&current->objsyms, AliasName(funcname));
+    sym = FindSymbol(&current->objsyms, funcname_internal);
     if (sym) {
         if (sym->kind != SYM_FUNCTION) {
-            ERROR(funcdef, "Redefining %s as a function", funcname);
+            ERROR(funcdef, "Redefining %s as a function", funcname_user);
             return;
         }
         fdef = (Function *)sym->val;
@@ -547,7 +548,7 @@ doDeclareFunction(AST *funcblock)
          * for an alias and declare under that name; that's what AliasName()
          * does
          */
-        sym = AddSymbol(&current->objsyms, AliasName(funcname), SYM_FUNCTION, fdef, NULL);
+        sym = AddSymbol(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user);
     }
     
     if (fdef->body) {
@@ -556,7 +557,7 @@ doDeclareFunction(AST *funcblock)
         if (fdef->body->kind == AST_STRING) {
             if (body->kind == AST_STRING) {
                 if (0 != strcmp(fdef->body->d.string, body->d.string)) {
-                    ERROR(funcdef, "different __fromfile strings for function %s", funcname);
+                    ERROR(funcdef, "different __fromfile strings for function %s", funcname_user);
                 }
                 return; // nothing else we need to do here
             }
@@ -573,7 +574,7 @@ doDeclareFunction(AST *funcblock)
         ReinitFunction(fdef);
     }
 
-    fdef->name = funcname;
+    fdef->name = funcname_internal;
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
@@ -715,7 +716,7 @@ doDeclareFunction(AST *funcblock)
     /* if there was an old definition, validate it */
     if (oldtype) {
         if (!CompatibleTypes(oldtype, fdef->overalltype)) {
-            WARNING(funcdef, "Redefining function %s with an incompatible type", funcname);
+            WARNING(funcdef, "Redefining function %s with an incompatible type", funcname_user);
         }
     }
     fdef->body = body;

@@ -480,8 +480,8 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     const char *name;
 
-    if (ast->kind == AST_IDENTIFIER) {
-        name = ast->d.string;
+    if (IsIdentifier(ast)) {
+        name = GetVarNameForError(ast);
     } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
         name = "__vararg";
     } else {
@@ -775,6 +775,14 @@ void PopCurrentTypes(void)
     }
 }
 
+/* enter a single alias */
+void
+EnterLocalAlias(SymbolTable *table, AST *globalName, const char *localName)
+{
+    const char *newName = GetIdentifierName(globalName);
+    AddSymbol(table, localName, SYM_REDEF, (void *)globalName, newName);
+}
+
 /* check a single declaration for typedefs or renamed variables */
 AST *
 MakeOneDeclaration(AST *origdecl, SymbolTable *table)
@@ -798,6 +806,9 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table)
     if (!decl) {
         return decl;
     }
+    if (!ident) {
+        return origdecl;
+    }
     if (ident->kind == AST_ASSIGN) {
         identptr = &ident->left;
         ident = *identptr;
@@ -815,11 +826,12 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table)
         AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
         return NULL;
     } else {
-        const char *newName = NewTemporaryVariable(ident->d.string);
+        const char *oldname = name;
+        const char *newName = NewTemporaryVariable(oldname);
         AST *newIdent = AstIdentifier(newName);
-        AddSymbol(table, name, SYM_REDEF, (void *)newIdent, newName);
+        AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
         if (identptr) {
-            *identptr = newIdent;
+            *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
         } else {
             ERROR(decl, "internal error could not find identifier ptr");
         }

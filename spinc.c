@@ -303,6 +303,9 @@ FindDeclaration(AST *datlist, const char *name)
             if (ident->kind == AST_ASSIGN) {
                 ident = ident->left;
             }
+            if (ident->kind == AST_LOCAL_IDENTIFIER) {
+                ident = ident->left;
+            }
             if (ident->kind == AST_IDENTIFIER) {
                 if (!strcmp(name, ident->d.string)) {
                     return declare;
@@ -326,7 +329,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     Symbol *olddef;
     SymbolTable *table = &P->objsyms;
     const char *name = NULL;
-    const char *alias = NULL;
+    const char *user_name = "variable";
     int is_static = 0;
     int is_typedef = 0;
     
@@ -360,47 +363,29 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         type->d.ptr = ident->d.ptr;
         ident = ident->left;
     }
-    if (ident->kind != AST_IDENTIFIER) {
+#warning we need to look carefully here    
+    if (!IsIdentifier(ident)) {
         ERROR(ident, "Internal error, expected identifier");
         return;
     }
-#warning we need to look carefully here    
-    name = ident->d.string;
+    name = GetIdentifierName(ident);
+    user_name = GetVarNameForError(ident);
     olddef = FindSymbol(table, name);
-    if (olddef) {
-        // is it an alias?
-        if (olddef->kind == SYM_WEAK_ALIAS) {
-            alias = name;
-            name = olddef->val;
-        }
-    }
-
     if (is_typedef) {
-        if (alias) {
-            ERROR(ident, "Aliased typedef %s not allowed", alias);
-        } else if (olddef) {
-            ERROR(ident, "Redefining symbol %s", name);
+        if (olddef) {
+            ERROR(ident, "Redefining symbol %s", user_name);
         }
         AddSymbol(currentTypes, name, SYM_TYPEDEF, type, NULL);
         return;
     }
-    if (olddef && !alias) {
-        ERROR(ident, "Redefining symbol %s", name);
+    if (olddef) {
+        ERROR(ident, "Redefining symbol %s", user_name);
     }
-#warning this needs fixing    
-    if (is_static) {
-        if (!alias) {
-            alias = NewTemporaryVariable("_static_");
-            ident = AstIdentifier(alias);
-            AddSymbol(table, name, SYM_WEAK_ALIAS, (void *)alias, NULL);
-        }
-    }
-    
     // if this is an array type with no size, there must be an
     // initializer
     if (type->kind == AST_ARRAYTYPE && !type->right) {
         if (!initializer) {
-            ERROR(ident, "global array %s declared with no size and no initializer", name);
+            ERROR(ident, "global array %s declared with no size and no initializer", user_name);
             type->right = AstInteger(1);
         } else {
             if (initializer->kind == AST_EXPRLIST) {
@@ -416,9 +401,9 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
     if (declare && declare->right) {
         if (declare->right->kind == AST_ASSIGN && initializer) {
             ERROR(initializer, "Variable %s is initialized twice",
-                  alias ? alias : name);
+                  user_name);
         } else if (initializer) {
-            declare->right = AstAssign(AstIdentifier(name), initializer);
+            declare->right = AstAssign(DupAST(ident), initializer);
         }
     } else {
         if (initializer) {
