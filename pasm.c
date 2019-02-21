@@ -299,7 +299,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         } else {
             AST *typ = ExprType(initval);
             if (IsFunctionType(typ)) {
-                ASTReportInfo(saveinfo);
+                ASTReportInfo saveinfo;
                 AstReportAs(initval, &saveinfo);
                 elem = initval;
                 if (IsIdentifier(initval)) {
