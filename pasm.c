@@ -341,7 +341,9 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             P->datblock = AddToList(P->datblock, ast);
             //globalModule->datblock = AddToList(globalModule->datblock, ast);
             arrayref = NewAST(AST_ARRAYREF, newident, AstInteger(0));
-            *initializer = *NewAST(AST_ABSADDROF, arrayref, NULL);
+            arrayref = NewAST(AST_ABSADDROF, arrayref, NULL);
+            arrayref = NewAST(AST_CAST, ast_type_generic, arrayref);
+            *initializer = *arrayref;
             AstReportDone(&saveinfo);
         }
     } else  if (type->kind == AST_ARRAYTYPE) {

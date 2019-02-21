@@ -1496,7 +1496,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
         src = ArrayAddress(src);
         srctype = ast_type_ptr_void;
     }
-    if (IsPointerType(desttype)) {
+    if (IsPointerType(desttype) || IsGenericType(desttype)) {
         if (IsFloatType(srctype)) {
             src = dofloatToInt(src);
             srctype = ast_type_long;

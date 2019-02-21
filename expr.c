@@ -1458,6 +1458,10 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             return intExpr(lref->hubval + offset);
         }
         break;
+    case AST_CAST:
+        if (IsGenericType(expr->left)) {
+            return EvalExpr(expr->right, flags, valid, depth+1);
+        }
     default:
         break;
     }
