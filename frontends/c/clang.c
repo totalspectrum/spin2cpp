@@ -162,12 +162,14 @@ CreateSwitch(AST *expr, AST *stmt)
 
 // "cflags" indicates some special handling:
 #define CFLAGS_NO_ARRAY_CONVERSION 0x01
+#define CFLAGS_IN_DECL 0x02
+#define CFLAGS_SKIP_CONVERT (CFLAGS_IN_DECL|CFLAGS_NO_ARRAY_CONVERSION)
+
 static void
-doCTransform(AST **astptr, unsigned orig_cflags)
+doCTransform(AST **astptr, unsigned cflags)
 {
     AST *ast = *astptr;
     Function *func = NULL;
-    unsigned cflags = orig_cflags & ~CFLAGS_NO_ARRAY_CONVERSION;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -204,7 +206,7 @@ doCTransform(AST **astptr, unsigned orig_cflags)
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
-            doCTransform(&ast->left, cflags);
+            doCTransform(&ast->left, cflags | CFLAGS_NO_ARRAY_CONVERSION);
             doCTransform(&ast->right, cflags);
             if (curfunc && IsLocalVariable(ast->left)) {
                 curfunc->local_address_taken = 1;
@@ -223,8 +225,34 @@ doCTransform(AST **astptr, unsigned orig_cflags)
             }
         }
         break;
+    case AST_DECLARE_ALIAS:
+    case AST_DECLARE_VAR:
+    case AST_DECLARE_VAR_WEAK:
+    case AST_GLOBALVARS:
+    case AST_LAMBDA:
+    case AST_GOTO:
+    case AST_NEW:
+    case AST_ARRAYDECL:
+    case AST_ARRAYTYPE:
+    case AST_PTRTYPE:
+    case AST_INSTRHOLDER:
+    case AST_INSTRMODIFIER:
+    case AST_CONSTANT:
+    case AST_TEMPARRAYDECL:
+    case AST_IMMHOLDER:
+    case AST_BIGIMMHOLDER:
+    case AST_TYPEDEF:
+    case AST_STRUCT:
+    case AST_UNION:
+        cflags |= CFLAGS_IN_DECL;
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
+        break;
     case AST_SIZEOF:
     case AST_ARRAYREF:
+    case AST_TEMPARRAYUSE:
+    case AST_CAST:
+        
         // if ast->left is just a plain identifier, no need to process it
         doCTransform(&ast->left, cflags | CFLAGS_NO_ARRAY_CONVERSION);
         doCTransform(&ast->right, cflags);
@@ -280,7 +308,7 @@ doCTransform(AST **astptr, unsigned orig_cflags)
                 curfunc->large_local = 1;
             }
         }
-        if (!(orig_cflags & CFLAGS_NO_ARRAY_CONVERSION) && IsArrayType(typ)) {
+        if (!(cflags & CFLAGS_SKIP_CONVERT) && IsArrayType(typ)) {
             *astptr = NewAST(AST_ABSADDROF,
                              NewAST(AST_ARRAYREF, ast, AstInteger(0)),
                              NULL);
