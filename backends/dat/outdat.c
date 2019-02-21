@@ -293,7 +293,7 @@ AlignPc(Flexbuf *f, int size)
 
 /* output a single data item element */
 void
-outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
+outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, AST *type)
 {
     uintptr_t origval, val;
     intptr_t offset;
@@ -343,7 +343,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs)
 /* output a variable initializer list */
 /* returns the number of elements output */
 int
-outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs)
+outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs, AST *type)
 {
     int n = 0;
     // at this point we can ignore casts
@@ -351,7 +351,7 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
         initval = initval->right;
     }
     if (!initval) {
-        outputInitItem(f, elemsize, NULL, numelems, relocs);
+        outputInitItem(f, elemsize, NULL, numelems, relocs, type);
         return numelems;
     }
     if (initval->kind == AST_EXPRLIST) {
@@ -361,12 +361,12 @@ outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *re
         while (initval && elemsleft > 0) {
             item = initval->left;
             initval = initval->right;
-            r = outputInitList(f, elemsize, item, 1, relocs);
+            r = outputInitList(f, elemsize, item, 1, relocs, type);
             n += r;
             elemsleft -= r;
         }
     } else {
-        outputInitItem(f, elemsize, initval, 1, relocs);
+        outputInitItem(f, elemsize, initval, 1, relocs, type);
         return 1;
     }
     return n;
@@ -389,7 +389,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     AlignPc(f, typealign);
     if (!initval) {
         // just fill with 0s
-        outputInitList(f, elemsize, initval, numelems, relocs);
+        outputInitList(f, elemsize, initval, numelems, relocs, type);
         return;
     }
     switch(type->kind) {
@@ -397,7 +397,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     case AST_UNSIGNEDTYPE:
     case AST_FLOATTYPE:
     case AST_PTRTYPE:
-        outputInitList(f, elemsize, initval, numelems, relocs);
+        outputInitList(f, elemsize, initval, numelems, relocs, type);
         break;
     case AST_ARRAYTYPE:
     {
@@ -413,7 +413,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             initval = initval->right;
         }
         if (numelems > 0) {
-            outputInitList(f, elemsize, NULL, numelems, relocs);
+            outputInitList(f, elemsize, NULL, numelems, relocs, type);
         } else if (initval) {
             ERROR(initval, "too many elements found in initializer");
         }
