@@ -640,4 +640,10 @@ Symbol *GetCurImplicitTypes(void);
 /* create a "normalized" form of a file name that we can use for comparison */
 char *NormalizePath(const char *path);
 
+/* check types in an expression; returns the overall result of the expression */
+AST *CheckTypes(AST *expr);
+/* type conversion */
+/* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype);
+
 #endif

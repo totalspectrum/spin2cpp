@@ -299,11 +299,16 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
     intptr_t offset;
     int i;
     int checkReloc;
-
+    AST *exprType;
+    
     if (elemsize == 0) {
         return;
     }
     if (item) {
+        exprType = CheckTypes(item);
+        if (exprType) {
+            type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType);
+        }
         if (RELOC_KIND_NONE != (checkReloc = IsRelocatable(item, &offset, true))) {
             if (checkReloc == -1) {
                 ERROR(item, "Illegal operation on relocatable @@@ value");
