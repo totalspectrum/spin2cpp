@@ -112,7 +112,7 @@ pri _basic_close(h) | ptr, t, f, o
   f := long[t+4]
   _call_method(o, f, 0)
   
-pri _basic_print_char(h, c) | saveobj, t, f, o
+pri _basic_print_char(h, c, fmt=0) | saveobj, t, f, o
   t := bas_tx_handles[h]
   if t == 0
     return
