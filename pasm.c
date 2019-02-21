@@ -233,6 +233,8 @@ reduceStrings(AST *orig_exprlist)
     AST *exprlist = orig_exprlist;
     AST *elem, *next;
     AST *first = NULL;
+    ASTReportInfo saveinfo;
+    
     if (!exprlist || exprlist->kind != AST_EXPRLIST) {
         ERROR(exprlist, "internal error, expected exprlist");
         return exprlist;
@@ -245,6 +247,7 @@ reduceStrings(AST *orig_exprlist)
             const char *t = elem->d.string;
             int c;
             first = elem;
+            AstReportAs(elem, &saveinfo);
             do {
                 c = *t++;
                 ast = AstInteger(c);
@@ -258,6 +261,7 @@ reduceStrings(AST *orig_exprlist)
                     exprlist = ast;
                 }
             } while (c);
+            AstReportDone(&saveinfo);
         }
         exprlist = next;
     }
@@ -295,6 +299,8 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         } else {
             AST *typ = ExprType(initval);
             if (IsFunctionType(typ)) {
+                ASTReportInfo(saveinfo);
+                AstReportAs(initval, &saveinfo);
                 elem = initval;
                 if (IsIdentifier(initval)) {
                     *initval = *NewAST(AST_ABSADDROF, DupAST(initval), NULL);
@@ -307,13 +313,16 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
                               AstInteger(0),
                               NewAST(AST_EXPRLIST, elem, NULL));
                 type = ast_type_ptr_long;
+                AstReportDone(&saveinfo);
             } else {
                 elem = initval;
             }
         }
         if (elem->kind == AST_EXPRLIST) {
             AST *ast, *declare;
+            ASTReportInfo saveinfo;
 
+            AstReportAs(elem, &saveinfo);
             /* need to move it to its own declaration */
             if (elem->kind == AST_EXPRLIST) {
                 subtype = type->left;
@@ -331,6 +340,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             P->datblock = AddToList(P->datblock, ast);
             //globalModule->datblock = AddToList(globalModule->datblock, ast);
             *initializer = *NewAST(AST_ABSADDROF, newident, NULL);
+            AstReportDone(&saveinfo);
         }
     } else  if (type->kind == AST_ARRAYTYPE) {
         AST *elem;
@@ -525,8 +535,11 @@ DeclareLabels(Module *P)
                 AST *type = ast->left;
                 AST *ident = ast->right;
                 AST *initializer = NULL;
+                ASTReportInfo saveinfo;
                 int typalign;
                 int typsize;
+
+                AstReportAs(ident, &saveinfo);
                 if (ident->kind == AST_ASSIGN) {
                     initializer = ident->right;
                     ident = ident->left;
@@ -549,6 +562,7 @@ DeclareLabels(Module *P)
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, type, lastOrg, inHub);
                 INCPC(typsize);
                 fixupInitializer(P, initializer, type);
+                AstReportDone(&saveinfo);
             }
             break;
         default:
