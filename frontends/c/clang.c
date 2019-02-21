@@ -156,11 +156,18 @@ CreateSwitch(AST *expr, AST *stmt)
     return switchstmt;
 }
 
+// one obvious transformation we should perform
+// for C is "buf" -> "&buf[0]" if "buf" is an array type
+// and is not currently being dereferenced
+
+// "cflags" indicates some special handling:
+#define CFLAGS_NO_ARRAY_CONVERSION 0x01
 static void
-doCTransform(AST **astptr)
+doCTransform(AST **astptr, unsigned orig_cflags)
 {
     AST *ast = *astptr;
     Function *func = NULL;
+    unsigned cflags = orig_cflags & ~CFLAGS_NO_ARRAY_CONVERSION;
     
     while (ast && ast->kind == AST_COMMENTEDNODE) {
         astptr = &ast->left;
@@ -172,30 +179,34 @@ doCTransform(AST **astptr)
         if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
         }
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         break;
     case AST_COUNTREPEAT:
         // convert repeat count into a for loop
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_RANGEREF:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ALLOCA:
-        doCTransform(&ast->right);
-        curfunc->uses_alloca = 1;
+        doCTransform(&ast->right, cflags);
+        if (curfunc) {
+            curfunc->uses_alloca = 1;
+        } else {
+            ERROR(ast, "use of alloca outside a function");
+        }
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
-            doCTransform(&ast->left);
-            doCTransform(&ast->right);
-            if (IsLocalVariable(ast->left)) {
+            doCTransform(&ast->left, cflags);
+            doCTransform(&ast->right, cflags);
+            if (curfunc && IsLocalVariable(ast->left)) {
                 curfunc->local_address_taken = 1;
             }
             // taking the address of a function may restrict how
@@ -212,26 +223,36 @@ doCTransform(AST **astptr)
             }
         }
         break;
+    case AST_SIZEOF:
+    case AST_ARRAYREF:
+        // if ast->left is just a plain identifier, no need to process it
+        doCTransform(&ast->left, cflags | CFLAGS_NO_ARRAY_CONVERSION);
+        doCTransform(&ast->right, cflags);
+        break;
     case AST_METHODREF:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         if (IsPointerType(ast->left)) {
             WARNING(ast, "Needs a pointer dereference");
         }
         break;
     case AST_TRYENV:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         // keep local variables on stack, so they will be preserved
         // if an exception throws us back here without cleanup
-        curfunc->local_address_taken = 1;
+        if (curfunc) {
+            curfunc->local_address_taken = 1;
+        } else {
+            ERROR(ast, "setjmp/longjmp outside of a function");
+        }
         break;
     case AST_LABEL:
         AddLabel(ast);
         break;
     case AST_COGINIT:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         if (IsSpinCoginit(ast, &func) && func) {
             func->cog_task = 1;
             func->force_static = 1;
@@ -239,31 +260,36 @@ doCTransform(AST **astptr)
         break;
     case AST_FUNCCALL:
         // handle __builtin_printf(x, ...) specially
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         if (ast->left && ast->left->kind == AST_PRINT) {
             *ast = *genPrintf(ast);
         }
         break;
     case AST_CASE:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         *ast = *CreateSwitch(ast->left, ast->right);
         break;
+    case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
-        AST *typ;
-        if (IsLocalVariable(ast)) {
-            typ = ExprType(ast);
+        AST *typ = ExprType(ast);
+        if (curfunc && IsLocalVariable(ast)) {
             if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
                 curfunc->large_local = 1;
             }
         }
+        if (!(orig_cflags & CFLAGS_NO_ARRAY_CONVERSION) && IsArrayType(typ)) {
+            *astptr = NewAST(AST_ABSADDROF,
+                             NewAST(AST_ARRAYREF, ast, AstInteger(0)),
+                             NULL);
+        }
         break;
     }
     default:
-        doCTransform(&ast->left);
-        doCTransform(&ast->right);
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
         break;
     }
 }
@@ -274,6 +300,6 @@ CTransform(Function *func)
     InitGlobalFuncs();
     
     SimplifyAssignments(&func->body);
-    doCTransform(&func->body);
+    doCTransform(&func->body, 0);
     CheckTypes(func->body);
 }
