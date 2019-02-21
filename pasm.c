@@ -320,6 +320,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         }
         if (elem->kind == AST_EXPRLIST) {
             AST *ast, *declare;
+            AST *arrayref;
             ASTReportInfo saveinfo;
 
             AstReportAs(elem, &saveinfo);
@@ -339,7 +340,8 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
             P->datblock = AddToList(P->datblock, ast);
             //globalModule->datblock = AddToList(globalModule->datblock, ast);
-            *initializer = *NewAST(AST_ABSADDROF, newident, NULL);
+            arrayref = NewAST(AST_ARRAYREF, newident, AstInteger(0));
+            *initializer = *NewAST(AST_ABSADDROF, arrayref, NULL);
             AstReportDone(&saveinfo);
         }
     } else  if (type->kind == AST_ARRAYTYPE) {
