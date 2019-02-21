@@ -1805,7 +1805,18 @@ AST *CheckTypes(AST *ast)
         AST *outputs = ast->right;
         if (!outputs) return NULL;
         ltype = ExprType(outputs->left);
+        if (IsArrayType(ltype)) {
+            outputs->left = ArrayAddress(outputs->left);
+            ltype = ArrayToPointerType(ltype);
+        }
         rtype = ExprType(outputs->right);
+        if (IsArrayType(rtype)) {
+            outputs->right = ArrayAddress(outputs->right);
+            rtype = ArrayToPointerType(rtype);
+        }
+        if (IsGenericType(ltype)) {
+            ltype = rtype;
+        }
         if (!CompatibleTypes(ltype, rtype)) {
             WARNING(ast, "different types in arms of ?");
         }

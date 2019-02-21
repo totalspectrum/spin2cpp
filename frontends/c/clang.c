@@ -156,14 +156,7 @@ CreateSwitch(AST *expr, AST *stmt)
     return switchstmt;
 }
 
-// one obvious transformation we should perform
-// for C is "buf" -> "&buf[0]" if "buf" is an array type
-// and is not currently being dereferenced
-
-// "cflags" indicates some special handling:
-#define CFLAGS_NO_ARRAY_CONVERSION 0x01
-#define CFLAGS_IN_DECL 0x02
-#define CFLAGS_SKIP_CONVERT (CFLAGS_IN_DECL|CFLAGS_NO_ARRAY_CONVERSION)
+// "cflags" is reserved for future use
 
 static void
 doCTransform(AST **astptr, unsigned cflags)
@@ -206,7 +199,7 @@ doCTransform(AST **astptr, unsigned cflags)
     case AST_ADDROF:
     case AST_ABSADDROF:
         {
-            doCTransform(&ast->left, cflags | CFLAGS_NO_ARRAY_CONVERSION);
+            doCTransform(&ast->left, cflags);
             doCTransform(&ast->right, cflags);
             if (curfunc && IsLocalVariable(ast->left)) {
                 curfunc->local_address_taken = 1;
@@ -224,38 +217,6 @@ doCTransform(AST **astptr, unsigned cflags)
                 f->callSites++;
             }
         }
-        break;
-    case AST_DECLARE_ALIAS:
-    case AST_DECLARE_VAR:
-    case AST_DECLARE_VAR_WEAK:
-    case AST_GLOBALVARS:
-    case AST_LAMBDA:
-    case AST_GOTO:
-    case AST_NEW:
-    case AST_ARRAYDECL:
-    case AST_ARRAYTYPE:
-    case AST_PTRTYPE:
-    case AST_INSTRHOLDER:
-    case AST_INSTRMODIFIER:
-    case AST_CONSTANT:
-    case AST_TEMPARRAYDECL:
-    case AST_IMMHOLDER:
-    case AST_BIGIMMHOLDER:
-    case AST_TYPEDEF:
-    case AST_STRUCT:
-    case AST_UNION:
-        cflags |= CFLAGS_IN_DECL;
-        doCTransform(&ast->left, cflags);
-        doCTransform(&ast->right, cflags);
-        break;
-    case AST_SIZEOF:
-    case AST_ARRAYREF:
-    case AST_TEMPARRAYUSE:
-    case AST_CAST:
-        
-        // if ast->left is just a plain identifier, no need to process it
-        doCTransform(&ast->left, cflags | CFLAGS_NO_ARRAY_CONVERSION);
-        doCTransform(&ast->right, cflags);
         break;
     case AST_METHODREF:
         doCTransform(&ast->left, cflags);
@@ -307,11 +268,6 @@ doCTransform(AST **astptr, unsigned cflags)
             if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
                 curfunc->large_local = 1;
             }
-        }
-        if (!(cflags & CFLAGS_SKIP_CONVERT) && IsArrayType(typ)) {
-            *astptr = NewAST(AST_ABSADDROF,
-                             NewAST(AST_ARRAYREF, ast, AstInteger(0)),
-                             NULL);
         }
         break;
     }
