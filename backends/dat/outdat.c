@@ -351,10 +351,6 @@ int
 outputInitList(Flexbuf *f, int elemsize, AST *initval, int numelems, Flexbuf *relocs, AST *type)
 {
     int n = 0;
-    // at this point we can ignore casts
-    while (initval && initval->kind == AST_CAST) {
-        initval = initval->right;
-    }
     if (!initval) {
         outputInitItem(f, elemsize, NULL, numelems, relocs, type);
         return numelems;

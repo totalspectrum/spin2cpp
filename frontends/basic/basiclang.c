@@ -1707,8 +1707,13 @@ AST *CheckTypes(AST *ast)
     case AST_TRUNC:
     case AST_ROUND:
         return ast_type_float;
-    case AST_ISBETWEEN:
     case AST_INTEGER:
+        if (ast->d.ival == 0) {
+            // let "0" stand for any NULL object
+            return ast_type_generic;
+        }
+        return  ast_type_long;
+    case AST_ISBETWEEN:
     case AST_HWREG:
     case AST_CONSTREF:
         return ast_type_long;
@@ -1721,7 +1726,7 @@ AST *CheckTypes(AST *ast)
         return ast_type_long;
     case AST_STRING:
     case AST_STRINGPTR:
-        if (curfunc->language == LANG_BASIC) {
+        if (curfunc && curfunc->language == LANG_BASIC) {
             return ast_type_string;
         }
         return ast_type_ptr_byte;
@@ -1751,9 +1756,9 @@ AST *CheckTypes(AST *ast)
             basetype = BaseType(lefttype);
             if (IsPointerType(lefttype)) {
                 // force this to have a memory dereference
-                // and in BASIC, also force 1 for the base
+                // and in BASIC, also force the appropriate number for the base
                 AST *deref;
-                if (curfunc->language == LANG_BASIC) {
+                if (curfunc && curfunc->language == LANG_BASIC) {
                     extern Symbol *GetCurArrayBase();
                     Symbol *sym = GetCurArrayBase();
                     if (sym && sym->kind == SYM_CONSTANT) {
@@ -1885,6 +1890,8 @@ AST *CheckTypes(AST *ast)
     case AST_CONSTANT:
     case AST_VA_ARG:
         return ExprType(ast);
+    case AST_SIMPLEFUNCPTR:
+        return ast_type_generic;
     default:
         break;
     }

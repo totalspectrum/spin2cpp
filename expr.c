@@ -2399,7 +2399,7 @@ CompatibleTypes(AST *A, AST *B)
             return true;
         }
     }
-    if (typesOK && (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
+    if ( /*typesOK &&*/ (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
         return 1;
     }
     if (A->kind != B->kind) {
@@ -2421,7 +2421,7 @@ CompatibleTypes(AST *A, AST *B)
         // FIXME: deal with actual parameter checks later
         return 1;
     }
-    if (A->kind == AST_PTRTYPE && B->kind == AST_PTRTYPE) {
+    if ( A->kind == AST_PTRTYPE && B->kind == AST_PTRTYPE) {
         // if one side is a void * then they are compatible
         AST *typeA = A->left;
         AST *rawtypeA = RemoveTypeModifiers(typeA);
