@@ -142,6 +142,9 @@ InstrModifies(IR *ir, Operand *reg)
             return true;
         }
     }
+    if (ir->src == reg && OPEFFECT_NONE != (ir->srceffect & 0xff)) {
+        return true;
+    }
     return false;
 }
 
