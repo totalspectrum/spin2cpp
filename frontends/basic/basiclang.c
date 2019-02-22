@@ -1418,22 +1418,15 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     // automatically cast arrays to pointers if necessary
-    if (IsArrayType(srctype) && IsPointerType(desttype) && IsSymbol(expr)) {
+    if (IsArrayType(srctype) && IsPointerType(desttype)) {
         srctype = ArrayToPointerType(srctype);
         expr = ArrayAddress(expr);
         *astptr = expr;
     }
-    if (IsPointerType(desttype) && srctype) {
-        if (srctype->kind == AST_FUNCTYPE) {
-            srctype = FunctionPointerType(srctype);
-            expr = FunctionAddress(expr);
-            *astptr = expr;
-        } else if (IsArrayType(srctype)) {
-            // automatically cast arrays to pointers
-            expr = ArrayAddress(expr);
-            *astptr = expr;
-            srctype = ArrayToPointerType(srctype);
-        }
+    if (IsFunctionType(srctype) && IsPointerType(desttype) && !IsPointerType(srctype)) {
+        srctype = FunctionPointerType(srctype);
+        expr = FunctionAddress(expr);
+        *astptr = expr;
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
