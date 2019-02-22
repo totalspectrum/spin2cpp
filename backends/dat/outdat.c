@@ -218,7 +218,10 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
     intptr_t myoff;
     int r1 , r2;
     int kind;
-    
+
+    while (sub && sub->kind == AST_CAST) {
+        sub = sub->right;
+    }
     if (!sub) {
         *offset = 0;
         return RELOC_KIND_NONE;

@@ -339,7 +339,6 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             declare = NewAST(AST_DECLARE_VAR, subtype, declare);
             ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
             P->datblock = AddToList(P->datblock, ast);
-            //globalModule->datblock = AddToList(globalModule->datblock, ast);
             arrayref = NewAST(AST_ARRAYREF, newident, AstInteger(0));
             arrayref = NewAST(AST_ABSADDROF, arrayref, NULL);
             arrayref = NewAST(AST_CAST, ast_type_generic, arrayref);
