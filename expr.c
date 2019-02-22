@@ -2384,8 +2384,8 @@ SameTypes(AST *A, AST *B)
 int
 CompatibleTypes(AST *A, AST *B)
 {
-    bool typesOK = (curfunc != NULL && curfunc->language != LANG_SPIN);
-    bool skipfloats = !typesOK;
+    bool isSpin = (curfunc != NULL && curfunc->language == LANG_SPIN);
+    bool skipfloats = isSpin;
     
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
@@ -2403,7 +2403,7 @@ CompatibleTypes(AST *A, AST *B)
             return true;
         }
     }
-    if ( /*typesOK &&*/ (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
+    if ( !isSpin && (A->kind == AST_GENERICTYPE || B->kind == AST_GENERICTYPE)) {
         return 1;
     }
     if (A->kind != B->kind) {
