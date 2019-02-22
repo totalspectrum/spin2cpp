@@ -1014,16 +1014,21 @@ enum_specifier
 
 enumerator_list
 	: enumerator
-            { $$ = CommentedListHolder($1); }
+            { $$ = $1; }
 	| enumerator_list ',' enumerator
-            { $$ = AddToList($1, CommentedListHolder($3)); }
+            { $$ = AddToList($1, $3); }
 	;
 
 enumerator
 	: C_IDENTIFIER
-            { $$ = $1; }
+            { $$ = CommentedListHolder($1); }
 	| C_IDENTIFIER '=' constant_expression
-            { $$ = NewAST(AST_ASSIGN, $1, $3); }
+            {
+                AST *setval = NewAST(AST_ENUMSET, $3, NULL);
+                AST *id = CommentedListHolder($1);
+                setval = NewAST(AST_LISTHOLDER, setval, id);
+                $$ = setval;
+            }
 	;
 
 type_qualifier
