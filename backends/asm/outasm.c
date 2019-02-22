@@ -131,7 +131,9 @@ static int sym_offset(Function *func, Symbol *s)
     } else if (s->kind == SYM_PARAMETER) {
         offset = LONG_SIZE*func->numresults + s->offset;
     } else if (s->kind == SYM_LOCALVAR || s->kind == SYM_TEMPVAR) {
-        offset = LONG_SIZE*(func->numresults + func->numparams) + s->offset;
+        int realparams = func->numparams;
+        if (realparams < 0) realparams = -realparams; /* varargs function */
+        offset = LONG_SIZE*(func->numresults + realparams) + s->offset;
     }
     return offset;
 }
