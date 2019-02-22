@@ -1495,6 +1495,10 @@ doCast(AST *desttype, AST *srctype, AST *src)
     if (IsArrayType(srctype)) {
         src = ArrayAddress(src);
         srctype = ast_type_ptr_void;
+    } else if (IsFunctionType(srctype) && !IsPointerType(srctype)) {
+        // need to create a handle for it
+        src = FunctionAddress(src);
+        srctype = FunctionPointerType(srctype);
     }
     if (IsPointerType(desttype) || IsGenericType(desttype)) {
         if (IsFloatType(srctype)) {
