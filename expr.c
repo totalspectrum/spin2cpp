@@ -721,10 +721,14 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         shift = AstOperator(K_SHL, AstInteger(1), loexpr);
         maskassign = AstAssign(maskvar, shift);
         maskassign = NewAST(AST_STMTLIST, maskassign, NULL);
+#if 0        
         // insert the mask assignment at the beginning of the function
+        // NO! WE CANNOT DO THIS IF LOEXPR IS NOT CONSTANT AND
+        // DEPENDS ON SOMETHING BETWEEN THE START OF FUNCTION AND HERE
         maskassign->right = curfunc->body;
         curfunc->body = maskassign;
-
+#endif
+        
         /* dst->left is the destination assignment */
         /* it may be an AST_LISTHOLDER, in which case it
            represents a pair of registers */
@@ -742,6 +746,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         stmt = NewAST(AST_THENELSE, ifpart, elsepart);
         ifstmt = NewAST(AST_IF, ifcond, stmt);
         ifstmt = NewAST(AST_STMTLIST, ifstmt, NULL);
+        ifstmt = AddToList(maskassign, ifstmt);
         AstReportDone(&saveinfo);
         return ifstmt;
     }
