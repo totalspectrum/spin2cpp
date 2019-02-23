@@ -3,7 +3,7 @@ CON
   _clkfreq = 80_000_000
 
 OBJ
-  fds : "FullDuplexSerial.spin"
+  fds : "spin/FullDuplexSerial"
 
 PUB demo | n, i, b
 

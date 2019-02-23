@@ -13,6 +13,7 @@ Version 3.9.21
   functions to pointers
 - Fixed handling of enums in C
 - Fixed checking for duplicate labels
+- Added some standard Spin serial routines to the include/spin folder
 
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object

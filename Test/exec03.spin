@@ -5,7 +5,7 @@ CON
   roottwof = ^^twof
 
 OBJ
-  fds: "FullDuplexSerial"
+  fds: "spin/FullDuplexSerial"
   sa: "setabort.spin"
   
 PUB demo | x,y,z,i,r

@@ -5,7 +5,7 @@ CON
   abstwof = ||twof
 
 OBJ
-  fds: "FullDuplexSerial"
+  fds: "spin/FullDuplexSerial"
 
 PUB demo | x,y
 

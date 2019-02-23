@@ -3,7 +3,7 @@ CON
   _clkfreq = 80_000_000
 
 OBJ
-  fds: "FullDuplexSerial"
+  fds: "spin/FullDuplexSerial"
 
 VAR
   long m
