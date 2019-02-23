@@ -1,8 +1,7 @@
 Version 3.9.21
-- Fixed automatic conversion of arrays to pointers
 - Increased stack size on Windows to prevent a crash
 - Added if_00, if_same, and other missing P2 conditions
-- Fixed a problem with ">| 0" on P2
+- Fixed an incorrect result for ">| 0" on P2
 - Added some P2 specific optimizations
 - Added Spin serial drivers to default include directory
 - Rewrote C static and variable handling code to fix a number of bugs
@@ -10,8 +9,10 @@ Version 3.9.21
 - Fixed an optimizer bug where register masks could be created before
   the variables they dependend on were initialized
 - Fixed a P2 optimizer bug affecting varargs
-- Fixed a number of C type casting bugs
+- Fixed several C type casting bugs including conversion of arrays and
+  functions to pointers
 - Fixed handling of enums in C
+- Fixed checking for duplicate labels
 
 Version 3.9.20
 - Allow closures to access variables and functions in the enclosing object

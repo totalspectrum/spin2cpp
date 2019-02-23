@@ -100,7 +100,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             return;
         }
         labelref = (Label *)sym->val;
-#if 0        
+#if 1
         if (labelref->hubval != hubpc) {
             ERROR(origLabel, "Changing hub value for symbol %s", name);
             return;
