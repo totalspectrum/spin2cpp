@@ -6,7 +6,7 @@ CON
   _clkfreq = 80_000_000
   
 OBJ
-  fds : "FullDuplexSerial.spin"
+  fds : "spin/FullDuplexSerial"
 
 PUB main | start,elapsed,idx
   '' start up the serial port
