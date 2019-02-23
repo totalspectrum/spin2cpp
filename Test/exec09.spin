@@ -15,7 +15,7 @@ VAR
   
 OBJ
 #ifdef __P2__
- ser: "spin/SmartSerial.spin2"
+ ser: "spin/SmartSerial"
 #else
  ser: "spin/FullDuplexSerial"
 #endif
