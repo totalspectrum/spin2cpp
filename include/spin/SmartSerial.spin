@@ -23,6 +23,10 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode
   wxpin_(bitperiod, rxpin)
   dirh_(rxpin)
   return 1
+
+' start with default serial pins and mode
+PUB start_default(baudrate)
+  return start(63, 62, 0, baudrate)
   
 PUB tx(val) | txpin
   txpin := tx_pin
