@@ -79,9 +79,12 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         immflag = 1;
         expr = expr->left;
     }
-    if (expr->kind == AST_IDENTIFIER || expr->kind == AST_RESULT) {
+    if (expr->kind == AST_LOCAL_IDENTIFIER || expr->kind == AST_IDENTIFIER || expr->kind == AST_RESULT) {
         Symbol *sym;
         const char *name;
+        if (expr->kind == AST_LOCAL_IDENTIFIER) {
+            expr = expr->left;
+        }
         if (expr->kind == AST_RESULT) {
             name = "result";
         } else {
