@@ -646,4 +646,7 @@ AST *CheckTypes(AST *expr);
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype);
 
+/* add a subclass to a class */
+void AddSubClass(Module *P, Module *subP);
+
 #endif

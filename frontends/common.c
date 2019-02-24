@@ -902,3 +902,17 @@ MakeDeclarations(AST *origdecl, SymbolTable *table)
     }
     return origdecl;
 }
+
+/* add a subclass C to a class P */
+void
+AddSubClass(Module *P, Module *C)
+{
+    Module **ptr;
+    Module *Q;
+    ptr = &P->subclasses;
+    while ( 0 != (Q = *ptr)) {
+        ptr = &Q->subclasses;
+    }
+    *ptr = C;
+    C->subclasses = 0;
+}

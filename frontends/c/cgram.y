@@ -442,8 +442,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             class_type = NewAbstractObject(AstIdentifier(typename), NULL);
             class_type->d.ptr = C;
             AddSymbol(symtable, typename, SYM_TYPEDEF, class_type, NULL);
-            C->subclasses = P->subclasses;
-            P->subclasses = C;
+            AddSubClass(P, C);
         }
     }
     if (body) {
