@@ -336,6 +336,8 @@ ForceStatementList(AST *stmt)
 static AST *
 AddEnumerators(AST *identifier, AST *enumlist)
 {
+    AST *resetZero = NewAST(AST_ENUMSET, AstInteger(0), NULL);
+    enumlist = NewAST(AST_LISTHOLDER, resetZero, enumlist);
     current->conblock = AddToList(current->conblock, enumlist);
     return ast_type_long;
 }
