@@ -728,8 +728,10 @@ doBasicTransform(AST **astptr)
         AST *typ;
         if (IsLocalVariable(ast)) {
             typ = ExprType(ast);
-            if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
-                curfunc->large_local = 1;
+            if (typ) {
+                if (TypeSize(typ) > LARGE_SIZE_THRESHOLD || IsArrayType(typ)) {
+                    curfunc->large_local = 1;
+                }
             }
         }
         break;

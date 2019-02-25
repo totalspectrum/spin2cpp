@@ -204,7 +204,13 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     if (ALL_VARS_ON_STACK(func)) {
         return true;
     }
-    if (func->large_local && size > LARGE_SIZE_THRESHOLD) {
+    if (!ANY_VARS_ON_STACK(func)) {
+        return false;
+    }
+    if (size > LARGE_SIZE_THRESHOLD) {
+        return true;
+    }
+    if (sym->kind == SYM_LOCALVAR && IsArrayType(sym->val)) {
         return true;
     }
     return false;

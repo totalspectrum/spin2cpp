@@ -2,7 +2,8 @@ Version 3.9.22
 - Made sure C enums start at 0
 - Do not change the order of class declarations, so that sizes can be
   properly calculated
-  
+- Always put array variables on the stack
+
 Version 3.9.21
 - Increased stack size on Windows to prevent a crash
 - Added if_00, if_same, and other missing P2 conditions

@@ -265,9 +265,12 @@ doCTransform(AST **astptr, unsigned cflags)
     {
         AST *typ = ExprType(ast);
         if (curfunc && IsLocalVariable(ast)) {
-            if (typ && TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
-                curfunc->large_local = 1;
+            if (typ) {
+                if (TypeSize(typ) > LARGE_SIZE_THRESHOLD || IsArrayType(typ)) {
+                    curfunc->large_local = 1;
+                }
             }
+            
         }
         break;
     }
