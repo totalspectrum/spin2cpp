@@ -41,6 +41,8 @@ static AST *make_methodptr;
 static AST *gc_alloc;
 static AST *gc_free;
 
+static AST *funcptr_cmp;
+
 static AST *BuildMethodPointer(AST *ast);
 
 static int
@@ -1090,6 +1092,11 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     if (IsPointerType(lefttype) || IsPointerType(righttype)) {
         /* FIXME: should handle floats and type promotion here!!! */
         leftUnsigned = rightUnsigned = 0;
+        if (IsFunctionType(lefttype->left) || IsFunctionType(righttype->left)) {
+            ast->left = MakeOperatorCall(funcptr_cmp, ast->left, ast->right, NULL);
+            ast->right = AstInteger(0);
+            return;
+        }
     } else {
         if (!MakeBothIntegers(ast, lefttype, righttype, "comparison")) {
             return;
@@ -1946,6 +1953,8 @@ InitGlobalFuncs(void)
         make_methodptr = getBasicPrimitive("_make_methodptr");
         gc_alloc = getBasicPrimitive("_gc_alloc");
         gc_free = getBasicPrimitive("_gc_free");
+
+        funcptr_cmp = getBasicPrimitive("_funcptr_cmp");
     }
 }
 

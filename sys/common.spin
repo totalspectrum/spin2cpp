@@ -288,6 +288,16 @@ pri _fixed_div(x, y, n) | sign
     x := -x
   return x << n
 
+pri _funcptr_cmp(x, y) | xc, yc, d
+  xc := long[x]
+  yc := long[y]
+  d := xc - yc
+  if d == 0
+    xc := long[x+4]
+    yc := long[y+4]
+    d := xc - yc
+  return d
+
 pri _string_cmp(x, y) | xc, yc, d
   repeat
     xc := byte[x++]
