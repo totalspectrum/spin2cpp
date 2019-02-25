@@ -20,14 +20,14 @@ _fibo
 	add	sp, #4
 	mov	fp, sp
 _fibo_enter
-	mov	local01, arg01
-	cmps	local01, #2 wc,wz
- if_b	mov	result1, local01
+	cmps	arg01, #2 wc,wz
+ if_b	mov	result1, arg01
  if_b	jmp	#LR__0001
-	mov	arg01, local01
-	sub	arg01, #1
-	mov	local02, local01
+	mov	local01, arg01
+	sub	local01, #1
+	mov	local02, arg01
 	sub	local02, #2
+	mov	arg01, local01
 	call	#_fibo
 	mov	local03, result1
 	mov	arg01, local02

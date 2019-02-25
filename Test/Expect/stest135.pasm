@@ -12,7 +12,6 @@ _zero
 LR__0001
 	mov	arg01, #0
 	wrword	arg01, _var01
-	mov	arg01, _var02
 	add	_var01, #2
 	djnz	_var02, #LR__0001
 LR__0002

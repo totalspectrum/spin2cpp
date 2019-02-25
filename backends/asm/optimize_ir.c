@@ -536,9 +536,13 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
             return false;
         }
+#if 0        
+        // we can't actually do this because there might be
+        // earlier conditional jumps to here
         if (ir->cond == COND_TRUE && ir->opc == OPC_JUMP) {
             return true;
         }
+#endif        
     }
   }
   /* if we reach the end without seeing any use */
@@ -549,7 +553,8 @@ static bool
 IsDeadAfter(IR *instr, Operand *op)
 {
     IR *stack[MAX_FOLLOWED_JUMPS];
-    return doIsDeadAfter(instr, op, 0, stack);
+    stack[0] = instr;
+    return doIsDeadAfter(instr, op, 1, stack);
 }
 
 static bool
@@ -634,6 +639,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   bool orig_modified = false;
   
   if (SrcOnlyHwReg(replace)) {
+      return NULL;
+  }
+  if (!first_ir) {
       return NULL;
   }
   for (ir = first_ir; ir; ir = ir->next) {
