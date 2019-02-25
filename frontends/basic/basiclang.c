@@ -1718,6 +1718,9 @@ AST *CheckTypes(AST *ast)
             // let "0" stand for any NULL object
             return ast_type_generic;
         }
+        if (ast->left) {
+            return ast->left;
+        }
         return  ast_type_long;
     case AST_ISBETWEEN:
     case AST_HWREG:

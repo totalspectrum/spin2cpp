@@ -26,8 +26,8 @@ _factorial_enter
 	mov	muldiva_, local01
 	mov	muldivb_, arg01
 	call	#multiply_
-	mov	arg01, local02
 	mov	arg02, muldiva_
+	mov	arg01, local02
 	jmp	#_factorial_enter
 LR__0001
 	mov	result1, local01
@@ -68,6 +68,10 @@ itmp1_
 	long	0
 itmp2_
 	long	0
+muldiva_
+	long	0
+muldivb_
+	long	0
 result1
 	long	0
 sp
@@ -86,9 +90,5 @@ factorial_tmp001_
 local01
 	res	1
 local02
-	res	1
-muldiva_
-	res	1
-muldivb_
 	res	1
 	fit	496

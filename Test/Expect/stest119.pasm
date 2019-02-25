@@ -5,16 +5,15 @@ dat
 entry
 
 _zeroit
-	mov	_var01, arg01
-	mov	_var02, #1
+	mov	_var01, #1
 	add	arg02, #1
 LR__0001
-	cmps	_var02, arg02 wc,wz
+	cmps	_var01, arg02 wc,wz
  if_ae	jmp	#LR__0002
-	mov	arg01, #0
-	wrbyte	arg01, _var01
-	add	_var02, #1
+	mov	_var02, #0
+	wrbyte	_var02, arg01
 	add	_var01, #1
+	add	arg01, #1
 	jmp	#LR__0001
 LR__0002
 	mov	result1, #0

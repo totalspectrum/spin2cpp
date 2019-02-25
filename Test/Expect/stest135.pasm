@@ -5,15 +5,14 @@ dat
 entry
 
 _zero
-	mov	_var01, arg01
 	cmps	arg02, #0 wc,wz
  if_be	jmp	#LR__0002
-	mov	_var02, arg02
+	mov	_var01, arg02
 LR__0001
-	mov	arg01, #0
-	wrword	arg01, _var01
-	add	_var01, #2
-	djnz	_var02, #LR__0001
+	mov	_var02, #0
+	wrword	_var02, arg01
+	add	arg01, #2
+	djnz	_var01, #LR__0001
 LR__0002
 _zero_ret
 	ret

@@ -427,7 +427,7 @@ extern Operand *mulfunc, *divfunc, *unsdivfunc, *muldiva, *muldivb;
 static bool FuncUsesArg(Operand *func, Operand *arg)
 {
     if (func == mulfunc || func == divfunc || func == unsdivfunc) {
-        return arg == muldiva || arg == muldivb;
+        return (arg == muldiva) || (arg == muldivb);
     }
     return true;
 }
@@ -643,6 +643,9 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   }
   if (!first_ir) {
       return NULL;
+  }
+  if (!IsBranch(first_ir) && IsDeadAfter(first_ir, orig)) {
+      return first_ir;
   }
   for (ir = first_ir; ir; ir = ir->next) {
     if (IsDummy(ir)) {

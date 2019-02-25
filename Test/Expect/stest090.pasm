@@ -10,8 +10,7 @@ _proc1
 	mov	_var02, #0
 	mov	_var03, arg02
 	shl	_var03, #2
-	mov	_var04, arg01
-	add	_var03, _var04
+	add	_var03, arg01
 LR__0001
 	cmps	_var01, #0 wc,wz
  if_be	jmp	#LR__0002

@@ -1740,8 +1740,8 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     }
     if (!mulfunc) {
         mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
-        muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
-        muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
+        muldiva = GetOneGlobal(REG_REG, "muldiva_", 0);
+        muldivb = GetOneGlobal(REG_REG, "muldivb_", 0);
     }
     EmitMove(irl, muldiva, lhs);
     EmitMove(irl, muldivb, rhs);

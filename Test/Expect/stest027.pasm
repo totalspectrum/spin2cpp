@@ -38,6 +38,10 @@ itmp1_
 	long	0
 itmp2_
 	long	0
+muldiva_
+	long	0
+muldivb_
+	long	0
 result1
 	long	0
 COG_BSS_START
@@ -48,9 +52,5 @@ _var01
 arg01
 	res	1
 arg02
-	res	1
-muldiva_
-	res	1
-muldivb_
 	res	1
 	fit	496

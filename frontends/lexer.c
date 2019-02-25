@@ -3137,20 +3137,20 @@ getCToken(LexStream *L, AST **ast_ptr)
                 // check for hex or binary prefixes like 0x or 0h
                 if (c2 == 'x' || c2 == 'X') {
                     c = parseNumber(L, 16, &ast->d.ival);
-                    needunget = 0;
+                    c2 = lexgetc(L);
                 } else if (c2 == 'b' || c2 == 'B') {
                     c = parseNumber(L, 2, &ast->d.ival);
-                    needunget = 0;
-                }
-            } else {
-                if (c2 == 'U' || c2 == 'u') {
-                    // unsigned flag, ignore for now
                     c2 = lexgetc(L);
                 }
-                if (c2 == 'L' || c2 == 'l') {
-                    // long constant flag, ignore for now
-                    needunget = 0;
-                }
+            }
+            if (c2 == 'U' || c2 == 'u') {
+                // unsigned flag; add in an unsigned type
+                ast->left = ast_type_unsigned_long;
+                c2 = lexgetc(L);
+            }
+            if (c2 == 'L' || c2 == 'l') {
+                // long constant flag, ignore for now
+                needunget = 0;
             }
             if (needunget) {
                 lexungetc(L, c2);
