@@ -1727,6 +1727,9 @@ int TypeSize(AST *typ)
     case AST_OBJECT:
     {
         Module *P = (Module *)typ->d.ptr;
+        if (P->pendingvarblock) {
+            ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
+        }
         return P->varsize;
     }
     case AST_TUPLETYPE:
