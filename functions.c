@@ -126,7 +126,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             } else {
                 actualtype = defaulttype;
             }
-            typesize = actualtype ? TypeSize(actualtype) : 4;
+            typesize = actualtype ? CheckedTypeSize(actualtype) : 4;
             if (kind == SYM_LOCALVAR || kind == SYM_TEMPVAR || kind == SYM_PARAMETER) {
                 // keep things in registers, generally
                 if (typesize < 4) typesize = 4;

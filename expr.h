@@ -48,6 +48,7 @@ AST *RemoveTypeModifiers(AST *typ);
 
 int TypeSize(AST *typ);
 int TypeAlign(AST *typ);
+int CheckedTypeSize(AST *typ); // like TypeSize, but declares members if necessary
 
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);

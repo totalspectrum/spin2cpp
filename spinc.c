@@ -151,6 +151,19 @@ InitGlobalModule(void)
 
 }
 
+int
+CheckedTypeSize(AST *type)
+{
+    Module *P;
+    if (IsClassType(type)) {
+        P = GetClassPtr(type);
+        if (P && P->pendingvarblock) {
+            DeclareMemberVariables(P);
+        }
+    }
+    return TypeSize(type);
+}
+
 static int
 DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
 {
@@ -188,7 +201,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         case AST_DECLARE_VAR_WEAK:
             curtype = ast->left;
             idlist = ast->right;
-            curtypesize = TypeSize(curtype);
+            curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
             if (curtype->kind == AST_ASSIGN) {
                 if (basetypesize == 4 || basetypesize == 0) {
                     ERROR(ast, "Member variables cannot have initial values");
@@ -557,7 +570,7 @@ ProcessModule(Module *P)
     
     /* now declare all the symbols that weren't already declared */
     DeclareConstants(&P->conblock);
-    DeclareMemberVariables(P); P->pendingvarblock = NULL;
+    DeclareMemberVariables(P);
     DeclareFunctions(P);
 
     /* recursively process closures */

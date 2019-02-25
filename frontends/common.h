@@ -649,4 +649,6 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
 /* add a subclass to a class */
 void AddSubClass(Module *P, Module *subP);
 
+void DeclareMemberVariables(Module *);
+
 #endif
