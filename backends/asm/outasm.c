@@ -3701,13 +3701,14 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         Operand *where;
         
         // if we are reading into a register, no need for
-        // a temp
-        if (IsValidDstReg(origdst)) {
+        // a temp (unless there's an offset, in which case we
+        // need to watch out for the case where src == dst)
+        src = (Operand *)src->name;
+        if (IsValidDstReg(origdst) && (off == 0 || src != dst)) {
             where = origdst;
         } else {
             where = temp = NewFunctionTempRegister();
         }
-        src = (Operand *)src->name;
         if (off) {
             EmitAddSub(irl, src, off);
         }
@@ -3739,7 +3740,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
-        if (src->kind == IMM_INT || SrcOnlyHwReg(src)) {
+        if (src->kind == IMM_INT || SrcOnlyHwReg(src) || (off && src == dst)) {
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src);
             src = temp2;
