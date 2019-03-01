@@ -904,7 +904,9 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
 
-    if (!vartype) vartype = ast_type_long;
+    if (!vartype) {
+        vartype = ast_type_long;
+    }
     EnterVars(symtype, &func->localsyms, vartype, varlist, func->numlocals * LONG_SIZE, 0);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     func->numlocals++;
