@@ -3,6 +3,8 @@ Version 3.9.22
 - Do not change the order of class declarations, so that sizes can be
   properly calculated
 - Always put array variables on the stack
+- Fixed some type promotion problems in C
+- Fixed a pointer offset bug that affected all languages
 
 Version 3.9.21
 - Increased stack size on Windows to prevent a crash

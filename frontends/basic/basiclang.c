@@ -1253,10 +1253,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             return lefttype;
         }
         if (IsPointerType(lefttype) && IsIntType(righttype)) {
-            ast->right = ScalePointer(lefttype, ast->right);
+            ast->right = ScalePointer(lefttype, forcepromote(righttype, ast->right));
             return lefttype;
         } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
-            ast->left = ScalePointer(righttype, ast->left);
+            ast->left = ScalePointer(righttype, forcepromote(lefttype, ast->left));
             return righttype;
         } else {
             return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
@@ -1275,10 +1275,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             return ast_type_unsigned_long;
         }
         if (IsPointerType(lefttype) && IsIntType(righttype)) {
-            ast->right = ScalePointer(lefttype, ast->right);
+            ast->right = ScalePointer(lefttype, forcepromote(righttype, ast->right));
             return lefttype;
         } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
-            ast->left = ScalePointer(righttype, ast->left);
+            ast->left = ScalePointer(righttype, forcepromote(lefttype, ast->left));
             return righttype;
         } else {
             return HandleTwoNumerics(ast->d.ival, ast, lefttype, righttype);
