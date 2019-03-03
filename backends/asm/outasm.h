@@ -45,6 +45,9 @@ IRCond InvertCond(IRCond v);
 // assembly
 char *IRAssemble(IRList *list, Module *P);
 
+// do instruction compression
+void IRCompress(IRList *list);
+
 // create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);
 

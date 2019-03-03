@@ -5713,6 +5713,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // now the cog bss (which doesn't need any actual space
     AppendIR(&cogcode, cogbss.head);
 
+    // check for compression
+    IRCompress(&cogcode);
+    
     // and assemble the result
     asmcode = IRAssemble(&cogcode, P);
     
