@@ -5,6 +5,7 @@ Version 3.9.22
 - Always put array variables on the stack
 - Fixed some type promotion problems in C
 - Fixed a pointer offset bug that affected all languages
+- Fixed loop strength reduction of the '?' operator
 
 Version 3.9.21
 - Increased stack size on Windows to prevent a crash

@@ -514,8 +514,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             break;
         case '?':
             // random number operator; cannot CSE this
-            newflags |= CSE_NO_REPLACE;
-            break;
+            flags |= CSE_NO_REPLACE;
+            // fall through and handle like K_INCREMENT/K_DECREMENT
         case K_INCREMENT:
         case K_DECREMENT:
             if (ast->left) {

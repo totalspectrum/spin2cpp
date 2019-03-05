@@ -218,10 +218,8 @@ CheckOperatorForAssignment(LoopValueSet *lvs, AST *parent, AST *ast, unsigned fl
     
     switch (ast->d.ival) {
     case K_INCREMENT:
-        name = ast->left ? ast->left : ast->right;
-        AddAssignment(lvs, name, val, flags, parent);
-        break;
     case K_DECREMENT:
+    case '?':
         name = ast->left ? ast->left : ast->right;
         AddAssignment(lvs, name, val, flags, parent);
         break;
