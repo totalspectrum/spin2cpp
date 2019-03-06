@@ -1,3 +1,6 @@
+Version 3.9.23
+- Caught some cases where function redefinitions were not flagged as errors
+
 Version 3.9.22
 - Made sure C enums start at 0
 - Do not change the order of class declarations, so that sizes can be

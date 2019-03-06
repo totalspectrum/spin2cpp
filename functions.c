@@ -566,6 +566,8 @@ doDeclareFunction(AST *funcblock)
                 /* providing a __fromfile() declaration after we saw
                    a real declaration; just ignore it */
                 return;
+            } else if (!AstMatch(fdef->decl, funcdef)) {
+                ERROR(funcdef, "redefining function %s", funcname_user);
             }
         }
         // if we get here then we are redefining a previously seen __fromfile
