@@ -448,6 +448,7 @@ static void
 ReplaceJumpTarget(IR *jmpir, Operand *dst)
 {
     switch(jmpir->opc) {
+    case OPC_REPEAT_END:
     case OPC_JUMP:
         jmpir->dst = dst;
         break;
@@ -509,11 +510,13 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
                 IR *jmpir;
                 ir->dst = NewCodeLabel();
                 jmpir = (IR *)ir->aux;
-                if (!jmpir) {
-                    ERROR(NULL, "internal error: unable to find jump target");
-                    return;
+                if (jmpir) {
+                    ReplaceJumpTarget(jmpir, ir->dst);
+                } else {
+                    // we used to print an error here, but in fact it is legal
+                    // (albeit unusual) for a label to have nothing explicitly jumping to it,
+                    // e.g. the label at the end of a repeat block
                 }
-                ReplaceJumpTarget(jmpir, ir->dst);
             }
         }
     }
