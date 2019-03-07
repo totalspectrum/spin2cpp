@@ -1453,7 +1453,7 @@ int
 GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
 {
     // look up in P->objsyms
-    Symbol *clkmodesym = FindSymbol(&P->objsyms, "_clkmode");
+    Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
     Symbol *sym;
     AST *ast;
     int32_t clkmode, clkfreq, xinfreq;
