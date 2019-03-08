@@ -51,15 +51,16 @@ pri lockret(id)
     lockret id
   endasm
   return 0
-pri clkset(mode, freq, xsel = 3)
+pri clkset(mode, freq, xsel = 3) | oldfreq
+  oldfreq = CLKFREQ & !3  ' remove low bits, if any
   CLKFREQ := freq
   CLKMODE := mode
   asm
-    hubset #0
-    hubset mode
-    waitx ##20_000_000/100
+    hubset oldfreq	' go to RCFAST using known prior mode
+    hubset mode		' setup for new mode, still RCFAST
+    waitx ##20_000_000/100 ' wait ~10ms
     add  mode, xsel
-    hubset mode
+    hubset mode         ' activate new mode
   endasm
 pri _sqrt(a) | r
   if (a =< 0)
