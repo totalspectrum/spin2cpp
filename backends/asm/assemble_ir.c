@@ -693,6 +693,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_addstr(fb, "\tcogid\t$1d0\n");
                 flexbuf_printf(fb, "\tcoginit\t$1d0,##$%x\n", P2_HUB_BASE);
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_CONFIG_BASE);
+                flexbuf_printf(fb, "\tlong\t0\t'reserved\n");
                 flexbuf_printf(fb, "\tlong\t%d ' clock frequency\n", clkfreq); 
                 flexbuf_printf(fb, "\tlong\t$%x ' clock mode\n", clkreg); 
                 flexbuf_printf(fb, "\torgh\t$%x\n", P2_HUB_BASE);
