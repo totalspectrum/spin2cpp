@@ -2,6 +2,7 @@ Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors
 - Fixed an optimizer crash when inlining functions containing REP
 - Implemented work-around in CLKSET for RCFAST setting issue
+- Allow fcache on P2; must be explicitly enabled though
 
 Version 3.9.22
 - Made sure C enums start at 0
