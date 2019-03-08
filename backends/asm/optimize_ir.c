@@ -2825,9 +2825,6 @@ OptimizeFcache(IRList *irl)
 {
     IR *ir;
 
-    if (gl_p2)
-        return;
-    
     ir = irl->head;
     while (ir) {
         if (IsLabel(ir)) {

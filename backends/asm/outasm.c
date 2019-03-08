@@ -4808,6 +4808,21 @@ static const char *builtin_lmm_p1 =
     "    long 0\n"
     ;
 
+const char *builtin_fcache_p2 =
+    "FCACHE_LOAD_\n"
+    "    rdlong\tpb, ptra++\n"
+    "    add\tpb, pa\n"
+    "    wrlong\tpb, --ptra\n"
+    "    shr\tpa, #2\n" // convert to words
+    "    wrlut reta_instr_, pa\n" 
+    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the reta instruction after the loop
+    "    setq2\tpa\n"
+    "    rdlong\t0, pb\n"
+    "    jmp\t#\\$200 ' jmp to cache\n"
+    "reta_instr_\n"
+    "    reta\n"
+    ;
+
 //
 // pushregs sets up a frame
 // the frame pointer is the last thing pushed before the new frame
@@ -5003,10 +5018,20 @@ const char *builtin_wrcog =
 static void
 EmitBuiltins(IRList *irl)
 {
-    if (HUB_CODE && !gl_p2) {
-        const char *builtin_lmm = builtin_lmm_p1;
-        Operand *loop = NewOperand(IMM_STRING, builtin_lmm, 0);
-        EmitOp1(irl, OPC_LITERAL, loop);
+    if (HUB_CODE) {
+        const char *builtin_lmm = NULL;
+        if (gl_p2) {
+            if (gl_fcache_size > 0) {
+                builtin_lmm = builtin_fcache_p2;
+            }
+        } else {
+            builtin_lmm = builtin_lmm_p1;
+        }
+        if (builtin_lmm) {
+            Operand *loop;
+            loop = NewOperand(IMM_STRING, builtin_lmm, 0);
+            EmitOp1(irl, OPC_LITERAL, loop);
+        }
     }
     if (pushregs_) {
         const char *builtin_pushregs = (gl_p2 ? builtin_pushregs_p2 : builtin_pushregs_p1);

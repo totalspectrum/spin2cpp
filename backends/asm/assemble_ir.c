@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2018 Total Spectrum Software Inc.
+ * Copyright 2016-2019 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -135,7 +135,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             if (useabsaddr) {
                 flexbuf_addstr(fb, "\\");
             }
-            flexbuf_addstr(fb, "@");
+            //flexbuf_addstr(fb, "@");
         }
         
         flexbuf_addstr(fb, RemappedName(reg->name));
@@ -701,7 +701,23 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             didOrg = 1;
         }
     }
-    if (!gl_p2) {
+    if (gl_p2) {
+        // check for fcache stuff
+        if (ir->fcache) {
+            switch(ir->opc) {
+            case OPC_JUMP:
+            case OPC_DJNZ:
+                // we hope all of these will be generated as relative branches
+                break;
+            case OPC_CALL:
+            case OPC_RET:
+                ERROR(NULL, "call/return from fcached code not supported");
+                break;
+            default:
+                break;
+            }
+        }
+    } else {
         // handle jumps in LMM mode
         switch (ir->opc) {
         case OPC_CALL:
@@ -928,12 +944,21 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_addstr(fb, "]\n");
         break;
     case OPC_FCACHE:
-        flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
-        flexbuf_printf(fb, "\tlong\t(");
-        PrintOperandAsValue(fb, ir->dst);
-        flexbuf_printf(fb, "-");
-        PrintOperandAsValue(fb, ir->src);
-        flexbuf_printf(fb, ")\n");
+        if (gl_p2) {
+            flexbuf_printf(fb, "\tloc\tpa,\t#(");
+            PrintOperandAsValue(fb, ir->dst);
+            flexbuf_printf(fb, "-");
+            PrintOperandAsValue(fb, ir->src);
+            flexbuf_printf(fb, ")\n");
+            flexbuf_printf(fb, "\tcalla\t#FCACHE_LOAD_\n");
+        } else {
+            flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
+            flexbuf_printf(fb, "\tlong\t(");
+            PrintOperandAsValue(fb, ir->dst);
+            flexbuf_printf(fb, "-");
+            PrintOperandAsValue(fb, ir->src);
+            flexbuf_printf(fb, ")\n");
+        }
         break;
     case OPC_LABELED_BLOB:
         // output a binary blob
