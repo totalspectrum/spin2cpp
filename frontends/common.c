@@ -586,6 +586,22 @@ ReplaceExtension(const char *basename, const char *extension)
 }
 
 //
+// append an extension
+//
+char *
+AddExtension(const char *basename, const char *extension)
+{
+    char *ret = (char *)malloc(strlen(basename) + strlen(extension) + 1);
+    if (!ret) {
+      fprintf(stderr, "FATAL: out of memory\n");
+      exit(2);
+    }
+    strcpy(ret, basename);
+    strcat(ret, extension);
+    return ret;
+}
+
+//
 // add a propeller checksum to a binary file
 // may also pad the image out to form a .eeprom
 // image, if eepromSize is non-zero

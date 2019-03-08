@@ -926,7 +926,7 @@ OutputCppCode(const char *filename, Module *P, int printMain)
     }
 
     /* print out the header file */
-    fname = ReplaceExtension(filename, ".h");
+    fname = AddExtension(filename, ".h");
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
@@ -982,9 +982,9 @@ OutputCppCode(const char *filename, Module *P, int printMain)
     }
 
     if (gl_output == OUTPUT_C) {
-        fname = ReplaceExtension(filename, ".c");
+        fname = AddExtension(filename, ".c");
     } else {
-        fname = ReplaceExtension(filename, ".cpp");
+        fname = AddExtension(filename, ".cpp");
     }
 
     f = fopen(fname, "w");

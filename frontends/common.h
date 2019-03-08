@@ -550,6 +550,9 @@ const char *FindLastDirectoryChar(const char *name);
 /* if the base string has an extension already, we remove it */
 char *ReplaceExtension(const char *base, const char *ext);
 
+/* like ReplaceExtension but adds the extension on */
+char *AddExtension(const char *base, const char *ext);
+
 /* add "basename" to the path portion of  "directory" to make a complete file name */
 char *ReplaceDirectory(const char *basename, const char *directory);
 
