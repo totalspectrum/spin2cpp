@@ -709,7 +709,6 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             case OPC_DJNZ:
                 // we hope all of these will be generated as relative branches
                 break;
-            case OPC_CALL:
             case OPC_RET:
                 ERROR(NULL, "call/return from fcached code not supported");
                 break;
