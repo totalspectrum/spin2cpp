@@ -4810,9 +4810,10 @@ static const char *builtin_lmm_p1 =
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
-    "    rdlong\tpb, ptra++\n"
+    "    rdlong\tpb, --ptra\n"
     "    add\tpb, pa\n"
-    "    wrlong\tpb, --ptra\n"
+    "    wrlong\tpb, ptra++\n"
+    "    sub\tpb, pa\n"
     "    shr\tpa, #2\n" // convert to words
     "    wrlut reta_instr_, pa\n" 
     "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the reta instruction after the loop

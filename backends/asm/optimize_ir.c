@@ -2831,14 +2831,26 @@ OptimizeFcache(IRList *irl)
             if (LoopCanBeFcached(irl, ir)) {
                 Operand *src = ir->dst;
                 Operand *dst = NewHubLabel();
+                IR *startlabel = ir;
                 IR *endlabel = NewIR(OPC_LABEL);
                 IR *fcache = NewIR(OPC_FCACHE);
                 IR *jmp = (IR *)ir->aux;
+                IR *loopstart = ir->prev;
                 fcache->src = src;
                 fcache->dst = dst;
                 endlabel->dst = dst;
+                while (loopstart && IsDummy(loopstart)) {
+                    loopstart = loopstart->prev;
+                }
+                if (loopstart && loopstart->opc == OPC_REPEAT) {
+                    loopstart = loopstart->prev;
+                    startlabel = NewIR(OPC_LABEL);
+                    fcache->src = startlabel->dst = NewHubLabel();
+                    InsertAfterIR(irl, loopstart, startlabel);
+                    ir = startlabel;
+                }
                 InsertAfterIR(irl, jmp, endlabel);
-                InsertAfterIR(irl, ir->prev, fcache);
+                InsertAfterIR(irl, loopstart, fcache);
                 while (ir != endlabel) {
                     ir->fcache = src;
                     ir = ir->next;
