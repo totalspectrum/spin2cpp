@@ -14,7 +14,7 @@
 #include "outasm.h"
 
 // fcache size in longs; -1 means take a guess
-int gl_fcache_size = 96;
+int gl_fcache_size = -1;
 
 //
 // helper functions

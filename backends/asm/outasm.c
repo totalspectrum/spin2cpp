@@ -5477,6 +5477,10 @@ InitAsmCode()
     initDone = 1;
 }
 
+// guessing fcache size still needs work...
+//#define REALLY_GUESS_FCACHE_SIZE
+
+#ifdef REALLY_GUESS_FCACHE_SIZE
 static int guess_instructions_in_literal(const char *s)
 {
     int n = 0;
@@ -5493,13 +5497,19 @@ static int guess_instructions_in_literal(const char *s)
     }
     return n;
 }
+#endif
 
 /* routine to try to guess how much room we need for fcache */
-/* this does not work very well at present, so it isn't actually used yet */
+/* this does not work very well at present */
 
 static int
 GuessFcacheSize(IRList *irl)
 {
+#    /* for now, just go by p2/p1 */
+    if (gl_p2) {
+        return 0; // disable fcache by default
+    } else {
+#ifdef REALLY_GUESS_FCACHE_SIZE    
     int n = 0;
     int datsize;
     
@@ -5524,6 +5534,10 @@ GuessFcacheSize(IRList *irl)
     }
     //printf("guessed fcache size = %d\n", n);
     return n;
+#else
+    return 96; // default size of P1
+#endif
+}
 }
 
 void
