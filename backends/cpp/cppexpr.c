@@ -594,14 +594,28 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
     case K_DECREMENT:
     {
         // we don't go through the usual PrintInOp because we
-        // do not want any casting to occur
+        // have to control the casting
         const char *str = op == K_INCREMENT ? "++" : "--";
-        if (left) {
-            PrintExpr(f, left, flags);
-            flexbuf_printf(f, "%s", str);
-        } else {
-            flexbuf_printf(f, "%s", str);
-            PrintExpr(f, right, flags);
+        const char *prefix;
+        const char *suffix;
+        AST *finalType;
+        int needCast = 0;
+        prefix = left ? "" : str;
+        suffix = left ? str : "";
+        finalType = left ? ExprType(left) : ExprType(right);
+        if (finalType && IsPointerType(finalType)) {
+            needCast = 0 != curfunc->parmarray;
+        }
+        if (needCast) {
+            flexbuf_addstr(f, "((");
+            PrintType(f, finalType, 0);
+            flexbuf_addstr(f, ")");
+        }
+        flexbuf_printf(f, "%s", prefix);
+        PrintExpr(f, left ? left : right, flags);
+        flexbuf_printf(f, "%s", suffix);
+        if (needCast) {
+            flexbuf_addstr(f, ")");
         }
         break;
     }

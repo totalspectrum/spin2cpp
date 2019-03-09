@@ -303,7 +303,11 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
             PrintNewline(f);
         }
         for (v = func->params; v; v = v->right) {
+            AST *typ = ExprType(v->left);
             flexbuf_printf(f, "%*c%s[%d] = ", indent, ' ', func->parmarray, offset);
+            if (typ && !IsIntType(typ)) {
+                flexbuf_printf(f, "(int32_t)");
+            }
             flexbuf_printf(f, "%s;", v->left->d.string);
             PrintNewline(f);
             offset++;
