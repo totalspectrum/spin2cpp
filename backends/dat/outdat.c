@@ -78,6 +78,7 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     save = current;
     current = P;
 
+    gl_nospin = 1; // we are outputting only the dat section
     f = fopen(fname, "wb");
     if (!f) {
         fprintf(stderr, "Unable to open output file: ");
@@ -286,6 +287,32 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
     return 0;
 }
 
+intptr_t
+EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocKind)
+{
+    int checkReloc;
+    intptr_t offset;
+    
+    checkReloc = IsRelocatable(expr, &offset, true);
+    if (relocKind) {
+        *relocKind = checkReloc;
+    }
+    if (checkReloc != RELOC_KIND_NONE) {
+        if (checkReloc == -1) {
+            ERROR(expr, "Illegal operation on relocatable @@@ value");
+        } else if (relocs) {
+            Reloc r;
+            int addr = flexbuf_curlen(f);
+            r.kind = checkReloc;
+            r.off = addr;
+            r.val = offset;
+            flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+        }
+        return offset;
+    }
+    return EvalPasmExpr(expr);
+}
+
 static void
 AlignPc(Flexbuf *f, int size)
 {
@@ -299,9 +326,8 @@ void
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, AST *type)
 {
     uintptr_t origval, val;
-    intptr_t offset;
     int i;
-    int checkReloc;
+    int checkReloc = RELOC_KIND_NONE;
     AST *exprType;
     
     if (elemsize == 0) {
@@ -316,28 +342,9 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 item = item->right;
             }
         }
-        if (RELOC_KIND_NONE != (checkReloc = IsRelocatable(item, &offset, true))) {
-            if (checkReloc == -1) {
-                ERROR(item, "Illegal operation on relocatable @@@ value");
-            }
-            if (reps != 1) {
-                ERROR(item, "internal error, cannot handle reps of @@@");
-            }
-            if (relocs) {
-                Reloc r;
-                int addr = flexbuf_curlen(f);
-                if (elemsize != LONG_SIZE) {
-                    ERROR(item, "@@@ supported only on long values");
-                }
-                r.kind = checkReloc;
-                r.off = addr;
-                r.val = origval = offset;
-                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            } else {
-                origval = EvalPasmExpr(item);
-            }
-        } else {
-            origval = EvalPasmExpr(item);
+        origval = EvalRelocPasmExpr(item, f, relocs, &checkReloc);
+        if (checkReloc > RELOC_KIND_NONE && reps > 1) {
+            ERROR(item, "repeat counts not supported on relocatable items");
         }
     } else {
         origval = 0;
@@ -1418,6 +1425,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             assembleFile(f, ast->left);
             break;
         case AST_ORGH:
+            if (!gl_nospin && ast->d.ival > 3) {
+                WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");
+            }
         case AST_ORGF:
             /* need to skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
