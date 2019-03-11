@@ -288,14 +288,14 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
 }
 
 intptr_t
-EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocKind)
+EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
 {
     int checkReloc;
     intptr_t offset;
     
     checkReloc = IsRelocatable(expr, &offset, true);
-    if (relocKind) {
-        *relocKind = checkReloc;
+    if (relocOff) {
+        *relocOff = -1;
     }
     if (checkReloc != RELOC_KIND_NONE) {
         if (checkReloc == -1) {
@@ -307,7 +307,10 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocKind)
             r.off = addr;
             r.val = offset;
             flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-        }
+            if (relocOff) {
+                *relocOff = flexbuf_curlen(relocs) - sizeof(r);
+            }
+         }
         return offset;
     }
     return EvalPasmExpr(expr);
@@ -327,7 +330,8 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
 {
     uintptr_t origval, val;
     int i;
-    int checkReloc = RELOC_KIND_NONE;
+    Reloc *rptr;
+    int relocOff;
     AST *exprType;
     
     if (elemsize == 0) {
@@ -342,8 +346,13 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 item = item->right;
             }
         }
-        origval = EvalRelocPasmExpr(item, f, relocs, &checkReloc);
-        if (checkReloc > RELOC_KIND_NONE && reps > 1) {
+        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff);
+        if (relocOff >= 0) {
+            rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
+        } else {
+            rptr = 0;
+        }
+        if (rptr && (rptr->kind > RELOC_KIND_NONE) && reps > 1) {
             ERROR(item, "repeat counts not supported on relocatable items");
         }
     } else {
@@ -940,6 +949,8 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
     AST *origast;
     int isRelJmp = 0;
     int opidx;
+    Reloc *rptr;
+    int relocOff = -1;;
     bool needIndirect = false;
     
     extern Instruction instr_p2[];
@@ -1166,10 +1177,10 @@ decode_instr:
             if (realval->kind == AST_FUNCCALL) {
                 realval = realval->left;  // correct for parser misreading
             }
-            isrc = EvalPasmExpr(realval);
+            isrc = EvalRelocPasmExpr(realval, f, relocs, &relocOff);
             isRelJmp = 0;
         } else {
-            isrc = EvalPasmExpr(operand[opidx]);
+            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &relocOff);
             if ( (inHub && isrc < 0x400)
                  || (!inHub && isrc >= 0x400)
                 )
@@ -1259,6 +1270,10 @@ decode_instr:
 instr_ok:
     val = val | (dst << 9) | src | (immmask & ~0xff);
     /* output the instruction */
+    if (relocOff >= 0) {
+        rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
+        rptr->val = val;
+    }
     outputInstrLong(f, val);
 }
 
