@@ -512,7 +512,8 @@ main(int argc, const char **argv)
     
     if (P) {
         Module *Q;
-
+        int compile_original = 0;
+        
         if (gl_errors > 0) {
             exit(1);
         }
@@ -575,7 +576,13 @@ main(int argc, const char **argv)
                     asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
                 }
             }
-            OutputAsmCode(asmname, P, outputMain);
+            if (P->functions == NULL) {
+                // we can just assemble the .spin file directoy
+                asmname = strdup(P->fullname);
+                compile_original = 1;
+            } else {
+                OutputAsmCode(asmname, P, outputMain);
+            }
             if (compile)  {
                 if (gl_errors > 0) {
                     remove(binname);
@@ -585,7 +592,7 @@ main(int argc, const char **argv)
                     exit(1);
                 }
                 gl_output = OUTPUT_DAT;
-                gl_caseSensitive = 1;
+                gl_caseSensitive = !compile_original;
                 Q = ParseTopFiles(&asmname, 1, 1);
                 if (gl_errors == 0) {
                     if (listFile) {
