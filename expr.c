@@ -1457,7 +1457,6 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
                     return intExpr(0);
                 } else {
                     offset += gl_dat_offset;
-                    return intExpr(lref->hubval + offset);
                 }
             }
             return intExpr(lref->hubval + offset);

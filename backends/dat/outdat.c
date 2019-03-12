@@ -300,10 +300,10 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
     int32_t offset;
     Symbol *sym;
     
-    checkReloc = IsRelocatable(expr, &sym, &offset, true);
     if (relocOff) {
         *relocOff = -1;
     }
+    checkReloc = IsRelocatable(expr, &sym, &offset, false);
     if (checkReloc != RELOC_KIND_NONE) {
         if (checkReloc == -1) {
             ERROR(expr, "Illegal operation on relocatable @@@ value");
@@ -318,7 +318,13 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
             if (relocOff) {
                 *relocOff = flexbuf_curlen(relocs) - sizeof(r);
             }
-         }
+        } else {
+            if (gl_dat_offset >= 0) {
+                offset += gl_dat_offset;
+            } else {
+                ERROR(expr, "do not know how to relocate absolute address");
+            }
+        }
         return offset;
     }
     return EvalPasmExpr(expr);
@@ -518,12 +524,10 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
             reps = 0;
         } else {
             origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff);
-#if 0
-            /* don't seem to need this */
             if (relocOff >= 0) {
-                Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);
+                Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);       
+                (void)r;
             }
-#endif            
             reps = 1;
         }
         while (reps > 0) {
