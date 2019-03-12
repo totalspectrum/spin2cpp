@@ -294,7 +294,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
 }
 
 int32_t
-EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal)
+EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal, int relocKind)
 {
     int checkReloc;
     int32_t offset;
@@ -303,29 +303,25 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool is
     if (relocOff) {
         *relocOff = -1;
     }
-    checkReloc = IsRelocatable(expr, &sym, &offset, isInitVal);
-    if (checkReloc != RELOC_KIND_NONE) {
-        if (checkReloc == -1) {
-            ERROR(expr, "Illegal operation on relocatable @@@ value");
-        } else if (relocs) {
-            Reloc r;
-            int addr = flexbuf_curlen(f);
-            r.kind = checkReloc;
-            r.addr = addr;
-            r.sym = sym;
-            r.symoff = offset;
-            flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            if (relocOff) {
-                *relocOff = flexbuf_curlen(relocs) - sizeof(r);
-            }
-        } else {
-            if (gl_dat_offset >= 0) {
-                offset += gl_dat_offset;
+    if (relocs) {
+        checkReloc = IsRelocatable(expr, &sym, &offset, isInitVal);
+        if (checkReloc != RELOC_KIND_NONE) {
+            if (checkReloc == -1) {
+                ERROR(expr, "Illegal operation on relocatable @@@ value");
             } else {
-                ERROR(expr, "do not know how to relocate absolute address");
+                Reloc r;
+                int addr = flexbuf_curlen(f);
+                r.kind = relocKind;
+                r.addr = addr;
+                r.sym = sym;
+                r.symoff = offset;
+                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
+                if (relocOff) {
+                    *relocOff = flexbuf_curlen(relocs) - sizeof(r);
+                }
             }
+            return offset;
         }
-        return offset;
     }
     return EvalPasmExpr(expr);
 }
@@ -360,7 +356,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 item = item->right;
             }
         }
-        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true);
+        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true, RELOC_KIND_I32);
         if (relocOff >= 0) {
             rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
         } else {
@@ -523,7 +519,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
             }
             reps = 0;
         } else {
-            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false);
+            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false, RELOC_KIND_I32);
             if (relocOff >= 0) {
                 Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);       
                 (void)r;
@@ -950,7 +946,8 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
     int isRelJmp = 0;
     int opidx;
     Reloc *rptr;
-    int relocOff = -1;;
+    int srcRelocOff = -1;
+    int dstRelocOff = -1;
     bool needIndirect = false;
     
     extern Instruction instr_p2[];
@@ -1015,8 +1012,8 @@ decode_instr:
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_DEFZ:
     handle_two_operands:
-        dst = EvalPasmExpr(operand[0]);
-        src = EvalPasmExpr(operand[1]);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
+        src = EvalRelocPasmExpr(operand[1], f, relocs, &srcRelocOff, true, RELOC_KIND_AUGS);
         break;
     case P2_MODCZ:
         dst = EvalPasmExpr(operand[0]);
@@ -1177,10 +1174,10 @@ decode_instr:
             if (realval->kind == AST_FUNCCALL) {
                 realval = realval->left;  // correct for parser misreading
             }
-            isrc = EvalRelocPasmExpr(realval, f, relocs, &relocOff, true);
+            isrc = EvalRelocPasmExpr(realval, f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
             isRelJmp = 0;
         } else {
-            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &relocOff, true);
+            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
             if ( (inHub && isrc < 0x400)
                  || (!inHub && isrc >= 0x400)
                 )
@@ -1203,7 +1200,7 @@ decode_instr:
         goto instr_ok;
     case DST_OPERAND_ONLY:
     case P2_DST_CONST_OK:
-        dst = EvalPasmExpr(operand[0]);
+        dst = EvalRelocPasmExpr(operand[0], f, relocs, &dstRelocOff, true, RELOC_KIND_AUGD);
         src = 0;
         break;
     case CALL_OPERAND:
@@ -1243,20 +1240,39 @@ decode_instr:
         if (immmask & BIG_IMM_DST) {
             uint32_t augval = val & 0xf0000000; // preserve condition
             if (augval == 0) augval = 0xf0000000; // except _ret_
+            if (dstRelocOff >= 0) {
+                if (srcRelocOff >= 0) {
+                    ERROR(line, "fastspin does not currently support two relocations on one instruction");
+                }
+                rptr = (Reloc *)(flexbuf_peek(relocs) + dstRelocOff);
+                rptr->symoff = dst;
+                dst = 0;
+                dstRelocOff = -1;
+            }
             augval |= (dst >> 9) & 0x007fffff;
             augval |= 0x0f800000; // AUGD
             dst &= 0x1ff;
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_DST;
+        } else if (dstRelocOff >= 0) {
+            ERROR(line, "Use of immediate hub address in dest requires ##");
         }
         if (immmask & BIG_IMM_SRC) {
             uint32_t augval = val & 0xf0000000; // preserve condition
             if (augval == 0) augval = 0xf0000000; // except _ret_
+            if (srcRelocOff >= 0) {
+                rptr = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
+                rptr->symoff = src;
+                src = 0;
+                srcRelocOff = -1;
+            }
             augval |= (src >> 9) & 0x007fffff;
             augval |= 0x0f000000; // AUGS
             src &= 0x1ff;
             outputInstrLong(f, augval);
             immmask &= ~BIG_IMM_SRC;
+        } else if (srcRelocOff >= 0) {
+            ERROR(line, "Use of immediate hub address in src requires ##");
         }
         if (src > 511) {
             ERROR(line, "Source operand too big for %s", instr->name);
@@ -1270,8 +1286,8 @@ decode_instr:
 instr_ok:
     val = val | (dst << 9) | src | (immmask & ~0xff);
     /* output the instruction */
-    if (relocOff >= 0) {
-        rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
+    if (srcRelocOff >= 0) {
+        rptr = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
         rptr->symoff = val;
     }
     outputInstrLong(f, val);

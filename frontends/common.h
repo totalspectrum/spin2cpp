@@ -435,6 +435,8 @@ typedef struct Reloc {
 #define RELOC_KIND_NONE  0  // no relocation, should not produce an entry
 #define RELOC_KIND_DEBUG 1  // not a real relocation, a debug entry
 #define RELOC_KIND_I32   2  // add a symbol to a 32 bit value
+#define RELOC_KIND_AUGS  3  // relocation for AUGS
+#define RELOC_KIND_AUGD  4  // relocation for AUGD
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);

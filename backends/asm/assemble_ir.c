@@ -294,6 +294,14 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     flexbuf_addchar(fb, '\t');
 }
 
+static uint32_t
+fetchUint32(uint8_t *data)
+{
+    uint32_t r;
+    r = data[0] | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
+    return r;
+}
+
 #define MAX_BYTES_ON_LINE 16
 
 static void
@@ -347,37 +355,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
             bytesToReloc = nextreloc->addr - addr;
             if (bytesToReloc == 0) {
                 int32_t offset;
+                uint32_t baseWord;
                 Symbol *sym;
                 const char *symname;
                 
                 // we have to output a relocation or debug entry now
-                if (nextreloc->kind == RELOC_KIND_I32) {
-                    if (bytesPending < 4) {
-                        ERROR(NULL, "internal error: not enough space for reloc");
-                        return;
-                    }
-                    
-                    flexbuf_printf(fb, "\tlong\t");
-                    sym = nextreloc->sym;
-                    offset = nextreloc->symoff;
-                    if (!sym) {
-                        symname = RemappedName(label->name);
-                    } else {
-                        symname = IdentifierModuleName(current, sym->our_name);
-                    }
-                    if (offset == 0) {
-                        flexbuf_printf(fb, "@@@%s\n", symname);
-                    } else if (offset > 0) {
-                        flexbuf_printf(fb, "@@@%s + %d\n", symname, offset);
-                    } else {
-                        flexbuf_printf(fb, "@@@%s - %d\n", symname, -offset);
-                    }
-                    data += 4;
-                    addr += 4;
-                    nextreloc++;
-                    --relocs;
-                    continue;
-                }
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
                     LineInfo *info = (LineInfo *)nextreloc->sym;
                     if (info && info->linedata) {
@@ -387,9 +369,64 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                     --relocs;
                     goto again;
                 }
-                ERROR(NULL, "internal error: bad reloc kind %d", nextreloc->kind);
-                return;
+                if (nextreloc->kind == RELOC_KIND_I32) {
+                    if (bytesPending < 4) {
+                        ERROR(NULL, "internal error: not enough space for reloc");
+                        return;
+                    }
+                } else if (nextreloc->kind == RELOC_KIND_AUGD || nextreloc->kind == RELOC_KIND_AUGS) {
+                    if (bytesPending < 8) {
+                        ERROR(NULL, "internal error: not enough space for reloc");
+                        return;
+                    }
+                } else {
+                    ERROR(NULL, "internal error: bad reloc kind %d", nextreloc->kind);
+                    return;
+                }
+                flexbuf_printf(fb, "\tlong\t");
+                sym = nextreloc->sym;
+                offset = nextreloc->symoff;
+                if (!sym) {
+                    symname = RemappedName(label->name);
+                } else {
+                    symname = IdentifierModuleName(current, sym->our_name);
+                }
+                switch(nextreloc->kind) {
+                case RELOC_KIND_I32:
+                    if (offset == 0) {
+                        flexbuf_printf(fb, "@@@%s\n", symname);
+                    } else if (offset > 0) {
+                        flexbuf_printf(fb, "@@@%s + %d\n", symname, offset);
+                    } else {
+                        flexbuf_printf(fb, "@@@%s - %d\n", symname, -offset);
+                    }
+                    data += 4;
+                    addr += 4;
+                    break;
+                case RELOC_KIND_AUGS:
+                case RELOC_KIND_AUGD:
+                    baseWord = fetchUint32(data);
+                    flexbuf_printf(fb, "((@@@%s + %d)>>9) | $%08x\n", symname, offset, baseWord);
+                    data += 4;
+                    addr += 4;
+                    baseWord = fetchUint32(data);
+                    if (nextreloc->kind == RELOC_KIND_AUGD) {
+                        flexbuf_printf(fb, "\tlong\t(((@@@%s + %d)&$1ff)<<9) | $%08x\n", symname, offset, baseWord);
+                    } else {
+                        flexbuf_printf(fb, "\tlong\t((@@@%s + %d)&$1ff) | $%08x\n", symname, offset, baseWord);
+                    }
+                    data += 4;
+                    addr += 4;
+                    break;
+                default:
+                    ERROR(NULL, "internal error in relocs");
+                    break;
+                }
+                nextreloc++;
+                --relocs;
+                continue;
             }
+
             if (bytesPending > bytesToReloc) {
                 bytesPending = bytesToReloc;
             }
