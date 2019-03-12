@@ -416,7 +416,7 @@ typedef struct DataBlockOutFuncs {
  * For now, the relocation system works only on longs, and only in some
  * modes. For each long that needs the base of dat added to it we emit
  * a relocation r, which contains (a) the offset of the relocatable long
- * in bytes from the start of the dat, and (b) the value to add to the base
+ * in bytes from the start of the dat, and (b) the symbol to add to the base
  * of the dat section at that long.
  * The relocs should be sorted in order of increasing offset, so we can
  * easily process them in order along with the output.
@@ -427,14 +427,14 @@ typedef struct DataBlockOutFuncs {
  */
 typedef struct Reloc {
     int32_t  kind;    // reloc or debug
-    int32_t  off;     // the address the entry affects (offset from dat base)
-    intptr_t val;     // value to add to dat base, or pointer to LineInfo
+    int32_t  addr;    // the address the entry affects (offset from dat base)
+    Symbol   *sym;    // the symbol this relocation is relative to (NULL for dat base)
+    int32_t  symoff;  // offset relative to sym
 } Reloc;
 
-#define RELOC_KIND_NONE  0 // no relocation, should not produce an entry
-#define RELOC_KIND_LONG  1
-#define RELOC_KIND_DEBUG 2
-#define RELOC_KIND_SYM   3
+#define RELOC_KIND_NONE  0  // no relocation, should not produce an entry
+#define RELOC_KIND_DEBUG 1  // not a real relocation, a debug entry
+#define RELOC_KIND_I32   2  // add a symbol to a 32 bit value
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);

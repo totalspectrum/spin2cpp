@@ -5565,7 +5565,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         if (gl_p2) {
             gl_no_coginit = 1;
             gl_hub_base = 0;
-            gl_nospin = 1;
         }
     }
     InitAsmCode();

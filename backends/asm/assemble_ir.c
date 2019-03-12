@@ -344,40 +344,34 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
 
     again:
         if (relocs > 0) {
-            bytesToReloc = nextreloc->off - addr;
+            bytesToReloc = nextreloc->addr - addr;
             if (bytesToReloc == 0) {
-                intptr_t offset;
+                int32_t offset;
+                Symbol *sym;
+                const char *symname;
+                
                 // we have to output a relocation or debug entry now
-                if (nextreloc->kind == RELOC_KIND_LONG) {
+                if (nextreloc->kind == RELOC_KIND_I32) {
                     if (bytesPending < 4) {
                         ERROR(NULL, "internal error: not enough space for reloc");
                         return;
                     }
                     
                     flexbuf_printf(fb, "\tlong\t");
-                    offset = nextreloc->val;
-                    if (offset == 0) {
-                        flexbuf_printf(fb, "@@@%s\n", RemappedName(label->name));
-                    } else if (offset > 0) {
-                        flexbuf_printf(fb, "@@@%s + %d\n", RemappedName(label->name), offset);
+                    sym = nextreloc->sym;
+                    offset = nextreloc->symoff;
+                    if (!sym) {
+                        symname = RemappedName(label->name);
                     } else {
-                        flexbuf_printf(fb, "@@@%s - %d\n", RemappedName(label->name), -offset);
+                        symname = IdentifierModuleName(current, sym->our_name);
                     }
-                    data += 4;
-                    addr += 4;
-                    nextreloc++;
-                    --relocs;
-                    continue;
-                }
-                if (nextreloc->kind == RELOC_KIND_SYM) {
-                    Symbol *sym;
-                    if (bytesPending < 4) {
-                        ERROR(NULL, "internal error: not enough space for reloc");
-                        return;
+                    if (offset == 0) {
+                        flexbuf_printf(fb, "@@@%s\n", symname);
+                    } else if (offset > 0) {
+                        flexbuf_printf(fb, "@@@%s + %d\n", symname, offset);
+                    } else {
+                        flexbuf_printf(fb, "@@@%s - %d\n", symname, -offset);
                     }
-                    flexbuf_printf(fb, "\tlong\t");
-                    sym = (Symbol *)nextreloc->val;
-                    flexbuf_printf(fb, "@@@%s\n", IdentifierModuleName(current, sym->our_name));
                     data += 4;
                     addr += 4;
                     nextreloc++;
@@ -385,7 +379,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                     continue;
                 }
                 if (nextreloc->kind == RELOC_KIND_DEBUG) {
-                    LineInfo *info = (LineInfo *)nextreloc->val;
+                    LineInfo *info = (LineInfo *)nextreloc->sym;
                     if (info && info->linedata) {
                         flexbuf_printf(fb, "'-' %s", info->linedata);
                     }

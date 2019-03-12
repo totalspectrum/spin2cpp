@@ -209,22 +209,29 @@ GetAddrOffset(AST *ast)
 }
 
 // figure out whether an expression is relocatable;
-// if it is, calculate the offset
+// if it is, calculate the symbol and offset
 // NOTE: if the relocation is complicated like "@@@foo / 4"
 // then we return -1
 
 static int
-IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
+IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
 {
-    intptr_t myoff;
+    int32_t myoff;
     int r1 , r2;
     int kind;
-
+    Symbol *mysym;
+    
+    if (symptr) {
+        *symptr = NULL;
+    }
+    if (offptr) {
+        *offptr = 0;
+    }
     while (sub && sub->kind == AST_CAST) {
         sub = sub->right;
     }
     if (!sub) {
-        *offset = 0;
+        *offptr = 0;
         return RELOC_KIND_NONE;
     }
     kind = sub->kind;
@@ -232,25 +239,24 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
         Symbol *sym = LookupAstSymbol(sub->left, "pointer address");
         if (!sym || sym->kind != SYM_FUNCTION) {
             ERROR(sub, "Bad function pointer");
-            *offset = 0;
             return RELOC_KIND_NONE;
         }
-        *offset = (intptr_t)sym;
-        return RELOC_KIND_SYM;
+        *symptr = sym;
+        return RELOC_KIND_I32;
     }
     if (kind == AST_ABSADDROF || (isInitVal && kind == AST_ADDROF) ) {
-        *offset = GetAddrOffset(sub->left);
-        return RELOC_KIND_LONG;
+        *offptr = GetAddrOffset(sub->left);
+        return RELOC_KIND_I32;
     }
     if (sub->kind == AST_OPERATOR) {
-        r1 = IsRelocatable(sub->left, offset, isInitVal);
-        r2 = IsRelocatable(sub->right, &myoff, isInitVal);
+        r1 = IsRelocatable(sub->left, symptr, offptr, isInitVal);
+        r2 = IsRelocatable(sub->right, &mysym, &myoff, isInitVal);
         if (r1 || r2) {
             // if one side has an error, return an error
             if ( -1 == (r1|r2) ) {
                 return -1;
             }
-            if (r1 == RELOC_KIND_SYM || r2 == RELOC_KIND_SYM) {
+            if (*symptr != mysym) {
                 return -1;
             }
             // only certain kinds of math we can do on relocations
@@ -259,8 +265,8 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
                 if (r1 && r2) {
                     return -1;
                 }
-                *offset += myoff;
-                return RELOC_KIND_LONG;
+                *offptr += myoff;
+                return RELOC_KIND_I32;
             case '-':
                 if (r1 && r2) {
                     // difference of absolute relocations
@@ -269,8 +275,8 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
                 }
                 if (r1) {
                     // reloc - offset
-                    *offset -= myoff;
-                    return RELOC_KIND_LONG;
+                    *offptr -= myoff;
+                    return RELOC_KIND_I32;
                 }
                 // offset - reloc
                 // not implemented
@@ -283,17 +289,18 @@ IsRelocatable(AST *sub, intptr_t *offset, bool isInitVal)
 
     // not a relocatable expression per se; so just set the offset
     // to our value
-    *offset = EvalPasmExpr(sub);
+    *offptr = EvalPasmExpr(sub);
     return 0;
 }
 
-intptr_t
+int32_t
 EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
 {
     int checkReloc;
-    intptr_t offset;
+    int32_t offset;
+    Symbol *sym;
     
-    checkReloc = IsRelocatable(expr, &offset, true);
+    checkReloc = IsRelocatable(expr, &sym, &offset, true);
     if (relocOff) {
         *relocOff = -1;
     }
@@ -304,8 +311,9 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
             Reloc r;
             int addr = flexbuf_curlen(f);
             r.kind = checkReloc;
-            r.off = addr;
-            r.val = offset;
+            r.addr = addr;
+            r.sym = sym;
+            r.symoff = offset;
             flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             if (relocOff) {
                 *relocOff = flexbuf_curlen(relocs) - sizeof(r);
@@ -477,9 +485,8 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
     unsigned val, origval;
     int i, reps;
-    int checkReloc;
     AST *sub;
-    intptr_t offset = 0;
+    int32_t relocOff = 0;
     
     origval = 0;
     while (ast) {
@@ -509,26 +516,14 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 start++;
             }
             reps = 0;
-        } else if ( 0 != (checkReloc = IsRelocatable(sub, &offset, false)) ) {
-            if (checkReloc == -1) {
-                ERROR(ast, "Illegal operation on relocatable @@@ value");
-            }
-            if (relocs) {
-                Reloc r;
-                int addr = flexbuf_curlen(f);
-                if (size != LONG_SIZE) {
-                    ERROR(ast, "@@@ supported only on long values");
-                }
-                r.kind = RELOC_KIND_LONG;
-                r.off = addr;
-                r.val = origval = offset;
-                flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
-            } else {
-                origval = EvalPasmExpr(sub);
-            }
-            reps = 1;
         } else {
-            origval = EvalPasmExpr(sub);
+            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff);
+#if 0
+            /* don't seem to need this */
+            if (relocOff >= 0) {
+                Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);
+            }
+#endif            
             reps = 1;
         }
         while (reps > 0) {
@@ -912,8 +907,9 @@ static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
         if (ast->kind == AST_SRCCOMMENT && gl_srccomments) {
             if (relocs) {
                 r.kind = RELOC_KIND_DEBUG;
-                r.off = flexbuf_curlen(f);
-                r.val = (intptr_t)GetLineInfo(ast);
+                r.addr = flexbuf_curlen(f);
+                r.sym = (Symbol *)GetLineInfo(ast);
+                r.symoff = 0;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             }
         } else if (ast->kind == AST_COMMENT) {
@@ -1272,7 +1268,7 @@ instr_ok:
     /* output the instruction */
     if (relocOff >= 0) {
         rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
-        rptr->val = val;
+        rptr->symoff = val;
     }
     outputInstrLong(f, val);
 }
@@ -1333,8 +1329,9 @@ SendComments(Flexbuf *f, AST *ast, Flexbuf *relocs)
         case AST_SRCCOMMENT:
             if (relocs) {
                 r.kind = RELOC_KIND_DEBUG;
-                r.off = flexbuf_curlen(f);
-                r.val = (intptr_t)GetLineInfo(ast);
+                r.addr = flexbuf_curlen(f);
+                r.sym = (Symbol *)GetLineInfo(ast);
+                r.symoff = 0;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             }
             break;
@@ -1458,8 +1455,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             if (relocs) {
                 // emit a debug entry
                 r.kind = RELOC_KIND_DEBUG;
-                r.off = flexbuf_curlen(f);
-                r.val = (intptr_t)GetLineInfo(ast);
+                r.addr = flexbuf_curlen(f);
+                r.sym = (Symbol *)GetLineInfo(ast);
+                r.symoff = 0;
                 flexbuf_addmem(relocs, (const char *)&r, sizeof(r));
             }
             break;
