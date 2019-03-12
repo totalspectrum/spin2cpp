@@ -294,7 +294,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
 }
 
 int32_t
-EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
+EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool isInitVal)
 {
     int checkReloc;
     int32_t offset;
@@ -303,7 +303,7 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff)
     if (relocOff) {
         *relocOff = -1;
     }
-    checkReloc = IsRelocatable(expr, &sym, &offset, false);
+    checkReloc = IsRelocatable(expr, &sym, &offset, isInitVal);
     if (checkReloc != RELOC_KIND_NONE) {
         if (checkReloc == -1) {
             ERROR(expr, "Illegal operation on relocatable @@@ value");
@@ -360,7 +360,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
                 item = item->right;
             }
         }
-        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff);
+        origval = EvalRelocPasmExpr(item, f, relocs, &relocOff, true);
         if (relocOff >= 0) {
             rptr = (Reloc *)(flexbuf_peek(relocs) + relocOff);
         } else {
@@ -523,7 +523,7 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
             }
             reps = 0;
         } else {
-            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff);
+            origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false);
             if (relocOff >= 0) {
                 Reloc *r = (Reloc *)(flexbuf_peek(relocs) + relocOff);       
                 (void)r;
@@ -1177,10 +1177,10 @@ decode_instr:
             if (realval->kind == AST_FUNCCALL) {
                 realval = realval->left;  // correct for parser misreading
             }
-            isrc = EvalRelocPasmExpr(realval, f, relocs, &relocOff);
+            isrc = EvalRelocPasmExpr(realval, f, relocs, &relocOff, true);
             isRelJmp = 0;
         } else {
-            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &relocOff);
+            isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &relocOff, true);
             if ( (inHub && isrc < 0x400)
                  || (!inHub && isrc >= 0x400)
                 )
@@ -1441,7 +1441,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             assembleFile(f, ast->left);
             break;
         case AST_ORGH:
-            if (!gl_no_coginit && ast->d.ival > 3) {
+            if (!gl_nospin && ast->d.ival > 3) {
                 WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");
             }
         case AST_ORGF:

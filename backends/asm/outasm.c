@@ -5564,6 +5564,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         ValidateDatBase(P); // include DAT even though no labels referenced
         if (gl_p2) {
             gl_no_coginit = 1;
+            gl_nospin = 1;
             gl_hub_base = 0;
         }
     }
