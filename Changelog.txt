@@ -5,6 +5,7 @@ Version 3.9.23
 - Allow fcache on P2; must be explicitly enabled though
 - Fixed filename extension bug in C/C++ output
 - Fixed C++ output for the serial printf functions
+- Fixed some problems with output of method calls in C output
 - Changed the way @@@ relocation is done, and made some P2
   instructions use it so that HUB references work even if there are
   Spin methods present.

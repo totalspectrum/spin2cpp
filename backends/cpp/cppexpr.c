@@ -288,7 +288,11 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
         is_static = func->is_static;
         localMethod = (objtype == NULL) && (objref == NULL);
     }
-    if (!gl_ccode) {
+    if (gl_ccode) {
+        if (objref) {
+            PrintExpr(f, objref, PRINTEXPR_TOPLEVEL);
+        }
+    } else {
         if (localMethod && curfunc && curfunc->force_static) {
             // need to call through an object
             flexbuf_printf(f, "self->");
@@ -304,7 +308,7 @@ PrintFuncCall(Flexbuf *f, Symbol *sym, AST *params, AST *objtype, AST *objref)
         ) {
         if (objtype) {
             flexbuf_printf(f, "&");
-            PrintExpr(f, objref, PRINTEXPR_DEFAULT);
+            PrintExpr(f, objref->left, PRINTEXPR_DEFAULT);
         } else {
             flexbuf_printf(f, "self");
         }
