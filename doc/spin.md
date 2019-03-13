@@ -159,7 +159,7 @@ This declares a function `myfunc` with two parameters, which will be loaded from
 
 Note that there is no need for a body to the function (it is an error to give one). The number of parameters and return values, however, should be specified; they must match the number given in the final definition contained in the file.
 
-The function body need not be in Spin. For example, to use the C `atoi` function in a Spin object, you could do:
+The function body need not be in Spin. For example, to use the C `atoi` function in a Spin object on a Propeller1, you could do:
 ```
 obj ser: "spin/FullDuplexSerial.spin"
 pub file "libc/stdlib/atoi.c" atoi(str)
@@ -169,6 +169,7 @@ pub test
   x := string("1234")
   ser.dec(atoi(x))
 ```
+(For Propeller2 you would have to modify this to use "spin/SmartSerial" and to change the output pins appropriately.)
 
 Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
 

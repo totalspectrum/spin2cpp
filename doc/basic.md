@@ -647,11 +647,13 @@ prints `A` (the character whose ASCII value is 65)
 
 A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object. In fact, Spin objects may be directly imported as classes:
 ```
-   dim ser as class using "FullDuplexSerial.spin"
-
+#ifdef __P2__
+   dim ser as class using "spin/SmartSerial"
+#else
+   dim ser as class using "spin/FullDuplexSerial"
+#endif   
 ```
-creates an object `ser` based on the Spin file "FullDuplexSerial.spin"; this
-may then be used directly, e.g.:
+creates an object `ser` based on the Spin file "SmartSerial.spin" (for P2) or "FullDuplexSerial"; this may then be used directly, e.g.:
 ```
    ser.str("hello, world!")
    ser.tx(13)  ' send a carriage return
@@ -664,6 +666,7 @@ BASIC files may also be used as classes. When they are, all the functions and su
 Another way to define an object is to first declare an abstract `class` with a name, and then use that name in the `dim` statement:
 ```
   ' create abstract class fds representing Spin FullDuplexSerial
+  ' NOTE: use SmartSerial.spin instead if trying on P2
   class fds using "FullDuplexSerial.spin"
   ' create a variable of that type
   dim ser as fds
@@ -1264,7 +1267,7 @@ Allocates memory from the heap for a new object, and returns a pointer to it. Ma
   var x = new ubyte(10)  ' allocate 10 bytes and return a pointer to it
   x(1) = 1               ' set a variable in it
   
-  class FDS using "FullDuplexSerial.spin"
+  class FDS using "FullDuplexSerial.spin" ' Use "SmartSerial.spin" on P2
   var ser = new FDS      ' allocate space for a new full duplex serial object
   ser.start(31, 30, 0, 115_200) ' start up the new object
 ```
