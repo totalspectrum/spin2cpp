@@ -1228,10 +1228,25 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
     case AST_STRING:
     {
         const char *s = expr->d.string;
-        if (reportError && strlen(s) > 1) {
-            WARNING(expr, "only first element of string is used");
+        int val = s[0] & 0xff;
+        int ok = 1;
+        size_t n = strlen(s);
+        if (n > 1) {
+            /* is this a UTF-8 sequence denoting a single code point? */
+            /* if so, return that code point */
+            wchar_t w;
+            size_t cnt;
+            ok = 0;
+            cnt = from_utf8(&w, s, n);
+            if (cnt == n) {
+                val = w;
+                ok = 1;
+            }
+            if (reportError && !ok) {
+                WARNING(expr, "only first element of string is used");
+            }
         }
-        return intExpr(expr->d.string[0]);
+        return intExpr(val);
     }
     case AST_TOFLOAT:
         lval = EvalExpr(expr->left, flags, valid, depth+1);

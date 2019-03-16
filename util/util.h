@@ -2,6 +2,7 @@
 #define UTIL_H_2016_
 
 #include <stdarg.h>
+#include <wchar.h>
 
 #if 0
 #define va_ptr          va_list
@@ -48,5 +49,11 @@ char *strrev(char *origstr);
 
 // create a new string with the concatenation of two old ones
 char *strdupcat(const char *a, const char *b);
+
+// convert wide character wcorig to utf-8 in s, returns count
+size_t to_utf8(char *s, wchar_t wcorig);
+
+// convert utf-8 sequence to wide character
+size_t from_utf8(wchar_t *wcptr, const char *cptr, size_t n);
 
 #endif

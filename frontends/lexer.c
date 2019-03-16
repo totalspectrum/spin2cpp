@@ -138,16 +138,24 @@ filegetwc(LexStream *L)
 {
     FILE *f;
     int c1, c2;
-
     f = (FILE *)L->ptr;
 again:
     c1 = fgetc(f);
     if (c1 < 0) return EOF;
     c2 = fgetc(f);
-    if (c2 != 0) {
+    if (c2 != 0 || c1 >= 0x80) {
+        wchar_t w;
+        size_t n;
+        char buf[8];
         if (c2 < 0) return EOF;
-        /* FIXME: should convert to UTF-8 */
-        return 0xff;
+        /* convert to UTF-8 */
+        w = (c2<<8) | c1;
+        n = to_utf8(buf, w);
+        while (n > 1) {
+            --n;
+            lexungetc(L, buf[n] & 0xff);
+        }
+        return buf[0] & 0xff;
     }
     /* eliminate carriage returns */
     /* actually there's a problem: if we have a MAC file,
@@ -276,7 +284,7 @@ AST *IntegerLabel(AST *num)
 
 //
 // establish an indent level
-// if the line is indented more than this, aa SP_INDENT will
+// if the line is indented more than this, an SP_INDENT will
 // be emitted
 //
 void

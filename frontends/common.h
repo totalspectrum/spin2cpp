@@ -25,7 +25,7 @@ struct lexstream {
     void *ptr;  /* current pointer */
     void *arg;  /* original value of pointer */
     int (*getcf)(LexStream *);
-#define UNGET_MAX 8 /* we can ungetc this many times */
+#define UNGET_MAX 16 /* we can ungetc this many times */
     int ungot[UNGET_MAX];
     int ungot_ptr;
 
