@@ -1001,6 +1001,10 @@ decode_instr:
                 } else {
                     count = (label - (curpc+4)/4);
                 }
+                // remove augment prefixes from the count
+                if (immmask & BIG_IMM_SRC) {
+                    count--;
+                }
                 operand[0] = AstInteger(count);
                 opimm[0] = P2_IMM_DST;
                 immmask |= P2_IMM_DST;

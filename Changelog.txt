@@ -10,7 +10,8 @@ Version 3.9.23
   instructions use it so that HUB references work even if there are
   Spin methods present.
 - Allow Unicode characters above 0x7f in PASM expressions
-- When parsing a UCS-16 file, convert characters to UTF-8
+- When parsing a UCS-16 file without a preprocessor, convert characters to UTF-8
+- Fixed rep count calculation when an augment is needed for large immediate repetitions
 
 Version 3.9.22
 - Made sure C enums start at 0
