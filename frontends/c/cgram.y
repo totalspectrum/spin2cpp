@@ -238,9 +238,9 @@ MultipleDeclareVar(AST *first, AST *second)
         item = second->left;
         second = second->right;
         type = CombineTypes(first, item, &ident);
-        if (type->kind == AST_STATIC) {
+        if (type && type->kind == AST_STATIC) {
             stmtlist = AddToList(stmtlist, DeclareStatics(current, type->left, ident));
-        } else if (type->kind == AST_EXTERN) {
+        } else if (type && type->kind == AST_EXTERN) {
             /* do nothing */
         } else {
             ident = NewAST(AST_DECLARE_VAR, type, ident);
