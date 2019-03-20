@@ -5507,6 +5507,11 @@ GuessFcacheSize(IRList *irl)
 {
 #    /* for now, just go by p2/p1 */
     if (gl_p2) {
+        // fcache disabled by default on P2
+        // if we use -O2 though then use LUT for fcache
+        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+            return 240;
+        }
         return 0; // disable fcache by default
     } else {
 #ifdef REALLY_GUESS_FCACHE_SIZE    

@@ -1,5 +1,6 @@
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
+- On P2 use --fcache=240 when -O2 is passed
 
 Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors
