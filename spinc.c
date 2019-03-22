@@ -627,7 +627,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     char *fname = NULL;
     char *parseString = NULL;
     char *langptr;
-    int language = LANG_SPIN;
+    int language;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
 
@@ -649,13 +649,18 @@ doParseFile(const char *name, Module *P, int *is_dup)
       {
 	language = LANG_C;
       } else {
-        langptr = ".spin";
+        language = LANG_SPIN;
+        langptr = ".spin2";
       }
     } else {
-      langptr = ".spin";
+        // no extension, see if we can figure one out
+      langptr = ".spin2";
     }
     if (current) {
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
+        if (!fname && !strcmp(langptr, ".spin2")) {
+            fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
+        }
         if (fname) {
             fname = NormalizePath(fname);
         }
