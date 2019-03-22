@@ -1,6 +1,8 @@
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
 - On P2 use --fcache=240 when -O2 is passed
+- Automatically search for .spin2 extensions first, then .spin ones in Spin
+  OBJ blocks if no explicit file name extension is given.
 
 Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors
