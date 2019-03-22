@@ -627,7 +627,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     char *fname = NULL;
     char *parseString = NULL;
     char *langptr;
-    int language;
+    int language = LANG_SPIN;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
 
