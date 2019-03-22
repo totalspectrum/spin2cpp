@@ -5692,18 +5692,18 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         } else {
             CompileToIR_internal(&cogcode, globalModule);
         }
+        // guesstimate how much space we will have for FCACHE, if
+        // a dynamic size is requested
+        if (gl_fcache_size < 0) {
+            gl_fcache_size = GuessFcacheSize(&cogcode);
+        }
+    
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
 
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     }
 
-    // guesstimate how much space we will have for FCACHE, if
-    // a dynamic size is requested
-    if (gl_fcache_size < 0) {
-        gl_fcache_size = GuessFcacheSize(&cogcode);
-    }
-    
     if (emitSpinCode) {
         AppendIR(&cogcode, hubcode.head);
 
