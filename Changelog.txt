@@ -4,6 +4,7 @@ Version 3.9.24
 - Automatically search for .spin2 extensions first, then .spin ones in Spin
   OBJ blocks if no explicit file name extension is given.
 - Suppress some spurious warnings about orgh in listing files
+- Fixed a Spin problem with function calls inside method reference lookups
 
 Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors

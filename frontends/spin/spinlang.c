@@ -174,6 +174,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
         // these assumptions fail if we encounter a methodref or constref
     case AST_CONSTREF:
     case AST_METHODREF:
+        /* we can (and should) update the lhs though */
+        ScanFunctionBody(fdef, body->left, body, NULL);
         return;
     case AST_ADDROF:
     case AST_ABSADDROF:
@@ -329,7 +331,8 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     ScanFunctionBody(fdef, actualParamList->left, actualParamList, NULL);
                     ScanFunctionBody(fdef, actualParamList->right, actualParamList, NULL);
                 }
-                // we're done processing
+                // now update the actual function call itself
+                ScanFunctionBody(fdef, body->left, body, NULL);
                 return;
             }
         }
