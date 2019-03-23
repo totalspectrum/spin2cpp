@@ -5,6 +5,8 @@ Version 3.9.24
   OBJ blocks if no explicit file name extension is given.
 - Suppress some spurious warnings about orgh in listing files
 - Fixed a Spin problem with function calls inside method reference lookups
+- Fixed a problem where constant references within strings were evaluated in the wrong context
+
 
 Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors

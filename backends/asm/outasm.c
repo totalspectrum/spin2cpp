@@ -3323,6 +3323,27 @@ validateArrayRef(AST *ast)
     }
 }
 
+static AST *
+EvalStringConst(AST *expr)
+{
+    if (!expr) {
+        return expr;
+    }
+    switch (expr->kind) {
+    case AST_EXPRLIST:
+        return NewAST(AST_EXPRLIST, EvalStringConst(expr->left), EvalStringConst(expr->right));
+    case AST_STRING:
+    case AST_INTEGER:
+        return expr;
+    default:
+        if (IsConstExpr(expr)) {
+            return AstInteger(EvalConstExpr(expr));
+        } else {
+            return expr;
+        }
+    }
+}
+
 static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *
@@ -3468,8 +3489,12 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       }
       return NewImmediate(expr->d.string[0]);
   case AST_STRINGPTR:
-      r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(expr->left));
+  {
+      // evaluate any const references in our current context
+      AST *stringExpr = EvalStringConst(expr->left);
+      r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
       return NewImmediatePtr(NULL, r);
+  }
   case AST_ARRAYREF:
   {
       Operand *base;
