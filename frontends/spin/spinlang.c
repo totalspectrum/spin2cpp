@@ -157,6 +157,21 @@ TransformLongMove(AST **astptr, AST *ast)
     return true;
 }
 
+static void
+SetLocalArray(Function *fdef, Symbol *sym, AST *body)
+{
+    if (sym->kind == SYM_PARAMETER) {
+        if (!fdef->parmarray) {
+            fdef->parmarray = NewTemporaryVariable("_parm_");
+        }
+        fdef->localarray = fdef->parmarray;
+    } else if (sym->kind == SYM_LOCALVAR && (!body || IsAddrRef(body, sym)) ) {
+        if (!fdef->localarray) {
+            fdef->localarray = NewTemporaryVariable("_local_");
+        }
+    }
+}
+
 /*
  * scan a function body for various special conditions
  * "expectType" marks a parameter type that is expected
@@ -185,16 +200,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
         if (IsIdentifier(ast)) {
             sym = FindSymbol(&fdef->localsyms, GetIdentifierName(ast));
             if (sym) {
-                if (sym->kind == SYM_PARAMETER) {
-                    if (!fdef->parmarray) {
-                        fdef->parmarray = NewTemporaryVariable("_parm_");
-                    }
-                    fdef->localarray = fdef->parmarray;
-                } else if (sym->kind == SYM_LOCALVAR && IsAddrRef(body, sym) ) {
-                    if (!fdef->localarray) {
-                        fdef->localarray = NewTemporaryVariable("_local_");
-                    }
-                }
+                SetLocalArray(fdef, sym, body);
             } else {
                 /* Taking the address of an object variable? That will make the object volatile. */
                 sym = LookupSymbol(ast->d.string);
@@ -540,13 +546,42 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, 0);
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
-            if (sym && sym->kind == SYM_TYPEDEF) {
-                // change this into a pointer cast
-                //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->val, NULL);
-                AST *ptrtype = (AST *)sym->val;
-                AST *ptrcast = NewAST(AST_MEMREF, ptrtype, ast->right);
-                AST *deref = NewAST(AST_ARRAYREF, ptrcast, AstInteger(0));
-                *ast = *deref;
+            AST *typ;
+            if (sym) {
+                int isLocal = 0;
+                switch (sym->kind) {
+                case SYM_TYPEDEF:
+                {
+                    // change this into a pointer cast
+                    //AST *ptrtype = NewAST(AST_PTRTYPE, (AST *)sym->val, NULL);
+                    AST *ptrtype = (AST *)sym->val;
+                    AST *ptrcast = NewAST(AST_MEMREF, ptrtype, ast->right);
+                    AST *deref = NewAST(AST_ARRAYREF, ptrcast, AstInteger(0));
+                    *ast = *deref;
+                    break;
+                }                
+                case SYM_LOCALVAR:
+                case SYM_PARAMETER:
+                    isLocal = 1;
+                    /* fall through */
+                case SYM_VARIABLE:
+                    /* check for x[i] where x is not an array */
+                    /* if found, convert to long[@x][i] */
+                    typ = ExprType(ast->left);
+                    if (!typ) typ = ast_type_long;
+                    if (!IsArrayType(typ)) {
+                        AST *ptr = NewAST(AST_ADDROF, ast->left, NULL);
+                        AST *memref = NewAST(AST_MEMREF, typ, ptr);
+                        *ast = *NewAST(AST_ARRAYREF, memref, ast->right);
+                        if (isLocal) {
+                            SetLocalArray(curfunc, sym, NULL);
+                            curfunc->local_address_taken = 1;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+                } 
             }
         }
         break;

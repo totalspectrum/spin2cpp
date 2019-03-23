@@ -3505,7 +3505,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           return NewOperand(REG_REG, "???", 0);
       }
       if (!validateArrayRef(expr->left)) {
-          ERROR(expr, "Item is not an array");
+          ERROR(expr, "%s is not an array", GetVarNameForError(expr->left));
       }
       base = CompileExpression(irl, expr->left, NULL);
       offset = CompileExpression(irl, expr->right, NULL);
