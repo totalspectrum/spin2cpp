@@ -6,7 +6,7 @@ Version 3.9.24
 - Suppress some spurious warnings about orgh in listing files
 - Fixed a Spin problem with function calls inside method reference lookups
 - Fixed a problem where constant references within strings were evaluated in the wrong context
-
+- Allow Spin code to use any variable as an array
 
 Version 3.9.23
 - Caught some cases where function redefinitions were not flagged as errors
