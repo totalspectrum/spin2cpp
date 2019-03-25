@@ -1,3 +1,6 @@
+Version 3.9.25
+- Accept old-style C function declarations
+
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
 - On P2 use --fcache=240 when -O2 is passed
