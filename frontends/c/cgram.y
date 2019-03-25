@@ -453,6 +453,73 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     return class_type;
 }
 
+//
+// utility function: find a variable in a declaration list
+//
+static AST *
+FindDeclInList(AST *param, AST *decl_list)
+{
+    AST *decl;
+    AST *ident;
+    while (decl_list) {
+        if (decl_list->kind != AST_STMTLIST) {
+            ERROR(decl_list, "Internal error, badly formed declaration list");
+            return NULL;
+        }
+        decl = decl_list->left;
+        if (decl->kind == AST_DECLARE_VAR) {
+            ident = decl->right;
+            if (AstUses(ident, param)) {
+                return DupAST(decl);
+            }
+        }
+        decl_list = decl_list->right;
+    }
+    return NULL;
+}
+
+//
+// convert an old style declaration like:
+//   int strlen(x) char *x; { ... }
+// into
+//   int strlen(char *x) { ... }
+//
+// actually this part just finds the declarations
+//
+AST *
+MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
+{
+    AST *funcdecl = orig_funcdecl;
+    AST *param_list;
+    AST *param;
+    if (!funcdecl) return NULL;
+    if (funcdecl->kind != AST_DECLARE_VAR) {
+        ERROR(funcdecl, "Internal error expected declaration");
+        return orig_funcdecl;
+    }
+    if (funcdecl->left->kind != AST_FUNCTYPE) {
+        ERROR(funcdecl, "Expected function declaration");
+        return orig_funcdecl;
+    }
+    funcdecl = funcdecl->left;
+    param_list = funcdecl->right;
+    while(param_list) {
+        AST *newdecl;
+        param = param_list->left;
+        if (!param || param->kind != AST_DECLARE_VAR) {
+            ERROR(param, "Internal error, expecting to find variable");
+            return orig_funcdecl;
+        }
+        // find the corresponding one from decl_list and replace it
+        newdecl = FindDeclInList(param->right, decl_list);
+        if (newdecl) {
+            param_list->left = newdecl;
+        }
+        param_list = param_list->right;
+    }
+    return orig_funcdecl;
+}
+
 %}
 
 %pure-parser
@@ -1500,25 +1567,46 @@ external_declaration
 
 function_definition
 	: declaration_specifiers declarator declaration_list compound_statement
-            { SYNTAX_ERROR("old style C function declarations are not allowed"); }
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $4;
+                AST *decl = $2;
+                int is_public = 1;
+
+                decl = MergeOldStyleDeclarationList(decl, $3);
+                type = CombineTypes($1, decl, &ident);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+            }
 	| declaration_specifiers declarator compound_statement
             {
                 AST *type;
                 AST *ident;
                 AST *body = $3;
+                AST *decl = $2;
                 int is_public = 1;
-                type = CombineTypes($1, $2, &ident);
+                type = CombineTypes($1, decl, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
             }
 	| declarator declaration_list compound_statement
-            { SYNTAX_ERROR("old style C function declarations are not allowed"); }
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $3;
+                AST *decl = $1;
+                int is_public = 1;
+                decl = MergeOldStyleDeclarationList(decl, $2);
+                type = CombineTypes(NULL, decl, &ident);
+                DeclareTypedFunction(current, type, ident, is_public, body);
+            }
 	| declarator compound_statement
             {
                 AST *type;
                 AST *ident;
                 AST *body = $2;
+                AST *decl = $1;
                 int is_public = 1;
-                type = CombineTypes(NULL, $1, &ident);
+                type = CombineTypes(NULL, decl, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
             }
 	| declaration_specifiers declarator fromfile_decl
