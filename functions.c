@@ -487,6 +487,25 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
 }
 
 static void
+AdjustParameterTypes(AST *paramlist)
+{
+    AST *param;
+    AST *type;
+    while (paramlist) {
+        param = paramlist->left;
+        if (param->kind == AST_DECLARE_VAR) {
+            type = param->left;
+            if (IsArrayType(type)) {
+                type = BaseType(type);
+                type = NewAST(AST_PTRTYPE, type, NULL);
+                param->left = type;
+            }
+        }
+        paramlist = paramlist->right;
+    }
+}
+
+static void
 doDeclareFunction(AST *funcblock)
 {
     AST *holder;
@@ -678,7 +697,11 @@ doDeclareFunction(AST *funcblock)
     }
 
     curfunc = fdef;
-    
+
+    if (fdef->language == LANG_C) {
+        // parameters declared as arrays should actually be treated as pointers
+        AdjustParameterTypes(fdef->params);
+    }
     fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0, 0) / LONG_SIZE;
     /* check for VARARGS */
     {
