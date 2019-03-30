@@ -27,12 +27,24 @@ then the symbol is defined as the string `1`.
 #### IFDEF
 
 Introduces a conditional compilation section, which is only compiled if
-the symbol after the `#ifdef` is in fact defined.
+the symbol after the `#ifdef` is in fact defined. For example:
+```
+#ifdef __P2__
+'' propeller 2 code goes here
+#else
+'' propeller 1 code goes here
+#endif
+```
 
 #### IFNDEF
 
 Introduces a conditional compilation section, which is only compiled if
-the symbol after the `#ifndef` is *not* defined.
+the symbol after the `#ifndef` is *not* defined. For example:
+```
+#ifndef __P2__
+#error this code only works on Propeller 2
+#endif
+```
 
 #### ELSE
 
@@ -269,7 +281,7 @@ which is probably not what was intended.
 
 The "expression" in a default parameter may also be a type name, for example `long`, `float`, or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.
 
-Variables declared as return values may also be given type hints, which will be used to determine the type of the function.
+Variables declared as return values may also be given type hints, which will be used to determine the type of the function when it is accessed from another language.
 
 Example:
 ```
@@ -300,9 +312,7 @@ fastspin has some new operators for treating values as unsigned
 
 ### coginit/cognew
 
-The `coginit` (and `cognew`) functions in Fastspin can start functions
-from other objects than the current. (In "regular" Spin only functions
-from the same object may be started this way.)
+The `coginit` (and `cognew`) functions in Fastspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)
 
 ## New intrinsics
 
@@ -361,6 +371,7 @@ by preceding them with a backquote, e.g. to define a function `chr$` do:
 ```
 
 ### Opcodes
+
 In regular Spin opcodes like `TEST` are always reserved.
 
 In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to have a function or variable named `test` or `add`.

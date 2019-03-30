@@ -44,7 +44,14 @@ then the symbol is defined as the string `1`.
 #### IFDEF
 
 Introduces a conditional compilation section, which is only compiled if
-the symbol after the `#ifdef` is in fact defined.
+the symbol after the `#ifdef` is in fact defined. For example:
+```
+#ifdef __P2__
+'' propeller 2 code goes here
+#else
+'' propeller 1 code goes here
+#endif
+```
 
 #### IFNDEF
 
@@ -65,15 +72,24 @@ A combination of `#else` and `#ifndef`.
 
 #### ERROR
 
-Prints an error message. Mainly used in conditional compilation to report an unhandled condition. Everything after the `#error` directive is printed.
+Prints an error message. Mainly used in conditional compilation to report an unhandled condition. Everything after the `#error` directive is printed. Example:
+```
+#ifndef __P2__
+#error This code only works on Propeller 2
+#endif
+```
 
 #### INCLUDE
 
-Includes a file.
+Includes a file. The contents of the file are placed in the compilation just as if everything in that file was typed into the original file instead. This is often used
+```
+#include "foo.h"
+```
+
 
 #### WARN
 
-Prints a warning message.
+Prints a warning message; otherwise similar to `#error`.
 
 #### UNDEF
 
@@ -225,7 +241,7 @@ xor
 
 Names of variables, subroutines, or functions ("identifiers") consist of a letter or underscore, followed by any sequence of letters, underscores, or digits. Names beginning with an underscore are reserved for system use. Case is ignored; thus the names `avar`, `aVar`, `AVar`, `AVAR`, etc. all refer to the same variable.
 
-Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers. the first is a string variable. If no type specifier is appended, the identifier is assumed to be an integer. This may be overridden with the `defsng` directive, which specifies that variables starting with certain letters are to be assumed to be single precision floating point.
+Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers (the first is a string variable and the second is a floating point variable). If no type specifier is appended, the identifier is assumed to be an integer. This may be overridden with the `defsng` directive, which specifies that variables starting with certain letters are to be assumed to be single precision floating point.
 
 Variable or function types may also be explicitly given, and in this case the type overrides any implicit type defined by the name. However, we strongly recommend that you not use type specifiers like `$` for variables (or functions) that you give an explicit type to.
 
