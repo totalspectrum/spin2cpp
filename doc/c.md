@@ -75,7 +75,7 @@ struct __using("FullDuplexSerial.spin") fds;
 
 void main()
 {
-    fds.start(31, 30, 0, 115_200);
+    fds.start(31, 30, 0, 115200);
     fds.str("hello, world!\r\n");
 }
 ```
