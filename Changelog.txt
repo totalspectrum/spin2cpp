@@ -1,5 +1,8 @@
 Version 3.9.25
 - Accept old-style C function declarations
+- Unrolled LMM loop some more, for about a 10% performance improvement on code outside of fcache.
+- Added --lmm=xxx flag to change LMM interpreter (for test purposes only, really)
+- Changed runtime support code to avoid using CNT shadow register (for GEAR emulator compatibility)
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
