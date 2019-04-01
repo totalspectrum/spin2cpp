@@ -15,6 +15,22 @@ LMM_i3
     add    pc, #4
 LMM_i4
     nop
+    rdlong LMM_i5, pc
+    add    pc, #4
+LMM_i5
+    nop
+    rdlong LMM_i6, pc
+    add    pc, #4
+LMM_i6
+    nop
+    rdlong LMM_i7, pc
+    add    pc, #4
+LMM_i7
+    nop
+    rdlong LMM_i8, pc
+    add    pc, #4
+LMM_i8
+    nop
 LMM_jmptop
     jmp    #LMM_LOOP
 pc
