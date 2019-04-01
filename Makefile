@@ -64,6 +64,7 @@ SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
 OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 
 SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h sys/float.spin.h sys/gcalloc.spin.h
+PASM_SUPPORT_CODE = sys/lmm_orig.spin.h sys/lmm_slow.spin.h
 
 all: $(BUILD) $(PROGS)
 
@@ -80,6 +81,7 @@ $(BUILD)/cgram.tab.c $(BUILD)/cgram.tab.h: frontends/c/cgram.y
 	$(YACC) -p cgramyy -t -b $(BUILD)/cgram -d frontends/c/cgram.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
+$(BUILD)/outasm.o: outasm.c $(PASM_SUPPORT_CODE)
 
 preproc: preprocess.c $(UTIL)
 	$(CC) $(CFLAGS) -DTESTPP -o $@ $^ $(LIBS)

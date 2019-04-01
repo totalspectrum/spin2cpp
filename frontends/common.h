@@ -122,6 +122,12 @@ extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point
 extern int gl_caseSensitive; /* whether Spin/PASM is case sensitive */
 extern int gl_no_coginit;    /* skip coginit code */
 
+/* LMM kind selected */
+extern int gl_lmm_kind;
+#define LMM_KIND_ORIG  0
+#define LMM_KIND_SLOW  1
+#define LMM_KIND_TRACE 2
+
 /* types of output */
 #define OUTPUT_CPP  0
 #define OUTPUT_C    1

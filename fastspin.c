@@ -116,6 +116,10 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
+    fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
+    fprintf(f, "           xxx = orig uses original fastspin LMM\n");
+    fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    
     fflush(stderr);
     exit(2);
 }
@@ -284,6 +288,21 @@ main(int argc, const char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_CODE;
             } else {
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
+                Usage(stderr, bstcMode);
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "--lmm=", 6)) {
+            const char *lmmtype = argv[0]+6;
+            if (!strcmp(lmmtype, "orig")) {
+                gl_lmm_kind = LMM_KIND_ORIG;
+            } else if (!strcmp(lmmtype, "slow")) {
+                gl_lmm_kind = LMM_KIND_SLOW;
+                gl_fcache_size = 0;
+            } else if (!strcmp(lmmtype, "trace")) {
+                gl_lmm_kind = LMM_KIND_TRACE;
+                gl_fcache_size = 0;
+            } else {
+                fprintf(stderr, "Unknown --lmm= choice: %s\n", lmmtype);
                 Usage(stderr, bstcMode);
             }
             argv++; --argc;

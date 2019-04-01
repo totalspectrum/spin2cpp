@@ -4744,94 +4744,8 @@ static const char *builtin_div_p2 =
 "       reta\n"
 ;
 
-static const char *builtin_lmm_p1 =
-    "LMM_LOOP\n"
-    "    rdlong LMM_i1, pc\n"
-    "    add    pc, #4\n"
-    "LMM_i1\n"
-    "    nop\n"
-    "    rdlong LMM_i2, pc\n"
-    "    add    pc, #4\n"
-    "LMM_i2\n"
-    "    nop\n"
-    "    rdlong LMM_i3, pc\n"
-    "    add    pc, #4\n"
-    "LMM_i3\n"
-    "    nop\n"
-    "    rdlong LMM_i4, pc\n"
-    "    add    pc, #4\n"
-    "LMM_i4\n"
-    "    nop\n"
-    "LMM_jmptop\n"
-    "    jmp    #LMM_LOOP\n"
-    "pc\n"
-    "    long @@@hubentry\n"
-    "lr\n"
-    "    long 0\n"
-    "hubretptr\n"
-    "    long @@@hub_ret_to_cog\n"
-    "LMM_NEW_PC\n"
-    "    long   0\n"
-    "    ' fall through\n"
-    "LMM_CALL\n"
-    "    rdlong LMM_NEW_PC, pc\n"
-    "    add    pc, #4\n"
-    "LMM_CALL_PTR\n"
-    "    wrlong pc, sp\n"
-    "    add    sp, #4\n"
-    "    mov    pc, LMM_NEW_PC\n"
-    "    jmp    #LMM_LOOP\n"
-    "LMM_JUMP\n"
-    "    rdlong pc, pc\n"
-    "    jmp    #LMM_LOOP\n"
-    "LMM_RET\n"
-    "    sub    sp, #4\n"
-    "    rdlong pc, sp\n"
-    "    jmp    #LMM_LOOP\n"
-    "LMM_CALL_FROM_COG\n"
-    "    wrlong  hubretptr, sp\n"
-    "    add     sp, #4\n"
-    "    jmp  #LMM_LOOP\n"
-    "LMM_CALL_FROM_COG_ret\n"
-    "    ret\n"
-    "LMM_FCACHE_LOAD\n"
-    "    rdlong FCOUNT_, pc\n"
-    "    add    pc, #4\n"
-    "    mov    ADDR_, pc\n"
-    "    sub    LMM_ADDR_, pc\n"
-    "    tjz    LMM_ADDR_, #a_fcachegoaddpc\n"
-    "    movd   a_fcacheldlp, #LMM_FCACHE_START\n"
-    "    shr    FCOUNT_, #2\n"
-    "a_fcacheldlp\n"
-    "    rdlong 0-0, pc\n"
-    "    add    pc, #4\n"
-    "    add    a_fcacheldlp,inc_dest1\n"
-    "    djnz   FCOUNT_,#a_fcacheldlp\n"
-    // add in a JMP back out of LMM
-    "    ror    a_fcacheldlp, #9\n"
-    "    movd   a_fcachecopyjmp, a_fcacheldlp\n"
-    "    rol    a_fcacheldlp, #9\n"
-    "a_fcachecopyjmp\n"
-    "    mov    0-0, LMM_jmptop\n"
-    "a_fcachego\n"
-    "    mov    LMM_ADDR_, ADDR_\n"
-    "    jmpret LMM_RETREG,#LMM_FCACHE_START\n"
-    "a_fcachegoaddpc\n"
-    "    add    pc, FCOUNT_\n"
-    "    jmp    #a_fcachego\n"
-    "LMM_FCACHE_LOAD_ret\n"
-    "    ret\n"
-    "inc_dest1\n"
-    "    long (1<<9)\n"
-    "LMM_LEAVE_CODE\n"
-    "    jmp LMM_RETREG\n"
-    "LMM_ADDR_\n"
-    "    long 0\n"
-    "ADDR_\n"
-    "    long 0\n"
-    "FCOUNT_\n"
-    "    long 0\n"
-    ;
+#include "sys/lmm_orig.spin.h"
+#include "sys/lmm_slow.spin.h"
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
@@ -5051,7 +4965,14 @@ EmitBuiltins(IRList *irl)
                 builtin_lmm = builtin_fcache_p2;
             }
         } else {
-            builtin_lmm = builtin_lmm_p1;
+            switch(gl_lmm_kind) {
+            case LMM_KIND_SLOW:
+                builtin_lmm = (const char *)sys_lmm_slow_spin;
+                break;
+            default:
+                builtin_lmm = (const char *)sys_lmm_orig_spin;
+                break;
+            }
         }
         if (builtin_lmm) {
             Operand *loop;

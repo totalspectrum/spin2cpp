@@ -844,7 +844,11 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                         return;
                     }
                 }
-                flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                if (gl_lmm_kind == LMM_KIND_ORIG) {
+                    flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                } else {
+                    flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                }
                 flexbuf_addstr(fb, "\tlong\t");
                 PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
