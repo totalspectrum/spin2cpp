@@ -71,24 +71,10 @@ LMM_JUMP
 	'' so we need to fetch the new PC from HUB memory
 	rdlong	newpc, pc
 	add	pc, #4
-	'' we are going to need 3 longs in cache:
-	''    a long for the new pc (part of the LMM jump sequence)
-	''    2 longs for a new LMM jump back to oldpc (in case the original
-	''    jump was conditional)
-	mov   cacheptr, _trmov
-	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
-	movd  _trmov2, cacheptr
-	movs  _trmov2, #cache_end_seq
-	mov   lpcnt, #3
 
-L_copy_lp
-_trmov2
-	mov	0-0, 0-0	' copy from cache_end_seq into cache
-	add	_trmov2, inc_dest1
-	add	_trmov2, #1
-	sub	trace_count, #1	' 1 fewer instruction left in trace
-	djnz	lpcnt, #L_copy_lp
-
+	'' close out the current trace cache line
+	call	 #close_cache_line
+	
 	mov   pc, newpc
 
 
@@ -169,6 +155,30 @@ cache_hit
 	'' now jump into the cache
 I_lmm_jmpindirect
 	jmp	0-0
+	
+
+	''
+	'' close out the current trace cache line
+close_cache_line
+	'' we are going to need 3 longs in cache:
+	''    a long for the new pc (part of the LMM jump sequence)
+	''    2 longs for a new LMM jump back to oldpc (in case the original
+	''    jump was conditional)
+	mov   cacheptr, _trmov
+	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
+	movd  _trmov2, cacheptr
+	movs  _trmov2, #cache_end_seq
+	mov   lpcnt, #3
+
+L_copy_lp
+_trmov2
+	mov	0-0, 0-0	' copy from cache_end_seq into cache
+	add	_trmov2, inc_dest1
+	add	_trmov2, #1
+	sub	trace_count, #1	' 1 fewer instruction left in trace
+	djnz	lpcnt, #L_copy_lp
+close_cache_line_ret
+	ret
 	
 save_cz
 	long	0
