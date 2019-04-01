@@ -46,7 +46,12 @@ LMM_CALL_FROM_COG
     add     sp, #4
     jmp  #LMM_LOOP
 LMM_CALL_FROM_COG_ret
-    ret
+LMM_CALL_ret
+LMM_JUMP_ret
+LMM_RET_ret
+LMM_RA
+    long	0
+    
 LMM_FCACHE_LOAD
     rdlong FCOUNT_, pc
     add    pc, #4

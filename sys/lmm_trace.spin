@@ -27,9 +27,16 @@ LMM_CALL_FROM_COG_ret
     ret
 
 LMM_JUMP_ret
-LMM_ra
-	long	0	' return address for LMM subroutine calls
+LMM_CALL_ret
+LMM_RA
+	long 0	' return address for LMM subroutine calls
+
+	'' this is a 3 long sequence to be copied to CACHE
+cache_end_seq
 pc	long 0
+	call #LMM_JUMP
+newpc	long 0
+
 inc_dest1
 	long  (1<<9)
 hubretptr
@@ -41,13 +48,48 @@ LMM_CALL
 	wrlong	pc, sp
 	add	sp, #4
 LMM_JUMP
-	rdlong	pc, pc
-	'' fall through
+	'' if the actual CALL instruction that triggered this CALL or JUMP is in
+	'' the ordinary LMM stream, the return address (found in LMM_RA) will be "nextinstr"
+	'' in that case, the program counter to find is in HUB
+	muxnz	save_cz, #2			' save Z
+	muxc	save_cz, #1			' save C
+	
+	cmp	LMM_RA, #nextinstr wz
+  if_nz	jmp	#already_in_cache
+
+	'' here we were running in ordinary LMM mode
+	'' so we need to fetch the new PC from HUB memory
+	rdlong	newpc, pc
+	add	pc, #4
+	
+	'' we are going to need 3 longs in cache:
+	''    a long for the new pc (part of the LMM jump sequence)
+	''    2 longs for a new LMM jump back to oldpc (in case the original
+	''    jump was conditional)
+
+	'' finally go set the new pc
+	mov   pc, newpc
+	jmp   #do_lmm_set_pc
+	
+already_in_cache
+	'' this is where we come for a JMP/CALL that was already in cache
+	'' this is a simpler case, we just fetch the new pc from cache
+	movs	I_getpc_from_cache, LMM_RA
+	add	LMM_RA, #1
+I_getpc_from_cache
+	mov	pc, 0-0
+	jmp	#do_lmm_set_pc
+	
 lmm_set_pc
+	'' save flags
+	muxnz	save_cz, #2			' save Z
+	muxc	save_cz, #1			' save C
+do_lmm_set_pc
+
+	'' restore flags
+	shr	save_cz, #1 wc,wz
 	jmp	#LMM_LOOP
 	
-	'' save Z
-	muxnz	savez, #1
 	
 	'' see if the pc is already in the trace cache
 	mov	lmm_cptr, pc
@@ -72,11 +114,11 @@ I_lmm_savetracestart
 	mov	0-0, trace_firstpc
 cache_hit
 	'' restore flags
-	shr	savez, #1 wz
+	shr	save_cz, #1 wz,wc
 I_lmm_jmpindirect
 	jmp	0-0
 	
-savez
+save_cz
 	long	0
 lmm_cptr
 	long	0

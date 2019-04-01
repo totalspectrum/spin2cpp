@@ -761,7 +761,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     flexbuf_addstr(fb, "call\t#LMM_CALL_FROM_COG\n");
                 } else {
                     PrintCond(fb, ir->cond);
-                    flexbuf_addstr(fb, "jmp\t#LMM_CALL\n");
+                    flexbuf_addstr(fb, "call\t#LMM_CALL\n");
                 }
                 flexbuf_addstr(fb, "\tlong\t");
                 if (ir->dst->kind != IMM_HUB_LABEL) {
@@ -777,7 +777,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     PrintOperand(fb, ir->dst);
                     flexbuf_addstr(fb, "\n");
                     PrintCond(fb, ir->cond);
-                    flexbuf_addstr(fb, "jmp\t#LMM_CALL_PTR\n");
+                    flexbuf_addstr(fb, "call\t#LMM_CALL_PTR\n");
                     return;
                 }
             }
@@ -794,10 +794,22 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_addstr(fb, ")\n");
                 return;
             } else if (IsHubDest(ir->src)) {
-                PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "djnz\t");
-                PrintOperand(fb, ir->dst);
-                flexbuf_addstr(fb, ", #LMM_JUMP\n");
+                if (ir->cond != COND_TRUE) {
+                    ERROR(NULL, "Internal error, cannot do conditional djnz in HUB");
+                }
+                if (gl_lmm_kind == LMM_KIND_TRACE) {
+                    PrintCond(fb, COND_TRUE);
+                    flexbuf_addstr(fb, "sub\t");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_addstr(fb,", #1 wz\n");
+                    PrintCond(fb, COND_NE);
+                    flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                } else {
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "djnz\t");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_addstr(fb, ", #LMM_JUMP\n");
+                }
                 flexbuf_addstr(fb, "\tlong\t");
                 if (ir->src->kind != IMM_HUB_LABEL) {
                     ERROR(NULL, "internal error: non-hub label in LMM jump");

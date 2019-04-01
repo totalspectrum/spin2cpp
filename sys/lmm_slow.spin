@@ -23,6 +23,7 @@ LMM_CALL_FROM_COG_ret
     ret
 
 LMM_JUMP_ret
+LMM_CALL_ret
 LMM_ra
 	long	0	' return address for LMM subroutine calls
 pc	long 0
