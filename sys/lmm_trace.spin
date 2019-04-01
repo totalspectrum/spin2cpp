@@ -12,12 +12,23 @@ instr
 nextinstr
 	add	_trmov, inc_dest1
 	djnz	trace_count, #LMM_LOOP
-	'' we've run out of trace space; restart the trace
-RESTART_TRACE
+	'' fall through if non-zero
+	'' we've run out of trace space; flush the trace cache
+FLUSH_TRACE_CACHE
+#ifdef NEVER
+	'' clear all cache tags
+	movd	flshc_lp, #trace_cache_tags
+	mov	cnt, #16*2	' clear tags and saved pcs
+flshc_lp
+	mov	0-0, #0
+	add	flshc_lp, #1
+	add	flshc_lp, inc_dest1
+	djnz	cnt, #flshc_lp
+#endif
+
 	movd	_trmov, #trace_data
-	mov	trace_firstpc, pc
-	mov	trace_count, #128-4	' maximum trace size
-	jmp	#LMM_LOOP
+	mov	trace_count, #120	' maximum trace size
+	jmp	#lmm_set_pc
 
 LMM_CALL_FROM_COG
     wrlong  hubretptr, sp
@@ -53,7 +64,8 @@ LMM_JUMP
 	'' in that case, the program counter to find is in HUB
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
-	
+
+
 	cmp	LMM_RA, #nextinstr wz
   if_nz	jmp	#already_in_cache
 
@@ -61,14 +73,38 @@ LMM_JUMP
 	'' so we need to fetch the new PC from HUB memory
 	rdlong	newpc, pc
 	add	pc, #4
-	
 	'' we are going to need 3 longs in cache:
 	''    a long for the new pc (part of the LMM jump sequence)
 	''    2 longs for a new LMM jump back to oldpc (in case the original
 	''    jump was conditional)
+	mov   cacheptr, _trmov
+	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
+	movd  _trmov2, cacheptr
+	movs  _trmov2, #cache_end_seq
+	mov   lpcnt, #3
+
+L_copy_lp
+_trmov2
+	mov	0-0, 0-0	' copy from cache_end_seq into cache
+	add	_trmov2, inc_dest1
+	add	_trmov2, #1
+	sub	trace_count, #1	' 1 fewer instruction left in trace
+	djnz	lpcnt, #L_copy_lp
+
+	mov   pc, newpc
+
+
+	'' did we run out of room in the cache?
+	'' if so, flush it and start over
+	cmps	trace_count, #4 wc,wz
+  if_be	jmp	#restore_flags_and_RESTART_TRACE
+	
+  	'' restore original cache ptr
+	mov	cacheptr, _trmov2
+	shr	cacheptr, #9
+	movd	_trmov, cacheptr
 
 	'' finally go set the new pc
-	mov   pc, newpc
 	jmp   #do_lmm_set_pc
 	
 already_in_cache
@@ -79,6 +115,10 @@ already_in_cache
 I_getpc_from_cache
 	mov	pc, 0-0
 	jmp	#do_lmm_set_pc
+
+restore_flags_and_RESTART_TRACE
+	shr	save_cz, #1 wc,wz
+	jmp	#FLUSH_TRACE_CACHE
 	
 lmm_set_pc
 	'' save flags
@@ -86,35 +126,53 @@ lmm_set_pc
 	muxc	save_cz, #1			' save C
 do_lmm_set_pc
 
-	'' restore flags
-	shr	save_cz, #1 wc,wz
+	'' FIXME: continue with the regular LMM here, since we have no valid trace in cache
+	shr	save_cz, #1 wz, wc
 	jmp	#LMM_LOOP
-	
-	
+
 	'' see if the pc is already in the trace cache
 	mov	lmm_cptr, pc
-	shr	lmm_cptr, #2
+	shr	lmm_cptr, #2	' ignore low bits of pc, these will always be 0
 	and	lmm_cptr, #$F	' 16 trace cache tags
 	add	lmm_cptr, #trace_cache_tags
-	movs	I_lmm_cmp1, lmm_cptr
-	movd	I_lmm_savepc, lmm_cptr
-	add	lmm_cptr, #(trace_cache_pc - trace_cache_tags)
-	movs	I_lmm_jmpindirect, lmm_cptr
-I_lmm_cmp1
-	cmp	pc, 0-0 wz
-  if_z	jmp	#cache_hit
-	mov	lmm_tmp, 0-0
 
-	'' cache miss here
-	'' start a new trace
+	'' set up to test against cache tag
+	movs	I_lmm_cmp1, lmm_cptr
+	'' set up to save new tag if we have a miss
+	movd	I_lmm_savetag, lmm_cptr
+	'' go to next the actual cache pc
+	add	lmm_cptr, #(trace_cache_pcs - trace_cache_tags)
+	'' set up to save the trace pc start
 	movd	I_lmm_savetracestart, lmm_cptr
-I_lmm_savepc
-	mov	0-0, pc	' save pc to cache tags
+	'' set up to jump to the right place if there is a hit
+	movs	I_lmm_jmpindirect, lmm_cptr
+
+
+I_lmm_cmp1
+	cmp	pc, 0-0 wz	' compare against current cache tag
+#ifdef NEVER
+if_z	jmp	#cache_hit
+#else
+	nop
+#endif
+	'' cache miss here
+	'' get the cache pointer from the LMM loop
+	mov   cacheptr, _trmov
+	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
+I_lmm_savetag
+	mov	0-0, pc		' save pc as new cache tag
 I_lmm_savetracestart
-	mov	0-0, trace_firstpc
+	mov	0-0, cacheptr	' save pointer to cache data
+
+	'' and we have to continue with the regular LMM here, since we have no valid trace in cache
+	shr	save_cz, #1 wz, wc
+	jmp	#LMM_LOOP
+	
 cache_hit
 	'' restore flags
 	shr	save_cz, #1 wz,wc
+
+	'' now jump into the cache
 I_lmm_jmpindirect
 	jmp	0-0
 	
@@ -122,10 +180,11 @@ save_cz
 	long	0
 lmm_cptr
 	long	0
-lmm_tmp
+cacheptr
+	long	0
 trace_cache_tags
 	long	0[16]
-trace_cache_pc
+trace_cache_pcs
 	long	0[16]
 	
 trace_data
@@ -135,4 +194,6 @@ trace_data_end
 trace_count
 	long	1
 trace_firstpc
+	long	0
+lpcnt
 	long	0
