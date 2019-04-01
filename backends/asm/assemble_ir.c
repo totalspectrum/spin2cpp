@@ -839,7 +839,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
-                if (ir->aux) {
+                if (ir->aux && gl_lmm_kind != LMM_KIND_TRACE) {
                     int offset;
                     dest = (IR *)ir->aux;
                     offset = dest->addr - ir->addr;
