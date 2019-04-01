@@ -15,7 +15,6 @@ nextinstr
 	'' fall through if non-zero
 	'' we've run out of trace space; flush the trace cache
 FLUSH_TRACE_CACHE
-#ifdef NEVER
 	'' clear all cache tags
 	movd	flshc_lp, #trace_cache_tags
 	mov	cnt, #16*2	' clear tags and saved pcs
@@ -24,7 +23,6 @@ flshc_lp
 	add	flshc_lp, #1
 	add	flshc_lp, inc_dest1
 	djnz	cnt, #flshc_lp
-#endif
 
 	movd	_trmov, #trace_data
 	mov	trace_count, #120	' maximum trace size
@@ -125,10 +123,6 @@ lmm_set_pc
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 do_lmm_set_pc
-
-	'' FIXME: continue with the regular LMM here, since we have no valid trace in cache
-	shr	save_cz, #1 wz, wc
-	jmp	#LMM_LOOP
 
 	'' see if the pc is already in the trace cache
 	mov	lmm_cptr, pc
