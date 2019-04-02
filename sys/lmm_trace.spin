@@ -1,3 +1,5 @@
+#define TRACE_SIZE 200
+
 LMM_RET
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
@@ -27,7 +29,7 @@ flshc_lp
 	djnz	lpcnt, #flshc_lp
 
 	movd	_trmov, #trace_data
-	mov	trace_count, #120	' maximum trace size
+	mov	trace_count, #TRACE_SIZE-4	' maximum trace size
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 	jmp	#LMM_LOOP
@@ -248,7 +250,7 @@ trace_cache_pcs
 	long	0[16]
 	
 trace_data
-	long	0[128+4]
+	long	0[TRACE_SIZE]
 trace_data_end
 
 trace_count
