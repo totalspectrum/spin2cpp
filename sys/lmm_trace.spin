@@ -22,7 +22,6 @@ FLUSH_TRACE_CACHE
 	mov	lpcnt, #16*2	' clear tags and saved pcs
 flshc_lp
 	mov	0-0, #0
-	add	flshc_lp, #1
 	add	flshc_lp, inc_dest1
 	djnz	lpcnt, #flshc_lp
 
