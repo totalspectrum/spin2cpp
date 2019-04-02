@@ -101,11 +101,6 @@ lmm_set_newpc_close_cache
 	cmps	trace_count, #4 wc,wz
   if_be	jmp	#restore_flags_and_RESTART_TRACE
 	
-  	'' restore original cache ptr
-	mov	cacheptr, _trmov2
-	shr	cacheptr, #9
-	movd	_trmov, cacheptr
-
 	'' finally go set the new pc
 	jmp   #lmm_set_pc
 	
@@ -188,6 +183,12 @@ _trmov2
 	add	_trmov2, #1
 	sub	trace_count, #1	' 1 fewer instruction left in trace
 	djnz	lpcnt, #L_copy_lp
+
+  	'' restore original cache ptr
+	mov	cacheptr, _trmov2
+	shr	cacheptr, #9
+	movd	_trmov, cacheptr
+
 close_cache_line_ret
 	ret
 	
