@@ -29,9 +29,6 @@ LMM_RET
 	''
 LMM_CALL
 	tjnz	LMM_IN_HUB, #LMM_CALL_FROM_HUB
-	'' potential optimization: we could replace the LMM_CALL
-	'' instruction in cache with one that jumps directly to
-	'' LMM_CALL_FROM_CACHE
 LMM_CALL_FROM_CACHE
 	mov	LMM_tmp, LMM_RA
 	sub	LMM_tmp, #LMM_cache_area	' find offset in cache
@@ -39,7 +36,12 @@ LMM_CALL_FROM_CACHE
 	add	LMM_tmp, LMM_cache_basepc	' and offset by cache base
 	wrlong	LMM_tmp, sp			' push old PC
 	add	sp, #4
-	jmp	#LMM_JUMP_FROM_CACHE
+	'' now retrieve the pc
+	movs	I_fetch_CALL_PC, LMM_RA
+	add	LMM_RA, #1
+I_fetch_CALL_PC
+	mov	LMM_NEW_PC, 0-0
+	jmp	#LMM_set_pc
 LMM_CALL_FROM_HUB
 	wrlong	pc, sp
 	add	sp, #4
@@ -52,15 +54,84 @@ LMM_CALL_FROM_HUB
 LMM_JUMP
 	tjnz	LMM_IN_HUB, #LMM_JUMP_FROM_HUB
 LMM_JUMP_FROM_CACHE
-	movs	I_fetch_PC, LMM_RA
+	movs	I_fetch_JMP_PC, LMM_RA
 	add	LMM_RA, #1
-I_fetch_PC
+I_fetch_JMP_PC
 	mov	LMM_NEW_PC, 0-0
+
+	'' see if new PC is still in cache; if it is, modify the jump
+	'' so that it goes directly there
+
+	'' save C and Z flags
+	muxc    save_cz, #1
+	muxnz	save_cz, #2
+	'' calculate offset into cache
+	'' we expect LMM_cache_basepc < LMM_NEW_PC
+	mov	LMM_tmp, LMM_NEW_PC
+	sub	LMM_tmp, LMM_cache_basepc
+	cmp	LMM_tmp, LMM_CACHE_SIZE_BYTES wc,wz
+  if_ae	jmp	#not_in_cache
+  	'' yes, we are in cache
+	shr	LMM_tmp, #2  ' convert offset to longs
+	sub	LMM_RA, #2   ' back up cog pc to point to jmp/call
+	'' change the JMP instruction to go directly where we want
+	movd	fixup_jmp, LMM_RA
+	add	LMM_tmp, #LMM_cache_area
+fixup_jmp
+	movs	0-0, LMM_tmp	' update JMP instruction
+	'' restore C and Z flags
+	shr	save_cz, #1 wc,wz
+	
+'die  	jmp	#die
+	
+	'' jump to the instruction we just fixed up
+	mov	LMM_IN_HUB, #0
+	jmp	LMM_RA
+	
+not_in_cache
+	'' restore C and Z flags
+	shr	save_cz, #1 wc,wz
+	'' and go set the new pc
 	jmp	#LMM_set_pc
 LMM_JUMP_FROM_HUB
 	rdlong	LMM_NEW_PC, pc
+	add	pc, #4
+	'' see if we want to change the cache
+	'' we do that only for backwards branches
+	'' where the whole code from the new PC to the current PC
+	'' will fit in cache
+	
+	'' save C and Z flags
+	muxc    save_cz, #1
+	muxnz	save_cz, #2
+
+	'' calculate size needed in cache
+	'' if we cache from LMM_NEW_PC up to pc
+	'' NOTE: we expect LMM_NEW_PC < pc
+  	mov	LMM_tmp, pc
+	sub	LMM_tmp, LMM_NEW_PC wc, wz
+	cmp	LMM_tmp, LMM_CACHE_SIZE_BYTES wc,wz
+  if_ae	jmp	#no_recache
+
+  	mov	LMM_cache_basepc, LMM_NEW_PC
+	mov	LMM_cache_endpc, pc
+
+	call	#LMM_load_cache
+
+	'' restore flags
+	shr	save_cz, #1 wc,wz
+	
+	'' now jump into the cache
+	mov	LMM_IN_HUB, #0
+	jmp    	#LMM_cache_area
+	
+no_recache
+	' restore flags
+	shr	save_cz, #1 wc,wz
+	' fall through to LMM_set_pc
 LMM_set_pc
 	'' OK, actually set the new pc here
+	'' really should check here to see if we're jumping into cache
 	mov    pc, LMM_NEW_PC
 	jmp    #LMM_LOOP
 
@@ -77,15 +148,48 @@ hubretptr
 LMM_NEW_PC
 	long   0
 LMM_IN_HUB
-	long 0
+	long	0
 LMM_cache_basepc
 	long	0		' HUB address of first cache instruction
+LMM_cache_endpc
+	long	0		' HUB address of last cache instruction
 LMM_tmp
 	long	0
 LMM_cache_area
 	long	0[LMM_CACHE_SIZE]
+LMM_end_cache
 	'' if we run off the end of the cache we have to jump back
-	mov    LMM_NEW_PC, #LMM_CACHE_SIZE
-	shl    LMM_NEW_PC, #2
-	add    LMM_NEW_PC, LMM_cache_basepc
-	jmp    #LMM_set_pc
+	mov	LMM_IN_HUB, #1
+	mov    	LMM_NEW_PC, LMM_cache_endpc
+	jmp    	#LMM_set_pc
+
+	'' load the cache area
+	'' LMM_cache_basepc and LMM_cache_endpc are already set
+LMM_load_cache
+	mov	LMM_tmp, LMM_cache_basepc
+	mov	FCOUNT_, LMM_cache_endpc
+	sub	FCOUNT_, LMM_cache_basepc
+	movd   a_fcacheldlp, #LMM_cache_area
+	shr    FCOUNT_, #2
+a_fcacheldlp
+	rdlong 0-0, LMM_tmp
+	add    LMM_tmp, #4
+	add    a_fcacheldlp,inc_dest1
+	djnz   FCOUNT_,#a_fcacheldlp
+	'' now add in a JMP out of LMM
+	ror    a_fcacheldlp, #9	   	' get the dest into low bits
+	movd   a_fcachecopyjmp, a_fcacheldlp
+	rol    a_fcacheldlp, #9		' restore the instruction
+a_fcachecopyjmp
+	mov	0-0, LMM_jmptop
+LMM_load_cache_ret
+	ret
+LMM_jmptop
+	jmp	#LMM_end_cache
+	
+FCOUNT_
+	long 0
+save_cz
+	long 0
+LMM_CACHE_SIZE_BYTES
+	long 4*LMM_CACHE_SIZE

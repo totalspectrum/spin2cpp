@@ -5676,6 +5676,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitReserve(&cogbss, 1, COG_RESERVE);
             EmitNamedCogLabel(&cogbss, "LMM_FCACHE_START");
             EmitReserve(&cogbss, gl_fcache_size+1, COG_RESERVE);
+            EmitNamedCogLabel(&cogbss, "LMM_FCACHE_END");
         }
     }
     

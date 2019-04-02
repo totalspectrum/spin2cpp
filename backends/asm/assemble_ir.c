@@ -797,7 +797,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 if (ir->cond != COND_TRUE) {
                     ERROR(NULL, "Internal error, cannot do conditional djnz in HUB");
                 }
-                if (gl_lmm_kind == LMM_KIND_TRACE) {
+                if (gl_lmm_kind != LMM_KIND_ORIG) {
                     PrintCond(fb, COND_TRUE);
                     flexbuf_addstr(fb, "sub\t");
                     PrintOperand(fb, ir->dst);
