@@ -19,12 +19,12 @@ nextinstr
 FLUSH_TRACE_CACHE
 	'' clear all cache tags
 	movd	flshc_lp, #trace_cache_tags
-	mov	cnt, #16*2	' clear tags and saved pcs
+	mov	lpcnt, #16*2	' clear tags and saved pcs
 flshc_lp
 	mov	0-0, #0
 	add	flshc_lp, #1
 	add	flshc_lp, inc_dest1
-	djnz	cnt, #flshc_lp
+	djnz	lpcnt, #flshc_lp
 
 	movd	_trmov, #trace_data
 	mov	trace_count, #120	' maximum trace size
@@ -48,9 +48,9 @@ LMM_RA
 
 	'' this is a 3 long sequence to be copied to CACHE
 cache_end_seq
-pc	long 0
-	call #LMM_JUMP
 newpc	long 0
+	call #LMM_JUMP
+pc	long 0
 
 inc_dest1
 	long  (1<<9)
@@ -145,6 +145,7 @@ if_z	jmp	#cache_hit
 	'' get the cache pointer from the LMM loop
 	mov   cacheptr, _trmov
 	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
+	and   cacheptr, #$1ff		' FIXME? probably only needed to make reg contents pretty for debug
 I_lmm_savetag
 	mov	0-0, pc		' save pc as new cache tag
 I_lmm_savetracestart
