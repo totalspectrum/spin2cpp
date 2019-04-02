@@ -8,6 +8,7 @@ LMM_RET
 LMM_LOOP
 	rdlong	instr, pc
 	add	pc, #4
+	mov	lmm_flags, #0
 _trmov	mov	trace_data, instr	' DEST is updated as needed
 	add	_trmov, inc_dest1
 instr
@@ -134,6 +135,11 @@ already_in_cache
 	add	LMM_RA, #1
 I_getpc_from_cache
 	mov	pc, 0-0
+
+	' now, here's an interesting thing we could do: if the jump target
+	' is in cache, we can re-write the jmp instruction itself to
+	' go directly there and bypass this whole rigamarole
+	or	lmm_flags, #1
 	jmp	#lmm_set_pc
 
 lmm_set_pc
@@ -157,9 +163,9 @@ lmm_set_pc
 
 I_lmm_cmp1
 	cmp	pc, 0-0 wz	' compare against current cache tag
-'#ifdef NEVER
+
 if_z	jmp	#cache_hit
-'#endif
+
 	'' cache miss here
 	'' get the cache pointer from the LMM loop
 	mov   cacheptr, _trmov
@@ -175,6 +181,26 @@ I_lmm_savetracestart
 	jmp	#nextinstr
 	
 cache_hit
+	'' if lmm_flags &1 is non-zero, then the jump instruction was in
+	'' cache, and so is the destination, so we can re-write the jmp
+	'' so it goes from cache to cache
+	test	lmm_flags, #1 wz
+  if_z	jmp	#skip_rewrite
+  	sub	LMM_RA, #2	' point back to the original instruction
+	''
+	'' this is a little bit tricky: I_lmm_jmpindirect points to the pointer to the actual PC
+	'' so we need to do a double indirection to fetch it
+	''
+	movs	I_dblfetch, I_lmm_jmpindirect
+	movd	I_rewrite, LMM_RA
+I_dblfetch
+	movs	I_rewrite, 0-0
+	mov	lmm_flags, #0
+I_rewrite
+	movs	0-0, #I_lmm_jmpindirect		' dest comes from LMM_RA, src from new PC target
+
+
+skip_rewrite
 	'' restore flags
 	shr	save_cz, #1 wz,wc
 
@@ -230,4 +256,6 @@ trace_count
 trace_firstpc
 	long	0
 lpcnt
+	long	0
+lmm_flags
 	long	0
