@@ -1,5 +1,3 @@
-#define LMM_CACHE_SIZE 64
-
 	''
 	'' caching LMM
 	''
@@ -31,7 +29,7 @@ LMM_CALL
 	tjnz	LMM_IN_HUB, #LMM_CALL_FROM_HUB
 LMM_CALL_FROM_CACHE
 	mov	LMM_tmp, LMM_RA
-	sub	LMM_tmp, #LMM_cache_area	' find offset in cache
+	sub	LMM_tmp, #LMM_FCACHE_START	' find offset in cache
 	shl	LMM_tmp, #2			' convert to HUB address
 	add	LMM_tmp, LMM_cache_basepc	' and offset by cache base
 	wrlong	LMM_tmp, sp			' push old PC
@@ -76,7 +74,7 @@ I_fetch_JMP_PC
 	sub	LMM_RA, #2   ' back up cog pc to point to jmp/call
 	'' change the JMP instruction to go directly where we want
 	movd	fixup_jmp, LMM_RA
-	add	LMM_tmp, #LMM_cache_area
+	add	LMM_tmp, #LMM_FCACHE_START
 fixup_jmp
 	movs	0-0, LMM_tmp	' update JMP instruction
 	'' restore C and Z flags
@@ -123,8 +121,7 @@ LMM_JUMP_FROM_HUB
 	
 	'' now jump into the cache
 	mov	LMM_IN_HUB, #0
-	jmp    	#LMM_cache_area
-	
+	jmp    	#LMM_FCACHE_START	
 no_recache
 	' restore flags
 	shr	save_cz, #1 wc,wz
@@ -155,8 +152,7 @@ LMM_cache_endpc
 	long	0		' HUB address of last cache instruction
 LMM_tmp
 	long	0
-LMM_cache_area
-	long	0[LMM_CACHE_SIZE]
+
 LMM_end_cache
 	'' if we run off the end of the cache we have to jump back
 	mov	LMM_IN_HUB, #1
@@ -169,7 +165,7 @@ LMM_load_cache
 	mov	LMM_tmp, LMM_cache_basepc
 	mov	FCOUNT_, LMM_cache_endpc
 	sub	FCOUNT_, LMM_cache_basepc
-	movd   a_fcacheldlp, #LMM_cache_area
+	movd   a_fcacheldlp, #LMM_FCACHE_START
 	shr    FCOUNT_, #2
 a_fcacheldlp
 	rdlong 0-0, LMM_tmp
@@ -192,4 +188,5 @@ FCOUNT_
 save_cz
 	long 0
 LMM_CACHE_SIZE_BYTES
-	long 4*LMM_CACHE_SIZE
+	long 4*(LMM_FCACHE_END - LMM_FCACHE_START)
+	
