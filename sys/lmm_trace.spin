@@ -9,10 +9,10 @@ LMM_LOOP
 	rdlong	instr, pc
 	add	pc, #4
 _trmov	mov	trace_data, instr	' DEST is updated as needed
+	add	_trmov, inc_dest1
 instr
 	nop
 nextinstr
-	add	_trmov, inc_dest1
 	djnz	trace_count, #LMM_LOOP
 	'' fall through if non-zero
 	'' we've run out of trace space; flush the trace cache
@@ -76,7 +76,10 @@ LMM_JUMP
 	'' so we need to fetch the new PC from HUB memory
 	rdlong	newpc, pc
 	add	pc, #4
-	'' now go set it
+	'' and copy it to cache
+	mov    instr, newpc
+	call   #emit_instr
+	
 	'' we can skip the check for running in cache, we already
 	'' know we aren't
 	jmp	#lmm_set_newpc_close_cache
@@ -137,9 +140,9 @@ lmm_set_pc
 
 I_lmm_cmp1
 	cmp	pc, 0-0 wz	' compare against current cache tag
-'#ifdef NEVER
+#ifdef NEVER
 if_z	jmp	#cache_hit
-'#endif
+#endif
 	'' cache miss here
 	'' get the cache pointer from the LMM loop
 	mov   cacheptr, _trmov
@@ -152,7 +155,7 @@ I_lmm_savetracestart
 
 	'' and we have to continue with the regular LMM here, since we have no valid trace in cache
 	shr	save_cz, #1 wz, wc
-	jmp	#LMM_LOOP
+	jmp	#nextinstr
 	
 cache_hit
 	'' restore flags
@@ -164,31 +167,29 @@ I_lmm_jmpindirect
 	
 
 	''
-	'' close out the current trace cache line
-close_cache_line
-	'' we are going to need 3 longs in cache:
-	''    a long for the new pc (part of the LMM jump sequence)
-	''    2 longs for a new LMM jump back to oldpc (in case the original
-	''    jump was conditional)
-	mov   cacheptr, _trmov
-	shr   cacheptr, #9		' extract current cache pointer from instruction in loop
-	movd  _trmov2, cacheptr
-	movs  _trmov2, #cache_end_seq
-	mov   lpcnt, #3
-
-L_copy_lp
+	'' copy the instruction at "opcode" to the cache
+	''
+emit_instr
+	mov	_trmov2, _trmov
+	sub	trace_count, #1
 _trmov2
-	mov	0-0, 0-0	' copy from cache_end_seq into cache
-	add	_trmov2, inc_dest1
-	add	_trmov2, #1
-	sub	trace_count, #1	' 1 fewer instruction left in trace
-	djnz	lpcnt, #L_copy_lp
-
-  	'' restore original cache ptr
-	mov	cacheptr, _trmov2
-	shr	cacheptr, #9
-	movd	_trmov, cacheptr
-
+	mov	0-0, 0-0
+	add	_trmov, inc_dest1
+	mins	trace_count, #1
+emit_instr_ret
+	ret
+	
+	''
+	'' close out the current trace cache line
+	'' we should optimize and see if the previous branch
+	'' was conditional, but for now we just always add
+	'' a jump back to the original pc
+	''
+close_cache_line
+	mov	instr, #cache_end_seq
+	call	#emit_instr
+	mov	instr, pc
+	call	#emit_instr
 close_cache_line_ret
 	ret
 	
