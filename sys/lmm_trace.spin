@@ -41,14 +41,13 @@ LMM_CALL_FROM_COG_ret
     ret
 
 LMM_JUMP_ret
-LMM_CALL_ret
+LMM_PUSH_ret
 LMM_RA
 	long 0	' return address for LMM subroutine calls
 
-	'' this is a 3 long sequence to be copied to CACHE
 cache_end_seq
-newpc	long 0
 	call #LMM_JUMP
+newpc	long 0
 pc	long 0
 
 inc_dest1
@@ -58,16 +57,43 @@ hubretptr
 LMM_NEW_PC
     long   0
 
-LMM_CALL
-	wrlong	pc, sp
-	add	sp, #4
-LMM_JUMP
+	'' This version of LMM does not support LMM_CALL
+	'' instead it needs a sequence of 2 instructions:
+	'' LMM_PUSH and then LMM_JUMP
+	'' LMM_PUSH will push the return address onto the stack
+LMM_PUSH
 	'' if the actual CALL instruction that triggered this CALL or JUMP is in
 	'' the ordinary LMM stream, the return address (found in LMM_RA) will be "nextinstr"
 	'' in that case, the program counter to find is in HUB
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 
+
+	cmp	LMM_RA, #nextinstr wz
+  if_nz	jmp	#push_from_cache
+
+  	'' push from HUB code; need to copy to cache
+  	rdlong	instr, pc
+	add	pc, #4
+	call	#emit_instr
+	jmp	#do_push
+push_from_cache
+	movs	I_push_copy, LMM_RA
+	add	LMM_RA, #1
+I_push_copy
+	mov	instr, 0-0
+do_push
+	shr	save_cz, #1 wc,wz
+	wrlong	instr, sp
+	add	sp, #4
+	jmp	LMM_RA
+	
+LMM_JUMP
+	'' if the actual CALL instruction that triggered this CALL or JUMP is in
+	'' the ordinary LMM stream, the return address (found in LMM_RA) will be "nextinstr"
+	'' in that case, the program counter to find is in HUB
+	muxnz	save_cz, #2			' save Z
+	muxc	save_cz, #1			' save C
 
 	cmp	LMM_RA, #nextinstr wz
   if_nz	jmp	#already_in_cache

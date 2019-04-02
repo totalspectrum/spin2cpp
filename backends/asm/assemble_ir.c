@@ -753,22 +753,39 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         switch (ir->opc) {
         case OPC_CALL:
             if (IsHubDest(ir->dst)) {
+                if (ir->dst->kind != IMM_HUB_LABEL) {
+                    ERROR(NULL, "internal error: non-hub label in LMM jump");
+                }
                 if (!lmmMode) {
                     // call of hub function from COG
                     PrintCond(fb, ir->cond);
                     flexbuf_addstr(fb, "mov\tpc, $+2\n");
                     PrintCond(fb, ir->cond);
                     flexbuf_addstr(fb, "call\t#LMM_CALL_FROM_COG\n");
+                    flexbuf_addstr(fb, "\tlong\t");
+                    PrintOperandAsValue(fb, ir->dst);
+                    flexbuf_addstr(fb, "\n");
                 } else {
-                    PrintCond(fb, ir->cond);
-                    flexbuf_addstr(fb, "call\t#LMM_CALL\n");
+                    if (gl_lmm_kind == LMM_KIND_TRACE) {
+                        static int retlabel;
+                        PrintCond(fb, ir->cond);
+                        flexbuf_addstr(fb, "call\t#LMM_PUSH\n");
+                        flexbuf_printf(fb, "\tlong\t@@@LMM_ret_%04d\n", retlabel);
+                        PrintCond(fb, ir->cond);
+                        flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                        flexbuf_addstr(fb, "\tlong\t");
+                        PrintOperandAsValue(fb, ir->dst);
+                        flexbuf_addstr(fb, "\n");
+                        flexbuf_printf(fb, "LMM_ret_%04d\n", retlabel);
+                        ++retlabel;
+                    } else {
+                        PrintCond(fb, ir->cond);
+                        flexbuf_addstr(fb, "call\t#LMM_CALL\n");
+                        flexbuf_addstr(fb, "\tlong\t");
+                        PrintOperandAsValue(fb, ir->dst);
+                        flexbuf_addstr(fb, "\n");
+                    }
                 }
-                flexbuf_addstr(fb, "\tlong\t");
-                if (ir->dst->kind != IMM_HUB_LABEL) {
-                    ERROR(NULL, "internal error: non-hub label in LMM jump");
-                }
-                PrintOperandAsValue(fb, ir->dst);
-                flexbuf_addstr(fb, "\n");
                 return;
             } else if (IsLocalOrArg(ir->dst)) {
                 if (lmmMode) {
