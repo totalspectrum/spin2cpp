@@ -127,6 +127,7 @@ extern int gl_lmm_kind;
 #define LMM_KIND_ORIG  0
 #define LMM_KIND_SLOW  1
 #define LMM_KIND_TRACE 2
+#define LMM_KIND_CACHE 3
 
 /* types of output */
 #define OUTPUT_CPP  0

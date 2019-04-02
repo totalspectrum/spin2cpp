@@ -4747,6 +4747,7 @@ static const char *builtin_div_p2 =
 #include "sys/lmm_orig.spin.h"
 #include "sys/lmm_slow.spin.h"
 #include "sys/lmm_trace.spin.h"
+#include "sys/lmm_cache.spin.h"
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
@@ -4974,6 +4975,9 @@ EmitBuiltins(IRList *irl)
                 break;
             case LMM_KIND_TRACE:
                 builtin_lmm = (const char *)sys_lmm_trace_spin;
+                break;
+            case LMM_KIND_CACHE:
+                builtin_lmm = (const char *)sys_lmm_cache_spin;
                 break;
             default:
                 builtin_lmm = (const char *)sys_lmm_orig_spin;

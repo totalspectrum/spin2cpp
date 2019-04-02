@@ -97,9 +97,9 @@ lmm_set_newpc_close_cache
 
 	'' did we run out of room in the cache?
 	'' if so, flush it and start over
-	cmps	trace_count, #4 wc,wz
+	cmps	trace_count, #1 wc,wz
   if_be	jmp	#restore_flags_and_RESTART_TRACE
-	
+
 	'' finally go set the new pc
 	jmp   #lmm_set_pc
 	
@@ -137,9 +137,9 @@ lmm_set_pc
 
 I_lmm_cmp1
 	cmp	pc, 0-0 wz	' compare against current cache tag
-#ifdef NEVER
+'#ifdef NEVER
 if_z	jmp	#cache_hit
-#endif
+'#endif
 	'' cache miss here
 	'' get the cache pointer from the LMM loop
 	mov   cacheptr, _trmov
@@ -204,7 +204,7 @@ trace_cache_pcs
 	long	0[16]
 	
 trace_data
-	long	0[128]
+	long	0[128+4]
 trace_data_end
 
 trace_count
