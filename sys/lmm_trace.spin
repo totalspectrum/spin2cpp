@@ -1,5 +1,3 @@
-#define TRACE_SIZE 200
-
 LMM_RET
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
@@ -11,7 +9,7 @@ LMM_LOOP
 	rdlong	instr, pc
 	add	pc, #4
 	mov	lmm_flags, #0
-_trmov	mov	trace_data, instr	' DEST is updated as needed
+_trmov	mov	LMM_FCACHE_START, instr	' DEST is updated as needed
 	add	_trmov, inc_dest1
 instr
 	nop
@@ -28,8 +26,9 @@ flshc_lp
 	add	flshc_lp, inc_dest1
 	djnz	lpcnt, #flshc_lp
 
-	movd	_trmov, #trace_data
-	mov	trace_count, #TRACE_SIZE-4	' maximum trace size
+	movd	_trmov, #LMM_FCACHE_START
+	mov	trace_count, TRACE_SIZE		' maximum trace size
+	sub	trace_count, #3			' leave room to close trace
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 	jmp	#LMM_LOOP
@@ -248,11 +247,9 @@ trace_cache_tags
 	long	0[16]
 trace_cache_pcs
 	long	0[16]
-	
-trace_data
-	long	0[TRACE_SIZE]
-trace_data_end
 
+TRACE_SIZE
+	long	LMM_FCACHE_END - LMM_FCACHE_START
 trace_count
 	long	1
 trace_firstpc

@@ -300,7 +300,6 @@ main(int argc, const char **argv)
                 gl_fcache_size = 0;
             } else if (!strcmp(lmmtype, "trace")) {
                 gl_lmm_kind = LMM_KIND_TRACE;
-                gl_fcache_size = 0;
             } else if (!strcmp(lmmtype, "cache")) {
                 gl_lmm_kind = LMM_KIND_CACHE;
                 gl_fcache_size = 0;

@@ -2668,9 +2668,10 @@ OptimizeIRGlobal(IRList *irl)
         }
         ir = ir_next;
     }
-    // check for fcache
-    OptimizeFcache(irl);
-    
+    if (gl_lmm_kind == LMM_KIND_ORIG) {
+        // check for fcache
+        OptimizeFcache(irl);
+    }
     // check for usage
     CheckUsage(irl);
 }
