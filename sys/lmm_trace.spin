@@ -29,7 +29,7 @@ flshc_lp
 	mov	trace_count, #120	' maximum trace size
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
-	jmp	#lmm_set_pc
+	jmp	#LMM_LOOP
 
 LMM_CALL_FROM_COG
     wrlong  hubretptr, sp
@@ -108,26 +108,21 @@ LMM_JUMP
 	
 	'' we can skip the check for running in cache, we already
 	'' know we aren't
-	jmp	#lmm_set_newpc_close_cache
+	jmp	#close_cache_and_set_pc
 
 	'' general routine for copying "newpc" to "pc"
 	'' if we were called from HUB, close out the current
 	'' cache line
 lmm_set_newpc
 	cmp	LMM_RA, #nextinstr wz
-  if_z	jmp	#lmm_set_newpc_close_cache
+  if_z	jmp	#close_cache_and_set_pc
   	mov	pc, newpc
 	jmp	#lmm_set_pc
 	
-lmm_set_newpc_close_cache
+close_cache_and_set_pc
 	'' close out the current trace cache line
 	call	 #close_cache_line	
 	mov   pc, newpc
-
-	'' did we run out of room in the cache?
-	'' if so, flush it and start over
-	cmps	trace_count, #1 wc,wz
-  if_be	jmp	#restore_flags_and_RESTART_TRACE
 
 	'' finally go set the new pc
 	jmp   #lmm_set_pc
@@ -141,10 +136,6 @@ I_getpc_from_cache
 	mov	pc, 0-0
 	jmp	#lmm_set_pc
 
-restore_flags_and_RESTART_TRACE
-	shr	save_cz, #1 wc,wz
-	jmp	#FLUSH_TRACE_CACHE
-	
 lmm_set_pc
 	'' see if the pc is already in the trace cache
 	mov	lmm_cptr, pc
@@ -166,9 +157,9 @@ lmm_set_pc
 
 I_lmm_cmp1
 	cmp	pc, 0-0 wz	' compare against current cache tag
-#ifdef NEVER
+'#ifdef NEVER
 if_z	jmp	#cache_hit
-#endif
+'#endif
 	'' cache miss here
 	'' get the cache pointer from the LMM loop
 	mov   cacheptr, _trmov
@@ -212,7 +203,7 @@ emit_instr_ret
 	'' a jump back to the original pc
 	''
 close_cache_line
-	mov	instr, #cache_end_seq
+	mov	instr, cache_end_seq
 	call	#emit_instr
 	mov	instr, pc
 	call	#emit_instr
