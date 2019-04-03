@@ -766,7 +766,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     PrintOperandAsValue(fb, ir->dst);
                     flexbuf_addstr(fb, "\n");
                 } else {
-                    if (gl_lmm_kind == LMM_KIND_TRACE) {
+                    if (gl_lmm_kind == LMM_KIND_TRACE || gl_lmm_kind == LMM_KIND_CACHE) {
                         static int retlabel;
                         PrintCond(fb, ir->cond);
                         flexbuf_addstr(fb, "call\t#LMM_PUSH\n");

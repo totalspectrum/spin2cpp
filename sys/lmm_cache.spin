@@ -7,6 +7,7 @@ LMM_LOOP
 	mov	LMM_IN_HUB, #1
 instr
 	nop
+nextinstr
 	jmp	#LMM_LOOP
 
 LMM_CALL_FROM_COG
@@ -16,6 +17,25 @@ LMM_CALL_FROM_COG
 LMM_CALL_FROM_COG_ret
     ret
 
+	'' PUSH operation: can be used to synthesize LMM_CALL in the compiler
+
+LMM_PUSH
+	tjnz	LMM_IN_HUB, #LMM_PUSH_FROM_HUB
+LMM_PUSH_FROM_CACHE
+	movs	I_pushmv, LMM_RA
+	add	LMM_RA, #1
+I_pushmv
+	mov	LMM_tmp, 0-0
+	jmp	#do_push
+	
+LMM_PUSH_FROM_HUB
+	rdlong	LMM_tmp, pc
+	add	pc, #4
+do_push
+	wrlong	LMM_tmp, sp
+	add	sp, #4
+	jmp	LMM_RA
+	
 LMM_RET
 	sub	sp, #4
 	rdlong	LMM_NEW_PC, sp
@@ -59,16 +79,18 @@ I_fetch_JMP_PC
 
 	'' see if new PC is still in cache; if it is, modify the jump
 	'' so that it goes directly there
-
+	'' WARNING: we cannot do that for LMM_CALL
+	
 	'' save C and Z flags
-	muxc    save_cz, #1
-	muxnz	save_cz, #2
+	muxnz	save_cz, #2			' save Z
+	muxc	save_cz, #1			' save C
 	'' calculate offset into cache
-	'' we expect LMM_cache_basepc < LMM_NEW_PC
-	mov	LMM_tmp, LMM_NEW_PC
-	sub	LMM_tmp, LMM_cache_basepc
-	cmp	LMM_tmp, LMM_CACHE_SIZE_BYTES wc,wz
+	'' we expect LMM_cache_basepc <= LMM_NEW_PC < LMM_cache_endpc
+	cmp	LMM_NEW_PC, LMM_cache_endpc wc,wz
   if_ae	jmp	#not_in_cache
+	mov	LMM_tmp, LMM_NEW_PC
+	subs	LMM_tmp, LMM_cache_basepc wc,wz
+  if_b	jmp	#not_in_cache
   	'' yes, we are in cache
 	shr	LMM_tmp, #2  ' convert offset to longs
 	sub	LMM_RA, #2   ' back up cog pc to point to jmp/call
@@ -79,8 +101,6 @@ fixup_jmp
 	movs	0-0, LMM_tmp	' update JMP instruction
 	'' restore C and Z flags
 	shr	save_cz, #1 wc,wz
-	
-'die  	jmp	#die
 	
 	'' jump to the instruction we just fixed up
 	mov	LMM_IN_HUB, #0
@@ -104,7 +124,7 @@ LMM_JUMP_FROM_HUB
 	muxnz	save_cz, #2
 
 	'' calculate size needed in cache
-	'' if we cache from LMM_NEW_PC up to pc
+	'' if we cache from LMM_NEW_PC up to and including pc
 	'' NOTE: we expect LMM_NEW_PC < pc
   	mov	LMM_tmp, pc
 	sub	LMM_tmp, LMM_NEW_PC wc, wz
@@ -130,10 +150,11 @@ LMM_set_pc
 	'' OK, actually set the new pc here
 	'' really should check here to see if we're jumping into cache
 	mov    pc, LMM_NEW_PC
-	jmp    #LMM_LOOP
+	jmp    #nextinstr
 
 LMM_JUMP_ret
 LMM_CALL_ret
+LMM_PUSH_ret
 LMM_RET_ret
 LMM_RA
 	long	0	' return address for LMM subroutine calls
@@ -152,12 +173,6 @@ LMM_cache_endpc
 	long	0		' HUB address of last cache instruction
 LMM_tmp
 	long	0
-
-LMM_end_cache
-	'' if we run off the end of the cache we have to jump back
-	mov	LMM_IN_HUB, #1
-	mov    	LMM_NEW_PC, LMM_cache_endpc
-	jmp    	#LMM_set_pc
 
 	'' load the cache area
 	'' LMM_cache_basepc and LMM_cache_endpc are already set
@@ -182,6 +197,11 @@ LMM_load_cache_ret
 	ret
 LMM_jmptop
 	jmp	#LMM_end_cache
+LMM_end_cache
+	'' if we run off the end of the cache we have to jump back
+	mov	LMM_IN_HUB, #1
+	mov    	pc, LMM_cache_endpc
+	jmp    	#nextinstr
 	
 FCOUNT_
 	long 0
