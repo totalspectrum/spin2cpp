@@ -123,6 +123,10 @@ LMM_JUMP_FROM_HUB
 	muxc    save_cz, #1
 	muxnz	save_cz, #2
 
+	'' is this area already in cache?
+	cmp   LMM_cache_basepc, LMM_NEW_PC wz
+   if_z	jmp   #jump_into_cache
+	
 	'' calculate size needed in cache
 	'' if we cache from LMM_NEW_PC up to and including pc
 	'' NOTE: we expect LMM_NEW_PC < pc
@@ -136,9 +140,10 @@ LMM_JUMP_FROM_HUB
 
 	call	#LMM_load_cache
 
+jump_into_cache
 	'' restore flags
 	shr	save_cz, #1 wc,wz
-	
+
 	'' now jump into the cache
 	mov	LMM_IN_HUB, #0
 	jmp    	#LMM_FCACHE_START	
