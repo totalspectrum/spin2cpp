@@ -17,25 +17,6 @@ LMM_CALL_FROM_COG
 LMM_CALL_FROM_COG_ret
     ret
 
-	'' PUSH operation: can be used to synthesize LMM_CALL in the compiler
-
-LMM_PUSH
-	tjnz	LMM_IN_HUB, #LMM_PUSH_FROM_HUB
-LMM_PUSH_FROM_CACHE
-	movs	I_pushmv, LMM_RA
-	add	LMM_RA, #1
-I_pushmv
-	mov	LMM_tmp, 0-0
-	jmp	#do_push
-	
-LMM_PUSH_FROM_HUB
-	rdlong	LMM_tmp, pc
-	add	pc, #4
-do_push
-	wrlong	LMM_tmp, sp
-	add	sp, #4
-	jmp	LMM_RA
-	
 LMM_RET
 	sub	sp, #4
 	rdlong	LMM_NEW_PC, sp
