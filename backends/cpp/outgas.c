@@ -396,6 +396,7 @@ outputGasInstruction(Flexbuf *f, AST *ast, int inlineAsm, CppInlineState *state)
                 flexbuf_printf(f, ", #");
                 break;
             }
+            case JMP_OPERAND:
             case SRC_OPERAND_ONLY:
                 flexbuf_printf(f, "#");
                 if (instr->opc != OPC_JUMP) printFlags |= PRINTEXPR_GASIMM;

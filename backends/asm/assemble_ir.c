@@ -910,6 +910,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         switch (ir->instr->ops) {
         case NO_OPERANDS:
             break;
+        case JMP_OPERAND:
         case SRC_OPERAND_ONLY:
         case DST_OPERAND_ONLY:
         case CALL_OPERAND:

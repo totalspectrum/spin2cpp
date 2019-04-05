@@ -563,6 +563,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case P2_AUG:
     case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
+    case JMP_OPERAND:
     case CALL_OPERAND:
         return mask;
     case TWO_OPERANDS:
@@ -735,6 +736,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     bool sawFlagUsed = false;
     uint32_t mask;
     int expectops;
+    int jump_operand = -1; /* indicates no jump operand */
     
     /* check for modifiers and operands */
     numoperands = 0;
@@ -823,11 +825,14 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     case NO_OPERANDS:
         expectops = 0;
         break;
+    case JMPRET_OPERANDS:
+    case P2_TJZ_OPERANDS:
+        jump_operand = 1;
+        expectops = 2;
+        break;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
     case TWO_OPERANDS_DEFZ:
-    case JMPRET_OPERANDS:
-    case P2_TJZ_OPERANDS:
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
     case P2_LOC:
@@ -839,6 +844,12 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     case THREE_OPERANDS_NIBBLE:
         expectops = 3;
         break;
+    case JMP_OPERAND:
+    case P2_JUMP:
+    case CALL_OPERAND:
+        jump_operand = 0;
+        expectops = 1;
+        break;        
     default:
         expectops = 1;
         break;
@@ -894,7 +905,25 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
         ERROR(line, "Expected %d operands for %s, found %d", expectops, instr->name, numoperands);
         return -1;
     }
-
+    if (jump_operand >= 0 && opimm[jump_operand] == 0) {
+        /* if it's going to a label we may be able to notice if the
+           user forgot to type "#"
+        */
+        AST *op;
+        op = operand[jump_operand];
+        if (IsIdentifier(op)) {
+            const char *internal_name = GetIdentifierName(op);
+            const char *user_name = GetUserIdentifierName(op);
+            Symbol *sym = LookupSymbol(internal_name);
+            if (sym->kind == SYM_LABEL) {
+                Label *lab = (Label *)sym->val;
+                if (lab && (lab->flags & LABEL_HAS_INSTR)) {
+                    WARNING(line, "%s to %s without #; are you sure this is correct?", instr->name, user_name);
+                }
+            }
+        }
+    }
+        
     return numoperands;
 }
 
@@ -1124,6 +1153,7 @@ decode_instr:
             src = EvalPasmExpr(operand[opidx]);
         }
         break;
+    case JMP_OPERAND:
     case SRC_OPERAND_ONLY:
     case P2_AUG:
         dst = 0;

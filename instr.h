@@ -260,7 +260,8 @@ typedef enum InstrOps {
     TWO_OPERANDS,
     CALL_OPERAND,
     JMPRET_OPERANDS,
-
+    JMP_OPERAND,
+    
     /* P2 extensions */
     TWO_OPERANDS_OPTIONAL,  /* one of the 2 operands is optional */
     P2_TJZ_OPERANDS,        /* like TJZ */
