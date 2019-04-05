@@ -817,6 +817,18 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     }
     
     /* warn about some instructions not having wc or wz */
+    /* if the instruction has a _ret_ tag on it it might be deliberately doing nothing ;
+       _ret_ cmp 0, #0 can be used to double as a counter
+       similarly on P1 for a no-op instruction
+    */
+    if (gl_p2) {
+        mask = 0xf << 28;
+    } else {
+        mask = 0xf << 18;
+    }
+    if ((*val & mask) == 0) {
+        sawFlagUsed = true; // do not warn here
+    }
     if ((instr->flags & FLAG_WARN_NOTUSED) && !sawFlagUsed) {
         WARNING(line, "instruction %s used without flags being set", instr->name);
     }
