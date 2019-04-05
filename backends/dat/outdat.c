@@ -929,7 +929,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             Symbol *sym = LookupSymbol(internal_name);
             if (sym->kind == SYM_LABEL) {
                 Label *lab = (Label *)sym->val;
-                if (lab && (lab->flags & LABEL_HAS_INSTR)) {
+                if (lab && (lab->flags & LABEL_HAS_INSTR) && !(lab->flags & LABEL_HAS_JMP)) {
                     WARNING(line, "%s to %s without #; are you sure this is correct?", instr->name, user_name);
                 }
             }

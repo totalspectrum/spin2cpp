@@ -401,7 +401,7 @@ IsRetInstruction(AST *ast)
 {
     if (ast && ast->kind == AST_INSTR) {
         Instruction *instr = (Instruction *)ast->d.ptr;
-        if (instr && instr->opc == OPC_RET) {
+        if (instr && instr->opc == OPC_RET && !gl_p2) {
             return true;
         }
     }

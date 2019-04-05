@@ -7,8 +7,9 @@ DAT
 	call	is_indirect
 	jmp	should_be_imm
 	jmp	#should_be_imm
-	djnz	0, should_be_imm_ret	' should give a warning
 	jmp	should_be_imm_ret	' this actually should not give a warning
+	djnz	0, should_be_imm	' should give a warning
+	
 is_indirect
 	long	0
 is_indirect_ret
