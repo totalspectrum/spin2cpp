@@ -890,7 +890,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 return;
             } else if (lmmMode) {
                 PrintCond(fb, ir->cond);
-                flexbuf_addstr(fb, "jmp\t#LMM_RET\n");
+                flexbuf_addstr(fb, "call\t#LMM_RET\n");
                 return;
             }
         default:
