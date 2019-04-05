@@ -393,8 +393,8 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 
 #define MARK_DATA(label_flags) label_flags &= ~LABEL_HAS_INSTR
 #define MARK_CODE(label_flags) label_flags |= LABEL_HAS_INSTR
-#define MARK_HUB(label_flags) label_flags &= ~LABEL_IN_HUB
-#define MARK_COG(label_flags) label_flags |= LABEL_IN_HUB
+#define MARK_HUB(label_flags) label_flags |= LABEL_IN_HUB
+#define MARK_COG(label_flags) label_flags &= ~LABEL_IN_HUB
 
 static bool
 IsRetInstruction(AST *ast)
