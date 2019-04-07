@@ -62,6 +62,8 @@ LMM_CALL_FROM_COG
     add     sp, #4
     jmp  #LMM_LOOP
 LMM_CALL_FROM_COG_ret
+    ret
+    
 LMM_CALL_ret
 LMM_CALL_PTR_ret
 LMM_JUMP_ret
