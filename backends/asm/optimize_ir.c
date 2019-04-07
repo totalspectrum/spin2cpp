@@ -1364,6 +1364,10 @@ static int IsSafeShortForwardJump(IR *irbase)
           // calls do not preserve condition codes
           return 0;
       }
+      if (ir->opc == OPC_DJNZ && !gl_p2) {
+          // DJNZ does not work conditionally in LMM
+          return 0;
+      }
       n++;
       if (n > MAX_JUMP_OVER) return 0;
     }
@@ -1620,6 +1624,7 @@ OptimizeCompares(IRList *irl)
             else if (ir_prev
                 && !InstrSetsAnyFlags(ir_prev)
                 && !InstrIsVolatile(ir_prev)
+                && (ir_prev->flags == COND_TRUE)
                 && CanTestZero(ir_prev->opc))
             {
                 ir_prev->flags |= FLAG_WZ;
