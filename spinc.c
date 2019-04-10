@@ -645,6 +645,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
                  || !strcmp(langptr, ".cpp")
                  || !strcmp(langptr, ".cc")
                  || !strcmp(langptr, ".cxx")
+                 || !strcmp(langptr, ".a")
           )
       {
 	language = LANG_C;

@@ -1,0 +1,226 @@
+#define size_t unsigned int
+#define wchar_t unsigned int
+#define wint_t int
+#define time_t unsigned int
+
+/* libc/misc/ctype.c */
+int isupper(int c) __fromfile("libc/misc/ctype.c");
+int islower(int c) __fromfile("libc/misc/ctype.c");
+int isspace(int c) __fromfile("libc/misc/ctype.c");
+int isdigit(int c) __fromfile("libc/misc/ctype.c");
+int isalnum(int c) __fromfile("libc/misc/ctype.c");
+int isalpha(int c) __fromfile("libc/misc/ctype.c");
+int isblank(int c) __fromfile("libc/misc/ctype.c");
+
+/* libc/misc/iscntrl.c */
+int iscntrl(int c) __fromfile("libc/misc/iscntrl.c");
+
+/* libc/misc/isgraph.c */
+int isgraph(int c) __fromfile("libc/misc/isgraph.c");
+
+/* libc/misc/isprint.c */
+int isprint(int c) __fromfile("libc/misc/isprint.c");
+
+/* libc/misc/ispunct.c */
+int ispunct(int c) __fromfile("libc/misc/ispunct.c");
+
+/* libc/misc/isxdigit.c */
+int isxdigit(int c) __fromfile("libc/misc/isxdigit.c");
+
+/* libc/misc/tolower.c */
+int tolower(int c) __fromfile("libc/misc/tolower.c");
+
+/* libc/misc/toupper.c */
+int toupper(int c) __fromfile("libc/misc/toupper.c");
+
+/* libc/stdio/gets.c */
+char *gets(char *data) __fromfile("libc/stdio/gets.c");
+
+/* libc/stdlib/abort.c */
+void abort(void) __fromfile("libc/stdlib/abort.c");
+
+/* libc/stdlib/atoi.c */
+long atol(const char *str) __fromfile("libc/stdlib/atoi.c");
+int atoi(const char *str) __fromfile("libc/stdlib/atoi.c");
+
+/* libc/stdlib/_Exit.c */
+void _Exit(int status) __fromfile("libc/stdlib/_Exit.c");
+void exit(int status) __fromfile("libc/stdlib/_Exit.c");
+
+/* libc/stdlib/rand.c */
+void srand(unsigned int seed) __fromfile("libc/stdlib/rand.c");
+int rand(void) __fromfile("libc/stdlib/rand.c");
+
+/* libc/stdlib/strtol.c */
+signed long strtol(const char *nptr, char **endptr, int base) __fromfile("libc/stdlib/strtol.c");
+
+/* libc/stdlib/strtoul.c */
+unsigned long strtoul(const char *nptr, char **endptr, int base) __fromfile("libc/stdlib/strtoul.c");
+
+/* libc/string/memchr.c */
+void *memchr(const void *s, int ucharwanted, size_t size) __fromfile("libc/string/memchr.c");
+
+/* libc/string/memcmp.c */
+int memcmp(const void *s1, const void *s2, size_t size) __fromfile("libc/string/memcmp.c");
+
+/* libc/string/memcpy.c */
+int memcpy(void *dest, const void *src, size_t n) __fromfile("libc/string/memcpy.c");
+
+/* libc/string/memmove.c */
+void *memmove(void *dest_p, const void *src_p, size_t n) __fromfile("libc/string/memmove.c");
+
+/* libc/string/memset.c */
+void *memset(void *dest_p, int c, size_t n) __fromfile("libc/string/memset.c");
+
+/* libc/string/strchr.c */
+char *strchr(const char *s, int charwanted) __fromfile("libc/string/strchr.c");
+
+/* libc/string/strcmp.c */
+int strcmp(const char *scan1, const char *scan2) __fromfile("libc/string/strcmp.c");
+
+/* libc/string/strcpy.c */
+char *strcpy(char *__restrict dst, const char *__restrict src) __fromfile("libc/string/strcpy.c");
+
+/* libc/string/strlen.c */
+size_t strlen(const char *scan) __fromfile("libc/string/strlen.c");
+
+/* libc/string/strrchr.c */
+char *strrchr(const char *s, int charwanted) __fromfile("libc/string/strrchr.c");
+
+/* libc/sys/propeller/clock.c */
+unsigned int clock(void) __fromfile("libc/sys/propeller/clock.c");
+
+/* libc/time/asctime.c */
+char *_asctime_r(const struct tm *time, char *buf) __fromfile("libc/time/asctime.c");
+char *asctime(const struct tm *time) __fromfile("libc/time/asctime.c");
+char *ctime(const time_t *rawtime) __fromfile("libc/time/asctime.c");
+
+/* libc/time/difftime.c */
+double difftime(time_t t2, time_t t1) __fromfile("libc/time/difftime.c");
+
+/* libc/time/gettimeofday.c */
+int gettimeofday(struct timeval *tv, void *unused) __fromfile("libc/time/gettimeofday.c");
+
+/* libc/time/localtim.c */
+int _is_leap_year(int y) __fromfile("libc/time/localtim.c");
+time_t mktime(struct tm *t) __fromfile("libc/time/localtim.c");
+struct tm *_gmtime_r(const time_t *t, struct tm *stm) __fromfile("libc/time/localtim.c");
+struct tm *_localtime_r(const time_t *t, struct tm *stm) __fromfile("libc/time/localtim.c");
+struct tm *localtime(const time_t *t) __fromfile("libc/time/localtim.c");
+struct tm *gmtime(const time_t *t) __fromfile("libc/time/localtim.c");
+void _tzset(void) __fromfile("libc/time/localtim.c");
+
+/* libc/time/settimeofday.c */
+int settimeofday(const struct timeval *tv, const void *unused) __fromfile("libc/time/settimeofday.c");
+
+/* libc/time/sleep.c */
+unsigned int sleep(unsigned int n) __fromfile("libc/time/sleep.c");
+
+/* libc/time/strftime.c */
+size_t strftime(char *str, size_t maxsize, const char *fmt, const struct tm *ts) __fromfile("libc/time/strftime.c");
+
+/* libc/time/time.c */
+time_t time(time_t *tp) __fromfile("libc/time/time.c");
+
+/* libc/time/usleep.c */
+int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
+
+/* libc/wchar/btowc.c */
+wint_t btowc(int c) __fromfile("libc/wchar/btowc.c");
+
+/* libc/wchar/iswalnum.c */
+int iswalnum(wint_t wc) __fromfile("libc/wchar/iswalnum.c");
+
+/* libc/wchar/iswalpha.c */
+int iswalpha(wint_t wc) __fromfile("libc/wchar/iswalpha.c");
+
+/* libc/wchar/iswblank.c */
+int iswblank(wint_t wc) __fromfile("libc/wchar/iswblank.c");
+
+/* libc/wchar/iswcntrl.c */
+int iswcntrl(wint_t wc) __fromfile("libc/wchar/iswcntrl.c");
+
+/* libc/wchar/iswdigit.c */
+int iswdigit(wint_t wc) __fromfile("libc/wchar/iswdigit.c");
+
+/* libc/wchar/iswgraph.c */
+int iswgraph(wint_t wc) __fromfile("libc/wchar/iswgraph.c");
+
+/* libc/wchar/iswlower.c */
+int iswlower(wint_t wc) __fromfile("libc/wchar/iswlower.c");
+
+/* libc/wchar/iswprint.c */
+int iswprint(wint_t wc) __fromfile("libc/wchar/iswprint.c");
+
+/* libc/wchar/iswpunct.c */
+int iswpunct(wint_t wc) __fromfile("libc/wchar/iswpunct.c");
+
+/* libc/wchar/iswspace.c */
+int iswspace(wint_t wc) __fromfile("libc/wchar/iswspace.c");
+
+/* libc/wchar/iswupper.c */
+int iswupper(wint_t wc) __fromfile("libc/wchar/iswupper.c");
+
+/* libc/wchar/iswxdigit.c */
+int iswxdigit(wint_t wc) __fromfile("libc/wchar/iswxdigit.c");
+
+/* libc/wchar/towlower.c */
+wint_t towlower(wint_t x) __fromfile("libc/wchar/towlower.c");
+wint_t towupper(wint_t x) __fromfile("libc/wchar/towlower.c");
+
+/* libc/wchar/wcscat.c */
+wchar_t *wcscat(wchar_t *dst, const wchar_t *src) __fromfile("libc/wchar/wcscat.c");
+
+/* libc/wchar/wcschr.c */
+wchar_t *wcschr(const wchar_t *s, int charwanted) __fromfile("libc/wchar/wcschr.c");
+
+/* libc/wchar/wcscmp.c */
+int wcscmp(const wchar_t *scan1, const wchar_t *scan2) __fromfile("libc/wchar/wcscmp.c");
+
+/* libc/wchar/wcscoll.c */
+int wcscoll(const wchar_t *scan1, const wchar_t *scan2) __fromfile("libc/wchar/wcscoll.c");
+
+/* libc/wchar/wcscpy.c */
+wchar_t *wcscpy(wchar_t *__restrict dst, const wchar_t *__restrict src) __fromfile("libc/wchar/wcscpy.c");
+
+/* libc/wchar/wcslen.c */
+size_t wcslen(const wchar_t *scan) __fromfile("libc/wchar/wcslen.c");
+
+/* libc/wchar/wcsncat.c */
+wchar_t *wcsncat(wchar_t *dst, const wchar_t *src, size_t n) __fromfile("libc/wchar/wcsncat.c");
+
+/* libc/wchar/wcsncmp.c */
+int wcsncmp(const wchar_t *scan1, const wchar_t *scan2, size_t n) __fromfile("libc/wchar/wcsncmp.c");
+
+/* libc/wchar/wcsncpy.c */
+wchar_t *wcsncpy(wchar_t *__restrict dst, const wchar_t *__restrict src, size_t n) __fromfile("libc/wchar/wcsncpy.c");
+
+/* libc/wchar/wcsrchr.c */
+wchar_t *wcsrchr(const wchar_t *s, int charwanted) __fromfile("libc/wchar/wcsrchr.c");
+
+/* libc/wchar/wcstol.c */
+signed long wcstol(const wchar_t *nptr, wchar_t **endptr, int base) __fromfile("libc/wchar/wcstol.c");
+
+/* libc/wchar/wcstoll.c */
+signed long long wcstoll(const wchar_t *nptr, wchar_t **endptr, int base) __fromfile("libc/wchar/wcstoll.c");
+
+/* libc/wchar/wcstoul.c */
+unsigned long wcstoul(const wchar_t *nptr, wchar_t **endptr, int base) __fromfile("libc/wchar/wcstoul.c");
+
+/* libc/wchar/wcstoull.c */
+unsigned long long wcstoull(const wchar_t *nptr, wchar_t **endptr, int base) __fromfile("libc/wchar/wcstoull.c");
+
+/* libc/wchar/wcsxfrm.c */
+size_t wcsxfrm(wchar_t *to, const wchar_t *from, size_t maxsize) __fromfile("libc/wchar/wcsxfrm.c");
+
+/* libc/wchar/wctob.c */
+int wctob(wint_t c) __fromfile("libc/wchar/wctob.c");
+
+/* libc/wchar/wmemcmp.c */
+int wmemcmp(const wchar_t *scan1, const wchar_t *scan2, size_t size) __fromfile("libc/wchar/wmemcmp.c");
+
+/* libc/wchar/wmemcpy.c */
+wchar_t *wmemcpy(wchar_t *dest, const wchar_t *src, size_t n) __fromfile("libc/wchar/wmemcpy.c");
+
+/* libc/wchar/wmemmove.c */
+wchar_t *wmemmove(wchar_t *dst, const wchar_t *src, size_t n) __fromfile("libc/wchar/wmemmove.c");

@@ -4,6 +4,7 @@ Version 3.9.25
 - Added --lmm=xxx flag to change LMM interpreter (for test purposes only, really)
 - Changed runtime support code to avoid using CNT shadow register (for GEAR emulator compatibility)
 - Added warnings for missing # on jumps
+- Accept .a as an extension for C code; this allows us to create a "library" of containing a bunch of C declarations with __fromfile() notation to find the implementations.
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
