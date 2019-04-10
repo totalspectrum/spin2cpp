@@ -287,6 +287,9 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     case COND_NC:
       flexbuf_addstr(fb, " if_nc");
       break;
+    case COND_NC_AND_NZ:
+      flexbuf_addstr(fb, " if_nc_and_nz");
+      break;
     default:
       flexbuf_addstr(fb, " if_??");
       break;
@@ -811,15 +814,27 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_addstr(fb, ")\n");
                 return;
             } else if (IsHubDest(ir->src)) {
-                if (ir->cond != COND_TRUE) {
+                /* we're going to issue a sub x, #1 and then if_nz jmp
+                   if there's already a condition, we need the new
+                   condition to be if_nz AND if_x jmp
+                */
+                int jmp_cond = COND_NE;
+                if (ir->cond == COND_NC) {
+                    jmp_cond = COND_NC_AND_NZ;
+                } else if (ir->cond == COND_LE) {
+                    /* <= 0 AND != 0 becomes < 0 */
+                    jmp_cond = COND_LT;
+                } else if (ir->cond == COND_GE) {
+                    jmp_cond = COND_GT;
+                } else if (ir->cond != COND_TRUE) {
                     ERROR(NULL, "Internal error, cannot do conditional djnz in HUB");
                 }
                 if (gl_lmm_kind != LMM_KIND_ORIG) {
-                    PrintCond(fb, COND_TRUE);
+                    PrintCond(fb, ir->cond);
                     flexbuf_addstr(fb, "sub\t");
                     PrintOperand(fb, ir->dst);
                     flexbuf_addstr(fb,", #1 wz\n");
-                    PrintCond(fb, COND_NE);
+                    PrintCond(fb, jmp_cond);
                     flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
                 } else {
                     PrintCond(fb, ir->cond);

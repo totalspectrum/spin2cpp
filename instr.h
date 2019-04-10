@@ -157,6 +157,7 @@ typedef enum IRCond {
 
     COND_C,
     COND_NC,
+    COND_NC_AND_NZ,
 } IRCond;
 
 enum flags {
