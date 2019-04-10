@@ -25,21 +25,32 @@ LMM_RET
 	''
 	'' complication for LMM_CALL: if we are called from
 	'' cache rather than HUB, we need to calculate the pc
+	'' to push on the stack
 	''
+LMM_CALL_PTR
+	tjnz	LMM_IN_HUB, #LMM_CALL_PTR_FROM_HUB
+	'' call from cache
+	jmp	#LMM_do_call_from_cache
+LMM_CALL_PTR_FROM_HUB
+	wrlong	pc, sp
+	add	sp, #4
+	jmp	#LMM_do_jump
+	
 LMM_CALL
 	tjnz	LMM_IN_HUB, #LMM_CALL_FROM_HUB
 LMM_CALL_FROM_CACHE
+	''retrieve the pc
+	movs	I_fetch_CALL_PC, LMM_RA
+	add	LMM_RA, #1
+I_fetch_CALL_PC
+	mov	LMM_NEW_PC, 0-0
+LMM_do_call_from_cache
 	mov	LMM_tmp, LMM_RA
 	sub	LMM_tmp, #LMM_FCACHE_START	' find offset in cache
 	shl	LMM_tmp, #2			' convert to HUB address
 	add	LMM_tmp, LMM_cache_basepc	' and offset by cache base
 	wrlong	LMM_tmp, sp			' push old PC
 	add	sp, #4
-	'' now retrieve the pc
-	movs	I_fetch_CALL_PC, LMM_RA
-	add	LMM_RA, #1
-I_fetch_CALL_PC
-	mov	LMM_NEW_PC, 0-0
 	jmp	#LMM_set_pc
 LMM_CALL_FROM_HUB
 	wrlong	pc, sp
@@ -95,6 +106,7 @@ not_in_cache
 LMM_JUMP_FROM_HUB
 	rdlong	LMM_NEW_PC, pc
 	add	pc, #4
+LMM_do_jump
 	'' see if we want to change the cache
 	'' we do that only for backwards branches
 	'' where the whole code from the new PC to the current PC
@@ -140,6 +152,7 @@ LMM_set_pc
 
 LMM_JUMP_ret
 LMM_CALL_ret
+LMM_CALL_PTR_ret
 LMM_PUSH_ret
 LMM_RET_ret
 LMM_RA
