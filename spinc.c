@@ -333,6 +333,25 @@ FindDeclaration(AST *datlist, const char *name)
     return NULL;
 }
 
+static int
+GetExprlistLen(AST *list)
+{
+    int len = 0;
+    AST *sub;
+    while (list) {
+        sub = list->left;
+        list = list->right;
+        if (sub->kind == AST_EXPRLIST) {
+            len += GetExprlistLen(sub);
+        } else if (sub->kind == AST_STRING) {
+            len += strlen(sub->d.string);
+        } else {
+            len++;
+        }
+    }
+    return len;
+}
+
 void
 DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
 {
@@ -401,6 +420,8 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type)
         } else {
             if (initializer->kind == AST_EXPRLIST) {
                 type->right = AstInteger(AstListLen(initializer));
+            } else if (initializer->kind == AST_STRINGPTR) {
+                type->right = AstInteger(GetExprlistLen(initializer->left) + 1);
             } else {
                 type->right = AstInteger(1);
             }
