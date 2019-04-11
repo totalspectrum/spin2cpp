@@ -1238,6 +1238,9 @@ decode_instr:
                 isrc *= 4;
             }
             isrc = isrc - (curpc+4);
+            if (instr->ops == P2_LOC && !inHub) {
+                isrc = isrc >> 2;
+            }
             src = isrc & 0xfffff;
             val = val | (1<<20);
         } else {
