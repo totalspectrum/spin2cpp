@@ -2464,7 +2464,7 @@ instr_p2[] = {
   // long jumps
     { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, 0 },
     { "call",   0x0da00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
-    { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },
+    { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },  /* internally we use calla for generated subroutine calls */
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
 
     { "calld.loc",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH, 0 },
