@@ -23,11 +23,11 @@ static void initOutput(Module *P)
 }
 
 //
-// every byte will start with 24 bytes
-//  HHHHH CCC DDDDDDDD  |   (3 spaces at end)
-// HHHHH is the hub address
-// CCC is the cog address, or blank
-// DDDDDDDD is up to 4 bytes of data
+// every line will start with 24 bytes
+//  HHHHH CCC DD DD DD DD |
+// HHHHH is the hub address (5 + 1 space)
+// CCC is the cog address, or blank (3 + 1 space)
+// DD DD DD DD is up to 4 bytes of data (12)
 
 static void startNewLine(Flexbuf *f) {
     bytesOnLine = 0;
@@ -43,7 +43,7 @@ static void lstPutByte(Flexbuf *f, int c) {
     if (bytesOnLine >= 4) {
         startNewLine(f);
     }
-    flexbuf_printf(f, "%02X", c);
+    flexbuf_printf(f, "%02X ", c);
     bytesOnLine++;
     hubPc++;
     cogPc++;
@@ -52,12 +52,12 @@ static void lstPutByte(Flexbuf *f, int c) {
 static void AddRestOfLine(Flexbuf *f, const char *s) {
     int c;
     while (bytesOnLine < 4) {
-        flexbuf_printf(f, "  ");
+        flexbuf_printf(f, "   ");
         bytesOnLine++;
     }
-    // at this point we have written 6+4+8 == 18 characters
+    // at this point we have written 6+4+12 == 22 characters
     // line it up to 24 to make tabs work
-    flexbuf_printf(f, "    | ");
+    flexbuf_printf(f, "| ");
     while (*s) {
         c = *s++;
         if (c == '\n') {

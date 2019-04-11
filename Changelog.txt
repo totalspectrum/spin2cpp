@@ -6,6 +6,7 @@ Version 3.9.25
 - Added warnings for missing # on jumps
 - Accept .a as an extension for C code; this allows us to create a "library" of containing a bunch of C declarations with __fromfile() notation to find the implementations.
 - Fixed scaling of LOC instruction when running in COG mode
+- Put spaces between bytes in .lst files.
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
