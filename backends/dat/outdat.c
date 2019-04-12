@@ -560,6 +560,7 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     switch(instr->ops) {
     case P2_JUMP:
     case P2_LOC:
+    case P2_CALLD:
     case P2_AUG:
     case P2_JINT_OPERANDS:
     case SRC_OPERAND_ONLY:
@@ -848,6 +849,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
     case P2_TWO_OPERANDS:
     case P2_RDWR_OPERANDS:
     case P2_LOC:
+    case P2_CALLD:
     case P2_MODCZ:
         expectops = 2;
         break;
@@ -1172,13 +1174,13 @@ decode_instr:
         src = EvalPasmExpr(operand[0]);
         break;
     case P2_LOC:
+    case P2_CALLD:
         dst = EvalPasmExpr(operand[0]);
         if (dst >= 0x1f6 && dst <= 0x1f9) {
             val |= ( (dst-0x1f6) & 0x3) << 21;
         } else {
-            if (instr->opc == OPC_GENERIC_BRANCH) {
-                // try the .ind version
-                needIndirect = true;
+            if (instr->ops == P2_CALLD) {
+                ERROR(line, "internal error, indirect calld when immediate was given?");
             } else {
                 ERROR(line, "bad first operand to %s instruction", instr->name);
             }

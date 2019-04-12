@@ -2467,7 +2467,7 @@ instr_p2[] = {
     { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },  /* internally we use calla for generated subroutine calls */
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
 
-    { "calld.loc",  0x0e000000, P2_LOC, OPC_GENERIC_BRANCH, 0 },
+    { "calld.loc",  0x0e000000, P2_CALLD, OPC_GENERIC_BRANCH, 0 },
     { "loc",    0x0e800000, P2_LOC, OPC_GENERIC, 0 },
 
     { "augs",   0x0f000000, P2_AUG, OPC_GENERIC, 0 },
