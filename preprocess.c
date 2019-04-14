@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2018 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2019 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -912,30 +912,37 @@ do_line(struct preprocess *pp)
         parse_init(&P, data+1);
         parse_skipspaces(&P);
         func = parse_getword(&P);
-        if (!strcmp(func, "ifdef")) {
+        if (!strcasecmp(func, "ifdef")) {
             handle_ifdef(pp, &P, 0);
-        } else if (!strcmp(func, "ifndef")) {
+        } else if (!strcasecmp(func, "ifndef")) {
             handle_ifdef(pp, &P, 1);
-        } else if (!strcmp(func, "else")) {
+        } else if (!strcasecmp(func, "else")) {
             handle_else(pp, &P);
-        } else if (!strcmp(func, "elseifdef")) {
+        } else if (!strcasecmp(func, "elseifdef")) {
             handle_elseifdef(pp, &P, 0);
-        } else if (!strcmp(func, "elseifndef")) {
+        } else if (!strcasecmp(func, "elseifndef")) {
             handle_elseifdef(pp, &P, 1);
-        } else if (!strcmp(func, "endif")) {
+        } else if (!strcasecmp(func, "endif")) {
             handle_endif(pp, &P);
-        } else if (!strcmp(func, "error")) {
+        } else if (!strcasecmp(func, "error")) {
             handle_error(pp, &P);
-        } else if (!strcmp(func, "warning")) {
+        } else if (!strcasecmp(func, "warning")) {
             handle_warn(pp, &P);
-        } else if (!strcmp(func, "define")) {
+        } else if (!strcasecmp(func, "define")) {
             handle_define(pp, &P, 1);
-        } else if (!strcmp(func, "undef")) {
+        } else if (!strcasecmp(func, "undef")) {
             handle_define(pp, &P, 0);
-        } else if (!strcmp(func, "include")) {
+        } else if (!strcasecmp(func, "include")) {
             handle_include(pp, &P);
         } else {
-//            doerror(pp, "Unknown preprocessor directive `%s'", func);
+            if (!strcasecmp(func, "line")
+                || !strcasecmp(func, "pragma")
+                )
+            {
+                /* no warning for these directives */
+            } else {
+                dowarning(pp, "Ignoring unknown preprocessor directive `%s'", func);
+            }   
             // just pass it through for the language processor to deal with
             if (P.save) {
                 *P.save = P.c;

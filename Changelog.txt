@@ -8,6 +8,7 @@ Version 3.9.25
 - Fixed scaling of LOC instruction when running in COG mode
 - Put spaces between bytes in .lst files.
 - Fixed using string initializers for arrays.
+- Made preprocessor directives like "#define" case-insensitive in Spin and BASIC
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs
