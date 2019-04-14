@@ -7,9 +7,7 @@ yet. Missing features include:
 
  - Documentation; the manual below is just a start, much is incomplete.
 
- - There are some missing floating point functions, like sin and cos.
-
- - Input and output isn't fully implemented yet.
+ - Input and output aren't fully implemented yet.
 
  - RESTORE is not implemented yet.
 
@@ -267,7 +265,7 @@ Examples:
 #### Arrays
 
 Arrays must be declared with the `dim` keyword. Fastspin BASIC supports only
-one dimensional arrays, but they may be of any type. Examples of array
+one and two dimensional arrays, but they may be of any type. Examples of array
 declarations:
 ```
   rem an array of 10 integers
@@ -279,6 +277,8 @@ declarations:
   dim a$(9)
   rem another array of strings
   dim d(9) as string
+  rem a two dimensional array of strings
+  dim g$(9, 9)
 ```
 
 Arrays are by default indexed starting at 0. That is, if `a` is an array, then
@@ -306,8 +306,9 @@ The array definition may have an explicit lower bound given, for example:
    dim a(1 to 10)  ' array of 10 items
    dim b(0 to 10)  ' array of 11 items
 ```
+This only works for one dimensional arrays. For two dimensional arrays both dimensions must have the same lower bound, and both must start from the default set by the last `option base`.
 
-Note that pointer dereferences (using array notation) always use the last value set for `option base` in the file, since we cannot know at run time what the actual base of the pointed to object was.
+Note that pointer dereferences (using array notation) always use the last value set for `option base` in the file, since we cannot know at run time what the actual base of the pointed to object was. So it is best to set this just once.
 
 #### Global, Member, and Local variables.
 
@@ -450,7 +451,7 @@ end function
 
 ### Memory allocation
 
-Fastspin BASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size, but this may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
+Fastspin BASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size on Propeller 1, and 4096 bytes on Propeller 2. This may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
 
 Garbage collection works by scanning memory for pointers that were returned from the memory allocation function. As long as references to the original pointers returned by functions like `left$` or `right$` exist, the memory will not be re-used for anything else.
 
@@ -470,7 +471,7 @@ The `new` operator may be used to allocate memory. `new` returns a pointer to en
     print "not enough memory"
   endif
 ```
-The memory allocated by `new` is managed by the garbage collector, so it will ber reclaimed when all references to it have been removed. One may also explicitly free it with `delete`.
+The memory allocated by `new` is managed by the garbage collector, so it will be reclaimed when all references to it have been removed. One may also explicitly free it with `delete`.
 
 #### String functions
 

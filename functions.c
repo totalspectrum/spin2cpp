@@ -107,6 +107,23 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
     return sym;
 }
 
+static AST *
+ArrayDeclType(AST *indices, AST *basetype, AST *baseptr)
+{
+    AST *arraytype;
+    if (!indices) {
+        return basetype;
+    }
+    if (indices->kind == AST_EXPRLIST) {
+        basetype = ArrayDeclType(indices->right, basetype, baseptr);
+        arraytype = NewAST(AST_ARRAYTYPE,basetype, indices->left);
+    } else {
+        arraytype = NewAST(AST_ARRAYTYPE,basetype, indices);
+    }
+    arraytype->d.ptr = baseptr;
+    return arraytype;
+}
+
 int
 EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offset, int isUnion)
 {
@@ -162,13 +179,16 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 break;
             case AST_ARRAYDECL:
             {
-                AST *arraytype = NewAST(AST_ARRAYTYPE, actualtype, ast->right);
-                arraytype->d.ptr = ast->d.ptr; // copy over the array base info
+                AST *arraytype;
+                AST *indices = ast->right;
+
+                arraytype = ArrayDeclType(indices, actualtype, ast->d.ptr);
+
                 sym = EnterVariable(kind, stab, ast->left, arraytype);
-                size = EvalConstExpr(ast->right);
                 if (sym) sym->offset = offset;
                 if (!isUnion) {
-                    offset += size * typesize;
+                    size = TypeSize(arraytype);
+                    offset += size;
                 }
                 break;
             }

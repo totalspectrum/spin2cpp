@@ -425,6 +425,21 @@ genPrintf(AST *ast)
     return seq;
 }
 
+static AST *
+ArrayDeref(AST *base, AST *index)
+{
+    if (index->kind != AST_EXPRLIST) {
+        return NewAST(AST_ARRAYREF, base, index);
+    }
+    // A[0] -> ARRAYREF(A, 0)
+    // A[0, 1] -> ARRAYREF(ARRAYREF(A, 0), 1)
+    while (index) {
+        base = NewAST(AST_ARRAYREF, base, index->left);
+        index = index->right;
+    }
+    return base;
+}
+
 static void
 doBasicTransform(AST **astptr)
 {
@@ -549,20 +564,8 @@ doBasicTransform(AST **astptr)
             
             typ = ExprType(left);
             if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ))) {
-                ast->kind = AST_ARRAYREF;
-                if (!index || index->kind != AST_EXPRLIST) {
-                    ERROR(ast, "Internal error: expected expression list in array subscript");
-                    return;
-                }
-                // reduce a single item expression list, if necessary
-                if (index->right != NULL) {
-                    ERROR(index, "Multi-dimensional arrays are not supported\n");
-                    return;
-                }
-                index = index->left;
-                // later we will have to convert the array reference to
-                // BASIC style (subtract one); that's done in the type checking
-                ast->right = index;
+                AST *arrayref = ArrayDeref(left, index);
+                *ast = *arrayref;
             }
         }
         break;

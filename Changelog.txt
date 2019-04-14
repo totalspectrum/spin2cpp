@@ -9,6 +9,7 @@ Version 3.9.25
 - Put spaces between bytes in .lst files.
 - Fixed using string initializers for arrays.
 - Made preprocessor directives like "#define" case-insensitive in Spin and BASIC
+- Allow multi-dimensional dim in BASIC
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs

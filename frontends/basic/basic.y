@@ -1640,6 +1640,23 @@ identdecl:
         decl->d.ptr = base;
         $$ = decl;
     }
+  | BAS_IDENTIFIER '(' expr ',' expr ')'
+    {
+        Symbol *sym = GetCurArrayBase();
+        AST *ident = $1;
+        AST *base = (AST *)sym->val;
+        AST *size1 = $3;
+        AST *size2 = $5;
+        AST *sizelist;
+        AST *decl;
+        size1 = AstOperator('-', size1, AstOperator('-', base, AstInteger(1)));
+        size2 = AstOperator('-', size2, AstOperator('-', base, AstInteger(1)));
+        sizelist = NewAST(AST_EXPRLIST, size1,
+                          NewAST(AST_EXPRLIST, size2, NULL));
+        decl = NewAST(AST_ARRAYDECL, ident, sizelist);
+        decl->d.ptr = base;
+        $$ = decl;
+    }
 ;
 
 asmstmt:
