@@ -10,6 +10,8 @@ Version 3.9.25
 - Fixed using string initializers for arrays.
 - Made preprocessor directives like "#define" case-insensitive in Spin and BASIC
 - Allow multi-dimensional dim in BASIC
+- Add ON x GOTO to BASIC
+- Change BASIC number reading code to ignore leading spaces
 
 Version 3.9.24
 - Fixed a crash when enums are declared in structs

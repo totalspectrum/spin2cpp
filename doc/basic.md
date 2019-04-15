@@ -11,8 +11,6 @@ yet. Missing features include:
 
  - RESTORE is not implemented yet.
 
- - ON x GOTO is not implemented yet.
- 
 ## Introduction
 
 Fastspin BASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
@@ -1309,6 +1307,24 @@ A special pointer value that indicates an invalid pointer. `nil` may be returned
 Inverts all bits in the destination. This is basically the same as `b xor -1`.
 
 In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+
+### ON X GOTO
+
+For compatibility only, fastspin accepts statements like:
+```
+on x goto 100, 110, 120
+```
+This is equivalent to
+```
+select case x
+case 1
+  goto 100
+case 2
+  goto 110
+case 3
+  goto 120
+end select
+```
 
 ### OPEN
 

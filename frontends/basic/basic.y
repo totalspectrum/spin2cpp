@@ -306,6 +306,35 @@ GetCurrentLoop(int token)
     return 1;
 }
 
+static AST *
+BuildOnGotoCases(AST *exprlist)
+{
+    AST *list = NULL;
+    AST *target;
+    AST *item;
+    int index = 1;
+    AST *gostmt;
+    while (exprlist) {
+        target = exprlist->left;
+        exprlist = exprlist->right;
+        if (IsIdentifier(target)) {
+            gostmt = NewAST(AST_GOTO, target, NULL);
+        } else if (target->kind == AST_INTEGER) {
+            gostmt = NewAST(AST_GOTO, IntegerLabel(target), NULL);
+        } else {
+            SYNTAX_ERROR("ON GOTO accepts labels or integers only");
+            return NULL;
+        }
+        gostmt = NewAST(AST_STMTLIST, gostmt, NULL);
+        item = NewAST(AST_EXPRLIST, AstInteger(index), NULL);
+        item = NewAST(AST_CASEITEM, item, gostmt);
+        item = NewAST(AST_LISTHOLDER, item, NULL);
+        list = AddToList(list, item);
+        index++;
+    }
+    return list;
+}
+
 %}
 
 %pure-parser
@@ -370,6 +399,7 @@ GetCurrentLoop(int token)
 %token BAS_NEXT       "next"
 %token BAS_NIL        "nil"
 %token BAS_NOT        "not"
+%token BAS_ON         "on"
 %token BAS_OPEN       "open"
 %token BAS_OPTION     "option"
 %token BAS_OR         "or"
@@ -862,6 +892,8 @@ doloopend:
 selectstmt:
   BAS_SELECT BAS_CASE expr eoln casematchlist BAS_END BAS_SELECT
     { $$ = NewCommentedAST(AST_CASE, $3, $5, $1); }
+  | BAS_ON expr BAS_GOTO exprlist
+    { $$ = NewCommentedAST(AST_CASE, $2, BuildOnGotoCases($4), $1); }
 ;
 
 casematchlist:

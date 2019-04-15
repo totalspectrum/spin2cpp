@@ -1417,6 +1417,7 @@ struct reservedword basic_keywords[] = {
   { "next", BAS_NEXT },
   { "not", BAS_NOT },
   { "nil", BAS_NIL },
+  { "on", BAS_ON },
   { "open", BAS_OPEN },
   { "option", BAS_OPTION },
   { "or", BAS_OR },
