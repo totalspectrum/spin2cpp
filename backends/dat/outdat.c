@@ -932,7 +932,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             if (sym->kind == SYM_LABEL) {
                 Label *lab = (Label *)sym->val;
                 if (lab && (lab->flags & LABEL_HAS_INSTR) && !(lab->flags & LABEL_HAS_JMP)) {
-                    WARNING(line, "%s to %s without #; are you sure this is correct?", instr->name, user_name);
+                    WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the branch target to %s+0 to suppress this warning", instr->name, user_name, user_name);
                 }
             }
         }

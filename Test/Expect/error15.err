@@ -1,4 +1,4 @@
-error15.spin(3) warning: call to should_be_imm without #; are you sure this is correct?
+error15.spin(3) warning: call to should_be_imm without #; are you sure this is correct? If so, change the branch target to should_be_imm+0 to suppress this warning
 error15.spin(6) warning: instruction test used without flags being set
-error15.spin(8) warning: jmp to should_be_imm without #; are you sure this is correct?
-error15.spin(11) warning: djnz to should_be_imm without #; are you sure this is correct?
+error15.spin(8) warning: jmp to should_be_imm without #; are you sure this is correct? If so, change the branch target to should_be_imm+0 to suppress this warning
+error15.spin(11) warning: djnz to should_be_imm without #; are you sure this is correct? If so, change the branch target to should_be_imm+0 to suppress this warning
