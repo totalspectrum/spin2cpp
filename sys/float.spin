@@ -343,11 +343,9 @@ pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
 ' convert string to float
 pri __builtin_atoi(s = "0") : r | c, negate
   negate := 0
-  repeat
-    c := byte[s]
-    if c == " "
-      s++
-  while c == " "
+  repeat while byte[s] == " "
+    s++
+  c := byte[s]
   if c == "-"
     s++
     negate := 1
