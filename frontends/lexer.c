@@ -1388,6 +1388,7 @@ struct reservedword basic_keywords[] = {
   { "cpu", BAS_CPU },
   { "data", BAS_DATA },
   { "declare", BAS_DECLARE },
+  { "def", BAS_DEF },
   { "defint", BAS_DEFINT },
   { "defsng", BAS_DEFSNG },
   { "delete", BAS_DELETE },

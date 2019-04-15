@@ -370,6 +370,7 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_CPU        "cpu"
 %token BAS_DATA       "data"
 %token BAS_DECLARE    "declare"
+%token BAS_DEF        "def"
 %token BAS_DEFINT     "defint"
 %token BAS_DEFSNG     "defsng"
 %token BAS_DELETE     "delete"
@@ -1481,6 +1482,21 @@ funcdecl:
     AST *rettype = $7;
     DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
   }
+  | BAS_DEF BAS_IDENTIFIER '(' paramdecl ')' '=' expr
+  {
+    AST *name = $2;
+    AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
+    AST *rettype = InferTypeFromName(name);
+    AST *retval = $7;
+    AST *body;
+
+    body = NewAST(AST_STMTLIST,
+                  NewAST(AST_RETURN, retval, NULL),
+                  NULL);
+    DeclareFunction(current, rettype, 1, funcdef, body, NULL, $1);
+  }  
   ;
 
 classdecl:
