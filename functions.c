@@ -335,6 +335,30 @@ GuessLambdaReturnType(AST *params, AST *body)
 }
 
 //
+// undo a local variable delcaration
+//
+static void
+UndoLocalIdentifier(AST *body, AST *ident)
+{
+    if (!body || body == ident) {
+        return;
+    }
+    if (body->kind == AST_LOCAL_IDENTIFIER
+        && !strcmp(body->left->d.string, ident->left->d.string))
+    {
+        body->kind = AST_IDENTIFIER;
+        body->d.string = ident->right->d.string;
+        body->left = body->right = NULL;
+    }
+    else
+    {
+        UndoLocalIdentifier(body->left, ident);
+        UndoLocalIdentifier(body->right, ident);
+    }
+}
+
+        
+//
 // declare some static variables
 //
 
@@ -407,6 +431,17 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 }
             } else {
                 skipDef = false;
+            }
+            if (!skipDef && basetype && basetype->kind == AST_FUNCTYPE
+                && func->language == LANG_C)
+            {
+                // ignore definitions of global functions and such
+                // complication: since it's a local variable we've defined
+                // an alias for it; we need to undo that here
+                skipDef = true;
+                if (ident->kind == AST_LOCAL_IDENTIFIER) {
+                    UndoLocalIdentifier(func->body, ident);
+                }
             }
             if (!skipDef) {
                 if (basetype) {

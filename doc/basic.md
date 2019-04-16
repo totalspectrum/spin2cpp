@@ -842,9 +842,9 @@ Keyword reserved for future use.
 
 ### DEF
 
-Define a simple function. This is mostly intended for porting existing BASIC code, but could be convenient for creating very simple functions. The syntax consists of the function name, parameter list, `=`, and then the return value from the expression. All of the types are inferred from the names. So for example to define a function `add` to add two integers we would do:
+Define a simple function. This is mostly intended for porting existing BASIC code, but could be convenient for creating very simple functions. The syntax consists of the function name, parameter list, `=`, and then the return value from the expression. All of the types are inferred from the names. So for example to define a function `sum` to return the sum of two integers we would do:
 ```
-DEF add(x, y) = x+y
+DEF sum(x, y) = x+y
 ```
 
 ### DEFINT
