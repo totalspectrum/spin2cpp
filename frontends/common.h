@@ -115,7 +115,7 @@ extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
 extern const char *gl_intstring; /* int string to use */
 
 extern int gl_dat_offset; /* offset for @@@ operator */
-extern int gl_compressed; /* if instructions should be compressed (NOT IMPLEMENTED) */
+extern int gl_compress;   /* if instructions should be compressed (NOT IMPLEMENTED) */
 extern int gl_fixedreal;  /* if instead of float we should use 16.16 fixed point */
 #define G_FIXPOINT 16  /* number of bits of fraction */
 
@@ -128,6 +128,7 @@ extern int gl_lmm_kind;
 #define LMM_KIND_SLOW  1
 #define LMM_KIND_TRACE 2
 #define LMM_KIND_CACHE 3
+#define LMM_KIND_COMPRESS 4
 
 /* types of output */
 #define OUTPUT_CPP  0

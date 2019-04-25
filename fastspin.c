@@ -113,6 +113,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
+    fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
@@ -441,6 +442,20 @@ main(int argc, const char **argv)
                 gl_optimize_flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
             }
             argv++; --argc;
+        } else if (!strncmp(argv[0], "-z", 2)) {
+            // -z0 means no compression (default)
+            // -z1 means compress
+            // other z values reserved
+            int flag = argv[0][2];
+            if (flag == '0') {
+                gl_compress = 0;
+            } else if (flag == '1') {
+                gl_compress = 1;
+            } else {
+                fprintf(stderr, "-z option %c is not supported\n", flag);
+                Usage(stderr, bstcMode);
+            }
+            argv++; --argc;
         } else if (!strncmp(argv[0], "-H", 2)) {
             // set ub address
             const char *addr;
@@ -508,6 +523,11 @@ main(int argc, const char **argv)
         gl_dat_offset = 0;
     }
 
+    // compression
+    if (gl_compress) {
+        gl_lmm_kind = LMM_KIND_COMPRESS;
+    }
+    // listing file
     if (gl_listing && !(gl_output == OUTPUT_DAT)) {
         gl_srccomments = 1;
     }
