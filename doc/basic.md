@@ -1174,14 +1174,16 @@ You may also put an if statement after an else:
 if x = y then
   print "x and y are the same"
   print "I don't know about z"
-else if x = z
+else if x = z then
   print "x and z are the same, and different from y"
 else
   print "x does not equal either of the others"
 end if
 ```
 
-### INPUT (serial I/O)
+### INPUT
+
+#### Used for reading data
 
 The `input` keyword when used as a command acts to read data from a handle. It is followed by a list of variables. The data are separated by commas.
 ```
@@ -1196,11 +1198,11 @@ The input may optionally be preceded by a prompt string, so the above could be r
 ```
 If the prompt string is separated from the variables by a semicolon `;` rather than a comma, then `"? "` is automatically appended to the prompt.
 
-### INPUT (pins)
+#### Used for accessing pins
 
-A pseudo-array of bits representing the state of input pins. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
+`input` may also be used to refer to a pseudo-array of bits representing the state of input pins. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
 
-Bits in `input` may be read with an array-like syntax:
+Bits in the `input` array may be read with an array-like syntax:
 ```
    x = input(0)    ' read pin 0
    y = input(4,2)  ' read pins 4,3,2
@@ -1621,6 +1623,23 @@ for i = 2 to 8 step 2
 next
 ```
 will print 2, 4, 6, and 8 on separate lines.
+
+### SUB
+
+Defines a new subroutine. This is like a `function` but with no return value. Subroutines have a fixed number and type of arguments, but the last arguments may be given default values with an initializer. For example:
+```
+  sub say(msg$="hello")
+    print msg$
+  end sub
+```
+If you call `say` with an argument, it will print that argument. If you call `say` with no argument it will print the default of `hello`:
+```
+   say("hi!")  ' prints "hi!"
+   say "hi!"   ' the same
+   say         ' prints "hello"
+```
+
+Subroutines may be invoked with function notation (arguments enclosed in parentheses) or with the arguments separated from the subroutine name by white space, as in the example above.
 
 ### THEN
 

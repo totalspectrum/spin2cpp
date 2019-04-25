@@ -172,6 +172,7 @@ to produce a binary with code in HUB (LMM mode) do:
 This will produce demo.pasm (the converted assembly code) and demo.binary (the
 compiled binary suitable for download to the device).
 
+The alternate frontend `fastspin` is a more direct interface to the PASM compiler.
 
 OPTIONS
 =======
@@ -278,7 +279,7 @@ Spin2cpp accepts the following options:
   containing inline GAS code. This option is still experimental and
   may not always work correctly, but it dramatically improves the
   readability and maintainability of the generated code. Without it,
-  the DAT section is just an opaque "binary blob"; with it, the DAT
+  the DAT section is just an opaque binary blob; with it, the DAT
   section is readable and changeable PASM code placed inline in the C
   output.
 
@@ -303,7 +304,8 @@ Spin2cpp accepts the following options:
 `--nofcache`
   Disable FCACHE. On the P1 when code is placed in HUB, some small loops
   are compiled to be loaded into a region of COG memory (the FCACHE)
-  to improve performance. This option disables that optimization.
+  to improve performance. This option disables that optimization. It is equivalent
+  to `--fcache=0`.
   
 `--normalize`
   Normalize all identifiers so that the first letter is upper case and
