@@ -11,7 +11,11 @@
 #include <errno.h>
 #include "spinc.h"
 
-int gl_compressed = 0;
+#ifndef NEED_ALIGNMENT
+#define NEED_ALIGNMENT (!gl_p2 && !gl_compress)
+#endif
+
+int gl_compress = 0;
 
 static void putbyte(Flexbuf *f, unsigned int x)
 {
@@ -1347,7 +1351,7 @@ instr_ok:
 void
 outputAlignedDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
 {
-    if (size > 1 && !gl_p2) {
+    if (size > 1 && NEED_ALIGNMENT) {
         AlignPc(f, size);
     }
     outputDataList(f, size, ast, relocs);
@@ -1491,7 +1495,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         }
         case AST_INSTRHOLDER:
             /* make sure it is aligned */
-            if (!gl_p2 && !gl_compressed) {
+            if (NEED_ALIGNMENT) {
                 while ((datacount % 4) != 0) {
                     outputByte(f, 0);
                 }

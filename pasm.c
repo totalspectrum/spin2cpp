@@ -7,6 +7,10 @@
 #include <errno.h>
 #include "spinc.h"
 
+#ifndef NEED_ALIGNMENT
+#define NEED_ALIGNMENT (!gl_p2 && !gl_compress)
+#endif
+
 static char *
 NewOrgName()
 {
@@ -387,7 +391,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
  */
 
 #define ALIGNPC(size)  do { inc = size; cogpc = align(cogpc, inc); datoff = align(datoff, inc); hubpc = align(hubpc, inc); } while (0)
-#define MAYBEALIGNPC(size) if (!gl_p2) { ALIGNPC(size); }
+#define MAYBEALIGNPC(size) if (NEED_ALIGNMENT) { ALIGNPC(size); }
 #define INCPC(size)  do { inc = size; cogpc += inc; datoff += inc; hubpc += inc; } while (0)
 #define HEREPC (inHub ? hubpc : (cogpc/4))
 
