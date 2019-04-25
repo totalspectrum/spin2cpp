@@ -34,7 +34,7 @@ Symbol           | When Defined
 
 ### P1 Clock Frequency
 
-In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal and `xtal1 + pll16x` clock mode. This is a common configuration. You may override it with the `clkset` macro from `<propeller.h>`, which works the same as the Spin `clkset` function.
+In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal and `xtal1 + pll16x` clock mode. This is a common configuration. You may override it with the builtin `clkset` function, which works the same as the Spin `clkset` builtin.
 
 ### P2 Clock Frequency
 
@@ -65,7 +65,7 @@ int getcogid() {
 ```
 The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
 
-Inside inline assembly any instructions may be used, but the only legal operands are integer constants and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+Inside inline assembly any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 
 ### External Classes (e.g. Spin Objects)
 
@@ -90,6 +90,10 @@ struct {
 } myclass;
 ```
 Note that allowing function definitions inside a struct is an extension to C (it is feature of C++).
+
+#### Gotchas with Spin and BASIC classes
+
+Because Spin and BASIC are case insensitive languages, all of their identifiers are translated internally to lower case. So a constant like `VGA` in Spin class `sp` would be referenced in C as `sp.vga`.
 
 ### Header file external function definitions
 
