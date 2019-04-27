@@ -403,6 +403,9 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 static bool
 IsRetInstruction(AST *ast)
 {
+    if (ast && ast->kind == AST_COMPRESS_INSTR) {
+        ast = ast->left;
+    }
     if (ast && ast->kind == AST_INSTR) {
         Instruction *instr = (Instruction *)ast->d.ptr;
         if (instr && instr->opc == OPC_RET && !gl_p2) {

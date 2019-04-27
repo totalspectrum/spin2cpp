@@ -660,6 +660,52 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
     }        
 }
 
+// print a compressed local call to "labelStr"
+static void
+PrintCompressLocalCall(struct flexbuf *fb, const char *labelStr)
+{
+    flexbuf_printf(fb, "\tbyte\t$E0 + (%s>>8)\n\tbyte\t%s & $FF\n", labelStr, labelStr);
+}
+
+// print a conditional jump to "dst"
+static void
+PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
+{
+    int flag = 0xd0;
+    switch (cond) {
+    case COND_TRUE:
+        flag |= 0xf;
+        break;
+    case COND_EQ:
+        flag |= 0xa;
+        break;
+    case COND_NE:
+        flag |= 0x5;
+        break;
+    case COND_LT:
+    case COND_C:
+        flag |= 0xc;
+        break;
+    case COND_GE:
+    case COND_NC:
+        flag |= 0x3;
+        break;
+    case COND_GT:
+        flag |= 0x1;
+        break;
+    case COND_LE:
+        flag |= 0xe;
+        break;
+    default:
+        ERROR(NULL, "bad condition for compressed instruction");
+        break;
+    }
+    flexbuf_printf(fb, "\tbyte\t$%02x\n", flag);
+    flexbuf_addstr(fb, "\tword\t");
+    PrintOperandAsValue(fb, dst);
+    flexbuf_addstr(fb, "\n");
+}
+
 // LMM jumps +- this amount are turned into add/sub of the pc
 // pick a conservative value
 // 127 would be the absolute maximum here
@@ -781,6 +827,14 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                         flexbuf_addstr(fb, "\n");
                         flexbuf_printf(fb, "LMM_ret_%04d\n", retlabel);
                         ++retlabel;
+                    } else if (gl_lmm_kind == LMM_KIND_COMPRESS) {
+                        if (ir->cond != COND_TRUE) {
+                            ERROR(NULL, "Internal error, compressing conditional call\n");
+                        }
+                        flexbuf_printf(fb, "\tbyte\t$C0\n");
+                        flexbuf_addstr(fb, "\tword\t");
+                        PrintOperandAsValue(fb, ir->dst);
+                        flexbuf_addstr(fb, "\n");
                     } else {
                         PrintCond(fb, ir->cond);
                         flexbuf_addstr(fb, "call\t#LMM_CALL\n");
@@ -829,7 +883,15 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 } else if (ir->cond != COND_TRUE) {
                     ERROR(NULL, "Internal error, cannot do conditional djnz in HUB");
                 }
-                if (gl_lmm_kind != LMM_KIND_ORIG) {
+                if (gl_lmm_kind == LMM_KIND_COMPRESS) {
+                    flexbuf_addstr(fb, "byte $D0\n");
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "sub\t");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_addstr(fb,", #1 wz\n");
+                    PrintCompressCondJump(fb, jmp_cond, ir->src);
+                    return;
+                } else if (gl_lmm_kind != LMM_KIND_ORIG) {
                     PrintCond(fb, ir->cond);
                     flexbuf_addstr(fb, "sub\t");
                     PrintOperand(fb, ir->dst);
@@ -868,6 +930,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 if (ir->dst->kind != IMM_HUB_LABEL) {
                     ERROR(NULL, "internal error: non-hub label in LMM jump");
                 }
+                if (gl_lmm_kind == LMM_KIND_COMPRESS) {
+                    PrintCompressCondJump(fb, ir->cond, ir->dst);
+                    return;
+                }                    
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
@@ -904,6 +970,13 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 ERROR(NULL, "return from fcached code not supported");
                 return;
             } else if (lmmMode) {
+                if (gl_lmm_kind == LMM_KIND_COMPRESS) {
+                    if (ir->cond != COND_TRUE) {
+                        ERROR(NULL, "conditional return in compressed code");
+                    }
+                    PrintCompressLocalCall(fb, "LMM_RET");
+                    return;
+                }
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "call\t#LMM_RET\n");
                 return;
@@ -919,8 +992,17 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     
     if (ir->instr) {
         int ccset;
-        
-        PrintCond(fb, ir->cond);
+
+        if (lmmMode && gl_lmm_kind == LMM_KIND_COMPRESS) {
+            if (ir->cond == COND_TRUE) {
+                flexbuf_addstr(fb, "\t<");
+            } else {
+                flexbuf_addstr(fb, "\tbyte $D0\n");
+                PrintCond(fb, ir->cond);
+            }
+        } else {
+            PrintCond(fb, ir->cond);
+        }
         flexbuf_addstr(fb, ir->instr->name);
         switch (ir->instr->ops) {
         case NO_OPERANDS:

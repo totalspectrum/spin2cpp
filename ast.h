@@ -196,6 +196,7 @@ enum astkind {
     AST_GOSUB = 136,
     AST_SUPER,
     AST_LOCAL_IDENTIFIER,
+    AST_COMPRESS_INSTR,
 };
 
 /* forward reference */

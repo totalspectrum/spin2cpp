@@ -449,7 +449,7 @@ main(int argc, const char **argv)
             int flag = argv[0][2];
             if (flag == '0') {
                 gl_compress = 0;
-            } else if (flag == '1') {
+            } else if (flag == '1' || flag == 0) {
                 gl_compress = 1;
             } else {
                 fprintf(stderr, "-z option %c is not supported\n", flag);

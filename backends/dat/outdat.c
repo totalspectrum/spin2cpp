@@ -996,6 +996,7 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
     int srcRelocOff = -1;
     int dstRelocOff = -1;
     bool needIndirect = false;
+    bool compress = false;
     
     extern Instruction instr_p2[];
     curpc = ast->d.ival & 0x00ffffff;
@@ -1005,8 +1006,12 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
         AssembleComments(f, relocs, ast->right);
     }
     ast = AssembleComments(f, relocs, ast->left);
-        
-    instr = (Instruction *)ast->d.ptr;
+    if (ast->kind == AST_COMPRESS_INSTR) {
+        compress = true;
+        instr = (Instruction *)ast->left->d.ptr;
+    } else {
+        instr = (Instruction *)ast->d.ptr;
+    }
 decode_instr:
     origast = ast;
     val = instr->binary;
@@ -1344,6 +1349,9 @@ instr_ok:
     if (srcRelocOff >= 0) {
         rptr = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
         rptr->symoff = val;
+    }
+    if (compress) {
+        val = (val >> 14) | (val << 18);
     }
     outputInstrLong(f, val);
 }

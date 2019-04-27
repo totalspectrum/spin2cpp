@@ -1108,9 +1108,19 @@ hwreg:
 
 instruction:
   SP_INSTR
-  { $$ = $1; }
+    { $$ = $1; }
+  | '<' SP_INSTR
+    {
+        AST *oldast = $2;
+        if (oldast->kind == AST_SRCCOMMENT) {
+            oldast->right = NewAST(AST_COMPRESS_INSTR, oldast->right, NULL);
+        } else {
+            oldast = NewAST(AST_COMPRESS_INSTR, oldast, NULL);
+        }
+        $$ = oldast;
+    }
   | instrmodifier instruction
-  { $$ = AddToList($2, $1); }
+    { $$ = AddToList($2, $1); }
 ;
  
 instrmodifier:

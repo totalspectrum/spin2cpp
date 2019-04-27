@@ -5661,6 +5661,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
 
+        // check for compression
+        if (gl_compress) {
+            IRCompress(&hubcode, &cogcode);
+        }
+    
         orgh = EmitOp0(&cogcode, OPC_HUBMODE);
     }
 
@@ -5717,9 +5722,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     // now the cog bss (which doesn't need any actual space
     AppendIR(&cogcode, cogbss.head);
 
-    // check for compression
-    IRCompress(&cogcode);
-    
     // and assemble the result
     asmcode = IRAssemble(&cogcode, P);
     

@@ -46,7 +46,7 @@ IRCond InvertCond(IRCond v);
 char *IRAssemble(IRList *list, Module *P);
 
 // do instruction compression
-void IRCompress(IRList *list);
+void IRCompress(IRList *list, IRList *kernel);
 
 // create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);
@@ -170,5 +170,7 @@ Operand *GetLea(IRList *irl, Operand *src);
 // instruction emitting stuff
 IR *EmitOp1(IRList *irl, IROpcode code, Operand *op);
 IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
+
+void EmitNamedCogLabel(IRList *irl, const char *name);
 
 #endif

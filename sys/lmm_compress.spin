@@ -24,10 +24,10 @@ getword_ret
 	ret
 	
 compress_optable
-	long	handle_C
-	long	handle_D
-	long	handle_E
-	long	handle_F
+	jmp	#handle_C
+	jmp	#handle_D
+	jmp	#handle_E
+	jmp	#handle_F
 
 handle_C
 	call	#getword	' fetch word into LMM_NEW_PC
@@ -67,7 +67,7 @@ handle_F
 	call	#getword
 	shl	LMM_NEW_PC, #16
 	or	instr, LMM_NEW_PC
-	rol	instr, #18
+	rol	instr, #14
 	jmp	#go_instr
 
 LMM_LOOP
@@ -76,11 +76,12 @@ LMM_LOOP
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 	test	opcode, #$80 wz			' check for high bit
-  if_z	jmp	#single_byte_compress
+  if_z	jmp	#single_byte_decompress
   	test	opcode, #$40 wz
-  if_z	jmp	#multi_byte_compress
+  if_z	jmp	#multi_byte_decompress
   	mov	optemp, opcode
-	shr	optemp, #6
+	shr	optemp, #4
+	and	optemp, #3
 	add	optemp, #compress_optable
 	jmp	optemp+0
 	
@@ -93,7 +94,52 @@ opcode
 	long	0
 optemp
 	long	0
-	
+optemp2
+	long	0
+
+multi_byte_decompress
+	mov	optemp, opcode
+	shr	optemp, #5
+	mov	optemp2, opcode
+	and	optemp, #$1f
+	and	optemp2, #$1f
+	shr	opcode, #10
+	and	optemp2, #$f
+	jmp	#decompress_instr
+single_byte_decompress
+	mov	optemp, opcode
+	shr	optemp, #3
+	and	optemp, #$7
+	mov	optemp2, opcode
+	and	optemp2, #$7
+	shr	opcode, #6
+decompress_instr
+	'' enter here with opcode == instruction, optemp == dest, optemp2 == src
+	add	opcode, #COMPRESS_TABLE
+	movs	c_fetch1, opcode
+	add	optemp, #COMPRESS_TABLE
+	movs	c_fetch2, optemp
+	add	optemp2, #COMPRESS_TABLE
+	movs	c_fetch3, optemp2
+c_fetch1
+	mov	instr, 0-0
+	and	instr, INSTR_MASK
+c_fetch2
+	mov	optemp, 0-0
+c_fetch3
+	mov	optemp2, 0-0
+	and	optemp, DST_MASK
+	and	optemp2, SRC_MASK
+	or	instr, optemp
+	or	instr, optemp2
+	jmp	#go_instr
+INSTR_MASK
+	long	$ff80_0000
+DST_MASK
+	long	$0003_fe00
+SRC_MASK
+	long	$0040_01ff
+
 LMM_RET
 	sub	sp, #4
 	rdlong	pc, sp
@@ -124,10 +170,13 @@ LMM_CALL_PTR_ret
 LMM_RET_ret
 LMM_ra
 	long	0	' return address for LMM subroutine calls
-pc	long 0
+pc	long	0
 inc_dest1
-	long  (1<<9)
+	long	(1<<9)
 hubretptr
-	long @@@hub_ret_to_cog
+	long	@@@hub_ret_to_cog
 LMM_NEW_PC
-	long   0
+	long	0
+save_cz
+	long	0
+

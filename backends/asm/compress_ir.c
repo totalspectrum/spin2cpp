@@ -84,6 +84,8 @@ static void RecordItem(Flexbuf *fb, void *ptr, int checkImm)
     flexbuf_addmem(fb, (char *)&newfreq, sizeof(newfreq));
 }
 
+#define MAXSIZE 32
+
 static void DoPrintOp(void *ptr)
 {
     Flexbuf irbuf;
@@ -104,10 +106,8 @@ static void DoPrintInstr(void *ptr)
     printf("%s\n", instr->name);
 }
 
-#define MAXSIZE 32
-
 static void
-SortPrint(Flexbuf *buf, void (*doprint)(void *))
+SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *))
 {
     size_t size, members;
     size_t i;
@@ -132,17 +132,27 @@ SortPrint(Flexbuf *buf, void (*doprint)(void *))
     for (i = 0; i < members; i++) {
         counted += table[i].count;
     }
+#ifdef DEBUG
+    printf("%s\n", msg);
+#endif
     running = 0;
     for (i = 0; i < maxprint; i++) {
         running += table[i].count;
+#ifdef DEBUG        
         printf("freq: %d / %d  ", table[i].count, running);
         doprint(table[i].ptr);
+#else
+        (void)doprint;
+#endif        
     }
+#ifdef DEBUG    
     printf("total count: %d / %d\n", running, counted);
+#endif    
 }
 
-// walk through and record the most popular instructions/operands
-void IRCompress(IRList *irl)
+// walk through and record the most popular instructions/operands in the
+// list "irl" into the list "kernel"
+void IRCompress(IRList *irl, IRList *kernel)
 {
     IR *ir;
 
@@ -155,14 +165,16 @@ void IRCompress(IRList *irl)
             // not an opcode we're comfortable with
             continue;
         }
+        if (!ir->instr || ir->instr->ops != TWO_OPERANDS) {
+            continue;
+        }
         RecordInstr(&instrcount, (void *)ir->instr);
         RecordOperand(&dstcount, (void *)ir->dst);
         RecordOperand(&srccount, (void *)ir->src);
     }
-    printf("instructions:\n");
-    SortPrint(&instrcount, DoPrintInstr);
-    printf("dest operands:\n");
-    SortPrint(&dstcount, DoPrintOp);
-    printf("\nsrc operands:\n");
-    SortPrint(&srccount, DoPrintOp);
+    SortPrint("instructions", &instrcount, DoPrintInstr);
+    SortPrint("dst operands:", &dstcount, DoPrintOp);
+    SortPrint("src operands:", &srccount, DoPrintOp);
+    // now add 32 instructions to COMPRESS_TABLE in the kernel
+    EmitNamedCogLabel(kernel, "COMPRESS_TABLE");
 }
