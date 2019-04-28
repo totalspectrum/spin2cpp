@@ -1111,13 +1111,21 @@ instruction:
     { $$ = $1; }
   | '<' SP_INSTR
     {
-        AST *oldast = $2;
-        if (oldast->kind == AST_SRCCOMMENT) {
-            oldast->right = NewAST(AST_COMPRESS_INSTR, oldast->right, NULL);
-        } else {
-            oldast = NewAST(AST_COMPRESS_INSTR, oldast, NULL);
+        AST *ast = $2;
+        AST *rootast = $2;
+        AST *parent = NULL;
+        while (ast->kind == AST_SRCCOMMENT || ast->kind == AST_COMMENT)
+        {
+            parent = ast;
+            ast = ast->right;
         }
-        $$ = oldast;
+        ast = NewAST(AST_COMPRESS_INSTR, ast, NULL);
+        if (parent) {
+            parent->right = ast;
+            $$ = rootast;
+        } else {
+            $$ = ast;
+        }
     }
   | instrmodifier instruction
     { $$ = AddToList($2, $1); }

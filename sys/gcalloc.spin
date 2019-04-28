@@ -90,7 +90,7 @@ con
   __real_heapsize__ = 256  ' redefined based on user options
   
 dat
-        long
+        alignl
 _gc_heap_base
 	byte 0[__real_heapsize__]
 

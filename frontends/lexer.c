@@ -1901,7 +1901,7 @@ initSpinLexer(int flags)
         AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val, NULL);
     }
     
-    if (gl_p2) {
+    if (gl_p2 || 1) {
         AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL, NULL);
         AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW, NULL);
     }

@@ -324,7 +324,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
         ERROR(NULL, "Internal: bad binary blob");
         return;
     }
-    if (gl_p2) {
+    if (gl_p2 || gl_compress) {
         flexbuf_printf(fb, "\talignl\n"); // ensure long alignment
     } else {
         flexbuf_printf(fb, "\tlong\n"); // ensure long alignment
