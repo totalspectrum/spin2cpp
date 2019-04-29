@@ -173,4 +173,7 @@ IR *EmitOp2(IRList *irl, IROpcode code, Operand *op, Operand *op2);
 
 void EmitNamedCogLabel(IRList *irl, const char *name);
 
+// utility for debug
+void PrintOperandAsValue(struct flexbuf *fb, Operand *op);
+
 #endif

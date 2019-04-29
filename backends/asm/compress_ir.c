@@ -41,6 +41,12 @@ Flexbuf dstcount;
 Flexbuf srccount;
 Flexbuf instrcount;
 
+#define MAX_COMPRESS 32
+
+IR *cinstr_table[MAX_COMPRESS];
+Operand *cdst_table[MAX_COMPRESS];
+Operand *csrc_table[MAX_COMPRESS];
+
 // sorter function for PtrFreq
 int freqsort_fn(const void *aptr, const void *bptr)
 {
@@ -49,42 +55,58 @@ int freqsort_fn(const void *aptr, const void *bptr)
     return b->count - a->count;
 }
 
-// record an operand in a frequency tables
-#define RecordOperand(fb, oper) RecordItem(fb, oper, 1)
-#define RecordInstr(fb, instr) RecordItem(fb, instr, 0)
+// check to see if two operands match
+static int MatchOperand(void *aptr, void *bptr)
+{
+    Operand *a = (Operand *)aptr;
+    Operand *b = (Operand *)bptr;
+    if (a->kind != b->kind) {
+        return 0;
+    }
+    if (a->kind == IMM_INT) {
+        return a->val == b->val;
+    }
+    return a == b;
+}
 
-static void RecordItem(Flexbuf *fb, void *ptr, int checkImm)
+static int MatchIR(void *aptr, void *bptr)
+{
+    IR *a = (IR *)aptr;
+    IR *b = (IR *)bptr;
+    if (a->instr != b->instr) {
+        return 0;
+    }
+    if (a->flags != b->flags) {
+        return 0;
+    }
+    return a->srceffect == b->srceffect && a->dsteffect == b->dsteffect;
+}
+
+// record an operand in a frequency tables
+#define RecordOperand(fb, oper) RecordItem(fb, oper, MatchOperand)
+#define RecordInstr(fb, instr) RecordItem(fb, instr, MatchIR)
+
+
+static void RecordItem(Flexbuf *fb, void *ptr, int (*matchptr)(void *, void *))
 {
     size_t count = flexbuf_curlen(fb) / sizeof(PtrFreq);
     PtrFreq *freqtable = (PtrFreq *)flexbuf_peek(fb);
     PtrFreq newfreq;
     size_t i;
-    Operand *ptrop;
-    Operand *oper = (Operand *)ptr;
     
-    if (!oper) {
+    if (!ptr) {
         return;
     }
     for (i = 0; i < count; i++) {
-        ptrop = (Operand *)freqtable[i].ptr;
-        if (checkImm && oper->kind == IMM_INT) {
-            if (ptrop->kind == IMM_INT &&
-                oper->val == ptrop->val)
-            {
-                freqtable[i].count++;
-                return;
-            }
-        } else if (ptrop == oper) {
+        if (matchptr(freqtable[i].ptr, ptr)) {
             freqtable[i].count++;
             return;
         }
     }
-    newfreq.ptr = (void *)oper;
+    newfreq.ptr = ptr;
     newfreq.count = 1;
     flexbuf_addmem(fb, (char *)&newfreq, sizeof(newfreq));
 }
-
-#define MAXSIZE 32
 
 static void DoPrintOp(void *ptr)
 {
@@ -100,14 +122,14 @@ static void DoPrintOp(void *ptr)
     printf("%s%s\n", (op->kind == IMM_INT) ? "#" : "", s);
 }
 
-static void DoPrintInstr(void *ptr)
+static void DoPrintIR(void *ptr)
 {
-    Instruction *instr = (Instruction *)ptr;
-    printf("%s\n", instr->name);
+    IR *ir = (IR *)ptr;
+    printf("%s\n", ir->instr->name);
 }
 
 static void
-SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *))
+SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *), void **tableptr, void *defaultval)
 {
     size_t size, members;
     size_t i;
@@ -119,12 +141,12 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *))
     // now sort by usage
     size = flexbuf_curlen(buf);
     members = size / sizeof(PtrFreq);
-    table = (PtrFreq *)flexbuf_get(buf);
+    table = (PtrFreq *)flexbuf_peek(buf);
     qsort(table, members, sizeof(PtrFreq), freqsort_fn);
 
     // now print most popular 32
-    if (members > MAXSIZE)
-        maxprint = MAXSIZE;
+    if (members > MAX_COMPRESS)
+        maxprint = MAX_COMPRESS;
     else
         maxprint = members;
     
@@ -143,7 +165,12 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *))
         doprint(table[i].ptr);
 #else
         (void)doprint;
-#endif        
+#endif
+        tableptr[i] = table[i].ptr;
+    }
+    while (i < MAX_COMPRESS) {
+        tableptr[i] = defaultval;
+        i++;
     }
 #ifdef DEBUG    
     printf("total count: %d / %d\n", running, counted);
@@ -154,8 +181,10 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *))
 // list "irl" into the list "kernel"
 void IRCompress(IRList *irl, IRList *kernel)
 {
-    IR *ir;
-
+    IR *ir, *origir;
+    Operand *opsrc, *opdst;
+    int i;
+    
     flexbuf_init(&instrcount, 1024);
     flexbuf_init(&srccount, 1024);
     flexbuf_init(&dstcount, 1024);
@@ -168,13 +197,29 @@ void IRCompress(IRList *irl, IRList *kernel)
         if (!ir->instr || ir->instr->ops != TWO_OPERANDS) {
             continue;
         }
-        RecordInstr(&instrcount, (void *)ir->instr);
+        RecordInstr(&instrcount, (void *)ir);
         RecordOperand(&dstcount, (void *)ir->dst);
         RecordOperand(&srccount, (void *)ir->src);
     }
-    SortPrint("instructions", &instrcount, DoPrintInstr);
-    SortPrint("dst operands:", &dstcount, DoPrintOp);
-    SortPrint("src operands:", &srccount, DoPrintOp);
+
+    // establish default values for various instructions
+    opsrc = opdst = GetOneGlobal(REG_HW, "ina", 0);
+    ir = NewIR(OPC_MOV);
+    ir->src = opsrc;
+    ir->dst = opdst;
+    SortPrint("instructions", &instrcount, DoPrintIR, (void **)cinstr_table, (void *)ir);
+    SortPrint("dst operands:", &dstcount, DoPrintOp, (void **)cdst_table, (void *)opdst);
+    SortPrint("src operands:", &srccount, DoPrintOp, (void **)csrc_table, (void *)opsrc);
     // now add 32 instructions to COMPRESS_TABLE in the kernel
     EmitNamedCogLabel(kernel, "COMPRESS_TABLE");
+    
+    for (i = 0; i < MAX_COMPRESS; i++) {
+        opdst = cdst_table[i];
+        opsrc = csrc_table[i];
+        origir = cinstr_table[i];
+        ir = EmitOp2(kernel, origir->opc, opdst, opsrc);
+        ir->flags = origir->flags;
+        ir->srceffect = origir->srceffect;
+        ir->dsteffect = origir->dsteffect;
+    }
 }
