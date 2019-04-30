@@ -47,6 +47,24 @@ IR *cinstr_table[MAX_COMPRESS];
 Operand *cdst_table[MAX_COMPRESS];
 Operand *csrc_table[MAX_COMPRESS];
 
+// check to see if an operand is a simple 9 bit op
+static int
+IsSimple9BitOperand(Operand *op)
+{
+    if (!op) return 0;
+    switch (op->kind) {
+    case IMM_INT:
+        return (op->val >= 0 && op->val < 512);
+    case REG_HW:
+    case REG_REG:
+    case REG_LOCAL:
+    case REG_ARG:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 // sorter function for PtrFreq
 int freqsort_fn(const void *aptr, const void *bptr)
 {
@@ -193,7 +211,7 @@ static int FindPtr(void **table, void *ptr, int (*matchptr)(void *, void *))
 
 // walk through and record the most popular instructions/operands in the
 // list "irl" into the list "kernel"
-int gl_printstats = 0;
+int gl_printstats = 1;
 
 void IRCompress(IRList *irl, IRList *kernel)
 {
@@ -202,10 +220,11 @@ void IRCompress(IRList *irl, IRList *kernel)
     Operand *opsrc, *opdst;
     int i;
     struct flexbuf comment;
-    int byte_hits, word_hits;
+    int byte_hits, word_hits, tuple_hits;
     int misses = 0;
     
     byte_hits = word_hits = 0;
+    tuple_hits = 0;
     
     flexbuf_init(&instrcount, 1024);
     flexbuf_init(&srccount, 1024);
@@ -281,13 +300,17 @@ void IRCompress(IRList *irl, IRList *kernel)
             DeleteIR(irl, ir);
             ir = newir;
             if (instr_idx < 2 && dst_idx < 8 && src_idx < 8) {
+#ifdef NEVER                
                 // 1 bit for instruction, 3 bits each for dst and src
+                // no longer supported, but for debug keep track
                 byte0 = (instr_idx << 6) + (dst_idx << 3) + src_idx;
                 newir = NewIR(OPC_BYTE);
                 newir->dst = NewImmediate(byte0);
                 InsertAfterIR(irl, ir, newir);
+#endif                
                 byte_hits++;
-            } else {
+            }
+            {
                 byte0 = 0x80 + (instr_idx << 2) + (dst_idx >> 3);
                 byte1 = ((dst_idx & 0x7) << 5) + src_idx;
                 newir = NewIR(OPC_BYTE);
@@ -297,12 +320,35 @@ void IRCompress(IRList *irl, IRList *kernel)
                 newir->dst = NewImmediate(byte0);
                 InsertAfterIR(irl, ir, newir);                
             }
+        } else if (instr_idx < 16 && IsSimple9BitOperand(ir->dst) && IsSimple9BitOperand(ir->src)) {
+            Operand *src, *dst;
+
+            src = ir->src;
+            dst = ir->dst;
+            
+            DoAssembleIR(&comment, ir, NULL);
+            flexbuf_addchar(&comment, 0);
+            newir = NewIR(OPC_COMMENT);
+            newir->opc = OPC_COMMENT;
+            newir->dst = NewOperand(IMM_STRING, flexbuf_get(&comment), 0);
+            newir->src = NULL;
+            newir->instr = NULL;
+            InsertAfterIR(irl, ir, newir);
+            DeleteIR(irl, ir);
+            ir = newir;
+            
+            newir = NewIR(OPC_COMPRESS3);
+            newir->dst = dst;
+            newir->src = src;
+            newir->src2 = NewImmediate(instr_idx);
+            InsertAfterIR(irl, ir, newir);
+            tuple_hits++;
         } else {
             misses++;
         }
         ir = origir;
     }
     if (gl_printstats) {
-        printf("hit %d bytes, %d words; %d misses\n", byte_hits, word_hits, misses);
+        printf("hit %d words, %d tuples, %d short bytes; %d misses\n", word_hits, tuple_hits, byte_hits, misses);
     }
 }

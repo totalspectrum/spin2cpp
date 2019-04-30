@@ -1142,6 +1142,23 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         }
         lmmMode = 1;
         break;
+    case OPC_COMPRESS3:
+        flexbuf_addstr(fb, "\tbyte\t(");
+        PrintOperandAsValue(fb, ir->src2);
+        flexbuf_addstr(fb, "<<3) + ((");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_addstr(fb, ">>8)<<2) + ((");
+        PrintOperandAsValue(fb, ir->src);
+        flexbuf_addstr(fb, ">>8)<<1)");
+        if (!IsRegister(ir->src->kind)) {
+            flexbuf_addstr(fb, " + 1");
+        }
+        flexbuf_addstr(fb, ", (");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_addstr(fb, ") & $FF, (");
+        PrintOperandAsValue(fb, ir->src);
+        flexbuf_addstr(fb, ") & $FF\n");
+        break;
     default:
         ERROR(NULL, "Internal error: unable to process IR\n");
         break;

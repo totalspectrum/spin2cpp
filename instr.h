@@ -126,6 +126,10 @@ typedef enum IROpcode {
     
     /* pseudo-instruction to load FCACHE */
     OPC_FCACHE,
+
+    /* for compressed instructions */
+    OPC_COMPRESS2,
+    OPC_COMPRESS3,
     
     /* special flag to indicate a register is used/modified */
     /* used for cases like array accesses where the optimizer may

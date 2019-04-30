@@ -11,7 +11,9 @@
 	''           compressed instruction; 4 bits for the instruction, 5 for each of src and dest,
 	''           select the most commonly used instructions, sources, and destinations
 	''
-	'' %0add dsss: a selects most common 2 instructions, ddd, sss most common 8 sources/destinations
+	'' %0aaaadsi dddddddd ssssssss
+	'' 24 bits to select the 16 most common instructions, with
+	'' arbitrary source and destination; "i" is the immediate bit
 	''
 getword
 	rdbyte	LMM_NEW_PC, pc
@@ -76,9 +78,9 @@ LMM_LOOP
 	muxnz	save_cz, #2			' save Z
 	muxc	save_cz, #1			' save C
 	test	opcode, #$80 wz			' check for high bit
-  if_z	jmp	#single_byte_decompress
+  if_z	jmp	#three_byte_decompress
   	test	opcode, #$40 wz
-  if_z	jmp	#multi_byte_decompress
+  if_z	jmp	#two_byte_decompress
   	mov	optemp, opcode
 	shr	optemp, #4
 	and	optemp, #3
@@ -100,7 +102,7 @@ optemp2
 	'' two bytes:
 	'' $80 + 6 bits (4 bits instruction, 2 high bits of dest)
 	'' 8 bits (3 low bits dest, 5 bits src)
-multi_byte_decompress
+two_byte_decompress
 	mov	optemp, opcode
 	and	optemp, #3	' isolate top 2 bits
 	shl	optemp, #3	' move them into place
@@ -140,15 +142,39 @@ DST_MASK
 SRC_MASK
 	long	$0040_01ff
 
-single_byte_decompress
+	''
+	'' 3 bytes: 0aaaadsi dddddddd ssssssss
+	''
+three_byte_decompress
+	mov	instr, opcode
+	shr	instr, #3
+	add	instr, #COMPRESS_TABLE
+	movs	ct_fetch1, instr
 	mov	optemp, opcode
-	shr	optemp, #3
-	and	optemp, #$7
 	mov	optemp2, opcode
-	and	optemp2, #$7
-	shr	opcode, #6
-	jmp	#decompress_instr
+	and	optemp, #%100
+	shl	optemp, #8-2
+	and	optemp2, #%010
+	shl	optemp2, #8-1
 
+ct_fetch1
+	mov	instr, 0-0
+	and	instr, INSTR_MASK
+	test	opcode, #1 wc
+	muxc	instr, IMM_MASK	
+	rdbyte	opcode, pc
+	add	pc, #1
+	or	optemp, opcode
+	movd	instr, optemp
+	rdbyte	opcode, pc
+	add	pc, #1
+	or	optemp2, opcode
+	movs	instr, optemp2
+	jmp	#go_instr
+	
+IMM_MASK
+	long	(1<<22)
+	
 LMM_RET
 	sub	sp, #4
 	rdlong	pc, sp
