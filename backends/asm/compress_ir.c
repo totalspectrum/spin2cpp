@@ -211,7 +211,7 @@ static int FindPtr(void **table, void *ptr, int (*matchptr)(void *, void *))
 
 // walk through and record the most popular instructions/operands in the
 // list "irl" into the list "kernel"
-int gl_printstats = 1;
+int gl_printstats = 0;
 
 void IRCompress(IRList *irl, IRList *kernel)
 {
