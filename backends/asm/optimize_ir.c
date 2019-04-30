@@ -1409,6 +1409,9 @@ int OptimizeShortBranches(IRList *irl)
     int n;
     int change = 0;
     ir = irl->head;
+    if (gl_compress) {
+        return 0;
+    }
     while (ir) {
         ir_next = ir->next;
         n = IsSafeShortForwardJump(ir);
@@ -1561,7 +1564,10 @@ OptimizeCompares(IRList *irl)
     IR *ir_next;
     IR *ir_prev;
     int change = 0;
-    
+
+    if (gl_compress) {
+        return 0;
+    }
     ir_prev = 0;
     ir = irl->head;
     while (ir) {

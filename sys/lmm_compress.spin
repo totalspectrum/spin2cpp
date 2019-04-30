@@ -113,14 +113,6 @@ multi_byte_decompress
 	shr	instr, #5
 	and	instr, #7
 	or	optemp, instr
-	jmp	#decompress_instr
-single_byte_decompress
-	mov	optemp, opcode
-	shr	optemp, #3
-	and	optemp, #$7
-	mov	optemp2, opcode
-	and	optemp2, #$7
-	shr	opcode, #6
 decompress_instr
 	'' enter here with opcode == instruction, optemp == dest, optemp2 == src
 	add	opcode, #COMPRESS_TABLE
@@ -147,6 +139,15 @@ DST_MASK
 	long	$0003_fe00
 SRC_MASK
 	long	$0040_01ff
+
+single_byte_decompress
+	mov	optemp, opcode
+	shr	optemp, #3
+	and	optemp, #$7
+	mov	optemp2, opcode
+	and	optemp2, #$7
+	shr	opcode, #6
+	jmp	#decompress_instr
 
 LMM_RET
 	sub	sp, #4

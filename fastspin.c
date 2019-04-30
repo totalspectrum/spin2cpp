@@ -526,6 +526,7 @@ main(int argc, const char **argv)
     // compression
     if (gl_compress) {
         gl_lmm_kind = LMM_KIND_COMPRESS;
+        gl_fcache_size = 0;
     }
     // listing file
     if (gl_listing && !(gl_output == OUTPUT_DAT)) {

@@ -193,6 +193,8 @@ static int FindPtr(void **table, void *ptr, int (*matchptr)(void *, void *))
 
 // walk through and record the most popular instructions/operands in the
 // list "irl" into the list "kernel"
+int gl_printstats = 0;
+
 void IRCompress(IRList *irl, IRList *kernel)
 {
     IR *ir, *origir;
@@ -200,6 +202,10 @@ void IRCompress(IRList *irl, IRList *kernel)
     Operand *opsrc, *opdst;
     int i;
     struct flexbuf comment;
+    int byte_hits, word_hits;
+    int misses = 0;
+    
+    byte_hits = word_hits = 0;
     
     flexbuf_init(&instrcount, 1024);
     flexbuf_init(&srccount, 1024);
@@ -236,13 +242,12 @@ void IRCompress(IRList *irl, IRList *kernel)
         origir = cinstr_table[i];
         ir = EmitOp2(kernel, origir->opc, opdst, opsrc);
         ir->flags = origir->flags;
+        ir->cond = origir->cond;
         ir->srceffect = origir->srceffect;
         ir->dsteffect = origir->dsteffect;
     }
 
     // now go back and re-write matching instructions...
-    int byte_hits, word_hits;
-    byte_hits = word_hits = 0;
     ir = irl->head;
     while (ir) {
         int instr_idx;
@@ -267,16 +272,21 @@ void IRCompress(IRList *irl, IRList *kernel)
             word_hits++;
             DoAssembleIR(&comment, ir, NULL);
             flexbuf_addchar(&comment, 0);
-            ir->opc = OPC_COMMENT;
-            ir->dst = NewOperand(IMM_STRING, flexbuf_get(&comment), 0);
-            ir->src = NULL;
-            ir->instr = NULL;
+            newir = NewIR(OPC_COMMENT);
+            newir->opc = OPC_COMMENT;
+            newir->dst = NewOperand(IMM_STRING, flexbuf_get(&comment), 0);
+            newir->src = NULL;
+            newir->instr = NULL;
+            InsertAfterIR(irl, ir, newir);
+            DeleteIR(irl, ir);
+            ir = newir;
             if (instr_idx < 2 && dst_idx < 8 && src_idx < 8) {
                 // 1 bit for instruction, 3 bits each for dst and src
                 byte0 = (instr_idx << 6) + (dst_idx << 3) + src_idx;
                 newir = NewIR(OPC_BYTE);
                 newir->dst = NewImmediate(byte0);
                 InsertAfterIR(irl, ir, newir);
+                byte_hits++;
             } else {
                 byte0 = 0x80 + (instr_idx << 2) + (dst_idx >> 3);
                 byte1 = ((dst_idx & 0x7) << 5) + src_idx;
@@ -285,10 +295,14 @@ void IRCompress(IRList *irl, IRList *kernel)
                 InsertAfterIR(irl, ir, newir);
                 newir = NewIR(OPC_BYTE);
                 newir->dst = NewImmediate(byte0);
-                InsertAfterIR(irl, ir, newir);
+                InsertAfterIR(irl, ir, newir);                
             }
+        } else {
+            misses++;
         }
         ir = origir;
     }
-    printf("hit %d bytes, %d words\n", byte_hits, word_hits);
+    if (gl_printstats) {
+        printf("hit %d bytes, %d words; %d misses\n", byte_hits, word_hits, misses);
+    }
 }

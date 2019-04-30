@@ -31,6 +31,8 @@
 #define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
 #define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->large_local )
 
+#define IS_LEAF(func) ((gl_compress == 0) && (func)->is_leaf)
+
 /* lists of instructions in hub and cog */
 static IRList cogcode;
 static IRList hubcode;
@@ -899,7 +901,7 @@ GetFunctionTempRegister(Function *f, int n)
 {
   Module *P = f->module;
   char buf[1024];
-  if (f->is_leaf) {
+  if (IS_LEAF(f)) {
       // leaf functions can share a set of temporary registers
       snprintf(buf, sizeof(buf)-1, "_tmp%03d_", n);
   } else if (IsTopLevel(P)) {
@@ -1458,7 +1460,7 @@ RenameLocalRegs(IRList *irl, int isLeaf)
 static bool
 NeedToSaveLocals(Function *func)
 {
-    if (func->is_leaf || func->toplevel) {
+    if (IS_LEAF(func) || func->toplevel) {
         return false;
     }
     if (ALL_VARS_ON_STACK(func)) {
@@ -1543,7 +1545,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     needFrame = NeedFramePointer(func);
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         if (NeedToSaveLocals(func)) {
-            n = RenameLocalRegs(FuncIRL(func), func->is_leaf);
+            n = RenameLocalRegs(FuncIRL(func), IS_LEAF(func));
         }
     }
     if (needFrame == FRAME_MAYBE) {
@@ -1564,7 +1566,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             EmitPush(irl, frameptr);
             EmitMove(irl, frameptr, stackptr);
         }
-    } else if (func->is_leaf) {
+    } else if (IS_LEAF(func)) {
         RenameLocalRegs(FuncIRL(func), 1);
     }
     if (ANY_VARS_ON_STACK(func)) {
@@ -5567,7 +5569,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 if (func->is_recursive) {
                     savesize *= 16;
                 }
-                if (func->is_leaf) {
+                if (IS_LEAF(func)) {
                     if (maxLeafSize < savesize) maxLeafSize = savesize;
                 } else {
                     stackSize += savesize;
