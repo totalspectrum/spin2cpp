@@ -79,6 +79,9 @@ static int MatchIR(void *aptr, void *bptr)
     if (a->flags != b->flags) {
         return 0;
     }
+    if (a->cond != b->cond) {
+        return 0;
+    }
     return a->srceffect == b->srceffect && a->dsteffect == b->dsteffect;
 }
 
@@ -108,28 +111,23 @@ static void RecordItem(Flexbuf *fb, void *ptr, int (*matchptr)(void *, void *))
     flexbuf_addmem(fb, (char *)&newfreq, sizeof(newfreq));
 }
 
-static void DoPrintOp(void *ptr)
+static void DoPrintOp(struct flexbuf *fb, void *ptr)
 {
-    Flexbuf irbuf;
-    const char *s;
     Operand *op = (Operand *)ptr;
-    flexbuf_init(&irbuf, 1024);
-    PrintOperandAsValue(&irbuf, op);
-    flexbuf_addchar(&irbuf, 0);
-    
-    s = flexbuf_get(&irbuf);
-    flexbuf_delete(&irbuf);
-    printf("%s%s\n", (op->kind == IMM_INT) ? "#" : "", s);
+    if (op->kind == IMM_INT) {
+        flexbuf_addstr(fb, "#");
+    }
+    PrintOperandAsValue(fb, op);
 }
 
-static void DoPrintIR(void *ptr)
+static void DoPrintIR(struct flexbuf *fb, void *ptr)
 {
     IR *ir = (IR *)ptr;
-    printf("%s\n", ir->instr->name);
+    flexbuf_printf(fb, "%s", ir->instr->name);
 }
 
 static void
-SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *), void **tableptr, void *defaultval)
+SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(struct flexbuf *, void *), void **tableptr, void *defaultval)
 {
     size_t size, members;
     size_t i;
@@ -137,7 +135,9 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *), void **tablept
     PtrFreq *table;
     int maxprint;
     int running;
-    
+#ifdef DEBUG    
+    struct flexbuf sbuf;
+#endif
     // now sort by usage
     size = flexbuf_curlen(buf);
     members = size / sizeof(PtrFreq);
@@ -162,7 +162,10 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *), void **tablept
         running += table[i].count;
 #ifdef DEBUG        
         printf("freq: %d / %d  ", table[i].count, running);
-        doprint(table[i].ptr);
+        flexbuf_init(&sbuf, 1024);
+        doprint(&sbuf, table[i].ptr);
+        flexbuf_addchar(&sbuf, 0);
+        printf("%s\n", flexbuf_get(&sbuf));
 #else
         (void)doprint;
 #endif
@@ -177,17 +180,31 @@ SortPrint(const char *msg, Flexbuf *buf, void (*doprint)(void *), void **tablept
 #endif    
 }
 
+static int FindPtr(void **table, void *ptr, int (*matchptr)(void *, void *))
+{
+    int i;
+    for (i = 0; i < MAX_COMPRESS; i++) {
+        if (matchptr(table[i], ptr)) {
+            break;
+        }
+    }
+    return i;
+}
+
 // walk through and record the most popular instructions/operands in the
 // list "irl" into the list "kernel"
 void IRCompress(IRList *irl, IRList *kernel)
 {
     IR *ir, *origir;
+    IR *newir;
     Operand *opsrc, *opdst;
     int i;
+    struct flexbuf comment;
     
     flexbuf_init(&instrcount, 1024);
     flexbuf_init(&srccount, 1024);
     flexbuf_init(&dstcount, 1024);
+    flexbuf_init(&comment, 1024);
     
     for (ir = irl->head; ir; ir = ir->next) {
         if (ir->opc >= OPC_GENERIC) {
@@ -222,4 +239,56 @@ void IRCompress(IRList *irl, IRList *kernel)
         ir->srceffect = origir->srceffect;
         ir->dsteffect = origir->dsteffect;
     }
+
+    // now go back and re-write matching instructions...
+    int byte_hits, word_hits;
+    byte_hits = word_hits = 0;
+    ir = irl->head;
+    while (ir) {
+        int instr_idx;
+        int dst_idx;
+        int src_idx;
+        uint8_t byte0, byte1;
+        origir = ir->next;
+        if (ir->opc >= OPC_GENERIC) {
+            // not an opcode we're comfortable with
+            ir = origir;
+            continue;
+        }
+        if (!ir->instr || ir->instr->ops != TWO_OPERANDS) {
+            ir = origir;
+            continue;
+        }
+        instr_idx = FindPtr((void **)cinstr_table, ir, MatchIR);
+        dst_idx = FindPtr((void **)cdst_table, ir->dst, MatchOperand);
+        src_idx = FindPtr((void **)csrc_table, ir->src, MatchOperand);
+        // 4 bits for instruction, 5 bits each for src and dst
+        if (instr_idx < 16 && dst_idx < 32 && src_idx < 32) {
+            word_hits++;
+            DoAssembleIR(&comment, ir, NULL);
+            flexbuf_addchar(&comment, 0);
+            ir->opc = OPC_COMMENT;
+            ir->dst = NewOperand(IMM_STRING, flexbuf_get(&comment), 0);
+            ir->src = NULL;
+            ir->instr = NULL;
+            if (instr_idx < 2 && dst_idx < 8 && src_idx < 8) {
+                // 1 bit for instruction, 3 bits each for dst and src
+                byte0 = (instr_idx << 6) + (dst_idx << 3) + src_idx;
+                newir = NewIR(OPC_BYTE);
+                newir->dst = NewImmediate(byte0);
+                InsertAfterIR(irl, ir, newir);
+            } else {
+                byte0 = 0x80 + (instr_idx << 2) + (dst_idx >> 3);
+                byte1 = ((dst_idx & 0x7) << 5) + src_idx;
+                newir = NewIR(OPC_BYTE);
+                newir->dst = NewImmediate(byte1);
+                InsertAfterIR(irl, ir, newir);
+                newir = NewIR(OPC_BYTE);
+                newir->dst = NewImmediate(byte0);
+                InsertAfterIR(irl, ir, newir);
+            }
+        }
+        ir = origir;
+    }
+    printf("hit %d bytes, %d words\n", byte_hits, word_hits);
 }

@@ -175,5 +175,6 @@ void EmitNamedCogLabel(IRList *irl, const char *name);
 
 // utility for debug
 void PrintOperandAsValue(struct flexbuf *fb, Operand *op);
+void DoAssembleIR(struct flexbuf *, IR *, Module *);
 
 #endif

@@ -97,14 +97,22 @@ optemp
 optemp2
 	long	0
 
+	'' two bytes:
+	'' $80 + 6 bits (4 bits instruction, 2 high bits of dest)
+	'' 8 bits (3 low bits dest, 5 bits src)
 multi_byte_decompress
 	mov	optemp, opcode
-	shr	optemp, #5
-	mov	optemp2, opcode
-	and	optemp, #$1f
+	and	optemp, #3	' isolate top 2 bits
+	shl	optemp, #3	' move them into place
+	shr	opcode, #2
+	and	opcode, #$f	' opcode contains instruction
+	rdbyte	optemp2, pc
+	add	pc, #1
+	mov	instr, optemp2
 	and	optemp2, #$1f
-	shr	opcode, #10
-	and	optemp2, #$f
+	shr	instr, #5
+	and	instr, #7
+	or	optemp, instr
 	jmp	#decompress_instr
 single_byte_decompress
 	mov	optemp, opcode
@@ -134,7 +142,7 @@ c_fetch3
 	or	instr, optemp2
 	jmp	#go_instr
 INSTR_MASK
-	long	$ff80_0000
+	long	$ffbc_0000
 DST_MASK
 	long	$0003_fe00
 SRC_MASK
