@@ -2,6 +2,7 @@ Version 3.9.26
 - Added DEF FNA(X)=X form to BASIC
 - Fixed declarations of functions inside other C functions
 - Fixed SELECT CASE in BASIC when the test is on strings or floats
+- Added -z option to compress the code (produces smaller but slower code)
 
 Version 3.9.25
 - Unrolled LMM loop some more, for about a 10% performance improvement on code outside of fcache.
