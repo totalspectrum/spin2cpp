@@ -3,6 +3,7 @@ Version 3.9.26
 - Fixed declarations of functions inside other C functions
 - Fixed SELECT CASE in BASIC when the test is on strings or floats
 - Added -z option to compress the code (produces smaller but slower code)
+- Fixed an optimizer bug that affected local arrays
 
 Version 3.9.25
 - Unrolled LMM loop some more, for about a 10% performance improvement on code outside of fcache.

@@ -854,7 +854,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                     flexbuf_addstr(fb, "call\t#LMM_CALL_PTR\n");
                     return;
                 } else if (!gl_p2) {
-                    ERROR(NULL, "indirect function calls are not supported in COG mode");
+                    WARNING(NULL, "indirect function calls are not supported in COG mode");
                 }
             }
             break;

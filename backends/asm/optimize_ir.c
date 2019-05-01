@@ -572,6 +572,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
       if (ir->opc == OPC_LABEL) {
           return false;
       }
+      if (ir->opc == OPC_LIVE) {
+          return false;
+      }
       if (IsBranch(ir)) {
           return false;
       }
@@ -616,6 +619,9 @@ SrcOnlyHwReg(Operand *orig)
 {
     if (orig->kind != REG_HW)
         return false;
+    if (orig->val != 0) {
+        return true;
+    }
     if (!strcasecmp(orig->name, "CNT")
         || !strcasecmp(orig->name, "INA")
         || !strcasecmp(orig->name, "INB"))
@@ -650,6 +656,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   for (ir = first_ir; ir; ir = ir->next) {
     if (IsDummy(ir)) {
 	continue;
+    }
+    if (ir->opc == OPC_LIVE && !strcmp(orig->name, ir->dst->name)) {
+        return NULL;
+    }
+    if (ir->opc == OPC_LIVE && !strcmp(replace->name, ir->dst->name)) {
+        return NULL;
     }
     if (ir->opc == OPC_RET) {
         return IsLocalOrArg(orig) ? ir : NULL;
