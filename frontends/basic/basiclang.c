@@ -1799,7 +1799,10 @@ AST *CheckTypes(AST *ast)
                 deref = NewAST(AST_MEMREF, basetype, ast->left);
                 ast->left = deref;
             } else if (ast->left->kind == AST_MEMREF) {
-                // nothing to do
+                // the base type may be encoded here
+                if (ast->left->left) {
+                    basetype = ast->left->left;
+                }
             } else if (IsArrayType(lefttype)) {
                 // convert the array index to subtract base
                 AST *base = GetArrayBase(lefttype);
