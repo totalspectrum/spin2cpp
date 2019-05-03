@@ -143,7 +143,11 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             } else {
                 actualtype = defaulttype;
             }
-            typesize = actualtype ? CheckedTypeSize(actualtype) : 4;
+            if (actualtype) {
+                typesize = CheckedTypeSize(actualtype);
+            } else {
+                typesize = 4;
+            }
             if (kind == SYM_LOCALVAR || kind == SYM_TEMPVAR || kind == SYM_PARAMETER) {
                 // keep things in registers, generally
                 if (typesize < 4) typesize = 4;
@@ -983,15 +987,21 @@ void
 AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
 {
     AST *varlist = NewAST(AST_LISTHOLDER, var, NULL);
-
+    int numlongs;
+    
     if (!vartype) {
         vartype = ast_type_long;
     }
     EnterVars(symtype, &func->localsyms, vartype, varlist, func->numlocals * LONG_SIZE, 0);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
-    func->numlocals++;
+    if (vartype) {
+        numlongs = (TypeSize(vartype) + 3) / 4;
+    } else {
+        numlongs = 1;
+    }
+    func->numlocals += numlongs;
     if (func->localarray) {
-        func->localarray_len++;
+        func->localarray_len += numlongs;
     }
 }
 
