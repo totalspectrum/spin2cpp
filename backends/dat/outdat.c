@@ -453,7 +453,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         if (numelems > 0) {
             outputInitList(f, elemsize, NULL, numelems, relocs, type);
         } else if (initval) {
-            ERROR(initval, "too many elements found in initializer");
+            WARNING(initval, "too many elements found in initializer");
         }
         break;
     }
