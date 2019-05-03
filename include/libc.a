@@ -47,6 +47,11 @@ int atoi(const char *str) __fromfile("libc/stdlib/atoi.c");
 void _Exit(int status) __fromfile("libc/stdlib/_Exit.c");
 void exit(int status) __fromfile("libc/stdlib/_Exit.c");
 
+/* libc/stdlib/malloc.c */
+void *malloc(size_t size) __fromfile("libc/stdlib/malloc.c");
+void *calloc(size_t n, size_t size) __fromfile("libc/stdlib/malloc.c");
+void free(void *ptr) __fromfile("libc/stdlib/malloc.c");
+
 /* libc/stdlib/rand.c */
 void srand(unsigned int seed) __fromfile("libc/stdlib/rand.c");
 int rand(void) __fromfile("libc/stdlib/rand.c");

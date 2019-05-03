@@ -31,22 +31,10 @@ extern "C" {
     int rand(void) _IMPL("libc/stdlib/rand.c");
     void srand(unsigned int seed) _IMPL("libc/stdlib/rand.c");
 
-  void *malloc(size_t n);
-  void *calloc(size_t, size_t);
-  void *realloc(void *, size_t);
-  void free(void *);
-
-  void *_hubmalloc(size_t n);
-  void *_hubcalloc(size_t, size_t);
-  void *_hubrealloc(void *, size_t);
-  void _hubfree(void *);
-
-#if !defined(__STRICT_ANSI__)
-  void *hubmalloc(size_t n);
-  void *hubcalloc(size_t, size_t);
-  void *hubrealloc(void *, size_t);
-  void hubfree(void *);
-#endif
+    void *malloc(size_t n) _IMPL("libc/stdlib/malloc.c");
+    void *calloc(size_t, size_t) _IMPL("libc/stdlib/malloc.c");
+    void *realloc(void *, size_t) _IMPL("libc/stdlib/malloc.c");
+    void free(void *) _IMPL("libc/stdlib/malloc.c");
 
   int atexit(void (*func)(void));
   _NORETURN void exit(int status);
