@@ -1338,7 +1338,11 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                 tsize = (tsize + LONG_SIZE - 1) & ~(LONG_SIZE-1);
                 size = tsize / LONG_SIZE;
             }
-            basedst = CompileIdentifierForFunc(irl, ast, func);
+            if (ast && ast->kind != AST_INTTYPE && ast->kind != AST_UNSIGNEDTYPE) {
+                basedst = CompileIdentifierForFunc(irl, ast, func);
+            } else {
+                size = 0;
+            }
             for (i = 0; i < size; i++) {
                 src = GetFunctionParameterForCall(irl, func, func->overalltype, n++);
                 if (!src) {
