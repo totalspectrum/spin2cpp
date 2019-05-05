@@ -691,6 +691,7 @@ PrintCompressCondJump(struct flexbuf *fb, int cond, Operand *dst)
         flag |= 0x3;
         break;
     case COND_GT:
+    case COND_NC_AND_NZ:
         flag |= 0x1;
         break;
     case COND_LE:
