@@ -35,6 +35,7 @@ static AST *float_abs;
 static AST *float_sqrt;
 static AST *float_neg;
 
+static AST *struct_copy;
 static AST *string_cmp;
 static AST *string_concat;
 static AST *make_methodptr;
@@ -1188,6 +1189,14 @@ AST *ArrayAddress(AST *expr)
                   NULL);
 }
 
+AST *StructAddress(AST *expr)
+{
+    if (expr->kind == AST_MEMREF) {
+        return expr->right;
+    }
+    return NewAST(AST_ABSADDROF, expr, NULL);
+}
+
 // return the address of a function
 AST *FunctionAddress(AST *expr)
 {
@@ -1676,6 +1685,17 @@ AST *CheckTypes(AST *ast)
         if (rtype) {
             ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype);
         }
+        if (ltype && IsClassType(ltype)) {
+            int siz = TypeSize(ltype);
+            if (siz > 8) {
+                // convert the assignment to a memcpy
+                AST *lptr = StructAddress(ast->left);
+                AST *rptr = StructAddress(ast->right);
+                AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, AstInteger(siz));
+                *ast = *NewAST(AST_MEMREF, NULL, copy);
+//                WARNING(ast, "Need to convert to memcpy");
+            }
+        }
         break;
     case AST_RETURN:
         if (ast->left) {
@@ -1976,6 +1996,11 @@ InitGlobalFuncs(void)
         basic_print_nl = getBasicPrimitive("_basic_print_nl");
         basic_put = getBasicPrimitive("_basic_put");
 
+        if (gl_p2) {
+            struct_copy = getBasicPrimitive("longmove");
+        } else {
+            struct_copy = getBasicPrimitive("bytemove");
+        }
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
         make_methodptr = getBasicPrimitive("_make_methodptr");

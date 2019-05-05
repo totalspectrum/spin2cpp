@@ -6,7 +6,8 @@ pri longfill(ptr, val, count)
   repeat count
     long[ptr] := val
     ptr += 4
-pri longmove(dst, src, count)
+pri longmove(dst, src, count) : origdst
+  origdst := dst
   repeat count
     long[dst] := long[src]
     dst += 4
@@ -15,7 +16,8 @@ pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val
     ptr += 2
-pri wordmove(dst, src, count)
+pri wordmove(dst, src, count) : origdst
+  origdst := dst
   repeat count
     word[dst] := word[src]
     dst += 2
@@ -24,7 +26,8 @@ pri bytefill(ptr, val, count)
   repeat count
     byte[ptr] := val
     ptr += 1
-pri bytemove(dst, src, count)
+pri bytemove(dst, src, count) : origdst
+  origdst := dst
   repeat count
     byte[dst] := byte[src]
     dst += 1
