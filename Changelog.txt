@@ -2,11 +2,12 @@ Version 3.9.26
 - Added DEF FNA(X)=X form to BASIC
 - Fixed declarations of functions inside other C functions
 - Fixed SELECT CASE in BASIC when the test is on strings or floats
-- Added -z option to compress the code (produces smaller but slower code)
 - Fixed an optimizer bug that affected local arrays
 - Fixed space allocation for local arrays in C functions
 - On P2, default to 160MHz and 230400 baud if no explicit clkset is given
-- Made BASIC read functions support other bases
+- Made BASIC read functions support base 16 and base 2 numbers
+- Implemented struct assignment for C
+- Experimental -z option to compress the code (produces smaller but slower code)
 
 Version 3.9.25
 - Unrolled LMM loop some more, for about a 10% performance improvement on code outside of fcache.

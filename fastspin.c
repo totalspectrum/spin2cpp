@@ -528,6 +528,10 @@ main(int argc, const char **argv)
         gl_lmm_kind = LMM_KIND_COMPRESS;
         gl_fcache_size = 0;
         gl_optimize_flags |= OPT_REMOVE_HUB_BSS;
+        if (gl_p2) {
+            fprintf(stderr, "-z is not supported on P2 yet");
+            exit(2);
+        }
     }
     // listing file
     if (gl_listing && !(gl_output == OUTPUT_DAT)) {
