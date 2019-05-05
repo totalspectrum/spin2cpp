@@ -31,12 +31,20 @@ compress_optable
 	jmp	#handle_E
 	jmp	#handle_F
 
+	''
+	'' C is a call instruction
+	''
 handle_C
 	call	#getword	' fetch word into LMM_NEW_PC
 	shr	save_cz, #1 wz, wc	' restore C and Z
 	jmp	#LMM_CALL_PTR	' and go do it as a subroutine
+
+	''
+	'' Dx is a conditional branch with condition "x"
+	'' except for D0, which is an escape for a single instruction
+	''
 handle_D
-	call	#getword	' fetch new PC
+	call	#getword	' fetch 2 bytes into LMM_NEW_PC
 	cmp	opcode, #$D0 wz
   if_z	jmp	#single_instr
   	and	opcode, #$F	' isolate condition code
@@ -54,6 +62,8 @@ single_instr
 	shl	LMM_NEW_PC, #16
 	or	instr, LMM_NEW_PC
 	jmp	#go_instr
+
+	'' E is a jmpret LMM_ra, COG_ADDR
 handle_E
 	rdbyte	optemp, pc
 	add	pc, #1
@@ -62,6 +72,8 @@ handle_E
 	or	optemp, opcode
 	shr	save_cz, #1 wz, wc	' restore C and Z
 	jmpret	LMM_ra, optemp+0
+	
+	'' F is a rotated unconditional instruction
 handle_F
 	sub	pc, #1			' back up
 	call	#getword
