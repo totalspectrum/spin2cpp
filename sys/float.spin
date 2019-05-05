@@ -341,7 +341,7 @@ pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
     _basic_print_char(h, exp + "0")
 
 ' convert string to float
-pri __builtin_atoi(s = "0") : r | c, negate
+pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit
   negate := 0
   repeat while byte[s] == " "
     s++
@@ -352,11 +352,24 @@ pri __builtin_atoi(s = "0") : r | c, negate
     
   repeat
     c := byte[s++]
-    if (c => "0") and (c =< "9")
-      r := 10 * r + (c - "0")
+    if (c == "0") or (c == "&")
+      digit := 0
+    elseif (c => "1") and (c =< "9")
+      digit := (c - "0")
+      if (base == 0)
+        base := 10
+    elseif (base > 10) and (c => "a") and (c =< "f")
+      digit := 10 + (c-"a")
+    elseif (base > 10) and (c => "A") and (c =< "F")
+      digit := 10 + (c-"A")
     else
       quit
-      
+    r := base * r + digit
+  if (base == 0)
+    if (c == "x" or c == "h")
+      r := __builtin_atoi(s, 16)
+    elseif c == "b"
+      r := __builtin_atoi(s, 2)
   if negate
     r := -r
 
