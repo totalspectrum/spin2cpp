@@ -79,7 +79,7 @@ pri _coginit(id, code, param)
   return id
 
 dat
-_bitcycles long 80_000_000 / 115_200
+_bitcycles long 0
 
 pri _setbaud(rate)
   _bitcycles := clkfreq / rate
@@ -90,6 +90,11 @@ con
  _txpin = 30
 pri _tx(c) | val, nextcnt, bitcycles
   bitcycles := _bitcycles
+  if (bitcycles == 0)
+    if clkfreq == 0
+      clkset($010007f8, 160_000_000)
+    _setbaud(230_800)
+    bitcycles := _bitcycles
   DIRB[_txpin] := 1
   OUTB[_txpin] := 1
   val := (c | 256) << 1
