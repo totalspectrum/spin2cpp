@@ -209,16 +209,20 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
         if (needs_initializer && !has_initializer) {
             continue;
         }
-        // OK, "nameAst" is the name we want it to be known as inside
-        // the function, but we will want to create a global variable
-        // with a new name
+        if (nameAst->kind == AST_LOCAL_IDENTIFIER) {
+            DeclareOneGlobalVar(P, decl, basetype);
+        } else {
+            // OK, "nameAst" is the name we want it to be known as inside
+            // the function, but we will want to create a global variable
+            // with a new name
 
-        nameString = GetIdentifierName(nameAst);
-        globalname = AstTempIdentifier(nameString);
-        EnterLocalAlias(currentTypes, globalname, nameString);
-        // and enter a new global definition
-        *nameAst = *globalname;
-        DeclareOneGlobalVar(P, decl, basetype);
+            nameString = GetIdentifierName(nameAst);
+            globalname = AstTempIdentifier(nameString);
+            EnterLocalAlias(currentTypes, globalname, nameString);
+            // and enter a new global definition
+            *nameAst = *globalname;
+            DeclareOneGlobalVar(P, decl, basetype);
+        }
     }
     return results;
 }
