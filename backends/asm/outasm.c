@@ -200,6 +200,8 @@ IdentifierModuleName(Module *P, const char *name)
     return strdup(temp);
 }
 
+Operand *GetLocalReg(int n, int isLeaf); // forward declaration
+
 static bool
 PutVarOnStack(Function *func, Symbol *sym, int size)
 {
@@ -287,6 +289,9 @@ static void
 ValidatePushregs(void)
 {
     if (!pushregs_) {
+        // we will need local01
+        Operand *local1 = GetLocalReg(0, 0);
+        local1->used++;
         pushregs_ = NewOperand(IMM_COG_LABEL, "pushregs_", 0);
         popregs_ = NewOperand(IMM_COG_LABEL, "popregs_", 0);
         count_ = NewOperand(REG_REG, "COUNT_", 0);
