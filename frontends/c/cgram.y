@@ -1436,6 +1436,13 @@ modifierlist:
     { $$ = AddToList($1, $3); }
   ;
   
+func_declaration_list
+	: declaration
+            { $$ = $1; }
+	| declaration_list declaration
+            { $$ = AddToList($1, $2); }
+	;
+
 declaration_list
 	: declaration
             { $$ = MakeDeclarations($1, currentTypes); }
@@ -1570,7 +1577,7 @@ external_declaration
 	;
 
 function_definition
-	: declaration_specifiers declarator declaration_list compound_statement
+	: declaration_specifiers declarator func_declaration_list compound_statement
             {
                 AST *type;
                 AST *ident;
@@ -1592,7 +1599,7 @@ function_definition
                 type = CombineTypes($1, decl, &ident);
                 DeclareTypedFunction(current, type, ident, is_public, body);
             }
-	| declarator declaration_list compound_statement
+	| declarator func_declaration_list compound_statement
             {
                 AST *type;
                 AST *ident;

@@ -1,3 +1,6 @@
+Version 3.9.27
+- Fixed a name conflict in some old style C function declarations
+
 Version 3.9.26
 - Added DEF FNA(X)=X form to BASIC
 - Fixed declarations of functions inside other C functions
