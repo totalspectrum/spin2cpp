@@ -363,6 +363,7 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_BYTE       "byte"
 %token BAS_CATCH      "catch"
 %token BAS_CASE       "case"
+%token BAS_CAST       "cast"
 %token BAS_CLASS      "class"
 %token BAS_CLOSE      "close"
 %token BAS_CONST      "const"
@@ -1215,6 +1216,10 @@ pseudofunc_expr:
     {
         AST *orig = $3;
         $$ = NewAST(AST_CAST, ast_type_long, orig);
+    }
+  | BAS_CAST '(' typename ',' expr ')'
+    {
+        $$ = NewAST(AST_CAST, $3, $5);
     }
   | BAS_CPU '(' exprlist ')'
     {

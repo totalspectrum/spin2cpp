@@ -1,16 +1,5 @@
 # Fastspin BASIC
 
-## WARNING:
-
-BASIC support in fastspin is incomplete, and may not usable for production
-yet. Missing features include:
-
- - Documentation; the manual below is just a start, much is incomplete.
-
- - Input and output aren't fully implemented yet.
-
- - RESTORE is not implemented yet.
-
 ## Introduction
 
 Fastspin BASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
@@ -645,6 +634,17 @@ end select
 ```
 
 All of the statements between the `case` and the next `case` (or `end select`) are executed if the `case` is the first one to match the expression in the `select case`.
+
+### CAST
+
+Used to convert between types. `cast(type1, expr)` will calculate `expr` and then convert it to type `type1`. This could involve calculation (if `expr` has an integer type, for example, and `type1` is `single` then the bit pattern of `expr` is changed) or could just mean a different way of interpreting the bits in a value.
+
+For example, to get a pointer to the Propeller 1 LOG table, located in ROM at address `0xC000`, you could do:
+```
+   dim logptr as ushort ptr
+   logptr = cast(ushort ptr, 0xC000)
+```
+
 
 ### CATCH
 
