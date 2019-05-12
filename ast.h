@@ -197,6 +197,8 @@ enum astkind {
     AST_SUPER,
     AST_LOCAL_IDENTIFIER,
     AST_COMPRESS_INSTR,
+
+    AST_BITFIELD = 140,
 };
 
 /* forward reference */

@@ -565,7 +565,8 @@ static const char *astnames[] = {
     "super",
     "local_identifier",
     "compress",
-    
+
+    "bitfield",
 };
 
 //

@@ -2954,6 +2954,9 @@ CompileMaskMove(IRList *irl, AST *expr)
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
         break;
+    case AST_METHODREF:
+        dest = CompileExpression(irl, destast, NULL);
+        break;
     default:
         ERROR(expr, "Internal error, bad value  in MaskMove");
         return tmp;

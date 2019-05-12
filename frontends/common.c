@@ -73,6 +73,7 @@ AST *ast_type_ptr_void;
 AST *ast_type_generic;
 AST *ast_type_const_generic;
 AST *ast_type_void;
+AST *ast_type_bitfield;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -516,6 +517,8 @@ Init()
     ast_type_ptr_byte = NewAST(AST_PTRTYPE, ast_type_byte, NULL);
     ast_type_ptr_void = NewAST(AST_PTRTYPE, ast_type_void, NULL);
 
+    ast_type_bitfield = NewAST(AST_BITFIELD, NULL, NULL);
+    
     // string is pointer to const byte
     ast_type_string = NewAST(AST_PTRTYPE, NewAST(AST_MODIFIER_CONST, ast_type_byte, NULL), NULL);
 
@@ -932,4 +935,18 @@ AddSubClass(Module *P, Module *C)
     }
     *ptr = C;
     C->subclasses = 0;
+}
+
+/* declare a symbol that's an alias for an expression */
+void
+DeclareMemberAlias(Module *P, AST *ident, AST *expr)
+{
+    const char *name = GetIdentifierName(ident);
+    const char *userName = GetUserIdentifierName(ident);
+    Symbol *sym = FindSymbol(&P->objsyms, name);
+    if (sym && sym->kind == SYM_VARIABLE) {
+        ERROR(ident, "Redefining %s", userName);
+        return;
+    }
+    AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
 }

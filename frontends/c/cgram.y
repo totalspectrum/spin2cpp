@@ -159,6 +159,15 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         second = MergePrefix(prefix, CombineTypes(first, second->left, identifier));
         expr->left = second;
         return expr;
+    case AST_BITFIELD:
+        // first == type
+        // second == BITFIELD(ident, size)
+        // -> BITFIELD(type, size)
+        if (identifier) {
+            *identifier = second->left;
+        }
+        second->left = first;
+        return second;
     default:
         if (!first) {
             return MergePrefix(prefix, second);
@@ -354,7 +363,10 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     AST *idlist, *typ;
     AST *ident;
     AST *ast;
-    
+    int bitfield_offset = 0;
+    int bitfield_size = 0;
+    int max_bitfield_size = 0;
+    AST *bitfield_ident;
     if (!astlist) return;
     if (astlist->kind != AST_STMTLIST) {
         ERROR(astlist, "Internal error, expected stmt list");
@@ -373,13 +385,51 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
         idlist = ast->right;
         typ = ast->left;
         if (idlist->kind == AST_LISTHOLDER) {
+            if (typ->kind == AST_BITFIELD) {
+                ERROR(typ, "Internal error, bitfield in a list");
+                typ = typ->left;
+            }
             while (idlist) {
                 ident = idlist->left;
+                // not in a bitfield
+                max_bitfield_size = bitfield_size = bitfield_offset = 0;
                 MaybeDeclareMemberVar(P, ident, typ);
                 idlist = idlist->right;
             }
         } else {
-            MaybeDeclareMemberVar(P, idlist, typ);
+            ident = idlist;
+            if (typ->kind == AST_BITFIELD) {
+                AST *bfield_ast = typ->right;
+                AST *bfield_typ = typ->left;
+                AST *bfield_access;
+                int tsize;
+                int bsize = EvalConstExpr(bfield_ast);
+                tsize = TypeSize(bfield_typ) * 8;
+                if (max_bitfield_size == 0 || max_bitfield_size != tsize || bitfield_offset + bsize > max_bitfield_size) {
+                    // start a new bitfield
+                    max_bitfield_size = tsize;
+                    bitfield_offset = 0;
+                    bitfield_ident = AstTempIdentifier("__bitfield_");
+                    MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ);
+                }
+                if (bsize > max_bitfield_size) {
+                    ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
+                          bsize, max_bitfield_size);
+                    bsize = max_bitfield_size;
+                }
+                if (bsize < 0) {
+                    bsize = 1;
+                }
+                bfield_access = NewAST(AST_RANGE, AstInteger(bitfield_offset + bsize - 1), AstInteger(bitfield_offset));
+                bfield_access = NewAST(AST_RANGEREF, bitfield_ident, bfield_access);
+                bfield_access = NewAST(AST_CAST, bfield_typ, bfield_access);
+                DeclareMemberAlias(P, ident, bfield_access);
+                bitfield_offset += bsize;
+            } else {
+                // not in a bitfield
+                max_bitfield_size = bitfield_size = bitfield_offset = 0;
+                MaybeDeclareMemberVar(P, ident, typ);
+            }
         }
     }
 
@@ -1068,9 +1118,11 @@ struct_declarator
 	: declarator
             { $$ = $1; }
 	| ':' constant_expression
-            { SYNTAX_ERROR("Bitfields not supported yet"); $$ = NULL; }
+            { SYNTAX_ERROR("Empty bitfields not supported yet"); $$ = NULL; }
 	| declarator ':' constant_expression
-            { SYNTAX_ERROR("Bitfields not supported yet"); $$ = $1; }
+            {
+                $$ = NewAST(AST_BITFIELD, $1, $3);
+            }
 	;
 
 enum_specifier

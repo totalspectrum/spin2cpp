@@ -163,6 +163,7 @@ extern AST *ast_type_ptr_long;
 extern AST *ast_type_ptr_word;
 extern AST *ast_type_ptr_byte;
 extern AST *ast_type_ptr_void;
+extern AST *ast_type_bitfield;
 
 /* structure describing a dat block label */
 typedef struct label {
@@ -616,6 +617,9 @@ void DeclareOneMemberVar(Module *P, AST *ident, AST *typ);
 
 /* declare a member variable of P if it does not already exist */
 void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);
+
+/* declare a member alias of P */
+void DeclareMemberAlias(Module *P, AST *ident, AST *expr);
 
 /* declare a single global variable */
 void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ);

@@ -171,11 +171,15 @@ doCTransform(AST **astptr, unsigned cflags)
     if (!ast) return;
     switch (ast->kind) {
     case AST_ASSIGN:
+        doCTransform(&ast->left, cflags);
+        doCTransform(&ast->right, cflags);
+        if (ast->left && ast->left->kind == AST_CAST) {
+            ast->left = ast->left->right;
+        }
         if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
         }
-        doCTransform(&ast->left, cflags);
-        doCTransform(&ast->right, cflags);
+
         break;
     case AST_COUNTREPEAT:
         // convert repeat count into a for loop
@@ -219,12 +223,21 @@ doCTransform(AST **astptr, unsigned cflags)
         }
         break;
     case AST_METHODREF:
+    {
+        AST *typ;
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
-        if (IsPointerType(ast->left)) {
-            WARNING(ast, "Needs a pointer dereference");
+        typ = ExprType(ast);
+        if (typ && typ->kind == AST_USING) {
+            AST *replace = typ->left;
+            if (replace && replace->right && replace->right->kind == AST_RANGEREF) {
+                ast->right = replace->right->left;
+                replace->right->left = DupAST(ast);
+            }
+            *ast = *replace;
         }
         break;
+    }
     case AST_TRYENV:
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
@@ -263,14 +276,13 @@ doCTransform(AST **astptr, unsigned cflags)
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
-        AST *typ = ExprType(ast);
         if (curfunc && IsLocalVariable(ast)) {
+            AST *typ = ExprType(ast);
             if (typ) {
                 if (TypeSize(typ) > LARGE_SIZE_THRESHOLD || IsArrayType(typ)) {
                     curfunc->large_local = 1;
                 }
             }
-            
         }
         break;
     }

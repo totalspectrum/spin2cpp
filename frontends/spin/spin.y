@@ -940,6 +940,7 @@ lhs: identifier
   | identifier '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | hwreg
+    { $$ = $1; }
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }

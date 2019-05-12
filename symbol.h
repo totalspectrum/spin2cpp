@@ -28,6 +28,7 @@ typedef enum symtype {
     SYM_WEAK_ALIAS,      /* an alias for another symbol; may be overwritten */
     SYM_FILE,            /* name of a file included in the object */
     SYM_REDEF,           /* name redefinition, used for implementing static */
+    SYM_ALIAS,           /* makes a name an alias for an expression */
 } Symtype;
 
 #define IsAlias(sym) ((sym)->kind == SYM_WEAK_ALIAS)

@@ -611,7 +611,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         assign = NewAST(AST_STMTLIST, assign, NULL);
         AstReportDone(&saveinfo);
         return assign;
-    } else if (hwreg->kind == AST_HWREG) {
+    } else if (hwreg->kind == AST_HWREG || hwreg->kind == AST_METHODREF) {
         // OK
     } else {
         ERROR(dst, "internal error in range assign");
@@ -784,7 +784,7 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
 /*
  * print a range use
  * src->right should be an AST_RANGE
- * src->left is a hardware register
+ * src->left is a hardware register or simple expression
  */
 AST *
 TransformRangeUse(AST *src)
@@ -835,10 +835,12 @@ TransformRangeUse(AST *src)
                       cond,
                       NewAST(AST_THENELSE, rega, regb));
     }
+#if 0    
     if (src->left->kind != AST_HWREG) {
         ERROR(src, "range not applied to hardware register");
         return AstInteger(0);
     }
+#endif    
     AstReportAs(src, &saveinfo);
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
@@ -2261,6 +2263,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     {
         AST *objref = expr->left;
         AST *objtype = NULL;
+        AST *typexpr = NULL;
         Symbol *sym = NULL;
         const char *methodname;
         Function *func;
@@ -2288,6 +2291,16 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_VARIABLE:
             return (AST *)sym->val;
         case SYM_CONSTANT:
+            return ExprTypeRelative(table, (AST *)sym->val, P);
+        case SYM_ALIAS:
+            typexpr = (AST *)sym->val;
+            if (typexpr->kind == AST_CAST) {
+                typexpr = typexpr->right;
+            }
+            if (typexpr && typexpr->kind == AST_RANGEREF) {
+                AST *typ = NewAST(AST_USING, (AST *)sym->val, NULL);
+                return typ;
+            }
             return ExprTypeRelative(table, (AST *)sym->val, P);
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
