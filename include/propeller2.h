@@ -78,3 +78,10 @@ static __inline__ void togglepin(int pin)
         drvnot pin
     }
 }
+
+static __inline__ void pinwr(int pin, unsigned value)
+{
+    __asm {
+        wrpin value, pin
+    }
+}

@@ -19,7 +19,7 @@
  * if "classname" is TRUE, then add the class name as well
  */
 static void
-PrintDatArray(Flexbuf *f, Module *parse, const char *tail, bool classname)
+PrintDatArrayName(Flexbuf *f, Module *parse, const char *tail, bool classname)
 {
     char *datname = parse->datname;
 
@@ -379,7 +379,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
     /* data block, if applicable */
     if (parse->datblock && !gl_gas_dat) {
         flexbuf_printf(f, "  static ");
-        PrintDatArray(f, parse, ";\n", false);
+        PrintDatArrayName(f, parse, ";\n", false);
     }
     /* now the public members */
     PrintPublicFunctionDecls(f, parse);
@@ -660,12 +660,6 @@ outputByteHex(Flexbuf *f, int c)
     }
 }
 
-static DataBlockOutFuncs cppOutputFuncs = {
-    NULL,
-    outputByteHex,
-    NULL,
-};
-
 static void IfdefPropeller(Flexbuf *f)
 {
     if (gl_cc) {
@@ -680,8 +674,58 @@ static void EndIfdefPropeller(Flexbuf *f)
 }
 
 static void
+PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
+{
+    int numrelocs = flexbuf_curlen(relocs) / sizeof(Reloc);
+    int i;
+    Reloc *relocarray;
+    Reloc *nextreloc;
+    
+    if (numrelocs == 0) {
+        return;
+    }
+    flexbuf_printf(f, "#define RELOC_KIND_I32 %d\n", RELOC_KIND_I32);
+    flexbuf_printf(f, "#define RELOC_KIND_AUGS %d\n", RELOC_KIND_AUGS);
+    flexbuf_printf(f, "#define RELOC_KIND_AUGD %d\n", RELOC_KIND_AUGD);
+    flexbuf_printf(f, "static struct reloc {\n");
+    flexbuf_printf(f, "  int kind;\n");
+    flexbuf_printf(f, "  int where;\n");
+    flexbuf_printf(f, "  int value;\n");
+    flexbuf_printf(f, "} _reloc_%s[] = {\n", P->datname);
+    relocarray = (Reloc *)flexbuf_peek(relocs);
+    for (i = 0; i < numrelocs; i++) {
+        int32_t value;
+        char *kindstr;
+        Symbol *sym;
+        nextreloc = &relocarray[i];
+        
+        switch (nextreloc->kind) {
+        case RELOC_KIND_DEBUG:
+            continue;
+        case RELOC_KIND_I32:
+            sym = nextreloc->sym;
+            value = nextreloc->symoff;
+            kindstr = "RELOC_KIND_I32";
+            break;
+        case RELOC_KIND_AUGS:
+        case RELOC_KIND_AUGD:
+        default:
+            ERROR(NULL, "Cannot handle relocation yet\n");
+        }
+        flexbuf_printf(f, "    { %s, %d, %d },\n",
+                       kindstr, nextreloc->addr, value);
+    }
+    flexbuf_printf(f, "    { 0, 0, 0 }\n");
+    flexbuf_printf(f, "};\n");
+}
+
+static void
 PrintCppFile(Flexbuf *f, Module *parse)
 {
+    Flexbuf relocbuf;
+
+    flexbuf_init(&relocbuf, 1024);
+    
     /* things we always need */
     if (gl_header1 && gl_header2) {
         flexbuf_printf(f, "// %s", gl_header1);
@@ -725,23 +769,36 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (parse->datblock) {
         if (gl_gas_dat) {
             flexbuf_printf(f, "extern ");
-            PrintDatArray(f, parse, " __asm__(\"..dat_start\");\n", false);
+            PrintDatArrayName(f, parse, " __asm__(\"..dat_start\");\n", false);
             PrintDataBlockForGas(f, parse, 1);
         } else {
+            Flexbuf datb;
+            unsigned char *datbytes;
+            unsigned int siz;
+            flexbuf_init(&datb, 2048);
             if (gl_output == OUTPUT_C) {
                 flexbuf_printf(f, "static ");
-                PrintDatArray(f, parse, " = {\n", false);
+                PrintDatArrayName(f, parse, " = {\n", false);
             } else {
-                PrintDatArray(f, parse, " = {\n", true);
+                PrintDatArrayName(f, parse, " = {\n", true);
             }
             datacount = 0;
-            PrintDataBlock(f, parse, &cppOutputFuncs, NULL);
+            PrintDataBlock(&datb, parse, NULL, &relocbuf);
+            siz = flexbuf_curlen(&datb);
+            datbytes = (unsigned char *)flexbuf_get(&datb);
+            while (siz > 0) {
+                outputByteHex(f, *datbytes++);
+                --siz;
+            }
             if (datacount != 0) {
                 flexbuf_printf(f, "\n");
             }
             flexbuf_printf(f, "};\n");
         }
     }
+    /* relocations, if necessary */
+    PrintCppRelocs(f, parse, &relocbuf);
+    
     /* functions */
     PrintFunctionBodies(f, parse);
 
