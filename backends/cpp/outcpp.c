@@ -673,6 +673,36 @@ static void EndIfdefPropeller(Flexbuf *f)
     }
 }
 
+static char *
+reloc_func =
+    "static void reloc_add_(uint8_t *ptr, uint32_t offset)\n"
+    "{\n"
+    "    int byte, carry, offbyte, i;\n"
+    "    carry = 0;\n"
+    "    for (i = 0; i < 4; i++) {\n"
+    "        offbyte = offset & 0xff; offset = offset>>8;\n"
+    "        byte = *ptr + offbyte + carry;\n"
+    "        *ptr++ = byte & 0xff;\n"
+    "        carry = byte >> 8;\n"
+    "    }\n"
+    "}\n"
+    "\n"
+    "static void _dorelocs(uint8_t *dat, struct reloc__ *reloc)\n"
+    "{\n"
+    "    while (reloc->kind != 0) {\n"
+    "        switch(reloc->kind) {\n"
+    "        case RELOC_KIND_I32:\n"
+    "            reloc_add_((uint8_t*)&dat[reloc->where], reloc->value);\n"
+    "            break;\n"
+    "        }\n"
+    "        reloc++;\n"
+    "    }\n"
+    "}\n"
+    "static void _doreloc(void) __attribute__((constructor));\n"
+    "static void _doreloc(void)\n"
+    "{  _dorelocs( (uint8_t*)&%s[0], &_reloc_dat[0]); }\n\n"
+    ;
+
 static void
 PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
 {
@@ -680,6 +710,7 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     int i;
     Reloc *relocarray;
     Reloc *nextreloc;
+    char *prefix;
     
     if (numrelocs == 0) {
         return;
@@ -687,11 +718,11 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     flexbuf_printf(f, "#define RELOC_KIND_I32 %d\n", RELOC_KIND_I32);
     flexbuf_printf(f, "#define RELOC_KIND_AUGS %d\n", RELOC_KIND_AUGS);
     flexbuf_printf(f, "#define RELOC_KIND_AUGD %d\n", RELOC_KIND_AUGD);
-    flexbuf_printf(f, "static struct reloc {\n");
+    flexbuf_printf(f, "static struct reloc__ {\n");
     flexbuf_printf(f, "  int kind;\n");
     flexbuf_printf(f, "  int where;\n");
     flexbuf_printf(f, "  int value;\n");
-    flexbuf_printf(f, "} _reloc_%s[] = {\n", P->datname);
+    flexbuf_printf(f, "} _reloc_dat[] = {\n");
     relocarray = (Reloc *)flexbuf_peek(relocs);
     for (i = 0; i < numrelocs; i++) {
         int32_t value;
@@ -717,6 +748,13 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     }
     flexbuf_printf(f, "    { 0, 0, 0 }\n");
     flexbuf_printf(f, "};\n");
+    prefix = calloc(1, strlen(P->datname)+strlen(P->classname)+32);
+    if (gl_output == OUTPUT_C) {
+        sprintf(prefix, "%s_%s", P->classname, P->datname);
+    } else {
+        sprintf(prefix, "%s::%s", P->classname, P->datname);
+    }
+    flexbuf_printf(f, reloc_func, prefix, P->datname);
 }
 
 static void
