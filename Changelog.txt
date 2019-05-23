@@ -1,6 +1,7 @@
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations
 - Added CAST operator to BASIC
+- Added support in C/C++ output for doing relocation of P2 ASM code at run time (needed for supporting HUB addresses)
 
 Version 3.9.26
 - Added DEF FNA(X)=X form to BASIC

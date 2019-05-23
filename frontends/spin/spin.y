@@ -101,6 +101,7 @@ SpinRetType(AST *funcdef)
 %token SP_COGNEW     "COGNEW"
 
 %token SP_CASE       "CASE"
+%token SP_CASE_FAST  "CASE_FAST"
 %token SP_OTHER      "OTHER"
 
 %token SP_QUIT       "QUIT"
@@ -382,6 +383,8 @@ elseblock:
 casestmt:
   SP_CASE expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
     { $$ = NewCommentedAST(AST_CASE, $2, $5, $1); }
+  | SP_CASE expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
+    { $$ = NewCommentedAST(AST_CASETABLE, $2, $5, $1); }
 ;
 
 casematchlist:

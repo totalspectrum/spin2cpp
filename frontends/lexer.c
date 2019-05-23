@@ -1257,6 +1257,7 @@ struct reservedword {
     { "byte", SP_BYTE },
 
     { "case", SP_CASE },
+    { "case_fast", SP_CASE_FAST },
     { "cognew", SP_COGNEW },
     { "coginit", SP_COGINIT },
     { "con", SP_CON },
