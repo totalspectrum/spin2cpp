@@ -427,7 +427,7 @@ PrintMacros(Flexbuf *f, Module *parse)
       }
 
     if (needsIfdef) {
-      flexbuf_printf(f, "#ifdef __GNUC__\n");
+      flexbuf_printf(f, "#if defined(__GNUC__)\n");
     }
 
     if (needsInline) flexbuf_printf(f, "#define INLINE__ static inline\n");
@@ -453,6 +453,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	  flexbuf_printf(f, "#define Yield__()\n");
 	}
 	if (gl_output == OUTPUT_C) {
+          flexbuf_printf(f, "#ifndef __FLEXC__\n");
 	  flexbuf_printf(f, "#define waitcnt(n) _waitcnt(n)\n");
 	  if (be->needsLockFuncs) {
               flexbuf_printf(f, "#define locknew() _locknew()\n");
@@ -463,6 +464,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	  flexbuf_printf(f, "#define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)\n");
 	  flexbuf_printf(f, "#define cognew(code, par) coginit(0x8, (code), (par))\n");
 	  flexbuf_printf(f, "#define cogstop(i) _cogstop(i)\n");
+          flexbuf_printf(f, "#endif /* __FLEXC__ */\n");
 	  if (be->needsHighmult) {
               flexbuf_printf(f, "static int32_t Highmult__(int32_t a, int32_t b) {\n");
 	      flexbuf_printf(f, "  int sign = (a^b)>>31;\n");
@@ -677,22 +679,22 @@ static char *
 reloc_func =
     "static void reloc_add_(uint8_t *ptr, uint32_t offset)\n"
     "{\n"
-    "    int byte, carry, offbyte, i;\n"
-    "    carry = 0;\n"
-    "    for (i = 0; i < 4; i++) {\n"
-    "        offbyte = offset & 0xff; offset = offset>>8;\n"
-    "        byte = *ptr + offbyte + carry;\n"
-    "        *ptr++ = byte & 0xff;\n"
-    "        carry = byte >> 8;\n"
-    "    }\n"
+    "    uint32_t d;\n"
+    "    d = ptr[0] + (ptr[1]<<8) + (ptr[2]<<16) + (ptr[3]<<24);\n"
+    "    d += offset;\n"
+    "    ptr[0] = d & 0xff;\n"
+    "    ptr[1] = (d>>8) & 0xff;\n"
+    "    ptr[2] = (d>>16) & 0xff;\n"
+    "    ptr[3] = (d>>24) & 0xff;\n"
     "}\n"
     "\n"
     "static void _dorelocs(uint8_t *dat, struct reloc__ *reloc)\n"
     "{\n"
+    "    int32_t offset = (int32_t)dat;\n"
     "    while (reloc->kind != 0) {\n"
     "        switch(reloc->kind) {\n"
     "        case RELOC_KIND_I32:\n"
-    "            reloc_add_((uint8_t*)&dat[reloc->where], reloc->value);\n"
+    "            reloc_add_((uint8_t*)&dat[reloc->where], offset);\n"
     "            break;\n"
     "        }\n"
     "        reloc++;\n"
@@ -700,7 +702,12 @@ reloc_func =
     "}\n"
     "static void _doreloc(void) __attribute__((constructor));\n"
     "static void _doreloc(void)\n"
-    "{  _dorelocs( (uint8_t*)&%s[0], &_reloc_dat[0]); }\n\n"
+    "{  static int done = 0;\n"
+    "   if (!done) {\n"
+    "     _dorelocs( (uint8_t*)&%s[0], &_reloc_dat[0]);\n"
+    "     done = 1;\n"
+    "   }\n"
+    "}\n\n"
     ;
 
 static void
@@ -715,6 +722,8 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     if (numrelocs == 0) {
         return;
     }
+    WARNING(NULL, "PASM code must be relocated at run time; you may need to manually tweak the C/C++ output if __attribute__((constructor)) is not supported");
+    
     flexbuf_printf(f, "#define RELOC_KIND_I32 %d\n", RELOC_KIND_I32);
     flexbuf_printf(f, "#define RELOC_KIND_AUGS %d\n", RELOC_KIND_AUGS);
     flexbuf_printf(f, "#define RELOC_KIND_AUGD %d\n", RELOC_KIND_AUGD);
@@ -727,21 +736,24 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     for (i = 0; i < numrelocs; i++) {
         int32_t value;
         char *kindstr;
-        Symbol *sym;
         nextreloc = &relocarray[i];
         
         switch (nextreloc->kind) {
         case RELOC_KIND_DEBUG:
             continue;
         case RELOC_KIND_I32:
-            sym = nextreloc->sym;
             value = nextreloc->symoff;
             kindstr = "RELOC_KIND_I32";
             break;
         case RELOC_KIND_AUGS:
+            ERROR(NULL, "Cannot handle AUGS relocation yet");
+            break;
         case RELOC_KIND_AUGD:
+            ERROR(NULL, "Cannot handle AUGD relocation yet");
+            break;
         default:
-            ERROR(NULL, "Cannot handle relocation yet\n");
+            ERROR(NULL, "Cannot handle this relocation yet");
+            break;
         }
         flexbuf_printf(f, "    { %s, %d, %d },\n",
                        kindstr, nextreloc->addr, value);
@@ -750,7 +762,7 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     flexbuf_printf(f, "};\n");
     prefix = calloc(1, strlen(P->datname)+strlen(P->classname)+32);
     if (gl_output == OUTPUT_C) {
-        sprintf(prefix, "%s_%s", P->classname, P->datname);
+        sprintf(prefix, "%s", P->datname);
     } else {
         sprintf(prefix, "%s::%s", P->classname, P->datname);
     }
