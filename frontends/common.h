@@ -671,4 +671,10 @@ void AddSubClass(Module *P, Module *subP);
 
 void DeclareMemberVariables(Module *);
 
+/* add a symbol for a label in the current function */
+void AddSymbolForLabel(AST *ast);
+
+/* transform a switch/case expression into a sequence of GOTOs */
+AST *CreateSwitch(AST *expr, AST *stmt);
+
 #endif
