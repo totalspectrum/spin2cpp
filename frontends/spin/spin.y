@@ -383,7 +383,7 @@ elseblock:
 casestmt:
   SP_CASE expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
     { $$ = NewCommentedAST(AST_CASE, $2, $5, $1); }
-  | SP_CASE expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
+  | SP_CASE_FAST expr SP_EOLN SP_INDENT casematchlist SP_OUTDENT
     { $$ = NewCommentedAST(AST_CASETABLE, $2, $5, $1); }
 ;
 
