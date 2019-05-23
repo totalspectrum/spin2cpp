@@ -567,6 +567,7 @@ static const char *astnames[] = {
     "compress",
 
     "bitfield",
+    "case_table",
 };
 
 //

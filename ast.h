@@ -199,6 +199,7 @@ enum astkind {
     AST_COMPRESS_INSTR,
 
     AST_BITFIELD = 140,
+    AST_CASETABLE,
 };
 
 /* forward reference */
