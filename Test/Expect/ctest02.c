@@ -4,14 +4,16 @@
 #include <propeller.h>
 #include "ctest02.h"
 
-#ifdef __GNUC__
+#if defined(__GNUC__)
 #define INLINE__ static inline
 #else
 #define INLINE__ static
+#ifndef __FLEXC__
 #define waitcnt(n) _waitcnt(n)
 #define coginit(id, code, par) _coginit((unsigned)(par)>>2, (unsigned)(code)>>2, id)
 #define cognew(code, par) coginit(0x8, (code), (par))
 #define cogstop(i) _cogstop(i)
+#endif /* __FLEXC__ */
 #endif
 
 static  int32_t ctest02_implement(ctest02 *self, int32_t x);
