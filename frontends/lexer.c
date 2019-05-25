@@ -549,6 +549,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_ELSEIFNOT:
             case SP_REPEAT:
             case SP_CASE:
+            case SP_CASE_FAST:
                 EstablishIndent(L, startColumn);
                 break;
             case SP_LONG:
