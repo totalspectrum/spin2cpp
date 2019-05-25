@@ -51,7 +51,7 @@ void IRCompress(IRList *list, IRList *kernel);
 // create an IR list from a module definition
 bool CompileToIR(IRList *list, Module *P);
 
-void EmitLabel(IRList *list, Operand *op);
+IR *EmitLabel(IRList *list, Operand *op);
 
 // optimization functions
 void OptimizeIRLocal(IRList *irl, Function *f);

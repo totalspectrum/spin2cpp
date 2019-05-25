@@ -127,7 +127,7 @@ doCTransform(AST **astptr, unsigned cflags)
     case AST_CASE:
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
-        *ast = *CreateSwitch(ast->left, ast->right);
+        *ast = *CreateSwitch(ast->left, ast->right, NULL);
         break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:

@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "common.h"
+#include "util/flexbuf.h"
 
 void
 AddSymbolForLabel(AST *ast)
@@ -129,15 +130,166 @@ again:
     return switchstmt;
 }
 
+// struct that holds case values and labels
+typedef struct {
+    int32_t val;
+    AST *label;
+} CaseHolder;
+
+static int caseCmp(const void *av, const void *bv)
+{
+    const CaseHolder *a = (const CaseHolder *)av;
+    const CaseHolder *b = (const CaseHolder *)bv;
+    return a->val - b->val;
+}
+
+static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *force_reason)
+{
+    CaseHolder temp;
+    if (expr->kind != AST_OPERATOR) {
+        if (force_reason) {
+            ERROR(expr, "%s: case expression is not valid", force_reason);
+        }
+        return 0;
+    }
+    if (expr->d.ival == K_EQ) {
+        if (!AstMatch(ident, expr->left)) {
+            if (force_reason) {
+                ERROR(expr, "%s: case expression is not valid", force_reason);
+            }
+            return 0;
+        }
+        if (!IsConstExpr(expr->right)) {
+            if (force_reason) {
+                ERROR(expr, "%s: case expression is not constant", force_reason);
+            }
+            return 0;
+        }
+        temp.val = EvalConstExpr(expr->right);
+        temp.label = label;
+        flexbuf_addmem(fb, (char *)&temp, sizeof(temp));
+    } else if (expr->d.ival == K_BOOL_OR) {
+        return AddCases(fb, ident, expr->left, label, force_reason) && AddCases(fb, ident, expr->right, label, force_reason);
+    }
+    return 1;
+}
+
+//
+// check a list of if x goto y statements to see if they can be turned into a jump
+// table
+//
+AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reason)
+{
+    AST *top, *ast;
+    AST *assign, *ident;
+    AST *expr;
+    AST *label;
+    AST *exprtype;
+    Flexbuf fb;
+    CaseHolder *cases;
+    CaseHolder *curcase;
+    size_t siz;
+    int i;
+    int range, minval;
+    int maxrange = 255;
+    int minrange = 3;
+    int lastval;
+    
+    assign = switchstmt->left;
+    switchstmt = switchstmt->right;
+    if (assign->kind != AST_ASSIGN) {
+        ERROR(NULL, "internal error in switch: assignment not found");
+        return NULL;
+    }
+    ident = assign->left;
+    exprtype = ExprType(ident);
+    if (exprtype && !IsIntOrGenericType(exprtype)) {
+        return NULL;
+    }
+    flexbuf_init(&fb, 0);
+    for (top = switchstmt; top; top = top->right) {
+        ast = top->left;
+        if (ast->kind != AST_IF) {
+            ERROR(NULL, "internal error in switch: IF not found");
+            return NULL;
+        }
+        expr = ast->left;
+        label = ast->right;
+        if (label->kind != AST_THENELSE || label->left->kind != AST_STMTLIST) {
+            ERROR(NULL, "internal error in switch: thenelse not found");
+            return NULL;
+        }
+        label = label->left->left;
+        if (label->kind != AST_GOTO) {
+            ERROR(NULL, "internal error in switch: goto not found");
+            return NULL;
+        }
+        label = label->left;
+        if (!AddCases(&fb, ident, expr, label, force_reason)) {
+            return NULL;
+        }
+    }
+    // now sort the cases
+    siz = flexbuf_curlen(&fb) / sizeof(CaseHolder);
+    if (!siz) {
+        return NULL;
+    }
+    cases = (CaseHolder *)flexbuf_get(&fb);
+    qsort(cases, siz, sizeof(CaseHolder), caseCmp);
+    minval = cases[0].val;
+    range = (cases[siz-1].val - minval)+1;
+    if (range > maxrange) {
+        if (force_reason) {
+            ERROR(switchstmt, "%s: too many entries needed for jump table", force_reason);
+        }
+        return NULL;
+    }
+    if (range < minrange && !force_reason) {
+        return NULL;
+    }
+    ast = NewAST(AST_JUMPTABLE, NULL, NULL);
+
+    // fix up the assignment
+    expr = assign->right;
+    if (minval < 0) {
+        minval = -minval;
+        expr = AstOperator('+', expr, AstInteger(minval));
+    } else {
+        expr = AstOperator('-', expr, AstInteger(minval));
+    }
+    expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    assign->right = expr;
+    ast->left = assign;
+    curcase = cases;
+    lastval = curcase->val;
+    for (i = 0; i < siz; i++) {
+        // insert any default branches we need
+        while (lastval < curcase->val) {
+            ast->right = AddToList(ast->right, NewAST(AST_LISTHOLDER, defaultlabel, NULL));
+            lastval++;
+        }
+        ast->right = AddToList(ast->right,
+                               NewAST(AST_LISTHOLDER, curcase->label, NULL));
+        lastval++;
+        curcase++;
+    }
+    ast->right = AddToList(ast->right,
+                           NewAST(AST_LISTHOLDER, defaultlabel, NULL));
+    //DumpAST(ast);
+    return ast;
+}
+
 //
 // transform a case statement
 // we evaluate _tmpvar = expr
 // then construct a series of statements like:
 //  if (_tmpvar == case1expr) goto case1label
 // for each case found within the stmt
+// if "force" is nonzero, then we force creation of
+// the jump table and print an error if it cannot be made
 //
 AST *
-CreateSwitch(AST *expr, AST *stmt)
+CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
 {
     AST *casetype;
     AST *tmpvar;
@@ -166,8 +318,13 @@ CreateSwitch(AST *expr, AST *stmt)
     if (!defaultlabel) {
         defaultlabel = endswitch;
     }
-    gostmt = NewAST(AST_GOTO, defaultlabel, NULL);
-    switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, gostmt, NULL));
+    gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
+    if (gostmt) {
+        switchstmt = gostmt;
+    } else {
+        gostmt = NewAST(AST_GOTO, defaultlabel, NULL);
+        switchstmt = AddToList(switchstmt, NewAST(AST_STMTLIST, gostmt, NULL));
+    }
     switchstmt = AddToList(switchstmt, stmt);
     switchstmt = AddToList(switchstmt,
                            NewAST(AST_STMTLIST, endlabel, NULL));

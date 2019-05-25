@@ -216,22 +216,6 @@ IsValidDstReg(Operand *op)
     }
 }
 
-#if 0
-static bool
-IsRegister(Operand *op)
-{
-    switch(op->kind) {
-    case REG_LOCAL:
-    case REG_ARG:
-    case REG_REG:
-    case REG_HW:
-        return true;
-    default:
-        return false;
-    }
-}
-#endif
-
 static bool
 InstrSetsFlags(IR *ir, int flags)
 {
@@ -1278,29 +1262,29 @@ int EliminateDeadCode(IRList *irl)
     while (ir) {
       ir_next = ir->next;
       if (ir->opc == OPC_JUMP) {
-          if (ir->cond == COND_TRUE) {
+          if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
               // dead code from here to next label
               IR *x = ir->next;
               while (x && x->opc != OPC_LABEL) {
                   ir_next = x->next;
-                  if (!IsDummy(x)) {
+                  if (!IsDummy(x) && !InstrIsVolatile(x)) {
                       DeleteIR(irl, x);
                       change = 1;
                   }
                   x = ir_next;
               }
               /* is the branch to the next instruction? */
-              if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst) {
+              if (ir_next && ir_next->opc == OPC_LABEL && ir_next->dst == ir->dst && !InstrIsVolatile(ir)) {
                   DeleteIR(irl, ir);
                   change = 1;
               }
-          } else if (ir->cond == COND_FALSE) {
+          } else if (ir->cond == COND_FALSE && !InstrIsVolatile(ir)) {
               DeleteIR(irl, ir);
           } else {
               /* if the branch skips over things that already have the right
                  condition, delete it
               */
-              if (ir->dst && ir_next && AllInstructionsConditional(InvertCond(ir->cond), ir_next, ir->dst))
+              if (ir->dst && !IsRegister(ir->dst->kind) && ir_next && AllInstructionsConditional(InvertCond(ir->cond), ir_next, ir->dst) && !InstrIsVolatile(ir))
               {
                   DeleteIR(irl, ir);
                   change = 1;
@@ -1332,15 +1316,20 @@ static void CheckUsage(IRList *irl)
 {
   IR *ir;
   for (ir = irl->head; ir; ir = ir->next) {
-    if (IsDummy(ir) || ir->opc == OPC_LABEL) {
-      continue;
-    }
-    CheckOpUsage(ir->src);
-    CheckOpUsage(ir->dst);
+      if (ir->opc == OPC_LABEL) {
+          if (InstrIsVolatile(ir)) {
+              ir->dst->used = 1;
+          }
+          continue;
+      } else if (IsDummy(ir) || ir->opc == OPC_LABEL) {
+          continue;
+      }
+      CheckOpUsage(ir->src);
+      CheckOpUsage(ir->dst);
   }
   /* remove unused labels */
   for (ir = irl->head; ir; ir = ir->next) {
-    if (ir->opc == OPC_LABEL) {
+    if (ir->opc == OPC_LABEL && !InstrIsVolatile(ir)) {
       if (ir->dst->used == 0) {
 	ir->opc = OPC_DUMMY;
       }
@@ -1361,7 +1350,13 @@ static int IsSafeShortForwardJump(IR *irbase)
 
   if (irbase->opc != OPC_JUMP)
     return 0;
+  if (InstrIsVolatile(irbase)) {
+      return 0;
+  }
   target = irbase->dst;
+  if (IsRegister(target->kind)) {
+      return 0;
+  }
   ir = irbase->next;
   while (ir) {
     if (!IsDummy(ir)) {
@@ -1833,7 +1828,7 @@ CheckLabelUsage(IRList *irl)
         ir_next = ir->next;
         if (ir->opc == OPC_LABEL) {
             MarkLabelUses(irl, ir);
-            if ( IsTemporaryLabel(ir->dst) && !(ir->flags & FLAG_LABEL_USED)) {
+            if ( IsTemporaryLabel(ir->dst) && !(ir->flags & (FLAG_LABEL_USED|FLAG_KEEP_INSTR))) {
                 DeleteIR(irl, ir);
                 change = 1;
             }

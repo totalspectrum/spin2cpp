@@ -675,6 +675,6 @@ void DeclareMemberVariables(Module *);
 void AddSymbolForLabel(AST *ast);
 
 /* transform a switch/case expression into a sequence of GOTOs */
-AST *CreateSwitch(AST *expr, AST *stmt);
+AST *CreateSwitch(AST *expr, AST *stmt, const char *force_reason);
 
 #endif

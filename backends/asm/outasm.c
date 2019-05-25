@@ -704,11 +704,13 @@ IR *EmitOp2(IRList *irl, IROpcode code, Operand *d, Operand *s)
 }
 
 // emit an assembler label
-void EmitLabel(IRList *irl, Operand *op)
+IR *EmitLabel(IRList *irl, Operand *op)
 {
+    IR *ir = NULL;
     if (irl) {
-        EmitOp1(irl, OPC_LABEL, op);
+        ir = EmitOp1(irl, OPC_LABEL, op);
     }
+    return ir;
 }
 
 void EmitNamedCogLabel(IRList *irl, const char *name)
@@ -864,15 +866,16 @@ int EmitString(IRList *irl, AST *ast)
     return count;
 }
 
-void EmitJump(IRList *irl, IRCond cond, Operand *label)
+IR *EmitJump(IRList *irl, IRCond cond, Operand *label)
 {
   IR *ir;
 
-  if (cond == COND_FALSE) return;
+  if (cond == COND_FALSE) return NULL;
   ir = NewIR(OPC_JUMP);
   ir->dst = label;
   ir->cond = cond;
   AppendIR(irl, ir);
+  return ir;
 }
 
 Operand *
@@ -2091,6 +2094,10 @@ OpcFromOp(int op)
       return OPC_MINS;
   case K_LIMITMAX:
       return OPC_MAXS;
+  case K_LIMITMIN_UNS:
+      return OPC_MINU;
+  case K_LIMITMAX_UNS:
+      return OPC_MAXU;
   default:
     ERROR(NULL, "Unsupported operator %d", op);
     return OPC_UNKNOWN;
@@ -2146,6 +2153,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_ROTR:
   case K_LIMITMIN:
   case K_LIMITMAX:
+  case K_LIMITMIN_UNS:
+  case K_LIMITMAX_UNS:
       left = CompileExpression(irl, lhs, temp);
       right = CompileExpression(irl, rhs, NULL);
       EmitMove(irl, temp, left);
@@ -4172,6 +4181,44 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_STMTLIST:
         CompileStatementList(irl, ast);
         break;
+    case AST_JUMPTABLE:
+    {
+        Operand *switchval;
+        Operand *op;
+        Operand *jumptab;
+        Operand *jumptabptr;
+        Operand *shift;
+        IR *ir;
+
+        if (gl_p2 || COG_CODE) {
+            shift = NewImmediate(2);
+        } else {
+            shift = NewImmediate(3);
+        }
+        switchval = CompileExpression(irl, ast->left, NULL);
+        jumptab = NewCodeLabel();
+        jumptabptr = NewImmediatePtr(NULL, jumptab);
+        EmitOp2(irl, OPC_SHL, switchval, shift);
+        EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+        EmitJump(irl, COND_TRUE, switchval);
+        ir = EmitLabel(irl, jumptab);
+        ir->flags |= FLAG_KEEP_INSTR;
+        ast = ast->right;
+        while (ast->kind == AST_LISTHOLDER) {
+            op = GetLabelFromSymbol(ast, ast->left->d.string);
+            if (op) {
+                ir = EmitJump(irl, COND_TRUE, op);
+                ir->flags |= FLAG_KEEP_INSTR;
+            }
+            ast = ast->right;
+        }
+        if (ast->kind != AST_STMTLIST) {
+            ERROR(ast, "Expected statement list!");
+            break;
+        }
+        CompileStatementList(irl, ast);
+        break;
+    }
     case AST_ASSIGN:
         /* fall through */
     default:
