@@ -41,5 +41,7 @@
 #define K_GTU       0x122
 #define K_GEU       0x123
 #define K_ASC       0x124
+#define K_LIMITMIN_UNS 0x125
+#define K_LIMITMAX_UNS 0x126
 
 #endif

@@ -44,6 +44,8 @@ typedef enum IROpcode {
     OPC_LOCKSET,
     OPC_MAXS,
     OPC_MINS,
+    OPC_MAXU,
+    OPC_MINU,
     OPC_MOV,
     OPC_MOVD,
     OPC_MOVS,
