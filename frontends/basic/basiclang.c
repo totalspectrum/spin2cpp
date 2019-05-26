@@ -490,12 +490,14 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->right);
         break;
     case AST_CASE:
+    case AST_CASETABLE:
     {
         AST *list = ast->right;
         AST *var;
         AST *seq = NULL;
         AST *elseholder = NULL;
         AST *ifholder = NULL;
+        const char *case_name = (ast->kind == AST_CASETABLE) ? "ON GOTO" : NULL;
         doBasicTransform(&ast->left);
         AstReportAs(ast, &saveinfo);
         if (IsIdentifier(ast->left)) {
@@ -528,6 +530,7 @@ doBasicTransform(AST **astptr)
             ifholder->right = elseholder = NewAST(AST_THENELSE, casebody, NULL);
             list = list->right;
         }
+        *ast = *CreateSwitch(ast->left, ast->right, case_name);
         AstReportDone(&saveinfo);
         if (seq) {
             *astptr = seq;

@@ -3,19 +3,26 @@
 
 void test031::Fun(int32_t Y)
 {
-  int32_t 	_tmp__0001;
-  switch((_tmp__0001 = X + Y)) {
-  case 10:
-    _OUTA ^= 0x1;
-    break;
-  case (A * 2):
-    _OUTA ^= 0x2;
-    _OUTA ^= 0x4;
-    break;
-  default:
-    _OUTA ^= 0x8;
-    break;
+  int32_t 	_tmp__0001, _tmp__0002;
+  _tmp__0002 = _tmp__0001 = X + Y;
+  if (_tmp__0002 == 10) {
+    goto _case__0004;
   }
+  if (_tmp__0002 == (A * 2)) {
+    goto _case__0005;
+  }
+  goto _case__0006;
+  _case__0004:
+  _OUTA ^= 0x1;
+  goto _endswitch_0003;
+  _case__0005:
+  _OUTA ^= 0x2;
+  _OUTA ^= 0x4;
+  goto _endswitch_0003;
+  _case__0006:
+  _OUTA ^= 0x8;
+  goto _endswitch_0003;
+  _endswitch_0003:
   X = X + 5;
 }
 

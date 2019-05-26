@@ -425,9 +425,11 @@ doSpinTransform(AST **astptr, int level)
         doSpinTransform(&ast->right, level);
         break;
     case AST_CASE:
+    case AST_CASETABLE:
     {
         AST *list = ast->right;
-        doSpinTransform(&ast->left, 0);
+        const char *case_name = ast->kind == AST_CASETABLE ? "case_fast" : NULL;
+        doSpinTransform(&ast->left, level);
         AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
             AST *var = AstTempLocalVariable("_tmp_", NULL);
@@ -435,14 +437,15 @@ doSpinTransform(AST **astptr, int level)
         }
         while (list) {
             AST *caseitem;
-            if (list->kind != AST_LISTHOLDER) {
+            if (list->kind != AST_STMTLIST) {
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
-            doSpinTransform(&caseitem->left, 0);
+            doSpinTransform(&caseitem->left, level);
             doSpinTransform(&caseitem->right, level);
             list = list->right;
         }
+        *ast = *CreateSwitch(ast->left, ast->right, case_name);
         AstReportDone(&saveinfo);
         break;
     }

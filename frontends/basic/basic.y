@@ -895,7 +895,7 @@ selectstmt:
   BAS_SELECT BAS_CASE expr eoln casematchlist BAS_END BAS_SELECT
     { $$ = NewCommentedAST(AST_CASE, $3, $5, $1); }
   | BAS_ON expr BAS_GOTO exprlist
-    { $$ = NewCommentedAST(AST_CASE, $2, BuildOnGotoCases($4), $1); }
+    { $$ = NewCommentedAST(AST_CASETABLE, $2, BuildOnGotoCases($4), $1); }
 ;
 
 casematchlist:

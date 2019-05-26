@@ -389,16 +389,26 @@ casestmt:
 
 casematchlist:
   casematchitem
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+    { $$ = $1; }
   | casematchlist casematchitem
-    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+    { $$ = AddToList($1, $2); }
   ;
 
 casematchitem:
   casematch SP_EOLN stmtblock
     {
-        AST *slist = NewAST(AST_STMTLIST, $3, NULL);
-        $$ = NewAST(AST_CASEITEM, $1, slist);
+        AST *expr = $1;
+        AST *stmts = $3;
+        AST *firststmt;
+        AST *breakstmt = NewAST(AST_QUIT, NULL, NULL);
+        stmts = AddToList(stmts, NewAST(AST_STMTLIST, breakstmt, NULL));
+        firststmt = stmts->left;
+        if (expr->kind == AST_OTHER) {
+            stmts->left = NewAST(AST_OTHER, firststmt, NULL);
+        } else {
+            stmts->left = NewAST(AST_CASEITEM, expr, firststmt);
+        }
+        $$ = stmts;
     }
   ;
 

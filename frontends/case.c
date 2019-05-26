@@ -47,6 +47,40 @@ AddSymbolForLabel(AST *ast)
     }
 }
 
+/* turn an expression list into an expression */
+static AST *MakeCaseTest(AST *ident, AST *expr)
+{
+    AST *r, *r2;
+    if (!expr) {
+        return NULL;
+    }
+    if (expr->kind == AST_RANGE) {
+        r = AstOperator(K_GE, ident, expr->left);
+        r2 = AstOperator(K_LE, ident, expr->right);
+        r = AstOperator(K_BOOL_AND, r, r2);
+        return r;
+    }
+    if (expr->kind == AST_EXPRLIST) {
+        r = MakeCaseTest(ident, expr->left);
+        if (expr->right) {
+            r2 = MakeCaseTest(ident, expr->right);
+            r = AstOperator(K_BOOL_OR, r, r2);
+        }
+        return r;
+    }
+    if (expr->kind == AST_STRING) {
+        const char *s = expr->d.string;
+        r = AstOperator(K_EQ, ident, AstInteger(*s));
+        s++;
+        while (*s) {
+            r = AstOperator(K_BOOL_OR, r, AstOperator(K_EQ, ident, AstInteger(*s)));
+            s++;
+        }
+        return r;
+    }
+    return AstOperator(K_EQ, ident, expr);
+}
+
 /*
  * returns a list of if x goto y; statments where x is a case condition and
  * y is the case label
@@ -74,7 +108,7 @@ again:
         labelid = AstTempIdentifier("_case_");
         label = NewAST(AST_LABEL, labelid, NULL);
         AddSymbolForLabel(label);
-        ifcond = AstOperator(K_EQ, tmpvar, stmt->left);
+        ifcond = MakeCaseTest(tmpvar, stmt->left);
         *stmt = *NewAST(AST_STMTLIST, label,
                         NewAST(AST_STMTLIST, stmt->right, NULL));
         ifgoto = NewAST(AST_GOTO, labelid, NULL);
@@ -168,10 +202,47 @@ static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *
         temp.val = EvalConstExpr(expr->right);
         temp.label = label;
         flexbuf_addmem(fb, (char *)&temp, sizeof(temp));
+        return 1;
     } else if (expr->d.ival == K_BOOL_OR) {
         return AddCases(fb, ident, expr->left, label, force_reason) && AddCases(fb, ident, expr->right, label, force_reason);
+    } else if (expr->d.ival == K_BOOL_AND) {
+        AST *left, *right;
+        int32_t minval, maxval;
+        left = expr->left;
+        right = expr->right;
+        if (left->kind != AST_OPERATOR || left->d.ival != K_GE) {
+            goto skip;
+        }
+        if (right->kind != AST_OPERATOR || right->d.ival != K_LE) {
+            goto skip;
+        }
+        if (!AstMatch(ident, left->left) || !AstMatch(ident, right->left)) {
+            goto skip;
+        }
+        if (!IsConstExpr(left->right) || !IsConstExpr(right->right)) {
+            goto skip;
+        }
+        minval = EvalConstExpr(left->right);
+        maxval = EvalConstExpr(right->right);
+        if ( (maxval - minval) > 256 ) {
+            if (force_reason) {
+                ERROR(expr, "%s: expression has too many cases", force_reason);
+            }
+            return 0;
+        }
+        while (minval < maxval) {
+            temp.val = minval;
+            temp.label = label;
+            flexbuf_addmem(fb, (char *)&temp, sizeof(temp));
+            minval++;
+        }
+        return 1;
     }
-    return 1;
+skip:    
+    if (force_reason) {
+        ERROR(expr, "%s: case expression is not valid", force_reason);
+    }
+    return 0;
 }
 
 //
@@ -194,7 +265,10 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     int maxrange = 255;
     int minrange = 3;
     int lastval;
-    
+
+    if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
+        return NULL;
+    }
     assign = switchstmt->left;
     switchstmt = switchstmt->right;
     if (assign->kind != AST_ASSIGN) {
@@ -254,7 +328,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     if (minval < 0) {
         minval = -minval;
         expr = AstOperator('+', expr, AstInteger(minval));
-    } else {
+    } else if (minval > 0) {
         expr = AstOperator('-', expr, AstInteger(minval));
     }
     expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
@@ -299,6 +373,8 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AST *gostmt;
     AST *endlabel;
     ASTReportInfo saveinfo;
+
+    //DumpAST(stmt);
     
     AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);

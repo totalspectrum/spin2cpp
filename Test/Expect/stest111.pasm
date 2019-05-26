@@ -6,19 +6,24 @@ entry
 
 _check
 	mov	_var01, arg01
-	cmp	_var01, #48 wz
+	mov	_var02, _var01
+	cmp	_var02, #48 wz
  if_e	jmp	#LR__0001
-	cmp	_var01, #49 wz
+	cmp	_var02, #49 wz
  if_e	jmp	#LR__0001
-	cmp	_var01, #50 wz
+	cmp	_var02, #50 wz
  if_e	jmp	#LR__0001
-	rdlong	_var02, objptr
-	cmp	_var01, _var02 wz
+	rdlong	_var03, objptr
+	cmp	_var02, _var03 wz
  if_ne	jmp	#LR__0002
 LR__0001
+	jmp	#LR__0003
+LR__0002
+	jmp	#LR__0004
+LR__0003
 	mov	result1, #1
 	jmp	#_check_ret
-LR__0002
+LR__0004
 	mov	result1, #0
 _check_ret
 	ret
@@ -35,6 +40,8 @@ objmem
 _var01
 	res	1
 _var02
+	res	1
+_var03
 	res	1
 arg01
 	res	1

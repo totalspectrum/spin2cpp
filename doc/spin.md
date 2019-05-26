@@ -102,6 +102,10 @@ The `@@@` operator returns the absolute hub address of
 a variable. This is the same as `@` in Spin code, but in PASM code `@`
 returns only the address relative to the start of the `DAT` section.
 
+### CASE_FAST
+
+`CASE_FAST` is just like `CASE`, except that each of the case items must be a constant expression. It is guaranteed to compile to a jump table (regular `CASE` may sometimes compile to a sequence of `IF`/`ELSE IF`).
+
 ### Conditional expressions
 
 IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
