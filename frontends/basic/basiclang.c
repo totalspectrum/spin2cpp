@@ -441,28 +441,6 @@ ArrayDeref(AST *base, AST *index)
     return base;
 }
 
-static AST *
-CalculateCaseTest(AST *casetest, AST *var)
-{
-    AST *ast;
-    if (casetest->kind == AST_EXPRLIST) {
-        ast = CalculateCaseTest(casetest->left, var);
-        if (casetest->right) {
-            ast = AstOperator(K_BOOL_OR, ast,
-                              CalculateCaseTest(casetest->right, var));
-        }
-    } else if (casetest->kind == AST_RANGE) {
-        ast = AstOperator(K_BOOL_AND,
-                          AstOperator(K_GE, var, casetest->left),
-                          AstOperator(K_LE, var, casetest->right));
-    } else if (casetest->kind == AST_OTHER) {
-        ast = AstInteger(1);
-    } else {
-        ast = AstOperator(K_EQ, var, casetest);
-    }
-    return ast;
-}
-
 static void
 doBasicTransform(AST **astptr)
 {
@@ -495,8 +473,6 @@ doBasicTransform(AST **astptr)
         AST *list = ast->right;
         AST *var;
         AST *seq = NULL;
-        AST *elseholder = NULL;
-        AST *ifholder = NULL;
         const char *case_name = (ast->kind == AST_CASETABLE) ? "ON GOTO" : NULL;
         doBasicTransform(&ast->left);
         AstReportAs(ast, &saveinfo);
@@ -508,26 +484,12 @@ doBasicTransform(AST **astptr)
         }
         while (list) {
             AST *caseitem;
-            AST *casetest;
-            AST *casebody;
-            AST *iflist;
-            if (list->kind != AST_LISTHOLDER) {
+            if (list->kind != AST_STMTLIST) {
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
             doBasicTransform(&caseitem->left);
             doBasicTransform(&caseitem->right);
-            casetest = caseitem->left;
-            casebody = caseitem->right;
-            casetest = CalculateCaseTest(casetest, var);
-            ifholder = NewAST(AST_IF, casetest, NULL);
-            iflist = NewAST(AST_STMTLIST, ifholder, NULL);
-            if (!elseholder) {
-                seq = AddToList(seq, iflist);
-            } else {
-                elseholder->right = iflist;
-            }
-            ifholder->right = elseholder = NewAST(AST_THENELSE, casebody, NULL);
             list = list->right;
         }
         *ast = *CreateSwitch(ast->left, ast->right, case_name);

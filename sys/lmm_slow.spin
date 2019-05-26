@@ -6,6 +6,7 @@ LMM_RET
 LMM_CALL_PTR
 	wrlong	pc, sp
 	add	sp, #4
+LMM_JUMP_PTR
 	mov	pc, LMM_NEW_PC
 	jmp	#LMM_LOOP
 LMM_CALL
@@ -28,6 +29,7 @@ LMM_CALL_FROM_COG_ret
     ret
 
 LMM_JUMP_ret
+LMM_JUMP_PTR_ret
 LMM_CALL_ret
 LMM_CALL_PTR_ret
 LMM_RET_ret

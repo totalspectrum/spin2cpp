@@ -925,6 +925,18 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintOperand(fb, ir->fcache);
                 flexbuf_addstr(fb, ")\n");
                 return;
+            } else if (IsLocalOrArg(ir->dst) && lmmMode) {
+                if (lmmMode) {
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "mov\tLMM_NEW_PC, ");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_addstr(fb, "\n");
+                    PrintCond(fb, ir->cond);
+                    flexbuf_addstr(fb, "call\t#LMM_JUMP_PTR\n");
+                    return;
+                } else if (!gl_p2) {
+                    WARNING(NULL, "indirect function calls are not supported in COG mode");
+                }
             } else if (IsHubDest(ir->dst)) {
                 IR *dest;
                 if (!lmmMode) {

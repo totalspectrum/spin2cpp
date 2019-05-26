@@ -69,6 +69,7 @@ LMM_JUMP_FROM_CACHE
 I_fetch_JMP_PC
 	mov	LMM_NEW_PC, 0-0
 
+LMM_JUMP_PTR
 	'' see if new PC is still in cache; if it is, modify the jump
 	'' so that it goes directly there
 	'' WARNING: we cannot do that for LMM_CALL
@@ -150,6 +151,7 @@ LMM_set_pc
 	mov    pc, LMM_NEW_PC
 	jmp    #nextinstr
 
+LMM_JUMP_PTR_ret
 LMM_JUMP_ret
 LMM_CALL_ret
 LMM_CALL_PTR_ret

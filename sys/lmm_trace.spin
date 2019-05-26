@@ -42,6 +42,7 @@ LMM_CALL_FROM_COG
 LMM_CALL_FROM_COG_ret
     ret
 
+LMM_JUMP_PTR_ret
 LMM_JUMP_ret
 LMM_PUSH_ret
 LMM_RA
@@ -89,6 +90,12 @@ do_push
 	wrlong	instr, sp
 	add	sp, #4
 	jmp	LMM_RA
+
+LMM_JUMP_PTR
+	muxnz save_cz, #2
+	muxc  save_cz, #1
+	mov   newpc, LMM_NEW_PC
+	jmp   #lmm_set_newpc
 	
 LMM_JUMP
 	'' if the actual CALL instruction that triggered this CALL or JUMP is in

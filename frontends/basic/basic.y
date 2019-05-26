@@ -328,7 +328,7 @@ BuildOnGotoCases(AST *exprlist)
         gostmt = NewAST(AST_STMTLIST, gostmt, NULL);
         item = NewAST(AST_EXPRLIST, AstInteger(index), NULL);
         item = NewAST(AST_CASEITEM, item, gostmt);
-        item = NewAST(AST_LISTHOLDER, item, NULL);
+        item = NewAST(AST_STMTLIST, item, NULL);
         list = AddToList(list, item);
         index++;
     }
@@ -900,16 +900,26 @@ selectstmt:
 
 casematchlist:
   casematchitem
-    { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+    { $$ = $1; }
   | casematchlist casematchitem
-    { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $2, NULL)); }
+    { $$ = AddToList($1, $2); }
   ;
 
 casematchitem:
   casematch eoln statementlist
     {
-        AST *slist = $3;
-        $$ = NewAST(AST_CASEITEM, $1, slist);
+        AST *expr = $1;
+        AST *stmts = $3;
+        AST *firststmt;
+        AST *breakstmt = NewAST(AST_QUIT, NULL, NULL);
+        stmts = AddToList(stmts, NewAST(AST_STMTLIST, breakstmt, NULL));
+        firststmt = stmts->left;
+        if (expr->kind == AST_OTHER) {
+            stmts->left = NewAST(AST_OTHER, firststmt, NULL);
+        } else {
+            stmts->left = NewAST(AST_CASEITEM, expr, firststmt);
+        }
+        $$ = stmts;
     }
 ;
 
