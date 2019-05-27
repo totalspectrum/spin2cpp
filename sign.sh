@@ -14,8 +14,9 @@
 #
 code=$1
 if [ "$CODE_SIGN_BASE" != "" ]; then
-  mv $code ./unsigned_binary
+  cp $code ./unsigned_binary
   osslsigncode -spc $CODE_SIGN_BASE.spc -key $CODE_SIGN_BASE.key -t http://timestamp.verisign.com/scripts/timstamp.dll -in ./unsigned_binary -out $code
+  rm -f ./unsigned_binary
 else
     echo "No CODE_SIGN_BASE variable set, skipping signing"
 fi
