@@ -13,27 +13,24 @@
 # to build a release .zip, do "make zip" and "make spincvt.zip"
 #
 
+SIGN=./sign.sh
 ifeq ($(CROSS),win32)
 #  CC=i586-mingw32msvc-gcc
   CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000
   EXT=.exe
   BUILD=./build-win32
-  SIGN=./sign.sh
 else ifeq ($(CROSS),rpi)
   CC=arm-linux-gnueabihf-gcc
   EXT=
   BUILD=./build-rpi
-  SIGN=echo
 else ifeq ($(CROSS),linux32)
   CC=gcc -m32
   EXT=
   BUILD=./build-linux32
-  SIGN=echo
 else
   CC=gcc
   EXT=
   BUILD=./build
-  SIGN=echo
 endif
 
 INC=-I. -I$(BUILD)
