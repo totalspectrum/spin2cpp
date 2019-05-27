@@ -18,18 +18,22 @@ ifeq ($(CROSS),win32)
   CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000
   EXT=.exe
   BUILD=./build-win32
+  SIGN=./sign.sh
 else ifeq ($(CROSS),rpi)
   CC=arm-linux-gnueabihf-gcc
   EXT=
   BUILD=./build-rpi
+  SIGN=echo
 else ifeq ($(CROSS),linux32)
   CC=gcc -m32
   EXT=
   BUILD=./build-linux32
+  SIGN=echo
 else
   CC=gcc
   EXT=
   BUILD=./build
+  SIGN=echo
 endif
 
 INC=-I. -I$(BUILD)
@@ -177,6 +181,7 @@ COMMONDOCS=COPYING Changelog.txt doc
 ALLDOCS=README.md Fastspin.md $(COMMONDOCS)
 
 zip: fastspin.exe spin2cpp.exe
+	$(SIGN) fastspin.exe
 	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe fastspin.exe
 	zip -r fastspin.zip fastspin.exe Fastspin.md doc include
 
