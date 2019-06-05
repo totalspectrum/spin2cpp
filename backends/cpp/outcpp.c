@@ -734,8 +734,8 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
     flexbuf_printf(f, "} _reloc_dat[] = {\n");
     relocarray = (Reloc *)flexbuf_peek(relocs);
     for (i = 0; i < numrelocs; i++) {
-        int32_t value;
-        char *kindstr;
+        int32_t value = 0;
+        char *kindstr = "RELOC_INVALID";
         nextreloc = &relocarray[i];
         
         switch (nextreloc->kind) {
