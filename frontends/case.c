@@ -264,10 +264,18 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     int range, minval;
     int maxrange = 255;
     int minrange = 3;
+    int density; // at least density/maxrange items must be non-default
     int lastval;
-
+    int defaults_seen = 0;
+    
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
+    }
+    if (force_reason) {
+        density = 0; // we will always use a jump table
+    } else {
+        // otherwise at least half the jump table entries must be non-default
+        density = maxrange / 2;
     }
     assign = switchstmt->left;
     switchstmt = switchstmt->right;
@@ -341,6 +349,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         while (lastval < curcase->val) {
             ast->right = AddToList(ast->right, NewAST(AST_LISTHOLDER, defaultlabel, NULL));
             lastval++;
+            defaults_seen++;
         }
         ast->right = AddToList(ast->right,
                                NewAST(AST_LISTHOLDER, curcase->label, NULL));
@@ -349,6 +358,13 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     }
     ast->right = AddToList(ast->right,
                            NewAST(AST_LISTHOLDER, defaultlabel, NULL));
+    defaults_seen++;
+
+    // if the jump table is mostly defaults, revert to if/else
+    // mathematically we want defaults_seen / range > density / maxrange
+    if ( (defaults_seen * maxrange) / range < density ) {
+        return NULL;
+    }
     //DumpAST(ast);
     return ast;
 }

@@ -1672,13 +1672,14 @@ OptimizeImmediates(IRList *irl)
     IR *ir;
     Operand *src;
     int val;
+    int change = 0;
     
     for (ir = irl->head; ir; ir = ir->next) {
         src = ir->src;
         if (! (src && src->kind == IMM_INT) ) {
             continue;
         }
-        if (src->name == NULL || src->name[0] == 0) {
+        if (!gl_p2 && (src->name == NULL || src->name[0] == 0)) {
             /* already a small immediate */
             continue;
         }
@@ -1686,18 +1687,22 @@ OptimizeImmediates(IRList *irl)
         if (ir->opc == OPC_MOV && val < 0 && val >= -511) {
 	    ReplaceOpcode(ir, OPC_NEG);
             ir->src = NewImmediate(-val);
+            change++;
         } else if (ir->opc == OPC_AND && val < 0 && val >= -512) {
 	    ReplaceOpcode(ir, OPC_ANDN);
-            ir->src = NewImmediate(~val);
+            ir->src = NewImmediate( ~val ); /* note that is a tilde! */
+            change++;
         } else if (ir->opc == OPC_ADD && val < 0 && val >= -511) {
 	    ReplaceOpcode(ir, OPC_SUB);
             ir->src = NewImmediate(-val);
+            change++;
         } else if (ir->opc == OPC_SUB && val < 0 && val >= -511) {
 	    ReplaceOpcode(ir, OPC_ADD);
             ir->src = NewImmediate(-val);
+            change++;
 	}
     }
-    return 0; /* no rescan necessary */
+    return change;
 }
 
 static int

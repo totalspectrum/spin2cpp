@@ -1,3 +1,8 @@
+Version 3.9.28
+- Only use jump table for switch / select if the density is greater than 1/2
+- Do small immediate optimizations even in P2 (it was accidentally P1 only)
+
+
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations
 - Added CAST operator to BASIC
