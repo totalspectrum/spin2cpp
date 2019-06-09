@@ -308,7 +308,7 @@ fetchUint32(uint8_t *data)
 #define MAX_BYTES_ON_LINE 16
 
 static void
-OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
+OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
 {
     Flexbuf *databuf;
     Flexbuf *relocbuf;
@@ -392,7 +392,7 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op)
                 if (!sym) {
                     symname = RemappedName(label->name);
                 } else {
-                    symname = IdentifierModuleName(current, sym->our_name);
+                    symname = IdentifierModuleName(P, sym->our_name);
                 }
                 switch(nextreloc->kind) {
                 case RELOC_KIND_I32:
@@ -1141,7 +1141,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         // output a binary blob
         // dst has a label
         // data is in a string in src
-        OutputBlob(fb, ir->dst, ir->src);
+        // src2 is re-used as a pointer to the module
+        OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2);
         break;
     case OPC_FIT:
         flexbuf_addstr(fb, "\tfit\t496\n");

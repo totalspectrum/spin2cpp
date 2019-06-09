@@ -5175,7 +5175,8 @@ EmitDatSection(IRList *irl, Module *P)
   Flexbuf *fb;
   Flexbuf *relocs;
   Operand *op;
-
+  IR *ir;
+  
   if (!ModData(P) || !ModData(P)->datbase)
       return;
   fb = (Flexbuf *)calloc(1, sizeof(*fb));
@@ -5184,7 +5185,8 @@ EmitDatSection(IRList *irl, Module *P)
   flexbuf_init(relocs, 512);
   PrintDataBlock(fb, P, NULL,relocs);
   op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
-  EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
+  ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
+  ir->src2 = (Operand *)P;
 }
 
 void
