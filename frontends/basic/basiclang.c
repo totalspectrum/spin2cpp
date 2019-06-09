@@ -121,10 +121,10 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
     return AddToList(seq, elem);
 }
 
+// create a hex print integer call
 static AST *
-addPrintHex(AST *seq, AST *handle, AST *expr, AST *fmtAst)
+addPrintHex(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 {
-    // create a hex call
     AST *ast;
     AST *params;
 
@@ -132,7 +132,23 @@ addPrintHex(AST *seq, AST *handle, AST *expr, AST *fmtAst)
                     NewAST(AST_EXPRLIST, expr,
                            NewAST(AST_EXPRLIST, fmtAst,
                                   NewAST(AST_EXPRLIST, AstInteger(16), NULL))));
-    ast = NewAST(AST_FUNCCALL, basic_print_unsigned, params);
+    ast = NewAST(AST_FUNCCALL, func, params);
+    ast = NewAST(AST_SEQUENCE, ast, NULL);
+    return AddToList(seq, ast);
+}
+
+// create a decimal print integer call
+static AST *
+addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
+{
+    AST *ast;
+    AST *params;
+
+    params = NewAST(AST_EXPRLIST, handle,
+                    NewAST(AST_EXPRLIST, expr,
+                           NewAST(AST_EXPRLIST, fmtAst,
+                                  NewAST(AST_EXPRLIST, AstInteger(10), NULL))));
+    ast = NewAST(AST_FUNCCALL, func, params);
     ast = NewAST(AST_SEQUENCE, ast, NULL);
     return AddToList(seq, ast);
 }
@@ -143,20 +159,31 @@ addPrintHex(AST *seq, AST *handle, AST *expr, AST *fmtAst)
 // each field discovered in the string causes the corresponding parameter
 // to be prefixed with an AST_USING with an AST_INTEGER left side "fmtparam"
 // "fmtparam" has the following fields:
-//   bit 0-7: width 0-255; 0 means "no particular width"
-//   bit 8-9: 0=left justify, 1=right justify, 2=center
+//   bit 0-7: minimum width 0-255; 0 means "no particular width"
+//   bit 8-15: maximum width 0-255: 0 means "no particular maximum"
+//   bit 16-21: precision (digits after decimal point)
+//   bit 22: 1=left justify, 2=right justify, 3=center
 //   bits 10-15: reserved
 //   bit 16-21: minimum number of digits to show
 //   bits 22-23: sign field: 0 = print nothing for positive sign, 1 = print space, 2 = print +
 //
 
-#define FMTPARAM_WIDTH(w) (w)
-#define FMTPARAM_MINDIGITS(x) ((x)<<16)
+#define MAXWIDTH_BIT (0)
+#define MINWIDTH_BIT (8)
+#define PREC_BIT     (16)
+#define JUSTIFY_BIT  (22)
+#define PADDING_BIT  (24)
+#define SIGNCHAR_BIT (26)
+#define ALT_BIT      (28)
+#define UPCASE_BIT   (29)
+
+#define FMTPARAM_MAXWIDTH(w) (w)
+#define FMTPARAM_MINDIGITS(x) ((x)<<MINWIDTH_BIT)
 #define FMTPARAM_LEFTJUSTIFY (0)
-#define FMTPARAM_RIGHTJUSTIFY (1<<8)
-#define FMTPARAM_CENTER (2<<8)
-#define FMTPARAM_SIGNSPACE (1<<22)
-#define FMTPARAM_SIGNPLUS  (2<<22)
+#define FMTPARAM_RIGHTJUSTIFY (2<<JUSTIFY_BIT)
+#define FMTPARAM_CENTER (3<<JUSTIFY_BIT)
+#define FMTPARAM_SIGNPLUS  (1<<SIGNCHAR_BIT)
+#define FMTPARAM_SIGNSPACE (2<<SIGNCHAR_BIT)
 
 static AST *
 harvest(AST *exprlist, Flexbuf *fb)
@@ -262,7 +289,7 @@ TransformUsing(const char *usestr, AST *params)
                 width++;
                 if (c == '%') minwidth++;
             }
-            fmtparam = FMTPARAM_WIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
+            fmtparam = FMTPARAM_MAXWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
@@ -286,7 +313,7 @@ TransformUsing(const char *usestr, AST *params)
                 width++;
                 usestr++;
             }
-            fmtparam |= FMTPARAM_WIDTH(width);
+            fmtparam |= FMTPARAM_MAXWIDTH(width);
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
@@ -390,13 +417,13 @@ genPrintf(AST *ast)
                 }
                 switch (c) {
                 case 'd':
-                    seq = addPrintCall(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
+                    seq = addPrintDec(seq, Handle, basic_print_integer, thisarg, AstInteger(fmt));
                     break;
                 case 'u':
-                    seq = addPrintCall(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
+                    seq = addPrintDec(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     break;
                 case 'x':
-                    seq = addPrintHex(seq, Handle, thisarg, AstInteger(fmt));
+                    seq = addPrintHex(seq, Handle, basic_print_unsigned, thisarg, AstInteger(fmt));
                     break;
                 case 's':
                     seq = addPrintCall(seq, Handle, basic_print_string, thisarg, AstInteger(fmt));
@@ -680,11 +707,11 @@ doBasicTransform(AST **astptr)
                     seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
                 } else if (IsGenericType(type)) {
                     // create a hex call
-                    seq = addPrintHex(seq, handle, expr, fmtAst);
+                    seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
                 } else if (IsUnsignedType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_unsigned, expr, fmtAst);
+                    seq = addPrintDec(seq, handle, basic_print_unsigned, expr, fmtAst);
                 } else if (IsIntType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_integer, expr, fmtAst);
+                    seq = addPrintDec(seq, handle, basic_print_integer, expr, fmtAst);
                 } else {
                     ERROR(ast, "Unable to print expression of this type");
                 }
