@@ -3652,7 +3652,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
                               AstOperator(K_BIT_NOT, NULL, AstInteger(3)));
       r = CompileExpression(irl, alignexpr, NULL);
       temp = dest ? dest : NewFunctionTempRegister();
-      EmitMove(irl, dest, stackptr);
+      EmitMove(irl, temp, stackptr);
       EmitOp2(irl, OPC_ADD, stackptr, r);
       return temp;
   }
