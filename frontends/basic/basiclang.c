@@ -178,7 +178,9 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 #define UPCASE_BIT   (29)
 
 #define FMTPARAM_MAXWIDTH(w) (w)
-#define FMTPARAM_MINDIGITS(x) ((x)<<MINWIDTH_BIT)
+#define FMTPARAM_MINWIDTH(w) ((w)<<MINWIDTH_BIT)
+#define FMTPARAM_ALLWIDTH(w) (FMTPARAM_MAXWIDTH(w)|FMTPARAM_MINWIDTH(w))
+#define FMTPARAM_MINDIGITS(x) ((x)<<PREC_BIT)
 #define FMTPARAM_LEFTJUSTIFY (0)
 #define FMTPARAM_RIGHTJUSTIFY (2<<JUSTIFY_BIT)
 #define FMTPARAM_CENTER (3<<JUSTIFY_BIT)
@@ -289,7 +291,7 @@ TransformUsing(const char *usestr, AST *params)
                 width++;
                 if (c == '%') minwidth++;
             }
-            fmtparam = FMTPARAM_MAXWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
+            fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
@@ -313,7 +315,7 @@ TransformUsing(const char *usestr, AST *params)
                 width++;
                 usestr++;
             }
-            fmtparam |= FMTPARAM_MAXWIDTH(width);
+            fmtparam |= FMTPARAM_ALLWIDTH(width);
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
