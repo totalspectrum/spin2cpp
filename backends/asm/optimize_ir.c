@@ -634,9 +634,15 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   if (!first_ir) {
       return NULL;
   }
-  if (!IsBranch(first_ir) && IsDeadAfter(first_ir, orig)) {
+
+#if 1
+  // special case: if orig is dead after this,
+  // and if first_ir does not modify it, then it is safe to
+  // replace
+  if (!IsBranch(first_ir) && IsDeadAfter(first_ir, orig) && !InstrModifies(first_ir, orig)) {
       return first_ir;
   }
+#endif  
   for (ir = first_ir; ir; ir = ir->next) {
     if (IsDummy(ir)) {
 	continue;

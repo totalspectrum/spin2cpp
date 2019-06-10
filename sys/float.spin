@@ -275,14 +275,14 @@ pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
   needexp := 0
   numdigits := 5 '' later this should be a parameter  
   if (f < 0)
-    _basic_print_char(h, "-")
+    _basic_print_char(h, "-", 0)
     f := _float_negate(f)
   (lastf, exp) := _float_getpowten(f)
   f := _float_div(f, lastf)
   if (_float_cmp(f, 10.0) > 0)
-    _basic_print_char(h, "i")
-    _basic_print_char(h, "n")
-    _basic_print_char(h, "f")
+    _basic_print_char(h, "i", 0)
+    _basic_print_char(h, "n", 0)
+    _basic_print_char(h, "f", 0)
     return
 
   ''
@@ -323,22 +323,22 @@ pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, ne
     digit := u +/ maxu
     u := u +// maxu
     if (needpoint == 0)
-      _basic_print_char(h, ".")
-    _basic_print_char(h, "0" + digit)
+      _basic_print_char(h, ".", 0)
+    _basic_print_char(h, "0" + digit, 0)
     --needpoint
 
   if (needexp)
-    _basic_print_char(h, "E")
+    _basic_print_char(h, "E", 0)
     if (exp < 0)
-      _basic_print_char(h, "-")
+      _basic_print_char(h, "-", 0)
       exp := -exp
     else
-      _basic_print_char(h, "+")
+      _basic_print_char(h, "+", 0)
       --exp
     u := exp +/ 10
     exp := exp +// 10
-    _basic_print_char(h, u + "0")
-    _basic_print_char(h, exp + "0")
+    _basic_print_char(h, u + "0", 0)
+    _basic_print_char(h, exp + "0", 0)
 
 ' convert string to float
 pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit

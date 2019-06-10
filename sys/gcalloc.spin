@@ -88,35 +88,9 @@ con
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
   __real_heapsize__ = 256  ' redefined based on user options
-  
-dat
-        alignl
-_gc_heap_base
-	byte 0[__real_heapsize__]
 
-	
-''
-'' return gc pointers
-'' if called before gc pointers are set up, initialize
-'' the heap
-''
-pri _gc_ptrs | base, end, size
-  base := @_gc_heap_base
-  end := base + __real_heapsize__
-  if (long[base] == 0)
-    size := end - base
-    word[base + OFF_SIZE] := 1 
-    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_RESERVED
-    word[base + OFF_PREV] := 0
-    word[base + OFF_LINK] := 1
-    base += pagesize
-    word[base + OFF_SIZE] := (size / pagesize) - 1
-    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
-    word[base + OFF_PREV] := 0
-    word[base + OFF_LINK] := 0
-    base -= pagesize
-  return (base, end)
-  
+pri file "libsys/gcptrs.spin" _gc_ptrs
+
 { return a pointer to page i in the heap }
 pri _gc_pageptr(heapbase, i)
   if (i == 0)

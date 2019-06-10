@@ -1,16 +1,8 @@
 //
 // string formatting functions
 //
-#ifdef __FLEXC__
 typedef int (*putfunc)(int c);
 #define CALL(fn, c) (*fn)(c)
-#else
-typedef struct {
-    int (*func)(int c, void *arg);
-    void *arg;
-} putfunc;
-#define CALL(fn, c) (*fn->func)(c, fn->arg)
-#endif
 
 //
 // flags:
@@ -40,7 +32,7 @@ typedef struct {
 #define SIGNCHAR_PLUS 1
 #define SIGNCHAR_SPACE 2
 #define SIGNCHAR_UNSIGNED 3
-#define SIGNCHAR_MINUS 3
+#define SIGNCHAR_MINUS 4
 
 //
 // reverse a string in-place
@@ -50,6 +42,7 @@ void _strrev(char *str)
     char *end;
     int c;
 
+    if (!*str) return;
     for (end = str; *end; end++) ;
     --end;
     while (end > str) {
@@ -72,7 +65,7 @@ void _strrev(char *str)
 
 int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
 {
-    int minwidth = (fmt & 0xff);
+    int minwidth = (fmt >> MINWIDTH_BIT) & 0xff;
     unsigned justify = (fmt >> JUSTIFY_BIT) & 3;
     int i, r;
     int n = 0;
@@ -99,7 +92,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
 
 int _fmtstr(putfunc fn, unsigned fmt, const char *str)
 {
-    int maxwidth = (fmt >> MAXWIDTH_BIT) & 3;
+    int maxwidth = (fmt >> MAXWIDTH_BIT) & 0xff;
     int width = __builtin_strlen(str);
     int n;
     int r, i;
@@ -161,8 +154,8 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
 {
     char buf[MAX_NUM_DIGITS+1];
     char *ptr = buf;
-    int width;
-    int mindigits = (fmt >> PREC_BIT) & 0xff;
+    int width = 0;
+    int mindigits = (fmt >> PREC_BIT) & 0x1f;
     int maxdigits = (fmt >> MAXWIDTH_BIT) & 0xff;
     int signchar = (fmt >> SIGNCHAR_BIT) & 0x3;
     int padchar = (fmt >> PADDING_BIT) & 0x3;
@@ -176,13 +169,13 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
         signchar = SIGNCHAR_MINUS;
         x = -x;
     }
-    if (padchar != PADCHAR_ZERO) {
-        mindigits = 1;
-    }
     if (signchar != SIGNCHAR_NONE) {
-        maxdigits--;
-        if (!maxdigits) {
-            return _fmtchar(fn, fmt, '#');
+        width++;
+        if (mindigits == maxdigits) {
+            mindigits--;
+            if (!mindigits) {
+                return _fmtchar(fn, fmt, '#');
+            }
         }
         switch (signchar) {
         case SIGNCHAR_SPACE:
@@ -197,7 +190,7 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
             break;
         }
     }
-    width = _uitoa(ptr, x, base, mindigits, 0 != (fmt & (1<<UPCASE_BIT)));
+    width += _uitoa(ptr, x, base, mindigits, 0 != (fmt & (1<<UPCASE_BIT)));
     if (width > maxdigits) {
         while (maxdigits-- > 0) {
             *ptr++ = '#';
@@ -206,6 +199,9 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
     }
     return _fmtstr(fn, fmt, buf);
 }
+
+extern int _tx(int c);
+extern int _rx(void);
 
 typedef int (*TxFunc)(int c);
 typedef int (*RxFunc)(void);
@@ -227,7 +223,7 @@ CloseFunc _bas_close_handles[8] = { 0 };
 //
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
-    if (h > 7) return;
+    if (h > 7) return -1;
     _bas_tx_handles[h] = sendf;
     _bas_rx_handles[h] = recvf;
     _bas_close_handles[h] = closef;
@@ -281,3 +277,29 @@ int _basic_get_char(unsigned h)
     if (!rf) return -1;
     return (*rf)();
 }
+
+#ifdef TEST
+#include <stdio.h>
+
+int _tx(int c)
+{
+    putchar(c);
+}
+int _rx(void)
+{
+    return -1;
+}
+
+int main()
+{
+    int i;
+
+    printf("[");
+    _basic_print_integer(0, -99, 0x4830404, 10);
+    printf("]\n");
+    printf("[");
+    _basic_print_integer(0, 98, 0, 10);
+    printf("]\n");
+    return 0;
+}
+#endif

@@ -77,168 +77,6 @@ pri _lfsr_backward(x) | a
     endasm
   return x
 
-dat
-rx_method
-tx_method
-   long 0	'  objptr does not matter
-   long 0	' special tag for _tx/_rx function
-
-  '' 8 possible open files
-  '' each one has 3 method pointers
-  '' sendchar, recvchar, close
-  ''
-bas_tx_handles
-   long @@@tx_method
-   long 0[7]
-bas_rx_handles
-   long @@@rx_method
-   long 0[7]
-bas_close_handles
-   long 0[8]
-
-pri _basic_open(h, sendf, recvf, closef)
-  if (h +> 7)
-    return
-  bas_tx_handles[h] := sendf
-  bas_rx_handles[h] := recvf
-  bas_close_handles[h] := closef
-
-  
-pri _basic_close(h) | ptr, t, f, o
-  if (h +> 7)
-    return
-  t := bas_close_handles[h]
-  _basic_open(h,0,0,0)
-  if t == 0
-    return
-  o := long[t]
-  f := long[t+4]
-  _call_method(o, f, 0)
-  
-pri _basic_print_char(h, c, fmt=0) | saveobj, t, f, o
-  t := bas_tx_handles[h]
-  if t == 0
-    return
-  o := long[t]
-  f := long[t+4]
-  if f == 0
-    _tx(c)
-  else
-    _call_method(o, f, c)
-
-pri _basic_get_char(h) | t, o, f, saveobj
-  t := bas_rx_handles[h]
-  if t == 0
-    return -1
-  o := long[t]
-  f := long[t+4]
-  if f == 0
-    return _rx
-  return _call_method(o, f, 0)
-
-pri _basic_print_string(h, ptr, fmt = 0) | c, len, w, justify, wright, wleft
-  w := fmt & $ff
-  justify := (fmt >> 8) & 3
-  len := __builtin_strlen(ptr)
-  wleft := wright := 0
-  if (w > 0 and len < w) 
-    if justify == 0 ' left justify
-      wright := w - len
-    elseif justify == 1 ' right justify
-      wleft := w - len
-    else
-      wleft := (w - len)/2
-      wright := (w - len) - wleft
-
-    repeat while wleft > 0
-      _basic_print_char(h, " ")
-      --wleft
-  if w == 0
-    w := $ffff
-  repeat while ((c := byte[ptr++]) <> 0 and w > 0)
-    _basic_print_char(h, c)
-    --w
-  repeat while wright > 0
-    _basic_print_char(h, " ")
-    --wright
-  return
-
-pri _basic_put(h, ptr, siz)|c
-  repeat while (siz-- > 0)
-    _basic_print_char(h, byte[ptr++])
-
-pri _basic_digit(d)
-  return (d < 10) ? d + "0" : (d-10) + "A"
-
-pri _basic_fmt_in_str(u, x, base, mindigits, maxdigits) | digit, i
-  if maxdigits == 1
-    if x => base
-      byte[u] := "*"
-    else
-      byte[u] := _basic_digit(x)
-    return 1
-
-  digit := x +// base
-  x := x +/ base
-  digit := _basic_digit(digit)
-  if (x > 0) or (mindigits > 1)
-    if mindigits > 1
-      mindigits := mindigits - 1
-    i := _basic_fmt_in_str(u, x, base, mindigits, maxdigits-1)
-  else
-    i := 0
-  byte[u + i] := digit
-  return i+1
-  
-pri _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, signchar) | u, r
-  u := ptr
-  if ptr == 0
-    return ptr
-  if (signchar)
-    maxdigits--
-    byte[u++] := signchar
-    if maxdigits == 0
-      byte[u++] := 0
-      return ptr
-  r := _basic_fmt_in_str(u, x, base, mindigits, maxdigits)
-  byte[u+r] := 0
-  return ptr
-  
-pri _basic_print_unsigned(h, x, fmt, base=10) | ptr, mindigits, maxdigits
-  maxdigits := fmt & $ff
-  mindigits := (fmt>>16) & $1f
-  if mindigits == 0
-    mindigits := 1
-  if maxdigits == 0
-     maxdigits := (base < 10) ? 33 : 11
-  ptr := __builtin_alloca(maxdigits+1)
-  _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, 0)
-  _basic_print_string(h, ptr, fmt)
-  
-pri _basic_print_integer(h, x, fmt, base=10) | mindigits, maxdigits, signchar, ptr
-  maxdigits := fmt & $ff
-  mindigits := (fmt>>16) & $1f
-  signchar := (fmt >> 22) & 3
-  if mindigits == 0
-    mindigits := 1
-
-  if (x < 0)
-    signchar := "-"
-    x := -x
-  else
-    if signchar == 1
-      signchar := " "
-    elseif signchar == 2
-      signchar := "+"
-    else
-      signchar := 0
-      
-  if maxdigits == 0
-    maxdigits := (base < 10) ? 33 : 11
-  ptr := __builtin_alloca(maxdigits+1)
-  _basic_fmt_uinteger(ptr, x, base, mindigits, maxdigits, signchar)
-  _basic_print_string(h, ptr, fmt)
-    
 pri _basic_print_fixed(h, x, fmt) | i, f
   if (x < 0)
     _basic_print_char(h, "-")
@@ -251,7 +89,7 @@ pri _basic_print_fixed(h, x, fmt) | i, f
   if (f > $ffff)
     i++
     f -= $10000
-  _basic_print_unsigned(h, i, fmt)
+  _basic_print_unsigned(h, i, fmt, 10)
   _basic_print_char(h, ".")
   repeat 4
     f := f * 10
@@ -423,3 +261,11 @@ pri file "libsys/random.c" _randfloat : r=float
 '' basic RND function
 pri file "libsys/random.c" _basic_rnd(x=long) : r=float
   
+'' I/O functions
+pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
+pri file "libsys/fmt.c" _basic_open(h)
+pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
+pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
+pri file "libsys/fmt.c" _basic_get_char(h)
+
+''
