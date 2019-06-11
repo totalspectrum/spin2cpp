@@ -3144,7 +3144,6 @@ getCToken(LexStream *L, AST **ast_ptr)
 	    c = C_CONSTANT;
 	} else {
             int c2 = lexgetc(L);
-            int needunget = 1;
             
             if (ast->d.ival == 0) {
                 // check for hex or binary prefixes like 0x or 0h
@@ -3163,11 +3162,9 @@ getCToken(LexStream *L, AST **ast_ptr)
             }
             if (c2 == 'L' || c2 == 'l') {
                 // long constant flag, ignore for now
-                needunget = 0;
+                c2 = lexgetc(L);
             }
-            if (needunget) {
-                lexungetc(L, c2);
-            }
+            lexungetc(L, c2);
             c = C_CONSTANT;
         }
     } else if (isIdentifierStart(c)) {

@@ -1,8 +1,35 @@
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
+#ifdef TEST
+#include <stdio.h>
+
+#define _tx my_tx
+#define _rx my_rx
+#endif
+
+#ifdef __FLEXC__
+#define SMALL_INT
+#endif
+
+#define alloca(x) __builtin_alloca(x)
+
 //
 // string formatting functions
 //
 typedef int (*putfunc)(int c);
 #define CALL(fn, c) (*fn)(c)
+
+#ifdef SMALL_INT
+#define UITYPE uint32_t
+#define ITYPE  int32_t
+#define FTYPE float
+#else
+#define UITYPE uint64_t
+#define ITYPE  int64_t
+#define FTYPE double
+#endif
+#define BITCOUNT (8*sizeof(UITYPE))
 
 //
 // flags:
@@ -10,19 +37,28 @@ typedef int (*putfunc)(int c);
 //  8 bits minimum width
 //  6 bits precision
 //  2 bits padding character (0=none, 1=space, 2='0', 3=reserved)
-//  2 bits justification (0=left, 1=right, 2=center)
+//  2 bits justification (0,1=left, 2=right, 3=center)
 //  2 bits sign character (0=none, 1='+', 2=' ', 3=unsigned)
 //  1 bit alt (for alternate form)
 //  1 bit for upper case
 //
 #define MAXWIDTH_BIT (0)
+#define WIDTH_MASK   0xff
 #define MINWIDTH_BIT (8)
 #define PREC_BIT     (16)
+#define PREC_MASK    0x1f
 #define JUSTIFY_BIT  (22)
-#define PADDING_BIT  (24)
+#define JUSTIFY_MASK 0x3
+#define PADCHAR_BIT  (24)
+#define PADCHAR_MASK 0x3
 #define SIGNCHAR_BIT (26)
-#define ALT_BIT      (28)
+#define SIGNCHAR_MASK 0x3
+#define ALTFMT_BIT   (28)
 #define UPCASE_BIT   (29)
+
+#define JUSTIFY_LEFT  1
+#define JUSTIFY_RIGHT 2
+#define JUSTIFY_CENTER 3
 
 #define PADCHAR_NONE  0
 #define PADCHAR_SPACE 1
@@ -33,6 +69,9 @@ typedef int (*putfunc)(int c);
 #define SIGNCHAR_SPACE 2
 #define SIGNCHAR_UNSIGNED 3
 #define SIGNCHAR_MINUS 4
+
+#define DEFAULT_PREC 4
+#define DEFAULT_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT))
 
 //
 // reverse a string in-place
@@ -70,7 +109,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
     int i, r;
     int n = 0;
     if (justify == 0) {
-        justify = 1;
+        justify = JUSTIFY_LEFT;
     }
     if ( (justify & leftright) == 0 ) {
         return 0;  // padding goes on other side
@@ -79,7 +118,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
     if (width <= 0) {
         return 0;
     }
-    if (justify == 3) { // centering, only half as much padding (if odd do on right)
+    if (justify == JUSTIFY_CENTER) { // centering, only half as much padding (if odd do on right)
         width = (width + (leftright==PAD_ON_RIGHT)) / 2;
     }
     for (i = 0; i < width; i++) {
@@ -93,7 +132,7 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
 int _fmtstr(putfunc fn, unsigned fmt, const char *str)
 {
     int maxwidth = (fmt >> MAXWIDTH_BIT) & 0xff;
-    int width = __builtin_strlen(str);
+    int width = strlen(str);
     int n;
     int r, i;
     if (maxwidth && width > maxwidth) {
@@ -120,7 +159,7 @@ int _fmtchar(putfunc fn, unsigned fmt, int c)
     return _fmtstr(fn, fmt, buf);
 }
 
-int _uitoa(char *orig_str, unsigned num, unsigned base, unsigned mindigits, int uppercase)
+int _uitoa(char *orig_str, UITYPE num, unsigned base, unsigned mindigits, int uppercase)
 {
     char *str = orig_str;
     unsigned digit;
@@ -155,10 +194,9 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
     char buf[MAX_NUM_DIGITS+1];
     char *ptr = buf;
     int width = 0;
-    int mindigits = (fmt >> PREC_BIT) & 0x1f;
+    int mindigits = (fmt >> PREC_BIT) & PREC_MASK;
     int maxdigits = (fmt >> MAXWIDTH_BIT) & 0xff;
     int signchar = (fmt >> SIGNCHAR_BIT) & 0x3;
-    int padchar = (fmt >> PADDING_BIT) & 0x3;
     
     if (maxdigits > MAX_NUM_DIGITS || maxdigits == 0) {
         maxdigits = MAX_NUM_DIGITS;
@@ -200,6 +238,426 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
     return _fmtstr(fn, fmt, buf);
 }
 
+/*******************************************************
+ * floating point support
+ *******************************************************/
+typedef union DI {
+    FTYPE d;
+    UITYPE i;
+} DI;
+
+#ifdef __propeller__
+# ifdef __GNUC__
+extern long double _intpow(long double a, long double b, int n);
+#define _float_pow_n(a, n) _intpow(1.0, a, n)
+# endif
+#else
+// calculate b^n with as much precision as possible
+double _float_pow_n(long double b, int n)
+{
+    long double r = powl((long double)b, (long double)n);
+    return r;
+}
+#endif
+
+/*
+ * disassemble a positive floating point number x into
+ * ai,n such that 
+ * 1.0 <= a < base and x=a * base^n
+ * (normally base will be 10, but we can accept 2 as well)
+ * we output ai as an integer, but conceptually it is still
+ * a float with one digit before the decimal point
+ * if numdigits is negative, then make numdigits be n-(numdigits+1)
+ * so as to get that many digits after the decimal point
+ */
+#ifdef SMALL_INT
+#define DOUBLE_BITS 23
+#define MAX_DEC_DIGITS 9
+#define DOUBLE_ONE ((unsigned)(1<<DOUBLE_BITS))
+#else
+#define DOUBLE_BITS 52
+#define MAX_DEC_DIGITS 17
+#define DOUBLE_ONE (1ULL<<DOUBLE_BITS)
+#endif
+#define DOUBLE_MASK (DOUBLE_ONE-1)
+
+static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
+{
+    FTYPE a;
+    FTYPE p;
+    int maxdigits;
+    FTYPE based = (FTYPE)base;
+    UITYPE ai;
+    UITYPE u;
+    UITYPE maxu;
+    int n;
+    int i;
+    int trys = 0;
+    DI un;
+
+
+    if (x == 0.0) {
+        *aip = 0;
+        *np = 0;
+        return;
+    }
+
+    // first, find (a,n) such that
+    // 1.0 <= a < base and x = a * base^n
+ 
+    n = ilogb(x);
+    if (base == 10) {
+        // initial estimate: 2^10 ~= 10^3, so 3/10 of ilogb is a good first guess
+        n = (3 * n)/10 ;
+        maxdigits = MAX_DEC_DIGITS;
+    } else {
+        maxdigits = DOUBLE_BITS+1;  // for base 2
+    }
+    
+    while (trys++ < 8) {
+        //
+        //
+        p = _float_pow_n(based, n);
+        a = x / p;
+        if (a < 1.0) {
+            --n;
+        } else if (a >= based) {
+            ++n;
+        } else {
+            break;
+        }
+    }
+#if defined(TEST) && !defined(__FLEXC__)
+    if (trys == 8) {
+        fprintf(stderr, "Warning hit retry count\n");
+    }
+#endif
+    i = ilogb(a);
+    un.d = a;
+    ai = un.i & DOUBLE_MASK;
+    ai |= DOUBLE_ONE;
+    ai = ai<<i;
+
+    // base 2 we will group digits into 4 to print as hex
+    if (base == 2) {
+        numdigits *= 4;
+    }
+    // now extract as many significant digits as we can
+    // into u
+    u = 0;
+    if (numdigits< 0) {
+        numdigits = n - numdigits;
+
+        // "0" digits is a special case (we may need to round the
+        // implicit 0 up to 1)
+        // negative digits will always mean 0 though
+        if (numdigits < 0) {
+            goto done;
+        }
+    } else {
+        numdigits = numdigits+1;
+    }
+    if (numdigits > maxdigits)
+        numdigits = maxdigits;
+    maxu = 1; // for overflow
+    while ( u < DOUBLE_ONE && numdigits-- > 0) {
+        FTYPE d;
+        d = (ai >> DOUBLE_BITS); // next digit
+        ai &= DOUBLE_MASK;
+        u = u * base;
+        maxu = maxu * base;
+        ai = ai * base;
+        u = u+d;
+    }
+    //
+    // round
+    //
+    if (ai > (unsigned)(base*DOUBLE_ONE/2) || (ai == (unsigned)(base*DOUBLE_ONE/2) && (u & 1))) {
+        u++;
+        if (u == maxu) {
+            ++n;
+        }
+    }
+done:
+    *aip = u;
+    *np = n;
+}
+
+//
+// output the sign and any hex digits required
+// if buf is NULL print using pi
+// otherwise put into buf
+// returns number of bytes output, or -1 if an error happens
+//
+static int
+emitsign(char *buf, int sign, int hex)
+{
+    int r = 0;
+    if (sign) {
+        *buf++ = sign;
+        r++;
+    }
+    if (hex) {
+        *buf++ = '0';
+        *buf++ = hex;
+        r += 2;
+    }
+    return r;
+}
+
+//
+// find the digits for x 
+// we will output "prec" digits after the decimal point
+// spec is a C printf style specification ('g', 'f', 'a', etc.)
+//
+
+#define MAXWIDTH 64
+
+static int
+_fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
+{
+    UITYPE ai;
+    int i;
+    int base = 10;
+    int exp;  // exponent
+    int isExpFmt;  // output should be printed in exponential notation
+    int isGFmt;    // format character was %g
+    int totalWidth;
+    int sign = 0;
+    int expchar;
+    int stripTrailingZeros = 0;
+    int expprec = 2;
+    int needPrefix = 0;
+    int hexSign = 0;
+    int padkind = 0;
+    
+    // we print a series of 0's, then the digits, then more 0's if necessary
+    // to force e.g. 4 leading 0's, set startdigit to -4
+    int startdigit;
+    int decpt;
+    int enddigit;
+    int numdigits;
+    int expdigits;
+    int expsign = 0;
+    int signclass;
+    int minwidth;
+    char dig[64]; // digits for the number
+    char expdig[8]; // digits for the exponent
+    int prec;
+    int needUpper;
+    char *buf;
+    char *origbuf;
+    int justify;
+    
+    origbuf = buf = alloca(MAXWIDTH + 1);
+
+    prec = (fmt >> PREC_BIT) & PREC_MASK;
+    if (prec == 0) prec = DEFAULT_PREC;
+    justify = (fmt >> JUSTIFY_BIT) & JUSTIFY_MASK;
+    needUpper = (fmt >> UPCASE_BIT) & 1;
+    minwidth = (fmt >> MINWIDTH_BIT) & WIDTH_MASK;
+    isExpFmt = (spec == 'e');
+    isGFmt = (spec == 'g');
+    expchar = needUpper ? 'E' : 'e';
+    if (spec == 'a') {
+        isExpFmt = 1;
+        expchar = needUpper ? 'P' : 'p';
+        base = 2;
+        // if precision is missing, %a needs enough digits
+        // to precisely represent the number
+        if (prec < 0) {
+            prec = 13;
+            stripTrailingZeros = 1;
+        }
+        expprec = 1;
+        hexSign = needUpper ? 'X' : 'x';
+    } else {
+        // default precision
+        if (prec < 0) {
+            prec = 6;
+        }
+    }
+
+    signclass = (fmt >> SIGNCHAR_BIT) & SIGNCHAR_MASK;
+    
+    if ( signbit(x) ) {
+        // work on non-negative values only
+        sign = '-';
+        x = copysign(x, 1.0);
+    } else {
+        // sometimes we need positive sign
+        if (signclass == SIGNCHAR_PLUS) {
+            sign = '+';
+        } else if (signclass == SIGNCHAR_SPACE) {
+            sign = ' ';
+        }
+    }
+
+    // if user requested 0 padding, emit the sign and adjust width
+    // now
+    padkind = (fmt >> PADCHAR_BIT) & PADCHAR_MASK;
+    needPrefix = (sign || base != 10);
+    if ( needPrefix && padkind == PADCHAR_ZERO && (justify != JUSTIFY_RIGHT)) {
+        int r;
+        r = emitsign(buf, sign, hexSign);
+        if (r < 0) return r;
+        buf += r;
+        if (minwidth) {
+            minwidth -= r;
+            if (minwidth < 0) minwidth = 0;
+            fmt = fmt & ~(WIDTH_MASK << MINWIDTH_BIT);
+            fmt |= (minwidth << MINWIDTH_BIT);
+        }
+        needPrefix = 0;
+    }
+
+    // handle special cases
+    if (isinf(x)) {
+        origbuf = buf = alloca(6);
+        // emit sign
+        if (sign) *buf++ = sign;
+        strcpy(buf, "inf");
+        goto done;
+    } else if (isnan(x)) {
+        origbuf = buf = alloca(6);
+        if (sign) *buf++ = sign;
+        strcpy(buf, "nan");
+        goto done;
+    }
+
+    if (isGFmt) {
+        // find the exponent
+        disassemble(x, &ai, &exp, prec ? prec - 1 : 0, base);
+        // for g format, special handling
+        stripTrailingZeros = (0 == ((fmt>>ALTFMT_BIT) & 1));
+        if (exp >= prec || exp < -4) {
+            isExpFmt = 1;
+        } else {
+            prec = prec - exp;
+            disassemble(x, &ai, &exp, -prec, base);
+        }
+    } else if (isExpFmt) {
+        disassemble(x, &ai, &exp, prec, base);
+    } else {
+        disassemble(x, &ai, &exp, -(prec+1), base);
+    }
+
+    //
+    // figure out how many digits we have to print
+    //
+
+    // put the digits in their buffers
+    // now, a satisfies ai * 10^exp == x
+    // if base 2, print digits in hex
+    if (base == 2) {
+        base = 16;
+#ifdef SMALL_INT
+        // we actually want hex output, but with small
+        // integers there are 23 bits after the decimal point
+        // rather than 24, so adjust here
+        while (ai && ai < (DOUBLE_ONE << 1)) {
+            ai = ai << 1;
+        }
+#endif        
+    }
+
+    numdigits = _uitoa(dig, ai, base, 1, needUpper);
+    if (exp < 0) {
+        expsign = '-';
+        expdigits = _uitoa(expdig, -exp, 10, expprec, needUpper);
+    } else {
+        expsign = '+';
+        expdigits = _uitoa(expdig, exp, 10, expprec, needUpper);
+    }
+
+    if (isExpFmt) {
+        startdigit = decpt = 0;
+        enddigit = prec + 1;
+    } else {
+        if (exp < 0) {
+            // force leading 0's
+            startdigit = decpt = exp;
+            enddigit = exp + prec + 1;
+        } else {
+            startdigit = 0;
+            decpt = exp;
+            enddigit = decpt + prec + 1;
+        }
+    }
+
+    // allocate a string buffer; leave extra room for '.' just in case
+    totalWidth = (enddigit - startdigit) + 1;
+    if (sign) {
+        totalWidth++;  // we will be printing '+' or '-'
+    }
+    if (base == 16) {
+        totalWidth += 2;  // for '0x'
+    }
+    if (isExpFmt) {
+        // exponents can go up to +- 1024
+        totalWidth += 2 + expdigits; // (for e+1024)
+    }
+    if (totalWidth > MAXWIDTH) {
+        return -1;
+    }
+    // emit sign
+    if (needPrefix) {
+        int r = emitsign(buf, sign, hexSign);
+        if (r < 0) return r;
+        buf += r;
+    }
+    //
+    //
+    // emit the number
+    //
+    for (i = startdigit; i < enddigit; i++) {
+        if (i >= 0 && i < numdigits) {
+            *buf++ = dig[i];
+        } else {
+            *buf++ = '0';
+        }
+        if (i == decpt) {
+            *buf++ = '.';
+        }
+    }
+
+    if (stripTrailingZeros) {
+        --buf;
+        // remove any trailing 0's
+        while (buf > origbuf && *buf == '0') {
+            --buf;
+        }
+        // remove radix if appropriate
+        if (*buf == '.') {
+            --buf;
+        }
+        // *buf now points at the last valid character; advance so
+        // that we can write starting after that
+        buf++;
+    }
+
+    //
+    // output the exponent
+    // we want at least 2 digits
+    // (up to 4 may be required)
+    //
+    if (isExpFmt)
+    {
+        *buf++ = expchar;  // 'p' for hex, 'e' for decimal
+        *buf++ = expsign;
+        for (i = 0; i < expdigits; i++) {
+            *buf++ = expdig[i];
+        }
+    }
+
+    *buf = 0;
+
+done:
+    // now output the string
+    return _fmtstr(fn, fmt, origbuf);
+}
+
+// BASIC support routines
 extern int _tx(int c);
 extern int _rx(void);
 
@@ -208,11 +666,11 @@ typedef int (*RxFunc)(void);
 typedef int (*CloseFunc)(void);
 
 TxFunc _bas_tx_handles[8] = {
-    &_tx, 0, 0, 0,
+    _tx, 0, 0, 0,
     0, 0, 0, 0
 };
 RxFunc _bas_rx_handles[8] = {
-    &_rx, 0, 0, 0,
+    _rx, 0, 0, 0,
     0, 0, 0, 0
 };
 CloseFunc _bas_close_handles[8] = { 0 };
@@ -247,7 +705,7 @@ int _basic_print_char(unsigned h, int c, unsigned fmt)
     return 1;
 }
 
-int _basic_print_string(unsigned h, char *ptr, unsigned fmt)
+int _basic_print_string(unsigned h, const char *ptr, unsigned fmt)
 {
     TxFunc tf = _bas_tx_handles[h];
     if (!tf) return 0;
@@ -264,7 +722,10 @@ int _basic_print_unsigned(unsigned h, int x, unsigned fmt, int base)
 
 int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
 {
-    TxFunc tf = _bas_tx_handles[h];
+    TxFunc tf;
+
+    if (h > 7) return -1;
+    tf = _bas_tx_handles[h];
     if (!tf) return 0;
     return _fmtnum(tf, fmt, x, base);
 }
@@ -278,28 +739,58 @@ int _basic_get_char(unsigned h)
     return (*rf)();
 }
 
+int _basic_print_float(unsigned h, FTYPE x, unsigned fmt)
+{
+    TxFunc tf;
+    if (fmt == 0) {
+        fmt = DEFAULT_FLOAT_FMT;
+    }
+    if (h > 7) return -1;
+    tf = _bas_tx_handles[h];
+    if (!tf) return 0;
+    return _fmtfloat(tf, fmt, x, 'g');
+}
+
 #ifdef TEST
 #include <stdio.h>
 
 int _tx(int c)
 {
     putchar(c);
+    return 1;
 }
 int _rx(void)
 {
     return -1;
 }
 
+void testfloat(float x)
+{
+#ifdef __FLEXC__
+    printf("[");
+#else    
+    printf("%g -> [", x);
+#endif    
+    _basic_print_float(0, x, 0);
+    printf("]\n");
+}
+
 int main()
 {
-    int i;
-
     printf("[");
     _basic_print_integer(0, -99, 0x4830404, 10);
     printf("]\n");
     printf("[");
     _basic_print_integer(0, 98, 0, 10);
     printf("]\n");
+
+    testfloat(0.0);
+    testfloat(0.1);
+    testfloat(0.01);
+    testfloat(100.0);
+    testfloat(-99.12345);
+    testfloat(1e6);
+    
     return 0;
 }
 #endif

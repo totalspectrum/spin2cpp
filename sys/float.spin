@@ -8,7 +8,9 @@
 ''*  Copyright (c) 2018 Total Spectrum Software Inc.
 ''*  See end of file for terms of use.  *
 ''***************************************
-
+con
+  _float_one = $2000_0000
+  
 pri _float_fromuns(integer = long) : m = float | s, x
 
 ''Convert integer to float    
@@ -178,22 +180,25 @@ pri _float_pow_n(a=float, n=long) : r=float | sgnflag, invflag
 ''
 '' compare a and b;
 '' return 0 if a = b, -N if a < b, +N if a > b
-''
+'' for a or b NaN, should return $8000000
+'' generally we return a-b
+
+CON
+  f_infinity = $7f800000
+  f_unordered = $80000000
 pri _float_cmp(a=float, b=float) : r=long
   if (a < 0)
     if (b < 0)
       return a - b
-    if (b == 0 and a == $8000000)
+    if b == 0 and a == $80000000
       return 0
     return -1
   if (b < 0)
-    if (a == 0 and b == $8000000)
+    if a == 0 and b == $80000000
       return 0
-    '' otherwise a >= 0, so is bigger than b
     return 1
-  '' in this case both are positive
   return a - b
-
+  
 pri _float_tointeger(a=float, r) : integer=long | s, x, m
 
 'Convert float to rounded/truncated integer
@@ -271,76 +276,9 @@ pri _float_getpowten(x) | midf, lo, hi, mid, t, sanity
       return (midf, mid)
   return (_float_pow_n(10.0, hi), hi)
 
-pri _basic_print_float(h, f, fmtparam=0) | numdigits, i, lastf, exp, u, maxu, needpoint, needexp, digit, numzeros
-  needexp := 0
-  numdigits := 5 '' later this should be a parameter  
-  if (f < 0)
-    _basic_print_char(h, "-", 0)
-    f := _float_negate(f)
-  (lastf, exp) := _float_getpowten(f)
-  f := _float_div(f, lastf)
-  if (_float_cmp(f, 10.0) > 0)
-    _basic_print_char(h, "i", 0)
-    _basic_print_char(h, "n", 0)
-    _basic_print_char(h, "f", 0)
-    return
+pri file "libsys/fmt.c" _basic_print_float(h, f, fmtparam)
 
-  ''
-  '' sanity checks
-  '' 
-  if (numdigits > 7)
-    numdigits := 7
-  elseif (numdigits < 1)
-    numdigits := 1
-  lastf := _float_pow_n(10.0, numdigits)
-  f := _float_mul(f, lastf)
-  maxu := _float_trunc(lastf)
-  u := _float_round(f)
-
-  if (exp < 0)
-    numzeros := -exp
-    needpoint := 1
-    if numzeros > (numdigits - 2)
-      needexp := 1
-      --exp
-    else
-      repeat i from 0 to numzeros
-        u := (u + 5) +/ 10
-  else
-    if (numdigits =< exp)
-      needpoint := 1
-      needexp := 1
-    else
-      needpoint := exp+1
-
-  repeat while (u => maxu)
-    u := (u + 5) +/ 10
-    exp++
-
-  repeat while numdigits > 0
-    --numdigits
-    u := u * 10
-    digit := u +/ maxu
-    u := u +// maxu
-    if (needpoint == 0)
-      _basic_print_char(h, ".", 0)
-    _basic_print_char(h, "0" + digit, 0)
-    --needpoint
-
-  if (needexp)
-    _basic_print_char(h, "E", 0)
-    if (exp < 0)
-      _basic_print_char(h, "-", 0)
-      exp := -exp
-    else
-      _basic_print_char(h, "+", 0)
-      --exp
-    u := exp +/ 10
-    exp := exp +// 10
-    _basic_print_char(h, u + "0", 0)
-    _basic_print_char(h, exp + "0", 0)
-
-' convert string to float
+' convert string to integer
 pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit
   negate := 0
   repeat while byte[s] == " "
@@ -373,6 +311,7 @@ pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit
   if negate
     r := -r
 
+' convert string to float
 pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   r := 0
   scaleexp := 0
@@ -412,6 +351,29 @@ pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   r := _float_mul(r, exp)
   if negate
     r := _float_negate(r)
+
+'' extract sign from a float
+pri __builtin_signbit(a=float) : r=long
+  r := a >> 31
+
+'' copy the sign from y to x; result has the magnitude of x, but
+'' sign of y
+pri __builtin_copysign(x=float, y=float) : r=float
+  x := (x<<1) >> 1
+  r := (y>>31) << 31
+  r |= x
+
+pri __builtin_ilogb(a=float) : r=long | s, x, m
+  (s,x,m) := _float_Unpack(a)
+  if m == 0
+    return -$7fffffff
+  if x == 128
+    if m == _float_one
+      return $7fffffff
+    return $8000_0000  ' NaN
+  return x
+  
+  
 {{
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
