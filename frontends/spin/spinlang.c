@@ -441,7 +441,7 @@ doSpinTransform(AST **astptr, int level)
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
-            doSpinTransform(&caseitem->left, level);
+            doSpinTransform(&caseitem->left, 0);
             doSpinTransform(&caseitem->right, level);
             list = list->right;
         }
