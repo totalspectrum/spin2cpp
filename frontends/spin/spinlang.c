@@ -379,6 +379,9 @@ doSpinTransform(AST **astptr, int level)
 
     switch (ast->kind) {
     case AST_EXPRLIST:
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
+        break;
     case AST_THENELSE:
         doSpinTransform(&ast->left, level);
         doSpinTransform(&ast->right, level);
@@ -421,8 +424,8 @@ doSpinTransform(AST **astptr, int level)
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_STMTLIST:
-        doSpinTransform(&ast->left, level);
-        doSpinTransform(&ast->right, level);
+        doSpinTransform(&ast->left, 1);
+        doSpinTransform(&ast->right, 1);
         break;
     case AST_CASE:
     case AST_CASETABLE:
@@ -441,7 +444,7 @@ doSpinTransform(AST **astptr, int level)
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
-            doSpinTransform(&caseitem->left, 0);
+            doSpinTransform(&caseitem->left, level);
             doSpinTransform(&caseitem->right, level);
             list = list->right;
         }
