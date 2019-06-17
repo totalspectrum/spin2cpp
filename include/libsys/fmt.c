@@ -366,7 +366,6 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     int base = 10;
     int exp;  // exponent
     int isExpFmt;  // output should be printed in exponential notation
-    int isGFmt;    // format character was %g
     int totalWidth;
     int sign = 0;
     int expchar;
@@ -402,7 +401,6 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     needUpper = (fmt >> UPCASE_BIT) & 1;
     minwidth = (fmt >> MINWIDTH_BIT) & WIDTH_MASK;
     isExpFmt = (spec == 'e');
-    isGFmt = (spec == 'g');
     expchar = needUpper ? 'E' : 'e';
     if (spec == 'a') {
         isExpFmt = 1;
@@ -470,16 +468,28 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
         goto done;
     }
 
-    if (isGFmt) {
+    if (spec == 'g' || spec == '#') {
         // find the exponent
         disassemble(x, &ai, &exp, prec ? prec - 1 : 0, base);
-        // for g format, special handling
-        stripTrailingZeros = (0 == ((fmt>>ALTFMT_BIT) & 1));
-        if (exp >= prec || exp < -4) {
-            isExpFmt = 1;
+        if (spec == '#') {
+            if (exp > prec) {
+                isExpFmt = 1;
+            } else if (exp < 0) {
+                if (exp <= -prec) {
+                    isExpFmt = 1;
+                }
+            } else if (exp > 0) {
+                prec = prec - exp;
+            }
         } else {
-            prec = prec - exp;
-            disassemble(x, &ai, &exp, -prec, base);
+            // for g format, special handling
+            stripTrailingZeros = (0 == ((fmt>>ALTFMT_BIT) & 1));
+            if (exp >= prec || exp < -4) {
+                isExpFmt = 1;
+            } else {
+                prec = prec - exp;
+                disassemble(x, &ai, &exp, -prec, base);
+            }
         }
     } else if (isExpFmt) {
         disassemble(x, &ai, &exp, prec, base);
@@ -693,7 +703,7 @@ int _basic_print_float(unsigned h, FTYPE x, unsigned fmt)
     if (h > 7) return -1;
     tf = _bas_tx_handles[h];
     if (!tf) return 0;
-    return _fmtfloat(tf, fmt, x, 'g');
+    return _fmtfloat(tf, fmt, x, '#');
 }
 
 #ifdef TEST
