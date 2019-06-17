@@ -1,3 +1,7 @@
+#include <stdint.h>
+
+#pragma once
+
 #ifdef SMALL_INT
 #define UITYPE uint32_t
 #define ITYPE  int32_t
@@ -53,4 +57,13 @@ typedef int (*putfunc)(int c);
 #define SIGNCHAR_SPACE 2
 #define SIGNCHAR_UNSIGNED 3
 #define SIGNCHAR_MINUS 4
+
+int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright) _IMPL("libsys/fmt.c");
+int _fmtstr(putfunc fn, unsigned fmt, const char *str) _IMPL("libsys/fmt.c");
+int _fmtchar(putfunc fn, unsigned fmt, int c) _IMPL("libsys/fmt.c");
+int _fmtnum(putfunc fn, unsigned fmt, int x, int base) _IMPL("libsys/fmt.c");
+int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec) _IMPL("libsys/fmt.c");
+
+
+
 

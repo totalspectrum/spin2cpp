@@ -359,8 +359,7 @@ emitsign(char *buf, int sign, int hex)
 
 #define MAXWIDTH 64
 
-static int
-_fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
+int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
 {
     UITYPE ai;
     int i;
