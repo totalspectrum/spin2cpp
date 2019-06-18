@@ -303,7 +303,13 @@ EvalRelocPasmExpr(AST *expr, Flexbuf *f, Flexbuf *relocs, int *relocOff, bool is
     int checkReloc;
     int32_t offset;
     Symbol *sym;
-    
+
+    if (expr->kind == AST_OPERATOR) {
+        if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
+            ERROR(expr, "invalid addressing mode for instruction");
+            return 0;
+        }
+    }
     if (relocOff) {
         *relocOff = -1;
     }
@@ -974,6 +980,41 @@ static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
     return ast;
 }
 
+static uint32_t
+EvalOperandExpr(Instruction *instr, AST *op)
+{
+    const char *iname = instr->name;
+    int badAddr = 0;
+    const char *opname = "";
+    
+    switch (op->kind) {
+    case AST_CATCH:
+        ERROR(op, "\\ absolute expression marker not valid for %s", iname);
+        return 0;
+    case AST_OPERATOR:
+        if (op->d.ival == K_INCREMENT || op->d.ival == K_DECREMENT) {
+            badAddr = 1;
+            if (instr->ops == P2_RDWR_OPERANDS) {
+                opname = "first operand of ";
+            }
+        }
+        break;
+    case AST_RANGEREF:
+        badAddr = 1;
+        if (instr->ops == P2_RDWR_OPERANDS) {
+            opname = "first operand of ";
+        }
+        break;
+    default:
+        break;
+    }
+    if (badAddr) {
+        ERROR(op, "invalid addressing mode for %s%s", opname, iname);
+        return 0;
+    }
+    return EvalPasmExpr(op);
+}
+
 /*
  * assemble an instruction, along with its modifiers,
  * into a flexbuf
@@ -1051,7 +1092,7 @@ decode_instr:
             // special case: rep @x, N says to count the instructions up to x
             // and repeat them N times; fixup the operand here
             if (operand[0]->kind == AST_ADDROF && !opimm[0]) {
-                int32_t label = EvalPasmExpr(operand[0]->left);
+                int32_t label = EvalOperandExpr(instr, operand[0]->left);
                 int32_t count;
                 if (inHub) {
                     count = (label - (curpc+4)) / 4;
@@ -1077,8 +1118,8 @@ decode_instr:
         src = EvalRelocPasmExpr(operand[1], f, relocs, &srcRelocOff, true, RELOC_KIND_AUGS);
         break;
     case P2_MODCZ:
-        dst = EvalPasmExpr(operand[0]);
-        src = EvalPasmExpr(operand[1]);
+        dst = EvalOperandExpr(instr, operand[0]);
+        src = EvalOperandExpr(instr, operand[1]);
         if (dst > 0xf || src > 0xf) {
             ERROR(line, "bad operand for %s", instr->name);
             dst = src = 0;
@@ -1087,7 +1128,7 @@ decode_instr:
         src = 0;
         break;
     case P2_RDWR_OPERANDS:
-        dst = EvalPasmExpr(operand[0]);
+        dst = EvalOperandExpr(instr, operand[0]);
         src = SpecialRdOperand(operand[1], opimm[1]);
         if (src == 0) {
             src = EvalPasmExpr(operand[1]);
@@ -1096,7 +1137,7 @@ decode_instr:
         }
         break;
     case P2_TJZ_OPERANDS:
-        dst = EvalPasmExpr(operand[0]);
+        dst = EvalOperandExpr(instr, operand[0]);
         if (!strcmp(instr->name, "calld") && opimm[1] && (dst >= 0x1f6 && dst <= 0x1f9)) {
             int k = 0;
             // use the .loc version of this instruction
@@ -1105,7 +1146,7 @@ decode_instr:
             if (operand[1]->kind == AST_CATCH) {
                 goto force_loc;
             }
-            isrc = EvalPasmExpr(operand[1]);
+            isrc = EvalOperandExpr(instr, operand[1]);
             if (isrc < 0x400) {
                 if (inHub) goto force_loc;
                 isrc *= 4;
@@ -1144,7 +1185,7 @@ decode_instr:
         } else if (opimm[opidx]) {
             bool dstLut = false;
             bool dstHub = true;
-            isrc = EvalPasmExpr(operand[opidx]);
+            isrc = EvalOperandExpr(instr, operand[opidx]);
             if (isrc < 0x400) {
                 dstHub = false;
                 dstLut = (isrc >= 0x200);
@@ -1185,11 +1226,11 @@ decode_instr:
     case SRC_OPERAND_ONLY:
     case P2_AUG:
         dst = 0;
-        src = EvalPasmExpr(operand[0]);
+        src = EvalOperandExpr(instr, operand[0]);
         break;
     case P2_LOC:
     case P2_CALLD:
-        dst = EvalPasmExpr(operand[0]);
+        dst = EvalOperandExpr(instr, operand[0]);
         if (dst >= 0x1f6 && dst <= 0x1f9) {
             val |= ( (dst-0x1f6) & 0x3) << 21;
         } else {

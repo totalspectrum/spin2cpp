@@ -3,6 +3,7 @@ Version 3.9.28
 - Do small immediate optimizations even in P2 (it was accidentally P1 only)
 - Add error if nop instruction is conditionalized
 - Improved output formatting code, particularly for floating point
+- Improved error messages for bad addressing modes
 
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations
