@@ -806,6 +806,11 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
                         ERROR(line, "internal error in instruction table");
                     }
                 }
+            } else {
+                // this is a condition (like if_z, etc.
+                if (instr->opc == OPC_NOP) {
+                    ERROR(line, "attempt to modify NOP with condition");
+                }
             }
             if (val) {
                 if (mask & 0x0003ffff) {
