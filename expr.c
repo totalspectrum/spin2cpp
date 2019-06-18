@@ -1044,6 +1044,12 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         if (rval == 0)
 	    return rval;
         return lval % rval;
+    case K_UNS_DIV:
+        if (rval == 0) return rval;
+        return (int32_t)((uint32_t) lval / (uint32_t) rval);
+    case K_UNS_MOD:
+        if (rval == 0) return rval;
+        return (int32_t)((uint32_t) lval % (uint32_t) rval);
     case '*':
         return lval * rval;
     case '|':
@@ -1100,6 +1106,10 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return (lval < rval) ? rval : lval;
     case K_LIMITMAX:
         return (lval > rval) ? rval : lval;
+    case K_LIMITMIN_UNS:
+        return ((uint32_t)lval < (uint32_t)rval) ? rval : lval;
+    case K_LIMITMAX_UNS:
+        return ((uint32_t)lval > (uint32_t)rval) ? rval : lval;
     case K_REV:
         return ReverseBits(lval, rval);
     case K_ZEROEXTEND:
@@ -1114,6 +1124,14 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
             return ((int32_t)lval << shift) >> shift;
         }
         break;
+    case K_DECREMENT:
+    case K_INCREMENT:
+        if (valid) {
+            *valid = 0;
+        } else {
+            ERROR(NULL, "unexpected operator ++ in constant expression", (op == K_INCREMENT) ? "++" : "--");
+        }
+        return 0;
     default:
         if (valid)
             *valid = 0;
