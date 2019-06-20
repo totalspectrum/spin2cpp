@@ -1,3 +1,5 @@
+// calcresult has a small switch statement, so it
+// will generate if/then/else instead of a jump table
 int calcresult(int sel, int a, int b)
 {
     switch(sel) {

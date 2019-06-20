@@ -5,39 +5,30 @@ dat
 entry
 
 _calcresult
-	mov	_var01, arg01
-	mov	_var02, arg02
-	mov	_var03, arg03
-	mov	_var04, _var01
-	add	_var04, #1
-	mov	_var05, _var04
-	max	_var05, #3
-	mov	_var06, _var05
-	shl	_var06, #2
-	add	_var06, ptr_L__0006_
-	jmp	_var06
-LR__0001
+	cmp	arg01, #1 wz
+ if_e	jmp	#LR__0001
+	cmp	arg01, imm_4294967295_ wz
+ if_e	jmp	#LR__0002
 	jmp	#LR__0003
-	jmp	#LR__0004
-	jmp	#LR__0002
-	jmp	#LR__0004
+LR__0001
+	mov	_var01, arg02
+	add	_var01, arg03
+	mov	_var02, _var01
+	mov	result1, _var02
+	jmp	#_calcresult_ret
 LR__0002
-	mov	_var07, _var02
-	add	_var07, _var03
-	mov	result1, _var07
+	mov	_var01, arg02
+	sub	_var01, arg03
+	mov	_var03, _var01
+	mov	result1, _var03
 	jmp	#_calcresult_ret
 LR__0003
-	mov	_var07, _var02
-	sub	_var07, _var03
-	mov	result1, _var07
-	jmp	#_calcresult_ret
-LR__0004
-	mov	result1, _var02
+	mov	result1, arg02
 _calcresult_ret
 	ret
 
-ptr_L__0006_
-	long	LR__0001
+imm_4294967295_
+	long	-1
 result1
 	long	0
 COG_BSS_START
@@ -48,14 +39,6 @@ _var01
 _var02
 	res	1
 _var03
-	res	1
-_var04
-	res	1
-_var05
-	res	1
-_var06
-	res	1
-_var07
 	res	1
 arg01
 	res	1

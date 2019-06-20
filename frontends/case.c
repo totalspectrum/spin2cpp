@@ -331,17 +331,6 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     }
     ast = NewAST(AST_JUMPTABLE, NULL, NULL);
 
-    // fix up the assignment
-    expr = assign->right;
-    if (minval < 0) {
-        minval = -minval;
-        expr = AstOperator('+', expr, AstInteger(minval));
-    } else if (minval > 0) {
-        expr = AstOperator('-', expr, AstInteger(minval));
-    }
-    expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
-    assign->right = expr;
-    ast->left = assign;
     curcase = cases;
     lastval = curcase->val;
     for (i = 0; i < siz; i++) {
@@ -362,9 +351,21 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 
     // if the jump table is mostly defaults, revert to if/else
     // mathematically we want defaults_seen / range > density / maxrange
-    if ( (defaults_seen * maxrange) / range < density ) {
+    if ( (defaults_seen * maxrange) / range > density ) {
         return NULL;
     }
+    // fix up the assignment
+    expr = assign->right;
+    if (minval < 0) {
+        minval = -minval;
+        expr = AstOperator('+', expr, AstInteger(minval));
+    } else if (minval > 0) {
+        expr = AstOperator('-', expr, AstInteger(minval));
+    }
+    expr = AstOperator(K_LIMITMAX_UNS, expr, AstInteger(range));
+    assign->right = expr;
+    ast->left = assign;
+
     //DumpAST(ast);
     return ast;
 }
