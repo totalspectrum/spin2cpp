@@ -4,7 +4,10 @@ Version 3.9.28
 - Add error if nop instruction is conditionalized
 - Improved output formatting code, particularly for floating point
 - Improved error messages for bad addressing modes
-
+- Fixed some nasty bugs in case generation (the wrong values could be
+  generated for case comparisons, and the code for determining jump
+  tables was incorrect)
+  
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations
 - Added CAST operator to BASIC

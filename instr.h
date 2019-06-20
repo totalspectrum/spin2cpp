@@ -214,6 +214,7 @@ enum Operandkind {
     REG_HW,   // for a hardware register
     REG_REG,  // for a regular register
     REG_LOCAL, // for a "local" register (only live inside function)
+    REG_TEMP,  // for a temporary register
     REG_HUBPTR, // a register which holds a hub address
     REG_COGPTR, // a register which holds a cog address
     REG_ARG,   // for an argument to a function

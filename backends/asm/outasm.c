@@ -917,7 +917,7 @@ GetFunctionTempRegister(Function *f, int n)
   } else {
       snprintf(buf, sizeof(buf)-1, "%s_%s_tmp%03d_", P->classname, cleanname(f->name), n);
   }
-  return GetOneGlobal(REG_LOCAL, strdup(buf), 0);
+  return GetOneGlobal(REG_TEMP, strdup(buf), 0);
 }
 
 Operand *
@@ -1097,7 +1097,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
           return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_TEMPVAR:
           size = TypeSize((AST *)sym->val);
-          return GetSizedGlobal(REG_LOCAL, IdentifierLocalName(func, sym->our_name), 0, size);
+          return GetSizedGlobal(REG_TEMP, IdentifierLocalName(func, sym->our_name), 0, size);
       case SYM_LABEL:
           return LabelRef(irl, sym);
       }
@@ -2122,9 +2122,17 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   AST *rhs = expr->right;
   Operand *left;
   Operand *right;
-  Operand *temp = NewFunctionTempRegister(); // FIXME? was dest ? dest : NewFunctionTempRegister(), but that fails for a = b - a
+  Operand *temp;
   IR *ir;
 
+  // beware of things like a = b - a
+  // so make sure we re-use temp for dest only
+  // if it isn't already in use
+  if (dest && dest->kind == REG_TEMP) {
+      temp = dest;
+  } else {
+      temp = NewFunctionTempRegister();
+  }
   switch(op) {
   case K_REV:
       // we actually want rev lhs, 32 - rhs
@@ -2747,6 +2755,7 @@ IsCogMem(Operand *addr)
     case COGMEM_REF:
     case REG_HW:
     case REG_REG:
+    case REG_TEMP:
     case REG_LOCAL:
     case REG_ARG:
         return true;
@@ -2786,6 +2795,7 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
+        case REG_TEMP:
         case REG_ARG:
         case REG_HW:
             base->used = 1;
@@ -2845,6 +2855,7 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
+        case REG_TEMP:
         case REG_ARG:
         case REG_HW:
             base->used = 1;
@@ -2994,6 +3005,7 @@ GetLea(IRList *irl, Operand *src)
             return src;
         case REG_REG:
         case REG_LOCAL:
+        case REG_TEMP:
         case REG_ARG:
         case REG_HW:
             src->used = 1;
@@ -4321,6 +4333,9 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
       if (g[i].op->kind == REG_LOCAL && !g[i].op->used) {
 	continue;
       }
+      if (g[i].op->kind == REG_TEMP && !g[i].op->used) {
+	continue;
+      }
       if (g[i].op->kind == IMM_INT && !g[i].op->used) {
 	continue;
       }
@@ -4345,6 +4360,7 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
           break;
       case REG_ARG:
       case REG_LOCAL:
+      case REG_TEMP:
 	  if (bssirl != NULL) {
    	      EmitLabel(bssirl, g[i].op);
 	      varsize = g[i].count / LONG_SIZE;

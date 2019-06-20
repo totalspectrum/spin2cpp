@@ -173,21 +173,21 @@ InstrUses(IR *ir, Operand *reg)
 static bool
 IsArg(Operand *op)
 {
-  return op->kind == REG_ARG;
+    return op->kind == REG_ARG;
 }
 
 // returns TRUE if an operand represents a local register
 bool
 IsLocal(Operand *op)
 {
-  return op->kind == REG_LOCAL;
+    return op->kind == REG_LOCAL || op->kind == REG_TEMP;
 }
 
 // returns TRUE if an operand represents a local register or argument
 bool
 IsLocalOrArg(Operand *op)
 {
-  return op->kind == REG_LOCAL || op->kind == REG_ARG;
+    return op->kind == REG_LOCAL || op->kind == REG_ARG || op->kind == REG_TEMP;
 }
 
 static bool
@@ -207,6 +207,7 @@ IsValidDstReg(Operand *op)
 {
     switch(op->kind) {
     case REG_LOCAL:
+    case REG_TEMP:
     case REG_ARG:
     case REG_REG:
     case IMM_COG_LABEL:  // for popping ret addresses and such
