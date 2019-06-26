@@ -337,12 +337,14 @@ static int
 parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 {
     unsigned long uval, digit;
+    unsigned long tenval;
     unsigned int c;
     int sawdigit = 0;
     int kind = SP_NUM;
 
     uval = 0;
-
+    tenval = 0;
+    
     for(;;) {
         c = lexgetc(L);
         if (c == '_')
@@ -356,16 +358,23 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         } else {
             break;
         }
+        if (base == 8) {
+            // keep parallel track of the interpretation in base 10
+            tenval = 10 * tenval + digit;
+        }
         if (digit < base) {
             uval = base * uval + digit;
             sawdigit = 1;
+        } else if (base == 8 && digit < 10) {
+            uval = tenval;
+            base = 10;
         } else {
             break;
         }
     }
-    if ( base == 10 && (c == '.' || c == 'e' || c == 'E') ) {
+    if ( (base <= 10) && (c == '.' || c == 'e' || c == 'E') ) {
         /* potential floating point number */
-        float f = (float)uval;
+        float f = (float)tenval;
         float ff = 0.0;
         static float divby[45] = {
             1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
@@ -3130,10 +3139,11 @@ getCToken(LexStream *L, AST **ast_ptr)
         *ast_ptr = ast;
         return c;
     }
+    parse_number:        
     if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
-        if (c == 0) {
+        if (c == '0') {
             // 0ddd is an octal number in C
             c = parseNumber(L, 8, &ast->d.ival);
         } else {
@@ -3166,6 +3176,15 @@ getCToken(LexStream *L, AST **ast_ptr)
             }
             lexungetc(L, c2);
             c = C_CONSTANT;
+        }
+    } else if (c == '.') {
+        // check for .1234 <=> 0.1234
+        c2 = lexgetc(L);
+        lexungetc(L, c2);
+        if (safe_isdigit(c2)) {
+            lexungetc(L, c);
+            c = '0';
+            goto parse_number;
         }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
