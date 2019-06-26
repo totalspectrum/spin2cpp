@@ -358,7 +358,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         } else {
             break;
         }
-        if (base == 8) {
+        if (base <= 10) {
             // keep parallel track of the interpretation in base 10
             tenval = 10 * tenval + digit;
         }
@@ -3177,15 +3177,6 @@ getCToken(LexStream *L, AST **ast_ptr)
             lexungetc(L, c2);
             c = C_CONSTANT;
         }
-    } else if (c == '.') {
-        // check for .1234 <=> 0.1234
-        c2 = lexgetc(L);
-        lexungetc(L, c2);
-        if (safe_isdigit(c2)) {
-            lexungetc(L, c);
-            c = '0';
-            goto parse_number;
-        }
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
         c = parseCIdentifier(L, &ast);
@@ -3209,7 +3200,14 @@ getCToken(LexStream *L, AST **ast_ptr)
         c2 = lexgetc(L);
         if (c2 == '.') {
             c2 = lexgetc(L);
-            if (c2 == '.') {
+            // check for .1234 <=> 0.1234
+            if (safe_isdigit(c2)) {
+                lexungetc(L, c2);
+                lexungetc(L, c);
+                c = '0';
+                goto parse_number;
+            }
+            else if (c2 == '.') {
                 c = C_ELLIPSIS;
             } else {
                 lexungetc(L, c2);
