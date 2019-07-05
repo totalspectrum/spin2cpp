@@ -1,6 +1,11 @@
 OVERVIEW
 ========
 
+`spin2cpp` and `fastspin` are tools for converting Spin to C++ and for compiling Spin to native Propeller binaries, respectively. They can also accept a FreeBASIC-like dialect and C code as input, so the names are no longer really appropriate.
+
+Background
+----------
+
 Spin is a language that is the "native" language of the Parallax
 Propeller chip (a very cool multi-core microprocessor).  Spin is
 normally compiled to a bytecode which is interpreted by a program in
@@ -23,13 +28,24 @@ It has grown considerably past that now, and can perform conversions like:
 spin2cpp should be able to deal with any Spin program; please report
 any that it cannot convert.
 
+fastspin
+--------
+
 There is also an alternate front end `fastspin` which mimics the command
 line of the `openspin` compiler, but which produces LMM binaries instead
 of spin bytecode binaries. `fastspin` compiled programs will typically be
 about 4-10 times faster than `openspin` ones, but will be 2-3 times as large.
 
+Languages
+---------
+
+As mentioned, besides Spin the tools can now accept BASIC and C code as input, and the languages may be mixed in the same program. See the `docs/` folder for more detail
+
 INSTALLATION
-============ 
+============
+
+Windows
+-------
 
 To install in Windows, just unzip the release ZIP file. If you want to
 use the command line version of spin2cpp, you should copy spin2cpp.exe
@@ -44,6 +60,16 @@ case you do not need a C compiler.
 Similarly, if you only want to use the `--asm` option of spin2cpp to
 generate PASM, then you do not need propeller-elf-gcc or anything else
 from PropGCC.
+
+Linux
+-----
+
+For Linux builds you will have to build from source. Just do `make` in this directory. The binaries are placed in `build`. To install in `$INSTALLDIR` do:
+```
+mkdir -p $INSTALLDIR/bin
+cp build/* $INSTALLDIR/bin
+cp -r include $INSTALLDIR
+```
 
 COMMAND LINE USAGE
 ==================
