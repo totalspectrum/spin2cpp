@@ -234,6 +234,18 @@ topelement:
     { DeclareFunction(current, SpinRetType($4), 1, $4, $3, NULL, $1); }
   | SP_PRI SP_FILE SP_STRING funcdef
     { DeclareFunction(current, SpinRetType($4), 0, $4, $3, NULL, $1); }
+  | SP_PRI identifier '=' identifier SP_EOLN
+    {
+        const char *oldname = GetIdentifierName($4);
+        const char *newname = GetIdentifierName($2);
+        AddSymbol(&current->objsyms, newname, SYM_WEAK_ALIAS, (void *)oldname, NULL);
+    }
+  | SP_PUB identifier '=' identifier SP_EOLN
+    {
+        const char *oldname = GetIdentifierName($4);
+        const char *newname = GetIdentifierName($2);
+        AddSymbol(&current->objsyms, newname, SYM_WEAK_ALIAS, (void *)oldname, NULL);
+    }
   | annotation emptylines
     { DeclareToplevelAnnotation($1); }
 ;

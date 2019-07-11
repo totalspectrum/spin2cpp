@@ -84,12 +84,13 @@ There are several predefined symbols:
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
+`__propeller2__` | if compiling for Propeller 2
+`__P2__`         | if compiling for Propeller 2 (deprecated symbol)
 `__FASTSPIN__`   | if the `fastspin` front end is used
 `__SPINCVT__`    | always defined
 `__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)
 `__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
 `__cplusplus`    | if C++ is being output (never in fastspin)
-`__P2__`         | if compiling for Propeller 2
 
 
 ## Extensions to Spin 1
@@ -189,6 +190,17 @@ pub test
 
 Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
 
+### Function Aliases
+
+A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
+```
+PUB add(x, y)
+  return x+y
+PUB _add = add
+```
+The `PUB _add = add` line says that `_add` is an alias for `add`.
+
+Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
 
 ### Multiple return values and assignments
 

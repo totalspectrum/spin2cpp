@@ -1,87 +1,141 @@
-#pragma once
+#ifndef __PROPELLER2__H
+#define __PROPELLER2__H
 
-/// Use to set pins 0-31 to input (0) or output (1).
-#define DIRA    _DIRA
-/// Use to set pins 32-63 to input (0) or output (1).
-#define DIRB    _DIRB
+#include <stdint.h>
 
-/// Use to read the pins when corresponding DIRA bits are 0.
-#define INA     _INA
-#define INB     _INB
-/// Use to set output pin states when corresponding DIRA bits are 1.
-#define OUTA    _OUTA
-#define OUTB    _OUTB
-
-#define CNT getcnt()
-
-/**
- * @brief getpin accessor used to read the state of a pin.
- *
- * @details P1 provides pin access via registers only.
- * This inline macro provides access to read a given pin.
- *
- * This macro is a convenience for portability between P1/P2 code.
- *
- * @param pin Pin to read in the range 0:63.
- * @returns State of the requested pin with range 0:1.
+#ifndef __FASTSPIN__
+/*
+ * special cog register names (the actual types are compiler dependent)
+ * Not all compilers will necessarily support these
  */
-static __inline__ int getpin(int pin)
-{
-    int val = 0;
-    __asm {
-        testp pin wc
-        muxc val, #1
-    }
-    return val;
-}
 
-/**
- * @brief setpin accessor used to write the state of a pin.
- *
- * @details P1 provides pin access via registers only.
- * This inline macro provides access to write the value to a given pin.
- *
- * This macro is a convenience for portability between P1/P2 code.
- *
- * @param pin Pin to read in the range 0:63.
- * @param value The value to set to the pin 0:1
- * @returns Nothing.
+extern volatile uint32_t _IJMP3; 
+extern volatile uint32_t _IRET3;
+extern volatile uint32_t _IJMP2;
+extern volatile uint32_t _IRET2;
+extern volatile uint32_t _IJMP1;
+extern volatile uint32_t _IRET1;
+extern volatile uint32_t _PA;
+extern volatile uint32_t _PB;
+extern volatile uint32_t _PTRA;
+extern volatile uint32_t _PTRB;
+extern volatile uint32_t _DIRA;
+extern volatile uint32_t _DIRB;
+extern volatile uint32_t _OUTA;
+extern volatile uint32_t _OUTB;
+extern volatile uint32_t _INA;
+extern volatile uint32_t _INB;
+#endif
+
+/*
+ * For compatibility with previous programs, where the special register
+ * names did not have the leading underscore, we provide the #defines 
+ * to allow older programs to work with the new names:
  */
-static __inline__ void setpin(int pin, int value)
-{
-    if (value) {
-        __asm {
-            drvh pin
-        }
-    } else {
-        __asm {
-            drvl pin
-        }
-    }
-}
+#define DIRA _DIRA
+#define INA  _INA
+#define OUTA _OUTA
+#define DIRB _DIRB
+#define INB  _INB
+#define OUTB _OUTB
 
-/**
- * @brief togglepin accessor used to toggle the state of a pin.
- *
- * @details P1 provides pin access via registers only.
- * This inline macro provides access to toggle the value of a given pin.
- * Toggle means to set the opposite of the existing state.
- *
- * This macro is a convenience for portability between P1/P2 code.
- *
- * @param pin Pin to read in the range 0:31.
- * @returns Nothing.
+/*
+ * common definitions
  */
-static __inline__ void togglepin(int pin)
-{
-    __asm {
-        drvnot pin
-    }
-}
 
-static __inline__ void pinwr(int pin, unsigned value)
-{
-    __asm {
-        wrpin value, pin
-    }
-}
+#define ANY_COG 0x10
+
+/*
+ * common types
+ */
+
+// cartesian coordinates
+typedef struct _cartesian {
+   int32_t x, y;
+} cartesian_t;
+
+// polar coordinates
+typedef struct _polar {
+   uint32_t r, t;
+} polar_t;
+
+/*
+ * P2 32 Bit Clock Mode (see macros below to construct)
+ *
+ *      0000_000e_dddddd_mmmmmmmmmm_pppp_cc_ss
+ *
+ *   e          = XPLL (0 = PLL Off, 1 = PLL On)
+ *   dddddd     = XDIV (0 .. 63, crystal divider => 1 .. 64)
+ *   mmmmmmmmmm = XMUL (0 .. 1023, crystal multiplier => 1 .. 1024)
+ *   pppp       = XPPP (0 .. 15, see macro below)
+ *   cc         = XOSC (0 = OFF, 1 = OSC, 2 = 15pF, 3 = 30pF)
+ *   ss         = XSEL (0 = rcfast, 1 = rcslow, 2 = XI, 3 = PLL)
+ */
+
+// macro to calculate XPPP (1->15, 2->0, 4->1, 6->2 ... 30->14) ...
+#define XPPP(XDIVP) ((((XDIVP)>>1)+15)&0xF)  
+
+// macro to combine XPLL, XDIV, XDIVP, XOSC & XSEL into a 32 bit CLOCKMODE ...
+#define CLOCKMODE(XPLL,XDIV,XMUL,XDIVP,XOSC,XSEL) ((XPLL<<24)+((XDIV-1)<<18)+((XMUL-1)<<8)+(XPPP(XDIVP)<<4)+(XOSC<<2)+XSEL) 
+
+// macro to calculate final clock frequency ...
+#define CLOCKFREQ(XTALFREQ, XDIV, XMUL, XDIVP) ((XTALFREQ)/(XDIV)*(XMUL)/(XDIVP))
+
+/*
+ * pre-defined functions
+ */
+
+void      _clkset(uint32_t clkmode, uint32_t clkfreq);
+void      _hubset(uint32_t val);
+
+int       _coginit(int cog, void *pgm, void *ptr);
+#define _cognew(pgm, ptr) _coginit(ANY_COG, pgm, ptr)
+
+void      _cogstop(int cog);
+
+int       _cogid(void);
+int       _cogchk(int cog);
+
+int       _locknew(void);
+void      _lockret(int lock);
+
+int       _locktry(int lock);
+int       _lockrel(int lock);
+int       _lockchk(int lock);
+
+void      _cogatn(uint32_t mask);
+int       _pollatn(void);
+int       _waitatn(void);
+
+cartesian_t _rotxy(cartesian_t coord, uint32_t t);
+cartesian_t _polxy(polar_t coord);
+polar_t     _xypol(cartesian_t coord);
+
+uint32_t  _rnd(void);
+
+uint32_t  _cnt(void);
+uint32_t  _pollcnt(uint32_t tick);
+void      _waitcnt(uint32_t tick);
+
+void      _waitx(uint32_t delay);
+
+void      _pinw(int pin, int val);
+void      _pinl(int pin);
+void      _pinh(int pin);
+void      _pinnot(int pin);
+void      _pinrnd(int pin);
+void      _pinf(int pin);
+int       _pin(int pin);
+
+void      _wrpin(int pin, uint32_t val);
+void      _wxpin(int pin, uint32_t val);
+void      _wypin(int pin, uint32_t val);
+void      _akpin(int pin);
+uint32_t  _rdpin(int pin);
+uint32_t  _rqpin(int pin);
+
+#define _clockfreq() (*(uint32_t *)0x14)
+#define _clockmode() (*(uint32_t *)0x18)
+
+#endif
+

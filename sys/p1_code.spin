@@ -1,9 +1,11 @@
-pri waitcnt(x)
+pri _waitcnt(x)
   asm
     waitcnt x,#0
   endasm
 
-pri getcnt
+pri waitcnt = _waitcnt
+
+pri _getcnt
   return cnt
 
 pri waitpeq(pin, mask, c = 0)
@@ -107,7 +109,7 @@ pri _tx(c) | val, nextcnt, bitcycles
   val := (c | 256) << 1
   nextcnt := cnt
   repeat 10
-    waitcnt(nextcnt += bitcycles)
+    _waitcnt(nextcnt += bitcycles)
     OUTA[_txpin] := val
     val >>= 1
 
@@ -119,9 +121,9 @@ pri _rx | val, rxmask, waitcycles, i, bitcycles
   waitcycles := cnt + (bitcycles>>1)
   val := 0
   repeat 8
-    waitcnt(waitcycles += bitcycles)
+    _waitcnt(waitcycles += bitcycles)
     val := (INA[_rxpin] << 7) | (val>>1)
-  waitcnt(waitcycles + bitcycles)
+  _waitcnt(waitcycles + bitcycles)
   _tx(val)
   return val
 
@@ -183,7 +185,7 @@ pri __builtin_propeller_drv(pin, c) | mask
   else
     OUTA &= !mask
 
-pri __builtin_propeller_waitx(tim)
+pri _waitx(tim)
   asm
     add  tim, CNT
     waitcnt tim
