@@ -128,6 +128,7 @@ CombineTypes(AST *first, AST *second, AST **identifier)
         first = CombineTypes(first, second->left, identifier);
         first = CombineTypes(first, second->right, identifier);
         return MergePrefix(prefix, first);
+    case AST_SYMBOL:
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
         if (identifier) {
