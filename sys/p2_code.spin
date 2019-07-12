@@ -2,66 +2,56 @@
 '' P2 specific system calls
 ''
 
-pri _cnt | r
+pri cnt | r
   asm
     getct r
   endasm
   return r
-pri _waitcnt(x)
+pri getcnt | r
+  asm
+    getct r
+  endasm
+  return r
+pri waitcnt(x)
   asm
     addct1  x, #0
     waitct1
   endasm
-pri _cogid | rval
+pri cogid | rval
   asm
     cogid rval
   endasm
   return rval
-
-pri _cogchk(id) | rval
-  asm
-    cogid id wc
-    wrc   rval
-  endasm
-  return rval
-  
-pri _cogstop(id)
+pri cogstop(id)
   asm
     cogstop id
   endasm
   return 0
-pri _lockclr(id) | mask, rval
+pri lockclr(id) | mask, rval
   mask := -1
   asm
     lockrel id wc
     muxc   rval,mask
   endasm
   return rval
-pri _locktry(id) | mask, rval
+pri lockset(id) | mask, rval
   mask := -1
   asm
     locktry id wc
     muxnc   rval,mask  ' NOTE: C bit is opposite in P2
   endasm
   return rval
-pri _locknew | rval
+pri locknew | rval
   asm
     locknew rval
   endasm
   return rval
-pri _lockret(id)
+pri lockret(id)
   asm
     lockret id
   endasm
   return 0
-pri _lockchk(id)
-  asm
-    lockrel id wc
-  if_nc neg id, #1
-  endasm
-  return id
-
-pri _clkset(mode, freq, xsel = 3) | oldfreq
+pri clkset(mode, freq, xsel = 3) | oldfreq
   oldfreq := CLKFREQ & !3  ' remove low bits, if any
   CLKFREQ := freq
   CLKMODE := mode
@@ -239,12 +229,7 @@ pri __builtin_propeller_wypin(val, pin)
   asm
     wypin val, pin
   endasm
-pri _waitx(tim)
+pri __builtin_propeller_waitx(tim)
   asm
     waitx tim
-  endasm
-
-pri _cogatn(mask)
-  asm
-    cogatn mask
   endasm

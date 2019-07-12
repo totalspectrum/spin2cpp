@@ -96,24 +96,14 @@ Aliases spinalias[] = {
     { "drvh_", "__builtin_propeller_drvh" },
     { "drvnot_", "__builtin_propeller_drvnot" },
     { "drv_", "__builtin_propeller_drv" },
-    { "waitx_", "_waitx" },
+    { "waitx_", "__builtin_propeller_waitx" },
     { NULL, NULL },
 };
-/* the spin2 aliases are in addition to the spin1 ones */
 Aliases spin2alias[] = {
-    { "clkset", "_clkset" },
-    { "cnt", "_cnt" },
-    { "cogid", "_cogid" },
-    { "cogstop", "_cogstop" },
-    
     { "dirrnd_", "__builtin_propeller_dirrnd" },
+
     { "drvrnd_", "__builtin_propeller_drvrnd" },
 
-    { "lockclr", "_lockrel" },
-    { "locknew", "_locknew" },
-    { "lockret", "_lockret" },
-    { "lockset", "_locktry" },
-    
     { "outl_", "__builtin_propeller_outl" },
     { "outh_", "__builtin_propeller_outh" },
     { "outrnd_", "__builtin_propeller_outrnd" },
@@ -126,11 +116,9 @@ Aliases spin2alias[] = {
     { "fltnot_", "__builtin_propeller_fltnot" },
     { "flt_", "__builtin_propeller_flt" },
 
-    { "getcnt", "_cnt" },
     { "wrpin_", "__builtin_propeller_wrpin" },
     { "wxpin_", "__builtin_propeller_wxpin" },
     { "wypin_", "__builtin_propeller_wypin" },
-
     { NULL, NULL },
 };
 Aliases basicalias[] = {
@@ -158,10 +146,6 @@ static void
 addAliases(SymbolTable *tab, Aliases *A)
 {
     while (A && A->name) {
-        if (!strcmp(A->name, A->alias)) {
-            ERROR(NULL, "duplicate alias for %s", A->name);
-            continue;
-        }
         AddSymbol(tab, A->name, SYM_WEAK_ALIAS, (void *)A->alias, NULL);
         A++;
     }
