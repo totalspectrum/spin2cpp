@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#ifndef __FASTSPIN__
 /*
  * special cog register names (the actual types are compiler dependent)
  * Not all compilers will necessarily support these
@@ -25,7 +24,6 @@ extern volatile uint32_t _OUTA;
 extern volatile uint32_t _OUTB;
 extern volatile uint32_t _INA;
 extern volatile uint32_t _INB;
-#endif
 
 /*
  * For compatibility with previous programs, where the special register
@@ -88,13 +86,18 @@ typedef struct _polar {
 void      _clkset(uint32_t clkmode, uint32_t clkfreq);
 void      _hubset(uint32_t val);
 
+/* start PASM code in another COG */
 int       _coginit(int cog, void *pgm, void *ptr);
 #define _cognew(pgm, ptr) _coginit(ANY_COG, pgm, ptr)
 
+/* start C code in another COG */
+int _cogstart(void (*func)(void *), void *arg, void *arg, size_t stack_size);
+
+/* stop/check status of COGs */
 void      _cogstop(int cog);
+int       _cogchk(int cog);
 
 int       _cogid(void);
-int       _cogchk(int cog);
 
 int       _locknew(void);
 void      _lockret(int lock);
@@ -114,11 +117,14 @@ polar_t     _xypol(cartesian_t coord);
 uint32_t  _rnd(void);
 
 uint32_t  _cnt(void);
+uint32_t  _cnth(void); /* high 32 bits of CNT, on processors that support it */
+
 uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);
 
 void      _waitx(uint32_t delay);
 
+/* regular pin I/O */
 void      _pinw(int pin, int val);
 void      _pinl(int pin);
 void      _pinh(int pin);
@@ -127,6 +133,7 @@ void      _pinrnd(int pin);
 void      _pinf(int pin);
 int       _pin(int pin);
 
+/* smart pin controls */
 void      _wrpin(int pin, uint32_t val);
 void      _wxpin(int pin, uint32_t val);
 void      _wypin(int pin, uint32_t val);
@@ -134,6 +141,7 @@ void      _akpin(int pin);
 uint32_t  _rdpin(int pin);
 uint32_t  _rqpin(int pin);
 
+/* access to previously set clock mode and frequency */
 #define _clockfreq() (*(uint32_t *)0x14)
 #define _clockmode() (*(uint32_t *)0x18)
 

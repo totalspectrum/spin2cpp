@@ -88,6 +88,8 @@ Aliases spinalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
     { "strsize", "__builtin_strlen" },
+
+    /* obsolete aliases */
     { "dirl_", "__builtin_propeller_dirl" },
     { "dirh_", "__builtin_propeller_dirh" },
     { "dirnot_", "__builtin_propeller_dirnot" },
@@ -97,6 +99,7 @@ Aliases spinalias[] = {
     { "drvnot_", "__builtin_propeller_drvnot" },
     { "drv_", "__builtin_propeller_drv" },
     { "waitx_", "__builtin_propeller_waitx" },
+
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
@@ -136,6 +139,18 @@ Aliases basicalias[] = {
 Aliases calias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
+
+    /* new propeller2.h standard */
+    { "_dirl", "__builtin_propeller_dirl" },
+    { "_dirh", "__builtin_propeller_dirh" },
+    { "_dirnot", "__builtin_propeller_dirnot" },
+    { "_dirw", "__builtin_propeller_dir" },
+    { "_pinl", "__builtin_propeller_drvl" },
+    { "_pinh", "__builtin_propeller_drvh" },
+    { "_pinnot", "__builtin_propeller_drvnot" },
+    { "_pinw", "__builtin_propeller_drv" },
+    { "_waitx", "__builtin_propeller_waitx" },
+
     { NULL, NULL },
 };
 
