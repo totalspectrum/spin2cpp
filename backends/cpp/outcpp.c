@@ -787,6 +787,9 @@ PrintCppFile(Flexbuf *f, Module *parse)
     if (ModData(parse)->needsStdlib) {
         flexbuf_printf(f, "#include <stdlib.h>\n");
     }
+    if (ModData(parse)->needsString) {
+        flexbuf_printf(f, "#include <string.h>\n");
+    }
     IfdefPropeller(f);
     flexbuf_printf(f, "#include <propeller.h>\n");
     if (gl_gas_dat) {
@@ -949,6 +952,11 @@ SetCppFlags(CppModData *bedata, AST *ast)
                 Builtin *b = (Builtin *)sym->val;
                 if (!strncmp(b->name, "lock", 4)) {
                     bedata->needsLockFuncs = 1;
+                }
+                if (!strncmp(b->cname, "memcpy", 6)) {
+                    bedata->needsString = 1;
+                } else if (!strncmp(b->cname, "str", 3)) {
+                    bedata->needsString = 1;
                 }
             }
         }

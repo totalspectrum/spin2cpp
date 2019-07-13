@@ -1,3 +1,4 @@
+#include <string.h>
 #include <propeller.h>
 #include "test051.h"
 

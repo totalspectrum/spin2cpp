@@ -20,6 +20,7 @@ typedef struct asmmoddata {
     char needsRotate;
     char needsShr;
     char needsStdlib;
+    char needsString;
     char needsYield;
     char needsAbortdef;
     char needsRand;
