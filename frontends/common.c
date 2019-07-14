@@ -141,6 +141,7 @@ Aliases calias[] = {
     { "clkmode", "_clkmode" },
 
     /* new propeller2.h standard */
+    { "_cnt",  "_getcnt" },
     { "_dirl", "__builtin_propeller_dirl" },
     { "_dirh", "__builtin_propeller_dirh" },
     { "_dirnot", "__builtin_propeller_dirnot" },

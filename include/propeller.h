@@ -18,6 +18,7 @@
 #endif
 
 #ifdef __PROPELLER2__
+#define _PROP1_COMPATIBLE
 #include <propeller2.h>
 #else
 #include <propeller1.h>

@@ -25,6 +25,7 @@ extern volatile uint32_t _OUTB;
 extern volatile uint32_t _INA;
 extern volatile uint32_t _INB;
 
+#ifdef _PROP1_COMPATIBLE
 /*
  * For compatibility with previous programs, where the special register
  * names did not have the leading underscore, we provide the #defines 
@@ -36,6 +37,7 @@ extern volatile uint32_t _INB;
 #define DIRB _DIRB
 #define INB  _INB
 #define OUTB _OUTB
+#endif
 
 /*
  * common definitions
@@ -91,7 +93,7 @@ int       _coginit(int cog, void *pgm, void *ptr);
 #define _cognew(pgm, ptr) _coginit(ANY_COG, pgm, ptr)
 
 /* start C code in another COG */
-int _cogstart(void (*func)(void *), void *arg, void *arg, size_t stack_size);
+int _cogstart(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_size);
 
 /* stop/check status of COGs */
 void      _cogstop(int cog);
@@ -142,6 +144,9 @@ uint32_t  _rdpin(int pin);
 uint32_t  _rqpin(int pin);
 
 /* access to previously set clock mode and frequency */
+extern uint32_t _clockfreq(void);
+extern uint32_t _clockmode(void);
+
 #define _clockfreq() (*(uint32_t *)0x14)
 #define _clockmode() (*(uint32_t *)0x18)
 

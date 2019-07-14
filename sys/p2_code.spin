@@ -7,7 +7,7 @@ pri cnt | r
     getct r
   endasm
   return r
-pri getcnt | r
+pri _getcnt | r
   asm
     getct r
   endasm

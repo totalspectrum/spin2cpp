@@ -3,7 +3,7 @@ pri waitcnt(x)
     waitcnt x,#0
   endasm
 
-pri getcnt
+pri _getcnt
   return cnt
 
 pri waitpeq(pin, mask, c = 0)
