@@ -59,6 +59,11 @@ typedef struct _polar {
    uint32_t r, t;
 } polar_t;
 
+// 64 bit counter
+typedef struct _counter64 {
+    uint32_t low, high;
+} counter64_t;
+
 /*
  * P2 32 Bit Clock Mode (see macros below to construct)
  *
@@ -112,14 +117,21 @@ void      _cogatn(uint32_t mask);
 int       _pollatn(void);
 int       _waitatn(void);
 
+/* CORDIC instructions */
 cartesian_t _rotxy(cartesian_t coord, uint32_t t);
 cartesian_t _polxy(polar_t coord);
 polar_t     _xypol(cartesian_t coord);
 
+/* miscellaneous operations */
 uint32_t  _rnd(void);
+uint32_t  _rev(uint32_t val);   /* like Spin reverse operator */
+int       _encod(uint32_t val); /* Spin encode operator */
+uint32_t  _isqrt(uint32_t val); /* Spin integer square root */
 
+/* counter related functions */
 uint32_t  _cnt(void);
 uint32_t  _cnth(void); /* high 32 bits of CNT, on processors that support it */
+counter64_t _cnthl();  /* fetch both together */
 
 uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);
