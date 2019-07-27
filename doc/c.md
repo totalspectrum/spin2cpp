@@ -8,7 +8,6 @@ C compiler support is not even at the "beta" stage yet; there are many features 
 
 An incomplete list of things that still need to be implemented:
 
-  * bitfields
   * 64 bit integers (long long)
   * struct passing and return
   * much of the C standard library
@@ -27,7 +26,8 @@ Symbol           | When Defined
 `__FLEXC__`      | always defined to the fastspin version number
 `__FASTSPIN__`   | always defined to the fastspin version number
 `__cplusplus`    | if C++ is being output (not currently implemented)
-`__P2__`         | only defined if compiling for Propeller 2
+`__P2__`         | only defined if compiling for Propeller 2 (obsolete)
+`__propeller2__` | only defined if compiling for Propeller 2
 
 
 ## Runtime Environment
@@ -66,6 +66,23 @@ int getcogid() {
 The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+
+### Classes
+
+The C `struct` declaration is extended slightly to allow functions (methods) to be declared. These must be declared like C++ "inline" functions, that is in the struct definition itself, but are not necessarily implemented inline. For example, a simple counter class might be implemented as:
+```
+typedef struct counter {
+  int val;
+  void setval(int x) { val = x; }
+  int getval() { return val; }
+  int incval() { return ++val; }
+} Counter;
+
+Counter x;
+...
+x.setval(0);
+x.incval();
+```
 
 ### External Classes (e.g. Spin Objects)
 

@@ -379,6 +379,22 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     while (astlist) {
         ast = astlist->left;
         astlist = astlist->right;
+        if (ast->kind == AST_FUNCDECL) {
+            AST *type;
+            AST *ident;
+            AST *body;
+            int is_public = 1;
+            AST *list = ast->left;
+            if (list->kind != AST_LISTHOLDER) {
+                ERROR(list, "malformed func decl");
+                return;
+            }
+            type = list->left; list = list->right;
+            ident = list->left; list = list->right;
+            body = list->left;
+            DeclareTypedFunction(P, type, ident, is_public, body);
+            continue;
+        }
         if (ast->kind != AST_DECLARE_VAR) {
             ERROR(ast, "internal error, not DECLARE_VAR");
             return;
@@ -1094,6 +1110,26 @@ struct_declaration
 	: specifier_qualifier_list struct_declarator_list ';'
             {
                 $$ = MultipleDeclareVar($1, $2);
+            }
+        | specifier_qualifier_list struct_declarator_list compound_statement
+            {
+                AST *type;
+                AST *ident;
+                AST *body = $3;
+                AST *decl = $2;
+                AST *spqual = $1;
+                AST *top_decl;
+
+                if (decl->right) {
+                    SYNTAX_ERROR("bad method declaration");
+                }
+                type = CombineTypes(spqual, decl->left, &ident);
+
+                top_decl = NewAST(AST_LISTHOLDER, type,
+                                  NewAST(AST_LISTHOLDER, ident,
+                                         NewAST(AST_LISTHOLDER, body, NULL)));
+                top_decl = NewAST(AST_FUNCDECL, top_decl, NULL);
+                $$ = NewAST(AST_STMTLIST, top_decl, NULL);
             }        
 	;
 

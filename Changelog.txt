@@ -5,6 +5,7 @@ Version 3.9.28
 - Improved output formatting code, particularly for floating point
 - Improved error messages for bad addressing modes
 - Fixed octal number parsing in C
+- Added ability to declare methods in C structs
 
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations
