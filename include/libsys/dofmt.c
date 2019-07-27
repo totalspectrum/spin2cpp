@@ -119,6 +119,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
     int width = 0;
     int prec = 0;
     int size;
+    int padchar = PADCHAR_NONE;
     unsigned val;
 #ifdef LONGLONG_SUPPORT    
     unsigned long long val_LL;
@@ -133,12 +134,8 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             continue;
         }
         fmtstr = parseflags(fmtstr, &flags);
+        padchar = (flags>>PADCHAR_BIT) & PADCHAR_MASK;
         width = parseint(&fmtstr, args);
-        if (width < 0) {
-            width = -width;
-            flags &= ~(JUSTIFY_MASK<<JUSTIFY_BIT);
-            flags |= (JUSTIFY_LEFT<<JUSTIFY_BIT);
-        }
         c = *fmtstr; if (c == 0) break;
         if (c == '.') {
             fmtstr++;
@@ -164,6 +161,12 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         }
         if (prec < 0) prec = 0;
         if (prec > PREC_MASK) prec = PREC_MASK;
+        if (width < 0) {
+            width = -width;
+            flags &= ~(JUSTIFY_MASK<<JUSTIFY_BIT);
+            flags |= (JUSTIFY_LEFT<<JUSTIFY_BIT);
+            padchar = PADCHAR_SPACE;
+        }
         flags = flags | (width << MINWIDTH_BIT);
         flags = flags | (prec << PREC_BIT);
         switch (c) {
@@ -176,17 +179,20 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             break;
         case 'd':
         case 'i':
-            q = _fmtnum(fn, flags, val, 10);
-            break;
         case 'u':
-            flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
+            if (c == 'u') flags |= (SIGNCHAR_UNSIGNED<<SIGNCHAR_BIT);
+            if (prec == 0 && padchar == PADCHAR_ZERO) flags |= (width<<PREC_BIT);
             q = _fmtnum(fn, flags, val, 10);
             break;
         case 'o':
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
+            if (prec == 0 && padchar == PADCHAR_ZERO) {
+                flags |= (width<<PREC_BIT);
+            }
             q = _fmtnum(fn, flags, val, 8);
             break;
         case 'x':
+            if (prec == 0 && padchar == PADCHAR_ZERO) flags |= (width<<PREC_BIT);
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
             q = _fmtnum(fn, flags, val, 16);
             break;
