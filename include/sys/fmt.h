@@ -59,11 +59,12 @@ typedef int (*putfunc)(int c);
 #define SIGNCHAR_MINUS 4
 
 #if 0
-extern int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright) _IMPL("libsys/fmt.c");
-extern int _fmtstr(putfunc fn, unsigned fmt, const char *str) _IMPL("libsys/fmt.c");
-extern int _fmtchar(putfunc fn, unsigned fmt, int c) _IMPL("libsys/fmt.c");
-extern int _fmtnum(putfunc fn, unsigned fmt, int x, int base) _IMPL("libsys/fmt.c");
-extern int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec) _IMPL("libsys/fmt.c");
+// already declared in system module
+int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright) _IMPL("libsys/fmt.c");
+int _fmtstr(putfunc fn, unsigned fmt, const char *str) _IMPL("libsys/fmt.c");
+int _fmtchar(putfunc fn, unsigned fmt, int c) _IMPL("libsys/fmt.c");
+int _fmtnum(putfunc fn, unsigned fmt, int x, int base) _IMPL("libsys/fmt.c");
+int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec) _IMPL("libsys/fmt.c");
 #endif
 
 int _dofmt(putfunc fn, const char *fmtstr, va_list *args) _IMPL("libsys/dofmt.c");

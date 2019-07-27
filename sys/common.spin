@@ -268,4 +268,8 @@ pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_get_char(h)
 
-''
+'' format functions
+pri file "libsys/fmt.c" _fmtchar(fn, fmt, c)
+pri file "libsys/fmt.c" _fmtstr(fn, fmt, str)
+pri file "libsys/fmt.c" _fmtnum(fn, fmt, x, base)
+pri file "libsys/fmt.c" _fmtfloat(fn, fmt, x, spec)

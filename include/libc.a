@@ -89,6 +89,12 @@ char *strcpy(char *__restrict dst, const char *__restrict src) __fromfile("libc/
 /* libc/string/strlen.c */
 size_t strlen(const char *scan) __fromfile("libc/string/strlen.c");
 
+/* libc/string/strncmp.c */
+int strncmp(const char *scan1, const char *scan2, size_t n) __fromfile("libc/string/strncmp.c");
+
+/* libc/string/strncpy.c */
+char *strncpy(char *__restrict dst, const char *__restrict src, size_t n) __fromfile("libc/string/strncpy.c");
+
 /* libc/string/strrchr.c */
 char *strrchr(const char *s, int charwanted) __fromfile("libc/string/strrchr.c");
 
