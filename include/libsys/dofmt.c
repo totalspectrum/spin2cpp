@@ -109,6 +109,18 @@ static const char *parsesize(const char *fmt, unsigned *size_p)
     return fmt;
 }
 
+union f_or_i {
+    float f;
+    unsigned int i;
+};
+
+static inline float _asfloat(unsigned int x)
+{
+    union f_or_i v;
+    v.i = x;
+    return v.f;
+}
+
 int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
 {
     int c;
@@ -144,6 +156,11 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         }
         fmtstr = parsesize(fmtstr, &size);
         c = *fmtstr++; if (c == 0) break;
+        // handle some special cases
+        if (c == '%') {
+            q = _fmtchar(fn, flags, '%');
+            continue;
+        }
         q = 0;
 #ifdef LONGLONG_SUPPORT        
         if (size == 8) {
@@ -195,6 +212,12 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             if (prec == 0 && padchar == PADCHAR_ZERO) flags |= (width<<PREC_BIT);
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
             q = _fmtnum(fn, flags, val, 16);
+            break;
+        case 'a':
+        case 'e':
+        case 'f':
+        case 'g':
+            q = _fmtfloat(fn, flags, _asfloat(val), c);
             break;
         default:
             q = 0;

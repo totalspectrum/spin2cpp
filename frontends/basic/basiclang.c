@@ -434,6 +434,8 @@ genPrintf(AST *ast)
                     seq = addPrintCall(seq, Handle, basic_print_char, thisarg, AstInteger(fmt));
                     break;
                 case 'f':
+                case 'g':
+                case 'e':
                     seq = addPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt));
                     break;
                 default:

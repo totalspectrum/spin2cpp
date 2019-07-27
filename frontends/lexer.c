@@ -358,7 +358,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         } else {
             break;
         }
-        if (base <= 10) {
+        if (base <= 10 && digit < 10) {
             // keep parallel track of the interpretation in base 10
             tenval = 10 * tenval + digit;
         }

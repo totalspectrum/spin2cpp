@@ -17,4 +17,6 @@
 
 char *gets(char *data) _IMPL("libc/stdio/gets.c");
 
+int sprintf(char *str, const char *format, ...) _IMPL("libc/stdio/sprintf.c");
+
 #endif
