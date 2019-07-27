@@ -40,21 +40,25 @@ PrintParameterList(Flexbuf *f, Function *func)
         if (ast->kind == AST_DECLARE_VAR) {
             ast = ast->right;
         }
-        if (ast->kind != AST_IDENTIFIER) {
-            ERROR(ast, "Internal error: expected identifier in function parameter list");
-            return;
-        }
         if (needcomma) {
             flexbuf_printf(f, ", ");
         }
-        sym = FindSymbol(&func->localsyms, ast->d.string);
-        if (sym && sym->kind == SYM_PARAMETER && sym->val) {
-            typ = (AST *)sym->val;
+        if (ast->kind == AST_VARARGS) {
+            flexbuf_printf(f, "...");
         } else {
-            typ = ast_type_generic;
+            if (ast->kind != AST_IDENTIFIER) {
+                ERROR(ast, "Internal error: expected identifier in function parameter list");
+                return;
+            }
+            sym = FindSymbol(&func->localsyms, ast->d.string);
+            if (sym && sym->kind == SYM_PARAMETER && sym->val) {
+                typ = (AST *)sym->val;
+            } else {
+                typ = ast_type_generic;
+            }
+            PrintType(f, typ, 0);
+            CppPrintName(f, ast->d.string, 0);
         }
-        PrintType(f, typ, 0);
-        CppPrintName(f, ast->d.string, 0);
         needcomma = 1;
         list = list->right;
     }
