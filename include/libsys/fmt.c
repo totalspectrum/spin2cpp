@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <stdarg.h>
 #ifdef TEST
 #include <stdio.h>
 
