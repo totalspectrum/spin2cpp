@@ -20,6 +20,9 @@ static int _serget() {
 }
 static int _serput(int c) {
     _tx(c);
+    if (c == 10) {
+        _tx(13);
+    }
     return 1;
 }
 

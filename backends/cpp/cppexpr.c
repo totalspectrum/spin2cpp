@@ -819,6 +819,11 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             flexbuf_printf(f, "%s%s", P->classname, space);
         }
         break;
+    case AST_FUNCTYPE:
+        {
+            flexbuf_printf(f, "void *");
+        }
+        break;
     default:
         ERROR(typedecl, "unknown type declaration %d", typedecl->kind);
         break;

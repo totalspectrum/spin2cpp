@@ -556,6 +556,7 @@ AstUsesMemory(AST *ast)
     if (!ast) return false;
     switch (ast->kind) {
     case AST_MEMREF:
+    case AST_ARRAYREF:
         return true;
     case AST_CONSTREF:
         return false;
@@ -570,11 +571,11 @@ AstUsesMemory(AST *ast)
             return true;
         }
         switch (sym->kind) {
+        case SYM_TEMPVAR:
         case SYM_PARAMETER:
         case SYM_RESULT:
         case SYM_LOCALVAR:
-        case SYM_TEMPVAR:
-            return false;
+            return (curfunc->local_address_taken != 0);
         default:
             return true;
         }
@@ -1135,7 +1136,6 @@ PerformLoopOptimization(Module *Q)
     
     if ((gl_optimize_flags & OPT_PERFORM_CSE) == 0)
         return;
-
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
