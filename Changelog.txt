@@ -7,6 +7,7 @@ Version 3.9.28
 - Fixed octal number parsing in C
 - Added ability to declare methods in C structs
 - Expanded standard C library
+- Use the include directory to search for files on the command line if they end with .a.
 
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations

@@ -686,6 +686,8 @@ doParseFile(const char *name, Module *P, int *is_dup)
         if (fname) {
             fname = NormalizePath(fname);
         }
+    } else if (!strcmp(langptr, ".a")) {
+        fname = find_file_on_path(&gl_pp, name, langptr, NULL);
     }
     if (!fname) {
         fname = strdup(name);
