@@ -220,7 +220,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             q = _fmtfloat(fn, flags, _asfloat(val), c);
             break;
         default:
-            q = 0;
+            q = _fmtstr(fn, flags, "???");
             break;
         }
         if (q < 0) {
