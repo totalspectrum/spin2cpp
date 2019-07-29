@@ -193,6 +193,9 @@ PrintVarList(Flexbuf *f, AST *origtype, AST *ast, int flags)
         }
         needcomma = 1;
 	isfirst = 0;
+        if (decl->kind == AST_LOCAL_IDENTIFIER) {
+            decl = decl->right;
+        }
         switch (decl->kind) {
         case AST_IDENTIFIER:
             CppPrintName(f, decl->d.string, 0);
@@ -692,13 +695,19 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
     case AST_FORATLEASTONCE:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cfor(", indent, ' ');
-        PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
+        if (ast->left) {
+            PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
+        }
         flexbuf_printf(f, "; ");
         ast = ast->right;
-        PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
+        if (ast->left) {
+            PrintBoolExpr(f, ast->left, PRINTEXPR_DEFAULT);
+        }
         flexbuf_printf(f, "; ");
         ast = ast->right;
-        PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
+        if (ast->left) {
+            PrintExpr(f, ast->left, PRINTEXPR_TOPLEVEL);
+        }
         flexbuf_printf(f, ") {"); PrintNewline(f);
         PrintStatementList(f, ast->right, indent+2);
         flexbuf_printf(f, "%*c}", indent, ' ');
@@ -795,6 +804,10 @@ PrintFunctionBodies(Flexbuf *f, Module *parse)
     Function *pf;
 
     for (pf = parse->functions; pf; pf = pf->next) {
+        if (pf->body && pf->body->kind == AST_STRING) {
+            // external declaration
+            continue;
+        }
         PrintComment(f, pf->doccomment);
         if (pf->name == NULL) {
             PrintAnnotationList(f, pf->annotations, '\n');

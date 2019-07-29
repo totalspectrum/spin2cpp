@@ -1332,6 +1332,12 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
     objref = NULL;
     sym = NULL;
     switch (expr->kind) {
+    case AST_UNSIGNEDTYPE:
+    case AST_INTTYPE:
+    case AST_FLOATTYPE:
+    case AST_PTRTYPE:
+        PrintType(f, expr, flags);
+        break;
     case AST_INTEGER:
         PrintInteger(f, (int32_t)expr->d.ival, flags);
         break;
@@ -1556,6 +1562,18 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         break;
     case AST_CAST:
         PrintTypedExpr(f, expr->left, expr->right, flags);
+        break;
+    case AST_SIZEOF:
+        flexbuf_printf(f, "sizeof(");
+        PrintExpr(f, expr->left, flags);
+        flexbuf_printf(f, ")");
+        break;
+    case AST_VA_ARG:
+        flexbuf_printf(f, "va_arg(");
+        PrintExpr(f, expr->left, flags);
+        flexbuf_printf(f, ",");
+        PrintExpr(f, expr->right, flags);
+        flexbuf_printf(f, ")");
         break;
     default:
         ERROR(expr, "Internal error, bad expression");
