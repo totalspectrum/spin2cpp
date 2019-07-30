@@ -250,6 +250,10 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
             return;
         }
         break;
+    case AST_ADDROF:
+    case AST_ABSADDROF:
+        AddAssignment(lvs, ast->left, NewAST(AST_HWREG, NULL, NULL), LVFLAG_VARYMASK, NULL);
+        break;
     case AST_OPERATOR:
         flags = CheckOperatorForAssignment(lvs, parent, ast, flags);
         break;
@@ -259,7 +263,12 @@ FindAllAssignments(LoopValueSet *lvs, AST *parent, AST *ast, unsigned flags)
         break;
     case AST_IF:
     case AST_CASE:
+    case AST_LABEL:
         flags |= LVFLAG_CONDITIONAL;
+        break;
+    case AST_GOTO:
+        /* cannot cope with this */
+        lvs->valid = 0;
         break;
     case AST_WHILE:
     case AST_DOWHILE:
@@ -322,6 +331,7 @@ IsLoopDependent(LoopValueSet *lvs, AST *expr)
             entry = FindName(lvs, expr);
             if (!entry || !entry->value) {
                 // never assigned in the loop
+                if (curfunc->local_address_taken) return true;
                 return false;
             }
             if ((0 == (entry->flags & LVFLAG_VARYMASK))) {
@@ -951,6 +961,8 @@ CheckSimpleIncrementLoop(AST *stmt)
     case SYM_RESULT:
     case SYM_LOCALVAR:
     case SYM_TEMPVAR:
+        if (curfunc->local_address_taken)
+            return;
         /* OK, we can see all uses of these variables */
         break;
     default:
