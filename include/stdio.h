@@ -35,4 +35,9 @@ int fprintf(FILE *f, const char *format, ...) _IMPL("libc/stdio/fprintf.c");
 int fputs(const char *s, FILE *f) _IMPL("libc/stdio/fputs.c");
 int puts(const char *s) _IMPL("libc/stdio/fputs.c");
 
+#ifdef __FLEXC__
+// FLEXC can optimize printf
+#define printf __builtin_printf
+#endif
+
 #endif

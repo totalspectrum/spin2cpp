@@ -121,7 +121,12 @@ doCTransform(AST **astptr, unsigned cflags)
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
         if (ast->left && ast->left->kind == AST_PRINT) {
-            *ast = *genPrintf(ast);
+            AST *newprintf = genPrintf(ast);
+            if (newprintf) {
+                *ast = *newprintf;
+            } else {
+                ast->left = AstIdentifier("printf");
+            }
         }
         break;
     case AST_CASE:

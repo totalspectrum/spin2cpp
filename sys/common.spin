@@ -250,7 +250,7 @@ pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
 '' pause for m milliseconds
 pri pausems(m=long)
-  waitcnt(getcnt + m * (clkfreq / 1000))
+  waitcnt(_getcnt + m * (clkfreq / 1000))
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long

@@ -13,8 +13,6 @@ Better error messages.
 
 Add in the missing openspin options to fastspin.
 
-Support @@@foo + offset in --asm mode.
-
 Add an option to get a report of method sizes and free space left.
 
 Optimization

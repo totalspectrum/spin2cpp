@@ -359,12 +359,12 @@ genPrintf(AST *ast)
     
     flexbuf_init(&fb, 80);
     if (!args) {
-        ERROR(ast, "Empty printf");
-        return ast;
+        //ERROR(ast, "Empty printf");
+        return NULL;
     }
     if (args->kind != AST_EXPRLIST) {
-        ERROR(ast, "Expected expression list for printf");
-        return ast;
+        //ERROR(ast, "Expected expression list for printf");
+        return NULL;
     }
     str = args->left;
     args = args->right;
@@ -376,8 +376,8 @@ genPrintf(AST *ast)
         fmtstring = str->left->d.string;
     }
     if (!fmtstring) {
-        ERROR(ast, "__builtin_printf only works with a constant string");
-        return ast;
+        //ERROR(ast, "__builtin_printf only works with a constant string");
+        return NULL;
     }
     while (*fmtstring) {
         c = *fmtstring++;
@@ -387,8 +387,8 @@ genPrintf(AST *ast)
         if (c == '%') {
             c = *fmtstring++;
             if (!c) {
-                ERROR(ast, "bad format in __builtin_printf");
-                break;
+                //ERROR(ast, "bad format in __builtin_printf");
+                return NULL;
             }
             if (c == '%') {
                 flexbuf_addchar(&fb, c);
@@ -400,7 +400,7 @@ genPrintf(AST *ast)
                     seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
                 }
                 if (!args || args->kind != AST_EXPRLIST) {
-                    ERROR(ast, "not enough parameters for printf format string");
+                    WARNING(ast, "not enough parameters for printf format string");
                     break;
                 }
                 fmt = 0;
@@ -439,8 +439,8 @@ genPrintf(AST *ast)
                     seq = addPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt));
                     break;
                 default:
-                    ERROR(ast, "unknown printf format character `%c'", c);
-                    break;
+                    //ERROR(ast, "unknown printf format character `%c'", c);
+                    return NULL;
                 }
             }
         } else {
