@@ -1089,6 +1089,20 @@ for i = 1 to 4
 next
 ```
 
+Using the more compact notation for functions this may be written as:
+```
+type intfunc as function() as integer
+
+function makecounter(value = 1, stepval = 1) as intfunc
+  return [:var r = value : value = value + stepval : => r]
+end function
+
+var c = makecounter(7, 3)
+for i = 1 to 4
+  print c()
+next
+```
+
 ### GETCNT
 
 Propeller specific builtin function.
@@ -1101,7 +1115,9 @@ Returns the current cycle counter. This is an unsigned 32 bit value that counts 
 
 ### GOSUB
 
-Reserved for future use.
+`gosub x` pushes a return value on the stack and jumps to the label `x` (which may be a numeric label). A `return` statement will pop the return value off the stack and resume execution after the original `gosub`.
+
+`gosub` is supported for compatibility with old BASIC code, but should not be used in new code. In new code you should create a subroutine or function instead. See `sub`.
 
 ### GOTO
 
