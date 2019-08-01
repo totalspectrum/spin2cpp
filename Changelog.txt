@@ -1,6 +1,6 @@
 Version 3.9.28
 - Only use jump table for switch / select if the density is greater than 1/2
-- Do small immediate optimizations even in P2 (it was accidentally P1 only)
+- Do small immediate optimizations even for P2 (it was accidentally P1 only)
 - Add error if nop instruction is conditionalized
 - Improved output formatting code, particularly for floating point
 - Improved error messages for bad addressing modes
@@ -8,6 +8,7 @@ Version 3.9.28
 - Added ability to declare methods in C structs
 - Expanded standard C library
 - Use the include directory to search for files on the command line if they end with .a.
+- Fixed some incorrect detection of unused methods in indirect function calls.
 
 Version 3.9.27
 - Fixed a name conflict in some old style C function declarations

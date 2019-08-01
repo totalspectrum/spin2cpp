@@ -2102,15 +2102,14 @@ MarkUsedBody(AST *body, const char *caller)
         objref = body->left;
         objtype = BaseType(ExprType(objref));
         if (!objtype || objtype->kind != AST_OBJECT) {
-            //ERROR(body, "%s is not an object", objsym->name);
-            return;
+            //not a direct object reference
+        } else {
+            P = GetClassPtr(objtype);
+            sym = FindSymbol(&P->objsyms, GetUserIdentifierName(body->right));
+            if (sym && sym->kind == SYM_FUNCTION) {
+                MarkUsed((Function *)sym->val, sym->our_name);
+            }
         }
-        P = GetClassPtr(objtype);
-        sym = FindSymbol(&P->objsyms, GetUserIdentifierName(body->right));
-        if (!sym || sym->kind != SYM_FUNCTION) {
-            return;
-        }
-        MarkUsed((Function *)sym->val, sym->our_name);
         break;
     case AST_COGINIT:
         UseInternal("_coginit");
