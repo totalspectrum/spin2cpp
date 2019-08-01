@@ -1304,7 +1304,7 @@ lambdaexpr:
   | '[' paramdecl ':' optstatementlist BAS_GE expr opttype ']'
     {
       AST *params = $2;
-      AST *rettype = NULL;
+      AST *rettype = $7;
       AST *body = $4;
       AST *retstmt = NewCommentedStatement(AstReturn($6, NULL));
       AST *functype = NewAST(AST_FUNCTYPE, rettype, params);

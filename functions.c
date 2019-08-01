@@ -312,6 +312,10 @@ GuessLambdaReturnType(AST *params, AST *body)
     AST *r;
     
     if (body->kind == AST_STMTLIST) {
+        // look for a return statement
+        while (body && body->right != NULL && body->right->kind == AST_STMTLIST) {
+            body = body->right;
+        }
         if (body->right != NULL)
             return NULL;
         body = body->left;
