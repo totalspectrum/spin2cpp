@@ -1,3 +1,6 @@
+Version 3.9.29
+- Fixed a problem with @ operator applied to labels in Spin code outside of DAT section
+
 Version 3.9.28
 - Only use jump table for switch / select if the density is greater than 1/2
 - Do small immediate optimizations even for P2 (it was accidentally P1 only)

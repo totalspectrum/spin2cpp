@@ -1479,20 +1479,18 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             if (offset) {
                 offset *= TypeSize(BaseType(lref->type));
             }
+	    if (gl_dat_offset == -1 && (kind == AST_ABSADDROF || 0 == (flags & PASM_FLAG))) {
+	      if (reportError) {
+	          ERROR(expr, "offset for address operator is not known");
+	      } else {
+		  *valid = 0;
+	      }
+	    }
             if (gl_p2) {
                 return intExpr(lref->hubval + offset);
             }
             if (kind == AST_ABSADDROF) {
-                if (gl_dat_offset == -1) {
-                    if (reportError) {
-                        ERROR(expr, "offset for the @@@ operator is not known");
-                    } else {
-                        *valid = 0;
-                    }
-                    return intExpr(0);
-                } else {
-                    offset += gl_dat_offset;
-                }
+	      offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);
         }
