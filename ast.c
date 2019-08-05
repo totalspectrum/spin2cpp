@@ -569,6 +569,7 @@ static const char *astnames[] = {
     "bitfield",
     "case_table",
     "jmptable",
+    "func_template",
 };
 
 //

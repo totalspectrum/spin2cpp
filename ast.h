@@ -201,6 +201,7 @@ enum astkind {
     AST_BITFIELD = 140,
     AST_CASETABLE,
     AST_JUMPTABLE,
+    AST_FUNC_TEMPLATE,
 };
 
 /* forward reference */

@@ -1124,6 +1124,7 @@ topdecl:
   | funcdecl
   | subdecl
   | constdecl
+  | functemplate
 ;
 
 defitem:
@@ -1513,6 +1514,22 @@ funcdecl:
     DeclareFunction(current, rettype, 1, funcdef, body, NULL, $1);
   }  
   ;
+
+functemplate:
+    BAS_ANY '(' identlist ')' BAS_FUNCTION
+    ;
+
+identlist:
+  BAS_IDENTIFIER
+    {
+      $$ = NewAST(AST_LISTHOLDER, $1, NULL);
+    }
+  | identlist ',' BAS_IDENTIFIER
+    {
+      AST *rhs = NewAST(AST_LISTHOLDER, $3, NULL);
+      $$ = AddToList($1, rhs);
+    }
+;
 
 classdecl:
   BAS_CLASS BAS_IDENTIFIER BAS_USING BAS_STRING
