@@ -1544,6 +1544,22 @@ functemplate:
 	top_decl = NewAST(AST_FUNC_TEMPLATE, types, top_decl);
 	DeclareFunctionTemplate(current, top_decl);
     }
+    | templateheader BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
+    {
+        AST *name = $3;
+	AST *types = $1;
+        AST *paramvars = $5;
+        AST *rettype = ast_type_void;
+	AST *functype = NewAST(AST_FUNCTYPE, rettype, paramvars);
+	AST *body = $8;
+	AST *top_decl;
+	top_decl = NewAST(AST_LISTHOLDER, functype,
+			  NewAST(AST_LISTHOLDER, name,
+				 NewAST(AST_LISTHOLDER, body, NULL)));
+        PopCurrentTypes();
+	top_decl = NewAST(AST_FUNC_TEMPLATE, types, top_decl);
+	DeclareFunctionTemplate(current, top_decl);
+    }
     ;
 
 templateheader:

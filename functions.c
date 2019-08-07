@@ -569,7 +569,7 @@ AdjustParameterTypes(AST *paramlist)
     }
 }
 
-static void
+static Function *
 doDeclareFunction(AST *funcblock)
 {
     AST *holder;
@@ -602,7 +602,7 @@ doDeclareFunction(AST *funcblock)
     
     if (funcdef->kind != AST_FUNCDEF || funcdef->left->kind != AST_FUNCDECL) {
         ERROR(funcdef, "Internal error: bad function definition");
-        return;
+        return NULL;
     }
     src = funcdef->left;
     srcname = src->left;
@@ -613,14 +613,14 @@ doDeclareFunction(AST *funcblock)
         funcname_internal = funcname_user = srcname->d.string;
     } else {
         ERROR(funcdef, "Internal error: no function name");
-        return;
+        return NULL;
     }
     /* look for an existing definition */
     sym = FindSymbol(&current->objsyms, funcname_internal);
     if (sym) {
         if (sym->kind != SYM_FUNCTION) {
             ERROR(funcdef, "Redefining %s as a function", funcname_user);
-            return;
+            return NULL;
         }
         fdef = (Function *)sym->val;
         oldtype = fdef->overalltype;
@@ -642,13 +642,13 @@ doDeclareFunction(AST *funcblock)
                 if (0 != strcmp(fdef->body->d.string, body->d.string)) {
                     ERROR(funcdef, "different __fromfile strings for function %s", funcname_user);
                 }
-                return; // nothing else we need to do here
+                return fdef; // nothing else we need to do here
             }
         } else {
             if (body->kind == AST_STRING) {
                 /* providing a __fromfile() declaration after we saw
                    a real declaration; just ignore it */
-                return;
+                return fdef;
             } else if (!AstMatch(fdef->decl, funcdef)) {
                 ERROR(funcdef, "redefining function %s", funcname_user);
             }
@@ -838,7 +838,7 @@ doDeclareFunction(AST *funcblock)
     }
     // restore function symbol environment (if applicable)
     curfunc = oldcur;
-    
+    return fdef;
 }
 
 void
@@ -1625,6 +1625,11 @@ CheckFunctionCalls(AST *ast)
                 AST *lhsseq = NULL;
                 AST *assign;
                 AST *newparams;
+
+		if (n > MAX_TUPLE) {
+		  ERROR(ast, "argument too large to pass on stack");
+		  n = MAX_TUPLE-1;
+		}
                 // many backends need the results placed in temporaries
                 for (i = 0; i < n; i++) {
                     temps[i] = AstTempLocalVariable("_parm_", NULL);
@@ -2398,6 +2403,7 @@ static const char *
 appendType(const char *base, AST *typ)
 {
   char buf[32];
+  Module *P;
   if (!typ) return base;
   switch (typ->kind) {
   case AST_MODIFIER_CONST:
@@ -2424,6 +2430,12 @@ appendType(const char *base, AST *typ)
     sprintf(buf, "a%d", EvalConstExpr(typ->right));
     base = concatstr(base, buf);
     return appendType(base, typ->left);
+  case AST_OBJECT:
+    P = GetClassPtr(typ);
+    sprintf(buf, "x%d", strlen(P->classname));
+    base = concatstr(base, buf);
+    base = concatstr(base, P->classname);
+    return base;
   default:
     ERROR(typ, "do not know how to express type");
     return base;
@@ -2449,7 +2461,14 @@ const char *TemplateFuncName(AST *templpairs, const char *orig_base)
 
 static AST *matchType(AST *decl, AST *use, AST *var)
 {
-  return use;
+  if (decl->kind == AST_IDENTIFIER) {
+    return use;
+  }
+  if (decl->kind == use->kind) {
+    return matchType(decl->left, use->left, var);
+  }
+  ERROR(decl, "Unable to match template variable %s", GetUserIdentifierName(var));
+  return ast_type_generic;
 }
 
 // try to figure out the types required to instantiate a template
@@ -2564,9 +2583,11 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
   ident = AstIdentifier(name);
   sym = FindSymbol(&P->objsyms, name);
   if (!sym) {
+    Function *fdef;
     functype = fixupFunctype(pairs, DupAST(functype));
     funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body));
-    doDeclareFunction(funcblock);
+    fdef = doDeclareFunction(funcblock);
+    if (fdef) ProcessOneFunc(fdef);
   }
   return ident;
 }
