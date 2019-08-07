@@ -2521,7 +2521,7 @@ fixupFunctype(AST *pairs, AST *orig)
     // identifier was not found in the template list, so just return it
     return orig;
   default:
-    t = NewAST(orig->kind, NULL, NULL);
+    t = orig;
     t->left = fixupFunctype(pairs, orig->left);
     t->right = fixupFunctype(pairs, orig->right);
     return t;
