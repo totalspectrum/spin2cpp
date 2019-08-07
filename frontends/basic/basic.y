@@ -1574,7 +1574,55 @@ classdecl:
         AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
         $$ = NULL;
     }
+  | classheader classdecllist
   ;
+
+classheader:
+  BAS_CLASS BAS_IDENTIFIER eoln
+  {
+    AST *ident = $2;
+    const char *classname = ident->d.string;
+    Module *P = NewModule(classname, current->curLanguage);
+    AST *newobj = NewAbstractObject( $2, NULL );
+    newobj->d.ptr = P;
+    AddSymbol(currentTypes, $2->d.string, SYM_TYPEDEF, newobj, NULL);
+    P->Lptr = current->Lptr;
+    P->subclasses = current->subclasses;
+    current->subclasses = P;
+    P->superclass = current;
+    current = P;
+    $$ = NULL;
+  }
+  ;
+
+classdecllist:
+  classdeclitem classend
+  | classdeclitem eoln classdecllist
+  ;
+
+classend: BAS_END BAS_CLASS
+{
+  if (!current->superclass) {
+    SYNTAX_ERROR("END CLASS not inside class");
+  } else {
+    current = current->superclass;
+  }
+} 
+;
+
+classdeclitem:
+| dimension
+    {
+        AST *ast = $1;
+        if (ast->kind == AST_GLOBALVARS) {
+            DeclareBASICGlobalVariables(ast->left);
+        } else {
+            DeclareBASICMemberVariables(ast);
+        }
+    }
+| funcdecl
+| subdecl
+;
 
 constdecl:
   BAS_CONST constlist
