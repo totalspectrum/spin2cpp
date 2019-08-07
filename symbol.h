@@ -29,6 +29,7 @@ typedef enum symtype {
     SYM_FILE,            /* name of a file included in the object */
     SYM_REDEF,           /* name redefinition, used for implementing static */
     SYM_ALIAS,           /* makes a name an alias for an expression */
+    SYM_TEMPLATE,        /* points to a function or class template */
 } Symtype;
 
 #define IsAlias(sym) ((sym)->kind == SYM_WEAK_ALIAS)

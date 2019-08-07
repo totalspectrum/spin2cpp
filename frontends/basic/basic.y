@@ -275,6 +275,18 @@ AST *AstCharItem(int c)
     return NewAST(AST_EXPRLIST, expr, NULL);
 }
 
+AST *AddTemplateTypes(AST *list)
+{
+  AST *orig = list;
+  AST *ident;
+  while (list) {
+    ident = list->left;
+    list = list->right;
+    AddSymbol(currentTypes, ident->d.string, SYM_TYPEDEF, (void *)ident, NULL);
+  }
+  return orig;
+}
+
 #define MAX_LOOP_NEST 256
 static int loop_stack[MAX_LOOP_NEST];
 static int loop_sp;
@@ -1516,7 +1528,30 @@ funcdecl:
   ;
 
 functemplate:
-    BAS_ANY '(' identlist ')' BAS_FUNCTION
+    templateheader BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+    {
+        AST *name = $3;
+	AST *types = $1;
+        AST *paramvars = $5;
+        AST *rettype = $8;
+	AST *functype = NewAST(AST_FUNCTYPE, rettype, paramvars);
+	AST *body = $10;
+	AST *top_decl;
+	top_decl = NewAST(AST_LISTHOLDER, functype,
+			  NewAST(AST_LISTHOLDER, name,
+				 NewAST(AST_LISTHOLDER, body, NULL)));
+        PopCurrentTypes();
+	top_decl = NewAST(AST_FUNC_TEMPLATE, types, top_decl);
+	DeclareFunctionTemplate(current, top_decl);
+    }
+    ;
+
+templateheader:
+    BAS_ANY '(' identlist ')'
+    {
+      PushCurrentTypes();
+      $$ = AddTemplateTypes($3);
+    }
     ;
 
 identlist:

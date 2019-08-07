@@ -230,7 +230,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
  * declare a function and create a Function structure for it
  */
 
-void
+AST *
 DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotation, AST *comment)
 {
     AST *funcblock;
@@ -252,10 +252,11 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
     funcdecl->right = retinfoholder;
 
     P->funcblock = AddToList(P->funcblock, funcblock);
+    return funcblock->left;
 }
 
 /* like DeclareFunction, but takes a function type */
-void
+AST *
 DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody)
 {
     AST *funcvars, *funcdef;
@@ -270,7 +271,7 @@ DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody
     funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
     funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
-    DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
+    return DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
 }
 
 static AST *
@@ -2352,4 +2353,220 @@ SimplifyAssignments(AST **astptr)
     }
     SimplifyAssignments(&ast->left);
     SimplifyAssignments(&ast->right);
+}
+
+void
+DeclareFunctionTemplate(Module *P, AST *templ)
+{
+    Symbol *sym;
+    AST *ident;
+    const char *name_user, *name_internal;
+
+    /* templ->left is the list of type names */
+    /* templ->right->left is the function type signature */
+    /* templ->right->right->left is the name */
+    ident = templ->right->right->left;
+    if (ident->kind == AST_LOCAL_IDENTIFIER) {
+      name_internal = ident->left->d.string;
+      name_user = ident->right->d.string;
+    } else if (ident->kind == AST_IDENTIFIER) {
+      name_internal = name_user = ident->d.string;
+    } else {
+        ERROR(templ, "Internal error: no template name found");
+        return;
+    }
+    /* check for existing definition */
+    sym = FindSymbol(&P->objsyms, name_internal);
+    if (sym) {
+      ERROR(templ, "Redefining symbol %s", name_user);
+    }
+    /* create */
+    sym = AddSymbol(&P->objsyms, name_internal, SYM_TEMPLATE, (void *)templ, name_user);
+}
+
+static char *
+concatstr(const char *base, const char *suffix)
+{
+  int len = strlen(base) + strlen(suffix) + 1;
+  char *next = (char *)malloc(len);
+  strcpy(next, base);
+  strcat(next, suffix);
+  return next;
+}
+
+static const char *
+appendType(const char *base, AST *typ)
+{
+  char buf[32];
+  if (!typ) return base;
+  switch (typ->kind) {
+  case AST_MODIFIER_CONST:
+  case AST_MODIFIER_VOLATILE:
+    return appendType(base, typ->left);
+  case AST_INTTYPE:
+    sprintf(buf, "i%d", EvalConstExpr(typ->left));
+    return concatstr(base, buf);
+  case AST_UNSIGNEDTYPE:
+    sprintf(buf, "u%d", EvalConstExpr(typ->left));
+    return concatstr(base, buf);
+  case AST_FLOATTYPE:
+    sprintf(buf, "f%d", EvalConstExpr(typ->left));
+    return concatstr(base, buf);
+  case AST_GENERICTYPE:
+    return concatstr(base, "g");
+  case AST_PTRTYPE:
+    base = concatstr(base, "p");
+    return appendType(base, typ->left);
+  case AST_FUNCTYPE:
+    base = concatstr(base, "m");
+    return appendType(base, typ->left);
+  case AST_ARRAYTYPE:
+    sprintf(buf, "a%d", EvalConstExpr(typ->right));
+    base = concatstr(base, buf);
+    return appendType(base, typ->left);
+  default:
+    ERROR(typ, "do not know how to express type");
+    return base;
+  }
+}
+
+// determine the function name for a template
+// templpairs is a list each of whose elements contains
+// an AST_SEQUENCE with left=template name right=template type
+
+const char *TemplateFuncName(AST *templpairs, const char *orig_base)
+{
+  AST *ast, *typ;
+  const char *base = concatstr(orig_base, "__");
+  while (templpairs) {
+    ast = templpairs->left;
+    templpairs = templpairs->right;
+    typ = ast->right;
+    base = appendType(base, typ);
+  }
+  return base;
+}
+
+static AST *matchType(AST *decl, AST *use, AST *var)
+{
+  return use;
+}
+
+// try to figure out the types required to instantiate a template
+// returns a list of pairs containing (template name, type)
+static AST *deduceTemplateTypes(AST *templateVars, AST *functype, AST *call)
+{
+  AST *funcparams = functype->right;
+  AST *callparams = call->right;
+  AST *typ;
+  AST *decltyp;
+  AST *var;
+  AST *ast, *templVar;
+  AST *q;
+  AST *pairs = NULL;
+  AST *thispair;
+  const char *templName;
+  
+  while (funcparams && callparams) {
+    var = funcparams->left;
+    if (var && var->kind == AST_DECLARE_VAR) {
+      decltyp = var->left;
+      // check for use of one of the template variables
+      for (ast = templateVars; ast; ast = ast->right) {
+	templVar = ast->left;
+	templName = GetIdentifierName(templVar);
+	if (AstUses(decltyp, templVar)) {
+	  typ = ExprType(callparams->left);
+	  typ = matchType(decltyp, typ, templVar);
+	  // now look for it in the list of pairs
+	  for (q = pairs; q; q = q->right) {
+	    thispair = q->left;
+	    if (AstMatch(thispair->left, templVar)) {
+	      // already found; verify the type
+	      if (!CompatibleTypes(thispair->right, typ)) {
+		ERROR(callparams, "Incosistent types for template parameter %s", templName);
+	      }
+	      break;
+	    }
+	  }
+	  if (!q) {
+	    thispair = NewAST(AST_SEQUENCE, DupAST(templVar), typ);
+	    pairs = AddToList(pairs, NewAST(AST_LISTHOLDER, thispair, NULL));
+	  }
+	  break;
+	}
+      }
+    }
+    funcparams = funcparams->right;
+    callparams = callparams->right;
+  }
+  return pairs;    
+}
+
+static AST *
+fixupFunctype(AST *pairs, AST *orig)
+{
+  AST *thispair;
+  AST *t;
+  if (!orig) return NULL;
+  switch (orig->kind) {
+  case AST_IDENTIFIER:
+    for (t = pairs; t; t = t->right)
+      {
+	thispair = t->left;
+	if (AstMatch(thispair->left, orig)) {
+	  return thispair->right;
+	}
+      }
+    // identifier was not found in the template list, so just return it
+    return orig;
+  default:
+    t = NewAST(orig->kind, NULL, NULL);
+    t->left = fixupFunctype(pairs, orig->left);
+    t->right = fixupFunctype(pairs, orig->right);
+    return t;
+  }
+}
+
+  
+/*
+ * instantiate a template function call
+ * types are deduced from the types in the provided function call
+ * returns an identifier for the specialized function
+ */
+
+AST *
+InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
+{
+  AST *templateVars = templ->left;
+  AST *ident;
+  AST *functype;
+  AST *body;
+  AST *pairs;
+  AST *funcblock;
+  const char *name;
+  Symbol *sym;
+  
+  templateVars = templ->left;
+  templ = templ->right;
+  functype = templ->left;
+  templ = templ->right;
+  ident = templ->left;
+  templ = templ->right;
+  body = templ->left;
+
+  // assign types for each of the items in templateVars,
+  // based on the types passed in the parameters
+  pairs = deduceTemplateTypes(templateVars, functype, call);
+  name = GetIdentifierName(ident);
+  name = TemplateFuncName(pairs, name);
+
+  ident = AstIdentifier(name);
+  sym = FindSymbol(&P->objsyms, name);
+  if (!sym) {
+    functype = fixupFunctype(pairs, DupAST(functype));
+    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body));
+    doDeclareFunction(funcblock);
+  }
+  return ident;
 }

@@ -405,11 +405,17 @@ void DeclareLabels(Module *);
  "comment" is the list of comments preceding this function
  "rettype" is the return type of the function, if it is known, or NULL
 */
-void DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
+AST *DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 
 /* streamlined DeclareFunction: "ftype" is the function type (return + parameters) */
-void DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body);
-                          
+AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body);
+
+/* declare a template for a function */
+void DeclareFunctionTemplate(Module *P, AST *templ);
+
+/* instantiate a templated function */
+AST *InstantiateTemplateFunction(Module *P, AST *template, AST *call);
+
 void DeclareToplevelAnnotation(AST *annotation);
 
 /* functions for printing data into a flexbuf */
