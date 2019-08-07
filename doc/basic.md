@@ -662,7 +662,11 @@ prints `A` (the character whose ASCII value is 65)
 
 ### CLASS
 
-A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object. In fact, Spin objects may be directly imported as classes:
+A `class` is an abstract collection of variables and functions. If you've used the Spin language, a class is like a Spin object.
+
+#### Class Using
+
+Spin objects may be directly imported as classes:
 ```
 #ifdef __P2__
    dim ser as class using "spin/SmartSerial"
@@ -690,33 +694,36 @@ Another way to define an object is to first declare an abstract `class` with a n
 ```
 This is more convenient if there are many references to the class, or if you want to pass pointers to the class to functions.
 
-#### Class Example in BASIC
+#### Concrete classes
 
-`Counter.bas` (the class) contains:
+Finally, the functions, subroutines, and variables associated with a class may be defined directly inline, between
+the `class` and a finishing `end class`. In this case the class name may be used as a type name. For example:
+
 ```
-dim x as integer
+  class counter
+    dim x as integer
 
-sub reset
-  x = 0
-end sub
+    sub reset
+      x = 0
+    end sub
 
-sub inc(n = 1)
-  x = x + n
-end sub
+    sub inc(n = 1)
+      x = x + n
+    end sub
 
-function get()
-  return x
-end function
-```
+    function getval()
+      return x
+    end function
+  end class
 
-`Main.bas` (the main program) contains:
-```
-  dim cnt as class using "Counter.bas"
+  dim cnt as counter
 
   cnt.reset
   cnt.inc
   cnt.inc
-  print cnt.get() ' prints 2
+  print cnt.getval() ' prints 2
+  cnt.inc
+  print cnt.getval() ' prints 3
 ```
 This is compiled with:
 ```
