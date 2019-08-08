@@ -1,4 +1,6 @@
 Version 3.9.29
+- Implemented function templates in BASIC
+- Fixed typos in P2 _clkset function
 - Fixed a problem with @ operator applied to labels in Spin code outside of DAT section
 
 Version 3.9.28
