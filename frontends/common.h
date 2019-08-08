@@ -613,6 +613,7 @@ void initSpinLexer(int flags);
 #define LANG_SPIN  0
 #define LANG_BASIC 1
 #define LANG_C     2
+#define LANG_CIRCUS 3
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);

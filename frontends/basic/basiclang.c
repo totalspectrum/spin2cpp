@@ -609,8 +609,9 @@ doBasicTransform(AST **astptr)
     case AST_METHODREF:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
-        if (IsPointerType(ast->left)) {
-            WARNING(ast, "Needs a pointer dereference");
+        if (IsPointerType(ExprType(ast->left))) {
+	  // WARNING(ast, "Needs a pointer dereference");
+	  ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
         }
         break;
     case AST_TRYENV:
@@ -1236,6 +1237,19 @@ AST *ArrayToPointerType(AST *type)
     return type;
 }
 
+AST *ClassToPointerType(AST *type)
+{
+    AST *modifier;
+    if (type->kind == AST_OBJECT) {
+        type = NewAST(AST_PTRTYPE, type, NULL);
+    } else {
+        modifier = NewAST(type->kind, NULL, NULL);
+        modifier->left = ClassToPointerType(type->left);
+        type = modifier;
+    }
+    return type;
+}
+
 AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 {
     AST *rettype = lefttype;
@@ -1428,7 +1442,8 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     ASTReportInfo saveinfo;
     AST *expr = *astptr;
     const char *msg;
-
+    int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_C);
+    
     if (kind == AST_RETURN) {
         msg = "return";
     } else if (kind == AST_FUNCCALL) {
@@ -1471,6 +1486,14 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         expr = ArrayAddress(expr);
         *astptr = expr;
     }
+    // similarly for classes in some languages
+    if (IsClassType(srctype) && IsPointerType(desttype) && (lang == LANG_BASIC || lang == LANG_CIRCUS))
+      {
+          srctype = ClassToPointerType(srctype);
+          expr = StructAddress(expr);
+          *astptr = expr;
+      }
+    
     if (IsFunctionType(srctype) && IsPointerType(desttype) && !IsPointerType(srctype)) {
         srctype = FunctionPointerType(srctype);
         expr = FunctionAddress(expr);
