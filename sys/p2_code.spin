@@ -17,6 +17,11 @@ pri waitcnt(x)
     addct1  x, #0
     waitct1
   endasm
+pri _waitcnt(x)
+  asm
+    addct1  x, #0
+    waitct1
+  endasm
 pri cogid | rval
   asm
     cogid rval

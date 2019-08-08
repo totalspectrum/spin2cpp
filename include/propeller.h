@@ -20,6 +20,8 @@
 #ifdef __PROPELLER2__
 #define _PROP1_COMPATIBLE
 #include <propeller2.h>
+#define getcnt() _cnt()
+#define waitcnt(x) _waitcnt(x)
 #else
 #include <propeller1.h>
 #endif
