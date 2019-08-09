@@ -570,6 +570,9 @@ static const char *astnames[] = {
     "case_table",
     "jmptable",
     "func_template",
+
+    "class_template",
+    "orgh_min",
 };
 
 //

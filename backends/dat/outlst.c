@@ -163,6 +163,7 @@ static void lstStartAst(Flexbuf *f, AST *ast)
         cogPc = 4*EvalPasmExpr(ast->left);
         break;
     case AST_ORGH:
+    case AST_ORGH_MIN:
         inCog = 0;
         break;
     case AST_INSTRHOLDER:

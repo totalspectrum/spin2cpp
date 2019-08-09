@@ -631,6 +631,8 @@ basedatline:
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
   | SP_ORGH SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
+  | SP_ORGH SP_GE expr SP_EOLN
+    { $$ = NewCommentedAST(AST_ORGH_MIN, $2, NULL, $1); }
   | SP_ORGH expr SP_EOLN
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
   | SP_ORGF expr SP_EOLN
