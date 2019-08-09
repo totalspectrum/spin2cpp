@@ -190,7 +190,7 @@ static void lstEndAst(Flexbuf *f, AST *ast)
     switch (ast->kind) {
     case AST_IDENTIFIER:
         /* do not catch up to line, yet */
-        return;
+        break; // return;
     case AST_ORGH:
         break;
     default:
