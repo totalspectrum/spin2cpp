@@ -1638,6 +1638,7 @@ classdeclitem:
     }
 | funcdecl
 | subdecl
+| functemplate
 ;
 
 constdecl:

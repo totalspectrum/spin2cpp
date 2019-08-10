@@ -472,6 +472,35 @@ ArrayDeref(AST *base, AST *index)
     return base;
 }
 
+// the parser treats a(x) as a function call (always), but in fact it may be an array reference;
+// change it to one if applicable
+static void
+adjustFuncCall(Module *P, AST *ast)
+{
+    AST *left = ast->left;
+    AST *index = ast->right;
+    AST *typ;
+    AST *func = NULL;
+	    
+    /* check for template instantiation */
+    if (left->kind == AST_IDENTIFIER || left->kind == AST_LOCAL_IDENTIFIER) {
+        Symbol *sym = LookupAstSymbol(left, NULL);
+        if (sym && sym->kind == SYM_TEMPLATE) {
+	    func = InstantiateTemplateFunction(current, (AST *)sym->val, ast);
+            if (func) {
+		ast->left = func;
+	    }
+	}
+    }
+    if (!func) {
+        typ = ExprType(left);
+        if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ))) {
+	    AST *arrayref = ArrayDeref(left, index);
+	    *ast = *arrayref;
+	}
+    }
+}
+
 static void
 doBasicTransform(AST **astptr)
 {
@@ -573,28 +602,7 @@ doBasicTransform(AST **astptr)
         {
             // the parser treats a(x) as a function call (always), but in
             // fact it may be an array reference; change it to one if applicable
-            AST *left = ast->left;
-            AST *index = ast->right;
-            AST *typ;
-            AST *func = NULL;
-	    
-	    /* check for template instantiation */
-	    if (left->kind == AST_IDENTIFIER || left->kind == AST_LOCAL_IDENTIFIER) {
-	      Symbol *sym = LookupAstSymbol(left, NULL);
-	      if (sym && sym->kind == SYM_TEMPLATE) {
-		func = InstantiateTemplateFunction(current, (AST *)sym->val, ast);
-		if (func) {
-		  ast->left = func;
-		}
-	      }
-	    }
-	    if (!func) {
-	      typ = ExprType(left);
-	      if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ))) {
-                AST *arrayref = ArrayDeref(left, index);
-                *ast = *arrayref;
-	      }
-	    }
+ 	    adjustFuncCall(NULL, ast);
         }
         break;
     case AST_USING:
