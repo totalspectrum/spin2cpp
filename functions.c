@@ -2436,7 +2436,7 @@ appendType(const char *base, AST *typ)
     return appendType(base, typ->left);
   case AST_OBJECT:
     P = GetClassPtr(typ);
-    sprintf(buf, "x%d", strlen(P->classname));
+    sprintf(buf, "x%ld", (long)strlen(P->classname));
     base = concatstr(base, buf);
     base = concatstr(base, P->classname);
     return base;
