@@ -157,54 +157,6 @@ pri _string_concat(x, y) | lenx, leny, ptr
     byte[ptr + lenx + leny] := 0
   return ptr
 
-pri chr`$(x=long) | ptr
-  ptr := _gc_alloc_managed(2)
-  if (ptr)
-    byte[ptr+0] := x
-    byte[ptr+1] := 0
-  return ptr
-
-pri left`$(x, n) | ptr, i, m
-  if (n =< 0)
-    return ""
-  m := __builtin_strlen(x)
-  if (m =< n)
-    return x
-  ptr := _gc_alloc_managed(n+1)
-  if ptr
-    bytemove(ptr, x, n)
-    byte[ptr+n] := 0
-  return ptr
-  
-pri right`$(x, n) | ptr, i, m
-  if (n =< 0)
-    return ""
-  m := strsize(x)
-  if (m =< n)
-    return x
-
-  ptr := _gc_alloc_managed(n+1)
-  if ptr
-    i := m-n
-    bytemove(ptr, x+i, n+1)
-  return ptr
-
-pri mid`$(x, i=0, j=9999999) | ptr, m, n
-  if (j =< 0)
-    return ""
-  --i ' convert from 1 based to 0 based
-  m := strsize(x)
-  if (m < i)
-    return ""
-  ' calculate number of chars we will copy
-  n := (m-i)
-  n := (n > j) ? j : n
-  ptr := _gc_alloc_managed(n+1)
-  if ptr
-    bytemove(ptr, x+i, n)
-    byte[ptr+n] := 0
-  return ptr
-  
 pri _make_methodptr(o, func) | ptr
   ptr := _gc_alloc_managed(8)
   if (ptr)
@@ -273,3 +225,10 @@ pri file "libsys/fmt.c" _fmtchar(fn, fmt, c)
 pri file "libsys/fmt.c" _fmtstr(fn, fmt, str)
 pri file "libsys/fmt.c" _fmtnum(fn, fmt, x, base)
 pri file "libsys/fmt.c" _fmtfloat(fn, fmt, x, spec)
+
+'' string functions
+pri file "libsys/strings.bas" left`$(x, n)
+pri file "libsys/strings.bas" right`$(x, n)
+pri file "libsys/strings.bas" mid`$(s, n=0, m=9999999)
+pri file "libsys/strings.bas" chr`$(x)
+pri file "libsys/strings.bas" str`$(x=float)

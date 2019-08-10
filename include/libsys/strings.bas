@@ -59,3 +59,22 @@ function chr$(x as integer) as string
   return p
 end function
 
+function str$(x as single) as string
+  dim p as ubyte pointer
+  dim i as integer
+  var fn = function(c as integer) as integer
+    if (i < 31) then
+      p(i) = c
+      i = i+1
+      return 1
+    else
+      return -1
+    end if
+  end function
+  p = new ubyte(32)
+  i = 0
+  if p then
+    _fmtfloat(fn, 0, x, ASC("#"))
+  end if
+  return p
+end function

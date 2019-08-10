@@ -5584,6 +5584,16 @@ GuessFcacheSize(IRList *irl)
 }
 }
 
+static void
+CompileSystemModule(IRList *where, Module *M)
+{
+    Module *P;
+    CompileToIR_internal(where, M);
+    for (P = M->subclasses; P; P = P->next) {
+        CompileSystemModule(where, P);
+    }
+}
+
 void
 OutputAsmCode(const char *fname, Module *P, int outputMain)
 {
@@ -5727,9 +5737,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
         // output global functions
         if (HUB_CODE) {
-            CompileToIR_internal(&hubcode, globalModule);
+            CompileSystemModule(&hubcode, globalModule);
         } else {
-            CompileToIR_internal(&cogcode, globalModule);
+            CompileSystemModule(&cogcode, globalModule);
         }
         // guesstimate how much space we will have for FCACHE, if
         // a dynamic size is requested

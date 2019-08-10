@@ -1019,7 +1019,7 @@ ResolveSymbols()
     Module *Q, *savecurrent;
     Function *pf;
     int changes = 0;
-
+    
     savecurrent = current;
     for (Q = allparse; Q; Q = Q->next) {
         for (pf = Q->functions; pf; pf = pf->next) {
