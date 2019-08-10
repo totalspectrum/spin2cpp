@@ -475,18 +475,39 @@ ArrayDeref(AST *base, AST *index)
 // the parser treats a(x) as a function call (always), but in fact it may be an array reference;
 // change it to one if applicable
 static void
-adjustFuncCall(Module *P, AST *ast)
+adjustFuncCall(AST *ast)
 {
     AST *left = ast->left;
     AST *index = ast->right;
     AST *typ;
     AST *func = NULL;
-	    
+    AST *templident;
+    AST *methodref;
+    Module *P = NULL;
+
+    
+    if (left->kind == AST_METHODREF) {
+        templident = left->right;
+	methodref = left->left;
+    } else {
+        templident = left;
+	methodref = NULL;
+    }
     /* check for template instantiation */
-    if (left->kind == AST_IDENTIFIER || left->kind == AST_LOCAL_IDENTIFIER) {
-        Symbol *sym = LookupAstSymbol(left, NULL);
+    if (templident->kind == AST_IDENTIFIER || templident->kind == AST_LOCAL_IDENTIFIER) {
+        Symbol *sym;
+	const char *name = GetIdentifierName(templident);
+	if (methodref) {
+            AST *modtyp = ExprType(methodref);
+	    if (!IsClassType(modtyp)) {
+	        ERROR(methodref, "Unable to determine class type");
+	        return;
+	    }
+	    P = GetClassPtr(modtyp);
+	}
+	sym = P ? FindSymbol(&P->objsyms, name) : LookupSymbol(name);
         if (sym && sym->kind == SYM_TEMPLATE) {
-	    func = InstantiateTemplateFunction(current, (AST *)sym->val, ast);
+	    func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->val, ast);
             if (func) {
 		ast->left = func;
 	    }
@@ -602,7 +623,15 @@ doBasicTransform(AST **astptr)
         {
             // the parser treats a(x) as a function call (always), but in
             // fact it may be an array reference; change it to one if applicable
- 	    adjustFuncCall(NULL, ast);
+ 	    adjustFuncCall(ast);
+        }
+        break;
+    case AST_METHODREF:
+        doBasicTransform(&ast->left);
+        doBasicTransform(&ast->right);
+        if (IsPointerType(ExprType(ast->left))) {
+	  // WARNING(ast, "Needs a pointer dereference");
+	  ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
         }
         break;
     case AST_USING:
@@ -612,14 +641,6 @@ doBasicTransform(AST **astptr)
             *ast = *TransformUsing(ast->left->d.string, ast->right);
         } else {
             WARNING(ast, "Unexpected using method");
-        }
-        break;
-    case AST_METHODREF:
-        doBasicTransform(&ast->left);
-        doBasicTransform(&ast->right);
-        if (IsPointerType(ExprType(ast->left))) {
-	  // WARNING(ast, "Needs a pointer dereference");
-	  ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
         }
         break;
     case AST_TRYENV:
