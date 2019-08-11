@@ -1,6 +1,7 @@
 Version 3.9.29
 - Implemented concrete classes in BASIC
 - Implemented function templates in BASIC
+- Fixed BASIC new() operator to use managed allocation
 - Fixed typos in P2 _clkset function
 - Fixed a problem with @ operator applied to labels in Spin code outside of DAT section
 - Changed listing file output slightly to force labels to be output at the correct addresses

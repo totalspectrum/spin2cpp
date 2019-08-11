@@ -39,7 +39,7 @@ static AST *struct_copy;
 static AST *string_cmp;
 static AST *string_concat;
 static AST *make_methodptr;
-static AST *gc_alloc;
+static AST *gc_alloc_managed;
 static AST *gc_free;
 
 static AST *funcptr_cmp;
@@ -1911,7 +1911,7 @@ AST *CheckTypes(AST *ast)
             } else {
                 sizeExpr = AstOperator('*', ast->right, AstInteger(baseSize));
             }
-            *ast = *MakeOperatorCall(gc_alloc, sizeExpr, NULL, NULL);
+            *ast = *MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);
         }
         break;
     case AST_DELETE:
@@ -2064,7 +2064,7 @@ InitGlobalFuncs(void)
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
         make_methodptr = getBasicPrimitive("_make_methodptr");
-        gc_alloc = getBasicPrimitive("_gc_alloc");
+        gc_alloc_managed = getBasicPrimitive("_gc_alloc_managed");
         gc_free = getBasicPrimitive("_gc_free");
 
         funcptr_cmp = getBasicPrimitive("_funcptr_cmp");
