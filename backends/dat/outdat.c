@@ -1565,7 +1565,6 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         case AST_FILE:
             assembleFile(f, ast->left);
             break;
-	case AST_ORGH_MIN:
         case AST_ORGH:
             if (!gl_nospin && ast->d.ival > 3 && gl_output != OUTPUT_DAT) {
                 WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");

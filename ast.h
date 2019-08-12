@@ -204,7 +204,6 @@ enum astkind {
     AST_FUNC_TEMPLATE,
 
     AST_CLASS_TEMPLATE = 144, // reserved for future use
-    AST_ORGH_MIN,
 };
 
 /* forward reference */

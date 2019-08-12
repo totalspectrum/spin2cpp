@@ -572,7 +572,6 @@ static const char *astnames[] = {
     "func_template",
 
     "class_template",
-    "orgh_min",
 };
 
 //

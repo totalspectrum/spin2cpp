@@ -504,7 +504,6 @@ DeclareLabels(Module *P)
             MARK_COG(label_flags);
             break;
         case AST_ORGH:
-	case AST_ORGH_MIN:
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             ast->d.ival = hubpc; // temporary
             if (ast->left) {
@@ -516,10 +515,8 @@ DeclareLabels(Module *P)
             if (ast->d.ival <= hubpc) {
                 ast->d.ival = hubpc - ast->d.ival;
             } else {
-	        if (ast->kind == AST_ORGH) {
-                    ERROR(ast, "orgh address %x is less than previous address %x",
-                          hubpc, ast->d.ival);
-		}
+                ERROR(ast, "orgh address %x is less than previous address %x",
+                      hubpc, ast->d.ival);
                 ast->d.ival = 0;
             }
             lasttype = ast_type_long;
