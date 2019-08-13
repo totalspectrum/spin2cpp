@@ -270,12 +270,14 @@ declarations:
   dim g$(9, 9)
 ```
 
-Arrays are by default indexed starting at 0. That is, if `a` is an array, then
-`a(0)` is the first thing in the array, `a(1)` the second, and so on. This is
-similar to other languages (such as Spin and C), where array indexes start at 0.
+Arrays are by default indexed starting at 0. That is, if `a` is an
+array, then `a(0)` is the first thing in the array, `a(1)` the second,
+and so on. This is similar to other languages (such as Spin and C),
+where array indexes start at 0.  The value given in the `dim` is the
+last array index. This is different from Spin and C, where arrays are
+declared with their sizes rather than last array index.
 
-For example, a subroutine to initialize an array
-to 0 could look like:
+Code to initialize an array to 0 could look like:
 ```
    dim a(9) as integer
    sub zero_a
@@ -481,7 +483,33 @@ the variable `tx` holds a pointer both to the `ser` object and to the particular
 
 Instead of `new`, which allocates persistent memory on the heap, it is possible to allocate temporary memory with the `__builtin_alloca` operator. Memory allocated in this way may only be used during the lifetime of the function which allocated it, and may not be returned from that function or assigned to a global variable. Almost always it is better to use `new` than `__builtin_alloca`, but the latter is more efficient (but dangerous, because the pointer becomes invalid after the function that uses `__builtin_alloca` exits).
 
-## Propeller Specific Features
+### Templates
+
+Fastspin supports polymorphic programming via templates. These are like parameterized function or class declarations.
+Only function templates are supported at this time. 
+
+Templates are introduced by the keyword `any` followed by a parenthesized list of identifiers which are the types to be
+subsituted in the declaration. That is, each identifier in the list represents a type, which may vary at compile time.
+
+#### Function Templates
+
+A function to find the smaller of two items with the same type `t`, which can be string, integer, single, or any other type that supports the `<` operator, may be declared as:
+```
+any(t) function mymin(x as t, y as t) as t
+  if x < y then
+    return x
+  else
+    return y
+  end if
+end function
+```
+This declares a family of functions `mymin__T`, where `T` can be any type. Whenever the compiler sees `mymin(some_expr)` it checks the type of `some_expr` and changes the function call to `mymin__T(some_expr)`. So for example:
+```
+   print mymin(1.7, 2.4), mymin("zzz", "aaa")
+```
+will print `1.7` and `aaa`.
+
+## Propeller Hardware Features
 
 ### Input, Output, and Direction
 
