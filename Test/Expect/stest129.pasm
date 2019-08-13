@@ -25,6 +25,7 @@ divide_
        muxc    itmp2_,#%11                    'store sign of x
        abs     muldivb_,muldivb_     wc,wz    'abs(y)
  if_c  xor     itmp2_,#%10                    'store sign of y
+ if_z  jmp     #divbyzero__
 udiv__
         mov     itmp1_,#0                    'unsigned divide
         mov     DIVCNT,#32
@@ -41,6 +42,7 @@ mdiv2__
         negc    muldiva_,muldiva_ 
         test    itmp2_,#%10      wc       'restore sign, division result
         negc    muldivb_,muldivb_
+divbyzero__
 divide__ret
 unsdivide__ret
 	ret
