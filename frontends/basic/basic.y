@@ -1160,6 +1160,8 @@ varexpr:
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
   | varexpr '.' BAS_IDENTIFIER
     { $$ = NewAST(AST_METHODREF, $1, $3); }
+  | basetypename '.' BAS_IDENTIFIER
+    { $$ = NewAST(AST_METHODREF, $1, $3); }
 ;
 
 pinrange:
