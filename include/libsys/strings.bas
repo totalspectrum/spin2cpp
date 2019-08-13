@@ -71,10 +71,10 @@ function str$(x as single) as string
       return -1
     end if
   end function
-  p = new ubyte(32)
+  p = new ubyte(15)
   i = 0
   if p then
-    _fmtfloat(fn, 0, x, ASC("#"))
+    _fmtfloat(fn, 0, x, ASC("g"))
   end if
   return p
 end function

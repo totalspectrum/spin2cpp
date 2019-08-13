@@ -1652,6 +1652,10 @@ next
 ```
 will print 2, 4, 6, and 8 on separate lines.
 
+### STR$
+
+Convert a number to a string. The input is a floating point number (integers will automatically be converted to `single`) and the output is a string representing the number. Unlike the format used for regular `print`, `str$` tries to avoid trailing zeros, so the output is somewhat more compact than `print`.
+
 ### SUB
 
 Defines a new subroutine. This is like a `function` but with no return value. Subroutines have a fixed number and type of arguments, but the last arguments may be given default values with an initializer. For example:
