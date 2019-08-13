@@ -4783,7 +4783,7 @@ static const char *builtin_div_p1 =
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
-
+" if_z  jmp     #divbyzero__\n"
 "udiv__\n"
 "        mov     itmp1_,#0                    'unsigned divide\n"
 "        mov     DIVCNT,#32\n"
@@ -4802,6 +4802,7 @@ static const char *builtin_div_p1 =
 "        test    itmp2_,#%10      wc       'restore sign, division result\n"
 "        negc    muldivb_,muldivb_\n"
 
+"divbyzero__\n"
 "divide__ret\n"
 "unsdivide__ret\n"
     "\tret\n"
