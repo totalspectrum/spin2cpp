@@ -2543,6 +2543,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
     Symbol *sym;
     Function *func;
     AST *objref = NULL;
+    int abstract = 0;
     
     if (ftypeptr) {
         AST *ftype;
@@ -2598,14 +2599,25 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             // do nothing, offset is already set up
         } else {
             AST *objreftype = ExprType(objref);
-            objaddr = CompileExpression(irl, objref, NULL);
-            if (IsClassType(objreftype)) {
-                objaddr = GetLea(irl, objaddr);
+            if (objref->kind == AST_OBJECT) {
+                // direct reference to a static function
+                abstract = 1;
+            } else {
+                objaddr = CompileExpression(irl, objref, NULL);
+                if (IsClassType(objreftype)) {
+                    objaddr = GetLea(irl, objaddr);
+                }
             }
         }
     }
-    if (func && func->is_static) {
-        offset = NULL; // no need to update object
+    if (func) {
+        if (func->is_static) {
+            offset = NULL; // no need to update object
+        } else {
+            if (abstract && objptr && funcptr) {
+                ERROR(expr, "function call requires real object");
+            }
+        }
     }
     if (objptr) {
         *objptr = objaddr;

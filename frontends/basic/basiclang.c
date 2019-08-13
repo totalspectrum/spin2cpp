@@ -1946,7 +1946,7 @@ AST *CheckTypes(AST *ast)
         return ast->left ? ast->left : ast_type_ptr_void;
     }
     case AST_METHODREF:
-        if (!IsClassType(ltype)) {
+        if (ltype && !IsClassType(ltype)) {
             ERROR(ast, "Method reference on non-class %s", GetIdentifierName(ast->left));
             return ltype;
         }
