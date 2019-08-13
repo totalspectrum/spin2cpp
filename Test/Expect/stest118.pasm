@@ -11,13 +11,12 @@ __float_fromuns
 	mov	_var03, _var01
 	and	_var03, #15
 	mov	_var04, _var03
-	mov	_var05, _var01
-	shr	_var05, #2
-	mov	_var01, _var05
-	mov	_var06, #0
-	or	_var06, _var04
+	shr	_var01, #2
+	mov	_var05, #0
+	or	_var05, _var04
+	mov	_var06, _var05
+	or	_var06, _var01
 	mov	_var07, _var06
-	or	_var07, _var01
 	mov	result1, _var07
 	jmp	#__float_fromuns_ret
 LR__0001

@@ -2306,7 +2306,6 @@ ExtractSideEffects(AST *expr, AST **preseq)
     switch (expr->kind) {
     case AST_ARRAYREF:
     case AST_MEMREF:
-        expr->left = ExtractSideEffects(expr->left, preseq);
         if (ExprHasSideEffects(expr->right)) {
             temp = AstTempLocalVariable("_temp_", NULL);
             sideexpr = AstAssign(temp, expr->right);
@@ -2317,6 +2316,7 @@ ExtractSideEffects(AST *expr, AST **preseq)
                 *preseq = sideexpr;
             }
         }
+        expr->left = ExtractSideEffects(expr->left, preseq);
         break;
     default:
         /* do nothing */
@@ -2345,14 +2345,25 @@ SimplifyAssignments(AST **astptr)
                 return;
             }
         }
-        else if (op != K_ASSIGN)
+        else if (op != K_ASSIGN /*|| (curfunc && curfunc->language == LANG_SPIN)*/)
         {
             ASTReportInfo saveinfo;
+            AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
             if (ExprHasSideEffects(lhs)) {
+                if (curfunc && curfunc->language == LANG_SPIN) {
+                    // Spin must maintain a strict evaluation order
+                    AST *temp = AstTempLocalVariable("_temp_", NULL);
+                    preseq = AstAssign(temp, rhs);
+                    rhs = temp;
+                }
                 lhs = ExtractSideEffects(lhs, &preseq);
             }
-            ast = AstAssign(lhs, AstOperator(op, lhs, ast->right));
+            if (op == K_ASSIGN) {
+                ast = AstAssign(lhs, rhs);
+            } else {
+                ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+            }
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);
             }

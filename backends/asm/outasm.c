@@ -3508,11 +3508,19 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           // do a series of assignments
           return CompileMultipleAssign(irl, expr->left, expr->right);
       }
-      r = CompileExpression(irl, expr->left, NULL);
-      if (IsRegister(r->kind)) {
-          val = CompileExpression(irl, expr->right, r);
-      } else {
+      if (curfunc->language == LANG_SPIN) {
+          // Spin always evaluates RHS first, then LHS
           val = CompileExpression(irl, expr->right, NULL);
+          r = CompileExpression(irl, expr->left, NULL);
+      } else {
+          // for other languages, try to optimize by
+          // compiling RHS first and if it's a register re-using it
+          r = CompileExpression(irl, expr->left, NULL);
+          if (IsRegister(r->kind)) {
+              val = CompileExpression(irl, expr->right, r);
+          } else {
+              val = CompileExpression(irl, expr->right, NULL);
+          }
       }
       EmitMove(irl, r, val);
       return r;

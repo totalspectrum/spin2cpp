@@ -8,12 +8,12 @@ _xorbytes
 	cmp	arg03, #0 wz
  if_e	jmp	#LR__0002
 LR__0001
-	rdbyte	_var01, arg01
-	rdbyte	_var02, arg02
-	xor	_var01, _var02
-	wrbyte	_var01, arg01
-	add	arg01, #1
+	rdbyte	_var01, arg02
+	rdbyte	_var02, arg01
+	xor	_var02, _var01
+	wrbyte	_var02, arg01
 	add	arg02, #1
+	add	arg01, #1
 	djnz	arg03, #LR__0001
 LR__0002
 _xorbytes_ret
