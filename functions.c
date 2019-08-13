@@ -2580,6 +2580,7 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
   AST *funcblock;
   const char *name;
   Symbol *sym;
+  Module *savecur = current;
   
   templateVars = templ->left;
   templ = templ->right;
@@ -2599,10 +2600,16 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
   sym = FindSymbol(&P->objsyms, name);
   if (!sym) {
     Function *fdef;
+    current = P;
     functype = fixupFunctype(pairs, DupAST(functype));
     funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body));
     fdef = doDeclareFunction(funcblock);
-    if (fdef) ProcessOneFunc(fdef);
+    if (fdef) {
+        fdef->is_static = 1;
+        CheckForStatic(fdef, fdef->body);
+        ProcessOneFunc(fdef);
+    }
   }
+  current = savecur;
   return ident;
 }

@@ -483,15 +483,18 @@ adjustFuncCall(AST *ast)
     AST *func = NULL;
     AST *templident;
     AST *methodref;
+    AST *methodcall;
     Module *P = NULL;
 
     
     if (left->kind == AST_METHODREF) {
+        methodcall = left;
         templident = left->right;
 	methodref = left->left;
     } else {
         templident = left;
 	methodref = NULL;
+        methodcall = NULL;
     }
     /* check for template instantiation */
     if (templident->kind == AST_IDENTIFIER || templident->kind == AST_LOCAL_IDENTIFIER) {
@@ -509,7 +512,11 @@ adjustFuncCall(AST *ast)
         if (sym && sym->kind == SYM_TEMPLATE) {
 	    func = InstantiateTemplateFunction(P ? P : current, (AST *)sym->val, ast);
             if (func) {
-		ast->left = func;
+                if (methodcall) {
+                    methodcall->right = func;
+                } else {
+                    ast->left = func;
+                }
 	    }
 	}
     }
