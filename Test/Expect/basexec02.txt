@@ -1,2 +1,4 @@
 pointer test... hi! world!
+abc
+-4
  ...done

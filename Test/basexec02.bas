@@ -3,8 +3,19 @@
 '' no prints here please!
 ''
 
+class util
+  any(t) function mymin(x as t, y as t) as t
+    if x < y then
+      return x
+    else
+      return y
+    end if
+  end function
+end class
+
 class FDS using "FullDuplexSerial.spin"
 dim ser as FDS
+dim u as util
 dim msg as string
 
 sub newline
@@ -31,6 +42,10 @@ ser.str("pointer test... ")
 msg = "hi!"
 doit
 
+ser.str(u.mymin("xabc", "abc"))
+newline
+ser.dec(u.mymin(-4, 9))
+newline
 ser.str(" ...done")
 newline
 
