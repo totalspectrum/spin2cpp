@@ -1,8 +1,8 @@
-# Fastspin BASIC
+# FlexBASIC
 
 ## Introduction
 
-Fastspin BASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
+FlexBASIC is the BASIC language support of the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
 
 fastspin recognizes the language in a file by the extension. If a file has a ".bas" extension it is assumed to be BASIC. Otherwise it is assumed to be Spin.
 
@@ -28,8 +28,7 @@ then the symbol is defined as the string `1`.
 
 #### IFDEF
 
-Introduces a conditional compilation section, which is only compiled if
-the symbol after the `#ifdef` is in fact defined. For example:
+Introduces a conditional compilation section, which is only compiled if the symbol after the `#ifdef` is in fact defined. For example:
 ```
 #ifdef __P2__
 '' propeller 2 code goes here
@@ -40,8 +39,7 @@ the symbol after the `#ifdef` is in fact defined. For example:
 
 #### IFNDEF
 
-Introduces a conditional compilation section, which is only compiled if
-the symbol after the `#ifndef` is *not* defined.
+Introduces a conditional compilation section, which is only compiled if the symbol after the `#ifndef` is *not* defined.
 
 #### ELSE
 
@@ -74,7 +72,7 @@ Includes a file. The contents of the file are placed in the compilation just as 
 
 #### WARN
 
-Prints a warning message; otherwise similar to `#error`.
+`#warn` prints a warning message; otherwise it is similar to `#error`.
 
 #### UNDEF
 
@@ -137,8 +135,7 @@ For example, the following are all ways to represent the decimal number `10`:
 
 ### Keywords
 
-Keywords are always treated specially by the compiler, and no identifier may be
-named the same as a keyword.
+Keywords are always treated specially by the compiler, and no identifier may be named the same as a keyword.
 ```
 abs
 and
@@ -253,9 +250,7 @@ Examples:
 
 #### Arrays
 
-Arrays must be declared with the `dim` keyword. Fastspin BASIC supports only
-one and two dimensional arrays, but they may be of any type. Examples of array
-declarations:
+Arrays must be declared with the `dim` keyword. FlexBASIC supports only one and two dimensional arrays, but they may be of any type. Examples of array declarations:
 ```
   rem an array of 10 integers
   rem note that dim gives the last index
@@ -270,12 +265,7 @@ declarations:
   dim g$(9, 9)
 ```
 
-Arrays are by default indexed starting at 0. That is, if `a` is an
-array, then `a(0)` is the first thing in the array, `a(1)` the second,
-and so on. This is similar to other languages (such as Spin and C),
-where array indexes start at 0.  The value given in the `dim` is the
-last array index. This is different from Spin and C, where arrays are
-declared with their sizes rather than last array index.
+Arrays are by default indexed starting at 0. That is, if `a` is an array, then `a(0)` is the first thing in the array, `a(1)` the second, and so on. This is similar to other languages (such as Spin and C), where array indexes start at 0.  The value given in the `dim` is the last array index. This is different from Spin and C, where arrays are declared with their sizes rather than last array index.
 
 Code to initialize an array to 0 could look like:
 ```
@@ -376,7 +366,7 @@ and
 
 ### Types
 
-There are a number of data types built in to the Fastspin BASIC language.
+There are a number of data types built in to the FlexBASIC language.
 
 #### Unsigned integer types
 
@@ -388,11 +378,13 @@ There are a number of data types built in to the Fastspin BASIC language.
 
 #### Floating point types
 
-single is, by default, a 32 bit IEEE floating point number. There is an option to use a 16.16 fixed point number instead; this results in much faster calculations, but at the cost of much less precision and range.
+`single` is, by default, a 32 bit IEEE floating point number. There is an option to use a 16.16 fixed point number instead; this results in much faster calculations, but at the cost of much less precision and range.
+
+`double` is reserved for future use as a double precision (64 bit) floating point number, but this is not implemented yet.
 
 #### Pointer types
 
-Pointers to any other type may be declared.
+Pointers to any other type may be declared. `T pointer` is a pointer to type `T`. Thus `ushort pointer` is a pointer to an unsigned 16 bit number, and `ubyte pointer pointer` is a pointer to a pointer to an unsigned 8 bit number.
 
 #### String type
 
@@ -442,7 +434,7 @@ end function
 
 ### Memory allocation
 
-Fastspin BASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size on Propeller 1, and 4096 bytes on Propeller 2. This may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
+FlexBASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size on Propeller 1, and 4096 bytes on Propeller 2. This may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
 
 Garbage collection works by scanning memory for pointers that were returned from the memory allocation function. As long as references to the original pointers returned by functions like `left$` or `right$` exist, the memory will not be re-used for anything else.
 
@@ -485,11 +477,9 @@ Instead of `new`, which allocates persistent memory on the heap, it is possible 
 
 ### Templates
 
-Fastspin supports polymorphic programming via templates. These are like parameterized function or class declarations.
-Only function templates are supported at this time. 
+FlexBASIC supports polymorphic programming via templates. These are like parameterized function or class declarations. Only function templates are supported at this time. 
 
-Templates are introduced by the keyword `any` followed by a parenthesized list of identifiers which are the types to be
-subsituted in the declaration. That is, each identifier in the list represents a type, which may vary at compile time.
+Templates are introduced by the keyword `any` followed by a parenthesized list of identifiers which are the types to be subsituted in the declaration. That is, each identifier in the list represents a type, which may vary at compile time.
 
 #### Function Templates
 
@@ -513,8 +503,7 @@ will print `1.7` and `aaa`.
 
 ### Input, Output, and Direction
 
-For the Propeller we have some special pseudo-variables `direction`, `input`, and `output`. These may be
-used to directly control pins of the processor. For example, to set pin 1 as output and then set it high do:
+For the Propeller we have some special pseudo-variables `direction`, `input`, and `output`. These may be used to directly control pins of the processor. For example, to set pin 1 as output and then set it high do:
 ```
   direction(1) = output
   output(1) = 1
@@ -545,7 +534,7 @@ The builtin Propeller hardware registers are available with their usual names, u
 
 The hardware registers are not keywords, so they are not reserved to the system. Thus, it is possible to use `dim` to declare variables with the same name. Of course, if that is done then the original hardware register will not be accessible in the scope of the variable name.
 
-## Alphabetical List of Keywords
+## Alphabetical List of Keywords and Built In Functions
 
 ### ABS
 
@@ -631,7 +620,7 @@ end sub
 
 Allocates memory on the stack. The argument is an integer specifying how much memory to allocate. For example:
 ```
-   dim as integer ptr x = alloca(256)
+   dim as integer ptr x = __builtin_alloca(256)
 ```
 creates an array of 64 integers (which needs 256 bytes) and makes `x` into a pointer to it.
 
@@ -722,10 +711,9 @@ Another way to define an object is to first declare an abstract `class` with a n
 ```
 This is more convenient if there are many references to the class, or if you want to pass pointers to the class to functions.
 
-#### Concrete classes
+#### Inline Classes
 
-Finally, the functions, subroutines, and variables associated with a class may be defined directly inline, between
-the `class` and a finishing `end class`. In this case the class name may be used as a type name. For example:
+Finally, the functions, subroutines, and variables associated with a class may be defined directly inline, between the `class` and a finishing `end class`. In this case the class name may be used as a type name. For example:
 
 ```
   class counter
@@ -753,16 +741,12 @@ the `class` and a finishing `end class`. In this case the class name may be used
   cnt.inc
   print cnt.getval() ' prints 3
 ```
-This is compiled with:
-```
-  fastspin main.bas
-```
 
 #### Interoperation with Spin
 
 Using Spin objects with `class using` is straightforward, but there are some things to watch out for:
 
-  * Spin does not have any notion of types, so most Spin functions will return type `any` and take parameters of type `any`. This can cause problems if you expect them to return something special like a pointer or float and want to use them in the middle of an expression. It's probably best to just directly assign the results of Spin methods to a typed variable, and then use that variable in the expression instead
+  * Spin does not have any notion of types, so most Spin functions will return type `any` and take parameters of type `any`. This can cause problems if you expect them to return something special like a pointer or float and want to use them in the middle of an expression. You can either use explicit `cast` operations, or assign the results of Spin methods to a typed variable, and then use that variable in the expression instead.
   * Spin treats strings differently than BASIC does. For example, in the Spin expression `ser.tx("A")`, `"A"` is an integer (a single element list). That would be written in BASIC as `ser.tx(asc("A"))`. Conversely, in Spin you have to write `ser.str(string("hello"))` where in BASIC you would write just `ser.str("hello")`.
 
 #### Interoperation with C
@@ -813,7 +797,7 @@ Inside a type name, `const` signifies that variables of this type may not be mod
 
 ### CONTINUE
 
-Used to resume loop execution early. The type of loop (FOR, DO, or WHILE) may optionally be given after CONTINUE. However, note that only the innermost containing loop may be continued. This is different from FreeBasic, where for example `continue for` may be placed in a `while` loop that is itself inside a `for` loop. In FlexBasic this will producean error.
+Used to resume loop execution early. The type of loop (FOR, DO, or WHILE) may optionally be given after CONTINUE. However, note that only the innermost containing loop may be continued. This is different from FreeBasic, where for example `continue for` may be placed in a `while` loop that is itself inside a `for` loop. In FlexBasic this will produce an error.
 
 Example:
 ```
@@ -860,7 +844,7 @@ Note that `cpu` is not a function call, it is a special form which does not eval
 
 Introduces raw data to be read via the `read` keyword. This is usually used for initializing arrays or other data structures. The calculations for converting values from strings to integers or floats are done at run time, so consider using array initializers instead (which are more efficient).
 
-Unlike in some other BASICs, no parsing at all is done of the information following the `data` keyword; it is simply dumped into memory as a raw string. Subsequent `read` commands will read the bytes from memory and convert them to the appropriate type, as if they were `input` by the user.
+In contrast to some other BASICs, no parsing at all is done of the information following the `data` keyword; it is simply dumped into memory as a raw string. Subsequent `read` commands will read the bytes from memory and convert them to the appropriate type, as if they were `input` by the user.
 
 Unlike most other statements, the `data` statement always extends to the end of the line; any colons (for example) within the data are treated as data.
 ```
@@ -1146,7 +1130,7 @@ Propeller specific builtin function.
   function getcnt() as uinteger
   x = getcnt()
 ```
-Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds.
+Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds on propeller 1 and 27 seconds on propeller 2.
 
 ### GOSUB
 
@@ -1189,7 +1173,7 @@ is a label `foo` followed by a statement `bar`.
 ```
   const HEAPSIZE = 256
 ```
-Declares the amount of space to be used for internal memory allocation by things like string functions. The default is 256 bytes, but if your program does a lot of string manipulation and/or needs to hold on to the allocations for a long time, you may need to increase this by explicitly declaring `const HEAPSIZE` with a larger value.
+Declares the amount of space to be used for internal memory allocation by things like string functions. The default is 256 bytes for P1 and 4096 bytes for P2. If your program does a lot of string manipulation and/or needs to hold on to the allocations for a long time, you may need to increase this by explicitly declaring `const HEAPSIZE` with a larger value.
 
 ### IF
 
@@ -1343,9 +1327,9 @@ Note that if both the quotient and remainder are desired, it is best to put the 
 
 ### NEW
 
-Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array size:
+Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array limit. Note that as in `dim` statements, the value given is the last valid index, so for arrays starting at 0 (the default) it is one greater than the number of elements.
 ```
-  var x = new ubyte(10)  ' allocate 10 bytes and return a pointer to it
+  var x = new ubyte(10)  ' allocate 11 (not 10) bytes and return a pointer to it
   x(1) = 1               ' set a variable in it
   
   class FDS using "FullDuplexSerial.spin" ' Use "SmartSerial.spin" on P2
@@ -1376,7 +1360,7 @@ In logical (boolean) conditions, since the TRUE condition is all 1 bits set, thi
 
 ### ON X GOTO
 
-For compatibility only, fastspin accepts statements like:
+For compatibility only, FlexBASIC accepts statements like:
 ```
 on x goto 100, 110, 120
 ```
@@ -1498,7 +1482,7 @@ Force a pin to be an output, and invert its current value.
 
 ### PRINT
 
-`print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud.
+`print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud (230_400 baud on P2).
 
 More than one item may appear in a print statement. If items are separated by commas, a tab character is printed between them. If they are separated by semicolons, nothing is printed between them, not even a space; this differs from some other BASICs.
 
@@ -1629,7 +1613,7 @@ do
      keepgoing = 0
      print "ok, not continuing "
    case else
-     print "i did not understand your answer of "; a$
+     print "I did not understand your answer of "; a$
    end select   
 loop while keepgoing = -1
 ```
@@ -1648,7 +1632,7 @@ Set up the serial port baud rate, based on the current clock frequency.
 ```
   _setbaud(115_200) ' set baud rate to 115_200
 ```
-The default serial rate is 115_200 baud, and assuming a clock frequency of 80_000_000. If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
+The default serial rate on P1 is 115_200 baud, and assuming a clock frequency of 80_000_000 (on P2 both defaults are doubled). If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
 
 ### SHORT
 
