@@ -63,7 +63,7 @@ function str$(x as single) as string
   dim p as ubyte pointer
   dim i as integer
   var fn = function(c as integer) as integer
-    if (i < 31) then
+    if (i < 16) then
       p(i) = c
       i = i+1
       return 1
