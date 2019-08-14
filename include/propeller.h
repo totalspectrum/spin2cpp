@@ -22,6 +22,7 @@
 #include <propeller2.h>
 #define getcnt() _cnt()
 #define waitcnt(x) _waitcnt(x)
+#define CNT _cnt()
 #else
 #include <propeller1.h>
 #endif

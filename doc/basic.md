@@ -68,7 +68,7 @@ Includes a file. The contents of the file are placed in the compilation just as 
 ```
 #include "foo.h"
 ```
-
+Included files are searched for first in the same directory as the file that contains the `#include`. If they are not found there, then they are searched for in any directories specified by a `-I` or `-L` option on the command line. If the environment variable `FLEXCC_INCLUDE` is defined, that gives a directory to be searched after command line options. Finally the path `../include` relative to the fastspin executable binary is checked.
 
 #### WARN
 
@@ -416,6 +416,42 @@ cmpptrs(x, y)
 ```
 will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison (and while the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
 
+#### Classes
+
+FlexBASIC supports classes, which are similar to records or structs in other languages. There are two ways to define classes. A whole BASIC (or Spin, or C) file may be included as a class with the `using` keyword:
+```
+dim ser as class using "FullDuplexSerial.spin"
+```
+declares the variable `ser` as a class, using the Spin variables and methods from the given file. This also works for `.bas` or `.c` files. Any functions declared in the file become methods of the new class.
+
+Classes may also be declared directly, with the variables and methods of the class specified between
+`class` and `end class`
+```
+class counter
+  dim as integer c
+  sub inc()
+    c = c + 1
+  end sub
+  function get() as integer
+    return c
+  end function
+end class
+
+dim x as counter
+...
+x.inc
+print x.get()
+```
+Note that `end class` must be spelled out in full (unlike many `end x` pairs which may be abbreviated as just `end`). 
+
+#### Type Aliases
+
+An alias for an existing type may be declared with the `type` keyword. For example:
+```
+type numptr as integer pointer
+type fullduplexserial as class using "FullDuplexSerial.spin"
+```
+
 ### Function declarations
 
 Function names follow the same rules as variable names. Like variable names, function names may have a type specifier appended, and the type specifier gives the type that the function returns.
@@ -431,6 +467,7 @@ function Add(a as integer, b as integer) as integer
   return a+b
 end function
 ```
+It is often useful for documentation to explicitly specify all types like this, even when the default types specified by the variable names would work.
 
 ### Memory allocation
 
