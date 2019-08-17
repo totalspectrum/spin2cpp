@@ -1444,6 +1444,14 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case K_BOOL_NOT:
     case K_BOOL_AND:
     case K_BOOL_OR:
+        if (IsFloatType(lefttype)) {
+            ast->left = MakeOperatorCall(float_cmp, ast->left, AstInteger(0), NULL);
+            lefttype = ast_type_long;
+        }
+        if (IsFloatType(righttype)) {
+            ast->right = MakeOperatorCall(float_cmp, ast->right, AstInteger(0), NULL);
+            righttype = ast_type_long;
+        }
         if (lefttype && !IsBoolCompatibleType(lefttype)) {
             ERROR(ast, "Expression not compatible with boolean operation");
         } else if (righttype && !IsBoolCompatibleType(righttype)) {
