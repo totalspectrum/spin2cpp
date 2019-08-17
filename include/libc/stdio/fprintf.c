@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <sys/fmt.h>
+#undef printf
 
 int printf(const char *fmt, ...)
 {
