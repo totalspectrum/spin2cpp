@@ -341,7 +341,15 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     unsigned int c;
     int sawdigit = 0;
     int kind = SP_NUM;
+    int lang;
 
+    if (curfunc) {
+        lang = curfunc->language;
+    } else if (current) {
+        lang = current->curLanguage;
+    } else {
+        lang = LANG_SPIN;
+    }
     uval = 0;
     tenval = 0;
     
@@ -392,7 +400,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 
         if (c == '.') {
             c = lexgetc(L);
-            if ( c != 'e' && c != 'E' && (c < '0' || c > '9')) {
+            if ( lang == LANG_SPIN && c != 'e' && c != 'E' && (c < '0' || c > '9')) {
                 lexungetc(L, c);
                 c = '.';
                 goto donefloat;
@@ -401,6 +409,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         while (c >= '0' && c <= '9') {
             ff = ff + divby[counter]*(float)(c-'0');
             c = lexgetc(L);
+            sawdigit = 1;
             counter++;
         }
         if (c == 'e' || c == 'E') {
@@ -1180,7 +1189,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     if (c >= 127) {
         *ast_ptr = last_ast = ast;
         return c;
-    } else if (safe_isdigit(c)) {
+    } else if (safe_isdigit(c) || (c == '.' && safe_isdigit(lexpeekc(L)))) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
         c = parseNumber(L, 10, &ast->d.ival);
@@ -3198,16 +3207,16 @@ getCToken(LexStream *L, AST **ast_ptr)
         c = C_CONSTANT;
     } else if (c == '.') {
         c2 = lexgetc(L);
+        // check for .1234 <=> 0.1234
+        if (safe_isdigit(c2)) {
+            lexungetc(L, c2);
+            lexungetc(L, c);
+            c = '0';
+            goto parse_number;
+        }
         if (c2 == '.') {
             c2 = lexgetc(L);
-            // check for .1234 <=> 0.1234
-            if (safe_isdigit(c2)) {
-                lexungetc(L, c2);
-                lexungetc(L, c);
-                c = '0';
-                goto parse_number;
-            }
-            else if (c2 == '.') {
+            if (c2 == '.') {
                 c = C_ELLIPSIS;
             } else {
                 lexungetc(L, c2);

@@ -268,6 +268,7 @@ main()
     testFloat("1.0", 1.0f);
     testFloat("2.0", 2.0f);
     testFloat("0.01", 0.01f);
+    testFloat(".5", 0.5f);
     testFloat("1.0e-2", 0.01f);
     testFloat("1.e-2", 0.01f);
     testFloat("3.14e5", 314000.0f);
