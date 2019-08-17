@@ -520,6 +520,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     }
     if (body) {
         DeclareCMemberVariables(C, body, is_union);
+        DeclareMemberVariables(C); 
     }
     return class_type;
 }

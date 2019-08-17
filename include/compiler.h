@@ -23,6 +23,7 @@
 #define _INT_SIZE  __SIZEOF_INT__
 #define _LONG_SIZE __SIZEOF_LONG__
 #define _WCHAR_SIZE __SIZEOF_WCHAR_T__
+#define _INLINE inline
 #ifdef __CHAR_UNSIGNED__
 #define _CHAR_IS_UNSIGNED 1
 #else
@@ -85,6 +86,7 @@
 #define _CONST
 #define _WEAK
 #define _CACHED
+#define _INLINE inline
     
 #ifndef _WCHAR_T_TYPE
 #define _WCHAR_T_TYPE __WCHAR_TYPE__

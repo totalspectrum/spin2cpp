@@ -373,7 +373,6 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
     return $8000_0000  ' NaN
   return x
   
-  
 {{
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -391,4 +390,11 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
 │COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,   │
 │ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                         │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-}}    
+}}
+
+pri file "libsys/s_floorf.c" __builtin_floorf(x = float)
+pri file "libsys/math.c"  __builtin_fabsf(x = float)
+pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p)
+pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n)
+pri file "libsys/s_modf.c" __builtin_modff(x = float, p)
+

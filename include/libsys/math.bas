@@ -71,6 +71,7 @@ function cos(x as single) as single
   return sin(x + PI_2)
 end function
 
+#ifdef TEST
 dim sa, ca as any
 dim sval, cval as single
 
@@ -84,3 +85,4 @@ for x# = 0.0 to PI step 0.1
 '  print x#, sval, sa, cval, ca
   print x#, sval, cval
 next x#
+#endif
