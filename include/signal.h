@@ -1,6 +1,7 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
+#include <compiler.h>
 #include <sys/thread.h>
 
 #if defined(__cplusplus)
@@ -33,8 +34,8 @@ typedef _atomic_t sig_atomic_t;
 
 #define _NSIGS 16
 
-sighandler_t signal(int sig, sighandler_t handler);
-int raise(int sig);
+    sighandler_t signal(int sig, sighandler_t handler) _IMPL("libc/stdlib/signal.c");
+    int raise(int sig) _IMPL("libc/stdlib/signal.c");
 
 #if defined(__cplusplus)
 }

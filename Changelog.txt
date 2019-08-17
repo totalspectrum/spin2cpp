@@ -1,3 +1,7 @@
+Version 3.9.30
+- Fixed some floating point parsing issues
+- Added some missing C stdio functions
+
 Version 3.9.29
 - Implemented concrete classes in BASIC
 - Implemented function templates in BASIC
