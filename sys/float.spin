@@ -397,4 +397,5 @@ pri file "libsys/math.c"  __builtin_fabsf(x = float)
 pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p)
 pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n)
 pri file "libsys/s_modf.c" __builtin_modff(x = float, p)
-
+pri file "libsys/e_expf.c" __builtin_expf(x = float)
+pri file "libsys/e_logf.c" __builtin_logf(x = float)
