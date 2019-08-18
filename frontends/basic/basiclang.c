@@ -1390,8 +1390,8 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '>':
         CompileComparison(ast->d.ival, ast, lefttype, righttype);
         return ast_type_long;
-    case K_ABS:
     case K_NEGATE:
+    case K_ABS:
     case K_SQRT:
         if (IsFloatType(rettype)) {
             if (!gl_fixedreal) {
@@ -1400,7 +1400,13 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
                 } else if (op == K_SQRT) {
                     *ast = *MakeOperatorCall(float_sqrt, ast->right, NULL, NULL);
                 } else {
-                    *ast = *MakeOperatorCall(float_neg, ast->right, NULL, NULL);
+                    if (IsConstExpr(ast->right)) {
+                        int x = EvalConstExpr(ast->right);
+                        *ast = *NewAST(AST_FLOAT, NULL, NULL);
+                        ast->d.ival = x ^ 0x80000000U;
+                    } else {
+                        *ast = *MakeOperatorCall(float_neg, ast->right, NULL, NULL);
+                    }
                 }
                 return rettype;
             }
