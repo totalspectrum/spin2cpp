@@ -3159,8 +3159,13 @@ getCToken(LexStream *L, AST **ast_ptr)
             c = parseNumber(L, 10, &ast->d.ival);
         }
         if (c == SP_FLOATNUM) {
+            int c2;
             ast->kind = AST_FLOAT;
 	    c = C_CONSTANT;
+            c2 = lexpeekc(L);
+            if (c2 == 'f' || c2 == 'F') {
+                lexgetc(L);
+            }
 	} else {
             int c2 = lexgetc(L);
             
