@@ -3548,6 +3548,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       // evaluate any const references in our current context
       AST *stringExpr = EvalStringConst(expr->left);
       r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
+      if (gl_p2) {
+          return r;
+      }
       return NewImmediatePtr(NULL, r);
   }
   case AST_ARRAYREF:

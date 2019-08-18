@@ -129,6 +129,18 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         ERROR(NULL, "Internal error: tried to use memory directly");
         flexbuf_addstr(fb, "#@@@#");
         break;
+    case STRING_DEF:
+        if (gl_p2 && useimm) {
+            flexbuf_addstr(fb, "##");
+            if (useabsaddr) {
+                flexbuf_addstr(fb, "\\");
+            }
+            flexbuf_addstr(fb, "@");
+        } else {
+            flexbuf_addstr(fb, "#@@@");
+        }
+        flexbuf_addstr(fb, RemappedName(reg->name));
+        break;
     case IMM_HUB_LABEL:
         if (gl_p2 && useimm) {
             flexbuf_addstr(fb, "#");
