@@ -165,6 +165,12 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     case AST_ORGH:
         inCog = 0;
         break;
+    case AST_RES:
+        if (inCog) {
+            int delta = 4*EvalPasmExpr(ast->left);
+            cogPc += delta;
+        }
+        break;
     case AST_INSTRHOLDER:
         inCog = (ast->d.ival & (1<<30)) != 0;
         if (inCog) {
