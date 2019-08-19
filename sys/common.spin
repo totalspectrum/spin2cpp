@@ -180,6 +180,12 @@ pri input`$(n=long, h=0) | c, i, s
   byte[s+i] := 0
   return s
 
+pri __builtin_inf()
+  return $7f800000
+
+pri __builtin_nan(p)
+  return $7fc00000
+
 '' read a line of data from handle h
 pri file "libsys/readdata.spin" _basic_read_line(h=0)
 
