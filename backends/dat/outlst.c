@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-uint32_t cogPc;
-uint32_t hubPc;
-int inCog;
-int bytesOnLine;
+static uint32_t cogPc;
+static uint32_t hubPc;
+static int inCog;
+static int bytesOnLine;
+static int cogPcUpdate = 0;
 
 static LexStream *current_lex = NULL;
 
@@ -34,6 +35,8 @@ static void startNewLine(Flexbuf *f) {
     flexbuf_printf(f, "\n%05x ", hubPc);
     if (inCog) {
         flexbuf_printf(f, "%03x ", cogPc / 4);
+        cogPc += cogPcUpdate;
+        cogPcUpdate = 0;
     } else {
         flexbuf_printf(f, "    ");
     }
@@ -168,7 +171,7 @@ static void lstStartAst(Flexbuf *f, AST *ast)
     case AST_RES:
         if (inCog) {
             int delta = 4*EvalPasmExpr(ast->left);
-            cogPc += delta;
+            cogPcUpdate = delta; // advance cog PC after this line
         }
         break;
     case AST_INSTRHOLDER:
