@@ -180,7 +180,7 @@ pri input`$(n=long, h=0) | c, i, s
   byte[s+i] := 0
   return s
 
-pri __builtin_inf()
+pri __builtin_inf
   return $7f800000
 
 pri __builtin_nan(p)
