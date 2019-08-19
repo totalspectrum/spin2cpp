@@ -235,7 +235,9 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
         sub = sub->right;
     }
     if (!sub) {
-        *offptr = 0;
+        if (offptr) {
+            *offptr = 0;
+        }
         return RELOC_KIND_NONE;
     }
     kind = sub->kind;
@@ -245,11 +247,15 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
             ERROR(sub, "Bad function pointer");
             return RELOC_KIND_NONE;
         }
-        *symptr = sym;
+        if (symptr) {
+            *symptr = sym;
+        }
         return RELOC_KIND_I32;
     }
     if (kind == AST_ABSADDROF || (isInitVal && kind == AST_ADDROF) ) {
-        *offptr = GetAddrOffset(sub->left);
+        if (offptr) {
+            *offptr = GetAddrOffset(sub->left);
+        }
         return RELOC_KIND_I32;
     }
     if (sub->kind == AST_OPERATOR) {
@@ -260,7 +266,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
             if ( -1 == (r1|r2) ) {
                 return -1;
             }
-            if (*symptr != mysym) {
+            if (symptr && *symptr != mysym) {
                 return -1;
             }
             // only certain kinds of math we can do on relocations
@@ -269,7 +275,9 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
                 if (r1 && r2) {
                     return -1;
                 }
-                *offptr += myoff;
+                if (offptr) {
+                    *offptr += myoff;
+                }
                 return RELOC_KIND_I32;
             case '-':
                 if (r1 && r2) {
@@ -279,7 +287,9 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
                 }
                 if (r1) {
                     // reloc - offset
-                    *offptr -= myoff;
+                    if (offptr) {
+                        *offptr -= myoff;
+                    }
                     return RELOC_KIND_I32;
                 }
                 // offset - reloc
@@ -293,7 +303,9 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
 
     // not a relocatable expression per se; so just set the offset
     // to our value
-    *offptr = EvalPasmExpr(sub);
+    if (offptr) {
+        *offptr = EvalPasmExpr(sub);
+    }
     return 0;
 }
 
@@ -944,7 +956,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             const char *internal_name = GetIdentifierName(op);
             const char *user_name = GetUserIdentifierName(op);
             Symbol *sym = LookupSymbol(internal_name);
-            if (sym->kind == SYM_LABEL) {
+            if (sym && sym->kind == SYM_LABEL) {
                 Label *lab = (Label *)sym->val;
                 if (lab && (lab->flags & LABEL_HAS_INSTR) && !(lab->flags & LABEL_HAS_JMP)) {
                     WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the branch target to %s+0 to suppress this warning", instr->name, user_name, user_name);
@@ -1013,6 +1025,26 @@ EvalOperandExpr(Instruction *instr, AST *op)
         return 0;
     }
     return EvalPasmExpr(op);
+}
+
+bool
+IsHubSymbol(AST *ast)
+{
+    if (ast && ast->kind == AST_LOCAL_IDENTIFIER) {
+        ast = ast->left;
+    }
+    if (!ast) return 0;
+    if (ast->kind == AST_IDENTIFIER) {
+        Symbol *sym = LookupSymbol(ast->d.string);
+        Label *lab;
+        if (!sym) return 0;
+        if (sym->kind != SYM_LABEL) {
+            return 0;
+        }
+        lab = (Label *)sym->val;
+        return 0 != (lab->flags & LABEL_IN_HUB);
+    }
+    return 0;
 }
 
 /*
@@ -1186,7 +1218,7 @@ decode_instr:
             bool dstLut = false;
             bool dstHub = true;
             isrc = EvalOperandExpr(instr, operand[opidx]);
-            if (isrc < 0x400) {
+            if (isrc < 0x400 && !IsHubSymbol(operand[opidx])) {
                 dstHub = false;
                 dstLut = (isrc >= 0x200);
                 isrc *= 4;

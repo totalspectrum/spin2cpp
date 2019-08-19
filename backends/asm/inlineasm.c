@@ -65,6 +65,8 @@ static int parseargnum(const char *n)
     return reg-1;
 }
 
+extern Operand *LabelRef(IRList *irl, Symbol *sym);
+
 //
 // compile an expression as an inine asm operand
 //
@@ -77,6 +79,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     
     if (expr->kind == AST_IMMHOLDER || expr->kind == AST_BIGIMMHOLDER) {
         immflag = 1;
+        expr = expr->left;
+    }
+    // labels get automatically converted to array references; undo that
+    if (expr->kind == AST_ARRAYREF && IsConstExpr(expr->right) && EvalConstExpr(expr->right) == 0)
+    {
         expr = expr->left;
     }
     if (expr->kind == AST_LOCAL_IDENTIFIER || expr->kind == AST_IDENTIFIER || expr->kind == AST_RESULT) {
@@ -142,6 +149,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 }
                 r = GetLabelFromSymbol(expr, sym->our_name);
                 immflag = 0;
+                break;
+            case SYM_LABEL:
+                r = LabelRef(irl, sym);
                 break;
             case SYM_HWREG:
             {

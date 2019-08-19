@@ -85,6 +85,7 @@ pri _coginit(id, code, param)
   return id
 
 dat
+    orgh
 _bitcycles long 0
 
 pri _setbaud(rate)

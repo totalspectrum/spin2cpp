@@ -966,3 +966,12 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
     }
     AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
 }
+
+// returns true if P is the top level module for this project
+int
+IsTopLevel(Module *P)
+{
+    extern Module *allparse;
+    return P == allparse;
+}
+

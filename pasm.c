@@ -583,6 +583,8 @@ DeclareLabels(Module *P)
                 int typalign;
                 int typsize;
 
+                // initializers always go in HUB memory
+                inHub = 1;
                 MARK_DATA(label_flags);
                 AstReportAs(ident, &saveinfo);
                 if (ident->kind == AST_ASSIGN) {

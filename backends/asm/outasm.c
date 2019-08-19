@@ -117,14 +117,6 @@ static struct flexbuf cogGlobalVars;
 // global variables in hub memory (really holds struct AsmVariables)
 static struct flexbuf hubGlobalVars;
 
-// returns true if P is the top level module for this project
-static int
-IsTopLevel(Module *P)
-{
-    extern Module *allparse;
-    return P == allparse;
-}
-
 static int sym_offset(Function *func, Symbol *s)
 {
     int offset = -1;
@@ -1012,15 +1004,17 @@ ValidateDatBase(Module *P)
     return PD->datbase;
 }
 
-static Operand *
+Operand *
 LabelRef(IRList *irl, Symbol *sym)
 {
     Operand *temp;
     Label *lab = (Label *)sym->val;
     Module *P = current;
     Operand *datbase = ValidateDatBase(P);
-    // FIXME: should we check the label's flags to see if it's actually
-    // declared in COG memory??
+
+    if (! (lab->flags & (LABEL_IN_HUB|LABEL_USED_IN_SPIN) ) ) {
+        WARNING(NULL, "Internal error, unexpected COG label");
+    }
     temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
     return temp;
 }
@@ -4620,6 +4614,7 @@ AssignFuncNames(IRList *irl, Module *P)
                 label = (Label *)calloc(sizeof(*label), 1);
                 sym->offset = label->hubval = P->datsize;
                 label->type = ast_type_long;
+                label->flags = LABEL_IN_HUB;
                 sym->kind = SYM_LABEL;
                 sym->val = (void *)label;
                 table = NewAST(AST_LONGLIST, table, NULL);
