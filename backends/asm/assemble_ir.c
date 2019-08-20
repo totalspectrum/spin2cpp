@@ -126,9 +126,24 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         break;
     case HUBMEM_REF:
     case COGMEM_REF:
-        ERROR(NULL, "Internal error: tried to use memory directly");
-        flexbuf_addstr(fb, "#@@@#");
+    {
+        Operand *regptr = NULL;
+        if (gl_p2 && useimm) {
+            regptr = (Operand *)reg->name;
+            int offset = reg->val;
+            if (regptr && regptr->kind == REG_HUBPTR) {
+                regptr = (Operand *)regptr->val;
+                flexbuf_printf(fb, "#@%s + %d", regptr->name, offset);
+            } else {
+                regptr = NULL;
+            }
+        }
+        if (!regptr) {
+            ERROR(NULL, "Internal error: tried to use memory directly");
+            flexbuf_addstr(fb, "#@@@#");
+        }
         break;
+    }
     case STRING_DEF:
         if (gl_p2 && useimm) {
             flexbuf_addstr(fb, "##");
@@ -1013,10 +1028,6 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         }
     }
 
-    if (ir->dsteffect) {
-        ERROR(NULL, "internal error, unable to support destination effect");
-    }
-    
     if (ir->instr) {
         int ccset;
 
@@ -1041,7 +1052,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         case P2_JUMP:
         case P2_DST_CONST_OK:
             flexbuf_addstr(fb, "\t");
-            PrintOperandSrc(fb, ir->dst, OPEFFECT_NONE);
+            PrintOperandSrc(fb, ir->dst, ir->dsteffect);
             break;
         default:
             flexbuf_addstr(fb, "\t");

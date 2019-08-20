@@ -1313,7 +1313,7 @@ decode_instr:
             isRelJmp = 0;
         } else {
             isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
-            if ( (inHub && isrc < 0x400)
+            if ( (inHub && isrc < 0x400 && !IsHubSymbol(operand[opidx]))
                  || (!inHub && isrc >= 0x400)
                 )
             {
