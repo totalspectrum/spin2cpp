@@ -3,6 +3,7 @@ Version 3.9.30
 - Added some missing C stdio functions
 - In listing files update the COG address for RES statements
 - Reduce use of COG memory in P2
+- Fix some bad formatting in __builtin_printf
 
 Version 3.9.29
 - Implemented concrete classes in BASIC
