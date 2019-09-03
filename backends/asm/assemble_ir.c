@@ -152,6 +152,7 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             }
             flexbuf_addstr(fb, "@");
         } else {
+            ERROR(NULL, "Internal error: tried to use string directly");
             flexbuf_addstr(fb, "#@@@");
         }
         flexbuf_addstr(fb, RemappedName(reg->name));
