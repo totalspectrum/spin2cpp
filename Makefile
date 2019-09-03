@@ -10,10 +10,13 @@
 # "i586-mingw32msvc-gcc" for mingw, whereas Debian uses
 # "i686-w64-mingw32-gcc"
 #
-# to build a release .zip, do "make zip" and "make spincvt.zip"
+# to build a release .zip, do "make zip"
+# to build a signed release, do "make zip SIGN=sign.digikey.sh"
 #
 
-SIGN=./sign.sh
+# the script used to turn foo.exe into foo.signed.exe
+SIGN ?= ./sign.dummy.sh
+
 ifeq ($(CROSS),win32)
 #  CC=i586-mingw32msvc-gcc
   CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000
@@ -178,33 +181,35 @@ COMMONDOCS=COPYING Changelog.txt doc
 ALLDOCS=README.md Fastspin.md $(COMMONDOCS)
 
 zip: fastspin.exe spin2cpp.exe
-	$(SIGN) fastspin.exe
+	$(SIGN) fastspin
+	mv fastspin.signed.exe fastspin.exe
 	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe fastspin.exe
 	zip -r fastspin.zip fastspin.exe Fastspin.md doc include
 
 #
 # target to build a windows spincvt GUI
+# this has almost certainly bit-rotted
 #
-FREEWRAP=/opt/freewrap/linux64/freewrap
-FREEWRAPEXE=/opt/freewrap/win32/freewrap.exe
-
-spincvt.zip: .PHONY
-	rm -f spincvt.zip
-	rm -rf spincvt
-	$(MAKE) CROSS=win32
-	mkdir -p spincvt/bin
-	cp build-win32/spin2cpp.exe spincvt/bin
-	cp propeller-load/propeller-load.exe spincvt/bin
-	cp spinconvert/spinconvert.tcl spincvt
-	mkdir -p spincvt/examples
-	cp -rp spinconvert/examples/*.spin spincvt/examples
-	cp -rp spinconvert/examples/*.def spincvt/examples
-	cp -rp spinconvert/README.txt COPYING spincvt
-	cp -rp doc spincvt
-	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
-	rm spincvt/spinconvert.tcl
-	zip -r spincvt.zip spincvt
-	rm -rf spincvt
+#FREEWRAP=/opt/freewrap/linux64/freewrap
+#FREEWRAPEXE=/opt/freewrap/win32/freewrap.exe
+#
+#spincvt.zip: .PHONY
+#	rm -f spincvt.zip
+#	rm -rf spincvt
+#	$(MAKE) CROSS=win32
+#	mkdir -p spincvt/bin
+#	cp build-win32/spin2cpp.exe spincvt/bin
+#	cp propeller-load/propeller-load.exe spincvt/bin
+#	cp spinconvert/spinconvert.tcl spincvt
+#	mkdir -p spincvt/examples
+#	cp -rp spinconvert/examples/*.spin spincvt/examples
+#	cp -rp spinconvert/examples/*.def spincvt/examples
+#	cp -rp spinconvert/README.txt COPYING spincvt
+#	cp -rp doc spincvt
+#	(cd spincvt; $(FREEWRAP) spinconvert.tcl -w $(FREEWRAPEXE))
+#	rm spincvt/spinconvert.tcl
+#	zip -r spincvt.zip spincvt
+#	rm -rf spincvt
 
 
 .PHONY:
