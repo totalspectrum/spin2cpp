@@ -145,7 +145,7 @@ void      _pinh(int pin);
 void      _pinnot(int pin);
 void      _pinrnd(int pin);
 void      _pinf(int pin);
-int       _pin(int pin);
+int       _pinr(int pin);
 
 /* smart pin controls */
 void      _wrpin(int pin, uint32_t val);

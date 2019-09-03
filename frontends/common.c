@@ -151,6 +151,7 @@ Aliases calias[] = {
     { "_pinnot", "__builtin_propeller_drvnot" },
     { "_pinw", "__builtin_propeller_drv" },
     { "_waitx", "__builtin_propeller_waitx" },
+    { "_pinr", "__builtin_propeller_pinr" },
 
     { NULL, NULL },
 };

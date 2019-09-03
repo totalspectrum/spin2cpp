@@ -218,12 +218,18 @@ pri __builtin_propeller_fltrnd(pin)
   asm
     fltnot pin
   endasm
-pri __builtin_propeller_flt(pin, c)
+pri __builtin_propeller_flt(pin, val)
   asm
-    test   pin,#1 wc
+    test   val,#1 wc
     fltc pin
   endasm
 
+pri __builtin_propeller_pinr(pin) : val
+  asm
+    testp   pin wc
+    wrc val
+  endasm
+  
 pri __builtin_propeller_wrpin(val, pin)
   asm
     wrpin val, pin
