@@ -32,7 +32,7 @@ pri bytemove(dst, src, count) : origdst
     byte[dst] := byte[src]
     dst += 1
     src += 1
-pri __builtin_strlen(str) : r
+pri __builtin_strlen(str) : r=long
   r := 0
   repeat while byte[str] <> 0
     r++
@@ -139,15 +139,14 @@ pri _funcptr_cmp(x, y) | xc, yc, d
     d := xc - yc
   return d
 
-pri _string_cmp(x, y) | xc, yc, d
+pri _string_cmp(x, y) : rval = long | xc, yc, d
   repeat
     xc := byte[x++]
     yc := byte[y++]
-    d := xc - yc
-  while (d==0) and xc and yc
-  return d
+    rval := xc - yc
+  while (rval==0) and xc and yc
 
-pri _string_concat(x, y) | lenx, leny, ptr
+pri _string_concat(x, y) : ptr = @byte | lenx, leny
   lenx := __builtin_strlen(x)
   leny := __builtin_strlen(y)
   ptr := _gc_alloc_managed(lenx + leny + 1)
@@ -238,3 +237,5 @@ pri file "libsys/strings.bas" right`$(x, n)
 pri file "libsys/strings.bas" mid`$(s, n=0, m=9999999)
 pri file "libsys/strings.bas" chr`$(x)
 pri file "libsys/strings.bas" str`$(x=float)
+
+'' pri file "libc/string/strlen.c" __builtin_strlen(x)

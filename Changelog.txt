@@ -5,6 +5,7 @@ Version 3.9.30
 - Reduced use of COG memory in P2
 - Fixed some bad formatting in __builtin_printf
 - Fixed a bug in BASIC parsing of empty lines
+- Fixed return values of some BASIC builtin functions
 
 Version 3.9.29
 - Implemented concrete classes in BASIC
