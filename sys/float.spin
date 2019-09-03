@@ -279,7 +279,7 @@ pri _float_getpowten(x) | midf, lo, hi, mid, t, sanity
 pri file "libsys/fmt.c" _basic_print_float(h, f, fmtparam)
 
 ' convert string to integer
-pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit
+pri __builtin_atoi(s = "0", base=0) : r = long | c, negate, digit
   negate := 0
   repeat while byte[s] == " "
     s++
@@ -304,10 +304,12 @@ pri __builtin_atoi(s = "0", base=0) : r | c, negate, digit
       quit
     r := base * r + digit
   if (base == 0)
-    if (c == "x" or c == "h")
+    if (c == "x" or c == "h" or c == "X" or c == "H")
       r := __builtin_atoi(s, 16)
-    elseif c == "b"
+    elseif c == "b" or c == "B"
       r := __builtin_atoi(s, 2)
+    elseif c == "o" or c == "O"
+      r := __builtin_atoi(s, 8)
   if negate
     r := -r
 

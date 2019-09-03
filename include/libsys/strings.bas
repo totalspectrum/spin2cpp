@@ -76,5 +76,6 @@ function str$(x as single) as string
   if p then
     _fmtfloat(fn, 0, x, ASC("g"))
   end if
+  '' FIXME: should we check here that i is sensible?
   return p
 end function
