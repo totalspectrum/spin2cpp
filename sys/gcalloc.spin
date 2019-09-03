@@ -106,17 +106,22 @@ pri _gc_isFree(ptr)
   return word[ptr + OFF_FLAGS] == GC_MAGIC + GC_FLAG_FREE
 
 ' go to the next block in the global list of blocks
-pri _gc_nextBlockPtr(ptr)
-  return ptr + (word[ptr + OFF_SIZE] << pagesizeshift)
+pri _gc_nextBlockPtr(ptr) | t
+  t := word[ptr + OFF_SIZE]
+  if t == 0
+    return _gc_errmsg(string(" !!! corrupted heap??? !!! "))
+  return ptr + (t << pagesizeshift)
   
 pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
   (heap_base, heap_end) := _gc_ptrs
   ptr := heap_base
+  availsize := 0
   repeat
     lastptr := ptr
     ptr := _gc_pageptr(heap_base, word[ptr+OFF_LINK])
-    availsize := word[ptr+OFF_SIZE]
-  while ptr and size > availsize
+    if ptr
+      availsize := word[ptr+OFF_SIZE]
+  while ptr and ptr < heap_end and size > availsize
 
   if (ptr == 0)
     return ptr
@@ -136,9 +141,9 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
     saveptr := nextptr
     linkindex := _gc_pageindex(heap_base, saveptr)
     nextptr := _gc_nextBlockPtr(nextptr)
-    if (nextptr <  heap_end)
+    if (nextptr and nextptr <  heap_end)
       word[nextptr + OFF_PREV] := _gc_pageindex(heap_base, saveptr)
-
+     
   '' now unlink us from the free list
   word[lastptr + OFF_LINK] := linkindex
   
@@ -152,12 +157,21 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   '' and return
   ptr += headersize
   return ptr | POINTER_MAGIC
+
+pri _gc_errmsg(s) | c
+  repeat while ((c:=byte[s++]) <> 0)
+    _tx(c)
+  return 0
+
   
 pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)
 
-pri _gc_alloc_managed(size)
-  return _gc_doalloc(size, 0)
+pri _gc_alloc_managed(size) : r
+  r := _gc_doalloc(size, 0)
+  if (r == 0)
+    return _gc_errmsg(string(" !!! out of memory !!! "))
+  return r
 
 pri _gc_doalloc(size, reserveflag) | ptr, zptr
   if (size == 0)
@@ -174,9 +188,9 @@ pri _gc_doalloc(size, reserveflag) | ptr, zptr
   if (ptr == 0)
     '' run garbage collection here
     _gc_collect
-  
     ' see if gc freed up enough space
     ptr := _gc_tryalloc(size, reserveflag)
+    
   if ptr
     ' zero the returned memory
     size := ((size << pagesizeshift) - 8)/4
@@ -266,7 +280,7 @@ pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
       
   '' see if we should merge with following block
   tmpptr := _gc_nextBlockPtr(ptr)
-  if (tmpptr < heapend) and _gc_isFree(tmpptr)
+  if tmpptr and (tmpptr < heapend) and _gc_isFree(tmpptr)
     prevptr := ptr
     ptr := tmpptr
     word[prevptr + OFF_SIZE] += word[ptr + OFF_SIZE]
@@ -274,13 +288,18 @@ pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
     word[ptr + OFF_FLAGS] := $AA
     word[ptr + OFF_LINK] := 0
     nextptr := _gc_nextBlockPtr(ptr)
-    if (nextptr < heapend)
+    if (nextptr and nextptr < heapend)
       word[nextptr + OFF_PREV] := _gc_pageindex(heapbase, prevptr)
 
   return nextptr
    
 pri __topofstack(ptr)
   return @ptr
+pri __getsp | x
+  asm
+    mov x, sp
+  endasm
+  return x
   
 ''
 '' actual garbage collection routine
@@ -288,10 +307,11 @@ pri __topofstack(ptr)
 pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
 
   (startheap, endheap) := _gc_ptrs
+
   ' clear the "IN USE" flags for all blocks
   ptr := _gc_nextBlockPtr(startheap)
   ourid := cogid
-  repeat while ptr < endheap
+  repeat while ptr and ptr < endheap
     word[ptr + OFF_FLAGS] &= !GC_FLAG_INUSE
     ptr := _gc_nextBlockPtr(ptr)
 
@@ -313,7 +333,11 @@ pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
   ' there will always be at least one block after startheap,
   ' so nextptr will be valid at first
   nextptr := _gc_nextBlockPtr(startheap)
-  repeat 
+  if nextptr == 0
+    _gc_errmsg(string(" !!! corrupted heap !!! "))
+    return
+    
+  repeat
     ptr := nextptr
     nextptr := _gc_nextBlockPtr(ptr)
     flags := word[ptr + OFF_FLAGS]

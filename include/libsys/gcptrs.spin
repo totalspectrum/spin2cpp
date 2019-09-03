@@ -8,6 +8,8 @@ dat
         alignl
 _gc_heap_base
 	long 0[__real_heapsize__]
+	'' buffer for gc
+	long 0[2]
 	
 ''
 '' return gc pointers
@@ -24,11 +26,9 @@ pri _gc_ptrs | base, end, size
     word[base + OFF_PREV] := 0
     word[base + OFF_LINK] := 1
     base += pagesize
-    word[base + OFF_SIZE] := (size / pagesize) - 1
+    word[base + OFF_SIZE] := (size / pagesize)
     word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
     word[base + OFF_PREV] := 0
     word[base + OFF_LINK] := 0
     base -= pagesize
   return (base, end)
-  
-

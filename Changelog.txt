@@ -6,6 +6,8 @@ Version 3.9.30
 - Fixed some bad formatting in __builtin_printf
 - Fixed a bug in BASIC parsing of empty lines
 - Fixed return values of some BASIC builtin functions
+- Fixed a garbage collector hang
+- Added "out of memory" error messages
 
 Version 3.9.29
 - Implemented concrete classes in BASIC
