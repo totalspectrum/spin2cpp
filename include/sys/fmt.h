@@ -34,7 +34,7 @@ typedef int (*putfunc)(int c);
 #define WIDTH_MASK   0xff
 #define MINWIDTH_BIT (8)
 #define PREC_BIT     (16)
-#define PREC_MASK    0x1f
+#define PREC_MASK    0x3f
 #define JUSTIFY_BIT  (22)
 #define JUSTIFY_MASK 0x3
 #define PADCHAR_BIT  (24)
