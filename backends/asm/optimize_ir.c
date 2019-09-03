@@ -548,7 +548,7 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
   IR *ir;
   int usecount = 0;
 
-  if (SrcOnlyHwReg(replace))
+  if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind))
       return false;
   for (ir = instr; ir; ir = ir->prev) {
       if (IsDummy(ir)) {
@@ -629,7 +629,7 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   bool assignments_are_safe = true;
   bool orig_modified = false;
   
-  if (SrcOnlyHwReg(replace)) {
+  if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind)) {
       return NULL;
   }
   if (!first_ir) {
