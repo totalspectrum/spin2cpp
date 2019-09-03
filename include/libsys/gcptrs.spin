@@ -7,7 +7,7 @@
 dat
         alignl
 _gc_heap_base
-	byte 0[__real_heapsize__]
+	long 0[__real_heapsize__]
 	
 ''
 '' return gc pointers
