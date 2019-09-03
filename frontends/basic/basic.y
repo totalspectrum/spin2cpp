@@ -566,7 +566,7 @@ statementlist:
   realstatementlist
     { $$ = $1; }
   | eoln statementlist
-    { $$ = $1; }
+    { $$ = $2; }
 ;
 
 realstatementlist:
@@ -823,7 +823,9 @@ printlist:
 
 ifstmt:
   BAS_IF expr BAS_THEN BAS_EOLN thenelseblock
-    { $$ = NewCommentedAST(AST_IF, $2, $5, $1); }
+    {
+        $$ = NewCommentedAST(AST_IF, $2, $5, $1);
+    }
   | BAS_IF expr BAS_THEN BAS_INTEGER
     {
         AST *stmtlist = NewCommentedStatement(
