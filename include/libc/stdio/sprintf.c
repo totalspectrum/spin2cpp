@@ -34,7 +34,7 @@ int vsprintf(char *buf, const char *fmt, va_list ap)
 
     S.ptr = buf;
     S.end = buf + 0xffffff;
-    r = _dofmt(&S.putc, fmt, &ap);
+    r = _dofmt(&S.sputc, fmt, &ap);
     S.sputc(0);
     return r;
 }
