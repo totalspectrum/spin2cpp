@@ -3820,7 +3820,10 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     if (IsMemRef(origdst)) {
         int off = dst->val;
         dst = (Operand *)dst->name;
-        if (src->kind == IMM_INT || SrcOnlyHwReg(src) || (off && src == dst)) {
+        // the "STRING_DEF" case is missed above on p2, where
+        // we can deliberately refer to memory; but mem-mem moves
+        // do not work out well
+        if (src->kind == IMM_INT || SrcOnlyHwReg(src) || (off && src == dst) || src->kind == STRING_DEF) {
             temp2 = NewFunctionTempRegister();
             EmitMove(irl, temp2, src);
             src = temp2;
