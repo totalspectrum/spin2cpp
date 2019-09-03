@@ -152,8 +152,7 @@ pri _string_concat(x, y) : ptr = @byte | lenx, leny
   ptr := _gc_alloc_managed(lenx + leny + 1)
   if ptr
     bytemove(ptr, x, lenx)
-    bytemove(ptr + lenx, y, leny)
-    byte[ptr + lenx + leny] := 0
+    bytemove(ptr + lenx, y, leny+1)
   return ptr
 
 pri _make_methodptr(o, func) | ptr
