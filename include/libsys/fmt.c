@@ -621,6 +621,16 @@ typedef int (*TxFunc)(int c);
 typedef int (*RxFunc)(void);
 typedef int (*CloseFunc)(void);
 
+// we want the BASIC open function to work correctly with old Spin
+// interfaces which don't return sensible values from send, so we
+// have to wrap the send function into one which always returns 1
+// use this class to do it:
+
+typedef struct _bas_wrap_sender {
+    TxFunc f;
+    int tx(int c) { f(c); return 1; }
+} BasicWrapper;
+
 TxFunc _bas_tx_handles[8] = {
     _tx, 0, 0, 0,
     0, 0, 0, 0
@@ -631,16 +641,34 @@ RxFunc _bas_rx_handles[8] = {
 };
 CloseFunc _bas_close_handles[8] = { 0 };
 
+/* make sure we hold on to the original wrapper structure so it
+   isn't garbage collected as long as the file is open
+*/
+BasicWrapper *_bas_wrappers[8] = { 0 };
 
 //
 // basic interfaces
 //
+
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
+    struct _bas_wrap_sender *wrapper;
     if (h > 7) return -1;
-    _bas_tx_handles[h] = sendf;
+
+    if (sendf) {
+        wrapper = _gc_alloc_managed(sizeof(_bas_wrap_sender));
+        if (!wrapper) {
+            return -1; /* out of memory */
+        }
+        wrapper->f = sendf;
+        _bas_tx_handles[h] = &wrapper->tx;
+    } else {
+        wrapper = 0;
+        _bas_tx_handles[h] = sendf;
+    }
     _bas_rx_handles[h] = recvf;
     _bas_close_handles[h] = closef;
+    _bas_wrappers[h] = wrapper;
     return 0;
 }
 
@@ -648,6 +676,11 @@ void _basic_close(unsigned h)
 {
     CloseFunc cf;
     if (h > 7) return;
+
+    if (_bas_wrappers[h]) {
+        _gc_free(_bas_wrappers[h]);
+        _bas_wrappers[h] = 0;
+    }
     cf = _bas_close_handles[h];
     _basic_open(h, 0, 0, 0);
     (*cf)();
