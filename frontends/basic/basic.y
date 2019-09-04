@@ -1687,7 +1687,7 @@ typename:
         AST *size = $3;
         AST *base = (AST *)sym->val;
         size = AstOperator('-', size, AstOperator('-', base, AstInteger(1)));
-        $$ = NewAST(AST_ARRAYTYPE, $1, size);
+        $$ = MakeArrayType($1, size);
         $$->d.ptr = (AST *)sym->val;
     }
   ;

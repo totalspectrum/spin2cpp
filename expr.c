@@ -2650,3 +2650,19 @@ FuncNumParams(AST *functype)
     }
     return n;
 }
+
+//
+// create an array type
+//
+AST *
+MakeArrayType(AST *basetype, AST *exprlist)
+{
+    if (!exprlist) {
+        return basetype;
+    }
+    if (exprlist->kind == AST_EXPRLIST) {
+        basetype = MakeArrayType(basetype, exprlist->right);
+        return MakeArrayType(basetype, exprlist->left);
+    }
+    return NewAST(AST_ARRAYTYPE, basetype, exprlist);
+}

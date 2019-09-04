@@ -8,6 +8,7 @@ Version 3.9.30
 - Fixed return values of some BASIC builtin functions
 - Fixed a garbage collector hang
 - Added "out of memory" error messages
+- Fixed BASIC global multi-dimensional array declarations
 
 Version 3.9.29
 - Implemented concrete classes in BASIC

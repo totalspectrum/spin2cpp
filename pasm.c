@@ -592,7 +592,7 @@ DeclareLabels(Module *P)
                     ident = ident->left;
                 }
                 while (ident && ident->kind == AST_ARRAYDECL) {
-                    type = NewAST(AST_ARRAYTYPE, type, ident->right);
+                    type = MakeArrayType(type, ident->right);
                     ident = ident->left;
                 }
                 typalign = TypeAlign(type);

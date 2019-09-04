@@ -57,6 +57,8 @@ int TypeAlignment(AST *typ);
 int PointerTypeIncrement(AST *typ);
 // get base of an array type
 AST *GetArrayBase(AST *type);
+// create an array based on a type and expression or expression list
+AST *MakeArrayType(AST *basetype, AST *exprlist);
 
 int IsFunctionType(AST *typ);
 int IsStringType(AST *typ);
