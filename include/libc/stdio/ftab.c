@@ -19,10 +19,10 @@ static int _serget() {
     return _rx();
 }
 static int _serput(int c) {
-    _tx(c);
     if (c == 10) {
         _tx(13);
     }
+    _tx(c);
     return 1;
 }
 
