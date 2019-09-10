@@ -230,7 +230,7 @@ static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *
             }
             return 0;
         }
-        while (minval < maxval) {
+        while (minval <= maxval) {
             temp.val = minval;
             temp.label = label;
             flexbuf_addmem(fb, (char *)&temp, sizeof(temp));

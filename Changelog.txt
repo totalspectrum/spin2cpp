@@ -1,3 +1,6 @@
+Version 3.9.31
+- Fixed an off-by-one error in SELECT CASE
+
 Version 3.9.30
 - Fixed some floating point parsing issues
 - Added some missing C stdio functions
