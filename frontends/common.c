@@ -127,6 +127,7 @@ Aliases spin2alias[] = {
 Aliases basicalias[] = {
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
+    { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
     { "pinlo", "__builtin_propeller_drvl" },
     { "pinhi", "__builtin_propeller_drvh" },
