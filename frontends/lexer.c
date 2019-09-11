@@ -1689,6 +1689,7 @@ Builtin builtinfuncs[] = {
     { "bytemove", 3, memBuiltin, "memcpy", NULL, 1, NULL },
 
     { "getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
+    { "_getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
 
     // BASIC compiler builtins
     { "_basic_print_nl", 1, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
