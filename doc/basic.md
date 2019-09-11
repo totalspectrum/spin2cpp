@@ -70,6 +70,10 @@ Includes a file. The contents of the file are placed in the compilation just as 
 ```
 Included files are searched for first in the same directory as the file that contains the `#include`. If they are not found there, then they are searched for in any directories specified by a `-I` or `-L` option on the command line. If the environment variable `FLEXCC_INCLUDE` is defined, that gives a directory to be searched after command line options. Finally the path `../include` relative to the fastspin executable binary is checked.
 
+#### PRAGMA
+
+Provide a compiler hint. This is unimplemented for now, and silently ignored.
+
 #### WARN
 
 `#warn` prints a warning message; otherwise it is similar to `#error`.
@@ -225,7 +229,7 @@ xor
 
 Names of variables, subroutines, or functions ("identifiers") consist of a letter or underscore, followed by any sequence of letters, underscores, or digits. Names beginning with an underscore are reserved for system use. Case is ignored; thus the names `avar`, `aVar`, `AVar`, `AVAR`, etc. all refer to the same variable.
 
-Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers (the first is a string variable and the second is a floating point variable). If no type specifier is appended, the identifier is assumed to be an integer. This may be overridden with the `defsng` directive, which specifies that variables starting with certain letters are to be assumed to be single precision floating point.
+Identifiers may have a type specifier appended to them. `$` indicates a string variable or function, `%` an integer variable or function, and `#` or `!` a floating point variable or function. The type specifier is part of the name, so `a$` and `a#` are different identifiers (the first is a string variable and the second is a floating point variable). If no type specifier is appended, the identifier is assumed to be an integer. This may be overridden with the `defsng` directive, which specifies that variables starting with certain letters are to be assumed to be single precision floating point.
 
 Variable or function types may also be explicitly given, and in this case the type overrides any implicit type defined by the name. However, we strongly recommend that you not use type specifiers like `$` for variables (or functions) that you give an explicit type to.
 
@@ -644,7 +648,7 @@ Inside inline assembly any instructions may be used, but the only legal operands
 
 If you need temporary variables inside some inline assembly, `dim` them as locals in the enclosing function.
 
-Example: to implement a wait (like the built-in `waitcnt`:
+Example: to implement a wait (like the built-in `waitcnt`):
 ```
 sub wait_until_cycle(x as uinteger)
   asm
@@ -657,11 +661,14 @@ end sub
 
 Allocates memory on the stack. The argument is an integer specifying how much memory to allocate. For example:
 ```
-   dim as integer ptr x = __builtin_alloca(256)
+   sub mysub
+     dim as integer ptr x = __builtin_alloca(256)
+     ...
+   end sub
 ```
-creates an array of 64 integers (which needs 256 bytes) and makes `x` into a pointer to it.
+creates an array of 64 integers (which needs 256 bytes) and makes `x` into a pointer to it, which may be used anywhere within the subroutine or function.
 
-The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable or be returned from the function.
+The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable, a member variable (one declared outside of functions or subroutines),  or be returned from a function.
 
 `__builtin_alloca` is awkward to work with, and dangerous. Almost always you should use `new` instead. The only advantages of `__builtin_alloca` is that it is slightly more efficient than `new`, and does not use up heap space (but uses stack space instead).
 
@@ -1351,6 +1358,17 @@ A signed 32 bit integer. An alias for `integer`. The unsigned version of this is
 ### LOOP
 
 Marks the end of a loop introduced by `do`. See DO for details.
+
+### MID$
+
+A predefined string function. `mid$(s, i, j)` returns (up to) `j` characters of `s`, starting at position `i`. The first position is position 1. This function allocates memory from the heap, and if it is unable to do so it will return `nil`.
+
+Example:
+```
+a$="abcde"
+print mid$(a$, 3, 2)
+```
+prints "cd".
 
 ### MOD
 

@@ -270,6 +270,7 @@ InferTypeFromName(AST *identifier)
         return ast_type_string;
     case '%':
         return ast_type_long;
+    case '!':
     case '#':
         return ast_type_float;
     default:

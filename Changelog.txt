@@ -2,6 +2,7 @@ Version 3.9.31
 - Fixed an off-by-one error in SELECT CASE
 - Allow slightly longer functions to be inlined (improves pintoggle)
 - Fixed getcnt() in BASIC
+- Recognize ! as well as # as a suffix to indicate a floating point variable
 
 Version 3.9.30
 - Fixed some floating point parsing issues

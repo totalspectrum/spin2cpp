@@ -2801,7 +2801,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         c = lexgetc(L);
     }
     // allow trailing $, %, #
-    if (c == '$' || c == '#' || c == '%') {
+    if (c == '$' || c == '#' || c == '%' || c == '!') {
         flexbuf_addchar(&fb, c);
         c = lexgetc(L);
     }
