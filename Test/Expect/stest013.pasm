@@ -13,12 +13,14 @@ _prod_ret
 	ret
 
 _cube
-	mov	cube_tmp001_, arg01
-	mov	arg02, arg01
-	call	#_prod
-	mov	arg02, result1
-	mov	arg01, cube_tmp001_
-	call	#_prod
+	mov	muldiva_, arg01
+	mov	muldivb_, arg01
+	call	#multiply_
+	mov	result1, muldiva_
+	mov	muldivb_, result1
+	mov	muldiva_, arg01
+	call	#multiply_
+	mov	result1, muldiva_
 _cube_ret
 	ret
 
@@ -55,7 +57,5 @@ COG_BSS_START
 arg01
 	res	1
 arg02
-	res	1
-cube_tmp001_
 	res	1
 	fit	496

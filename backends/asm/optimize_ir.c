@@ -2719,7 +2719,7 @@ NeverInline(Function *f)
 //
 // check a function to see if it should be inlined
 //
-#define INLINE_THRESHOLD 3
+#define INLINE_THRESHOLD 4
 
 bool
 ShouldBeInlined(Function *f)

@@ -13,9 +13,10 @@ _ident_ret
 	ret
 
 _test
-	mov	arg01, #0
-	mov	arg02, #0
-	call	#_ident
+	mov	_ident_x, #0
+	mov	_ident_x + 1, #0
+	mov	result1, #0
+	mov	result2, #0
 _test_ret
 	ret
 wrcog

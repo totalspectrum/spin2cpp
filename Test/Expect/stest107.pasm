@@ -13,10 +13,12 @@ _dbl64_ret
 	ret
 
 _quad64
-	call	#_dbl64
-	mov	arg01, result1
-	mov	arg02, result2
-	call	#_dbl64
+	add	arg02, arg02 wc
+	addx	arg01, arg01
+	add	arg02, arg02 wc
+	addx	arg01, arg01
+	mov	result1, arg01
+	mov	result2, arg02
 _quad64_ret
 	ret
 

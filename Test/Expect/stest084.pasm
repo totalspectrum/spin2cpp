@@ -18,15 +18,19 @@ _bump
 	rdlong	bump_tmp002_, objptr
 	sub	objptr, #4
 	add	arg02, bump_tmp002_
-	mov	arg01, arg02
-	call	#_update
+	wrlong	arg02, objptr
+	add	objptr, #4
+	wrlong	arg02, objptr
+	sub	objptr, #4
 	rdlong	arg02, objptr
 	add	objptr, #4
 	rdlong	bump_tmp002_, objptr
 	sub	objptr, #4
 	add	arg02, bump_tmp002_
-	mov	arg01, arg02
-	call	#_update
+	wrlong	arg02, objptr
+	add	objptr, #4
+	wrlong	arg02, objptr
+	sub	objptr, #4
 _bump_ret
 	ret
 

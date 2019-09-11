@@ -18,11 +18,15 @@ _str
 LR__0002
 	rdbyte	_str_c, _str_s wz
 	add	_str_s, #1
- if_e	jmp	#LR__0003
+ if_e	jmp	#LR__0004
 	mov	arg01, _str_c
-	call	#_tx
-	jmp	#LR__0002
+	mov	_tx__idx__0001, #4
 LR__0003
+	mov	outa, arg01
+	add	arg01, #1
+	djnz	_tx__idx__0001, #LR__0003
+	jmp	#LR__0002
+LR__0004
 _str_ret
 	ret
 
@@ -32,6 +36,8 @@ COG_BSS_START
 _str_c
 	res	1
 _str_s
+	res	1
+_tx__idx__0001
 	res	1
 _var01
 	res	1
