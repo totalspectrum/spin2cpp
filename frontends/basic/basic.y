@@ -1459,7 +1459,7 @@ np_exprlist:
 ;
 
 subbody:
-  statementlist endsub
+  optstatementlist endsub
   { $$ = $1; }
   ;
 
@@ -1469,7 +1469,7 @@ endsub:
 ;
 
 funcbody:
-  statementlist endfunc
+  optstatementlist endfunc
   { $$ = $1; }
   ;
 
