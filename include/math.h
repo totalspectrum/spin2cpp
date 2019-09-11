@@ -4,6 +4,7 @@
 #pragma once
 
 #ifdef __FLEXC__
+#define abs(x) __builtin_abs(x)
 #define sqrt(x) __builtin_sqrt(x)
 #define copysign(x, y) __builtin_copysign((x), (y))
 #define copysignf(x, y) __builtin_copysign((x), (y))
