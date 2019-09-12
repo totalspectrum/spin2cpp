@@ -3,6 +3,7 @@ Version 3.9.31
 - Allow slightly longer functions to be inlined (improves pintoggle)
 - Fixed getcnt() in BASIC
 - Recognize ! as well as # as a suffix to indicate a floating point variable
+- Fixed some BASIC parsing problems with empty IF/ELSE conditions and empty subroutines.
 
 Version 3.9.30
 - Fixed some floating point parsing issues

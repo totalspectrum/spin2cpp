@@ -822,7 +822,7 @@ printlist:
 ;
 
 ifstmt:
-  BAS_IF expr BAS_THEN BAS_EOLN thenelseblock
+  BAS_IF expr BAS_THEN eoln thenelseblock
     {
         $$ = NewCommentedAST(AST_IF, $2, $5, $1);
     }
@@ -848,11 +848,11 @@ ifstmt:
 ;
 
 thenelseblock:
-  statementlist endif
+  optstatementlist endif
     { $$ = NewAST(AST_THENELSE, $1, NULL); }
-  | statementlist BAS_ELSE eoln statementlist endif
+  | optstatementlist BAS_ELSE eoln optstatementlist endif
     { $$ = NewAST(AST_THENELSE, $1, $4); }
-  | statementlist BAS_ELSE statement
+  | optstatementlist BAS_ELSE statement
     { $$ = NewAST(AST_THENELSE, $1, NewCommentedStatement($3)); }
 ;
 
@@ -920,7 +920,7 @@ casematchlist:
   ;
 
 casematchitem:
-  casematch eoln statementlist
+  casematch eoln optstatementlist
     {
         AST *expr = $1;
         AST *stmts = $3;

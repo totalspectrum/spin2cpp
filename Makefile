@@ -41,6 +41,8 @@ DEFS=-DFLEXSPIN_BUILD
 
 # byacc will fail some of the error tests, but mostly works
 #YACC = byacc -s
+#
+# note: to produce detailed debug, use YACC="bison --report=all"
 YACC = bison
 CFLAGS = -g -Wall $(INC) $(DEFS)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
