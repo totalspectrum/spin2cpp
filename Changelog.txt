@@ -5,6 +5,7 @@ Version 3.9.31
 - Recognize ! as well as # as a suffix to indicate a floating point variable
 - Fixed some BASIC parsing problems with empty IF/ELSE conditions and empty subroutines.
 - Fixed a problem with printing long strings
+- Changed format of error messages to "filename:line: error: stuff" to match the preprocessor's error format and make parsing easier
 
 Version 3.9.30
 - Fixed some floating point parsing issues

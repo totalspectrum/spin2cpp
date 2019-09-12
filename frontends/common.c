@@ -437,7 +437,7 @@ void
 ERRORHEADER(const char *fileName, int lineno, const char *msg)
 {
     if (fileName && lineno)
-        fprintf(stderr, "%s(%d) %s: ", fileName, lineno, msg);
+        fprintf(stderr, "%s:%d: %s: ", fileName, lineno, msg);
     else
         fprintf(stderr, "%s: ", msg);
 
