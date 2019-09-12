@@ -110,7 +110,8 @@ pri _tx(c) | val, nextcnt, bitcycles
     waitcnt(nextcnt += bitcycles)
     OUTA[_txpin] := val
     val >>= 1
-
+  return 1
+  
 pri _rx | val, rxmask, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   DIRA[_rxpin] := 0

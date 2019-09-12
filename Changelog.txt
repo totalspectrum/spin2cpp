@@ -4,6 +4,7 @@ Version 3.9.31
 - Fixed getcnt() in BASIC
 - Recognize ! as well as # as a suffix to indicate a floating point variable
 - Fixed some BASIC parsing problems with empty IF/ELSE conditions and empty subroutines.
+- Fixed a problem with printing long strings
 
 Version 3.9.30
 - Fixed some floating point parsing issues

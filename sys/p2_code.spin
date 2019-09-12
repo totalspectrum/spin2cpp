@@ -110,6 +110,8 @@ pri _tx(c) | val, nextcnt, bitcycles
     waitcnt(nextcnt += bitcycles)
     OUTB[_txpin] := val
     val >>= 1
+  return 1
+  
 pri _rx | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   DIRB[_rxpin] := 0
