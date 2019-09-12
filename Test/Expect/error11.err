@@ -1,1 +1,1 @@
-error11.spin(7) warning: instruction cmp used without flags being set
+error11.spin:7: warning: instruction cmp used without flags being set

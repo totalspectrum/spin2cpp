@@ -1,2 +1,2 @@
-error06.spin(5) error: Bad number of parameters in call to foo: expected 1 found 2
-error06.spin(8) error: Bad number of parameters in call to bar: expected 3 found 2
+error06.spin:5: error: Bad number of parameters in call to foo: expected 1 found 2
+error06.spin:8: error: Bad number of parameters in call to bar: expected 3 found 2
