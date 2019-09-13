@@ -225,6 +225,34 @@ word
 xor
 ```
 
+### Predefined functions and variables
+
+A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion in readers of your code.
+```
+clkfreq
+clkset
+cnt
+dira
+dirb
+ina
+inb
+input$
+left$
+len
+mid$
+outa
+outb
+pausems
+right$
+rnd
+sendrecvdevice
+_setbaud
+str$
+waitcnt
+waitpeq
+waitpne
+```
+
 ### Variable, Subroutine, and Function names
 
 Names of variables, subroutines, or functions ("identifiers") consist of a letter or underscore, followed by any sequence of letters, underscores, or digits. Names beginning with an underscore are reserved for system use. Case is ignored; thus the names `avar`, `aVar`, `AVar`, `AVAR`, etc. all refer to the same variable.
