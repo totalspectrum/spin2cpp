@@ -6,13 +6,15 @@
 
 #define VERSION_MAJOR 3
 #define VERSION_MINOR 9
-#define VERSION_REV   31
-//#define BETA "-beta"
-
-extern char version_string[];
+#define VERSION_REV   32
+#define BETA "-beta"
 
 #define VERSIONSTR version_string
 
+#ifndef TCL_SRC
+extern char version_string[];
+
 extern void CheckVersion(const char *string);
+#endif
 
 #endif
