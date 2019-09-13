@@ -11,6 +11,8 @@
 #include <errno.h>
 #include "spinc.h"
 
+bool IsHubAddress(AST *);
+
 #ifndef NEED_ALIGNMENT
 #define NEED_ALIGNMENT (!gl_p2 && !gl_compress)
 #endif
@@ -258,7 +260,15 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
         }
         return RELOC_KIND_I32;
     }
-    if (sub->kind == AST_OPERATOR) {
+    if (kind == AST_IDENTIFIER || kind == AST_LOCAL_IDENTIFIER) {
+        if (IsHubAddress(sub)) {
+            if (offptr) {
+                *offptr = GetAddrOffset(sub);
+            }
+            return RELOC_KIND_I32;
+        }
+    }
+    if (kind == AST_OPERATOR) {
         r1 = IsRelocatable(sub->left, symptr, offptr, isInitVal);
         r2 = IsRelocatable(sub->right, &mysym, &myoff, isInitVal);
         if (r1 || r2) {
@@ -992,6 +1002,33 @@ static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
     return ast;
 }
 
+bool
+IsHubAddress(AST *ast)
+{
+    if (ast && ast->kind == AST_LOCAL_IDENTIFIER) {
+        ast = ast->left;
+    }
+    if (!ast) return 0;
+    switch(ast->kind) {
+    case AST_INTEGER:
+    case AST_HWREG:
+        return 0;
+    case AST_IDENTIFIER:
+    {
+        Symbol *sym = LookupSymbol(ast->d.string);
+        Label *lab;
+        if (!sym) return 0;
+        if (sym->kind != SYM_LABEL) {
+            return 0;
+        }
+        lab = (Label *)sym->val;
+        return 0 != (lab->flags & LABEL_IN_HUB);
+    }
+    default:
+        return IsHubAddress(ast->left) || IsHubAddress(ast->right);
+    }
+}
+
 static uint32_t
 EvalOperandExpr(Instruction *instr, AST *op)
 {
@@ -1025,26 +1062,6 @@ EvalOperandExpr(Instruction *instr, AST *op)
         return 0;
     }
     return EvalPasmExpr(op);
-}
-
-bool
-IsHubSymbol(AST *ast)
-{
-    if (ast && ast->kind == AST_LOCAL_IDENTIFIER) {
-        ast = ast->left;
-    }
-    if (!ast) return 0;
-    if (ast->kind == AST_IDENTIFIER) {
-        Symbol *sym = LookupSymbol(ast->d.string);
-        Label *lab;
-        if (!sym) return 0;
-        if (sym->kind != SYM_LABEL) {
-            return 0;
-        }
-        lab = (Label *)sym->val;
-        return 0 != (lab->flags & LABEL_IN_HUB);
-    }
-    return 0;
 }
 
 /*
@@ -1218,7 +1235,7 @@ decode_instr:
             bool dstLut = false;
             bool dstHub = true;
             isrc = EvalOperandExpr(instr, operand[opidx]);
-            if (isrc < 0x400 && !IsHubSymbol(operand[opidx])) {
+            if (isrc < 0x400 && !IsHubAddress(operand[opidx])) {
                 dstHub = false;
                 dstLut = (isrc >= 0x200);
                 isrc *= 4;
@@ -1313,7 +1330,7 @@ decode_instr:
             isRelJmp = 0;
         } else {
             isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
-            if ( (inHub && isrc < 0x400 && !IsHubSymbol(operand[opidx]))
+            if ( (inHub && isrc < 0x400 && !IsHubAddress(operand[opidx]))
                  || (!inHub && isrc >= 0x400)
                 )
             {
