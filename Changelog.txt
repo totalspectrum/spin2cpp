@@ -1,5 +1,6 @@
 Version 3.9.32
-- Improved detection of hub addresses in Spin objects
+- Improved handling of hub addresses in Spin objects
+- Fixed lmm=trace
 
 Version 3.9.31
 - Fixed an off-by-one error in SELECT CASE
