@@ -410,6 +410,11 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
                         ERROR(NULL, "internal error: not enough space for reloc");
                         return;
                     }
+                } else if (nextreloc->kind == RELOC_KIND_NONE) {
+                    // reloc was cancelled
+                    nextreloc++;
+                    --relocs;
+                    goto again;
                 } else {
                     ERROR(NULL, "internal error: bad reloc kind %d", nextreloc->kind);
                     return;

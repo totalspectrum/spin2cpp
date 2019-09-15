@@ -1330,7 +1330,9 @@ decode_instr:
             isRelJmp = 0;
         } else {
             isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
-            if ( (inHub && isrc < 0x400 && !IsHubAddress(operand[opidx]))
+            if (inHub && IsHubAddress(operand[opidx])) {
+                isRelJmp = 1;
+            }  else if ( (inHub && isrc < 0x400 && !IsHubAddress(operand[opidx]))
                  || (!inHub && isrc >= 0x400)
                 )
             {
@@ -1349,6 +1351,11 @@ decode_instr:
             }
             src = isrc & 0xfffff;
             val = val | (1<<20);
+            if (srcRelocOff >= 0) {
+                // cancel the relocation
+                Reloc *r = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
+                r->kind = RELOC_KIND_NONE;
+            }
         } else {
             src = isrc & 0xfffff;
         }
