@@ -1335,15 +1335,23 @@ decode_instr:
             isRelHubAddr = IsRelativeHubAddress(operand[opidx]);
             isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
            
-            if (inHub && isRelHubAddr) {
-                isRelJmp = 1;
-            }  else if ( (inHub && isrc < 0x400 && !isRelHubAddr) 
-                         || (!inHub && isrc >= 0x400) 
-                )
-            {
-                isRelJmp = 0;
+            if (inHub) {
+                if (isRelHubAddr) {
+                    isRelJmp = 1;
+                } else if (gl_nospin) {
+                    isRelJmp = (isrc >= 0x400);
+                } else {
+                    isRelJmp = 0;
+                }
             } else {
-                isRelJmp = 1;
+                if (isrc >= 0x400) {
+                    isRelJmp = 0;
+                } else if (isrc >= 0x200) {
+                    // destination in LUT
+                    isRelJmp = (curpc >= 0x800);
+                } else {
+                    isRelJmp = (curpc < 0x800);
+                }
             }
         }
         if (isRelJmp) {
