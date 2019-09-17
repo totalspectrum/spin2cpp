@@ -1402,6 +1402,11 @@ compound_statement_close:
     { PopCurrentTypes(); }
   ;
 
+for_statement_start:
+  C_FOR
+  { PushCurrentTypes(); }
+;
+
 block_item_list
    : block_item
        { $$ = $1; }
@@ -1570,7 +1575,7 @@ iteration_statement
             { AST *body = ForceStatementList(CheckYield($2));
               $$ = NewCommentedAST(AST_DOWHILE, $5, body, $1);
             }
-	| C_FOR '(' expression_statement expression_statement ')' statement
+	| for_statement_start '(' expression_statement expression_statement ')' statement
             {   AST *body = ForceStatementList(CheckYield($6));
                 AST *init = $3;
                 AST *cond = $4;
@@ -1585,8 +1590,9 @@ iteration_statement
                 stepstmt = NewAST(AST_STEP, update, body);
                 condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
+                PopCurrentTypes();
             }
-	| C_FOR '(' expression_statement expression_statement expression ')' statement
+	| for_statement_start '(' expression_statement expression_statement expression ')' statement
             {   AST *body = ForceStatementList(CheckYield($7));
                 AST *init = $3;
                 AST *cond = $4;
@@ -1601,8 +1607,9 @@ iteration_statement
                 stepstmt = NewAST(AST_STEP, update, body);
                 condtest = NewAST(AST_TO, cond, stepstmt);
                 $$ = NewCommentedAST(AST_FOR, init, condtest, $1);
+                PopCurrentTypes();
             }
-	| C_FOR '(' declaration expression_statement ')' statement
+	| for_statement_start '(' for_declaration expression_statement ')' statement
             {   AST *body = ForceStatementList(CheckYield($6));
                 AST *init = $3;
                 AST *cond = $4;
@@ -1620,8 +1627,9 @@ iteration_statement
                 init = NewAST(AST_STMTLIST, init,
                               NewAST(AST_STMTLIST, body, NULL));
                 $$ = NewAST(AST_SCOPE, init, NULL);
+                PopCurrentTypes();
             }
-	| C_FOR '(' declaration expression_statement expression ')' statement
+	| for_statement_start '(' for_declaration expression_statement expression ')' statement
             {   AST *body = ForceStatementList(CheckYield($7));
                 AST *init = $3;
                 AST *cond = $4;
@@ -1639,7 +1647,12 @@ iteration_statement
                 init = NewAST(AST_STMTLIST, init,
                               NewAST(AST_STMTLIST, body, NULL));
                 $$ = NewAST(AST_SCOPE, init, NULL);
+                PopCurrentTypes();
             }
+	;
+for_declaration
+	: declaration
+          { $$ = MakeDeclarations($1, currentTypes); }
 	;
 
 jump_statement

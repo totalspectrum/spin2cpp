@@ -1,6 +1,8 @@
 Version 3.9.32
 - Improved handling of hub addresses in Spin objects
+- Fixed some errors in C propeller2.h file
 - Fixed lmm=trace
+- Fixed C99 for loop declarations
 
 Version 3.9.31
 - Fixed an off-by-one error in SELECT CASE

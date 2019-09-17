@@ -11,7 +11,7 @@
 #include <errno.h>
 #include "spinc.h"
 
-bool IsHubAddress(AST *);
+bool IsRelativeHubAddress(AST *);
 
 #ifndef NEED_ALIGNMENT
 #define NEED_ALIGNMENT (!gl_p2 && !gl_compress)
@@ -261,7 +261,7 @@ IsRelocatable(AST *sub, Symbol **symptr, int32_t *offptr, bool isInitVal)
         return RELOC_KIND_I32;
     }
     if (kind == AST_IDENTIFIER || kind == AST_LOCAL_IDENTIFIER) {
-        if (IsHubAddress(sub)) {
+        if (IsRelativeHubAddress(sub)) {
             if (offptr) {
                 *offptr = GetAddrOffset(sub);
             }
@@ -1003,7 +1003,7 @@ static AST* AssembleComments(Flexbuf *f, Flexbuf *relocs, AST *ast)
 }
 
 bool
-IsHubAddress(AST *ast)
+IsRelativeHubAddress(AST *ast)
 {
     if (ast && ast->kind == AST_LOCAL_IDENTIFIER) {
         ast = ast->left;
@@ -1025,7 +1025,7 @@ IsHubAddress(AST *ast)
         return 0 != (lab->flags & LABEL_IN_HUB);
     }
     default:
-        return IsHubAddress(ast->left) || IsHubAddress(ast->right);
+        return IsRelativeHubAddress(ast->left) || IsRelativeHubAddress(ast->right);
     }
 }
 
@@ -1086,6 +1086,7 @@ AssembleInstruction(Flexbuf *f, AST *ast, Flexbuf *relocs)
     AST *retast;
     AST *origast;
     int isRelJmp = 0;
+    int isRelHubAddr = 0;
     int opidx;
     Reloc *rptr;
     int srcRelocOff = -1;
@@ -1234,8 +1235,9 @@ decode_instr:
         } else if (opimm[opidx]) {
             bool dstLut = false;
             bool dstHub = true;
+            bool relHub = IsRelativeHubAddress(operand[opidx]);
             isrc = EvalOperandExpr(instr, operand[opidx]);
-            if (isrc < 0x400 && !IsHubAddress(operand[opidx])) {
+            if (isrc < 0x400 && !relHub) {
                 dstHub = false;
                 dstLut = (isrc >= 0x200);
                 isrc *= 4;
@@ -1328,12 +1330,15 @@ decode_instr:
             }
             isrc = EvalRelocPasmExpr(realval, f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
             isRelJmp = 0;
+            isRelHubAddr = 0;
         } else {
+            isRelHubAddr = IsRelativeHubAddress(operand[opidx]);
             isrc = EvalRelocPasmExpr(operand[opidx], f, relocs, &srcRelocOff, true, RELOC_KIND_I32);
-            if (inHub && IsHubAddress(operand[opidx])) {
+           
+            if (inHub && isRelHubAddr) {
                 isRelJmp = 1;
-            }  else if ( (inHub && isrc < 0x400 && !IsHubAddress(operand[opidx]))
-                 || (!inHub && isrc >= 0x400)
+            }  else if ( (inHub && isrc < 0x400 && !isRelHubAddr) 
+                         || (!inHub && isrc >= 0x400) 
                 )
             {
                 isRelJmp = 0;
@@ -1351,7 +1356,7 @@ decode_instr:
             }
             src = isrc & 0xfffff;
             val = val | (1<<20);
-            if (srcRelocOff >= 0) {
+            if (srcRelocOff >= 0 && isRelHubAddr) {
                 // cancel the relocation
                 Reloc *r = (Reloc *)(flexbuf_peek(relocs) + srcRelocOff);
                 r->kind = RELOC_KIND_NONE;
