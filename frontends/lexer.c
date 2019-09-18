@@ -2192,7 +2192,7 @@ instr_p2[] = {
 
     { "rqpin",  0x0a800000, TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
     { "rdpin",  0x0a880000, TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
-    { "rdlut",  0x0aa00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "rdlut",  0x0aa00000, P2_RDWR_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
   
     { "rdbyte", 0x0ac00000, P2_RDWR_OPERANDS, OPC_RDBYTE, FLAG_P2_STD },
     { "rdword", 0x0ae00000, P2_RDWR_OPERANDS, OPC_RDWORD, FLAG_P2_STD },
@@ -2272,7 +2272,7 @@ instr_p2[] = {
     { "akpin",  0x0c080200, SRC_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "wxpin",  0x0c100000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "wypin",  0x0c200000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "wrlut",  0x0c300000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "wrlut",  0x0c300000, P2_RDWR_OPERANDS, OPC_GENERIC, 0 },
 
     { "wrbyte", 0x0c400000, P2_RDWR_OPERANDS, OPC_WRBYTE, 0 },
     { "wrword", 0x0c500000, P2_RDWR_OPERANDS, OPC_WRWORD, 0 },

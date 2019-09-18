@@ -282,7 +282,7 @@ main(int argc, const char **argv)
             gl_normalizeIdents = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "--p2")) {
-            gl_p2 = 1;
+            gl_p2 = DEFAULT_P2_VERSION;
             argv++; --argc;
         } else if (!strcmp(argv[0], "--side")) {
             outputSide = 1;

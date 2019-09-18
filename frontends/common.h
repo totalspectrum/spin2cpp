@@ -84,6 +84,10 @@ struct lexstream {
 
 /* compilation flags */
 extern int gl_p2;      /* set for P2 output */
+# define P2_REV_A 1
+# define P2_REV_B 2
+#define DEFAULT_P2_VERSION P2_REV_A
+
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */
 extern int gl_nospin; /* if set, suppress output of Spin methods */

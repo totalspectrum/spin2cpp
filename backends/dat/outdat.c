@@ -728,11 +728,23 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
         ERROR(ast, "bad rdlong/wrlong pointer reference");
         return 0;
     }
-    if (subval < -32 || subval > 31) {
-        ERROR(ast, "ptr index out of range");
-        subval = 0;
+
+    // index ranges from -32 to 31 for all modes on rev A,
+    // and for most of them on rev B (except for plain indexing)
+    if (0 != (val & 0x60) || gl_p2 == P2_REV_A) {
+        if (subval < -32 || subval > 31) {
+            ERROR(ast, "ptr index out of range -32 to 31");
+            subval = 0;
+        }
+        return val | (subval & 0x1f);
+    } else {
+        // plain indexing on rev B and later
+        if (subval < -64 || subval > 63) {
+            ERROR(ast, "ptr index out of range");
+            subval = 0;
+        }
+        return val | (subval & 0x3f);
     }
-    return val | (subval & 0x1f);
 }
 
 /* utility routine to fix up an opcode based on the #N at the end */
@@ -1179,7 +1191,13 @@ decode_instr:
         break;
     case P2_RDWR_OPERANDS:
         dst = EvalOperandExpr(instr, operand[0]);
-        src = SpecialRdOperand(operand[1], opimm[1]);
+        if (gl_p2 == P2_REV_A && strstr(instr->name, "lut")) {
+            // in the original P2 silicon the LUT instructions are just
+            // regular two operand instructions
+            src = EvalOperandExpr(instr, operand[1]);
+        } else {
+            src = SpecialRdOperand(operand[1], opimm[1]);
+        }
         if (src == 0) {
             src = EvalPasmExpr(operand[1]);
         } else {

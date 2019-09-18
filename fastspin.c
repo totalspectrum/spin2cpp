@@ -104,7 +104,9 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -p ]             disable the preprocessor\n");
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
-    fprintf(f, "  [ -2 ]             compile for Prop2\n");
+    fprintf(f, "  [ -2# ]             compile for Prop2\n");
+    fprintf(f, "          -2a = original silicon\n");
+    fprintf(f, "          -2b = rev B silicon\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
@@ -233,9 +235,9 @@ main(int argc, const char **argv)
         n = strlen(nameRoot);
         if (n > 4) {
             if (strcmp(nameRoot + n - 5, "spin2") == 0) {
-                gl_p2 = 1;
+                gl_p2 = DEFAULT_P2_VERSION;
             } else if (n > 8 && strcmp(nameRoot + n - 9, "spin2.exe") == 0) {
-                gl_p2 = 1;
+                gl_p2 = DEFAULT_P2_VERSION;
             }
         }
     }
@@ -342,8 +344,11 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-u")) {
             // ignore -u, we always eliminate unused methods
             argv++; --argc;
-        } else if (!strcmp(argv[0], "-2")) {
-            gl_p2 = 1;
+        } else if (!strncmp(argv[0], "-2", 2)) {
+            gl_p2 = DEFAULT_P2_VERSION;
+            if (argv[0][2] >= 'a' && argv[0][2] <= 'z') {
+                gl_p2 = argv[0][2] - 'a' + 1;
+            }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
             PrintInfo(stdout, bstcMode);
