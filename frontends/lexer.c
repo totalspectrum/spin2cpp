@@ -2482,8 +2482,8 @@ instr_p2[] = {
     { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD | FLAG_WARN_NOTUSED },
     { "modc",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WC | FLAG_WARN_NOTUSED },
     { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WZ | FLAG_WARN_NOTUSED },
-    { "rfvar",  0x0d600070, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "rfvars", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
+    { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "getscp", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     
   // long jumps
     { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, 0 },
