@@ -732,14 +732,14 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     // index ranges from -32 to 31 for all modes on rev A,
     // and for most of them on rev B (except for plain indexing)
     if (0 != (val & 0x60) || gl_p2 == P2_REV_A) {
-        if (subval < -32 || subval > 31) {
+        if (subval < -16 || subval > 15) {
             ERROR(ast, "ptr index out of range -32 to 31");
             subval = 0;
         }
         return val | (subval & 0x1f);
     } else {
         // plain indexing on rev B and later
-        if (subval < -64 || subval > 63) {
+        if (subval < -32 || subval > 31) {
             ERROR(ast, "ptr index out of range");
             subval = 0;
         }
