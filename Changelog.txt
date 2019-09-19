@@ -4,6 +4,7 @@ Version 3.9.32
 - Fixed lmm=trace
 - Fixed C99 for loop declarations
 - Allow selection of P2 silicon version via "-2a" or "-2b" flags; for now just plain "-2" selects rev A (original silicon)
+- Improved error checking for LOC and jumps
 
 Version 3.9.31
 - Fixed an off-by-one error in SELECT CASE

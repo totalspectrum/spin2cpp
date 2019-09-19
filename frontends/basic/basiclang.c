@@ -58,6 +58,15 @@ IsBasicString(AST *typ)
 }
 
 AST *
+addToPrintSeq(AST *seq, AST *printCall)
+{
+    AST *ast;
+    ast = NewAST(AST_SEQUENCE, printCall, NULL);
+    seq = AddToList(seq, ast);
+    return seq;
+}
+
+AST *
 addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 {
     AST *elem;
@@ -75,9 +84,9 @@ addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
     }
     params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
-    elem = NewAST(AST_SEQUENCE, funccall, NULL);
+    elem = addToPrintSeq(seq, funccall);
     AstReportDone(&saveinfo);
-    return AddToList(seq, elem);
+    return elem;
 }
 
 AST *
@@ -117,8 +126,8 @@ addPutCall(AST *seq, AST *handle, AST *func, AST *expr, int size)
                        NewAST(AST_EXPRLIST, sizexpr, NULL));
     params = NewAST(AST_EXPRLIST, handle, params);
     AST *funccall = NewAST(AST_FUNCCALL, func, params);
-    elem = NewAST(AST_SEQUENCE, funccall, NULL);
-    return AddToList(seq, elem);
+    elem = addToPrintSeq(seq, funccall);
+    return elem;
 }
 
 // create a hex print integer call
@@ -133,8 +142,8 @@ addPrintHex(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
                            NewAST(AST_EXPRLIST, fmtAst,
                                   NewAST(AST_EXPRLIST, AstInteger(16), NULL))));
     ast = NewAST(AST_FUNCCALL, func, params);
-    ast = NewAST(AST_SEQUENCE, ast, NULL);
-    return AddToList(seq, ast);
+    ast = addToPrintSeq(seq, ast);
+    return ast;
 }
 
 // create a decimal print integer call
@@ -149,8 +158,8 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
                            NewAST(AST_EXPRLIST, fmtAst,
                                   NewAST(AST_EXPRLIST, AstInteger(10), NULL))));
     ast = NewAST(AST_FUNCCALL, func, params);
-    ast = NewAST(AST_SEQUENCE, ast, NULL);
-    return AddToList(seq, ast);
+    ast = addToPrintSeq(seq, ast);
+    return ast;
 }
 
 //
