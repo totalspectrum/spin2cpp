@@ -77,9 +77,9 @@ pri _lfsr_backward(x) | a
     endasm
   return x
 
-pri _basic_print_fixed(h, x, fmt) | i, f
+pri _basic_print_fixed(h, x, fmt) : r | i, f
   if (x < 0)
-    _basic_print_char(h, "-")
+    r := _basic_print_char(h, "-")
     x := -x
   i := x >> 16
   f := x & $ffff
@@ -89,18 +89,19 @@ pri _basic_print_fixed(h, x, fmt) | i, f
   if (f > $ffff)
     i++
     f -= $10000
-  _basic_print_unsigned(h, i, fmt, 10)
-  _basic_print_char(h, ".")
+  r += _basic_print_unsigned(h, i, fmt, 10)
+  r += _basic_print_char(h, ".")
   repeat 4
     f := f * 10
     i := f >> 16
     f := f & $ffff
-    _basic_print_char(h, i + "0")
-  return
+    r += _basic_print_char(h, i + "0")
+  return r
 
 pri _basic_print_nl(h)
   _basic_print_char(h, 13)
   _basic_print_char(h, 10)
+  return 1
 
 ''
 '' fixed point multiply

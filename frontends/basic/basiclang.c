@@ -60,9 +60,11 @@ IsBasicString(AST *typ)
 AST *
 addToPrintSeq(AST *seq, AST *printCall)
 {
-    AST *ast;
-    ast = NewAST(AST_SEQUENCE, printCall, NULL);
-    seq = AddToList(seq, ast);
+    if (seq) {
+        seq = AstOperator('+', seq, printCall);
+    } else {
+        seq = printCall;
+    }
     return seq;
 }
 
@@ -470,10 +472,13 @@ genPrintf(AST *ast)
                     return NULL;
                 }
             }
-        } else {
-            if (c == '\n') {
-                flexbuf_addchar(&fb, '\r');
+        } else if (c == '\n') {
+            exprlist = harvest(NULL, &fb);
+            if (exprlist) {
+                seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
             }
+            seq = addPrintCall(seq, Handle, basic_print_nl, NULL, NULL);
+        } else {
             flexbuf_addchar(&fb, c);
         }
     }
