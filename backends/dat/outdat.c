@@ -1380,6 +1380,9 @@ decode_instr:
             if (instr->ops == P2_LOC && !inHub) {
                 isrc = isrc >> 2;
             }
+            if (isrc > 0x7ffff || isrc < -0x80000) {
+                ERROR(line, "Operand for %s is out of range", instr->name);
+            }                
             src = isrc & 0xfffff;
             val = val | (1<<20);
             if (srcRelocOff >= 0 && isRelHubAddr) {
@@ -1388,6 +1391,9 @@ decode_instr:
                 r->kind = RELOC_KIND_NONE;
             }
         } else {
+            if ( (isrc > 0xfffff) || (isrc < 0) ) {
+                ERROR(line, "Operand for %s is out of range", instr->name);
+            }
             src = isrc & 0xfffff;
         }
         goto instr_ok;
