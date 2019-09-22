@@ -1197,11 +1197,11 @@ decode_instr:
             src = EvalOperandExpr(instr, operand[1]);
         } else {
             src = SpecialRdOperand(operand[1], opimm[1]);
-        }
-        if (src == 0) {
-            src = EvalPasmExpr(operand[1]);
-        } else {
-            immmask |= P2_IMM_SRC;
+            if (src == 0) {
+                src = EvalPasmExpr(operand[1]);
+            } else {
+                immmask |= P2_IMM_SRC;
+            }
         }
         break;
     case P2_TJZ_OPERANDS:
