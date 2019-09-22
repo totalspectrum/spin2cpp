@@ -232,15 +232,15 @@ pri __builtin_propeller_pinr(pin) : val
     wrc val
   endasm
   
-pri __builtin_propeller_wrpin(pin, val)
+pri __builtin_propeller_wrpin(val, pin)
   asm
     wrpin val, pin
   endasm
-pri __builtin_propeller_wxpin(pin, val)
+pri __builtin_propeller_wxpin(val, pin)
   asm
     wxpin val, pin
   endasm
-pri __builtin_propeller_wypin(pin, val)
+pri __builtin_propeller_wypin(val, pin)
   asm
     wypin val, pin
   endasm

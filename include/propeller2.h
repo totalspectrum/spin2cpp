@@ -148,9 +148,15 @@ void      _pinf(int pin);
 int       _pinr(int pin);
 
 /* smart pin controls */
+#ifdef __FLEXC__
+#define _wrpin(pin, val) __builtin_propeller_wrpin(val, pin)
+#define _wxpin(pin, val) __builtin_propeller_wxpin(val, pin)
+#define _wypin(pin, val) __builtin_propeller_wypin(val, pin)
+#else
 void      _wrpin(int pin, uint32_t val);
 void      _wxpin(int pin, uint32_t val);
 void      _wypin(int pin, uint32_t val);
+#endif
 void      _akpin(int pin);
 uint32_t  _rdpin(int pin);
 uint32_t  _rqpin(int pin);
