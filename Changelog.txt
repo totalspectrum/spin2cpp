@@ -1,5 +1,6 @@
 Version 3.9.33
 - Fixed a bug in encoding wrlut and rdlut instructions in rev 2a
+- Fixed wrpin_ functions in Spin (affects P2 SmartSerial object)
 
 Version 3.9.32
 - Improved handling of hub addresses in Spin objects
