@@ -385,6 +385,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
     AST *basetype;
     AST *expr;
     AST *seq = NULL; // sequence for variable initialization
+    AST *arrayinfo = NULL;
     int kind;
     bool skipDef;
     
@@ -428,8 +429,10 @@ findLocalsAndDeclare(Function *func, AST *ast)
             }
             if (ident->kind == AST_ARRAYDECL) {
                 name = ident->left;
+                arrayinfo = ident;
             } else {
                 name = ident;
+                arrayinfo = NULL;
             }
             if (kind == AST_DECLARE_VAR_WEAK) {
                 Symbol *sym = LookupSymbol(name->d.string);
@@ -462,6 +465,9 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 }
                 if (!datatype) {
                     datatype = InferTypeFromName(name);
+                }
+                if (arrayinfo) {
+                    datatype = ArrayDeclType(arrayinfo->right, datatype, arrayinfo->d.ptr);
                 }
                 if (datatype && datatype->kind == AST_TYPEDEF) {
                     datatype = datatype->left;
