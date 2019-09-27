@@ -144,13 +144,15 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
 {
     Module *P;
     Symbol *sym;
+    AST *objident = NULL;
+    
     objtype = BaseType(objtype);
 
     if (!objtype) {
         // if a constant ref, look for the object in the current modules list of
         // objects; this allows Spin to use constants before they are declared
         if (expr->kind == AST_CONSTREF) {
-            AST *objident = expr->left;
+            objident = expr->left;
             while (objident && objident->kind != AST_IDENTIFIER) {
                 objident = objident->left;
             }
@@ -165,6 +167,25 @@ LookupMemberSymbol(AST *expr, AST *objtype, const char *name, Module **Ptr)
                         }
                     }
                     a = a->right;
+                }
+            }
+        } else if (expr->kind == AST_METHODREF && expr->left && expr->left->kind == AST_IDENTIFIER) {
+            // if a method reference, it may be in a pending variable
+            objident = expr->left;
+            objtype = NULL;
+            if (objident) {
+                AST *a = current->pendingvarblock;
+                while (a) {
+                    AST *b = a->left;
+                    a = a->right;
+                    if (b->kind == AST_DECLARE_VAR) {
+                        if (b->left && b->left->kind == AST_OBJECT
+                            && AstUses(b->right, objident))
+                        {
+                            objtype = b->left;
+                            break;
+                        }
+                    }
                 }
             }
         }
