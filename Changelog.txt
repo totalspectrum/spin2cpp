@@ -3,6 +3,7 @@ Version 3.9.34
 - Fixed using constant members in const declarations in BASIC
 - Use printf for translating BASIC print statements
 - Allow underscore after decimal point in floating point numbers
+- Support ptra++ and --ptra operands in inline assembly
 
 Version 3.9.33
 - Fixed a bug in encoding wrlut and rdlut instructions in rev 2a

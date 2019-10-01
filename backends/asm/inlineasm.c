@@ -205,6 +205,25 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
         return r;
     } else if (expr->kind == AST_OPERATOR) {
+        // have to handle things like ptra++
+        if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
+            int incdec = 0;
+            AST *subexpr = NULL;
+            if (expr->left && expr->left->kind == AST_HWREG) {
+                incdec = (expr->d.ival == K_INCREMENT) ? OPEFFECT_POSTINC : OPEFFECT_POSTDEC;
+                subexpr = expr->left;
+            } else if (expr->right && expr->right->kind == AST_HWREG) {
+                incdec = (expr->d.ival == K_INCREMENT) ? OPEFFECT_PREINC : OPEFFECT_PREDEC;
+                subexpr = expr->right;
+            }
+            if (incdec && subexpr) {
+                r = CompileInlineOperand(irl, subexpr, effects, 0);
+                if (r && effects) {
+                    *effects |= incdec;
+                }
+                return r;
+            }
+        }
         if (IsConstExpr(expr)) {
             return NewImmediate(EvalPasmExpr(expr));
         }

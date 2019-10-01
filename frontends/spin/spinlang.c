@@ -378,6 +378,8 @@ doSpinTransform(AST **astptr, int level)
     if (!ast) return;
 
     switch (ast->kind) {
+    case AST_INLINEASM:
+        return;
     case AST_EXPRLIST:
         doSpinTransform(&ast->left, 0);
         doSpinTransform(&ast->right, 0);
