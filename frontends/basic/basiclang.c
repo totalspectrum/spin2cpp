@@ -199,6 +199,12 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 #define FMTPARAM_SIGNSPACE (2<<SIGNCHAR_BIT)
 
 static AST *
+AddExprToList(AST *list, AST *x)
+{
+    return AddToList(list, NewAST(AST_EXPRLIST, x, NULL));
+}
+
+static AST *
 harvest(AST *exprlist, Flexbuf *fb)
 {
     const char *str;
@@ -369,7 +375,10 @@ genPrintf(AST *ast)
     int minwidth;
     int zeropad;
     int justify;
-    
+
+    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        return NULL; // convert directly to C
+    }
     flexbuf_init(&fb, 80);
     if (!args) {
         //ERROR(ast, "Empty printf");
@@ -561,6 +570,101 @@ adjustFuncCall(AST *ast)
     }
 }
 
+static AST *
+ConvertPrintToPrintf(AST *ast)
+{
+    AST *exprlist = ast->left;
+    AST *handle = ast->right;
+    AST *expr, *type;
+    AST *printit = NewAST(AST_PRINT, NULL, NULL);
+    AST *seq = NULL;
+    
+    AST *fmtAst = NULL;
+    Flexbuf fbstr;
+    char strbuf[8];
+
+    flexbuf_init(&fbstr, 80);
+    
+    if (handle) {
+        ERROR(ast, "Unable to convert print # to C");
+        return AstInteger(0);
+    }
+    while (exprlist) {
+        if (exprlist->kind != AST_EXPRLIST) {
+            ERROR(exprlist, "internal error in print list");
+            return NULL;
+        }
+        expr = exprlist->left;
+        exprlist = exprlist->right;
+        if (expr->kind == AST_USING) {
+            fmtAst = expr->left;
+            expr = expr->right;
+        }
+        if (!expr) {
+            continue;
+        }
+        if (expr->kind == AST_HERE) {
+            // PUT expression
+            ERROR(ast, "PUT not supported yet");
+            return NULL;
+        }
+        if (expr->kind == AST_CHAR) {
+            expr = expr->left;
+            if (IsConstExpr(expr)) {
+                int c = EvalConstExpr(expr);
+                switch (c) {
+                case '\n':
+                    strcpy(strbuf, "\\n");
+                    break;
+                case '\r':
+                    strcpy(strbuf, "\\r");
+                    break;
+                case '\t':
+                    strcpy(strbuf, "\\t");
+                    break;
+                default:
+                    strbuf[0] = c;
+                    strbuf[1] = 0;
+                    break;
+                }
+                flexbuf_addstr(&fbstr, strbuf);
+            } else {
+                flexbuf_addstr(&fbstr, "%c");
+                seq = AddExprToList(seq, expr);
+            }
+            continue;
+        }
+        type = ExprType(expr);
+        if (!type) {
+            ERROR(ast, "Unknown type in print");
+            continue;
+        }
+        if (IsFloatType(type)) {
+            flexbuf_addstr(&fbstr, "%f");
+            seq = AddExprToList(seq, expr);
+        } else if (IsStringType(type)) {
+            flexbuf_addstr(&fbstr, "%s");
+            seq = AddExprToList(seq, expr);
+        } else if (IsGenericType(type)) {
+            flexbuf_addstr(&fbstr, "%x");
+            seq = AddExprToList(seq, expr);
+        } else if (IsUnsignedType(type)) {
+            flexbuf_addstr(&fbstr, "%u");
+            seq = AddExprToList(seq, expr);
+        } else if (IsIntType(type)) {
+            flexbuf_addstr(&fbstr, "%d");
+            seq = AddExprToList(seq, expr);
+        } else {
+            ERROR(ast, "Unable to print expression of this type");
+        }       
+    }
+    printit->left = AstIdentifier("printf");
+    exprlist = harvest(NULL, &fbstr);
+    exprlist = AddToList(exprlist, seq);
+    printit->right = exprlist;
+    return printit;
+}
+
 static void
 doBasicTransform(AST **astptr)
 {
@@ -735,7 +839,9 @@ doBasicTransform(AST **astptr)
     case AST_PRINT:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
-        {
+        if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+            *astptr = ast = ConvertPrintToPrintf(ast);
+        } else {
             // convert PRINT to a series of calls to basic_print_xxx
             AST *seq = NULL;
             AST *type;

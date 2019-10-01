@@ -5,7 +5,7 @@
 
 class btest007 {
 public:
-  static void 	program(void);
+  void 	program(void);
 private:
 };
 

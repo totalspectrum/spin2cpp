@@ -1511,6 +1511,11 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         }
         break;
     }
+    case AST_PRINT:
+        flexbuf_printf(f, "printf(");
+        PrintExprList(f, expr->right, PRINTEXPR_DEFAULT, NULL);
+        flexbuf_printf(f, ")");
+        break;
     case AST_COGINIT:
         PrintCogInit(f, expr);
         break;
