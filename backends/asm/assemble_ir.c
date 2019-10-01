@@ -56,16 +56,45 @@ static bool mayRemap(const char *name)
     return false;
 }
 
+#define MAX_BUF 128
+
+static const char *QuotedName(const char *orig_name)
+{
+    static char buf[MAX_BUF];
+    const char *name = orig_name;
+    int i = 0;
+    int c;
+    while (i < MAX_BUF-2) {
+        c = *name++;
+        switch(c) {
+        case '!':
+        case '$':
+        case '%':
+        case '#':
+            buf[i++] = '`';
+            break;
+        case ' ':
+        case '\n':
+            return orig_name;
+        default:
+            break;
+        }
+        buf[i++] = c;
+    }
+    buf[i++] = 0;
+    return buf;
+}
+
 static const char *RemappedName(const char *name)
 {
     Symbol *sym;
     unsigned num;
-    static char buf[32];
+    static char buf[MAX_BUF];
     
     if (!mayRemap(name))
-        return name;
+        return QuotedName(name);
     sym = FindSymbol(&localLabelMap, name);
-    if (!sym) return name;
+    if (!sym) return QuotedName(name);
     num = (uintptr_t)sym->val;
     sprintf(buf, "LR__%04u", num);
     return buf;
