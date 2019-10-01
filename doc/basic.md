@@ -362,7 +362,7 @@ will print 1 and then 2, because `x.ctr` and `y.ctr` are the same (shared) globa
 
 Member variables, on the other hand, are unique to each instance of a class. They are created with regular `dim` outside of any function or subroutine. If we modified the sample above to remove the `shared` from the declaration of `ctr`, then the program would print 1 and then 0, because the `y.inc_ctr()`  invocation would not affect the value of `x.ctr`.
 
-Member variables are automatically initialized to 0, and may not be initialized to any other value.
+Member variables are not automatically initialized to any value. Due to the way classes are implemented, it's not possible to write an initialization in the declaration of a member variable. They must be explicitly set with an assignment statement before being used.
 
 Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called. Local variables may be initialized to values, but this initialization is done at run time so it has some overhead.
 
