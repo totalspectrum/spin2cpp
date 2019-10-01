@@ -406,11 +406,13 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 goto donefloat;
             }
         }
-        while (c >= '0' && c <= '9') {
-            ff = ff + divby[counter]*(float)(c-'0');
-            c = lexgetc(L);
+        while ( (c >= '0' && c <= '9') || (c == '_')) {
+            if (c != '_') {
+                ff = ff + divby[counter]*(float)(c-'0');
+                counter++;
+            }
             sawdigit = 1;
-            counter++;
+            c = lexgetc(L);
         }
         if (c == 'e' || c == 'E') {
             int expval = 0;
