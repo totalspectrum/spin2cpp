@@ -307,7 +307,7 @@ PrintCHeaderFile(Flexbuf *f, Module *parse)
                 }
                 flexbuf_printf(f, "};\n");
                 flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
-                flexbuf_printf(f, "  static MakeTuple%d__(", n);
+                flexbuf_printf(f, "  static Tuple%d__ MakeTuple%d__(", n, n);
                 for (i = 0; i < n; i++) {
                     flexbuf_printf(f, "int32_t x%d%c", i, (i==n-1) ? ')' : ',');
                 }
@@ -376,7 +376,7 @@ PrintCppHeaderFile(Flexbuf *f, Module *parse)
                 }
                 flexbuf_printf(f, "};\n");
                 flexbuf_printf(f, "# define Tuple%d__ struct tuple%d__\n", n, n);
-                flexbuf_printf(f, "  static MakeTuple%d__(", n);
+                flexbuf_printf(f, "  static Tuple%d__ MakeTuple%d__(", n, n);
                 for (i = 0; i < n; i++) {
                     flexbuf_printf(f, "int32_t x%d%c", i, (i==n-1) ? ')' : ',');
                 }

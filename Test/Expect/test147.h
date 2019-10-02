@@ -6,7 +6,7 @@
 #ifndef Tuple2__
   struct tuple2__ { int32_t v0;  int32_t v1; };
 # define Tuple2__ struct tuple2__
-  static MakeTuple2__(int32_t x0,int32_t x1) {
+  static Tuple2__ MakeTuple2__(int32_t x0,int32_t x1) {
     Tuple2__ t;
     t.v0 = x0;
     t.v1 = x1;
