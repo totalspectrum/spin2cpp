@@ -1659,56 +1659,50 @@ static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 // the fields here are:
 // "spin name", numparameters, outputfunc, cname, gasname, extradata, parsehook
 
-// the C version of the name
-// an alternate form to use
+// the P1 C version of the name
+// the P2 C version of the name
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "_clkfreq", NULL, 0, NULL },
-    { "clkmode", 0, defaultVariable, "_clkmode", NULL, 0, NULL },
-    { "clkset", 2, defaultBuiltin, "clkset", "_clkset", 0, NULL },
+    { "clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
+    { "clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
+    { "clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
 
-    { "cogstop", 1, defaultBuiltin, "cogstop", "__builtin_propeller_cogstop", 0, NULL },
-    { "cogid", 0, defaultBuiltin, "cogid", "__builtin_propeller_cogid", 0, NULL },
+    { "cogstop", 1, defaultBuiltin, "cogstop", "_cogstop", "__builtin_propeller_cogstop", 0, NULL },
+    { "cogid", 0, defaultBuiltin, "cogid", "_cogid", "__builtin_propeller_cogid", 0, NULL },
 
-    { "locknew", 0, defaultBuiltin, "locknew", "__builtin_propeller_locknew", 0, lockhook },
-    { "lockset", 1, defaultBuiltin, "lockset", "__builtin_propeller_lockset", 0, lockhook },
-    { "lockclr", 1, defaultBuiltin, "lockclr", "__builtin_propeller_lockclr", 0, lockhook },
-    { "lockret", 1, defaultBuiltin, "lockret", "__builtin_propeller_lockret", 0, lockhook },
+    { "locknew", 0, defaultBuiltin, "locknew", "_locknew", "__builtin_propeller_locknew", 0, lockhook },
+    { "lockset", 1, defaultBuiltin, "lockset", "_lockset", "__builtin_propeller_lockset", 0, lockhook },
+    { "lockclr", 1, defaultBuiltin, "lockclr", "_lockclr", "__builtin_propeller_lockclr", 0, lockhook },
+    { "lockret", 1, defaultBuiltin, "lockret", "_lockret", "__builtin_propeller_lockret", 0, lockhook },
 
-    { "strsize", 1, str1Builtin, "strlen", NULL, 0, NULL },
-    { "__builtin_strlen", 1, str1Builtin, "strlen", NULL, 0, NULL },
-    { "strcomp", 2, strcompBuiltin, "strcmp", NULL, 0, NULL },
-    { "waitcnt", 1, defaultBuiltin, "waitcnt", "_waitcnt", 0, NULL },
-    { "waitpeq", 3, waitpeqBuiltin, "waitpeq", "__builtin_propeller_waitpeq", 0, NULL },
-    { "waitpne", 3, waitpeqBuiltin, "waitpne", "__builtin_propeller_waitpne", 0, NULL },
+    { "strsize", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },
+    { "__builtin_strlen", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },
+    { "strcomp", 2, strcompBuiltin, "strcmp", NULL, NULL, 0, NULL },
+    { "waitcnt", 1, defaultBuiltin, "waitcnt", "_waitcnt", "_waitcnt", 0, NULL },
+    { "waitpeq", 3, waitpeqBuiltin, "waitpeq", "_waitpeq", "__builtin_propeller_waitpeq", 0, NULL },
+    { "waitpne", 3, waitpeqBuiltin, "waitpne", "_waitpne", "__builtin_propeller_waitpne", 0, NULL },
 
-    { "reboot", 0, rebootBuiltin, "reboot", NULL, 0, NULL },
+    { "reboot", 0, rebootBuiltin, "reboot", NULL, NULL, 0, NULL },
 
-    { "longfill", 3, memFillBuiltin, "memset", NULL, 4, NULL },
-    { "longmove", 3, memBuiltin, "memmove", NULL, 4, NULL },
-    { "wordfill", 3, memFillBuiltin, "memset", NULL, 2, NULL },
-    { "wordmove", 3, memBuiltin, "memmove", NULL, 2, NULL },
-    { "bytefill", 3, memBuiltin, "memset", NULL, 1, NULL },
-    { "bytemove", 3, memBuiltin, "memcpy", NULL, 1, NULL },
+    { "longfill", 3, memFillBuiltin, "memset", NULL, NULL, 4, NULL },
+    { "longmove", 3, memBuiltin, "memmove", NULL, NULL, 4, NULL },
+    { "wordfill", 3, memFillBuiltin, "memset", NULL, NULL, 2, NULL },
+    { "wordmove", 3, memBuiltin, "memmove", NULL, NULL, 2, NULL },
+    { "bytefill", 3, memBuiltin, "memset", NULL, NULL, 1, NULL },
+    { "bytemove", 3, memBuiltin, "memcpy", NULL, NULL, 1, NULL },
 
-    { "getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
-    { "_getcnt", 0, defaultBuiltin, "getcnt", NULL, 0, NULL },
+    { "getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
+    { "_getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
+
+    { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, NULL, 0, NULL },
+
+    { "_string_concat", 2, defaultBuiltin, "_string_concat", NULL, NULL, 0, NULL },
+
+    // float support routines
+    { "_fixed_div", 3, defaultBuiltin, "fixed_div", NULL, NULL, 0, NULL },
+    { "_fixed_mul", 2, defaultBuiltin, "fixed_mul", NULL, NULL, 0, NULL },
 
     // BASIC compiler builtins
-    { "_basic_print_nl", 1, defaultBuiltin, "basic_print_nl", NULL, 0, NULL },
-    { "_basic_print_string", 3, defaultBuiltin, "basic_print_string", NULL, 0, NULL },
-    { "_basic_print_integer", 4, defaultBuiltin, "basic_print_integer", NULL, 0, NULL },
-    { "_basic_print_unsigned", 4, defaultBuiltin, "basic_print_unsigned", NULL, 0, NULL },
-    { "_basic_print_float", 3, defaultBuiltin, "basic_print_float", NULL, 0, NULL },
-    { "_basic_print_fixed", 3, defaultBuiltin, "basic_print_fixed", NULL, 0, NULL },
-    { "_basic_print_char", 2, defaultBuiltin, "basic_print_char", NULL, 0, NULL },
-    { "_basic_put", 3, defaultBuiltin, "basic_put", NULL, 0, NULL },
-
-    { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, 0, NULL },
-
-    { "_string_concat", 2, defaultBuiltin, "_string_concat", NULL, 0, NULL },
-
-    { "_fixed_div", 3, defaultBuiltin, "fixed_div", NULL, 0, NULL },
-    { "_fixed_mul", 2, defaultBuiltin, "fixed_mul", NULL, 0, NULL },
+    { "_basic_print_unsigned", 4, defaultBuiltin, "basic_print_unsigned", NULL, NULL, 0, NULL },
 };
 
 struct constants {

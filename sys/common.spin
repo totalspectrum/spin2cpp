@@ -179,6 +179,13 @@ pri input`$(n=long, h=0) | c, i, s
   byte[s+i] := 0
   return s
 
+pri __builtin_clkfreq
+  return _clkfreq_var
+
+pri __builtin_clkmode
+  return _clkmode_var
+  
+
 pri __builtin_inf
   return $7f800000
 

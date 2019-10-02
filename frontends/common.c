@@ -85,8 +85,8 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__builtin_clkfreq" },
+    { "clkmode", "__builtin_clkmode" },
     { "strsize", "__builtin_strlen" },
 
     /* obsolete aliases */
@@ -125,8 +125,8 @@ Aliases spin2alias[] = {
     { NULL, NULL },
 };
 Aliases basicalias[] = {
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__builtin_clkfreq" },
+    { "clkmode", "__builtin_clkmode" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
     { "pinlo", "__builtin_propeller_drvl" },
@@ -138,8 +138,8 @@ Aliases basicalias[] = {
     { NULL, NULL },
 };
 Aliases calias[] = {
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__builtin_clkfreq" },
+    { "clkmode", "__builtin_clkmode" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },

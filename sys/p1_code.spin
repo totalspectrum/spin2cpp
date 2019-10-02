@@ -29,8 +29,8 @@ pri cogstop(id)
   return 0
 
 pri clkset(mode, freq)
-  CLKFREQ := freq
-  CLKMODE := mode
+  _clkfreq_var := freq
+  _clkmode_var := mode
   asm
     clkset mode
   endasm

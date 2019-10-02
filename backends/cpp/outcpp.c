@@ -470,7 +470,7 @@ PrintMacros(Flexbuf *f, Module *parse)
 	if (be->needsYield) {
 	  flexbuf_printf(f, "#define Yield__()\n");
 	}
-	if (gl_output == OUTPUT_C) {
+	if (gl_output == OUTPUT_C && !gl_p2) {
           flexbuf_printf(f, "#ifndef __FLEXC__\n");
 	  flexbuf_printf(f, "#define waitcnt(n) _waitcnt(n)\n");
 	  if (be->needsLockFuncs) {
@@ -809,7 +809,11 @@ PrintCppFile(Flexbuf *f, Module *parse)
         flexbuf_printf(f, "#include <string.h>\n");
     }
     IfdefPropeller(f);
-    flexbuf_printf(f, "#include <propeller.h>\n");
+    if (gl_p2) {
+        flexbuf_printf(f, "#include <propeller2.h>\n");
+    } else {
+        flexbuf_printf(f, "#include <propeller.h>\n");
+    }
     if (gl_gas_dat) {
         flexbuf_printf(f, "#undef clkset\n");
         flexbuf_printf(f, "#undef cogid\n");
@@ -971,9 +975,9 @@ SetCppFlags(CppModData *bedata, AST *ast)
                 if (!strncmp(b->name, "lock", 4)) {
                     bedata->needsLockFuncs = 1;
                 }
-                if (!strncmp(b->cname, "memcpy", 6)) {
+                if (!strncmp(b->p1_cname, "memcpy", 6)) {
                     bedata->needsString = 1;
-                } else if (!strncmp(b->cname, "str", 3)) {
+                } else if (!strncmp(b->p1_cname, "str", 3)) {
                     bedata->needsString = 1;
                 }
             }

@@ -190,7 +190,11 @@ CppPrintName(Flexbuf *f, const char *name, int flags)
         flexbuf_printf(f, "%%[", name);
     }
     if (!strcmp(name, "clkfreq")) {
-        flexbuf_printf(f, "CLKFREQ");
+        if (gl_p2) {
+            flexbuf_printf(f, "_clockfreq()");
+        } else {
+            flexbuf_printf(f, "_CLKFREQ");
+        }
     } else {
         while (0 != (c = *name++)) {
             switch (c) {
@@ -336,7 +340,7 @@ PrintLabelCoginit(Flexbuf *f, AST *params)
         int32_t cogid = EvalConstExpr(params->left);
         if (cogid >= NUM_COGS || cogid < 0) {
             params = params->right;
-            funcname = "cognew";
+            funcname = gl_p2 ? "_cognew" : "cognew";
         }
     }
     flexbuf_printf(f, "%s(", funcname);
@@ -1755,10 +1759,12 @@ defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
     if (AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
-    if (gl_gas_dat && b->gasname) {
-        flexbuf_printf(f, "%s(", b->gasname);
+    if (gl_p2 && b->p2_cname) {
+        flexbuf_printf(f, "%s(", b->p2_cname);
+    } else if (gl_gas_dat && b->gas_cname) {
+        flexbuf_printf(f, "%s(", b->gas_cname);
     } else {
-        flexbuf_printf(f, "%s(", b->cname);
+        flexbuf_printf(f, "%s(", b->p1_cname);
     }
     PrintExprList(f, params, PRINTEXPR_TOPLEVEL, NULL);
     flexbuf_printf(f, ")");
@@ -1782,10 +1788,12 @@ waitpeqBuiltin(Flexbuf *f, Builtin *b, AST *origparams)
         ERROR(params, "Third parameter to %s must be 0", b->name);
         return;
     }
-    if (gl_gas_dat && b->gasname) {
-        flexbuf_printf(f, "%s(", b->gasname);
+    if (gl_p2 && b->p2_cname) {
+        flexbuf_printf(f, "%s(", b->p2_cname);
+    } else if (gl_gas_dat && b->gas_cname) {
+        flexbuf_printf(f, "%s(", b->gas_cname);
     } else {
-        flexbuf_printf(f, "%s(", b->cname);
+        flexbuf_printf(f, "%s(", b->p1_cname);
     }
     PrintTypedExpr(f, ast_type_long, a1, PRINTEXPR_TOPLEVEL);
     flexbuf_printf(f, ", ");
@@ -1797,14 +1805,20 @@ waitpeqBuiltin(Flexbuf *f, Builtin *b, AST *origparams)
 void
 defaultVariable(Flexbuf *f, Builtin *b, AST *params)
 {
-    flexbuf_printf(f, "%s", b->cname);
+    if (gl_p2 && b->p2_cname) {
+        flexbuf_printf(f, "%s", b->p2_cname);
+    } else if (gl_gas_dat && b->gas_cname) {
+        flexbuf_printf(f, "%s", b->gas_cname);
+    } else {
+        flexbuf_printf(f, "%s", b->p1_cname);
+    }
 }
 
 /* code to do memory copies; also does 1 byte fills */
 void
 memBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
-    int ismemcpy = !strcmp(b->cname, "memcpy") || !strcmp(b->cname, "memmove");
+    int ismemcpy = !strcmp(b->p1_cname, "memcpy") || !strcmp(b->p1_cname, "memmove");
     AST *dst, *src, *count;
 
     dst = params->left;
@@ -1813,7 +1827,7 @@ memBuiltin(Flexbuf *f, Builtin *b, AST *params)
     params = params->right;
     count = params->left;
 
-    flexbuf_printf(f, "%s( (void *)", b->cname);
+    flexbuf_printf(f, "%s( (void *)", b->p1_cname);
     PrintAsAddr(f, dst, PRINTEXPR_DEFAULT);
     flexbuf_printf(f, ", ");
     if (ismemcpy) {
@@ -1878,7 +1892,7 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
 void
 str1Builtin(Flexbuf *f, Builtin *b, AST *params)
 {
-    flexbuf_printf(f, "%s(", b->cname);
+    flexbuf_printf(f, "%s(", b->p1_cname);
     PrintTypedExpr(f, ast_type_string, params->left, PRINTEXPR_TOPLEVEL);
     params = params->right;
     flexbuf_printf(f, ")");

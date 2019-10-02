@@ -274,9 +274,9 @@ typedef struct builtin {
     int         numparameters;
     /* function to actually print the builtin */
     void        (*printit)(Flexbuf *, struct builtin *, AST *params);
-    const char *cname;  /* c version of the name */
-    const char *gasname; /* name to use if --gas is given */
-    
+    const char *p1_cname;  /* c version of the name */
+    const char *p2_cname;  /* name to use if --p2 is given */
+    const char *gas_cname; /* name to use if --gas is given */
     /* extra data */
     int extradata;
 

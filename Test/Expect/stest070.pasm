@@ -5,23 +5,23 @@ dat
 entry
 
 _start
-	rdlong	start_tmp002_, #0
-	mov	_start__cse__0001, start_tmp002_
+	rdlong	result1, #0
+	mov	_start__cse__0001, result1
 	shl	_start__cse__0001, #2
-	add	_start__cse__0001, start_tmp002_
+	add	_start__cse__0001, result1
 	mov	arg01, cnt
 	add	arg01, _start__cse__0001
 	waitcnt	arg01, #0
 _start_ret
 	ret
 
+result1
+	long	0
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 _start__cse__0001
 	res	1
 arg01
-	res	1
-start_tmp002_
 	res	1
 	fit	496

@@ -105,12 +105,14 @@ InitGlobalModule(void)
     
     current = globalModule = NewModule("_system_", LANG_SPIN);
     table = &globalModule->objsyms;
-    sym = AddSymbol(table, "_clkfreq", SYM_VARIABLE, ast_type_long, NULL);
+
+    sym = AddSymbol(table, "_clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x4) : 0;
-    sym = AddSymbol(table, "_clkmode", SYM_VARIABLE, ast_type_byte, NULL);
+    sym = AddSymbol(table, "_clkmode_var", SYM_VARIABLE, ast_type_byte, NULL);
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x8) : 4;
+
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
         sym->flags |= SYMF_GLOBAL;
