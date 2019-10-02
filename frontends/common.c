@@ -87,8 +87,15 @@ typedef struct alias {
 Aliases spinalias[] = {
     { "clkfreq", "__builtin_clkfreq" },
     { "clkmode", "__builtin_clkmode" },
+    { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
-
+#ifdef NEVER    
+    { "lockclr", "__builtin_lockclr" },
+    { "lockset", "__builtin_lockset" },
+    { "locknew", "__builtin_locknew" },
+    { "lockret", "__builtin_lockret" },
+#endif
+    
     /* obsolete aliases */
     { "dirl_", "__builtin_propeller_dirl" },
     { "dirh_", "__builtin_propeller_dirh" },
@@ -127,6 +134,7 @@ Aliases spin2alias[] = {
 Aliases basicalias[] = {
     { "clkfreq", "__builtin_clkfreq" },
     { "clkmode", "__builtin_clkmode" },
+    { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
     { "pinlo", "__builtin_propeller_drvl" },

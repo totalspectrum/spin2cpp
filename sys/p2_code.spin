@@ -56,7 +56,7 @@ pri lockret(id)
     lockret id
   endasm
   return 0
-pri clkset(mode, freq, xsel = 3) | oldmode
+pri _clkset(mode, freq, xsel = 3) | oldmode
   oldmode := CLKMODE & !3  ' remove low bits, if any
   mode := mode & !3
   _clkfreq_var := freq

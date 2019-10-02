@@ -4,9 +4,9 @@ dat
 	org	0
 entry
 
-_lockset
+_mylockset
 	lockset	arg01
-_lockset_ret
+_mylockset_ret
 	ret
 
 COG_BSS_START
