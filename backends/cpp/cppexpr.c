@@ -1107,9 +1107,9 @@ PrintAssign(Flexbuf *f, AST *lhs, AST *rhs, int flags)
         int n = AstListLen(lhs);
         flexbuf_printf(f, "({ Tuple%d__ tmp__ = ", n);
         if (rhs && rhs->kind == AST_EXPRLIST) {
-            flexbuf_printf(f, "((Tuple%d__){", n, n);
+            flexbuf_printf(f, "MakeTuple%d__(", n, n);
             PrintExprList(f, rhs, PRINTEXPR_DEFAULT, NULL);
-            flexbuf_printf(f, "})");
+            flexbuf_printf(f, ")");
         } else {
             PrintExpr(f, rhs, PRINTEXPR_DEFAULT);
         }

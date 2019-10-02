@@ -9,7 +9,7 @@ Tuple2__ test147::Dbl64(int32_t Ahi, int32_t Alo)
   if (Alo & 0x80000000) {
     (Bhi++);
   }
-  return ((Tuple2__){Bhi, Blo});
+  return MakeTuple2__(Bhi, Blo);
 }
 
 // function to quadruple a 64 bit number

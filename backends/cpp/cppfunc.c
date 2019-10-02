@@ -593,9 +593,9 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
             flexbuf_printf(f, "%*creturn ", indent, ' ');
             if (retval->kind == AST_EXPRLIST) {
                 int n = AstListLen(retval);
-                flexbuf_printf(f, "((Tuple%d__){", n);
+                flexbuf_printf(f, "MakeTuple%d__(", n);
                 PrintExprList(f, retval, PRINTEXPR_DEFAULT, NULL);
-                flexbuf_printf(f, "})");
+                flexbuf_printf(f, ")");
             } else {
                 PrintTypedExpr(f, GetFunctionReturnType(curfunc), retval, PRINTEXPR_DEFAULT);
             }
@@ -762,9 +762,9 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
             flexbuf_printf(f, "%*c", indent, ' ');
             flexbuf_printf(f, "{ Tuple%d__ tmp__ = ", n);
             if (rhs && rhs->kind == AST_EXPRLIST) {
-                flexbuf_printf(f, "((Tuple%d__){", n, n);
+                flexbuf_printf(f, "MakeTuple%d__(", n, n);
                 PrintExprList(f, rhs, PRINTEXPR_DEFAULT, NULL);
-                flexbuf_printf(f, "})");
+                flexbuf_printf(f, ")");
             } else {
                 PrintExpr(f, rhs, PRINTEXPR_DEFAULT);
             }

@@ -3,12 +3,12 @@
 
 void test146::Swapab(void)
 {
-  { Tuple2__ tmp__ = ((Tuple2__){B, A}); A = tmp__.v0; B = tmp__.v1;  };
+  { Tuple2__ tmp__ = MakeTuple2__(B, A); A = tmp__.v0; B = tmp__.v1;  };
 }
 
 Tuple3__ test146::Seq3(int32_t N)
 {
-  return ((Tuple3__){N, N + 1, N + 2});
+  return MakeTuple3__(N, N + 1, N + 2);
 }
 
 void test146::Setit(void)
