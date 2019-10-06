@@ -366,6 +366,57 @@ Member variables are not automatically initialized to any value. Due to the way 
 
 Local variables are only available inside the function or subroutine where they are declared, and only exist for as long as that function or subroutine is running. When the routine returns, the variables lose any values they had at the time. They are re-created afresh the next time the function is called. Local variables may be initialized to values, but this initialization is done at run time so it has some overhead.
 
+### Operators
+
+FlexBASIC contains a number of built in operators.
+
+#### Unary operators
+
+`-x` is the negative of `x`, basically the same as `0-x`. It is defined for both integers and floats.
+
+`NOT x` is the bitwise inverse of `x`. It is defined only for integers; when applied to a float the float will be converted to an integer first, and then the result will be an integer.
+
+`@x` takes the address of `x`, producing a pointer to `x`
+
+#### Binary arithmetic operators
+
+```
++, -, *, /
+```
+These are the usual arithmetic operations. `*` is used for multiplication, and `/` for division. If both arguments to the operators are integers, then the result is an integer. If any argument is a float, the result is a float. This is particularly important for division, since integer division will truncate (round towards 0). For example, `3/2` produces the result `1`, whereas `3.0/2.0` produces the result `1.5`.
+
+```
+MOD
+```
+This is the integer modulo operator; `a mod b` is the remainder when `a` is divided by `b`. It is only well defined for integers. The sign of the result is the same as the sign of `a`. `mod` and `/` are related: if `x = a / b` and `y = a mod b` then `x * b + y` will equal `a`.
+
+#### Comparison operators
+
+
+In general for all of the comparison operators, if either `a` or `b` is a float, the comparison is done in floating point. If both `a` and `b` are strings then the comparison is done on the usual lexicographical ordering of strings. Comparisons produce `0` if false, and `-1` (all bits set) if true.
+
+`a=b` compares `a` and `b` for equality. `a<>b` compares for inequality. `!=` means the same as `<>`, and `==` means the same as `=`.
+
+`a<b` and `a<=b` compare for `a` less than or less than or equal to `b`.
+
+`a>b` and `a>=b` compare for `a` greater than or greater than or equal to `b`.
+
+`=<` means the same as `<=`; similarly `=>` means the same as `>=`.
+
+#### Logical operators
+
+All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
+
+`a and b` is the bitwise and of `a` and `b`
+
+`a or b` is the bitwise (inclusive) or of `a` and `b`
+
+`a xor b` is the bitwise exclusive or of `a` and `b`
+
+`a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this.
+
+`a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
+
 ### Extending lines
 
 It is possible to extend a long expression or array initializer over several lines. To do this, add a single `_` immediately before the end of the line. This causes the compiler to treat the end of line like a space rather than an end of line. For example:
