@@ -568,6 +568,55 @@ This declares a family of functions `mymin__T`, where `T` can be any type. Whene
 ```
 will print `1.7` and `aaa`.
 
+## Libraries
+
+There are two ways to create and use libraries of useful functions.
+
+### Classes
+
+Probably the cleanest way is to use classes. For each group of related functions, put them into a .bas file, and then instantiate a class using that file. For example:
+```
+' mylib.bas
+' simple library with just one entry point, greet
+sub greet(msg as string)
+  print msg
+end sub
+' test program
+greet "hello, world"
+```
+This file may be compiled on its own, in which case it will run as a normal BASIC program would (and will print "hello, world". To use it in another program, for example "main.bas", create a class from it:
+```
+' main.bas
+dim G as class using "mylib.bas"
+G.greet("hello")
+G.greet("goodbye")
+```
+If you compile this program, it will print "hello" and then "goodbye". Note that the main program code of `mylib.bas` is not executed in this case. In general the statements in a BASIC file outside of any `sub` or `function` are placed into a subroutine called `program`. So in the above case if we called `G.program` it would print "hello, world". However, if the `program` subroutine is never called it will automatically be removed by the compiler.
+
+### Include files
+
+A .bas file may also be included with the `#include` directive. This places all of the code in the included file directly into the main file, as if it had been typed in by the user. The downside of this is that there is no namespace protection, and any test code outside of `sub` and `function` will be executed. To avoid this, use `#ifdef TEST` or something similar around such code.
+
+The above example as an include file would be:
+```
+' mylib.bas
+' simple library with just one entry point, greet
+sub greet(msg as string)
+  print msg
+end sub
+#ifdef TEST
+' test program
+greet "hello, world"
+#endif
+```
+which may be compiled for testing with `-DTEST` on the command line; to use it, do:
+```
+' main.bas
+#include "mylib.bas"
+greet "hello"
+greet "goodbye"
+```
+
 ## Propeller Hardware Features
 
 ### Input, Output, and Direction
