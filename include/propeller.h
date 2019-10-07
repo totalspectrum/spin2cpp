@@ -27,7 +27,7 @@
 #include <propeller1.h>
 #endif
 
-#define CLKFREQ _clkfreq
+#define CLKFREQ _clockfreq()
 
 /**
  * @brief Start a new propeller LMM function/thread in another COG.

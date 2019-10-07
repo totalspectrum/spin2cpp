@@ -103,6 +103,8 @@ static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
 
+static void AssignOneFuncName(Function *f);
+
 static bool IsCogMem(Operand *addr);
 
 typedef struct AsmVariable {
@@ -2620,6 +2622,9 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         *offsetptr = offset;
     }
     if (funcptr) {
+        if (!FuncData(func)) {
+            AssignOneFuncName(func);
+        }
         *funcptr = FuncData(func)->asmname;
     }
     return func;
@@ -4502,28 +4507,26 @@ RemoveIfInlined(Function *f)
     return false;
 }
 
-// assign all function names so we can do forward calls
-// this is also where we can allocate the back end data
+// assign one function name
 static void
-AssignFuncNames(IRList *irl, Module *P)
+AssignOneFuncName(Function *f)
 {
-    Function *f;
+    const char *fname;
+    char *frname;
+    char *faltname;
+    char *fentername = NULL;
+    Module *P = f->module;
     Function *savecur = curfunc;
     
-    (void)irl; // not used
-
+    if (f->bedata) {
+        // already set up
+        return;
+    }
     if (!P->bedata) {
         P->bedata = calloc(sizeof(AsmModData), 1);
     }
-    for(f = P->functions; f; f = f->next) {
-	const char *fname;
-        char *frname;
-        char *faltname;
-        char *fentername = NULL;
-        
-        if (ShouldSkipFunction(f))
-            continue;
-        curfunc = f;
+    curfunc = f;
+    {
         // at one time we also forced the global module stuff into
         // COG memory, so we still have the capability to put code
         // into COG on a per-function basis; may be useful later
@@ -4628,6 +4631,22 @@ AssignFuncNames(IRList *irl, Module *P)
         }
     }
     curfunc = savecur;
+}
+
+// assign all function names so we can do forward calls
+// this is also where we can allocate the back end data
+static void
+AssignFuncNames(IRList *irl, Module *P)
+{
+    Function *f;
+    
+    (void)irl; // not used
+
+    for(f = P->functions; f; f = f->next) {
+        if (ShouldSkipFunction(f))
+            continue;
+        AssignOneFuncName(f);
+    }
 }
 
 static void
@@ -5297,7 +5316,7 @@ EmitMain_P1(IRList *irl, Module *P)
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfunc->toplevel = 1;  // does not need to save registers
     firstfunc->callSites += 1;
-    firstfuncname = IdentifierModuleName(P, firstfunc->name);
+    firstfuncname = IdentifierModuleName(firstfunc->module, firstfunc->name);
     
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
@@ -5386,7 +5405,7 @@ EmitMain_P2(IRList *irl, Module *P)
     firstfunc->no_inline = 1; // make sure it is never inlined or removed
     firstfunc->toplevel = 1;
     firstfunc->callSites += 1;
-    firstfuncname = IdentifierModuleName(P, firstfunc->name);
+    firstfuncname = IdentifierModuleName(firstfunc->module, firstfunc->name);
     
     ValidateStackptr();
     ValidateObjbase();

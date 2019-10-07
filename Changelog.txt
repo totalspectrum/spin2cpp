@@ -1,10 +1,11 @@
-Version 3.9.34
+Version 4.0.0
 - Fixed in-function array declarations in BASIC
 - Fixed using constant members in const declarations in BASIC
 - Use printf for translating BASIC print statements
 - Allow underscore after decimal point in floating point numbers
 - Support ptra++ and --ptra operands in inline assembly
 - Revised how CLKMODE and CLKFREQ are handled; made them functions rather than variables and changed some internal code for better compatibility
+- Added -x flag to fastspin to output magic exit code for C programs
 
 Version 3.9.33
 - Fixed a bug in encoding wrlut and rdlut instructions in rev 2a

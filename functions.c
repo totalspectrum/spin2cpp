@@ -814,7 +814,7 @@ doDeclareFunction(AST *funcblock)
     }
 
     /* if there was an old definition, validate it */
-    if (oldtype) {
+    if (oldtype && oldtype->left) {
         if (!CompatibleTypes(oldtype, fdef->overalltype)) {
             WARNING(funcdef, "Redefining function %s with an incompatible type", funcname_user);
         }
@@ -1694,7 +1694,7 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         } else {
-            if (gotArgs != expectArgs) {
+            if (gotArgs != expectArgs && !(f && f->language == LANG_C)) {
                 ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
                 return;
             }
@@ -2103,12 +2103,14 @@ MarkUsedBody(AST *body, const char *caller)
     AST *objref;
     AST *objtype;
     Module *P;
+    const char *name;
     
     if (!body) return;
     switch(body->kind) {
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
-        sym = LookupSymbol(GetIdentifierName(body));
+        name = GetIdentifierName(body);
+        sym = LookupSymbol(name);
         if (sym && sym->kind == SYM_FUNCTION) {
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);

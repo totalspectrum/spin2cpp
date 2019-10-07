@@ -1175,7 +1175,12 @@ GetMainFunction(Module *P)
     if (P->mainLanguage == LANG_BASIC) {
         mainName = "program";
     } else if (P->mainLanguage == LANG_C) {
-        mainName = "main";
+        if (gl_exit_status) {
+            mainName = "_c_startup";
+            P = globalModule;
+        } else {
+            mainName = "main";
+        }
     }
 
     if (mainName) {

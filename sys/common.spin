@@ -246,3 +246,5 @@ pri file "libsys/strings.bas" chr`$(x)
 pri file "libsys/strings.bas" str`$(x=float)
 
 '' pri file "libc/string/strlen.c" __builtin_strlen(x)
+
+pri file "libsys/c_startup.c" _c_startup

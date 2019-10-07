@@ -115,6 +115,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
+    fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
@@ -476,6 +477,9 @@ main(int argc, const char **argv)
                 fprintf(stderr, "Warning: hub base set to 0\n");
             }
             argv++; --argc;
+        } else if (!strcmp(argv[0], "-x")) {
+            argv++; --argc;
+            gl_exit_status = 1;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
             Usage(stderr, bstcMode);
@@ -505,6 +509,9 @@ main(int argc, const char **argv)
     pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
+    if (gl_exit_status) {
+        pp_define(&gl_pp, "__EXIT_STATUS__", "1");
+    }
     if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
         pp_define(&gl_pp, "__SPIN2PASM__", "1");
     }

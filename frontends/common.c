@@ -51,6 +51,7 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
+int gl_exit_status = 0;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
 int gl_listing = 0;

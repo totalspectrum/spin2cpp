@@ -97,7 +97,16 @@ LookupSymbolInFunc(Function *func, const char *name)
 Symbol *
 LookupSymbol(const char *name)
 {
-    return LookupSymbolInFunc(curfunc, name);
+    Symbol *s;
+    s = LookupSymbolInFunc(curfunc, name);
+    if (!s) {
+        // maybe it's a global symbol?
+        // for now be conservative, only look for "main"
+        if (!strcmp(name, "main") && allparse) {
+            s = LookupSymbolInTable(&allparse->objsyms, name);
+        }
+    }
+    return s;
 }
 
 /*
@@ -2641,6 +2650,9 @@ IsStringConst(AST *expr)
 int
 FuncNumResults(AST *functype)
 {
+    if (!functype) {
+        return 1; // unknown return type
+    }
     functype = functype->left;
     if (functype == ast_type_void) {
         return 0;
