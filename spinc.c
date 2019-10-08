@@ -174,8 +174,14 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     AST *curtype;
     int curtypesize;
     int isUnion = P->isUnion;
-    
-    for (upper = P->pendingvarblock; upper; upper = upper->right) {
+    AST *varblocklist;
+
+    varblocklist = P->pendingvarblock;
+    if (offset == 0) {
+        P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
+        P->pendingvarblock = NULL;
+    }
+    for (upper = varblocklist; upper; upper = upper->right) {
         AST *idlist;
         if (upper->kind != AST_LISTHOLDER) {
             ERROR(upper, "Expected list holder\n");
@@ -518,8 +524,10 @@ DeclareMemberVariables(Module *P)
         offset = (offset + 3) & ~3;
         P->varsize = offset;
     }
-    P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
-    P->pendingvarblock = NULL;
+    if (P->pendingvarblock) {
+        P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
+        P->pendingvarblock = NULL;
+    }
 }
 
 /* helper function for parsing pasm FILE directives */

@@ -35,13 +35,14 @@
 void
 AddSymbolForLabel(AST *ast)
 {
-    if (!ast->left || ast->left->kind != AST_IDENTIFIER) {
+    AST *ident = ast->left;
+    if (!ident || !IsIdentifier(ident)) {
         ERROR(ast, "Label is not an identifier");
     } else {
-        const char *name = ast->left->d.string;
+        const char *name = GetIdentifierName(ident);
         Symbol *sym = FindSymbol(&curfunc->localsyms, name);
         if (sym) {
-            WARNING(ast, "Redefining %s as a label", name);
+            WARNING(ident, "Redefining %s as a label", GetUserIdentifierName(ident));
         }
         AddSymbol(&curfunc->localsyms, name, SYM_LOCALLABEL, NULL, NULL);
     }

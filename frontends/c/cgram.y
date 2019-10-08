@@ -452,6 +452,16 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
 
 }
 
+static void
+AddStructBody(Module *C, AST *body)
+{
+    if (body) {
+        int is_union = C->isUnion;
+        DeclareCMemberVariables(C, body, is_union);
+        DeclareMemberVariables(C);
+    }
+}
+
 // make a new struct
 // skind is either AST_STRUCT or AST_UNION
 // identifier is NULL or is a struct tag
@@ -503,6 +513,9 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             return NULL;
         }
         C = class_type->d.ptr;
+        if (C->isUnion != is_union) {
+            SYNTAX_ERROR("Inconsistent use of union/struct for %s", typename);
+        }
     } else {
         if (body && body->kind == AST_STRING) {
             class_type = NewAbstractObject(AstIdentifier(typename), body);
@@ -512,16 +525,14 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         } else {
             C = NewModule(typename, LANG_C);
             C->Lptr = current->Lptr;
+            C->isUnion = is_union;
             class_type = NewAbstractObject(AstIdentifier(typename), NULL);
             class_type->d.ptr = C;
             AddSymbol(symtable, typename, SYM_TYPEDEF, class_type, NULL);
             AddSubClass(P, C);
         }
     }
-    if (body) {
-        DeclareCMemberVariables(C, body, is_union);
-        DeclareMemberVariables(C); 
-    }
+    AddStructBody(C, body);
     return class_type;
 }
 
@@ -1072,10 +1083,13 @@ type_specifier
 	;
 
 struct_or_union_specifier
-	: struct_or_union any_identifier '{' struct_declaration_list '}'
-            { $$ = MakeNewStruct(current, $1, $2, $4); }
-	| struct_or_union '{' struct_declaration_list '}'
-            { $$ = MakeNewStruct(current, $1, NULL, $3); }
+	: struct_open struct_declaration_list '}' struct_close
+            {
+                AST *d = $1;
+                AddStructBody(current, $2);
+                current = current->superclass;
+                $$ = d;
+            }
 	| struct_or_union any_identifier
             { $$ = MakeNewStruct(current, $1, $2, NULL); }
         | struct_or_union C_USING fromfile_clause
@@ -1099,6 +1113,37 @@ fromfile_clause
         : '(' C_STRING_LITERAL ')'
             { $$ = $2; }
         ;
+
+struct_open
+        : struct_or_union any_identifier '{'
+            {
+                AST *newstruct;
+                Module *C;
+                PushCurrentTypes();
+                newstruct = MakeNewStruct(current, $1, $2, NULL);
+                $$ = newstruct;
+                C = GetClassPtr(newstruct);
+                C->superclass = current;
+                current = C;
+            }
+        | struct_or_union '{'
+            {
+                AST *newstruct;
+                Module *C;
+                PushCurrentTypes();
+                newstruct = MakeNewStruct(current, $1, NULL, NULL);
+                $$ = newstruct;
+                C = GetClassPtr(newstruct);
+                C->superclass = current;
+                current = C;
+            }
+;
+
+struct_close:
+    {
+        PopCurrentTypes();
+    }
+;
 
 struct_declaration_list
 	: struct_declaration
