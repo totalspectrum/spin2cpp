@@ -85,7 +85,7 @@ doCTransform(AST **astptr, unsigned cflags)
         doCTransform(&ast->right, cflags);
         typ = ExprType(ast);
         if (typ && typ->kind == AST_USING) {
-            AST *replace = typ->left;
+            AST *replace = DupAST(typ->left);
             if (replace && replace->right && replace->right->kind == AST_RANGEREF) {
                 ast->right = replace->right->left;
                 replace->right->left = DupAST(ast);
