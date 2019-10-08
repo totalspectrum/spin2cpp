@@ -2,6 +2,7 @@
 #define wchar_t unsigned int
 #define wint_t int
 #define time_t unsigned int
+#define _FILE struct FILE
 
 /* libc/misc/ctype.c */
 int isupper(int c) __fromfile("libc/misc/ctype.c");
@@ -33,8 +34,21 @@ int tolower(int c) __fromfile("libc/misc/tolower.c");
 /* libc/misc/toupper.c */
 int toupper(int c) __fromfile("libc/misc/toupper.c");
 
+/* libc/stdio/fflush.c */
+int fflush(_FILE *f) __fromfile("libc/stdio/fflush.c");
+
+/* libc/stdio/fprintf.c */
+int printf(const char *format, ...) __fromfile("libc/stdio/fprintf.c");
+int fprintf(_FILE *, const char *format, ...) __fromfile("libc/stdio/fprintf.c");
+
+/* libc/stdio/fputs.c */
+char *fputs(char *data, _FILE *) __fromfile("libc/stdio/fputs.c");
+char *puts(char *data) __fromfile("libc/stdio/fputs.c");
+
 /* libc/stdio/gets.c */
 char *gets(char *data) __fromfile("libc/stdio/gets.c");
+
+int sprintf(char *str, const char *format, ...) __fromfile("libc/stdio/sprintf.c");
 
 /* libc/stdlib/abort.c */
 void abort(void) __fromfile("libc/stdlib/abort.c");
