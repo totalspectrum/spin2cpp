@@ -2713,6 +2713,7 @@ NeverInline(Function *f)
     if (f->uses_alloca) return true;
     if (f->large_local) return true;
     if (f->closure) return true;
+    if (gl_exit_status && !strcmp(f->name, "main")) return true;
     return false;
 }
 
