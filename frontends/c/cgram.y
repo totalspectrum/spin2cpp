@@ -1108,7 +1108,14 @@ struct_declaration_list
 	;
 
 struct_declaration
-	: specifier_qualifier_list struct_declarator_list ';'
+        : specifier_qualifier_list ';' /* for anonymous struct/union */
+            {
+                AST *dummy;
+                dummy = AstTempIdentifier("__anonymous__");
+                dummy = NewAST(AST_LISTHOLDER, dummy, NULL);
+                $$ = MultipleDeclareVar($1, dummy);
+            }
+	| specifier_qualifier_list struct_declarator_list ';'
             {
                 $$ = MultipleDeclareVar($1, $2);
             }
@@ -1173,7 +1180,7 @@ enum_specifier
 	| C_ENUM any_identifier '{' enumerator_list ',' '}'
             { $$ = AddEnumerators($2, $4); }
 	| C_ENUM any_identifier
-            { $$ = NULL; }
+            { $$ = ast_type_long; }
 	;
 
 enumerator_list
