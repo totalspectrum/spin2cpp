@@ -3173,6 +3173,12 @@ getCChar(LexStream *L, int isWide)
     if (c2 != '\'') {
         SYNTAX_ERROR("expected closing \' ");
     }
+    if (!isWide) {
+        if (255 < (unsigned)c) {
+            SYNTAX_ERROR("value does not fit in char");
+            c &= 255;
+        }
+    }
     return c;
 }
 
