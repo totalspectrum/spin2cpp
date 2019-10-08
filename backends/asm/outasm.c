@@ -3544,7 +3544,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       AST *stringExpr = EvalStringConst(expr->left);
       r = GetOneHub(STRING_DEF, NewTempLabelName(), (intptr_t)(stringExpr));
       if (gl_p2) {
-          return r;
+          Operand *temp = NewFunctionTempRegister();
+          EmitMove(irl, temp, r);
+          return temp;
       }
       return NewImmediatePtr(NULL, r);
   }
