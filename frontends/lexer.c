@@ -3130,6 +3130,21 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     return C_IDENTIFIER;
 }
 
+static int
+getCChar(LexStream *L, int isWide)
+{
+    int c, c2;
+    c = lexgetc(L);
+    if (c == '\\') {
+        c = getEscapedChar(L);
+    }
+    c2  = lexgetc(L);
+    if (c2 != '\'') {
+        SYNTAX_ERROR("expected closing \' ");
+    }
+    return c;
+}
+
 int saved_cgramyychar;
 
 static int
@@ -3189,22 +3204,27 @@ getCToken(LexStream *L, AST **ast_ptr)
             c = C_CONSTANT;
         }
     } else if (isIdentifierStart(c)) {
-        lexungetc(L, c);
-        c = parseCIdentifier(L, &ast);
+        if (c == 'L') {
+            int c2 = lexgetc(L);
+            if (c2 == '\'') {
+                c = getCChar(L, 1);
+                ast = AstInteger(c);
+                c = C_CONSTANT;
+            } else {
+                lexungetc(L, c2);
+            }
+        }
+        if (c != C_CONSTANT) {
+            lexungetc(L, c);
+            c = parseCIdentifier(L, &ast);
+        }
     } else if (c == '"') {
         parseCString(L, &ast);
 	c = C_STRING_LITERAL;
     } else if (c == '}' && InDatBlock(L)) {
         L->in_block = SP_PUB;
     } else if (c == '\'') {
-        c = lexgetc(L);
-        if (c == '\\') {
-            c = getEscapedChar(L);
-        }
-        c2  = lexgetc(L);
-        if (c2 != '\'') {
-            SYNTAX_ERROR("expected closing \' ");
-        }
+        c = getCChar(L, 0);
         ast = AstInteger(c);
         c = C_CONSTANT;
     } else if (c == '.') {
