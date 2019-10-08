@@ -678,13 +678,28 @@ static int
 getEscapedChar(LexStream *L)
 {
     int c = lexgetc(L);
+    int g;
     if (c < 0) {
         SYNTAX_ERROR("end of file inside string");
         return c;
     }
     switch (c) {
     case '0':
-        c = 0; break;
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+        g = c;
+        c = 0;
+        while (g >= '0' && g <= '7') {
+            c = c*8 + (g-'0');
+            g = lexgetc(L);
+        }
+        lexungetc(L, g);
+        break;
     case 'a':
         c = 7; break;
     case 'b':
@@ -701,6 +716,22 @@ getEscapedChar(LexStream *L)
         c = 13; break;
     case 'e':
         c = 27; break;
+    case 'x':
+    case 'X':
+        c = 0;
+        for(;;) {
+            g = lexgetc(L);
+            if (g >= '0' && g <= '9') {
+                c = 16*c + (g-'0');
+            } else if (g >= 'a' && g <= 'f') {
+                c = 16*c + (g-'a') + 10;
+            } else if (g >= 'A' && g <= 'F') {
+                c = 16*c + (g-'A') + 10;
+            } else {
+                lexungetc(L, g);
+                break;
+            }
+        }
     }
     return c;
 }
