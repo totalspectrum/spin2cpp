@@ -2554,11 +2554,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         *ftypeptr = ftype;
     }
     sym = FindFuncSymbol(expr, &objref, 1);
-    if (!sym) {
-//        ERROR(expr, "expected function symbol"); // already printed an error
-        return NULL;
-    }
-    if (sym->kind != SYM_FUNCTION) {
+    if (!sym || sym->kind != SYM_FUNCTION) {
         Operand *base;
         Operand *tempbase = NewFunctionTempRegister();
         Operand *temp1 = NewFunctionTempRegister();
@@ -2640,8 +2636,8 @@ CompileFunccall(IRList *irl, AST *expr)
   Function *func = NULL;
   AST *functype = NULL;
   AST *params;
-  Operand *offset;
-  Operand *absobjaddr;
+  Operand *offset = NULL;
+  Operand *absobjaddr = NULL;
   Operand *funcaddr = NULL;
   OperandList *temp;
   OperandList *results = NULL;
