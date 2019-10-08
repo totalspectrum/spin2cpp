@@ -225,6 +225,15 @@ AstBitValue(long ival)
     return ast;
 }
 
+/* create a floating point value */
+AST *
+AstFloat(float f)
+{
+    AST *ast = NewAST(AST_FLOAT, NULL, NULL);
+    ast->d.ival = floatAsInt(f);
+    return ast;
+}
+
 /* create an identifier */
 AST *
 AstIdentifier(const char *name)

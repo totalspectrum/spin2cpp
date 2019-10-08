@@ -6,6 +6,7 @@ Version 4.0.0
 - Support ptra++ and --ptra operands in inline assembly
 - Revised how CLKMODE and CLKFREQ are handled; made them functions rather than variables and changed some internal code for better compatibility
 - Added -x flag to fastspin to output magic exit code for C programs
+- Fixed a number of small C bugs
 
 Version 3.9.33
 - Fixed a bug in encoding wrlut and rdlut instructions in rev 2a

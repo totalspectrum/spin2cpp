@@ -1128,6 +1128,11 @@ domakefloat(AST *typ, AST *ast)
         return ret;
     }
     ast = forcepromote(typ, ast);
+    if (IsConstExpr(ast)) {
+        int x = EvalConstExpr(ast);
+        // FIXME: assumes 32 bit floats only
+        return AstFloat((float)x);
+    }
     if (IsUnsignedType(typ)) {
         ret = MakeOperatorCall(float_fromuns, ast, NULL, NULL);
     } else {
