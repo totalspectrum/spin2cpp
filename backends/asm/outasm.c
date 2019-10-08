@@ -4097,14 +4097,14 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     case AST_LABEL:
         EmitDebugComment(irl, ast);
-        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left));
         if (op) {
             EmitLabel(irl, op);
         }
         break;
     case AST_GOTO:
         EmitDebugComment(irl, ast);
-        op = GetLabelFromSymbol(ast, ast->left->d.string);
+        op = GetLabelFromSymbol(ast, GetUserIdentifierName(ast->left));
         if (op) {
             EmitJump(irl, COND_TRUE, op);
         }

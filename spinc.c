@@ -177,7 +177,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     AST *varblocklist;
 
     varblocklist = P->pendingvarblock;
-    if (offset == 0) {
+    if (basetypesize == 0) {
         P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
         P->pendingvarblock = NULL;
     }

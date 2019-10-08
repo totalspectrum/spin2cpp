@@ -39,7 +39,10 @@ AddSymbolForLabel(AST *ast)
     if (!ident || !IsIdentifier(ident)) {
         ERROR(ast, "Label is not an identifier");
     } else {
-        const char *name = GetIdentifierName(ident);
+        // labels occupy a different namespace from ordinary identifiers
+        // so we do not use the internal name (GetIdentifierName) but
+        // rather directly use the user's name (GetUserIdentifierName)
+        const char *name = GetUserIdentifierName(ident);
         Symbol *sym = FindSymbol(&curfunc->localsyms, name);
         if (sym) {
             WARNING(ident, "Redefining %s as a label", GetUserIdentifierName(ident));
