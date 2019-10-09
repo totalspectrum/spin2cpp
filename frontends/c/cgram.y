@@ -476,7 +476,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     const char *name;
     char *typename;
     Module *C;
-    SymbolTable *symtable = &P->objsyms;
+    SymbolTable *symtable = currentTypes; // &P->objsyms;
     Symbol *sym;
     AST *class_type;
     
@@ -1120,23 +1120,23 @@ struct_open
             {
                 AST *newstruct;
                 Module *C;
-                PushCurrentTypes();
                 newstruct = MakeNewStruct(current, $1, $2, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
                 C->superclass = current;
                 current = C;
+                PushCurrentTypes();
             }
         | struct_or_union '{'
             {
                 AST *newstruct;
                 Module *C;
-                PushCurrentTypes();
                 newstruct = MakeNewStruct(current, $1, NULL, NULL);
                 $$ = newstruct;
                 C = GetClassPtr(newstruct);
                 C->superclass = current;
                 current = C;
+                PushCurrentTypes();
             }
 ;
 
