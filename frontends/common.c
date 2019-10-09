@@ -303,7 +303,11 @@ DeclareConstants(AST **conlist_ptr)
                 switch (ast->kind) {
                 case AST_ASSIGN:
                     if (IsConstExpr(ast->right)) {
-                        EnterConstant(ast->left->d.string, ast->right);
+                        if (!IsIdentifier(ast->left)) {
+                            ERROR(ast, "Internal error, bad constant declaration");
+                            return;
+                        }                            
+                        EnterConstant(GetIdentifierName(ast->left), ast->right);
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);

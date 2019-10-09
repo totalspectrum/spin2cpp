@@ -156,7 +156,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
 {
     unsigned hash;
     Symbol *sym;
-
+    
     hash = SymbolHash(name);
     sym = table->hash[hash];
     while (sym) {
@@ -172,13 +172,13 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
 
     if (!sym) {
         sym = NewSymbol();
-    }
+        sym->next = table->hash[hash];
+        table->hash[hash] = sym;
+    } 
     sym->our_name = name;
     sym->user_name = user_name ? user_name : name;
     sym->kind = (Symtype)type;
     sym->val = val;
-    sym->next = table->hash[hash];
-    table->hash[hash] = sym;
     return sym;
 }
 
