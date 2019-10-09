@@ -516,6 +516,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         if (C->isUnion != is_union) {
             SYNTAX_ERROR("Inconsistent use of union/struct for %s", typename);
         }
+        C->Lptr = current->Lptr;
     } else {
         if (body && body->kind == AST_STRING) {
             class_type = NewAbstractObject(AstIdentifier(typename), body);
