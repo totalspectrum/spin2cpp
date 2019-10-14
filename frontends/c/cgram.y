@@ -577,6 +577,9 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
     AST *param_list;
     AST *param;
     if (!funcdecl) return NULL;
+    while (funcdecl && funcdecl->kind == AST_PTRTYPE) {
+        funcdecl = funcdecl->left;
+    }
     if (funcdecl->kind != AST_DECLARE_VAR) {
         ERROR(funcdecl, "Internal error expected declaration");
         return orig_funcdecl;
