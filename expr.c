@@ -1058,6 +1058,19 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
 }
 
 static int32_t
+BoolValue(int v)
+{
+    if (!v) return 0;
+    if (!curfunc) return -1;
+    switch (curfunc->language) {
+    case LANG_C:
+        return 1;
+    default:
+        return -1;
+    }
+}
+
+static int32_t
 EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
 {
     
@@ -1101,25 +1114,31 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_ROTR:
         return ((uint32_t)lval >> rval) | ((uint32_t) lval) << (32-rval);
     case '<':
-        return -(lval < rval);
+        return BoolValue(lval < rval);
     case '>':
-        return -(lval > rval);
+        return BoolValue(lval > rval);
     case K_LE:
-        return -(lval <= rval);
+        return BoolValue(lval <= rval);
     case K_GE:
-        return -(lval >= rval);
+        return BoolValue(lval >= rval);
     case K_LTU:
-        return (-((uint32_t)lval < (uint32_t)rval));
+        return BoolValue(((uint32_t)lval < (uint32_t)rval));
     case K_GTU:
-        return (-((uint32_t)lval > (uint32_t)rval));
+        return BoolValue(((uint32_t)lval > (uint32_t)rval));
     case K_LEU:
-        return (-((uint32_t)lval <= (uint32_t)rval));
+        return BoolValue(((uint32_t)lval <= (uint32_t)rval));
     case K_GEU:
-        return (-((uint32_t)lval >= (uint32_t)rval));
+        return BoolValue(((uint32_t)lval >= (uint32_t)rval));
     case K_NE:
-        return -(lval != rval);
+        return BoolValue(lval != rval);
     case K_EQ:
-        return -(lval == rval);
+        return BoolValue(lval == rval);
+    case K_BOOL_OR:
+        return BoolValue(lval || rval);
+    case K_BOOL_AND:
+        return BoolValue(lval && rval);
+    case K_BOOL_NOT:
+        return BoolValue(!rval);
     case K_NEGATE:
         return -rval;
     case K_BIT_NOT:
