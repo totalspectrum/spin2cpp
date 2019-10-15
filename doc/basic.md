@@ -595,6 +595,25 @@ the variable `tx` holds a pointer both to the `ser` object and to the particular
 
 Instead of `new`, which allocates persistent memory on the heap, it is possible to allocate temporary memory with the `__builtin_alloca` operator. Memory allocated in this way may only be used during the lifetime of the function which allocated it, and may not be returned from that function or assigned to a global variable. Almost always it is better to use `new` than `__builtin_alloca`, but the latter is more efficient (but dangerous, because the pointer becomes invalid after the function that uses `__builtin_alloca` exits).
 
+#### _gc_alloc_managed
+
+The low-level function used by `new` is `_gc_alloc_managed`. You may call it directly, although it is rare that you will need to do this:
+```
+  ptr = _gc_alloc_managed(size)
+```
+
+#### _gc_alloc
+
+The `_gc_alloc` function allocates memory on the heap, but unlike `_gc_alloc_managed` the memory will *not* be reclaimed by garbage collection. It must be explicitly freed with `_gc_free`.
+
+#### _gc_free
+
+`_gc_free` frees memory previously allocated by `_gc_alloc` or `_gc_alloc_managed`. Its use for managed memory is optional (the garbage collector can usually reclaim the memory when it is unused).
+
+#### _gc_collect
+
+The `_gc_collect` function forces garbage collection to be run
+
 ### Templates
 
 FlexBASIC supports polymorphic programming via templates. These are like parameterized function or class declarations. Only function templates are supported at this time. 
