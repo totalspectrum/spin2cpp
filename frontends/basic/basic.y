@@ -402,6 +402,7 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_GOTO       "goto"
 %token BAS_GOSUB      "gosub"
 %token BAS_IF         "if"
+%token BAS_IMPORT     "import"
 %token BAS_INPUT      "input"
 %token BAS_CAST_INT   "int"
 %token BAS_INTEGER_KW "integer"

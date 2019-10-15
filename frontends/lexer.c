@@ -1461,6 +1461,7 @@ struct reservedword basic_keywords[] = {
   { "goto", BAS_GOTO },
   { "gosub", BAS_GOSUB },
   { "if", BAS_IF },
+  { "import", BAS_IMPORT },
   { "input", BAS_INPUT },
   { "int", BAS_CAST_INT },
   { "integer", BAS_INTEGER_KW },

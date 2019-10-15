@@ -175,6 +175,7 @@ function
 gosub
 goto
 if
+import
 input
 integer
 let
@@ -1418,6 +1419,10 @@ else
   print "x does not equal either of the others"
 end if
 ```
+
+### IMPORT
+
+Keyword reserved for future use.
 
 ### INPUT
 
