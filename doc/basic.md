@@ -888,7 +888,7 @@ creates an object `ser` based on the Spin file "SmartSerial.spin" (for P2) or "F
    ser.tx(13)  ' send a carriage return
    ser.dec(100) ' print 100 as a decimal number
 ```
-BASIC files may also be used as classes. When they are, all the functions and subroutines in the BASIC file are exposed as methods (there are no private methods in BASIC yet). Any BASIC code that is not in a function or subroutine is not accessible.
+BASIC files may also be used as classes. When they are, all the functions and subroutines in the BASIC file are exposed as methods (there are no private methods in BASIC yet). Any BASIC code that is not in a function or subroutine is gathered into a method called `program`.
 
 #### Abstract classes
 
@@ -943,6 +943,13 @@ Using Spin objects with `class using` is straightforward, but there are some thi
 #### Interoperation with C
 
 C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky. Only C symbols that are all lower case may be accessed from BASIC.
+
+### CLKFREQ
+
+```
+  current_freq = clkfreq
+```
+Propeller built in function which returns the current clock frequency.
 
 ### CLKSET
 
@@ -1971,14 +1978,17 @@ Propeller specific builtin function. Waits until the cycle counter is a specific
   waitcnt(getcnt() + clkfreq) ' wait one second
 ```
 
-#### WAITPEQ
+### WAITPEQ
 
 Propeller specific builtin function. Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpeq` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
 
-#### WAITPNE
+### WAITPNE
 
 Propeller specific builtin function. Waits for pins to not have a specific value (given by a bit mask). Same as the Spin `waitpne` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
 
+### WITH
+
+Keyword reserved for future use.
 
 ### WHILE
 
