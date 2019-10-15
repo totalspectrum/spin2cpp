@@ -127,7 +127,7 @@ pri _rx | val, rxmask, waitcycles, i, bitcycles
   return val
 
 pri _setbaud(rate)
-  _bitcycles := clkfreq / rate
+  _bitcycles := _clkfreq_var / rate
 
 pri _call_method(o, f, x=0) | r
   asm

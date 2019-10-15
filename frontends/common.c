@@ -147,11 +147,12 @@ Aliases basicalias[] = {
     { NULL, NULL },
 };
 Aliases calias[] = {
-    { "clkfreq", "__builtin_clkfreq" },
-    { "clkmode", "__builtin_clkmode" },
+    { "clkfreq", "_clkfreq_var" },
+    { "clkmode", "_clkmode_var" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
+    { "_clockfreq", "__builtin_clkfreq" },
     { "_dirl", "__builtin_propeller_dirl" },
     { "_dirh", "__builtin_propeller_dirh" },
     { "_dirnot", "__builtin_propeller_dirnot" },

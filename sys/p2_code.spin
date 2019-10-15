@@ -89,7 +89,7 @@ dat
 _bitcycles long 0
 
 pri _setbaud(rate)
-  _bitcycles := clkfreq / rate
+  _bitcycles := _clkfreq_var / rate
   _baudrate := rate '' update global config area
   
 con
