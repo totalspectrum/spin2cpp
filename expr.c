@@ -1896,7 +1896,11 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     AST *objref = NULL;
     Symbol *sym = NULL;
     AST *expr = ast;
-    
+
+    if (IsIdentifier(expr)) {
+        sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
+        return sym;
+    }
     if (expr->kind != AST_METHODREF) {       
         if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF && expr->kind != AST_ABSADDROF) {
             ERROR(expr, "Internal error expecting function call");
