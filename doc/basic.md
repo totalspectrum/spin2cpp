@@ -1901,6 +1901,43 @@ If you call `say` with an argument, it will print that argument. If you call `sa
 
 Subroutines may be invoked with function notation (arguments enclosed in parentheses) or with the arguments separated from the subroutine name by white space, as in the example above.
 
+#### Anonymous subroutines
+
+`sub` may also be used in expressions to specify a temporary, unnamed subroutine. The syntax for this is very like anonymous functions. For example, here is a way to construct a subroutine which executes another subroutine `n` times:
+```
+   ' define an alias for a subroutine with no arguments
+   type voidsub as sub()
+
+   ' execute subroutine S n times
+   sub doit(s as voidsub, n as integer)
+     if n > 0 then
+       s()
+       doit(s, n-1)
+     end if
+   end sub
+
+   dim f as voidsub
+   f = sub()
+         print "hello"
+       end sub
+   ' print hello 4 times
+   doit( f, 4 )
+```
+There is also a short form of subroutine definitions, starting with `[` followed by the subroutine parameters, `:`, and then the subroutine statements. So the above example could be written more compactly as:
+```
+   ' define an alias for a subroutine with no arguments
+   type voidsub as sub()
+
+   ' execute subroutine S n times
+   sub doit(s as voidsub, n as integer)
+     if n > 0 then
+       s()
+       doit(s, n-1)
+     end if
+   end sub
+   doit( [: print "hello" ], 4 )
+```
+
 ### THEN
 
 Introduces a multi-line series of statements for an `if` statement. See IF for details.
