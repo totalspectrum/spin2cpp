@@ -774,8 +774,7 @@ number:
 
 ### AS
 
-`as` is a keyword that introduces a type for a function, function parameter, or
-dimensioned variable.
+`as` is a keyword that introduces a type for a function, function parameter, or dimensioned variable.
 
 ```
   ' declare a function with an integer parameter that returns a string
@@ -799,7 +798,7 @@ Inside inline assembly any instructions may be used, but the only legal operands
 
 If you need temporary variables inside some inline assembly, `dim` them as locals in the enclosing function.
 
-Example: to implement a wait (like the built-in `waitcnt`):
+Example: to implement a wait (like the built-in `waitcnt`) on Propeller 1:
 ```
 sub wait_until_cycle(x as uinteger)
   asm
@@ -819,9 +818,9 @@ Allocates memory on the stack. The argument is an integer specifying how much me
 ```
 creates an array of 64 integers (which needs 256 bytes) and makes `x` into a pointer to it, which may be used anywhere within the subroutine or function.
 
-The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable, a member variable (one declared outside of functions or subroutines),  or be returned from a function.
+The pointer returned from `__builtin_alloca` will become invalid as soon as the current function returns (or throws an exception), so it should never be assigned to a global variable, a member variable (one declared outside of functions or subroutines), or be returned from a function.
 
-`__builtin_alloca` is awkward to work with, and dangerous. Almost always you should use `new` instead. The only advantages of `__builtin_alloca` is that it is slightly more efficient than `new`, and does not use up heap space (but uses stack space instead).
+`__builtin_alloca` is awkward to work with, and dangerous. In most cases you should use `new` instead. The only advantages of `__builtin_alloca` is that it is more efficient than `new`, and does not use up heap space (but uses stack space instead).
 
 ### BYTE
 
@@ -2073,15 +2072,6 @@ Reserved for use in inline assembler.
   a = x xor y
 ```
 Returns the bit-wise exclusive or of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed. `xor` is often used for flipping bits.
-
-### Propeller Specific Variables
-
-#### clkfreq
-
-```
-  dim clkfreq as uinteger
-```
-Clkfreq gives the frequency of the system clock in cycles per second.
 
 ## Sample Programs
 
