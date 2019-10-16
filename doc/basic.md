@@ -1755,8 +1755,10 @@ Within the string literal output fields are specified by special forms, which ar
 
 `\` indicates a string field, which continues until the next `\`. The width of the field is the total number of characters, including the beginning and ending `\`. The string will be printed left justified within the field. Centering or right justification may be achieved for fields of length 3 or more by using `=` or '>' characters, respectively, as fillers between `\`. If the string is too long to fit within the field, only the first `N` characters of the string are printed.
 
+`_` (underscore) indicates that the next character is to be escaped; this prevents the usual interpretation of characters like `%` and `#` and allows them to be inserted into the format string.
 
 ```
+' print x with 4 digits (including leading 0's)
 print using "%%%%"; x
 ```
 
