@@ -498,7 +498,7 @@ y = "he" + "llo"
 cmpstrings(x, y)
 cmpptrs(x, y)
 ```
-will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison (and while the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
+will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison. While the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
 
 #### Classes
 
@@ -526,7 +526,7 @@ dim x as counter
 x.inc
 print x.get()
 ```
-Note that `end class` must be spelled out in full (unlike many `end x` pairs which may be abbreviated as just `end`). 
+Note that `end class` must be spelled out in full (unlike many "`end x`" pairs which may be abbreviated as just `end`). 
 
 #### Type Aliases
 
@@ -645,7 +645,7 @@ There are two ways to create and use libraries of useful functions.
 
 ### Classes
 
-Probably the cleanest way is to use classes. For each group of related functions, put them into a .bas file, and then instantiate a class using that file. For example:
+Probably the cleanest way to create libraries is to use classes. For each group of related functions, put them into a .bas file, and then instantiate a class using that file. For example:
 ```
 ' mylib.bas
 ' simple library with just one entry point, greet
@@ -703,6 +703,8 @@ Similarly, to set pin 2 as input and read it:
   x = input(2)
 ```
 
+On the Propeller 1 pins 0-31 may be used. On Propeller 2 this expands to 0-63.
+
 #### Pin Ranges
 
 Ranges of pins may be specified with `hi,lo` or `lo,hi`. The first form is preferred; if you do
@@ -714,8 +716,9 @@ then the bottom 3 bits of x are copied directly to the first 3 output pins. If y
   output(0, 2) = x     ' note: x is reversed!
   output(0, 2) = &b110 ' sets bits 0 and 1 to 1, and bit 2 to 0
 ```
-then the lower 3 bits are reversed; this is useful if you're directly coding a binary constant, but
-otherwise is probably not what you want.
+then the lower 3 bits are reversed; this is useful if you're directly coding a binary constant, but otherwise is probably not what you want.
+
+A pin range should not extend over pin 32. That is, each range must fit into either 0 to 31 or 32 to 63.
 
 ### Hardware registers
 
