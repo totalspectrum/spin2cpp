@@ -169,7 +169,7 @@ pri _gc_alloc(size)
 
 pri _gc_alloc_managed(size) : r
   r := _gc_doalloc(size, 0)
-  if (r == 0)
+  if (r == 0 and size > 0)
     return _gc_errmsg(string(" !!! out of memory !!! "))
   return r
 
@@ -304,7 +304,7 @@ pri __getsp | x
 ''
 '' actual garbage collection routine
 ''
-pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid
+pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid, size
 
   (startheap, endheap) := _gc_ptrs
 
