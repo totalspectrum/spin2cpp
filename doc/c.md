@@ -152,7 +152,7 @@ The amount of space required for the stack depends on the complexity of the code
 ### REV
 
 ```
-x = __builtin_rev(y, n)
+x = __builtin_propeller_rev(y, n)
 ```
 Reverses the bits of `y` and then shifts the result right by `32-n` places. This effectively means that the bottom `n` bits of `y` are reversed, and 0 placed in the remaining bits.
 
