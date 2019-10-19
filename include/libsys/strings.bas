@@ -59,10 +59,10 @@ function chr$(x as integer) as string
   return p
 end function
 
-function str$(x as single) as string
+class __strs_cl
   dim p as ubyte pointer
   dim i as integer
-  var fn = function(c as integer) as integer
+  function pfunc(c as integer) as integer
     if (i < 16) then
       p(i) = c
       i = i+1
@@ -71,10 +71,19 @@ function str$(x as single) as string
       return -1
     end if
   end function
+end class
+
+function str$(x as single) as string
+  dim p as ubyte pointer
+  dim i as integer
+  dim g as __strs_cl pointer
   p = new ubyte(15)
   i = 0
   if p then
-    _fmtfloat(fn, 0, x, ASC("g"))
+    g = __builtin_alloca(8)
+    g(0).p = p
+    g(0).i = i
+    _fmtfloat(@g(0).pfunc, 0, x, ASC("g"))
   end if
   '' FIXME: should we check here that i is sensible?
   return p
