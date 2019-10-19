@@ -143,7 +143,8 @@ Aliases basicalias[] = {
     { "pinset", "__builtin_propeller_drv" },
     { "pintoggle", "__builtin_propeller_drvnot" },
     { "rnd", "_basic_rnd" },
-    { "val", "__builtin_atoi" },
+    { "val", "__builtin_atof" },
+    { "val%", "__builtin_atoi" },
     { NULL, NULL },
 };
 Aliases calias[] = {

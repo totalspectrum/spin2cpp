@@ -284,10 +284,12 @@ pri __builtin_atoi(s = "0", base=0) : r = long | c, negate, digit
   repeat while byte[s] == " "
     s++
   c := byte[s]
-  if c == "-"
+  repeat while (c == "-") or (c == "+")
     s++
-    negate := 1
-    
+    if (c == "-")
+      negate := 1 - negate
+    c := byte[s]
+  
   repeat
     c := byte[s++]
     if (c == "0") or (c == "&")
@@ -323,11 +325,12 @@ pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   repeat while byte[s] == " "
     s++
   c := byte[s]
-  if c == "+"
+  repeat while (c == "+") or (c == "-")
+    if c == "-"
+      negate := 1-negate
     s++
-  elseif c == "-"
-    s++
-    negate := 1
+    c := byte[s]
+    
   repeat
     c := byte[s++]
     if (c == 0)

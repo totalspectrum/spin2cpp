@@ -249,6 +249,8 @@ rnd
 sendrecvdevice
 _setbaud
 str$
+val
+val%
 waitcnt
 waitpeq
 waitpne
@@ -2005,6 +2007,19 @@ An unsigned 16 bit integer, occupying two bytes of computer memory. The signed v
 ### USING
 
 Keyword intended for use in PRINT statements, and also to indicate the file to be used for a CLASS.
+
+### VAL
+
+Predefined function to convert a string to a floating point number.
+```
+  dim x as single
+  x = val(a$) ' convert a$ to a float
+```
+If you know the input string represents an integer, consider using the more efficient `val%` instead.
+
+### VAL%
+
+Predefined function to convert a string to an integer.
 
 ### VAR
 
