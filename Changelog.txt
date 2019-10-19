@@ -8,6 +8,7 @@ Version 4.0.0
 - Fixed a bug in redefinition of special built-in functions
 - Fixed a spurious "Out of memory" message when allocating 0 bytes
 - Added -x flag to fastspin to output magic exit code for C programs
+- Fixed promotion to unsigned when one operator is unsigned
 - Fixed a number of small C bugs
 
 Version 3.9.33

@@ -577,8 +577,7 @@ ConvertPrintToPrintf(AST *ast)
     AST *handle = ast->right;
     AST *expr, *type;
     AST *printit = NewAST(AST_PRINT, NULL, NULL);
-    AST *seq = NULL;
-    
+    AST *seq = NULL;    
     AST *fmtAst = NULL;
     Flexbuf fbstr;
     char strbuf[8];
@@ -1110,7 +1109,7 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
         }
         rettype = lefttype;
     }
-    if (leftunsigned && rightunsigned) {
+    if (leftunsigned || rightunsigned) {
         return rettype;
     } else {
         return ast_type_long;
