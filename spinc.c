@@ -565,6 +565,7 @@ InitBasicData(Module *P)
     datinfo = NewAST(AST_BYTELIST, P->bas_data, zero);
     datinfo = AddToList(labeldef, datinfo);
     datinfo = AddToList(NewAST(AST_LINEBREAK, NULL, NULL), datinfo);
+    datinfo = AddToList(NewAST(AST_ORGH, NULL, NULL), datinfo);
     P->datblock = AddToList(datinfo, P->datblock);
 
     // Add a definition for __basic_data_ptr
