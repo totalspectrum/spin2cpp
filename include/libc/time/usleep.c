@@ -11,7 +11,7 @@ usleep(unsigned int n)
   unsigned usecond = _clkfreq/1000000;
 
   waitcycles = getcnt() + n*usecond;
-  __napuntil(waitcycles);
+  waitcnt(waitcycles);
 
   return 0;
 }

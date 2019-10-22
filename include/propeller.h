@@ -27,6 +27,7 @@
 #include <propeller1.h>
 #endif
 
+#define _clkfreq _clockfreq()
 #define CLKFREQ _clockfreq()
 
 /**
