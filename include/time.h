@@ -11,10 +11,10 @@ extern "C" {
 #endif
 
 typedef unsigned int clock_t;
-extern clock_t _clkfreq;
+extern clock_t _clkfreq_var;
 /* the actual frequency the machine is running at may vary */
-#define CLOCKS_PER_SEC _clkfreq
-#define CLK_TCK _clkfreq
+#define CLOCKS_PER_SEC _clkfreq_var
+#define CLK_TCK _clkfreq_var
 
 /* our time_t is the same as the Posix time_t:
  *  86400 * (number of days past the epoch) + (seconds elapsed today)
