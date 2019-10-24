@@ -366,7 +366,40 @@ UndoLocalIdentifier(AST *body, AST *ident)
     }
 }
 
-        
+//
+// add initializers of the form "ident = expr" to a given sequence "seq"
+// the type of ident is "basetype"
+//
+static AST *
+AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
+{
+    AST *assign;
+    int i;
+    int limit;
+    if (IsArrayType(basetype)) {
+        AST *sub;
+        if (!IsConstExpr(basetype->right)) {
+            ERROR(ident, "Variable length arrays not supported yet");
+            return seq;
+        }
+        limit = EvalConstExpr(basetype->right);
+        for (i = 0; expr && i < limit; i++) {
+            sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
+            seq = AddInitializers(seq, sub, expr->left, basetype->left);
+            expr = expr->right;
+        }
+        while (i < limit) {
+            sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
+            seq = AddInitializers(seq, sub, AstInteger(0), basetype->left);
+            i++;
+        }
+        return seq;
+    }
+    assign = AstAssign(ident, expr);
+    seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
+    return seq;
+}
+
 //
 // declare some static variables
 //
@@ -420,8 +453,12 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 identlist = NULL;
             }
             if (ident->kind == AST_ASSIGN) {
+                // check for x[] = {a, b, c} type initializers here
+                if (IsArrayType(basetype) && basetype->right == NULL && ident->right->kind == AST_EXPRLIST) {
+                    basetype->right = AstInteger(AstListLen(ident->right));
+                }
                 // write out an initialization for the variable
-                seq = AddToList(seq, NewAST(AST_SEQUENCE, ident, NULL));
+                seq = AddInitializers(seq, ident->left, ident->right, basetype);
                 expr = ident->right;
                 ident = ident->left;
                 // scan for lambdas?
