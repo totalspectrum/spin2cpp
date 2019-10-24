@@ -220,6 +220,19 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
             continue;
         }
         if (nameAst->kind == AST_LOCAL_IDENTIFIER) {
+            // we have to be very careful here; a new static declaration
+            // for an identifier needs to override an existing static in
+            // an outer scope
+            Symbol *sym;
+            const char *idstr = GetUserIdentifierName(nameAst);
+            // use FindSymbol to look only in current tables, not enclosing
+            // ones
+            sym = FindSymbol(currentTypes, idstr);
+            if (!sym) {
+                *nameAst = *nameAst->right; // create a new local
+            }
+        }
+        if (nameAst->kind == AST_LOCAL_IDENTIFIER) {
             DeclareOneGlobalVar(P, decl, basetype);
         } else {
             // OK, "nameAst" is the name we want it to be known as inside

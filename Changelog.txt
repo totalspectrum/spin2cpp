@@ -1,5 +1,6 @@
 Version 4.0.1
 - Added initialization of local arrays in C
+- Fixed a static name declaration bug in C
 
 Version 4.0.0
 - Fixed in-function array declarations in BASIC
