@@ -77,7 +77,7 @@ pri _lfsr_backward(x) | a
     endasm
   return x
 
-pri _basic_print_fixed(h, x, fmt) : r | i, f
+pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
   if (x < 0)
     r := _basic_print_char(h, "-")
     x := -x

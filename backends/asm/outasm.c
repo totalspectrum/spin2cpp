@@ -2548,6 +2548,9 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
             if (ftype && ftype->kind == AST_PTRTYPE) {
                 ftype = RemoveTypeModifiers(ftype->left);
             }
+            if (ftype && !IsFunctionType(ftype)) {
+                ftype = NULL;
+            }
         } else {
             ftype = NULL;
         }

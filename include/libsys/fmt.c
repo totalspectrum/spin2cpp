@@ -17,8 +17,9 @@
 
 #include "sys/fmt.h"
 
-#define DEFAULT_PREC 4
-#define DEFAULT_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT))
+#define DEFAULT_PREC 6
+#define DEFAULT_BASIC_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT)|(4<<PREC_BIT))
+#define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
 
 //
 // reverse a string in-place
@@ -728,16 +729,16 @@ int _basic_get_char(unsigned h)
     return (*rf)();
 }
 
-int _basic_print_float(unsigned h, FTYPE x, unsigned fmt)
+int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
 {
     TxFunc tf;
     if (fmt == 0) {
-        fmt = DEFAULT_FLOAT_FMT;
+        fmt = (ch == '#') ? DEFAULT_BASIC_FLOAT_FMT : DEFAULT_FLOAT_FMT;
     }
     if (h > 7) return -1;
     tf = _bas_tx_handles[h];
     if (!tf) return 0;
-    return _fmtfloat(tf, fmt, x, '#');
+    return _fmtfloat(tf, fmt, x, ch);
 }
 
 #ifdef TEST

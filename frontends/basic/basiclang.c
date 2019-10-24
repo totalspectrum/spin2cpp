@@ -69,6 +69,33 @@ addToPrintSeq(AST *seq, AST *printCall)
 }
 
 AST *
+addFloatPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt, int ch)
+{
+    AST *elem;
+    AST *params;
+    ASTReportInfo saveinfo;
+
+    AstReportAs(fmt, &saveinfo);
+    if (ch) {
+        params = NewAST(AST_EXPRLIST, AstInteger(ch), NULL);
+    } else {
+        params = NULL;
+    }
+    if (fmt) {
+        params = NewAST(AST_EXPRLIST, fmt, params);
+    }
+    if (expr) {
+        params = NewAST(AST_EXPRLIST, expr, params);
+    }
+
+    params = NewAST(AST_EXPRLIST, handle, params);
+    AST *funccall = NewAST(AST_FUNCCALL, func, params);
+    elem = addToPrintSeq(seq, funccall);
+    AstReportDone(&saveinfo);
+    return elem;
+}
+
+AST *
 addPrintCall(AST *seq, AST *handle, AST *func, AST *expr, AST *fmt)
 {
     AST *elem;
@@ -474,7 +501,7 @@ genPrintf(AST *ast)
                 case 'f':
                 case 'g':
                 case 'e':
-                    seq = addPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt));
+                    seq = addFloatPrintCall(seq, Handle, basic_print_float, thisarg, AstInteger(fmt), c);
                     break;
                 default:
                     //ERROR(ast, "unknown printf format character `%c'", c);
@@ -892,7 +919,7 @@ doBasicTransform(AST **astptr)
                     continue;
                 }
                 if (IsFloatType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_float, expr, fmtAst);
+                    seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, '#');
                 } else if (IsStringType(type)) {
                     seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
                 } else if (IsGenericType(type)) {
@@ -1302,7 +1329,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
     if (IsPointerType(lefttype) || IsPointerType(righttype)) {
         /* FIXME: should handle floats and type promotion here!!! */
         leftUnsigned = rightUnsigned = 0;
-        if (IsFunctionType(lefttype->left) || IsFunctionType(righttype->left)) {
+        if ( (lefttype && IsFunctionType(lefttype->left)) || (righttype && IsFunctionType(righttype->left)) ) {
             ast->left = MakeOperatorCall(funcptr_cmp, ast->left, ast->right, NULL);
             ast->right = AstInteger(0);
             return;
