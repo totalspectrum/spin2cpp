@@ -1730,7 +1730,7 @@ jump_statement
 	| C_CONTINUE ';'
             { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
 	| C_BREAK ';'
-            { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
+            { $$ = NewCommentedAST(AST_ENDCASE, NULL, NULL, $1); }
 	| C_RETURN ';'
             { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
 	| C_RETURN expression ';'

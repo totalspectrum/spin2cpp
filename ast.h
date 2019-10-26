@@ -95,7 +95,7 @@ enum astkind {
 
     AST_YIELD = 56,
     AST_CONSTANT,
-    AST_QUIT,
+    AST_QUITLOOP,
     AST_CONTINUE,
 
     AST_RESULT = 60,
@@ -204,6 +204,7 @@ enum astkind {
     AST_FUNC_TEMPLATE,
 
     AST_CLASS_TEMPLATE = 144, // reserved for future use
+    AST_ENDCASE,
 };
 
 /* forward reference */

@@ -141,7 +141,7 @@ again:
         }
         AstReportDone(&saveinfo);
         goto again;
-    case AST_QUIT:
+    case AST_ENDCASE:
         AstReportAs(stmt, &saveinfo);
         if (endswitch) {
             *stmt = *NewAST(AST_GOTO, endswitch, NULL);

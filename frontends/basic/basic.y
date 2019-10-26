@@ -926,7 +926,7 @@ casematchitem:
         AST *expr = $1;
         AST *stmts = $3;
         AST *firststmt;
-        AST *breakstmt = NewAST(AST_QUIT, NULL, NULL);
+        AST *breakstmt = NewAST(AST_ENDCASE, NULL, NULL);
         stmts = AddToList(stmts, NewAST(AST_STMTLIST, breakstmt, NULL));
         firststmt = stmts->left;
         if (expr->kind == AST_OTHER) {
@@ -1031,7 +1031,7 @@ exitstmt:
         } else {
             modifier = AstInteger(curLoop);
         }
-        $$ = NewAST(AST_QUIT, modifier, NULL);
+        $$ = NewAST(AST_QUITLOOP, modifier, NULL);
     }
   | BAS_EXIT BAS_WHILE
     {
@@ -1042,7 +1042,7 @@ exitstmt:
         } else {
             modifier = AstInteger(curLoop);
         }
-        $$ = NewAST(AST_QUIT, modifier, NULL);
+        $$ = NewAST(AST_QUITLOOP, modifier, NULL);
     }
   | BAS_EXIT BAS_DO
     {
@@ -1053,7 +1053,7 @@ exitstmt:
         } else {
             modifier = AstInteger(curLoop);
         }
-        $$ = NewAST(AST_QUIT, modifier, NULL);
+        $$ = NewAST(AST_QUITLOOP, modifier, NULL);
     }
   | BAS_EXIT
     {
@@ -1064,7 +1064,7 @@ exitstmt:
         } else {
             modifier = AstInteger(curLoop);
         }
-        $$ = NewAST(AST_QUIT, modifier, NULL);
+        $$ = NewAST(AST_QUITLOOP, modifier, NULL);
     }
   | BAS_CONTINUE BAS_FOR
     {

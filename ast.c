@@ -472,7 +472,7 @@ static const char *astnames[] = {
 
     "yield",
     "constant",
-    "quit",
+    "quitloop",
     "continue",
 
     "result",
@@ -581,6 +581,7 @@ static const char *astnames[] = {
     "func_template",
 
     "class_template",
+    "endcase",
 };
 
 //

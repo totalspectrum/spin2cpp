@@ -345,7 +345,7 @@ basicstmt:
   | expr SP_EOLN
     { $$ = $1; }
   | SP_QUIT SP_EOLN
-    { $$ = NewCommentedAST(AST_QUIT, NULL, NULL, $1); }
+    { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
 ;
@@ -412,7 +412,7 @@ casematchitem:
         AST *expr = $1;
         AST *stmts = $3;
         AST *firststmt;
-        AST *breakstmt = NewAST(AST_QUIT, NULL, NULL);
+        AST *breakstmt = NewAST(AST_ENDCASE, NULL, NULL);
         stmts = AddToList(stmts, NewAST(AST_STMTLIST, breakstmt, NULL));
         firststmt = stmts->left;
         if (expr->kind == AST_OTHER) {

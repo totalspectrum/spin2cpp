@@ -1,3 +1,6 @@
+Version 4.0.2
+- Fixed Spin quit inside of case
+
 Version 4.0.1
 - Added initialization of local arrays and structs in C
 - Fixed a static name declaration bug in C

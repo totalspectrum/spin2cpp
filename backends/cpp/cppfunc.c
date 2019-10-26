@@ -625,7 +625,8 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         flexbuf_printf(f, "%*cYield__();", indent, ' ');
         PrintNewline(f);
         break;
-    case AST_QUIT:
+    case AST_QUITLOOP:
+    case AST_ENDCASE:
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*cbreak;", indent, ' ');
         PrintNewline(f);

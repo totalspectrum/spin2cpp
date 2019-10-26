@@ -4171,7 +4171,8 @@ static void CompileStatement(IRList *irl, AST *ast)
     case AST_CASE:
         CompileCaseStmt(irl, ast);
         break;
-    case AST_QUIT:
+    case AST_QUITLOOP:
+    case AST_ENDCASE:
         EmitDebugComment(irl, ast);
         if (!quitlabel) {
 	    ERROR(ast, "loop exit statement outside of loop");
