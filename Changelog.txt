@@ -1,6 +1,7 @@
 Version 4.0.2
 - Fixed Spin quit inside of case
 - Optimized sequences of jumps (such as produced by case)
+- Fixed floating point comparison bug
 
 Version 4.0.1
 - Added initialization of local arrays and structs in C

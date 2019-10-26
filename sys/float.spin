@@ -186,10 +186,11 @@ pri _float_pow_n(a=float, n=long) : r=float | sgnflag, invflag
 CON
   f_infinity = $7f800000
   f_unordered = $80000000
+
 pri _float_cmp(a=float, b=float) : r=long
   if (a < 0)
     if (b < 0)
-      return a - b
+      return b - a
     if b == 0 and a == $80000000
       return 0
     return -1
