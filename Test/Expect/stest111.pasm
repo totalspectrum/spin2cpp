@@ -17,13 +17,9 @@ _check
 	cmp	_var02, _var03 wz
  if_ne	jmp	#LR__0002
 LR__0001
-	jmp	#LR__0003
-LR__0002
-	jmp	#LR__0004
-LR__0003
 	mov	result1, #1
 	jmp	#_check_ret
-LR__0004
+LR__0002
 	mov	result1, #0
 _check_ret
 	ret

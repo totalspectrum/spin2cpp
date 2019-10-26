@@ -2641,7 +2641,29 @@ OptimizeTailCalls(IRList *irl, Function *f)
     return change;
 }
 
-//
+// optimize jumps: jmp #A where the instruction after A is jmp #B gets
+// turned into jmp #B
+static int
+OptimizeJumps(IRList *irl)
+{
+    IR *ir = irl->head;
+    IR *jmpdest;
+    int change = 0;
+    
+    while (ir) {
+        if (ir->opc == OPC_JUMP) {
+            // ptr to jump destination (if known) is in aux; see if it's also a jump
+            jmpdest = NextInstruction(ir->aux);
+            if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir) {
+                ir->dst = jmpdest->dst;
+                ir->aux = jmpdest->aux;
+                change++;
+            }
+        }
+        ir = ir->next;
+    }
+    return change;
+}
 
 // optimize an isolated piece of IRList
 // (typically a function)
@@ -2673,6 +2695,7 @@ again:
         change |= OptimizeAddSub(irl);
         change |= OptimizePeepholes(irl);
         change |= OptimizeIncDec(irl);
+        change |= OptimizeJumps(irl);
         if (gl_p2) {
             change |= OptimizeP2(irl);
         }
