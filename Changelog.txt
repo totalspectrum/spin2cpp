@@ -1,3 +1,6 @@
+Version 4.0.3
+- Fixed some symbol resolution issues for functions called via pointers
+
 Version 4.0.2
 - Fixed Spin quit inside of case
 - Optimized sequences of jumps (such as produced by case)

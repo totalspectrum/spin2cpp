@@ -898,6 +898,8 @@ doPruneMethods(Module *P)
     }
 }
 
+static void MarkStaticFunctionPointers(AST *list);
+
 //
 // remove unused methods
 // if "isBinary" is true we can eliminate any methods not called
@@ -909,14 +911,15 @@ CheckUnusedMethods(int isBinary)
 {
     Module *P;
     Function *pf;
-
+    Module *savecurrent = current;
+    
     // mark everything unused
     for (P = allparse; P; P = P->next) {
         for (pf = P->functions; pf; pf = pf->next) {
             pf->callSites = 0;
         }
     }
-    
+
     if (isBinary) {
         MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
@@ -932,6 +935,12 @@ CheckUnusedMethods(int isBinary)
                 }
             }
         }
+    }
+    // check for functions called via pointers
+    for (P = allparse; P; P = P->next) {
+        current = P;
+        MarkStaticFunctionPointers(P->datblock);
+        current = savecurrent;
     }
 }
 
