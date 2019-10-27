@@ -817,7 +817,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_addstr(fb, "\n");
         return;
     }
-    if (!inDat) {
+    if (!inDat && P) {
         if (!didPub && P) {
             EmitSpinMethods(fb, P);
             didPub = 1;
@@ -1272,9 +1272,10 @@ IRAssemble(IRList *list, Module *P)
     inCon = 0;
     didOrg = 0;
     didPub = 0;
-    lmmMode = 0;
-    
-    RenameLabels(list);
+    if (P) {
+        lmmMode = 0;
+        RenameLabels(list);
+    }
     
     if (gl_p2 && gl_output != OUTPUT_COGSPIN) {
         didPub = 1; // we do not want pub declaration in P2 code
@@ -1306,5 +1307,8 @@ IRAssemble(IRList *list, Module *P)
 void
 DumpIRL(IRList *irl)
 {
+    int saveLmmMode = lmmMode;
+    lmmMode = 1;
     puts(IRAssemble(irl, NULL));
+    lmmMode = saveLmmMode;
 }
