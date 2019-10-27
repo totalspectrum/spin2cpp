@@ -32,6 +32,20 @@
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
 
+extern int allow_type_names;
+    
+static void
+DisallowTypeNames()
+{
+    allow_type_names = 0;
+}
+
+static void
+AllowTypeNames()
+{
+    allow_type_names = 1;
+}
+
 static AST *
 MakeSigned(AST *type, int isSigned)
 {
@@ -790,9 +804,9 @@ postfix_expression
             { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
 	| postfix_expression '(' argument_expression_list ')'
             { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-	| postfix_expression '.' C_IDENTIFIER
+	| postfix_expression '.' any_identifier
             { $$ = NewAST(AST_METHODREF, $1, $3); }
-	| postfix_expression C_PTR_OP C_IDENTIFIER
+	| postfix_expression C_PTR_OP any_identifier
             { $$ = NewAST(AST_METHODREF,
                           NewAST(AST_ARRAYREF, $1, AstInteger(0)),
                           $3);
@@ -1008,15 +1022,20 @@ declaration_specifiers
             { $$ = $1; }
 	| storage_class_specifier declaration_specifiers
             { $$ = $1; if ($$) $$->left = $2; else $$ = $2; }
-	| type_specifier
-            { $$ = $1; }
-	| type_specifier declaration_specifiers
-            { $$ = C_ModifySignedUnsigned($1, $2); }
+	| type_specifier reset_identifier_expectation
+            { $$ = $1; AllowTypeNames(); }
+	| type_specifier reset_identifier_expectation declaration_specifiers
+            { $$ = C_ModifySignedUnsigned($1, $2); AllowTypeNames(); }
 	| type_qualifier
             { $$ = $1; $$->left = ast_type_long; }
 	| type_qualifier declaration_specifiers
            { $$ = $1; $$->left = $2; }
 	;
+
+reset_identifier_expectation
+        :
+            { DisallowTypeNames(); }
+;
 
 init_declarator_list
 	: init_declarator
@@ -1424,7 +1443,7 @@ designator_list
 
 designator
          : '[' constant_expression ']'
-         | '.' C_IDENTIFIER
+         | '.' any_identifier
          ;
 
 statement
@@ -1438,7 +1457,7 @@ statement
 	;
 
 labeled_statement
-	: C_IDENTIFIER ':' statement
+	: any_identifier ':' statement
             {
                 AST *label = NewAST(AST_LABEL, $1, NULL);
                 $$ = NewAST(AST_STMTLIST, label,
@@ -1725,7 +1744,7 @@ for_declaration
 	;
 
 jump_statement
-	: C_GOTO C_IDENTIFIER ';'
+	: C_GOTO any_identifier ';'
             { $$ = NewCommentedAST(AST_GOTO, $2, NULL, $1); }
 	| C_CONTINUE ';'
             { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
