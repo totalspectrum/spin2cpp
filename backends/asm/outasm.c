@@ -1359,7 +1359,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                     }
                 }
                 if (size > 1) {
-                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), 0);
+                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), 4);
                 } else {
                     dst = basedst;
                 }
