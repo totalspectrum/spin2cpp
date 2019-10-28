@@ -1025,7 +1025,7 @@ declaration_specifiers
 	| type_specifier reset_identifier_expectation
             { $$ = $1; AllowTypeNames(); }
 	| type_specifier reset_identifier_expectation declaration_specifiers
-            { $$ = C_ModifySignedUnsigned($1, $2); AllowTypeNames(); }
+            { $$ = C_ModifySignedUnsigned($1, $3); AllowTypeNames(); }
 	| type_qualifier
             { $$ = $1; $$->left = ast_type_long; }
 	| type_qualifier declaration_specifiers

@@ -15,6 +15,8 @@
 #include "lexer.h"
 #include "preprocess.h"
 
+int allow_type_names = 1;
+
 #ifndef EOF
 #define EOF (-1)
 #endif
@@ -3143,7 +3145,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     if (current) {
         sym = LookupSymbolInTable(currentTypes, idstr);
         if (sym) {
-            if (sym->kind == SYM_TYPEDEF) {
+            if (sym->kind == SYM_TYPEDEF && allow_type_names) {
                 last_ast = ast = AstIdentifier(idstr);
                 *ast_ptr = ast;
                 return C_TYPE_NAME;
