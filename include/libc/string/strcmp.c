@@ -13,7 +13,7 @@
 int				/* <0 for <, 0 for ==, >0 for > */
 strcmp(const char *scan1, const char *scan2)
 {
-	char c1, c2;
+	int c1, c2;
 
 	if (!scan1)
             return scan2 ? -1 : 0;

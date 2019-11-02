@@ -1,5 +1,6 @@
 Version 4.0.3
 - Fixed some symbol resolution issues for functions called via pointers
+- Fixed incorrect string comparisons in C library
 
 Version 4.0.2
 - Fixed Spin quit inside of case

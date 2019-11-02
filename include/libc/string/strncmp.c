@@ -12,7 +12,7 @@ _CACHED
 int				/* <0 for <, 0 for ==, >0 for > */
 strncmp(const char *scan1, const char *scan2, size_t n)
 {
-	register char c1, c2;
+	register int c1, c2;
 	register long count;
 
 	if (!scan1) {
