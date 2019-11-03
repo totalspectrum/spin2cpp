@@ -1695,6 +1695,9 @@ CheckFunctionCalls(AST *ast)
                     ftype = ftype->left;
                 }
                 expectArgs = AstListLen(ftype->right);
+                if (expectArgs == 0 && curfunc && curfunc->language == LANG_C) {
+                    is_varargs = 1;
+                }
             }
         } else {
             goto skipcheck;
