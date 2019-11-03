@@ -1087,7 +1087,7 @@ static AST *forcepromote(AST *type, AST *expr)
         return expr;
     }
     if (!IsIntType(type) && !IsGenericType(type)) {
-        ERROR(expr, "internal error in forcecpromote");
+        ERROR(expr, "internal error in forcepromote");
     }
     tsize = TypeSize(type);
     op = IsUnsignedType(type) ? K_ZEROEXTEND : K_SIGNEXTEND;
@@ -1226,7 +1226,29 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         } else {
             ast->left = domakefloat(lefttype, ast->left);
         }
+    } else {
+        // in C we need to promote both sides to  long
+        if (curfunc && curfunc->language == LANG_C) {
+            int operator;
+            if (lefttype) {
+                int leftsize = TypeSize(lefttype);
+                if (leftsize < 4) {
+                    operator = IsUnsignedType(lefttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
+                    ast->left = dopromote(ast->left, leftsize, LONG_SIZE, operator);
+                    lefttype = ast_type_long;
+                }
+            }
+            if (righttype) {
+                int rightsize = TypeSize(righttype);
+                if (rightsize < 4) {
+                    operator = IsUnsignedType(righttype) ? K_ZEROEXTEND : K_SIGNEXTEND;
+                    ast->right = dopromote(ast->right, rightsize, LONG_SIZE, operator);
+                    righttype = ast_type_long;
+                }
+            }
+        }
     }
+            
     if (isfloat) {
         switch (op) {
         case '+':
