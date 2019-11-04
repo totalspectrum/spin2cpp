@@ -28,7 +28,7 @@ Symbol           | When Defined
 `__cplusplus`    | if C++ is being output (not currently implemented)
 `__P2__`         | only defined if compiling for Propeller 2 (obsolete)
 `__propeller2__` | only defined if compiling for Propeller 2
-
+`__ILP32__`      | always defined; some programs use this to determine pointer size
 
 ## Runtime Environment
 
