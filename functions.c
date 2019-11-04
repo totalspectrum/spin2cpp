@@ -1580,6 +1580,23 @@ ForceExprType(AST *ast)
 }
 
 static int
+CheckRetJumpList(Function *func, AST *ast)
+{
+    int sawret = 1;
+    while (ast && ast->kind == AST_LISTHOLDER) {
+        ast = ast->right;
+    }
+    while (ast && ast->kind == AST_STMTLIST) {
+        // order of && below matters, we do want to check
+        // return types in case some branches return a value
+        // and others do not
+        sawret = CheckRetStatement(func, ast->left) && sawret;
+        ast = ast->right;
+    }
+    return sawret;
+}
+
+static int
 CheckRetStatement(Function *func, AST *ast)
 {
     int sawreturn = 0;
@@ -1609,6 +1626,9 @@ CheckRetStatement(Function *func, AST *ast)
             ast = ast->left;
         sawreturn = CheckRetStatementList(func, ast->left);
         sawreturn = CheckRetStatementList(func, ast->right) && sawreturn;
+        break;
+    case AST_JUMPTABLE:
+        sawreturn = CheckRetJumpList(func, ast->right);
         break;
     case AST_CASE:
         sawreturn = CheckRetCaseMatchList(func, ast->right);
