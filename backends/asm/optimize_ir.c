@@ -2654,7 +2654,7 @@ OptimizeJumps(IRList *irl)
         if (ir->opc == OPC_JUMP) {
             // ptr to jump destination (if known) is in aux; see if it's also a jump
             jmpdest = NextInstruction(ir->aux);
-            if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir) {
+            if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir && jmpdest->dst != ir->dst) {
                 ir->dst = jmpdest->dst;
                 ir->aux = jmpdest->aux;
                 change++;
