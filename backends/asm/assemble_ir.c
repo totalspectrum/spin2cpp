@@ -66,6 +66,7 @@ static const char *QuotedName(const char *orig_name)
     int c;
     while (i < MAX_BUF-2) {
         c = *name++;
+        if (c == 0) break;
         switch(c) {
         case '!':
         case '$':
