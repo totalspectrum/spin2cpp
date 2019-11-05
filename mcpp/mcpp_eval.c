@@ -1152,7 +1152,8 @@ static expr_t   eval_signed(
          * If v1 has the "true" value, v2 has the "false" value.
          * The top of the value stack has the test.
          */
-        v1 = (--*valpp)->val ? v1 : v2;
+        valp--;
+        v1 = valp->val ? v1 : v2;
         break;
     default:
         cfatal( illeg_op, op_name, 0L, NULL);
