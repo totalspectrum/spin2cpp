@@ -250,8 +250,9 @@ skip:
 }
 
 //
-// check a list of if x goto y statements to see if they can be turned into a jump
-// table
+// check a list of if x goto y statements to see if they can be turned into a
+// jump table
+// if force_reason is non-zero, we must create one
 //
 AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reason)
 {
@@ -355,7 +356,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 
     // if the jump table is mostly defaults, revert to if/else
     // mathematically we want defaults_seen / range > density / maxrange
-    if ( (defaults_seen * maxrange) / range > density ) {
+    if ( (defaults_seen * maxrange) / range > density  && density > 0) {
         return NULL;
     }
     // fix up the assignment
@@ -380,7 +381,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
 // then construct a series of statements like:
 //  if (_tmpvar == case1expr) goto case1label
 // for each case found within the stmt
-// if "force" is nonzero, then we force creation of
+// if "force_reason" is nonzero, then we force creation of
 // the jump table and print an error if it cannot be made
 //
 AST *
