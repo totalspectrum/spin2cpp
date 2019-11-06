@@ -2176,6 +2176,16 @@ AST *CheckTypes(AST *ast)
                 return NULL;
             }
             ltype = ExprType(ast);
+            // if this is a REFTYPE then dereference it
+            if (ltype && IsRefType(ltype)) {
+                AST *deref;
+                AST *basetype = BaseType(ltype);
+                deref = DupAST(ast);
+                deref = NewAST(AST_MEMREF, basetype, deref);
+                deref = NewAST(AST_ARRAYREF, deref, AstInteger(0));
+                *ast = *deref;
+                ltype = basetype;
+            }
             if (sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (f->module == current || f->module == globalModule) {

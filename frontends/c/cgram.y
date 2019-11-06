@@ -152,8 +152,9 @@ CombineTypes(AST *first, AST *second, AST **identifier)
     case AST_ARRAYDECL:
         first = NewAST(AST_ARRAYTYPE, first, second->right);
         return MergePrefix(prefix, CombineTypes(first, second->left, identifier));
+    case AST_REFTYPE:
     case AST_PTRTYPE:
-        first = NewAST(AST_PTRTYPE, first, NULL);
+        first = NewAST(second->kind, first, NULL);
         second = CombineTypes(first, second->left, identifier);
         return MergePrefix(prefix, second);
         
@@ -1332,6 +1333,22 @@ pointer
                     q = q->left;
                 if (q) q->left = $3;
                 $$ = NewAST(AST_PTRTYPE, $2, NULL);
+            }
+	| '&'
+            { $$ = NewAST(AST_REFTYPE, NULL, NULL); }
+	| '&' type_qualifier_list
+            {
+                $$ = CombinePointer(NewAST(AST_REFTYPE, NULL, NULL), $2);
+            }
+	| '&' pointer
+            { $$ = NewAST(AST_REFTYPE, $2, NULL); }
+	| '&' type_qualifier_list pointer
+            {
+                AST *q = $2;
+                while (q && q->left)
+                    q = q->left;
+                if (q) q->left = $3;
+                $$ = NewAST(AST_REFTYPE, $2, NULL);
             }
 	;
 

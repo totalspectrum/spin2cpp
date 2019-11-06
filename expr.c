@@ -1722,6 +1722,7 @@ IsArrayType(AST *ast)
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
     case AST_PTRTYPE:
+    case AST_REFTYPE:
     case AST_VOIDTYPE:
     case AST_FUNCTYPE:
     case AST_OBJECT:
@@ -1762,6 +1763,7 @@ int TypeAlign(AST *typ)
     case AST_FLOATTYPE:
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
+    case AST_REFTYPE:
     case AST_FUNCTYPE:
     default:
         return 4; // all pointers are 4 bytes
@@ -1803,6 +1805,7 @@ int TypeSize(AST *typ)
     case AST_FLOATTYPE:
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
+    case AST_REFTYPE:
     case AST_FUNCTYPE:
         return 4; // all pointers are 4 bytes
     case AST_OBJECT:
@@ -1837,6 +1840,7 @@ AST *BaseType(AST *typ)
     case AST_ARRAYTYPE:
         return typ->left;
     case AST_PTRTYPE:
+    case AST_REFTYPE:
         return typ->left;
     default:
         return typ;
@@ -1854,6 +1858,7 @@ int TypeAlignment(AST *typ)
         return TypeAlignment(typ->left);
     case AST_ARRAYTYPE:
     case AST_PTRTYPE:
+    case AST_REFTYPE:
         return TypeAlignment(typ->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -2025,7 +2030,18 @@ IsPointerType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
     
-    if (type->kind == AST_PTRTYPE)
+    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE)
+        return 1;
+    return 0;
+}
+
+int
+IsRefType(AST *type)
+{
+    type = RemoveTypeModifiers(type);
+    if (!type) return 0;
+    
+    if (type->kind == AST_REFTYPE)
         return 1;
     return 0;
 }
@@ -2078,6 +2094,8 @@ IsBoolCompatibleType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 1;
     switch (type->kind) {
+    case AST_REFTYPE:
+        return IsBoolCompatibleType(type->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_PTRTYPE:
@@ -2094,7 +2112,7 @@ IsFunctionType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    if (type->kind == AST_PTRTYPE) {
+    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE) {
         type = RemoveTypeModifiers(type->left);
     }
     if (type && type->kind == AST_FUNCTYPE)
@@ -2293,7 +2311,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (expr->left->kind == AST_MEMREF) {
             return sub;
         }
-        if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE)) return NULL;
+        if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE || sub->kind == AST_REFTYPE)) return NULL;
         return sub->left;
     case AST_FUNCCALL:
     {
@@ -2308,7 +2326,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
                 typexpr = sym->val;
-                if (typexpr && typexpr->kind == AST_PTRTYPE) {
+                if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
                 }
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
@@ -2459,6 +2477,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_VA_ARG:
         return expr->left;
     case AST_PTRTYPE:
+    case AST_REFTYPE:
     case AST_ARRAYTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -2497,6 +2516,12 @@ CompatibleTypes(AST *A, AST *B)
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
     
+    if ( A && A->kind == AST_REFTYPE ) {
+        A = A->left;
+    }
+    if ( B && B->kind == AST_REFTYPE ) {
+        B = B->left;
+    }
     if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
         A = ast_type_generic;
     }

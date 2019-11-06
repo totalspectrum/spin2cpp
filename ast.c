@@ -582,6 +582,7 @@ static const char *astnames[] = {
 
     "class_template",
     "endcase",
+    "reftype",
 };
 
 //

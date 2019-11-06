@@ -757,6 +757,7 @@ PrintCppRelocs(Flexbuf *f, Module *P, Flexbuf *relocs)
         nextreloc = &relocarray[i];
         
         switch (nextreloc->kind) {
+        case RELOC_KIND_NONE:
         case RELOC_KIND_DEBUG:
             continue;
         case RELOC_KIND_I32:

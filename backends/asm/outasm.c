@@ -955,7 +955,7 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
         size = 4;
     } else if (type->kind == AST_TUPLETYPE) {
         size = type->d.ival * 4;
-    } else if (type->kind == AST_PTRTYPE ) {
+    } else if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE ) {
         size = 4;
     } else if (type->kind == AST_OBJECT) {
         Module *Q = type->d.ptr;
@@ -2545,7 +2545,7 @@ CompileGetFunctionInfo(IRList *irl, AST *expr, Operand **objptr, Operand **offse
         AST *ftype;
         if (expr->kind == AST_FUNCCALL || expr->kind == AST_ADDROF || expr->kind == AST_ABSADDROF) {
             ftype = ExprType(expr->left);
-            if (ftype && ftype->kind == AST_PTRTYPE) {
+            if (ftype && (ftype->kind == AST_PTRTYPE || ftype->kind == AST_REFTYPE)) {
                 ftype = RemoveTypeModifiers(ftype->left);
             }
             if (ftype && !IsFunctionType(ftype)) {
