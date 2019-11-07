@@ -8,6 +8,7 @@ Version 4.0.3
 - Fixed incorrect type inference in Spin functions which contain cases
 - Fixed an uninitialized variable problem with some large programs
 - Made sure case_fast actually does produce a jump table
+- Made -2b the default P2 hardware instead of -2a.
 
 Version 4.0.2
 - Fixed Spin quit inside of case
