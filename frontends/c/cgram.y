@@ -747,6 +747,8 @@ primary_expression
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
 	| '(' expression ')'
             { $$ = $2; }
+	| '(' '{' block_item_list '}' ')'
+            { $$ = $3; }
 	;
 
 postfix_expression

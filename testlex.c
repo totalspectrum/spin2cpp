@@ -279,3 +279,13 @@ main()
     printf("all tests passed\n");
     return 0;
 }
+
+/* dummy functions to make the linker happy */
+void defaultVariable() { }
+void defaultBuiltin() { }
+void str1Builtin() { }
+void strcompBuiltin() { }
+void memBuiltin() { }
+void memFillBuiltin() { }
+void waitpeqBuiltin() { }
+void rebootBuiltin() { }

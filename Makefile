@@ -59,10 +59,9 @@ UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c fr
 
 MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_support.c
 
-# FIXME lexer should not need cppexpr.c (it belongs in CPPBACK)
-LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c cppexpr.c
+LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
-CPPBACK = outcpp.c cppfunc.c outgas.c # cppexpr.c
+CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
 SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c types.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) $(MCPP) version.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)

@@ -324,7 +324,7 @@ PrintFunctionVariables(Flexbuf *f, Function *func)
  
 static void PrintStatement(Flexbuf *f, AST *ast, int indent); /* forward declaration */
 
-static void
+void
 PrintStatementList(Flexbuf *f, AST *ast, int indent)
 {
     while (ast) {

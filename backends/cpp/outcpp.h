@@ -91,6 +91,7 @@ int  PrintLookupArray(Flexbuf *f, AST *arr, int flags);
 void PrintGasExpr(Flexbuf *f, AST *expr, bool useFloat);
 void PrintSymbol(Flexbuf *f, Symbol *sym, int flags);
 void PrintObjConstName(Flexbuf *f, Module *P, const char* name);
+void PrintStatementList(Flexbuf *f, AST *ast, int indent);
 
 typedef struct cppInlineState {
     AST *outputs;
