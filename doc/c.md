@@ -11,7 +11,20 @@ An incomplete list of things that still need to be implemented:
   * 64 bit integers (long long)
   * struct passing and return
   * some of the C standard library
-  
+
+### Known Bugs
+
+There are several known bugs and deviations from the C standard:
+
+(1) Enum declaration
+Enums declared inside of structs have their tags declared in the namespace of the struct; thus in
+```
+struct stype {
+  enum { X } a;
+} s;
+```
+The symbol `X` should be declared at global scope in C, but in FlexC it's only available as `s.X`. (C++ is like FlexC in this regard, so this kind of usage is probably rare.)
+
 ## Introduction
 
 ## Preprocessor
