@@ -29,6 +29,14 @@ The symbol `X` should be declared at global scope in C, but in FlexC it's only a
 
 The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
 
+(3) Doubles
+
+The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't quite meet the requirements in the C99 and later standards for the range available for double.
+
+(4) Struct initialization
+
+Structure initialization is still incomplete and some cases will not work properly.
+
 ## Introduction
 
 ## Preprocessor
