@@ -584,8 +584,6 @@ static const char *astnames[] = {
     "endcase",
     "reftype",
     "copyreftype",
-    
-    "tempcopy",
 };
 
 //

@@ -244,7 +244,7 @@ typedef struct funcdef {
     unsigned has_throw:1;    // 1 if function has a "throw" in it
     unsigned toplevel:1;     // 1 if function is top level
 
-#define LARGE_SIZE_THRESHOLD (8)
+#define LARGE_SIZE_THRESHOLD (12)
     
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */

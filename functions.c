@@ -43,6 +43,10 @@ NumExprItemsOnStack(AST *expr)
         return 1;
     }
     siz = TypeSize(type);
+    if (siz > LARGE_SIZE_THRESHOLD) {
+        // we'll pass this as a pointer
+        return 1;
+    }
     return ((siz+3) & ~3) / LONG_SIZE;
 }
 
@@ -651,6 +655,11 @@ AdjustParameterTypes(AST *paramlist, int lang)
                 type = NewAST(AST_PTRTYPE, type, NULL);
                 param->left = type;
             }
+            else if (IsClassType(type) && (lang == LANG_C) && TypeSize(type) > LARGE_SIZE_THRESHOLD ) {
+                type = BaseType(type);
+                type = NewAST(AST_COPYREFTYPE, type, NULL);
+                param->left = type;
+            }
         }
         paramlist = paramlist->right;
     }
@@ -775,8 +784,12 @@ doDeclareFunction(AST *funcblock)
             fdef->numresults = fdef->overalltype->left->d.ival;
         } else {
             int siz = TypeSize(fdef->overalltype->left);
-            siz = (siz + 3) & ~3;
-            fdef->numresults = siz / 4;
+            if (siz > LARGE_SIZE_THRESHOLD) {
+                fdef->numresults = 1; // will return a pointer
+            } else {
+                siz = (siz + 3) & ~3;
+                fdef->numresults = siz / 4;
+            }
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {

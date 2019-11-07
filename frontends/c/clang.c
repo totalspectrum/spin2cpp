@@ -159,7 +159,6 @@ CTransform(Function *func)
 {
     InitGlobalFuncs();
 
-    FixupParameters(func);
     SimplifyAssignments(&func->body);
     doCTransform(&func->body, 0);
     CheckTypes(func->body);
