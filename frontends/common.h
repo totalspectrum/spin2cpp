@@ -679,6 +679,12 @@ AST *CheckTypes(AST *expr);
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype);
 
+/* change parameter types as necessary for calling conventions; for example,
+ * "large" values are passed as reference to data on the stack rather than
+ * in registers
+ */
+void FixupParameters(Function *func);
+
 /* add a subclass to a class */
 void AddSubClass(Module *P, Module *subP);
 
