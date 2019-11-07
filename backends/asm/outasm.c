@@ -3621,7 +3621,30 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           return CompileExpression(irl, list->right, dest);
       }
       if (list) {
-          return CompileExpression(irl, list->left, dest);
+          AST *finalexpr = list->left;
+          while (finalexpr && finalexpr->kind == AST_COMMENTEDNODE) {
+              finalexpr = finalexpr->left;
+          }
+          if (finalexpr) {
+              switch(finalexpr->kind) {
+              case AST_IF:
+              case AST_GOTO:
+              case AST_GOSUB:
+              case AST_WHILE:
+              case AST_DOWHILE:
+              case AST_FOR:
+              case AST_FORATLEASTONCE:
+              case AST_CASE:
+              case AST_ENDCASE:
+              case AST_QUITLOOP:
+              case AST_LABEL:
+                  CompileStatement(irl, list);
+                  WARNING(expr, "statement expression does not produce a value");
+                  return OPERAND_DUMMY;
+              default:
+                  return CompileExpression(irl, finalexpr, dest);
+              }
+          }
       }
       ERROR(expr, "expected expression at end of statement list");
       return OPERAND_DUMMY;
