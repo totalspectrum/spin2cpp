@@ -1515,7 +1515,14 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
                 flexbuf_printf(f, "%s_", current->classname);
         }
         if (!sym) {
-            ; /* do nothing, printed error already */
+            /* we already printed an error; punt and stick whatever identifier
+               we can find in the output */
+            const char *name = GetIdentifierName(expr->left);
+            if (name) {
+                flexbuf_printf(f, "%s(", name);
+                PrintExprList(f, expr->right, PRINTEXPR_DEFAULT, NULL);
+                flexbuf_printf(f, ")");
+            }
         } else if (sym->kind == SYM_BUILTIN) {
             Builtin *b = (Builtin *)sym->val;
             (*b->printit)(f, b, expr->right);
