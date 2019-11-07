@@ -1528,6 +1528,7 @@ struct reservedword c_keywords[] = {
   {"__builtin_abs", C_BUILTIN_ABS },
   { "__builtin_alloca", C_BUILTIN_ALLOCA },
   { "__builtin_cogstart", C_BUILTIN_COGSTART },
+  { "__builtin_expect", C_BUILTIN_EXPECT },
   { "__builtin_longjmp", C_BUILTIN_LONGJMP },
   { "__builtin_printf", C_BUILTIN_PRINTF },
   { "__builtin_propeller_rev", C_BUILTIN_REV },

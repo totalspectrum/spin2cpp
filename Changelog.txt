@@ -1,6 +1,8 @@
 Version 4.0.3
 - Implemented C++ references like "int &c"
 - Implemented passing structs by value in C
+- Implemented GCC compatible statement expressions
+- Added __builtin_expect (does nothing for now)
 - Fixed some symbol resolution issues for functions called via pointers
 - Fixed incorrect string comparisons in C library
 - Fixed incorrect type inference in Spin functions which contain cases

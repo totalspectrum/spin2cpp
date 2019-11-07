@@ -164,6 +164,10 @@ void swap_c(int *a, int *b)
    swap_c(&x, &y);
 ```
 
+### Statement expressions
+
+A compound statement enclosed in parentheses may appear as an expression. This is a GCC extension which allows loops, switches, and similar features to appear within an expression.
+
 ## Builtin functions
 
 ### ABS
@@ -192,6 +196,10 @@ runs `somefunc` with parameters `a` and `b` in a new COG, using the given stack 
 The amount of space required for the stack depends on the complexity of the code to run, but must be at least 16 longs (64 bytes).
 
 `__builtin_cogstart` returns the identifier of the new COG, or -1 if no COGs are free.
+
+### EXPECT
+
+Indicates the expected value for an expression. `__builtin_expect(x, y)` evaluates `x`, and indicates to the optimizer that the value will normally be `y`. This is provided for GCC compatibility, and the expected value is ignored by FlexC (so `__builtin_expect(x, y)` is treated the same as `(x)`).
 
 ### REV
 

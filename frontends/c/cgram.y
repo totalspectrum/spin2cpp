@@ -724,6 +724,7 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
 %token C_BUILTIN_COGSTART "__builtin_cogstart"
+%token C_BUILTIN_EXPECT "__builtin_expect"
 %token C_BUILTIN_PRINTF "__builtin_printf"
 %token C_BUILTIN_REV    "__builtin_rev"
 %token C_BUILTIN_VA_START "__builtin_va_start"
@@ -797,6 +798,8 @@ postfix_expression
                 elist = AddToList(elist, $3);
                 $$ = NewAST(AST_COGINIT, elist, NULL);
             }
+        | C_BUILTIN_EXPECT '(' assignment_expression ',' assignment_expression ')'
+            { $$ = $3; }
         | C_BUILTIN_LONGJMP '(' assignment_expression ',' assignment_expression ')'
             {
                 $$ = NewAST(AST_THROW, $5, $3);
