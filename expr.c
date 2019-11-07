@@ -2102,6 +2102,7 @@ IsBoolCompatibleType(AST *type)
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_PTRTYPE:
+    case AST_GENERICTYPE:
         return 1;
     default:
         return 0;
