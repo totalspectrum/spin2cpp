@@ -800,13 +800,18 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
+        // handle literal '0' specially for C
         if (curfunc && curfunc->language == LANG_C) {
             if (IsPointerType(desttype)) {
                 return desttype;
             }
         }
     }
-    
+    if (IsRefType(desttype) && kind == AST_FUNCCALL) {
+        // passing to reference parameter
+        *astptr = NewAST(AST_ADDROF, expr, NULL);
+        srctype = NewAST(AST_REFTYPE, srctype, NULL);
+    }
     if (!desttype || !srctype) {
         return desttype;
     }

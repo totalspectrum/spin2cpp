@@ -2099,9 +2099,6 @@ IsBoolCompatibleType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 1;
     switch (type->kind) {
-    case AST_REFTYPE:
-    case AST_COPYREFTYPE:
-        return IsBoolCompatibleType(type->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
     case AST_PTRTYPE:
@@ -2523,12 +2520,6 @@ CompatibleTypes(AST *A, AST *B)
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
     
-    if ( A && (A->kind == AST_REFTYPE || A->kind == AST_COPYREFTYPE) ) {
-        A = A->left;
-    }
-    if ( B && (B->kind == AST_REFTYPE || B->kind == AST_COPYREFTYPE) ) {
-        B = B->left;
-    }
     if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
         A = ast_type_generic;
     }

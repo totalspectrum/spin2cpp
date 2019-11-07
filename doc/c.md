@@ -10,7 +10,7 @@ An incomplete list of things that still need to be implemented:
 
   * 64 bit integers (long long)
   * struct passing and return
-  * much of the C standard library
+  * some of the C standard library
   
 ## Introduction
 
@@ -119,6 +119,33 @@ There is no linker as yet, so in order to use standard library functions we use 
   size_t strlen(const char *s) __fromfile("libc/string/strlen.c");
 ```
 declares the `strlen` function, and also says that if it is used and no definition is given for it, the file "libc/string/strlen.c" should be added to the build. This file is searched for along the standard include path.
+
+### C++ reference parameters
+
+FlexC supports C++ references. These are just like pointers, but are automaticaly dereferenced upon use. They are declared with `&` in place of `*`. For example, a function to swap two integers could be written as:
+```
+void swap(int &a, int &b)
+{
+   int t = a;
+   a = b;
+   b = t;
+}
+```
+and used as
+```
+   swap(x, y);
+```
+Internally this is the same as the traditional C:
+```
+void swap_c(int *a, int *b)
+{
+   int t = *a;
+   *a = *b;
+   *b = t;
+}
+...
+   swap_c(&x, &y);
+```
 
 ## Builtin functions
 
