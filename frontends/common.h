@@ -699,4 +699,18 @@ AST *CreateSwitch(AST *expr, AST *stmt, const char *force_reason);
 // check to see if module is top level
 int IsTopLevel(Module *P);
 
+// external vars
+extern AST *basic_get_float;
+extern AST *basic_get_string;
+extern AST *basic_get_integer;
+extern AST *basic_read_line;
+
+extern AST *basic_print_float;
+extern AST *basic_print_string;
+extern AST *basic_print_integer;
+extern AST *basic_print_unsigned;
+extern AST *basic_print_char;
+extern AST *basic_print_nl;
+extern AST *basic_put;
+
 #endif

@@ -1723,6 +1723,7 @@ IsArrayType(AST *ast)
     case AST_FLOATTYPE:
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
     case AST_VOIDTYPE:
     case AST_FUNCTYPE:
     case AST_OBJECT:
@@ -1764,6 +1765,7 @@ int TypeAlign(AST *typ)
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
     case AST_FUNCTYPE:
     default:
         return 4; // all pointers are 4 bytes
@@ -1806,6 +1808,7 @@ int TypeSize(AST *typ)
         return EvalConstExpr(typ->left);
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
     case AST_FUNCTYPE:
         return 4; // all pointers are 4 bytes
     case AST_OBJECT:
@@ -1841,6 +1844,7 @@ AST *BaseType(AST *typ)
         return typ->left;
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
         return typ->left;
     default:
         return typ;
@@ -1859,6 +1863,7 @@ int TypeAlignment(AST *typ)
     case AST_ARRAYTYPE:
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
         return TypeAlignment(typ->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -2030,7 +2035,7 @@ IsPointerType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
     
-    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE)
+    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE)
         return 1;
     return 0;
 }
@@ -2041,7 +2046,7 @@ IsRefType(AST *type)
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
     
-    if (type->kind == AST_REFTYPE)
+    if (type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE)
         return 1;
     return 0;
 }
@@ -2095,6 +2100,7 @@ IsBoolCompatibleType(AST *type)
     if (!type) return 1;
     switch (type->kind) {
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
         return IsBoolCompatibleType(type->left);
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -2112,7 +2118,7 @@ IsFunctionType(AST *type)
 {
     type = RemoveTypeModifiers(type);
     if (!type) return 0;
-    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE) {
+    if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE) {
         type = RemoveTypeModifiers(type->left);
     }
     if (type && type->kind == AST_FUNCTYPE)
@@ -2311,7 +2317,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (expr->left->kind == AST_MEMREF) {
             return sub;
         }
-        if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE || sub->kind == AST_REFTYPE)) return NULL;
+        if (!(sub->kind == AST_PTRTYPE || sub->kind == AST_ARRAYTYPE || sub->kind == AST_REFTYPE || sub->kind == AST_COPYREFTYPE)) return NULL;
         return sub->left;
     case AST_FUNCCALL:
     {
@@ -2326,7 +2332,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
                 typexpr = sym->val;
-                if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE)) {
+                if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
                 }
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
@@ -2478,6 +2484,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         return expr->left;
     case AST_PTRTYPE:
     case AST_REFTYPE:
+    case AST_COPYREFTYPE:
     case AST_ARRAYTYPE:
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -2516,10 +2523,10 @@ CompatibleTypes(AST *A, AST *B)
     A = RemoveTypeModifiers(A);
     B = RemoveTypeModifiers(B);
     
-    if ( A && A->kind == AST_REFTYPE ) {
+    if ( A && (A->kind == AST_REFTYPE || A->kind == AST_COPYREFTYPE) ) {
         A = A->left;
     }
-    if ( B && B->kind == AST_REFTYPE ) {
+    if ( B && (B->kind == AST_REFTYPE || B->kind == AST_COPYREFTYPE) ) {
         B = B->left;
     }
     if (!A || (skipfloats && A->kind == AST_FLOATTYPE)) {
