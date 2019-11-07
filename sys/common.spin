@@ -227,7 +227,7 @@ pri file "libsys/random.c" _basic_rnd(x=long) : r=float
   
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
-pri file "libsys/fmt.c" _basic_open(h)
+pri file "libsys/fmt.c" _basic_close(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)
