@@ -800,6 +800,10 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             }
         }
         break;
+    case AST_COPYREFTYPE:
+        doPrintType(f, typedecl->left, 1, 0);
+        break;
+    case AST_REFTYPE:
     case AST_PTRTYPE:
     case AST_ARRAYTYPE:
         doPrintType(f, typedecl->left, 1, 0);
@@ -956,7 +960,14 @@ PrintLHS(Flexbuf *f, AST *expr, int flags)
     case AST_METHODREF:
         PrintExpr(f, expr->left, flags);
         flexbuf_addstr(f, ".");
-        PrintLHS(f, expr->right, flags);
+        {
+            const char *thename = GetIdentifierName(expr->right);
+            if (!thename) {
+                ERROR(expr, "Cannot find name %s", thename);
+                break;
+            }
+            flexbuf_addstr(f, thename);
+        }
         break;
     case AST_CAST:
         PrintTypedExpr(f, expr->left, expr->right, flags);
