@@ -25,6 +25,10 @@ struct stype {
 ```
 The symbol `X` should be declared at global scope in C, but in FlexC it's only available as `s.X`. (C++ is like FlexC in this regard, so this kind of usage is probably rare.)
 
+(2) Name Spaces
+
+The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
+
 ## Introduction
 
 ## Preprocessor
