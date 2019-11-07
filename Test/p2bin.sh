@@ -6,7 +6,7 @@ else
   FASTSPIN=../build/fastspin
 fi
 
-PROG="$FASTSPIN -q -2 -I../Lib"
+PROG="$FASTSPIN -q -2a -I../Lib"
 ok="ok"
 endmsg=$ok
 
