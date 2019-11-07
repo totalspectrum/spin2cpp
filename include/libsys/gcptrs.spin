@@ -16,7 +16,7 @@ _gc_heap_base
 '' if called before gc pointers are set up, initialize
 '' the heap
 ''
-pri _gc_ptrs | base, end, size
+pri _gc_ptrs : base, end | size
   base := @_gc_heap_base
   end := base + __real_heapsize__
   if (long[base] == 0)

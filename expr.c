@@ -2537,7 +2537,13 @@ CompatibleTypes(AST *A, AST *B)
         return 1;
     }
     if (A->kind != B->kind) {
-        return 0;
+        if (A->kind == AST_COPYREFTYPE && B->kind == AST_REFTYPE) {
+            /* ok */
+        } else if (A->kind == AST_REFTYPE && B->kind == AST_COPYREFTYPE) {
+            /* ok */
+        } else {
+            return 0;
+        }
     }
     if (A->kind == AST_FUNCTYPE) {
         if (FuncNumResults(A) != FuncNumResults(B)) {

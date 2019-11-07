@@ -207,6 +207,8 @@ enum astkind {
     AST_ENDCASE,
     AST_REFTYPE, // like a ptrtype, but transparent
     AST_COPYREFTYPE, // first the value is copied, then a reference passed; used for passing large structs
+
+    AST_TEMPCOPY = 148,
 };
 
 /* forward reference */

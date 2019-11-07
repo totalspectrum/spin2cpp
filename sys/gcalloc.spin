@@ -89,7 +89,7 @@ con
   POINTER_MAGIC_MASK = $fff00000
   __real_heapsize__ = 256  ' redefined based on user options
 
-pri file "libsys/gcptrs.spin" _gc_ptrs
+pri file "libsys/gcptrs.spin" _gc_ptrs : a, b
 
 { return a pointer to page i in the heap }
 pri _gc_pageptr(heapbase, i)

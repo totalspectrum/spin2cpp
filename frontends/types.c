@@ -809,7 +809,16 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (IsRefType(desttype) && kind == AST_FUNCCALL) {
         // passing to reference parameter
-        *astptr = NewAST(AST_ADDROF, expr, NULL);
+        if (desttype->kind == AST_COPYREFTYPE) {
+            // need to create a temporary duplicate
+            AST *sizeExpr = AstInteger(TypeSize(srctype));
+            AST *lptr = MakeOperatorCall(gc_alloc_managed, sizeExpr, NULL, NULL);;
+            AST *rptr = StructAddress(expr);
+            AST *copy = MakeOperatorCall(struct_copy, lptr, rptr, sizeExpr);
+            *astptr = copy;
+        } else {
+            *astptr = NewAST(AST_ADDROF, expr, NULL);
+        }
         srctype = NewAST(AST_REFTYPE, srctype, NULL);
     }
     if (!desttype || !srctype) {
@@ -1068,7 +1077,7 @@ AST *CheckTypes(AST *ast)
         }
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
-            if (siz > 8) {
+            if (siz > LARGE_SIZE_THRESHOLD) {
                 // convert the assignment to a memcpy
                 AST *lptr = StructAddress(ast->left);
                 AST *rptr = StructAddress(ast->right);
@@ -1387,11 +1396,8 @@ InitGlobalFuncs(void)
         basic_print_nl = getBasicPrimitive("_basic_print_nl");
         basic_put = getBasicPrimitive("_basic_put");
 
-        if (gl_p2) {
-            struct_copy = getBasicPrimitive("longmove");
-        } else {
-            struct_copy = getBasicPrimitive("bytemove");
-        }
+        struct_copy = getBasicPrimitive("bytemove");
+
         string_cmp = getBasicPrimitive("_string_cmp");
         string_concat = getBasicPrimitive("_string_concat");
         make_methodptr = getBasicPrimitive("_make_methodptr");
@@ -1404,5 +1410,46 @@ InitGlobalFuncs(void)
 
 void FixupParameters(Function *func)
 {
-}
+    AST *ftype;
+    AST *params;
+    AST *actualParam;
+    AST *paramType;
+    AST *ident;
+    AST **typePtr;
+    
+    ftype = func->overalltype;
+    if (!ftype) return;
+    params = ftype->right;
+    if (!params) return;
+    while (params) {
+        ident = NULL;
+        typePtr = &params->left;
+        actualParam = params->left;
+        if (actualParam && actualParam->kind == AST_DECLARE_VAR) {
+            typePtr = &actualParam->left;
+            ident = actualParam->right;
+            actualParam = actualParam->left;
+        }
+        if (ident && ident->kind == AST_ASSIGN) {
+            ident = ident->left;
+        }
+        if (ident && ident->kind == AST_ARRAYDECL) {
+            ident = ident->left;
+        }
+        paramType = ExprType(actualParam);
+        if (TypeSize(paramType) > LARGE_SIZE_THRESHOLD) {
+            paramType = NewAST(AST_COPYREFTYPE, paramType, NULL);
+            *typePtr = paramType;
 
+            if (ident) {
+                const char *name = GetIdentifierName(ident);
+                Symbol *sym = FindSymbol(&func->localsyms, name);
+                if (sym && sym->kind == SYM_PARAMETER) {
+                    AST *typ = (AST *)sym->val;
+                    sym->val = NewAST(AST_COPYREFTYPE, typ, NULL);
+                }
+            }
+        }
+        params = params->right;
+    }
+}
