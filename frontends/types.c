@@ -1125,7 +1125,12 @@ AST *CheckTypes(AST *ast)
                     if (!expectType) {
                         // we use const generic to avoid lots of warning
                         // messages about passing strings to printf
-                        expectType = ast_type_const_generic;
+                        if (TypeSize(passedType) > LARGE_SIZE_THRESHOLD) {
+                            // need to emit a copy
+                            expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
+                        } else {
+                            expectType = ast_type_const_generic;
+                        }
                     }
                     CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
                     if (calledParamList) {
