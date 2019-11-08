@@ -382,65 +382,74 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
     AST *subtype;
     int i;
     int limit;
-    if (IsArrayType(basetype)) {
-        if (!IsConstExpr(basetype->right)) {
-            ERROR(ident, "Variable length arrays not supported yet");
+    ASTReportInfo saveinfo;
+
+    AstReportAs(expr, &saveinfo);
+    if (expr && expr->kind == AST_EXPRLIST) {
+        if (IsArrayType(basetype)) {
+            if (!IsConstExpr(basetype->right)) {
+                ERROR(ident, "Variable length arrays not supported yet");
+                AstReportDone(&saveinfo);
+                return seq;
+            }
+            limit = EvalConstExpr(basetype->right);
+            subtype = basetype->left;
+            for (i = 0; expr && i < limit; i++) {
+                sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
+                seq = AddInitializers(seq, sub, expr->left, subtype);
+                expr = expr->right;
+            }
+            while (i < limit) {
+                sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
+                seq = AddInitializers(seq, sub, AstInteger(0), basetype->left);
+                i++;
+            }
+            AstReportDone(&saveinfo);
             return seq;
         }
-        limit = EvalConstExpr(basetype->right);
-        subtype = basetype->left;
-        for (i = 0; expr && i < limit; i++) {
-            sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
-            seq = AddInitializers(seq, sub, expr->left, subtype);
-            expr = expr->right;
-        }
-        while (i < limit) {
-            sub = NewAST(AST_ARRAYREF, ident, AstInteger(i));
-            seq = AddInitializers(seq, sub, AstInteger(0), basetype->left);
-            i++;
-        }
-        return seq;
-    }
-    if (IsClassType(basetype)) {
-        Module *P = GetClassPtr(basetype);
-        AST *varlist = P ? P->finalvarblock : NULL;
-        AST *decl;
-        AST *subident;
-        AST *curexpr;
-        while (varlist && varlist->kind == AST_LISTHOLDER) {
-            decl = varlist->left;
-            varlist = varlist->right;
-            if (decl && decl->kind == AST_DECLARE_VAR) {
-                subtype = decl->left;
-                decl = decl->right;
-                while (decl) {
-                    if (decl->kind == AST_LISTHOLDER) {
-                        subident = decl->left;
-                        decl = decl->right;
-                    } else {
-                        subident = decl;
-                        decl = NULL;
-                    }
-                    if (expr) {
-                        if (expr->kind == AST_EXPRLIST) {
-                            curexpr = expr->left;
-                            expr = expr->right;
+        if (IsClassType(basetype)) {
+            Module *P = GetClassPtr(basetype);
+            AST *varlist = P ? P->finalvarblock : NULL;
+            AST *decl;
+            AST *subident;
+            AST *curexpr;
+            while (varlist && varlist->kind == AST_LISTHOLDER) {
+                decl = varlist->left;
+                varlist = varlist->right;
+                if (decl && decl->kind == AST_DECLARE_VAR) {
+                    subtype = decl->left;
+                    decl = decl->right;
+                    while (decl) {
+                        if (decl->kind == AST_LISTHOLDER) {
+                            subident = decl->left;
+                            decl = decl->right;
                         } else {
-                            curexpr = expr;
-                            expr = NULL;
+                            subident = decl;
+                            decl = NULL;
                         }
-                    } else {
-                        curexpr = AstInteger(0);
+                        if (expr) {
+                            if (expr->kind == AST_EXPRLIST) {
+                                curexpr = expr->left;
+                                expr = expr->right;
+                            } else {
+                                curexpr = expr;
+                                expr = NULL;
+                            }
+                        } else {
+                            curexpr = AstInteger(0);
+                        }
+                        sub = NewAST(AST_METHODREF, ident, subident);
+                        seq = AddInitializers(seq, sub, curexpr, subtype);
                     }
-                    sub = NewAST(AST_METHODREF, ident, subident);
-                    seq = AddInitializers(seq, sub, curexpr, subtype);
                 }
             }
+            AstReportDone(&saveinfo);
+            return seq;
         }
-        return seq;
     }
     assign = AstAssign(ident, expr);
     seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
+    AstReportDone(&saveinfo);
     return seq;
 }
 
