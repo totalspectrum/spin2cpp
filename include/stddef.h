@@ -7,4 +7,6 @@
 
 typedef long ptrdiff_t;
 
+#define offsetof(T, f) ( (size_t) & (((T *)0)->f) )
+
 #endif

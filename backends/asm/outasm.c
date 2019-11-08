@@ -98,7 +98,7 @@ static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
 static void EmitBuiltins(IRList *irl);
 static void CompileConsts(IRList *irl, AST *consts);
-static void EmitAddSub(IRList *irl, Operand *dst, int off);
+static Operand *EmitAddSub(IRList *irl, Operand *dst, int off);
 static Operand *SizedHubMemRef(int size, Operand *addr, int offset);
 Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
@@ -3030,11 +3030,11 @@ GetLea(IRList *irl, Operand *src)
         int off = src->val;
         src = (Operand *)src->name;
         if (off) {
-            EmitAddSub(irl, src, off);
+            src = EmitAddSub(irl, src, off);
         }
         EmitMove(irl, dst, src);
         if (off) {
-            EmitAddSub(irl, src, -off);
+            src = EmitAddSub(irl, src, -off);
         }
         return dst;
     } else if (src->kind == IMM_HUB_LABEL) {
@@ -3733,7 +3733,7 @@ CompileStatementList(IRList *irl, AST *ast)
         ast = ast->right;
     }
 }
-static void EmitAddSub(IRList *irl, Operand *dst, int off)
+static Operand *EmitAddSub(IRList *irl, Operand *dst, int off)
 {
     IROpcode opc  = OPC_ADD;
     Operand *imm;
@@ -3742,8 +3742,13 @@ static void EmitAddSub(IRList *irl, Operand *dst, int off)
         off = -off;
         opc = OPC_SUB;
     }
+    if (dst->kind == IMM_INT) {
+        off += dst->val;
+        return NewImmediate(off);
+    }
     imm = NewImmediate(off);
     EmitOp2(irl, opc, dst, imm);
+    return dst;
 }
 
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
