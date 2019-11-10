@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <string.h>
 #include <math.h>
 #include <stdarg.h>
 #ifdef TEST
@@ -11,6 +10,11 @@
 
 #ifdef __FLEXC__
 #define SMALL_INT
+#define strlen __builtin_strlen
+#define strcpy __builtin_strcpy
+#include <compiler.h>
+#else
+#include <string.h>
 #endif
 
 #define alloca(x) __builtin_alloca(x)

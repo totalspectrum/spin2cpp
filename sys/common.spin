@@ -37,6 +37,13 @@ pri __builtin_strlen(str) : r=long
   repeat while byte[str] <> 0
     r++
     str++
+pri __builtin_strcpy(dst, src) : r=@byte | c
+  r := dst
+  repeat
+    c := byte[src++]
+    byte[dst++] := c
+  until c==0
+
 pri strcomp(s1, s2) | c1, c2
   repeat
     c1 := byte[s1++]
