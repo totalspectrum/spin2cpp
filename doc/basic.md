@@ -1339,6 +1339,8 @@ Returns the current cycle counter. This is an unsigned 32 bit value that counts 
 
 `gosub x` pushes a return value on the stack and jumps to the label `x` (which may be a numeric label). A `return` statement will pop the return value off the stack and resume execution after the original `gosub`.
 
+`gosub` may not be used inside a subroutine or function, it may only be used in top level code.
+
 `gosub` is supported for compatibility with old BASIC code, but should not be used in new code. In new code you should create a subroutine or function instead. See `sub`.
 
 ### GOTO
