@@ -42,10 +42,16 @@ extern "C" {
     _NORETURN void _Exit(int status) _IMPL("libc/stdlib/_Exit.c");  /* like exit(), but skips atexit() stuff */
   _NORETURN void _exit(int status);  /* nonstandard name for _Exit() */
 
+#ifndef abs
   _CONST int abs(int i);
+#endif
+#ifndef labs    
   _CONST long labs(long l);
+#endif
+#ifndef llabs
   _CONST long long llabs(long long ll);
-
+#endif
+    
   typedef struct {
     int quot, rem;
   } div_t;
