@@ -713,12 +713,19 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 %token C_INSTRMODIFIER "instruction modifier"
 
  // asm only tokens
-%token C_WORD "word"
-%token C_BYTE "byte"
 %token C_ALIGNL "alignl"
 %token C_ALIGNW "alignw"
+%token C_BYTE "byte"
+%token C_FILE "file"
+%token C_FIT "fit"
+%token C_ORG  "org"
+%token C_ORGH "orgh"
+%token C_ORGF "orgf"
+%token C_RES "res"
+%token C_WORD "word"
 %token C_EOLN "end of line"
 
+// builtin functions
 %token C_BUILTIN_ABS    "__builtin_abs"
 %token C_BUILTIN_SQRT   "__builtin_sqrt"
 
@@ -1539,6 +1546,11 @@ asm_statement:
     { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
   ;
 
+top_asm:
+  C_ASM '{' asmlist '}'
+      { $$ = current->datblock = AddToListEx(current->datblock, $2, &current->datblock_tail); }
+;
+
 asmlist:
   asmline
   { $$ = $1; }
@@ -1593,6 +1605,24 @@ basedatline:
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
   | C_ALIGNW C_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  | C_ORG C_EOLN
+    { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
+  | C_ORG pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
+  | C_ORGH C_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
+  | C_ORGH pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
+  | C_ORGF pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
+  | C_RES pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
+  | C_FIT pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
+  | C_FIT C_EOLN
+    { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
+  | C_FILE C_STRING_LITERAL C_EOLN
+    { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
 operand:
@@ -1785,6 +1815,7 @@ translation_unit
 
 external_declaration
 	: function_definition
+        | top_asm
 	| declaration
            { DeclareCGlobalVariables($1); }
 	;

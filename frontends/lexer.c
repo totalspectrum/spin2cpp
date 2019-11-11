@@ -69,6 +69,7 @@ safe_isdigit(unsigned int x) {
 SymbolTable spinReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable cReservedWords;
+SymbolTable cAsmReservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
 
@@ -1575,7 +1576,22 @@ struct reservedword c_keywords[] = {
   { "volatile", C_VOLATILE },
   { "while", C_WHILE },
 };
+// keywords reserved in C only with __asm blocks
+struct reservedword c_pasm_keywords[] = {
+  { "alignl", C_ALIGNL },
+  { "alignw", C_ALIGNW },
+  { "byte", C_BYTE },
+  { "file", C_FILE },
+  { "fit", C_FIT },
+  { "org", C_ORG },
+  { "orgf", C_ORGF },
+  { "orgh", C_ORGH },
+  { "res", C_RES },
+  { "word", C_WORD },
+};
 
+// list of words to detect symbols that may conflict with
+// C keywords (used by the C/C++ back end)
 static char *c_words[] = {
     "abort",
     "abs",
@@ -1952,6 +1968,9 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(c_keywords); i++) {
         AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(c_pasm_keywords); i++) {
+        AddSymbol(&cAsmReservedWords, c_pasm_keywords[i].name, SYM_RESERVED, (void *)c_pasm_keywords[i].val, NULL);
     }
     
     if (gl_p2 || 1) {
@@ -2742,6 +2761,7 @@ InitPasm(int flags)
         AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&pasmWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
     }
 
     /* add instructions */
@@ -3113,7 +3133,14 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     }
 
     // check for keywords
-    sym = FindSymbol(&cReservedWords, idstr);
+    if (InDatBlock(L)) {
+        sym = FindSymbol(&cAsmReservedWords, idstr);
+    } else {
+        sym = NULL;
+    }
+    if (!sym) {
+        sym = FindSymbol(&cReservedWords, idstr);
+    }
     if (sym != NULL) {
       if (sym->kind == SYM_RESERVED) {
 	c = INTVAL(sym);
