@@ -2010,26 +2010,30 @@ pasmunary
           { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
 ;
 
+pasmmul
+      : pasmunary
+            { $$ = $1; }
+      | pasmmul '*' pasmunary
+            { $$ = AstOperator('*', $1, $3); } 
+      | pasmmul '/' pasmunary
+            { $$ = AstOperator('/', $1, $3); } 
+      | pasmmul C_LEFT_OP pasmunary
+            { $$ = AstOperator(K_SHL, $1, $3); } 
+      | pasmmul C_RIGHT_OP pasmunary
+            { $$ = AstOperator(K_SHR, $1, $3); } 
+;
 pasmterm
       : pasmunary
             { $$ = $1; }
-      | pasmterm '+' pasmunary
+      | pasmterm '+' pasmmul
             { $$ = AstOperator('+', $1, $3); } 
-      | pasmterm '-' pasmunary
+      | pasmterm '-' pasmmul
             { $$ = AstOperator('-', $1, $3); } 
 ;
-pasmmul
+pasmexpr
       : pasmterm
             { $$ = $1; }
-      | pasmmul '*' pasmterm
-            { $$ = AstOperator('*', $1, $3); } 
-      | pasmmul '/' pasmterm
-            { $$ = AstOperator('/', $1, $3); } 
-;
-pasmexpr
-      : pasmmul
-            { $$ = $1; }
-      | '\\' pasmmul
+      | '\\' pasmexpr
             { $$ = AstCatch($2); }
 ;
 

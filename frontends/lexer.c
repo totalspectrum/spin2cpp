@@ -457,7 +457,29 @@ donefloat:
 /* check for DAT or ASM blocks */
 static int InDatBlock(LexStream *L)
 {
-    return L->in_block == SP_DAT || L->in_block == SP_ASM;
+    return L->block_type >= BLOCK_DAT && L->block_type <= BLOCK_PASM;
+}
+
+static int MapSpinBlock(int c)
+{
+    switch(c) {
+    case SP_CON:
+        return BLOCK_CON;
+    case SP_VAR:
+        return BLOCK_VAR;
+    case SP_OBJ:
+        return BLOCK_OBJ;
+    case SP_DAT:
+        return BLOCK_DAT;
+    case SP_ASM:
+        return BLOCK_ASM;
+    case SP_PUB:
+        return BLOCK_PUB;
+    case SP_PRI:
+        return BLOCK_PRI;
+    default:
+        return BLOCK_UNKNOWN;
+    }
 }
 
 /* parse an identifier */
@@ -550,20 +572,20 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_OBJ:
             case SP_VAR:
             case SP_CON:
-                L->in_block = c;
+                L->block_type = MapSpinBlock(c);
                 L->block_firstline = L->lineCounter;
                 //EstablishIndent(L, 1);
                 break;
 	    case SP_ASM:
-	        if (L->in_block == SP_ASM) {
+	        if (L->block_type == BLOCK_ASM) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
 		} else {
-		    L->save_block = L->in_block;
+		    L->save_block = L->block_type;
 		}
-		L->in_block = c;
+		L->block_type = BLOCK_ASM;
 		break;
 	    case SP_ENDASM:
-	        L->in_block = L->save_block;
+	        L->block_type = L->save_block;
 	        break;
             case SP_IF:
             case SP_IFNOT:
@@ -578,7 +600,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_LONG:
             case SP_BYTE:
             case SP_WORD:
-                if (L->in_block == SP_ASM || L->in_block == SP_DAT) {
+                if (L->block_type == BLOCK_ASM || L->block_type == BLOCK_DAT) {
                     gatherComments = 1;
                 } else {
                     gatherComments = 0;
@@ -872,7 +894,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
         return c;
     }
 
-    if (language == LANG_C) {
+    if (language == LANG_C && L->block_type != BLOCK_PASM) {
         if (c == '/') {
             int c2 = lexgetc(L);
             if (c2 == '/') {
@@ -919,7 +941,7 @@ docomment:
 static bool
 commentBlockStart(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN) {
+    if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
         return c == '{';
     }
     if (language == LANG_BASIC) {
@@ -950,7 +972,7 @@ commentBlockStart(int language, int c, LexStream *L)
 static bool
 commentBlockEnd(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN) {
+    if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
         return c == '}';
     }
     if (language == LANG_BASIC) {
@@ -1003,7 +1025,7 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
       eoln_token = BAS_EOLN;
       eof_token = BAS_EOF;
     } else if (language == LANG_C) {
-        if (L->in_block == SP_ASM) {
+        if (InDatBlock(L)) {
             eoln_token = C_EOLN;
         } else {
             eoln_token = ' ';
@@ -1039,7 +1061,7 @@ again:
         startline = L->lineCounter;
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
-        if (language == LANG_SPIN) {
+        if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
             doccommentchar = '{';
             allowNestedComments = 1;
         } else {
@@ -1072,7 +1094,7 @@ again:
             if (allowNestedComments && commentBlockStart(language, c, L)) {
                 commentNest++;
             } else if (commentBlockEnd(language, c, L)) {
-	        if (doccomment && language == LANG_SPIN) {
+	        if (doccomment && (language == LANG_SPIN || L->block_type == BLOCK_PASM)) {
 	            int peekc;
 		    peekc = lexgetc(L);
 		    if (peekc == '}') {
@@ -1105,7 +1127,7 @@ again:
             *ast_ptr = ast;
             // if this is indented and inside a PUB or PRI,
             // then treat it as inline C code
-            if (startcol > 1 && startline > L->block_firstline && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
+            if (startcol > 1 && startline > L->block_firstline && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
                 return SP_INLINECCODE;
             }
             return SP_ANNOTATION;
@@ -1135,7 +1157,7 @@ again:
         goto again;
     }
 
-    if (L->eoln && language == LANG_SPIN && (L->in_block == SP_PUB || L->in_block == SP_PRI)) {
+    if (L->eoln && language == LANG_SPIN && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
             goto again;
@@ -2900,9 +2922,9 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
         case BAS_ASM:
             if (InDatBlock(L)) {
                 // leave the inline assembly
-                L->in_block = SP_PUB;
+                L->block_type = BLOCK_PUB;
             } else {
-                L->in_block = SP_ASM;
+                L->block_type = BLOCK_ASM;
             }
             break;
         default:
@@ -3151,9 +3173,9 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
         case C_PASM:
             if (InDatBlock(L)) {
                 // leave the inline assembly
-                L->in_block = SP_PUB;
+                L->block_type = BLOCK_PUB;
             } else {
-                L->in_block = SP_ASM;
+                L->block_type = BLOCK_ASM;
             }
             break;
         default:
@@ -3292,7 +3314,7 @@ getCToken(LexStream *L, AST **ast_ptr)
         parseCString(L, &ast);
 	c = C_STRING_LITERAL;
     } else if (c == '}' && InDatBlock(L)) {
-        L->in_block = SP_PUB;
+        L->block_type = BLOCK_PUB;
     } else if (c == '\'') {
         c = getCChar(L, 0);
         ast = AstInteger(c);

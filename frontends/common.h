@@ -29,11 +29,21 @@ struct lexstream {
     int ungot[UNGET_MAX];
     int ungot_ptr;
 
-#define MAX_INDENTS 64
     /* input state */
-    int in_block;  /* T_DAT, T_PUB, or T_CON */
+    int block_type;  /* BLOCK_DAT, BLOCK_PUB etc. */
+#define BLOCK_DAT 100  /* Spin DAT block */
+#define BLOCK_ASM 101  /* Spin inline ASM */
+#define BLOCK_PASM 102 /* C PASM block */
+#define BLOCK_PUB 103
+#define BLOCK_PRI 104
+#define BLOCK_CON 105
+#define BLOCK_VAR 106
+#define BLOCK_OBJ 108
+#define BLOCK_UNKNOWN 999
+    
     int save_block; /* so we can nest T_ASM inside others */
     int block_firstline; /* what line does the block start on? */
+#define MAX_INDENTS 64
     int indent[MAX_INDENTS];    /* current indentation level */
     int indentsp;               /* pointer into stack of indentation level */
     int pending_indent;
