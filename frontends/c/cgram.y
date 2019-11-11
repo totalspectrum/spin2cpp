@@ -1548,7 +1548,7 @@ asm_statement:
 
 top_asm:
   C_ASM '{' asmlist '}'
-      { $$ = current->datblock = AddToListEx(current->datblock, $2, &current->datblock_tail); }
+      { $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); }
 ;
 
 asmlist:

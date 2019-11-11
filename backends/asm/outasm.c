@@ -1014,9 +1014,11 @@ LabelRef(IRList *irl, Symbol *sym)
     Module *P = current;
     Operand *datbase = ValidateDatBase(P);
 
+#if 0    
     if (! (lab->flags & (LABEL_IN_HUB|LABEL_USED_IN_SPIN) ) ) {
         WARNING(NULL, "Internal error, unexpected COG label");
     }
+#endif    
     temp = TypedHubMemRef(lab->type, datbase, (int)lab->hubval);
     return temp;
 }
