@@ -1300,7 +1300,7 @@ static char *   get_line(
  * Convert [CR+LF] to [LF].
  */
 {
-#define cr_warn_level 1
+#define cr_warn_level 2
     static int  cr_converted;
     int     converted = FALSE;
     int     len;                            /* Line length - alpha  */
