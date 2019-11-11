@@ -667,6 +667,9 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 %token C_OR_ASSIGN "|="
 %token C_TYPE_NAME "type name"
 
+%token C_LIMITMIN_OP "#<"
+%token C_LIMITMAX_OP "#>"
+
 %token C_TYPEDEF "typedef"
 %token C_EXTERN "extern"
 %token C_STATIC "static"
@@ -1995,6 +1998,8 @@ pasmatom
             { $$ = $1; }
       | C_CONSTANT
             { $$ = $1; }
+      | C_STRING_LITERAL
+            { $$ = $1; }
       | '@' C_IDENTIFIER
             { $$ = NewAST(AST_ADDROF, $2, NULL); }
       | '(' pasmexpr ')'
@@ -2010,28 +2015,69 @@ pasmunary
           { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
 ;
 
-pasmmul
+pasm_e1
       : pasmunary
             { $$ = $1; }
-      | pasmmul '*' pasmunary
-            { $$ = AstOperator('*', $1, $3); } 
-      | pasmmul '/' pasmunary
-            { $$ = AstOperator('/', $1, $3); } 
-      | pasmmul C_LEFT_OP pasmunary
+      | pasm_e1 C_LEFT_OP pasmunary
             { $$ = AstOperator(K_SHL, $1, $3); } 
-      | pasmmul C_RIGHT_OP pasmunary
+      | pasm_e1 C_RIGHT_OP pasmunary
             { $$ = AstOperator(K_SHR, $1, $3); } 
 ;
-pasmterm
-      : pasmunary
+pasm_e2
+      : pasm_e1
             { $$ = $1; }
-      | pasmterm '+' pasmmul
+      | pasm_e2 '&' pasm_e1
+            { $$ = AstOperator('&', $1, $3); } 
+;
+pasm_e3
+      : pasm_e2
+            { $$ = $1; }
+      | pasm_e3 '|' pasm_e2
+            { $$ = AstOperator('|', $1, $3); } 
+      | pasm_e3 '^' pasm_e2
+            { $$ = AstOperator('^', $1, $3); } 
+;
+pasm_e4
+      : pasm_e3
+            { $$ = $1; }
+      | pasm_e4 '*' pasm_e3
+            { $$ = AstOperator('*', $1, $3); } 
+      | pasm_e4 '/' pasm_e3
+            { $$ = AstOperator('/', $1, $3); } 
+      | pasm_e4 '%' pasm_e3
+            { $$ = AstOperator(K_MODULUS, $1, $3); } 
+;
+pasm_e5
+      : pasm_e4
+            { $$ = $1; }
+      | pasm_e5 '+' pasm_e4
             { $$ = AstOperator('+', $1, $3); } 
-      | pasmterm '-' pasmmul
+      | pasm_e5 '-' pasm_e4
             { $$ = AstOperator('-', $1, $3); } 
 ;
+pasm_e6
+      : pasm_e5
+            { $$ = $1; }
+      | pasm_e6 C_LIMITMIN_OP pasm_e5
+            { $$ = AstOperator(K_LIMITMIN, $1, $3); } 
+      | pasm_e6 C_LIMITMAX_OP pasm_e5
+            { $$ = AstOperator(K_LIMITMAX, $1, $3); } 
+;
+pasm_e7
+      : pasm_e6
+            { $$ = $1; }
+      | pasm_e7 '>' pasm_e6
+            { $$ = AstOperator('>', $1, $3); } 
+      | pasm_e7 '<' pasm_e6
+            { $$ = AstOperator('<', $1, $3); } 
+      | pasm_e7 C_LE_OP pasm_e6
+            { $$ = AstOperator(K_LE, $1, $3); } 
+      | pasm_e7 C_GE_OP pasm_e6
+            { $$ = AstOperator(K_GE, $1, $3); } 
+;
+
 pasmexpr
-      : pasmterm
+      : pasm_e7
             { $$ = $1; }
       | '\\' pasmexpr
             { $$ = AstCatch($2); }

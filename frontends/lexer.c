@@ -600,7 +600,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             case SP_LONG:
             case SP_BYTE:
             case SP_WORD:
-                if (L->block_type == BLOCK_ASM || L->block_type == BLOCK_DAT) {
+                if (InDatBlock(L)) {
                     gatherComments = 1;
                 } else {
                     gatherComments = 0;
@@ -941,7 +941,7 @@ docomment:
 static bool
 commentBlockStart(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
+    if (language == LANG_SPIN) {
         return c == '{';
     }
     if (language == LANG_BASIC) {
@@ -972,7 +972,7 @@ commentBlockStart(int language, int c, LexStream *L)
 static bool
 commentBlockEnd(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
+    if (language == LANG_SPIN) {
         return c == '}';
     }
     if (language == LANG_BASIC) {
@@ -3175,7 +3175,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
                 // leave the inline assembly
                 L->block_type = BLOCK_PUB;
             } else {
-                L->block_type = BLOCK_ASM;
+                L->block_type = (c == C_PASM) ? BLOCK_PASM : BLOCK_ASM;
             }
             break;
         default:
