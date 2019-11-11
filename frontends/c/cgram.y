@@ -709,6 +709,7 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 %token C_USING "__using"
 
 %token C_ASM "__asm"
+%token C_PASM "__pasm"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
 
@@ -742,6 +743,7 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 %token C_EOF "end of file"
 
 %start translation_unit
+
 %%
 
 primary_expression
@@ -1559,8 +1561,8 @@ asmlist:
   ;
 
 asmline:
-  basedatline
-  | C_IDENTIFIER basedatline
+  asm_baseline
+  | C_IDENTIFIER asm_baseline
     {   AST *linebreak;
         AST *comment = GetComments();
         AST *ast;
@@ -1576,30 +1578,30 @@ asmline:
     }
   ;
 
-basedatline:
+asm_baseline:
   C_EOLN
     { $$ = NULL; }
   | error C_EOLN
     { $$ = NULL; }
   | C_BYTE C_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | C_BYTE operandlist C_EOLN
+  | C_BYTE asm_operandlist C_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | C_WORD C_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | C_WORD operandlist C_EOLN
+  | C_WORD asm_operandlist C_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
   | C_LONG C_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | C_LONG operandlist C_EOLN
+  | C_LONG asm_operandlist C_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction C_EOLN
     { $$ = NewCommentedInstr($1); }
-  | instruction operandlist C_EOLN
+  | instruction asm_operandlist C_EOLN
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
   | instruction modifierlist C_EOLN
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction operandlist modifierlist C_EOLN
+  | instruction asm_operandlist modifierlist C_EOLN
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
   | C_ALIGNL C_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
@@ -1607,17 +1609,17 @@ basedatline:
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
   | C_ORG C_EOLN
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
-  | C_ORG pasmexpr C_EOLN
+  | C_ORG asmexpr C_EOLN
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
   | C_ORGH C_EOLN
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
-  | C_ORGH pasmexpr C_EOLN
+  | C_ORGH asmexpr C_EOLN
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
-  | C_ORGF pasmexpr C_EOLN
+  | C_ORGF asmexpr C_EOLN
     { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
-  | C_RES pasmexpr C_EOLN
+  | C_RES asmexpr C_EOLN
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
-  | C_FIT pasmexpr C_EOLN
+  | C_FIT asmexpr C_EOLN
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
   | C_FIT C_EOLN
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
@@ -1625,30 +1627,30 @@ basedatline:
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
-operand:
-  pasmexpr
+asm_operand:
+  asmexpr
    { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
- | '#' pasmexpr
+ | '#' asmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
- | '#' '#' pasmexpr
+ | '#' '#' asmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
- | pasmexpr '[' pasmexpr ']'
+ | asmexpr '[' asmexpr ']'
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
 ;
 
-pasmexpr:
+asm_operandlist:
+   asm_operand
+   { $$ = $1; }
+ | asm_operandlist ',' asm_operand
+   { $$ = AddToList($1, $3); }
+ ;
+
+asmexpr:
   conditional_expression
     { $$ = $1; }
   | '\\' conditional_expression
     { $$ = AstCatch($2); }
 ;
-
-operandlist:
-   operand
-   { $$ = $1; }
- | operandlist ',' operand
-   { $$ = AddToList($1, $3); }
- ;
 
 instruction:
   C_INSTR
@@ -1816,6 +1818,7 @@ translation_unit
 external_declaration
 	: function_definition
         | top_asm
+        | top_pasm
 	| declaration
            { DeclareCGlobalVariables($1); }
 	;
@@ -1889,6 +1892,147 @@ fromfile_decl
             {  $$ = $3; }
         ;
 
+/* PASM syntax: this is awkward, so not fully supported yet */
+top_pasm:
+  C_PASM '{' pasmlist '}'
+      { $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); }
+;
+
+pasmlist:
+  pasmline
+  { $$ = $1; }
+  | pasmlist pasmline
+  { $$ = AddToList($1, $2); }
+  ;
+
+pasmline:
+  pasm_baseline
+  | C_IDENTIFIER pasm_baseline
+    {   AST *linebreak;
+        AST *comment = GetComments();
+        AST *ast;
+        ast = $1;
+        if (comment && (comment->d.string || comment->kind == AST_SRCCOMMENT)) {
+            linebreak = NewCommentedAST(AST_LINEBREAK, NULL, NULL, comment);
+        } else {
+            linebreak = NewAST(AST_LINEBREAK, NULL, NULL);
+        }
+        ast = AddToList(ast, $2);
+        ast = AddToList(linebreak, ast);
+        $$ = ast;
+    }
+  ;
+
+pasm_baseline:
+  C_EOLN
+    { $$ = NULL; }
+  | error C_EOLN
+    { $$ = NULL; }
+  | C_BYTE C_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
+  | C_BYTE pasm_operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
+  | C_WORD C_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
+  | C_WORD pasm_operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
+  | C_LONG C_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
+  | C_LONG pasm_operandlist C_EOLN
+    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
+  | instruction C_EOLN
+    { $$ = NewCommentedInstr($1); }
+  | instruction pasm_operandlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction modifierlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, $2)); }
+  | instruction pasm_operandlist modifierlist C_EOLN
+    { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
+  | C_ALIGNL C_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
+  | C_ALIGNW C_EOLN
+    { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  | C_ORG C_EOLN
+    { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
+  | C_ORG pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
+  | C_ORGH C_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
+  | C_ORGH pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
+  | C_ORGF pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
+  | C_RES pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
+  | C_FIT pasmexpr C_EOLN
+    { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
+  | C_FIT C_EOLN
+    { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
+  | C_FILE C_STRING_LITERAL C_EOLN
+    { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  ;
+
+pasm_operand:
+  pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+ | '#' pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
+ | '#' '#' pasmexpr
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
+ | pasmexpr '[' pasmexpr ']'
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+;
+
+pasm_operandlist:
+   pasm_operand
+   { $$ = $1; }
+ | pasm_operandlist ',' pasm_operand
+   { $$ = AddToList($1, $3); }
+ ;
+
+pasmatom
+      : C_IDENTIFIER
+            { $$ = $1; }
+      | C_CONSTANT
+            { $$ = $1; }
+      | '@' C_IDENTIFIER
+            { $$ = NewAST(AST_ADDROF, $2, NULL); }
+      | '(' pasmexpr ')'
+            { $$ = $2; }
+;
+
+pasmunary
+      : pasmatom
+          { $$ = $1; }
+      | '-' pasmunary
+          { $$ = AstOperator(K_NEGATE, NULL, $2); }
+      | '!' pasmunary
+          { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+;
+
+pasmterm
+      : pasmunary
+            { $$ = $1; }
+      | pasmterm '+' pasmunary
+            { $$ = AstOperator('+', $1, $3); } 
+      | pasmterm '-' pasmunary
+            { $$ = AstOperator('-', $1, $3); } 
+;
+pasmmul
+      : pasmterm
+            { $$ = $1; }
+      | pasmmul '*' pasmterm
+            { $$ = AstOperator('*', $1, $3); } 
+      | pasmmul '/' pasmterm
+            { $$ = AstOperator('/', $1, $3); } 
+;
+pasmexpr
+      : pasmmul
+            { $$ = $1; }
+      | '\\' pasmmul
+            { $$ = AstCatch($2); }
+;
+
 %%
 #include <stdio.h>
 
@@ -1925,3 +2069,4 @@ cgramyyerror(const char *msg)
     fprintf(stderr, "\n");
     gl_errors++;
 }
+

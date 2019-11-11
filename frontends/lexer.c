@@ -1559,6 +1559,7 @@ struct reservedword c_keywords[] = {
   { "inline", C_INLINE },
   { "int", C_INT },
   { "long", C_LONG },
+  { "__pasm", C_PASM },
   { "__restrict", C_RESTRICT },
   { "register", C_REGISTER },
   { "return", C_RETURN },
@@ -3147,6 +3148,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
         /* check for special handling */
         switch(c) {
         case C_ASM:
+        case C_PASM:
             if (InDatBlock(L)) {
                 // leave the inline assembly
                 L->in_block = SP_PUB;
