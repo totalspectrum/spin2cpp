@@ -76,7 +76,7 @@ The macros `_SETFREQ` and `_CLOCKFREQ` are not special in any way, and this whol
 
 ## Extensions to C
 
-### Inline Assembly
+### Inline Assembly (C Style)
 
 The inline assembly syntax is similar to that of MSVC. Inline assembly blocks are marked with the keyword `__asm`. For example, a function to get the current cog id could be written as:
 ```
@@ -91,6 +91,16 @@ int getcogid() {
 The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+
+The syntax of expressions inside inline assembly is the same as that of C, and only C style constants may be used (so write `0xff` instead of `$ff`). Comments must be made in C style, not Spin style (so use `//` to begin a comment that extends to the end of line).
+
+### Inline Assembly (Spin Style)
+
+Because much existing assembly code is written in the Spin language, FlexC supports inline assembly that uses the Spin rules for expression evaluation and comments. These blocks are like C style inline assembly, but start with the keyword `__pasm` instead of `__asm`. Inside `__pasm` blocks comments start with a single quote, and expressions are evaluated as they are in Spin.
+
+`__pasm` blocks are still a work in progress, and are probably still incomplete.
+
+Note that FlexC supports calling Spin methods directly, so to adapt existing Spin code it may be easier to just include the Spin object with `struct __using` (see below).
 
 ### Classes
 
