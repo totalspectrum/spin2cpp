@@ -2,6 +2,7 @@ Version 4.0.4
 - Implemented top level __asm in C
 - Fixed some namespace conflicts between BASIC and C
 - Fixed a typo in stdlib.h which caused conflict with math.h
+- Added auto baud rate detection capability to SmartSerial
 
 Version 4.0.3
 - Implemented C++ references like "int &c"
