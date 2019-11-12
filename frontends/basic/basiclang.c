@@ -674,17 +674,9 @@ doBasicTransform(AST **astptr)
     case AST_CASETABLE:
     {
         AST *list = ast->right;
-        AST *var;
-        AST *seq = NULL;
         const char *case_name = (ast->kind == AST_CASETABLE) ? "ON GOTO" : NULL;
         doBasicTransform(&ast->left);
         AstReportAs(ast, &saveinfo);
-        if (IsIdentifier(ast->left)) {
-            var = ast->left;
-        } else {
-            var = AstTempLocalVariable("_tmp_", ExprType(ast->left));
-            seq = AddToList(seq, NewAST(AST_STMTLIST, AstAssign(var, ast->left), NULL));
-        }
         while (list) {
             AST *caseitem;
             if (list->kind != AST_STMTLIST) {
@@ -697,9 +689,6 @@ doBasicTransform(AST **astptr)
         }
         *ast = *CreateSwitch(ast->left, ast->right, case_name);
         AstReportDone(&saveinfo);
-        if (seq) {
-            *astptr = seq;
-        }
         break;
     }        
     case AST_COUNTREPEAT:
