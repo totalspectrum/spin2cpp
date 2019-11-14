@@ -178,7 +178,7 @@ pri __builtin_propeller_drvrnd(pin)
   endasm
 pri __builtin_propeller_drv(pin, c)
   asm
-    test   pin,#1 wc
+    test   c,#1 wc
     drvc pin
   endasm
 

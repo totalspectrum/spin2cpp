@@ -4,6 +4,7 @@ Version 4.0.4
 - Fixed a typo in stdlib.h which caused conflict with math.h
 - Added auto baud rate detection capability to SmartSerial
 - Fixed an error in switch statement expressions in BASIC
+- Fixed the C _pinw function
 
 Version 4.0.3
 - Implemented C++ references like "int &c"
