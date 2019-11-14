@@ -90,7 +90,9 @@ int getcogid() {
 ```
 The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
 
-Inside inline assembly any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+For inline assembly inside a function, any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+
+Inline assembly may also appear outside of any function. In this case the inline assembly block is similar to a Spin `DAT` section, and creates a global block of code and/or data.
 
 The syntax of expressions inside inline assembly is the same as that of C, and only C style constants may be used (so write `0xff` instead of `$ff`). Comments must be made in C style, not Spin style (so use `//` to begin a comment that extends to the end of line).
 
@@ -185,6 +187,10 @@ void swap_c(int *a, int *b)
 ### Statement expressions
 
 A compound statement enclosed in parentheses may appear as an expression. This is a GCC extension which allows loops, switches, and similar features to appear within an expression.
+
+### Miscellaneous extensions
+
+The `@` symbol may be used as an addressof operator in place of `&`. This is mainly useful in inline assembly (where it mimics the syntax of PASM/Spin).
 
 ## Builtin functions
 

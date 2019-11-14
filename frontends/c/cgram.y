@@ -870,6 +870,8 @@ unary_expression
 unary_operator
 	: '&'
             { $$ = NewAST(AST_ADDROF, NULL, NULL); }
+	| '@'
+            { $$ = NewAST(AST_ADDROF, NULL, NULL); }
 	| '*'
             { $$ = NewAST(AST_ARRAYREF, NULL, AstInteger(0)); }
 	| '+'
