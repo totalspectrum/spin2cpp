@@ -98,7 +98,11 @@ int       _coginit(int cog, void *pgm, void *ptr);
 #define _cognew(pgm, ptr) _coginit(ANY_COG, pgm, ptr)
 
 /* start C code in another COG */
+#ifdef __FLEXC__
+#define _cogstart(func, arg, stack, size) __builtin_cogstart(func(arg), stack)
+#else
 int _cogstart(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_size);
+#endif
 
 /* stop/check status of COGs */
 void      _cogstop(int cog);
