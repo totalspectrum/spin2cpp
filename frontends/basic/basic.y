@@ -179,7 +179,7 @@ DefineDefaultVarTypes(AST *deflist, AST *type)
         last = GetIdentifierName(entry->right);
         low = toupper(first[0]) - 'A';
         high = toupper(last[0]) - 'A';
-        if (strlen(first) != 1 || strlen(last) != 1 || low < 0 || high > 25) {
+        if (strlen(first) != 1 || strlen(last) != 1 || low > 25 || high > 25) {
             SYNTAX_ERROR("defXXX requires single letters in patterns");
             return NULL;
         }
