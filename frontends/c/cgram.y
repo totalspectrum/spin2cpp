@@ -395,7 +395,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     int bitfield_offset = 0;
     int bitfield_size = 0;
     int max_bitfield_size = 0;
-    AST *bitfield_ident;
+    AST *bitfield_ident = 0;
     if (!astlist) return;
     if (astlist->kind != AST_STMTLIST) {
         ERROR(astlist, "Internal error, expected stmt list");
