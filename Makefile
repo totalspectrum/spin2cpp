@@ -19,11 +19,11 @@ SIGN ?= ./sign.dummy.sh
 
 ifeq ($(CROSS),win32)
 #  CC=i586-mingw32msvc-gcc
-  CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000
+  CC=i686-w64-mingw32-gcc -Wl,--stack -Wl,8000000 -O
   EXT=.exe
   BUILD=./build-win32
 else ifeq ($(CROSS),rpi)
-  CC=arm-linux-gnueabihf-gcc
+  CC=arm-linux-gnueabihf-gcc -O
   EXT=
   BUILD=./build-rpi
 else ifeq ($(CROSS),linux32)
@@ -31,7 +31,7 @@ else ifeq ($(CROSS),linux32)
   EXT=
   BUILD=./build-linux32
 else ifeq ($(CROSS),macosx)
-  CC=o64-clang -DMACOSX
+  CC=o64-clang -DMACOSX -O
   EXT=
   BUILD=./build-macosx
 else
