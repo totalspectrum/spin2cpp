@@ -4,7 +4,7 @@
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
-# possible targets are: win32, rpi
+# possible targets are: win32, rpi, macosx
 # Note that you may have to adjust your compiler names depending on
 # which Linux distribution you are using (e.g. ubuntu uses
 # "i586-mingw32msvc-gcc" for mingw, whereas Debian uses
@@ -30,6 +30,10 @@ else ifeq ($(CROSS),linux32)
   CC=gcc -m32
   EXT=
   BUILD=./build-linux32
+else ifeq ($(CROSS),macosx)
+  CC=o64-clang -DMACOSX
+  EXT=
+  BUILD=./build-macosx
 else
   CC=gcc
   EXT=
