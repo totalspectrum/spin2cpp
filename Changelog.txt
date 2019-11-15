@@ -5,6 +5,7 @@ Version 4.0.4
 - Added auto baud rate detection capability to SmartSerial
 - Fixed an error in switch statement expressions in BASIC
 - Fixed the C _pinw function
+- Fixed MOD operator in BASIC to work like FastBASIC.
 
 Version 4.0.3
 - Implemented C++ references like "int &c"

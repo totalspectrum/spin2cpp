@@ -393,6 +393,8 @@ MOD
 ```
 This is the integer modulo operator; `a mod b` is the remainder when `a` is divided by `b`. It is only well defined for integers. The sign of the result is the same as the sign of `a`. `mod` and `/` are related: if `x = a / b` and `y = a mod b` then `x * b + y` will equal `a`.
 
+Any floating point arguments will be converted to integer before `mod` is applied.
+
 #### Comparison operators
 
 

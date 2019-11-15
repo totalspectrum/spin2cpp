@@ -616,6 +616,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '&':
     case '|':
     case '^':
+    case K_MODULUS:
         if (lefttype && IsFloatType(lefttype)) {
             ast->left = dofloatToInt(ast->left);
             lefttype = ast_type_long;
@@ -669,7 +670,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
     case '*':
     case '/':
-    case K_MODULUS:
         return HandleTwoNumerics(op, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         VerifyIntegerType(ast, righttype, "sign extension");
