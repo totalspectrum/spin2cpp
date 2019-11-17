@@ -291,7 +291,18 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     int isfloat = 0;
     int isalreadyfixed = 0;
     AST *scale = NULL;
-    
+
+    if (op == K_MODULUS) {
+        // MOD operator convers float operands to integer
+        if (IsFloatType(lefttype)) {
+            ast->left = dofloatToInt(ast->left);
+            lefttype = ast_type_long;
+        }
+        if (IsFloatType(righttype)) {
+            ast->right = dofloatToInt(ast->right);
+            righttype = ast_type_long;
+        }
+    }
     if (IsFloatType(lefttype)) {
         isfloat = 1;
         if (!IsFloatType(righttype)) {
@@ -616,7 +627,6 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '&':
     case '|':
     case '^':
-    case K_MODULUS:
         if (lefttype && IsFloatType(lefttype)) {
             ast->left = dofloatToInt(ast->left);
             lefttype = ast_type_long;
@@ -670,6 +680,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         }
     case '*':
     case '/':
+    case K_MODULUS:
         return HandleTwoNumerics(op, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         VerifyIntegerType(ast, righttype, "sign extension");
