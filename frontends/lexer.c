@@ -460,6 +460,13 @@ static int InDatBlock(LexStream *L)
     return L->block_type >= BLOCK_DAT && L->block_type <= BLOCK_PASM;
 }
 
+/* check for PASM (Spin compatible assembly) block in C or BASIC */
+static int InPasmBlock(LexStream *L)
+{
+    return L->block_type == BLOCK_PASM;
+}
+
+/* convert a Spin block type into a standard block type */
 static int MapSpinBlock(int c)
 {
     switch(c) {
@@ -900,7 +907,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
         return c;
     }
 
-    if (language == LANG_C && L->block_type != BLOCK_PASM) {
+    if (language == LANG_C && !InPasmBlock(L)) {
         if (c == '/') {
             int c2 = lexgetc(L);
             if (c2 == '/') {
@@ -3452,7 +3459,7 @@ getCToken(LexStream *L, AST **ast_ptr)
         c = C_CONSTANT;
     } else if (c == '%') {
         c2 = lexgetc(L);
-        if (L->block_type == BLOCK_PASM) {
+        if (InPasmBlock(L)) {
             ast = NewAST(AST_INTEGER, NULL, NULL);
             if (c2 == '%') {
                 c = parseNumber(L, 4, &ast->d.ival);
