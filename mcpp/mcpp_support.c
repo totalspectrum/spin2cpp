@@ -1284,6 +1284,8 @@ static char *   read_c_comment(
     return  sp;                             /* Never reach here     */
 }
 
+static int spin_comment_nest = 0;
+
 static char *   parse_spin_line( void)
 /*
  * ANSI (ISO) C: translation phase 3.
@@ -1319,9 +1321,8 @@ static char *   parse_spin_line( void)
     while ((c = *sp++ & UCHARMAX) != '\n') {
 
         switch (c) {
-        case '/':
-            switch (*sp++) {
-            case '\'':                       /* Start of a comment   */
+        case '{':
+            if (spin_comment_nest > 0) {
                 if ((sp = read_spin_comment( sp, &com_size)) == NULL) {
                     free( temp);            /* End of file with un- */
                     return  NULL;           /*   terminated comment */
@@ -1330,11 +1331,15 @@ static char *   parse_spin_line( void)
                         ! (char_type[ *(tp - 1) & UCHARMAX] & HSP))
                     *tp++ = ' ';        /* Squeeze white spaces */
                 break;
-            default:                        /* Not a comment        */
-                *tp++ = '/';
-                sp--;                       /* To re-read           */
-                break;
+            } else {
+                spin_comment_nest++;
+                *tp++ = c;
             }
+            break;
+        case '}':
+            *tp++ = c;
+            spin_comment_nest = 0;
+            mcpp_comment_style = MCPP_COMMENT_STYLE_C;
             break;
         case '\r':                          /* Vertical white spaces*/
                 /* Note that [CR+LF] is already converted to [LF].  */
@@ -1406,8 +1411,6 @@ end_line:
     return  infile->buffer;
 }
 
-static int spin_comment_nest = 0;
-
 static char *   read_spin_comment(
     char *      sp,                         /* Source               */
     size_t *    sizp                        /* Size of the comment  */
@@ -1419,9 +1422,9 @@ static char *   read_spin_comment(
     int         c;
     char *      saved_sp;
     int         cat_line = 0;       /* Number of catenated lines    */
-
+    int	        nest = 0;
     if (keep_comments)                      /* If writing comments  */
-        mcpp_fputs( "/'", OUT);             /* Write the initializer*/
+        mcpp_fputs( "{", OUT);             /* Write the initializer*/
     c = *sp++;
 
     while (1) {                             /* Eat a comment        */
@@ -1429,34 +1432,16 @@ static char *   read_spin_comment(
             mcpp_fputc( c, OUT);
 
         switch (c) {
-        case '/':
-            if ((c = *sp++) != '\'')         /* Don't let comments   */
-                continue;                   /*   nest.              */
-            if (warn_level & 1)
-                cwarn( "\"/'\" within comment", NULL, 0L, NULL);    /* _W1_ */
-            if (keep_comments)
-                mcpp_fputc( c, OUT);
-                                            /* Fall into * stuff    */
-        case '\'':
-            if ((c = *sp++) != '/')         /* If comment doesn't   */
-                continue;                   /*   end, look at next. */
-            if (keep_comments) {            /* Put out comment      */
-                mcpp_fputc( c, OUT);        /*   terminator, too.   */
-                mcpp_fputc( '\n', OUT);     /* Append '\n' to avoid */
-                    /*  trouble on some other tools such as rpcgen. */
-                wrong_line = TRUE;
+        case '{':
+            nest++;
+            break;
+        case '}':
+            if (nest == 0) {
+                /* end of comment */
+                return sp;
             }
-            if ((mcpp_debug & MACRO_CALL) && compiling) {
-                if (cat_line) {
-                    cat_line++;
-                    com_cat_line.len[ cat_line]         /* Catenated length */
-                            = com_cat_line.len[ cat_line - 1]
-                                + strlen( infile->buffer) - 1;
-                                            /* '-1' for '\n'        */
-                    com_cat_line.last_line = src_line;
-                }
-            }
-            return  sp;                     /* End of comment       */
+            --nest;
+            break;
         case '\n':                          /* Line-crossing comment*/
             if ((mcpp_debug & MACRO_CALL) && compiling) {
                                     /* Save location informations   */
@@ -1498,10 +1483,17 @@ static char *   parse_line( void)
         return parse_spin_line();
     }
     r = p = parse_c_line();
-    while ( *p && *p == ' ' ) p++;
-    if (!strncmp(p, "__pasm", 6)) {
-        mcpp_comment_style = MCPP_COMMENT_STYLE_SPIN;
-        spin_comment_nest = 0;
+    if (p) {
+        while ( *p && *p == ' ' ) p++;
+        if (!strncmp(p, "__pasm", 6)) {
+            mcpp_comment_style = MCPP_COMMENT_STYLE_SPIN;
+            spin_comment_nest = 0;
+            p += 6;
+            while (*p && *p != '{') {
+                p++;
+            }
+            if (*p == '{') spin_comment_nest = 1;
+        }
     }
     return r;
 }
