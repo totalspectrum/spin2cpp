@@ -542,6 +542,12 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 *ast_ptr = ast;
                 return SP_INSTRMODIFIER;
             }
+            if (sym->kind == SYM_HWREG) {
+                ast = NewAST(AST_HWREG, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return SP_HWREG;
+            }
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
     }
@@ -2784,7 +2790,7 @@ InitPasm(int flags)
         AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
-        AddSymbol(&pasmWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&pasmWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
     }
 
     /* add instructions */
@@ -2907,6 +2913,12 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return BAS_INSTRMODIFIER;
+            }
+            if (sym->kind == SYM_HWREG) {
+                ast = NewAST(AST_HWREG, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return BAS_HWREG;
             }
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
@@ -3150,6 +3162,12 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
                 ast->d.ptr = sym->val;
                 *ast_ptr = ast;
                 return C_INSTRMODIFIER;
+            }
+            if (sym->kind == SYM_HWREG) {
+                ast = NewAST(AST_HWREG, NULL, NULL);
+                ast->d.ptr = sym->val;
+                *ast_ptr = ast;
+                return C_HWREG;
             }
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }

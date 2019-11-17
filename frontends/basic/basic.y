@@ -361,6 +361,7 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_TYPENAME   "type name"
 %token BAS_INSTR      "asm instruction"
 %token BAS_INSTRMODIFIER "asm instruction modifier"
+%token BAS_HWREG      "hardware register"
 %token BAS_ALIGNL     "alignl"
 %token BAS_ALIGNW     "alignw"
 

@@ -715,6 +715,7 @@ MergeOldStyleDeclarationList(AST *orig_funcdecl, AST *decl_list)
 %token C_PASM "__pasm"
 %token C_INSTR "asm instruction"
 %token C_INSTRMODIFIER "instruction modifier"
+%token C_HWREG "hardware register"
 
  // asm only tokens
 %token C_ALIGNL "alignl"
@@ -753,6 +754,8 @@ primary_expression
 	: C_IDENTIFIER
             { $$ = $1; }
 	| C_CONSTANT
+            { $$ = $1; }
+	| C_HWREG
             { $$ = $1; }
 	| C_STRING_LITERAL
             { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
@@ -1999,6 +2002,8 @@ pasmatom
       : C_IDENTIFIER
             { $$ = $1; }
       | C_CONSTANT
+            { $$ = $1; }
+      | C_HWREG
             { $$ = $1; }
       | C_STRING_LITERAL
             { $$ = $1; }
