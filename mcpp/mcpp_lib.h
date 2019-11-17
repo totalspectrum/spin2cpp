@@ -28,4 +28,10 @@ extern DLL_DECL void    mcpp_set_out_func(
                     );
 extern DLL_DECL void    mcpp_use_mem_buffers( int tf);
 extern DLL_DECL char *  mcpp_get_mem_buffer( OUTDEST od);
+
+
+extern int mcpp_comment_style;
+#define MCPP_COMMENT_STYLE_C    0
+#define MCPP_COMMENT_STYLE_SPIN 1
+
 #endif  /* _MCPP_LIB_H  */

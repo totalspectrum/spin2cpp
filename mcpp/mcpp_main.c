@@ -48,7 +48,7 @@
     };
 
     int     mcpp_mode = STD;        /* Mode of preprocessing        */
-
+    int     mcpp_comment_style = MCPP_COMMENT_STYLE_C;
     long    stdc_ver = 0L;          /* Value of __STDC_VERSION__    */
     int     stdc_val = 0;           /* Value of __STDC__            */
     int     std_line_prefix = STD_LINE_PREFIX;

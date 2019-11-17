@@ -78,7 +78,9 @@ static char *   scan_op( int c, char * out);
                 /* Scan an operator or a punctuator     */
 static char *   parse_line( void);
                 /* Parse a logical line and convert comments    */
-static char *   read_a_comment( char * sp, size_t * sizp);
+static char *   read_c_comment( char * sp, size_t * sizp);
+                /* Read over a comment          */
+static char *   read_spin_comment( char * sp, size_t * sizp);
                 /* Read over a comment          */
 static char *   get_line( int in_comment);
                 /* Get a logical line from file, handle line-splicing   */
@@ -1072,7 +1074,7 @@ int     get_ch( void)
     return  get_ch();                       /* Get from the parent  */
 }
 
-static char *   parse_line( void)
+static char *   parse_c_line( void)
 /*
  * ANSI (ISO) C: translation phase 3.
  * Parse a logical line.
@@ -1110,7 +1112,7 @@ static char *   parse_line( void)
         case '/':
             switch (*sp++) {
             case '*':                       /* Start of a comment   */
-                if ((sp = read_a_comment( sp, &com_size)) == NULL) {
+                if ((sp = read_c_comment( sp, &com_size)) == NULL) {
                     free( temp);            /* End of file with un- */
                     return  NULL;           /*   terminated comment */
                 }
@@ -1200,7 +1202,7 @@ end_line:
     return  infile->buffer;
 }
 
-static char *   read_a_comment(
+static char *   read_c_comment(
     char *      sp,                         /* Source               */
     size_t *    sizp                        /* Size of the comment  */
 )
@@ -1280,6 +1282,228 @@ static char *   read_a_comment(
     }                                       /* End comment loop     */
 
     return  sp;                             /* Never reach here     */
+}
+
+static char *   parse_spin_line( void)
+/*
+ * ANSI (ISO) C: translation phase 3.
+ * Parse a logical line.
+ * Check illegal control characters.
+ * Check unterminated string literal, character constant or comment.
+ * Convert each comment to one space (or spaces of the comment length on
+ * 'keep_spaces' mode)..
+ * Squeeze succeding white spaces other than <newline> (including comments) to
+ * one space (unless keep_spaces == TRUE).
+ * The lines might be spliced by comments which cross the lines.
+ */
+{
+    char *      temp;                       /* Temporary buffer     */
+    char *      limit;                      /* Buffer end           */
+    char *      tp;     /* Current pointer into temporary buffer    */
+    char *      sp;                 /* Pointer into input buffer    */
+    size_t      com_size;
+    int         c;
+
+    if ((sp = get_line( FALSE)) == NULL)    /* Next logical line    */
+        return  NULL;                       /* End of a file        */
+    tp = temp = xmalloc( (size_t) NBUFF);
+    limit = temp + NBUFF - 2;
+
+    while (char_type[ c = *sp++ & UCHARMAX] & HSP) {
+        /* Preserve line top horizontal white spaces    */
+        /*      as they are for human-readability       */
+        *tp++ = c;
+    }
+    sp--;
+
+    while ((c = *sp++ & UCHARMAX) != '\n') {
+
+        switch (c) {
+        case '/':
+            switch (*sp++) {
+            case '\'':                       /* Start of a comment   */
+                if ((sp = read_spin_comment( sp, &com_size)) == NULL) {
+                    free( temp);            /* End of file with un- */
+                    return  NULL;           /*   terminated comment */
+                }
+                if (temp == tp ||
+                        ! (char_type[ *(tp - 1) & UCHARMAX] & HSP))
+                    *tp++ = ' ';        /* Squeeze white spaces */
+                break;
+            default:                        /* Not a comment        */
+                *tp++ = '/';
+                sp--;                       /* To re-read           */
+                break;
+            }
+            break;
+        case '\r':                          /* Vertical white spaces*/
+                /* Note that [CR+LF] is already converted to [LF].  */
+        case '\f':
+        case '\v':
+            if (warn_level & 4)
+                cwarn( "Converted %.0s0x%02lx to a space"   /* _W4_ */
+                    , NULL, (long) c, NULL);
+        case '\t':                          /* Horizontal space     */
+        case ' ':
+            if (! (char_type[ *(tp - 1) & UCHARMAX] & HSP)) {
+                *tp++ = ' ';                /* Squeeze white spaces */
+            }
+            break;
+        case '\'':                          /* Spin comment   */
+            if (keep_comments) {
+                sp--;
+                while (*sp != '\n') /* Until end of line */
+                    mcpp_fputc( *sp++, OUT);
+                mcpp_fputc( '\n', OUT);
+                wrong_line = TRUE;
+            }
+            goto end_line;
+        case '"':                           /* String literal       */
+            infile->bptr = sp;
+            tp = scan_quote( c, tp, limit, TRUE);
+            if (tp == NULL) {
+                free( temp);                /* Unbalanced quotation */
+                return  parse_line();       /* Skip the line        */
+            }
+            sp = infile->bptr;
+            break;
+        default:
+            if (iscntrl( c)) {
+                cerror(             /* Skip the control character   */
+    "Illegal control character %.0s0x%lx, skipped the character"    /* _E_  */
+                        , NULL, (long) c, NULL);
+            } else {                        /* Any valid character  */
+                *tp++ = c;
+            }
+            break;
+        }
+
+        if (limit < tp) {
+            *tp = EOS;
+            cfatal( "Too long line spliced by comments"     /* _F_  */
+                    , NULL, 0L, NULL);
+        }
+    }
+
+end_line:
+    if (temp < tp && (char_type[ *(tp - 1) & UCHARMAX] & HSP))
+        tp--;                       /* Remove trailing white space  */
+    *tp++ = '\n';
+    *tp = EOS;
+    infile->bptr = strcpy( infile->buffer, temp);   /* Write back to buffer */
+    free( temp);
+    if (macro_line != 0 && macro_line != MACRO_ERROR) { /* Expanding macro  */
+        temp = infile->buffer;
+        while (char_type[ *temp & UCHARMAX] & HSP)
+            temp++;
+        if (*temp == '#'        /* This line starts with # token    */
+                || (*temp == '%' && *(temp + 1) == ':'))
+            if (warn_level & 1)
+                cwarn(
+    "Macro started at line %.0s%ld swallowed directive-like line"   /* _W1_ */
+                    , NULL, macro_line, NULL);
+    }
+    return  infile->buffer;
+}
+
+static int spin_comment_nest = 0;
+
+static char *   read_spin_comment(
+    char *      sp,                         /* Source               */
+    size_t *    sizp                        /* Size of the comment  */
+)
+/*
+ * Read over a comment (which may cross the lines).
+ */
+{
+    int         c;
+    char *      saved_sp;
+    int         cat_line = 0;       /* Number of catenated lines    */
+
+    if (keep_comments)                      /* If writing comments  */
+        mcpp_fputs( "/'", OUT);             /* Write the initializer*/
+    c = *sp++;
+
+    while (1) {                             /* Eat a comment        */
+        if (keep_comments)
+            mcpp_fputc( c, OUT);
+
+        switch (c) {
+        case '/':
+            if ((c = *sp++) != '\'')         /* Don't let comments   */
+                continue;                   /*   nest.              */
+            if (warn_level & 1)
+                cwarn( "\"/'\" within comment", NULL, 0L, NULL);    /* _W1_ */
+            if (keep_comments)
+                mcpp_fputc( c, OUT);
+                                            /* Fall into * stuff    */
+        case '\'':
+            if ((c = *sp++) != '/')         /* If comment doesn't   */
+                continue;                   /*   end, look at next. */
+            if (keep_comments) {            /* Put out comment      */
+                mcpp_fputc( c, OUT);        /*   terminator, too.   */
+                mcpp_fputc( '\n', OUT);     /* Append '\n' to avoid */
+                    /*  trouble on some other tools such as rpcgen. */
+                wrong_line = TRUE;
+            }
+            if ((mcpp_debug & MACRO_CALL) && compiling) {
+                if (cat_line) {
+                    cat_line++;
+                    com_cat_line.len[ cat_line]         /* Catenated length */
+                            = com_cat_line.len[ cat_line - 1]
+                                + strlen( infile->buffer) - 1;
+                                            /* '-1' for '\n'        */
+                    com_cat_line.last_line = src_line;
+                }
+            }
+            return  sp;                     /* End of comment       */
+        case '\n':                          /* Line-crossing comment*/
+            if ((mcpp_debug & MACRO_CALL) && compiling) {
+                                    /* Save location informations   */
+                if (cat_line == 0)  /* First line of catenation     */
+                    com_cat_line.start_line = src_line;
+                if (cat_line >= MAX_CAT_LINE - 1) {
+                    *sizp = 0;      /* Discard the too long comment */
+                    cat_line = 0;
+                    if (warn_level & 4)
+                        cwarn(
+                        "Too long comment, discarded up to here"    /* _W4_ */
+                                , NULL, 0L, NULL);
+                }
+                cat_line++;
+                com_cat_line.len[ cat_line]
+                        = com_cat_line.len[ cat_line - 1]
+                            + strlen( infile->buffer) - 1;
+            }
+            if ((saved_sp = sp = get_line( TRUE)) == NULL)
+                return  NULL;       /* End of file within comment   */
+                /* Never happen, because at_eof() supplement closing*/
+            wrong_line = TRUE;      /* We'll need a #line later     */
+            break;
+        default:                            /* Anything else is     */
+            break;                          /*   just a character   */
+        }                                   /* End switch           */
+
+        c = *sp++;
+    }                                       /* End comment loop     */
+
+    return  sp;                             /* Never reach here     */
+}
+
+static char *   parse_line( void)
+{
+    char *r, *p;
+    if (mcpp_comment_style == MCPP_COMMENT_STYLE_SPIN)
+    {
+        return parse_spin_line();
+    }
+    r = p = parse_c_line();
+    while ( *p && *p == ' ' ) p++;
+    if (!strncmp(p, "__pasm", 6)) {
+        mcpp_comment_style = MCPP_COMMENT_STYLE_SPIN;
+        spin_comment_nest = 0;
+    }
+    return r;
 }
 
 static char *   mcpp_fgets(
@@ -1441,7 +1665,7 @@ static char *   at_eof(
         if ((warn_level & 1))
             cwarn( format, input, 0L, unterm_com);
         /* The partial comment line has been already read by        */
-        /* read_a_comment(), so supplement the  next line.          */
+        /* read_c_comment(), so supplement the  next line.          */
         strcpy( infile->buffer, "*/\n");
         return  infile->bptr = infile->buffer;
     }

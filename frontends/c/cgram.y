@@ -2046,8 +2046,8 @@ pasm_e4
             { $$ = AstOperator('*', $1, $3); } 
       | pasm_e4 '/' pasm_e3
             { $$ = AstOperator('/', $1, $3); } 
-      | pasm_e4 '%' pasm_e3
-            { $$ = AstOperator(K_MODULUS, $1, $3); } 
+      | pasm_e4 '/' '/' pasm_e3
+            { $$ = AstOperator(K_MODULUS, $1, $4); } 
 ;
 pasm_e5
       : pasm_e4
