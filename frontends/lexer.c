@@ -3127,7 +3127,7 @@ basicyylex(BASICYYSTYPE *yval)
 }
 
 static int
-parseCIdentifier(LexStream *L, AST **ast_ptr)
+parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
     struct flexbuf fb;
@@ -3136,6 +3136,14 @@ parseCIdentifier(LexStream *L, AST **ast_ptr)
     char *idstr;
     
     flexbuf_init(&fb, INCSTR);
+    if (prefix) {
+        flexbuf_addmem(&fb, prefix, strlen(prefix));
+        if (gl_gas_dat) {
+            flexbuf_addchar(&fb, '.');
+        } else {
+            flexbuf_addchar(&fb, ':');
+        }
+    }
     c = lexgetc(L);
     while (isIdentifierChar(c)) {
         flexbuf_addchar(&fb, c);
@@ -3269,6 +3277,7 @@ getCToken(LexStream *L, AST **ast_ptr)
 {
     int c, c2;
     AST *ast = NULL;
+    int at_startofline = (L->eoln == 1);
     
     c = skipSpace(L, &ast, LANG_C);
 
@@ -3277,7 +3286,7 @@ getCToken(LexStream *L, AST **ast_ptr)
         *ast_ptr = ast;
         return c;
     }
-    parse_number:        
+parse_number:        
     if (safe_isdigit(c)) {
         lexungetc(L,c);
         ast = NewAST(AST_INTEGER, NULL, NULL);
@@ -3333,7 +3342,12 @@ getCToken(LexStream *L, AST **ast_ptr)
         }
         if (c != C_CONSTANT) {
             lexungetc(L, c);
-            c = parseCIdentifier(L, &ast);
+            c = parseCIdentifier(L, &ast, NULL);
+        }
+        if (InDatBlock(L) && c == C_IDENTIFIER) {
+            if (at_startofline) {
+                L->lastGlobal = ast->d.string;
+            }
         }
     } else if (c == '"') {
         parseCString(L, &ast);
@@ -3346,24 +3360,30 @@ getCToken(LexStream *L, AST **ast_ptr)
         c = C_CONSTANT;
     } else if (c == '.') {
         c2 = lexgetc(L);
-        // check for .1234 <=> 0.1234
-        if (safe_isdigit(c2)) {
-            lexungetc(L, c2);
-            lexungetc(L, c);
-            c = '0';
-            goto parse_number;
-        }
-        if (c2 == '.') {
-            c2 = lexgetc(L);
+        if (gl_p2 && InDatBlock(L) && isIdentifierStart(lexpeekc(L))) {
+            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
+        } else {
+            if (safe_isdigit(c2)) {
+                // check for .1234 <=> 0.1234
+                lexungetc(L, c2);
+                lexungetc(L, c);
+                c = '0';
+                goto parse_number;
+            }
             if (c2 == '.') {
-                c = C_ELLIPSIS;
+                c2 = lexgetc(L);
+                if (c2 == '.') {
+                    c = C_ELLIPSIS;
+                } else {
+                    lexungetc(L, c2);
+                    lexungetc(L, '.');
+                }
             } else {
                 lexungetc(L, c2);
-                lexungetc(L, '.');
             }
-        } else {
-            lexungetc(L, c2);
         }
+    } else if (c == ':' && !gl_p2 && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
+        c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
     } else if (c == '<') {
         c2 = lexgetc(L);
         if (c2 == '=') {
