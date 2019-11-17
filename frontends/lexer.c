@@ -3446,9 +3446,25 @@ getCToken(LexStream *L, AST **ast_ptr)
         } else {
             lexungetc(L, c2);
         }
+    } else if (c == '$') {
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = parseNumber(L, 16, &ast->d.ival);
+        c = C_CONSTANT;
     } else if (c == '%') {
         c2 = lexgetc(L);
-        if (c2 == '=') {
+        if (L->block_type == BLOCK_PASM) {
+            ast = NewAST(AST_INTEGER, NULL, NULL);
+            if (c2 == '%') {
+                c = parseNumber(L, 4, &ast->d.ival);
+            } else {
+                lexungetc(L, c2);
+                c = parseNumber(L, 2, &ast->d.ival);
+            }
+            if (c == SP_FLOATNUM) {
+                ast->kind = AST_FLOAT;
+            }
+            c = C_CONSTANT;
+        } else if (c2 == '=') {
             c = C_MOD_ASSIGN;
         } else {
             lexungetc(L, c2);
