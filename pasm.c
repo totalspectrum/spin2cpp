@@ -547,6 +547,12 @@ DeclareLabels(Module *P)
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             replaceHeres(ast->left, cogpc / 4, lastOrg);
             delta = EvalPasmExpr(ast->left);
+            if ( ((int)delta) < 0) {
+                ERROR(ast, "RES with negative storage specifier");
+                delta = 0;
+            } else if (delta == 0) {
+                WARNING(ast, "RES has 0 space");
+            }
             cogpc += 4*delta;
 //            hubpc += 4*delta;
             lasttype = ast_type_long;
