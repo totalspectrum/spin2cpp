@@ -545,6 +545,7 @@ DeclareLabels(Module *P)
             }
             cogpc = align(cogpc, 4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
+            replaceHeres(ast->left, cogpc / 4, lastOrg);
             delta = EvalPasmExpr(ast->left);
             cogpc += 4*delta;
 //            hubpc += 4*delta;

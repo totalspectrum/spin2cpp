@@ -8,6 +8,7 @@ Version 4.0.4
 - Fixed the C _pinw function
 - Fixed MOD operator in BASIC to work like FastBASIC.
 - Printed an error for RES after ORGH
+- Allow $ expressions inside RES
 
 Version 4.0.3
 - Implemented C++ references like "int &c"
