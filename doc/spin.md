@@ -326,6 +326,29 @@ fastspin has some new operators for treating values as unsigned
   a +=> b  is an unsigned version of =>
 ```
 
+### New PASM directives
+
+fastspin accepts some Spin2 assembly directives, even in Spin1 mode.
+
+#### ORGF
+
+Forces the COG PC to reach a certain value by inserting 0 if necessary. For example, `orgf $100` will insert 0 bytes until the COG program counter reaches $100. `orgf X` is basically similar to:
+```
+   long 0[X - $]
+```
+ORGF is valid only in COG space.
+
+#### ORGH
+
+Specifies that labels and code after this must be in HUB memory.
+```
+   orgh   ' following code must be in HUB
+   orgh $400 ' following code must be in HUB at a specific address
+```
+If an address is given, then the code must not have exceeded that address yet, and 0 bytes will be inserted to force the HUB memory to get up to the given address.
+
+Note that labels normally have two values, their COG memory address (specified by the last ORG) and their hub memory address (specified implicitly by how they are placed in RAM). After `orgh` the COG memory address is no longer valid, and the hub memory address may be explicitly given if the `orgh` had a value.
+
 ### coginit/cognew
 
 The `coginit` (and `cognew`) functions in Fastspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)

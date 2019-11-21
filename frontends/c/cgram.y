@@ -1554,11 +1554,15 @@ block_item
 asm_statement:
   C_ASM '{' asmlist '}'
     { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+  | C_ASM C_EOLN '{' asmlist '}'
+    { $$ = NewCommentedAST(AST_INLINEASM, $4, NULL, $1); }
   ;
 
 top_asm:
   C_ASM '{' asmlist '}'
       { $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); }
+  | C_ASM C_EOLN '{' asmlist '}'
+      { $$ = current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); }
 ;
 
 asmlist:
@@ -1904,6 +1908,8 @@ fromfile_decl
 top_pasm:
   C_PASM '{' pasmlist '}'
       { $$ = current->datblock = AddToListEx(current->datblock, $3, &current->datblock_tail); }
+  | C_PASM C_EOLN '{' pasmlist '}'
+      { $$ = current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); }
 ;
 
 pasmlist:
