@@ -1,6 +1,7 @@
 Version 4.0.4
 - Implemented top level __asm in C
 - Implemented Spin compatible __pasm in C
+- Implemented asm shared in BASIC
 - Fixed some namespace conflicts between BASIC and C
 - Fixed a typo in stdlib.h which caused conflict with math.h
 - Added auto baud rate detection capability to SmartSerial

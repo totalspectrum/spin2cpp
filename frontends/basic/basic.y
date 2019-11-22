@@ -364,6 +364,12 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_HWREG      "hardware register"
 %token BAS_ALIGNL     "alignl"
 %token BAS_ALIGNW     "alignw"
+%token BAS_FILE       "file"
+%token BAS_FIT        "fit"
+%token BAS_ORG        "org"
+%token BAS_ORGF       "orgf"
+%token BAS_ORGH       "orgh"
+%token BAS_RES        "res"
 
 /* keywords */
 %token BAS_ABS        "abs"
@@ -1847,7 +1853,9 @@ identdecl:
 
 asmstmt:
   BAS_ASM eoln asmlist BAS_END BAS_ASM
-  { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+      { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+  | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
+      { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
   ;
 
 asmlist:
@@ -1904,6 +1912,24 @@ basedatline:
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
   | BAS_ALIGNW BAS_EOLN
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
+  | BAS_ORG BAS_EOLN
+    { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
+  | BAS_ORG pasmexpr BAS_EOLN
+    { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
+  | BAS_ORGH BAS_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
+  | BAS_ORGH pasmexpr BAS_EOLN
+    { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
+  | BAS_ORGF pasmexpr BAS_EOLN
+    { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
+  | BAS_RES pasmexpr BAS_EOLN
+    { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
+  | BAS_FIT pasmexpr BAS_EOLN
+    { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
+  | BAS_FIT BAS_EOLN
+    { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
+  | BAS_FILE BAS_STRING BAS_EOLN
+    { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
 operand:
@@ -1922,6 +1948,8 @@ pasmexpr:
     { $$ = $1; }
   | '\\' expr
     { $$ = AstCatch($2); }
+  | BAS_HWREG
+    { $$ = $1; }
 ;
 
 operandlist:

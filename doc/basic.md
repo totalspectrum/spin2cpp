@@ -796,8 +796,11 @@ argument is not a string it is an error.
 
 ### ASM
 
-Introduces inline assembly. The block between ASM and END ASM is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers.
+Introduces inline assembly. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code must be explicitly executed with a `cpu` directive.
 
+#### ASM 
+
+A normal ASM block specifies some code to be executed when the block is reached. If it is outside of any function or subroutine, then it 
 Inside inline assembly any instructions may be used, but the only legal operands are integer constants, registers, and local variables (or parameters) to the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function. Any attempt to leave the function, either by jumping out of it or returning, will cause undefined behavior. In other words, don't do that!
 
 If you need temporary variables inside some inline assembly, `dim` them as locals in the enclosing function.
@@ -810,6 +813,12 @@ sub wait_until_cycle(x as uinteger)
   end asm
 end sub
 ```
+
+#### ASM SHARED
+
+An `asm shared` block declares some static code and/or data which is not intended to be executed immediately, but may be invoked with `cpu`. In this respect it is like a Spin language `DAT` block.
+
+The main difference between `asm` and `asm shared` is that the `asm shared` blocks are kept separate, outside of all functions and subroutines, whereas `asm` blocks are always part of a function or subroutine (or the main program). `asm` blocks are executed when control flow reaches them; code within `asm shared` must be explicitly invoked via `cpu`.
 
 ### __BUILTIN_ALLOCA
 
@@ -1044,6 +1053,10 @@ var a = cpu(blink(LED, 80_000_000), @stack(1))
 Note that `cpu` is not a function call, it is a special form which does not evaluate its arguments in the usual way. The first parameter is actually preserved and called in the context of the new CPU.
 
 `cpu` returns the CPU id ("cog id") of the CPU that the new function is running on. If no free CPU is available, `cpu` returns -1.
+
+#### Using CPU to run shared ASM
+
+The `cpu` directive may also be used to execute shared assembly code, that is, assembly code started with `asm shared`. In this case the first parameter to `cpu` is the address of a label in the assembly code, where the program should start, and the second parameter is the parameter to be passed to the assembly code. This parameter is passed in the `par` register in P1, and in `ptra` in P2.
 
 ### DATA
 

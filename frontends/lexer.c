@@ -68,6 +68,7 @@ safe_isdigit(unsigned int x) {
 
 SymbolTable spinReservedWords;
 SymbolTable basicReservedWords;
+SymbolTable basicAsmReservedWords;
 SymbolTable cReservedWords;
 SymbolTable cAsmReservedWords;
 SymbolTable pasmWords;
@@ -1612,6 +1613,17 @@ struct reservedword c_keywords[] = {
   { "volatile", C_VOLATILE },
   { "while", C_WHILE },
 };
+// keywords reserved in BASIC only in asm blocks
+struct reservedword bas_pasm_keywords[] = {
+  { "alignl", BAS_ALIGNL },
+  { "alignw", BAS_ALIGNW },
+  { "file", BAS_FILE },
+  { "fit", BAS_FIT },
+  { "org", BAS_ORG },
+  { "orgf", BAS_ORGF },
+  { "orgh", BAS_ORGH },
+  { "res", BAS_RES },
+};
 // keywords reserved in C only with __asm blocks
 struct reservedword c_pasm_keywords[] = {
   { "alignl", C_ALIGNL },
@@ -2001,6 +2013,9 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
         AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(bas_pasm_keywords); i++) {
+        AddSymbol(&basicAsmReservedWords, bas_pasm_keywords[i].name, SYM_RESERVED, (void *)bas_pasm_keywords[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(c_keywords); i++) {
         AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val, NULL);
@@ -2932,7 +2947,14 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     }
 
     // check for keywords
-    sym = FindSymbol(&basicReservedWords, idstr);
+    if (InDatBlock(L)) {
+        sym = FindSymbol(&basicAsmReservedWords, idstr);
+    } else {
+        sym = NULL;
+    }
+    if (!sym) {
+        sym = FindSymbol(&basicReservedWords, idstr);
+    }
     if (sym != NULL) {
       if (sym->kind == SYM_RESERVED) {
 	c = INTVAL(sym);
