@@ -3100,6 +3100,23 @@ again:
                 c = BAS_INTEGER;
             }
         }
+    } else if (c == '$') {
+        int c2 = lexpeekc(L);
+        if ( (c2 >= '0' && c2 <= '9') || (c2 >= 'a' && c2 <= 'f') || (c2 >= 'A' && c2 <= 'F') ) {
+            ast = NewAST(AST_INTEGER, NULL, NULL);
+            parseNumber(L, 16, &ast->d.ival);
+            c = BAS_INTEGER;
+        }
+    } else if (c == '%') {
+        ast = NewAST(AST_INTEGER, NULL, NULL);
+        c = lexgetc(L);
+        if (c == '%') {
+            parseNumber(L, 4, &ast->d.ival);
+        } else if (c >= '0' && c <= '9') {
+            lexungetc(L, c);
+            parseNumber(L, 2, &ast->d.ival);
+        }
+        c = BAS_INTEGER;
     } else if (isIdentifierStart(c)) {
         lexungetc(L, c);
         c = parseBasicIdentifier(L, &ast);
