@@ -77,6 +77,15 @@ for i = 0 to 10
   print i, j, slowtimes(i, j)
 next i
 
+sub testit(x as single)
+  print x mod 2.1
+end sub
+
+testit(3.0)
+testit(3.1)
+testit(0.5)
+testit(-2.1)
+
 ''
 '' send the magic propload status code
 ''
