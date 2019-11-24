@@ -11,6 +11,7 @@ Version 4.0.4
 - Printed an error for RES after ORGH
 - Allow $ expressions inside RES
 - Allow $ to start a hex number in BASIC
+- Revert clkfreq and clkmode in BASIC to their old behavior
 
 Version 4.0.3
 - Implemented C++ references like "int &c"

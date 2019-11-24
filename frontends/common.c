@@ -133,8 +133,12 @@ Aliases spin2alias[] = {
     { NULL, NULL },
 };
 Aliases basicalias[] = {
-    { "clkfreq", "__builtin_clkfreq" },
-    { "clkmode", "__builtin_clkmode" },
+    /* ugh, not sure if we want to keep supporting the clk* variables,
+     * but changing them to functions is difficult
+     */
+    { "clkfreq", "_clkfreq_var" },
+    { "clkmode", "_clkmode_var" },
+    /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },

@@ -965,7 +965,7 @@ C files may be used as classes, but there are some restrictions. BASIC and Spin 
 ```
   current_freq = clkfreq
 ```
-Propeller built in function which returns the current clock frequency.
+Propeller built in variable which gives the current clock frequency.
 
 ### CLKSET
 
