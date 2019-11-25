@@ -699,6 +699,15 @@ int _basic_print_char(unsigned h, int c, unsigned fmt)
     return 1;
 }
 
+int _basic_print_nl(unsigned h)
+{
+#ifndef __EXIT_STATUS__    
+    _basic_print_char(h, 13);
+#endif    
+    _basic_print_char(h, 10);
+    return 1;
+}
+
 int _basic_print_string(unsigned h, const char *ptr, unsigned fmt)
 {
     TxFunc tf = _bas_tx_handles[h];

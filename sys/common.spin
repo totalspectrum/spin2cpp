@@ -105,11 +105,6 @@ pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
     r += _basic_print_char(h, i + "0")
   return r
 
-pri _basic_print_nl(h)
-  _basic_print_char(h, 13)
-  _basic_print_char(h, 10)
-  return 1
-
 ''
 '' fixed point multiply
 ''
@@ -235,6 +230,7 @@ pri file "libsys/random.c" _basic_rnd(x=long) : r=float
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
 pri file "libsys/fmt.c" _basic_close(h)
+pri file "libsys/fmt.c" _basic_print_nl(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_string(h, ptr, fmt = 0)
 pri file "libsys/fmt.c" _basic_print_integer(h, x, fmt = 0, base=10)

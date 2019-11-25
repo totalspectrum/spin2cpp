@@ -1,3 +1,6 @@
+Version 4.0.5
+- Made -x flag disable LF->CR+LF translation on serial port
+
 Version 4.0.4
 - Implemented top level __asm in C
 - Implemented Spin compatible __pasm in C

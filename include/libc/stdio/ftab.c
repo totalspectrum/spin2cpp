@@ -19,9 +19,11 @@ static int _serget() {
     return _rx();
 }
 static int _serput(int c) {
+#ifndef __EXIT_STATUS__    
     if (c == 10) {
         _tx(13);
     }
+#endif    
     _tx(c);
     return 1;
 }
