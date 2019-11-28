@@ -1,5 +1,7 @@
 Version 4.0.5
 - Made -x flag disable LF->CR+LF translation on serial port
+- Print errors for function declared twice
+- Fixed static function declarations in C so that declarations in different files do not conflict
 
 Version 4.0.4
 - Implemented top level __asm in C

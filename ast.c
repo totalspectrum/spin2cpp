@@ -119,8 +119,10 @@ DupASTWithReplace(AST *ast, AST *orig, AST *replace)
 }
 
 /* see if two trees match */
-int
-AstMatch(AST *a, AST *b)
+/* if "ignoreStatic" is true, ignore local identifier differences */
+
+static int
+doAstMatch(AST *a, AST *b, int ignoreStatic)
 {
     if (a == NULL)
         return b == NULL;
@@ -129,8 +131,17 @@ AstMatch(AST *a, AST *b)
     if (a == b) {
         return 1;
     }
-    if (a->kind != b->kind)
+
+    if (a->kind != b->kind) {
+        if (!ignoreStatic) return 0;
+        if (a->kind == AST_SEQUENCE && !a->right) {
+            return doAstMatch(a->left, b, 1);
+        }
+        if (b->kind == AST_SEQUENCE && !b->right) {
+            return doAstMatch(a, b->left, 1);
+        }
         return 0;
+    }
     switch (a->kind) {
     case AST_HWREG:
         return a->d.ptr == b->d.ptr;
@@ -139,6 +150,11 @@ AstMatch(AST *a, AST *b)
     case AST_STRING:
     case AST_IDENTIFIER:
         return strcasecmp(a->d.string, b->d.string) == 0;
+    case AST_LOCAL_IDENTIFIER:
+        if (ignoreStatic) {
+            return doAstMatch(a->right, b->right, ignoreStatic);
+        }
+        break;
     case AST_OPERATOR:
     case AST_ASSIGN:
         if (a->d.ival != b->d.ival)
@@ -147,9 +163,20 @@ AstMatch(AST *a, AST *b)
     default:
         break;
     }
-    return AstMatch(a->left, b->left) && AstMatch(a->right, b->right);
+    return doAstMatch(a->left, b->left, ignoreStatic) && doAstMatch(a->right, b->right, ignoreStatic);
 }
 
+int
+AstMatch(AST *a, AST *b)
+{
+    return doAstMatch(a, b, 0);
+}
+
+int
+AstBodyMatch(AST *a, AST *b)
+{
+    return doAstMatch(a, b, 1);
+}
 /* see if b is a subtree of a */
 int
 AstUses(AST *a, AST *b)

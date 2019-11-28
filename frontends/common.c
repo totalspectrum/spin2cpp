@@ -523,6 +523,23 @@ WARNING(AST *instr, const char *msg, ...)
 }
 
 void
+NOTE(AST *instr, const char *msg, ...)
+{
+    va_list args;
+    LineInfo *info = GetLineInfo(instr);
+
+    if (info)
+        ERRORHEADER(info->fileName, info->lineno, "note");
+    else
+        ERRORHEADER(NULL, 0, "note: ");
+
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+void
 ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     const char *name;
