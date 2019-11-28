@@ -328,6 +328,23 @@ IsForwardJump(IR *jmp)
     return JumpIsAfterOrEqual(jmp, jmp);
 }
 
+/* check to see if a jump is relatively close to its
+ * destination; if this is false then (on P2) djnz may
+ * exceed its relative distance limit
+ */
+static bool
+IsCloseJump(IR *jmp)
+{
+    if (jmp->aux) {
+        int delta;
+        IR *label = (IR *)jmp->aux;
+        delta = jmp->addr - label->addr;
+        if (delta < 0) delta = -delta;
+        if (delta < 200) return true;
+    }
+    return false;
+}
+
 /*
  * find next instruction following ir
  */
@@ -1656,7 +1673,9 @@ OptimizeCompares(IRList *irl)
                 if (ir_prev->opc == OPC_SUB
                     && ir_next->opc == OPC_JUMP
                     && ir_next->cond == COND_NE
-                    && IsImmediateVal(ir_prev->src, 1) )
+                    && IsImmediateVal(ir_prev->src, 1)
+                    && IsCloseJump(ir_next)
+                    )
                 {
                     // replace jmp with djnz
 		    ReplaceOpcode(ir_next, OPC_DJNZ);
