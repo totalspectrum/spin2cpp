@@ -381,8 +381,18 @@ static AST *
 AddEnumerators(AST *identifier, AST *enumlist)
 {
     AST *resetZero = NewAST(AST_ENUMSET, AstInteger(0), NULL);
+    Module *P;
     enumlist = NewAST(AST_LISTHOLDER, resetZero, enumlist);
-    current->conblock = AddToList(current->conblock, enumlist);
+
+    if (current->curLanguage == LANG_CFAMILY_C) {
+        // enum symbols in C get declared with global scope
+        P = GetTopLevelModule();
+    } else {
+        // in C++ enums get declared in the context of the class
+        // they're declared in
+        P = current;
+    }
+    P->conblock = AddToList(P->conblock, enumlist);
     return ast_type_long;
 }
 

@@ -1013,7 +1013,12 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
 int
 IsTopLevel(Module *P)
 {
-    extern Module *allparse;
     return P == allparse;
 }
 
+// fetch the top level module
+Module *
+GetTopLevelModule(void)
+{
+    return allparse;
+}
