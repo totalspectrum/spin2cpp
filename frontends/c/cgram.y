@@ -552,7 +552,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             body = NULL;
             C = NULL;
         } else {
-            C = NewModule(typename, LANG_CFAMILY_CPP);
+            C = NewModule(typename, LANG_CFAMILY_C);
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
             class_type = NewAbstractObject(AstIdentifier(typename), NULL);
