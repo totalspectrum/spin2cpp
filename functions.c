@@ -34,7 +34,7 @@ NumExprItemsOnStack(AST *expr)
     if (!type) {
         return 1;
     }
-    if (curfunc->language == LANG_C && IsArrayType(type)) {
+    if (IsCLang(curfunc->language) && IsArrayType(type)) {
         /* convert a to &a[0] */
         AST *ref = DupAST(expr);
         *expr = *NewAST(AST_ADDROF,
@@ -535,7 +535,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 skipDef = false;
             }
             if (!skipDef && basetype && basetype->kind == AST_FUNCTYPE
-                && func->language == LANG_C)
+                && IsCLang(func->language))
             {
                 // ignore definitions of global functions and such
                 // complication: since it's a local variable we've defined
@@ -656,15 +656,15 @@ AdjustParameterTypes(AST *paramlist, int lang)
         param = paramlist->left;
         if (param->kind == AST_DECLARE_VAR) {
             type = param->left;
-            if ( (IsArrayType(type) && (lang == LANG_C || lang == LANG_BASIC))
-		 || (IsClassType(type) && (lang == LANG_BASIC || lang == LANG_CIRCUS) )
+            if ( (IsArrayType(type) && (IsCLang(lang) || IsBasicLang(lang)))
+		 || (IsClassType(type) && (IsCLang(lang) || IsPythonLang(lang)) )
 	       )
 	    {
                 type = BaseType(type);
                 type = NewAST(AST_PTRTYPE, type, NULL);
                 param->left = type;
             }
-            else if (IsClassType(type) && (lang == LANG_C) && TypeSize(type) > LARGE_SIZE_THRESHOLD ) {
+            else if (IsClassType(type) && IsCLang(lang) && TypeSize(type) > LARGE_SIZE_THRESHOLD ) {
                 type = BaseType(type);
                 type = NewAST(AST_COPYREFTYPE, type, NULL);
                 param->left = type;
@@ -806,7 +806,7 @@ doDeclareFunction(AST *funcblock)
         }
     }
     if (!src->right || src->right->kind == AST_RESULT) {
-        if (language == LANG_SPIN) {
+        if (IsSpinLang(language)) {
             fdef->resultexpr = AstIdentifier("result");
             AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL);
         } else {
@@ -1274,7 +1274,7 @@ TransformCountRepeat(AST *ast)
     if (IsConstExpr(stepval)) {
         knownStepVal = EvalConstExpr(stepval);
     }
-    if (curfunc->language != LANG_SPIN) {
+    if (!IsSpinLang(curfunc->language)) {
         // only Spin does the weirdness where
         // repeat i from a to b step 1
         // walks backwards if a > b; other languages
@@ -1348,7 +1348,7 @@ TransformCountRepeat(AST *ast)
 
     /* set the step variable */
     if (knownStepVal && knownStepDir) {
-        if (knownStepDir < 0 && curfunc->language == LANG_SPIN) {
+        if (knownStepDir < 0 && IsSpinLang(curfunc->language)) {
             stepval = AstOperator(K_NEGATE, NULL, stepval);
             knownStepVal = -knownStepVal;
         }
@@ -1741,7 +1741,7 @@ CheckFunctionCalls(AST *ast)
                     ftype = ftype->left;
                 }
                 expectArgs = AstListLen(ftype->right);
-                if (expectArgs == 0 && curfunc && curfunc->language == LANG_C) {
+                if (expectArgs == 0 && curfunc && IsCLang(curfunc->language)) {
                     is_varargs = 1;
                 }
             }
@@ -1820,7 +1820,7 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         } else {
-            if (gotArgs != expectArgs && !(f && f->language == LANG_C)) {
+            if (gotArgs != expectArgs && !(f && IsCLang(f->language))) {
                 ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
                 return;
             }
@@ -1862,16 +1862,12 @@ ProcessOneFunc(Function *pf)
     current = pf->module;
     curfunc = pf;
 
-    switch (pf->language) {
-    case LANG_BASIC:
+    if (IsBasicLang(pf->language)) {
         BasicTransform(pf);
-        break;
-    case LANG_C:
+    } else if (IsCLang(pf->language)) {
         CTransform(pf);
-        break;
-    default:
+    } else {
         SpinTransform(pf);
-        break;
     }
 
     if (last_errors != gl_errors) return;
@@ -2479,13 +2475,13 @@ SimplifyAssignments(AST **astptr)
                 return;
             }
         }
-        else if (op != K_ASSIGN /*|| (curfunc && curfunc->language == LANG_SPIN)*/)
+        else if (op != K_ASSIGN )
         {
             ASTReportInfo saveinfo;
             AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
             if (ExprHasSideEffects(lhs)) {
-                if (curfunc && curfunc->language == LANG_SPIN) {
+                if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
                     preseq = AstAssign(temp, rhs);

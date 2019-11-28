@@ -626,11 +626,23 @@ extern unsigned int gl_hub_base;
  */
 void initSpinLexer(int flags);
 
-/* parsing functions */
-#define LANG_SPIN  0
-#define LANG_BASIC 1
-#define LANG_C     2
-#define LANG_CIRCUS 3
+/* The various language families */
+#define LANG_SPIN_SPIN1  0x00
+#define LANG_SPIN_SPIN2  0x01
+#define IsSpinLang(lang) ((lang)>=LANG_SPIN_SPIN1 && (lang)<=LANG_SPIN_SPIN2)
+
+#define LANG_BASIC_FBASIC 0x10
+#define IsBasicLang(lang) ((lang) == LANG_BASIC_FBASIC)
+
+#define LANG_CFAMILY_C     0x20
+#define LANG_CFAMILY_CPP   0x21
+#define IsCLang(lang) ((lang)>=LANG_CFAMILY_C && (lang)<=LANG_CFAMILY_CPP)
+
+#define LANG_PYTHON_CIRCUS 0x30
+#define IsPythonLang(lang) ((lang)==LANG_PYTHON_CIRCUS)
+
+// language features
+#define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);

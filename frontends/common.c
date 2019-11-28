@@ -196,19 +196,15 @@ static void
 initSymbols(Module *P, int language)
 {
     Aliases *A;
-    switch (language) {
-    case LANG_BASIC:
+    if (IsBasicLang(language)) {
         A = basicalias;
-        break;
-    case LANG_C:
+    } else if (IsCLang(language)) {
         A = calias;
-        break;
-    default:
+    } else {
         A = spinalias;
-        break;
     }
     addAliases(&P->objsyms, A);
-    if (gl_p2 && language != LANG_C) {
+    if (gl_p2 && (IsBasicLang(language)||IsSpinLang(language))) {
         addAliases(&P->objsyms, spin2alias);
     }
 }
@@ -252,9 +248,9 @@ NewModule(const char *fullname, int language)
     /* link the global symbols */
     if (globalModule) {
         P->objsyms.next = &globalModule->objsyms;
-    } else if (language == LANG_BASIC) {
+    } else if (IsBasicLang(language)) {
         P->objsyms.next = &basicReservedWords;
-    } else if (language == LANG_C) {
+    } else if (IsCLang(language)) {
         P->objsyms.next = &cReservedWords;
     } else {
         P->objsyms.next = &spinReservedWords;

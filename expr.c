@@ -1062,10 +1062,9 @@ BoolValue(int v)
 {
     if (!v) return 0;
     if (!curfunc) return -1;
-    switch (curfunc->language) {
-    case LANG_C:
+    if (LangBoolIsOne(curfunc->language)) {
         return 1;
-    default:
+    } else {
         return -1;
     }
 }
@@ -2212,7 +2211,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     }
     switch (expr->kind) {
     case AST_INTEGER:
-        if (P->curLanguage == LANG_C && expr->d.ival == 0) {
+        if ( IsCLang(P->curLanguage) && expr->d.ival == 0) {
             return ast_type_generic;
         }
         if (expr->left) {
@@ -2242,7 +2241,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         // (actually no -- "abc" is the same as "a", "b", "c")
-        if (curfunc->language == LANG_SPIN) {
+        if (IsSpinLang(curfunc->language)) {
             return ast_type_long;
         }
         /* otherwise fall through */
@@ -2287,7 +2286,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_LABEL:
             lab = (Label *)sym->val;
             typ = lab->type;
-            if (curfunc && curfunc->language == LANG_SPIN && typ && typ->kind != AST_ARRAYTYPE) {
+            if (curfunc && IsSpinLang(curfunc->language) && typ && typ->kind != AST_ARRAYTYPE) {
                 return NewAST(AST_ARRAYTYPE, typ, AstInteger(1));
             }
             return typ;
@@ -2414,7 +2413,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             if (expr->d.ival == '+' && IsStringType(ltype)) {
                 return ltype;
             }
-            if (curfunc && curfunc->language == LANG_SPIN) {
+            if (curfunc && IsSpinLang(curfunc->language)) {
                 if (!ltype) ltype = rtype;
                 if (ltype) {
                     if (IsIntOrGenericType(ltype)) return ltype;
@@ -2515,7 +2514,7 @@ SameTypes(AST *A, AST *B)
 int
 CompatibleTypes(AST *A, AST *B)
 {
-    bool isSpin = (curfunc != NULL && curfunc->language == LANG_SPIN);
+    bool isSpin = (curfunc != NULL && IsSpinLang(curfunc->language));
     bool skipfloats = isSpin;
     
     A = RemoveTypeModifiers(A);

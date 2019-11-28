@@ -331,7 +331,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
     } else {
         // in C we need to promote both sides to  long
-        if (curfunc && curfunc->language == LANG_C) {
+        if (curfunc && IsCLang(curfunc->language)) {
             int operator;
             if (lefttype) {
                 int leftsize = TypeSize(lefttype);
@@ -798,7 +798,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     ASTReportInfo saveinfo;
     AST *expr = *astptr;
     const char *msg;
-    int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_C);
+    int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_CFAMILY_C);
     
     if (kind == AST_RETURN) {
         msg = "return";
@@ -812,7 +812,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
 
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
         // handle literal '0' specially for C
-        if (curfunc && curfunc->language == LANG_C) {
+        if (curfunc && IsCLang(curfunc->language)) {
             if (IsPointerType(desttype)) {
                 return desttype;
             }
@@ -857,7 +857,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         *astptr = expr;
     }
     // similarly for classes in some languages
-    if (IsClassType(srctype) && IsPointerType(desttype) && (lang == LANG_BASIC || lang == LANG_CIRCUS))
+    if (IsClassType(srctype) && IsPointerType(desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
       {
           srctype = ClassToPointerType(srctype);
           expr = StructAddress(expr);
@@ -1183,7 +1183,7 @@ AST *CheckTypes(AST *ast)
         return ast_type_long;
     case AST_STRING:
     case AST_STRINGPTR:
-        if (curfunc && curfunc->language == LANG_BASIC) {
+        if (curfunc && IsBasicLang(curfunc->language)) {
             return ast_type_string;
         }
         return ast_type_ptr_byte;
@@ -1215,7 +1215,7 @@ AST *CheckTypes(AST *ast)
                 // force this to have a memory dereference
                 // and in BASIC, also force the appropriate number for the base
                 AST *deref;
-                if (curfunc && curfunc->language == LANG_BASIC) {
+                if (curfunc && IsBasicLang(curfunc->language)) {
                     extern Symbol *GetCurArrayBase();
                     Symbol *sym = GetCurArrayBase();
                     if (sym && sym->kind == SYM_CONSTANT) {

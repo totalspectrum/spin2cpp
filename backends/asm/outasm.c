@@ -2256,7 +2256,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       Operand *skiplabel = NewCodeLabel();
       Operand *truevalue;
 
-      if (curfunc->language == LANG_C) {
+      if (LangBoolIsOne(curfunc->language)) {
           truevalue = NewImmediate(1);
       } else {
           truevalue = NewImmediate(-1);
@@ -3462,7 +3462,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       Operand *zero = NewImmediate(0);
       Operand *skiplabel = NewCodeLabel();
       Operand *temp = NewFunctionTempRegister();
-      Operand *truevalue = (curfunc->language == LANG_C) ? NewImmediate(1) : NewImmediate(-1);
+      Operand *truevalue = (LangBoolIsOne(curfunc->language)) ? NewImmediate(1) : NewImmediate(-1);
       EmitMove(irl, temp, zero);
       CompileBoolBranches(irl, expr, NULL, skiplabel);
       EmitOp2(irl, OPC_XOR, temp, truevalue);
@@ -3522,7 +3522,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
           // do a series of assignments
           return CompileMultipleAssign(irl, expr->left, expr->right);
       }
-      if (curfunc->language == LANG_SPIN) {
+      if ( IsSpinLang(curfunc->language)) {
           // Spin always evaluates RHS first, then LHS
           val = CompileExpression(irl, expr->right, NULL);
           r = CompileExpression(irl, expr->left, NULL);

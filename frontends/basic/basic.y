@@ -243,7 +243,7 @@ DeclareBASICGlobalVariables(AST *ast)
     if (typ && typ->kind == AST_EXTERN) {
         return;
     }
-    if (current->curLanguage == LANG_BASIC) {
+    if (IsBasicLang(current->curLanguage)) {
         // BASIC does not require pointer notation for pointers to functions
         AST *subtype = RemoveTypeModifiers(typ);
         if (subtype && subtype->kind == AST_FUNCTYPE) {

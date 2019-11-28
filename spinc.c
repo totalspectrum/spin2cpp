@@ -103,7 +103,7 @@ InitGlobalModule(void)
     int oldtmpnum;
     const char *syscode;
     
-    current = globalModule = NewModule("_system_", LANG_SPIN);
+    current = globalModule = NewModule("_system_", LANG_SPIN_SPIN1);
     table = &globalModule->objsyms;
 
     sym = AddSymbol(table, "_clkfreq_var", SYM_VARIABLE, ast_type_long, NULL);
@@ -510,7 +510,7 @@ DeclareMemberVariables(Module *P)
     } else {
         offset = P->varsize;
     }
-    if (P->mainLanguage == LANG_SPIN) {
+    if (IsSpinLang(P->mainLanguage)) {
         // Spin always declares longs first, then words, then bytes
         // but other languages may have other preferences
         offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
@@ -640,10 +640,10 @@ doparse(int language)
     ASTReportInfo saveinfo;
     
     AstReportAs(NULL, &saveinfo); // reset error tracking
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
         basicyydebug = spinyydebug;
         basicyyparse();
-    } else if (language == LANG_C) {
+    } else if (IsCLang(language)) {
         cgramyydebug = spinyydebug;
         cgramyyparse();
     } else {
@@ -660,7 +660,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
     char *fname = NULL;
     char *parseString = NULL;
     char *langptr;
-    int language = LANG_SPIN;
+    int language = LANG_SPIN_SPIN1;
     SymbolTable *saveCurrentTypes = NULL;
     int new_module = 0;
 
@@ -672,18 +672,30 @@ doParseFile(const char *name, Module *P, int *is_dup)
           || !strcmp(langptr, ".bi")
           )
       {
-	language = LANG_BASIC;
+	language = LANG_BASIC_FBASIC;
       } else if (!strcmp(langptr, ".c")
                  || !strcmp(langptr, ".h")
-                 || !strcmp(langptr, ".cpp")
-                 || !strcmp(langptr, ".cc")
-                 || !strcmp(langptr, ".cxx")
                  || !strcmp(langptr, ".a")
           )
       {
-	language = LANG_C;
-      } else {
-        language = LANG_SPIN;
+	language = LANG_CFAMILY_C;
+      } else if (!strcmp(langptr, ".cpp")
+                 || !strcmp(langptr, ".cc")
+                 || !strcmp(langptr, ".cxx")
+                 || !strcmp(langptr, ".hpp")
+                 || !strcmp(langptr, ".hh")
+          )
+      {
+          language = LANG_CFAMILY_CPP;
+      }
+      else if (!strcmp(langptr, ".spin2"))
+      {
+        language = LANG_SPIN_SPIN2;
+        langptr = ".spin2";
+      }
+      else
+      {
+        language = LANG_SPIN_SPIN2;
         langptr = ".spin2";
       }
     } else {
@@ -783,7 +795,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
         void *defineState;
 
 #define MAX_MCPP_ARGC 255
-        if (language == LANG_C) {
+        if (IsCLang(language)) {
             /* use mcpp */
             char *argv[MAX_MCPP_ARGC+1];
             int argc = 0;
@@ -1190,9 +1202,9 @@ GetMainFunction(Module *P)
 {
     const char *mainName = NULL;
     
-    if (P->mainLanguage == LANG_BASIC) {
+    if (IsBasicLang(P->mainLanguage)) {
         mainName = "program";
-    } else if (P->mainLanguage == LANG_C) {
+    } else if (IsCLang(P->mainLanguage)) {
         if (gl_exit_status) {
             mainName = "_c_startup";
             P = globalModule;

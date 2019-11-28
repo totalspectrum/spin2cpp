@@ -161,7 +161,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
             case SYM_FUNCTION:
             {
-                if (curfunc && !strcmp(curfunc->name, sym->our_name) && curfunc->language == LANG_BASIC) {
+                if (curfunc && !strcmp(curfunc->name, sym->our_name) && IsBasicLang(curfunc->language)) {
                     // BASIC lets you write the function name to indicate the
                     // function result; allow that in inline asm too
                     // this is just like result1

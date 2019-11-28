@@ -352,7 +352,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     } else if (current) {
         lang = current->curLanguage;
     } else {
-        lang = LANG_SPIN;
+        lang = LANG_SPIN_SPIN1;
     }
     uval = 0;
     tenval = 0;
@@ -404,7 +404,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
 
         if (c == '.') {
             c = lexgetc(L);
-            if ( lang == LANG_SPIN && c != 'e' && c != 'E' && (c < '0' || c > '9')) {
+            if ( IsSpinLang(lang) && c != 'e' && c != 'E' && (c < '0' || c > '9')) {
                 lexungetc(L, c);
                 c = '.';
                 goto donefloat;
@@ -805,7 +805,7 @@ again:
         c = lexgetc(L);
     }
     // handle "x" "y" as "xy"
-    c = skipSpace(L, NULL, LANG_C);
+    c = skipSpace(L, NULL, LANG_CFAMILY_C);
     if (c == '"') {
         goto again;
     } else {
@@ -889,7 +889,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
     if (c == '#' && L->colCounter == 1) {
         goto docomment;
     }
-    if (language == LANG_BASIC && (c == 'r' || c == 'R') ) {
+    if ( IsBasicLang(language) && (c == 'r' || c == 'R') ) {
         int c2, c3, c4;
         c2 = lexgetc(L);
         if (c2 == 'e' || c2 == 'E') {
@@ -908,7 +908,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
         return c;
     }
 
-    if (language == LANG_C && !InPasmBlock(L)) {
+    if (IsCLang(language) && !InPasmBlock(L)) {
         if (c == '/') {
             int c2 = lexgetc(L);
             if (c2 == '/') {
@@ -955,10 +955,10 @@ docomment:
 static bool
 commentBlockStart(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN) {
+    if (IsSpinLang(language)) {
         return c == '{';
     }
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
         if (c != '/') {
             return false;
         }
@@ -969,7 +969,7 @@ commentBlockStart(int language, int c, LexStream *L)
         }
         return true;
     }
-    if (language == LANG_C) {
+    if (IsCLang(language)) {
         if (c != '/') {
             return false;
         }
@@ -986,10 +986,10 @@ commentBlockStart(int language, int c, LexStream *L)
 static bool
 commentBlockEnd(int language, int c, LexStream *L)
 {
-    if (language == LANG_SPIN) {
+    if (IsSpinLang(language)) {
         return c == '}';
     }
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
         if (c != '\'') {
             return false;
         }
@@ -1000,7 +1000,7 @@ commentBlockEnd(int language, int c, LexStream *L)
         }
         return true;
     }
-    if (language == LANG_C) {
+    if (IsCLang(language)) {
         if (c != '*') {
             return false;
         }
@@ -1035,10 +1035,10 @@ skipSpace(LexStream *L, AST **ast_ptr, int language)
     int eoln_token;
     int eof_token;
 
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
       eoln_token = BAS_EOLN;
       eof_token = BAS_EOF;
-    } else if (language == LANG_C) {
+    } else if (IsCLang(language)) {
         if (InDatBlock(L)) {
             eoln_token = C_EOLN;
         } else {
@@ -1075,7 +1075,7 @@ again:
         startline = L->lineCounter;
         flexbuf_init(&anno, INCSTR);
         commentNest = 1;
-        if (language == LANG_SPIN || L->block_type == BLOCK_PASM) {
+        if ( IsSpinLang(language) || L->block_type == BLOCK_PASM) {
             doccommentchar = '{';
             allowNestedComments = 1;
         } else {
@@ -1108,7 +1108,7 @@ again:
             if (allowNestedComments && commentBlockStart(language, c, L)) {
                 commentNest++;
             } else if (commentBlockEnd(language, c, L)) {
-	        if (doccomment && (language == LANG_SPIN || L->block_type == BLOCK_PASM)) {
+	        if (doccomment && (IsSpinLang(language) || L->block_type == BLOCK_PASM)) {
 	            int peekc;
 		    peekc = lexgetc(L);
 		    if (peekc == '}') {
@@ -1171,7 +1171,7 @@ again:
         goto again;
     }
 
-    if (L->eoln && language == LANG_SPIN && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
+    if (L->eoln && IsSpinLang(language) && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
         if (c == '\n') {
             c = lexgetc(L);
             goto again;
@@ -1202,7 +1202,7 @@ again:
     if (c == EOF) {
       if (!L->eoln && !L->eof) {
         L->eof = L->eoln = 1;
-        if (language == LANG_BASIC) {
+        if (IsBasicLang(language)) {
             L->firstNonBlank = 0;
         }
         if (eoln_token == ' ') goto refetch;
@@ -1223,7 +1223,7 @@ again:
         current->sawToken = 1;
         current->topcomment = GetComments();
     }
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
         // if we have an _ followed by a newline, treat it as a space
         if (c == '_') {
             int d;
@@ -1252,7 +1252,7 @@ getSpinToken(LexStream *L, AST **ast_ptr)
     int at_startofline = (L->eoln == 1);
     int peekc;
     
-    c = skipSpace(L, &ast, LANG_SPIN);
+    c = skipSpace(L, &ast, LANG_SPIN_SPIN1);
 
     if (c == EOF) {
       c = SP_EOF;
@@ -1949,7 +1949,7 @@ void InitPreprocessor(const char **argv)
     const char *envpath;
     char *progname;
     pp_init(&gl_pp);
-    SetPreprocessorLanguage(LANG_SPIN);
+    SetPreprocessorLanguage(LANG_SPIN_SPIN1);
 
     // add a path relative to the executable
     if (argv[0] != NULL) {
@@ -1977,11 +1977,11 @@ void InitPreprocessor(const char **argv)
 
 void SetPreprocessorLanguage(int language)
 {
-    if (language == LANG_BASIC) {
+    if (IsBasicLang(language)) {
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
         pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
         //pp_setlinedirective(&gl_pp, "");   
-    } else if (language == LANG_C) {
+    } else if (IsCLang(language)) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
         pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
         //pp_setlinedirective(&gl_pp, "");   
@@ -3038,7 +3038,7 @@ getBasicToken(LexStream *L, AST **ast_ptr)
     int c;
     AST *ast = NULL;
     
-    c = skipSpace(L, &ast, LANG_BASIC);
+    c = skipSpace(L, &ast, LANG_BASIC_FBASIC);
 again:
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
@@ -3318,7 +3318,7 @@ getCToken(LexStream *L, AST **ast_ptr)
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
     
-    c = skipSpace(L, &ast, LANG_C);
+    c = skipSpace(L, &ast, LANG_CFAMILY_C);
 
     // printf("c=%d L->linecounter=%d\n", c, L->lineCounter);
     if (c >= 127) {
