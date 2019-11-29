@@ -70,6 +70,7 @@ SymbolTable spinReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable basicAsmReservedWords;
 SymbolTable cReservedWords;
+SymbolTable cppReservedWords;
 SymbolTable cAsmReservedWords;
 SymbolTable pasmWords;
 SymbolTable ckeywords;
@@ -98,7 +99,7 @@ strgetc(LexStream *L)
 }
 
 /* open a stream from a string s */
-void strToLex(LexStream *L, const char *s, const char *name)
+void strToLex(LexStream *L, const char *s, const char *name, int language)
 {
     if (!L) {
         current->Lptr = L = malloc(sizeof(*L));
@@ -108,6 +109,7 @@ void strToLex(LexStream *L, const char *s, const char *name)
     L->getcf = strgetc;
     L->pendingLine = 1;
     L->fileName = name ? name : "<string>";
+    L->language = language;
     flexbuf_init(&L->curLine, 1024);
     flexbuf_init(&L->lineInfo, 1024);
 }
@@ -184,7 +186,7 @@ again:
 }
 
 /* open a stream from a FILE f */
-void fileToLex(LexStream *L, FILE *f, const char *name)
+void fileToLex(LexStream *L, FILE *f, const char *name, int language)
 {
     int c1, c2;
 
@@ -196,6 +198,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name)
     L->arg = NULL;
     L->getcf = filegetc;
     L->pendingLine = 1;
+    L->language = language;
     flexbuf_init(&L->curLine, 1024);
     flexbuf_init(&L->lineInfo, 1024);
     /* check for Unicode */
@@ -347,13 +350,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
     int kind = SP_NUM;
     int lang;
 
-    if (curfunc) {
-        lang = curfunc->language;
-    } else if (current) {
-        lang = current->curLanguage;
-    } else {
-        lang = LANG_SPIN_SPIN1;
-    }
+    lang = L->language;
     uval = 0;
     tenval = 0;
     
@@ -502,7 +499,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     char *idstr;
     int gatherComments = 1;
     bool forceLower = !gl_caseSensitive;
-    
+
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
         flexbuf_addmem(&fb, prefix, strlen(prefix));
@@ -1613,6 +1610,18 @@ struct reservedword c_keywords[] = {
   { "volatile", C_VOLATILE },
   { "while", C_WHILE },
 };
+// C++ keywords
+struct reservedword cpp_keywords[] = {
+  { "catch", C_CATCH },
+  { "class", C_CLASS },
+  { "nullptr", C_NULLPTR },
+  { "private", C_PRIVATE },
+  { "public", C_PUBLIC },
+  { "template", C_TEMPLATE },
+  { "this", C_THIS },
+  { "throw", C_THROW },
+};
+
 // keywords reserved in BASIC only in asm blocks
 struct reservedword bas_pasm_keywords[] = {
   { "alignl", BAS_ALIGNL },
@@ -2019,6 +2028,9 @@ initSpinLexer(int flags)
     }
     for (i = 0; i < N_ELEMENTS(c_keywords); i++) {
         AddSymbol(&cReservedWords, c_keywords[i].name, SYM_RESERVED, (void *)c_keywords[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(cpp_keywords); i++) {
+        AddSymbol(&cppReservedWords, cpp_keywords[i].name, SYM_RESERVED, (void *)cpp_keywords[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(c_pasm_keywords); i++) {
         AddSymbol(&cAsmReservedWords, c_pasm_keywords[i].name, SYM_RESERVED, (void *)c_pasm_keywords[i].val, NULL);
@@ -2876,6 +2888,7 @@ int
 spinyylex(SPINYYSTYPE *yval)
 {
     int c;
+    
     saved_spinyychar = c = getSpinToken(current->Lptr, yval);
     if (c == SP_EOF)
         return 0;
@@ -3235,6 +3248,9 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     if (!sym) {
         sym = FindSymbol(&cReservedWords, idstr);
+    }
+    if (!sym && L->language == LANG_CFAMILY_CPP) {
+        sym = FindSymbol(&cppReservedWords, idstr);
     }
     if (sym != NULL) {
       if (sym->kind == SYM_RESERVED) {

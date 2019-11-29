@@ -134,13 +134,13 @@ InitGlobalModule(void)
         }
         gl_normalizeIdents = 0;
         globalModule->Lptr = malloc(sizeof(*globalModule->Lptr));
-        strToLex(globalModule->Lptr, syscode, "_system_");
+        strToLex(globalModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_common_spin, "_common_");
+        strToLex(globalModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_float_spin, "_float_");
+        strToLex(globalModule->Lptr, (const char *)sys_float_spin, "_float_", LANG_SPIN_SPIN1);
         spinyyparse();
-        strToLex(globalModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_");
+        strToLex(globalModule->Lptr, (const char *)sys_gcalloc_spin, "_gc_", LANG_SPIN_SPIN1);
         spinyyparse();
         
         ProcessModule(globalModule);
@@ -682,6 +682,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
       } else if (!strcmp(langptr, ".cpp")
                  || !strcmp(langptr, ".cc")
                  || !strcmp(langptr, ".cxx")
+                 || !strcmp(langptr, ".c++")
                  || !strcmp(langptr, ".hpp")
                  || !strcmp(langptr, ".hh")
           )
@@ -831,11 +832,11 @@ doParseFile(const char *name, Module *P, int *is_dup)
             parseString = pp_finish(&gl_pp);
             pp_restore_define_state(&gl_pp, defineState);
         }
-        strToLex(NULL, parseString, fname);
+        strToLex(NULL, parseString, fname, language);
 	doparse(language);
         free(parseString);
     } else {
-        fileToLex(NULL, f, fname);
+        fileToLex(NULL, f, fname, language);
         doparse(language);
     }
     fclose(f);

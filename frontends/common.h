@@ -59,6 +59,9 @@ struct lexstream {
     int lineCounter;
     const char *fileName;
 
+    /* current language being parsed */
+    int language;
+    
     /* for handling Unicode CR+LF */
     int sawCr;
 

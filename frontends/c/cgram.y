@@ -745,7 +745,17 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
 %token C_INSTRMODIFIER "instruction modifier"
 %token C_HWREG "hardware register"
 
- // asm only tokens
+// C++ tokens
+%token C_CATCH "catch"
+%token C_CLASS "class"
+%token C_NULLPTR "nullptr"
+%token C_PRIVATE "private"
+%token C_PUBLIC "public"
+%token C_TEMPLATE "template"
+%token C_THIS "this"
+%token C_THROW "throw"
+
+// asm only tokens
 %token C_ALIGNL "alignl"
 %token C_ALIGNW "alignw"
 %token C_BYTE "byte"

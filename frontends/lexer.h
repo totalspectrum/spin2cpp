@@ -22,12 +22,12 @@ extern void resetLineState(LexStream *L);
 /*
  * function to open a lexer stream from a string
  */
-void strToLex(LexStream *lex, const char *s, const char *name);
+void strToLex(LexStream *lex, const char *s, const char *name, int language);
 
 /*
  * function to open a lexer stream from a FILE
  */
-void fileToLex(LexStream *lex, FILE *f, const char *name);
+void fileToLex(LexStream *lex, FILE *f, const char *name, int language);
 
 /*
  * function to get the next token from a stream
