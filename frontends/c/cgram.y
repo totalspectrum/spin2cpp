@@ -748,6 +748,8 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
 // C++ tokens
 %token C_CATCH "catch"
 %token C_CLASS "class"
+%token C_DELETE "delete"
+%token C_NEW "new"
 %token C_NULLPTR "nullptr"
 %token C_PRIVATE "private"
 %token C_PUBLIC "public"
@@ -795,6 +797,10 @@ primary_expression
             { $$ = $1; }
 	| C_HWREG
             { $$ = $1; }
+	| C_THIS
+            { $$ = NewAST(AST_SELF, NULL, NULL); }
+        | C_NULLPTR
+            { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL
             { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
         | C_BUILTIN_PRINTF
@@ -1202,6 +1208,8 @@ any_identifier
 struct_or_union
 	: C_STRUCT
             { $$ = NewAST(AST_STRUCT, NULL, NULL); }
+	| C_CLASS
+            { $$ = NewAST(AST_STRUCT, NULL, NULL); } /* FIXME: should differ from struct */
 	| C_UNION
             { $$ = NewAST(AST_UNION, NULL, NULL); }
 	;

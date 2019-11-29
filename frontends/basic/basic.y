@@ -1202,6 +1202,8 @@ np_primary_expr:
     { $$ = $1; }
   | BAS_NIL
     { $$ = AstBitValue(0); }
+  | BAS_SELF
+    { $$ = NewAST(AST_SELF, NULL, NULL); }
   | BAS_STRING
     { $$ = NewAST(AST_STRINGPTR,
                   NewAST(AST_EXPRLIST, $1, NULL), NULL); }
