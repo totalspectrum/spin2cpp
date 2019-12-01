@@ -765,6 +765,28 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
     return val;
 }
 
+static int
+IsConstInteger(AST *op)
+{
+    if (op->kind == AST_INTEGER) {
+        return 1;
+    }
+    return 0;
+}
+
+static int
+InstructionWarnAboutConsts(Instruction *instr)
+{
+    switch(instr->ops) {
+    case TWO_OPERANDS:
+    case P2_TWO_OPERANDS:
+    case P2_LOC:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 #define MAX_OPERANDS 3
 /*
  * decode operands, taking care of alternate forms and such
@@ -984,6 +1006,11 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
                     WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the branch target to %s+0 to suppress this warning", instr->name, user_name, user_name);
                 }
             }
+        }
+    } else if (numoperands >= 2 && operand[1] && !opimm[1]) {
+        // check for immediate operands
+        if (IsConstInteger(operand[1]) && InstructionWarnAboutConsts(instr)) {
+            WARNING(line, "Second operand is a constant used without #; is this correct? If so, you may suppress this warning by putting +0 after the operand");
         }
     }
         
