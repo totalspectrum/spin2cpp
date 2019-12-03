@@ -814,6 +814,16 @@ sub wait_until_cycle(x as uinteger)
 end sub
 ```
 
+Example: to create a function that rotates an unsigned integer x left by y:
+```
+function rotleft(x as uinteger, y as uinteger)
+  asm
+    rol x, y
+  end asm
+  return x
+end function
+```
+
 #### ASM SHARED
 
 An `asm shared` block declares some static code and/or data which is not intended to be executed immediately, but may be invoked with `cpu`. In this respect it is like a Spin language `DAT` block.
