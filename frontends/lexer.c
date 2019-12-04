@@ -1116,7 +1116,9 @@ again:
 		} else {
 		  --commentNest;
 		}
-	    }
+	    } else if (c == '\n') {
+                L->eoln = 1;
+            }
             if (commentNest <= 0 || c == EOF) {
                 break;
             }
@@ -1164,8 +1166,7 @@ again:
             ast->d.string = flexbuf_get(&cb);
             comment_chain = AddToList(comment_chain, ast);
         }
-        c = lexgetc(L);
-        goto again;
+        goto refetch;
     }
 
     if (L->eoln && IsSpinLang(language) && (L->block_type == BLOCK_PUB || L->block_type == BLOCK_PRI)) {
