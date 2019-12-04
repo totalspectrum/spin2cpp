@@ -6,6 +6,7 @@ Version 4.0.5
 - Fixed enum declaration scope in C
 - Made optimizer take care not to create djnz with large offsets
 - Added a warning for some uses of integers without '#'.
+- Added some missing propeller2.h functions
 
 Version 4.0.4
 - Implemented top level __asm in C

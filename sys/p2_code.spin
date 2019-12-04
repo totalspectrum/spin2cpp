@@ -248,3 +248,49 @@ pri __builtin_propeller_waitx(tim)
   asm
     waitx tim
   endasm
+
+pri __builtin_propeller_cogatn(mask)
+  asm
+    cogatn mask
+  endasm
+pri __builtin_propeller_rdpin(pin) : r
+  asm
+    rdpin r, pin
+  endasm
+pri __builtin_propeller_rqpin(pin) : r
+  asm
+    rqpin q, pin
+  endasm
+pri __builtin_propeller_akpin(pin)
+  asm
+    akpin pin
+  endasm
+
+pri _rnd : r
+  asm
+    getrnd r
+  endasm
+  
+pri _rotxy(x, y, angle)
+  asm
+    setq y
+    qrotate x, angle
+    getqx x
+    getqy y
+  endasm
+  return x,y
+
+pri _polxy(d, angle) : x, y
+  asm
+    qrotate d, angle
+    getqx x
+    getqy y
+  endasm
+
+pri _xypol(x, y) : d, angle
+  asm
+    qvector x, y
+    getqx d
+    getqy angle
+  endasm
+  
