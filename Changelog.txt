@@ -8,7 +8,8 @@ Version 4.0.5
 - Added a warning for some uses of integers without '#'.
 - Added some missing propeller2.h functions
 - Fixed a problem parsing Spin comment blocks containing newlines after an empty REPEAT statement
- 
+- Made instructions be automatically aligned in ORG mode (not ORGH mode)
+
 Version 4.0.4
 - Implemented top level __asm in C
 - Implemented Spin compatible __pasm in C

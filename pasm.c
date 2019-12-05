@@ -472,7 +472,11 @@ DeclareLabels(Module *P)
             break;
         case AST_INSTRHOLDER:
             MARK_CODE(label_flags);
-            MAYBEALIGNPC(4);
+            if (inHub) {
+                MAYBEALIGNPC(4);
+            } else {
+                ALIGNPC(4);
+            }
             /* check to see if the following instruction is a "ret" */
             if (!gl_p2 && IsRetInstruction(ast->left)) {
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags | LABEL_HAS_JMP);

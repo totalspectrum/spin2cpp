@@ -1619,6 +1619,8 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     AST *ast;
     AST *top;
     Reloc r;
+    int inHub = 0;
+    
     void (*startAst)(Flexbuf *f, AST *ast) = NULL;
     void (*endAst)(Flexbuf *f, AST *ast) = NULL;
     
@@ -1669,7 +1671,7 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
         }
         case AST_INSTRHOLDER:
             /* make sure it is aligned */
-            if (NEED_ALIGNMENT) {
+            if (NEED_ALIGNMENT || (!inHub) ) {
                 while ((datacount % 4) != 0) {
                     outputByte(f, 0);
                 }
@@ -1689,12 +1691,19 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             if (!gl_nospin && ast->d.ival > 3 && gl_output != OUTPUT_DAT) {
                 WARNING(ast, "orgh with explicit origin does not work if Spin methods are present");
             }
-	    /* fall through */
+            /* skip ahead to PC */
+            padBytes(f, ast, ast->d.ival);
+            inHub = 1;
+            break;
+
         case AST_ORGF:
             /* need to skip ahead to PC */
             padBytes(f, ast, ast->d.ival);
+            inHub = 0;
             break;
         case AST_ORG:
+            inHub = 0;
+            break;
         case AST_RES:
         case AST_FIT:
         case AST_LINEBREAK:
