@@ -11,3 +11,11 @@ end
 	long start	' should be $401
 	long end	' should be $407
 
+	org  0
+	nop
+	byte $ff
+	add  pa, #1
+foo
+	byte $11
+	long foo
+	
