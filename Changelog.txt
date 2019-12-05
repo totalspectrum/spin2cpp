@@ -5,7 +5,7 @@ Version 4.0.5
 - Re-arranged internal code to make it possible to distinguish C vs C++ or spin1 vs spin2
 - Fixed enum declaration scope in C
 - Made optimizer take care not to create djnz with large offsets
-- Added a warning for some uses of integers without '#'.
+- Added a warning in PASM for some uses of integers without '#'.
 - Added some missing propeller2.h functions
 - Fixed a problem parsing Spin comment blocks containing newlines after an empty REPEAT statement
 - Made instructions be automatically aligned in ORG mode (not ORGH mode)

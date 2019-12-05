@@ -765,22 +765,39 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
     return val;
 }
 
+/*
+ * check for whether an operand is a constant integer
+ */
 static int
 IsConstInteger(AST *op)
 {
     if (op->kind == AST_INTEGER) {
         return 1;
     }
+    if (IsIdentifier(op)) {
+        if (IsConstExpr(op)) {
+            return 1;
+        }
+    }
     return 0;
 }
 
-static int
+/* returns a mask indicating which operands should be checked for
+ * immediate constants:
+ *   0x1: first operand only
+ *   0x2: second operand
+ *   0x3: both operands
+ */
+static unsigned
 InstructionWarnAboutConsts(Instruction *instr)
 {
     switch(instr->ops) {
     case TWO_OPERANDS:
-    case P2_TWO_OPERANDS:
     case P2_LOC:
+        return 2;
+    case P2_TWO_OPERANDS:
+        return 3;
+    case P2_DST_CONST_OK:
         return 1;
     default:
         return 0;
@@ -1007,10 +1024,17 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
                 }
             }
         }
-    } else if (numoperands >= 2 && operand[1] && !opimm[1]) {
-        // check for immediate operands
-        if (IsConstInteger(operand[1]) && InstructionWarnAboutConsts(instr)) {
-            WARNING(line, "Second operand is a constant used without #; is this correct? If so, you may suppress this warning by putting +0 after the operand");
+    } else {
+        unsigned warn_mask = InstructionWarnAboutConsts(instr);
+        if ( (warn_mask & 1) && operand[0] && !opimm[0]) {
+            if (IsConstInteger(operand[0])) {
+                WARNING(line, "First operand is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand");
+            }
+        }
+        if ( (warn_mask & 2) && operand[1] && !opimm[1]) {
+            if (IsConstInteger(operand[1])) {
+                WARNING(line, "Second operand is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand");
+            }
         }
     }
         
