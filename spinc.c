@@ -245,6 +245,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
             offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion);
         }
     }
+    if (curtypesize != 4) {
+        P->longOnly = 0;
+    }
     return offset;
     
 }
@@ -588,7 +591,8 @@ ProcessModule(Module *P)
 
     current = P;
     P->botcomment = GetComments();
-
+    P->longOnly = 1;
+    
     if (P->body) {
         AST *funcdecl = NewAST(AST_FUNCDECL, AstIdentifier("program"), NULL);
         AST *funcvars = NewAST(AST_FUNCVARS, NULL, NULL);

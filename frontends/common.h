@@ -357,6 +357,7 @@ struct modulestate {
     char datHasCode; // if 1, DAT section has PASM code in it
     char gasPasm;    // if 1, output is in GAS format
     char isUnion;    // if 1, module actually represents a union
+    char longOnly;   // if 1, all module variables are longs
     
     /* back end specific flags */
     void *bedata;
