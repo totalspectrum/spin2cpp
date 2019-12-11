@@ -276,6 +276,8 @@ funcdef:
 optparamlist:
 /* empty */
   { $$ = NULL; }
+| '(' ')'
+  { $$ = NULL; }
 | paramidentlist
   { $$ = $1; }
 | '(' paramidentlist ')'
