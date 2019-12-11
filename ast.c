@@ -905,3 +905,26 @@ AstNullify(AST *ast)
     memset(ast, 0, sizeof(*ast));
     ast->kind = AST_COMMENT;
 }
+
+//
+// replace occurances of "old" within body by "new"
+//
+void
+ReplaceAst(AST *body, AST *old, AST *new)
+{
+    if (!body) return;
+    if (body->left) {
+        if (body->left->kind == old->kind && AstMatch(body->left, old)) {
+            body->left = new;
+        } else {
+            ReplaceAst(body->left, old, new);
+        }
+    }
+    if (body->right) {
+        if (body->right->kind == old->kind && AstMatch(body->right, old)) {
+            body->right = new;
+        } else {
+            ReplaceAst(body->right, old, new);
+        }
+    }
+}

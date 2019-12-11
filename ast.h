@@ -287,6 +287,7 @@ AST *AstAbort(AST *expr, AST *comment);
 AST *AstCatch(AST *expr);
 AST *AstSprRef(AST *index);
 AST *CheckYield(AST *loopbody);
+void ReplaceAst(AST *body, AST *old, AST *new);
 
 // turn an AST into a no-op
 void AstNullify(AST *ptr);

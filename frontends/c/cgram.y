@@ -657,8 +657,12 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
         /* declare a local alias for the name */
         const char *nameString = GetIdentifierName(nameAst);
         AST *globalName = AstTempIdentifier(nameString);
+        AST *origName = nameAst;
         EnterLocalAlias(currentTypes, globalName, nameString);
         nameAst = NewAST(AST_LOCAL_IDENTIFIER, globalName, nameAst);
+        // we have to fix up the body of the function so that references
+        // to the original name are replaced with the new name
+        ReplaceAst(body, origName, nameAst);
     }
     return DeclareTypedFunction(P, ftype, nameAst, is_public, body);
 }
