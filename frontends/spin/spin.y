@@ -1011,6 +1011,8 @@ memref:
 funccall:
   identifier '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
+  | identifier '(' ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | SP_COGINIT '(' exprlist ')'
     { $$ = NewAST(AST_COGINIT, $3, NULL); }
   | SP_COGNEW '(' exprlist ')'
@@ -1024,6 +1026,10 @@ funccall:
   | identifier '.' identifier '(' exprlist ')'
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+    }
+  | identifier '.' identifier '(' ')'
+    { 
+        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
     }
   | identifier '.' identifier
     { 

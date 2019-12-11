@@ -9,6 +9,7 @@ Version 4.0.5
 - Made -x flag disable LF->CR+LF translation on serial port
 - Print errors for function declared twice
 - Re-arranged internal code to make it possible to distinguish C vs C++ or spin1 vs spin2
+- Allow empty parameter lists in Spin
 
 Version 4.0.4
 - Implemented top level __asm in C
