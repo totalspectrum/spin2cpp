@@ -268,6 +268,22 @@ EnterConstant(const char *name, AST *expr)
 {
     Symbol *sym;
 
+    // check to see if the symbol already has a definition
+    sym = FindSymbol(&current->objsyms, name);
+    if (sym) {
+        if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
+            int32_t origval;
+            int32_t newval;
+
+            origval = EvalConstExpr(sym->val);
+            newval = EvalConstExpr(expr);
+            if (origval != newval) {
+                ERROR(expr, "Redefining %s with a different value", name);
+                return NULL;
+            }
+            return NULL; /* did not create new symbol */
+        }
+    }
     if (IsFloatConst(expr)) {
         sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
     } else {
@@ -282,10 +298,11 @@ DeclareConstants(AST **conlist_ptr)
     AST *conlist;
     AST *upper, *ast, *id;
     AST *next;
+    AST *completed_declarations = NULL;
     int default_val;
     int default_val_ok = 0;
     int n;
-
+    
     conlist = *conlist_ptr;
 
     // first do all the simple assignments
@@ -315,9 +332,8 @@ DeclareConstants(AST **conlist_ptr)
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
+                        upper->right = NULL;
+                        completed_declarations = AddToList(completed_declarations, upper);
                         conlist = *conlist_ptr;
                     }
                     break;
@@ -325,6 +341,10 @@ DeclareConstants(AST **conlist_ptr)
                     if (IsConstExpr(ast->left)) {
                         default_val = EvalConstExpr(ast->left);
                         default_val_ok = 1;
+                        RemoveFromList(conlist_ptr, upper);
+                        upper->right = NULL;
+                        completed_declarations = AddToList(completed_declarations, upper);
+                        conlist = *conlist_ptr;
                     } else {
                         default_val_ok = 0;
                     }
@@ -341,9 +361,8 @@ DeclareConstants(AST **conlist_ptr)
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
+                        upper->right = NULL;
+                        completed_declarations = AddToList(completed_declarations, upper);
                         conlist = *conlist_ptr;
                     }
                     break;
@@ -354,9 +373,8 @@ DeclareConstants(AST **conlist_ptr)
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
-                        upper->right = *conlist_ptr;
-                        *conlist_ptr = upper;
-                        conlist_ptr = &upper->right;
+                        upper->right = NULL;
+                        completed_declarations = AddToList(completed_declarations, upper);
                         conlist = *conlist_ptr;
                     }
                     break;
@@ -367,7 +385,6 @@ DeclareConstants(AST **conlist_ptr)
             }
             upper = next;
         }
-
     } while (n > 0);
 
     default_val = 0;
@@ -409,6 +426,8 @@ DeclareConstants(AST **conlist_ptr)
             ERROR(upper, "Expected list in constant, found %d instead", upper->kind);
         }
     }
+    completed_declarations = AddToList(completed_declarations, conlist);
+    *conlist_ptr = completed_declarations;
 }
 
 #if 0
