@@ -27,6 +27,11 @@ extern char *malloc();
 extern long atol();
 #endif
 
+/* this stuff is non-standard, libtool has become Posix specific */
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS  0
 #define EXIT_FAILURE  1
@@ -730,14 +735,88 @@ DEBUG("EOF in getdecl loop\n");
 	}
 }
 
+// forward declaration
+static int scan_directory(char *filename);
+
+void
+dofile(char *filename)
+{
+    FILE *f;
+    char *iobuf;
+
+    if (scan_directory(filename)) {
+        return;
+    }
+    iobuf = malloc(NEWBUFSIZ);
+    
+    if (!(f = fopen(filename, "r"))) {
+        perror(filename);
+        exit(EXIT_FAILURE);
+    }
+    if (iobuf)
+        setvbuf(f, iobuf, _IOFBF, NEWBUFSIZ);
+    
+    printf("\n/* %s */\n", filename);
+    linenum = 1;
+    newline_seen = 1;
+    glastc = ' ';
+    DEBUG("calling getdecl\n");
+    getdecl(f, filename);
+    DEBUG("back from getdecl\n");
+    fclose(f);
+    DEBUG("back from fclose\n");
+    free(iobuf);
+}
+
+// check for whether a file contains C code
+static int is_c_file(const char *filename)
+{
+    char *ext = strrchr(filename, '.');
+    if (!ext) return 0;
+    if (!strcmp(ext, ".c")) return 1;
+    if (!strcmp(ext, ".C")) return 1;
+    if (!strcmp(ext, ".cpp")) return 1;
+    if (!strcmp(ext, ".cc")) return 1;
+    if (!strcmp(ext, ".cxx")) return 1;
+    if (!strcmp(ext, ".c++")) return 1;
+    return 0;
+}
+
+// try to recursively scan a directory
+static int
+scan_directory(char *filename)
+{
+    DIR *dir;
+    struct dirent *ent;
+    
+    dir = opendir(filename);
+    if (!dir) return 0;
+    if (chdir(filename) < 0) {
+        closedir(dir);
+        return 0;
+    }
+    for(;;) {
+        ent = readdir(dir);
+        if (!ent) break;
+        if (scan_directory(ent->d_name)) {
+            continue;
+        }
+        if (is_c_file(ent->d_name)) {
+            dofile(ent->d_name);
+        }
+    }
+    chdir("..");
+    closedir(dir);
+    return 1;
+}
+
 int
 main(argc, argv)
 int argc; char **argv;
 {
-	FILE *f;
-	char *t, *iobuf;
 	extern void Usage();
-
+        char *t;
+        
 	if (argv[0] && argv[0][0])
 		ourname = argv[0];
 	else
@@ -748,7 +827,6 @@ int argc; char **argv;
 	if (argc < 0)		/* strange -- no args at all */
 		Usage();
 
-	iobuf = malloc(NEWBUFSIZ);
 	while (*argv && **argv == '-') {
 		t = *argv++; --argc; t++;
 		while (*t) {
@@ -790,24 +868,8 @@ int argc; char **argv;
                 getdecl(stdin, "<stdin>");
 	else
 		while (argc > 0 && *argv) {
-DEBUG("trying a new file\n");
-			if (!(f = fopen(*argv, "r"))) {
-				perror(*argv);
-				exit(EXIT_FAILURE);
-			}
-			if (iobuf)
-				setvbuf(f, iobuf, _IOFBF, NEWBUFSIZ);
-
-			printf("\n/* %s */\n", *argv);
-			linenum = 1;
-			newline_seen = 1;
-			glastc = ' ';
-DEBUG("calling getdecl\n");
-			getdecl(f, *argv);
-DEBUG("back from getdecl\n");
-			argc--; argv++;
-			fclose(f);
-DEBUG("back from fclose\n");
+                    dofile(*argv);
+                    argc--; argv++;
 		}
 	if (use_macro && define_macro) {
 		printf("\n#undef %s\n", macro_name);	/* clean up namespace */
