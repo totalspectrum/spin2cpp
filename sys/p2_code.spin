@@ -1,7 +1,6 @@
 ''
 '' P2 specific system calls
 ''
-
 pri cnt | r
   asm
     getct r
@@ -95,7 +94,8 @@ pri _setbaud(rate)
 con
  _rxpin = 31
  _txpin = 30
-pri _tx(c) | val, nextcnt, bitcycles
+ 
+pri _txraw(c) | val, nextcnt, bitcycles
   bitcycles := _bitcycles
   if (bitcycles == 0)
     if clkfreq == 0
@@ -111,8 +111,9 @@ pri _tx(c) | val, nextcnt, bitcycles
     OUTB[_txpin] := val
     val >>= 1
   return 1
-  
-pri _rx | val, waitcycles, i, bitcycles
+
+
+pri _rxraw | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   DIRB[_rxpin] := 0
   repeat
@@ -123,8 +124,8 @@ pri _rx | val, waitcycles, i, bitcycles
     waitcnt(waitcycles += bitcycles)
     val := (INB[_rxpin] << 7) | (val>>1)
   waitcnt(waitcycles + bitcycles)
-  _tx(val)
   return val
+
 pri _call_method(o, f, x=0) | r
   asm
     wrlong objptr, ptra

@@ -100,7 +100,7 @@ con
 dat
 _bitcycles long 80_000_000 / 115_200
 
-pri _tx(c) | val, nextcnt, bitcycles
+pri _txraw(c) | val, nextcnt, bitcycles
   bitcycles := _bitcycles
   OUTA[_txpin] := 1
   DIRA[_txpin] := 1
@@ -112,7 +112,7 @@ pri _tx(c) | val, nextcnt, bitcycles
     val >>= 1
   return 1
   
-pri _rx | val, rxmask, waitcycles, i, bitcycles
+pri _rxraw | val, rxmask, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   DIRA[_rxpin] := 0
   rxmask := 1<<_rxpin
@@ -123,7 +123,6 @@ pri _rx | val, rxmask, waitcycles, i, bitcycles
     waitcnt(waitcycles += bitcycles)
     val := (INA[_rxpin] << 7) | (val>>1)
   waitcnt(waitcycles + bitcycles)
-  _tx(val)
   return val
 
 pri _setbaud(rate)
