@@ -67,7 +67,8 @@ static AST *gc_free;
 
 static AST *funcptr_cmp;
 
-static AST *BuildMethodPointer(AST *ast);
+AST *BuildMethodPointer(AST *ast);
+static AST * getBasicPrimitive(const char *name);
 
 bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
 {
@@ -1003,7 +1004,7 @@ doCast(AST *desttype, AST *srctype, AST *src)
     return NULL;
 }
 
-static AST *
+AST *
 BuildMethodPointer(AST *ast)
 {
     Symbol *sym;
@@ -1029,6 +1030,9 @@ BuildMethodPointer(AST *ast)
     // save off the current @ node
     funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
     // create a call
+    if (!make_methodptr) {
+        make_methodptr = getBasicPrimitive("_make_methodptr");
+    }
     result = MakeOperatorCall(make_methodptr, objast, funcaddr, NULL);
     return result;
 }

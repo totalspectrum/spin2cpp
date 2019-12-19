@@ -214,8 +214,16 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                         lab->flags |= (LABEL_NEEDS_EXTRA_ALIGN|LABEL_USED_IN_SPIN);
                         WARNING(body, "Label is dereferenced with greater alignment than it was declared with");
                     }
-
-                }
+                } else if (sym && sym->kind == SYM_FUNCTION) {
+                    // insert an explicit function address
+                    extern AST *FunctionAddress(AST *); // in types.c
+                    AST *getaddr = FunctionAddress(body->left);
+                    if (upper->left == body) {
+                        upper->left = getaddr;
+                        return;
+                    }
+                    WARNING(body, "Taking address of function not supported yet in Spin");
+                }                        
             }
         } else if (ast->kind == AST_RESULT) {
             /* hack to make F32.spin work: it expects all variables
@@ -264,7 +272,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             }
             // convert plain IDENTIFIER into a FUNCCALL if it is a function
             // identifier
-            if (sym->kind == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL) {
+            if (sym->kind == SYM_FUNCTION && upper && upper->kind != AST_FUNCCALL && upper->kind != AST_ADDROF) {
                 AST *funccall;
                 ASTReportInfo saveinfo;
                 AstReportAs(body, &saveinfo);

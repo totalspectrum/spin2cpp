@@ -28,24 +28,24 @@ LR__0001
 _fetchv_ret
 	ret
 
-__system___tx
-	mov	__system___tx_val, arg01
-	rdlong	__system___tx_bitcycles, ptr___system__dat__
+__system___txraw
+	mov	__system___txraw_val, arg01
+	rdlong	__system___txraw_bitcycles, ptr___system__dat__
 	or	outa, imm_1073741824_
 	or	dira, imm_1073741824_
-	or	__system___tx_val, #256
-	shl	__system___tx_val, #1
-	mov	__system___tx_nextcnt, cnt
-	mov	__system___tx__idx__90001, #10
+	or	__system___txraw_val, #256
+	shl	__system___txraw_val, #1
+	mov	__system___txraw_nextcnt, cnt
+	mov	__system___txraw__idx__90001, #10
 LR__0002
-	add	__system___tx_nextcnt, __system___tx_bitcycles
-	mov	arg01, __system___tx_nextcnt
+	add	__system___txraw_nextcnt, __system___txraw_bitcycles
+	mov	arg01, __system___txraw_nextcnt
 	waitcnt	arg01, #0
-	shr	__system___tx_val, #1 wc
+	shr	__system___txraw_val, #1 wc
 	muxc	outa, imm_1073741824_
-	djnz	__system___tx__idx__90001, #LR__0002
+	djnz	__system___txraw__idx__90001, #LR__0002
 	mov	result1, #1
-__system___tx_ret
+__system___txraw_ret
 	ret
 
 __system___gc_pageptr
@@ -204,7 +204,7 @@ LR__0008
 	add	__system___gc_errmsg_s, #1
  if_e	jmp	#LR__0009
 	mov	arg01, __system___gc_errmsg_c
-	call	#__system___tx
+	call	#__system___txraw
 	jmp	#LR__0008
 LR__0009
 	mov	result1, #0
@@ -793,13 +793,13 @@ __system___gc_tryalloc_saveptr
 	res	1
 __system___gc_tryalloc_size
 	res	1
-__system___tx__idx__90001
+__system___txraw__idx__90001
 	res	1
-__system___tx_bitcycles
+__system___txraw_bitcycles
 	res	1
-__system___tx_nextcnt
+__system___txraw_nextcnt
 	res	1
-__system___tx_val
+__system___txraw_val
 	res	1
 __system__bytemove_origdst
 	res	1

@@ -10,6 +10,7 @@ Version 4.0.5
 - Print errors for function declared twice
 - Re-arranged internal code to make it possible to distinguish C vs C++ or spin1 vs spin2
 - Allow empty parameter lists in Spin
+- Allow address of function to be taken in Spin
 - Added checks for redefined constants
 
 Version 4.0.4
