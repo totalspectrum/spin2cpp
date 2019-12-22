@@ -111,8 +111,12 @@ CombinePointer(AST *ptr, AST *type)
 static AST *MergePrefix(AST *prefix, AST *first)
 {
     if (prefix) {
-        prefix->left = first;
-        first = prefix;
+        // make sure we migrate STATIC to the front of the list
+        if (first && first->kind == AST_STATIC) {
+            first->left = AddToLeftList(prefix, first->left);
+        } else {
+            first = AddToLeftList(prefix, first);
+        }
     }
     return first;
 }
@@ -1092,7 +1096,11 @@ declaration_specifiers
 	: storage_class_specifier
             { $$ = $1; }
 	| storage_class_specifier declaration_specifiers
-            { $$ = $1; if ($$) $$->left = $2; else $$ = $2; }
+            {
+                AST *prefix = $1;
+                AST *suffix = $2;
+                $$ = MergePrefix(prefix, suffix);
+            }
 	| type_specifier reset_identifier_expectation
             { $$ = $1; AllowTypeNames(); }
 	| type_specifier reset_identifier_expectation declaration_specifiers
@@ -1100,7 +1108,7 @@ declaration_specifiers
 	| type_qualifier
             { $$ = $1; $$->left = ast_type_long; }
 	| type_qualifier declaration_specifiers
-           { $$ = $1; $$->left = $2; }
+            { $$ = MergePrefix($1, $2); }
 	;
 
 reset_identifier_expectation

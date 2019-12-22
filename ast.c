@@ -55,6 +55,24 @@ AddToList(AST *list, AST *newelement)
     p->right = newelement;
     return list;
 }
+/*
+ * add an AST to a "left" list
+ * this is one where everything is on the left pointers,
+ * e.g. a list of type modifiers
+ */
+AST *
+AddToLeftList(AST *list, AST *newelement)
+{
+    AST *p;
+    if (!list)
+        return newelement;
+    if (!newelement)
+        return list;
+    for (p = list; p->left != NULL; p = p->left)
+        ;
+    p->left = newelement;
+    return list;
+}
 /* accelerator for AddToList; keeps track of tail */
 AST *AddToListEx(AST *head, AST *newelem, AST **tailptr)
 {
