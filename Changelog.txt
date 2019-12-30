@@ -1,3 +1,7 @@
+Version 4.0.6
+- Allow "static" and "const" or "volatile" to come in any order in C code
+- Fixed a problem with detection of "static" functions (ones without member variable references) which use coginit on non-static functions.
+
 Version 4.0.5
 - Fixed static function declarations in C so that declarations in different files do not conflict
 - Fixed enum declaration scope in C

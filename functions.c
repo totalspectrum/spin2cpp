@@ -1526,6 +1526,14 @@ CheckForStatic(Function *fdef, AST *body)
             fdef->is_static = 0;
         }
         break;
+    case AST_COGINIT:
+        // if we end up doing a COGINIT of a non-static member,
+        // then we better be non-static as well. This could be
+        // optimized further, but for now punt
+        if (IsSpinCoginit(body, NULL)) {
+            fdef->is_static = 0;
+        }
+        break;
     default:
         CheckForStatic(fdef, body->left);
         CheckForStatic(fdef, body->right);
