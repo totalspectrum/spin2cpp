@@ -2438,7 +2438,7 @@ instr_p2[] = {
 
     { "getqx",  0x0d600018, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "getqy",  0x0d600019, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "getct",  0x0d60001a, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "getct",  0x0d60001a, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_WC },
     { "getrnd", 0x0d60001b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
 
     { "setdacs",0x0d60001c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
