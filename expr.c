@@ -1958,53 +1958,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 Symbol *
 FindCalledFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
 {
-#if 1
     return FindFuncSymbol(ast, objrefPtr, errflag);
-#else    
-    AST *objref = NULL;
-    AST *objtype = NULL;
-    Symbol *sym = NULL;
-    AST *expr = ast;
-    
-    if (expr->kind != AST_METHODREF) {       
-        if (expr->kind != AST_FUNCCALL && expr->kind != AST_ADDROF) {
-            ERROR(expr, "Internal error expecting function call");
-            return NULL;
-        }
-        expr = expr->left;
-    }
-        
-    if (expr && expr->kind == AST_METHODREF) {
-        const char *thename;
-        Function *f;
-        Module *P;
-        
-        objref = expr->left;
-        objtype = ExprType(objref);
-
-        if (!objtype || BaseType(objtype)->kind != AST_OBJECT) {
-            if (errflag)
-                ERROR(ast, "member dereference to non-object");
-            return NULL;
-        }
-        P = GetClassPtr(objtype);
-        thename = expr->right->d.string;
-        sym = FindSymbol(&P->objsyms, thename);
-        if (!sym || sym->kind != SYM_FUNCTION) {
-            if (errflag)
-                ERROR(ast, "%s is not a method of %s", thename, P->classname);
-            return NULL;
-        }
-        f = (Function *)sym->val;
-        if (!f->is_public) {
-            ERROR(ast, "%s is a private method of %s", thename, P->classname);
-        }
-    } else {
-        sym = LookupAstSymbol(expr, errflag ? "function call" : NULL);
-    }
-    if (objrefPtr) *objrefPtr = objref;
-    return sym;
-#endif    
 }
 
 int
