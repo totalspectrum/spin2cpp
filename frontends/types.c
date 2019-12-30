@@ -852,13 +852,13 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
 
     // automatically cast arrays to pointers if necessary
-    if (IsArrayType(srctype) && IsPointerType(desttype)) {
+    if (IsArrayType(srctype) && (IsPointerType(desttype) || !desttype)) {
         srctype = ArrayToPointerType(srctype);
         expr = ArrayAddress(expr);
         *astptr = expr;
     }
     // similarly for classes in some languages
-    if (IsClassType(srctype) && IsPointerType(desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
+    if (IsClassType(srctype) && (IsPointerType(desttype) || !desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
       {
           srctype = ClassToPointerType(srctype);
           expr = StructAddress(expr);
@@ -1120,8 +1120,8 @@ AST *CheckTypes(AST *ast)
             if (functype && functype->kind == AST_PTRTYPE) {
                 functype = RemoveTypeModifiers(functype->left);
             }
-            if (IsFunctionType(functype)) {
-                calledParamList = functype->right;
+            if (!functype || IsFunctionType(functype)) {
+                calledParamList = functype ? functype->right : NULL;
                 while (actualParamList) {
                     AST *paramId = calledParamList ? calledParamList->left : NULL;
                     AST *actualParam = actualParamList->left;
@@ -1138,9 +1138,13 @@ AST *CheckTypes(AST *ast)
                         }
                     }
                     if (!expectType) {
+                        // pass arrays as pointers
+                        if (IsArrayType(passedType)) {
+                            expectType = ArrayToPointerType(passedType);
+                        }
                         // we use const generic to avoid lots of warning
                         // messages about passing strings to printf
-                        if (TypeSize(passedType) > LARGE_SIZE_THRESHOLD) {
+                        else if (IsClassType(passedType) && TypeSize(passedType) > LARGE_SIZE_THRESHOLD) {
                             // need to emit a copy
                             expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
                         } else {
@@ -1153,7 +1157,7 @@ AST *CheckTypes(AST *ast)
                     }
                     actualParamList = actualParamList->right;
                 }
-                ltype = functype->left;
+                ltype = functype ? functype->left : NULL;
             } else {
                 return NULL;
             }

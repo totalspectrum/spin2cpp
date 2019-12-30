@@ -4,6 +4,7 @@ Version 4.0.6
 - Updated definition of P2 getct instruction to allow wc
 - Various small changes to builtin functions for spin2cpp
 - Relax warnings for use of constants in range $1c0-$1ef as registers
+- Made sure arrays are converted to pointers in all cases for passing parameters in C
 
 Version 4.0.5
 - Fixed static function declarations in C so that declarations in different files do not conflict
