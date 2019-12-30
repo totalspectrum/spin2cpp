@@ -771,15 +771,27 @@ FixupThreeOperands(uint32_t val, AST *op, uint32_t immflags, uint32_t maxN, AST 
 static int
 IsConstInteger(AST *op)
 {
+    int r = 0;
+    uint32_t N;
+    
     if (op->kind == AST_INTEGER) {
-        return 1;
-    }
-    if (IsIdentifier(op)) {
+        r = 1;
+    } else if (IsIdentifier(op)) {
         if (IsConstExpr(op)) {
-            return 1;
+            r = 1;
         }
     }
-    return 0;
+    if (r) {
+        N = EvalPasmExpr(op);
+        if (N >= 0x1c0 && N < 0x1f0) {
+            // special case;
+            // allow constants in range 1c0-1ef to be
+            // used as registers without warning
+            r = 0;
+        }
+    }
+    
+    return r;
 }
 
 /* returns a mask indicating which operands should be checked for
