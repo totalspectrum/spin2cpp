@@ -1771,6 +1771,10 @@ static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 // the P1 C version of the name
 // the P2 C version of the name
 Builtin builtinfuncs[] = {
+    { "clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
+    { "clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
+    { "clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
+
     { "__builtin_clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
     { "__builtin_clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
     { "_clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
@@ -1799,7 +1803,6 @@ Builtin builtinfuncs[] = {
     { "bytefill", 3, memBuiltin, "memset", NULL, NULL, 1, NULL },
     { "bytemove", 3, memBuiltin, "memcpy", NULL, NULL, 1, NULL },
 
-    { "cnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
     { "getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
     { "_getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
 

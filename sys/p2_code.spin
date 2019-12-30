@@ -1,11 +1,6 @@
 ''
 '' P2 specific system calls
 ''
-pri cnt | r
-  asm
-    getct r
-  endasm
-  return r
 pri _getcnt | r
   asm
     getct r

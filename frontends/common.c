@@ -111,6 +111,8 @@ Aliases spinalias[] = {
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
+    { "cnt", "_getcnt" },
+    
     { "dirrnd_", "__builtin_propeller_dirrnd" },
 
     { "drvrnd_", "__builtin_propeller_drvrnd" },
