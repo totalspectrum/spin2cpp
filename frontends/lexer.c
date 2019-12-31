@@ -1770,10 +1770,9 @@ extern void waitpeqBuiltin(Flexbuf *, Builtin *, AST *);
 static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 
 // the fields here are:
-// "spin name", numparameters, outputfunc, cname, gasname, extradata, parsehook
+// "spin name", numparameters, outputfunc, cname, c2name, gasname, extradata, parsehook
 
-// the P1 C version of the name
-// the P2 C version of the name
+// c2name is the P2 C version of the name
 Builtin builtinfuncs[] = {
     { "clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
     { "clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
@@ -1807,8 +1806,8 @@ Builtin builtinfuncs[] = {
     { "bytefill", 3, memBuiltin, "memset", NULL, NULL, 1, NULL },
     { "bytemove", 3, memBuiltin, "memcpy", NULL, NULL, 1, NULL },
 
-    { "getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
-    { "_getcnt", 0, defaultBuiltin, "getcnt", "_getcnt", "_getcnt", 0, NULL },
+    { "getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },
+    { "_getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },
 
     { "_string_cmp", 2, defaultBuiltin, "strcmp", NULL, NULL, 0, NULL },
 
