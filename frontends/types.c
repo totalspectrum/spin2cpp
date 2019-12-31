@@ -1063,6 +1063,8 @@ AST *CheckTypes(AST *ast)
     ltype = CheckTypes(ast->left);
     if (ast->kind != AST_METHODREF) {
         rtype = CheckTypes(ast->right);
+    } else {
+        rtype = NULL;
     }
     switch (ast->kind) {
     case AST_GOSUB:
@@ -1365,7 +1367,6 @@ AST *CheckTypes(AST *ast)
         }
     case AST_EXPRLIST:
         if (ast->right) {
-            rtype = CheckTypes(ast->right);
             return NewAST(AST_TUPLE_TYPE, ltype, rtype);
         }
         return ltype;
