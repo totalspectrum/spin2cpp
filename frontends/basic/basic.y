@@ -698,7 +698,7 @@ simple_assign_statement:
   }
   | register_expr '=' expr
     {
-        AST *op = $2;
+        AST *op = AstAssign(NULL, NULL);
         op->left = $1;
         op->right = $3;
         $$ = op;
@@ -739,7 +739,7 @@ branchstmt:
   exitstmt
   | BAS_RETURN
     { $$ = AstReturn(NULL, $1); }
-  | BAS_RETURN expr
+  | BAS_RETURN exprlist
     { $$ = AstReturn($2, $1); }
   | BAS_GOTO BAS_IDENTIFIER
     { $$ = NewAST(AST_GOTO, $2, NULL); }
@@ -1575,7 +1575,7 @@ funcdecl:
     AST *rettype = InferTypeFromName(name);
     DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
   }
-  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
   {
     AST *name = $2;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
@@ -1602,7 +1602,7 @@ funcdecl:
   ;
 
 functemplate:
-    templateheader BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typename eoln funcbody
+    templateheader BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
     {
         AST *name = $3;
 	AST *types = $1;
@@ -1761,6 +1761,20 @@ typename:
         $$->d.ptr = (AST *)sym->val;
     }
   ;
+
+typelist:
+  typename
+    { $$ = $1; }
+  | typelist ',' typename
+    {
+        AST *list = $1;
+        AST *added = $3;
+        if (list->kind != AST_LISTHOLDER) {
+            list = NewAST(AST_LISTHOLDER, list, NULL);
+        }
+        $$ = AddToList(list, NewAST(AST_LISTHOLDER, added, NULL));
+    }
+;
 
 ptrdef:
   BAS_POINTER | BAS_PTR

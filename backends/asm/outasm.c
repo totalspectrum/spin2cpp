@@ -953,8 +953,8 @@ TypedHubMemRef(AST *type, Operand *addr, int offset)
     }
     if (!type) {
         size = 4;
-    } else if (type->kind == AST_TUPLETYPE) {
-        size = type->d.ival * 4;
+    } else if (type->kind == AST_TUPLE_TYPE) {
+        size = AstListLen(type) * 4;
     } else if (type->kind == AST_PTRTYPE || type->kind == AST_REFTYPE || type->kind == AST_COPYREFTYPE ) {
         size = 4;
     } else if (type->kind == AST_OBJECT) {

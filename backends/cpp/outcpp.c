@@ -1006,8 +1006,8 @@ SetCppFlags(CppModData *bedata, AST *ast)
         if (ast->left && ast->left->kind == AST_EXPRLIST) {
             AST *lhstyp = ExprType(ast->left);
             AST *rhstyp = ExprType(ast->right);
-            int lhscount = (lhstyp && lhstyp->kind == AST_TUPLETYPE) ? lhstyp->d.ival : 1;
-            int rhscount = (rhstyp && rhstyp->kind == AST_TUPLETYPE) ? rhstyp->d.ival : 1;
+            int lhscount = (lhstyp && lhstyp->kind == AST_TUPLE_TYPE) ? AstListLen(lhstyp) : 1;
+            int rhscount = (rhstyp && rhstyp->kind == AST_TUPLE_TYPE) ? AstListLen(rhstyp) : 1;
             if (lhscount != rhscount) {
                 ERROR(ast, "Expected to assign %d items but found %d", lhscount, rhscount);
             } else {

@@ -1726,7 +1726,7 @@ IsArrayType(AST *ast)
     case AST_VOIDTYPE:
     case AST_FUNCTYPE:
     case AST_OBJECT:
-    case AST_TUPLETYPE:
+    case AST_TUPLE_TYPE:
         return 0;
     default:
         ERROR(ast, "Internal error: unknown type %d passed to IsArrayType",
@@ -1818,9 +1818,13 @@ int TypeSize(AST *typ)
         }
         return P->varsize;
     }
-    case AST_TUPLETYPE:
+    case AST_TUPLE_TYPE:
     {
-        return typ->d.ival * 4;
+        int siz = TypeSize(typ->left);
+        if (typ->right) {
+            siz += TypeSize(typ->right);
+        }
+        return siz;
     }
     case AST_VOIDTYPE:
     {
@@ -2410,9 +2414,12 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     }
     case AST_EXPRLIST:
     {
-        AST *typ = NewAST(AST_TUPLETYPE, NULL, NULL);
-        typ->d.ival = AstListLen(expr);
-        return typ; 
+        AST *typ = NewAST(AST_TUPLE_TYPE, NULL, NULL);
+        typ->left = ExprTypeRelative(table, expr->left, P);
+        if (expr->right) {
+            typ->right = ExprTypeRelative(table, expr->right, P);
+        }
+        return typ;
     }
     case AST_SEQUENCE:
     {

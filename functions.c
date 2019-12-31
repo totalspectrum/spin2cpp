@@ -793,8 +793,8 @@ doDeclareFunction(AST *funcblock)
     if (fdef->overalltype->left) {
         if (fdef->overalltype->left == ast_type_void) {
             fdef->numresults = 0;
-        } else if (fdef->overalltype->left->kind == AST_TUPLETYPE) {
-            fdef->numresults = fdef->overalltype->left->d.ival;
+        } else if (fdef->overalltype->left->kind == AST_TUPLE_TYPE) {
+            fdef->numresults = AstListLen(fdef->overalltype->left);
         } else {
             int siz = TypeSize(fdef->overalltype->left);
             if (siz > LARGE_SIZE_THRESHOLD) {
@@ -825,9 +825,13 @@ doDeclareFunction(AST *funcblock)
             AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL);
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
-            fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0) / LONG_SIZE;
-            rettype = NewAST(AST_TUPLETYPE, NULL, NULL);
-            rettype->d.ival = fdef->numresults;
+            int count;
+            count = fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0) / LONG_SIZE;
+            rettype = NULL;
+            while (count > 0) {
+                rettype = NewAST(AST_TUPLE_TYPE, NULL, rettype);
+                --count;
+            }
             fdef->overalltype->left = rettype;
             fdef->resultexpr = TranslateToExprList(fdef->resultexpr);
         } else {
@@ -1957,7 +1961,7 @@ InferTypesStmt(AST *ast)
     if (!sub) {
       sub = curfunc->resultexpr;
     }
-    if (sub && sub->kind != AST_TUPLETYPE && sub->kind != AST_EXPRLIST) {
+    if (sub && sub->kind != AST_TUPLE_TYPE && sub->kind != AST_EXPRLIST) {
         changes = InferTypesExpr(sub, GetFunctionReturnType(curfunc));
     }
     return changes;
@@ -2329,10 +2333,10 @@ SetFunctionReturnType(Function *f, AST *typ)
         if (typ == ast_type_byte || typ == ast_type_word) {
             typ = ast_type_long;
         }
-        if (typ && typ->kind == AST_TUPLETYPE) {
+        if (typ && typ->kind == AST_TUPLE_TYPE) {
             f->overalltype->left = typ;
             if (f->numresults > 1) {
-                if (f->numresults != typ->d.ival) {
+                if (f->numresults != AstListLen(typ)) {
                     ERROR(NULL, "inconsistent return values from function %s", f->name);
                 }
             }
@@ -2343,11 +2347,12 @@ SetFunctionReturnType(Function *f, AST *typ)
             f->overalltype->left = ast_type_generic;
         }
     }
-    if (typ && typ->kind == AST_TUPLETYPE) {
+    if (typ && typ->kind == AST_TUPLE_TYPE) {
+        int len = AstListLen(typ);
         if (f->numresults <= 1) {
-            f->numresults = typ->d.ival;
+            f->numresults = len;
         }
-        else if (f->numresults != typ->d.ival) {
+        else if (f->numresults != len) {
             ERROR(NULL, "inconsistent return values from function %s", f->name);
         }
     }

@@ -815,8 +815,8 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             flexbuf_printf(f, "const ");
         }
         break;
-    case AST_TUPLETYPE:
-        flexbuf_printf(f, "Tuple%d__%s", typedecl->d.ival, space);
+    case AST_TUPLE_TYPE:
+        flexbuf_printf(f, "Tuple%d__%s", AstListLen(typedecl), space);
         break;
     case AST_VOIDTYPE:
         flexbuf_printf(f, "void%s", space);
