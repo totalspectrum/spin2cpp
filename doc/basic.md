@@ -148,7 +148,9 @@ any
 as
 asm
 __builtin_alloca
+byref
 byte
+byval
 case
 catch
 class
