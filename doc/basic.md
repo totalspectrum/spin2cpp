@@ -773,6 +773,15 @@ Also useful in boolean operations. The comparison operators return 0 for false c
   end if
 ```
 
+### ANDALSO
+
+```
+  if a andalso b then
+    dosomething
+  end if
+```
+Evaluates `a`, and if it is true then it evaluates `b` and returns `b`; otherwise it returns `false`. This is similar to `and`, but avoids evaluating its second argument if the first is false.
+
 ### ANY
 
 ```
@@ -1711,6 +1720,16 @@ Also useful in boolean operations. The comparison operators return 0 for false c
     ' code that runs if either condition is true
   end if
 ```
+
+### ORELSE
+
+```
+  if a orelse b then
+    dosomething
+  end if
+```
+Evaluates `a`, and if it is true then it returns true; otherwise it evaluates `b` and returns `b`. This is similar to `or`, but avoids evaluating its second argument if the first is true.
+
 
 ### OUTPUT
 

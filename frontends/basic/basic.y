@@ -1507,8 +1507,17 @@ bit_expr:
     { $$ = AstOperator('^', $1, $3); }
 ;
 
-expr:
+bool_expr:
   bit_expr
+    { $$ = $1; }
+  | bool_expr BAS_ANDALSO bit_expr
+    { $$ = AstOperator(K_BOOL_AND, $1, $3); }
+  | bool_expr BAS_ORELSE bit_expr
+    { $$ = AstOperator(K_BOOL_OR, $1, $3); }
+;
+
+expr:
+  bool_expr
     { $$ = $1; }
   | lambdaexpr
     { $$ = $1; }
