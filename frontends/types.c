@@ -1364,6 +1364,11 @@ AST *CheckTypes(AST *ast)
             return ltype;
         }
     case AST_EXPRLIST:
+        if (ast->right) {
+            rtype = CheckTypes(ast->right);
+            return NewAST(AST_TUPLE_TYPE, ltype, rtype);
+        }
+        return ltype;
     case AST_SEQUENCE:
     case AST_CONSTANT:
     case AST_VA_ARG:

@@ -1769,10 +1769,10 @@ typelist:
     {
         AST *list = $1;
         AST *added = $3;
-        if (list->kind != AST_LISTHOLDER) {
-            list = NewAST(AST_LISTHOLDER, list, NULL);
+        if (list->kind != AST_TUPLE_TYPE) {
+            list = NewAST(AST_TUPLE_TYPE, list, NULL);
         }
-        $$ = AddToList(list, NewAST(AST_LISTHOLDER, added, NULL));
+        $$ = AddToList(list, NewAST(AST_TUPLE_TYPE, added, NULL));
     }
 ;
 
