@@ -558,7 +558,7 @@ ConvertPrintToPrintf(AST *ast)
     AST *expr, *type;
     AST *printit = NewAST(AST_PRINT, NULL, NULL);
     AST *seq = NULL;    
-    AST *fmtAst = NULL;
+//    AST *fmtAst = NULL;
     Flexbuf fbstr;
     char strbuf[8];
 
@@ -576,7 +576,7 @@ ConvertPrintToPrintf(AST *ast)
         expr = exprlist->left;
         exprlist = exprlist->right;
         if (expr->kind == AST_USING) {
-            fmtAst = expr->left;
+//            fmtAst = expr->left;
             expr = expr->right;
         }
         if (!expr) {
@@ -924,6 +924,7 @@ BasicTransform(Function *func)
 {
     InitGlobalFuncs();
 
+    SimplifyAssignments(&func->body);
     doBasicTransform(&func->body);
     CheckTypes(func->body);
 }
