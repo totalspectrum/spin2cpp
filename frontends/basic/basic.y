@@ -670,6 +670,20 @@ assignment_operator
             { $$ = AstOpAssign('|', NULL, NULL); }
 	;
 
+
+varexprlist:
+  varexpr ',' multivars
+      { $$ = NewAST(AST_EXPRLIST, $1, $3); }
+  ;
+
+multivars:
+  varexpr
+      { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+  | multivars ',' varexpr
+      { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+  ;
+
+
 simple_assign_statement:
   varexpr assignment_operator expr
     {
@@ -678,6 +692,10 @@ simple_assign_statement:
         op->right = $3;
         $$ = op;
     }
+  | varexprlist '=' exprlist
+  {
+      $$ = AstAssign($1, $3);
+  }
   | register_expr '=' expr
     {
         AST *op = $2;
