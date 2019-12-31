@@ -5,8 +5,8 @@ dat
 entry
 
 _main
-	mov	result1, #1
 	mov	result2, #2
+	mov	result1, #1
 	wrlong	result1, objptr
 	add	objptr, #4
 	wrlong	result2, objptr

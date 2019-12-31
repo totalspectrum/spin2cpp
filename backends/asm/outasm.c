@@ -4080,6 +4080,8 @@ static void CompileStatement(IRList *irl, AST *ast)
                 int n = 0;
                 int items;
                 AST *retlist = NULL;
+                OperandList *oplist = NULL;
+                Operand *tempreg;
                 if (retval->kind == AST_EXPRLIST) {
                     retlist = retval;
                 }
@@ -4091,20 +4093,34 @@ static void CompileStatement(IRList *irl, AST *ast)
                     items = NumExprItemsOnStack(retval);
                     op = CompileExpression(irl, retval, NULL);
                     if (items <= 1) {
-                        EmitMove(irl, GetResultReg(n), op);
-                        n++;
+                        if (retlist) {
+                            tempreg = NewFunctionTempRegister();
+                            EmitMove(irl, tempreg, op);
+                            AppendOperand(&oplist, tempreg);
+                            n++;
+                        } else {
+                            EmitMove(irl, GetResultReg(n), op);
+                            n++;
+                        }
                     } else {
                         Operand *base = op;
                         Operand *derefptr;
                         int offset = 0;
                         while (items-- > 0) {
                             derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), 0);
-                            EmitMove(irl, GetResultReg(n), derefptr);
-                            n++;
+                            tempreg = NewFunctionTempRegister();
+                            EmitMove(irl, tempreg, derefptr);
                             offset++;
+                            AppendOperand(&oplist, tempreg);
                         }
                     }
                 } while(retlist);
+                n = 0;
+                while (oplist) {
+                    EmitMove(irl, GetResultReg(n), oplist->op);
+                    n++;
+                    oplist = oplist->next;
+                }
             }
 	}
 	EmitJump(irl, COND_TRUE, FuncData(curfunc)->asmreturnlabel);

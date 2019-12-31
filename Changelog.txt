@@ -1,3 +1,9 @@
+Version 4.1.0
+- Added BYREF and BYVAL modifiers to BASIC function parameters
+- Made &, |, ^ aliases for BASIC AND, OR, XOR operators
+- Added +=, -=, *=, /= assignment operators to BASIC
+- Allow multiple assignment and functions which return multiple values in BASIC
+
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code
 - Fixed a problem with detection of "static" functions (ones without member variable references) which use coginit on non-static functions.

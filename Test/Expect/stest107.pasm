@@ -7,8 +7,8 @@ entry
 _dbl64
 	add	arg02, arg02 wc
 	addx	arg01, arg01
-	mov	result1, arg01
 	mov	result2, arg02
+	mov	result1, arg01
 _dbl64_ret
 	ret
 
@@ -17,8 +17,8 @@ _quad64
 	addx	arg01, arg01
 	add	arg02, arg02 wc
 	addx	arg01, arg01
-	mov	result1, arg01
 	mov	result2, arg02
+	mov	result1, arg01
 _quad64_ret
 	ret
 

@@ -5,8 +5,8 @@ dat
 entry
 
 _onetwo
-	mov	result1, #1
 	mov	result2, #2
+	mov	result1, #1
 _onetwo_ret
 	ret
 
