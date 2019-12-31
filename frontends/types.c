@@ -1117,7 +1117,8 @@ AST *CheckTypes(AST *ast)
             AST *calledParamList;
             AST *expectType, *passedType;
             AST *functype;
-
+            AST *tupleType = NULL;
+            
             functype = RemoveTypeModifiers(ExprType(ast->left));
             if (functype && functype->kind == AST_PTRTYPE) {
                 functype = RemoveTypeModifiers(functype->left);
@@ -1129,9 +1130,16 @@ AST *CheckTypes(AST *ast)
                     AST *actualParam = actualParamList->left;
                     
                     expectType = NULL;
-                    passedType = NULL;
-                    if (!passedType) {
+                    if (tupleType) {
+                        passedType = tupleType->left;
+                        tupleType = tupleType->right;
+                    } else {
                         passedType = ExprType(actualParam);
+                        if (passedType && passedType->kind == AST_TUPLE_TYPE) {
+                            // a tuple substitutes for multiple parameters
+                            tupleType = passedType->right;
+                            passedType = passedType->left;
+                        }
                     }
                     if (paramId) {
                         // if the parameter has a type declaration, use it
