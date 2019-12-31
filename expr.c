@@ -2489,6 +2489,21 @@ CompatibleTypes(AST *A, AST *B)
     }
 
     if (A == B) return 1;
+    if (A && A->kind == AST_TUPLE_TYPE) {
+        if (B && B->kind == AST_TUPLE_TYPE) {
+            return CompatibleTypes(A->left, B->left) && CompatibleTypes(A->right, B->right);
+        } else if (A->right) {
+            return 0;
+        } else {
+            return CompatibleTypes(A->left, B);
+        }
+    } else if (B && B->kind == AST_TUPLE_TYPE) {
+        if (B->right) {
+            return 0;
+        }
+        return CompatibleTypes(B->left, A);
+    }
+    
     if (A->kind == AST_INTTYPE || A->kind == AST_UNSIGNEDTYPE || A->kind == AST_GENERICTYPE) {
         if (B->kind == AST_INTTYPE || B->kind == AST_UNSIGNEDTYPE || B->kind == AST_GENERICTYPE) {
             return true;
