@@ -374,6 +374,7 @@ BuildOnGotoCases(AST *exprlist)
 /* keywords */
 %token BAS_ABS        "abs"
 %token BAS_AND        "and"
+%token BAS_ANDALSO    "andalso"
 %token BAS_ANY        "any"
 %token BAS_AS         "as"
 %token BAS_ASC        "asc"
@@ -425,6 +426,7 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_OPEN       "open"
 %token BAS_OPTION     "option"
 %token BAS_OR         "or"
+%token BAS_ORELSE     "orelse"
 %token BAS_OUTPUT     "output"
 %token BAS_POINTER    "pointer"
 %token BAS_PRINT      "print"

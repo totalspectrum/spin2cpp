@@ -143,6 +143,7 @@ Keywords are always treated specially by the compiler, and no identifier may be 
 ```
 abs
 and
+andalso
 any
 as
 asm
@@ -189,6 +190,7 @@ not
 open
 option
 or
+orelse
 output
 pointer
 print

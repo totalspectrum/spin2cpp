@@ -1463,6 +1463,7 @@ struct reservedword {
 struct reservedword basic_keywords[] = {
   { "abs", BAS_ABS },
   { "and", BAS_AND },
+  { "andalso", BAS_ANDALSO },
   { "any", BAS_ANY },
   { "as", BAS_AS },
   { "asc", BAS_ASC },
@@ -1514,6 +1515,7 @@ struct reservedword basic_keywords[] = {
   { "open", BAS_OPEN },
   { "option", BAS_OPTION },
   { "or", BAS_OR },
+  { "orelse", BAS_ORELSE },
   { "output", BAS_OUTPUT },
   { "pointer", BAS_POINTER },
   { "print", BAS_PRINT },
