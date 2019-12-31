@@ -416,15 +416,31 @@ In general for all of the comparison operators, if either `a` or `b` is a float,
 
 All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
 
-`a and b` is the bitwise and of `a` and `b`
+`a and b` is the bitwise and of `a` and `b`. This may also be written as `a & b`.
 
-`a or b` is the bitwise (inclusive) or of `a` and `b`
+`a or b` is the bitwise (inclusive) or of `a` and `b`. This may also be written as `a | b`.
 
-`a xor b` is the bitwise exclusive or of `a` and `b`
+`a xor b` is the bitwise exclusive or of `a` and `b` This may also be written as `a ^ b`.
 
 `a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this.
 
 `a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
+
+#### Assignment operators
+
+Normally assignment is performed with the `=` symbol:
+```
+  a = b
+```
+It is possible to combine assignment and the basic arithmetic operators (`+`, `-`, `/`, `*`) or some logic operators (`&`, `|`, `^`). That is, the
+assignment:
+```
+  a = a + b
+```
+may also be written as
+```
+  a += b
+```
 
 ### Extending lines
 
@@ -849,9 +865,28 @@ The pointer returned from `__builtin_alloca` will become invalid as soon as the 
 
 `__builtin_alloca` is awkward to work with, and dangerous. In most cases you should use `new` instead. The only advantages of `__builtin_alloca` is that it is more efficient than `new`, and does not use up heap space (but uses stack space instead).
 
+### BYREF
+
+Specifies that a parameter is to be passed by reference. This means that changes to the parameter inside the subroutine or function are reflected in the variable outside, so for example in:
+```
+   sub incr(byref a as integer)
+     a += 1
+   end sub
+
+   var x = 2
+   incr(x)
+```
+the final value of `x` is 3. Normally simple parameters (integers, floats, and strings) are passed by value, which means that changes inside the function do not affect the callers variables.
+
+Note that if a parameter is specified as `byref` then literal constants like `1` or `-2.0` cannot be passed to it; only variables (or pointers to values) may be passed as `byref` parameters.
+
 ### BYTE
 
 A signed 8 bit integer, occupying one byte of computer memory. The unsigned version of this is `ubyte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### BYVAL
+
+Specifies that a parameter is to be passed by value. This is the default for simple integers, floats, and strings, but arrays and classes are normally passed by reference. If `byval` is specified for such a parameter, a copy will be made of the array or class and that copy will be passed in to the function. This can be expensive if the parameter is large.
 
 ### CASE
 

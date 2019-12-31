@@ -523,6 +523,9 @@ adjustFuncCall(AST *ast)
 	const char *name = GetIdentifierName(templident);
 	if (methodref) {
             AST *modtyp = ExprType(methodref);
+            if (IsRefType(modtyp)) {
+                modtyp = modtyp->left;
+            }
 	    if (!IsClassType(modtyp)) {
 	        ERROR(methodref, "Unable to determine class type");
 	        return;
@@ -740,9 +743,12 @@ doBasicTransform(AST **astptr)
     case AST_METHODREF:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
-        if (IsPointerType(ExprType(ast->left))) {
-	  // WARNING(ast, "Needs a pointer dereference");
-	  ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
+        {
+            AST *typ = ExprType(ast->left);
+            if (IsPointerType(typ) && !IsRefType(typ)) {
+                // WARNING(ast, "Needs a pointer dereference");
+                ast->left = NewAST(AST_ARRAYREF, ast->left, AstInteger(0));
+            }
         }
         break;
     case AST_USING:

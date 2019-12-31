@@ -426,7 +426,6 @@ AdjustParamForByVal(AST *param)
 %token BAS_EXIT       "exit"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
-%token BAS_GET        "get"
 %token BAS_GOTO       "goto"
 %token BAS_GOSUB      "gosub"
 %token BAS_IF         "if"

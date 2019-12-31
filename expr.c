@@ -1933,6 +1933,9 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         AST *objtype;
         objref = expr->left;
         objtype = ExprType(objref);
+        while (objtype && IsRefType(objtype)) {
+            objtype = objtype->left;
+        }
         thename = GetIdentifierName(expr->right);
         if (!thename) {
             return NULL;
