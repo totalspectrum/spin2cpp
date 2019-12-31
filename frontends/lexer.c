@@ -3075,6 +3075,8 @@ again:
         } else if (c2 == 'b' || c2 == 'B') {
             parseNumber(L, 2, &ast->d.ival);
             c = BAS_INTEGER;
+        } else if (c2 == '=') {
+            c = BAS_AND_ASSIGN;
         } else {
             lexungetc(L, c2);
         }
@@ -3164,6 +3166,25 @@ again:
             }
         } else {
             lexungetc(L, c2);
+        }
+    } else if (lexpeekc(L) == '=' && strchr("+-*/", c) != 0) {
+        (void)lexgetc(L); // get the =
+        switch (c) {
+        case '+':
+            c = BAS_ADD_ASSIGN;
+            break;
+        case '-':
+            c = BAS_SUB_ASSIGN;
+            break;
+        case '/':
+            c = BAS_DIV_ASSIGN;
+            break;
+        case '*':
+            c = BAS_MUL_ASSIGN;
+            break;
+        default:
+            SYNTAX_ERROR("internal lexer error");
+            break;
         }
     }
     L->firstNonBlank = L->colCounter;

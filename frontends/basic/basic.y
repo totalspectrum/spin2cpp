@@ -467,6 +467,13 @@ BuildOnGotoCases(AST *exprlist)
 %token BAS_SHL        "<<"
 %token BAS_SHR        ">>"
 
+%token BAS_ADD_ASSIGN "+="
+%token BAS_SUB_ASSIGN "-="
+%token BAS_MUL_ASSIGN "*="
+%token BAS_DIV_ASSIGN "/="
+%token BAS_AND_ASSIGN "&="
+%token BAS_OR_ASSIGN "|="
+%token BAS_XOR_ASSIGN "^="
 
 %left BAS_EOLN
 %left BAS_FUNCTION
@@ -644,11 +651,40 @@ statement:
     { $$ = $1; }
 ;
 
+assignment_operator
+	: '='
+            { $$ = AstAssign(NULL, NULL); }
+	| BAS_MUL_ASSIGN
+            { $$ = AstOpAssign('*', NULL, NULL); }
+	| BAS_DIV_ASSIGN
+            { $$ = AstOpAssign('/', NULL, NULL); }
+	| BAS_ADD_ASSIGN
+            { $$ = AstOpAssign('+', NULL, NULL); }
+	| BAS_SUB_ASSIGN
+            { $$ = AstOpAssign('-', NULL, NULL); }
+	| BAS_AND_ASSIGN
+            { $$ = AstOpAssign('&', NULL, NULL); }
+	| BAS_XOR_ASSIGN
+            { $$ = AstOpAssign('^', NULL, NULL); }
+	| BAS_OR_ASSIGN
+            { $$ = AstOpAssign('|', NULL, NULL); }
+	;
+
 simple_assign_statement:
-  varexpr '=' expr
-    { $$ = AstAssign($1, $3); }
+  varexpr assignment_operator expr
+    {
+        AST *op = $2;
+        op->left = $1;
+        op->right = $3;
+        $$ = op;
+    }
   | register_expr '=' expr
-    { $$ = AstAssign($1, $3); }
+    {
+        AST *op = $2;
+        op->left = $1;
+        op->right = $3;
+        $$ = op;
+    }
   | register_expr '=' BAS_INPUT
     { $$ = AstAssign($1, AstInteger(0)); }
   | register_expr '=' BAS_OUTPUT
