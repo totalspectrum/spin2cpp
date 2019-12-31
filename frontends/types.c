@@ -793,11 +793,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 // to have type desttype by introducing any
 // necessary casts
 // returns the new type (should normally be desttype)
+// NOTE: if **astptr is NULL, then we cannot do coercion
 //
 AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
 {
     ASTReportInfo saveinfo;
-    AST *expr = *astptr;
+    AST *expr = astptr ? *astptr : NULL;
     const char *msg;
     int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_CFAMILY_C);
     
@@ -821,6 +822,10 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (IsRefType(desttype) && kind == AST_FUNCCALL) {
         // passing to reference parameter
+        if (!astptr) {
+            ERROR(line, "Unable to pass multiple function result to reference parameter");
+            return NULL;
+        }
         if (desttype->kind == AST_COPYREFTYPE) {
             // need to create a temporary duplicate
             AST *sizeExpr = AstInteger(TypeSize(srctype));
@@ -839,14 +844,22 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     AstReportAs(expr, &saveinfo);
     if (IsFloatType(desttype)) {
         if (IsIntType(srctype)) {
+            if (!astptr) {
+                ERROR(line, "Unable to convert multiple function result to float");
+                return ast_type_float;
+            }
             *astptr = domakefloat(srctype, expr);
             srctype = ast_type_float;
         }
     }
     // allow floats to be cast as ints
     if (IsIntType(desttype) && IsFloatType(srctype)) {
-        expr = dofloatToInt(expr);
-        *astptr = expr;
+        if (!astptr) {
+            ERROR(line, "Unable to convert float function result to integer");
+        } else {
+            expr = dofloatToInt(expr);
+            *astptr = expr;
+        }
         AstReportDone(&saveinfo);
         return desttype;
     }
@@ -854,21 +867,33 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     // automatically cast arrays to pointers if necessary
     if (IsArrayType(srctype) && (IsPointerType(desttype) || !desttype)) {
         srctype = ArrayToPointerType(srctype);
-        expr = ArrayAddress(expr);
-        *astptr = expr;
+        if (!astptr) {
+            ERROR(line, "Unable to convert array function result to pointer");
+        } else {
+            expr = ArrayAddress(expr);
+            *astptr = expr;
+        }
     }
     // similarly for classes in some languages
     if (IsClassType(srctype) && (IsPointerType(desttype) || !desttype) && ( IsBasicLang(lang) || IsPythonLang(lang) ))
       {
           srctype = ClassToPointerType(srctype);
-          expr = StructAddress(expr);
-          *astptr = expr;
+          if (!astptr) {
+              ERROR(line, "Unable to convert class function result to pointer");
+          } else {
+              expr = StructAddress(expr);
+              *astptr = expr;
+          }
       }
     
     if (IsFunctionType(srctype) && IsPointerType(desttype) && !IsPointerType(srctype)) {
         srctype = FunctionPointerType(srctype);
-        expr = FunctionAddress(expr);
-        *astptr = expr;
+        if (astptr) {
+            expr = FunctionAddress(expr);
+            *astptr = expr;
+        } else {
+            ERROR(line, "Unable to convert function result to pointer");
+        }
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
@@ -891,14 +916,22 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             int lsize = TypeSize(desttype);
             int rsize = TypeSize(srctype);
             if (lsize > rsize) {
-                if (IsUnsignedType(srctype)) {
-                    *astptr = dopromote(expr, rsize, lsize, K_ZEROEXTEND);
+                if (astptr) {
+                    if (IsUnsignedType(srctype)) {
+                        *astptr = dopromote(expr, rsize, lsize, K_ZEROEXTEND);
+                    } else {
+                        *astptr = dopromote(expr, rsize, lsize, K_SIGNEXTEND);
+                    }
                 } else {
-                    *astptr = dopromote(expr, rsize, lsize, K_SIGNEXTEND);
+                    WARNING(line, "Unable to widen function result");
                 }
             } else if (rsize == 8 && lsize < rsize) {
                 // narrowing cast
-                *astptr = donarrow(expr, rsize, lsize, IsUnsignedType(srctype));
+                if (astptr) {
+                    *astptr = donarrow(expr, rsize, lsize, IsUnsignedType(srctype));
+                } else {
+                    ERROR(line, "Unable to narrow parameter");
+                }
             }
         }
     }
@@ -1132,12 +1165,11 @@ AST *CheckTypes(AST *ast)
                     expectType = NULL;
                     if (tupleType) {
                         passedType = tupleType->left;
-                        tupleType = tupleType->right;
                     } else {
                         passedType = ExprType(actualParam);
                         if (passedType && passedType->kind == AST_TUPLE_TYPE) {
                             // a tuple substitutes for multiple parameters
-                            tupleType = passedType->right;
+                            tupleType = passedType;
                             passedType = passedType->left;
                         }
                     }
@@ -1161,11 +1193,19 @@ AST *CheckTypes(AST *ast)
                             expectType = ast_type_const_generic;
                         }
                     }
-                    CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                    if (tupleType) {
+                        // cannot coerce function arguments, really
+                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType);
+                        tupleType = tupleType->right;
+                    } else {
+                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                    }
+                    if (!tupleType) {
+                        actualParamList = actualParamList->right;
+                    }
                     if (calledParamList) {
                         calledParamList = calledParamList->right;
                     }
-                    actualParamList = actualParamList->right;
                 }
                 ltype = functype ? functype->left : NULL;
             } else {

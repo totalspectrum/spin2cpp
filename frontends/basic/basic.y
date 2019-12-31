@@ -347,6 +347,24 @@ BuildOnGotoCases(AST *exprlist)
     return list;
 }
 
+static AST *
+AdjustParamForByRef(AST *param)
+{
+    AST *typ = param->left;
+    param->left = NewAST(AST_REFTYPE, typ, NULL);
+    return param;
+}
+
+static AST *
+AdjustParamForByVal(AST *param)
+{
+    AST *typ = param->left;
+    if (typ && (IsClassType(typ) || IsArrayType(typ))) {
+        param->left = NewAST(AST_COPYREFTYPE, typ, NULL);
+    }
+    return param;
+}
+
 %}
 
 %pure-parser
@@ -1844,6 +1862,15 @@ paramdecl1:
   ;
 
 paramitem:
+  paramvar
+    { $$ = $1; }
+  | BAS_BYREF paramvar
+    { $$ = AdjustParamForByRef($2); }
+  | BAS_BYVAL paramvar
+    { $$ = AdjustParamForByVal($2); }
+;
+
+paramvar:
   BAS_IDENTIFIER
     { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), $1); }
   | BAS_IDENTIFIER '=' expr
