@@ -106,6 +106,7 @@ Aliases spinalias[] = {
     { "_pinl", "__builtin_propeller_drvl" },    
     { "_pinh", "__builtin_propeller_drvh" },
     { "_pinnot", "__builtin_propeller_drvnot" },
+    { "_pinr", "__builtin_propeller_pinr" },
     
     { "_waitx", "__builtin_propeller_waitx" },
     
@@ -150,6 +151,7 @@ Aliases spin2alias[] = {
     { "waitx", "__builtin_propeller_waitx" },
     
     /* for C usage */
+    { "_pinf", "__builtin_propeller_flt" },
     { "_pinrnd", "__builtin_propeller_drvrnd" },
 
     /* obsolete aliases */
