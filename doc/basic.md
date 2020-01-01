@@ -232,7 +232,7 @@ xor
 
 ### Predefined functions and variables
 
-A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion in readers of your code.
+A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
 clkfreq
 clkset
@@ -399,19 +399,6 @@ This is the integer modulo operator; `a mod b` is the remainder when `a` is divi
 
 Any floating point arguments will be converted to integer before `mod` is applied.
 
-#### Comparison operators
-
-
-In general for all of the comparison operators, if either `a` or `b` is a float, the comparison is done in floating point. If both `a` and `b` are strings then the comparison is done on the usual lexicographical ordering of strings. Comparisons produce `0` if false, and `-1` (all bits set) if true.
-
-`a=b` compares `a` and `b` for equality. `a<>b` compares for inequality. `!=` means the same as `<>`, and `==` means the same as `=`.
-
-`a<b` and `a<=b` compare for `a` less than or less than or equal to `b`.
-
-`a>b` and `a>=b` compare for `a` greater than or greater than or equal to `b`.
-
-`=<` means the same as `<=`; similarly `=>` means the same as `>=`.
-
 #### Logical operators
 
 All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
@@ -426,6 +413,29 @@ All of the logical operators work only on integers. If given a float argument, t
 
 `a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
 
+#### Comparison operators
+
+
+In general for all of the comparison operators, if either `a` or `b` is a float, the comparison is done in floating point. If both `a` and `b` are strings then the comparison is done on the usual lexicographical ordering of strings. Comparisons produce `0` if false, and `-1` (all bits set) if true.
+
+`a=b` compares `a` and `b` for equality. `a<>b` compares for inequality. `!=` means the same as `<>`, and `==` means the same as `=`.
+
+`a<b` and `a<=b` compare for `a` less than or less than or equal to `b`.
+
+`a>b` and `a>=b` compare for `a` greater than or greater than or equal to `b`.
+
+`=<` means the same as `<=`; similarly `=>` means the same as `>=`.
+
+#### Boolean operators
+
+`a andalso b` evaluates `a`, and then only if `a` is true (nonzero) it evaluates `b`. It is similar to `and` but avoids evaluating one argument if it is not necessary. This is useful if the second argument is an expression which is only valid if the first argument is true, e.g. something like:
+```
+   if a <> nil andthen a(0) == 2 then
+      ' do something
+   end if
+```
+
+`a orelse b` evaluates `a`, and then only if `a` is false (zero) it evaluates `b`. It is similar to `or` but avoids evaluating one argument if it is not necessary.
 #### Assignment operators
 
 Normally assignment is performed with the `=` symbol:
@@ -532,8 +542,7 @@ dim ser as class using "FullDuplexSerial.spin"
 ```
 declares the variable `ser` as a class, using the Spin variables and methods from the given file. This also works for `.bas` or `.c` files. Any functions declared in the file become methods of the new class.
 
-Classes may also be declared directly, with the variables and methods of the class specified between
-`class` and `end class`
+Classes may also be declared directly, with the variables and methods of the class specified between `class` and `end class`
 ```
 class counter
   dim as integer c
@@ -576,6 +585,32 @@ function Add(a as integer, b as integer) as integer
 end function
 ```
 It is often useful for documentation to explicitly specify all types like this, even when the default types specified by the variable names would work.
+
+#### Multiple return values
+
+Functions may return multiple values; for example, a function to compute both the quotient and remainder of division could be defined as:
+```
+function quotrem(a as integer, b as integer) as integer,integer
+  return a/b, a mod b
+end function
+```
+This may be used like:
+```
+q, r = quotrem(x, y)
+```
+
+#### Default arguments
+
+Parameters to functions or subroutines may be given default arguments:
+```
+function incr(x, n=1)
+  return x + n
+end function
+print incr(2, 2)
+print incr(2)
+```
+prints `4` and then `3`; the invocation of `incr(2)` behaves the same as `incr(2, 1)`, because the second parameter (`n`) has a default value of 1.
+
 
 ### Memory allocation
 
