@@ -1,0 +1,12 @@
+Initial counter value=1
+inside sub: counter=2
+Outside sub counter value=2
+inside sub: counter=3
+Outside sub counter value=2
+
+p=91 b$=mval90
+3: mval2 -2
+1: mval0 -3
+3: uval2 99
+4
+3
