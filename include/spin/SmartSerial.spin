@@ -27,11 +27,11 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode, bit_mode
   tx_pin := txpin
   txmode := _txmode
   rxmode := _rxmode
-  _wrpin(txmode, txpin)
-  _wxpin(bit_mode, txpin)
+  _wrpin(txpin, txmode)
+  _wxpin(txpin, bit_mode)
   _dirh(txpin)
-  _wrpin(rxmode, rxpin)
-  _wxpin(bit_mode, rxpin)
+  _wrpin(rxpin, rxmode)
+  _wxpin(rxpin, bit_mode)
   _dirh(rxpin)
 
   return 1
@@ -87,16 +87,16 @@ PUB start_default(baudrate)
   
 PUB tx(val) | txpin
   txpin := tx_pin
-  _wypin(val, txpin)
+  _wypin(txpin, val)
   _waitx(1)
   txflush
 
 PUB txflush | txpin, z
   txpin := tx_pin
-  z := 1
-  repeat while z <> 0
+  repeat
     z := _pinr(txpin)
-
+  while z == 0
+  
 ' check if byte received (never waits)
 ' returns -1 if no byte, otherwise byte
 
