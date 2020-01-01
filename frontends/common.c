@@ -96,6 +96,18 @@ Aliases spinalias[] = {
     { "locknew", "__builtin_locknew" },
     { "lockret", "__builtin_lockret" },
 #endif
+
+    { "_dirl", "__builtin_propeller_dirl" },
+    { "_dirh", "__builtin_propeller_dirh" },
+    { "_dirnot", "__builtin_propeller_dirnot" },
+    { "_dir", "__builtin_propeller_dir" },
+
+    { "_pinw", "__builtin_propeller_drv" },
+    { "_pinl", "__builtin_propeller_drvl" },    
+    { "_pinh", "__builtin_propeller_drvh" },
+    { "_pinnot", "__builtin_propeller_drvnot" },
+    
+    { "_waitx", "__builtin_propeller_waitx" },
     
     /* obsolete aliases */
     { "dirl_", "__builtin_propeller_dirl" },
@@ -113,10 +125,36 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
     
+    { "pinw", "__builtin_propeller_drv" },
+    { "pinl", "__builtin_propeller_drvl" },    
+    { "pinh", "__builtin_propeller_drvh" },
+    { "pinnot", "__builtin_propeller_drvnot" },
+    { "pinrnd", "__builtin_propeller_drvrnd" },
+    { "pinr", "__builtin_propeller_pinr" },
+    
+    { "getct", "_getcnt" },
+
+    { "wrpin", "_wrpin" },
+    { "wxpin", "_wxpin" },
+    { "wypin", "_wypin" },
+    
+    { "akpin", "__builtin_propeller_akpin" },
+    { "rdpin", "__builtin_propeller_rdpin" },
+    { "rqpin", "__builtin_propeller_rqpin" },
+
+    { "rotxy", "_rotxy" },
+    { "polxy", "_polxy" },
+    { "xypol", "_xypol" },
+
+    { "cogatn", "__builtin_propeller_cogatn" },
+    { "waitx", "__builtin_propeller_waitx" },
+    
+    /* for C usage */
+    { "_pinrnd", "__builtin_propeller_drvrnd" },
+
+    /* obsolete aliases */
     { "dirrnd_", "__builtin_propeller_dirrnd" },
-
     { "drvrnd_", "__builtin_propeller_drvrnd" },
-
     { "outl_", "__builtin_propeller_outl" },
     { "outh_", "__builtin_propeller_outh" },
     { "outrnd_", "__builtin_propeller_outrnd" },

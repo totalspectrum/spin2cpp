@@ -68,3 +68,19 @@ function incr(x, n=1)
 end function
 print incr(2, 2)
 print incr(2)
+
+doexit 0
+
+''
+'' send a special exit status for propeller-load
+'' FF 00 xx, where xx is the exit status
+''
+
+sub doexit(status)
+  print \255; \0; \status;
+  ' just loop here so that quickstart board does not
+  ' let the pins float
+  do
+  loop
+end sub
+

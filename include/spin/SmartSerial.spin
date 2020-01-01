@@ -19,20 +19,20 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode, bit_mode
   else
     bitperiod := (CLKFREQ / baudrate)
 
-  dirl_(txpin)
-  dirl_(rxpin)
+  _dirl(txpin)
+  _dirl(rxpin)
   cur_bitrate := bitperiod
   bit_mode := 7 + (bitperiod << 16)
   rx_pin := rxpin
   tx_pin := txpin
   txmode := _txmode
   rxmode := _rxmode
-  wrpin_(txmode, txpin)
-  wxpin_(bit_mode, txpin)
-  dirh_(txpin)
-  wrpin_(rxmode, rxpin)
-  wxpin_(bit_mode, rxpin)
-  dirh_(rxpin)
+  _wrpin(txmode, txpin)
+  _wxpin(bit_mode, txpin)
+  _dirh(txpin)
+  _wrpin(rxmode, rxpin)
+  _wxpin(bit_mode, rxpin)
+  _dirh(rxpin)
 
   return 1
 
@@ -40,8 +40,8 @@ PUB getrate
   return cur_bitrate
 
 PRI autobaud(pin) | a, b, c, delay, port, mask
-  dirl_(pin)   ' set pin low
-  waitx_(1000) ' wait to settle
+  _dirl(pin)   ' set pin low
+  _waitx(1000) ' wait to settle
   if pin => 32
     port := 1
     mask := 1<<(pin-32)
@@ -78,7 +78,7 @@ PRI autobaud(pin) | a, b, c, delay, port, mask
     delay := c
 
   ' now want to wait for idle
-  waitx_(16*delay)
+  _waitx(16*delay)
   return delay
   
 ' start with default serial pins and mode
@@ -87,18 +87,15 @@ PUB start_default(baudrate)
   
 PUB tx(val) | txpin
   txpin := tx_pin
-  wypin_(val, txpin)
-  waitx_(1)
+  _wypin(val, txpin)
+  _waitx(1)
   txflush
 
 PUB txflush | txpin, z
   txpin := tx_pin
   z := 1
   repeat while z <> 0
-    asm
-      testp txpin wc
-   if_c mov z, #0
-    endasm
+    z := _pinr(txpin)
 
 ' check if byte received (never waits)
 ' returns -1 if no byte, otherwise byte

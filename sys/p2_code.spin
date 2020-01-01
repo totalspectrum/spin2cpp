@@ -289,4 +289,17 @@ pri _xypol(x, y) : d, angle
     getqx d
     getqy angle
   endasm
-  
+
+' versions with the Spin order of parameters
+pri _wrpin(pin, val)
+  asm
+    wrpin val, pin
+  endasm
+pri _wxpin(pin, val)
+  asm
+    wxpin val, pin
+  endasm
+pri _wypin(pin, val)
+  asm
+    wypin val, pin
+  endasm

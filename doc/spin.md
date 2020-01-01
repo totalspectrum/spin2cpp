@@ -355,27 +355,27 @@ The `coginit` (and `cognew`) functions in Fastspin can start functions from othe
 
 ## New intrinsics
 
-Fastspin supports some new builtin functions. These typically end with an underscore to avoid confusion with existing variable names.
+Fastspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in P2 mode many of these are available without the leading underscore.
 
-### DRV_
+### _PINW
 
-`drv_(p, c)` forces `p` to be an output and sets it to 0 if `c` is 0 or 1 if `c` is 1. If c is any other value the result is undefined. Supported for both P1 and P2
+`_pinw(p, c)` forces `p` to be an output and sets it to 0 if `c` is 0 or 1 if `c` is 1. If c is any other value the result is undefined. Supported for both P1 and P2
 
-### DRVL_
+### _PINL
 
-`drvl_(p)` drives pin `p` low, i.e. it forces `p` to be an output and sets it to 0. This is supported for both P1 and P2.
+`_pinl(p)` drives pin `p` low, i.e. it forces `p` to be an output and sets it to 0. This is supported for both P1 and P2.
 
-### DRVH_
+### _PINH
 
-`drvh_(p)` drives pin `p` high, i.e. it forces `p` to be an output and sets it to 1. This is supported for both P1 and P2.
+`_pinh(p)` drives pin `p` high, i.e. it forces `p` to be an output and sets it to 1. This is supported for both P1 and P2.
 
-### DRVNOT_
+### _PINNOT
 
-`drvnot_(p)` forces `p` to be an output and inverts it. This is supported for both P1 and P2.
+`_pinnot(p)` forces `p` to be an output and inverts it. This is supported for both P1 and P2.
 
-### WAITX_
+### _WAITX
 
-`waitx_(n)` waits for `n` cycles, plus the cycle time required for the instruction. This is 2 cycles on P2, and 8 cycles on P1.
+`_waitx(n)` waits for `n` cycles, plus the cycle time required for the instruction. This is 2 cycles on P2, and 8 cycles on P1.
 
 
 
