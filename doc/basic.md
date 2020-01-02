@@ -248,6 +248,7 @@ mid$
 outa
 outb
 pausems
+rdpin
 right$
 rnd
 sendrecvdevice
@@ -258,6 +259,10 @@ val%
 waitcnt
 waitpeq
 waitpne
+waitx
+wrpin
+wxpin
+wypin
 ```
 
 ### Variable, Subroutine, and Function names
@@ -1804,6 +1809,10 @@ Force a pin to be output as 1.
   pinhi(p)
 ```
 
+### PINRND (P2 only)
+
+Forces a pin to be an output, and sets its value randomly to either 0 or 1. This function is only available on P2.
+
 ### PINSET
 
 Force a pin to be an output, and set its value (new value must be either 0 or 1).
@@ -1891,6 +1900,10 @@ print using "%%%%"; x
 This keyword is reserved for future use.
 
 The statements in the top level of the file (not inside any subroutine or function) are placed in a method called `program`. This is only really useful for calling them from another language (for example a Spin program using a BASIC program as an object).
+
+### RDPIN (available on P2 only)
+
+`rdpin(p)` reads the current value of the smartpin `p` Z register.
 
 ### READ
 
@@ -2159,11 +2172,11 @@ Propeller specific builtin function. Waits until the cycle counter is a specific
   waitcnt(getcnt() + clkfreq) ' wait one second
 ```
 
-### WAITPEQ
+### WAITPEQ (only available on P1)
 
 Propeller specific builtin function. Waits for pins to have a specific value (given by a bit mask). Same as the Spin `waitpeq` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
 
-### WAITPNE
+### WAITPNE (only available on P1)
 
 Propeller specific builtin function. Waits for pins to not have a specific value (given by a bit mask). Same as the Spin `waitpne` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
 
@@ -2200,6 +2213,18 @@ or
 ### WORD
 
 Reserved for use in inline assembler.
+
+### WRPIN (only available on P2)
+
+Writes a value to a smartpin register. `wrpin(pin, val)` writes the value `val` to the smartpin.
+
+### WXPIN (only available on P2)
+
+Writes a value to a smartpin X register. `wxpin(pin, val)` writes the value `val` to the smartpin.
+
+### WYPIN (only available on P2)
+
+Writes a value to a smartpin Y register. `wypin(pin, val)` writes the value `val` to the smartpin.
 
 ### XOR
 
