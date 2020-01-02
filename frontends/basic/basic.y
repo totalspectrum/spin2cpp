@@ -369,6 +369,7 @@ AdjustParamForByVal(AST *param)
 
 %pure-parser
 
+%token BAS_EMPTY      "_"
 %token BAS_IDENTIFIER "identifier"
 %token BAS_LABEL      "label"
 %token BAS_INTEGER    "integer number"
@@ -692,15 +693,15 @@ assignment_operator
 	;
 
 
-varexprlist:
-  varexpr ',' multivars
+varassignlist:
+  varassigntarget ',' multivars
       { $$ = NewAST(AST_EXPRLIST, $1, $3); }
   ;
 
 multivars:
-  varexpr
+  varassigntarget
       { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
-  | multivars ',' varexpr
+  | multivars ',' varassigntarget
       { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
   ;
 
@@ -713,7 +714,7 @@ simple_assign_statement:
         op->right = $3;
         $$ = op;
     }
-  | varexprlist '=' exprlist
+  | varassignlist '=' exprlist
   {
       $$ = AstAssign($1, $3);
   }
@@ -1247,6 +1248,13 @@ varexpr:
     { $$ = NewAST(AST_METHODREF, $1, $3); }
   | basetypename '.' BAS_IDENTIFIER
     { $$ = NewAST(AST_METHODREF, $1, $3); }
+;
+
+varassigntarget:
+  varexpr
+    { $$ = $1; }
+  | BAS_EMPTY
+    { $$ = NewAST(AST_EMPTY, NULL, NULL); }
 ;
 
 pinrange:
