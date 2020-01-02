@@ -4,6 +4,7 @@ Version 4.1.0
 - Added ANDALSO and ORELSE operators to BASIC
 - Added +=, -=, *=, /= assignment operators to BASIC
 - Allow multiple assignment and functions which return multiple values in BASIC
+- Implemented _ for skipping assignments in multiple assignments
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code

@@ -167,6 +167,17 @@ static char *cleanname(const char *name)
     return temp;
 }
 
+static Operand *
+EmptyOperand(void)
+{
+    return NewImmediate(0);
+}
+
+static bool IsEmptyOperand(Operand *op)
+{
+    return op->kind == IMM_INT && op->val == 0;
+}
+
 const char *
 IdentifierLocalName(Function *func, const char *name)
 {
@@ -1071,7 +1082,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
               stype = SYM_RESULT;
           } else {
               ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->user_name);
-              return NewImmediate(0);
+              return EmptyOperand();
           }
           /* fall through */
       case SYM_LOCALVAR:
@@ -1126,7 +1137,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
       name = VarName(expr);
       if (!name) {
           ERROR(expr, "Internal error, unexpected expression type for identifier");
-          return NewImmediate(0);
+          return EmptyOperand();
       }
   }
   sym = LookupSymbolInFunc(func, name);
@@ -1206,7 +1217,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
         
         if (!IsFunctionType(functype)) {
             ERROR(functype, "Expected function type");
-            return NewImmediate(0);
+            return EmptyOperand();
         }
         numresults = FuncNumResults(functype);
         astlist = functype->right;
@@ -1223,7 +1234,7 @@ static Operand *GetFunctionParameterForCall(IRList *irl, Function *func, AST *fu
                     sym = FindSymbol(&func->localsyms, name);
                     if (!sym) {
                         ERROR(NULL, "Internal error: symbol %s not found", name);
-                        return NewImmediate(0);
+                        return EmptyOperand();
                     }
                     if (sym->offset != offset) {
                         ERROR(NULL, "Internal error: offset %d is not sym offset %d", offset, sym->offset);
@@ -2236,7 +2247,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   case K_DECODE:
       ERROR(rhs, "Internal error: decode operators should have been handled in spin transormations");
-      return NewImmediate(0);
+      return EmptyOperand();
 
   case K_BOOL_NOT:
   case K_BOOL_AND:
@@ -2302,7 +2313,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   }
   default:
     ERROR(lhs, "Unsupported operator %d", op);
-    return NewImmediate(0);
+    return EmptyOperand();
   }
 }
 
@@ -3498,6 +3509,9 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
         r = dest;
     }
     return r;
+  case AST_EMPTY:
+      r = EmptyOperand();
+      return r;
   case AST_VA_START:
   {   // va_start(x, n) -> mov x, __func__varargs
       Operand *src = CompileIdentifier(irl, expr); // VA_START gets __func__varargs
@@ -3681,7 +3695,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       name = GetUserIdentifierName(expr->right);
       if (!IsClassType(objtype)) {
           ERROR(expr, "Request for member %s in something that is not a class", name);
-          return NewImmediate(0);
+          return EmptyOperand();
       }
       base = CompileExpression(irl, expr->left, NULL);
       sym = LookupMemberSymbol(expr, objtype, name, &P);
@@ -3811,6 +3825,9 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     Operand *src = origsrc;
     IR *ir = NULL;
 
+    if (IsEmptyOperand(origdst)) {
+        return ir;
+    }
     if (src->kind == IMM_HUB_LABEL) {
         src = NewImmediatePtr(NULL, src);
     }

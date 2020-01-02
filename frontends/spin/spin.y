@@ -167,6 +167,7 @@ SpinRetType(AST *funcdef)
 %token SP_ROUND      "ROUND"
 %token SP_CONSTANT   "constant"
 %token SP_RANDOM     "??"
+%token SP_EMPTY      "_"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -982,17 +983,24 @@ lhs: identifier
   ;
 
 lhsseq:
-  '(' lhs ',' lhsseqcont ')'
+  '(' lhssingle ',' lhsseqcont ')'
     { $$ = NewAST(AST_EXPRLIST, $2, $4); }
-  | lhs ',' lhsseqcont
+  | lhssingle ',' lhsseqcont
     { $$ = NewAST(AST_EXPRLIST, $1, $3); }
   ;
 
 lhsseqcont:
-  lhs
+  lhssingle
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
-  | lhsseqcont ',' lhs
+  | lhsseqcont ',' lhssingle
     { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+;
+
+lhssingle:
+    lhs
+       { $$ = $1; }
+    | SP_EMPTY
+       { $$ = NewAST(AST_EMPTY, NULL, NULL); }
 ;
 
 memref:

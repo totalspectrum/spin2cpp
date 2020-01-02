@@ -1337,6 +1337,8 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_spin_words[] = {
+    { "_", SP_EMPTY },
+    
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
     { "and", SP_AND },

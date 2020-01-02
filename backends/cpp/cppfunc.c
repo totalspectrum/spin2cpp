@@ -772,8 +772,10 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
             flexbuf_printf(f, "; ");
             n = 0;
             while (lhs) {
-                PrintLHS(f, lhs->left, PRINTEXPR_ASSIGNMENT);
-                flexbuf_printf(f, " = tmp__.v%d; ", n);
+                if (lhs->left && lhs->left->kind != AST_EMPTY) {
+                    PrintLHS(f, lhs->left, PRINTEXPR_ASSIGNMENT);
+                    flexbuf_printf(f, " = tmp__.v%d; ", n);
+                }
                 n++;
                 lhs = lhs->right;
             }
