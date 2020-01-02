@@ -1501,16 +1501,10 @@ compare_expr:
 bit_expr:
   compare_expr
     { $$ = $1; }
-  | bit_expr '&' compare_expr
-    { $$ = AstOperator('&', $1, $3); }
   | bit_expr BAS_AND compare_expr
     { $$ = AstOperator('&', $1, $3); }
-  | bit_expr '|' compare_expr
-    { $$ = AstOperator('|', $1, $3); }
   | bit_expr BAS_OR compare_expr
     { $$ = AstOperator('|', $1, $3); }
-  | bit_expr '^' compare_expr
-    { $$ = AstOperator('^', $1, $3); }
   | bit_expr BAS_XOR compare_expr
     { $$ = AstOperator('^', $1, $3); }
 ;

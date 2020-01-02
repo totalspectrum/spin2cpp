@@ -408,11 +408,11 @@ Any floating point arguments will be converted to integer before `mod` is applie
 
 All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
 
-`a and b` is the bitwise and of `a` and `b`. This may also be written as `a & b`.
+`a and b` is the bitwise and of `a` and `b`.
 
-`a or b` is the bitwise (inclusive) or of `a` and `b`. This may also be written as `a | b`.
+`a or b` is the bitwise (inclusive) or of `a` and `b`.
 
-`a xor b` is the bitwise exclusive or of `a` and `b` This may also be written as `a ^ b`.
+`a xor b` is the bitwise exclusive or of `a` and `b`.
 
 `a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this.
 
