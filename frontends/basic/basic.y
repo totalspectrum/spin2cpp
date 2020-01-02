@@ -716,7 +716,7 @@ simple_assign_statement:
     }
   | varassignlist '=' exprlist
   {
-      $$ = AstAssign($1, $3);
+      $$ = AstAssignList($1, $3, $2);
   }
   | register_expr '=' expr
     {

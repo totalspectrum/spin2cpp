@@ -1463,6 +1463,8 @@ struct reservedword {
 };
 
 struct reservedword basic_keywords[] = {
+  { "_", BAS_EMPTY },
+  
   { "abs", BAS_ABS },
   { "and", BAS_AND },
   { "andalso", BAS_ANDALSO },
