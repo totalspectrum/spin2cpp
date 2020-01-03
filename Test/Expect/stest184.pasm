@@ -465,11 +465,9 @@ LR__0024
 	rdword	__system___gc_collect__cse__0062, __system___gc_collect__cse__0061
 	andn	__system___gc_collect__cse__0062, #32
 	wrword	__system___gc_collect__cse__0062, __system___gc_collect__cse__0061
-	mov	_system___gc_collect_tmp001_, __system___gc_collect_ptr
-	mov	arg01, _system___gc_collect_tmp001_
+	mov	arg01, __system___gc_collect_ptr
 	call	#__system___gc_nextblockptr
-	mov	_system___gc_collect_tmp002_, result1
-	mov	__system___gc_collect_ptr, _system___gc_collect_tmp002_ wz
+	mov	__system___gc_collect_ptr, result1 wz
  if_ne	jmp	#LR__0024
 LR__0025
 	mov	_system___gc_collect_tmp001_, #0

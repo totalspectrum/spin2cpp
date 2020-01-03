@@ -464,7 +464,8 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     for (i = 0; i < level; i++) {
         if (ir == stack[i]) {
             // we've come around a loop
-            return IsLocalOrArg(op);
+            // registers may be considered dead, labels not
+            return IsRegister(op->kind);
         }
     }
     if (IsDummy(ir)) continue;
@@ -542,9 +543,9 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         if (!doIsDeadAfter((IR *)ir->aux, op, level+1, stack)) {
             return false;
         }
-#if 0        
-        // we can't actually do this because there might be
-        // earlier conditional jumps to here
+#if 1
+        // be very careful about potential conditional jumps to
+        // after this point, but we did check for that above
         if (ir->cond == COND_TRUE && ir->opc == OPC_JUMP) {
             return true;
         }

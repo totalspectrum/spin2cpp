@@ -33,8 +33,7 @@ LR__0004
 	test	arg01, __system___lfsr_backward_a wc
 	rcr	arg01, #1
 	djnz	__system___lfsr_backward__idx__90012, #LR__0004
-	mov	result1, arg01
-	mov	_main3_s, result1
+	mov	_main3_s, arg01
 	abs	outb, _main3_s
 	jmp	#LR__0003
 _main3_ret

@@ -9,16 +9,11 @@ _checkit
 LR__0001
 	mov	_var02, ina
 	and	_var02, #255
-	mov	_var03, _var02
-	cmp	_var03, #121 wz
+	cmp	_var02, #121 wz
  if_e	jmp	#LR__0002
-	cmp	_var03, #89 wz
- if_e	jmp	#LR__0002
-	mov	_var04, _var01
-	mov	_var05, _var01
-	add	_var05, #1
-	mov	_var01, _var05
-	jmp	#LR__0001
+	cmp	_var02, #89 wz
+ if_ne	add	_var01, #1
+ if_ne	jmp	#LR__0001
 LR__0002
 	mov	muldiva_, _var01
 	mov	muldivb_, #27
@@ -60,11 +55,5 @@ COG_BSS_START
 _var01
 	res	1
 _var02
-	res	1
-_var03
-	res	1
-_var04
-	res	1
-_var05
 	res	1
 	fit	496
