@@ -3121,6 +3121,7 @@ CompileCoginit(IRList *irl, AST *expr)
         remote = CompileGetFunctionInfo(irl, func, &baseobjptr, &offset, &funcptr, &functype);
         fobjptr = NewFunctionTempRegister();
         if (!baseobjptr) {
+            ValidateObjbase();
             baseobjptr = objbase;
         }
         EmitMove(irl, fobjptr, baseobjptr);
