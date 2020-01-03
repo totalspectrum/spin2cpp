@@ -191,6 +191,13 @@ Aliases basicalias[] = {
     { "rnd", "_basic_rnd" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
+
+    { "cos", "__builtin_cosf" },
+    { "exp", "__builtin_expf" },
+    { "log", "__builtin_logf" },
+    { "pow", "__builtin_powf" },
+    { "sin", "__builtin_sinf" },
+    
     { NULL, NULL },
 };
 Aliases calias[] = {

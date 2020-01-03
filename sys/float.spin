@@ -398,10 +398,12 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 }}
 
-pri file "libsys/s_floorf.c" __builtin_floorf(x = float)
-pri file "libsys/math.c"  __builtin_fabsf(x = float)
-pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p)
-pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n)
-pri file "libsys/s_modf.c" __builtin_modff(x = float, p)
-pri file "libsys/e_expf.c" __builtin_expf(x = float)
-pri file "libsys/e_logf.c" __builtin_logf(x = float)
+pri file "libsys/s_floorf.c" __builtin_floorf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_sinf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_cosf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_fabsf(x = float) : r=float
+pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=long) : r=float
+pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
+pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float
+pri file "libsys/e_expf.c" __builtin_expf(x = float) : r=float
+pri file "libsys/e_logf.c" __builtin_logf(x = float) : r=float

@@ -237,13 +237,16 @@ A number of functions and variables are predefined. These names may be redefined
 clkfreq
 clkset
 cnt
+cos
 dira
 dirb
+exp
 ina
 inb
 input$
 left$
 len
+log
 mid$
 outa
 outb
@@ -253,6 +256,7 @@ right$
 rnd
 sendrecvdevice
 _setbaud
+sin
 str$
 val
 val%
@@ -1130,6 +1134,10 @@ for i = 1 to 5
 next
 ```
 
+### COS
+
+Predefined function. `cos(x)` returns the cosine of `x`, which is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
+
 ### CPU
 
 Used to start a subroutine running on another CPU. The parameters are the subroutine call to execute, and a stack for the other CPU to use. For example:
@@ -1327,6 +1335,10 @@ Returns from the current subroutine. Same as the `return` statement.
 
 Exit from the innermost enclosing loop if it is a `while` loop. If it is not a `while` loop then the compiler will print an error.
 
+
+### EXP
+
+Predefined function. `exp(x)` returns the natural exponential of `x`, that is `e ^ x` where `e` is 2.71828...
 
 ### FOR
 
@@ -1628,6 +1640,10 @@ sets `a` to be equal to `b`. This can usually be written as:
   a = b
 ```
 the only difference is that in the `let` form if `a` does not already exist it is created as a member variable (one accessible in all functions of this file). The `let` keyword is deprecated in some versions of BASIC (such as FreeBASIC) so it's probably better to use `var` or `dim` to explicitly declare your variables.
+
+### LOG
+
+Predefined function. `log(x)` returns the natural logarithm of `x`, that is the logarithm base `e` where `e` is 2.71828...
 
 ### LONG
 
@@ -1990,6 +2006,10 @@ The default serial rate on P1 is 115_200 baud, and assuming a clock frequency of
 ### SHORT
 
 A signed 16 bit integer, occupying two bytes of computer memory. The unsigned version of this is `ushort`. The difference arises with the treatment of the upper bit. Both `short` and `ushort` treat 0-32767 the same, but for `short` 32768 to 65535 are considered equivalent to -32768 to -1 respectively (that is, when a `short` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ushort` the new bits are filled with 0 instead).
+
+### SIN
+
+Predefined function. `sin(x)` returns the sine of `x`, which is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
 
 ### SINGLE
 

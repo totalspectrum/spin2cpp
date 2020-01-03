@@ -15,6 +15,8 @@
 
 #define exp(x) __builtin_expf(x)
 #define log(x) __builtin_logf(x)
+#define sin(x) __builtin_sinf(x)
+#define cos(x) __builtin_cosf(x)
 #define floor(x) __builtin_floorf(x)
 #define fabs(x)  __builtin_fabsf(x)
 #define frexp(x, p) __builtin_frexpf((x), (p))
