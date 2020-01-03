@@ -1624,7 +1624,7 @@ until s$ = ""        ' stop at end of file
 
 ### INT
 
-Convert float to int. Any fractional parts are truncated.
+Convert a floating point value to integer. Any fractional parts are truncated.
 ```
   i = int(3.1415) ' now i will be set to 3
 ```
@@ -1744,6 +1744,7 @@ case 3
   goto 120
 end select
 ```
+This construct is deprecated, and should not be used in new programs.
 
 ### OPEN
 
@@ -1776,7 +1777,7 @@ It is possible to use `option base` more than once in a file, but we do not reco
 
 #### OPTION EXPLICIT
 
-Requires that all variables be explicitly declared before use. The default is to allow variables in LET and FOR statements to be implicitly declared.
+Requires that all variables be explicitly declared with DIM or VAR before use. The default is to allow variables in LET and FOR statements to be implicitly declared.
 
 #### OPTION IMPLICIT
 
@@ -1796,6 +1797,7 @@ Also useful in boolean operations. The comparison operators return 0 for false c
     ' code that runs if either condition is true
   end if
 ```
+However, the `orelse` operator is more efficient for boolean operations (see below).
 
 ### ORELSE
 
@@ -1809,12 +1811,12 @@ Evaluates `a`, and if it is true then it returns true; otherwise it evaluates `b
 
 ### OUTPUT
 
-A pseudo-array of bits representing the state of output bits. On the Propeller 1 this is the 32 bit OUTA register, but on Propeller 2 it is 64 bits.
+A pseudo-array of bits representing the state of output bits. On the Propeller 1 this is the 32 bit `OUTA` register, but on Propeller 2 it is 64 bits (comprising both `OUTA` and `OUTB`).
 
-Bits in `output` may be read and written an array-like syntax:
+Bits in `output` may be read and written an array-like syntax which gives a range of pins to set:
 ```
    output(0) = not output(0)   ' toggle pin 0
-   output(4,2) = 1  ' set pins 4 and 3 to 0 and pin 2 to 1
+   output(4,2) = 1  ' set 4,3,2: pins 4 and 3 to 0 and pin 2 to 1
 ```
 Note that usually you will want to access the pins with the larger pin number first, as the bits are labelled with bit 31 at the high bit and bit 0 as the low bit.
 
