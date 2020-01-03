@@ -5,8 +5,6 @@ dat
 entry
 
 _go
-	mov	result1, arg01
-	add	result1, arg02
 	sub	arg01, arg02
 	mov	result2, arg01
 	mov	result1, result2

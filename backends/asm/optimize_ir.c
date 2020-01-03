@@ -1168,9 +1168,11 @@ OptimizeMoves(IRList *irl)
 }
 
 static bool
-HasSideEffects(IR *ir)
+HasSideEffectsOtherThanReg(IR *ir)
 {
-    if (ir->dst && !IsLocalOrArg(ir->dst) /*ir->dst->kind == REG_HW*/) {
+    if ( (ir->dst && ir->dst->kind == REG_HW)
+         || (ir->src && ir->src->kind == REG_HW) )
+    {
         return true;
     }
     if (InstrSetsAnyFlags(ir)) {
@@ -1211,6 +1213,17 @@ HasSideEffects(IR *ir)
         return false;
     }
 }
+
+#if 0
+static bool
+HasSideEffects(IR *ir)
+{
+    if (ir->dst && !IsLocalOrArg(ir->dst) /*ir->dst->kind == REG_HW*/) {
+        return true;
+    }
+    return HasSideEffectsOtherThanReg(ir);
+}
+#endif
 
 static bool
 MeaninglessMath(IR *ir)
@@ -1317,7 +1330,7 @@ int EliminateDeadCode(IRList *irl)
       } else if (ir->cond == COND_FALSE) {
 	  DeleteIR(irl, ir);
 	  change = 1;
-      } else if (!IsDummy(ir) && ir->dst && IsDeadAfter(ir, ir->dst) && !HasSideEffects(ir)) {
+      } else if (!IsDummy(ir) && ir->dst && !HasSideEffectsOtherThanReg(ir) && IsDeadAfter(ir, ir->dst)) {
 	  DeleteIR(irl, ir);
 	  change = 1;
       } else if (MeaninglessMath(ir)) {
