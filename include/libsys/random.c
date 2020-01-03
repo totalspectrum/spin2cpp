@@ -36,7 +36,7 @@ float _basic_rnd(int n)
     if (n < 0) {
         _seed = n;
     } else if (n == 0) {
-        _seed = _CNT;
+        _seed = _getcnt();
     }
     r = _lfsr_forward(_seed);
     _seed = r;
