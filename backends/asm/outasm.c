@@ -4353,9 +4353,22 @@ CompileFunctionBody(Function *f)
     if (f->resultexpr && !IsConstExpr(f->resultexpr))
     {
         AST *init = GetResultExpr(f->resultexpr);
-        if (init && (IsIdentifier(init) || init->kind == AST_RESULT)) {
-            AST *resinit = AstAssign(init, AstInteger(0));
-            CompileStatement(irl, resinit);
+        if (init) {
+            AST *zero = AstInteger(0);
+            if (IsIdentifier(init) || init->kind == AST_RESULT) {
+                AST *resinit = AstAssign(init, zero);
+                CompileStatement(irl, resinit);
+            } else if (init->kind == AST_EXPRLIST) {
+                AST *var;
+                
+                while (init && init->kind == AST_EXPRLIST) {
+                    var = init->left;
+                    init = init->right;
+                    if (var && (IsIdentifier(var) || var->kind == AST_RESULT)) {
+                        CompileStatement(irl, AstAssign(var, zero));
+                    }
+                }
+            }
         }
     }
     // check for __fromfile

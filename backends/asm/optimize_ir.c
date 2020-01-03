@@ -58,6 +58,10 @@ InstrReadsDst(IR *ir)
   case OPC_RDBYTE:
   case OPC_RDWORD:
   case OPC_RDLONG:
+  case OPC_GETQX:
+  case OPC_GETQY:
+  case OPC_GETRND:
+  case OPC_GETCT:
     return false;
   default:
     break;
