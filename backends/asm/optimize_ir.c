@@ -1935,6 +1935,40 @@ IsCommutativeMath(IROpcode opc)
     }
 }
 
+// check if x is of the form (1<<n)
+// if so, return a bit mask
+// otherwise, return -1
+static int P2CheckBitMask(unsigned int x)
+{
+    int rshift = 0;
+
+    if (x == 0) return -1;
+    while ((x & 1) == 0) {
+        rshift++;
+        x = x>>1;
+    }
+    switch (x) {
+    case 1:
+        return rshift;
+    case 3:
+        return rshift + (1<<5);
+    case 7:
+        return rshift + (2<<5);
+    case 15:
+        return rshift + (3<<5);
+    case 31:
+        return rshift + (4<<5);
+    case 63:
+        return rshift + (5<<5);
+    case 127:
+        return rshift + (6<<5);
+    case 255:
+        return rshift + (7<<5);
+    default:
+        return -1;
+    }
+}
+
 //
 // basic peephole substitution
 //
@@ -1975,6 +2009,9 @@ IsCommutativeMath(IROpcode opc)
 // mov a, #1
 // shl a, N
 // becomes decod a, N on P2
+
+// xor a, #(1<<x)
+// becomes bitnot a, #x on P2
 
 int
 OptimizePeepholes(IRList *irl)
@@ -2188,7 +2225,28 @@ OptimizePeepholes(IRList *irl)
             changed = 1;
             goto done;
         }
-        
+
+        // on P2, check for immediate operand with just one bit set
+        if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir)) {
+            int mask = P2CheckBitMask(ir->src->val);
+            if (mask) {
+                if (ir->opc == OPC_ANDN) {
+                    ReplaceOpcode(ir, OPC_BITL);
+                    ir->src = NewImmediate(mask);
+                    goto done;
+                }
+                if (ir->opc == OPC_OR) {
+                    ReplaceOpcode(ir, OPC_BITH);
+                    ir->src = NewImmediate(mask);
+                    goto done;
+                }
+                if (ir->opc == OPC_XOR) {
+                    ReplaceOpcode(ir, OPC_BITNOT);
+                    ir->src = NewImmediate(mask);
+                    goto done;
+                }
+            }
+        }
     done:
         ir = ir_next;
     }
