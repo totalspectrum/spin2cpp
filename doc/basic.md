@@ -183,6 +183,7 @@ input
 integer
 let
 long
+longint
 loop
 mod
 next
@@ -219,6 +220,7 @@ type
 ubyte
 uinteger
 ulong
+ulongint
 until
 ushort
 using
@@ -347,7 +349,7 @@ Global (shared) variables may be accessed from anywhere in the program, and exis
 ```
    dim shared x = 2
 ```
-creates a global variable with a value of 2.
+creates a global variable with an initial value of 2.
 
 A global variable is shared by all instances of the object that creates it. For example, if "foo.bas" contains
 ```
@@ -404,7 +406,7 @@ These are the usual arithmetic operations. `*` is used for multiplication, and `
 ```
 MOD
 ```
-This is the integer modulo operator; `a mod b` is the remainder when `a` is divided by `b`. It is only well defined for integers. The sign of the result is the same as the sign of `a`. `mod` and `/` are related: if `x = a / b` and `y = a mod b` then `x * b + y` will equal `a`.
+This is the integer modulo operator; `a mod b` is the remainder when `a` is divided by `b`. It is only well defined for integers. The sign of the result is the same as the sign of `a`. `mod` and `/` are related: if `x = a / b` and `y = a mod b` then `x * b + y` will equal `a` (this assumes that all of the values are integers, of course).
 
 Any floating point arguments will be converted to integer before `mod` is applied.
 
@@ -423,7 +425,6 @@ All of the logical operators work only on integers. If given a float argument, t
 `a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
 
 #### Comparison operators
-
 
 In general for all of the comparison operators, if either `a` or `b` is a float, the comparison is done in floating point. If both `a` and `b` are strings then the comparison is done on the usual lexicographical ordering of strings. Comparisons produce `0` if false, and `-1` (all bits set) if true.
 
@@ -445,6 +446,7 @@ In general for all of the comparison operators, if either `a` or `b` is a float,
 ```
 
 `a orelse b` evaluates `a`, and then only if `a` is false (zero) it evaluates `b`. It is similar to `or` but avoids evaluating one argument if it is not necessary.
+
 #### Assignment operators
 
 Normally assignment is performed with the `=` symbol:
@@ -460,6 +462,18 @@ may also be written as
 ```
   a += b
 ```
+
+#### Multiple assignment
+
+The plain assignment operator `=` may be applied to multiple values. For example, to set three variables `x`, `y`, and `z` to 1, 2, and 3 respectively, one may write:
+```
+   x,y,z = 1,2,3
+```
+The values on the right hand side of the `=` are evaluated before any assignments are performed. This means that:
+```
+   x, y = y, x
+```
+works, and will swap `x` and `y`.
 
 ### Extending lines
 
@@ -499,9 +513,11 @@ There are a number of data types built in to the FlexBASIC language.
 
 `ubyte`, `ushort`, and `uinteger` are the names for 8 bit, 16 bit, and 32 bit unsigned integers, respectively. The Propeller load instructions do not sign extend by default, so `ubyte` and `ushort` are the preferred names for 8 and 16 bit integers on the Propeller.
 
+`ulong` is an alias for `uinteger`. `ulongint` is reserved for 64 bit integers (which are not implemented yet).
+
 #### Signed integer types
 
-`byte`, `short`, and `integer` are 8 bit, 16 bit, and 32 bit signed integers.
+`byte`, `short`, and `integer` are 8 bit, 16 bit, and 32 bit signed integers. `long` is an alias for `integer`. `longint` is reserved for 64 bit integers (which are not implemented yet).
 
 #### Floating point types
 
@@ -1278,7 +1294,7 @@ See also WHILE.
 
 ### DOUBLE
 
-The type for a double precision floating point number. `double` is not actually implemented in the compiler, and is treated the same as `single`.
+The type for a double precision (64 bit) floating point number. `double` is not actually implemented in the compiler, and is treated the same as `single` (so it occupies only 32 bits).
 
 ### ELSE
 
@@ -1648,6 +1664,10 @@ Predefined function. `log(x)` returns the natural logarithm of `x`, that is the 
 ### LONG
 
 A signed 32 bit integer. An alias for `integer`. The unsigned version of this is `ulong`.
+
+### LONGINT
+
+A signed 64 bit integer. The unsigned version of this is `ulongint`. This type is not yet fully implemented.
 
 ### LOOP
 
@@ -2152,6 +2172,10 @@ An unsigned 32 bit integer.
 ### ULONG
 
 An unsigned 32 bit integer, occupying four bytes of computer memory. The signed version of this is `long`.
+
+### ULONGINT
+
+An unsigned 64 bit integer, occupying eight bytes of computer memory. The signed version of this is `longint`. This type is not yet fully implemented.
 
 ### USHORT
 

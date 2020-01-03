@@ -183,6 +183,8 @@ extern AST *ast_type_ptr_word;
 extern AST *ast_type_ptr_byte;
 extern AST *ast_type_ptr_void;
 extern AST *ast_type_bitfield;
+extern AST *ast_type_long64;
+extern AST *ast_type_unsigned_long64;
 
 /* structure describing a dat block label */
 typedef struct label {

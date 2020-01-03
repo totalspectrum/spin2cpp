@@ -436,6 +436,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_INTEGER_KW "integer"
 %token BAS_LET        "let"
 %token BAS_LONG       "long"
+%token BAS_LONGINT    "longint"
 %token BAS_LOOP       "loop"
 %token BAS_MOD        "mod"
 %token BAS_NEW        "new"
@@ -474,6 +475,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_UBYTE      "ubyte"
 %token BAS_UINTEGER   "uinteger"
 %token BAS_ULONG      "ulong"
+%token BAS_ULONGINT   "ulongint"
 %token BAS_UNTIL      "until"
 %token BAS_USHORT     "ushort"
 %token BAS_USING      "using"
@@ -1819,12 +1821,16 @@ basetypename:
     { $$ = ast_type_word; }
   | BAS_LONG
     { $$ = ast_type_long; }
+  | BAS_LONGINT
+    { $$ = ast_type_long64; }
   | BAS_BYTE
     { $$ = ast_type_signed_byte; }
   | BAS_SHORT
     { $$ = ast_type_signed_word; }
   | BAS_ULONG
     { $$ = ast_type_unsigned_long; }
+  | BAS_ULONGINT
+    { $$ = ast_type_unsigned_long64; }
   | BAS_INTEGER_KW
     { $$ = ast_type_long; }
   | BAS_UINTEGER

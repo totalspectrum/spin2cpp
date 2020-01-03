@@ -75,6 +75,7 @@ AST *ast_type_generic;
 AST *ast_type_const_generic;
 AST *ast_type_void;
 AST *ast_type_bitfield;
+AST *ast_type_long64, *ast_type_unsigned_long64;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -625,10 +626,12 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 void
 Init()
 {
+    ast_type_long64 = NewAST(AST_INTTYPE, AstInteger(8), NULL);
     ast_type_long = NewAST(AST_INTTYPE, AstInteger(4), NULL);
     ast_type_word = NewAST(AST_UNSIGNEDTYPE, AstInteger(2), NULL);
     ast_type_byte = NewAST(AST_UNSIGNEDTYPE, AstInteger(1), NULL);
 
+    ast_type_unsigned_long64 = NewAST(AST_UNSIGNEDTYPE, AstInteger(8), NULL);
     ast_type_unsigned_long = NewAST(AST_UNSIGNEDTYPE, AstInteger(4), NULL);
     ast_type_signed_word = NewAST(AST_INTTYPE, AstInteger(2), NULL);
     ast_type_signed_byte = NewAST(AST_INTTYPE, AstInteger(1), NULL);
