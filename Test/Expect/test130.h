@@ -5,7 +5,9 @@
 
 class test130 {
 public:
-  static void	Main(void);
+  static const int _Clkmode = (8 + 1024);
+  static const int _Xinfreq = 5000000;
+  static void 	Main(void);
 private:
 };
 

@@ -192,6 +192,11 @@ SpinRetType(AST *funcdef)
 input:
   rest
   | conblock rest
+    {
+        if (current) {
+            current->conblock = AddToListEx(current->conblock, $1, &current->conblock_tail);
+        }
+    }
 ;
 
 rest:

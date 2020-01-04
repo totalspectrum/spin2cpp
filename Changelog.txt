@@ -8,6 +8,7 @@ Version 4.1.0
 - Implemented a few more peephole optimizations for P2
 - Make sure all of the results in a multi-result function are initialized to 0 for Spin
 - Improved the optimizer's dead register detection
+- Start Spin file  compilation in CON mode
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code
