@@ -439,3 +439,15 @@ which will be the same as
     foo("A")
 ```
 The difference is rarely noticeable, because fastspin does convert string literals to lists in many places.
+
+# Restrictions on P2 code
+
+Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but there are some important exceptions:
+
+- PASM must be translated to P2ASM. The assembly language for the Propeller 1 and Propeller 2 are different; there are some similarities, but in general any assembly language code will have to be translated to work on the different processor.
+
+- WAITPEQ, WAITPNE, and WAITVID are not implemented on P2
+
+- The hardware register set is different; the P2 does not have the CTRx, FRQx, PHSx, VCFG, or VSCL registers.
+
+- The clock frequency is set differently. On the P1 you can simply pre-define _CLKFREQ and _CLKFREQ constants and the compiler will automatically set the frequency for your program. On the P2 you must supply an explicit call to the `_clkset` function to set the clock frequency.
