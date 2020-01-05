@@ -1242,7 +1242,10 @@ deflist:
 varexpr:
   BAS_IDENTIFIER
     { $$ = $1; }
+  | BAS_IDENTIFIER '[' expr ']'
+    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
   | varexpr '(' ')'
+    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
     { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
   | varexpr '(' exprlist ')'
     { $$ = NewAST(AST_FUNCCALL, $1, $3); }
@@ -1893,6 +1896,8 @@ paramvar:
     { $$ = NewAST(AST_DECLARE_VAR, InferTypeFromName($1), AstAssign($1, $3)); }
   | BAS_IDENTIFIER BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
+  | BAS_IDENTIFIER '(' ')' BAS_AS typename
+    { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_PTRTYPE, $5, NULL), $1); }
   | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
 ;

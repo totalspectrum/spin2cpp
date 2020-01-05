@@ -546,9 +546,18 @@ adjustFuncCall(AST *ast)
     }
     if (!func) {
         typ = ExprType(left);
-        if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ)) && left && index) {
-	    AST *arrayref = ArrayDeref(left, index);
-	    *ast = *arrayref;
+        if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ)) && left) {
+            if (index) {
+                AST *arrayref = ArrayDeref(left, index);
+                *ast = *arrayref;
+            } else {
+                if (IsArrayType(typ)) {
+                    // allow "foo()" to mean "@foo(0)"
+                    // actually we just replace "foo()" with "foo"
+                    // and let array->pointer promotion do the rest
+                    *ast = *left;
+                }
+            }
 	}
     }
 }

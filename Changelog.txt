@@ -10,6 +10,7 @@ Version 4.1.0
 - Improved the optimizer's dead register detection
 - Start Spin file compilation in CON mode
 - Fixed a type promotion problem with bitwise operators in C
+- Added [] pointer dereference operator for FreeBasic compatibility.
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code
