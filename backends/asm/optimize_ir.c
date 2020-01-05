@@ -1656,7 +1656,7 @@ OptimizeCompares(IRList *irl)
                     while (loopend && IsDummy(loopend)) {
                         loopend = loopend->prev;
                     }
-                    if (loopend->opc == OPC_JUMP && loopend->cond == COND_TRUE && loopend->aux && ir_prev == (IR *)loopend->aux) {
+                    if (loopend && loopend->opc == OPC_JUMP && loopend->cond == COND_TRUE && loopend->aux && ir_prev == (IR *)loopend->aux) {
                         // OK, we've found the jump to loop end
                         // insert a new label after jmpend, copy the compare, and
                         // change the loopend jmp to jump to the new label

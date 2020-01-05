@@ -546,7 +546,7 @@ adjustFuncCall(AST *ast)
     }
     if (!func) {
         typ = ExprType(left);
-        if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ))) {
+        if (typ && ( (IsPointerType(typ) && !IsFunctionType(typ))  || IsArrayType(typ)) && left && index) {
 	    AST *arrayref = ArrayDeref(left, index);
 	    *ast = *arrayref;
 	}
