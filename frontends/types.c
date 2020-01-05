@@ -642,7 +642,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         if (ast->d.ival == K_SAR && lefttype && IsUnsignedType(lefttype)) {
             ast->d.ival = K_SHR;
         }
-        return lefttype;
+        return MatchIntegerTypes(ast, lefttype, righttype, 0);
     case '+':
         if (IsStringType(lefttype) && IsStringType(righttype)) {
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
