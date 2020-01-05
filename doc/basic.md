@@ -636,6 +636,9 @@ print incr(2)
 ```
 prints `4` and then `3`; the invocation of `incr(2)` behaves the same as `incr(2, 1)`, because the second parameter (`n`) has a default value of 1.
 
+#### Parameter passing
+
+Parameters to functions (and subroutines) may be passed "by value" or "by reference". The default for integer, floating point, and string variables is for them to be passed by value. Classes and arrays are passed by reference by default. The defaults may be overridden with the `byref` and `byval` keywords.
 
 ### Memory allocation
 
