@@ -1293,9 +1293,8 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             lexungetc(L, peekc);
             if (gl_p2) {
                 SYNTAX_ERROR("in P2 temporary labels must start with . rather than :");
-            } else {
-                c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
             }
+            c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
         }
