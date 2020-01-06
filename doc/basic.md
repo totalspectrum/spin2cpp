@@ -410,6 +410,11 @@ This is the integer modulo operator; `a mod b` is the remainder when `a` is divi
 
 Any floating point arguments will be converted to integer before `mod` is applied.
 
+```
+^
+```
+`x^y` means `x` raised to the power `y`. The result is always a floating point value, and is evaluated using floating point arithmetic.
+
 #### Logical operators
 
 All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
@@ -446,6 +451,14 @@ In general for all of the comparison operators, if either `a` or `b` is a float,
 ```
 
 `a orelse b` evaluates `a`, and then only if `a` is false (zero) it evaluates `b`. It is similar to `or` but avoids evaluating one argument if it is not necessary.
+
+#### String operators
+
+The `+` operator normally means addition, but for strings it means concatentation. That is,
+```
+"hello, " + "world"
+```
+produces the string "hello, world".
 
 #### Assignment operators
 

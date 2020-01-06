@@ -407,3 +407,4 @@ pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
 pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float
 pri file "libsys/e_expf.c" __builtin_expf(x = float) : r=float
 pri file "libsys/e_logf.c" __builtin_logf(x = float) : r=float
+pri file "libsys/e_powf.c" __builtin_powf(x = float, y = float) : r=float

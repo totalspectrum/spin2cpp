@@ -2362,6 +2362,8 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     {
         AST *ltype, *rtype;
         switch (expr->d.ival) {
+        case K_POWER:
+            return ast_type_float;
         case '-':
         case '+':
         case K_INCREMENT:

@@ -5,13 +5,17 @@
 
 #ifdef __FLEXC__
 #define abs(x) __builtin_abs(x)
+#define fabsf(x) __builtin_abs(x)
 #define sqrt(x) __builtin_sqrt(x)
+#define sqrtf(x) __builtin_sqrt(x)
 #define copysign(x, y) __builtin_copysign((x), (y))
 #define copysignf(x, y) __builtin_copysign((x), (y))
 #define signbit(x) __builtin_signbit(x)
 #define ilogb(x) __builtin_ilogb(x)
 #define FP_ILOGB0 (-0x7fffffff)
 #define FP_ILOGBNAN (0x80000000)
+
+#define scalbnf(x) __builtin_scalbnf(x)
 
 #define exp(x) __builtin_expf(x)
 #define log(x) __builtin_logf(x)

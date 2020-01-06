@@ -57,6 +57,8 @@ static AST *float_toint;
 static AST *float_abs;
 static AST *float_sqrt;
 static AST *float_neg;
+static AST *float_pow_n;
+static AST *float_powf;
 
 static AST *struct_copy;
 static AST *string_cmp;
@@ -331,8 +333,14 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             ast->left = domakefloat(lefttype, ast->left);
         }
     } else {
+        // for exponentiation both sides need to be floats
+        if (op == K_POWER) {
+            isfloat = 1;
+            ast->left = domakefloat(lefttype, ast->left);
+            ast->right = domakefloat(righttype, ast->right);
+        }
         // in C we need to promote both sides to  long
-        if (curfunc && IsCLang(curfunc->language)) {
+        else if (curfunc && IsCLang(curfunc->language)) {
             int operator;
             if (lefttype) {
                 int leftsize = TypeSize(lefttype);
@@ -377,6 +385,14 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
                 }
             }
             *ast = *MakeOperatorCall(float_div, ast->left, ast->right, scale);
+            break;
+        case K_POWER:
+            if (gl_fixedreal) {
+                ERROR(ast, "exponentiation operator not supported in fixed point mode");
+                ast->d.ival = '*'; // pretend it's multiply instead
+            } else {
+                *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
+            }
             break;
         default:
             ERROR(ast, "internal error unhandled operator");
@@ -682,6 +698,7 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
     case '*':
     case '/':
     case K_MODULUS:
+    case K_POWER:
         return HandleTwoNumerics(op, ast, lefttype, righttype);
     case K_SIGNEXTEND:
         VerifyIntegerType(ast, righttype, "sign extension");
@@ -1462,6 +1479,8 @@ InitGlobalFuncs(void)
             float_abs = getBasicPrimitive("_float_abs");
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
+            float_pow_n = getBasicPrimitive("_float_pow_n");
+            float_powf = getBasicPrimitive("__builtin_powf");
         }
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");

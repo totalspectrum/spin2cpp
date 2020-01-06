@@ -43,5 +43,6 @@
 #define K_ASC       0x124
 #define K_LIMITMIN_UNS 0x125
 #define K_LIMITMAX_UNS 0x126
+#define K_POWER     0x127
 
 #endif

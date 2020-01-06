@@ -1451,10 +1451,28 @@ mult_op:
     { $$ = AstOperator(K_SAR, NULL, NULL); }
 ;
 
-mult_expr:
+power_expr:
   unary_expr
     { $$ = $1; }
-  | mult_expr mult_op unary_expr
+  | power_expr '^' unary_expr
+    {
+        $$ = AstOperator(K_POWER, $1, $3);
+    }
+;
+
+np_power_expr:
+  np_unary_expr
+    { $$ = $1; }
+  | np_power_expr '^' np_unary_expr
+    {
+        $$ = AstOperator(K_POWER, $1, $3);
+    }
+;
+  
+mult_expr:
+  power_expr
+    { $$ = $1; }
+  | mult_expr mult_op power_expr
     {
         $$ = $2;
         $$->left = $1;
@@ -1462,9 +1480,9 @@ mult_expr:
     }
 ;
 np_mult_expr:
-  np_unary_expr
+  np_power_expr
     { $$ = $1; }
-  | np_mult_expr mult_op unary_expr
+  | np_mult_expr mult_op np_power_expr
     {
         $$ = $2;
         $$->left = $1;
