@@ -686,6 +686,12 @@ static void IfdefPropeller(Flexbuf *f)
         flexbuf_printf(f, "#ifdef __propeller__\n");
     }
 }
+static void IfdefPropGCC(Flexbuf *f)
+{
+    if (gl_cc) {
+        flexbuf_printf(f, "#if defined(__propeller__) && defined(__GNUC__)\n");
+    }
+}
 static void EndIfdefPropeller(Flexbuf *f)
 {
     if (gl_cc) {
@@ -900,7 +906,7 @@ OutputClkFreq(Flexbuf *f, Module *P)
     unsigned int clkreg;
 
     if (GetClkFreq(P, &clkfreq, &clkreg)) {
-        IfdefPropeller(f);
+        IfdefPropGCC(f);
         // now output the clkfreq and clkmode settings
         OutputAsmEquate(f, "__clkfreqval", clkfreq);
         OutputAsmEquate(f, "__clkmodeval", clkreg);
