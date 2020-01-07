@@ -1,40 +1,45 @@
 Fastspin
 ========
-(Fastspin is copyright 2011-2019 Total Spectrum Software Inc.,
+(Fastspin is copyright 2011-2020 Total Spectrum Software Inc.,
 and is distributed under the terms of the MIT License (see the
 end of this file for details)
 
 Fastspin is a compiler from the Spin language to assembly (PASM).
+It also now supports BASIC and C input.
+
 Normally Spin is translated to a special kind of bytecode which
 is interpreted by a program in the Propeller's ROM. This bytecode
 is very compact, but it is slow to run. Fastspin produces much larger
-code, but it is also much faster.
+code, but it is also much faster. Fastspin also supports the Propeller 2
+as well as the original Propeller chip.
 
 The command line options for fastspin are very similar to those of the
 openspin compiler.
 
-The basic usage is very simple:
-
+The ordinary usage is very simple:
+```
     fastspin program.spin
-
+```
 will compile `program.spin` into `program.binary`, which may then be
 loaded into the Propeller. There are many methods to do this; most
 IDEs (including the Propeller Tool) have a way to run a binary
 file. There are also command line tools (such as `propeller-load`) to
 run binaries. My workflow with Spin programs typically looks like:
-
+```
     emacs program.spin & # or use your favorite text editor
     fastspin program.spin
     propeller-load program.binary -r -t
+```
 
 ## Propeller 2 Support ##
 
-fastspin supports the Propeller 2 instruction set (the v32b FPGA images).
+fastspin supports the Propeller 2 instruction set (both rev A and rev B).
 To compile programs for Propeller 2, you can use the -2 option. Binaries
 may be downloaded to the board using Dave Hein's loadp2 program:
-
+```
     fastspin -2 program.spin2
-    loadp2 program.binary -t
+    loadp2 -b230400 program.binary -t
+```
 
 If the fastspin program is named something that ends in "spin2" (for
 example "fastspin2.exe") then it will use the -2 flag automatically. This
@@ -172,13 +177,19 @@ To compile a program to start at address 65536 (at the 64K boundary), do:
 fastspin -2 -H 0x10000 -E fibo.bas
 ```
 
-Extensions
-----------
+Spin Language Extensions
+------------------------
 
 fastspin supports a number of extensions to the Spin language, including a preprocessor (also found in some other Spin compilers), multiple values in return and assignments, conditional assignment, inline assembly, and abstract function pointers.
 
-See the `spin.md` file in the `docs` directory for more details.
+See the `spin.md` file (or `spin.pdf`) in the `docs` directory for more details.
 
+BASIC and C support
+-------------------
+
+If an input file ends in `.bas` it is compiled as a BASIC program. See the `basic.md` file (or `basic.pdf`) for details of the BASIC language supported by fastspin.
+
+If an input file ends in `.c`, `.cc`, or `.cpp` it is compiled as a C program. See the `c.md` file for details of the C language support in fastspin.
 
 Limitations
 -----------
