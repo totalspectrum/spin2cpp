@@ -1745,14 +1745,21 @@ CheckFunctionCalls(AST *ast)
                 expectArgs = f->numparams;
             } else {
                 AST *ftype = ExprType(ast->left);
-                if (!IsFunctionType(ftype)) {
-                    ERROR(ast, "%s is not a function", fname);
-                    return;
+                if (ftype) {
+                    if (!IsFunctionType(ftype)) {
+                        ERROR(ast, "%s is not a function", fname);
+                        return;
+                    }
+                    if (ftype && ftype->kind == AST_PTRTYPE) {
+                        ftype = ftype->left;
+                    }
                 }
-                if (ftype->kind == AST_PTRTYPE) {
-                    ftype = ftype->left;
+                if (ftype) {
+                    expectArgs = AstListLen(ftype->right);
+                } else {
+                    expectArgs = 0;
+                    is_varargs = 1;
                 }
-                expectArgs = AstListLen(ftype->right);
                 if (expectArgs == 0 && curfunc && IsCLang(curfunc->language)) {
                     is_varargs = 1;
                 }

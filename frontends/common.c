@@ -76,6 +76,7 @@ AST *ast_type_const_generic;
 AST *ast_type_void;
 AST *ast_type_bitfield;
 AST *ast_type_long64, *ast_type_unsigned_long64;
+AST *ast_type_generic_funcptr;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -623,6 +624,15 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     }
 }
 
+AST *
+GenericFunctionPtr(int numresults)
+{
+    AST *fptr = NewAST(AST_FUNCTYPE, NULL, NULL);
+
+    fptr = NewAST(AST_PTRTYPE, fptr, NULL);
+    return fptr;
+}
+
 void
 Init()
 {
@@ -651,6 +661,8 @@ Init()
     // string is pointer to const byte
     ast_type_string = NewAST(AST_PTRTYPE, NewAST(AST_MODIFIER_CONST, ast_type_byte, NULL), NULL);
 
+    // a generic function returning a single (unknown) value
+    ast_type_generic_funcptr = GenericFunctionPtr(1);
     initSpinLexer(gl_p2);
 
     /* fill in the global symbol table */
@@ -1093,3 +1105,4 @@ GetTopLevelModule(void)
 {
     return allparse;
 }
+

@@ -218,12 +218,12 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     // insert an explicit function address
                     extern AST *FunctionAddress(AST *); // in types.c
                     AST *getaddr = FunctionAddress(body->left);
-                    if (upper->left == body) {
-                        upper->left = getaddr;
+                    if (upper->right == body) {
+                        upper->right = getaddr;
                         return;
                     }
-                    WARNING(body, "Taking address of function not supported yet in Spin");
-                }                        
+                    WARNING(body, "Internal error, function address may not be computed correctly");
+                }
             }
         } else if (ast->kind == AST_RESULT) {
             /* hack to make F32.spin work: it expects all variables

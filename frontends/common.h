@@ -185,6 +185,7 @@ extern AST *ast_type_ptr_void;
 extern AST *ast_type_bitfield;
 extern AST *ast_type_long64;
 extern AST *ast_type_unsigned_long64;
+extern AST *ast_type_generic_funcptr;
 
 /* structure describing a dat block label */
 typedef struct label {
@@ -218,6 +219,12 @@ typedef struct funcdef {
     AST *overalltype; /* the type of the function, including types of parameters */
     AST *annotations; /* any annotations for the function (section, etc.) */
     AST *doccomment;  /* documentation comments */
+    /* number of parameters:
+       if negative, it is the number of fixed parameters before a varargs
+       if UNKNOWN_PARAMCOUNT it is unknown (any number may be passed in registers)
+       otherwise it's the number of parameters
+    */
+#define UNKNOWN_PARAMCOUNT 32768
     int numparams;
     AST *params;      /* parameter list */
     AST *defaultparams; /* default values for parameters */
