@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 

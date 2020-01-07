@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -74,11 +74,11 @@ static void
 PrintInfo(FILE *f, int bstcMode)
 {
     if (bstcMode) {
-        fprintf(f, "FastSpin Compiler v%s - Copyright 2011-2019 Total Spectrum Software Inc.\n", VERSIONSTR);
+        fprintf(f, "FastSpin Compiler v%s - Copyright 2011-2020 Total Spectrum Software Inc.\n", VERSIONSTR);
         fprintf(f, "Compiled on: " __DATE__ "\n");
         
     } else {
-        fprintf(f, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2019 Total Spectrum Software Inc.\n");
+        fprintf(f, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2020 Total Spectrum Software Inc.\n");
         fprintf(f, "Version %s Compiled on: " __DATE__ "\n", VERSIONSTR);
     }
     fflush(f);
