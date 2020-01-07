@@ -151,6 +151,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                 immflag = 0;
                 break;
             case SYM_LABEL:
+                if (!immflag) {
+                    ERROR(expr, "must use an immediate with global labels in inline asm");
+                }
                 r = LabelRef(irl, sym);
                 break;
             case SYM_HWREG:
