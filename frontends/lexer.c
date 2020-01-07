@@ -2986,6 +2986,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     }
     if (sym != NULL) {
       if (sym->kind == SYM_RESERVED) {
+        int peekc = lexpeekc(L);
 	c = INTVAL(sym);
         /* check for special handling */
         switch(c) {
@@ -2995,6 +2996,30 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
                 L->block_type = BLOCK_PUB;
             } else {
                 L->block_type = BLOCK_ASM;
+            }
+            break;
+        case BAS_AND:
+            if (peekc == '=') {
+                (void)lexgetc(L);
+                c = BAS_AND_ASSIGN;
+            }
+            break;
+        case BAS_MOD:
+            if (peekc == '=') {
+                (void)lexgetc(L);
+                c = BAS_MOD_ASSIGN;
+            }
+            break;
+        case BAS_OR:
+            if (peekc == '=') {
+                (void)lexgetc(L);
+                c = BAS_OR_ASSIGN;
+            }
+            break;
+        case BAS_XOR:
+            if (peekc == '=') {
+                (void)lexgetc(L);
+                c = BAS_XOR_ASSIGN;
             }
             break;
         default:

@@ -495,9 +495,10 @@ AdjustParamForByVal(AST *param)
 %token BAS_SUB_ASSIGN "-="
 %token BAS_MUL_ASSIGN "*="
 %token BAS_DIV_ASSIGN "/="
-%token BAS_AND_ASSIGN "&="
-%token BAS_OR_ASSIGN "|="
-%token BAS_XOR_ASSIGN "^="
+%token BAS_MOD_ASSIGN "MOD="
+%token BAS_AND_ASSIGN "AND="
+%token BAS_OR_ASSIGN "OR="
+%token BAS_XOR_ASSIGN "XOR="
 
 %left BAS_EOLN
 %left BAS_FUNCTION

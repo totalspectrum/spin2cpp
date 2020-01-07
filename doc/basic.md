@@ -415,9 +415,9 @@ Any floating point arguments will be converted to integer before `mod` is applie
 ```
 `x^y` means `x` raised to the power `y`. The result is always a floating point value, and is evaluated using floating point arithmetic.
 
-#### Logical operators
+#### Bitwise logical operators
 
-All of the logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
+All of the bitwise logical operators work only on integers. If given a float argument, the float will be converted to a signed 32 bit integer before the operator is applied.
 
 `a and b` is the bitwise and of `a` and `b`.
 
@@ -425,7 +425,7 @@ All of the logical operators work only on integers. If given a float argument, t
 
 `a xor b` is the bitwise exclusive or of `a` and `b`.
 
-`a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this.
+`a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this).
 
 `a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
 
@@ -466,14 +466,16 @@ Normally assignment is performed with the `=` symbol:
 ```
   a = b
 ```
-It is possible to combine assignment and the basic arithmetic operators (`+`, `-`, `/`, `*`) or some logic operators (`&`, `|`, `^`). That is, the
-assignment:
+It is possible to combine assignment and the basic arithmetic operators (`+`, `-`, `/`, `*`) or some logic operators (`and`, `or`, `xor`). That is, the
+assignments:
 ```
   a = a + b
+  x = x and y
 ```
 may also be written as
 ```
   a += b
+  x and= y
 ```
 
 #### Multiple assignment
