@@ -2234,7 +2234,7 @@ OptimizePeepholes(IRList *irl)
         // on P2, check for immediate operand with just one bit set
         if (gl_p2 && ir->src && ir->src->kind == IMM_INT && !InstrSetsAnyFlags(ir) && ((uint32_t)ir->src->val) > 511) {
             int mask = P2CheckBitMask(ir->src->val);
-            if (mask) {
+            if (mask != -1) {
                 if (ir->opc == OPC_ANDN) {
                     ReplaceOpcode(ir, OPC_BITL);
                     ir->src = NewImmediate(mask);
