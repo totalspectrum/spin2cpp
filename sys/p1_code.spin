@@ -186,5 +186,5 @@ pri __builtin_propeller_drv(pin, c) | mask
 pri __builtin_propeller_waitx(tim)
   asm
     add  tim, CNT
-    waitcnt tim
+    waitcnt tim, #0
   endasm
