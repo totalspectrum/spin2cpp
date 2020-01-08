@@ -4719,6 +4719,29 @@ AssignOneFuncName(Function *f)
 
 // assign all function names so we can do forward calls
 // this is also where we can allocate the back end data
+static int FixupTypes(Symbol *sym, void *arg)
+{
+    Label *lab;
+    
+    switch (sym->kind) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_VARIABLE:
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+        sym->val = (void *)CleanupType((AST *)sym->val);
+        break;
+    case SYM_LABEL:
+        lab = (Label *)sym->val;
+        lab->type = CleanupType(lab->type);
+        break;
+    default:
+        break;
+    }
+    return 1;
+}
+
+// we also resolve type sizes here
 static void
 AssignFuncNames(IRList *irl, Module *P)
 {
@@ -4730,7 +4753,9 @@ AssignFuncNames(IRList *irl, Module *P)
         if (ShouldSkipFunction(f))
             continue;
         AssignOneFuncName(f);
+        IterateOverSymbols(&f->localsyms, FixupTypes, (void *)0);
     }
+    IterateOverSymbols(&P->objsyms, FixupTypes, (void *)0);
 }
 
 static void

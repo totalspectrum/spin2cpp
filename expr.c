@@ -2740,3 +2740,35 @@ MakeArrayType(AST *basetype, AST *exprlist)
     }
     return NewAST(AST_ARRAYTYPE, basetype, exprlist);
 }
+
+//
+// clean up a type definition so it has no symbols in it, only
+// constants
+// this is required because we may need a subtype from an object,
+// but constants should be evaluated in the context of the object itself
+//
+AST *
+CleanupType(AST *typ)
+{
+    AST *idx;
+    int n;
+    
+    if (!typ) return typ;
+    switch (typ->kind) {
+    case AST_ARRAYTYPE:
+        idx = typ->right;
+        if (idx && idx->kind != AST_INTEGER) {
+            if (IsConstExpr(idx)) {
+                n = EvalConstExpr(idx);
+                typ->right = AstInteger(n);
+            }
+        }
+        break;
+    case AST_FUNCTYPE:
+        typ->left = CleanupType(typ->left);
+        break;
+    default:
+        break;
+    }
+    return typ;
+}

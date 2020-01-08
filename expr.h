@@ -120,4 +120,9 @@ int FuncNumResults(AST *functype);
 // case the absolute value is the minimum number of parameters)
 int FuncNumParams(AST *functype);
 
+// clean up a type so it has no symbolic references; needed so that e.g. array
+// sizes that are symbolic constants can be found outside of the module they're
+// declared in
+AST *CleanupType(AST *typ);
+
 #endif
