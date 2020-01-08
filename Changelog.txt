@@ -2,16 +2,17 @@ Version 4.1.0
 - Added BYREF and BYVAL modifiers to BASIC function parameters
 - Added ANDALSO and ORELSE operators to BASIC
 - Added +=, -=, *=, /= assignment operators to BASIC
-- Allow multiple assignment and functions which return multiple values in BASIC
-- Implemented _ for skipping assignments in multiple assignments
+- Added BIN$ and HEX$ builtin functions to BASIC
 - Added standard Spin2 functions WRPIN, WXPIN, WYPIN, RDPIN, etc. to Spin and BASIC.
+- Added [] pointer dereference operator for FreeBasic compatibility.
+- Added exponentiation operator ^ to BASIC
+- Allowed multiple assignment and functions which return multiple values in BASIC
+- Implemented _ for skipping assignments in multiple assignments
 - Implemented a few more peephole optimizations for P2
-- Make sure all of the results in a multi-result function are initialized to 0 for Spin
+- Made sure all of the results in a multi-result function are initialized to 0 for Spin
 - Improved the optimizer's dead register detection
 - Start Spin file compilation in CON mode
 - Fixed a type promotion problem with bitwise operators in C
-- Added [] pointer dereference operator for FreeBasic compatibility.
-- Added exponentiation operator ^ to BASIC
 - Fixed a problem with calculating sizes of arrays referenced as "foo.bar"
 
 Version 4.0.6

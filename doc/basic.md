@@ -236,6 +236,7 @@ xor
 
 A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
+bin$
 clkfreq
 clkset
 cnt
@@ -243,6 +244,7 @@ cos
 dira
 dirb
 exp
+hex$
 ina
 inb
 input$
@@ -937,6 +939,13 @@ An `asm shared` block declares some static code and/or data which is not intende
 
 The main difference between `asm` and `asm shared` is that the `asm shared` blocks are kept separate, outside of all functions and subroutines, whereas `asm` blocks are always part of a function or subroutine (or the main program). `asm` blocks are executed when control flow reaches them; code within `asm shared` must be explicitly invoked via `cpu`.
 
+### BIN$
+
+```
+  s = bin$(x, n)
+```
+returns a string representing the unsigned integer `x` in binary notation. Only the lowest `n` digits of the representation are included; use 32 if you want to get all of the digits.
+
 ### __BUILTIN_ALLOCA
 
 Allocates memory on the stack. The argument is an integer specifying how much memory to allocate. For example:
@@ -1538,6 +1547,13 @@ is a label `foo` followed by a statement `bar`.
   const HEAPSIZE = 256
 ```
 Declares the amount of space to be used for internal memory allocation by things like string functions. The default is 256 bytes for P1 and 4096 bytes for P2. If your program does a lot of string manipulation and/or needs to hold on to the allocations for a long time, you may need to increase this by explicitly declaring `const HEAPSIZE` with a larger value.
+
+### HEX$
+
+```
+  s = hex$(x, n)
+```
+returns a string representing the unsigned integer `x` in hexadecimal notation (base 10). Only the lowest `n` digits of the representation are included; use 8 if you want to get all of the digits.
 
 ### IF
 

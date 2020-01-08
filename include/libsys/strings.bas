@@ -88,3 +88,36 @@ function str$(x as single) as string
   '' FIXME: should we check here that i is sensible?
   return p
 end function
+
+'
+' convert a number v in base B to a string with n digits
+'
+function number$(v as uinteger, n as uinteger, B as uinteger) as string
+  dim s as ubyte ptr
+  dim d as uinteger
+  if n > 32 then
+    n = 32
+  endif
+  s = new ubyte(n+1)
+  s[n] = 0
+  while n > 0
+    n -= 1
+    d = v mod B
+    v = v / B
+    if d < 10 then
+      d = d + ASC("0")
+    else
+      d = (d - 10) + ASC("A")
+    endif
+    s[n] = d
+  end while
+  return s
+end function
+
+function hex$(v as uinteger, n as uinteger)
+  return number$(v, n, 16)
+end function
+
+function bin$(v as uinteger, n as uinteger)
+  return number$(v, n, 2)
+end function
