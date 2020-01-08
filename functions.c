@@ -34,6 +34,9 @@ NumExprItemsOnStack(AST *expr)
     if (!type) {
         return 1;
     }
+    if (type == ast_type_void) {
+        return 0;
+    }
     if (IsCLang(curfunc->language) && IsArrayType(type)) {
         /* convert a to &a[0] */
         AST *ref = DupAST(expr);

@@ -2280,7 +2280,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     case AST_FUNCCALL:
     {
         Symbol *sym = FindFuncSymbol(expr, NULL, 0);
-        AST *typexpr;
+        AST *typexpr = NULL;
         if (sym) {
             switch (sym->kind) {
             case SYM_FUNCTION:
@@ -2301,6 +2301,14 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             default:
                 return NULL;
             }
+        } else if (expr && expr->left && expr->left->kind == AST_CAST) {
+            typexpr = expr->left->left;
+        }
+        if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
+            typexpr = RemoveTypeModifiers(typexpr->left);
+        }
+        if (typexpr && typexpr->kind == AST_FUNCTYPE) {
+            return typexpr->left;
         }
         return NULL;
     }

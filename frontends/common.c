@@ -629,9 +629,11 @@ GenericFunctionPtr(int numresults)
 {
     AST *fptr = NULL;
     AST *exprlist = NULL;
-    
-    if (numresults <= 1) {
-        fptr = NewAST(AST_FUNCTYPE, NULL, NULL);
+
+    if (numresults == 0) {
+        exprlist = ast_type_void;
+    } else if (numresults == 1) {
+        exprlist = NULL;
     } else {
         while (numresults > 0) {
             exprlist = NewAST(AST_TUPLE_TYPE, NULL, exprlist);
