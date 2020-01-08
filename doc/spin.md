@@ -164,6 +164,29 @@ PUB doprint22
   print(@aFullDuplexSerialObj, 22)
 ```
 
+### Method pointers
+
+Pointers to methods may be created with `@` and called using the normal calling syntax. For example:
+```
+VAR
+  LONG funcptr
+  
+PUB twice(x) : r
+  r := x + x
+...
+  funcptr := @twice
+  y := funcptr(a)
+```
+will set `y` to `a+a`.
+
+No special annotation is needed for functions which return 0 or 1 results. For functions returning multiple results, Spin2 requires a `:result` notation after the function call:
+```
+  x,y := fptr(a):2
+```
+The `:2` indicates that fptr is a pointer to a function which returns 2 results.
+
+It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done (since Spin only has untyped 32 bit values).
+
 ### PUB FILE and PRI FILE
 
 A `pub` or `pri` function declaration may include a `file` directive which gives the file which contains the actual definition of the function. This looks like:

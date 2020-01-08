@@ -41,6 +41,20 @@ SpinRetType(AST *funcdef)
     return NULL;
 }
 
+// in common.c
+extern AST *GenericFunctionPtr(int numresults);
+
+static AST *
+MakeFunccall(AST *func, AST *params, AST *numresults)
+{
+    if (numresults && numresults->kind == AST_INTEGER) {
+        int paramcount;
+        paramcount = numresults->d.ival;
+        func = NewAST(AST_CAST, GenericFunctionPtr(paramcount), func);
+    }
+    return NewAST(AST_FUNCCALL, func, params);
+}
+
 #define YYERROR_VERBOSE 1
 %}
 
@@ -1023,11 +1037,18 @@ memref:
     { $$ = NewAST(AST_MEMREF, ast_type_long, NewAST(AST_ADDROF, $1, NULL)); }
 ;
 
+opt_numrets:
+  /* nothing */
+    { $$ = NULL; }
+  | ':' SP_NUM
+    { $$ = $2; }
+;
+
 funccall:
-  identifier '(' exprlist ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, $3); }
-  | identifier '(' ')'
-    { $$ = NewAST(AST_FUNCCALL, $1, NULL); }
+  identifier '(' exprlist ')' opt_numrets
+    { $$ = MakeFunccall($1, $3, $5); }
+  | identifier '(' ')' opt_numrets
+    { $$ = MakeFunccall($1, NULL, $4); }
   | SP_COGINIT '(' exprlist ')'
     { $$ = NewAST(AST_COGINIT, $3, NULL); }
   | SP_COGNEW '(' exprlist ')'
@@ -1038,22 +1059,22 @@ funccall:
         elist = AddToList(elist, $3);
         $$ = NewAST(AST_COGINIT, elist, NULL);
     }
-  | identifier '.' identifier '(' exprlist ')'
+  | identifier '.' identifier '(' exprlist ')' opt_numrets
     { 
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), $5);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), $5, $7);
     }
-  | identifier '.' identifier '(' ')'
+  | identifier '.' identifier '(' ')' opt_numrets
     { 
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
     }
   | identifier '.' identifier
     { 
         $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
     }
-  | identifier '[' expr ']' '.' identifier '(' exprlist ')'
+  | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, arr, $6), $8);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), $8, $10);
     }
   | identifier '[' expr ']' '.' identifier
     { 

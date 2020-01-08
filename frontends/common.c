@@ -627,8 +627,18 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
 AST *
 GenericFunctionPtr(int numresults)
 {
-    AST *fptr = NewAST(AST_FUNCTYPE, NULL, NULL);
-
+    AST *fptr = NULL;
+    AST *exprlist = NULL;
+    
+    if (numresults <= 1) {
+        fptr = NewAST(AST_FUNCTYPE, NULL, NULL);
+    } else {
+        while (numresults > 0) {
+            exprlist = NewAST(AST_TUPLE_TYPE, NULL, exprlist);
+            --numresults;
+        }
+    }
+    fptr = NewAST(AST_FUNCTYPE, exprlist, NULL);
     fptr = NewAST(AST_PTRTYPE, fptr, NULL);
     return fptr;
 }
