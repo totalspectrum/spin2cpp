@@ -3381,6 +3381,7 @@ validateArrayRef(AST *ast)
         return true;
     case AST_IDENTIFIER:
     case AST_LOCAL_IDENTIFIER:
+    case AST_METHODREF:
         return IsArrayType(ExprType(ast));
     default:
         return validateArrayRef(ast->left) || validateArrayRef(ast->right);

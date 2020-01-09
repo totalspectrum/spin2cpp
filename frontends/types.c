@@ -664,10 +664,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(string_concat, ast->left, ast->right, NULL);
             return lefttype;
         }
-        if (IsPointerType(lefttype) && IsIntType(righttype)) {
+        if (IsPointerType(lefttype) && IsIntOrGenericType(righttype)) {
             ast->right = ScalePointer(lefttype, forcepromote(righttype, ast->right));
             return lefttype;
-        } else if (IsPointerType(righttype) && IsIntType(lefttype)) {
+        } else if (IsPointerType(righttype) && IsIntOrGenericType(lefttype)) {
             ast->left = ScalePointer(righttype, forcepromote(lefttype, ast->left));
             return righttype;
         } else {
