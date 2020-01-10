@@ -206,9 +206,6 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
     force = force || (lsize != rsize);
     
     if (lsize < finalsize && force) {
-        if (IsConstExpr(ast->right)) {
-            return lefttype;
-        }
         if (leftunsigned) {
             ast->left = dopromote(ast->left, lsize, finalsize, K_ZEROEXTEND);
             lefttype = ast_type_unsigned_long;
@@ -219,9 +216,6 @@ AST *MatchIntegerTypes(AST *ast, AST *lefttype, AST *righttype, int force) {
         rettype = righttype;
     }
     if (rsize < finalsize && force) {
-        if (IsConstExpr(ast->left)) {
-            return righttype;
-        }
         if (rightunsigned) {
             ast->right = dopromote(ast->right, rsize, finalsize, K_ZEROEXTEND);
             righttype = ast_type_unsigned_long;
