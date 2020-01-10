@@ -109,6 +109,8 @@ Aliases spinalias[] = {
     { "_pinh", "__builtin_propeller_drvh" },
     { "_pinnot", "__builtin_propeller_drvnot" },
     { "_pinr", "__builtin_propeller_pinr" },
+
+    { "reboot", "_reboot" },
     
     { "_waitx", "__builtin_propeller_waitx" },
     
