@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 #include <errno.h>
 #include "spinc.h"
 
@@ -42,7 +43,7 @@ OutputSpinHeader(Flexbuf *f, Module *P)
     unsigned int clkfreq;
     unsigned int clkmodeval;
 
-    if (!GetClkFreq(P, &clkfreq, &clkmodeval)) {
+    if (!GetClkFreqP1(P, &clkfreq, &clkmodeval)) {
         // use defaults
         clkfreq = 80000000;
         clkmodeval = 0x6f;
@@ -1766,9 +1767,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
     }
 }
 
-// output _clkmode and _clkfreq settings
+// output _clkmode and _clkfreq settings for P1
 int
-GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
 {
     // look up in P->objsyms
     Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
@@ -1862,5 +1863,111 @@ GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
 
     *clkfreqptr = clkfreq;
     *clkregptr = clkreg;
+    return 1;
+}
+
+int32_t EvalConstSym(Symbol *sym)
+{
+    AST *ast;
+    ast = (AST *)sym->val;
+    return EvalConstExpr(ast);
+}
+
+/* calculate frequencies for P2 */
+int
+GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
+{
+    // look up in P->objsyms
+    Symbol *clkmodesym = P ? FindSymbol(&P->objsyms, "_clkmode") : NULL;
+    Symbol *clkfreqsym = P ? FindSymbol(&P->objsyms, "_clkfreq") : NULL;
+    Symbol *xtlfreqsym = P ? FindSymbol(&P->objsyms, "_xtlfreq") : NULL;
+    Symbol *xinfreqsym = P ? FindSymbol(&P->objsyms, "_xinfreq") : NULL;
+    Symbol *errfreqsym = P ? FindSymbol(&P->objsyms, "_errfreq") : NULL;
+
+    double clkfreq = 160000000.0; // default frequency
+    double xinfreq = 20000000.0;  // default crystal frequency
+    double errtolerance = 100000.0;
+    uint32_t clkmode = 0;
+    uint32_t zzzz = 11; // 0b10_11
+    uint32_t pppp;
+    double error;
+    
+    if (xinfreqsym) {
+        if (xtlfreqsym) {
+            ERROR(NULL, "Only one of _xtlfreq or _xinfreq may be specified");
+            return 0;
+        }
+        xinfreq = (double)EvalConstSym(xinfreqsym);
+        zzzz = 7; // 0b01_11
+    } else if (xtlfreqsym) {
+        xinfreq = (double)EvalConstSym(xtlfreqsym);
+        if (xinfreq >= 16000000.0) {
+            zzzz = 11; // 0b10_11
+        } else {
+            zzzz = 15; // 0b11_11
+        }
+    }
+    if (clkmodesym) {
+        if (xinfreqsym || xtlfreqsym) {
+            ERROR(NULL, "_xinfreq and _xtlfreq are redundant with _clkmode");
+            return 0;
+        }
+        if (clkmodesym->kind != SYM_CONSTANT) {
+            WARNING(NULL, "_clkmode is not a constant");
+            return 0;
+        }
+        if (!clkfreqsym) {
+            ERROR(NULL, "_clkmode definition requires _clkfreq as well");
+            return 0;
+        }
+        *clkregptr = EvalConstSym(clkmodesym);
+        *clkfreqptr = EvalConstSym(clkfreqsym);
+        return 1;
+    }
+    if (clkfreqsym) {
+        clkfreq = (double)EvalConstSym(clkfreqsym);
+    }
+    if (errfreqsym) {
+        errtolerance = (double)EvalConstSym(errfreqsym);
+    }
+    
+    // figure out clock mode based on frequency
+    uint32_t divd;
+    double e, post, mult, Fpfd, Fvco, Fout;
+    double result_mult = 0;
+    double result_Fout = 0;
+    uint32_t result_pppp = 0, result_divd = 0;
+    error = 1e9;
+    for (pppp = 0; pppp <= 15; pppp++) {
+        if (pppp == 0) {
+            post = 1.0;
+        } else {
+            post = pppp * 2.0;
+        }
+        for (divd = 64; divd >= 1; --divd) {
+            Fpfd = round(xinfreq / (double)divd);
+            mult = round(clkfreq * post / Fpfd);
+            Fvco = Fpfd * mult;
+            Fout = round(Fvco / post);
+            e = abs(Fout - clkfreq);
+            if ( (e <= error) && (Fpfd >= 250000) && (mult <= 1024) && (Fvco > 99e6) && ((Fvco <= 201e6) || (Fvco <= clkfreq + 1e6)) ) {
+                result_divd = divd;
+                result_mult = mult;
+                result_pppp = (pppp-1) & 15;
+                result_Fout = Fout;
+                error = e;
+            }
+        }
+    }
+    if (error > errtolerance) {
+        ERROR(NULL, "Unable to find clock settings for freq %f Hz with input freq %f Hz", clkfreq, xinfreq);
+        return 0;
+    }
+    uint32_t D, M;
+    D = result_divd - 1;
+    M = ((uint32_t)result_mult) - 1;
+    clkmode = zzzz | (result_pppp<<4) | (M<<8) | (D<<18) | (1<<24);
+    *clkfreqptr = (uint32_t)round(result_Fout);
+    *clkregptr = clkmode;
     return 1;
 }

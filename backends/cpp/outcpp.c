@@ -686,17 +686,19 @@ static void IfdefPropeller(Flexbuf *f)
         flexbuf_printf(f, "#ifdef __propeller__\n");
     }
 }
-static void IfdefPropGCC(Flexbuf *f)
-{
-    if (gl_cc) {
-        flexbuf_printf(f, "#if defined(__propeller__) && defined(__GNUC__)\n");
-    }
-}
 static void EndIfdefPropeller(Flexbuf *f)
 {
     if (gl_cc) {
         flexbuf_printf(f, "#endif\n");
     }
+}
+static void IfdefPropGCC(Flexbuf *f)
+{
+    flexbuf_printf(f, "#if defined(__propeller__) && defined(__GNUC__)\n");
+}
+static void EndIfdefPropGCC(Flexbuf *f)
+{
+    flexbuf_printf(f, "#endif\n");
 }
 
 static char *
@@ -905,12 +907,16 @@ OutputClkFreq(Flexbuf *f, Module *P)
     unsigned int clkfreq;
     unsigned int clkreg;
 
-    if (GetClkFreq(P, &clkfreq, &clkreg)) {
-        IfdefPropGCC(f);
-        // now output the clkfreq and clkmode settings
-        OutputAsmEquate(f, "__clkfreqval", clkfreq);
-        OutputAsmEquate(f, "__clkmodeval", clkreg);
-        EndIfdefPropeller(f);
+    if (gl_p2) {
+        /* nothing yet */
+    } else {
+        if (GetClkFreqP1(P, &clkfreq, &clkreg)) {
+            IfdefPropGCC(f);
+            // now output the clkfreq and clkmode settings
+            OutputAsmEquate(f, "__clkfreqval", clkfreq);
+            OutputAsmEquate(f, "__clkmodeval", clkreg);
+            EndIfdefPropGCC(f);
+        }
     }
 }
 

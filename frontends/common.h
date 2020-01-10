@@ -589,7 +589,8 @@ int FuncParameterNum(Function *func, AST *var);
 void CompileIntermediate(Module *P);
 
 /* fetch clock frequency settings */
-int GetClkFreq(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
+int GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
+int GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr);
 
 // some string utilities
 

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2016-2019 Total Spectrum Software Inc.
+ * Copyright 2016-2020 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -830,7 +830,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             if (gl_p2 && !gl_no_coginit) {
                 unsigned int clkfreq, clkreg;
                 // on P2, make room for CLKFREQ and CLKMODE
-                if (!GetClkFreq(P, &clkfreq, &clkreg)) {
+                if (!GetClkFreqP2(P, &clkfreq, &clkreg)) {
                     clkfreq = 160000000;
                     clkreg = 0x010007f8;
                 }
