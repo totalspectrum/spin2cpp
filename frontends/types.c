@@ -784,10 +784,10 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
         return ast_type_long;
     case K_INCREMENT:
     case K_DECREMENT:
-        if (lefttype && IsPointerType(lefttype)) {
+        if (lefttype && (IsPointerType(lefttype) || IsIntOrGenericType(lefttype))) {
             return lefttype;
         }
-        if (righttype && IsPointerType(righttype)) {
+        if (righttype && (IsPointerType(righttype) || IsIntOrGenericType(righttype))) {
             return righttype;
         }
         /* fall through */

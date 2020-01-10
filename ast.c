@@ -767,6 +767,18 @@ static void doASTDump(AST *ast, int indent)
             case K_GEU:
                 opString = "+=>";
                 break;
+            case K_SIGNEXTEND:
+                opString = "signx";
+                break;
+            case K_ZEROEXTEND:
+                opString = "zerox";
+                break;
+            case K_ASC:
+                opString = "asc";
+                break;
+            case K_POWER:
+                opString = "power";
+                break;
             default:
                 sprintf(buf, "<operator #0x%x>", ast->d.ival);
                 break;
