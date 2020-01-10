@@ -222,6 +222,10 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                         upper->right = getaddr;
                         return;
                     }
+                    if (upper->left == body) {
+                        upper->left = getaddr;
+                        return;
+                    }
                     WARNING(body, "Internal error, function address may not be computed correctly");
                 }
             }
