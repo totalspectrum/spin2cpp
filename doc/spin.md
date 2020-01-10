@@ -179,13 +179,13 @@ PUB twice(x) : r
 ```
 will set `y` to `a+a`.
 
-No special annotation is needed for functions which return 0 or 1 results. For functions returning multiple results, Spin2 requires a `:result` notation after the function call:
+No special annotation is needed for functions which return 0 or 1 results. For functions returning multiple results, a `:N` notation is requited after the function call, where `N` is an integer giving the expected number of results:
 ```
   x,y := fptr(a):2
 ```
 The `:2` indicates that fptr is a pointer to a function which returns 2 results.
 
-It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done (since Spin only has untyped 32 bit values).
+It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
 
 ### PUB FILE and PRI FILE
 
@@ -217,11 +217,11 @@ Beware that functions declared with `file` are treated the same as other functio
 
 A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
 ```
-PUB add(x, y)
+PUB _add(x, y)
   return x+y
-PUB _add = add
+PUB add = _add
 ```
-The `PUB _add = add` line says that `_add` is an alias for `add`.
+The `PUB add = _add` line says that `add` is an alias for `_add`.
 
 Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
 
@@ -400,7 +400,7 @@ Fastspin supports some new builtin functions. These typically start with an unde
 
 `_waitx(n)` waits for `n` cycles, plus the cycle time required for the instruction. This is 2 cycles on P2, and 8 cycles on P1.
 
-
+In Spin2 mode all of the above are available without the underscore.
 
 # Compatibility with other Spin compilers
 

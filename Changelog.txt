@@ -1,7 +1,7 @@
 Version 4.1.0
 - Added BYREF and BYVAL modifiers to BASIC function parameters
 - Added ANDALSO and ORELSE operators to BASIC
-- Added +=, -=, *=, /= assignment operators to BASIC
+- Added +=, -=, *=, /=, AND=, OR=, XOR= assignment operators to BASIC
 - Added BIN$ and HEX$ builtin functions to BASIC
 - Added standard Spin2 functions WRPIN, WXPIN, WYPIN, RDPIN, etc. to Spin and BASIC.
 - Added [] pointer dereference operator for FreeBasic compatibility.

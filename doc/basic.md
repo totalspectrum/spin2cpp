@@ -257,6 +257,7 @@ outa
 outb
 pausems
 rdpin
+_reboot
 right$
 rnd
 sendrecvdevice
@@ -1988,6 +1989,10 @@ The statements in the top level of the file (not inside any subroutine or functi
 ### READ
 
 `read` reads data items declared by `data`. All of the strings following `data` keywords are lumped together, and then parsed by `read` in the same way as `input` parses data typed by the user.
+
+### _REBOOT
+
+`_reboot` is a built in function which will reset the P2. It is not used very often.
 
 ### REM
 
