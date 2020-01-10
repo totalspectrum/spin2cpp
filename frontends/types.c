@@ -523,7 +523,7 @@ void CompileComparison(int op, AST *ast, AST *lefttype, AST *righttype)
             // if both are 32 bits, we need to do something else
             int lsize = TypeSize(lefttype);
             int rsize = TypeSize(righttype);
-            if (lsize == 4 && rsize == 4) {
+            if (lsize == 4 && rsize == 4 && op != K_EQ && op != K_NE) {
                 WARNING(ast, "signed/unsigned comparison may not work properly");
             }
         }
