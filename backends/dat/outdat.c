@@ -1884,23 +1884,28 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     Symbol *xinfreqsym = P ? FindSymbol(&P->objsyms, "_xinfreq") : NULL;
     Symbol *errfreqsym = P ? FindSymbol(&P->objsyms, "_errfreq") : NULL;
 
-    double clkfreq = 160000000.0; // default frequency
+    double clkfreq;
     double xinfreq = 20000000.0;  // default crystal frequency
     double errtolerance = 100000.0;
     uint32_t clkmode = 0;
     uint32_t zzzz = 11; // 0b10_11
     uint32_t pppp;
     double error;
-    
+
+    if (IsSpinLang(P->mainLanguage)) {
+        clkfreq = 20000000.0; // actually we want RCFAST mode
+    } else {
+        clkfreq = 160000000.0;
+    }
     if (xinfreqsym) {
         if (xtlfreqsym) {
             ERROR(NULL, "Only one of _xtlfreq or _xinfreq may be specified");
             return 0;
         }
-        xinfreq = (double)EvalConstSym(xinfreqsym);
+        clkfreq = xinfreq = (double)EvalConstSym(xinfreqsym);
         zzzz = 7; // 0b01_11
     } else if (xtlfreqsym) {
-        xinfreq = (double)EvalConstSym(xtlfreqsym);
+        clkfreq = xinfreq = (double)EvalConstSym(xtlfreqsym);
         if (xinfreq >= 16000000.0) {
             zzzz = 11; // 0b10_11
         } else {

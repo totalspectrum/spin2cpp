@@ -237,6 +237,7 @@ xor
 A number of functions and variables are predefined. These names may be redefined (for example as local variable names inside a function), but changing them at the global level is probably unwise; at the very least it will cause confusion for readers of your code.
 ```
 bin$
+_clkfreq
 clkfreq
 clkset
 cnt
@@ -1104,6 +1105,13 @@ Using Spin objects with `class using` is straightforward, but there are some thi
 #### Interoperation with C
 
 C files may be used as classes, but there are some restrictions. BASIC and Spin are both case insensitive languages, which means that the BASIC symbols `AVariable`, `avariable`, and `AVARIABLE` are all the same, and all are translated internally to `avariable`. In C the case of identifiers matters. This makes accessing C symbols from BASIC somewhat tricky. Only C symbols that are all lower case may be accessed from BASIC.
+
+### _CLKFREQ
+
+```
+  const _clkfreq = 200_000_000
+```
+Declares a default value for the clock frequency. If this constant is not defined, the program will default to 160 MHz. This may be overridden by an explicit `clkset` call, or by changing the initial clkfreq and clkmode values in the program binary (at 0x14 and 0x18), e.g. via `loadp2 -PATCH`.
 
 ### CLKFREQ
 
