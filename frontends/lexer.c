@@ -1885,7 +1885,7 @@ struct constants p2_constants[] = {
     { "_nz",        SYM_CONSTANT, 0x5 },
     { "_ne",        SYM_CONSTANT, 0x5 },
     { "_c_ne_z",    SYM_CONSTANT, 0x6 },
-    { "_Z_ne_c",    SYM_CONSTANT, 0x6 },
+    { "_z_ne_c",    SYM_CONSTANT, 0x6 },
     { "_nz_or_nc",  SYM_CONSTANT, 0x7 },
     { "_nc_or_nz",  SYM_CONSTANT, 0x7 },
 
@@ -2459,7 +2459,7 @@ instr_p2[] = {
     { "setdacs",0x0d60001c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setxfrq",0x0d60001d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "getxacc",0x0d60001e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_STD },
+    { "waitx",  0x0d60001f, P2_DST_CONST_OK, OPC_WAITX, FLAG_P2_STD },
   
     { "setse1", 0x0d600020, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setse2", 0x0d600021, P2_DST_CONST_OK, OPC_GENERIC, 0 },

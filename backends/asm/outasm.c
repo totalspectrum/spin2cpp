@@ -1,7 +1,7 @@
 //
 // Pasm data output for spin2cpp
 //
-// Copyright 2016-2019 Total Spectrum Software Inc.
+// Copyright 2016-2020 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -5384,6 +5384,8 @@ extern Module *globalModule;
  * entry:
  *         mov arg01, par wz
  *   if_nz jmp spininit
+ *         initialize stack
+ *         set clock if necessary
  *         call P->firstfunc using stackcall
  * exit:
  *         cogstop(cogid)
@@ -5498,10 +5500,14 @@ EmitMain_P2(IRList *irl, Module *P)
     Function *firstfunc;
     const char *firstfuncname;
     IR *ir;
-    Operand *spinlabel;
+    Operand *spinlabel, *skip_clock_label;
     Operand *const4 = NewImmediate(4);
     Operand *result1 = GetResultReg(0);
     Operand *arg1 = GetArgReg(0);
+    Operand *pa_reg = GetOneGlobal(REG_HW, "pa", 0);
+    Operand *clkfreq_addr = NewImmediate(0x14);
+    Operand *clkmode_addr = NewImmediate(0x18);
+    uint32_t clkmode, clkfreq;
     int maxArgs = max_coginit_args;
     int i;
 
@@ -5521,6 +5527,7 @@ EmitMain_P2(IRList *irl, Module *P)
     ValidateObjbase();
     cogexit = NewOperand(IMM_COG_LABEL, "cogexit", 0);
     spinlabel = NewOperand(IMM_COG_LABEL, "spininit", 0);
+    skip_clock_label = NewOperand(IMM_COG_LABEL, "skip_clock_set_", 0);
     hubexit = NewOperand(IMM_HUB_LABEL, "hubexit", 0);
 
     ir = EmitOp2(irl, OPC_CMP, stackptr, NewImmediate(0));
@@ -5532,7 +5539,23 @@ EmitMain_P2(IRList *irl, Module *P)
     } else {
         EmitMove(irl, stackptr, stacklabel);
     }
-    //EmitOp1(irl, OPC_HUBSET, NewImmediate(0));
+    if (!GetClkFreqP2(P, &clkfreq, &clkmode)) {
+        clkfreq = 160000000;
+        clkmode = 0x010007fb;
+    }
+    // set the clock if the frequency is not known
+    ir = EmitOp2(irl, OPC_RDLONG, pa_reg, clkfreq_addr);
+    ir->flags |= FLAG_WZ;
+    EmitJump(irl, COND_NE, skip_clock_label);
+    EmitOp1(irl, OPC_HUBSET, NewImmediate(0));
+    EmitOp1(irl, OPC_HUBSET, NewImmediate(clkmode & ~3));
+    EmitOp1(irl, OPC_WAITX, NewImmediate(200000));
+    EmitMove(irl, pa_reg, NewImmediate(clkmode));
+    EmitOp1(irl, OPC_HUBSET, pa_reg);
+    EmitOp2(irl, OPC_WRLONG, pa_reg, clkmode_addr);
+    EmitOp2(irl, OPC_WRLONG, NewImmediate(clkfreq), clkfreq_addr);
+
+    EmitLabel(irl, skip_clock_label);
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {

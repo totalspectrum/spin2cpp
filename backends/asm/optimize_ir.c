@@ -1206,6 +1206,7 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
     case OPC_WAITCNT:
+    case OPC_WAITX:
     case OPC_WRBYTE:
     case OPC_WRLONG:
     case OPC_WRWORD:

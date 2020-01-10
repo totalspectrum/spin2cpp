@@ -89,6 +89,7 @@ typedef enum IROpcode {
     OPC_GETRND,
     OPC_HUBSET,
     OPC_NOT,
+    OPC_WAITX,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     

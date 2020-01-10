@@ -832,7 +832,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 // on P2, make room for CLKFREQ and CLKMODE
                 if (!GetClkFreqP2(P, &clkfreq, &clkreg)) {
                     clkfreq = 160000000;
-                    clkreg = 0x010007f8;
+                    clkreg = 0x010007fb;
                 }
                 flexbuf_addstr(fb, "\tcogid\tpa\n");
                 flexbuf_printf(fb, "\tcoginit\tpa,##$%x\n", P2_HUB_BASE);
