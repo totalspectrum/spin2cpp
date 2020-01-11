@@ -2432,7 +2432,7 @@ instr_p2[] = {
 
     { "hubset", 0x0d600000, P2_DST_CONST_OK,  OPC_HUBSET, 0 },
     { "cogid",  0x0d600001, P2_DST_CONST_OK,  OPC_COGID, FLAG_WC },
-    { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP, FLAG_WC },
+    { "cogstop",0x0d600003, P2_DST_CONST_OK,  OPC_COGSTOP, 0 },
     { "locknew",0x0d600004, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_WC },
     { "lockret",0x0d600005, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "locktry",0x0d600006, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WC },
