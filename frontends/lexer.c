@@ -270,7 +270,6 @@ lexungetc(LexStream *L, int c)
         SYNTAX_ERROR("internal error: unget limit exceeded\n");
     }
     L->ungot[L->ungot_ptr++] = c;
-    if (c == 10) L->eoln = 0;
 }
 
 int
@@ -1116,8 +1115,6 @@ again:
 		} else {
 		  --commentNest;
 		}
-	    } else if (c == '\n' && doccomment) {
-                L->eoln = 1;
             }
             if (commentNest <= 0 || c == EOF) {
                 break;
