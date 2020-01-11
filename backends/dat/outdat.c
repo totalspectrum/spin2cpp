@@ -1952,9 +1952,9 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
         for (divd = 64; divd >= 1; --divd) {
             Fpfd = round(xinfreq / (double)divd);
             mult = round(clkfreq * post / Fpfd);
-            Fvco = Fpfd * mult;
+            Fvco = round(Fpfd * mult);
             Fout = round(Fvco / post);
-            e = abs(Fout - clkfreq);
+            e = fabs(Fout - clkfreq);
             if ( (e <= error) && (Fpfd >= 250000) && (mult <= 1024) && (Fvco > 99e6) && ((Fvco <= 201e6) || (Fvco <= clkfreq + 1e6)) ) {
                 result_divd = divd;
                 result_mult = mult;
