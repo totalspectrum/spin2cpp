@@ -602,7 +602,7 @@ EmitSpinMethods(struct flexbuf *fb, Module *P)
         
         flexbuf_addstr(fb, "'' Code to lock access to the PASM COG\n");
         flexbuf_addstr(fb, "'' The idea here is that (in theory) multiple Spin bytecode threads might\n");
-        flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock mackes sure they don't step on each other.\n");
+        flexbuf_addstr(fb, "'' want access to the PASM COG, so this lock makes sure they don't step on each other.\n");
         flexbuf_addstr(fb, "'' This method also makes sure the remote COG is idle and ready to receive commands.\n");
         flexbuf_addstr(fb, "pri __lock\n");
         flexbuf_addstr(fb, "  repeat\n");
