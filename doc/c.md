@@ -1,29 +1,47 @@
-# Flex C (the C dialect accepted by fastspin)
+# Flex C
+
+## Introduction
+
+FlexC is the C dialect implemented by the fastspin compiler used in FlexGUI. It eventually will implement the C99 standard with some C++ extensions.
+
+fastspin recognizes the language by the extension of the file being compiled. If a file ends in `.c` it is treated as a C file. If a file ends in `.cpp`, `.cc`, or `.cxx` then it is treated as a C++ file; this enables a few keywords not available in C, but otherwise is very similar to C mode (FlexC is not a full featured C++ compiler).
+
+This document assumes that you are familiar with programming in C and with the Parallax Propeller chip. It mostly covers the differences between standard C and FlexC.
 
 ## DEVELOPMENT STATUS
 
-C compiler support is not even at the "beta" stage yet; there are many features missing.
+The C compiler is mostly implemented and could probably be considered "beta" software now, but there are a few missing features.
 
 ### Missing Features
 
 An incomplete list of things that still need to be implemented:
 
-  * 64 bit integers (long long)
-  * struct passing and return
+  * 64 bit integers (long long) are recognized but mostly do not work
+  * struct passing and return is only partially implemented
   * some of the C standard library
 
 ### Known Bugs
 
 There are several known bugs and deviations from the C standard:
 
-(1) Enum declaration
-Enums declared inside of structs have their tags declared in the namespace of the struct; thus in
+(1) Local arrays
+
+It's not currently possible to define and initialize a local array like:
 ```
-struct stype {
-  enum { X } a;
-} s;
+void foo {
+  char x[] = "hello";
+  ...
+}
 ```
-The symbol `X` should be declared at global scope in C, but in FlexC it's only available as `s.X`. (C++ is like FlexC in this regard, so this kind of usage is probably rare.)
+Static arrays and arrays at global scope work, as do pointers variables, so you could write
+```
+  char *x = "hello";
+```
+or
+```
+  static char x[] = "hello";
+```
+instead.
 
 (2) Name Spaces
 
@@ -31,13 +49,7 @@ The namespaces for types and variable names are not separated as they should be,
 
 (3) Doubles
 
-The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't quite meet the requirements in the C99 and later standards for the range available for double.
-
-(4) Struct initialization
-
-Structure initialization is still incomplete and some cases will not work properly.
-
-## Introduction
+The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
 
 ## Preprocessor
 
@@ -63,16 +75,16 @@ In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal a
 
 ### P2 Clock Frequency
 
-The P2 does not have a default clock frequency. You may set up the frequency with the loader (loadp2), but it is probably best to explicitly set it using `clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+The P2 does not have a default clock frequency. You may set up the frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
 
 Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 160 MHz you would do:
 ```
 #define P2_TARGET_MHZ 160
 #include <sys/p2es_clock.h>
 ...
-clkset(_SETFREQ, _CLOCKFREQ);
+_clkset(_SETFREQ, _CLOCKFREQ);
 ```
-The macros `_SETFREQ` and `_CLOCKFREQ` are not special in any way, and this whole mechanism is just provided as a convenience. You may completely ignore it and calculate the mode bits and frequency setting to pass to `clkset` yourself.
+The macros `_SETFREQ` and `_CLOCKFREQ` are not special in any way, and this whole mechanism is just provided as a convenience. You may completely ignore it and calculate the mode bits and frequency setting to pass to `_clkset` yourself.
 
 ## Extensions to C
 
@@ -98,7 +110,7 @@ The syntax of expressions inside inline assembly is the same as that of C, and o
 
 ### Inline Assembly (Spin Style)
 
-Because much existing assembly code is written in the Spin language, FlexC supports inline assembly that uses the Spin rules for expression evaluation and comments. These blocks are like C style inline assembly, but start with the keyword `__pasm` instead of `__asm`. Inside `__pasm` blocks comments start with a single quote, and expressions are evaluated as they are in Spin.
+Because much existing assembly code is written in the Spin language, FlexC supports inline assembly that (mostly) uses the Spin rules for expression evaluation and comments. These blocks are like C style inline assembly, but start with the keyword `__pasm` instead of `__asm`. Inside `__pasm` blocks comments start with a single quote, and expressions are evaluated as they are in Spin.
 
 `__pasm` blocks are still a work in progress, and are probably still incomplete.
 
@@ -120,6 +132,8 @@ Counter x;
 x.setval(0);
 x.incval();
 ```
+
+In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. Note that at present all variables are public, so `class` behaves like `struct`.
 
 ### External Classes (e.g. Spin Objects)
 

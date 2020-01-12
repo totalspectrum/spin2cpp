@@ -4,6 +4,10 @@
 
 Fastspin was designed to accept the language Spin as documented in the Parallax Propeller Manual. It should be able to compile any Spin program, as long as there is space. The restriction is an important one; other Spin compilers produce Spin bytecode, a compact form that is interpreted by a program in the Propeller's ROM. Fastspin produces LMM code, which is basically a slightly modified Propeller machine code (slightly modified to run in HUB memory instead of COG). This is much larger than Spin bytecode, but also much, much faster.
 
+Fastspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
+
+Fastspin also supports many of the features of the proposed Spin2 language as extensions to Spin 1.
+
 ## Preprocessor
 
 fastspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
@@ -107,6 +111,10 @@ returns only the address relative to the start of the `DAT` section.
 
 `CASE_FAST` is just like `CASE`, except that each of the case items must be a constant expression. It is guaranteed to compile to a jump table (regular `CASE` may sometimes compile to a sequence of `IF`/`ELSE IF`).
 
+### coginit/cognew
+
+The `coginit` (and `cognew`) functions in Fastspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)
+
 ### Conditional expressions
 
 IF...THEN...ELSE expressions; you can use IF/THEN/ELSE in an expression, like:
@@ -125,6 +133,52 @@ This may also be written in C / Verilog style as:
 r := (a) ? b : c
 ```
 In the latter form the parentheses around `a` are mandatory to avoid confusion with the random number operator `?`.
+
+### Function Aliases
+
+A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
+```
+PUB _add(x, y)
+  return x+y
+PUB add = _add
+```
+The `PUB add = _add` line says that `add` is an alias for `_add`.
+
+Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
+
+### Default function parameters
+
+fastspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
+```
+VAR
+  long a
+
+PUB inc(n=1)
+  a += n
+
+PUB main
+  inc(2) ' adds 2 to a
+  inc(1) ' adds 1 to a
+  inc    ' same as inc(1)
+  
+```
+The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
+
+#### Default string parameters
+
+If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically fastspin inserts a `string` operator around the literal in this case. So for example in:
+```
+PUB write(msg = string(""))
+  '' do some stuff
+...
+  write(string("hello, world"))
+  write("hello, world")
+```
+the two calls to `write` will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
+```
+  write($68, $65, ..., 0)  ' $68 = ASCII value of "h"
+```
+which is probably not what was intended.
 
 ### Inline assembly
 
@@ -148,22 +202,6 @@ waits until CNT reaches "newcnt", and returns "newcnt + incr".
 
 Note that unlike most Spin blocks, the `asm` block has to end with `endasm`. This is because indentation is not significant inside the assembly code. For example, labels typically start at the leftmost margin.
 
-### Abstract objects and object pointers
-
-The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
-```
-OBJ
-  fds = "FullDuplexSerial"
-```
-declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
-```
-PUB print(f, c)
-  fds[f].dec(c)
-
-PUB doprint22
-  print(@aFullDuplexSerialObj, 22)
-```
-
 ### Method pointers
 
 Pointers to methods may be created with `@` and called using the normal calling syntax. For example:
@@ -186,6 +224,22 @@ No special annotation is needed for functions which return 0 or 1 results. For f
 The `:2` indicates that fptr is a pointer to a function which returns 2 results.
 
 It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
+
+### Object pointers
+
+The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
+```
+OBJ
+  fds = "FullDuplexSerial"
+```
+declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
+```
+PUB print(f, c)
+  fds[f].dec(c)
+
+PUB doprint22
+  print(@aFullDuplexSerialObj, 22)
+```
 
 ### PUB FILE and PRI FILE
 
@@ -212,18 +266,6 @@ pub test
 (For Propeller2 you would have to modify this to use "spin/SmartSerial" and to change the output pins appropriately.)
 
 Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
-
-### Function Aliases
-
-A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
-```
-PUB _add(x, y)
-  return x+y
-PUB add = _add
-```
-The `PUB add = _add` line says that `add` is an alias for `_add`.
-
-Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
 
 ### Multiple return values and assignments
 
@@ -282,40 +324,6 @@ This particular example could be achieved via `lookup`, but there are other case
 
 This feature is still incomplete, and may not work properly for C/C++ output.
 
-### Default function parameters
-
-fastspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
-```
-VAR
-  long a
-
-PUB inc(n=1)
-  a += n
-
-PUB main
-  inc(2) ' adds 2 to a
-  inc(1) ' adds 1 to a
-  inc    ' same as inc(1)
-  
-```
-The default values must, for now, be constant. Perhaps in the future this restriction will be relaxed, but there are some slightly tricky issues involving variable scope that must be resolved first.
-
-#### Default string parameters
-
-If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically fastspin inserts a `string` operator around the literal in this case. So for example in:
-```
-PUB write(msg = string(""))
-  '' do some stuff
-...
-  write(string("hello, world"))
-  write("hello, world")
-```
-the two calls to `write` will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
-```
-  write($68, $65, ..., 0)  ' $68 = ASCII value of "h"
-```
-which is probably not what was intended.
-
 ### Typed parameters and return values
 
 The "expression" in a default parameter may also be a type name, for example `long`, `float`, or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.
@@ -372,11 +380,7 @@ If an address is given, then the code must not have exceeded that address yet, a
 
 Note that labels normally have two values, their COG memory address (specified by the last ORG) and their hub memory address (specified implicitly by how they are placed in RAM). After `orgh` the COG memory address is no longer valid, and the hub memory address may be explicitly given if the `orgh` had a value.
 
-### coginit/cognew
-
-The `coginit` (and `cognew`) functions in Fastspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)
-
-## New intrinsics
+## New intrinsics for both P1 and P2
 
 Fastspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in P2 mode many of these are available without the leading underscore.
 
