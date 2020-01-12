@@ -5821,6 +5821,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             if (func->is_public) {
                 if (func->numparams > maxargs) {
                     maxargs = func->numparams;
+                    if (maxargs > MAX_COGSPIN_ARGS) {
+                        ERROR(NULL, "function %s: too many arguments for .cog.spin", func->name);
+                    }
                 }
                 if (func->numresults > maxrets) {
                     maxrets = func->numresults;
@@ -5860,7 +5863,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             for (pf = Q->functions; pf; pf = pf->next) {
                 if (pf->cog_task) {
                     if (pf->numparams > max_coginit_args) {
-                        if (max_coginit_args > MAX_COGSPIN_ARGS) {
+                        if (pf->numparams > MAX_COGSPIN_ARGS) {
                             ERROR(NULL, "coginit function %s has too many parameters (%d), max is %d",
                                   pf->name, pf->numparams, MAX_COGSPIN_ARGS);
                         } else {
