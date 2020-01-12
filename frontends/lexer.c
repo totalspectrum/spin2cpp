@@ -67,6 +67,7 @@ safe_isdigit(unsigned int x) {
 }
 
 SymbolTable spinReservedWords;
+SymbolTable spin2ReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable basicAsmReservedWords;
 SymbolTable cReservedWords;
@@ -556,6 +557,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     sym = FindSymbol(&spinReservedWords, idstr);
+    // FIXME rather than gl_p2 we should test on .spin2 extension
+    if (gl_p2 && sym == NULL) {
+        sym = FindSymbol(&spin2ReservedWords, idstr);
+    }
     if (sym != NULL) {
         if (sym->kind == SYM_BUILTIN)
         {
@@ -1462,6 +1467,16 @@ struct reservedword {
     { "@@@", SP_TRIPLEAT },
 };
 
+struct reservedword init_spin2_words[] = {
+    { "alignl", SP_ALIGNL },
+    { "alignw", SP_ALIGNW },
+    { "cogspin", SP_COGINIT },
+    { "decod", SP_DECODE },
+    { "encod", SP_ENCODE },
+    { "rotl", SP_ROTL },
+    { "rotr", SP_ROTR },
+};
+
 struct reservedword basic_keywords[] = {
   { "_", BAS_EMPTY },
   
@@ -2033,6 +2048,10 @@ initSpinLexer(int flags)
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
         AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
     }
+    for (i = 0; i < N_ELEMENTS(init_spin2_words); i++) {
+        AddSymbol(&spin2ReservedWords, init_spin2_words[i].name, SYM_RESERVED, (void *)init_spin2_words[i].val, NULL);
+    }
+
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
         AddSymbol(&basicReservedWords, basic_keywords[i].name, SYM_RESERVED, (void *)basic_keywords[i].val, NULL);
     }
@@ -2049,10 +2068,6 @@ initSpinLexer(int flags)
         AddSymbol(&cAsmReservedWords, c_pasm_keywords[i].name, SYM_RESERVED, (void *)c_pasm_keywords[i].val, NULL);
     }
     
-    if (gl_p2 || 1) {
-        AddSymbol(&spinReservedWords, "alignl", SYM_RESERVED, (void *)SP_ALIGNL, NULL);
-        AddSymbol(&spinReservedWords, "alignw", SYM_RESERVED, (void *)SP_ALIGNW, NULL);
-    }
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
         AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
@@ -2081,7 +2096,12 @@ initSpinLexer(int flags)
 int
 IsReservedWord(const char *name)
 {
-    return FindSymbol(&spinReservedWords, name) != 0;
+    int x;
+    x = FindSymbol(&spinReservedWords, name) != 0;
+    if (gl_p2 && !x) {
+        x = FindSymbol(&spin2ReservedWords, name) != 0;
+    }
+    return x;
 }
 
 Instruction *instr;
