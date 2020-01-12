@@ -92,6 +92,7 @@ typedef struct _counter64 {
 
 void      _clkset(uint32_t clkmode, uint32_t clkfreq);
 void      _hubset(uint32_t val);
+void	  _reboot(void);
 
 /* start PASM code in another COG */
 int       _coginit(int cog, void *pgm, void *ptr);

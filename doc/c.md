@@ -253,3 +253,156 @@ Reverses the bits of `y` and then shifts the result right by `32-n` places. This
 ```
 Calculates the square root of `y`. This is not like a normal C function in that the result type depends on the input type. If the input is an integer, the result is an integer. If the input is a float, the result is a float.
 
+## propeller.h
+
+Propeller 1 specific functions are contained in the header file `propeller.h`. Many of these work on P2 as well.
+
+The propeller.h header file is not standardized. FlexC's library mostly follows the PropGCC propeller.h.
+
+### cogstart
+
+```
+int cogstart(void (*func)(void *), void *arg, void *stack, size_tstacksize);
+```
+Starts the C function `func` with argument `arg` in another COG, using `stack` as its stack. Returns the COG started, or -1 on failure.
+
+### getcnt
+
+```
+unsigned getcnt();
+```
+Fetches the current value of the CNT register. Using this instead of directly using CNT will make your code portable to P2.
+
+### getpin
+
+```
+int getpin(int pin);
+```
+Returns the current state of input pin `pin`, either 0 or 1.
+
+### setpin
+
+```
+int setpin(int pin, int val);
+```
+Sets the output pin `pin` to 0 if `val` is 0, or 1 otherwise.
+
+### togglepin
+
+```
+void togglepin(int pin, int val);
+```
+Inverts the output pin `pin`.
+
+## propeller2.h
+
+Propeller 2 specific functions are contained in the header file `propeller2.h`. This file is usually quite portable among C compilers.
+
+### COG and Clock control
+
+#### _clkset
+
+```
+void _clkset(uint32_t clkmode, uint32_t clkfreq);
+```
+Sets the system clock to a new frequency `clkfreq`, using clock mode bits `clkmode`.  Note that correct setting of the clock depends on the actual crystal frequency of the hardware the program is being run on. No validation is performed by `_clkset`. The user is responsible for ensuring that `clkmode` is a valid mode and that `clkfreq` does in fact correspond to `clkmode` on this system.
+
+#### _cnt
+
+```
+uint32_t _cnt(void);
+```
+Returns the low 32 bits of the system clock counter.
+
+#### _cnth
+
+```
+uint32_t _cnth(void);
+```
+Returns the upper 32 bits of the system clock counter.
+
+#### _cogchk
+
+```
+int _cogchk(int n);
+```
+Checks to see if cog `n` is running. Returns 1 if it is, 0 if it is not.
+
+#### _coginit
+
+```
+int _coginit(int cogid, void *cogpgm, void *ptra)
+```
+Starts PASM code in another COG. `cogid` is the ID of the COG to start, or `ANY_COG` if a new one should be allocated. `cogpgm` points to the compiled PASM code to start, and `ptra` is a value to be placed in the new COG's `ptra` register. Returns the ID of the new COG, or -1 on failure.
+
+#### _cogstop
+
+```
+void _cogstop(int cogid);
+```
+Stops the given COG.
+
+#### _reboot
+
+```
+void _reboot(void);
+```
+Reboots the P2. Needless to say, this function never returns.
+
+#### _waitx
+
+```
+void _waitx(uint32_t delay);
+```
+Waits for `delay` clock cycles.
+
+### Regular Pin I/O
+
+#### _pinf
+
+```
+void      _pinf(int pin);
+```
+Forces pin `pin` to float low.
+
+#### _pinl
+
+```
+void      _pinl(int pin);
+```
+Makes pin `pin` an output and forces it low.
+
+#### _pinh
+
+```
+void      _pinh(int pin);
+```
+Makes pin `pin` an output and forces it high.
+
+#### _pinnot
+
+```
+void      _pinnot(int pin);
+```
+Makes pin `pin` an output and inverts it.
+
+#### _pinrnd
+
+```
+void      _pinrnd(int pin);
+```
+Makes pin `pin` an output and sets it to a random bit value.
+
+#### _pinr
+
+```
+int       _pinr(int pin);
+```
+Makes pin `pin` an input and returns its current value (0 or 1).
+
+#### _pinw
+
+```
+void      _pinw(int pin, int val);
+```
+Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined.
