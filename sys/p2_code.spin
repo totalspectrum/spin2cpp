@@ -92,44 +92,43 @@ dat
     orgh
 _bitcycles long 0
 
-pri _setbaud(rate)
-  _bitcycles := _clkfreq_var / rate
-  _baudrate := rate '' update global config area
-  
 con
- _rxpin = 31
- _txpin = 30
- 
-pri _txraw(c) | val, nextcnt, bitcycles
-  bitcycles := _bitcycles
-  if (bitcycles == 0)
-    if clkfreq == 0
-      clkset($010007f8, 160_000_000)
-    _setbaud(230_800)
-    bitcycles := _bitcycles
-  DIRB[_txpin] := 1
-  OUTB[_txpin] := 1
-  val := (c | 256) << 1
-  nextcnt := cnt
-  repeat 10
-    waitcnt(nextcnt += bitcycles)
-    OUTB[_txpin] := val
-    val >>= 1
+ _rxpin = 63
+ _txpin = 62
+
+  _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
+  _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
+
+pri _setbaud(baudrate) | bitperiod, bit_mode
+  bitperiod := (CLKFREQ / baudrate)
+  _dirl(_txpin)
+  _dirl(_rxpin)
+  _bitcycles := bitperiod
+  bit_mode := 7 + (bitperiod << 16)
+  wrpin(_txpin, _txmode)
+  wxpin(_txpin, bit_mode)
+  wrpin(_rxpin, _rxmode)
+  wxpin(_rxpin, bit_mode)
+  _dirh(_txpin)
+  _dirh(_rxpin)
+  
+pri _txraw(c) | z
+  if _bitcycles == 0
+    _setbaud(230_400)
+  wypin(_txpin, c)
+  _waitx(1)
+  repeat
+    z := _pinr(_txpin)
+  while z == 0
   return 1
 
-
-pri _rxraw | val, waitcycles, i, bitcycles
-  bitcycles := _bitcycles
-  DIRB[_rxpin] := 0
-  repeat
-  while INB[_rxpin] <> 0
-  waitcycles := cnt + (bitcycles>>1)
-  val := 0
-  repeat 8
-    waitcnt(waitcycles += bitcycles)
-    val := (INB[_rxpin] << 7) | (val>>1)
-  waitcnt(waitcycles + bitcycles)
-  return val
+pri _rxraw : rxbyte = long | z
+  if _bitcycles == 0
+    _setbaud(230_400)
+  rxbyte := -1
+  z := pinr(_rxpin)
+  if z
+    rxbyte := rdpin(_rxpin)>>24
 
 pri _call_method(o, f, x=0) | r
   asm
