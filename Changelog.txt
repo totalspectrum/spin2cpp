@@ -7,6 +7,7 @@ Version 4.1.0
 - Added [] pointer dereference operator for FreeBasic compatibility.
 - Added exponentiation operator ^ to BASIC
 - Allowed multiple assignment and functions which return multiple values in BASIC
+- Cleaned up -w output a bit for P2
 - Implemented _ for skipping assignments in multiple assignments
 - Implemented a few more peephole optimizations for P2
 - Made sure all of the results in a multi-result function are initialized to 0 for Spin

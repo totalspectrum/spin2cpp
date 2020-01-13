@@ -827,7 +827,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         inCon = 0;
         inDat = 1;
         if (!didOrg) {
-            if (gl_p2 && !gl_no_coginit) {
+            if (gl_p2 && !gl_no_coginit && gl_output != OUTPUT_COGSPIN) {
                 unsigned int clkfreq, clkreg;
                 // on P2, make room for CLKFREQ and CLKMODE
                 if (!GetClkFreqP2(P, &clkfreq, &clkreg)) {
@@ -859,6 +859,21 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 break;
             default:
                 break;
+            }
+        }
+        if (gl_output == OUTPUT_COGSPIN) {
+            // use call/ret instead of calla/reta
+            if (ir->opc == OPC_CALL) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "call\t");
+                PrintOperandSrc(fb, ir->dst, ir->dsteffect);
+                flexbuf_addstr(fb, "\n");
+                return;
+            }
+            if (ir->opc == OPC_RET) {
+                PrintCond(fb, ir->cond);
+                flexbuf_addstr(fb, "ret\n");
+                return;
             }
         }
     } else {
