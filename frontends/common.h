@@ -143,6 +143,7 @@ extern int gl_caseSensitive; /* whether Spin/PASM is case sensitive */
 extern int gl_no_coginit;    /* skip coginit code */
 
 extern int gl_exit_status;   /* after exit return exit code via special sequence */
+extern int gl_relocatable;   /* 1 for position independent output */
 
 /* LMM kind selected */
 extern int gl_lmm_kind;

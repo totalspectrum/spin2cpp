@@ -59,6 +59,7 @@ int gl_fixedreal = 0;
 unsigned int gl_hub_base = 0x400;
 int gl_no_coginit = 0;
 int gl_lmm_kind = LMM_KIND_ORIG;
+int gl_relocatable = 0;
 
 // bytes and words are unsigned by default, but longs are signed by default
 // this is confusing, and someday we should make all of these explicit
