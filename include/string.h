@@ -17,6 +17,9 @@ extern "C" {
     char * strcat(char * __restrict dest, const char * __restrict src) _IMPL("libc/string/strcat.c");
     char * strncat(char * __restrict dest, const char * __restrict src, size_t n) _IMPL("libc/string/strncat.c");
 
+    size_t strcspn(char *s, const char *accept) _IMPL("libc/string/strcspn.c");
+    size_t strspn(char *s, const char *reject) _IMPL("libc/string/strspn.c");
+    
     int    memcmp(const void *s1, const void *s2, size_t n) _IMPL("libc/string/memcmp.c");
     int    strcmp(const char *s1, const char *s2) _IMPL("libc/string/strcmp.c");
     int    strcoll(const char *s1, const char *s2);
