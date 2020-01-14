@@ -102,3 +102,6 @@ static __inline__ void togglepin(int pin)
     _OUTA ^= mask;
     _DIRA |= mask;
 }
+
+
+#define cognew(code, data) _coginit(0x10, code, data)
