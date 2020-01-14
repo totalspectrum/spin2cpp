@@ -725,7 +725,7 @@ doDeclareFunction(AST *funcblock)
     }
     /* look for an existing definition */
     sym = FindSymbol(&current->objsyms, funcname_internal);
-    if (sym) {
+    if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind != SYM_FUNCTION) {
             ERROR(funcdef, "Redefining %s as a function", funcname_user);
             return NULL;
