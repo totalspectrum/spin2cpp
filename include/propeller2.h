@@ -142,7 +142,9 @@ counter64_t _cnthl();  /* fetch both together */
 uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);
 
-void      _waitx(uint32_t delay);
+void      _waitx(uint32_t cycles);
+void	  _waitms(uint32_t milliseconds);
+void	  _waitus(uint32_t microseconds);
 
 /* regular pin I/O */
 void      _pinw(int pin, int val);

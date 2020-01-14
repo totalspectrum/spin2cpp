@@ -153,7 +153,8 @@ Aliases spin2alias[] = {
 
     { "cogatn", "__builtin_propeller_cogatn" },
     { "waitx", "__builtin_propeller_waitx" },
-    { "waitms", "pausems" },
+    { "waitms", "_waitms" },
+    { "waitus", "_waitus" },
     
     /* for C usage */
     { "_pinf", "__builtin_propeller_fltl" },
@@ -189,6 +190,8 @@ Aliases basicalias[] = {
     { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
+    { "pausems", "_pausems" },
+    { "pauseus", "_pauseus" },
     { "pinlo", "__builtin_propeller_drvl" },
     { "pinhi", "__builtin_propeller_drvh" },
     { "pinset", "__builtin_propeller_drv" },
