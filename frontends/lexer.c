@@ -3494,7 +3494,8 @@ parse_number:
         c = C_CONSTANT;
     } else if (c == '.') {
         c2 = lexgetc(L);
-        if (gl_p2 && InDatBlock(L) && isIdentifierStart(lexpeekc(L))) {
+        if (gl_p2 && InDatBlock(L) && (isIdentifierStart(c2) || safe_isdigit(c2)) ) {
+            lexungetc(L, c2);
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             if (safe_isdigit(c2)) {
