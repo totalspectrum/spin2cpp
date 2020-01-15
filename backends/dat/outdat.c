@@ -868,8 +868,9 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             if (mod->flags & (FLAG_CZSET)) {
                 sawFlagUsed = true;
             }
-            *effectFlags |= mod->flags;
-
+            if (effectFlags) {
+                *effectFlags |= mod->flags;
+            }
             /* verify here that the modifier is permitted for this instruction */
             if (mod->flags) {
                 if (0 == (mod->flags & instr->flags)) {
