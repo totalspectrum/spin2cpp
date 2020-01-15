@@ -18,6 +18,7 @@ Version 4.1.0
 - Fixed a problem with calculating sizes of arrays referenced as "foo.bar"
 - Fixed comments at end-of-line in Spin
 - Fixed a problem with local labels in C __pasm
+- Fixed a bug in handling of wcz modifier in inline assembly
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code
