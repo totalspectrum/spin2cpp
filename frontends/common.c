@@ -136,6 +136,7 @@ Aliases spin2alias[] = {
     { "pinnot", "__builtin_propeller_drvnot" },
     { "pinrnd", "__builtin_propeller_drvrnd" },
     { "pinr", "__builtin_propeller_pinr" },
+    { "pinf", "__builtin_propeller_fltl" },
     
     { "getct", "_getcnt" },
 
@@ -190,8 +191,8 @@ Aliases basicalias[] = {
     { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
-    { "pausems", "_pausems" },
-    { "pauseus", "_pauseus" },
+    { "pausems", "_waitms" },
+    { "pauseus", "_waitus" },
     { "pinlo", "__builtin_propeller_drvl" },
     { "pinhi", "__builtin_propeller_drvh" },
     { "pinset", "__builtin_propeller_drv" },
