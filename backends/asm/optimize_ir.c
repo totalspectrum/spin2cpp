@@ -232,7 +232,7 @@ InstrSetsFlags(IR *ir, int flags)
 static bool
 InstrSetsAnyFlags(IR *ir)
 {
-    return InstrSetsFlags(ir, FLAG_WZ|FLAG_WC);
+    return InstrSetsFlags(ir, FLAG_CZSET);
 }
 
 static bool
@@ -2051,19 +2051,21 @@ OptimizePeepholes(IRList *irl)
                     if (InstrSetsFlags(ir, FLAG_WZ)) {
                         ReplaceOpcode(ir, OPC_CMP);
                         ir->src->val = 0;
-                    } else {
+                        changed = 1;
+                    } else if (!InstrSetsAnyFlags(ir)) {
                         DeleteIR(irl, ir);
+                        changed = 1;
                     }
-                    changed = 1;
                     goto done;
                 } else if (opc == OPC_OR && ((oldmask | newmask) == oldmask)) {
                     if (InstrSetsFlags(ir, FLAG_WZ)) {
                         ReplaceOpcode(ir, OPC_CMP);
                         ir->src->val = 0;
-                    } else {
+                        changed = 1;
+                    } else if (!InstrSetsAnyFlags(ir)) {
                         DeleteIR(irl, ir);
+                        changed = 1;
                     }
-                    changed = 1;
                     goto done;
                 }
             }

@@ -272,6 +272,12 @@ CompileInlineInstr(IRList *irl, AST *ast)
     ival |= (gl_p2) ? (0xf<<28) : (0xf<<18); // set initial condition flags
     
     numoperands = DecodeAsmOperands(instr, ast, operands, opimm, &ival, &effectFlags);
+    /* replace wcz with wc,wz if we can, to make the optimizer's job
+       easier */
+    if ( (effectFlags & FLAG_WCZ) && instr->flags != FLAG_P2_CZTEST ) {
+        effectFlags &= ~FLAG_WCZ;
+        effectFlags |= (FLAG_WZ|FLAG_WC);
+    }
     ir->flags = effectFlags;
     // check for conditional execution
     if (gl_p2) {

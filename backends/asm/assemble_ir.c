@@ -1119,7 +1119,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             }
             break;
         }
-        ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR);
+        ccset = ir->flags & (FLAG_WC|FLAG_WZ|FLAG_NR|FLAG_WR|FLAG_WCZ|FLAG_ANDC|FLAG_ANDZ|FLAG_ORC|FLAG_ORZ|FLAG_XORC|FLAG_XORZ);
         if (ccset) {
             const char *sepstring = " ";
             if (gl_p2 && ((FLAG_WC|FLAG_WZ) == (ccset & (FLAG_WC|FLAG_WZ)))) {
@@ -1139,6 +1139,20 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 flexbuf_printf(fb, "%snr", sepstring);
             } else if (ccset & FLAG_WR) {
                 flexbuf_printf(fb, "%swr", sepstring);
+            } else if (ccset & FLAG_WCZ) {
+                flexbuf_printf(fb, "%swcz", sepstring);
+            } else if (ccset & FLAG_ANDC) {
+                flexbuf_printf(fb, "%sandc", sepstring);
+            } else if (ccset & FLAG_ANDZ) {
+                flexbuf_printf(fb, "%sandz", sepstring);
+            } else if (ccset & FLAG_ORC) {
+                flexbuf_printf(fb, "%sorc", sepstring);
+            } else if (ccset & FLAG_ORZ) {
+                flexbuf_printf(fb, "%sorz", sepstring);
+            } else if (ccset & FLAG_XORC) {
+                flexbuf_printf(fb, "%sxorc", sepstring);
+            } else if (ccset & FLAG_XORZ) {
+                flexbuf_printf(fb, "%sxorz", sepstring);
             }
         }
 #if 0        
