@@ -140,10 +140,12 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
     AST *actualtype;
     int size;
     int typesize;
+    ASTReportInfo saveinfo;
     
     for (lower = varlist; lower; lower = lower->right) {
         if (lower->kind == AST_LISTHOLDER) {
             ast = lower->left;
+            AstReportAs(ast, &saveinfo);
             if (ast->kind == AST_DECLARE_VAR) {
                 actualtype = ast->left;
                 ast = ast->right;
@@ -227,8 +229,10 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             }
         } else {
             ERROR(lower, "Expected list of variables, found %d instead", lower->kind);
+            AstReportDone(&saveinfo);
             return offset;
         }
+        AstReportDone(&saveinfo);
     }
     return offset;
 }
