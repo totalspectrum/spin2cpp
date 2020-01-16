@@ -1761,6 +1761,11 @@ classend: BAS_END BAS_CLASS
 ;
 
 classdeclitem:
+| dimlist BAS_AS typename
+    {
+        AST *ast = NewAST(AST_DECLARE_VAR, $3, $1);
+        DeclareBASICMemberVariables(ast);
+    }
 | dimension
     {
         AST *ast = $1;
