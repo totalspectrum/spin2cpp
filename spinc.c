@@ -172,7 +172,7 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     AST *upper;
     AST *ast;
     AST *curtype;
-    int curtypesize;
+    int curtypesize = basetypesize;
     int isUnion = P->isUnion;
     AST *varblocklist;
 
