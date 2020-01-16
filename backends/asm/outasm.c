@@ -3822,13 +3822,16 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
     }
 }
 
+#define MAX_TMP_REGS 4
+
 static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
 {
-    Operand *temp = NULL;
-    Operand *temp2 = NULL;
+    Operand *temps[MAX_TMP_REGS] = { 0 };
+    unsigned i;
     Operand *dst = origdst;
     Operand *src = origsrc;
     IR *ir = NULL;
+    unsigned num_tmp_regs = 1;
 
     if (IsEmptyOperand(origdst)) {
         return ir;
@@ -3838,24 +3841,37 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
     }
     if (IsMemRef(src)) {
         int off = src->val;
-        Operand *where;
-        
+        Operand *where = NULL;
+        unsigned size = origsrc->size;
+        num_tmp_regs = (size + 3) / 4;
+
+        if (num_tmp_regs > MAX_TMP_REGS) {
+            ERROR(NULL, "too many temporary registers needed");
+            return ir;
+        }
         // if we are reading into a register, no need for
         // a temp (unless there's an offset, in which case we
         // need to watch out for the case where src == dst)
         src = (Operand *)src->name;
-        if (IsValidDstReg(origdst) && (off == 0 || src != dst)) {
-            where = origdst;
+        if (IsValidDstReg(origdst) && (off == 0 || src != dst) && num_tmp_regs == 1) {
+            temps[0] = where = origdst;
         } else {
-            where = temp = NewFunctionTempRegister();
+            for (i = 0; i < num_tmp_regs; i++) {
+                temps[i] = NewFunctionTempRegister();
+            }
+            where = temps[0];
         }
         if (off) {
             EmitAddSub(irl, src, off);
         }
         if (origsrc->kind == COGMEM_REF) {
-            ir = EmitCogread(irl, where, src);
+            for (i = 0; i < num_tmp_regs; i++) {
+                ir = EmitCogread(irl, temps[i], src);
+                if (i+1 != num_tmp_regs) {
+                    src = OffsetMemory(irl, src, NewImmediate(4), NULL);
+                }
+            }
         } else if (origsrc->kind == HUBMEM_REF) {
-            int size = origsrc->size;
             if (size == 4) {
                 ir = EmitOp2(irl, OPC_RDLONG, where, src);
             } else if (size == 2) {
@@ -3863,8 +3879,14 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             } else if (size == 1) {
                 ir = EmitOp2(irl, OPC_RDBYTE, where, src);
             } else {
-                ERROR(NULL, "Cannot handle memrefs of size %d", size);
-                ir = EmitOp2(irl, OPC_RDBYTE, where, src);
+                Operand *inc4 = NewImmediate(4);
+                for (i = 0; i < num_tmp_regs; i++) {
+                    ir = EmitOp2(irl, OPC_RDLONG, temps[i], src);
+                    if (i != (num_tmp_regs-1)) {
+                        ir = EmitOp2(irl, OPC_ADD, src, inc4);
+                    }
+                }
+                EmitAddSub(irl, src, -4*(num_tmp_regs-1));
             }
         } else {
             ERROR(NULL, "Illegal memory reference");
@@ -3873,12 +3895,14 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         if (off) {
             EmitAddSub(irl, src, -off);
         }
-        if (where == origdst)
+        if (where == origdst) {
             return ir;
-        src = temp;
+        }
+        src = temps[0];
     }
     if (IsMemRef(origdst)) {
         int off = dst->val;
+        Operand *temp2;
         dst = (Operand *)dst->name;
         // the "STRING_DEF" case is missed above on p2, where
         // we can deliberately refer to memory; but mem-mem moves
@@ -3892,6 +3916,10 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             EmitAddSub(irl, dst, off);
         }
         if (origdst->kind == COGMEM_REF) {
+            if (num_tmp_regs != 1) {
+                ERROR(NULL, "Cannot handle multiple COG writes yet");
+                return ir;
+            }
             ir = EmitCogwrite(irl, src, dst);
         } else if (origdst->kind == HUBMEM_REF) {
             int size = origdst->size;
@@ -3902,7 +3930,18 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
             } else if (size == 1) {
                 ir = EmitOp2(irl, OPC_WRBYTE, src, dst);
             } else {
-                ERROR(NULL, "Cannot handle memref of size %d", size);
+                Operand *inc4 = NewImmediate(4);
+                if (src != temps[0]) {
+                    ERROR(NULL, "Cannot handle memref of size %d", size);
+                    return ir;
+                }
+                for (i = 0; i < num_tmp_regs; i++) {
+                    EmitOp2(irl, OPC_WRLONG, temps[i], dst);
+                    if ( (i+1) != num_tmp_regs) {
+                        EmitOp2(irl, OPC_ADD, dst, inc4);
+                    }
+                }
+                EmitAddSub(irl, dst, -4*(num_tmp_regs-1));
             }
         } else {
             ERROR(NULL, "Illegal memory reference");
