@@ -9,38 +9,38 @@ CON
 
 VAR
   long rx_pin, tx_pin
-  long cur_bitrate
 
 '' if baudrate of -1 is given, auto baud detection is employed
 
-PUB start(rxpin, txpin, mode, baudrate) | bitperiod, txmode, rxmode, bit_mode
+PUB start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   if baudrate == -1
     bitperiod := autobaud(rxpin)
   else
     bitperiod := (CLKFREQ / baudrate)
 
-  _dirl(txpin)
-  _dirl(rxpin)
-  cur_bitrate := bitperiod
-  bit_mode := 7 + (bitperiod << 16)
+  ' save parameters in the object
   rx_pin := rxpin
   tx_pin := txpin
-  txmode := _txmode
-  rxmode := _rxmode
-  wrpin(txpin, txmode)
+
+  ' calculate smartpin mode for 8 bits per character
+  bit_mode := 7 + (bitperiod << 16)
+
+  ' set up the transmit pin
+  pinf(txpin)
+  wrpin(txpin, _txmode)
   wxpin(txpin, bit_mode)
-  _dirh(txpin)
-  wrpin(rxpin, rxmode)
+  pinl(txpin)	' turn smartpin on by making the pin an output
+
+  ' set up the receive pin
+  pinf(rxpin)
+  wrpin(rxpin, _rxmode)
   wxpin(rxpin, bit_mode)
-  _dirh(rxpin)
+  pinl(rxpin)  ' turn smartpin on
 
   return 1
 
-PUB getrate
-  return cur_bitrate
-
 PRI autobaud(pin) | a, b, c, delay, port, mask
-  _dirl(pin)   ' set pin low
+  pinf(pin)   ' set pin as input
   waitx(1000) ' wait to settle
   if pin => 32
     port := 1
@@ -85,16 +85,13 @@ PRI autobaud(pin) | a, b, c, delay, port, mask
 PUB start_default(baudrate)
   return start(63, 62, 0, baudrate)
   
-PUB tx(val) | txpin
-  txpin := tx_pin
-  wypin(txpin, val)
-  waitx(1)
+PUB tx(val)
+  wypin(tx_pin, val)
   txflush
 
 PUB txflush | txpin, z
-  txpin := tx_pin
   repeat
-    z := pinr(txpin)
+    z := pinr(tx_pin)
   while z == 0
   
 ' check if byte received (never waits)
