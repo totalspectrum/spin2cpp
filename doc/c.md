@@ -62,7 +62,6 @@ Symbol           | When Defined
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
 `__FLEXC__`      | always defined to the fastspin version number
 `__FASTSPIN__`   | always defined to the fastspin version number
-`__cplusplus`    | if C++ is being output (not currently implemented)
 `__P2__`         | only defined if compiling for Propeller 2 (obsolete)
 `__propeller2__` | only defined if compiling for Propeller 2
 `__ILP32__`      | always defined; some programs use this to determine pointer size

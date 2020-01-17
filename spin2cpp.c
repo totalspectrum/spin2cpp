@@ -532,9 +532,6 @@ main(int argc, const char **argv)
     }
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
         pp_define(&gl_pp, "__SPIN2CPP__", "1");
-        if (gl_output == OUTPUT_CPP) {
-            pp_define(&gl_pp, "__cplusplus", "1");
-        }
     }
     pp_define(&gl_pp, "__ILP32__", "1");
     if (gl_p2) {
