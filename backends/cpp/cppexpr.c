@@ -775,6 +775,9 @@ doPrintType(Flexbuf *f, AST *typedecl, int addspace, int flags)
             //flexbuf_printf(f, "int32_t");
             flexbuf_printf(f, "%s%s", gl_intstring, space);
             break;
+        case 8:
+            flexbuf_printf(f, "int64_t%s", space);
+            break;
         default:
             ERROR(typedecl, "unsupported integer size %d", size);
             break;
@@ -1512,12 +1515,12 @@ PrintExpr(Flexbuf *f, AST *expr, int flags)
         } else {
             objtype = NULL;
             objref = NULL;
-            sym = LookupAstSymbol(expr->left, "function call");
+            sym = LookupAstSymbol(expr->left, NULL);
             if (gl_ccode && sym && sym->kind == SYM_FUNCTION)
                 flexbuf_printf(f, "%s_", current->classname);
         }
         if (!sym) {
-            /* we already printed an error; punt and stick whatever identifier
+            /* if we can't find a symbol, punt and stick whatever identifier
                we can find in the output */
             const char *name = GetIdentifierName(expr->left);
             if (name) {

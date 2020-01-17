@@ -43,13 +43,12 @@ PrintParameterList(Flexbuf *f, Function *func)
         if (needcomma) {
             flexbuf_printf(f, ", ");
         }
+        if (!ast) {
+            ast = AstTempIdentifier("param");
+        }
         if (ast->kind == AST_VARARGS) {
             flexbuf_printf(f, "...");
-        } else {
-            if (ast->kind != AST_IDENTIFIER) {
-                ERROR(ast, "Internal error: expected identifier in function parameter list");
-                return;
-            }
+        } else if (IsIdentifier(ast)) {
             sym = FindSymbol(&func->localsyms, ast->d.string);
             if (sym && sym->kind == SYM_PARAMETER && sym->val) {
                 typ = (AST *)sym->val;
@@ -58,6 +57,9 @@ PrintParameterList(Flexbuf *f, Function *func)
             }
             PrintType(f, typ, 0);
             CppPrintName(f, ast->d.string, 0);
+        } else {
+            // assume it's a type
+            PrintType(f, ast, 0);
         }
         needcomma = 1;
         list = list->right;
