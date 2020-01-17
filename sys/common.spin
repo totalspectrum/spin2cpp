@@ -258,8 +258,9 @@ pri file "libsys/strings.bas" right`$(x, n)
 pri file "libsys/strings.bas" mid`$(s, n=0, m=9999999)
 pri file "libsys/strings.bas" chr`$(x)
 pri file "libsys/strings.bas" str`$(x=float)
-pri file "libsys/strings.bas" hex`$(x, n)
-pri file "libsys/strings.bas" bin`$(x, n)
+pri file "libsys/strings.bas" hex`$(x, n=0)
+pri file "libsys/strings.bas" bin`$(x, n=0)
+pri file "libsys/strings.bas" oct`$(x, n=0)
 
 '' pri file "libc/string/strlen.c" __builtin_strlen(x)
 

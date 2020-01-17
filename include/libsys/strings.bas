@@ -90,11 +90,30 @@ function str$(x as single) as string
 end function
 
 '
-' convert a number v in base B to a string with n digits
+' convert a number val in base B to a string with n digits
+' if n == 0 then we just use enough digits to fit
 '
-function number$(v as uinteger, n as uinteger, B as uinteger) as string
+function number$(val as uinteger, n as uinteger, B as uinteger) as string
   dim s as ubyte ptr
   dim d as uinteger
+  dim tmp as uinteger
+  dim lasttmp as uinteger
+  
+  if n = 0 then
+     ' figure out how many digits we need
+     n = 1
+     tmp = B
+     lasttmp = 1
+     ' we have to watch out for overflow in very large
+     ' numbers; if tmp wraps around (so tmp < last tmp)
+     ' then stop
+     while tmp < val and lasttmp < tmp
+       lasttmp = tmp
+       tmp = tmp * B
+       n = n + 1
+     end while
+  end if
+  ' for 32 bit numbers we'll never need more than 32 digits
   if n > 32 then
     n = 32
   endif
@@ -102,8 +121,8 @@ function number$(v as uinteger, n as uinteger, B as uinteger) as string
   s[n] = 0
   while n > 0
     n -= 1
-    d = v mod B
-    v = v / B
+    d = val mod B
+    val = val / B
     if d < 10 then
       d = d + ASC("0")
     else
@@ -114,10 +133,14 @@ function number$(v as uinteger, n as uinteger, B as uinteger) as string
   return s
 end function
 
-function hex$(v as uinteger, n as uinteger)
+function hex$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 16)
 end function
 
-function bin$(v as uinteger, n as uinteger)
+function bin$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 2)
+end function
+
+function oct$(v as uinteger, n=0 as uinteger)
+  return number$(v, n, 8)
 end function

@@ -253,6 +253,7 @@ left$
 len
 log
 mid$
+oct$
 outa
 outb
 pausems
@@ -945,8 +946,9 @@ The main difference between `asm` and `asm shared` is that the `asm shared` bloc
 
 ```
   s = bin$(x, n)
+  t = bin$(x)
 ```
-returns a string representing the unsigned integer `x` in binary notation. Only the lowest `n` digits of the representation are included; use 32 if you want to get all of the digits.
+Returns a string representing the unsigned integer `x` in binary notation. Only the lowest `n` digits of the representation are included; use 32 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
 
 ### __BUILTIN_ALLOCA
 
@@ -1561,8 +1563,9 @@ Declares the amount of space to be used for internal memory allocation by things
 
 ```
   s = hex$(x, n)
+  t = hex$(x)
 ```
-returns a string representing the unsigned integer `x` in hexadecimal notation (base 10). Only the lowest `n` digits of the representation are included; use 8 if you want to get all of the digits.
+returns a string representing the unsigned integer `x` in hexadecimal notation (base 10). Only the lowest `n` digits of the representation are included; use 8 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
 
 ### IF
 
@@ -1769,6 +1772,14 @@ A special pointer value that indicates an invalid pointer. `nil` may be returned
 Inverts all bits in the destination. This is basically the same as `b xor -1`.
 
 In logical (boolean) conditions, since the TRUE condition is all 1 bits set, this operation has its usual effect of reversing TRUE and FALSE.
+
+### OCT$
+
+```
+  s = oct$(x, n)
+  t = oct$(x)
+```
+Returns a string representing the unsigned integer `x` in base 8. Only the lowest `n` digits of the representation are included. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
 
 ### ON X GOTO
 
