@@ -1810,7 +1810,7 @@ CheckFunctionCalls(AST *ast)
                     for (i = 0; i < n; i++) {
                         AST *temp = NewAST(AST_EXPRLIST,
                                            NewAST(AST_ARRAYREF,
-                                                  addr, AstInteger(n)), NULL);
+                                                  addr, AstInteger(i)), NULL);
                         exprlist = AddToList(exprlist, temp);
                     }
                 }
