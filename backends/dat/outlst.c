@@ -1,6 +1,7 @@
 #include "spinc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static uint32_t cogPc;
 static uint32_t hubPc;
@@ -70,6 +71,38 @@ static void AddRestOfLine(Flexbuf *f, const char *s) {
     }
 }
 
+// check for Org in DAT output
+// DAT sections get compiled to binary blobs with '-' comments giving the
+// original code; but in listings we want COG addresses to show up, so we
+// need to look for ORG / ORGH
+static void CheckForOrg(const char *theline)
+{
+    const char *s = theline;
+    
+    while (*s && isspace(*s)) s++;
+    if (*s == '\'' || *s == '{') return;
+    if (!strncasecmp(s, "org", 3)) {
+        if (s[3] == 'h' || s[3] == 'H') {
+            inCog = 0;
+        } else if (!s[3] || isspace(s[3])) {
+            s += 3;
+            if (isspace(*s)) s++;
+            // Aargh, need to find the actual COG PC
+            while (*s && *s != '$') s++;
+            if (*s == '$') {
+                s++;
+                if (*s) {
+                    cogPc = strtoul(s, NULL, 16);
+                    inCog = 1;
+                }
+            } else if (!*s) {
+                cogPc = 0;
+                inCog = 1;
+            }
+        }
+    }
+}
+
 // AppendOneSrcLine:
 // normally, this should just append line "line"
 // however, if the line starts with '-' then skip it
@@ -99,6 +132,7 @@ static bool AppendOneSrcLine(Flexbuf *f, int line, LexStream *L, bool needsStart
         }
         if (!strncmp(nextline, "'-' ", 4)) {
             theline = theline + 4;
+            CheckForOrg(theline);
         } else {
             return false; // skip this line
         }
@@ -109,6 +143,8 @@ static bool AppendOneSrcLine(Flexbuf *f, int line, LexStream *L, bool needsStart
     }
     if (prevline && !strncmp(prevline, "'-' ", 4)) {
         theline = prevline + 4;
+        // check for ORG and ORGH
+        CheckForOrg(theline);
     }
     // skip over preprocessor comments
     if (theline[0] == '{' && theline[1] == '#') {
