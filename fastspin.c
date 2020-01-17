@@ -106,7 +106,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(f, "  [ -2# ]             compile for Prop2\n");
     fprintf(f, "          -2a = original silicon\n");
-    fprintf(f, "          -2b = rev B silicon\n");
+    fprintf(f, "          -2b = rev B or rev C silicon\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");

@@ -1,3 +1,7 @@
+# PASM Output
+
+This document describes some details of the PASM code output by fastspin.
+
 Calling Conventions
 ===================
 

@@ -1787,7 +1787,8 @@ CheckFunctionCalls(AST *ast)
                 AST *lhsseq = NULL;
                 AST *assign;
                 AST *newparams;
-
+                AST *exprlist;
+                
 		if (n > MAX_TUPLE) {
 		  ERROR(ast, "argument too large to pass on stack");
 		  n = MAX_TUPLE-1;
@@ -1800,7 +1801,20 @@ CheckFunctionCalls(AST *ast)
                 // create the new parameters
                 newparams = DupAST(lhsseq);
                 // create an initialization for the temps
-                assign = AstAssign(lhsseq, a->left);
+                exprlist = a->left;
+                if (IsIdentifier(exprlist)) {
+                    AST *addr = NewAST(AST_ADDROF, exprlist, NULL);
+                    addr = NewAST(AST_CAST, ast_type_ptr_long, exprlist);
+                    addr = NewAST(AST_MEMREF, ast_type_long, addr);
+                    exprlist = NULL;
+                    for (i = 0; i < n; i++) {
+                        AST *temp = NewAST(AST_EXPRLIST,
+                                           NewAST(AST_ARRAYREF,
+                                                  addr, AstInteger(n)), NULL);
+                        exprlist = AddToList(exprlist, temp);
+                    }
+                }
+                assign = AstAssign(lhsseq, exprlist);
                 if (initseq) {
                     initseq = NewAST(AST_SEQUENCE, initseq, assign);
                 } else {
