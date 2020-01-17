@@ -1804,7 +1804,7 @@ CheckFunctionCalls(AST *ast)
                 exprlist = a->left;
                 if (IsIdentifier(exprlist)) {
                     AST *addr = NewAST(AST_ADDROF, exprlist, NULL);
-                    addr = NewAST(AST_CAST, ast_type_ptr_long, exprlist);
+                    addr = NewAST(AST_CAST, ast_type_ptr_long, addr);
                     addr = NewAST(AST_MEMREF, ast_type_long, addr);
                     exprlist = NULL;
                     for (i = 0; i < n; i++) {
