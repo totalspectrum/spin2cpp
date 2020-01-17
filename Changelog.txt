@@ -19,6 +19,7 @@ Version 4.1.0
 - Fixed comments at end-of-line in Spin
 - Fixed a problem with local labels in C __pasm
 - Fixed a bug in handling of wcz modifier in inline assembly
+- Updated listing file to (attempt to) track ORG in sub-modules
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code
