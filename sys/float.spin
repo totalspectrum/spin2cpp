@@ -401,6 +401,7 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
 pri file "libsys/s_floorf.c" __builtin_floorf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_sinf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_cosf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_tanf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_fabsf(x = float) : r=float
 pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=long) : r=float
 pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float

@@ -1,0 +1,49 @@
+This document describes the copyright of the various library files in
+the include directory. For the most part they are either public domain
+or under an MIT style license. For exact details see the source code.
+
+Most library functions are by myself or adapted from Parallax sample
+code, and MIT licensed. Jeff Roark (user JRoark on the forums)
+generously contributed some floating point and math routines which he
+has agreed to have distributed under the same terms.
+
+Copyright (c) 2011-2020 Total Spectrum Software Inc.
+Copyright (c) 2006-2019 Parallax, Inc.
+Copyright (c) 2020 Jeff Roark
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+----
+Some floating point math code is from the Sun Microsystems math library:
+
+* ====================================================
+* Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+*
+* Developed at SunPro, a Sun Microsystems, Inc. business.
+* Permission to use, copy, modify, and distribute this
+* software is freely granted, provided that this notice 
+* is preserved.
+* ====================================================
+
+----
+Some code used was explicitly placed in the public domain:
+
+String code written by Henry Spencer
+strtoul written by Matthias Fleischer nad Gunther Nikl

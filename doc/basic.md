@@ -242,6 +242,7 @@ clkfreq
 clkset
 cnt
 cos
+decuns$
 dira
 dirb
 exp
@@ -265,6 +266,7 @@ sendrecvdevice
 _setbaud
 sin
 str$
+tan
 val
 val%
 waitcnt
@@ -1242,6 +1244,14 @@ The order of `data` statements matters, but they may be intermixed with other st
 
 Keyword reserved for future use.
 
+### DECUNS$
+
+```
+  s = decuns$(x, n)
+  t = decuns$(x)
+```
+Returns a string representing the unsigned integer `x` in decimal notation (base 10). Only the lowest `n` digits of the representation are included; use 10 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
+
 ### DEF
 
 Define a simple function. This is mostly intended for porting existing BASIC code, but could be convenient for creating very simple functions. The syntax consists of the function name, parameter list, `=`, and then the return value from the expression. All of the types are inferred from the names. So for example to define a function `sum` to return the sum of two integers we would do:
@@ -1565,7 +1575,7 @@ Declares the amount of space to be used for internal memory allocation by things
   s = hex$(x, n)
   t = hex$(x)
 ```
-returns a string representing the unsigned integer `x` in hexadecimal notation (base 10). Only the lowest `n` digits of the representation are included; use 8 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
+Returns a string representing the unsigned integer `x` in hexadecimal notation (base 10). Only the lowest `n` digits of the representation are included; use 8 if you want to get all of the digits. If `n` is omitted or is 0 then the returned string is the minimum length needed to represent the unsigned value.
 
 ### IF
 
@@ -2174,6 +2184,10 @@ There is also a short form of subroutine definitions, starting with `[` followed
    end sub
    doit( [: print "hello" ], 4 )
 ```
+
+### TAN
+
+Predefined function. `tan(x)` returns the tangent of `x`, which is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
 
 ### THEN
 

@@ -1,3 +1,4 @@
+' retrieve the leftmost n characters from a string
 function left$(x as string, n as integer) as string
   dim p as ubyte pointer
   dim i, m as integer
@@ -13,6 +14,7 @@ function left$(x as string, n as integer) as string
   return p
 end function
 
+' retrieve the rightmost n characters from a string
 function right$(x as string, n as integer) as string
   dim p as ubyte pointer
   dim i, m as integer
@@ -28,6 +30,7 @@ function right$(x as string, n as integer) as string
   return p
 end function
 
+' retrieve the middle substring starting at i and j characters long
 function mid$(x as string, i=0, j=9999999) as string
   dim p as ubyte pointer
   dim m, n
@@ -49,6 +52,7 @@ function mid$(x as string, i=0, j=9999999) as string
   return p
 end function
 
+' convert an integer to a single character string
 function chr$(x as integer) as string
   dim p as ubyte pointer
   p = new ubyte(2)
@@ -73,6 +77,7 @@ class __strs_cl
   end function
 end class
 
+' format a floating point number as a string
 function str$(x as single) as string
   dim p as ubyte pointer
   dim i as integer
@@ -141,6 +146,11 @@ function bin$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 2)
 end function
 
+function decuns$(v as uinteger, n=0 as uinteger)
+  return number$(v, n, 10)
+end function
+
 function oct$(v as uinteger, n=0 as uinteger)
   return number$(v, n, 8)
 end function
+

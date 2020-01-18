@@ -91,3 +91,8 @@ float __builtin_cosf(float x)
 {
     return __builtin_sinf(x + PI_2);
 }
+
+float __builtin_tanf(x)
+{
+    return __builtin_sinf(x) / __builtin_cosf(x);
+}
