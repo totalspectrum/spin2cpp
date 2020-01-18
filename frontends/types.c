@@ -1138,7 +1138,7 @@ AST *CheckTypes(AST *ast)
         }
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
-            if (siz > LARGE_SIZE_THRESHOLD) {
+            if (TypeGoesOnStack(ltype)) {
                 // convert the assignment to a memcpy
                 AST *lptr = StructAddress(ast->left);
                 AST *rptr = StructAddress(ast->right);
@@ -1194,13 +1194,12 @@ AST *CheckTypes(AST *ast)
                         // pass arrays as pointers
                         if (IsArrayType(passedType)) {
                             expectType = ArrayToPointerType(passedType);
-                        }
-                        // we use const generic to avoid lots of warning
-                        // messages about passing strings to printf
-                        else if (IsClassType(passedType) && TypeSize(passedType) > LARGE_SIZE_THRESHOLD) {
+                        } else if (TypeGoesOnStack(passedType)) {
                             // need to emit a copy
                             expectType = NewAST(AST_COPYREFTYPE, passedType, NULL);
                         } else {
+                            // we use const generic to avoid lots of warning
+                            // messages about passing strings to printf
                             expectType = ast_type_const_generic;
                         }
                     }

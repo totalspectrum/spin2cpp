@@ -109,7 +109,7 @@ FindSymbolByOffset(SymbolTable *table, int offset)
     for (hash = 0; hash < SYMTABLE_HASH_SIZE; hash++) {
         sym = table->hash[hash];
         while (sym) {
-            if (sym->offset == offset)
+            if (sym->offset == offset && sym->kind != SYM_WEAK_ALIAS && sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)
                 return sym;
             sym = sym->next;
         }

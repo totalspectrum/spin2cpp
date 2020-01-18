@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling functions
@@ -45,11 +45,11 @@ NumExprItemsOnStack(AST *expr)
                                ref, AstInteger(0)), NULL);
         return 1;
     }
-    siz = TypeSize(type);
-    if (siz > LARGE_SIZE_THRESHOLD) {
+    if (TypeGoesOnStack(type)) {
         // we'll pass this as a pointer
         return 1;
     }
+    siz = TypeSize(type);
     return ((siz+3) & ~3) / LONG_SIZE;
 }
 
@@ -671,7 +671,7 @@ AdjustParameterTypes(AST *paramlist, int lang)
                 type = NewAST(AST_PTRTYPE, type, NULL);
                 param->left = type;
             }
-            else if (IsClassType(type) && IsCLang(lang) && TypeSize(type) > LARGE_SIZE_THRESHOLD ) {
+            else if (IsClassType(type) && IsCLang(lang) && TypeGoesOnStack(type) ) {
                 type = BaseType(type);
                 type = NewAST(AST_COPYREFTYPE, type, NULL);
                 param->left = type;
@@ -804,7 +804,7 @@ doDeclareFunction(AST *funcblock)
             fdef->numresults = AstListLen(fdef->overalltype->left);
         } else {
             int siz = TypeSize(fdef->overalltype->left);
-            if (siz > LARGE_SIZE_THRESHOLD) {
+            if (TypeGoesOnStack(fdef->overalltype->left)) {
                 fdef->numresults = 1; // will return a pointer
             } else {
                 siz = (siz + 3) & ~3;
@@ -1803,15 +1803,26 @@ CheckFunctionCalls(AST *ast)
                 // create an initialization for the temps
                 exprlist = a->left;
                 if (IsIdentifier(exprlist)) {
-                    AST *addr = NewAST(AST_ADDROF, exprlist, NULL);
-                    addr = NewAST(AST_CAST, ast_type_ptr_long, addr);
-                    addr = NewAST(AST_MEMREF, ast_type_long, addr);
-                    exprlist = NULL;
-                    for (i = 0; i < n; i++) {
-                        AST *temp = NewAST(AST_EXPRLIST,
-                                           NewAST(AST_ARRAYREF,
-                                                  addr, AstInteger(i)), NULL);
-                        exprlist = AddToList(exprlist, temp);
+                    AST *temp;
+                    AST *id = exprlist;
+                    AST *typ = ExprType(id);
+                    Module *P = NULL;
+                    if (typ && IsClassType(typ) && 0 != (P=GetClassPtr(typ))) {
+                        Symbol *sym;
+                        exprlist = NULL;
+                        for (i = 0; i < n; i++) {
+                            sym = FindSymbolByOffset(&P->objsyms, i*4);
+                            if (!sym || sym->kind != SYM_VARIABLE) {
+                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*4);
+                                return;
+                            }
+                            temp = NewAST(AST_METHODREF, id, AstIdentifier(sym->our_name));
+                            temp = NewAST(AST_EXPRLIST, temp, NULL);
+                            exprlist = AddToList(exprlist, temp);
+                        }
+                    } else {
+                        ERROR(exprlist, "Internal error: Unable to handle this type of parameter");
+                        return;
                     }
                 }
                 assign = AstAssign(lhsseq, exprlist);

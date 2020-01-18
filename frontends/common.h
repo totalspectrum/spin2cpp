@@ -262,12 +262,10 @@ typedef struct funcdef {
     unsigned no_inline:1;    // 1 if function cannot be inlined
     unsigned is_leaf:1;      // 1 if function is a leaf function
     unsigned uses_alloca:1;  // 1 if function uses alloca
-    unsigned large_local:1;  // 1 if function has a "large" local (size > LARGE_SIZE_THRESHOLD)
+    unsigned stack_local:1;  // 1 if function has a local that must go on stack
     unsigned has_throw:1;    // 1 if function has a "throw" in it
     unsigned toplevel:1;     // 1 if function is top level
 
-#define LARGE_SIZE_THRESHOLD (12)
-    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;
@@ -738,6 +736,9 @@ int IsTopLevel(Module *P);
 
 // fetch top level module
 Module *GetTopLevelModule(void);
+
+// returns non-zero if a variable of type typ must go on the stack
+int TypeGoesOnStack(AST *typ);
 
 // external vars
 extern AST *basic_get_float;

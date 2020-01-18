@@ -10,10 +10,10 @@ _blah
 	rdlong	blah_tmp002_, blah_tmp001_
 	add	blah_tmp001_, #4
 	rdlong	blah_tmp003_, blah_tmp001_
-	mov	blah_tmp005_, objptr
+	mov	blah_tmp006_, objptr
 	mov	objptr, blah_tmp002_
 	call	blah_tmp003_
-	mov	objptr, blah_tmp005_
+	mov	objptr, blah_tmp006_
 _blah_ret
 	ret
 
@@ -39,6 +39,6 @@ blah_tmp003_
 	res	1
 blah_tmp004_
 	res	1
-blah_tmp005_
+blah_tmp006_
 	res	1
 	fit	496

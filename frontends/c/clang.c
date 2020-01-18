@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for BASIC specific features
@@ -140,8 +140,8 @@ doCTransform(AST **astptr, unsigned cflags)
         if (curfunc && IsLocalVariable(ast)) {
             AST *typ = ExprType(ast);
             if (typ) {
-                if (TypeSize(typ) > LARGE_SIZE_THRESHOLD || IsArrayType(typ)) {
-                    curfunc->large_local = 1;
+                if (TypeGoesOnStack(typ)) {
+                    curfunc->stack_local = 1;
                 }
             }
         }

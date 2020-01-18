@@ -29,6 +29,8 @@ _demo_y
 	res	1
 _demo_z
 	res	1
+_tmp002_
+	res	1
 arg01
 	res	1
 arg02

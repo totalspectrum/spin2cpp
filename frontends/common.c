@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -291,7 +291,7 @@ NewModule(const char *fullname, int language)
         exit(1);
     }
     P->mainLanguage = P->curLanguage = language;
-    
+    P->longOnly = 1;
     /* set up the base file name */
     P->fullname = fullname;
     P->basename = strdup(fullname);
@@ -1133,3 +1133,30 @@ GetTopLevelModule(void)
     return allparse;
 }
 
+//
+// check for whether a variable of type T must go on the stack
+//
+#define LARGE_SIZE_THRESHOLD 12
+
+int TypeGoesOnStack(AST *typ)
+{
+    if (!typ) return 0;
+    typ = RemoveTypeModifiers(typ);
+    if (TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
+        return 1;
+    }
+    switch (typ->kind) {
+    case AST_ARRAYTYPE:
+        return 1;
+    case AST_OBJECT:
+    {
+        Module *P = GetClassPtr(typ);
+        if (P && P->longOnly) {
+            return 0;
+        }
+        return 1;
+    }
+    default:
+        return 0;
+    }
+}

@@ -35,7 +35,7 @@ _ident_x
 	res	2
 _tmp004_
 	res	1
-_tmp006_
+_tmp007_
 	res	1
 arg01
 	res	1

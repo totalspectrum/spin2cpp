@@ -29,7 +29,7 @@
 #define IS_STACK_CALL(f) ( (f != 0) && FuncData(f)->convention == STACK_CALL)
 
 #define ALL_VARS_ON_STACK(f) ( IS_STACK_CALL(f) || f->local_address_taken || f->closure)
-#define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->large_local )
+#define ANY_VARS_ON_STACK(f) ( ALL_VARS_ON_STACK(f) || f->stack_local )
 
 #define IS_LEAF(func) ((gl_compress == 0) && (func)->is_leaf)
 
@@ -216,10 +216,7 @@ PutVarOnStack(Function *func, Symbol *sym, int size)
     if (!ANY_VARS_ON_STACK(func)) {
         return false;
     }
-    if (size > LARGE_SIZE_THRESHOLD) {
-        return true;
-    }
-    if (sym->kind == SYM_LOCALVAR && IsArrayType(sym->val)) {
+    if (sym->kind == SYM_LOCALVAR && TypeGoesOnStack(sym->val)) {
         return true;
     }
     return false;
@@ -2118,6 +2115,9 @@ Dereference(IRList *irl, Operand *op)
     if (IsMemRef(op)) {
         Operand *temp = NewFunctionTempRegister();
         EmitMove(irl, temp, op);
+        if (op->size > 4) {
+            ERROR(NULL, "internal error, Dereference called on large object");
+        }
         return temp;
     }
     return op;
@@ -2798,12 +2798,17 @@ IsCogMem(Operand *addr)
 }
 
 static Operand *
-CompileHubref(IRList *irl, AST *expr)
+CompileMemref(IRList *irl, AST *expr)
 {
     Operand *addr = CompileExpression(irl, expr->right, NULL);
     AST *type = expr->left;
-
+    
     addr = Dereference(irl, addr);
+    if (0 && addr->kind != REG_TEMP && IsCogMem(addr)) {
+        addr = CogMemRef(addr, 0);
+        addr->size = TypeSize(type);
+        return addr;
+    }
     return TypedHubMemRef(type, addr, 0);
 }
 
@@ -3612,7 +3617,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       if (IsFunctionType(ExprType(expr->right))) {
           return CompileExpression(irl, expr->right, dest);
       }
-      return CompileHubref(irl, expr);
+      return CompileMemref(irl, expr);
   }
   case AST_COGINIT:
     return CompileCoginit(irl, expr);
@@ -3679,7 +3684,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       //  vl += sizeof(type)
       int incsize = TypeSize(expr->left);
       Operand *temp = dest ? dest : NewFunctionTempRegister();
-      r = CompileHubref(irl, expr);
+      r = CompileMemref(irl, expr);
       EmitMove(irl, temp, r);
       (void)CompileExpression(irl,
                               AstAssign(expr->right,
@@ -3853,7 +3858,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
         // a temp (unless there's an offset, in which case we
         // need to watch out for the case where src == dst)
         src = (Operand *)src->name;
-        if (IsValidDstReg(origdst) && (off == 0 || src != dst) && num_tmp_regs == 1) {
+        if (IsValidDstReg(origdst) && off == 0 && num_tmp_regs == 1) {
             temps[0] = where = origdst;
         } else {
             for (i = 0; i < num_tmp_regs; i++) {
@@ -3886,6 +3891,7 @@ static IR *EmitMove(IRList *irl, Operand *origdst, Operand *origsrc)
                         ir = EmitOp2(irl, OPC_ADD, src, inc4);
                     }
                 }
+                where = NULL; // use temps array
                 EmitAddSub(irl, src, -4*(num_tmp_regs-1));
             }
         } else {
