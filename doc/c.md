@@ -17,37 +17,17 @@ The C compiler is mostly implemented and could probably be considered "beta" sof
 An incomplete list of things that still need to be implemented:
 
   * 64 bit integers (long long) are recognized but mostly do not work
-  * struct passing and return is only partially implemented
-  * some of the C standard library
+  * only part of the C standard library is finished
 
 ### Known Bugs
 
 There are several known bugs and deviations from the C standard:
 
-(1) Local arrays
-
-It's not currently possible to define and initialize a local array like:
-```
-void foo {
-  char x[] = "hello";
-  ...
-}
-```
-Static arrays and arrays at global scope work, as do pointers variables, so you could write
-```
-  char *x = "hello";
-```
-or
-```
-  static char x[] = "hello";
-```
-instead.
-
-(2) Name Spaces
+(1) Name Spaces
 
 The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
 
-(3) Doubles
+(2) Doubles
 
 The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
 

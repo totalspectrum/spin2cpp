@@ -390,6 +390,30 @@ AstLookup(enum astkind kind, int base, AST *expr, AST *table)
     return NewAST(kind, ev, table);
 }
 
+/* return length of a Spin expression like STRING("hello", 1, 2) */
+int
+AstStringLen(AST *list)
+{
+    int len = 1;
+    if (!list) return 0;
+    if (list->kind != AST_STRINGPTR) {
+        ERROR(list, "Internal error, expected string");
+        return 1;
+    }
+    list = list->left;
+    while (list && list->kind == AST_EXPRLIST) {
+        if (!list->left) continue;
+        if (list->left->kind == AST_STRING) {
+            len += strlen(list->left->d.string);
+        } else {
+            len += 1;
+        }
+        list = list->right;
+    }
+    return len;
+}
+
+/* return length of an AST list; data is on left, ptr to next on right */
 int
 AstListLen(AST *list)
 {

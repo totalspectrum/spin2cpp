@@ -391,8 +391,28 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
     int limit;
     ASTReportInfo saveinfo;
 
+    if (!expr) return seq;
     AstReportAs(expr, &saveinfo);
-    if (expr && expr->kind == AST_EXPRLIST) {
+
+    if (expr->kind == AST_STRINGPTR && IsArrayType(basetype)) {
+        AST *params;
+        int srclen, dstlen;
+        srclen = AstStringLen(expr);
+        dstlen = TypeSize(basetype);
+        if (srclen > dstlen) {
+            ERROR(expr, "Copying %d bytes to array which has only %d bytes space\n", srclen, dstlen);
+        }
+        params = NewAST(AST_EXPRLIST,
+                       ident,
+                       NewAST(AST_EXPRLIST,
+                              expr, NULL));
+        assign = NewAST(AST_FUNCCALL,
+                     AstIdentifier("__builtin_strcpy"),
+                     params);
+        seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
+        AstReportDone(&saveinfo);
+        return seq;
+    } else if (expr->kind == AST_EXPRLIST) {
         if (IsArrayType(basetype)) {
             if (!IsConstExpr(basetype->right)) {
                 ERROR(ident, "Variable length arrays not supported yet");
@@ -514,13 +534,17 @@ findLocalsAndDeclare(Function *func, AST *ast)
             }
             if (ident->kind == AST_ASSIGN) {
                 // check for x[] = {a, b, c} type initializers here
-                if (IsArrayType(basetype) && basetype->right == NULL && ident->right->kind == AST_EXPRLIST) {
-                    basetype->right = AstInteger(AstListLen(ident->right));
+                if (IsArrayType(basetype) && basetype->right == NULL) {
+                    if (ident->right->kind == AST_EXPRLIST) {
+                        basetype->right = AstInteger(AstListLen(ident->right));
+                    } else if (ident->right->kind == AST_STRINGPTR) {
+                        basetype->right = AstInteger(AstStringLen(ident->right));
+                    }
                 }
                 // write out an initialization for the variable
-                seq = AddInitializers(seq, ident->left, ident->right, basetype);
                 expr = ident->right;
                 ident = ident->left;
+                seq = AddInitializers(seq, ident, expr, basetype);
                 // scan for lambdas?
                 findLocalsAndDeclare(func, expr);
             }

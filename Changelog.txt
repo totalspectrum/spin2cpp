@@ -11,16 +11,17 @@ Version 4.1.0
 - Cleaned up -w output a bit for P2
 - Implemented _ for skipping assignments in multiple assignments
 - Implemented a few more peephole optimizations for P2
-- Made sure all of the results in a multi-result function are initialized to 0 for Spin
 - Improved the optimizer's dead register detection
 - Implemented automatic clkfreq setting based on _clkfreq
+- Made sure all of the results in a multi-result function are initialized to 0 for Spin
 - Start Spin file compilation in CON mode
+- Updated listing file to (attempt to) track ORG in sub-modules
 - Fixed a type promotion problem with bitwise operators in C
 - Fixed a problem with calculating sizes of arrays referenced as "foo.bar"
 - Fixed comments at end-of-line in Spin
 - Fixed a problem with local labels in C __pasm
 - Fixed a bug in handling of wcz modifier in inline assembly
-- Updated listing file to (attempt to) track ORG in sub-modules
+- Fixed initialization of local character arrays with strings in C
 
 Version 4.0.6
 - Allow "static" and "const" or "volatile" to come in any order in C code

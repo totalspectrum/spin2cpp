@@ -269,6 +269,9 @@ int AstModifiesIdentifier(AST *body, AST *id);
 /* length of an AST list */
 int AstListLen(AST *a);
 
+/* length of an AST stringptr list */
+int AstStringLen(AST *a);
+
 /* mark new ASTs to be created to have the same line as AST old */
 /* used when we're transforming ASTs */
 void AstReportAs(AST *old, ASTReportInfo *save);
