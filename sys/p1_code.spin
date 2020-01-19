@@ -116,7 +116,9 @@ pri _rxraw | val, rxmask, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   DIRA[_rxpin] := 0
   rxmask := 1<<_rxpin
-  waitpeq(0, rxmask)
+  if INA[_rxpin] <> 0
+    return -1
+
   waitcycles := cnt + (bitcycles>>1)
   val := 0
   repeat 8

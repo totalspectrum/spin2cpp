@@ -185,7 +185,9 @@ pri _tx(c)
   _txraw(c)
 
 pri _rx : r
-  r := _rxraw
+  repeat
+    r := _rxraw
+  until r <> -1
   _tx(r)
   
 pri __builtin_clkfreq
