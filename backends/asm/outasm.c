@@ -5607,6 +5607,7 @@ EmitMain_P2(IRList *irl, Module *P)
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_HUB_LABEL, firstfuncname, 0));
     }
     EmitLabel(irl, cogexit);
+    EmitOp1(irl, OPC_WAITX, NewImmediate(160000)); // 1 ms delay at 160 MHz
     EmitOp1(irl, OPC_COGID, arg1);
     EmitOp1(irl, OPC_COGSTOP, arg1);
 
