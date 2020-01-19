@@ -209,11 +209,17 @@ Aliases basicalias[] = {
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
 
+    /* extra string function s*/
+    { "instr", "_instr" },
+    { "instr", "_instrrev" },
+    
+    /* math functions */
     { "cos", "__builtin_cosf" },
     { "exp", "__builtin_expf" },
     { "log", "__builtin_logf" },
     { "pow", "__builtin_powf" },
     { "sin", "__builtin_sinf" },
+    { "tan", "__builtin_tanf" },
     
     { NULL, NULL },
 };

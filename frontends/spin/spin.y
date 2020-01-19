@@ -749,6 +749,8 @@ paramidentdecl:
   { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_word, $1); }
   | identifier '=' '@' SP_BYTE
   { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_byte, $1); }
+  | identifier '=' SP_STRINGPTR
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_string, $1); }
   ;
 
 paramidentlist:

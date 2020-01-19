@@ -21,8 +21,8 @@
 '
 '	Delete$(t$,o%,l%)		Deletes everything in T$ beginning at offset O% and continuing for length L% characters
 '	Insert$(x$, y$, p%)	Inserts Y$ into X$ at position P and returns the resulting string
-'	Instr(x$, y$)			Searches for the first occurance of Y$ in X$ and returns the offset where the match is found. 
-'	InstrRev(x$, y$)		Like INSTR() but searches backward instead of forward
+'	Instr(off, x$, y$)			Searches for the first occurance of Y$ in X$ and returns the offset where the match is found. 
+'	InstrRev(off, x$, y$)		Like INSTR() but searches backward instead of forward
 '	LCase$(x$)				Converts X$ to lower case.
 '	LPad$(x$, w, ch$)		LEFT-pads X$ to the width specified by W by adding CH$ as padding on the RIGHT
 '	LTrim$(x$)				Removes leading spaces from X$
@@ -144,7 +144,7 @@ END FUNCTION
 '
 '=================================================================================================================================
 '
-FUNCTION Instr(Offset% as integer, Source$ as string, Target$ as string) as integer
+FUNCTION _Instr(Offset% as integer, Source$ as string, Target$ as string) as integer
 
 ' Purpose:  Returns the position of the first occurance of Target$ in Source$. The search begins at the Offset% character.
 '           If the Target$ isn't found in Source$, the function returns zero.
@@ -197,7 +197,7 @@ END FUNCTION
 '
 '=================================================================================================================================
 '
-FUNCTION InstrRev(Offset% as integer, Source$ as string, Target$ as string) as integer
+FUNCTION _InstrRev(Offset% as integer, Source$ as string, Target$ as string) as integer
 
 ' Purpose:  Returns the position of the LAST occurance of Target$ in Source$. The search begins at the Offset% character.
 '				If the Target$ isn't found in Source$, the function returns zero.
@@ -215,8 +215,8 @@ FUNCTION InstrRev(Offset% as integer, Source$ as string, Target$ as string) as i
    dim sourceSize% as integer
    dim idx% as integer
 
-   targetSize% = len(Target$)
-   sourceSize% = len(Source$)
+   targetSize% = __builtin_strlen(Target$)
+   sourceSize% = __builtin_strlen(Source$)
 
 ' Check for zero-length Source$ string. Return a zero (no-match) if true
    if sourceSize% = 0 then

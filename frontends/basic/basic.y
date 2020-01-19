@@ -488,8 +488,8 @@ AdjustParamForByVal(AST *param)
 %token BAS_LE         "<="
 %token BAS_GE         ">="
 %token BAS_NE         "<>"
-%token BAS_SHL        "<<"
-%token BAS_SHR        ">>"
+%token BAS_SHL        "shl"
+%token BAS_SHR        "shr"
 
 %token BAS_ADD_ASSIGN "+="
 %token BAS_SUB_ASSIGN "-="

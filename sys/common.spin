@@ -253,27 +253,29 @@ pri file "libsys/fmt.c" _fmtnum(fn, fmt, x, base)
 pri file "libsys/fmt.c" _fmtfloat(fn, fmt, x, spec)
 
 '' string functions
-pri file "libsys/strings.bas" left`$(x, n)
-pri file "libsys/strings.bas" right`$(x, n)
-pri file "libsys/strings.bas" mid`$(s, n=0, m=9999999)
-pri file "libsys/strings.bas" chr`$(x)
-pri file "libsys/strings.bas" str`$(x=float)
-pri file "libsys/strings.bas" bin`$(x, n=0)
-pri file "libsys/strings.bas" decuns`$(x, n=0)
-pri file "libsys/strings.bas" hex`$(x, n=0)
-pri file "libsys/strings.bas" oct`$(x, n=0)
+pri file "libsys/strings.bas" left`$(x=string, n) : r=string
+pri file "libsys/strings.bas" right`$(x=string, n): r=string
+pri file "libsys/strings.bas" mid`$(s=string, n=0, m=9999999): r=string
+pri file "libsys/strings.bas" chr`$(x): r=string
+pri file "libsys/strings.bas" str`$(x=float): r=string
+pri file "libsys/strings.bas" bin`$(x, n=0): r=string
+pri file "libsys/strings.bas" decuns`$(x, n=0): r=string
+pri file "libsys/strings.bas" hex`$(x, n=0): r=string
+pri file "libsys/strings.bas" oct`$(x, n=0): r=string
 
-pri file "libsys/stringlibp2.bas" delete`$(t,o,n)
-pri file "libsys/stringlibp2.bas" insert`$(x,y,p)
-pri file "libsys/stringlibp2.bas" lcase`$(x)
-pri file "libsys/stringlibp2.bas" lpad`$(x, w, ch)
-pri file "libsys/stringlibp2.bas" ltrim`$(x)
-pri file "libsys/stringlibp2.bas" reverse`$(x)
-pri file "libsys/stringlibp2.bas" rpad`$(x, w, ch)
-pri file "libsys/stringlibp2.bas" rtrim`$(x)
-pri file "libsys/stringlibp2.bas" space`$(n)
-pri file "libsys/stringlibp2.bas" string`$(n, x)
-pri file "libsys/stringlibp2.bas" ucase`$(x)
+pri file "libsys/stringlibp2.bas" delete`$(t,o,n): r=string
+pri file "libsys/stringlibp2.bas" insert`$(x,y,p): r=string
+pri file "libsys/stringlibp2.bas" lcase`$(x): r=string
+pri file "libsys/stringlibp2.bas" lpad`$(x, w, ch): r=string
+pri file "libsys/stringlibp2.bas" ltrim`$(x): r=string
+pri file "libsys/stringlibp2.bas" reverse`$(x): r=string
+pri file "libsys/stringlibp2.bas" rpad`$(x, w, ch): r=string
+pri file "libsys/stringlibp2.bas" rtrim`$(x): r=string
+pri file "libsys/stringlibp2.bas" space`$(n): r=string
+pri file "libsys/stringlibp2.bas" string`$(n, x): r=string
+pri file "libsys/stringlibp2.bas" ucase`$(x): r=string
+pri file "libsys/stringlibp2.bas" _instr(off, x, y): r=long
+pri file "libsys/stringlibp2.bas" _instrrev(off, x, y): r=long
 
 
 pri file "libsys/c_startup.c" _c_startup

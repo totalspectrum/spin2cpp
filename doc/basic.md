@@ -207,7 +207,9 @@ return
 select
 self
 shared
+shl
 short
+shr
 single
 sqrt
 step
@@ -243,6 +245,7 @@ clkset
 cnt
 cos
 decuns$
+delete$
 dira
 dirb
 exp
@@ -250,6 +253,9 @@ hex$
 ina
 inb
 input$
+insert$
+instr
+instrrev
 left$
 len
 log
@@ -434,7 +440,11 @@ All of the bitwise logical operators work only on integers. If given a float arg
 
 `a << b` shifts `a` left by `b` places, filling the new bits with `0`. The result is undefined if `b` is greater than or equal to 32 (in practice only the bottom 5 bits of `b` are used, but it is better not to rely on this).
 
+`a shl b` is a synonym for `a << b`
+
 `a >> b` shifts `a` right by `b` places. If `a` is a signed integer then its sign bit is used to fill in the new bits, otherwise `0` is used.
+
+`a shr b` is a synonym for `a >> b`
 
 #### Comparison operators
 
@@ -1287,6 +1297,14 @@ Free memory allocated by `new` or by one of the string functions (`+`, `left$`, 
 
 Use of `delete` is a nice hint and makes sure the memory is free, but it is not strictly necessary since the memory is garbage collected automatically.
 
+### DELETE$
+
+Deletes part of a string.
+```
+   x$ = delete$(t$, off, len)
+```
+sets `x$` to a string that is the same as `t$` except that the characters starting at offset `off` and continuing for `len` are removed.
+
 ### DIM
 
 Dimension variables. This defines variables and allocate memory for them. `dim` is the most common way to declare that variables exist. The simplest form just lists the variable names and (optionally) array sizes. The variable types are inferred from the names. For example, you can declare an array `a` of 10 integers, a single integer `b`, and a string `c$` with:
@@ -1677,6 +1695,25 @@ do
 until s$ = ""        ' stop at end of file
 ' now the whole file is in file$
 ```
+
+### INSERT$
+
+```
+  a$ = insert$(b$, y$, pos)
+```
+`insert$` inserts string `y$` into (a copy of) `b$` at position `pos`. If `pos` is greater than the length of `b$` then it is appended to `b$`.
+
+### INSTR
+```
+  n = instr(off, src$, target$)
+```
+Returns the position of the first occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned.
+
+### INSTRREV
+```
+  n = instrrev(off, src$, target$)
+```
+Returns the position of the last occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned.
 
 ### INT
 
@@ -2093,9 +2130,25 @@ Set up the serial port baud rate, based on the current clock frequency.
 ```
 The default serial rate on P1 is 115_200 baud, and assuming a clock frequency of 80_000_000 (on P2 both defaults are doubled). If these are changed, it is necessary to call `_setbaud` again in order for serial I/O to work.
 
+### SHL
+
+Operator for shifting left. For example:
+```
+  x shl 3
+```
+is the same as `x << 3` and multiplies x by 8 (2 raised to the power 3).
+
 ### SHORT
 
 A signed 16 bit integer, occupying two bytes of computer memory. The unsigned version of this is `ushort`. The difference arises with the treatment of the upper bit. Both `short` and `ushort` treat 0-32767 the same, but for `short` 32768 to 65535 are considered equivalent to -32768 to -1 respectively (that is, when a `short` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ushort` the new bits are filled with 0 instead).
+
+### SHR
+
+Operator for shifting right. For example:
+```
+  x shr 3
+```
+is the same as `x >> 3` and shifts the bits of `x` right by 3. If `x` is unsigned the new bits are filled with 0, otherwise they are filled with the sign bit of `x`.
 
 ### SIN
 
