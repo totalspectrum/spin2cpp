@@ -847,6 +847,9 @@ static void CheckSrcComment( LexStream *L )
     {
         return;
     }
+    if ( (L->flags & LEXSTREAM_FLAG_NOSRC) || (current == globalModule)) {
+        return;
+    }
     comment_chain = AddToList(comment_chain, NewAST(AST_SRCCOMMENT, NULL, NULL));
     s_lastStream = L;
     s_lastLine = L->lineCounter;

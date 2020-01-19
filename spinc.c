@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -133,7 +133,8 @@ InitGlobalModule(void)
             syscode = (const char *)sys_p1_code_spin;
         }
         gl_normalizeIdents = 0;
-        globalModule->Lptr = malloc(sizeof(*globalModule->Lptr));
+        globalModule->Lptr = calloc(sizeof(*globalModule->Lptr), 1);
+        globalModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
         strToLex(globalModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
         strToLex(globalModule->Lptr, (const char *)sys_common_spin, "_common_", LANG_SPIN_SPIN1);

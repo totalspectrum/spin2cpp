@@ -69,6 +69,9 @@ struct lexstream {
 
     Flexbuf curLine;  /* string of current line */
     Flexbuf lineInfo; /* pointers to line info about the file */
+
+    unsigned flags;
+#define LEXSTREAM_FLAG_NOSRC 0x01
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))
