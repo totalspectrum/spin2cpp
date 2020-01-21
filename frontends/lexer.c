@@ -1398,7 +1398,7 @@ struct reservedword {
     { "pub", SP_PUB },
     { "repeat", SP_REPEAT },
     { "res", SP_RES },
-    { "rev", SP_REV },
+    { "rev", SP_REV2 },
     { "result", SP_RESULT },
     { "return", SP_RETURN },
     { "rol", SP_ROTL },
