@@ -1941,8 +1941,9 @@ IsCommutativeMath(IROpcode opc)
     }
 }
 
-// check if x is of the form (1<<n)
-// if so, return a bit mask
+// check if x is of the form (A<<n)
+// where A is a small integer that is all 1's
+// in binary; if so, return a bit mask
 // otherwise, return -1
 static int P2CheckBitMask(unsigned int x)
 {
@@ -2241,16 +2242,33 @@ OptimizePeepholes(IRList *irl)
                 if (ir->opc == OPC_ANDN) {
                     ReplaceOpcode(ir, OPC_BITL);
                     ir->src = NewImmediate(mask);
+                    changed = 1;
                     goto done;
                 }
                 if (ir->opc == OPC_OR) {
                     ReplaceOpcode(ir, OPC_BITH);
                     ir->src = NewImmediate(mask);
+                    changed = 1;
                     goto done;
                 }
                 if (ir->opc == OPC_XOR) {
                     ReplaceOpcode(ir, OPC_BITNOT);
                     ir->src = NewImmediate(mask);
+                    changed = 1;
+                    goto done;
+                }
+            } else if (ir->opc == OPC_MOV) {
+                uint32_t mask = ir->src->val;
+                int bits = 0;
+                while ( (mask & 1) ) {
+                    bits++;
+                    mask = mask >> 1;
+                }
+                if (bits > 0 && mask == 0) {
+                    // could use BMASK instruction
+                    ReplaceOpcode(ir, OPC_BMASK);
+                    ir->src = NewImmediate(bits-1);
+                    changed = 1;
                     goto done;
                 }
             }
