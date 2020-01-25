@@ -1,6 +1,7 @@
 Version 4.1.1
 - Fixed Spin REV operator to match PNut's Spin2 definition.
-- Optimize some P2 moves into BMASK instructions
+- Optimize some P2 moves into BMASK or DECOD instructions
+- Allow the word "asm" to be used as a label in Spin
 
 Version 4.1.0
 - Added BYREF and BYVAL modifiers to BASIC function parameters
