@@ -1,7 +1,7 @@
 //
 // IR optimizer
 //
-// Copyright 2016-2019 Total Spectrum Software Inc.
+// Copyright 2016-2020 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -2253,6 +2253,12 @@ OptimizePeepholes(IRList *irl)
                 }
                 if (ir->opc == OPC_XOR) {
                     ReplaceOpcode(ir, OPC_BITNOT);
+                    ir->src = NewImmediate(mask);
+                    changed = 1;
+                    goto done;
+                }
+                if (ir->opc == OPC_MOV && mask < 32) {
+                    ReplaceOpcode(ir, OPC_DECOD);
                     ir->src = NewImmediate(mask);
                     changed = 1;
                     goto done;
