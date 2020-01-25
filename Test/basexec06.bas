@@ -69,7 +69,22 @@ end function
 print incr(2, 2)
 print incr(2)
 
+'
+' test of READ/DATA
+'
+testread
+testread
+testread
+
 doexit 0
+
+sub testread
+  dim x as uinteger
+  read x
+  print x; "=$"; hex$(x)
+end sub
+
+data &h00_ff_fe, 0b1011, 100
 
 ''
 '' send a special exit status for propeller-load
