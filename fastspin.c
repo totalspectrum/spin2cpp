@@ -123,7 +123,6 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
     fprintf(f, "           xxx = orig uses original fastspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
-    fprintf(f, "  [ --relocatable ]  make output relocatable\n");
     
     fflush(stderr);
     exit(2);
@@ -314,6 +313,8 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strcmp(argv[0], "--relocatable")) {
             gl_relocatable = 1;
+            fprintf(stderr, "WARNING: --relocatable not implemented yet\n");
+            argv++; --argc;
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
