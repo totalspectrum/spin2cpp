@@ -576,7 +576,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         {
             goto is_identifier;
         }
-        free(idstr);
         if (sym->kind == SYM_RESERVED) {
             c = INTVAL(sym);
             /* check for special handling */
@@ -594,7 +593,9 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 	    case SP_ASM:
 	        if (L->block_type == BLOCK_ASM) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
-		} else {
+		} else if (InDatBlock(L) || L->colCounter - L->firstNonBlank > 3) {
+                    goto is_identifier;
+                } else {
 		    L->save_block = L->block_type;
 		}
 		L->block_type = BLOCK_ASM;
@@ -630,12 +631,14 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     ast = GetComments();
                 }
             }
+            free(idstr);
             *ast_ptr = ast;
             return c;
         }
         if (sym->kind == SYM_HWREG) {
             ast = NewAST(AST_HWREG, NULL, NULL);
             ast->d.ptr = sym->val;
+            free(idstr);
             *ast_ptr = ast;
             return SP_HWREG;
         }

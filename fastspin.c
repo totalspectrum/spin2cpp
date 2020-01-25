@@ -123,6 +123,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
     fprintf(f, "           xxx = orig uses original fastspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    fprintf(f, "  [ --relocatable ]  make output relocatable\n");
     
     fflush(stderr);
     exit(2);
@@ -311,6 +312,8 @@ main(int argc, const char **argv)
                 Usage(stderr, bstcMode);
             }
             argv++; --argc;
+        } else if (!strcmp(argv[0], "--relocatable")) {
+            gl_relocatable = 1;
         } else if (!strcmp(argv[0], "-w")) {
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
@@ -496,6 +499,17 @@ main(int argc, const char **argv)
     /* tweak flags */
     if (gl_output == OUTPUT_COGSPIN) {
         gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
+    }
+    if (gl_relocatable) {
+        if (!gl_p2) {
+            fprintf(stderr, "ERROR: --relocatable only supported for P2\n");
+            exit(1);
+        }
+        gl_no_coginit = 1;
+        if (gl_hub_base != 0) {
+            fprintf(stderr, "Warning: --relocatable overrides -H\n");
+            gl_hub_base = 0;
+        }
     }
     /* add some predefined symbols */
     
