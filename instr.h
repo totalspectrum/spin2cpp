@@ -89,6 +89,7 @@ typedef enum IROpcode {
     OPC_GETQY,
     OPC_GETRND,
     OPC_HUBSET,
+    OPC_JMPREL,
     OPC_NOT,
     OPC_WAITX,
     OPC_REPEAT,

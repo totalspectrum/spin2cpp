@@ -4351,10 +4351,14 @@ static void CompileStatement(IRList *irl, AST *ast)
         }
         switchval = CompileExpression(irl, ast->left, NULL);
         jumptab = NewCodeLabel();
-        jumptabptr = NewImmediatePtr(NULL, jumptab);
-        EmitOp2(irl, OPC_SHL, switchval, shift);
-        EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
-        EmitJump(irl, COND_TRUE, switchval);
+        if (gl_p2) {
+            EmitOp1(irl, OPC_JMPREL, switchval);
+        } else {
+            jumptabptr = NewImmediatePtr(NULL, jumptab);
+            EmitOp2(irl, OPC_SHL, switchval, shift);
+            EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+            EmitJump(irl, COND_TRUE, switchval);
+        }
         ir = EmitLabel(irl, jumptab);
         ir->flags |= FLAG_KEEP_INSTR;
         ast = ast->right;

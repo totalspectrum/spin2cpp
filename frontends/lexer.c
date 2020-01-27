@@ -2553,7 +2553,7 @@ instr_p2[] = {
     { "callb.ind",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
 
-    { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_GENERIC_BRANCH, 0 },
+    { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_JMPREL, 0 },
   
     { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC, 0 },

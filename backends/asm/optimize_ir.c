@@ -103,6 +103,7 @@ static bool IsJump(IR *ir)
   case OPC_JUMP:
   case OPC_DJNZ:
   case OPC_REPEAT_END:
+  case OPC_JMPREL:
   case OPC_GENERIC_BRANCH:
     return true;
   default:
