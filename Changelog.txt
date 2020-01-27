@@ -1,3 +1,6 @@
+Version 4.1.2
+- Fixed "backwards" case ranges in Spin
+
 Version 4.1.1
 - Fixed Spin REV operator to match PNut's Spin2 definition.
 - Optimize some P2 moves into BMASK or DECOD instructions

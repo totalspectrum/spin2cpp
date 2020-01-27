@@ -59,9 +59,21 @@ static AST *MakeCaseTest(AST *ident, AST *expr)
         return NULL;
     }
     if (expr->kind == AST_RANGE) {
-        r = AstOperator(K_GE, ident, expr->left);
-        r2 = AstOperator(K_LE, ident, expr->right);
-        r = AstOperator(K_BOOL_AND, r, r2);
+        if (IsConstExpr(expr->left) && IsConstExpr(expr->right)) {
+            AST *left = expr->left;
+            AST *right = expr->right;
+            int32_t lval = EvalConstExpr(left);
+            int32_t rval = EvalConstExpr(right);
+            if (lval > rval) {
+                left = expr->right;
+                right = expr->left;
+            }
+            r = AstOperator(K_GE, ident, left);
+            r2 = AstOperator(K_LE, ident, right);
+            r = AstOperator(K_BOOL_AND, r, r2);
+        } else {
+            r = NewAST(AST_ISBETWEEN, ident, expr);
+        }
         return r;
     }
     if (expr->kind == AST_EXPRLIST) {
@@ -184,6 +196,7 @@ static int caseCmp(const void *av, const void *bv)
 static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *force_reason)
 {
     CaseHolder temp;
+
     if (expr->kind != AST_OPERATOR) {
         if (force_reason) {
             ERROR(expr, "%s: case expression is not valid", force_reason);
