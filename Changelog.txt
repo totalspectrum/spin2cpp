@@ -1,6 +1,7 @@
 Version 4.1.2
 - Fixed "backwards" case ranges in Spin
 - Use JMPREL to implement case_fast in P2
+- Fixed _rev() operator in C propeller2.h file for P2
 
 Version 4.1.1
 - Fixed Spin REV operator to match PNut's Spin2 definition.

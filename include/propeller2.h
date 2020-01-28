@@ -130,7 +130,7 @@ polar_t     _xypol(cartesian_t coord);
 /* miscellaneous operations */
 uint32_t  _rnd(void);
 //uint32_t  _rev(uint32_t val);   /* like Spin reverse operator */
-#define _rev(val) __builtin_propeller_rev(val)
+#define _rev(val) __builtin_propeller_rev((unsigned)val)
 int       _encod(uint32_t val); /* Spin encode operator */
 uint32_t  _isqrt(uint32_t val); /* Spin integer square root */
 

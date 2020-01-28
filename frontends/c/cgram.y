@@ -828,16 +828,26 @@ postfix_expression
             { $$ = AstOperator(K_SQRT, NULL, $3); }
         | C_BUILTIN_REV '(' argument_expression_list ')'
             {
+                AST *list;
                 AST *arg1, *arg2;
                 
-                arg1 = $3;
-                if (!arg1 || !arg1->left || !arg1->right
-                    || arg1->right->right)
+                list = $3;
+                if (!list || !list->left)
                 {
-                    SYNTAX_ERROR("__builtin_rev needs exactly 2 arguments");
+                    SYNTAX_ERROR("Missing argument to __builtin_rev");
+                    arg1 = AstInteger(1);
+                } else {
+                    arg1 = list->left;
                 }
-                arg2 = arg1->right->left;
-                arg1 = arg1->left;
+                if (list && list->right) {
+                    arg2 = list->right->left;
+                    if (list->right->right) {
+                        SYNTAX_ERROR("Too many arguments to __builtin_rev");
+                    }
+                } else {
+                    arg2 = AstInteger(0);
+                }
+
                 // PropGCC defines __builtin_rev to match the ASM instruction,
                 // not the >< operator, hence the 32 - arg2
                 $$ = AstOperator(K_REV, arg1, AstOperator('-', AstInteger(32), arg2));
