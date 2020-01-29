@@ -216,6 +216,8 @@ main(int argc, const char **argv)
 #ifdef DEBUG_YACC
     spinyydebug = 1;  /* turn on yacc debugging */
 #endif
+    gl_optimize_flags = DEFAULT_ASM_OPTS;
+    
     /* parse arguments */
     if (argv[0] != NULL) {
         gl_progname = argv[0];

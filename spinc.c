@@ -997,8 +997,13 @@ RemoveUnusedMethods(int isBinary)
     Module *P, *LastP;
     Function *pf;
     Module *saveCur;
+    int keep;
+
+    keep = (0 == (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS));
     
     // mark everything unused
+    // FIXME: there's an awful lot of duplication with
+    // CheckUnusedMethods; can we simplify that?
     gl_features_used = 0;
     for (P = allparse; P; P = P->next) {
         for (pf = P->functions; pf; pf = pf->next) {
@@ -1006,7 +1011,7 @@ RemoveUnusedMethods(int isBinary)
         }
     }
     
-    if (isBinary) {
+    if (isBinary && !keep) {
         MarkUsed(GetMainFunction(allparse), "__root__");
     } else {
         // mark stuff called via public functions
