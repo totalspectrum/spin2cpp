@@ -1474,6 +1474,7 @@ struct reservedword {
 };
 
 struct reservedword init_spin2_words[] = {
+    { "addpins", SP_ADDPINS },
     { "alignl", SP_ALIGNL },
     { "alignw", SP_ALIGNW },
     { "cogspin", SP_COGINIT },
