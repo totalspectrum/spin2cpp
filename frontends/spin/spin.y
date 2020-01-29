@@ -165,6 +165,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_SAR        "SAR (~>)"
 %token SP_REV        "><"
 %token SP_REV2       "REV"
+%token SP_ADDPINS    "ADDPINS"
 %token SP_NEGATE     "-"
 %token SP_BIT_NOT    "!"
 %token SP_SQRT       "^^"
@@ -199,7 +200,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -838,6 +839,8 @@ expr:
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_REV2 expr
     { $$ = AstOperator(K_REV, $1, AstOperator('+', $3, AstInteger(1))); }
+  | expr SP_ADDPINS expr
+    { $$ = AstOperator('|', $1, AstOperator(K_SHL, $3, AstInteger(6))); }
   | expr SP_ROTL expr
     { $$ = AstOperator(K_ROTL, $1, $3); }
   | expr SP_ROTR expr
