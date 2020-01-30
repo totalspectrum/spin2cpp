@@ -1163,9 +1163,9 @@ Note that handles 0 and 1 are reserved by the system; closing them may produce u
 
 At the beginning of a line, `const` declares a constant value. For example:
 ```
-  const x = 1, y = 2.0
+  const x = 1, msg = "hello", y = 2.0
 ```
-declares x to be the integer 1 and y to be the floating point value 2.0. Only numeric values (integers and floats) may be declared with `const`.
+declares x to be the integer 1, msg to be the string "hello", and y to be the floating point value 2.0. Only numeric values (integers and floats) and strings may be declared with `const`.
 
 Inside a type name, `const` signifies that variables of this type may not be modified. This is mainly useful for indicating that pointers should be treated as read-only.
 ```

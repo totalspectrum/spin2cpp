@@ -408,6 +408,21 @@ DeclareConstants(AST **conlist_ptr)
                         upper->right = NULL;
                         completed_declarations = AddToList(completed_declarations, upper);
                         conlist = *conlist_ptr;
+                    } else {
+                        AST *typ;
+                        typ = ExprType(ast->right);
+                        if (typ && (IsStringType(typ) || IsPointerType(typ))) {
+                            if (!IsIdentifier(ast->left)) {
+                                ERROR(ast, "Internal error, bad constant declaration");
+                                return;
+                            }
+                            typ = NewAST(AST_MODIFIER_CONST, typ, NULL);
+                            // pull it out and put it in the DAT section
+                            DeclareOneGlobalVar(current, ast, typ);
+                            RemoveFromList(conlist_ptr, upper);
+                            upper->right = NULL;
+                            conlist = *conlist_ptr;
+                        }
                     }
                     break;
                 case AST_ENUMSET:
