@@ -18,8 +18,7 @@
 
 char* getStr(char* buf, int max)
 {
-  extern text_t *dport_ptr;
-  return (_safe_gets(dport_ptr, buf, max));
+  return (_safe_gets((void *)0, buf, max));
 }
 
 char* readStr(text_t *text, char* buf, int max)

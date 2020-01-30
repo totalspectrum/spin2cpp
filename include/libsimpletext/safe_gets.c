@@ -17,30 +17,43 @@
 #include "simpletext.h"
 
 
-
 char* _safe_gets(text_t *text, char* origBuf, int count)
 {
   char* buf = origBuf;
+  int terminalEcho;
+
+  if (text) {
+      terminalEcho = text->terminalEcho;
+  } else {
+      terminalEcho = 1;
+  }
   while (count-- > 0)
   { 
-    int ch = text->rxChar(text);
+    int ch = text ? text->rxChar(text) : _rx();
       
-    if(text->terminalEcho)
+    if(terminalEcho)
     {  
       if (ch == 8 || ch == 127)
       {
           if (buf > origBuf)
           {
-              text->txChar(text, '\010');
-              text->txChar(text, ' ');
-              text->txChar(text, '\010');
+              if (text) {
+                  text->txChar(text, '\010');
+                  text->txChar(text, ' ');
+                  text->txChar(text, '\010');
+              } else {
+                  _tx('\010');
+                  _tx(' ');
+                  _tx('\010');
+              }
               count += 1;
               buf--;
           }
           count += 1;
           continue;
       }
-      
+
+#ifdef NEVER      
       #ifdef SIMPLETEXT_ECS
       /*
       if( !( (ch == *(text->ec)) || (ch == *(text->ec+1)) ) )
@@ -75,11 +88,16 @@ char* _safe_gets(text_t *text, char* origBuf, int count)
 
       if (ch == '\r')
           text->txChar(text, '\n');
-      #endif 
+      #endif
+#endif // NEVER      
     }   
     
     #ifdef ST_NO_CHAR_SUBS
-    text->txChar(text, ch);
+    if (text) {
+        text->txChar(text, ch);
+    } else {
+        _tx(ch);
+    }
     #endif
 
 
