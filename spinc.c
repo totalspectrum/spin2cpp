@@ -177,7 +177,11 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     int isUnion = P->isUnion;
     AST *varblocklist;
     int oldoffset = offset;
-    
+    unsigned sym_flags = 0;
+
+    if (P->defaultPrivate) {
+        sym_flags = SYMF_PRIVATE;
+    }
     varblocklist = P->pendingvarblock;
     if (basetypesize == 0) {
         P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
@@ -242,9 +246,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 }
             }
             // declare all the variables
-            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion);
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
-            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion);
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
         }
     }
     if (curtypesize != 4 && offset != oldoffset) {

@@ -1365,11 +1365,19 @@ AST *CheckTypes(AST *ast)
         return ast->left ? ast->left : ast_type_ptr_void;
     }
     case AST_METHODREF:
+    {
+        Symbol *sym;
+        const char *thename = GetIdentifierName(ast->right);
         if (ltype && !IsClassType(ltype)) {
             ERROR(ast, "Method reference on non-class %s", GetIdentifierName(ast->left));
             return ltype;
         }
+        if (!thename) {
+            ERROR(ast, "expected identifier after `.'");
+            return NULL;
+        }
         return ExprType(ast);
+    }
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     case AST_SYMBOL:

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling expressions
@@ -1929,7 +1929,6 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
     }
     if (expr && expr->kind == AST_METHODREF) {
         const char *thename;
-        Function *f;
         AST *objtype;
         objref = expr->left;
         objtype = ExprType(objref);
@@ -1947,10 +1946,10 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
             return NULL;
         }
         sym = LookupMemberSymbol(objref, objtype, thename, NULL);
-        if (sym && sym->kind == SYM_FUNCTION) {
-            f = (Function *)sym->val;
-            if (!f->is_public) {
-                ERROR(ast, "%s is a private method", thename);
+        if (sym) {
+            if (sym->flags & SYMF_PRIVATE) {
+                ERROR(ast, "attempt to access private member symbol %s", thename);
+                sym->flags &= ~SYMF_PRIVATE; // prevent future errors
             }
         }
     } else {
@@ -2342,6 +2341,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         if (!sym) {
             ERROR(expr, "%s is not a member of %s", methodname, TypeName(objtype));
             return NULL;
+        }
+        if (sym->flags & SYMF_PRIVATE) {
+            ERROR(expr, "attempt to access private member symbol %s", sym->user_name);
+            sym->flags &= ~SYMF_PRIVATE; // prevent future errors
         }
         switch (sym->kind) {
         case SYM_FUNCTION:

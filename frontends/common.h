@@ -368,6 +368,7 @@ struct modulestate {
     char datHasCode; // if 1, DAT section has PASM code in it
     char gasPasm;    // if 1, output is in GAS format
     char isUnion;    // if 1, module actually represents a union
+    char defaultPrivate; // if 1, member variables default to private
     char longOnly;   // if 1, all module variables are longs
     
     /* back end specific flags */
@@ -489,7 +490,7 @@ typedef struct Reloc {
 
 void PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs);
 void PrintDataBlockForGas(Flexbuf *f, Module *P, int inlineAsm);
-int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset, int isUnion);
+int  EnterVars(int kind, SymbolTable *stab, AST *symtype, AST *varlist, int startoffset, int isUnion, unsigned symFlags);
 
 // find the variable symbol for an identifier or array decl
 Symbol *VarSymbol(Function *func, AST *ast);

@@ -112,7 +112,7 @@ x.setval(0);
 x.incval();
 ```
 
-In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. Note that at present all variables are public, so `class` behaves like `struct`.
+In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. The difference between `class` and `struct` is that member variables are private in `class` and cannot be accessed outside the class, whereas they are public in `struct`.
 
 ### External Classes (e.g. Spin Objects)
 

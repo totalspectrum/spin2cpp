@@ -89,7 +89,7 @@ NewFunction(void)
 }
 
 static Symbol *
-EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
+EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym_flag)
 {
     Symbol *sym;
     const char *name;
@@ -110,6 +110,8 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type)
     sym = AddSymbol(stab, name, kind, (void *)type, username);
     if (!sym) {
         ERROR(astname, "duplicate definition for %s", username);
+    } else {
+        sym->flags |= sym_flag;
     }
     return sym;
 }
@@ -132,7 +134,7 @@ ArrayDeclType(AST *indices, AST *basetype, AST *baseptr)
 }
 
 int
-EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offset, int isUnion)
+EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offset, int isUnion, unsigned sym_flags)
 {
     AST *lower;
     AST *ast;
@@ -184,7 +186,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
             case AST_VARARGS:
             case AST_IDENTIFIER:
             case AST_LOCAL_IDENTIFIER:
-                sym = EnterVariable(kind, stab, ast, actualtype);
+                sym = EnterVariable(kind, stab, ast, actualtype, sym_flags);
                 if (sym) sym->offset = offset;
                 if (ast->kind != AST_VARARGS && !isUnion) {
                     offset += typesize;
@@ -197,7 +199,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
 
                 arraytype = ArrayDeclType(indices, actualtype, ast->d.ptr);
 
-                sym = EnterVariable(kind, stab, ast->left, arraytype);
+                sym = EnterVariable(kind, stab, ast->left, arraytype, sym_flags);
                 if (sym) sym->offset = offset;
                 if (!isUnion) {
                     size = TypeSize(arraytype);
@@ -346,7 +348,7 @@ GuessLambdaReturnType(AST *params, AST *body)
     {
         SymbolTable *table = calloc(1, sizeof(SymbolTable));
         table->next = &curfunc->localsyms;
-        EnterVars(SYM_PARAMETER, table, NULL, params, 0, 0);
+        EnterVars(SYM_PARAMETER, table, NULL, params, 0, 0, 0);
         
         r = ExprTypeRelative(table, expr, NULL);
         free(table);
@@ -596,7 +598,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 }
                 if (datatype && datatype->kind == AST_TYPEDEF) {
                     datatype = datatype->left;
-                    EnterVariable(SYM_TYPEDEF, &func->localsyms, name, datatype);
+                    EnterVariable(SYM_TYPEDEF, &func->localsyms, name, datatype, 0);
                 } else {
                     AddLocalVariable(func, name, datatype, SYM_LOCALVAR);
                 }
@@ -772,6 +774,9 @@ doDeclareFunction(AST *funcblock)
          * does
          */
         sym = AddSymbol(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user);
+        if (!is_public) {
+            sym->flags |= SYMF_PRIVATE;
+        }
     }
     
     if (fdef->body) {
@@ -861,7 +866,7 @@ doDeclareFunction(AST *funcblock)
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
             int count;
-            count = fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0) / LONG_SIZE;
+            count = fdef->numresults = EnterVars(SYM_RESULT, &fdef->localsyms, NULL, resultexpr, 0, 0, 0) / LONG_SIZE;
             rettype = NULL;
             while (count > 0) {
                 rettype = NewAST(AST_TUPLE_TYPE, NULL, rettype);
@@ -918,7 +923,7 @@ doDeclareFunction(AST *funcblock)
     // similarly in BASIC for objects
     AdjustParameterTypes(fdef->params, fdef->language);
 
-    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0, 0) / LONG_SIZE;
+    fdef->numparams = EnterVars(SYM_PARAMETER, &fdef->localsyms, NULL, fdef->params, 0, 0, 0) / LONG_SIZE;
     /* check for VARARGS */
     {
         AST *arg;
@@ -932,7 +937,7 @@ doDeclareFunction(AST *funcblock)
         }
     }
     
-    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0, 0) / LONG_SIZE;
+    fdef->numlocals = EnterVars(SYM_LOCALVAR, &fdef->localsyms, NULL, fdef->locals, 0, 0, 0) / LONG_SIZE;
 
     // if there are default values for the parameters, use those to initialize
     // the symbol types (only if we need to)
@@ -1149,7 +1154,7 @@ AddLocalVariable(Function *func, AST *var, AST *vartype, int symtype)
     if (!vartype) {
         vartype = ast_type_long;
     }
-    EnterVars(symtype, &func->localsyms, vartype, varlist, func->numlocals * LONG_SIZE, 0);
+    EnterVars(symtype, &func->localsyms, vartype, varlist, func->numlocals * LONG_SIZE, 0, 0);
     func->locals = AddToList(func->locals, NewAST(AST_LISTHOLDER, var, NULL));
     if (vartype) {
         numlongs = (TypeSize(vartype) + 3) / 4;

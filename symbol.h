@@ -49,7 +49,9 @@ typedef struct symbol {
     int           offset;  /* extra value recording symbol order within a function */
 } Symbol;
 
-#define SYMF_GLOBAL 0x01
+/* symbol flags */
+#define SYMF_GLOBAL 0x01  /* used for some special system globals */
+#define SYMF_PRIVATE 0x02 /* symbol should not be used from other modules */
 
 #define INTVAL(sym) ((intptr_t)((sym)->val))
 

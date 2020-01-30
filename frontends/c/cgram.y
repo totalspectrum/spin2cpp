@@ -1,6 +1,6 @@
 /*
  * C compiler parser
- * Copyright (c) 2011-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -515,6 +515,7 @@ static AST *
 MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
 {
     int is_union;
+    int is_class;
     const char *name;
     char *typename;
     Module *C;
@@ -524,8 +525,10 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     
     if (skind->kind == AST_STRUCT) {
         is_union = 0;
+        is_class = skind->d.ival != 0;
     } else if (skind->kind == AST_UNION) {
         is_union = 1;
+        is_class = 0;
     } else {
         ERROR(skind, "internal error: not struct or union");
         return NULL;
@@ -567,6 +570,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             C = NULL;
         } else {
             C = NewModule(typename, LANG_CFAMILY_C);
+            C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
             class_type = NewAbstractObject(AstIdentifier(typename), NULL);
@@ -1229,9 +1233,17 @@ any_identifier
 ;
 struct_or_union
 	: C_STRUCT
-            { $$ = NewAST(AST_STRUCT, NULL, NULL); }
+            {
+                AST *c = NewAST(AST_STRUCT, NULL, NULL);
+                c->d.ival = 0;  // public by default
+                $$ = c;
+            }
 	| C_CLASS
-            { $$ = NewAST(AST_STRUCT, NULL, NULL); } /* FIXME: should differ from struct */
+            {
+                AST *c = NewAST(AST_STRUCT, NULL, NULL);
+                c->d.ival = 1;  // private by default
+                $$ = c;
+            }
 	| C_UNION
             { $$ = NewAST(AST_UNION, NULL, NULL); }
 	;
