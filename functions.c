@@ -474,6 +474,10 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
             return seq;
         }
     }
+    if (IsConstType(basetype)) {
+        // cast to avoid warnings
+        ident = NewAST(AST_CAST, BaseType(basetype), ident);
+    }
     assign = AstAssign(ident, expr);
     seq = AddToList(seq, NewAST(AST_SEQUENCE, assign, NULL));
     AstReportDone(&saveinfo);

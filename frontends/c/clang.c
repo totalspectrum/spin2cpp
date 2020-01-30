@@ -29,9 +29,12 @@ doCTransform(AST **astptr, unsigned cflags)
     case AST_ASSIGN:
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
+#ifdef NEVER
+        // why did we have this here??
         if (ast->left && ast->left->kind == AST_CAST) {
             ast->left = ast->left->right;
         }
+#endif        
         if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, 1);
         }
