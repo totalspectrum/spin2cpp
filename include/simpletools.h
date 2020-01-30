@@ -21,5 +21,7 @@
 
 #define pause(ms) _waitms(ms)
 
+#define high(x) _pinh(x)
+#define low(x)  _pinl(x)
 
 #endif
