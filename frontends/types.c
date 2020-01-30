@@ -915,7 +915,12 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     if (IsConstType(desttype) && kind == AST_ASSIGN) {
-        WARNING(line, "assignment to const object");
+        // see if we can find an exact name
+        if (line && line->kind == AST_ASSIGN && IsIdentifier(line->left)) {
+            WARNING(line, "assignment to const item `%s'", GetUserIdentifierName(line->left));
+        } else {
+            WARNING(line, "assignment to const item");
+        }
     }
     if (IsPointerType(srctype) && IsConstType(BaseType(srctype)) && !IsConstType(BaseType(desttype))) {
         if (desttype != ast_type_const_generic) {
