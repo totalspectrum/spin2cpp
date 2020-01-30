@@ -3,6 +3,7 @@ Version 4.1.2
 - Fixed _rev() operator in C propeller2.h file for P2
 - Suppressed removal of unused methods when optimization is turned off
 - Used JMPREL to implement case_fast in P2
+- Started porting simpletools
 
 Version 4.1.1
 - Fixed Spin REV operator to match PNut's Spin2 definition.

@@ -2541,6 +2541,15 @@ SimplifyAssignments(AST **astptr)
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
         AST *lhs = ast->left;
+        if (IsIdentifier(lhs)) {
+            // check for CON := x
+            Symbol *sym = LookupAstSymbol(lhs, NULL);
+            if (sym) {
+                if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
+                    ERROR(ast, "assignment to constant `%s'", sym->user_name);
+                }
+            }
+        }
         if (lhs->kind == AST_EXPRLIST) {
             // multiple assignment; verify it's a simple assignment
             // note that we cannot check the number of assignments
