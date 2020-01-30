@@ -29,9 +29,10 @@ doCTransform(AST **astptr, unsigned cflags)
     case AST_ASSIGN:
         doCTransform(&ast->left, cflags);
         doCTransform(&ast->right, cflags);
-#ifdef NEVER
-        // why did we have this here??
-        if (ast->left && ast->left->kind == AST_CAST) {
+#if 1
+        // this seems pretty hacky but is needed to make some
+        // bitfield tests work
+        if (ast->left && ast->left->kind == AST_CAST && ast->left->right && ast->left->right->kind == AST_RANGEREF) {
             ast->left = ast->left->right;
         }
 #endif        
