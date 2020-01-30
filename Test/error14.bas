@@ -4,13 +4,13 @@ sub fillstring1(s as ubyte pointer)
 end sub
 
 sub fillstring2(s as const ubyte pointer)
-  s(1) = 0      ' assignment to const object
+  s(1) = 0      ' assignment to const item
   s = "goodbye"
 end sub
 
 sub fillstring3(s as const ubyte const pointer)
-  s(1) = 0     ' assignment to const object
-  s = "hello"  ' assignment to const object
+  s(1) = 0     ' assignment to const item
+  s = "hello"  ' assignment to const item `s'
 end sub
 
 function sum(x, y)
