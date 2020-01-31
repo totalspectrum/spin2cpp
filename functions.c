@@ -117,19 +117,26 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
 }
 
 static AST *
-ArrayDeclType(AST *indices, AST *basetype, AST *baseptr)
+ArrayDeclType(AST *indices, AST *basetype, AST *baseptr, AST *ident)
 {
     AST *arraytype;
     if (!indices) {
         return basetype;
     }
     if (indices->kind == AST_EXPRLIST) {
-        basetype = ArrayDeclType(indices->right, basetype, baseptr);
-        arraytype = NewAST(AST_ARRAYTYPE,basetype, indices->left);
+        basetype = ArrayDeclType(indices->right, basetype, baseptr, ident);
+        arraytype = NewAST(AST_ARRAYTYPE, basetype, indices->left);
     } else {
-        arraytype = NewAST(AST_ARRAYTYPE,basetype, indices);
+        if (!IsConstExpr(indices)) {
+            if (ident) {
+                ERROR(ident, "Unable to determine size of array %s", GetUserIdentifierName(ident));
+                indices = AstInteger(1);
+            }
+        }
+        arraytype = NewAST(AST_ARRAYTYPE, basetype, indices);
     }
     arraytype->d.ptr = baseptr;
+
     return arraytype;
 }
 
@@ -197,7 +204,7 @@ EnterVars(int kind, SymbolTable *stab, AST *defaulttype, AST *varlist, int offse
                 AST *arraytype;
                 AST *indices = ast->right;
 
-                arraytype = ArrayDeclType(indices, actualtype, ast->d.ptr);
+                arraytype = ArrayDeclType(indices, actualtype, ast->d.ptr, ast->left);
 
                 sym = EnterVariable(kind, stab, ast->left, arraytype, sym_flags);
                 if (sym) sym->offset = offset;
@@ -594,7 +601,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                     datatype = InferTypeFromName(name);
                 }
                 if (arrayinfo) {
-                    datatype = ArrayDeclType(arrayinfo->right, datatype, arrayinfo->d.ptr);
+                    datatype = ArrayDeclType(arrayinfo->right, datatype, arrayinfo->d.ptr, ident);
                 }
                 if (datatype && datatype->kind == AST_TYPEDEF) {
                     datatype = datatype->left;

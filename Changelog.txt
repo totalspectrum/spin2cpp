@@ -7,6 +7,7 @@ Version 4.1.2
 - Improved messages about const assignment
 - Allow strings in BASIC const declarations
 - In C++ class declarations make variables private by default
+- Improved some error messages about array declarations
 
 Version 4.1.1
 - Fixed Spin REV operator to match PNut's Spin2 definition.

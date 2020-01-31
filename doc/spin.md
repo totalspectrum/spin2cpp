@@ -145,18 +145,6 @@ r := (a) ? b : c
 ```
 In the latter form the parentheses around `a` are mandatory to avoid confusion with the random number operator `?`.
 
-### Function Aliases
-
-A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
-```
-PUB _add(x, y)
-  return x+y
-PUB add = _add
-```
-The `PUB add = _add` line says that `add` is an alias for `_add`.
-
-Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
-
 ### Default function parameters
 
 fastspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
@@ -190,6 +178,18 @@ the two calls to `write` will do the same thing. In regular Spin, and in fastspi
   write($68, $65, ..., 0)  ' $68 = ASCII value of "h"
 ```
 which is probably not what was intended.
+
+### Function Aliases
+
+A function may have an "alias" created for it. That is, if you want to be able to call the same function by two different names `add` and `_add`, you can do:
+```
+PUB _add(x, y)
+  return x+y
+PUB add = _add
+```
+The `PUB add = _add` line says that `add` is an alias for `_add`.
+
+Aliases defined this way are "weak"; that is, they may be overridden by later definitions. They are mostly intended for use in libraries where for some reason (e.g. C standard compatibility) we wish to allow the program to use the same name as a library function without a conflict occuring.
 
 ### Inline assembly
 
@@ -487,5 +487,3 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 - WAITPEQ, WAITPNE, and WAITVID are not implemented on P2
 
 - The hardware register set is different; the P2 does not have the CTRx, FRQx, PHSx, VCFG, or VSCL registers.
-
-- The clock frequency is set differently. On the P1 you can simply pre-define _CLKFREQ and _CLKFREQ constants and the compiler will automatically set the frequency for your program. On the P2 you must supply an explicit call to the `_clkset` function to set the clock frequency.
