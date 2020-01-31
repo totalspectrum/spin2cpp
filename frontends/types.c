@@ -1366,7 +1366,6 @@ AST *CheckTypes(AST *ast)
     }
     case AST_METHODREF:
     {
-        Symbol *sym;
         const char *thename = GetIdentifierName(ast->right);
         if (ltype && !IsClassType(ltype)) {
             ERROR(ast, "Method reference on non-class %s", GetIdentifierName(ast->left));
