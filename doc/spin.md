@@ -103,9 +103,20 @@ Fastspin has a number of extensions to the Spin language.
 
 ### Absolute address
 
-The `@@@` operator returns the absolute hub address of
-a variable. This is the same as `@` in Spin code, but in PASM code `@`
-returns only the address relative to the start of the `DAT` section.
+The `@@@` operator returns the absolute hub address of a variable. This is the same as `@` in Spin code, but in PASM code `@` returns only the address relative to the start of the `DAT` section.
+
+In P2 code `@@@` and `@` are the same, so for new P2 code just use `@`.
+
+### Access to member variables
+
+Fastspin allows access to member variables and constants using the `.` notation. That is, if `S` is an object like:
+```
+CON
+  rows = 24
+VAR
+  long x, y
+```
+then one may write `S.x` to access member variable `x` of `S`, and `S.rows` to access the constant `rows`. The original Spin syntax `S#rows` is still accepted for accessing constants.
 
 ### CASE_FAST
 
@@ -225,48 +236,6 @@ The `:2` indicates that fptr is a pointer to a function which returns 2 results.
 
 It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
 
-### Object pointers
-
-The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
-```
-OBJ
-  fds = "FullDuplexSerial"
-```
-declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
-```
-PUB print(f, c)
-  fds[f].dec(c)
-
-PUB doprint22
-  print(@aFullDuplexSerialObj, 22)
-```
-
-### PUB FILE and PRI FILE
-
-A `pub` or `pri` function declaration may include a `file` directive which gives the file which contains the actual definition of the function. This looks like:
-```
-  pub file "utils.spin" myfunc(x, y)
-```
-This declares a function `myfunc` with two parameters, which will be loaded from the file "utils.spin". The function will be a public function of the object. This provides an easy way to import the same function (e.g. a decimal conversion routine) into many different objects.
-
-`pub file` and `pri file` differ from the `obj` directive in that they do not create a new object; the functions defined in the new file are part of the current object.
-
-Note that there is no need for a body to the function (it is an error to give one). The number of parameters and return values, however, should be specified; they must match the number given in the final definition contained in the file.
-
-The function body need not be in Spin. For example, to use the C `atoi` function in a Spin object on a Propeller1, you could do:
-```
-obj ser: "spin/FullDuplexSerial.spin"
-pub file "libc/stdlib/atoi.c" atoi(str)
-
-pub test
-  ser.start(31, 30, 0, 115_200)
-  x := string("1234")
-  ser.dec(atoi(x))
-```
-(For Propeller2 you would have to modify this to use "spin/SmartSerial" and to change the output pins appropriately.)
-
-Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
-
 ### Multiple return values and assignments
 
 fastspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
@@ -310,19 +279,47 @@ PUB quad64(ahi, alo)
   return dbl64(dbl64(ahi, alo))
 ```
 
-### Array parameters
+### Object pointers
 
-fastspin allows method parameters to be small arrays; in this case, the caller must supply one argument for each element of the array. For example:
+The proposed Spin2 syntax for abstract object definitions and object pointers is accepted. A declaration like:
 ```
-pub selector(n, a[4])
-  return a[n]
-
-pub tryit
-  return selector(n, 1, 2, 3, 4)
+OBJ
+  fds = "FullDuplexSerial"
 ```
-This particular example could be achieved via `lookup`, but there are other cases where it might be convenient to bundle parameters together in an array.
+declares `fds` as having the methods of a FullDuplexSerial object, but without any actual variable or storage being instantiated. Symbols declared this way may be used to cast parameters to an object type, for example:
+```
+PUB print(f, c)
+  fds[f].dec(c)
 
-This feature is still incomplete, and may not work properly for C/C++ output.
+PUB doprint22
+  print(@aFullDuplexSerialObj, 22)
+```
+
+### PUB FILE and PRI FILE
+
+A `pub` or `pri` function declaration may include a `file` directive which gives the file which contains the actual definition of the function. This looks like:
+```
+  pub file "utils.spin" myfunc(x, y)
+```
+This declares a function `myfunc` with two parameters, which will be loaded from the file "utils.spin". The function will be a public function of the object. This provides an easy way to import the same function (e.g. a decimal conversion routine) into many different objects.
+
+`pub file` and `pri file` differ from the `obj` directive in that they do not create a new object; the functions defined in the new file are part of the current object.
+
+Note that there is no need for a body to the function (it is an error to give one). The number of parameters and return values, however, should be specified; they must match the number given in the final definition contained in the file.
+
+The function body need not be in Spin. For example, to use the C `atoi` function in a Spin object on a Propeller1, you could do:
+```
+obj ser: "spin/FullDuplexSerial.spin"
+pub file "libc/stdlib/atoi.c" atoi(str)
+
+pub test
+  ser.start(31, 30, 0, 115_200)
+  x := string("1234")
+  ser.dec(atoi(x))
+```
+(For Propeller2 you would have to modify this to use "spin/SmartSerial" and to change the output pins appropriately.)
+
+Beware that functions declared with `file` are treated the same as other functions; in particular, note that the first function in the top level object will be used as the starting point for the program, even if that function was declared with `pub file` or `pri file`. So unlike in C, the declaration of external functions should be placed at the end of the file rather than the beginning (unless for some reason you want the main program to come from another file).
 
 ### Typed parameters and return values
 
@@ -357,11 +354,25 @@ fastspin has some new operators for treating values as unsigned
   a +=> b  is an unsigned version of =>
 ```
 
-### New PASM directives
+### Array parameters (deprecated)
+
+fastspin allows method parameters to be small arrays; in this case, the caller must supply one argument for each element of the array. For example:
+```
+pub selector(n, a[4])
+  return a[n]
+
+pub tryit
+  return selector(n, 1, 2, 3, 4)
+```
+This particular example could be achieved via `lookup`, but there are other cases where it might be convenient to bundle parameters together in an array.
+
+This feature is still incomplete, and may not work properly for C/C++ output.
+
+## New PASM directives
 
 fastspin accepts some Spin2 assembly directives, even in Spin1 mode.
 
-#### ORGF
+### ORGF
 
 Forces the COG PC to reach a certain value by inserting 0 if necessary. For example, `orgf $100` will insert 0 bytes until the COG program counter reaches $100. `orgf X` is basically similar to:
 ```
@@ -369,7 +380,7 @@ Forces the COG PC to reach a certain value by inserting 0 if necessary. For exam
 ```
 ORGF is valid only in COG space.
 
-#### ORGH
+### ORGH
 
 Specifies that labels and code after this must be in HUB memory.
 ```
