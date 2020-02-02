@@ -537,7 +537,10 @@ repeatstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
   | SP_ASM datblock SP_ENDASM
-    {  $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1); }
+    {
+        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
+        $$->d.ival = 0; // not volatile
+    }
   | SP_INLINECCODE
     {  $$ = $1; }
 ;

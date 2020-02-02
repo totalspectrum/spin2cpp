@@ -1589,6 +1589,7 @@ struct reservedword basic_keywords[] = {
 
 struct reservedword c_keywords[] = {
   { "__asm", C_ASM },
+  { "__attribute__", C_ATTRIBUTE },
   { "_Bool", C_BOOL },
   { "break", C_BREAK },
   {"__builtin_abs", C_BUILTIN_ABS },

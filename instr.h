@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2019 Total Spectrum Software Inc.
+ * Copyright 2016-2020 Total Spectrum Software Inc.
  * Intermediate representation definitions
  */
 

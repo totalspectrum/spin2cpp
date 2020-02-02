@@ -242,7 +242,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
 //
 #define MAX_OPERANDS 4
 
-static void
+static IR *
 CompileInlineInstr(IRList *irl, AST *ast)
 {
     Instruction *instr;
@@ -261,7 +261,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
     }
     if (!ast) {
         ERROR(NULL, "Internal error, expected instruction");
-        return;
+        return NULL;
     }
     instr = (Instruction *)ast->d.ptr;
     ir = NewIR(instr->opc);
@@ -313,7 +313,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
     }
     
     if (numoperands < 0) {
-        return;
+        return NULL;
     }
     for (i = 0; i < numoperands; i++) {
         Operand *op;
@@ -337,10 +337,11 @@ CompileInlineInstr(IRList *irl, AST *ast)
         }
     }
     AppendIR(irl, ir);
+    return ir;
 }
 
 void
-CompileInlineAsm(IRList *irl, AST *origtop)
+CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
 {
     AST *ast;
     AST *top = origtop;
@@ -375,7 +376,10 @@ CompileInlineAsm(IRList *irl, AST *origtop)
             ast = ast->left;
         }
         if (ast->kind == AST_INSTRHOLDER) {
-            CompileInlineInstr(irl, ast->left);
+            IR *ir = CompileInlineInstr(irl, ast->left);
+            if (isConst) {
+                ir->flags |= FLAG_KEEP_INSTR;
+            }
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
             Operand *op;

@@ -2009,7 +2009,15 @@ identdecl:
 
 asmstmt:
   BAS_ASM eoln asmlist BAS_END BAS_ASM
-      { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
+      {
+          $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1);
+          $$->d.ival = 0; /* not volatile */
+      }
+  | BAS_ASM BAS_CONST eoln asmlist BAS_END BAS_ASM
+      {
+          $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1);
+          $$->d.ival = 1; /* volatile, do not touch */
+      }
   | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
   ;

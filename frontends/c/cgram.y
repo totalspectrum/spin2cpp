@@ -750,6 +750,7 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
 
 %token C_FROMFILE "__fromfile"
 %token C_USING "__using"
+%token C_ATTRIBUTE "__attribute__"
 
 %token C_ASM "__asm"
 %token C_PASM "__pasm"
@@ -1632,11 +1633,32 @@ block_item
    ;
 
 asm_statement:
-  C_ASM '{' asmlist '}'
-    { $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1); }
-  | C_ASM C_EOLN '{' asmlist '}'
-    { $$ = NewCommentedAST(AST_INLINEASM, $4, NULL, $1); }
+  C_ASM opt_asm_volatile '{' asmlist '}'
+    {
+        AST *asmcode;
+        AST *vol = $2;
+        asmcode = NewAST(AST_INLINEASM, $4, NULL);
+        asmcode->d.ival = (vol != 0);
+        $$ = asmcode;
+    }
+  | C_ASM opt_asm_volatile C_EOLN '{' asmlist '}'
+    {
+        AST *asmcode;
+        AST *vol = $2;
+        asmcode = NewAST(AST_INLINEASM, $5, NULL);
+        asmcode->d.ival = (vol != 0);
+        $$ = asmcode;
+    }
   ;
+
+opt_asm_volatile:
+  /* nothing */
+    { $$ = 0; }
+  | C_VOLATILE
+    { $$ = ast_type_void; }
+  | C_CONST
+    { $$ = ast_type_void; }
+;
 
 top_asm:
   C_ASM '{' asmlist '}'

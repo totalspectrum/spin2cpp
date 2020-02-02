@@ -1297,7 +1297,7 @@ int EliminateDeadCode(IRList *irl)
     while (ir && IsDummy(ir)) {
       ir = ir->prev;
     }
-    if (ir && ir->opc == OPC_JUMP && curfunc && ir->dst == FuncData(curfunc)->asmreturnlabel) {
+    if (ir && ir->opc == OPC_JUMP && curfunc && ir->dst == FuncData(curfunc)->asmreturnlabel && !InstrIsVolatile(ir)) {
       DeleteIR(irl, ir);
       change = 1;
     }
@@ -1305,7 +1305,9 @@ int EliminateDeadCode(IRList *irl)
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
-      if (ir->opc == OPC_JUMP) {
+      if (InstrIsVolatile(ir)) {
+          /* do nothing */
+      } else if (ir->opc == OPC_JUMP) {
           if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
               // dead code from here to next label
               IR *x = ir->next;

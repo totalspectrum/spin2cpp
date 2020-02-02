@@ -79,9 +79,11 @@ int getcogid() {
    return x;
 }
 ```
-The `__asm` keyword must be followed by a `{`; everything between that and the next `}` is taken to be assembly code.
+The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code.
 
 For inline assembly inside a function, any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
+
+Inline assembly inside a function is normally optimized along with the generated code; this produces opportunities to improve the generated code based on knowledge of the assembly. This may be suppressed by using `asm const` (equivalently `asm volatile`) instead of `asm`. Generally this will hurt the output code, but may be necessary if there is inline assembly with very sensitive timing.
 
 Inline assembly may also appear outside of any function. In this case the inline assembly block is similar to a Spin `DAT` section, and creates a global block of code and/or data.
 
@@ -91,7 +93,7 @@ The syntax of expressions inside inline assembly is the same as that of C, and o
 
 Because much existing assembly code is written in the Spin language, FlexC supports inline assembly that (mostly) uses the Spin rules for expression evaluation and comments. These blocks are like C style inline assembly, but start with the keyword `__pasm` instead of `__asm`. Inside `__pasm` blocks comments start with a single quote, and expressions are evaluated as they are in Spin.
 
-`__pasm` blocks are still a work in progress, and are probably still incomplete.
+`__pasm` blocks may only appear at top level (outside of any function). Inside a function only `__asm` blocks are supported, for now. Also note that the Spin language compatibility inside `__pasm` blocks is still a work in progress, and there are probably many missing pieces.
 
 Note that FlexC supports calling Spin methods directly, so to adapt existing Spin code it may be easier to just include the Spin object with `struct __using` (see below).
 

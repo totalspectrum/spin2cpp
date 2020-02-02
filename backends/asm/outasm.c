@@ -4281,7 +4281,7 @@ static void CompileStatement(IRList *irl, AST *ast)
         break;
     case AST_INLINEASM:
         //EmitDebugComment(irl, ast);
-        CompileInlineAsm(irl, ast->left);
+        CompileInlineAsm(irl, ast->left, ast->d.ival);
         break;
     case AST_CASE:
         CompileCaseStmt(irl, ast);

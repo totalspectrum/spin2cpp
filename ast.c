@@ -693,6 +693,9 @@ static void doASTDump(AST *ast, int indent)
         sprintf(buf, "<integer %d/>", ast->d.ival);
         leaf = 1;
         break;
+    case AST_INLINEASM:
+        sprintf(buf, "<inlineasm%s>", ast->d.ival ? " const" : " optimized");
+        break;
     case AST_BITVALUE:
         sprintf(buf, "<bitvalue 0x%x/>", ast->d.ival);
         leaf = 1;

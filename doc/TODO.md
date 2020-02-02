@@ -1,15 +1,31 @@
 Things to do
 ============
 
+C Improvements
+--------------
+stdio FILE routines and vfs
+
+__attribute__ for constructors and cogexec
+
+Finish porting simpletools.h
+
+BASIC Improvments
+-----------------
+Remaining math functions
+
+Remaining string functions
+
+Easier implicit declarations
+
 Short Term Misc
 ---------------
-Support for `_FREE` and `_STACK` (these are read, but ignored at present).
-
 More documentation.
 
 Code cleanup
 
 Better error messages.
+
+Support for `_FREE` and `_STACK` (these are read, but ignored at present).
 
 Add in the missing openspin options to fastspin.
 
@@ -29,6 +45,4 @@ Long Term
 
 Implement a spin bytecode back end.
 
-Implement a Tachyon bytecode back end.
-
-
+Implement a Python-like front end.
