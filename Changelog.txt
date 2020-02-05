@@ -1,3 +1,6 @@
+Version 4.1.3
+- Allow const qualifier for inline assembly
+
 Version 4.1.2
 - Fixed "backwards" case ranges in Spin
 - Fixed _rev() operator in C propeller2.h file for P2

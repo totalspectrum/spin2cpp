@@ -9,6 +9,21 @@ __attribute__ for constructors and cogexec
 
 Finish porting simpletools.h
 
+virtual methods?
+
+allow method declarations outside the class?
+
+C++ lambdas
+
+Implement "long long"
+
+Implement variable sized local arrays
+
+#pragma lib
+
+better flexcc frontend
+
+
 BASIC Improvments
 -----------------
 Remaining math functions
@@ -16,6 +31,10 @@ Remaining math functions
 Remaining string functions
 
 Easier implicit declarations
+
+Spin
+----
+Update to match spin2
 
 Short Term Misc
 ---------------
@@ -30,6 +49,8 @@ Support for `_FREE` and `_STACK` (these are read, but ignored at present).
 Add in the missing openspin options to fastspin.
 
 Add an option to get a report of method sizes and free space left.
+
+full public/private support
 
 Optimization
 ------------
