@@ -10,17 +10,27 @@ extern "C" {
 #define S_IWUSR   0400
 #define S_IRUSR   0200
 #define S_IXUSR   0100
+#define S_IWGRP   0040
+#define S_IRGRP   0020
+#define S_IXGRP   0010
+#define S_IWOTH   0004
+#define S_IROTH   0002
+#define S_IXOTH   0001
 
 #define S_IWRITE S_IWUSR
 #define S_IREAD  S_IRUSR
 #define S_IEXEC  S_IXUSR
 
-#define S_IFMT   07000
-#define S_IFREG  00000
-#define S_IFDIR  01000
-#define S_IFCHR  02000
-#define S_IFBLK  03000
-#define S_IFIFO  04000
+#define S_ISUID  0004000
+#define S_ISGID  0002000
+#define S_ISVTX  0001000
+    
+#define S_IFMT   0170000
+#define S_IFREG  0000000
+#define S_IFDIR  0010000
+#define S_IFCHR  0020000
+#define S_IFBLK  0030000
+#define S_IFIFO  0040000
 
 #define __S_ISFMT(mode, type) (((mode) & S_IFMT) == (type))
 #define S_ISREG(mode) __S_ISFMT(mode, S_IFREG)
