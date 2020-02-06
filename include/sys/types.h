@@ -20,13 +20,16 @@ typedef int dev_t;
 typedef int ino_t;
 typedef unsigned int mode_t;
 
+typedef unsigned short uid_t;
+typedef unsigned short gid_t;
+
 struct stat {
   int st_dev;  /* ID of device containing file */
   int st_ino;  /* inode number */
   unsigned int st_mode; /* protection */
   int st_nlink;
-  unsigned short st_uid;
-  unsigned short st_gid;
+  uid_t st_uid;
+  gid_t st_gid;
   int st_rdev;
   long st_size;
   long st_blksize;
