@@ -37,6 +37,8 @@ int puts(const char *s) _IMPL("libc/stdio/fputs.c");
 
 int fflush(FILE *f) _IMPL("libc/stdio/fflush.c");
 
+void perror(const char *s) _IMPL("libc/string/strerror.c");
+
 #ifdef __FLEXC__
 // FLEXC can optimize printf
 #define printf __builtin_printf

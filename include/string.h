@@ -26,7 +26,7 @@ extern "C" {
     int    strncmp(const char *s1, const char *s2, size_t n) _IMPL("libc/string/strncmp.c");
     size_t strxfrm(char *dest, const char *src, size_t n);
     
-    char * strdup (const char *s1);
+    char * strdup (const char *s1) _IMPL("libc/string/strdup.c");
 
     void * memchr(const void *s, int c, size_t n);
     char * strchr(const char *, int) _IMPL("libc/string/strchr.c");
@@ -39,7 +39,7 @@ extern "C" {
 
 
     void * memset(void *dest, int c, size_t n) _IMPL("libc/string/memset.c");
-    char * strerror(int err);
+    char * strerror(int err) _IMPL("libc/string/strerror.c");
     size_t strlen(const char *s) _IMPL("libc/string/strlen.c");
 
     extern int    _strcasecmp(const char *s1, const char *s2);

@@ -7,4 +7,6 @@ struct group {
     char **gr_mem;
 };
 
+struct group *getgrgid(gid_t gid) _IMPL("libc/unix/getgrgid.c");
+
 #endif

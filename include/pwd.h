@@ -8,4 +8,7 @@ struct passwd {
     char *pw_dir;
 };
 
+struct passwd *getpwuid(uid_t uid) _IMPL("libc/unix/getpwuid.c");
+struct passwd *getpwnam(const char *name) _IMPL("libc/unix/getpwuid.c");
+
 #endif
