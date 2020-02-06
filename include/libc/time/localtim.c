@@ -177,7 +177,7 @@ struct tm *_localtime_r(const time_t *t, struct tm *stm)
 
 	_tzset();
 	gmsecs = *t;
-	if (gmsecs > _timezone)
+	if ((int)gmsecs > _timezone)
 	  gmsecs = gmsecs - _timezone;
         stm = _gmtime_r(&gmsecs, stm);
 

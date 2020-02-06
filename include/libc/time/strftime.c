@@ -45,10 +45,11 @@ strftime(char *str, size_t maxsize, const char *fmt, const struct tm *ts)
 	int n;
 	int year;
         char    q;
-        char    buf[BIG_LEN], *putstr, *s;
+        char    buf[BIG_LEN], *s;
+        const char *putstr;
 
         for(;;) {
-                if (num >= maxsize) return 0;
+                if (num >= (long)maxsize) return 0;
                 if ((q = *fmt++) == 0)  break;
                 if (q != '%') {
                         *str++ = q;
@@ -219,7 +220,7 @@ strftime(char *str, size_t maxsize, const char *fmt, const struct tm *ts)
 			break;
                 }
 
-                if (num + (len = strlen(putstr)) >= maxsize)
+                if (num + (len = strlen(putstr)) >= (long)maxsize)
                         return 0;
 
                 num += len;

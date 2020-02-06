@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <sys/thread.h>
 
+static char ctime_buf[28];
+
 char *_asctime_r(const struct tm *time, char *buf)
 {
   strftime(buf, 26, "%a %b %d %H:%M:%S %Y\n", time);
@@ -16,7 +18,7 @@ char *asctime(const struct tm *time)
  *      the same internal buffer, as for ctime() is used for this function.
  */
 {
-  return _asctime_r(time, _TLS->ctime_buf);
+  return _asctime_r(time, &ctime_buf);
 }
 
 char *ctime(const time_t *rawtime)
