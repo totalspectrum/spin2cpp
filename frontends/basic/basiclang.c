@@ -736,7 +736,9 @@ doBasicTransform(AST **astptr)
             }
             if (f) {
                 f->used_as_ptr = 1;
-                f->callSites++;
+                if (f->callSites == 0) {
+                    MarkUsed(f, "func pointer");
+                }
             }
         }
         break;

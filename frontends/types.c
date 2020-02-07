@@ -1076,6 +1076,9 @@ BuildMethodPointer(AST *ast)
         objast = NewAST(AST_ADDROF, objast, NULL);
     }
     func->used_as_ptr = 1;
+    if (func->callSites == 0) {
+        MarkUsed(func, "func pointer");
+    }
     // save off the current @ node
     funcaddr = NewAST(AST_ADDROF, ast->left, ast->right);
     // create a call

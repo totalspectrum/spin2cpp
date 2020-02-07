@@ -1039,6 +1039,15 @@ RemoveUnusedMethods(int isBinary)
         current = saveCur;
         
     }
+    // mark all functions called via pointers
+    for (P = allparse; P; P = P->next) {
+        for (pf = P->functions; pf; pf = pf->next) {
+            if (pf->callSites == 0 && pf->used_as_ptr) {
+                MarkUsed(pf, "__func pointer__");
+            }
+        }
+    }
+    
     // Now remove the ones that are never called
     for (P = allparse; P; P = P->next) {
         doPruneMethods(P);
