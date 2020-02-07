@@ -13,6 +13,7 @@ struct dirent {
 
 typedef struct _dir {
     void *vfs;
+    void *vfsdata;
     struct dirent dirent;
 } DIR;
 

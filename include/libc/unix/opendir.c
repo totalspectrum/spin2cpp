@@ -44,7 +44,9 @@ struct dirent *readdir(DIR *dir)
 
     r = v->readdir(dir, D);
     if (r) {
-        _seterror(r);
+        if (r > 0) {
+            _seterror(r);
+        }
         return 0;
     }
     return D;
