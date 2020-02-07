@@ -18,7 +18,7 @@ char *asctime(const struct tm *time)
  *      the same internal buffer, as for ctime() is used for this function.
  */
 {
-  return _asctime_r(time, &ctime_buf);
+  return _asctime_r(time, &ctime_buf[0]);
 }
 
 char *ctime(const time_t *rawtime)
