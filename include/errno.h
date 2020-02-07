@@ -12,12 +12,16 @@
 #ifndef _ERRNO_H
 #define _ERRNO_H
 
+#ifndef _COMPILER_H
+#include <compiler.h>
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 #ifdef __FLEXC__
-    int errno;
+    extern int errno;
 #else
 #include <sys/thread.h>
 #define errno (_TLS->errno)
@@ -166,6 +170,9 @@ extern "C" {
 /**  Permission denied */
 #define EPERM        EACCES
 
+    int _seterror(int errnum) _IMPL("include/libc/stdlib/errno.c");
+    int _geterror() _IMPL("include/libc/stdlib/errno.c");
+    
 #if defined(__cplusplus)
 }
 #endif

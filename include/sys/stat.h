@@ -39,9 +39,8 @@ extern "C" {
 #define S_ISBLK(mode) __S_ISFMT(mode, S_IFBLK)
 #define S_ISFIFO(mode) __S_ISFMT(mode, S_IFIFO)
 
-int mkdir(const char *path, int mode);
-int stat(const char *path, struct stat *buf);
-int fstat(int fd, struct stat *buf);
+    int stat(const char *path, struct stat *buf) _IMPL("libc/unix/stat.c");
+    int fstat(int fd, struct stat *buf);
 
 #if defined(__cplusplus)
 }
