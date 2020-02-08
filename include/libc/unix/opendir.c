@@ -24,6 +24,7 @@ DIR *opendir(const char *name)
         free(dir);
         return 0;
     }
+    dir->vfs = v;
     return dir;
 }
 
@@ -42,6 +43,9 @@ struct dirent *readdir(DIR *dir)
     struct vfs *v = (struct vfs *)dir->vfs;
     struct dirent *D = &dir->dirent;
 
+    if (!v) {
+        return 0;
+    }
     r = v->readdir(dir, D);
     if (r) {
         if (r > 0) {
