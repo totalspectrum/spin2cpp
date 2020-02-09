@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #ifdef __FLEXC__
 #define SMALL_INT
@@ -619,6 +621,7 @@ extern int _rx(void);
 typedef int (*TxFunc)(int c);
 typedef int (*RxFunc)(void);
 typedef int (*CloseFunc)(void);
+typedef int (*VFS_CloseFunc)(vfs_file_t *);
 
 // we want the BASIC open function to work correctly with old Spin
 // interfaces which don't return sensible values from send, so we
@@ -630,31 +633,18 @@ typedef struct _bas_wrap_sender {
     int tx(int c) { f(c); return 1; }
 } BasicWrapper;
 
-TxFunc _bas_txh_handles[8] = {
-    _tx, 0, 0, 0,
-    0, 0, 0, 0
-};
-RxFunc _bas_rxh_handles[8] = {
-    _rx, 0, 0, 0,
-    0, 0, 0, 0
-};
-CloseFunc _bas_closeh_handles[8] = { 0 };
-
-/* make sure we hold on to the original wrapper structure so it
-   isn't garbage collected as long as the file is open
-*/
-BasicWrapper *_bas_wrappers[8] = { 0 };
-
-TxFunc _gettxfunc(int h) {
-    return _bas_txh_handles[h];
+TxFunc _gettxfunc(unsigned h) {
+    vfs_file_t *v;
+    v = __getftab(h);
+    if (!v) return 0;
+    return v->putchar;
 }
-RxFunc _getrxfunc(int h) {
-    return _bas_rxh_handles[h];
+RxFunc _getrxfunc(unsigned h) {
+    vfs_file_t *v;
+    v = __getftab(h);
+    if (!v) return 0;
+    return v->getchar;
 }
-CloseFunc _getclosefunc(int h) {
-    return _bas_closeh_handles[h];
-}
-    
 //
 // basic interfaces
 //
@@ -662,7 +652,10 @@ CloseFunc _getclosefunc(int h) {
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
     struct _bas_wrap_sender *wrapper;
-    if (h > 7) return -1;
+    struct vfs_file_t *v;
+
+    v = __getftab(h);
+    if (!v) return -1;
 
     if (sendf) {
         wrapper = _gc_alloc_managed(sizeof(_bas_wrap_sender));
@@ -670,29 +663,18 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
             return -1; /* out of memory */
         }
         wrapper->f = sendf;
-        _bas_txh_handles[h] = &wrapper->tx;
+        v->putchar = &wrapper->tx;
     } else {
-        wrapper = 0;
-        _bas_txh_handles[h] = sendf;
+        v->putchar = sendf;
     }
-    _bas_rxh_handles[h] = recvf;
-    _bas_closeh_handles[h] = closef;
-    _bas_wrappers[h] = wrapper;
+    v->getchar = recvf;
+    v->close = (VFS_CloseFunc)closef;
     return 0;
 }
 
 void _basic_close(unsigned h)
 {
-    CloseFunc cf;
-    if (h > 7) return;
-
-    if (_bas_wrappers[h]) {
-        _gc_free(_bas_wrappers[h]);
-        _bas_wrappers[h] = 0;
-    }
-    cf = _getclosefunc(h);
-    _basic_open(h, 0, 0, 0);
-    (*cf)();
+    close(h);
 }
 
 int _basic_print_char(unsigned h, int c, unsigned fmt)
@@ -731,7 +713,6 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
 {
     TxFunc tf;
 
-    if (h > 7) return -1;
     tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtnum(tf, fmt, x, base);
@@ -740,7 +721,6 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
 int _basic_get_char(unsigned h)
 {
     RxFunc rf;
-    if (h > 7) return -1;
     rf = _getrxfunc(h);
     if (!rf) return -1;
     return (*rf)();
@@ -752,7 +732,6 @@ int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
     if (fmt == 0) {
         fmt = (ch == '#') ? DEFAULT_BASIC_FLOAT_FMT : DEFAULT_FLOAT_FMT;
     }
-    if (h > 7) return -1;
     tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtfloat(tf, fmt, x, ch);

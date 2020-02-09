@@ -2,6 +2,7 @@
 #define _STDIO_H_
 
 #include <compiler.h>
+#include <sys/types.h>
 
 #ifndef EOF
 #define EOF (-1)
@@ -10,19 +11,15 @@
 #define NULL ((void *)0)
 #endif
 
-typedef struct FILE {
-    int (*putc)(int c);
-    int (*getc)();
-    int (*closef)();
-} FILE;
+typedef struct vfs_file_t FILE;
 
-FILE *__getftab(int i) _IMPL("libc/stdio/ftab.c");
+FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdin  __getftab(0)
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
-#define fputc(x, f) (((f)->putc)(x))
-#define fgetc(f)    (((f)->getc)())
+#define fputc(x, f) (((f)->putchar)(x))
+#define fgetc(f)    (((f)->getchar)())
 #define putchar(x) fputc(x, stdout)
 #define getchar() fgetc(stdin)
 

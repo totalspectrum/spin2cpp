@@ -9,7 +9,7 @@ let i = 2
 print a, i
 
 '' closure test for BASIC
-const HEAPSIZE = 6000
+const HEAPSIZE = 8000
 
 dim printer as sub(t as integer)
 dim stepper as sub()

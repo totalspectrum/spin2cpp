@@ -39,6 +39,8 @@ extern void ValidateStackptr(void);
 extern Operand *stackptr;
 extern void ValidateObjbase(void);
 extern Operand *objbase;
+extern void ValidateHeapptr(void);
+extern Operand *heapptr;
 extern Operand *resultreg[];
 extern Operand *arg1, *arg2;
 
@@ -108,6 +110,11 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             else if (!strcmp(name, "sp")) {
                 ValidateStackptr();
                 r = stackptr;
+                r_address = immflag;
+            }
+            else if (!strcmp(name, "__heap_ptr")) {
+                ValidateHeapptr();
+                r = heapptr;
                 r_address = immflag;
             }
             else if (!strncmp(name, "result", 6) && isargdigit(name[6]) && !name[7]) {

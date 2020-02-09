@@ -81,6 +81,9 @@ static Operand *stacktop;  // indirect reference through stackptr
 static Operand *frameptr;
 static Operand *linkreg;
 
+Operand *heapptr;
+static Operand *heaplabel;
+
 static Operand *hubexit;
 static Operand *cogexit;
 
@@ -229,6 +232,20 @@ ValidateObjbase(void)
         objlabel = NewOperand(IMM_HUB_LABEL, "objmem", 0);
         objbase = NewImmediatePtr("objptr", objlabel);
     }
+}
+
+void
+ValidateHeapptr(void)
+{
+    if (heapptr) {
+        return;
+    }
+    if (HUB_DATA) {
+        heaplabel = NewOperand(IMM_HUB_LABEL, "__heap_base", 0);
+    } else {
+        heaplabel = NewOperand(IMM_COG_LABEL, "__heap_base", 0);
+    }
+    heapptr = NewImmediatePtr("__heap_ptr", heaplabel);
 }
 
 void
@@ -6012,6 +6029,25 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     
     // only the top level variable space is needed
     EmitVarSection(&hubdata, P);
+
+    // emit heap space, if we need it
+    if (heaplabel) {
+        Symbol *sym = LookupSymbol("__real_heapsize__");
+        unsigned heapsize;
+        if (sym && sym->kind == SYM_CONSTANT) {
+            heapsize = EvalConstExpr((AST *)sym->val);
+        } else {
+            heapsize = 256;
+        }
+        heapsize += 2; // extra room for gc
+        if (HUB_DATA) {
+            EmitLabel(&hubdata, heaplabel);
+            EmitReserve(&hubdata, heapsize, HUB_RESERVE);
+        } else {
+            EmitLabel(&cogbss, heaplabel);
+            EmitReserve(&cogbss, heapsize, COG_RESERVE);
+        }
+    }
     
     // finally the stack, if we need it
     if (stacklabel) {

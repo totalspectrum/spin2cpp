@@ -62,6 +62,7 @@ INTERNALS
 }}
 
 con
+  __real_heapsize__ = 256 ' size of heap in longs, may be overridden by user
   pagesize = 16		' size of page in bytes
   pagesizeshift = 4	' log2(pagesize)
   headersize = 8 	' length of block header
@@ -87,9 +88,31 @@ con
   ' more easily
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
-  __real_heapsize__ = 256  ' redefined based on user options
 
-pri file "libsys/gcptrs.spin" _gc_ptrs : a, b
+''
+'' return gc pointers
+'' if called before gc pointers are set up, initialize
+'' the heap
+''
+pri _gc_ptrs : base, end | size
+  base := 0  ' will be overridden to __heap_ptr
+  asm
+    mov base, __heap_ptr
+  endasm
+  end := base + __real_heapsize__
+  if (long[base] == 0)
+    size := end - base
+    word[base + OFF_SIZE] := 1 
+    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_RESERVED
+    word[base + OFF_PREV] := 0
+    word[base + OFF_LINK] := 1
+    base += pagesize
+    word[base + OFF_SIZE] := (size / pagesize)
+    word[base + OFF_FLAGS] := GC_MAGIC | GC_FLAG_FREE
+    word[base + OFF_PREV] := 0
+    word[base + OFF_LINK] := 0
+    base -= pagesize
+  return (base, end)
 
 { return a pointer to page i in the heap }
 pri _gc_pageptr(heapbase, i)
@@ -113,7 +136,7 @@ pri _gc_nextBlockPtr(ptr) | t
   return ptr + (t << pagesizeshift)
   
 pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_base, heap_end, saveptr, linkindex
-  (heap_base, heap_end) := _gc_ptrs
+  (heap_base, heap_end) := _gc_ptrs()
   ptr := heap_base
   availsize := 0
   repeat

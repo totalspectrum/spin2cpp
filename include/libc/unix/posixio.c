@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 
 // BASIC support routines
 extern int _tx(int c);
@@ -29,7 +30,26 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         &_rx, /* getchar */
         0, /* close function */
     },
+    /* stderr */
+    {
+        0, /* vfsdata */
+        O_INTRN_WROK, /* flags */
+        0, /* read */
+        0, /* write */
+        &_tx, /* putchar */
+        &_rx, /* getchar */
+        0, /* close function */
+    },
 };
+
+struct vfs_file_t *
+__getftab(int i)
+{
+    if ( (unsigned)i >= (unsigned)_MAX_FILES) {
+        return 0;
+    }
+    return &__filetab[i];
+}
 
 static int
 _openas(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
@@ -74,6 +94,21 @@ int open(const char *name, int flags, mode_t mode=0644)
     return r;
 }
 
+int close(int fd)
+{
+    vfs_file_t *f;
+    if ((unsigned)fd >= (unsigned)_MAX_FILES) {
+        return _seterror(EBADF);
+    }
+    f = &__filetab[fd];
+    if (!f->flags) {
+        return _seterror(EBADF);
+    }
+    (*f->close)(f);
+    memset(f, 0, sizeof(*f));
+    return 0;
+}
+
 ssize_t write(int fd, const void *vbuf, size_t count)
 {
     ssize_t r;
@@ -102,6 +137,42 @@ ssize_t write(int fd, const void *vbuf, size_t count)
     r = 0;
     while (count > 0) {
         r += (*tx)(*buf++);
+        --count;
+    }
+    return r;
+}
+
+ssize_t read(int fd, void *vbuf, size_t count)
+{
+    ssize_t r, q;
+    vfs_file_t *f;
+    int (*rx)();
+    unsigned char *buf = (unsigned char *)vbuf;
+    
+    if ((unsigned)fd >= (unsigned)_MAX_FILES) {
+        return _seterror(EBADF);
+    }
+    f = &__filetab[fd];
+    if (! (f->flags & O_INTRN_RDOK) ) {
+        return _seterror(EACCES);
+    }
+    if (f->read) {
+        r = (*f->read)(f, vbuf, count);
+        if (r < 0) {
+            return _seterror(r);
+        }
+        return r;
+    }
+    rx = f->getchar;
+    if (!rx) {
+        return _seterror(EACCES);
+    }
+    r = 0;
+    while (count > 0) {
+        q = (*rx)();
+        if (q < 0) break;
+        *buf++ = q;
+        ++r;
         --count;
     }
     return r;
