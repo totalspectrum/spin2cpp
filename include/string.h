@@ -34,7 +34,7 @@ extern "C" {
     char * strpbrk(const char *str, const char *accept);
     char * strrchr(const char *, int) _IMPL("libc/string/strrchr.c");
     size_t strspn(const char *, const char *);
-    char * strstr(const char *src, const char *pattern);
+    char * strstr(const char *src, const char *pattern) _IMPL("libc/string/strstr.c");
     char * strtok(char * __restrict str, const char * __restrict delim);
 
 
