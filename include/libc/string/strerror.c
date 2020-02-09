@@ -29,9 +29,9 @@ char *_sys_errlist[] = {
 
 char *strerror(int errnum)
 {
-  if (errnum < 0 || errnum >= ENUMERRORS)
-    errnum = 0;
-  return _sys_errlist[errnum];
+    if (errnum < 0 || errnum >= (int)ENUMERRORS)
+        errnum = 0;
+    return _sys_errlist[errnum];
 }
 
 void perror(const char *s)

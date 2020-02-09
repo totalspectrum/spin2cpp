@@ -35,6 +35,12 @@
 /** Set open file to append */
 #define O_APPEND 32
 
+
+/* internal flags */
+#define O_INUSE      (0x0100)
+#define O_INTRN_WROK (0x0200)
+#define O_INTRN_RDOK (0x0400)
+
 /** 
  * Definition provided for convenience and libstdc++ build only.
  * Propeller-GCC does not allow forking applications.
@@ -42,7 +48,7 @@
  * If bit is 0, the file descriptor will remain open across
  * execve(2), otherwise it will be closed.
  */
-#define FD_CLOEXEC 0x100
+#define FD_CLOEXEC 0x10000
 
 /**
  * Definition provided for convenience and libstdc++ build only.
@@ -50,7 +56,7 @@
  *
  * Set the file descriptor flags to the value specified by arg.
  */
-#define F_SETFD    0x200
+#define F_SETFD    0x20000
 
 /**
  * Open a file; this translates into a call to fopen.
@@ -59,6 +65,6 @@
  * ... notation for variable number of arguments, so we deliberately
  * make its declaration old-style and without prototypes.
  */
-int open();
+extern int open();
 
 #endif

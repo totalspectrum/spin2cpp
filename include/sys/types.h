@@ -23,6 +23,8 @@ typedef unsigned int mode_t;
 typedef unsigned short uid_t;
 typedef unsigned short gid_t;
 
+typedef int pid_t;
+
 struct stat {
   int st_dev;  /* ID of device containing file */
   int st_ino;  /* inode number */
@@ -37,6 +39,18 @@ struct stat {
   time_t st_atime;
   time_t st_mtime;
   time_t st_ctime;
+};
+
+typedef struct vfs_file_t vfs_file_t;
+
+struct vfs_file_t {
+    void *vfsdata;
+    unsigned flags;
+    ssize_t (*read)(vfs_file_t *fil, void *buf, size_t count);
+    ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t count);
+    int (*putchar)(int c);
+    int (*getchar)(void);
+    int (*close)(vfs_file_t *fil);
 };
 
 #endif

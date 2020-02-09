@@ -73,6 +73,7 @@ extern "C" {
 		int (*compare)(const void *, const void *));
 
     char *getenv(const char *name) _IMPL("libc/stdlib/getenv.c");
+    int putenv(const char *name) _IMPL("libc/stdlib/getenv.c");
 
   /* multibyte character functions */
   extern int _mb_cur_max;

@@ -8,17 +8,20 @@
 extern "C" {
 #endif
 
-  /* Standard file descriptors */
+/* Standard file descriptors */
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
+#define _MAX_FILES 10
+    
   typedef unsigned int useconds_t;
 
-  int write(int fd, const void *buf, int count);
-  int read(int fd, void *buf, int count);
-  int close(int fd);
-  off_t lseek(int fd, off_t offset, int whence);
+  int open(const char *name, int flags, mode_t mode) _IMPL("libc/unix/posixio.c");
+  int write(int fd, const void *buf, int count) _IMPL("libc/unix/posixio.c");
+  int read(int fd, void *buf, int count) _IMPL("libc/unix/posixio.c");
+  int close(int fd) _IMPL("libc/unix/posixio.c");
+  off_t lseek(int fd, off_t offset, int whence) _IMPL("libc/unix/posixio.c");
   int isatty(int fd);
 
   char *getcwd(char *buf, int size);
