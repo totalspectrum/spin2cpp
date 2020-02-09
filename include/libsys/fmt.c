@@ -1,12 +1,6 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdarg.h>
-#ifdef TEST
-#include <stdio.h>
-
-#define _tx my_tx
-#define _rx my_rx
-#endif
 
 #ifdef __FLEXC__
 #define SMALL_INT
@@ -636,21 +630,31 @@ typedef struct _bas_wrap_sender {
     int tx(int c) { f(c); return 1; }
 } BasicWrapper;
 
-TxFunc _bas_tx_handles[8] = {
+TxFunc _bas_txh_handles[8] = {
     _tx, 0, 0, 0,
     0, 0, 0, 0
 };
-RxFunc _bas_rx_handles[8] = {
+RxFunc _bas_rxh_handles[8] = {
     _rx, 0, 0, 0,
     0, 0, 0, 0
 };
-CloseFunc _bas_close_handles[8] = { 0 };
+CloseFunc _bas_closeh_handles[8] = { 0 };
 
 /* make sure we hold on to the original wrapper structure so it
    isn't garbage collected as long as the file is open
 */
 BasicWrapper *_bas_wrappers[8] = { 0 };
 
+TxFunc _gettxfunc(int h) {
+    return _bas_txh_handles[h];
+}
+RxFunc _getrxfunc(int h) {
+    return _bas_rxh_handles[h];
+}
+CloseFunc _getclosefunc(int h) {
+    return _bas_closeh_handles[h];
+}
+    
 //
 // basic interfaces
 //
@@ -666,13 +670,13 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
             return -1; /* out of memory */
         }
         wrapper->f = sendf;
-        _bas_tx_handles[h] = &wrapper->tx;
+        _bas_txh_handles[h] = &wrapper->tx;
     } else {
         wrapper = 0;
-        _bas_tx_handles[h] = sendf;
+        _bas_txh_handles[h] = sendf;
     }
-    _bas_rx_handles[h] = recvf;
-    _bas_close_handles[h] = closef;
+    _bas_rxh_handles[h] = recvf;
+    _bas_closeh_handles[h] = closef;
     _bas_wrappers[h] = wrapper;
     return 0;
 }
@@ -686,14 +690,14 @@ void _basic_close(unsigned h)
         _gc_free(_bas_wrappers[h]);
         _bas_wrappers[h] = 0;
     }
-    cf = _bas_close_handles[h];
+    cf = _getclosefunc(h);
     _basic_open(h, 0, 0, 0);
     (*cf)();
 }
 
 int _basic_print_char(unsigned h, int c, unsigned fmt)
 {
-    TxFunc tf = _bas_tx_handles[h];
+    TxFunc tf = _gettxfunc(h);
     if (!tf) return 0;
     (*tf)(c);
     return 1;
@@ -710,14 +714,14 @@ int _basic_print_nl(unsigned h)
 
 int _basic_print_string(unsigned h, const char *ptr, unsigned fmt)
 {
-    TxFunc tf = _bas_tx_handles[h];
+    TxFunc tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtstr(tf, fmt, ptr);
 }
 
 int _basic_print_unsigned(unsigned h, int x, unsigned fmt, int base)
 {
-    TxFunc tf = _bas_tx_handles[h];
+    TxFunc tf = _gettxfunc(h);
     if (!tf) return 0;
     fmt |= 3<<SIGNCHAR_BIT;
     return _fmtnum(tf, fmt, x, base);
@@ -728,7 +732,7 @@ int _basic_print_integer(unsigned h, int x, unsigned fmt, int base)
     TxFunc tf;
 
     if (h > 7) return -1;
-    tf = _bas_tx_handles[h];
+    tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtnum(tf, fmt, x, base);
 }
@@ -737,7 +741,7 @@ int _basic_get_char(unsigned h)
 {
     RxFunc rf;
     if (h > 7) return -1;
-    rf = _bas_rx_handles[h];
+    rf = _getrxfunc(h);
     if (!rf) return -1;
     return (*rf)();
 }
@@ -749,7 +753,7 @@ int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
         fmt = (ch == '#') ? DEFAULT_BASIC_FLOAT_FMT : DEFAULT_FLOAT_FMT;
     }
     if (h > 7) return -1;
-    tf = _bas_tx_handles[h];
+    tf = _gettxfunc(h);
     if (!tf) return 0;
     return _fmtfloat(tf, fmt, x, ch);
 }
