@@ -112,6 +112,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         ERROR(astname, "duplicate definition for %s", username);
     } else {
         sym->flags |= sym_flag;
+        sym->module = (void *)current;
     }
     return sym;
 }
@@ -784,6 +785,7 @@ doDeclareFunction(AST *funcblock)
         if (!is_public) {
             sym->flags |= SYMF_PRIVATE;
         }
+        sym->module = current;
     }
     
     if (fdef->body) {

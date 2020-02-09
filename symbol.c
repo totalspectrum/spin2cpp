@@ -179,6 +179,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
     sym->user_name = user_name ? user_name : name;
     sym->kind = (Symtype)type;
     sym->val = val;
+    sym->module = 0;
     return sym;
 }
 

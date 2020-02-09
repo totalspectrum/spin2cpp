@@ -1,5 +1,6 @@
 Version 4.1.4
-- Fixed a problem with pruning of methods called indirectly via a pointer 
+- Fixed a problem with pruning of methods called indirectly via a pointer
+- Fixed function pointers pointing outside of current module
 - Implement default parameter values for C
 
 Version 4.1.3

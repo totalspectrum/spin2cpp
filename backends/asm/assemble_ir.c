@@ -455,7 +455,8 @@ OutputBlob(Flexbuf *fb, Operand *label, Operand *op, Module *P)
                 if (!sym) {
                     symname = RemappedName(label->name);
                 } else {
-                    symname = IdentifierModuleName(P, sym->our_name);
+                    Module *Q = sym->module ? sym->module : P;
+                    symname = IdentifierModuleName(Q, sym->our_name);
                 }
                 switch(nextreloc->kind) {
                 case RELOC_KIND_I32:

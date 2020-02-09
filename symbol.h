@@ -47,6 +47,7 @@ typedef struct symbol {
     void         *val;    /* symbol value */
     int           flags;  /* various flags */
     int           offset;  /* extra value recording symbol order within a function */
+    void         *module;  /* module info */
 } Symbol;
 
 /* symbol flags */
