@@ -675,6 +675,24 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
     return DeclareTypedFunction(P, ftype, nameAst, is_public, body);
 }
 
+static AST *
+ConstructDefaultValue(AST *decl, AST *val)
+{
+    AST *ident;
+    AST *ast;
+    if (!val) {
+        return decl;
+    }
+    if (!decl || decl->kind != AST_DECLARE_VAR) {
+        ERROR(decl, "Internal error: expected variable declaration");
+        return decl;
+    }
+    ident = decl->right;
+    ast = NewAST(AST_ASSIGN, ident, val);
+    decl->right = ast;
+    return decl;
+}
+
 %}
 
 %pure-parser
@@ -1481,14 +1499,28 @@ parameter_list
             { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
 	;
 
-parameter_declaration
+raw_parameter_declaration
 	: declaration_specifiers declarator
             { $$ = SingleDeclareVar($1, $2); }
 	| declaration_specifiers abstract_declarator
             { $$ = SingleDeclareVar($1, $2); }
 	| declaration_specifiers
             { $$ = $1; }
-	;
+;
+parameter_declaration
+        : raw_parameter_declaration opt_param_default
+            {
+                AST *assign = $2;
+                AST *decl = $1;
+                $$ = ConstructDefaultValue(decl, assign);
+            }
+;
+opt_param_default
+        : '=' conditional_expression
+            { $$ = $2; }
+        | /* empty */
+            { $$ = NULL; }
+;
 
 identifier_list
 	: C_IDENTIFIER

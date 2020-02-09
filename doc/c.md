@@ -179,6 +179,14 @@ void swap_c(int *a, int *b)
    swap_c(&x, &y);
 ```
 
+### Default values for parameters
+
+Like C++, FlexC allows function parameters to be given default values. For example, if a function is declared as:
+```
+int incr(int x, int v=1) { return x + v; }
+```
+then a call `incr(x)` where the second parameter is not given will be compiled as `incr(x, 1)`.
+
 ### Statement expressions
 
 A compound statement enclosed in parentheses may appear as an expression. This is a GCC extension which allows loops, switches, and similar features to appear within an expression.
