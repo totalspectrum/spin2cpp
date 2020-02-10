@@ -32,14 +32,14 @@ putenv(const char *strng)
     size_t idx;
     const char **var;
     const char *name;
-    size_t len = strlen(tag);
+    size_t len = strlen(strng);
     
     if (!_environ_ptr) {
         name = 0;
         var = 0;
     } else {
         for (var = _environ_ptr; (name = *var) != 0; var++) {
-            if (!strncmp(name, tag, len) && name[len] == '=')
+            if (!strncmp(name, strng, len) && name[len] == '=')
                 break;
         }
     }
