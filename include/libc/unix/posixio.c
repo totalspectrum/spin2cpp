@@ -54,6 +54,7 @@ __getftab(int i)
 static int
 _openas(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
 {
+    int r;
     struct vfs *v = _getrootvfs();
     if (!v || !v->open) {
         return _seterror(ENOSYS);
@@ -75,7 +76,7 @@ int open(const char *name, int flags, mode_t mode=0644)
         if (tab[fd].flags == 0) break;
     }
     if (fd == _MAX_FILES) {
-        return _seterror(ENMFILES);
+        return _seterror(EMFILE);
     }
     r = _openas(&tab[fd], name, flags, mode);
     if (r == 0) {

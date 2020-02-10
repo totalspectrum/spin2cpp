@@ -59,7 +59,7 @@ int atoi(const char *str) __fromfile("libc/stdlib/atoi.c");
 
 /* libc/stdlib/_Exit.c */
 void _Exit(int status) __fromfile("libc/stdlib/_Exit.c");
-void exit(int status) __fromfile("libc/stdlib/_Exit.c");
+void exit(int status) __fromfile("libc/stdlib/exit.c");
 
 /* libc/stdlib/malloc.c */
 void *malloc(size_t size) __fromfile("libc/stdlib/malloc.c");

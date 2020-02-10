@@ -36,8 +36,8 @@ extern "C" {
     void *realloc(void *, size_t) _IMPL("libc/stdlib/malloc.c");
     void free(void *) _IMPL("libc/stdlib/malloc.c");
 
-  int atexit(void (*func)(void));
-  _NORETURN void exit(int status);
+    int atexit(void (*func)(void)) _IMPL("libc/stdlib/exit.c");
+    _NORETURN void exit(int status) _IMPL("libc/stdlib/exit.c");
     _NORETURN void abort(void) _IMPL("libc/stdlib/abort.c");
     _NORETURN void _Exit(int status) _IMPL("libc/stdlib/_Exit.c");  /* like exit(), but skips atexit() stuff */
   _NORETURN void _exit(int status);  /* nonstandard name for _Exit() */

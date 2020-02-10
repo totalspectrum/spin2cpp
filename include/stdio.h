@@ -32,6 +32,7 @@ int fprintf(FILE *f, const char *format, ...) _IMPL("libc/stdio/fprintf.c");
 int fputs(const char *s, FILE *f) _IMPL("libc/stdio/fputs.c");
 int puts(const char *s) _IMPL("libc/stdio/fputs.c");
 
+FILE *fopen(const char *name, const char *mode) _IMPL("libc/stdio/fopen.c");
 int fflush(FILE *f) _IMPL("libc/stdio/fflush.c");
 
 void perror(const char *s) _IMPL("libc/string/strerror.c");

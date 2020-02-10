@@ -22,6 +22,13 @@ extern "C" {
   int read(int fd, void *buf, int count) _IMPL("libc/unix/posixio.c");
   int close(int fd) _IMPL("libc/unix/posixio.c");
   off_t lseek(int fd, off_t offset, int whence) _IMPL("libc/unix/posixio.c");
+  int access(const char *path, int mode) _IMPL("libc/unix/access.c");
+  /* access mode bits */
+#define F_OK (0)
+#define R_OK (4)
+#define W_OK (2)
+#define X_OK (1)
+
   int isatty(int fd);
 
   char *getcwd(char *buf, int size);
@@ -35,6 +42,9 @@ extern "C" {
   char *_mktemp(char *templ);
   char *mktemp(char *);
 
+#define getuid() (0)
+#define getgid() (0)
+    
 #if defined(__cplusplus)
 }
 #endif
