@@ -5,6 +5,22 @@
 #include <errno.h>
 #include <string.h>
 
+static int _rxtxioctl(vfs_file_t *f, unsigned long req, void *argp)
+{
+    unsigned long *argl = (unsigned long *)argp;
+    switch (req) {
+    TTYIOCTLGETFLAGS:
+        *argl = _getrxtxflags();
+        return 0;
+    TTYIOCTLSETFLAGS:
+        _setrxtxflags(*argl);
+        return 0;
+    default:
+        return _seterror(EINVAL);
+    }
+}
+
+
 // BASIC support routines
 extern int _tx(int c);
 extern int _rx(void);
@@ -13,32 +29,38 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     /* stdin */
     {
         0, /* vfsdata */
-        O_INTRN_RDOK, /* flags */
+        O_RDONLY, /* flags */
+        _VFS_STATE_INUSE|_VFS_STATE_RDOK,
         0, /* read */
         0, /* write */
         &_tx, /* putchar */
         &_rx, /* getchar */
         0, /* close function */
+        &_rxtxioctl, 
     },
     /* stdout */
     {
         0, /* vfsdata */
-        O_INTRN_WROK, /* flags */
+        O_WRONLY, /* flags */
+        _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* read */
         0, /* write */
         &_tx, /* putchar */
         &_rx, /* getchar */
         0, /* close function */
+        &_rxtxioctl, 
     },
     /* stderr */
     {
         0, /* vfsdata */
-        O_INTRN_WROK, /* flags */
+        O_WRONLY, /* flags */
+        _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* read */
         0, /* write */
         &_tx, /* putchar */
         &_rx, /* getchar */
         0, /* close function */
+        &_rxtxioctl, 
     },
 };
 
@@ -51,17 +73,28 @@ __getftab(int i)
     return &__filetab[i];
 }
 
-static int
-_openas(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
+int
+_openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
 {
     int r;
     struct vfs *v = _getrootvfs();
+    unsigned state = _VFS_STATE_INUSE;
     if (!v || !v->open) {
         return _seterror(ENOSYS);
     }
     r = (*v->open)(fil, name, flags);
     if (r < 0 && (flags & O_CREAT)) {
         r = (*v->creat)(fil, name, mode);
+    }
+    if (r == 0) {
+        int rdwr = flags & O_ACCMODE;
+        if (rdwr != O_RDONLY) {
+            state |= _VFS_STATE_WROK;
+        }
+        if (rdwr != O_WRONLY) {
+            state |= _VFS_STATE_RDOK;
+        }
+        fil->state = state;
     }
     return r;
 }
@@ -71,27 +104,30 @@ int open(const char *name, int flags, mode_t mode=0644)
     struct vfs_file_t *tab = &__filetab[0];
     int fd;
     int r;
-
+    
     for (fd = 0; fd < _MAX_FILES; fd++) {
-        if (tab[fd].flags == 0) break;
+        if (tab[fd].state == 0) break;
     }
     if (fd == _MAX_FILES) {
         return _seterror(EMFILE);
     }
-    r = _openas(&tab[fd], name, flags, mode);
+    r = _openraw(&tab[fd], name, flags, mode);
     if (r == 0) {
-        int rdwr = flags & O_ACCMODE;
-        if (rdwr != O_RDONLY) {
-            flags |= O_INTRN_WROK;
-        }
-        if (rdwr != O_WRONLY) {
-            flags |= O_INTRN_RDOK;
-        }
-        tab[fd].flags = flags | O_INUSE;
         r = fd;
-    } else {
-        /* assume _openas has set errno */
     }
+    return r;
+}
+
+int _closeraw(struct vfs_file_t *f)
+{
+    int r = 0;
+    if (!f->state) {
+        return _seterror(EBADF);
+    }
+    if (f->close) {
+        r = (*f->close)(f);
+    }
+    memset(f, 0, sizeof(*f));
     return r;
 }
 
@@ -102,12 +138,7 @@ int close(int fd)
         return _seterror(EBADF);
     }
     f = &__filetab[fd];
-    if (!f->flags) {
-        return _seterror(EBADF);
-    }
-    (*f->close)(f);
-    memset(f, 0, sizeof(*f));
-    return 0;
+    return _closeraw(f);
 }
 
 ssize_t write(int fd, const void *vbuf, size_t count)
@@ -121,12 +152,13 @@ ssize_t write(int fd, const void *vbuf, size_t count)
         return _seterror(EBADF);
     }
     f = &__filetab[fd];
-    if (! (f->flags & O_INTRN_WROK) ) {
+    if (! (f->state & _VFS_STATE_WROK) ) {
         return _seterror(EACCES);
     }
     if (f->write) {
         r = (*f->write)(f, vbuf, count);
         if (r < 0) {
+            f->state |= _VFS_STATE_ERR;
             return _seterror(r);
         }
         return r;
@@ -154,12 +186,13 @@ ssize_t read(int fd, void *vbuf, size_t count)
         return _seterror(EBADF);
     }
     f = &__filetab[fd];
-    if (! (f->flags & O_INTRN_RDOK) ) {
+    if (! (f->state & _VFS_STATE_RDOK) ) {
         return _seterror(EACCES);
     }
     if (f->read) {
         r = (*f->read)(f, vbuf, count);
         if (r < 0) {
+            f->state |= _VFS_STATE_ERR;
             return _seterror(r);
         }
         return r;

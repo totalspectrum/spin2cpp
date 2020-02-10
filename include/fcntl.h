@@ -35,12 +35,6 @@
 /** Set open file to append */
 #define O_APPEND 32
 
-
-/* internal flags */
-#define O_INUSE      (0x0100)
-#define O_INTRN_WROK (0x0200)
-#define O_INTRN_RDOK (0x0400)
-
 /** 
  * Definition provided for convenience and libstdc++ build only.
  * Propeller-GCC does not allow forking applications.

@@ -45,12 +45,20 @@ typedef struct vfs_file_t vfs_file_t;
 
 struct vfs_file_t {
     void *vfsdata;
-    unsigned flags;
+    unsigned flags; /* O_XXX for rdwr mode and such */
+    unsigned state; /* flags for EOF and the like */
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t count);
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t count);
     int (*putchar)(int c);
     int (*getchar)(void);
     int (*close)(vfs_file_t *fil);
+    int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
 };
+
+#define _VFS_STATE_RDOK (0x01)
+#define _VFS_STATE_WROK (0x02)
+#define _VFS_STATE_INUSE (0x04)
+#define _VFS_STATE_EOF (0x10)
+#define _VFS_STATE_ERR (0x20)
 
 #endif

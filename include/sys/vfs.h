@@ -30,4 +30,6 @@ struct vfs {
 struct vfs *_getrootvfs(void) _IMPL("libc/unix/vfs.c");
 void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
 
+int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
+int _closeraw(struct vfs_file_t *f) _IMPL("libc/unix/posixio.c");
 #endif

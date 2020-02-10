@@ -23,13 +23,16 @@ extern "C" {
   int close(int fd) _IMPL("libc/unix/posixio.c");
   off_t lseek(int fd, off_t offset, int whence) _IMPL("libc/unix/posixio.c");
   int access(const char *path, int mode) _IMPL("libc/unix/access.c");
+
+  int ioctl(int fd, unsigned long req, void *argp) _IMPL("libc/unix/ioctl.c");
+    
   /* access mode bits */
 #define F_OK (0)
 #define R_OK (4)
 #define W_OK (2)
 #define X_OK (1)
 
-  int isatty(int fd);
+  int isatty(int fd) _IMPL("libc/unix/isatty.c");
 
   char *getcwd(char *buf, int size);
   int chdir(const char *path);

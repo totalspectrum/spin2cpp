@@ -75,3 +75,8 @@ fopen(const char *pathname, const char *mode)
     ftab = __getftab(fd);
     return ftab;
 }
+
+int fclose(FILE *f)
+{
+    return _closeraw(f);
+}

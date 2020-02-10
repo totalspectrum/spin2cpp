@@ -33,13 +33,18 @@ int fputs(const char *s, FILE *f) _IMPL("libc/stdio/fputs.c");
 int puts(const char *s) _IMPL("libc/stdio/fputs.c");
 
 FILE *fopen(const char *name, const char *mode) _IMPL("libc/stdio/fopen.c");
+int fclose(FILE *f) _IMPL("libc/stdio/fopen.c");
 int fflush(FILE *f) _IMPL("libc/stdio/fflush.c");
 
+void clearerr(FILE *f) _IMPL("libc/stdio/clearerr.c");
 void perror(const char *s) _IMPL("libc/string/strerror.c");
 
 #ifdef __FLEXC__
 // FLEXC can optimize printf
 #define printf __builtin_printf
 #endif
+
+#define feof(f)   (0 != ((f)->state & _VFS_STATE_EOF))
+#define ferror(f) (0 != ((f)->state & _VFS_STATE_ERR))
 
 #endif

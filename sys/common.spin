@@ -1,6 +1,12 @@
 ''
 '' common code for both P1 and P2
 ''
+con
+  _rxtx_echo = 1
+  _rxtx_crnl = 2
+  
+dat
+__rxtxflags  long _rxtx_echo
 
 pri longfill(ptr, val, count)
   repeat count
@@ -181,14 +187,23 @@ pri input`$(n=long, h=0) | c, i, s
   byte[s+i] := 0
   return s
 
+pri _getrxtxflags()
+  return __rxtxflags
+
+pri _setrxtxflags(f)
+  __rxtxflags := f
+  
 pri _tx(c)
+  if (c == 10) and (__rxtxflags & _rxtx_crnl)
+    _txraw(13)
   _txraw(c)
 
 pri _rx : r
   repeat
     r := _rxraw
   until r <> -1
-  _tx(r)
+  if (__rxtxflags & _rxtx_echo)
+    _tx(r)
   
 pri __builtin_clkfreq
   return _clkfreq_var
