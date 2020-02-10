@@ -6,7 +6,9 @@ con
   _rxtx_crnl = 2
   
 dat
-__rxtxflags  long _rxtx_echo
+__rxtxflags
+    long _rxtx_echo | _rxtx_crnl
+
 
 pri longfill(ptr, val, count)
   repeat count
