@@ -16,6 +16,7 @@ struct vfs {
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t siz);
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t siz);
     off_t (*lseek)(vfs_file_t *fil, off_t offset, int whence);
+    int   (*ioctl)(vfs_file_t *fil, unsigned long req, void *argp);
     
     int (*opendir)(vfs_dir_t *dir, const char *name);
     int (*closedir)(vfs_dir_t *dir);
@@ -27,9 +28,11 @@ struct vfs {
     int (*remove)(const char *pathname);
 };
 
+int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
+int _closeraw(struct vfs_file_t *f) _IMPL("libc/unix/posixio.c");
+
 struct vfs *_getrootvfs(void) _IMPL("libc/unix/vfs.c");
 void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
 
-int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
-int _closeraw(struct vfs_file_t *f) _IMPL("libc/unix/posixio.c");
+struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
 #endif
