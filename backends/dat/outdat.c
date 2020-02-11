@@ -612,6 +612,12 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case THREE_OPERANDS_WORD:
         if (gl_p2) {
             if (opnum == 0) {
+                /* check that immediate source is legal */
+                /* the L bit occupies the same place as Z, so if the
+                   instruction can do a wz or wcz no immediate is legal */
+                if (instr->flags & (FLAG_WZ|FLAG_WCZ|FLAG_ANDZ)) {
+                    ERROR(ast, "Bad use of immediate for first operand of %s", instr->name);
+                }
                 mask = P2_IMM_DST;
                 if (bigImm) {
                     mask |= BIG_IMM_DST;
