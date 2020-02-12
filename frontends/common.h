@@ -658,6 +658,8 @@ void initSpinLexer(int flags);
 #define LANG_PYTHON_CIRCUS 0x30
 #define IsPythonLang(lang) ((lang)==LANG_PYTHON_CIRCUS)
 
+#define LANG_DEFAULT LANG_SPIN_SPIN1
+
 // language features
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
 

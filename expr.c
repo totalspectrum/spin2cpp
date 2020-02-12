@@ -101,9 +101,18 @@ LookupSymbol(const char *name)
     s = LookupSymbolInFunc(curfunc, name);
     if (!s) {
         // maybe it's a global symbol?
-        // for now be conservative, only look for "main"
-        if (!strcmp(name, "main") && allparse) {
-            s = LookupSymbolInTable(&allparse->objsyms, name);
+        // only do this for non-Spin languages
+        int lang = LANG_DEFAULT;
+        if (curfunc) {
+            lang = curfunc->language;
+        } else if (current) {
+            lang = current->mainLanguage;
+        }
+        if (!IsSpinLang(lang)) {
+            Module *top = GetTopLevelModule();
+            if (top) {
+                s = LookupSymbolInTable(&top->objsyms, name);
+            }
         }
     }
     return s;
@@ -119,7 +128,8 @@ LookupAstSymbol(AST *ast, const char *msg)
 {
     Symbol *sym = NULL;
     AST *id;
-    const char *name = "";
+    const char *username = "";
+    const char *ourname;
     
     if (ast->kind == AST_SYMBOL) {
         return (Symbol *)ast->d.ptr;
@@ -133,14 +143,14 @@ LookupAstSymbol(AST *ast, const char *msg)
         return NULL;
     }
     if (id->kind == AST_LOCAL_IDENTIFIER) {
-        name = GetIdentifierName(id);
-        sym = LookupSymbol(ast->left->d.string);
+        username = GetIdentifierName(id);
+        ourname = ast->left->d.string;
     } else if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
-        name = GetIdentifierName(id);
-        sym = LookupSymbol(name);
+        username = ourname = GetIdentifierName(id);
     }
+    sym = LookupSymbol(ourname);
     if (!sym && msg) {
-        ERROR(id, "unknown identifier %s used in %s", name, msg);
+        ERROR(id, "unknown identifier %s used in %s", username, msg);
     }
     return sym;
 }

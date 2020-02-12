@@ -40,6 +40,11 @@ int gl_infer_ctypes = 0;
 int gl_fixedreal = 0;
 const char *gl_intstring = "int32_t";
 
+// dummy needed for some symbol lookups
+Module *GetTopLevelModule(void) {
+    return 0;
+}
+
 static void EXPECTEQfn(long x, long val, int line) {
     if (x != val) {
         fprintf(stderr, "test failed at line %d of %s: expected %ld got %ld\n",
