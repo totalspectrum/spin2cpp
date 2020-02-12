@@ -4,15 +4,16 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 static int _rxtxioctl(vfs_file_t *f, unsigned long req, void *argp)
 {
     unsigned long *argl = (unsigned long *)argp;
     switch (req) {
-    TTYIOCTLGETFLAGS:
+    case TTYIOCTLGETFLAGS:
         *argl = _getrxtxflags();
         return 0;
-    TTYIOCTLSETFLAGS:
+    case TTYIOCTLSETFLAGS:
         _setrxtxflags(*argl);
         return 0;
     default:
@@ -30,7 +31,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     {
         0, /* vfsdata */
         O_RDONLY, /* flags */
-        _VFS_STATE_INUSE|_VFS_STATE_RDOK,
+        _VFS_STATE_INUSE|_VFS_STATE_RDOK, /* state */
         0, /* read */
         0, /* write */
         &_tx, /* putchar */
