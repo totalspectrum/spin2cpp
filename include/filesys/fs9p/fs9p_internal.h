@@ -44,6 +44,7 @@ enum {
 
 // functions for the 9p file system
 typedef struct fsfile {
+    struct _default_filebuf b;
     uint32_t offlo;
     uint32_t offhi;
 } fs_file;

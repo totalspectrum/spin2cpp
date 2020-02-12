@@ -35,4 +35,15 @@ struct vfs *_getrootvfs(void) _IMPL("libc/unix/vfs.c");
 void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
 
 struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
+
+/* generic file buffer code */
+#define _DEFAULT_BUFSIZ 128
+
+struct _default_filbuf {
+    unsigned char buf[_DEFAULT_BUFSIZ];
+    int filsiz;
+    unsigned flags;
+};
+
+
 #endif

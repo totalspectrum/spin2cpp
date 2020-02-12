@@ -5,13 +5,17 @@
 //#define DEBUG
 
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/limits.h>
 #include "fs9p_internal.h"
+
+#define FS9_OTRUNC 0x10
 
 int maxlen = MAXLEN;
 static uint8_t txbuf[MAXLEN];
@@ -442,19 +446,6 @@ int fs_stat(fs_file *dir, const char *path, struct stat *buf)
 #include <sys/types.h>
 #include <sys/vfs.h>
 
-static int v_open(vfs_file_t *fil, const char *name, int flags)
-{
-  int r;
-  fs_file *f = malloc(sizeof(*f));
-  r = fs_open(f, name, flags);
-  if (r) {
-    free(f);
-    return _seterror(-r);
-  }
-  fil->vfsdata = f;
-  return 0;
-}
-
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
   int r;
@@ -576,11 +567,38 @@ static int v_stat(const char *name, struct stat *buf)
 
 static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 {
-    return _seterror(ENOSYS);
+    fs_file *f = fil->vfsdata;
+    int r;
+    
+    if (!f) {
+        return _seterror(EBADF);
+    }
+    r = fs_read(f, buf, siz);
+#ifdef DEBUG
+    __builtin_printf("v_read: fs_read returned %d\n", r);
+#endif    
+    if (r < 0) {
+        fil->state |= _VFS_STATE_ERR;
+        return _seterror(-r);
+    }
+    if (r == 0) {
+        fil->state |= _VFS_STATE_EOF;
+    }
+    return r;
 }
-static ssize_t v_write(vfs_file_t *fil, const void *buf, size_t siz)
+static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 {
-    return _seterror(ENOSYS);
+    fs_file *f = fil->vfsdata;
+    int r;
+    if (!f) {
+        return _seterror(EBADF);
+    }
+    r = fs_read(f, buf, siz);
+    if (r < 0) {
+        fil->state |= _VFS_STATE_ERR;
+        return _seterror(-r);
+    }
+    return r;
 }
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
@@ -622,6 +640,35 @@ int v_remove(const char *name)
 int v_rmdir(const char *name)
 {
     return v_remove(name);
+}
+
+static int v_open(vfs_file_t *fil, const char *name, int flags)
+{
+  int r;
+  fs_file *f = malloc(sizeof(*f));
+  unsigned fs_flags;
+
+  if (!f) {
+      return _seterror(ENOMEM);
+  }
+  fs_flags = flags & 3; // basic stuff like O_RDONLY are the same
+  if (flags & O_TRUNC) {
+      fs_flags |= FS9_OTRUNC;
+  }
+  r = fs_open(f, name, fs_flags);
+#ifdef DEBUG
+  __builtin_printf("fs_open returned %d\n", r);
+#endif  
+  if (r) {
+    free(f);
+    return _seterror(-r);
+  }
+  fil->vfsdata = f;
+  fil->read = &v_read;
+  fil->write = &v_write;
+  fil->close = &v_close;
+  fil->ioctl = &v_ioctl;
+  return 0;
 }
 
 struct vfs fs9_vfs =

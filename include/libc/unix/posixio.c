@@ -142,11 +142,13 @@ int close(int fd)
     return _closeraw(f);
 }
 
+typedef int (*txFunc)(int c);
+
 ssize_t write(int fd, const void *vbuf, size_t count)
 {
     ssize_t r;
     vfs_file_t *f;
-    int (*tx)(int c);
+    txFunc tx;
     const unsigned char *buf = (const unsigned char *)vbuf;
     
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
@@ -182,11 +184,12 @@ ssize_t read(int fd, void *vbuf, size_t count)
     vfs_file_t *f;
     int (*rx)();
     unsigned char *buf = (unsigned char *)vbuf;
-    
+
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
         return _seterror(EBADF);
     }
     f = &__filetab[fd];
+    //__builtin_printf("read: fd=%d f->read=%x\n", fd, (unsigned)f->read);
     if (! (f->state & _VFS_STATE_RDOK) ) {
         return _seterror(EACCES);
     }
