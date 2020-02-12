@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/limits.h>
@@ -458,7 +459,7 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
   int r;
   fs_file *f = malloc(sizeof(*f));
-  r = fs_create(f, name, mode);
+  r = fs_create(f, pathname, mode);
   if (r) {
     free(f);
     return _seterror(-r);
