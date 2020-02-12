@@ -40,7 +40,10 @@ static int basic_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
     uint8_t *buf = startbuf;
     int i = 0;
     int left;
-    
+    unsigned flags;
+
+    flags = _getrxtxflags();
+    _setrxtxflags(0);  // raw mode
     startbuf[0] = len & 0xff;
     startbuf[1] = (len>>8) & 0xff;
     startbuf[2] = (len>>16) & 0xff;
@@ -67,6 +70,7 @@ static int basic_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
         buf[i++] = zdoGet1();
         --left;
     }
+    _setrxtxflags(flags);
     return len;
 }
 
