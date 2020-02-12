@@ -268,7 +268,7 @@ main(int argc, const char **argv)
             outputAsm = 1;
             gl_output = OUTPUT_ASM;
             argv++; --argc;
-            gl_optimize_flags |= (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
+            gl_optimize_flags = (DEFAULT_ASM_OPTS & ~OPT_REMOVE_UNUSED_FUNCS);
         } else if (!strcmp(argv[0], "--list")) {
             gl_listing = 1;
             argv++; --argc;
