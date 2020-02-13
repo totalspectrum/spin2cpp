@@ -17,6 +17,7 @@ struct vfs {
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t siz);
     off_t (*lseek)(vfs_file_t *fil, off_t offset, int whence);
     int   (*ioctl)(vfs_file_t *fil, unsigned long req, void *argp);
+    int (*flush)(vfs_file_t *fil);
     
     int (*opendir)(vfs_dir_t *dir, const char *name);
     int (*closedir)(vfs_dir_t *dir);
@@ -51,5 +52,6 @@ struct _default_buffer {
 
 int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
+int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
 #endif

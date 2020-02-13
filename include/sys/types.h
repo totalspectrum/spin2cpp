@@ -53,6 +53,8 @@ struct vfs_file_t {
     int (*getcf)(vfs_file_t *fil);
     int (*close)(vfs_file_t *fil);
     int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
+    int (*flush)(vfs_file_t *fil);
+    
     /* internal functions for formatting routines */
     int putchar(int c) {
         int i;

@@ -21,6 +21,10 @@ static int _rxtxioctl(vfs_file_t *f, unsigned long req, void *argp)
     }
 }
 
+static int __dummy_flush(vfs_file_t *f)
+{
+    return 0;
+}
 
 // BASIC support routines
 extern int _tx(int c);
@@ -37,7 +41,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         (putcfunc_t)&_tx, /* putc */
         (getcfunc_t)&_rx, /* getc */
         0, /* close function */
-        &_rxtxioctl, 
+        &_rxtxioctl,
+        &__dummy_flush, /* flush function */
     },
     /* stdout */
     {
@@ -49,7 +54,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         (putcfunc_t)&_tx, /* putchar */
         (getcfunc_t)&_rx, /* getchar */
         0, /* close function */
-        &_rxtxioctl, 
+        &_rxtxioctl,
+        &__dummy_flush, /* flush function */
     },
     /* stderr */
     {
@@ -61,7 +67,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         (putcfunc_t)&_tx, /* putchar */
         (getcfunc_t)&_rx, /* getchar */
         0, /* close function */
-        &_rxtxioctl, 
+        &_rxtxioctl,
+        &__dummy_flush, /* flush function */
     },
 };
 
@@ -104,6 +111,13 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
         if (!fil->ioctl) fil->ioctl = v->ioctl;
         if (!fil->putcf) fil->putcf = &__default_putc;
         if (!fil->getcf) fil->getcf = &__default_getc;
+        if (!fil->flush) {
+            if (v->flush) {
+                fil->flush = v->flush;
+            } else {
+                fil->flush = &__default_flush;
+            }
+        }
     }
     return r;
 }
@@ -132,6 +146,9 @@ int _closeraw(struct vfs_file_t *f)
     int r = 0;
     if (!f->state) {
         return _seterror(EBADF);
+    }
+    if (f->flush) {
+        (*f->flush)(f);
     }
     if (f->close) {
         r = (*f->close)(f);

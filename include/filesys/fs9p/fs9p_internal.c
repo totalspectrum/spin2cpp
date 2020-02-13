@@ -685,6 +685,7 @@ struct vfs fs9_vfs =
     &v_write,
     &v_lseek,
     &v_ioctl,
+    0, /* no flush function */
     
     &v_opendir,
     &v_closedir,

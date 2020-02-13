@@ -2,5 +2,9 @@
 
 int fflush(FILE *f)
 {
-    return 0;
+    int r = 0;
+    if (f->flush) {
+        r = (*f->flush)(f);
+    }
+    return r;
 }
