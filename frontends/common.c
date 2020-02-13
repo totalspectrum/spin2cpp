@@ -1038,6 +1038,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
 {
     AST *decl = origdecl;
     AST *ident;
+    AST *identinit = NULL;
     AST **identptr;
     const char *name;
     if (!decl) return decl;
@@ -1060,6 +1061,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         return origdecl;
     }
     if (ident->kind == AST_ASSIGN) {
+        identinit = ident->right;
         identptr = &ident->left;
         ident = *identptr;
     }
@@ -1083,6 +1085,9 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
             RemapIdentifiers(restOfList, newIdent, name);
+            if (identinit) {
+                RemapIdentifiers(identinit, newIdent, name);
+            }
         } else {
             ERROR(decl, "internal error could not find identifier ptr");
         }

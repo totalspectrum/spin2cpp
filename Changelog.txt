@@ -2,6 +2,7 @@ Version 4.1.4
 - Fixed a problem with pruning of methods called indirectly via a pointer
 - Fixed function pointers pointing outside of current module
 - Fixed comments and/or spaces after ASM in Spin code
+- Fixed a problem with C local variable names used on RHS of initialization
 - Implement default parameter values for C
 
 Version 4.1.3
