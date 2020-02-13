@@ -611,6 +611,14 @@ DeclareLabels(Module *P)
                 }
                 typalign = TypeAlign(type);
                 typsize = TypeSize(type);
+                if (typsize == 0) {
+                    // empty object; this is OK if it has methods
+                    Module *Q = GetClassPtr(type);
+                    if (Q && !Q->functions) {
+                        ERROR(ast, "empty or undefined class used to define %s", GetUserIdentifierName(ident));
+                    }
+                }
+                
                 ALIGNPC(typalign);
                 if (ident->kind == AST_LOCAL_IDENTIFIER) {
                     ident = ident->left;
