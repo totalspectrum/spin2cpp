@@ -18,8 +18,8 @@ FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
-#define fputc(x, f) (((f)->putchar)( (x), (f) ))
-#define fgetc(f)    (((f)->getchar)( (f) ))
+#define fputc(x, f) (((f)->putcf)( (x), (f) ))
+#define fgetc(f)    (((f)->getcf)( (f) ))
 #define putchar(x) fputc( (x), stdout)
 #define getchar() fgetc(stdin)
 

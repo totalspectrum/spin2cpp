@@ -34,8 +34,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         _VFS_STATE_INUSE|_VFS_STATE_RDOK, /* state */
         0, /* read */
         0, /* write */
-        &_tx, /* putchar */
-        &_rx, /* getchar */
+        (putcfunc_t)&_tx, /* putc */
+        (getcfunc_t)&_rx, /* getc */
         0, /* close function */
         &_rxtxioctl, 
     },
@@ -46,8 +46,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* read */
         0, /* write */
-        &_tx, /* putchar */
-        &_rx, /* getchar */
+        (putcfunc_t)&_tx, /* putchar */
+        (getcfunc_t)&_rx, /* getchar */
         0, /* close function */
         &_rxtxioctl, 
     },
@@ -58,8 +58,8 @@ static vfs_file_t __filetab[_MAX_FILES] = {
         _VFS_STATE_INUSE|_VFS_STATE_WROK,
         0, /* read */
         0, /* write */
-        &_tx, /* putchar */
-        &_rx, /* getchar */
+        (putcfunc_t)&_tx, /* putchar */
+        (getcfunc_t)&_rx, /* getchar */
         0, /* close function */
         &_rxtxioctl, 
     },
@@ -146,7 +146,7 @@ ssize_t write(int fd, const void *vbuf, size_t count)
 {
     ssize_t r;
     vfs_file_t *f;
-    putcharfunc_t tx;
+    putcfunc_t tx;
     const unsigned char *buf = (const unsigned char *)vbuf;
     
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
@@ -164,7 +164,7 @@ ssize_t write(int fd, const void *vbuf, size_t count)
         }
         return r;
     }
-    tx = f->putchar;
+    tx = f->putcf;
     if (!tx) {
         return _seterror(EACCES);
     }
@@ -180,7 +180,7 @@ ssize_t read(int fd, void *vbuf, size_t count)
 {
     ssize_t r, q;
     vfs_file_t *f;
-    getcharfunc_t rx;
+    getcfunc_t rx;
     unsigned char *buf = (unsigned char *)vbuf;
 
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
@@ -199,7 +199,7 @@ ssize_t read(int fd, void *vbuf, size_t count)
         }
         return r;
     }
-    rx = f->getchar;
+    rx = f->getcf;
     if (!rx) {
         return _seterror(EACCES);
     }

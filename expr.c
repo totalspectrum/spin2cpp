@@ -2490,6 +2490,9 @@ SameTypes(AST *A, AST *B)
     if (!A) return (B == ast_type_generic);
     if (!B) return (A == ast_type_generic);
     if (A->kind != B->kind) return 0;
+    if (A->kind == AST_OBJECT) {
+        return A->d.ptr == B->d.ptr;
+    }
     return AstMatch(A->left, B->left) && SameTypes(A->right, B->right);
 }
 

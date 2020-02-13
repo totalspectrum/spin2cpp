@@ -187,6 +187,10 @@ int incr(int x, int v=1) { return x + v; }
 ```
 then a call `incr(x)` where the second parameter is not given will be compiled as `incr(x, 1)`.
 
+### __this and __class
+
+The keywords `__this` and `__class` are allowed in both C and C++ code, and mean the same as `this` and `class` in C++. These keywords are intended for use in C code which wishes to use FlexC's class features.
+
 ### Statement expressions
 
 A compound statement enclosed in parentheses may appear as an expression. This is a GCC extension which allows loops, switches, and similar features to appear within an expression.

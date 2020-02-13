@@ -49,14 +49,17 @@ struct vfs_file_t {
     unsigned state; /* flags for EOF and the like */
     ssize_t (*read)(vfs_file_t *fil, void *buf, size_t count);
     ssize_t (*write)(vfs_file_t *fil, const void *buf, size_t count);
-    int (*putchar)(int c, vfs_file_t *fil);
-    int (*getchar)(vfs_file_t *fil);
+    int (*putcf)(int c, vfs_file_t *fil);
+    int (*getcf)(vfs_file_t *fil);
     int (*close)(vfs_file_t *fil);
     int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
+
+    int putchar(int c) { return putcf(c, __this); }
+    int getchar(void)  { return getcf(__this); }
 };
 
-typedef int (*putcharfunc_t)(int c, struct vfs_file_t *fil);
-typedef int (*getcharfunc_t)(struct vfs_file_t *fil);
+typedef int (*putcfunc_t)(int c, struct vfs_file_t *fil);
+typedef int (*getcfunc_t)(struct vfs_file_t *fil);
 
 #define _VFS_STATE_RDOK (0x01)
 #define _VFS_STATE_WROK (0x02)
