@@ -637,13 +637,13 @@ TxFunc _gettxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v) return 0;
-    return v->putchar;
+    return (TxFunc)v->putchar;
 }
 RxFunc _getrxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v) return 0;
-    return v->getchar;
+    return (RxFunc)v->getchar;
 }
 //
 // basic interfaces
@@ -663,11 +663,11 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
             return -1; /* out of memory */
         }
         wrapper->f = sendf;
-        v->putchar = &wrapper->tx;
+        v->putchar = (putcharfunc_t)&wrapper->tx;
     } else {
-        v->putchar = sendf;
+        v->putchar = (putcharfunc_t)sendf;
     }
-    v->getchar = recvf;
+    v->getchar = (getcharfunc_t)recvf;
     v->close = (VFS_CloseFunc)closef;
     return 0;
 }

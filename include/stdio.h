@@ -18,9 +18,9 @@ FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
-#define fputc(x, f) (((f)->putchar)(x))
-#define fgetc(f)    (((f)->getchar)())
-#define putchar(x) fputc(x, stdout)
+#define fputc(x, f) (((f)->putchar)( (x), (f) ))
+#define fgetc(f)    (((f)->getchar)( (f) ))
+#define putchar(x) fputc( (x), stdout)
 #define getchar() fgetc(stdin)
 
 int sprintf(char *str, const char *format, ...) _IMPL("libc/stdio/sprintf.c");

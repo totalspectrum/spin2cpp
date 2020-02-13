@@ -142,13 +142,11 @@ int close(int fd)
     return _closeraw(f);
 }
 
-typedef int (*txFunc)(int c);
-
 ssize_t write(int fd, const void *vbuf, size_t count)
 {
     ssize_t r;
     vfs_file_t *f;
-    txFunc tx;
+    putcharfunc_t tx;
     const unsigned char *buf = (const unsigned char *)vbuf;
     
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
@@ -172,7 +170,7 @@ ssize_t write(int fd, const void *vbuf, size_t count)
     }
     r = 0;
     while (count > 0) {
-        r += (*tx)(*buf++);
+        r += (*tx)(*buf++, f);
         --count;
     }
     return r;
@@ -182,7 +180,7 @@ ssize_t read(int fd, void *vbuf, size_t count)
 {
     ssize_t r, q;
     vfs_file_t *f;
-    int (*rx)();
+    getcharfunc_t rx;
     unsigned char *buf = (unsigned char *)vbuf;
 
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
@@ -207,7 +205,7 @@ ssize_t read(int fd, void *vbuf, size_t count)
     }
     r = 0;
     while (count > 0) {
-        q = (*rx)();
+        q = (*rx)(f);
         if (q < 0) break;
         *buf++ = q;
         ++r;
