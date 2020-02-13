@@ -636,13 +636,13 @@ typedef struct _bas_wrap_sender {
 TxFunc _gettxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
-    if (!v) return 0;
+    if (!v || !v->state) return 0;
     return &v->putchar;
 }
 RxFunc _getrxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
-    if (!v) return 0;
+    if (!v || !v->state) return 0;
     return &v->getchar;
 }
 //
