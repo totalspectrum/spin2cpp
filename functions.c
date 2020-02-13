@@ -529,6 +529,8 @@ findLocalsAndDeclare(Function *func, AST *ast)
     case AST_GLOBALVARS:
         ERROR(ast, "global variable declarations not allowed in functions");
         return;
+    case AST_CAST:
+        return;
     case AST_DECLARE_VAR:
     case AST_DECLARE_VAR_WEAK:
         identlist = ast->right;
