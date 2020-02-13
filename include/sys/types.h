@@ -53,8 +53,8 @@ struct vfs_file_t {
     int (*getcf)(vfs_file_t *fil);
     int (*close)(vfs_file_t *fil);
     int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
-
-    int putchar(int c) { return putcf(c, __this); }
+    /* internal functions for formatting routines */
+    int putchar(int c) { int i = putcf(c, __this); return (i < 0) ? 0 : 1; }
     int getchar(void)  { return getcf(__this); }
 };
 

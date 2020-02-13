@@ -37,13 +37,19 @@ void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
 struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
 
 /* generic file buffer code */
+/* put a "struct _default_buffer" at the start of your vfsdata to use the
+ * default versions of putc and getc
+ */
 #define _DEFAULT_BUFSIZ 128
 
-struct _default_filbuf {
-    unsigned char buf[_DEFAULT_BUFSIZ];
-    int filsiz;
+struct _default_buffer {
+    int cnt;
+    unsigned char *ptr;
     unsigned flags;
+    unsigned char buf[_DEFAULT_BUFSIZ];
 };
 
+int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
+int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
 #endif

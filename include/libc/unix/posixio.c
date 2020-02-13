@@ -83,6 +83,7 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
     if (!v || !v->open) {
         return _seterror(ENOSYS);
     }
+    memset(fil, 0, sizeof(*fil));
     r = (*v->open)(fil, name, flags);
     if (r < 0 && (flags & O_CREAT)) {
         r = (*v->creat)(fil, name, mode);
@@ -96,6 +97,13 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
             state |= _VFS_STATE_RDOK;
         }
         fil->state = state;
+
+        if (!fil->read) fil->read = v->read;
+        if (!fil->write) fil->write = v->write;
+        if (!fil->close) fil->close = v->close;
+        if (!fil->ioctl) fil->ioctl = v->ioctl;
+        if (!fil->putcf) fil->putcf = &__default_putc;
+        if (!fil->getcf) fil->getcf = &__default_getc;
     }
     return r;
 }

@@ -450,6 +450,11 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
   int r;
   fs_file *f = malloc(sizeof(*f));
+
+  if (!f) {
+      return _seterror(ENOMEM);
+  }
+  memset(f, 0, sizeof(*f));
   r = fs_create(f, pathname, mode);
   if (r) {
     free(f);
@@ -468,13 +473,12 @@ static int v_close(vfs_file_t *fil)
 
 static int v_opendir(DIR *dir, const char *name)
 {
-    fs_file *f;
+    fs_file *f = malloc(sizeof(*f));
     int r;
 
 #ifdef DEBUG    
     __builtin_printf("v_opendir(%s)\n", name);
 #endif    
-    f = malloc(sizeof(*f));
     if (!f) {
 #ifdef DEBUG
       __builtin_printf("malloc failed\n");
@@ -573,9 +577,12 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
     if (!f) {
         return _seterror(EBADF);
     }
+#ifdef DEBUG    
+    __builtin_printf("v_read: fs_read at %u:", f->offlo);
+#endif    
     r = fs_read(f, buf, siz);
 #ifdef DEBUG
-    __builtin_printf("v_read: fs_read returned %d\n", r);
+    __builtin_printf(" ...returned %d\n", r);
 #endif    
     if (r < 0) {
         fil->state |= _VFS_STATE_ERR;
@@ -651,23 +658,20 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   if (!f) {
       return _seterror(ENOMEM);
   }
+  memset(f, 0, sizeof(*f));
   fs_flags = flags & 3; // basic stuff like O_RDONLY are the same
   if (flags & O_TRUNC) {
       fs_flags |= FS9_OTRUNC;
   }
   r = fs_open(f, name, fs_flags);
 #ifdef DEBUG
-  __builtin_printf("fs_open returned %d\n", r);
+  __builtin_printf("fs_open(%s) returned %d\n", name, r);
 #endif  
   if (r) {
     free(f);
     return _seterror(-r);
   }
   fil->vfsdata = f;
-  fil->read = &v_read;
-  fil->write = &v_write;
-  fil->close = &v_close;
-  fil->ioctl = &v_ioctl;
   return 0;
 }
 

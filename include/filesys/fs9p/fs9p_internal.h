@@ -2,6 +2,8 @@
 #define FS9P_H
 
 #include <compiler.h>
+#include <sys/types.h>
+#include <sys/vfs.h>
 
 #define NOTAG 0xffffU
 #define NOFID 0xffffffffU
@@ -44,7 +46,7 @@ enum {
 
 // functions for the 9p file system
 typedef struct fsfile {
-    struct _default_filebuf b;
+    struct _default_buffer b;
     uint32_t offlo;
     uint32_t offhi;
 } fs_file;
