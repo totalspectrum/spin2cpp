@@ -92,7 +92,7 @@ static void CheckForOrg(const char *theline)
             if (*s == '$') {
                 s++;
                 if (*s) {
-                    cogPc = strtoul(s, NULL, 16);
+                    cogPc = strtoul(s, NULL, 16)*4;
                     inCog = 1;
                 }
             } else if (!*s) {
