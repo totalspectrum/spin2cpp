@@ -92,7 +92,7 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
     }
     memset(fil, 0, sizeof(*fil));
     r = (*v->open)(fil, name, flags);
-    if (r < 0 && (flags & O_CREAT)) {
+    if (r != 0 && (flags & O_CREAT)) {
         r = (*v->creat)(fil, name, mode);
     }
     if (r == 0) {

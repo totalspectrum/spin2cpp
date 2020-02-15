@@ -2,15 +2,17 @@
 // simple test program for 9p access to host files
 //
 
-//#define DEBUG
+#define DEBUG
 
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/vfs.h>
 #include <sys/stat.h>
 #include <sys/limits.h>
 #include "fs9p_internal.h"
@@ -70,7 +72,7 @@ static unsigned FETCH4(uint8_t *b)
 
 // root directory for connection
 // set up by fs_init
-fs_file rootdir;
+fs9_file rootdir;
 sendrecv_func sendRecv;
 
 // initialize connection to host
@@ -133,7 +135,7 @@ int fs_init(sendrecv_func fn)
     return 0;
 }
 
-fs_file *fs_getroot()
+fs9_file *fs_getroot()
 {
     return &rootdir;
 }
@@ -141,7 +143,7 @@ fs_file *fs_getroot()
 // walk from fid "dir" along path, creating fid "newfile"
 // if "skipLast" is nonzero, then do not try to walk the last element
 // (needed for create or other operations where the file may not exist)
-static int do_fs_walk(fs_file *dir, fs_file *newfile, const char *path, int skipLast)
+static int do_fs_walk(fs9_file *dir, fs9_file *newfile, const char *path, int skipLast)
 {
     uint8_t *ptr;
     uint8_t *sizeptr;
@@ -192,12 +194,12 @@ static int do_fs_walk(fs_file *dir, fs_file *newfile, const char *path, int skip
     return 0;
 }
 
-int fs_walk(fs_file *dir, fs_file *newfile, const char *path)
+int fs_walk(fs9_file *dir, fs9_file *newfile, const char *path)
 {
     return do_fs_walk(dir, newfile, path, 0);
 }
 
-int fs_open_relative(fs_file *dir, fs_file *f, const char *path, int fs_mode)
+int fs_open_relative(fs9_file *dir, fs9_file *f, const char *path, int fs_mode)
 {
     int r;
     uint8_t *ptr;
@@ -218,15 +220,15 @@ int fs_open_relative(fs_file *dir, fs_file *f, const char *path, int fs_mode)
     return 0;
 }
 
-int fs_open(fs_file *f, const char *path, int fs_mode)
+int fs_open(fs9_file *f, const char *path, int fs_mode)
 {
     return fs_open_relative(&rootdir, f, path, fs_mode);
 }
 
-int fs_create(fs_file *f, const char *path, uint32_t permissions)
+int fs_create(fs9_file *f, const char *path, uint32_t permissions)
 {
     int r;
-    fs_file dir;
+    fs9_file dir;
     uint8_t *ptr;
     const char *lastname;
     
@@ -252,7 +254,7 @@ int fs_create(fs_file *f, const char *path, uint32_t permissions)
     ptr = doPut1(ptr, FS_MODE_TRUNC | FS_MODE_WRITE);
     r = (*sendRecv)(txbuf, ptr, maxlen);
     if (r >= 0 && txbuf[4] == r_create) {
-      return r;
+      return 0;
     }
     
     // can we open the file with truncation set?
@@ -263,7 +265,7 @@ int fs_create(fs_file *f, const char *path, uint32_t permissions)
     return 0;
 }
 
-int fs_close(fs_file *f)
+int fs_close(fs9_file *f)
 {
     uint8_t *ptr;
     int r;
@@ -278,7 +280,7 @@ int fs_close(fs_file *f)
     return 0;
 }
 
-int fs_read(fs_file *f, uint8_t *buf, int count)
+int fs_read(fs9_file *f, uint8_t *buf, int count)
 {
     uint8_t *ptr;
     int totalread = 0;
@@ -287,6 +289,9 @@ int fs_read(fs_file *f, uint8_t *buf, int count)
     int left;
     uint32_t oldlo;
     while (count > 0) {
+#ifdef DEBUG
+        __builtin_printf("fs_read count=%d offset=%d\n", count, f->offlo);
+#endif        
         ptr = doPut4(txbuf, 0); // space for size
         ptr = doPut1(ptr, t_read);
         ptr = doPut2(ptr, NOTAG);
@@ -330,7 +335,7 @@ int fs_read(fs_file *f, uint8_t *buf, int count)
     return totalread;
 }
 
-int fs_write(fs_file *f, const uint8_t *buf, int count)
+int fs_write(fs9_file *f, const uint8_t *buf, int count)
 {
     uint8_t *ptr;
     int totalread = 0;
@@ -339,6 +344,9 @@ int fs_write(fs_file *f, const uint8_t *buf, int count)
     int left;
     uint32_t oldlo;
     while (count > 0) {
+#ifdef DEBUG
+        __builtin_printf("fs_write count=%d offset=%d\n", count, f->offlo);
+#endif        
         ptr = doPut4(txbuf, 0); // space for size
         ptr = doPut1(ptr, t_write);
         ptr = doPut2(ptr, NOTAG);
@@ -381,7 +389,7 @@ int fs_write(fs_file *f, const uint8_t *buf, int count)
     return totalread;
 }
 
-int fs_fstat(fs_file *f, struct stat *buf)
+int fs_fstat(fs9_file *f, struct stat *buf)
 {
     uint8_t *ptr;
     int r;
@@ -430,9 +438,9 @@ int fs_fstat(fs_file *f, struct stat *buf)
     return 0;
 }
 
-int fs_stat(fs_file *dir, const char *path, struct stat *buf)
+int fs_stat(fs9_file *dir, const char *path, struct stat *buf)
 {
-    fs_file f;
+    fs9_file f;
     int r = fs_open_relative(dir, &f, path, 0);
     if (r != 0) return r;
     r = fs_fstat(&f, buf);
@@ -449,13 +457,16 @@ int fs_stat(fs_file *dir, const char *path, struct stat *buf)
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
   int r;
-  fs_file *f = malloc(sizeof(*f));
+  fs9_file *f = malloc(sizeof(*f));
 
   if (!f) {
       return _seterror(ENOMEM);
   }
   memset(f, 0, sizeof(*f));
   r = fs_create(f, pathname, mode);
+#ifdef DEBUG
+  __builtin_printf("v_create(%s) returned %d\n", pathname, r);
+#endif  
   if (r) {
     free(f);
     return _seterror(-r);
@@ -473,7 +484,7 @@ static int v_close(vfs_file_t *fil)
 
 static int v_opendir(DIR *dir, const char *name)
 {
-    fs_file *f = malloc(sizeof(*f));
+    fs9_file *f = malloc(sizeof(*f));
     int r;
 
 #ifdef DEBUG    
@@ -501,7 +512,7 @@ static int v_opendir(DIR *dir, const char *name)
 static int v_closedir(DIR *dir)
 {
     int r;
-    fs_file *f = dir->vfsdata;
+    fs9_file *f = dir->vfsdata;
     r = fs_close(f);
     free(f);
     return r;
@@ -571,7 +582,7 @@ static int v_stat(const char *name, struct stat *buf)
 
 static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 {
-    fs_file *f = fil->vfsdata;
+    fs9_file *f = fil->vfsdata;
     int r;
     
     if (!f) {
@@ -595,12 +606,19 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 }
 static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 {
-    fs_file *f = fil->vfsdata;
+    fs9_file *f = fil->vfsdata;
     int r;
+    
     if (!f) {
         return _seterror(EBADF);
     }
-    r = fs_read(f, buf, siz);
+#ifdef DEBUG    
+    __builtin_printf("v_write: fs_write %d at %u:", siz, f->offlo);
+#endif    
+    r = fs_write(f, buf, siz);
+#ifdef DEBUG
+    __builtin_printf("returned %d\n", r);
+#endif    
     if (r < 0) {
         fil->state |= _VFS_STATE_ERR;
         return _seterror(-r);
@@ -609,11 +627,14 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 }
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
-    fs_file *f = fil->vfsdata;
+    fs9_file *f = fil->vfsdata;
     unsigned tmp;
     if (!f) {
         return _seterror(EBADF);
     }
+#ifdef DEBUG
+    __builtin_printf("v_lseek(%d, %d) start=%d ", offset, whence, f->offlo);
+#endif    
     if (whence == SEEK_SET) {
         f->offlo = offset;
     } else if (whence == SEEK_CUR) {
@@ -626,6 +647,9 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
         // FIXME: should do a stat on the file and then seek accordingly
         return _seterror(EINVAL);
     }
+#ifdef DEBUG
+    __builtin_printf("end=%d\n", f->offlo);
+#endif    
     return f->offlo;
 }
 
@@ -652,7 +676,7 @@ int v_rmdir(const char *name)
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
   int r;
-  fs_file *f = malloc(sizeof(*f));
+  fs9_file *f = malloc(sizeof(*f));
   unsigned fs_flags;
 
   if (!f) {
@@ -665,7 +689,9 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   }
   r = fs_open(f, name, fs_flags);
 #ifdef DEBUG
-  __builtin_printf("fs_open(%s) returned %d\n", name, r);
+  __builtin_printf("fs_open(%s) returned %d, offset=%d\n", name, r, f->offlo);
+  __builtin_printf("offset at %d, size at %d\n", offsetof(fs9_file, offlo), sizeof(fs9_file));
+  __builtin_printf("default buffer size=%d\n", sizeof(struct _default_buffer));
 #endif  
   if (r) {
     free(f);
