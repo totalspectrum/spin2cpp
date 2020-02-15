@@ -332,7 +332,15 @@ GetSizedVar(struct flexbuf *fb, Operandkind kind, const char *name, intptr_t val
   for (i = 0; i < siz; i++) {
     if (strcmp(name, g[i].op->name) == 0) {
         if (g[i].val != value) {
-            ERROR(NULL, "Internal error, redefining value of %s", name);
+            if ( (kind == REG_HUBPTR || kind == REG_COGPTR)
+                 && kind == g[i].op->kind
+                 && !strcmp( ((Operand *)g[i].val)->name, ((Operand *)value)->name )
+                )
+            {
+                /* OK, pretend this is a match */
+            } else {
+                ERROR(NULL, "Internal error, redefining value of %s", name);
+            }
         }
         if (g[i].count < count) {
             g[i].count = count;
