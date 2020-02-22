@@ -31,7 +31,8 @@ int sprintf(char *buf, const char *fmt, ...)
 int vsprintf(char *buf, const char *fmt, va_list ap)
 {
     SPInfo S;
-
+    int r;
+    
     S.ptr = buf;
     S.end = buf + 0xffffff;
     r = _dofmt(&S.sputc, fmt, &ap);
