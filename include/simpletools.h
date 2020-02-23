@@ -16,6 +16,7 @@
 
 #define print __builtin_printf
 #define printi __builtin_printf
+#define putChar(x) __builtin_printf("%c", x)
 #define putStr(x) __builtin_printf("%s", x)
 #define putDec(x) __builtin_printf("%d", x)
 #define putHex(x) __builtin_printf("%x", x)
