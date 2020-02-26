@@ -17,7 +17,11 @@
 #ifndef __i2c_H
 #define __i2c_H
 
+#ifdef __propeller2__
+#include <propeller2.h>
+#else
 #include <propeller.h>
+#endif
 
 typedef struct i2c_st
 {

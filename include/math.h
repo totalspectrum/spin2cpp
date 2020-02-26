@@ -21,6 +21,8 @@
 #define log(x) __builtin_logf(x)
 #define sin(x) __builtin_sinf(x)
 #define cos(x) __builtin_cosf(x)
+#define atan(x) __builtin_atanf(x)
+#define atan2(y, x) __builtin_atan2f((y), (x))
 #define floor(x) __builtin_floorf(x)
 #define fabs(x)  __builtin_fabsf(x)
 #define frexp(x, p) __builtin_frexpf((x), (p))
