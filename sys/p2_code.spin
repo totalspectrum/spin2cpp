@@ -161,7 +161,7 @@ pri __builtin_propeller_dirrnd(pin)
   endasm
 pri __builtin_propeller_dir(pin, c)
   asm
-    test   pin,#1 wc
+    test   c,#1 wc
     dirc pin
   endasm
 
@@ -205,7 +205,7 @@ pri __builtin_propeller_outrnd(pin)
   endasm
 pri __builtin_propeller_out(pin, c)
   asm
-    test   pin,#1 wc
+    test   c,#1 wc
     outc pin
   endasm
 
