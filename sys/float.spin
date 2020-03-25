@@ -407,6 +407,8 @@ pri file "libsys/math.c"  __builtin_sinf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_cosf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_tanf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_fabsf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_atanf(x = float) : r=float
+pri file "libsys/math.c"  __builtin_atan2f(y = float, x = float) : r=float
 pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=long) : r=float
 pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
 pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float

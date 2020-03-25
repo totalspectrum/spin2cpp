@@ -9,13 +9,6 @@
  */
 #include "simplei2c.h"
 
-#ifndef __propeller2__
-int _pinr(int pin)
-{
-    return getpin(pin);
-}
-#endif
-
 static inline void scl_low(i2c *bus)
 {
     _pinl(bus->scl_pin);
