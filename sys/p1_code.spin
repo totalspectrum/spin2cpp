@@ -185,6 +185,13 @@ pri __builtin_propeller_drv(pin, c) | mask
   else
     OUTA &= !mask
 
+pri __builtin_propeller_pinr(pin) | mask
+  mask := 1<<pin
+  if (INA & mask)
+    return 1
+  else
+    return 0
+    
 pri __builtin_propeller_waitx(tim)
   asm
     add  tim, CNT

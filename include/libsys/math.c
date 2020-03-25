@@ -96,3 +96,61 @@ float __builtin_tanf(x)
 {
     return __builtin_sinf(x) / __builtin_cosf(x);
 }
+
+// Approximates atan(x) normalized to the [-1,1] range
+// with a maximum error of 0.1620 degrees.
+
+float normalized_atanf( float x )
+{
+    static const uint32_t sign_mask = 0x80000000;
+    static const float b = 0.596227f;
+
+    // Extract the sign bit
+    uint32_t ux_s  = sign_mask & *((uint32_t *)&x);
+
+    // Calculate the arctangent in the first quadrant
+    float bx_a = __builtin_fabsf( b * x );
+    float num = bx_a + x * x;
+    float atan_1q = num / ( 1.f + bx_a + num );
+
+    // Restore the sign bit
+    uint32_t atan_2q = ux_s | *((uint32_t *)&atan_1q);
+    return *((float *)&atan_2q);
+}
+
+float __builtin_atanf(float x)
+{
+    return normalized_atanf(x) * PI_2;
+}
+
+// Approximates atan2(y, x) normalized to the -2 to 2 range
+// with a maximum error of 0.1620 degrees
+
+float normalized_atan2f(float y, float x)
+{
+    static const uint32_t sign_mask = 0x80000000;
+    static const float b = 0.596227f;
+
+    // Extract the sign bits
+    uint32_t ux_s = sign_mask & *((uint32_t *)&x);
+    uint32_t uy_s = sign_mask & *((uint32_t *)&y);
+
+    // Determine the quadrant offset
+    int32_t qa = ((ux_s >> 31) * 2);
+    int32_t qb = (((ux_s & uy_s) >> 31) * -4);
+    float q = (float)(qa + qb);
+
+    // Calculate the arctangent in the first quadrant
+    float bxy_a = __builtin_fabsf(b * x * y);
+    float num = bxy_a + y * y;
+    float atan_1q = num / (x * x + bxy_a + num);
+
+    // Translate it to the proper quadrant
+    uint32_t uatan_2q = (ux_s ^ uy_s) | *((uint32_t *)&atan_1q);
+    return q + *((float *)&uatan_2q);
+}
+
+float __builtin_atan2f(float y, float x)
+{
+    return normalized_atan2f(y,x) * PI_2;
+}
