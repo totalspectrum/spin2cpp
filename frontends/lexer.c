@@ -477,6 +477,7 @@ static int MapSpinBlock(int c)
     case SP_DAT:
         return BLOCK_DAT;
     case SP_ASM:
+    case SP_ORG:
         return BLOCK_ASM;
     case SP_PUB:
         return BLOCK_PUB;
@@ -591,6 +592,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 //EstablishIndent(L, 1);
                 break;
 	    case SP_ASM:
+            case SP_ORG:
 	        if (L->block_type == BLOCK_ASM) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
 		} else if (InDatBlock(L) || L->colCounter - L->firstNonBlank > 4) {
@@ -600,6 +602,11 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 		}
 		L->block_type = BLOCK_ASM;
 		break;
+            case SP_END:
+                if (L->block_type != BLOCK_ASM || L->colCounter - L->firstNonBlank > 4) {
+                    goto is_identifier;
+                }
+                /* fall through */
 	    case SP_ENDASM:
 	        L->block_type = L->save_block;
 	        break;
@@ -1480,6 +1487,7 @@ struct reservedword init_spin2_words[] = {
     { "cogspin", SP_COGINIT },
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
+    { "end",   SP_END },
     { "rotl", SP_ROTL },
     { "rotr", SP_ROTR },
 };
@@ -1926,6 +1934,30 @@ struct constants p2_constants[] = {
     { "_c_or_z",    SYM_CONSTANT, 0xE },
     { "_le",        SYM_CONSTANT, 0xE },
     { "_set",       SYM_CONSTANT, 0xF },
+
+    { "P_TRUE_A",   SYM_CONSTANT, 0 },
+    { "P_INVERT_A", SYM_CONSTANT, 0x80000000 },
+
+    { "P_NORMAL",   SYM_CONSTANT, 0x00 },
+    { "P_REPOSITORY", SYM_CONSTANT, 0x02 },
+    
+    { "P_STATE_TICKS", SYM_CONSTANT, 0x20 },
+    { "P_HIGH_TICKS",  SYM_CONSTANT, 0x22 },
+    { "P_EVENTS_TICKS", SYM_CONSTANT, 0x24 },
+    { "P_PERIOD_TICKS", SYM_CONSTANT, 0x26 },
+    { "P_PERIOD_HIGHS", SYM_CONSTANT, 0x28 },
+    { "P_COUNTER_TICKS", SYM_CONSTANT, 0x2a },
+    { "P_COUNTER_HIGHS", SYM_CONSTANT, 0x2c },
+    { "P_COUNTER_PERIODS", SYM_CONSTANT, 0x2e },
+    
+    { "P_ADC",      SYM_CONSTANT, 0x30 },
+    { "P_ADC_EXT",  SYM_CONSTANT, 0x32 },
+    { "P_ADC_SCOPE", SYM_CONSTANT, 0x34 },
+    { "P_USB_PAIR", SYM_CONSTANT, 0x36 },
+    { "P_SYNC_TX",  SYM_CONSTANT, 0x38 },
+    { "P_SYNC_RX",  SYM_CONSTANT, 0x3a },
+    { "P_ASYNC_TX", SYM_CONSTANT, 0x3c },
+    { "P_ASYNC_RX", SYM_CONSTANT, 0x3e },
 };
 
 #if defined(WIN32)

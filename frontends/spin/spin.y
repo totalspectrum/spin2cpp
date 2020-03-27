@@ -77,6 +77,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_OBJ        "OBJ"
 %token SP_ASM        "ASM"
 %token SP_ENDASM     "ENDASM"
+%token SP_END        "END"
 %token SP_INLINECCODE "CCODE"
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
@@ -537,6 +538,11 @@ repeatstmt:
       $$ = NewCommentedAST(AST_COUNTREPEAT, NULL, from, $1);
     }
   | SP_ASM datblock SP_ENDASM
+    {
+        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
+        $$->d.ival = 0; // not volatile
+    }
+  | SP_ORG datblock SP_END
     {
         $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
         $$->d.ival = 0; // not volatile

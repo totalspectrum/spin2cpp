@@ -6,6 +6,9 @@ Version 4.1.4
 - Fixed COG PC output in listing files for sub-objects
 - Fixed incorrect treatment of functions containing LOOKUP/LOOKDOWN
 - Implement default parameter values for C
+- Accept ORG/END as well as ASM/ENDASM for inline assembly in Spin2
+- Added some more simpletools functions
+- Began work on stdio functions
 
 Version 4.1.3
 - Allow const qualifier for inline assembly
