@@ -4,6 +4,7 @@ Version 4.1.4
 - Fixed comments and/or spaces after ASM in Spin code
 - Fixed a problem with C local variable names used on RHS of initialization
 - Fixed COG PC output in listing files for sub-objects
+- Fixed incorrect treatment of functions containing LOOKUP/LOOKDOWN
 - Implement default parameter values for C
 
 Version 4.1.3
