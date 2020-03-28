@@ -605,7 +605,19 @@ doSpinTransform(AST **astptr, int level)
             }
         }
         break;
-        
+    case AST_LOCAL_IDENTIFIER:
+    case AST_IDENTIFIER:
+    {
+        if (curfunc && IsLocalVariable(ast)) {
+            AST *typ = ExprType(ast);
+            if (typ) {
+                if (TypeGoesOnStack(typ)) {
+                    curfunc->stack_local = 1;
+                }
+            }
+        }
+        break;
+    }        
     case AST_OPERATOR:
         if (level == 1) {
             AST *lhsast;

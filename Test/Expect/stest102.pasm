@@ -5,9 +5,6 @@ dat
 entry
 
 _set
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, sp
-	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -26,14 +23,10 @@ _set
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
-	sub	sp, #4
 _set_ret
 	ret
 
 _set2
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, sp
-	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -43,7 +36,6 @@ _set2
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
-	sub	sp, #4
 _set2_ret
 	ret
 

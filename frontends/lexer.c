@@ -593,14 +593,18 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 break;
 	    case SP_ASM:
             case SP_ORG:
-	        if (L->block_type == BLOCK_ASM) {
+	        if (L->block_type == BLOCK_ASM && c == SP_ASM) {
 		    fprintf(stderr, "WARNING: ignoring nested asm\n");
-		} else if (InDatBlock(L) || L->colCounter - L->firstNonBlank > 4) {
-                    goto is_identifier;
+                } else if (InDatBlock(L)) {
+                    /* for ORG, nothing special to do */
+                    /* for ASM, check for identifier */
+                    if (c == SP_ASM && L->colCounter - L->firstNonBlank > 4) {
+                        goto is_identifier;
+                    }
                 } else {
 		    L->save_block = L->block_type;
+                    L->block_type = BLOCK_ASM;
 		}
-		L->block_type = BLOCK_ASM;
 		break;
             case SP_END:
                 if (L->block_type != BLOCK_ASM || L->colCounter - L->firstNonBlank > 4) {

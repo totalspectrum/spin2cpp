@@ -320,7 +320,7 @@ resultname: ':' paramidentlist
   ;
 
 localvars:
- '|' identlist
+ '|' vardecllist
   { $$ = $2; }
     ;
 
@@ -743,6 +743,24 @@ identdecl:
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
   ;
 
+vardecl:
+  identdecl
+    { $$ = $1; }
+  | SP_BYTE identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, ast_type_byte, $2); }
+  | SP_WORD identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, ast_type_word, $2); }
+  | SP_LONG identdecl
+    { $$ = NewAST(AST_DECLARE_VAR, NULL, $2); }
+;
+
+vardecllist:
+   vardecl
+      { $$ = NewAST(AST_LISTHOLDER, $1, NULL); }
+   | vardecllist ',' vardecl
+      { $$ = AddToList($1, NewAST(AST_LISTHOLDER, $3, NULL)); }
+   ;
+
 paramidentdecl:
   identifier
   { $$ = $1; }
@@ -866,6 +884,10 @@ expr:
     { $$ = AstOperator(K_BOOL_AND, $1, $3); }
   | expr SP_XOR expr
     { $$ = AstOperator(K_BOOL_XOR, $1, $3); }
+  | expr '&' '&' expr %prec SP_AND
+    { $$ = AstOperator(K_BOOL_AND, $1, $4); }
+  | expr '|' '|' expr %prec SP_OR
+    { $$ = AstOperator(K_BOOL_OR, $1, $4); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN
@@ -882,6 +904,10 @@ expr:
     { $$ = AstOpAssign('^', $1, $4); }
   | expr SP_REMAINDER '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_MODULUS, $1, $4); }
+  | expr SP_UNSDIV '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_UNS_DIV, $1, $4); }
+  | expr SP_UNSMOD '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_UNS_MOD, $1, $4); }
   | expr SP_HIGHMULT '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_HIGHMULT, $1, $4); }
   | expr SP_LIMITMIN '=' expr %prec SP_ASSIGN

@@ -495,9 +495,6 @@ __system___gc_dofree_ret
 	ret
 
 __system____topofstack
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, sp
-	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -509,7 +506,6 @@ __system____topofstack
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
-	sub	sp, #4
 __system____topofstack_ret
 	ret
 

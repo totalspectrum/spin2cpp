@@ -5,32 +5,36 @@ dat
 entry
 
 _demo
-	mov	_demo_a, arg01
-	mov	_demo_a + 1, arg02
-	mov	_demo_a + 2, arg03
-	mov	result1, _demo_a + 1
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
+	add	sp, #28
+	add	fp, #16
+	wrlong	arg01, fp
+	add	fp, #4
+	wrlong	arg02, fp
+	add	fp, #4
+	wrlong	arg03, fp
+	sub	fp, #4
+	rdlong	result1, fp
+	sub	fp, #20
+	mov	sp, fp
+	sub	sp, #4
+	rdlong	fp, sp
 _demo_ret
 	ret
-wrcog
-    mov    0-0, 0-0
-wrcog_ret
-    ret
 
+fp
+	long	0
 result1
 	long	0
+sp
+	long	@@@stackspace
 COG_BSS_START
 	fit	496
+stackspace
+	long	0[1]
 	org	COG_BSS_START
-_demo_a
-	res	3
-_demo_x
-	res	1
-_demo_y
-	res	1
-_demo_z
-	res	1
-_tmp002_
-	res	1
 arg01
 	res	1
 arg02

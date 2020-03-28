@@ -1605,7 +1605,6 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
             for (i = 0; i < n; i++) {
                 EmitPush(irl, GetLocalReg(i, 0));
             }
-            EmitPush(irl, NewImmediate(n));
             EmitPush(irl, frameptr);
             EmitMove(irl, frameptr, stackptr);
         }
@@ -1649,7 +1648,6 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             EmitOp1(irl, OPC_CALL, popregs_);
         } else {
             EmitPop(irl, frameptr);
-            EmitOp2(irl, OPC_SUB, stackptr, NewImmediate(4));
             for (i = n-1; i >= 0; --i) {
                 EmitPop(irl, GetLocalReg(i, 0));
             }
