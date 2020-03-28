@@ -1112,7 +1112,7 @@ funccall:
     }
   | identifier '.' identifier
     { 
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, $1, $3), NULL);
+        $$ = NewAST(AST_METHODREF, $1, $3);
     }
   | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
     { 
@@ -1122,7 +1122,7 @@ funccall:
   | identifier '[' expr ']' '.' identifier
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = NewAST(AST_FUNCCALL, NewAST(AST_METHODREF, arr, $6), NULL);
+        $$ = NewAST(AST_METHODREF, arr, $6);
     }
 ;
 
