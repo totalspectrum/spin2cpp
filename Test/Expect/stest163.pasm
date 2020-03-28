@@ -5,9 +5,6 @@ dat
 entry
 
 _main
-	mov	_tmp001_, #0
-	wrlong	_tmp001_, sp
-	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -18,7 +15,6 @@ _main
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
-	sub	sp, #4
 _main_ret
 	ret
 

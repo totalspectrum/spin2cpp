@@ -2478,6 +2478,8 @@ IsCalledFrom(Function *ref, AST *body, int visitRef)
         curfunc = oldCurFunc;
         return result;
     case AST_COGINIT:
+    case AST_LOOKUP:
+    case AST_LOOKDOWN:
         ref->is_leaf = 0;
         break;
     case AST_OPERATOR:

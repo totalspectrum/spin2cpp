@@ -334,6 +334,16 @@ PUB negfloat(x = float) : r = float
   r := x ^ $80000000
 ```
 
+### Typed local variables
+
+As in Spin2, local variables may be declared prefixed with `byte`, `word`, or `long` to give them a specific size.
+
+Example:
+```
+PUB dostuff(x) : r | byte tempstring[10]
+ ' may use tempstring here as an array
+```
+
 ### Spin2 operators
 
 fastspin accepts some Spin2 operators:

@@ -5,59 +5,64 @@ dat
 entry
 
 _get
-	mov	_var01, #0
-	mov	_var02, objptr
-	mov	_var03, #0
+	wrlong	fp, sp
+	add	sp, #4
+	mov	fp, sp
+	add	sp, #60
+	mov	_get_sum, #0
+	mov	_get__cse__0001, objptr
+	mov	_get_i, #0
 LR__0001
-	mov	_var04, _var03
-	add	_var04, #_get_a
-	rdlong	_var05, _var02
-	'.live	_var05
-	movs	wrcog, #_var05
-	movd	wrcog, _var04
-	call	#wrcog
-	mov	_var06, _var03
-	add	_var06, #_get_a
-	'.live	_var07
-	movs	wrcog, _var06
-	movd	wrcog, #_var07
-	call	#wrcog
-	add	_var01, _var07
-	add	_var03, #1
-	add	_var02, #4
-	cmps	_var03, #10 wc,wz
+	mov	_tmp001_, _get_i
+	shl	_tmp001_, #2
+	add	fp, #4
+	rdlong	_tmp003_, _get__cse__0001
+	add	_tmp001_, fp
+	wrlong	_tmp003_, _tmp001_
+	mov	_tmp002_, _get_i
+	shl	_tmp002_, #2
+	add	_tmp002_, fp
+	rdlong	_tmp004_, _tmp002_
+	add	_get_sum, _tmp004_
+	add	_get_i, #1
+	add	_get__cse__0001, #4
+	cmps	_get_i, #10 wc,wz
+	sub	fp, #4
  if_b	jmp	#LR__0001
-	mov	result1, _var01
+	mov	result1, _get_sum
+	mov	sp, fp
+	sub	sp, #4
+	rdlong	fp, sp
 _get_ret
 	ret
-wrcog
-    mov    0-0, 0-0
-wrcog_ret
-    ret
 
+fp
+	long	0
 objptr
 	long	@@@objmem
 result1
 	long	0
+sp
+	long	@@@stackspace
 COG_BSS_START
 	fit	496
 objmem
 	long	0[10]
+stackspace
+	long	0[1]
 	org	COG_BSS_START
-_get_a
-	res	10
-_var01
+_get__cse__0001
 	res	1
-_var02
+_get_i
 	res	1
-_var03
+_get_sum
 	res	1
-_var04
+_tmp001_
 	res	1
-_var05
+_tmp002_
 	res	1
-_var06
+_tmp003_
 	res	1
-_var07
+_tmp004_
 	res	1
 	fit	496

@@ -13,9 +13,6 @@ _fibo
 	add	sp, #4
 	wrlong	local03, sp
 	add	sp, #4
-	mov	fibo_tmp001_, #3
-	wrlong	fibo_tmp001_, sp
-	add	sp, #4
 	wrlong	fp, sp
 	add	sp, #4
 	mov	fp, sp
@@ -37,7 +34,6 @@ LR__0001
 	mov	sp, fp
 	sub	sp, #4
 	rdlong	fp, sp
-	sub	sp, #4
 	sub	sp, #4
 	rdlong	local03, sp
 	sub	sp, #4
@@ -62,8 +58,6 @@ stackspace
 	long	0[1]
 	org	COG_BSS_START
 arg01
-	res	1
-fibo_tmp001_
 	res	1
 local01
 	res	1
