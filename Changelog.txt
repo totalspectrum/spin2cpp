@@ -11,6 +11,7 @@ Version 4.1.4
 - Accept "foo.bar" notation for constants as well as "foo#bar"
 - Accept BYTE, WORD, LONG modifiers for Spin local variables
 - Added some more simpletools functions
+- Added many P2 smartpin constants
 - Began work on stdio functions
 
 Version 4.1.3
