@@ -3366,7 +3366,14 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 
     // check for keywords
     if (InDatBlock(L)) {
-        sym = FindSymbol(&cAsmReservedWords, idstr);
+        int i;
+        int len = strlen(idstr)+1;
+        char *lowerSym = alloca(len);
+        for (i = 0; i < len; i++) {
+            lowerSym[i] = tolower(idstr[i]);
+        }
+        lowerSym[i] = 0;
+        sym = FindSymbol(&cAsmReservedWords, lowerSym);
     } else {
         sym = NULL;
     }
