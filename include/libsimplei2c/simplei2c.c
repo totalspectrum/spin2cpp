@@ -63,6 +63,7 @@ void i2c_start(i2c *bus)
 {
     all_high(bus);
     sda_low(bus);
+    _waitus(1);
     scl_low(bus);
 }
 
@@ -70,7 +71,7 @@ void i2c_stop(i2c *bus)
 {
     all_low(bus);
     scl_high(bus);
-    _waitus(250);
+    _waitus(20);
     sda_high(bus);
 }
 
@@ -130,6 +131,7 @@ int i2c_readByte(i2c *bus, int ackState)
         _dirh(bus->sda_pin);
     }
     scl_high(bus);
+    _waitus(1);
     scl_low(bus);
 
     return byte;
