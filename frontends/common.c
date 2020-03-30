@@ -165,6 +165,7 @@ Aliases spin2alias[] = {
     { "waitx", "__builtin_propeller_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
+    { "waitct", "waitcnt" },
     
     /* for C usage */
     { "_pinf", "__builtin_propeller_fltl" },

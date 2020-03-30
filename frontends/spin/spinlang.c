@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Spin specific features
@@ -187,10 +187,27 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
     switch(body->kind) {
         // note that below we are making assumptions that we're still in the original function
         // these assumptions fail if we encounter a methodref or constref
-    case AST_CONSTREF:
     case AST_METHODREF:
+    case AST_CONSTREF:
         /* we can (and should) update the lhs though */
         ScanFunctionBody(fdef, body->left, body, NULL);
+        /* and transform plain foo.bar into foo.bar() if it is a function */
+        if (upper && upper->kind != AST_FUNCCALL && upper->kind != AST_ADDROF)
+        {
+            AST *typ = ExprType(body);
+            if (typ && IsFunctionType(typ)) {
+                AST *funccall;
+                ASTReportInfo saveinfo;
+                AstReportAs(body, &saveinfo);
+                funccall = NewAST(AST_FUNCCALL, body, NULL);
+                if (body == upper->left) {
+                    upper->left = funccall;
+                } else if (body == upper->right) {
+                    upper->right = funccall;
+                }
+                AstReportDone(&saveinfo);
+            }
+        }
         return;
     case AST_ADDROF:
     case AST_ABSADDROF:
@@ -608,7 +625,7 @@ doSpinTransform(AST **astptr, int level)
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
     {
-        if (curfunc && IsLocalVariable(ast)) {
+        if (curfunc && !curfunc->stack_local && IsLocalVariable(ast)) {
             AST *typ = ExprType(ast);
             if (typ) {
                 if (TypeGoesOnStack(typ)) {
