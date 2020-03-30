@@ -14,6 +14,7 @@ Version 4.1.4
 - Added some more simpletools functions
 - Added many P2 smartpin constants
 - Began work on stdio functions
+- Recognize <= and >= for .spin2 files
 
 Version 4.1.3
 - Allow const qualifier for inline assembly

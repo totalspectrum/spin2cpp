@@ -1,0 +1,10 @@
+PUB check1(a, b)
+  if (a <= b)
+    return 9
+  return -1
+
+PUB check2(a, b)
+  if (a =< b)
+    return 9
+  return -1
+  

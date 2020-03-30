@@ -29,6 +29,23 @@ do
   fi
 done
 
+for i in stest*.spin2
+do
+  j=`basename $i .spin2`
+  # NOTE: optimize 250 is all optimizations except
+  #   remove_unused_funcs (0x01)
+  #   remove_hub_bss (0x04)
+  $PROG --asm --optimize 250 --noheader $i
+  if  diff -ub Expect/$j.pasm $j.pasm
+  then
+      rm -f $j.pasm
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
 for i in stest*.bas
 do
   j=`basename $i .bas`
@@ -49,6 +66,23 @@ done
 for i in stest*.c
 do
   j=`basename $i .c`
+  # NOTE: optimize 250 is all optimizations except
+  #   remove_unused_funcs (0x01)
+  #   remove_hub_bss (0x04)
+  $PROG --asm --optimize 250 --noheader $i
+  if  diff -ub Expect/$j.pasm $j.pasm
+  then
+      rm -f $j.pasm
+      echo $j passed
+  else
+      echo $j failed
+      endmsg="TEST FAILURES"
+  fi
+done
+
+for i in stest*.cpp
+do
+  j=`basename $i .cpp`
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)

@@ -1342,6 +1342,21 @@ getSpinToken(LexStream *L, AST **ast_ptr)
                 break;
             }
         }
+        if (L->language == LANG_SPIN_SPIN2) {
+            // check for special spin2 cases
+            int nextc = lexgetc(L);
+            if (nextc == '=') {
+                if (token == '<') {
+                    token = SP_LE;
+                } else if (token == '>') {
+                    token = SP_GE;
+                } else {
+                    lexungetc(L, nextc);
+                }
+            } else {
+                lexungetc(L, nextc);
+            }
+        }
         c = token;
     } else if (c == '"') {
         parseString(L, &ast);

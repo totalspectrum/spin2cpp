@@ -11,7 +11,7 @@ ok="ok"
 endmsg=$ok
 
 # P2 ASM mode compilation tests
-for i in *.spin2
+for i in [A-Za-rt-z]*.spin2
 do
   j=`basename $i .spin2`
   $PROG $i
