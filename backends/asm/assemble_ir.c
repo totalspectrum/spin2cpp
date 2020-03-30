@@ -132,6 +132,9 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         }
     }
     switch (reg->kind) {
+    case IMM_PCRELATIVE:
+        ERROR(NULL, "internal error, pcrelative operand found");
+        break;
     case IMM_INT:
         if (reg->val >= 0 && reg->val < 512) {
             flexbuf_addstr(fb, "#");

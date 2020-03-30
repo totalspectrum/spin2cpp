@@ -906,6 +906,12 @@ IR *EmitJump(IRList *irl, IRCond cond, Operand *label)
 }
 
 Operand *
+NewPcRelative(int32_t val)
+{
+    return NewOperand(IMM_PCRELATIVE, "", (int32_t)val);
+}
+
+Operand *
 NewImmediate(int32_t val)
 {
   char temp[1024];
