@@ -2070,6 +2070,13 @@ struct constants p2_constants[] = {
     { "p_sync_rx",  SYM_CONSTANT, 0x3a },
     { "p_async_tx", SYM_CONSTANT, 0x3c },
     { "p_async_rx", SYM_CONSTANT, 0x3e },
+
+    { "cogexec", SYM_CONSTANT, 0 },
+    { "cogexec_new", SYM_CONSTANT, 0x10 },
+    { "hubexec", SYM_CONSTANT, 0x20 },
+    { "hubexec_new", SYM_CONSTANT, 0x30 },
+    { "cogexec_new_pair", SYM_CONSTANT, 0x11 },
+    { "hubexec_new_pair", SYM_CONSTANT, 0x31 },
 };
 
 #if defined(WIN32)
