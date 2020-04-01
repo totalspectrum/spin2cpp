@@ -1514,7 +1514,8 @@ static IR*
 FindPrevSetterForCompare(IR *irl, Operand *dst)
 {
     IR *ir;
-
+    int orig_condition = irl->cond;
+    
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irl->prev; ir; ir = ir->prev) {
@@ -1525,6 +1526,11 @@ FindPrevSetterForCompare(IR *irl, Operand *dst)
             // we may have branched to here from somewhere
             // else that did the set
             return NULL;
+        }
+        if (ir->cond != orig_condition) {
+            if (ir->dst == dst) {
+                return NULL;
+            }
         }
         if (InstrSetsAnyFlags(ir)) {
             // flags are messed up here, so we can't go back any further
@@ -1557,7 +1563,10 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
 {
     IR *ir;
     IR *saveir;
-    
+
+    if (irorig->cond != COND_TRUE) {
+        return NULL;
+    }
     if (SrcOnlyHwReg(dst))
         return NULL;
     for (ir = irorig->prev; ir; ir = ir->prev) {
@@ -1778,7 +1787,8 @@ OptimizeAddSub(IRList *irl)
         if (ir->opc == OPC_ADD || ir->opc == OPC_SUB) {
             prev = FindPrevSetterForReplace(ir, ir->dst);
             if (prev && (prev->opc == OPC_ADD || prev->opc == OPC_SUB) ) {
-                if (ir->src->kind == IMM_INT && prev->src->kind == IMM_INT)
+                if (ir->src->kind == IMM_INT && prev->src->kind == IMM_INT
+                    && ir->cond == prev->cond)
                 {
                     int val = AddSubVal(ir) + AddSubVal(prev);
                     if (val < 0) {
