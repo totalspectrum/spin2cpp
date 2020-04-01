@@ -81,7 +81,7 @@ done
 rm -f FullDuplexSerial.cpp FullDuplexSerial.h
 if [ "x$endmsg" = "x$ok" ]
 then
-  rm -f *.h *.cpp
+  rm -f [A-Za-r]*.h [A-Za-r]*.cpp
 else
   echo $endmsg
   exit 1

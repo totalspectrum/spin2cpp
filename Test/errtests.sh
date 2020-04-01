@@ -45,7 +45,7 @@ done
 #
 if [ "x$endmsg" = "x$ok" ]
 then
-  rm -f *.h *.cpp
+  rm -f err*.h err*.cpp
 else
   echo $endmsg
   exit 1
