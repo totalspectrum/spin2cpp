@@ -54,7 +54,8 @@ struct vfs_file_t {
     int (*close)(vfs_file_t *fil);
     int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
     int (*flush)(vfs_file_t *fil);
-    
+
+#ifdef NEVER    
     /* internal functions for formatting routines */
     int putchar(int c) {
         int i;
@@ -65,6 +66,7 @@ struct vfs_file_t {
         if (!getcf) return -1;
         return getcf(__this);
     }
+#endif    
 };
 
 typedef int (*putcfunc_t)(int c, struct vfs_file_t *fil);
