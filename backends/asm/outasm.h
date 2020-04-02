@@ -1,6 +1,6 @@
 /*
  * Spin to Pasm converter
- * Copyright 2016-2019 Total Spectrum Software Inc.
+ * Copyright 2016-2020 Total Spectrum Software Inc.
  * PASM output routines
  */
 
@@ -33,6 +33,7 @@ void ReplaceIRWithInline(IRList *irl, IR *ir, Function *func);
 Operand *NewOperand(enum Operandkind, const char *name, intptr_t val);
 Operand *NewImmediate(int32_t val);
 Operand *NewImmediatePtr(const char *name, Operand *val);
+Operand *NewPcRelative(int32_t val);
 Operand *NewCodeLabel();  // use only while compiling a function
 Operand *NewHubLabel();
 Operand *CogMemRef(Operand *addr, int offset);

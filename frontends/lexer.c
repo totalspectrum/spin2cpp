@@ -1342,6 +1342,21 @@ getSpinToken(LexStream *L, AST **ast_ptr)
                 break;
             }
         }
+        if (L->language == LANG_SPIN_SPIN2) {
+            // check for special spin2 cases
+            int nextc = lexgetc(L);
+            if (nextc == '=') {
+                if (token == '<') {
+                    token = SP_LE;
+                } else if (token == '>') {
+                    token = SP_GE;
+                } else {
+                    lexungetc(L, nextc);
+                }
+            } else {
+                lexungetc(L, nextc);
+            }
+        }
         c = token;
     } else if (c == '"') {
         parseString(L, &ast);
@@ -2055,6 +2070,13 @@ struct constants p2_constants[] = {
     { "p_sync_rx",  SYM_CONSTANT, 0x3a },
     { "p_async_tx", SYM_CONSTANT, 0x3c },
     { "p_async_rx", SYM_CONSTANT, 0x3e },
+
+    { "cogexec", SYM_CONSTANT, 0 },
+    { "cogexec_new", SYM_CONSTANT, 0x10 },
+    { "hubexec", SYM_CONSTANT, 0x20 },
+    { "hubexec_new", SYM_CONSTANT, 0x30 },
+    { "cogexec_new_pair", SYM_CONSTANT, 0x11 },
+    { "hubexec_new_pair", SYM_CONSTANT, 0x31 },
 };
 
 #if defined(WIN32)

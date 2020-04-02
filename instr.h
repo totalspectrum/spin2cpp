@@ -244,6 +244,9 @@ enum Operandkind {
     LONG_DEF,
     WORD_DEF,
     BYTE_DEF,
+
+    // relative reference
+    IMM_PCRELATIVE,
 };
 
 typedef enum Operandkind Operandkind;

@@ -703,10 +703,20 @@ doParseFile(const char *name, Module *P, int *is_dup)
         language = LANG_SPIN_SPIN2;
         langptr = ".spin2";
       }
-      else
+      else if (!strcmp(langptr, ".spin"))
+      {
+        language = LANG_SPIN_SPIN1;
+        langptr = ".spin";
+      }
+      else if (gl_p2)
       {
         language = LANG_SPIN_SPIN2;
         langptr = ".spin2";
+      }
+      else
+      {
+        language = LANG_SPIN_SPIN1;
+        langptr = ".spin";
       }
     } else {
         // no extension, see if we can figure one out

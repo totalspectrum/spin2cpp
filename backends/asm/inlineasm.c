@@ -70,7 +70,7 @@ static int parseargnum(const char *n)
 extern Operand *LabelRef(IRList *irl, Symbol *sym);
 
 //
-// compile an expression as an inine asm operand
+// compile an expression as an inline asm operand
 //
 static Operand *
 CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
@@ -214,6 +214,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             *effects |= OPEFFECT_FORCEABS;
         }
         return r;
+    } else if (expr->kind == AST_HERE) {
+        /* handle $ */
+        return NewPcRelative(0);
     } else if (expr->kind == AST_OPERATOR) {
         // have to handle things like ptra++
         if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
@@ -232,6 +235,16 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                     *effects |= incdec;
                 }
                 return r;
+            }
+        }
+        /* handle $+x / $-x */
+        if (expr->d.ival == '+' || expr->d.ival == '-') {
+            int sign = expr->d.ival == '-' ? -1 : +1;
+            if (expr->left && expr->left->kind == AST_HERE) {
+                if (expr->right && IsConstExpr(expr->right)) {
+                    v = sign * EvalPasmExpr(expr->right);
+                    return NewPcRelative(v);
+                }
             }
         }
         if (IsConstExpr(expr)) {
@@ -347,12 +360,46 @@ CompileInlineInstr(IRList *irl, AST *ast)
     return ir;
 }
 
+static Operand *
+FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
+{
+    IR *jir;
+
+    addr += dst->val;
+    if (addr < 0) {
+        ERROR(NULL, "pc relative address $ - %u in inline assembly is out of range",
+              -dst->val);
+        return NewImmediate(0);
+    }
+    
+    for (jir = firstir; jir; jir = jir->next) {
+        if (jir->addr == addr) {
+            Operand *newlabel = GetLabelOperand(NULL);
+            IR *labelir = NewIR(OPC_LABEL);
+            labelir->dst = newlabel;
+            InsertAfterIR(irl, jir->prev, labelir);
+            return newlabel;
+        }
+    }
+    if (dst->val < 0) {
+        ERROR(NULL, "pc relative address $ - %u in inline assembly is out of range",
+              -dst->val);
+    } else {
+        ERROR(NULL, "pc relative address $ + %u in inline assembly is out of range",
+              dst->val);
+    }
+        
+    return NewImmediate(0);;
+}
+
 void
 CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
 {
     AST *ast;
     AST *top = origtop;
-
+    unsigned relpc;
+    IR *firstir;
+    
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
         return;
@@ -373,6 +420,8 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
     
     // now go back and emit code
     top = origtop;
+    relpc = 0;
+    firstir = NULL;
     while(top) {
         ast = top;
         top = top->right;
@@ -387,9 +436,13 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
             if (isConst) {
                 ir->flags |= FLAG_KEEP_INSTR;
             }
+            ir->addr = relpc;
+            if (!firstir) firstir = ir;
+            relpc++;
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
             Operand *op;
+            IR *ir;
             if (!sym || sym->kind != SYM_LOCALLABEL) {
                 ERROR(ast, "%s is not a label or is multiply defined", ast->d.string);
                 break;
@@ -398,7 +451,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
                 sym->val = GetLabelOperand(sym->our_name);
             }
             op = (Operand *)sym->val;
-            EmitLabel(irl, op);
+            ir = EmitLabel(irl, op);
+            ir->addr = relpc;
+            if (!firstir) firstir = ir;
         } else if (ast->kind == AST_LINEBREAK || ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT) {
             // do nothing
         } else {
@@ -406,5 +461,16 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
             break;
         }
     }
-}
 
+    // now fixup any relative addresses
+    for (IR *ir = firstir; ir; ir = ir->next) {
+        if (!IsDummy(ir)) {
+            if (ir->dst && ir->dst->kind == IMM_PCRELATIVE) {
+                ir->dst = FixupHereLabel(irl, firstir, ir->addr, ir->dst);
+            }
+            if (ir->src && ir->src->kind == IMM_PCRELATIVE) {
+                ir->src = FixupHereLabel(irl, firstir, ir->addr, ir->src);
+            }
+        }
+    }
+}
