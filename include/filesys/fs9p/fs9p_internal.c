@@ -2,7 +2,7 @@
 // simple test program for 9p access to host files
 //
 
-#define DEBUG
+//#define DEBUG
 
 #include <string.h>
 #include <stdlib.h>
