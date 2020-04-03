@@ -15,6 +15,6 @@ void _c_startup()
 {
     int r;
     _setrxtxflags(TTY_FLAG_ECHO); // make sure TTY_FLAG_CRNL is off
-    r = main(_argc, _agv);
+    r = main(_argc, _argv);
     _Exit(r);
 }
