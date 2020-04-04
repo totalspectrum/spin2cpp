@@ -49,11 +49,24 @@ dataListLen(AST *ast, int elemsize)
 {
     unsigned size = 0;
     unsigned numelems;
+    int origelemsize = elemsize;
     AST *sub;
 
     while (ast) {
         sub = ast->left;
         if (sub) {
+            if (sub->kind == AST_LONGLIST) {
+                elemsize = 4;
+                sub = ExpectOneListElem(sub->left);
+            } else if (sub->kind == AST_WORDLIST) {
+                elemsize = 2;
+                sub = ExpectOneListElem(sub->left);
+            } else if (sub->kind == AST_BYTELIST) {
+                elemsize = 1;
+                sub = ExpectOneListElem(sub->left);
+            } else {
+                elemsize = origelemsize;
+            }
             if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
                 numelems = EvalPasmExpr(ast->left->right);
             } else if (sub->kind == AST_STRING) {

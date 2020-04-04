@@ -558,8 +558,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     sym = FindSymbol(&spinReservedWords, idstr);
-    // FIXME rather than gl_p2 we should test on .spin2 extension
-    if (gl_p2 && sym == NULL) {
+    if (sym == NULL && L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
     }
     if (sym != NULL) {

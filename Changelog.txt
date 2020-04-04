@@ -18,6 +18,8 @@ Version 4.1.4
 - Added many P2 smartpin constants
 - Began work on stdio functions
 - Recognize <= and >= for .spin2 files
+- Made "_" have a special meaning only in .spin2
+- Recognize "byte long x" in DAT sections of Spin files
 
 Version 4.1.3
 - Allow const qualifier for inline assembly

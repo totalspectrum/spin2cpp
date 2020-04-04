@@ -296,6 +296,9 @@ AST *AstSprRef(AST *index);
 AST *CheckYield(AST *loopbody);
 void ReplaceAst(AST *body, AST *old, AST *new);
 
+// checks for a list with just one element, and returns that element
+AST *ExpectOneListElem(AST *list);
+
 // turn an AST into a no-op
 void AstNullify(AST *ptr);
 
