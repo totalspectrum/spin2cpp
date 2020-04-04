@@ -184,7 +184,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_ROUND      "ROUND"
 %token SP_CONSTANT   "constant"
 %token SP_RANDOM     "??"
-%token SP_EMPTY      "_"
+%token SP_EMPTY      "empty assignment marker _"
 
 /* operator precedence */
 %right SP_ASSIGN

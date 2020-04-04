@@ -9,6 +9,7 @@ Version 4.1.4
 - Fixed promotion of array arguments to coginit
 - Improved stack handling in COG functions
 - Implemented default parameter values for C
+- Made recognition of _ empty assignment marker be P2 only
 - Accept ORG/END as well as ASM/ENDASM for inline assembly in Spin2
 - Accept "foo.bar" notation for constants as well as "foo#bar"
 - Accept BYTE, WORD, LONG modifiers for Spin local variables
