@@ -987,3 +987,17 @@ ReplaceAst(AST *body, AST *old, AST *new)
         }
     }
 }
+
+// check for a list with just one element; returns that element
+AST *
+ExpectOneListElem(AST *list)
+{
+    if (list->kind != AST_EXPRLIST) {
+        ERROR(list, "Expected a list");
+        return list;
+    }
+    if (list->right != NULL) {
+        ERROR(list, "Expected a single element list, found a longer one");
+    }
+    return list->left;
+}

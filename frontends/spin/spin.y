@@ -184,7 +184,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_ROUND      "ROUND"
 %token SP_CONSTANT   "constant"
 %token SP_RANDOM     "??"
-%token SP_EMPTY      "_"
+%token SP_EMPTY      "empty assignment marker _"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -636,15 +636,15 @@ basedatline:
     { $$ = NULL; }
   | SP_BYTE SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | SP_BYTE exprlist SP_EOLN
+  | SP_BYTE datexprlist SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | SP_WORD SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | SP_WORD exprlist SP_EOLN
+  | SP_WORD datexprlist SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
   | SP_LONG SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | SP_LONG exprlist SP_EOLN
+  | SP_LONG datexprlist SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction SP_EOLN
     { $$ = NewCommentedInstr($1); }
@@ -1159,6 +1159,23 @@ expritem:
 exprlist:
   expritem
  | exprlist ',' expritem
+   { $$ = AddToList($1, $3); }
+ ;
+
+datexpritem:
+   expritem
+       { $$ = $1; }
+   | SP_LONG expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_LONGLIST, $2, NULL), NULL); }
+   | SP_WORD expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_WORDLIST, $2, NULL), NULL); }
+   | SP_BYTE expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BYTELIST, $2, NULL), NULL); }
+;
+
+datexprlist:
+  datexpritem
+ | datexprlist ',' datexpritem
    { $$ = AddToList($1, $3); }
  ;
 

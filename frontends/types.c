@@ -1136,6 +1136,20 @@ AST *CheckTypes(AST *ast)
         return NULL;
     case AST_COGINIT:
         ltype = ast_type_long;
+        // promote types of parameters if necessary
+        {
+            AST *parmlist = ast->left;
+            AST *parmtype;
+            AST *sub;
+            while (parmlist) {
+                sub = parmlist->left;
+                parmtype = ExprType(sub);
+                if (IsArrayType(parmtype)) {
+                    parmlist->left = ArrayAddress(parmlist->left);
+                }
+                parmlist = parmlist->right;
+            }
+        }
         break;
     case AST_OPERATOR:
         ltype = CoerceOperatorTypes(ast, ltype, rtype);

@@ -213,6 +213,17 @@ waits until CNT reaches "newcnt", and returns "newcnt + incr".
 
 Note that unlike most Spin blocks, the `asm` block has to end with `endasm`. This is because indentation is not significant inside the assembly code. For example, labels typically start at the leftmost margin.
 
+#### Spin2 style inline assembly (org/end)
+
+fastspin also accepts Spin2 style inline assembly, marked with `org` and `end` instead of `asm` and `endasm`. So the above example could be written as:
+```
+PUB waitcnt2(newcnt, incr)
+  org
+    waitcnt newcnt, incr
+  end
+  return newcnt
+```
+
 ### Method pointers
 
 Pointers to methods may be created with `@` and called using the normal calling syntax. For example:

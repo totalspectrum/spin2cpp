@@ -138,6 +138,9 @@ LookupAstSymbol(AST *ast, const char *msg)
         id = ast;
     } else if (ast->kind == AST_ARRAYREF) {
         id = ast->left;
+        if (id && id->kind == AST_MEMREF) {
+            id = id->right;
+        }
     } else {
         //ERROR(ast, "internal error, bad id passed to LookupAstSymbol");
         return NULL;
@@ -2290,6 +2293,24 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
     {
         Symbol *sym = FindFuncSymbol(expr, NULL, 0);
         AST *typexpr = NULL;
+        if (expr->left) {
+            if (expr->left->kind == AST_ARRAYREF) {
+                sub = expr->left->left;
+                if (sub && sub->kind == AST_MEMREF && sub->left) {
+                    typexpr = sub->left;
+                }
+            } else if (expr->left->kind == AST_CAST) {
+                typexpr = expr->left->left;
+            }
+        }
+        if (typexpr) {
+            if (typexpr->kind == AST_FUNCTYPE) {
+                return typexpr->left;
+            } else {
+                ERROR(expr, "function call on non-function type");
+                return NULL;
+            }
+        }
         if (sym) {
             switch (sym->kind) {
             case SYM_FUNCTION:

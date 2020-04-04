@@ -1,7 +1,7 @@
 //
 // binary data output for spin2cpp
 //
-// Copyright 2012-2019 Total Spectrum Software Inc.
+// Copyright 2012-2020 Total Spectrum Software Inc.
 // see the file COPYING for conditions of redistribution
 //
 #include <stdio.h>
@@ -522,10 +522,23 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
     int i, reps;
     AST *sub;
     int32_t relocOff = 0;
+    int origsize = size;
     
     origval = 0;
     while (ast) {
         sub = ast->left;
+        if (sub->kind == AST_BYTELIST) {
+            size = 1;
+            sub = ExpectOneListElem(sub->left);
+        } else if (sub->kind == AST_WORDLIST) {
+            size = 2;
+            sub = ExpectOneListElem(sub->left);
+        } else if (sub->kind == AST_LONGLIST) {
+            size = 4;
+            sub = ExpectOneListElem(sub->left);
+        } else {
+            size = origsize;
+        }
         if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
             origval = EvalPasmExpr(ast->left->left);
             reps = EvalPasmExpr(ast->left->right);

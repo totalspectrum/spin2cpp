@@ -558,8 +558,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     sym = FindSymbol(&spinReservedWords, idstr);
-    // FIXME rather than gl_p2 we should test on .spin2 extension
-    if (gl_p2 && sym == NULL) {
+    if (sym == NULL && L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
     }
     if (sym != NULL) {
@@ -1374,8 +1373,6 @@ struct reservedword {
     const char *name;
     intptr_t val;
 } init_spin_words[] = {
-    { "_", SP_EMPTY },
-    
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
     { "and", SP_AND },
@@ -1500,6 +1497,8 @@ struct reservedword {
 };
 
 struct reservedword init_spin2_words[] = {
+    { "_", SP_EMPTY },
+    
     { "addpins", SP_ADDPINS },
     { "alignl", SP_ALIGNL },
     { "alignw", SP_ALIGNW },
