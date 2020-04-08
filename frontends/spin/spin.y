@@ -545,7 +545,7 @@ repeatstmt:
   | SP_ORG datblock SP_END
     {
         $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
-        $$->d.ival = 0; // not volatile
+        $$->d.ival = 1; // volatile, do not optimize
     }
   | SP_INLINECCODE
     {  $$ = $1; }
