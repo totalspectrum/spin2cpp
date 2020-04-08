@@ -183,7 +183,7 @@ pri _float_pow_n(a=float, n=long) : r=float | sgnflag, invflag
 '' for a or b NaN, should return $8000000
 '' generally we return a-b
 
-CON
+con
   f_infinity = $7f800000
   f_unordered = $80000000
 

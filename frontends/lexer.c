@@ -530,6 +530,16 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     /* check for reserved words */
     if (InDatBlock(L)) {
         sym = FindSymbol(&pasmWords, idstr);
+        if (!sym) {
+            int i;
+            int len = strlen(idstr)+1;
+            char *lowerSym = alloca(len);
+            for (i = 0; i < len; i++) {
+                lowerSym[i] = tolower(idstr[i]);
+            }
+            lowerSym[i] = 0;
+            sym = FindSymbol(&pasmWords, lowerSym);
+        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
@@ -559,6 +569,8 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     }
     if (L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
+    } else {
+        sym = NULL;
     }
     if (sym == NULL) {
         sym = FindSymbol(&spinReservedWords, idstr);
