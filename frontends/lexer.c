@@ -530,6 +530,16 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     /* check for reserved words */
     if (InDatBlock(L)) {
         sym = FindSymbol(&pasmWords, idstr);
+        if (!sym) {
+            int i;
+            int len = strlen(idstr)+1;
+            char *lowerSym = alloca(len);
+            for (i = 0; i < len; i++) {
+                lowerSym[i] = tolower(idstr[i]);
+            }
+            lowerSym[i] = 0;
+            sym = FindSymbol(&pasmWords, lowerSym);
+        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
@@ -557,9 +567,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
             fprintf(stderr, "Internal error: Unknown pasm symbol type %d\n", sym->kind);
         }
     }
-    sym = FindSymbol(&spinReservedWords, idstr);
-    if (sym == NULL && L->language == LANG_SPIN_SPIN2) {
+    if (L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
+    } else {
+        sym = NULL;
+    }
+    if (sym == NULL) {
+        sym = FindSymbol(&spinReservedWords, idstr);
     }
     if (sym != NULL) {
         if (sym->kind == SYM_BUILTIN)
@@ -1498,6 +1512,9 @@ struct reservedword {
 
 struct reservedword init_spin2_words[] = {
     { "_", SP_EMPTY },
+    { "^^", SP_XOR },
+    { "&&", SP_AND },
+    { "||", SP_OR },
     
     { "addpins", SP_ADDPINS },
     { "alignl", SP_ALIGNL },
@@ -1508,6 +1525,7 @@ struct reservedword init_spin2_words[] = {
     { "end",   SP_END },
     { "rotl", SP_ROTL },
     { "rotr", SP_ROTR },
+    { "sqrt", SP_SQRT },
 };
 
 struct reservedword basic_keywords[] = {

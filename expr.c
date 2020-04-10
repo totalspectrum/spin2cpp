@@ -150,6 +150,9 @@ LookupAstSymbol(AST *ast, const char *msg)
         ourname = ast->left->d.string;
     } else if (id->kind == AST_IDENTIFIER || id->kind == AST_SYMBOL) {
         username = ourname = GetIdentifierName(id);
+    } else {
+        ERROR(ast, "expected identifier");
+        return NULL;
     }
     sym = LookupSymbol(ourname);
     if (!sym && msg) {
