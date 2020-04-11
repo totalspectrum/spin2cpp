@@ -1034,14 +1034,22 @@ lhs: identifier
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }
+  | hwreg '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4);
+    }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+  | memref '.' '[' expr ']'
+    { $$ = NewAST(AST_ARRAYREF, $1, $4); }
   | '(' expr ')' '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $2, $5); }
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3); }
+  | identifier '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4);
+    }
   ;
 
 lhsseq:
