@@ -1516,6 +1516,7 @@ struct reservedword init_spin2_words[] = {
     { "&&", SP_AND },
     { "||", SP_OR },
     
+    { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
     { "alignl", SP_ALIGNL },
     { "alignw", SP_ALIGNW },
@@ -1523,8 +1524,10 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
     { "end",   SP_END },
-    { "rotl", SP_ROTL },
-    { "rotr", SP_ROTR },
+    { "rev", SP_REV },
+    { "rol", SP_ROTL },
+    { "ror", SP_ROTR },
+    { "sar", SP_SAR },
     { "sqrt", SP_SQRT },
 };
 

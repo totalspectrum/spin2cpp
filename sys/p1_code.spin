@@ -114,7 +114,7 @@ pri _txraw(c) | val, nextcnt, bitcycles
   
 pri _rxraw | val, rxmask, waitcycles, i, bitcycles
   bitcycles := _bitcycles
-  outa[_rxpin] := 0
+  dira[_rxpin] := 0
   rxmask := 1<<_rxpin
   if ina[_rxpin] <> 0
     return -1

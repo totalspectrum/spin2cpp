@@ -166,6 +166,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_SAR        "SAR (~>)"
 %token SP_REV        "><"
 %token SP_REV2       "REV"
+%token SP_ADDBITS    "ADDBITS"
 %token SP_ADDPINS    "ADDPINS"
 %token SP_NEGATE     "-"
 %token SP_BIT_NOT    "!"
@@ -201,7 +202,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -866,6 +867,8 @@ expr:
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_REV2 expr
     { $$ = AstOperator(K_REV, $1, AstOperator('+', $3, AstInteger(1))); }
+  | expr SP_ADDBITS expr
+    { $$ = AstOperator('|', $1, AstOperator(K_SHL, $3, AstInteger(5))); }
   | expr SP_ADDPINS expr
     { $$ = AstOperator('|', $1, AstOperator(K_SHL, $3, AstInteger(6))); }
   | expr SP_ROTL expr
@@ -1034,14 +1037,22 @@ lhs: identifier
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
     }
+  | hwreg '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4);
+    }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+  | memref '.' '[' expr ']'
+    { $$ = NewAST(AST_ARRAYREF, $1, $4); }
   | '(' expr ')' '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $2, $5); }
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
     { $$ = AstSprRef($3); }
+  | identifier '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4);
+    }
   ;
 
 lhsseq:

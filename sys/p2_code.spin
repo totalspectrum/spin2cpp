@@ -300,12 +300,21 @@ pri _xypol(x, y) : d, angle
   endasm
 
 ' synthetic smartpin instruction for setting up smartpin parameters
-pri _pinmode(pin, mode, xval, yval)
+pri _pinsetup(pin, mode, xval, yval)
   _dirl(pin)
   _wrpin(pin, mode)
   _wxpin(pin, xval)
   _wypin(pin, yval)
+
+pri _pinstart(pin, mode, xval, yval)
+  _pinsetup(pin, mode, xval, yval)
   _dirh(pin)
+
+pri _pinclear(pin)
+  asm
+    fltl pin
+    wrpin #0, pin
+  endasm
   
 ' versions of smartpin instructions with the Spin order of parameters
 pri _wrpin(pin, val)
@@ -319,4 +328,14 @@ pri _wxpin(pin, val)
 pri _wypin(pin, val)
   asm
     wypin val, pin
+  endasm
+
+pri _muldiv64(mult1, mult2, divisor) : r
+  asm
+    qmul mult1, mult2
+    getqy mult1
+    getqx mult2
+    setq mult1
+    qdiv mult2, divisor
+    getqx r
   endasm

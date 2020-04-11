@@ -105,7 +105,6 @@ Fastspin has a number of extensions to the Spin language.
 
 The `@@@` operator returns the absolute hub address of a variable. This is the same as `@` in Spin code, but in PASM code `@` returns only the address relative to the start of the `DAT` section.
 
-In P2 code `@@@` and `@` are the same, so for new P2 code just use `@`.
 
 ### Access to member variables
 
@@ -117,6 +116,10 @@ VAR
   long x, y
 ```
 then one may write `S.x` to access member variable `x` of `S`, and `S.rows` to access the constant `rows`. The original Spin syntax `S#rows` is still accepted for accessing constants.
+
+### Bitfield access
+
+Bits `m` to `n` of a variable `x` may be accessed via the notation `x.[m..n]`. If `m` is the same as `n` this may be simplified to `x.[n]`. This notation may also be applied to hardware registers.
 
 ### CASE_FAST
 

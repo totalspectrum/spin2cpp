@@ -164,6 +164,7 @@ doAstMatch(AST *a, AST *b, int ignoreStatic)
     case AST_HWREG:
         return a->d.ptr == b->d.ptr;
     case AST_INTEGER:
+    case AST_FLOAT:
         return a->d.ival == b->d.ival;
     case AST_STRING:
     case AST_IDENTIFIER:
