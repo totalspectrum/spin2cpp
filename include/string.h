@@ -49,8 +49,8 @@ extern "C" {
     char   *_strupr(char *str);  /* convert to upper case in place */
 
 #if !defined(__STRICT_ANSI__)
-    int    strcasecmp(const char *s1, const char *s2);
-    int    strncasecmp(const char *s1, const char *s2, size_t n);
+    int    strcasecmp(const char *s1, const char *s2) _IMPL("libc/string/strcasecmp.c");
+    int    strncasecmp(const char *s1, const char *s2, size_t n) _IMPL("libc/string/strncasecmp.c");
 #endif
 
 #if defined(__cplusplus)
