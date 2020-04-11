@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
+//#define DEBUG
+
 static int _rxtxioctl(vfs_file_t *f, unsigned long req, void *argp)
 {
     unsigned long *argl = (unsigned long *)argp;
@@ -95,6 +97,9 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
     if (r != 0 && (flags & O_CREAT)) {
         r = (*v->creat)(fil, name, mode);
     }
+#ifdef DEBUG
+    __builtin_printf("_openraw(%s) flags=%d returned %d\n", name, flags, r);
+#endif    
     if (r == 0) {
         int rdwr = flags & O_ACCMODE;
         if (rdwr != O_RDONLY) {
@@ -103,6 +108,9 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
         if (rdwr != O_WRONLY) {
             state |= _VFS_STATE_RDOK;
         }
+#ifdef DEBUG
+        __builtin_printf("rdwr=%d state=%d\n", rdwr, state);
+#endif    
         fil->state = state;
 
         if (!fil->read) fil->read = v->read;
@@ -167,17 +175,11 @@ int close(int fd)
     return _closeraw(f);
 }
 
-ssize_t write(int fd, const void *vbuf, size_t count)
+ssize_t _vfswrite(vfs_file_t *f, const void *vbuf, size_t count)
 {
     ssize_t r;
-    vfs_file_t *f;
     putcfunc_t tx;
     const unsigned char *buf = (const unsigned char *)vbuf;
-    
-    if ((unsigned)fd >= (unsigned)_MAX_FILES) {
-        return _seterror(EBADF);
-    }
-    f = &__filetab[fd];
     if (! (f->state & _VFS_STATE_WROK) ) {
         return _seterror(EACCES);
     }
@@ -201,18 +203,23 @@ ssize_t write(int fd, const void *vbuf, size_t count)
     return r;
 }
 
-ssize_t read(int fd, void *vbuf, size_t count)
+ssize_t write(int fd, const void *vbuf, size_t count)
 {
-    ssize_t r, q;
     vfs_file_t *f;
-    getcfunc_t rx;
-    unsigned char *buf = (unsigned char *)vbuf;
-
+    
     if ((unsigned)fd >= (unsigned)_MAX_FILES) {
         return _seterror(EBADF);
     }
     f = &__filetab[fd];
-    //__builtin_printf("read: fd=%d f->read=%x\n", fd, (unsigned)f->read);
+    return _vfswrite(f, vbuf, count);
+}
+
+ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
+{
+    ssize_t r, q;
+    getcfunc_t rx;
+    unsigned char *buf = (unsigned char *)vbuf;
+    
     if (! (f->state & _VFS_STATE_RDOK) ) {
         return _seterror(EACCES);
     }
@@ -237,4 +244,15 @@ ssize_t read(int fd, void *vbuf, size_t count)
         --count;
     }
     return r;
+}
+
+ssize_t read(int fd, void *vbuf, size_t count)
+{
+    vfs_file_t *f;
+
+    if ((unsigned)fd >= (unsigned)_MAX_FILES) {
+        return _seterror(EBADF);
+    }
+    f = &__filetab[fd];
+    return _vfsread(f, vbuf, count);
 }

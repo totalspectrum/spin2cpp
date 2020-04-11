@@ -1,3 +1,5 @@
+//#define DEBUG
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -70,9 +72,15 @@ fopen(const char *pathname, const char *mode)
 
     fd = open(pathname, open_mode, 0666);
     if (fd < 0) {
+#ifdef DEBUG
+        __builtin_printf("fopen returning NULL\n");
+#endif        
         return 0;
     }
     ftab = __getftab(fd);
+#ifdef DEBUG
+    __builtin_printf("fopen returning %x state=%x\n", ftab, ftab->state);
+#endif        
     return ftab;
 }
 

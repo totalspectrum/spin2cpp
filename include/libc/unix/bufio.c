@@ -1,3 +1,5 @@
+//#define DEBUG
+
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <stdio.h>

@@ -18,8 +18,13 @@ FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
+// FIXME: fputc and fgetc should be functions, not macros
 #define fputc(x, f) (((f)->putcf)( (x), (f) ))
 #define fgetc(f)    (((f)->getcf)( (f) ))
+
+#define putc(x, f) (((f)->putcf)( (x), (f) ))
+#define getc(f)    (((f)->getcf)( (f) ))
+
 #define putchar(x) fputc( (x), stdout)
 #define getchar() fgetc(stdin)
 
@@ -36,6 +41,8 @@ char *fgets(char *buf, int size, FILE *f) _IMPL("libc/stdio/fgets.c");
 FILE *fopen(const char *name, const char *mode) _IMPL("libc/stdio/fopen.c");
 int fclose(FILE *f) _IMPL("libc/stdio/fopen.c");
 int fflush(FILE *f) _IMPL("libc/stdio/fflush.c");
+size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f) _IMPL("libc/stdio/fwrite.c");
+size_t fread(void *ptr, size_t size, size_t n, FILE *f) _IMPL("libc/stdio/fwrite.c");
 
 void clearerr(FILE *f) _IMPL("libc/stdio/clearerr.c");
 void perror(const char *s) _IMPL("libc/string/strerror.c");
