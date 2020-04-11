@@ -1,6 +1,7 @@
 Version 4.1.5
 - Suppressed optimization of inline assembly inside ORG/END (but not ASM/ENDASM)
 - Fixed some issues with compiling with the -C flag
+- Added pinstart(), pinsetup(), and pinclear() methods
 
 Version 4.1.4
 - Fixed a problem with pruning of methods called indirectly via a pointer
