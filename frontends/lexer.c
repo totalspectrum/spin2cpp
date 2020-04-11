@@ -1390,13 +1390,13 @@ struct reservedword {
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
     { "and", SP_AND },
-    { "asm", SP_ASM },
+    { "asm", SP_ASM },  // NON-STANDARD
 
-    { "__builtin_alloca", SP_ALLOCA },
+    { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
     { "byte", SP_BYTE },
 
     { "case", SP_CASE },
-    { "case_fast", SP_CASE_FAST },
+    { "case_fast", SP_CASE_FAST }, // NON-STANDARD
     { "cognew", SP_COGNEW },
     { "coginit", SP_COGINIT },
     { "con", SP_CON },
@@ -1407,7 +1407,8 @@ struct reservedword {
     { "else", SP_ELSE },
     { "elseif", SP_ELSEIF },
     { "elseifnot", SP_ELSEIFNOT },
-    { "endasm", SP_ENDASM },
+    { "end",   SP_END },   // NON-STANDARD
+    { "endasm", SP_ENDASM }, // NON-STANDARD
 
     { "file", SP_FILE },
     { "fit", SP_FIT },
@@ -1429,8 +1430,8 @@ struct reservedword {
     { "obj", SP_OBJ },
     { "or", SP_OR },
     { "org", SP_ORG },
-    { "orgh", SP_ORGH },
-    { "orgf", SP_ORGF },
+    { "orgh", SP_ORGH }, // NON-STANDARD
+    { "orgf", SP_ORGF }, // NON-STANDARD
     { "other", SP_OTHER },
 
     { "quit", SP_QUIT },
@@ -1445,6 +1446,7 @@ struct reservedword {
     { "ror", SP_ROTR },
     { "round", SP_ROUND },
 
+    { "sar", SP_SAR },
     { "spr", SP_SPR },
     { "step", SP_STEP },
     { "string", SP_STRINGPTR },
@@ -1467,6 +1469,7 @@ struct reservedword {
     { "/", '/' },
     { "?", '?' },
     { "//", SP_REMAINDER },
+    { "///", SP_FRAC },
     { "+/", SP_UNSDIV },
     { "+//", SP_UNSMOD },
     { "*", '*' },
@@ -1523,11 +1526,7 @@ struct reservedword init_spin2_words[] = {
     { "cogspin", SP_COGINIT },
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
-    { "end",   SP_END },
-    { "rev", SP_REV },
-    { "rol", SP_ROTL },
-    { "ror", SP_ROTR },
-    { "sar", SP_SAR },
+    { "frac", SP_FRAC },
     { "sqrt", SP_SQRT },
 };
 
@@ -2622,7 +2621,7 @@ instr_p2[] = {
     { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
     { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "qfrac",  0x0d200000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "qfrac",  0x0d200000, P2_TWO_OPERANDS, OPC_QFRAC, 0 },
     { "qsqrt",  0x0d300000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qvector",0x0d500000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
