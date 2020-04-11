@@ -1,8 +1,9 @@
 Version 4.1.5
 - Suppressed optimization of inline assembly inside ORG/END (but not ASM/ENDASM)
 - Fixed some issues with compiling with the -C flag
-- Added pinstart(), pinsetup(), and pinclear() methods
+- Added pinstart(), pinsetup(), and pinclear() builtins
 - Added support for x.[m..n] bitfield access in Spin
+- Added muldiv64() builtin
 
 Version 4.1.4
 - Fixed a problem with pruning of methods called indirectly via a pointer
