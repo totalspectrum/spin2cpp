@@ -81,6 +81,7 @@ InstrSetsDst(IR *ir)
   case OPC_WRLONG:
   case OPC_WRWORD:
   case OPC_WRBYTE:
+  case OPC_QFRAC:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
@@ -1215,6 +1216,7 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_COGID:
     case OPC_ADDCT1:
     case OPC_HUBSET:
+    case OPC_QFRAC:
         return true;
     default:
         return false;

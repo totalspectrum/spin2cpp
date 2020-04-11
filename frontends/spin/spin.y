@@ -158,6 +158,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_REMAINDER  "//"
 %token SP_UNSDIV     "~/"
 %token SP_UNSMOD     "~//"
+%token SP_FRAC       "FRAC"
 %token SP_HIGHMULT   "**"
 %token SP_ROTR       "ROR (->)"
 %token SP_ROTL       "ROL (<-)"
@@ -170,7 +171,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_ADDPINS    "ADDPINS"
 %token SP_NEGATE     "-"
 %token SP_BIT_NOT    "!"
-%token SP_SQRT       "^^"
+%token SP_SQRT       "SQRT (^^)"
 %token SP_ABS        "ABS (||)"
 %token SP_DECODE     "|<"
 %token SP_ENCODE     ">|"
@@ -198,7 +199,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
-%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSDIV SP_UNSMOD
+%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSDIV SP_UNSMOD SP_FRAC
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2
@@ -859,6 +860,8 @@ expr:
     { $$ = AstOperator(K_UNS_MOD, $1, $3); }
   | expr SP_HIGHMULT expr
     { $$ = AstOperator(K_HIGHMULT, $1, $3); }
+  | expr SP_FRAC expr
+    { $$ = AstOperator(K_FRAC64, $1, $3); }
   | expr SP_LIMITMIN expr
     { $$ = AstOperator(K_LIMITMIN, $1, $3); }
   | expr SP_LIMITMAX expr

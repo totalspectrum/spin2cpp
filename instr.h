@@ -91,6 +91,7 @@ typedef enum IROpcode {
     OPC_HUBSET,
     OPC_JMPREL,
     OPC_NOT,
+    OPC_QFRAC,
     OPC_WAITX,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop

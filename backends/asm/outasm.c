@@ -1816,7 +1816,8 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 
 #define FAST_IMMEDIATE_DIVIDES
 
-// getmod is: 0 for divide, 1 for remainder, 2 for unsigned divide
+// getmod is: 0 for divide, 1 for remainder, 2 for unsigned divide, 3 for unsigned remainder
+//  special case: 4 is for unsigned 64 bit by 32 bit division
 static Operand *
 CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
 {
@@ -1824,11 +1825,12 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   Operand *rhs = CompileExpression(irl, expr->right, NULL);
   Operand *temp = dest ? dest : NewFunctionTempRegister();
   int isSigned = (getmod & 2) == 0;
-
+  int isfrac64 = getmod >= 4;
+  
   getmod &= 1;
   
 #ifdef FAST_IMMEDIATE_DIVIDES
-  if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val)) {
+  if (rhs->kind == IMM_INT && rhs->val > 0 && isPowerOf2(rhs->val) && !isfrac64) {
       IR *ir;
       int val = rhs->val;
       
@@ -1869,9 +1871,18 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
     muldiva = GetOneGlobal(REG_ARG, "muldiva_", 0);
     muldivb = GetOneGlobal(REG_ARG, "muldivb_", 0);
   }
-  EmitMove(irl, muldiva, lhs);
-  EmitMove(irl, muldivb, rhs);
-  EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
+  if (isfrac64) {
+      if (gl_p2) {
+          EmitOp2(irl, OPC_QFRAC, lhs, rhs);
+          EmitOp1(irl, OPC_GETQX, temp);
+          return temp;
+      }
+      ERROR(expr, "FRAC not supported on P1 yet");
+  } else {
+      EmitMove(irl, muldiva, lhs);
+      EmitMove(irl, muldivb, rhs);
+      EmitOp1(irl, OPC_CALL, (isSigned) ? divfunc : unsdivfunc);
+  }
   if (getmod) {
       EmitMove(irl, temp, muldiva);
   } else {
@@ -2399,6 +2410,8 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
         return CompileDiv(irl, expr, 2, dest);
     case K_UNS_MOD:
         return CompileDiv(irl, expr, 3, dest);
+    case K_FRAC64:
+        return CompileDiv(irl, expr, 4, dest);
     case '&':
         if (expr->right->kind == AST_OPERATOR && expr->right->d.ival == K_BIT_NOT) {
             Operand *temp = dest ? dest : NewFunctionTempRegister();
