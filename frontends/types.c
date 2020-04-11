@@ -846,6 +846,9 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
             *astptr = copy;
         } else {
             *astptr = NewAST(AST_ADDROF, expr, NULL);
+            if (curfunc && IsLocalVariable(expr)) {
+                curfunc->local_address_taken = 1;
+            }
         }
         srctype = NewAST(AST_REFTYPE, srctype, NULL);
     }
