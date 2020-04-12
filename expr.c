@@ -1108,6 +1108,9 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
     case K_UNS_MOD:
         if (rval == 0) return rval;
         return (int32_t)((uint32_t) lval % (uint32_t) rval);
+    case K_FRAC64:
+        if (rval == 0) return rval;
+        return (int32_t)( (((uint64_t)lval)<<32) / (uint64_t)rval );
     case '*':
         return lval * rval;
     case '|':

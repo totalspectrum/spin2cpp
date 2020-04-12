@@ -719,6 +719,13 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
+    case K_FRAC64:
+        flexbuf_printf(f, "( ((uint64_t)");
+        PrintExpr(f, left, flags);
+        flexbuf_printf(f, ") << 32 ) / ((uint64_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ")");
+        break;
     default:
         ERROR(NULL, "unsupported operator %d", op);
         break;
