@@ -18,7 +18,7 @@
 #include "sys/fmt.h"
 
 #define DEFAULT_PREC 6
-#define DEFAULT_BASIC_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT)|(4<<PREC_BIT))
+#define DEFAULT_BASIC_FLOAT_FMT ((1<<ALTFMT_BIT)|(1<<UPCASE_BIT)|((4+1)<<PREC_BIT))
 #define DEFAULT_FLOAT_FMT ((1<<UPCASE_BIT))
 
 //
@@ -145,7 +145,11 @@ int _fmtnum(putfunc fn, unsigned fmt, int x, int base)
     int mindigits = (fmt >> PREC_BIT) & PREC_MASK;
     int maxdigits = (fmt >> MAXWIDTH_BIT) & 0xff;
     int signchar = (fmt >> SIGNCHAR_BIT) & 0x3;
-    
+
+    if (mindigits > 0) {
+        // prec gets offset by one to allow 0 to be "default"
+        mindigits = mindigits - 1;
+    }
     if (maxdigits > MAX_NUM_DIGITS || maxdigits == 0) {
         maxdigits = MAX_NUM_DIGITS;
     }
@@ -394,11 +398,18 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     char *buf;
     char *origbuf;
     int justify;
+    int hash_format;
     
     origbuf = buf = alloca(MAXWIDTH + 1);
 
     prec = (fmt >> PREC_BIT) & PREC_MASK;
-    if (prec == 0) prec = DEFAULT_PREC;
+    hash_format = (fmt >> ALTFMT_BIT) & 1;
+    
+    if (prec == 0) {
+        prec = DEFAULT_PREC;
+    } else {
+        prec = prec-1;
+    }
     justify = (fmt >> JUSTIFY_BIT) & JUSTIFY_MASK;
     needUpper = (fmt >> UPCASE_BIT) & 1;
     minwidth = (fmt >> MINWIDTH_BIT) & WIDTH_MASK;
@@ -419,7 +430,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     } else {
         // default precision
         if (prec < 0) {
-            prec = 6;
+            prec = DEFAULT_PREC;
         }
     }
 
@@ -573,7 +584,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
         } else {
             *buf++ = '0';
         }
-        if (i == decpt) {
+        if (i == decpt && (hash_format || i < (enddigit-1))) {
             *buf++ = '.';
         }
     }
