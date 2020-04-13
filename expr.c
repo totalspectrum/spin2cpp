@@ -1718,7 +1718,7 @@ FoldIfConst(AST *expr)
 AST *
 RemoveTypeModifiers(AST *ast)
 {
-    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE)) {
+    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS)) {
         ast = ast->left;
     }
     return ast;
@@ -1897,6 +1897,27 @@ int TypeAlignment(AST *typ)
               typ->kind);
         return 1;
     }
+}
+
+int
+IsArraySymbol(Symbol *sym)
+{
+    AST *type = NULL;
+    if (!sym) return 0;
+    switch (sym->kind) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_VARIABLE:
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+        type = (AST *)sym->val;
+        break;
+    case SYM_LABEL:
+        return 1;
+    default:
+        return 0;
+    }
+    return IsArrayType(type);
 }
 
 int

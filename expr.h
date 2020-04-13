@@ -52,6 +52,7 @@ int CheckedTypeSize(AST *typ); // like TypeSize, but declares members if necessa
 
 int IsArray(AST *expr);
 int IsArrayType(AST *typ);
+int IsArraySymbol(Symbol *);
 int IsArrayOrPointerSymbol(Symbol *);
 int TypeAlignment(AST *typ);
 int PointerTypeIncrement(AST *typ);

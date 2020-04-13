@@ -10,10 +10,6 @@
 #include <string.h>
 #include "spinc.h"
 
-// Spin doesn't have pointers, so looking for arrays or
-// pointers should find only arrays
-#define IsArraySymbol(s) IsArrayOrPointerSymbol(s)
-
 bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;

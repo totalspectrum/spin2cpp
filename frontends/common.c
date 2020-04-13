@@ -168,6 +168,7 @@ Aliases spin2alias[] = {
     { "xypol", "_xypol" },
 
     { "cogatn", "__builtin_propeller_cogatn" },
+    { "muldiv64", "_muldiv64" },
     { "waitx", "__builtin_propeller_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
@@ -721,7 +722,7 @@ Init()
     ast_type_generic_funcptr = GenericFunctionPtr(1);
 
     // a generic function for Spin2 SEND type functionality
-    ast_type_sendptr = NewAST(AST_SEND_ARGS, GenericFunctionPtr(0), NULL);
+    ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
     
     initSpinLexer(gl_p2);
 

@@ -209,7 +209,7 @@ enum astkind {
     AST_COPYREFTYPE, // first the value is copied, then a reference passed; used for passing large structs
 
     AST_EMPTY = 148,
-    AST_SEND_ARGS = 149,
+    AST_MODIFIER_SEND_ARGS = 149,
 };
 
 /* forward reference */

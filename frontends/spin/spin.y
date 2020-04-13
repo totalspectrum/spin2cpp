@@ -806,11 +806,11 @@ expr:
   | SP_STRINGPTR '(' exprlist ')'
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
-  | '@' lhs
+  | '@' expr
     { $$ = NewAST(AST_ADDROF, $2, NULL); }
   | SP_DOUBLEAT expr
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
-  | SP_TRIPLEAT lhs
+  | SP_TRIPLEAT expr
     { $$ = NewAST(AST_ABSADDROF, $2, NULL); }
   | lhs SP_ASSIGN expr
     { $$ = AstAssign($1, $3); }
