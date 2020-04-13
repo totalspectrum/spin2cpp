@@ -78,6 +78,7 @@ AST *ast_type_void;
 AST *ast_type_bitfield;
 AST *ast_type_long64, *ast_type_unsigned_long64;
 AST *ast_type_generic_funcptr;
+AST *ast_type_sendptr;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -112,6 +113,8 @@ Aliases spinalias[] = {
     { "_pinr", "__builtin_propeller_pinr" },
 
     { "reboot", "_reboot" },
+
+    { "send", "__sendptr" },
     
     { "_waitx", "__builtin_propeller_waitx" },
     
@@ -716,6 +719,10 @@ Init()
 
     // a generic function returning a single (unknown) value
     ast_type_generic_funcptr = GenericFunctionPtr(1);
+
+    // a generic function for Spin2 SEND type functionality
+    ast_type_sendptr = NewAST(AST_SEND_ARGS, GenericFunctionPtr(0), NULL);
+    
     initSpinLexer(gl_p2);
 
     /* fill in the global symbol table */

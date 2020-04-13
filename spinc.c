@@ -113,6 +113,10 @@ InitGlobalModule(void)
     sym->flags |= SYMF_GLOBAL;
     sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x8) : 4;
 
+    sym = AddSymbol(table, "__sendptr", SYM_VARIABLE, ast_type_sendptr, NULL);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x30) : 8;
+
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
         sym->flags |= SYMF_GLOBAL;
