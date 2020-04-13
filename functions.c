@@ -1758,6 +1758,30 @@ CheckRetStatement(Function *func, AST *ast)
 }
 
 /*
+ * expand arguments in a SEND type function call
+ */
+AST *
+ExpandArguments(AST *sendptr, AST *args)
+{
+    AST *seq = NULL;
+    AST *arg;
+    AST *call;
+    
+    while (args) {
+        arg = args->left;
+        args = args->right;
+        call = NewAST(AST_FUNCCALL, sendptr,
+                      NewAST(AST_EXPRLIST, arg, NULL));
+        if (seq) {
+            seq = NewAST(AST_SEQUENCE, seq, call);
+        } else {
+            seq = NewAST(AST_SEQUENCE, call, NULL);
+        }
+    }
+    return seq;
+}
+
+/*
  * check function calls for correct number of arguments
  * also does expansion for multiple returns used as parameters
  * and does default parameter substitution
@@ -1784,6 +1808,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
+        int doExpandArgs = 0;
         sym = FindCalledFuncSymbol(ast, NULL, 0);
         expectArgs = 0;
         if (sym) {
@@ -1797,6 +1822,10 @@ CheckFunctionCalls(AST *ast)
             } else {
                 AST *ftype = ExprType(ast->left);
                 if (ftype) {
+                    if (ftype->kind == AST_MODIFIER_SEND_ARGS) {
+                        doExpandArgs = 1;
+                        ftype = ftype->left;
+                    }
                     if (!IsFunctionType(ftype)) {
                         ERROR(ast, "%s is not a function", fname);
                         return;
@@ -1816,6 +1845,13 @@ CheckFunctionCalls(AST *ast)
                 }
             }
         } else {
+            goto skipcheck;
+        }
+        if (doExpandArgs) {
+            if (AstListLen(ast->right) > 1) {
+                initseq = ExpandArguments(ast->left, ast->right);
+                *ast = *initseq;
+            }
             goto skipcheck;
         }
         if (expectArgs < 0) {
