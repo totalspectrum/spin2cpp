@@ -1347,27 +1347,19 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             }
             op[i] = c;
             op[i+1] = 0;
-            sym = FindSymbol(&spinReservedWords, op);
+            if (L->language == LANG_SPIN_SPIN2) {
+                sym = FindSymbol(&spin2ReservedWords, op);
+            } else {
+                sym = NULL;
+            }
+            if (!sym) {
+                sym = FindSymbol(&spinReservedWords, op);
+            }
             if (sym) {
                 token = INTVAL(sym);
             } else {
                 lexungetc(L, c);
                 break;
-            }
-        }
-        if (L->language == LANG_SPIN_SPIN2) {
-            // check for special spin2 cases
-            int nextc = lexgetc(L);
-            if (nextc == '=') {
-                if (token == '<') {
-                    token = SP_LE;
-                } else if (token == '>') {
-                    token = SP_GE;
-                } else {
-                    lexungetc(L, nextc);
-                }
-            } else {
-                lexungetc(L, nextc);
             }
         }
         c = token;
@@ -1518,6 +1510,8 @@ struct reservedword init_spin2_words[] = {
     { "^^", SP_XOR },
     { "&&", SP_AND },
     { "||", SP_OR },
+    { "<=", SP_LE },
+    { ">=", SP_GE },
     
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
