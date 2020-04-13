@@ -2,6 +2,7 @@ Version 4.1.5
 - Suppressed optimization of inline assembly inside ORG/END (but not ASM/ENDASM)
 - Fixed some issues with compiling with the -C flag
 - Fixed passing simple local variables by reference
+- Fixed float printf with 0 digits after decimal point
 - Added pinstart(), pinsetup(), and pinclear() builtins
 - Added support for x.[m..n] bitfield access in Spin
 - Added muldiv64() builtin

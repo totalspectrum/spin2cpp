@@ -151,7 +151,7 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         c = *fmtstr; if (c == 0) break;
         if (c == '.') {
             fmtstr++;
-            prec = parseint(&fmtstr, args);
+            prec = parseint(&fmtstr, args) + 1;
             c = *fmtstr; if (c == 0) break;
         }
         fmtstr = parsesize(fmtstr, &size);
@@ -176,7 +176,9 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             c -= 'A';
             c += 'a';
         }
-        if (prec < 0) prec = 0;
+        if (prec < 0) {
+            prec = 0;
+        }
         if (prec > PREC_MASK) prec = PREC_MASK;
         if (width < 0) {
             width = -width;
@@ -198,18 +200,22 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
         case 'i':
         case 'u':
             if (c == 'u') flags |= (SIGNCHAR_UNSIGNED<<SIGNCHAR_BIT);
-            if (prec == 0 && padchar == PADCHAR_ZERO) flags |= (width<<PREC_BIT);
+            if (prec == 0 && padchar == PADCHAR_ZERO) {
+                flags |= ((width+1)<<PREC_BIT);
+            }
             q = _fmtnum(fn, flags, val, 10);
             break;
         case 'o':
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
             if (prec == 0 && padchar == PADCHAR_ZERO) {
-                flags |= (width<<PREC_BIT);
+                flags |= ((width+1)<<PREC_BIT);
             }
             q = _fmtnum(fn, flags, val, 8);
             break;
         case 'x':
-            if (prec == 0 && padchar == PADCHAR_ZERO) flags |= (width<<PREC_BIT);
+            if (prec == 0 && padchar == PADCHAR_ZERO) {
+                flags |= ((width+1)<<PREC_BIT);
+            }
             flags |= SIGNCHAR_UNSIGNED << SIGNCHAR_BIT;
             q = _fmtnum(fn, flags, val, 16);
             break;
