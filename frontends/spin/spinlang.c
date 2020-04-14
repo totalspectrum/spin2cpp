@@ -233,6 +233,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                 } else if (sym && sym->kind == SYM_FUNCTION) {
                     // insert an explicit function address
                     AST *getaddr = FunctionAddress(body->left);
+                    fdef->is_leaf = 0;
                     if (upper->right == body) {
                         upper->right = getaddr;
                         return;
@@ -263,6 +264,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             AST *typ = ExprType(ast);
             if (IsFunctionType(typ)) {
                 AST *getaddr = BuildMethodPointer(body);
+                fdef->is_leaf = 0;
                 if (upper->right == body) {
                     upper->right = getaddr;
                     return;

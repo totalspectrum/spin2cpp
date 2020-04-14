@@ -1766,12 +1766,42 @@ ExpandArguments(AST *sendptr, AST *args)
     AST *seq = NULL;
     AST *arg;
     AST *call;
-    
+    AST *typ;
+    static AST *sendstring = NULL;
+
+    call = NULL;
     while (args) {
         arg = args->left;
         args = args->right;
-        call = NewAST(AST_FUNCCALL, sendptr,
-                      NewAST(AST_EXPRLIST, arg, NULL));
+        if (arg) {
+            switch (arg->kind) {
+            case AST_STRING:
+                if (!sendstring) {
+                    sendstring = AstIdentifier("__sendstring");
+                }
+                arg = NewAST(AST_EXPRLIST, arg, NULL);
+                arg = NewAST(AST_STRINGPTR, arg, NULL);
+                arg = NewAST(AST_EXPRLIST, sendptr,
+                             NewAST(AST_EXPRLIST, arg, NULL));
+                call = NewAST(AST_FUNCCALL, sendstring, arg);
+                break;
+            case AST_FUNCCALL:
+                typ = ExprType(arg);
+                if (typ == ast_type_void) {
+                    call = arg;
+                } else {
+                    // FIXME: do we need to handle multiple return values
+                    // here??
+                    call = NewAST(AST_FUNCCALL, sendptr,
+                                  NewAST(AST_EXPRLIST, arg, NULL));
+                }
+                break;
+            default:
+                call = NewAST(AST_FUNCCALL, sendptr,
+                              NewAST(AST_EXPRLIST, arg, NULL));
+                break;
+            }
+        }
         if (seq) {
             seq = NewAST(AST_SEQUENCE, seq, call);
         } else {

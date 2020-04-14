@@ -206,7 +206,14 @@ pri _rx : r
   until r <> -1
   if (__rxtxflags & _rxtx_echo)
     _tx(r)
-  
+
+pri __sendstring(func, str) | c
+  repeat
+    c := byte[str++]
+    if c
+      func(c)
+  until c == 0
+
 pri __builtin_clkfreq
   return _clkfreq_var
 

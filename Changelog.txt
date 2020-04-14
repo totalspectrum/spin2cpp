@@ -8,6 +8,7 @@ Version 4.1.5
 - Added support for x.[m..n] bitfield access in Spin
 - Added muldiv64() builtin and FRAC operator
 - Added more stdio functions for C
+- Added Spin2 SEND builtin
 
 Version 4.1.4
 - Fixed a problem with pruning of methods called indirectly via a pointer
