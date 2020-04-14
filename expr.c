@@ -1530,18 +1530,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             name = expr->d.string;
             sym = LookupSymbol(name);
         }
-        if (!sym || sym->kind != SYM_LABEL) {
-            if (reportError) {
-                if (!sym) {
-                    ERROR(expr, "Unknown symbol %s", name);
-                } else {
-                    ERROR(expr, "Only addresses of labels allowed");
-                }
-            } else {
-                *valid = 0;
-            }
-            return intExpr(0);
-        } else {
+        if (sym && sym->kind == SYM_LABEL) {
             Label *lref = (Label *)sym->val;
             if (offset) {
                 offset *= TypeSize(BaseType(lref->type));
@@ -1560,6 +1549,19 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 	      offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);
+        } else if (sym && sym->kind == SYM_VARIABLE && (sym->flags & SYMF_GLOBAL)) {
+            return intExpr(sym->offset);
+        } else {
+            if (reportError) {
+                if (!sym) {
+                    ERROR(expr, "Unknown symbol %s", name);
+                } else {
+                    ERROR(expr, "Only addresses of labels allowed");
+                }
+            } else {
+                *valid = 0;
+            }
+            return intExpr(0);
         }
         break;
     case AST_CAST:

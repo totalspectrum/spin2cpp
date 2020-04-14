@@ -90,8 +90,8 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
-    { "clkfreq", "__builtin_clkfreq" },
-    { "clkmode", "__builtin_clkmode" },
+    { "clkfreq", "_clkfreq_var" },
+    { "clkmode", "_clkmode_var" },
     { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
 #ifdef NEVER    
