@@ -172,6 +172,9 @@ SetLocalArray(Function *fdef, Symbol *sym, AST *body)
  * scan a function body for various special conditions
  * "expectType" marks a parameter type that is expected
  */
+extern AST *FunctionAddress(AST *); // in types.c
+extern AST *BuildMethodPointer(AST *); // in types.c
+
 static void
 ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
 {
@@ -229,7 +232,6 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     }
                 } else if (sym && sym->kind == SYM_FUNCTION) {
                     // insert an explicit function address
-                    extern AST *FunctionAddress(AST *); // in types.c
                     AST *getaddr = FunctionAddress(body->left);
                     if (upper->right == body) {
                         upper->right = getaddr;
@@ -256,7 +258,23 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                 fdef->resultexpr = NewAST(AST_RESULT, NULL, NULL);
                 fdef->result_used = 1;
             }
+        } else if (ast->kind == AST_METHODREF) {
+            // fix up @foo.bar
+            AST *typ = ExprType(ast);
+            if (IsFunctionType(typ)) {
+                AST *getaddr = BuildMethodPointer(body);
+                if (upper->right == body) {
+                    upper->right = getaddr;
+                    return;
+                }
+                if (upper->left == body) {
+                    upper->left = getaddr;
+                    return;
+                }
+                WARNING(body, "Internal error, function address may not be computed correctly");
+            }
         }
+        
         // after an @, we probably cannot rely on any typing info??
         expectType = NULL;
         break;
