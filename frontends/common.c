@@ -90,8 +90,8 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
-    { "clkfreq", "_clkfreq_var" },
-    { "clkmode", "_clkmode_var" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
     { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
 #ifdef NEVER    
@@ -202,8 +202,8 @@ Aliases basicalias[] = {
     /* ugh, not sure if we want to keep supporting the clk* variables,
      * but changing them to functions is difficult
      */
-    { "clkfreq", "_clkfreq_var" },
-    { "clkmode", "_clkmode_var" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
