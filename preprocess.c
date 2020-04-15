@@ -364,6 +364,7 @@ void pp_pop_file(struct preprocess *pp)
             flexbuf_addstr(&pp->whole, temp);
         }
     }
+    pp->incomment = 0;
 }
 
 /*
