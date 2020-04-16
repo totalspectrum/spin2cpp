@@ -1017,6 +1017,10 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             opimm[0] = 0;
             numoperands = 2;
         }
+    } else if (instr->opc == OPC_GETRND && numoperands == 0) {
+        operand[0] = AstInteger(0);
+        opimm[0] = 1;
+        numoperands = 1;
     }
     if (expectops == 3 && numoperands == 1) {
         // SETNIB reg/# -> SETNIB 0, reg/#, #0

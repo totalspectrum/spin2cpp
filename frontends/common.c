@@ -134,7 +134,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
     
-    { "pinw", "__builtin_propeller_drv" },
+    { "pinw", "_pinwrite" },
     { "pinl", "__builtin_propeller_drvl" },    
     { "pinh", "__builtin_propeller_drvh" },
     { "pint", "__builtin_propeller_drvnot" },
@@ -145,7 +145,7 @@ Aliases spin2alias[] = {
     { "pinclear", "_pinclear" },
     
 //    { "pinrnd", "__builtin_propeller_drvrnd" },
-    { "pinwrite", "__builtin_propeller_drv" },
+    { "pinwrite", "_pinwrite" },
     { "pinlow", "__builtin_propeller_drvl" },    
     { "pinhigh", "__builtin_propeller_drvh" },
     { "pintoggle", "__builtin_propeller_drvnot" },
