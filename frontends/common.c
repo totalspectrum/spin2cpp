@@ -654,7 +654,8 @@ void
 ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     const char *name;
-
+    Label *labelref;
+    
     if (IsIdentifier(ast)) {
         name = GetVarNameForError(ast);
     } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
@@ -666,6 +667,9 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     // add a definition for this symbol so we don't get this error again
     if (curfunc) {
         AddLocalVariable(curfunc, ast, NULL, SYM_LOCALVAR);
+    } else {
+        labelref = (Label *)calloc(1, sizeof(*labelref));
+        AddSymbol(&globalModule->objsyms, name, SYM_LABEL, labelref, NULL);
     }
 }
 
