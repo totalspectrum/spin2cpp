@@ -234,8 +234,8 @@ Aliases basicalias[] = {
 };
 Aliases calias[] = {
     /* these are obsolete but we'll support them for now */
-    { "clkfreq", "_clkfreq_var" },
-    { "clkmode", "_clkmode_var" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
