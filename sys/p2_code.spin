@@ -62,8 +62,8 @@ pri _clkset(mode, freq) | oldmode, xsel
   if xsel == 0 and mode > 1
     xsel := 3
   oldmode := clkmode & !3  ' remove low bits, if any
-  _clkfreq_var := freq
-  _clkmode_var := mode
+  _clkfreq := freq
+  _clkmode := mode
   mode := mode & !3
   asm
     hubset oldmode	' go to RCFAST using known prior mode

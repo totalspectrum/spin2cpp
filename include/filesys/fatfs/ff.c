@@ -962,7 +962,7 @@ static void unlock_fs (
 /*-----------------------------------------------------------------------*/
 
 static FRESULT chk_lock (	/* Check if the file can be accessed */
-	DIR* dp,		/* Directory object pointing the file to be checked */
+	FFDIR* dp,		/* Directory object pointing the file to be checked */
 	int acc			/* Desired access type (0:Read mode open, 1:Write mode open, 2:Delete or rename) */
 )
 {
@@ -998,7 +998,7 @@ static int enq_lock (void)	/* Check if an entry is available for a new object */
 
 
 static UINT inc_lock (	/* Increment object open counter and returns its index (0:Internal error) */
-	DIR* dp,	/* Directory object pointing the file to register or increment */
+	FFDIR* dp,	/* Directory object pointing the file to register or increment */
 	int acc		/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
 )
 {
@@ -1711,7 +1711,7 @@ static FRESULT dir_clear (	/* Returns FR_OK or FR_DISK_ERR */
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_sdi (	/* FR_OK(0):succeeded, !=0:error */
-	DIR* dp,		/* Pointer to directory object */
+	FFDIR* dp,		/* Pointer to directory object */
 	DWORD ofs		/* Offset of directory table */
 )
 {
@@ -1759,7 +1759,7 @@ static FRESULT dir_sdi (	/* FR_OK(0):succeeded, !=0:error */
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_next (	/* FR_OK(0):succeeded, FR_NO_FILE:End of table, FR_DENIED:Could not stretch */
-	DIR* dp,				/* Pointer to the directory object */
+	FFDIR* dp,				/* Pointer to the directory object */
 	int stretch				/* 0: Do not stretch table, 1: Stretch table if needed */
 )
 {
@@ -1820,7 +1820,7 @@ static FRESULT dir_next (	/* FR_OK(0):succeeded, FR_NO_FILE:End of table, FR_DEN
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_alloc (	/* FR_OK(0):succeeded, !=0:error */
-	DIR* dp,				/* Pointer to the directory object */
+	FFDIR* dp,				/* Pointer to the directory object */
 	UINT nent				/* Number of contiguous entries to allocate */
 )
 {
@@ -2186,7 +2186,7 @@ static void get_xfileinfo (
 /*-----------------------------------*/
 
 static FRESULT load_xdir (	/* FR_INT_ERR: invalid entry block */
-	DIR* dp					/* Reading direcotry object pointing top of the entry block to load */
+	FFDIR* dp					/* Reading direcotry object pointing top of the entry block to load */
 )
 {
 	FRESULT res;
@@ -2255,7 +2255,7 @@ static void init_alloc_info (
 /*------------------------------------------------*/
 
 static FRESULT load_obj_xdir (
-	DIR* dp,			/* Blank directory object to be used to access containing direcotry */
+	FFDIR* dp,			/* Blank directory object to be used to access containing direcotry */
 	const FFOBJID* obj	/* Object with its containing directory information */
 )
 {
@@ -2284,7 +2284,7 @@ static FRESULT load_obj_xdir (
 /*----------------------------------------*/
 
 static FRESULT store_xdir (
-	DIR* dp				/* Pointer to the direcotry object */
+	FFDIR* dp				/* Pointer to the direcotry object */
 )
 {
 	FRESULT res;
@@ -2362,7 +2362,7 @@ static void create_xdir (
 #define DIR_READ_LABEL(dp) dir_read(dp, 1)
 
 static FRESULT dir_read (
-	DIR* dp,		/* Pointer to the directory object */
+	FFDIR* dp,		/* Pointer to the directory object */
 	int vol			/* Filtered by 0:file/directory or 1:volume label */
 )
 {
@@ -2440,7 +2440,7 @@ static FRESULT dir_read (
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_find (	/* FR_OK(0):succeeded, !=0:error */
-	DIR* dp					/* Pointer to the directory object with the file name */
+	FFDIR* dp					/* Pointer to the directory object with the file name */
 )
 {
 	FRESULT res;
@@ -2521,7 +2521,7 @@ static FRESULT dir_find (	/* FR_OK(0):succeeded, !=0:error */
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_register (	/* FR_OK:succeeded, FR_DENIED:no free entry or too many SFN collision, FR_DISK_ERR:disk error */
-	DIR* dp						/* Target directory with object name to be created */
+	FFDIR* dp						/* Target directory with object name to be created */
 )
 {
 	FRESULT res;
@@ -2548,7 +2548,7 @@ static FRESULT dir_register (	/* FR_OK:succeeded, FR_DENIED:no free entry or too
 			res = fill_last_frag(&dp->obj, dp->clust, 0xFFFFFFFF);	/* Fill the last fragment on the FAT if needed */
 			if (res != FR_OK) return res;
 			if (dp->obj.sclust != 0) {		/* Is it a sub-directory? */
-				DIR dj;
+				FFDIR dj;
 
 				res = load_obj_xdir(&dj, &dp->obj);	/* Load the object status */
 				if (res != FR_OK) return res;
@@ -2627,7 +2627,7 @@ static FRESULT dir_register (	/* FR_OK:succeeded, FR_DENIED:no free entry or too
 /*-----------------------------------------------------------------------*/
 
 static FRESULT dir_remove (	/* FR_OK:Succeeded, FR_DISK_ERR:A disk error */
-	DIR* dp					/* Directory object pointing the entry to be removed */
+	FFDIR* dp					/* Directory object pointing the entry to be removed */
 )
 {
 	FRESULT res;
@@ -2673,7 +2673,7 @@ static FRESULT dir_remove (	/* FR_OK:Succeeded, FR_DISK_ERR:A disk error */
 /*-----------------------------------------------------------------------*/
 
 static void get_fileinfo (
-	DIR* dp,			/* Pointer to the directory object */
+	FFDIR* dp,			/* Pointer to the directory object */
 	FILINFO* fno		/* Pointer to the file information to be filled */
 )
 {
@@ -2857,7 +2857,7 @@ static int pattern_matching (	/* 0:not matched, 1:matched */
 /*-----------------------------------------------------------------------*/
 
 static FRESULT create_name (	/* FR_OK: successful, FR_INVALID_NAME: could not create */
-	DIR* dp,					/* Pointer to the directory object */
+	FFDIR* dp,					/* Pointer to the directory object */
 	const TCHAR** path			/* Pointer to pointer to the segment in the path string */
 )
 {
@@ -3058,7 +3058,7 @@ static FRESULT create_name (	/* FR_OK: successful, FR_INVALID_NAME: could not cr
 /*-----------------------------------------------------------------------*/
 
 static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
-	DIR* dp,					/* Directory object to return last directory and found object */
+	FFDIR* dp,					/* Directory object to return last directory and found object */
 	const TCHAR* path			/* Full-path string to find a file or directory */
 )
 {
@@ -3080,7 +3080,7 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	dp->obj.n_frag = 0;	/* Invalidate last fragment counter of the object */
 #if FF_FS_RPATH != 0
 	if (fs->fs_type == FS_EXFAT && dp->obj.sclust) {	/* exFAT: Retrieve the sub-directory's status */
-		DIR dj;
+		FFDIR dj;
 
 		dp->obj.c_scl = fs->cdc_scl;
 		dp->obj.c_size = fs->cdc_size;
@@ -3695,7 +3695,7 @@ FRESULT f_open (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 #if !FF_FS_READONLY
 	DWORD cl, bcs, clst;
@@ -4131,7 +4131,7 @@ FRESULT f_sync (
 					res = fill_last_frag(&fp->obj, fp->clust, 0xFFFFFFFF);	/* Fill last fragment on the FAT if needed */
 				}
 				if (res == FR_OK) {
-					DIR dj;
+					FFDIR dj;
 					DEF_NAMBUF
 
 					INIT_NAMBUF(fs);
@@ -4245,7 +4245,7 @@ FRESULT f_chdir (
 	UINT i;
 #endif
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	DEF_NAMBUF
 
@@ -4305,7 +4305,7 @@ FRESULT f_getcwd (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	UINT i, n;
 	DWORD ccl;
@@ -4563,7 +4563,7 @@ FRESULT f_lseek (
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_opendir (
-	DIR* dp,			/* Pointer to directory object to create */
+	FFDIR* dp,			/* Pointer to directory object to create */
 	const TCHAR* path	/* Pointer to the directory path */
 )
 {
@@ -4629,7 +4629,7 @@ FRESULT f_opendir (
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_closedir (
-	DIR *dp		/* Pointer to the directory object to be closed */
+	FFDIR *dp		/* Pointer to the directory object to be closed */
 )
 {
 	FRESULT res;
@@ -4659,7 +4659,7 @@ FRESULT f_closedir (
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_readdir (
-	DIR* dp,			/* Pointer to the open directory object */
+	FFDIR* dp,			/* Pointer to the open directory object */
 	FILINFO* fno		/* Pointer to file information to return */
 )
 {
@@ -4695,7 +4695,7 @@ FRESULT f_readdir (
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_findnext (
-	DIR* dp,		/* Pointer to the open directory object */
+	FFDIR* dp,		/* Pointer to the open directory object */
 	FILINFO* fno	/* Pointer to the file information structure */
 )
 {
@@ -4720,7 +4720,7 @@ FRESULT f_findnext (
 /*-----------------------------------------------------------------------*/
 
 FRESULT f_findfirst (
-	DIR* dp,				/* Pointer to the blank directory object */
+	FFDIR* dp,				/* Pointer to the blank directory object */
 	FILINFO* fno,			/* Pointer to the file information structure */
 	const TCHAR* path,		/* Pointer to the directory to open */
 	const TCHAR* pattern	/* Pointer to the matching pattern */
@@ -4752,7 +4752,7 @@ FRESULT f_stat (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	DEF_NAMBUF
 
 
@@ -4926,7 +4926,7 @@ FRESULT f_unlink (
 )
 {
 	FRESULT res;
-	DIR dj, sdj;
+	FFDIR dj, sdj;
 	DWORD dclst = 0;
 	FATFS *fs;
 #if FF_FS_EXFAT
@@ -5020,7 +5020,7 @@ FRESULT f_mkdir (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FFOBJID sobj;
 	FATFS *fs;
 	DWORD dcl, pcl, tm;
@@ -5105,7 +5105,7 @@ FRESULT f_rename (
 )
 {
 	FRESULT res;
-	DIR djo, djn;
+	FFDIR djo, djn;
 	FATFS *fs;
 	BYTE buf[FF_FS_EXFAT ? SZDIRE * 2 : SZDIRE], *dir;
 	LBA_t sect;
@@ -5153,7 +5153,7 @@ FRESULT f_rename (
 #endif
 			{	/* At FAT/FAT32 volume */
 				mem_cpy(buf, djo.dir, SZDIRE);			/* Save directory entry of the object */
-				mem_cpy(&djn, &djo, sizeof (DIR));		/* Duplicate the directory object */
+				mem_cpy(&djn, &djo, sizeof (FFDIR));		/* Duplicate the directory object */
 				res = follow_path(&djn, path_new);		/* Make sure if new object name is not in use */
 				if (res == FR_OK) {						/* Is new name already in use by any other object? */
 					res = (djn.obj.sclust == djo.obj.sclust && djn.dptr == djo.dptr) ? FR_NO_FILE : FR_EXIST;
@@ -5216,7 +5216,7 @@ FRESULT f_chmod (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	DEF_NAMBUF
 
@@ -5262,7 +5262,7 @@ FRESULT f_utime (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	DEF_NAMBUF
 
@@ -5310,7 +5310,7 @@ FRESULT f_getlabel (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	UINT si, di;
 	WCHAR wc;
@@ -5403,7 +5403,7 @@ FRESULT f_setlabel (
 )
 {
 	FRESULT res;
-	DIR dj;
+	FFDIR dj;
 	FATFS *fs;
 	BYTE dirvn[22];
 	UINT di;
@@ -6846,3 +6846,339 @@ FRESULT f_setcp (
 }
 #endif	/* FF_CODE_PAGE == 0 */
 
+/////////////////////////////////////////////////////////////////////////
+// FlexC virtual file system glue code
+/////////////////////////////////////////////////////////////////////////
+#include <sys/types.h>
+#include <sys/vfs.h>
+#include <errno.h>
+
+static int _set_dos_error(int derr)
+{
+    int r;
+    switch (derr) {
+    case FR_OK:
+        r = 0;
+        break;
+    case FR_NO_FILE:
+    case FR_NO_PATH:
+    case FR_INVALID_NAME:
+        r = ENOENT;
+        break;
+    case FR_DENIED:
+    case FR_WRITE_PROTECTED:
+        r = EACCES;
+        break;
+    case FR_EXIST:
+        r = EEXIST;
+        break;
+    case FR_NOT_ENOUGH_CORE:
+        r = ENOMEM;
+        break;
+    case FR_INVALID_PARAMETER:
+    case FR_INVALID_OBJECT:
+    case FR_INVALID_DRIVE:
+    case FR_NOT_ENABLED:
+    case FR_NO_FILESYSTEM:
+        r = EINVAL;
+        break;
+    case FR_TOO_MANY_OPEN_FILES:
+        r = EMFILE;
+        break;
+        
+    case FR_DISK_ERR:
+    case FR_INT_ERR:
+    case FR_NOT_READY:
+    default:
+        r = EIO;
+        break;
+    }
+    return _seterror(r);
+}
+
+static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
+{
+  int r;
+  FIL *f = malloc(sizeof(*f));
+  int fatmode;
+  
+  if (!f) {
+      return _seterror(ENOMEM);
+  }
+  memset(f, 0, sizeof(*f));
+  fatmode = FA_CREATE_NEW | FA_WRITE | FA_READ;
+  r = f_open(f, pathname, fatmode);
+#ifdef DEBUG
+  __builtin_printf("v_create(%s) returned %d\n", pathname, r);
+#endif  
+  if (r) {
+    free(f);
+    return _set_dos_error(r);
+  }
+  fil->vfsdata = f;
+  return 0;
+}
+
+static int v_close(vfs_file_t *fil)
+{
+  int r=f_close(fil->vfsdata);
+  free(fil->vfsdata);
+  return _set_dos_error(r);
+}
+
+static int v_opendir(DIR *dir, const char *name)
+{
+    FFDIR *f = malloc(sizeof(*f));
+    int r;
+
+#ifdef DEBUG    
+    __builtin_printf("v_opendir(%s)\n", name);
+#endif    
+    if (!f) {
+#ifdef DEBUG
+      __builtin_printf("malloc failed\n");
+#endif    
+      return _seterror(ENOMEM);
+    }
+    r = f_opendir(f, name, 0);
+#ifdef DEBUG
+    __builtin_printf("f_opendir returned %d\n", r);
+#endif    
+    
+    if (r) {
+        free(f);
+        return _set_dos_error(r);
+    }
+    dir->vfsdata = f;
+    return 0;
+}
+
+static int v_closedir(DIR *dir)
+{
+    int r;
+    FFDIR *f = dir->vfsdata;
+    r = f_closedir(f);
+    free(f);
+    if (r) _set_dos_error(r);
+    return r;
+}
+
+static int v_readdir(DIR *dir, struct dirent *ent)
+{
+    FILINFO finfo;
+    int r;
+
+#ifdef DEBUG    
+    __builtin_printf("v_readdir()\n");
+#endif    
+    r = f_readdir(dir->vfsdata, &finfo);
+#ifdef DEBUG       
+    __builtin_printf("readdir fs_read: %d\n", r);
+#endif	
+    if (r != 0) {
+        return _set_dos_error(r); // error
+    }
+    if (finfo.fname[0] == 0) {
+        return -1; // EOF
+    }
+#if FF_USE_LFN
+    strncpy(ent->d_name, finfo.altname, _NAME_MAX-1);
+    ent->d_name[_NAME_MAX-1] = 0;
+#else
+    strcpy(ent->d_name, finfo.fname);
+#endif
+    return 0;
+}
+
+static time_t unixtime(unsigned int dosdate, unsigned int dostime)
+{
+    time_t t;
+    unsigned year = (dosdate >> 9) & 0x7f;
+    unsigned month = ((dosdate >> 5) & 0xf) - 1;
+    unsigned day = (dosdate & 0x1f) - 1;
+    unsigned hour = (dostime >> 11) & 0x1f;
+    unsigned minute = (dostime >> 5) & 0x3f;
+    unsigned second = (dostime & 0x1f) << 1;
+
+    t = second + minute*60 + hour * 3600;
+    return t;
+}
+
+static int v_stat(const char *name, struct stat *buf)
+{
+    int r;
+    FILINFO finfo;
+    unsigned mode;
+#ifdef DEBUG    
+    __builtin_printf("v_stat(%s)\n", name);
+#endif    
+    r = f_stat(name, &finfo);
+    if (r != 0) {
+        return _set_dos_error(r);
+    }
+    mode = S_IRUSR | S_IRGRP | S_IROTH;
+    if (finfo.fattrib & AM_RDO) {
+        mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    }
+    if (finfo.fattrib & AM_DIR) {
+        mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
+    }
+    memset(buf, 0, sizeof(*buf));
+    buf->st_mode = mode;
+    buf->st_nlink = 1;
+    buf->st_size = finfo.size;
+    buf->st_blksize = 512;
+    buf->st_blocks = buf->st_size / 512;
+    buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
+    return r;
+}
+
+static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
+{
+    FIL *f = fil->vfsdata;
+    int r;
+    UINT x;
+    
+    if (!f) {
+        return _seterror(EBADF);
+    }
+#ifdef DEBUG    
+    __builtin_printf("v_read: fs_read at %u:", f->offlo);
+#endif    
+    r = f_read(f, buf, siz, &x);
+#ifdef DEBUG
+    __builtin_printf(" ...returned %d\n", r);
+#endif    
+    if (r != 0) {
+        fil->state |= _VFS_STATE_ERR;
+        return _set_dos_error(r);
+    }
+    if (x == 0) {
+        fil->state |= _VFS_STATE_EOF;
+    }
+    return x;
+}
+static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
+{
+    FIL *f = fil->vfsdata;
+    int r;
+    UINT x;
+    if (!f) {
+        return _seterror(EBADF);
+    }
+#ifdef DEBUG    
+    __builtin_printf("v_write: fs_write %d at %u:", siz, f->offlo);
+#endif    
+    r = f_write(f, buf, siz, &x);
+#ifdef DEBUG
+    __builtin_printf("returned %d\n", r);
+#endif    
+    if (r != 0) {
+        fil->state |= _VFS_STATE_ERR;
+        return _set_dos_error(r);
+    }
+    return x;
+}
+static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
+{
+    FIL *f = fil->vfsdata;
+    unsigned tmp;
+    if (!f) {
+        return _seterror(EBADF);
+    }
+#ifdef DEBUG
+    __builtin_printf("v_lseek(%d, %d) start=%d ", offset, whence, f->offlo);
+#endif    
+    if (whence == SEEK_SET) {
+        f->offlo = offset;
+    } else if (whence == SEEK_CUR) {
+        tmp = f->offlo + offset;
+        if (tmp < f->offlo) {
+            f->offhi++;
+        }
+        f->offlo = tmp;
+    } else {
+        // FIXME: should do a stat on the file and then seek accordingly
+        return _seterror(EINVAL);
+    }
+#ifdef DEBUG
+    __builtin_printf("end=%d\n", f->offlo);
+#endif    
+    return f->offlo;
+}
+
+int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
+{
+    return _seterror(EINVAL);
+}
+
+int v_mkdir(const char *name, mode_t mode)
+{
+    return _seterror(EACCES);
+}
+
+int v_remove(const char *name)
+{
+    return _seterror(EACCES);
+}
+
+int v_rmdir(const char *name)
+{
+    return v_remove(name);
+}
+
+static int v_open(vfs_file_t *fil, const char *name, int flags)
+{
+  int r;
+  FIL *f = malloc(sizeof(*f));
+  unsigned fs_flags;
+
+  if (!f) {
+      return _seterror(ENOMEM);
+  }
+  memset(f, 0, sizeof(*f));
+  fs_flags = flags & 3; // basic stuff like O_RDONLY are the same
+  if (flags & O_TRUNC) {
+      fs_flags |= FS9_OTRUNC;
+  }
+  r = fs_open(f, name, fs_flags);
+#ifdef DEBUG
+  __builtin_printf("fs_open(%s) returned %d, offset=%d\n", name, r, f->offlo);
+  __builtin_printf("offset at %d, size at %d\n", offsetof(fs9_file, offlo), sizeof(fs9_file));
+  __builtin_printf("default buffer size=%d\n", sizeof(struct _default_buffer));
+#endif  
+  if (r) {
+    free(f);
+    return _seterror(-r);
+  }
+  fil->vfsdata = f;
+  return 0;
+}
+
+struct vfs fat_vfs =
+{
+    &v_open,
+    &v_creat,
+    &v_close,
+
+    &v_read,
+    &v_write,
+    &v_lseek,
+    &v_ioctl,
+    0, /* no flush function */
+    
+    &v_opendir,
+    &v_closedir,
+    &v_readdir,
+    &v_stat,
+
+    &v_mkdir,
+    &v_rmdir,
+    &v_remove,
+};
+
+struct vfs *
+get_vfs()
+{
+    return &fat_vfs;
+}
