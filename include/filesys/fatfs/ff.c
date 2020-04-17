@@ -6855,6 +6855,7 @@ FRESULT f_setcp (
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 static int _set_dos_error(int derr)
 {
@@ -6899,7 +6900,7 @@ static int _set_dos_error(int derr)
         r = EIO;
         break;
     }
-    return _seterror(-r);
+    return _seterror(r);
 }
 
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
@@ -7079,7 +7080,7 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
         return _seterror(EBADF);
     }
 #ifdef DEBUG    
-    __builtin_printf("v_write: fs_write %d bytes:", siz);
+    __builtin_printf("v_write: f_write %d bytes:", siz);
 #endif    
     r = f_write(f, buf, siz, &x);
 #ifdef DEBUG
