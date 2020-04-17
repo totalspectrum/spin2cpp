@@ -6,6 +6,8 @@
 #ifndef _DISKIO_DEFINED
 #define _DISKIO_DEFINED
 
+#include <compiler.h> /* for _IMPL() */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,11 +29,11 @@ typedef enum {
 /* Prototypes for disk control functions */
 
 
-DSTATUS disk_initialize (BYTE pdrv);
-DSTATUS disk_status (BYTE pdrv);
-DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count);
-DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count);
-DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
+    DSTATUS disk_initialize (BYTE pdrv) _IMPL("sdmm.c");
+    DSTATUS disk_status (BYTE pdrv) _IMPL("sdmm.c");
+    DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.c");
+    DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.c");
+    DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff) _IMPL("sdmm.c");
 
 
 /* Disk Status Bits (DSTATUS) */

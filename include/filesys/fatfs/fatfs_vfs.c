@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <dirent.h>
+#include "ff.h"
 
 static struct __using("filesys/fatfs/ff.c") FFS;
 static FATFS FatFs;

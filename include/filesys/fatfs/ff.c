@@ -6851,11 +6851,17 @@ FRESULT f_setcp (
 /////////////////////////////////////////////////////////////////////////
 #include <sys/types.h>
 #include <sys/vfs.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 static int _set_dos_error(int derr)
 {
     int r;
+#ifdef DEBUG
+    __builtin_printf("_set_dos_error(%d)\n", derr);
+#endif    
     switch (derr) {
     case FR_OK:
         r = 0;
@@ -6893,7 +6899,7 @@ static int _set_dos_error(int derr)
         r = EIO;
         break;
     }
-    return _seterror(r);
+    return _seterror(-r);
 }
 
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
@@ -7011,8 +7017,15 @@ static int v_stat(const char *name, struct stat *buf)
     unsigned mode;
 #ifdef DEBUG    
     __builtin_printf("v_stat(%s)\n", name);
-#endif    
-    r = f_stat(name, &finfo);
+#endif
+    memset(buf, 0, sizeof(*buf));
+    if (name[0] == 0 || (name[0] == '.' && name[1] == 0)) {
+        /* root directory */
+        finfo.fattrib = AM_DIR;
+        r = 0;
+    } else {
+        r = f_stat(name, &finfo);
+    }
     if (r != 0) {
         return _set_dos_error(r);
     }
@@ -7023,10 +7036,9 @@ static int v_stat(const char *name, struct stat *buf)
     if (finfo.fattrib & AM_DIR) {
         mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
     }
-    memset(buf, 0, sizeof(*buf));
     buf->st_mode = mode;
     buf->st_nlink = 1;
-    buf->st_size = finfo.size;
+    buf->st_size = finfo.fsize;
     buf->st_blksize = 512;
     buf->st_blocks = buf->st_size / 512;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
@@ -7043,7 +7055,7 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
         return _seterror(EBADF);
     }
 #ifdef DEBUG    
-    __builtin_printf("v_read: fs_read at %u:", f->offlo);
+    __builtin_printf("v_read: fs_read of %u bytes:", siz);
 #endif    
     r = f_read(f, buf, siz, &x);
 #ifdef DEBUG
@@ -7067,7 +7079,7 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
         return _seterror(EBADF);
     }
 #ifdef DEBUG    
-    __builtin_printf("v_write: fs_write %d at %u:", siz, f->offlo);
+    __builtin_printf("v_write: fs_write %d bytes:", siz);
 #endif    
     r = f_write(f, buf, siz, &x);
 #ifdef DEBUG
@@ -7082,29 +7094,29 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
     FIL *f = fil->vfsdata;
-    unsigned tmp;
+    int result;
+    
     if (!f) {
         return _seterror(EBADF);
     }
 #ifdef DEBUG
-    __builtin_printf("v_lseek(%d, %d) start=%d ", offset, whence, f->offlo);
+    __builtin_printf("v_lseek(%d, %d) ", offset, whence);
 #endif    
     if (whence == SEEK_SET) {
-        f->offlo = offset;
+        /* offset is OK */
     } else if (whence == SEEK_CUR) {
-        tmp = f->offlo + offset;
-        if (tmp < f->offlo) {
-            f->offhi++;
-        }
-        f->offlo = tmp;
+        offset += f->fptr;
     } else {
-        // FIXME: should do a stat on the file and then seek accordingly
-        return _seterror(EINVAL);
+        offset += f->obj.objsize;
     }
+    result = f_lseek(f, offset);
 #ifdef DEBUG
-    __builtin_printf("end=%d\n", f->offlo);
-#endif    
-    return f->offlo;
+    __builtin_printf("result=%d\n", result);
+#endif
+    if (result) {
+        return _set_dos_error(result);
+    }
+    return offset;
 }
 
 int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
@@ -7114,17 +7126,26 @@ int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 
 int v_mkdir(const char *name, mode_t mode)
 {
-    return _seterror(EACCES);
+    int r;
+
+    r = f_mkdir(name);
+    return _set_dos_error(r);
 }
 
 int v_remove(const char *name)
 {
-    return _seterror(EACCES);
+    int r;
+
+    r = f_unlink(name);
+    return _set_dos_error(r);
 }
 
 int v_rmdir(const char *name)
 {
-    return v_remove(name);
+    int r;
+
+    r = f_unlink(name);
+    return _set_dos_error(r);
 }
 
 static int v_open(vfs_file_t *fil, const char *name, int flags)
@@ -7139,17 +7160,16 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   memset(f, 0, sizeof(*f));
   fs_flags = flags & 3; // basic stuff like O_RDONLY are the same
   if (flags & O_TRUNC) {
-      fs_flags |= FS9_OTRUNC;
+      fs_flags |= FA_CREATE_ALWAYS;
+  } else if (flags & O_APPEND) {
+      fs_flags |= FA_OPEN_APPEND;
+  } else {
+      fs_flags |= FA_OPEN_ALWAYS;
   }
-  r = fs_open(f, name, fs_flags);
-#ifdef DEBUG
-  __builtin_printf("fs_open(%s) returned %d, offset=%d\n", name, r, f->offlo);
-  __builtin_printf("offset at %d, size at %d\n", offsetof(fs9_file, offlo), sizeof(fs9_file));
-  __builtin_printf("default buffer size=%d\n", sizeof(struct _default_buffer));
-#endif  
+  r = f_open(f, name, fs_flags);
   if (r) {
     free(f);
-    return _seterror(-r);
+    return _set_dos_error(r);
   }
   fil->vfsdata = f;
   return 0;
