@@ -1530,18 +1530,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             name = expr->d.string;
             sym = LookupSymbol(name);
         }
-        if (!sym || sym->kind != SYM_LABEL) {
-            if (reportError) {
-                if (!sym) {
-                    ERROR(expr, "Unknown symbol %s", name);
-                } else {
-                    ERROR(expr, "Only addresses of labels allowed");
-                }
-            } else {
-                *valid = 0;
-            }
-            return intExpr(0);
-        } else {
+        if (sym && sym->kind == SYM_LABEL) {
             Label *lref = (Label *)sym->val;
             if (offset) {
                 offset *= TypeSize(BaseType(lref->type));
@@ -1560,6 +1549,19 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 	      offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);
+        } else if (sym && sym->kind == SYM_VARIABLE && (sym->flags & SYMF_GLOBAL)) {
+            return intExpr(sym->offset);
+        } else {
+            if (reportError) {
+                if (!sym) {
+                    ERROR(expr, "Unknown symbol %s", name);
+                } else {
+                    ERROR(expr, "Only addresses of labels allowed");
+                }
+            } else {
+                *valid = 0;
+            }
+            return intExpr(0);
         }
         break;
     case AST_CAST:
@@ -1718,7 +1720,7 @@ FoldIfConst(AST *expr)
 AST *
 RemoveTypeModifiers(AST *ast)
 {
-    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE)) {
+    while(ast && (ast->kind == AST_MODIFIER_CONST || ast->kind == AST_MODIFIER_VOLATILE || ast->kind == AST_MODIFIER_SEND_ARGS)) {
         ast = ast->left;
     }
     return ast;
@@ -1810,6 +1812,7 @@ int TypeSize(AST *typ)
     switch (typ->kind) {
     case AST_MODIFIER_CONST:
     case AST_MODIFIER_VOLATILE:
+    case AST_MODIFIER_SEND_ARGS:
         return TypeSize(typ->left);
     case AST_ARRAYTYPE:
         if (!IsConstExpr(typ->right)) {
@@ -1897,6 +1900,27 @@ int TypeAlignment(AST *typ)
               typ->kind);
         return 1;
     }
+}
+
+int
+IsArraySymbol(Symbol *sym)
+{
+    AST *type = NULL;
+    if (!sym) return 0;
+    switch (sym->kind) {
+    case SYM_LOCALVAR:
+    case SYM_TEMPVAR:
+    case SYM_VARIABLE:
+    case SYM_PARAMETER:
+    case SYM_RESULT:
+        type = (AST *)sym->val;
+        break;
+    case SYM_LABEL:
+        return 1;
+    default:
+        return 0;
+    }
+    return IsArrayType(type);
 }
 
 int

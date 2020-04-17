@@ -206,12 +206,19 @@ pri _rx : r
   until r <> -1
   if (__rxtxflags & _rxtx_echo)
     _tx(r)
-  
+
+pri __sendstring(func, str) | c
+  repeat
+    c := byte[str++]
+    if c
+      func(c)
+  until c == 0
+
 pri __builtin_clkfreq
-  return _clkfreq_var
+  return _clkfreq
 
 pri __builtin_clkmode
-  return _clkmode_var
+  return _clkmode
   
 pri __builtin_inf
   return $7f800000
@@ -219,12 +226,26 @@ pri __builtin_inf
 pri __builtin_nan(p)
   return $7fc00000
 
+pri _pinwrite(pingrp, val) | mask, basepin, reg
+  basepin := pingrp & $1f
+  reg := pingrp & $20
+  mask := (pingrp >> 6)
+  mask := (1<<(mask+1)) - 1
+  mask := mask << basepin
+  val := (val << basepin) & mask
+  if reg
+    dirb |= mask
+    outb := (outb & !mask) | val 
+  else
+    dira |= mask
+    outa := (outa & !mask) | val
+
 '' read a line of data from handle h
 pri file "libsys/readdata.spin" _basic_read_line(h=0)
 
 '' find the end of a string, or the next comma
 pri file "libsys/readdata.spin" _basic_find_terminator(ptr)
-    
+
 '' read a string from another string
 '' returns two values: the new string, and a pointer into
 '' the original string right after where we stopped reading
@@ -241,11 +262,11 @@ pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
 '' pause for m milliseconds
 pri _waitms(m=long)
-  _waitx(m * (clkfreq / 1000))
+  _waitx(m * (_clkfreq / 1000))
 
 '' pause for m microseconds
 pri _waitus(m=long)
-  _waitx(m * (clkfreq / 1000000))
+  _waitx(m * (_clkfreq / 1000000))
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long

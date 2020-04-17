@@ -433,6 +433,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
         }
         if (ast->kind == AST_INSTRHOLDER) {
             IR *ir = CompileInlineInstr(irl, ast->left);
+            if (!ir) break;
             if (isConst) {
                 ir->flags |= FLAG_KEEP_INSTR;
             }

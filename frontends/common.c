@@ -78,6 +78,7 @@ AST *ast_type_void;
 AST *ast_type_bitfield;
 AST *ast_type_long64, *ast_type_unsigned_long64;
 AST *ast_type_generic_funcptr;
+AST *ast_type_sendptr;
 
 const char *gl_progname = "spin2cpp";
 char *gl_header1 = NULL;
@@ -89,8 +90,8 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
-    { "clkfreq", "__builtin_clkfreq" },
-    { "clkmode", "__builtin_clkmode" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
     { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
 #ifdef NEVER    
@@ -112,6 +113,8 @@ Aliases spinalias[] = {
     { "_pinr", "__builtin_propeller_pinr" },
 
     { "reboot", "_reboot" },
+
+    { "send", "__sendptr" },
     
     { "_waitx", "__builtin_propeller_waitx" },
     
@@ -131,7 +134,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
     
-    { "pinw", "__builtin_propeller_drv" },
+    { "pinw", "_pinwrite" },
     { "pinl", "__builtin_propeller_drvl" },    
     { "pinh", "__builtin_propeller_drvh" },
     { "pint", "__builtin_propeller_drvnot" },
@@ -142,7 +145,7 @@ Aliases spin2alias[] = {
     { "pinclear", "_pinclear" },
     
 //    { "pinrnd", "__builtin_propeller_drvrnd" },
-    { "pinwrite", "__builtin_propeller_drv" },
+    { "pinwrite", "_pinwrite" },
     { "pinlow", "__builtin_propeller_drvl" },    
     { "pinhigh", "__builtin_propeller_drvh" },
     { "pintoggle", "__builtin_propeller_drvnot" },
@@ -165,6 +168,7 @@ Aliases spin2alias[] = {
     { "xypol", "_xypol" },
 
     { "cogatn", "__builtin_propeller_cogatn" },
+    { "muldiv64", "_muldiv64" },
     { "waitx", "__builtin_propeller_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
@@ -198,8 +202,8 @@ Aliases basicalias[] = {
     /* ugh, not sure if we want to keep supporting the clk* variables,
      * but changing them to functions is difficult
      */
-    { "clkfreq", "_clkfreq_var" },
-    { "clkmode", "_clkmode_var" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "getcnt",  "_getcnt" },
@@ -716,6 +720,10 @@ Init()
 
     // a generic function returning a single (unknown) value
     ast_type_generic_funcptr = GenericFunctionPtr(1);
+
+    // a generic function for Spin2 SEND type functionality
+    ast_type_sendptr = NewAST(AST_MODIFIER_SEND_ARGS, GenericFunctionPtr(0), NULL);
+    
     initSpinLexer(gl_p2);
 
     /* fill in the global symbol table */

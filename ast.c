@@ -656,6 +656,7 @@ static const char *astnames[] = {
     "copyreftype",
 
     "empty",
+    "sendargs",
 };
 
 //

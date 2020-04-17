@@ -1986,6 +1986,9 @@ CompileBasicBoolExpression(IRList *irl, AST *expr)
   default:
     cond = COND_NE;
     lhs = CompileExpression(irl, expr, NULL);
+    if (lhs && lhs->kind == IMM_INT) {
+        return (lhs->val == 0) ? COND_FALSE : COND_TRUE;
+    }
     rhs = NewOperand(IMM_INT, "", 0);
     break;
   }

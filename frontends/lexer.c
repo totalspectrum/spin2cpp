@@ -1347,27 +1347,19 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             }
             op[i] = c;
             op[i+1] = 0;
-            sym = FindSymbol(&spinReservedWords, op);
+            if (L->language == LANG_SPIN_SPIN2) {
+                sym = FindSymbol(&spin2ReservedWords, op);
+            } else {
+                sym = NULL;
+            }
+            if (!sym) {
+                sym = FindSymbol(&spinReservedWords, op);
+            }
             if (sym) {
                 token = INTVAL(sym);
             } else {
                 lexungetc(L, c);
                 break;
-            }
-        }
-        if (L->language == LANG_SPIN_SPIN2) {
-            // check for special spin2 cases
-            int nextc = lexgetc(L);
-            if (nextc == '=') {
-                if (token == '<') {
-                    token = SP_LE;
-                } else if (token == '>') {
-                    token = SP_GE;
-                } else {
-                    lexungetc(L, nextc);
-                }
-            } else {
-                lexungetc(L, nextc);
             }
         }
         c = token;
@@ -1389,6 +1381,8 @@ struct reservedword {
 } init_spin_words[] = {
     { "abort", SP_ABORT },
     { "abs", SP_ABS },
+    { "alignl", SP_ALIGNL }, // NON-STANDARD
+    { "alignw", SP_ALIGNW }, // NON-STANDARD
     { "and", SP_AND },
     { "asm", SP_ASM },  // NON-STANDARD
 
@@ -1518,11 +1512,11 @@ struct reservedword init_spin2_words[] = {
     { "^^", SP_XOR },
     { "&&", SP_AND },
     { "||", SP_OR },
+    { "<=", SP_LE },
+    { ">=", SP_GE },
     
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
-    { "alignl", SP_ALIGNL },
-    { "alignw", SP_ALIGNW },
     { "cogspin", SP_COGINIT },
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
@@ -2650,7 +2644,7 @@ instr_p2[] = {
     { "getqx",  0x0d600018, DST_OPERAND_ONLY, OPC_GETQX, FLAG_P2_STD },
     { "getqy",  0x0d600019, DST_OPERAND_ONLY, OPC_GETQY, FLAG_P2_STD },
     { "getct",  0x0d60001a, DST_OPERAND_ONLY, OPC_GETCT, FLAG_WC },
-    { "getrnd", 0x0d60001b, DST_OPERAND_ONLY, OPC_GETRND, FLAG_P2_STD },
+    { "getrnd", 0x0d60001b, P2_DST_CONST_OK, OPC_GETRND, FLAG_P2_STD },
 
     { "setdacs",0x0d60001c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setxfrq",0x0d60001d, P2_DST_CONST_OK, OPC_GENERIC, 0 },

@@ -190,6 +190,8 @@ extern AST *ast_type_bitfield;
 extern AST *ast_type_long64;
 extern AST *ast_type_unsigned_long64;
 extern AST *ast_type_generic_funcptr;
+// special function pointer used for Spin2 SEND builtin
+extern AST *ast_type_sendptr;
 
 /* structure describing a dat block label */
 typedef struct label {
@@ -636,6 +638,7 @@ extern unsigned int gl_hub_base;
    0x18 == CLKSET mode setting
    0x1c == baud rate
    0x20 - 0x30 (VGA settings (not used by fastspin)
+   0x30 == SEND pointer
 */
 
 /*

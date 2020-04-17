@@ -2151,6 +2151,10 @@ pasmatom
             { $$ = NewAST(AST_ADDROF, $2, NULL); }
       | '(' pasmexpr ')'
             { $$ = $2; }
+      | pasmatom C_INC_OP
+            { $$ = AstOperator(K_INCREMENT, $1, NULL); }
+      | pasmatom C_DEC_OP
+            { $$ = AstOperator(K_DECREMENT, $1, NULL); }
 ;
 
 pasmunary

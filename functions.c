@@ -1758,6 +1758,60 @@ CheckRetStatement(Function *func, AST *ast)
 }
 
 /*
+ * expand arguments in a SEND type function call
+ */
+AST *
+ExpandArguments(AST *sendptr, AST *args)
+{
+    AST *seq = NULL;
+    AST *arg;
+    AST *call;
+    AST *typ;
+    static AST *sendstring = NULL;
+
+    call = NULL;
+    while (args) {
+        arg = args->left;
+        args = args->right;
+        if (arg) {
+            switch (arg->kind) {
+            case AST_STRING:
+                if (!sendstring) {
+                    sendstring = AstIdentifier("__sendstring");
+                }
+                arg = NewAST(AST_EXPRLIST, arg, NULL);
+                arg = NewAST(AST_STRINGPTR, arg, NULL);
+                arg = NewAST(AST_EXPRLIST, sendptr,
+                             NewAST(AST_EXPRLIST, arg, NULL));
+                call = NewAST(AST_FUNCCALL, sendstring, arg);
+                break;
+            case AST_FUNCCALL:
+                typ = ExprType(arg);
+                if (typ == ast_type_void) {
+                    call = arg;
+                } else {
+                    // FIXME: do we need to handle multiple return values
+                    // here??
+                    call = NewAST(AST_FUNCCALL, sendptr,
+                                  NewAST(AST_EXPRLIST, arg, NULL));
+                }
+                break;
+            default:
+                call = NewAST(AST_FUNCCALL, sendptr,
+                              NewAST(AST_EXPRLIST, arg, NULL));
+                break;
+            }
+        }
+        if (seq) {
+            seq = NewAST(AST_SEQUENCE, seq, call);
+        } else {
+            seq = NewAST(AST_SEQUENCE, call, NULL);
+        }
+    }
+    return seq;
+}
+
+/*
  * check function calls for correct number of arguments
  * also does expansion for multiple returns used as parameters
  * and does default parameter substitution
@@ -1784,6 +1838,7 @@ CheckFunctionCalls(AST *ast)
     if (ast->kind == AST_FUNCCALL) {
         AST *a;
         AST **lastaptr;
+        int doExpandArgs = 0;
         sym = FindCalledFuncSymbol(ast, NULL, 0);
         expectArgs = 0;
         if (sym) {
@@ -1797,6 +1852,10 @@ CheckFunctionCalls(AST *ast)
             } else {
                 AST *ftype = ExprType(ast->left);
                 if (ftype) {
+                    if (ftype->kind == AST_MODIFIER_SEND_ARGS) {
+                        doExpandArgs = 1;
+                        ftype = ftype->left;
+                    }
                     if (!IsFunctionType(ftype)) {
                         ERROR(ast, "%s is not a function", fname);
                         return;
@@ -1816,6 +1875,13 @@ CheckFunctionCalls(AST *ast)
                 }
             }
         } else {
+            goto skipcheck;
+        }
+        if (doExpandArgs) {
+            if (AstListLen(ast->right) > 1) {
+                initseq = ExpandArguments(ast->left, ast->right);
+                *ast = *initseq;
+            }
             goto skipcheck;
         }
         if (expectArgs < 0) {
