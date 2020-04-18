@@ -109,7 +109,7 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
             state |= _VFS_STATE_RDOK;
         }
 #ifdef DEBUG
-        __builtin_printf("rdwr=%d state=%d\n", rdwr, state);
+        __builtin_printf("openraw rdwr=%d state=%d\n", rdwr, state);
 #endif    
         fil->state = state;
 
@@ -117,12 +117,28 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
         if (!fil->write) fil->write = v->write;
         if (!fil->close) fil->close = v->close;
         if (!fil->ioctl) fil->ioctl = v->ioctl;
-        if (!fil->putcf) fil->putcf = &__default_putc;
-        if (!fil->getcf) fil->getcf = &__default_getc;
+        if (!fil->putcf) {
+            fil->putcf = &__default_putc;
+        }
+        if (!fil->getcf) {
+            fil->getcf = &__default_getc;
+#ifdef DEBUG
+            {
+                unsigned *ptr = (unsigned *)fil->getcf;
+                __builtin_printf("openraw: using default getc (%x: %x %x)\n", (unsigned)ptr, ptr[0], ptr[1]);
+            }
+#endif                
+        }
         if (!fil->flush) {
             if (v->flush) {
+#ifdef DEBUG
+                __builtin_printf("openraw: using vfs flush\n");
+#endif                
                 fil->flush = v->flush;
             } else {
+#ifdef DEBUG
+                __builtin_printf("openraw: using default flush\n");
+#endif                
                 fil->flush = &__default_flush;
             }
         }

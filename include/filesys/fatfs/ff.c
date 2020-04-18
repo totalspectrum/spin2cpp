@@ -6857,6 +6857,11 @@ FRESULT f_setcp (
 #include <unistd.h>
 #include <stdlib.h>
 
+typedef struct fat_file {
+    struct _default_buffer b;
+    FIL fil;
+} FAT_FIL;
+
 static int _set_dos_error(int derr)
 {
     int r;
@@ -6906,7 +6911,7 @@ static int _set_dos_error(int derr)
 static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 {
   int r;
-  FIL *f = malloc(sizeof(*f));
+  FAT_FIL *f = malloc(sizeof(*f));
   int fatmode;
   
   if (!f) {
@@ -6914,7 +6919,7 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
   }
   memset(f, 0, sizeof(*f));
   fatmode = FA_CREATE_NEW | FA_WRITE | FA_READ;
-  r = f_open(f, pathname, fatmode);
+  r = f_open(&f->fil, pathname, fatmode);
 #ifdef DEBUG
   __builtin_printf("v_create(%s) returned %d\n", pathname, r);
 #endif  
@@ -6928,9 +6933,11 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
 
 static int v_close(vfs_file_t *fil)
 {
-  int r=f_close(fil->vfsdata);
-  free(fil->vfsdata);
-  return _set_dos_error(r);
+    int r;
+    FAT_FIL *f = fil->vfsdata;
+    r=f_close(&f->fil);
+    free(f);
+    return _set_dos_error(r);
 }
 
 static int v_opendir(DIR *dir, const char *name)
@@ -7048,7 +7055,7 @@ static int v_stat(const char *name, struct stat *buf)
 
 static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 {
-    FIL *f = fil->vfsdata;
+    FAT_FIL *f = fil->vfsdata;
     int r;
     UINT x;
     
@@ -7058,7 +7065,7 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 #ifdef DEBUG    
     __builtin_printf("v_read: fs_read of %u bytes:", siz);
 #endif    
-    r = f_read(f, buf, siz, &x);
+    r = f_read(&f->fil, buf, siz, &x);
 #ifdef DEBUG
     __builtin_printf(" ...returned %d\n", r);
 #endif    
@@ -7073,7 +7080,7 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
 }
 static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 {
-    FIL *f = fil->vfsdata;
+    FAT_FIL *f = fil->vfsdata;
     int r;
     UINT x;
     if (!f) {
@@ -7082,7 +7089,7 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 #ifdef DEBUG    
     __builtin_printf("v_write: f_write %d bytes:", siz);
 #endif    
-    r = f_write(f, buf, siz, &x);
+    r = f_write(&f->fil, buf, siz, &x);
 #ifdef DEBUG
     __builtin_printf("returned %d\n", r);
 #endif    
@@ -7094,7 +7101,8 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
 }
 static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 {
-    FIL *f = fil->vfsdata;
+    FAT_FIL *vf = fil->vfsdata;
+    FIL *f = &vf->fil;
     int result;
     
     if (!f) {
@@ -7141,7 +7149,7 @@ int v_remove(const char *name)
     return _set_dos_error(r);
 }
 
-int v_rmdir(const char *name)
+static int v_rmdir(const char *name)
 {
     int r;
 
@@ -7152,14 +7160,25 @@ int v_rmdir(const char *name)
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
   int r;
-  FIL *f = malloc(sizeof(*f));
+  FAT_FIL *f = malloc(sizeof(*f));
   unsigned fs_flags;
 
   if (!f) {
       return _seterror(ENOMEM);
   }
   memset(f, 0, sizeof(*f));
-  fs_flags = flags & 3; // basic stuff like O_RDONLY are the same
+  switch (flags & 3) {
+  case O_RDONLY:
+      fs_flags = FA_READ;
+      break;
+  case O_WRONLY:
+      fs_flags = FA_WRITE;
+      break;
+  default:
+      fs_flags = FA_READ | FA_WRITE;
+      break;
+  }
+  
   if (flags & O_TRUNC) {
       fs_flags |= FA_CREATE_ALWAYS;
   } else if (flags & O_APPEND) {
@@ -7167,7 +7186,7 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   } else {
       fs_flags |= FA_OPEN_ALWAYS;
   }
-  r = f_open(f, name, fs_flags);
+  r = f_open(&f->fil, name, fs_flags);
   if (r) {
     free(f);
     return _set_dos_error(r);
