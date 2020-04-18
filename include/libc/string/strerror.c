@@ -36,7 +36,7 @@ char *strerror(int errnum)
 
 void perror(const char *s)
 {
-  int err = errno;
+  int err = _geterror();
 
   fputs(s, stderr);
   fputs(": ", stderr);

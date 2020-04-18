@@ -36,6 +36,7 @@ struct vfs *_getrootvfs(void) _IMPL("libc/unix/vfs.c");
 void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
 
 struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
+struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
 
 /* generic file buffer code */
 /* put a "struct _default_buffer" at the start of your vfsdata to use the

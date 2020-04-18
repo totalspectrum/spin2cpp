@@ -56,11 +56,15 @@ int __default_getc(vfs_file_t *f) {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
     int i = b->cnt;
     unsigned char *ptr;
-    
-//    __builtin_printf("getc: %d\n", i);
+
+#ifdef DEBUG    
+    __builtin_printf("getc: %d\n", i);
+#endif    
     if (i == 0) {
         i = __default_filbuf(f);
-//        __builtin_printf("filbuf: %d\n", i);
+#ifdef DEBUG        
+        __builtin_printf("filbuf: %d\n", i);
+#endif        
     }
     if (i <= 0) {
         return -1;

@@ -234,8 +234,8 @@ Aliases basicalias[] = {
 };
 Aliases calias[] = {
     /* these are obsolete but we'll support them for now */
-    { "clkfreq", "_clkfreq_var" },
-    { "clkmode", "_clkmode_var" },
+    { "clkfreq", "_clkfreq" },
+    { "clkmode", "_clkmode" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
@@ -654,7 +654,8 @@ void
 ERROR_UNKNOWN_SYMBOL(AST *ast)
 {
     const char *name;
-
+    Label *labelref;
+    
     if (IsIdentifier(ast)) {
         name = GetVarNameForError(ast);
     } else if (ast->kind == AST_VARARGS || ast->kind == AST_VA_START) {
@@ -666,6 +667,9 @@ ERROR_UNKNOWN_SYMBOL(AST *ast)
     // add a definition for this symbol so we don't get this error again
     if (curfunc) {
         AddLocalVariable(curfunc, ast, NULL, SYM_LOCALVAR);
+    } else {
+        labelref = (Label *)calloc(1, sizeof(*labelref));
+        AddSymbol(&globalModule->objsyms, name, SYM_LABEL, labelref, NULL);
     }
 }
 

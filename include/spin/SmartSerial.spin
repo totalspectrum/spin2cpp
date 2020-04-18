@@ -37,7 +37,6 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   wxpin(rxpin, bit_mode)
   pinl(rxpin)  ' turn smartpin on
 
-  return 1
 
 PRI autobaud(pin) | a, b, c, delay, port, mask
   pinf(pin)   ' set pin as input
@@ -56,7 +55,7 @@ PRI autobaud(pin) | a, b, c, delay, port, mask
   ' this works if the character sent is space ($20), which has 1 bit high
   ' or CR ($0d) which has 1 bit low after the high bit
   '
-  asm
+  org
     test port, #1 wc	' set C to distinguish INA/OUTA
     test port, #2 wz    ' set Z (match on =)
 
@@ -71,7 +70,7 @@ PRI autobaud(pin) | a, b, c, delay, port, mask
     setpat mask,mask	' wait for pin hi again (end of 0 sequence)
     waitpat
     getct c
-  endasm
+  end
   delay := b - a	' length of first 1 bit sequence
   c := c - b            ' length of following 0
   if c < delay
@@ -89,7 +88,7 @@ PUB tx(val)
   wypin(tx_pin, val)
   txflush
 
-PUB txflush | txpin, z
+PUB txflush() | z
   repeat
     z := pinr(tx_pin)
   while z == 0
@@ -97,7 +96,7 @@ PUB txflush | txpin, z
 ' check if byte received (never waits)
 ' returns -1 if no byte, otherwise byte
 
-PUB rxcheck : rxbyte | rxpin, z
+PUB rxcheck() : rxbyte | rxpin, z
   rxbyte := -1
   rxpin := rx_pin
   z := pinr(rxpin)
@@ -106,7 +105,7 @@ PUB rxcheck : rxbyte | rxpin, z
     
 
 ' receive a byte (waits until one ready)
-PUB rx : v
+PUB rx() : v
   repeat
     v := rxcheck
   while v == -1
