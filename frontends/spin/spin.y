@@ -141,9 +141,9 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 
 /* operators */
 %token SP_ASSIGN     ":="
-%token SP_XOR        "XOR"
-%token SP_OR         "OR"
-%token SP_AND        "AND"
+%token SP_XOR        "XOR (^^)"
+%token SP_OR         "OR (||)"
+%token SP_AND        "AND (&&)"
 %token SP_GE         "=>"
 %token SP_LE         "=<"
 %token SP_GEU        "+=>"
