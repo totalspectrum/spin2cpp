@@ -1525,7 +1525,9 @@ struct reservedword init_spin2_words[] = {
     { "frac", SP_FRAC },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_HIGHMULT },
+    { "signx", SP_SIGNX },
     { "sqrt", SP_SQRT },
+    { "zerox", SP_ZEROX },
 };
 
 struct reservedword basic_keywords[] = {

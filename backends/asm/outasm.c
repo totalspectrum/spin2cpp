@@ -2229,7 +2229,7 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   case K_ZEROEXTEND:
   case K_SIGNEXTEND:
       if (!IsConstExpr(rhs)) {
-          ERROR(NULL, "Internal error: non-constant extend");
+          ERROR(rhs, "Error: only constant values are supported for sign/zero extension");
       } else {
           int shift = 32 - EvalConstExpr(rhs);
           left = CompileExpression(irl, lhs, temp);

@@ -188,6 +188,8 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_CONSTANT   "constant"
 %token SP_RANDOM     "??"
 %token SP_EMPTY      "empty assignment marker _"
+%token SP_SIGNX      "SIGNX"
+%token SP_ZEROX      "ZEROX"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -203,7 +205,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_UNSDIV SP_UNSMOD SP_FRAC
 %left '|' '^'
 %left '&'
-%left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2
+%left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
 %left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
@@ -874,6 +876,10 @@ expr:
     { $$ = AstOperator(K_LIMITMIN, $1, $3); }
   | expr SP_LIMITMAX expr
     { $$ = AstOperator(K_LIMITMAX, $1, $3); }
+  | expr SP_ZEROX expr
+    { $$ = AstOperator(K_ZEROEXTEND, $1, $3); }
+  | expr SP_SIGNX expr
+    { $$ = AstOperator(K_SIGNEXTEND, $1, $3); }
   | expr SP_REV expr
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_REV2 expr
