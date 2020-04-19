@@ -22,12 +22,11 @@ FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdout __getftab(1)
 #define stderr __getftab(2)
 
-// FIXME: fputc and fgetc should be functions, not macros
-#define fputc(x, f) (((f)->putcf)( (x), (f) ))
-#define fgetc(f)    (((f)->getcf)( (f) ))
-
 #define putc(x, f) (((f)->putcf)( (x), (f) ))
 #define getc(f)    (((f)->getcf)( (f) ))
+
+int fputc(int c, FILE *f) _IMPL("libc/stdio/fputs.c");
+int fgetc(FILE *f) _IMPL("libc/stdio/fputs.c");
 
 #define putchar(x) fputc( (x), stdout)
 #define getchar() fgetc(stdin)
