@@ -2,7 +2,15 @@
 #define wchar_t unsigned int
 #define wint_t int
 #define time_t unsigned int
-#define _FILE struct FILE
+#define mode_t unsigned int
+#define off_t long
+#define _FILE struct vfs_file_t
+
+/* filesys/fatfs/fatfs_vfs.c */
+struct vfs *_vfs_open_sdcard(void) __fromfile("filesys/fatfs/fatfs_vfs.c");
+
+/* filesys/fs9p/fs9p_vfs.c */
+struct vfs *_vfs_open_host(void) __fromfile("filesys/fs9p/fs9p_vfs.c");
 
 /* libc/misc/ctype.c */
 int isupper(int c) __fromfile("libc/misc/ctype.c");
@@ -40,15 +48,29 @@ int fflush(_FILE *f) __fromfile("libc/stdio/fflush.c");
 /* libc/stdio/fprintf.c */
 int printf(const char *format, ...) __fromfile("libc/stdio/fprintf.c");
 int fprintf(_FILE *, const char *format, ...) __fromfile("libc/stdio/fprintf.c");
+int vprintf(const char *format, unsigned long ap) __fromfile("libc/stdio/fprintf.c");
+int vfprintf(_FILE *f, const char *format, unsigned long ap) __fromfile("libc/stdio/fprintf.c");
 
 /* libc/stdio/fputs.c */
+int fputc(int c, _FILE *f) __fromfile("libc/stdio/fputs.c");
+int fgetc(_FILE *f) __fromfile("libc/stdio/fputs.c");
 char *fputs(char *data, _FILE *) __fromfile("libc/stdio/fputs.c");
 char *puts(char *data) __fromfile("libc/stdio/fputs.c");
+
+/* libc/stdio/fopen.c */
+_FILE *fopen(const char *name, const char *mode) __fromfile("libc/stdio/fopen.c");
+int fclose(_FILE *f) __fromfile("libc/stdio/fopen.c");
+
+/* libc/stdio/fwrite.c */
+size_t fwrite(const void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
+size_t fread(void *ptr, size_t size, size_t n, _FILE *f) __fromfile("libc/stdio/fwrite.c");
 
 /* libc/stdio/gets.c */
 char *gets(char *data) __fromfile("libc/stdio/gets.c");
 
+/* libc/stdio/sprintf.c */
 int sprintf(char *str, const char *format, ...) __fromfile("libc/stdio/sprintf.c");
+int vsprintf(char *str, const char *format, unsigned long ap) __fromfile("libc/stdio/sprintf.c");
 
 /* libc/stdlib/abort.c */
 void abort(void) __fromfile("libc/stdlib/abort.c");
@@ -149,6 +171,20 @@ time_t time(time_t *tp) __fromfile("libc/time/time.c");
 
 /* libc/time/usleep.c */
 int usleep(unsigned int n) __fromfile("libc/time/usleep.c");
+
+/* libc/unix/posixio.c */
+int _openraw(_FILE *f, const char *name, unsigned flags, unsigned perm) __fromfile("libc/unix/posixio.c");
+int _closeraw(_FILE *f) __fromfile("libc/unix/posixio.c");
+int open(const char *name, int flags, mode_t mode) __fromfile("libc/unix/posixio.c");
+int write(int fd, const void *buf, int count) __fromfile("libc/unix/posixio.c");
+int read(int fd, void *buf, int count) __fromfile("libc/unix/posixio.c");
+int close(int fd) __fromfile("libc/unix/posixio.c");
+off_t lseek(int fd, off_t offset, int whence) __fromfile("libc/unix/posixio.c");
+int access(const char *path, int mode) __fromfile("libc/unix/access.c");
+
+/* libc/unix/vfs.c */
+struct vfs *_getrootvfs(void) __fromfile("libc/unix/vfs.c");
+void _setrootvfs(struct vfs *) __fromfile("libc/unix/vfs.c");
 
 /* libc/wchar/btowc.c */
 wint_t btowc(int c) __fromfile("libc/wchar/btowc.c");

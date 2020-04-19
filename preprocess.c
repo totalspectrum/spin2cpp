@@ -781,6 +781,12 @@ find_file_relative(struct preprocess *pp, const char *name, const char *ext, con
   FILE *f;
   int trimname = 1;
   
+#ifdef WIN32
+  if (isalpha(name[0]) && name[1] == ':') {
+      /* absolute path */
+      path = "";
+  } else
+#endif      
   if (name[0] == '/' || name[0] == '\\') {
     /* absolute path */
     path = "";

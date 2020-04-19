@@ -29,3 +29,11 @@ int puts(const char *s)
     q++;
     return q;
 }
+
+int fputc(int c, FILE *f) {
+    return putc(c, f);
+}
+
+int fgetc(FILE *f) {
+    return getc(f);
+}

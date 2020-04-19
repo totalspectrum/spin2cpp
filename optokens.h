@@ -45,5 +45,6 @@
 #define K_LIMITMAX_UNS 0x126
 #define K_POWER     0x127
 #define K_FRAC64    0x128
+#define K_UNS_HIGHMULT 0x129
 
 #endif
