@@ -223,7 +223,7 @@ Aliases basicalias[] = {
 
     /* extra string functions */
     { "instr", "_instr" },
-    { "instr", "_instrrev" },
+    { "instrrev", "_instrrev" },
     
     /* math functions */
     { "cos", "__builtin_cosf" },
