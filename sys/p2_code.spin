@@ -264,7 +264,7 @@ pri __builtin_propeller_rdpin(pin) : r
   endasm
 pri __builtin_propeller_rqpin(pin) : r
   asm
-    rqpin q, pin
+    rqpin r, pin
   endasm
 pri __builtin_propeller_akpin(pin)
   asm

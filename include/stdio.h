@@ -3,12 +3,16 @@
 
 #include <compiler.h>
 #include <sys/types.h>
+#include <sys/limits.h>
 
 #ifndef EOF
 #define EOF (-1)
 #endif
 #ifndef NULL
 #define NULL ((void *)0)
+#endif
+#ifndef FILENAME_MAX
+#define FILENAME_MAX _PATH_MAX
 #endif
 
 typedef struct vfs_file_t FILE;
