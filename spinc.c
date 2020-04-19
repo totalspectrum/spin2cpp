@@ -731,7 +731,9 @@ doParseFile(const char *name, Module *P, int *is_dup)
         fname = find_file_on_path(&gl_pp, name, langptr, current->fullname);
         if (!fname && !strcmp(langptr, ".spin2")) {
             fname = find_file_on_path(&gl_pp, name, ".spin", current->fullname);
-            language = LANG_SPIN_SPIN1;
+            if (fname) {
+                language = LANG_SPIN_SPIN1;
+            }
         }
         if (fname) {
             fname = NormalizePath(fname);
