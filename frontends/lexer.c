@@ -1468,6 +1468,7 @@ struct reservedword {
     { "+//", SP_UNSMOD },
     { "*", '*' },
     { "**", SP_HIGHMULT },
+    { "+**", SP_UNSHIGHMULT },
     { ">", '>' },
     { "<", '<' },
     { "=<", SP_LE },
@@ -1512,6 +1513,7 @@ struct reservedword init_spin2_words[] = {
     { "^^", SP_XOR },
     { "&&", SP_AND },
     { "||", SP_OR },
+    { "!!", SP_NOT },
     { "<=", SP_LE },
     { ">=", SP_GE },
     
@@ -1521,6 +1523,8 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
     { "frac", SP_FRAC },
+    { "sca", SP_UNSHIGHMULT },
+    { "scas", SP_HIGHMULT },
     { "sqrt", SP_SQRT },
 };
 

@@ -32,11 +32,16 @@ _calc2
 _calc2_ret
 	ret
 
+unsmultiply_
+	mov	itmp2_, #0
+	jmp	#do_multiply_
+
 multiply_
 	mov	itmp2_, muldiva_
 	xor	itmp2_, muldivb_
 	abs	muldiva_, muldiva_
 	abs	muldivb_, muldivb_
+do_multiply_
 	mov	result1, #0
 	mov	itmp1_, #32
 	shr	muldiva_, #1 wc

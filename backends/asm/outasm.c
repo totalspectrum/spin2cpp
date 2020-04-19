@@ -48,7 +48,7 @@ static IRList hubdata;
 static int max_coginit_args = 4;
 
 /* operands for multiply/divide */
-Operand *mulfunc, *muldiva, *muldivb;
+Operand *mulfunc, *unsmulfunc, *muldiva, *muldivb;
 Operand *divfunc, *unsdivfunc;
 
 Operand *putcogreg;
@@ -1749,8 +1749,8 @@ static Operand *
 doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
 {    
     Operand *temp = NewFunctionTempRegister();
-
-    g_NeedMulHi |= gethi;
+    int isUnsigned = (gethi & 2);
+    g_NeedMulHi |= (gethi & 1);
     
     // if lhs is constant, swap left and right
     if (lhs->kind == IMM_INT) {
@@ -1792,12 +1792,17 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
     }
     if (!mulfunc) {
         mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
+        unsmulfunc = NewOperand(IMM_COG_LABEL, "unsmultiply_", 0);
         muldiva = GetOneGlobal(REG_REG, "muldiva_", 0);
         muldivb = GetOneGlobal(REG_REG, "muldivb_", 0);
     }
     EmitMove(irl, muldiva, lhs);
     EmitMove(irl, muldivb, rhs);
-    EmitOp1(irl, OPC_CALL, mulfunc);
+    if (isUnsigned) {
+        EmitOp1(irl, OPC_CALL, unsmulfunc);
+    } else {
+        EmitOp1(irl, OPC_CALL, mulfunc);
+    }
     if (gethi) {
         EmitMove(irl, temp, muldivb);
     } else {
@@ -2405,6 +2410,8 @@ CompileOperator(IRList *irl, AST *expr, Operand *dest)
         return CompileMul(irl, expr, 0, dest);
     case K_HIGHMULT:
         return CompileMul(irl, expr, 1, dest);
+    case K_UNS_HIGHMULT:
+        return CompileMul(irl, expr, 3, dest);
     case '/':
         return CompileDiv(irl, expr, 0, dest);
     case K_MODULUS:
@@ -4945,11 +4952,15 @@ CompileToIR(IRList *irl, Module *P)
  * emit builtin functions like mul and div
  */
 static const char *builtin_mul_p1 =
+"\nunsmultiply_\n"
+"\tmov\titmp2_, #0\n"
+"\tjmp\t#do_multiply_\n"
 "\nmultiply_\n"
 "\tmov\titmp2_, muldiva_\n"
 "\txor\titmp2_, muldivb_\n"
 "\tabs\tmuldiva_, muldiva_\n"
 "\tabs\tmuldivb_, muldivb_\n"
+"do_multiply_\n"
 "\tmov\tresult1, #0\n"
 "\tmov\titmp1_, #32\n"
 "\tshr\tmuldiva_, #1 wc\n"
@@ -4969,11 +4980,15 @@ static const char *builtin_mul_p1 =
 ;
 
 static const char *builtin_mul_p1_fast =
+"\nunsmultiply_\n"
+"       mov    itmp2_, #0\n"
+"       jmp    #do_multiply_\n"
 "\nmultiply_\n"
 "       mov    itmp2_, muldiva_\n"
 "       xor    itmp2_, muldivb_\n"
 "       abs    muldiva_, muldiva_\n"
 "       abs    muldivb_, muldivb_\n"
+"do_multiply_\n"
 "	mov    result1, #0\n"
 "mul_lp_\n"
 "	shr    muldivb_, #1 wc,wz\n"
@@ -4988,11 +5003,15 @@ static const char *builtin_mul_p1_fast =
 ;
 
 static const char *builtin_mul_p2 =
+"\nunsmultiply_\n"
+"\tmov\titmp2_, #0\n"
+"\tjmp\t#do_multiply_\n"
 "\nmultiply_\n"
 "\tmov\titmp2_, muldiva_\n"
 "\txor\titmp2_, muldivb_\n"
 "\tabs\tmuldiva_, muldiva_\n"
 "\tabs\tmuldivb_, muldivb_\n"
+"do_multiply_\n"
 "\tqmul\tmuldiva_, muldivb_\n"
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"

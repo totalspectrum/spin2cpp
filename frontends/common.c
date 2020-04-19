@@ -133,6 +133,9 @@ Aliases spinalias[] = {
 };
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
+
+    { "locktry", "lockset" },
+    { "lockrel", "lockclr" },
     
     { "pinw", "_pinwrite" },
     { "pinl", "__builtin_propeller_drvl" },    

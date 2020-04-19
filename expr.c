@@ -972,6 +972,7 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
     case '^':
         return intAsFloat(floatAsInt(lval) ^ floatAsInt(rval));
     case K_HIGHMULT:
+    case K_UNS_HIGHMULT:
         return lval*rval / (float)(1LL<<32);
     case K_SHL:
         return intAsFloat(floatAsInt(lval) << floatAsInt(rval));
@@ -1031,6 +1032,8 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval ^ rval;
     case K_HIGHMULT:
         return (lval*(int64_t)rval) >> (G_FIXPOINT + 32);
+    case K_UNS_HIGHMULT:
+        return ((uint64_t)lval*(uint64_t)rval) >> (G_FIXPOINT + 32);
     case K_SHL:
         return lval << (rval >> G_FIXPOINT);
     case K_SHR:
