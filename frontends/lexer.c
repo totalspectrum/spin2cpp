@@ -1894,6 +1894,30 @@ Builtin builtinfuncs[] = {
 
     // BASIC compiler builtins
     { "_basic_print_unsigned", 4, defaultBuiltin, "basic_print_unsigned", NULL, NULL, 0, NULL },
+
+    // Spin2 builtins
+    { "akpin",    1, defaultBuiltin, "_akpin", "_akpin", NULL, 0, NULL },
+    { "getct",    0, defaultBuiltin, "_getcnt", "_getcnt", NULL, 0, NULL },
+    { "rdpin",    1, defaultBuiltin, "_rdpin", "_rdpin", NULL, 0, NULL },
+
+    { "pinf",     1, defaultBuiltin, "_pinf", "_pinf", NULL, 0, NULL },
+    { "pinfloat", 1, defaultBuiltin, "_pinf", "_pinf", NULL, 0, NULL },
+    { "pinh",     1, defaultBuiltin, "_pinh", "_pinh", NULL, 0, NULL },
+    { "pinhigh",  1, defaultBuiltin, "_pinh", "_pinh", NULL, 0, NULL },
+    { "pinl",     1, defaultBuiltin, "_pinl", "_pinl", NULL, 0, NULL },
+    { "pinlow",   1, defaultBuiltin, "_pinl", "_pinl", NULL, 0, NULL },
+    { "pinr",     1, defaultBuiltin, "_pinr", "_pinr", NULL, 0, NULL },
+    { "pinread",  1, defaultBuiltin, "_pinr", "_pinr", NULL, 0, NULL },
+    { "pinw",     2, defaultBuiltin, "_pinw", "_pinw", NULL, 0, NULL },
+    { "pinwrite", 2, defaultBuiltin, "_pinw", "_pinw", NULL, 0, NULL },
+
+    { "waitms",   1, defaultBuiltin, "_waitms", "_waitms", NULL, 0, NULL },
+    { "waitus",   1, defaultBuiltin, "_waitus", "_waitus", NULL, 0, NULL },
+    
+    { "wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
+    { "wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
+    { "wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
+    
 };
 
 struct constants {
