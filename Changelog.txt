@@ -1,6 +1,7 @@
 Version 4.1.6
 - Added FILENAME_MAX to stdio.h
 - Added some missing functions to libc.a
+- Added a warning for some variable redefinitions
 - Fixed a typo in implementation of rqpin
 - Fixed BASIC instrrev function
 - Fixed some problems with Windows absolute paths

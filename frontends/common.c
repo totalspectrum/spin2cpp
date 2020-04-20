@@ -1059,6 +1059,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
     AST *ident;
     AST *identinit = NULL;
     AST **identptr;
+    Symbol *sym;
     const char *name;
     if (!decl) return decl;
 
@@ -1093,6 +1094,11 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         return NULL;
     }
     name = ident->d.string;
+    sym = FindSymbol(table, name);
+    if (sym) {
+        WARNING(ident, "Redefining %s", name);
+    }
+            
     if (decl->kind == AST_TYPEDEF) {
         AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
         return NULL;
@@ -1100,6 +1106,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         const char *oldname = name;
         const char *newName = NewTemporaryVariable(oldname);
         AST *newIdent = AstIdentifier(newName);
+
         AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
