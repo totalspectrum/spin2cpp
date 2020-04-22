@@ -69,7 +69,7 @@ __system___tx_ret
 __system___gc_ptrs
 	mov	_var01, __heap_ptr
 	mov	_var02, _var01
-	add	_var02, imm_1024_
+	add	_var02, imm_1008_
 	rdlong	_var03, _var01 wz
  if_ne	jmp	#LR__0004
 	mov	_var04, _var02
@@ -652,8 +652,8 @@ __heap_ptr
 	long	@@@__heap_base
 fp
 	long	0
-imm_1024_
-	long	1024
+imm_1008_
+	long	1008
 imm_1073741824_
 	long	1073741824
 imm_1669332992_

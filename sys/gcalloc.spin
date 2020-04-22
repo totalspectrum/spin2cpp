@@ -99,7 +99,7 @@ pri _gc_ptrs : base, end | size
   asm
     mov base, __heap_ptr
   endasm
-  end := base + __real_heapsize__*4
+  end := base + (__real_heapsize__-4)*4
   if (long[base] == 0)
     size := end - base
     word[base + OFF_SIZE] := 1 
