@@ -5,6 +5,8 @@ Version 4.1.6
 - Fixed a typo in implementation of rqpin
 - Fixed BASIC instrrev function
 - Fixed some problems with Windows absolute paths
+- Fixed a serious memory allocation issue which caused only 1/4 of the
+  heap to actually be available
 - Supported more Spin2 operators
 
 Version 4.1.5

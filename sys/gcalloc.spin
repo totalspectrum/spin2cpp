@@ -99,7 +99,7 @@ pri _gc_ptrs : base, end | size
   asm
     mov base, __heap_ptr
   endasm
-  end := base + __real_heapsize__
+  end := base + __real_heapsize__*4
   if (long[base] == 0)
     size := end - base
     word[base + OFF_SIZE] := 1 
@@ -139,6 +139,7 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   (heap_base, heap_end) := _gc_ptrs()
   ptr := heap_base
   availsize := 0
+  
   repeat
     lastptr := ptr
     ptr := _gc_pageptr(heap_base, word[ptr+OFF_LINK])
@@ -186,6 +187,13 @@ pri _gc_errmsg(s) | c
     _tx(c)
   return 0
 
+pri _gc_errhex(h) | c
+  repeat 8
+    h := (h<-4)
+    c := h & $f
+    c := (c < 10) ? c + "0" : (c-10) + "A"
+    _tx(c)
+  _tx(" ")
   
 pri _gc_alloc(size)
   return _gc_doalloc(size, GC_FLAG_RESERVED)
