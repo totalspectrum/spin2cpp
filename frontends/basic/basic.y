@@ -351,7 +351,7 @@ static AST *
 AdjustParamType(AST *param)
 {
     AST *typ = param->left;
-    if (IsClassType(typ) || IsArrayType(typ)) {
+    if (typ && !IsIdentifier(typ) && (IsClassType(typ) || IsArrayType(typ))) {
         param->left = NewAST(AST_REFTYPE, typ, NULL);
     }
     return param;        
@@ -369,7 +369,7 @@ static AST *
 AdjustParamForByVal(AST *param)
 {
     AST *typ = param->left;
-    if (typ && (IsClassType(typ) || IsArrayType(typ))) {
+    if (typ && !IsIdentifier(typ) && (IsClassType(typ) || IsArrayType(typ))) {
         param->left = NewAST(AST_COPYREFTYPE, typ, NULL);
     }
     return param;
