@@ -994,7 +994,7 @@ Specifies that a parameter is to be passed by reference. This means that changes
    var x = 2
    incr(x)
 ```
-the final value of `x` is 3. Normally simple parameters (integers, floats, and strings) are passed by value, which means that changes inside the function do not affect the callers variables.
+the final value of `x` is 3. Normally simple parameters (integers, floats, and strings) are passed by value, which means that changes inside the function do not affect the callers variables. However, classes and arrays default to being passed by reference, so the `byref` declaration is optional for these.
 
 Note that if a parameter is specified as `byref` then literal constants like `1` or `-2.0` cannot be passed to it; only variables (or pointers to values) may be passed as `byref` parameters.
 
@@ -2048,7 +2048,7 @@ The statements in the top level of the file (not inside any subroutine or functi
 
 ### RDPIN (available on P2 only)
 
-`rdpin(p)` reads the current value of the smartpin `p` Z register.
+`rdpin(p)` reads the current value of the smartpin Z register for pin `p`.
 
 ### READ
 

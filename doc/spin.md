@@ -97,6 +97,36 @@ Symbol           | When Defined
 `__cplusplus`    | if C++ is being output (never in fastspin)
 
 
+## Memory Management
+
+There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
+
+### Heap allocation
+
+The main function is `_gc_alloc_managed(siz)`, which allocates `siz` bytes of memory managed by the garbage collector. It returns 0 if not enough memory is avilable, otherwise returns a pointer to the start of the memory (like C's `malloc`). As long as there is some reference in COG or HUB memory to the pointer which got returned, the memory will be considered "in use". If there is no more such reference then the garbage collector will feel free to reclaim it. There's also `_gc_alloc(siz)` which is similar but marks the memory so it will never be reclaimed, and `_gc_free(ptr)` which explicitly frees a pointer previously allocated by `_gc_alloc` or `_gc_alloc_managed`.
+
+ The size of the heap is determined by a constant `HEAPSIZE` declared in the top level object. If none is given then a (small) default value is used.
+
+Example:
+```
+' put this CON in the top level object to specify how much memory should be provided for
+' memory allocation (the "heap"). The default is 4K on P2, 256 bytes on P1
+CON
+   HEAPSIZE = 32768 ' or however much memory you want to provide for the allocator
+
+' here's a function to allocate memory
+' "siz" is the size in bytes
+PUB allocmem(size) : ptr
+  ptr := _gc_alloc_managed(size)
+```
+
+The garbage collection functions and heap are only included in programs which explicitly ask for them.
+
+### Stack allocation
+
+Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
+
+
 ## Extensions to Spin 1
 
 Fastspin has a number of extensions to the Spin language.
