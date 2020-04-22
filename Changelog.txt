@@ -4,6 +4,7 @@ Version 4.1.6
 - Added a warning for some variable redefinitions
 - Fixed a typo in implementation of rqpin
 - Fixed BASIC instrrev function
+- Fixed BYREF and BYVAL passing of arrays in BASIC
 - Fixed some problems with Windows absolute paths
 - Fixed a serious memory allocation issue which caused only 1/4 of the
   heap to actually be available

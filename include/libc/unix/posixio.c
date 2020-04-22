@@ -87,7 +87,7 @@ int
 _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
 {
     int r;
-    struct vfs *v = _getrootvfs();
+    struct vfs *v = (struct vfs *)_getrootvfs();
     unsigned state = _VFS_STATE_INUSE;
     if (!v || !v->open) {
         return _seterror(ENOSYS);

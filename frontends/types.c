@@ -911,7 +911,11 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
-            WARNING(line, "incompatible pointer types in %s", msg);
+            if (IsBasicLang(curfunc->language) && IsRefType(desttype) && TypeSize(desttype->left) == 0) {
+                /* OK, parameter declared as foo() so can accept any array */
+            } else {
+                WARNING(line, "incompatible pointer types in %s", msg);
+            }
         } else {
             ERROR(line, "incompatible types in %s", msg);
             return desttype;
