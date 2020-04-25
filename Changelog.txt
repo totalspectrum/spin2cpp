@@ -1,3 +1,6 @@
+Version 4.1.7
+- Fixed a problem that could cause functions to be processed twice
+
 Version 4.1.6
 - Added FILENAME_MAX to stdio.h
 - Added some missing functions to libc.a
