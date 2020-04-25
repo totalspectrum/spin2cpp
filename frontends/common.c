@@ -134,7 +134,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
 
-    { "locktry", "lockset" },
+    { "locktry", "_locktry" },
     { "lockrel", "lockclr" },
     
     { "pinw", "_pinwrite" },

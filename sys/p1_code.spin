@@ -54,6 +54,15 @@ pri lockset(id) | mask, rval
   endasm
   return rval
 
+' like lockset but has opposite return value
+pri _locktry(id) | mask, rval
+  mask := -1
+  asm
+    lockset id wc
+    muxnc   rval,mask
+  endasm
+  return rval
+
 pri locknew | rval
   asm
     locknew rval

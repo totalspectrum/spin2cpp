@@ -1,5 +1,7 @@
 Version 4.1.7
 - Fixed a problem that could cause functions to be processed twice
+- Fixed a problem with compiling FRAC with a non-register argument
+- Fixed return value of locktry
 
 Version 4.1.6
 - Added FILENAME_MAX to stdio.h
