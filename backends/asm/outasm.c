@@ -1878,7 +1878,10 @@ CompileDiv(IRList *irl, AST *expr, int getmod, Operand *dest)
   }
   if (isfrac64) {
       if (gl_p2) {
-          EmitOp2(irl, OPC_QFRAC, lhs, rhs);
+          Operand *temp2 = NewFunctionTempRegister();
+          EmitMove(irl, temp2, rhs);
+          EmitMove(irl, temp, lhs);
+          EmitOp2(irl, OPC_QFRAC, temp, temp2);
           EmitOp1(irl, OPC_GETQX, temp);
           return temp;
       }
