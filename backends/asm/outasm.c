@@ -2886,10 +2886,12 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
+#if 0            
             /* special case offsets of 0 */
             if (offset->kind == IMM_INT && offset->val == 0) {
                 return base;
             }
+#endif            
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
@@ -3845,6 +3847,7 @@ static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
     EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
     if (gl_p2) {
         IR *ir;
+        EmitOp1(irl, OPC_LIVE, src); // FIXME: the optimizer should be smart enough to deduce this?
         ir = EmitOp2(irl, OPC_ALTS, src, zero);
         ir->flags |= FLAG_KEEP_INSTR;
         ir = EmitOp2(irl, OPC_MOV, dst, src);
@@ -3870,6 +3873,7 @@ static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
     EmitOp1(irl, OPC_LIVE, src);
     src = Dereference(irl, src);
     if (gl_p2) {
+        EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
         ir = EmitOp2(irl, OPC_ALTD, dst, zero);
         ir->flags |= FLAG_KEEP_INSTR;
         ir = EmitOp2(irl, OPC_MOV, dst, src);

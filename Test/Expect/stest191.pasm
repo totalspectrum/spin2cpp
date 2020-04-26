@@ -12,8 +12,9 @@ _fetch_ret
 	ret
 
 _fetch2
+	mov	_fetch2_B_0001, arg01
 	mov	_fetch2_B_0001 + 1, arg02
-	mov	_fetch_x, arg01
+	mov	_fetch_x, _fetch2_B_0001
 	mov	_fetch_x + 1, arg02
 	mov	result1, _fetch_x + 1
 _fetch2_ret
@@ -58,6 +59,8 @@ _dat_
 	org	COG_BSS_START
 _fetch2_B_0001
 	res	2
+_fetch2_x
+	res	1
 _fetch2_y
 	res	1
 _fetch_x
@@ -72,6 +75,8 @@ arg01
 	res	1
 arg02
 	res	1
-fetch2_tmp004_
+fetch2_tmp002_
+	res	1
+fetch2_tmp005_
 	res	1
 	fit	496
