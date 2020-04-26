@@ -657,12 +657,6 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         assign = NewAST(AST_STMTLIST, assign, NULL);
         AstReportDone(&saveinfo);
         return assign;
-    } else if (hwreg->kind == AST_HWREG || hwreg->kind == AST_METHODREF) {
-        // OK
-    } else {
-        ERROR(dst, "internal error in range assign");
-        AstReportDone(&saveinfo);
-        return NULL;
     }
     /* special case logical operators */
 
@@ -1545,10 +1539,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
 		  *valid = 0;
 	      }
 	    }
-            if (gl_p2) {
-                return intExpr(lref->hubval + offset);
-            }
-            if (kind == AST_ABSADDROF) {
+            if (kind == AST_ABSADDROF && !gl_p2) {
 	      offset += gl_dat_offset > 0 ? gl_dat_offset : 0;
             }
             return intExpr(lref->hubval + offset);

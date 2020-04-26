@@ -2400,26 +2400,59 @@ FindNamedOperand(IRList *irl, const char *name, int val)
 extern Operand *putcogreg;
 
 static int
+IsMovIndirect(IR *ir, IR *ir_prev, IR *ir_next)
+{
+    if (!ir_prev
+        || ir_prev->opc != OPC_LIVE)
+    {
+        return 0;
+    }
+    if (!ir_next) {
+        return 0;
+    }
+    if (ir->opc == OPC_MOVS
+        && ir->dst == putcogreg
+        && ir->src->kind == IMM_COG_LABEL
+        && ir_next
+        && ir_next->opc == OPC_MOVD
+        && ir_next->dst == putcogreg
+        && ir_next->src->kind == IMM_COG_LABEL
+        && ir_next->next
+        && ir_next->next->opc == OPC_CALL
+        && ir_next->next->dst == putcogreg
+        )
+    {
+        return 1;
+    }
+    if (0 && gl_p2
+        && ir->opc == OPC_MOV
+        && ir->dst == ir_next->dst
+        && ir->src->kind == IMM_COG_LABEL
+        && ir_next->opc == OPC_ALTS
+        && ir_next->src->kind == IMM_INT
+        && ir_next->src->val == 0
+        && ir_next->next
+        && ir_next->next->opc == OPC_MOV
+        && ir_next->next->src == ir_next->dst
+        )
+    {
+        return 2;
+    }
+    return 0;
+}
+
+static int
 OptimizeCogWrites(IRList *irl)
 {
     IR *ir, *ir_next, *ir_prev;
     int change = 0;
+    int x;
     ir = irl->head;
     ir_prev = NULL;
     while (ir) {
         ir_next = ir->next;
-        if (ir->opc == OPC_MOVS
-            && ir->dst == putcogreg
-            && ir->src->kind == IMM_COG_LABEL
-            && ir_next
-            && ir_next->opc == OPC_MOVD
-            && ir_next->dst == putcogreg
-            && ir_next->src->kind == IMM_COG_LABEL
-            && ir_next->next
-            && ir_next->next->opc == OPC_CALL
-            && ir_next->next->dst == putcogreg
-            && ir_prev && ir_prev->opc == OPC_LIVE
-            )
+        x = IsMovIndirect(ir, ir_prev, ir_next);
+        if (x)
         {
             Operand *src = ir->src;
             Operand *dst = ir_next->src;

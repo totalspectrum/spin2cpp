@@ -2886,6 +2886,10 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
+            /* special case offsets of 0 */
+            if (offset->kind == IMM_INT && offset->val == 0) {
+                return base;
+            }
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
