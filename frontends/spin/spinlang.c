@@ -426,8 +426,8 @@ doSpinTransform(AST **astptr, int level)
     case AST_INLINEASM:
         return;
     case AST_EXPRLIST:
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, level);
+        doSpinTransform(&ast->right, level);
         break;
     case AST_THENELSE:
         doSpinTransform(&ast->left, level);
@@ -506,7 +506,7 @@ doSpinTransform(AST **astptr, int level)
         }
         doSpinTransform(&ast->left, 2);
         doSpinTransform(&ast->right, 2);
-        break;
+        return;
     case AST_FUNCCALL:
         if (level == 0) {
             /* check for void functions here; if one is called,

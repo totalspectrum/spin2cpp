@@ -1,3 +1,6 @@
+Version 4.1.8
+- Fixed a problem with coginit of Spin functions which do not return a value
+
 Version 4.1.7
 - Fixed a problem that could cause functions to be processed twice
 - Fixed a problem with compiling FRAC with a non-register argument
