@@ -3,7 +3,7 @@
 #include <sys/vfs.h>
 #include <dirent.h>
 
-struct __using("filesys/fs9p/fs9p_internal.c") FS;
+struct __using("filesys/fs9p/fs9p_internal.cc") FS;
 
 // receive 1 byte
 static unsigned int zdoGet1()
