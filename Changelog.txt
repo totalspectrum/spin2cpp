@@ -1,6 +1,8 @@
 Version 4.1.8
 - Fixed a problem with coginit of Spin functions which do not return a value
 - Fixed using ADDBITS in bitfield expressions
+- Fixed using foo.bar in PASM, and allowed foo#bar to refer to any
+  kind of thing `bar` (so foo.bar and foo#bar are identical)
 - Use C++ enum scope for any .c files included as classes in other languages
 
 Version 4.1.7

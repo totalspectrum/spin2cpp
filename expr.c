@@ -579,6 +579,37 @@ TransformAssignChain(AST *dst, AST *src)
 }
 
 /*
+ * change x.[A addbits B] into x.[(B+A)..A]
+ * Note: A addbits B is encoded as
+ *    A | (B<<5)
+ * We pass in the AST_RANGE item, so dst->kind == AST_RANGE
+ */
+static void
+CheckAddBits(AST *expr)
+{
+    if (expr->right == 0
+        && expr->left != 0
+        && expr->left->kind == AST_OPERATOR
+        && expr->left->d.ival == '|'
+        )
+    {
+        AST *sub = expr->left;
+        if (sub->right
+            && sub->right->kind == AST_OPERATOR
+            && sub->right->d.ival == K_SHL
+            && sub->right->right->kind == AST_INTEGER
+            && sub->right->right->d.ival == 5)
+        {
+            AST *firstpin = expr->left->left;
+            AST *lastpin = sub->right->left;
+            lastpin = AstOperator('+', firstpin, lastpin);
+            expr->left = lastpin;
+            expr->right = firstpin;
+        }
+    }
+}
+
+/*
  * special code for printing a range expression
  * dst->left is the hardware register; or, it may be an AST_REGPAIR
  *      holding two paired registers
@@ -619,6 +650,8 @@ TransformRangeAssign(AST *dst, AST *src, int toplevel)
         return result;
     }
     AstReportAs(dst, &saveinfo);  // set up error messages as if coming from "dst"
+    /* change x.[a addbits b] to x.[(b+a)..a] */
+    CheckAddBits(dst->right);
 
     hwreg = dst->left;
     if (hwreg->kind == AST_REGPAIR) {
@@ -852,6 +885,8 @@ TransformRangeUse(AST *src)
         ERROR(src, "internal error: expecting range");
         return src;
     }
+    AstReportAs(src, &saveinfo);
+    CheckAddBits(range);
     if (src->left->kind == AST_REGPAIR) {
         AST *rega, *regb;
         AST *cond;
@@ -868,20 +903,17 @@ TransformRangeUse(AST *src)
         }
         if (IsConstExpr(cond)) {
             int x = EvalConstExpr(cond);
+            AstReportDone(&saveinfo);
             if (x) return rega;
             return regb;
         }
-        return NewAST(AST_CONDRESULT,
+        cond = NewAST(AST_CONDRESULT,
                       cond,
                       NewAST(AST_THENELSE, rega, regb));
+        AstReportDone(&saveinfo);
+        return cond;
     }
-#if 0    
-    if (src->left->kind != AST_HWREG) {
-        ERROR(src, "range not applied to hardware register");
-        return AstInteger(0);
-    }
-#endif    
-    AstReportAs(src, &saveinfo);
+
     /* now handle the ordinary case */
     if (src->right->right == NULL) {
         hi = lo = src->right->left;
@@ -1368,6 +1400,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         if (!sym) {
             return intExpr(0);
         }
+#if 0        
         if ((sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)) {
             if (valid) {
                 *valid = 0;
@@ -1376,8 +1409,9 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
             }
             return intExpr(0);
         }
+#endif        
         /* while we're evaluating, use the object context */
-        ret = EvalExprInState(P, (AST *)sym->val, flags, valid, depth+1);
+        ret = EvalExprInState(P, expr->right, flags, valid, depth+1);
         return ret;
     }
     case AST_RESULT:

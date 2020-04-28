@@ -676,6 +676,15 @@ is_identifier:
         NormalizeIdentifier(idstr);
     }
 
+    /* peek ahead to handle foo.bar as foo#bar */
+    if (gl_p2 && InDatBlock(L)) {
+        c = lexgetc(L);
+        if (c == '.') {
+            lexungetc(L, '#');
+        } else {
+            lexungetc(L, c);
+        }
+    }
     ast->d.string = idstr;
     *ast_ptr = ast;
     return SP_IDENTIFIER;

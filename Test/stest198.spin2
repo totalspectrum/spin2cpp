@@ -1,0 +1,11 @@
+pub setval2(x) : r
+  x.[0 addbits 1] := 1
+  r := x
+
+pub setval1(x) : r
+  x.[1..0] := 1
+  r := x
+
+pub getval2(x) : r
+  r := x.[4 addbits 7]
+
