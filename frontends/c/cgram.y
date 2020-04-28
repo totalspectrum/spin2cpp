@@ -391,6 +391,11 @@ AddEnumerators(AST *identifier, AST *enumlist)
     if (current->curLanguage == LANG_CFAMILY_C) {
         // enum symbols in C get declared with global scope
         P = GetTopLevelModule();
+        if (P->curLanguage != LANG_CFAMILY_C) {
+            // handle the case where a C file is included as a module
+            // in another language
+            P = current;
+        }
     } else {
         // in C++ enums get declared in the context of the class
         // they're declared in

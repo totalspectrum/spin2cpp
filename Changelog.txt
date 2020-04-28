@@ -1,5 +1,7 @@
 Version 4.1.8
 - Fixed a problem with coginit of Spin functions which do not return a value
+- Fixed using ADDBITS in bitfield expressions
+- Use C++ enum scope for any .c files included as classes in other languages
 
 Version 4.1.7
 - Fixed a problem that could cause functions to be processed twice
