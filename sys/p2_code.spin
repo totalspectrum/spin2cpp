@@ -348,3 +348,9 @@ pri _muldiv64(mult1, mult2, divisor) : r
     qdiv mult2, divisor
     getqx r
   endasm
+
+pri _call(hubaddr)
+  asm
+    call hubaddr
+  endasm
+  

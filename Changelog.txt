@@ -1,4 +1,5 @@
 Version 4.1.8
+- Added CALL builtin for Spin2
 - Fixed a problem with coginit of Spin functions which do not return a value
 - Fixed using ADDBITS in bitfield expressions
 - Fixed using foo.bar in PASM, and allowed foo#bar to refer to any

@@ -206,3 +206,8 @@ pri __builtin_propeller_waitx(tim)
     add  tim, cnt
     waitcnt tim, #0
   endasm
+
+pri _call(hubaddr)
+  asm
+    call hubaddr
+  endasm

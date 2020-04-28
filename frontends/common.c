@@ -132,6 +132,7 @@ Aliases spinalias[] = {
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
+    { "call", "_call" },
     { "cnt", "_getcnt" },
 
     { "locktry", "_locktry" },
@@ -289,6 +290,8 @@ initSymbols(Module *P, int language)
     }
     addAliases(&P->objsyms, A);
     if (gl_p2 && (IsBasicLang(language)||IsSpinLang(language))) {
+        addAliases(&P->objsyms, spin2alias);
+    } else if (language == LANG_SPIN_SPIN2) {
         addAliases(&P->objsyms, spin2alias);
     }
 }
