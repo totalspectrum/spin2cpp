@@ -950,9 +950,15 @@ AstCatch(AST *expr)
 }
 
 AST *
-AstSprRef(AST *index)
+AstSprRef(AST *index, int offset)
 {
-    AST *expr = AstOperator('+', AstInteger(0x1f0), index);
+    AST *expr;
+
+    if (offset) {
+        expr = AstOperator('+', AstInteger(offset), index);
+    } else {
+        expr = index;
+    }
     return NewAST(AST_SPRREF, expr, NULL);
 }
 

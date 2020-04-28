@@ -3840,13 +3840,30 @@ static Operand *EmitAddSub(IRList *irl, Operand *dst, int off)
     return dst;
 }
 
+static Operand *ImmCogRef(Operand *addr)
+{
+    char *immname = calloc(1, 16);
+    sprintf(immname, "%lu + 0", (unsigned long)addr->val);
+    return NewOperand(IMM_COG_LABEL, immname, 0);
+}
+
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 {
     Operand *dstimm;
-    Operand *zero = NewImmediate(0);
-    EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
+    static Operand *zero = NULL;
+
+    if (!zero) zero = NewImmediate(0);
+    if (dst->kind != IMM_INT) {
+        EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
+    }
     if (gl_p2) {
         IR *ir;
+
+        if (src->kind == IMM_INT) {
+            Operand *newsrc = ImmCogRef(src);
+            ir = EmitOp2(irl, OPC_MOV, dst, newsrc);
+            return ir;
+        }
         EmitOp1(irl, OPC_LIVE, src); // FIXME: the optimizer should be smart enough to deduce this?
         ir = EmitOp2(irl, OPC_ALTS, src, zero);
         ir->flags |= FLAG_KEEP_INSTR;
@@ -3867,12 +3884,18 @@ static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
 static IR *EmitCogwrite(IRList *irl, Operand *src, Operand *dst)
 {
     Operand *srcimm;
-    Operand *zero = NewImmediate(0);
+    static Operand *zero = NULL;
     IR *ir;
-    
+
+    if (!zero) zero = NewImmediate(0);
     EmitOp1(irl, OPC_LIVE, src);
     src = Dereference(irl, src);
     if (gl_p2) {
+        if (dst->kind == IMM_INT) {
+            Operand *newdst = ImmCogRef(dst);
+            ir = EmitOp2(irl, OPC_MOV, newdst, src);
+            return ir;
+        }
         EmitOp1(irl, OPC_LIVE, dst); // FIXME: the optimizer should be smart enough to deduce this?
         ir = EmitOp2(irl, OPC_ALTD, dst, zero);
         ir->flags |= FLAG_KEEP_INSTR;

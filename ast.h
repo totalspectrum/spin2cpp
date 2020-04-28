@@ -292,7 +292,7 @@ AST *AstAssignList(AST *dest, AST *expr, AST *comment);
 AST *AstYield(void);
 AST *AstAbort(AST *expr, AST *comment);
 AST *AstCatch(AST *expr);
-AST *AstSprRef(AST *index);
+AST *AstSprRef(AST *index, int offset);
 AST *CheckYield(AST *loopbody);
 void ReplaceAst(AST *body, AST *old, AST *new);
 

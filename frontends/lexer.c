@@ -1532,6 +1532,7 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
     { "frac", SP_FRAC },
+    { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_HIGHMULT },
     { "signx", SP_SIGNX },

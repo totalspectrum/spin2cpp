@@ -90,6 +90,7 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
+    { "call", "_call" },
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
     { "clkset", "_clkset" },
@@ -132,7 +133,6 @@ Aliases spinalias[] = {
     { NULL, NULL },
 };
 Aliases spin2alias[] = {
-    { "call", "_call" },
     { "cnt", "_getcnt" },
 
     { "locktry", "_locktry" },
