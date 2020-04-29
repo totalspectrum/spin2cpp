@@ -126,6 +126,19 @@ The garbage collection functions and heap are only included in programs which ex
 
 Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
 
+## Interoperation with C and BASIC
+
+C and BASIC files may be included as objects in Spin1 and Spin2 programs. To do this, be sure to include the entire file name (including any extension, like `.c` or `.bas`) in the `OBJ` line.
+
+### Calling C standard library functions
+
+A simple way to include the C standard library is to declare an object using `libc.a`. C standard library functions may then be accessed as methods of that object. For example, to call `sprintf` you could do:
+```
+OBJ
+  c: "libc.a"
+...
+  c.sprintf(@buf, string("the value is %x", 10), val)
+```
 
 ## Extensions to Spin 1
 

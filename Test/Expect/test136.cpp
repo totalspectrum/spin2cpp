@@ -12,16 +12,16 @@ void test136::Doone(int32_t X)
     goto _case__0004;
   }
   goto _case__0005;
-  _case__0003:
+  _case__0003: ;
   Dotwo(1);
   goto _endswitch_0002;
-  _case__0004:
+  _case__0004: ;
   Dotwo(2);
   goto _endswitch_0002;
-  _case__0005:
+  _case__0005: ;
   Dotwo(3);
   goto _endswitch_0002;
-  _endswitch_0002:
+  _endswitch_0002: ;
 }
 
 void test136::Dotwo(int32_t X)
