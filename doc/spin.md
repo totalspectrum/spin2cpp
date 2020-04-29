@@ -6,7 +6,7 @@ Fastspin was designed to accept the language Spin as documented in the Parallax 
 
 Fastspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
 
-Fastspin also supports many of the features of the proposed Spin2 language as extensions to Spin 1.
+Fastspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
 
 ## Preprocessor
 
@@ -20,7 +20,7 @@ fastspin has a pre-processor that understands basic directives like `#include`, 
 ```
 Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
 
-Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted.
+Note that unlike the C preprocessor, this one cannot accept arguments in macros. Only simple defines are permitted.
 
 If no value is given, e.g.
 ```
@@ -475,7 +475,7 @@ Fastspin supports some new builtin functions. These typically start with an unde
 
 In Spin2 mode all of the above are available without the underscore.
 
-# Compatibility with other Spin compilers
+# Compatibility with other Spin 1 compilers
 
 ## Limitations
 
@@ -513,7 +513,7 @@ In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to 
 
 ### Reserved words
 
-fastspin adds some reserved words: `asm`, `endasm`, and `then`.
+fastspin adds some reserved words: `asm`, `endasm`, and `then`. Programs which use these reserved words may not work correctly in fastspin, although there has been some effort made to make them work as regular identifiers in many contexts.
 
 ## Strings
 
@@ -536,7 +536,9 @@ which will be the same as
 ```
 The difference is rarely noticeable, because fastspin does convert string literals to lists in many places.
 
-# Restrictions on P2 code
+# P2 Considerations
+
+## Spin1 on P2
 
 Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but there are some important exceptions:
 
@@ -545,3 +547,14 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 - WAITPEQ, WAITPNE, and WAITVID are not implemented on P2
 
 - The hardware register set is different; the P2 does not have the CTRx, FRQx, PHSx, VCFG, or VSCL registers.
+
+## Compatibility with Spin2
+
+### ORG/END
+
+No address may be given in an ORG/END pair. In fastspin inline assembly is always run from HUB rather than from COG.
+
+### Memory map
+
+The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
+
