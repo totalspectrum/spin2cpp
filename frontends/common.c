@@ -90,6 +90,7 @@ typedef struct alias {
 } Aliases;
 
 Aliases spinalias[] = {
+    { "call", "_call" },
     { "clkfreq", "_clkfreq" },
     { "clkmode", "_clkmode" },
     { "clkset", "_clkset" },
@@ -134,7 +135,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
 
-    { "locktry", "lockset" },
+    { "locktry", "_locktry" },
     { "lockrel", "lockclr" },
     
     { "pinw", "_pinwrite" },
@@ -289,6 +290,8 @@ initSymbols(Module *P, int language)
     }
     addAliases(&P->objsyms, A);
     if (gl_p2 && (IsBasicLang(language)||IsSpinLang(language))) {
+        addAliases(&P->objsyms, spin2alias);
+    } else if (language == LANG_SPIN_SPIN2) {
         addAliases(&P->objsyms, spin2alias);
     }
 }
@@ -1059,6 +1062,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
     AST *ident;
     AST *identinit = NULL;
     AST **identptr;
+    Symbol *sym;
     const char *name;
     if (!decl) return decl;
 
@@ -1093,6 +1097,11 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         return NULL;
     }
     name = ident->d.string;
+    sym = FindSymbol(table, name);
+    if (sym) {
+        WARNING(ident, "Redefining %s", name);
+    }
+            
     if (decl->kind == AST_TYPEDEF) {
         AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
         return NULL;
@@ -1100,6 +1109,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         const char *oldname = name;
         const char *newName = NewTemporaryVariable(oldname);
         AST *newIdent = AstIdentifier(newName);
+
         AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);

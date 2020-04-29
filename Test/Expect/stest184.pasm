@@ -69,7 +69,7 @@ __system___tx_ret
 __system___gc_ptrs
 	mov	_var01, __heap_ptr
 	mov	_var02, _var01
-	add	_var02, #256
+	add	_var02, imm_1008_
 	rdlong	_var03, _var01 wz
  if_ne	jmp	#LR__0004
 	mov	_var04, _var02
@@ -320,14 +320,14 @@ LR__0013
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
  if_b	neg	_system___gc_doalloc_tmp001_, _system___gc_doalloc_tmp001_
-	mov	__system___gc_doalloc__idx__90018, _system___gc_doalloc_tmp001_ wz
+	mov	__system___gc_doalloc__idx__90019, _system___gc_doalloc_tmp001_ wz
 	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
  if_e	jmp	#LR__0015
 LR__0014
 	mov	_system___gc_doalloc_tmp001_, #0
 	wrlong	_system___gc_doalloc_tmp001_, __system___gc_doalloc_zptr
 	add	__system___gc_doalloc_zptr, #4
-	djnz	__system___gc_doalloc__idx__90018, #LR__0014
+	djnz	__system___gc_doalloc__idx__90019, #LR__0014
 LR__0015
 LR__0016
 	mov	result1, __system___gc_doalloc_ptr
@@ -652,6 +652,8 @@ __heap_ptr
 	long	@@@__heap_base
 fp
 	long	0
+imm_1008_
+	long	1008
 imm_1073741824_
 	long	1073741824
 imm_1669332992_
@@ -727,7 +729,7 @@ __system___gc_collect_ptr
 	res	1
 __system___gc_collect_startheap
 	res	1
-__system___gc_doalloc__idx__90018
+__system___gc_doalloc__idx__90019
 	res	1
 __system___gc_doalloc_ptr
 	res	1

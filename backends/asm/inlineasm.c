@@ -142,6 +142,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
                     return NewImmediate(0);
                 }
                 r_address = immflag;
+                if (r->kind == HUBMEM_REF) {
+                    ERROR(expr, "Variable %s must be placed in memory (probably due to an @ expression) and hence cannot be accessed in inline assembly", sym->user_name);
+                }
                 break;
             case SYM_CONSTANT:
                 v = EvalPasmExpr(expr);

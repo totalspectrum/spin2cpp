@@ -649,7 +649,9 @@ PrintStatement(Flexbuf *f, AST *ast, int indent)
         PrintDebugDirective(f, ast);
         flexbuf_printf(f, "%*c", indent, ' ');
         CppPrintName(f, ast->left->d.string, 0);
-        flexbuf_printf(f, ":");
+        /* the semicolon prevents errors if the label is at the end
+           of a compound statement */
+        flexbuf_printf(f, ": ;");
         PrintNewline(f);
         break;
     case AST_IF:

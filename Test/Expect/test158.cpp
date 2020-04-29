@@ -12,15 +12,15 @@ int32_t test158::Check(int32_t Exponent)
     goto _case__0004;
   }
   goto _case__0005;
-  _case__0003:
+  _case__0003: ;
   return 1;
   goto _endswitch_0002;
-  _case__0004:
+  _case__0004: ;
   return 2;
   goto _endswitch_0002;
-  _case__0005:
+  _case__0005: ;
   return 3;
   goto _endswitch_0002;
-  _endswitch_0002:
+  _endswitch_0002: ;
 }
 

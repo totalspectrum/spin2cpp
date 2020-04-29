@@ -12,13 +12,13 @@ int32_t test152::Hexdigit(int32_t X)
     goto _case__0004;
   }
   goto _endswitch_0002;
-  _case__0003:
+  _case__0003: ;
   return 1;
   goto _endswitch_0002;
-  _case__0004:
+  _case__0004: ;
   return 1;
   goto _endswitch_0002;
-  _endswitch_0002:
+  _endswitch_0002: ;
   return 0;
 }
 

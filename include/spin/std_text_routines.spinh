@@ -15,8 +15,8 @@
 }}
 
 '' output a string
-PUB str(s = string("")) | c
-  REPEAT WHILE ((c := byte[s++]) <> 0)
+pub str(s = string("")) | c
+  repeat while ((c := byte[s++]) <> 0)
     tx(c)
 
 
@@ -37,10 +37,10 @@ PUB str(s = string("")) | c
 ''
 '' we will print at least prec digits
 ''
-VAR
+var
   byte buf[32]
 
-PUB Num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
+pub num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
 
   '' if signflag is nonzero, it indicates we should treat
   '' val as signed; if it is > 1, it is a character we should
@@ -89,38 +89,38 @@ PUB Num(val, base, signflag, digitsNeeded) | i, digit, r1, q1
     tx(buf[--i])
 
 '' print a signed decimal number
-PUB dec(val)
+pub dec(val)
   num(val, 10, 1, 0)
 
 '' print an unsigned decimal number with the specified
 '' number of digits; 0 means just use as many as we need
-PUB decuns(val, digits = 0)
+pub decuns(val, digits = 0)
   num(val, 10, 0, digits)
 
 '' print a hex number with the specified number
 '' of digits; 0 means just use as many as we need
-PUB hex(val, digits = 8) | mask
+pub hex(val, digits = 8) | mask
   if digits > 0 and digits < 8
     mask := (|< (4*digits)) - 1
     val &= mask
   num(val, 16, 0, digits)
 
 '' print a number in binary form
-PUB bin(val, digits = 32) | mask
+pub bin(val, digits = 32) | mask
   if digits > 0 and digits < 32
     mask := (|< digits) - 1
     val &= mask
   num(val, 2, 0, digits)
   
 '' print a newline
-PUB nl
+pub nl
   tx(13)
   tx(10)
 
 ''
 '' C like formatted print
 ''
-PUB printf(fmt = string(""), an=0, bn=0, cn=0, dn=0, en=0, fn=0) | c, valptr, val
+pub printf(fmt = string(""), an=0, bn=0, cn=0, dn=0, en=0, fn=0) | c, valptr, val
   valptr := @an
   repeat
     c := byte[fmt++]

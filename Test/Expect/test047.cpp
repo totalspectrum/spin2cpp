@@ -12,7 +12,7 @@ void test047::Test(int32_t C)
     goto _case__0009;
   }
   goto _endswitch_0007;
-  _case__0008:
+  _case__0008: ;
   _tmp__0001 = C;
   if (_tmp__0001 == 9) {
     goto _case__0003;
@@ -21,23 +21,23 @@ void test047::Test(int32_t C)
     goto _case__0004;
   }
   goto _case__0005;
-  _case__0003:
+  _case__0003: ;
   do {
     _OUTA = Cols++;
   } while (Cols & 0x7);
   goto _endswitch_0002;
-  _case__0004:
+  _case__0004: ;
   _OUTA = C;
   goto _endswitch_0002;
-  _case__0005:
+  _case__0005: ;
   _OUTA = Flag;
   goto _endswitch_0002;
-  _endswitch_0002:
+  _endswitch_0002: ;
   goto _endswitch_0007;
-  _case__0009:
+  _case__0009: ;
   Cols = C % Cols;
   goto _endswitch_0007;
-  _endswitch_0007:
+  _endswitch_0007: ;
   Flag = 0;
 }
 

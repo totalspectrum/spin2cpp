@@ -6,7 +6,7 @@ Fastspin was designed to accept the language Spin as documented in the Parallax 
 
 Fastspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
 
-Fastspin also supports many of the features of the proposed Spin2 language as extensions to Spin 1.
+Fastspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
 
 ## Preprocessor
 
@@ -20,7 +20,7 @@ fastspin has a pre-processor that understands basic directives like `#include`, 
 ```
 Defines a new macro `FOO` with the value `hello`. Whenever the symbol `FOO` appears in the text, the preprocessor will substitute `hello`.
 
-Note that unlike the C preprocessor, this one cannot accept arguments. Only simple defines are permitted.
+Note that unlike the C preprocessor, this one cannot accept arguments in macros. Only simple defines are permitted.
 
 If no value is given, e.g.
 ```
@@ -96,6 +96,49 @@ Symbol           | When Defined
 `__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
 `__cplusplus`    | if C++ is being output (never in fastspin)
 
+
+## Memory Management
+
+There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
+
+### Heap allocation
+
+The main function is `_gc_alloc_managed(siz)`, which allocates `siz` bytes of memory managed by the garbage collector. It returns 0 if not enough memory is avilable, otherwise returns a pointer to the start of the memory (like C's `malloc`). As long as there is some reference in COG or HUB memory to the pointer which got returned, the memory will be considered "in use". If there is no more such reference then the garbage collector will feel free to reclaim it. There's also `_gc_alloc(siz)` which is similar but marks the memory so it will never be reclaimed, and `_gc_free(ptr)` which explicitly frees a pointer previously allocated by `_gc_alloc` or `_gc_alloc_managed`.
+
+ The size of the heap is determined by a constant `HEAPSIZE` declared in the top level object. If none is given then a (small) default value is used.
+
+Example:
+```
+' put this CON in the top level object to specify how much memory should be provided for
+' memory allocation (the "heap"). The default is 4K on P2, 256 bytes on P1
+CON
+   HEAPSIZE = 32768 ' or however much memory you want to provide for the allocator
+
+' here's a function to allocate memory
+' "siz" is the size in bytes
+PUB allocmem(size) : ptr
+  ptr := _gc_alloc_managed(size)
+```
+
+The garbage collection functions and heap are only included in programs which explicitly ask for them.
+
+### Stack allocation
+
+Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
+
+## Interoperation with C and BASIC
+
+C and BASIC files may be included as objects in Spin1 and Spin2 programs. To do this, be sure to include the entire file name (including any extension, like `.c` or `.bas`) in the `OBJ` line.
+
+### Calling C standard library functions
+
+A simple way to include the C standard library is to declare an object using `libc.a`. C standard library functions may then be accessed as methods of that object. For example, to call `sprintf` you could do:
+```
+OBJ
+  c: "libc.a"
+...
+  c.sprintf(@buf, string("the value is %x", 10), val)
+```
 
 ## Extensions to Spin 1
 
@@ -375,6 +418,7 @@ fastspin has some new operators for treating values as unsigned
 ```
   a +/ b   is the unsigned quotient of a and b (treating both as unsigned)
   a +// b  is the unsigned remainder of a and b
+  a +** b  gives the upper 32 bits of unsigned multiplication
   a +< b   is an unsigned version of <
   a +> b   is an unsigned version of >
   a +=< b  is an unsigned version of =<
@@ -444,7 +488,7 @@ Fastspin supports some new builtin functions. These typically start with an unde
 
 In Spin2 mode all of the above are available without the underscore.
 
-# Compatibility with other Spin compilers
+# Compatibility with other Spin 1 compilers
 
 ## Limitations
 
@@ -482,7 +526,7 @@ In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to 
 
 ### Reserved words
 
-fastspin adds some reserved words: `asm`, `endasm`, and `then`.
+fastspin adds some reserved words: `asm`, `endasm`, and `then`. Programs which use these reserved words may not work correctly in fastspin, although there has been some effort made to make them work as regular identifiers in many contexts.
 
 ## Strings
 
@@ -505,7 +549,9 @@ which will be the same as
 ```
 The difference is rarely noticeable, because fastspin does convert string literals to lists in many places.
 
-# Restrictions on P2 code
+# P2 Considerations
+
+## Spin1 on P2
 
 Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but there are some important exceptions:
 
@@ -514,3 +560,14 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 - WAITPEQ, WAITPNE, and WAITVID are not implemented on P2
 
 - The hardware register set is different; the P2 does not have the CTRx, FRQx, PHSx, VCFG, or VSCL registers.
+
+## Compatibility with Spin2
+
+### ORG/END
+
+No address may be given in an ORG/END pair. In fastspin inline assembly is always run from HUB rather than from COG.
+
+### Memory map
+
+The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
+

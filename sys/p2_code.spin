@@ -40,6 +40,15 @@ pri lockset(id) | mask, rval
     muxnc   rval,mask  ' NOTE: C bit is opposite in P2
   endasm
   return rval
+
+' locktry is like lockset but with opposite return value
+pri _locktry(id) | mask, rval
+  mask := -1
+  asm
+    locktry id wc
+    muxc   rval,mask
+  endasm
+  return rval
 pri locknew | rval
   asm
     locknew rval
@@ -339,3 +348,9 @@ pri _muldiv64(mult1, mult2, divisor) : r
     qdiv mult2, divisor
     getqx r
   endasm
+
+pri _call(hubaddr)
+  asm
+    call hubaddr
+  endasm
+  

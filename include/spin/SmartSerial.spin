@@ -3,20 +3,20 @@
 ' simple smart pin serial object for P2 eval board
 ' implements a subset of FullDuplexSerial functionality
 '
-CON
+con
   _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
   _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
 
-VAR
+var
   long rx_pin, tx_pin
 
 '' if baudrate of -1 is given, auto baud detection is employed
 
-PUB start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
+pub start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   if baudrate == -1
     bitperiod := autobaud(rxpin)
   else
-    bitperiod := (CLKFREQ / baudrate)
+    bitperiod := (clkfreq / baudrate)
 
   ' save parameters in the object
   rx_pin := rxpin
@@ -38,7 +38,7 @@ PUB start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   pinl(rxpin)  ' turn smartpin on
 
 
-PRI autobaud(pin) | a, b, c, delay, port, mask
+pri autobaud(pin) | a, b, c, delay, port, mask
   pinf(pin)   ' set pin as input
   waitx(1000) ' wait to settle
   if pin => 32
@@ -81,14 +81,14 @@ PRI autobaud(pin) | a, b, c, delay, port, mask
   return delay
   
 ' start with default serial pins and mode
-PUB start_default(baudrate)
+pub start_default(baudrate)
   return start(63, 62, 0, baudrate)
   
-PUB tx(val)
+pub tx(val)
   wypin(tx_pin, val)
   txflush
 
-PUB txflush() | z
+pub txflush() | z
   repeat
     z := pinr(tx_pin)
   while z == 0
@@ -96,7 +96,7 @@ PUB txflush() | z
 ' check if byte received (never waits)
 ' returns -1 if no byte, otherwise byte
 
-PUB rxcheck() : rxbyte | rxpin, z
+pub rxcheck() : rxbyte | rxpin, z
   rxbyte := -1
   rxpin := rx_pin
   z := pinr(rxpin)
@@ -105,7 +105,7 @@ PUB rxcheck() : rxbyte | rxpin, z
     
 
 ' receive a byte (waits until one ready)
-PUB rx() : v
+pub rx() : v
   repeat
     v := rxcheck
   while v == -1

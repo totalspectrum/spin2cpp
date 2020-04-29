@@ -676,6 +676,15 @@ is_identifier:
         NormalizeIdentifier(idstr);
     }
 
+    /* peek ahead to handle foo.bar as foo#bar */
+    if (gl_p2 && InDatBlock(L)) {
+        c = lexgetc(L);
+        if (c == '.') {
+            lexungetc(L, '#');
+        } else {
+            lexungetc(L, c);
+        }
+    }
     ast->d.string = idstr;
     *ast_ptr = ast;
     return SP_IDENTIFIER;
@@ -1523,6 +1532,7 @@ struct reservedword init_spin2_words[] = {
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
     { "frac", SP_FRAC },
+    { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_HIGHMULT },
     { "signx", SP_SIGNX },
@@ -1894,6 +1904,25 @@ Builtin builtinfuncs[] = {
 
     // BASIC compiler builtins
     { "_basic_print_unsigned", 4, defaultBuiltin, "basic_print_unsigned", NULL, NULL, 0, NULL },
+
+    // Spin2 builtins
+    { "__builtin_propeller_akpin",    1, defaultBuiltin, "_akpin", "_akpin", NULL, 0, NULL },
+    { "__builtin_propeller_rdpin",    1, defaultBuiltin, "_rdpin", "_rdpin", NULL, 0, NULL },
+    { "__builtin_propeller_rqpin",    1, defaultBuiltin, "_rqpin", "_rqpin", NULL, 0, NULL },
+
+    { "__builtin_propeller_fltl",     1, defaultBuiltin, "_pinf", "_pinf", NULL, 0, NULL },
+    { "__builtin_propeller_drvh",     1, defaultBuiltin, "_pinh", "_pinh", NULL, 0, NULL },
+    { "__builtin_propeller_drvl",     1, defaultBuiltin, "_pinl", "_pinl", NULL, 0, NULL },
+    { "__builtin_propeller_pinr",     1, defaultBuiltin, "_pinr", "_pinr", NULL, 0, NULL },
+    { "_pinwrite", 2, defaultBuiltin, "_pinw", "_pinw", NULL, 0, NULL },
+
+    { "_waitms",   1, defaultBuiltin, "_waitms", "_waitms", NULL, 0, NULL },
+    { "_waitus",   1, defaultBuiltin, "_waitus", "_waitus", NULL, 0, NULL },
+    
+    { "_wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
+    { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
+    { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
+    
 };
 
 struct constants {

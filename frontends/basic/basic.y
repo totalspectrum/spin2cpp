@@ -348,6 +348,16 @@ BuildOnGotoCases(AST *exprlist)
 }
 
 static AST *
+AdjustParamType(AST *param)
+{
+    AST *typ = param->left;
+    if (typ && !IsIdentifier(typ) && (IsClassType(typ) || IsArrayType(typ))) {
+        param->left = NewAST(AST_REFTYPE, typ, NULL);
+    }
+    return param;        
+}
+
+static AST *
 AdjustParamForByRef(AST *param)
 {
     AST *typ = param->left;
@@ -359,7 +369,7 @@ static AST *
 AdjustParamForByVal(AST *param)
 {
     AST *typ = param->left;
-    if (typ && (IsClassType(typ) || IsArrayType(typ))) {
+    if (typ && !IsIdentifier(typ) && (IsClassType(typ) || IsArrayType(typ))) {
         param->left = NewAST(AST_COPYREFTYPE, typ, NULL);
     }
     return param;
@@ -1910,7 +1920,7 @@ paramdecl1:
 
 paramitem:
   paramvar
-    { $$ = $1; }
+    { $$ = AdjustParamType($1); }
   | BAS_BYREF paramvar
     { $$ = AdjustParamForByRef($2); }
   | BAS_BYVAL paramvar
@@ -1925,7 +1935,11 @@ paramvar:
   | BAS_IDENTIFIER BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $3, $1); }
   | BAS_IDENTIFIER '(' ')' BAS_AS typename
-    { $$ = NewAST(AST_DECLARE_VAR, NewAST(AST_PTRTYPE, $5, NULL), $1); }
+    {
+        AST *typ = $5;
+        typ = MakeArrayType(typ, AstInteger(0));
+        $$ = NewAST(AST_DECLARE_VAR, typ, $1);
+    }
   | BAS_IDENTIFIER '=' expr BAS_AS typename
     { $$ = NewAST(AST_DECLARE_VAR, $5, AstAssign($1, $3)); }
 ;

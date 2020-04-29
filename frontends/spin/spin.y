@@ -67,6 +67,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_STRING     "string"
 %token SP_FLOATNUM   "float point number"
 %token SP_SPR        "SPR"
+%token SP_COGREG     "REG"
 
 /* various keywords */
 %token SP_CON        "CON"
@@ -1066,7 +1067,9 @@ lhs: identifier
   | memref
     { $$ = NewAST(AST_ARRAYREF, $1, AstInteger(0)); }
   | SP_SPR '[' expr ']'
-    { $$ = AstSprRef($3); }
+    { $$ = AstSprRef($3, 0x1f0); }
+  | SP_COGREG '[' expr ']'
+    { $$ = AstSprRef($3, 0x0); }
   | identifier '.' '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $4);
     }

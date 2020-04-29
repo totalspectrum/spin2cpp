@@ -2409,6 +2409,7 @@ MarkUsedBody(AST *body, const char *caller)
             sym = FindSymbol(&P->objsyms, GetUserIdentifierName(body->right));
             if (sym && sym->kind == SYM_FUNCTION) {
                 MarkUsed((Function *)sym->val, sym->our_name);
+                return;
             }
         }
         break;
