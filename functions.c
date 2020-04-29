@@ -1921,7 +1921,7 @@ CheckFunctionCalls(AST *ast)
                         Symbol *sym;
                         exprlist = NULL;
                         for (i = 0; i < n; i++) {
-                            sym = FindSymbolByOffset(&P->objsyms, i*4);
+                            sym = FindSymbolByOffsetAndKind(&P->objsyms, i*4, SYM_VARIABLE);
                             if (!sym || sym->kind != SYM_VARIABLE) {
                                 ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*4);
                                 return;

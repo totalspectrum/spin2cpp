@@ -78,7 +78,7 @@ unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);
 Symbol *AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char *user_name);
 Symbol *FindSymbol(SymbolTable *table, const char *name);
-Symbol *FindSymbolByOffset(SymbolTable *table, int offset);
+Symbol *FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
 
 /* create a new temporary variable */

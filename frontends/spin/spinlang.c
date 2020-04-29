@@ -64,7 +64,7 @@ IsAddrRef(AST *body, Symbol *sym)
  * change a small longmove call into a series of assignments
  * returns true if transform done
  */
-#define LONGMOVE_THRESHOLD 4
+#define LONGMOVE_THRESHOLD 6
 
 static bool
 TransformLongMove(AST **astptr, AST *ast)
@@ -108,6 +108,7 @@ TransformLongMove(AST **astptr, AST *ast)
     case SYM_VARIABLE:
         srctab = &current->objsyms;
         break;
+    case SYM_RESULT:
     case SYM_PARAMETER:
     case SYM_LOCALVAR:
         srctab = &curfunc->localsyms;
@@ -119,6 +120,7 @@ TransformLongMove(AST **astptr, AST *ast)
     case SYM_VARIABLE:
         dsttab = &current->objsyms;
         break;
+    case SYM_RESULT:
     case SYM_PARAMETER:
     case SYM_LOCALVAR:
         dsttab = &curfunc->localsyms;
@@ -138,12 +140,14 @@ TransformLongMove(AST **astptr, AST *ast)
         if (n == 0) break;
         srcoff += 4;
         dstoff += 4;
-        symd = FindSymbolByOffset(dsttab, dstoff);
-        syms = FindSymbolByOffset(srctab, srcoff);
+        symd = FindSymbolByOffsetAndKind(dsttab, dstoff, symd->kind);
+        syms = FindSymbolByOffsetAndKind(srctab, srcoff, syms->kind);
         if (!symd || !syms) {
             AstReportDone(&saveinfo);
             return false;
         }
+        srcoff = syms->offset;
+        dstoff = symd->offset;
     }
     *astptr = sequence;
     /* the longmove probably indicates a COG will be reading these
