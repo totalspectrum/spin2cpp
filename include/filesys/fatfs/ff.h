@@ -362,9 +362,9 @@ DWORD get_fattime (void);
 
 /* LFN support functions */
 #if FF_USE_LFN >= 1						/* Code conversion (defined in unicode.c) */
-WCHAR ff_oem2uni (WCHAR oem, WORD cp);	/* OEM code to Unicode conversion */
-WCHAR ff_uni2oem (DWORD uni, WORD cp);	/* Unicode to OEM code conversion */
-DWORD ff_wtoupper (DWORD uni);			/* Unicode upper-case conversion */
+    WCHAR ff_oem2uni (WCHAR oem, WORD cp) __fromfile("filesys/fatfs/ffunicode.c");	/* OEM code to Unicode conversion */
+    WCHAR ff_uni2oem (DWORD uni, WORD cp) __fromfile("filesys/fatfs/ffunicode.c");	/* Unicode to OEM code conversion */
+    DWORD ff_wtoupper (DWORD uni) __fromfile("filesys/fatfs/ffunicode.c");			/* Unicode upper-case conversion */
 #endif
 #if FF_USE_LFN == 3						/* Dynamic memory allocation */
 void* ff_memalloc (UINT msize);			/* Allocate memory block */
