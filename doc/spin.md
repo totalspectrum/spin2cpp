@@ -288,11 +288,21 @@ PUB twice(x) : r
 ```
 will set `y` to `a+a`.
 
-No special annotation is needed for functions which return 0 or 1 results. For functions returning multiple results, a `:N` notation is requited after the function call, where `N` is an integer giving the expected number of results:
+If no parameters are to be passed to the called function, it is still necessary to write `()` after it in order to force it to be interpreted as a call. That is,
+```
+a = f()
+```
+causes an indirect call of the function pointed to by `f`, whereas
+```
+a = f
+```
+copies the pointer in `f` to `a`.
+
+For functions returning multiple results, a `:N` notation is required after the function call, where `N` is an integer giving the expected number of results:
 ```
   x,y := fptr(a):2
 ```
-The `:2` indicates that fptr is a pointer to a function which returns 2 results.
+The `:2` indicates that fptr is a pointer to a function which returns 2 results. Putting `:0` or `:1` for functions which return 0 or 1 results is optional in fastspin.
 
 It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
 

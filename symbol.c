@@ -100,21 +100,35 @@ LookupSymbolInTable(SymbolTable *table, const char *name)
  * find a symbol by offset
  * this is slow (we have to search the whole table) and
  * not guaranteed by us to be unique
+ * Also note: if "origsym" is non-NULL then it's a pointer to
+ * the last symbol we tried to find, and it's used to cycle
+ * through RESULT, PARAMETER, LOCALS as Spin needs
  */
 Symbol *
-FindSymbolByOffset(SymbolTable *table, int offset)
+FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind)
 {
-    Symbol *sym;
+    Symbol *sym = NULL;
     int hash;
     for (hash = 0; hash < SYMTABLE_HASH_SIZE; hash++) {
         sym = table->hash[hash];
         while (sym) {
-            if (sym->offset == offset && sym->kind != SYM_WEAK_ALIAS && sym->kind != SYM_CONSTANT && sym->kind != SYM_FLOAT_CONSTANT)
+            if (sym->offset == offset && sym->kind == kind)
+            {
                 return sym;
+            }
             sym = sym->next;
         }
     }
-    return NULL;
+    /* could not find it */
+    if (kind == SYM_RESULT) {
+        /* look for first parameter */
+        kind = SYM_PARAMETER;
+        sym = FindSymbolByOffsetAndKind(table, 0, SYM_PARAMETER);
+    }
+    if (!sym && kind == SYM_PARAMETER) {
+        sym = FindSymbolByOffsetAndKind(table, 0, SYM_LOCALVAR);
+    }
+    return sym;
 }
 
 /*

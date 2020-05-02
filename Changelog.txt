@@ -4,6 +4,8 @@ Version 4.1.8
 - Fixed using ADDBITS in bitfield expressions
 - Fixed using foo.bar in PASM, and allowed foo#bar to refer to any
   kind of thing `bar` (so foo.bar and foo#bar are identical)
+- Fixed a bug in transformation of longmove() to moves, and extended
+  this to make many more longmoves() be automatically converted
 - Use C++ enum scope for any .c files included as classes in other languages
 
 Version 4.1.7
