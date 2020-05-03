@@ -56,7 +56,7 @@ void perror(const char *s) _IMPL("libc/string/strerror.c");
 
 int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
 
-#ifdef __FLEXC__
+#if defined(__FLEXC__) && !defined(_NO_BUILTIN_PRINTF)
 // FLEXC can optimize printf
 #define printf __builtin_printf
 #endif
