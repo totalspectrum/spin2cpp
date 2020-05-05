@@ -499,6 +499,7 @@ static void
 adjustFuncCall(AST *ast)
 {
     AST *left = ast->left;
+    AST *leftparent = NULL;
     AST *index = ast->right;
     AST *typ;
     AST *func = NULL;
@@ -516,6 +517,7 @@ adjustFuncCall(AST *ast)
         templident = left;
 	methodref = NULL;
         methodcall = NULL;
+        leftparent = ast;
     }
     /* check for template instantiation */
     if (templident->kind == AST_IDENTIFIER || templident->kind == AST_LOCAL_IDENTIFIER) {
@@ -558,7 +560,17 @@ adjustFuncCall(AST *ast)
                     *ast = *left;
                 }
             }
-	}
+	} else {
+            if (left->kind == AST_IDENTIFIER && leftparent && typ) {
+                if (!strcmp(left->d.string, "_basic_open") && IsStringType(typ)) {
+                    /* change to _basic_open_string */
+                    AST *newleft = AstIdentifier("_basic_open_string");
+                    leftparent->left = newleft;
+                    /* append O_RDWR | O_CREAT */
+                    leftparent->right = AddToList(leftparent->right, AstInteger(6));
+                }
+            }
+        }
     }
 }
 

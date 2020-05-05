@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #ifdef __FLEXC__
 #define SMALL_INT
@@ -681,6 +682,18 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     v->getcf = (getcfunc_t)recvf;
     v->close = (VFS_CloseFunc)closef;
     return 0;
+}
+
+int _basic_open_string(unsigned h, char *fname, unsigned iomode)
+{
+    struct vfs_file_t *v;
+    int r;
+    
+    v = __getftab(h);
+    if (!v) return -1;
+
+    r = _openraw(v, fname, iomode, 0666);
+    return r;
 }
 
 void _basic_close(unsigned h)

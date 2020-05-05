@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -848,6 +848,24 @@ iostmt:
                 AstIdentifier("_basic_open"),
                 NewAST(AST_EXPRLIST, $5,
                        NewAST(AST_EXPRLIST, $2, NULL)), $1);
+    }
+  | BAS_OPEN expr BAS_FOR BAS_INPUT BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode 0 is O_RDONLY */
+                              NewAST(AST_EXPRLIST, AstInteger(0), NULL))), $1);
+    }
+  | BAS_OPEN expr BAS_FOR BAS_OUTPUT BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode 5 is O_WRONLY | O_CREAT | O_TRUNC */
+                              NewAST(AST_EXPRLIST, AstInteger(1 + 4 + 8), NULL))), $1);
     }
   | BAS_CLOSE '#' expr
     {

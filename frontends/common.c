@@ -210,6 +210,7 @@ Aliases basicalias[] = {
     { "clkmode", "_clkmode" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
+    { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },

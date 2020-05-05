@@ -1855,7 +1855,7 @@ This construct is deprecated, and should not be used in new programs.
 
 ### OPEN
 
-Open a handle for input and/or output. The general form is:
+Open a handle for input and/or output. There are two forms. The most general form is:
 ```
   open device as #n
 ```
@@ -1866,6 +1866,13 @@ Example:
   open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
 ```
 Here the `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
+
+The second form uses a file name:
+```
+   open "file.txt" for input as #2
+   open name$ for output as #3
+```
+This opens the given file for input or output. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long.
 
 ### OPTION
 
