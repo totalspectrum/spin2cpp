@@ -3844,7 +3844,7 @@ static Operand *ImmCogRef(Operand *addr)
 {
     char *immname = calloc(1, 16);
     sprintf(immname, "%lu + 0", (unsigned long)addr->val);
-    return NewOperand(IMM_COG_LABEL, immname, 0);
+    return NewOperand(REG_REG, immname, 0);
 }
 
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)

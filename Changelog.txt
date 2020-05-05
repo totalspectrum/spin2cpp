@@ -1,3 +1,6 @@
+Version 4.2.0
+- Fixed REG[] dereferencing
+
 Version 4.1.8
 - Added CALL and REG builtins for Spin2
 - Fixed a problem with coginit of Spin functions which do not return a value
