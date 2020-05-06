@@ -84,11 +84,14 @@ __getftab(int i)
 }
 
 int
-_openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
+_openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
 {
     int r;
-    struct vfs *v = (struct vfs *)_getrootvfs();
+    struct vfs *v;
     unsigned state = _VFS_STATE_INUSE;
+
+    char *name = __getfilebuffer();
+    v = (struct vfs *)__getvfsforfile(name, orig_name);
     if (!v || !v->open) {
         return _seterror(ENOSYS);
     }
@@ -146,7 +149,7 @@ _openraw(struct vfs_file_t *fil, const char *name, int flags, mode_t mode)
     return r;
 }
 
-int open(const char *name, int flags, mode_t mode=0644)
+int open(const char *orig_name, int flags, mode_t mode=0644)
 {
     struct vfs_file_t *tab = &__filetab[0];
     int fd;
@@ -158,7 +161,7 @@ int open(const char *name, int flags, mode_t mode=0644)
     if (fd == _MAX_FILES) {
         return _seterror(EMFILE);
     }
-    r = _openraw(&tab[fd], name, flags, mode);
+    r = _openraw(&tab[fd], orig_name, flags, mode);
     if (r == 0) {
         r = fd;
     }

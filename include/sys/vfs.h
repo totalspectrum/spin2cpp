@@ -55,4 +55,8 @@ int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
+/* directory functions */
+char *__getfilebuffer() _IMPL("libc/unix/mount.c");
+struct vfs *__getvfsforfile(char *fullname, const char *orig_name) _IMPL("libc/unix/mount.c");
+
 #endif
