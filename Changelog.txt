@@ -1,6 +1,7 @@
 Version 4.2.0
 - Fixed REG[] dereferencing
 - Fixed a problem with passing pointers to pointers to functions
+- Fixed a problem with subclasses in system module
 
 Version 4.1.8
 - Added CALL and REG builtins for Spin2

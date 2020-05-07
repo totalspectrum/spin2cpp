@@ -5910,11 +5910,7 @@ GuessFcacheSize(IRList *irl)
 static void
 CompileSystemModule(IRList *where, Module *M)
 {
-    Module *P;
-    CompileToIR_internal(where, M);
-    for (P = M->subclasses; P; P = P->next) {
-        CompileSystemModule(where, P);
-    }
+    VisitRecursive(where, M, CompileToIR_internal, VISITFLAG_COMPILEIR);
 }
 
 void
