@@ -1071,7 +1071,11 @@ BuildMethodPointer(AST *ast)
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
     if (!sym || sym->kind != SYM_FUNCTION) {
-        ERROR(ast, "Internal error, unable to find function address");
+        if (sym) {
+            ERROR(ast, "%s is not a function", sym->user_name);
+        } else {
+            ERROR(ast, "Internal error, unable to find function address");
+        }
         return ast;
     }
     func = (Function *)sym->val;
@@ -1286,7 +1290,7 @@ AST *CheckTypes(AST *ast)
         return ast_type_ptr_byte;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        if (IsFunctionType(ltype)) {
+        if (IsFunctionType(ltype) && !IsPointerType(ltype)) {
             *ast = *BuildMethodPointer(ast);
             return ltype;
         }
