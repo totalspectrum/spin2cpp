@@ -41,9 +41,9 @@ struct stat {
   time_t st_ctime;
 };
 
-typedef struct vfs_file_t vfs_file_t;
+typedef struct s_vfs_file_t vfs_file_t;
 
-struct vfs_file_t {
+struct s_vfs_file_t {
     void *vfsdata;
     unsigned flags; /* O_XXX for rdwr mode and such */
     unsigned state; /* flags for EOF and the like */
@@ -55,7 +55,6 @@ struct vfs_file_t {
     int (*ioctl)(vfs_file_t *fil, int arg, void *buf);
     int (*flush)(vfs_file_t *fil);
 
-#ifdef NEVER    
     /* internal functions for formatting routines */
     int putchar(int c) {
         int i;
@@ -66,11 +65,10 @@ struct vfs_file_t {
         if (!getcf) return -1;
         return getcf(__this);
     }
-#endif    
 };
 
-typedef int (*putcfunc_t)(int c, struct vfs_file_t *fil);
-typedef int (*getcfunc_t)(struct vfs_file_t *fil);
+typedef int (*putcfunc_t)(int c, vfs_file_t *fil);
+typedef int (*getcfunc_t)(vfs_file_t *fil);
 
 #define _VFS_STATE_RDOK (0x01)
 #define _VFS_STATE_WROK (0x02)

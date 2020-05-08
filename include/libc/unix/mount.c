@@ -34,17 +34,27 @@ __getvfsforfile(char *name, const char *orig_name)
             v = (struct vfs *)vfstab[i];
             /* remove prefix */
             strcpy(name, name+len+1);
+#ifdef _DEBUG
+            __builtin_printf("_getvfsforfile: returning %x for %s\n", (unsigned)v, name);
+#endif            
             return v;
         }
     }
-    return _getrootvfs();
+    v = _getrootvfs();
+#ifdef _DEBUG
+    __builtin_printf("_getvfsforfile: returning root %x for %s\n", (unsigned)v, name);
+#endif
+    return v;
 }
 
 int mount(char *name, struct vfs *v)
 {
     int i, len;
     int lastfree = -1;
-    
+
+#ifdef _DEBUG
+    __builtin_printf("mount(%s) called\n", name);
+#endif    
     if (name[0] != '/') {
 #ifdef _DEBUG
         __builtin_printf("mount %s: EINVAL\n", name);

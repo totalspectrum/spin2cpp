@@ -649,13 +649,13 @@ TxFunc _gettxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v || !v->state) return 0;
-    return (TxFunc)v->putcf;
+    return (TxFunc)&v->putchar;
 }
 RxFunc _getrxfunc(unsigned h) {
     vfs_file_t *v;
     v = __getftab(h);
     if (!v || !v->state) return 0;
-    return (RxFunc)v->getcf;
+    return (RxFunc)&v->getchar;
 }
 //
 // basic interfaces

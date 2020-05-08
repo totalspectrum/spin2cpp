@@ -74,7 +74,7 @@ static vfs_file_t __filetab[_MAX_FILES] = {
     },
 };
 
-struct vfs_file_t *
+vfs_file_t *
 __getftab(int i)
 {
     if ( (unsigned)i >= (unsigned)_MAX_FILES) {
@@ -84,7 +84,7 @@ __getftab(int i)
 }
 
 int
-_openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
+_openraw(vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
 {
     int r;
     struct vfs *v;
@@ -99,8 +99,17 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
         return _seterror(ENOSYS);
     }
     memset(fil, 0, sizeof(*fil));
+#ifdef _DEBUG
+    {
+        unsigned *ptr = (unsigned *)v->open;
+        __builtin_printf("_openraw: calling %x : %x\n", ptr[0], ptr[1]);
+    }
+#endif        
     r = (*v->open)(fil, name, flags);
     if (r != 0 && (flags & O_CREAT)) {
+#ifdef _DEBUG
+        __builtin_printf("_openraw: calling v->creat\n");
+#endif        
         r = (*v->creat)(fil, name, mode);
     }
 #ifdef _DEBUG
@@ -163,7 +172,7 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
 
 int open(const char *orig_name, int flags, mode_t mode=0644)
 {
-    struct vfs_file_t *tab = &__filetab[0];
+    vfs_file_t *tab = &__filetab[0];
     int fd;
     int r;
     
@@ -180,7 +189,7 @@ int open(const char *orig_name, int flags, mode_t mode=0644)
     return r;
 }
 
-int _closeraw(struct vfs_file_t *f)
+int _closeraw(vfs_file_t *f)
 {
     int r = 0;
     if (!f->state) {

@@ -134,6 +134,11 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             ERROR(origLabel, "Changing type of symbol %s", name);
             return;
         }
+        if (ltype && labelref->size != TypeSize(ltype)) {
+            ERROR(origLabel, "Changing size of symbol %s from %d to %d", name,
+                  labelref->size, TypeSize(ltype));
+            return;
+        }            
         if (inHub) {
             if (!(labelref->flags & LABEL_IN_HUB)) {
                 ERROR(origLabel, "Changing inhub value of symbol %s", name);
@@ -156,6 +161,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     labelref->cogval = cogpc;
     labelref->type = ltype;
     labelref->org = lastorg;
+    labelref->size = ltype ? TypeSize(ltype) : 4;
     if (inHub) {
         flags |= LABEL_IN_HUB;
     }

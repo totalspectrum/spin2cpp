@@ -15,7 +15,7 @@
 #define FILENAME_MAX _PATH_MAX
 #endif
 
-typedef struct vfs_file_t FILE;
+typedef vfs_file_t FILE;
 
 FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdin  __getftab(0)
