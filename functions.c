@@ -690,7 +690,7 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     if (!typ) {
         typ = ExprTypeRelative(&f->localsyms, ident, P);
     }
-    MaybeDeclareMemberVar(P, ident, typ);
+    MaybeDeclareMemberVar(P, ident, typ, 0);
 }
 
 static void

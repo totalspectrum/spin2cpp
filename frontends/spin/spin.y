@@ -699,7 +699,8 @@ objline:
   | identdecl ':' string
     {
         AST *typ = NewObject($1, $3);
-        DeclareOneMemberVar(current, $1, typ);
+        /* last parameter is 1 for a private member */
+        DeclareOneMemberVar(current, $1, typ, 0);
         $$ = typ;
     }
   | identdecl '=' string

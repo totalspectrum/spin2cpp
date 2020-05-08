@@ -422,6 +422,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     int bitfield_size = 0;
     int max_bitfield_size = 0;
     AST *bitfield_ident = 0;
+    int is_private = 0;
+
     if (!astlist) return;
     if (astlist->kind != AST_STMTLIST) {
         ERROR(astlist, "Internal error, expected stmt list");
@@ -449,6 +451,14 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             DeclareTypedFunction(P, type, ident, is_public, body);
             continue;
         }
+        if (ast->kind == AST_PUBFUNC) {
+            is_private = 0;
+            continue;
+        }
+        if (ast->kind == AST_PRIFUNC) {
+            is_private = 1;
+            continue;
+        }
         if (ast->kind != AST_DECLARE_VAR) {
             ERROR(ast, "internal error, not DECLARE_VAR");
             return;
@@ -464,7 +474,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 ident = idlist->left;
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ);
+                MaybeDeclareMemberVar(P, ident, typ, is_private);
                 idlist = idlist->right;
             }
         } else {
@@ -481,7 +491,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                     max_bitfield_size = tsize;
                     bitfield_offset = 0;
                     bitfield_ident = AstTempIdentifier("__bitfield_");
-                    MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ);
+                    MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ, is_private);
                 }
                 if (bsize > max_bitfield_size) {
                     ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
@@ -499,7 +509,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             } else {
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ);
+                MaybeDeclareMemberVar(P, ident, typ, is_private);
             }
         }
     }
@@ -1333,6 +1343,16 @@ struct_declaration
 	| specifier_qualifier_list struct_declarator_list ';'
             {
                 $$ = MultipleDeclareVar($1, $2);
+            }
+        | C_PUBLIC ':'
+            {
+                $$ = NewAST(AST_STMTLIST,
+                            NewAST(AST_PUBFUNC, NULL, NULL), NULL);
+            }
+        | C_PRIVATE ':'
+            {
+                $$ = NewAST(AST_STMTLIST,
+                            NewAST(AST_PRIFUNC, NULL, NULL), NULL);
             }
         | specifier_qualifier_list struct_declarator_list compound_statement
             {

@@ -1392,7 +1392,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     }
     if (!inDat) {
         /* make this a member variable */
-        DeclareOneMemberVar(P, ident, type);
+        DeclareOneMemberVar(P, ident, type, 0);
         return;
     }
     // look through the globals to see if there's already a definition
@@ -1503,12 +1503,11 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     if (curtypesize != 4 && offset != oldoffset) {
         P->longOnly = 0;
     }
-    return offset;
-    
+    return offset;   
 }
 
 void
-DeclareOneMemberVar(Module *P, AST *ident, AST *type)
+DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
 {
     if (!type) {
         type = InferTypeFromName(ident);
@@ -1521,7 +1520,7 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type)
 }
 
 void
-MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ)
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
 {
     AST *sub;
     const char *name;

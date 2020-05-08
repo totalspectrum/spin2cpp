@@ -204,7 +204,8 @@ DeclareBASICMemberVariables(AST *ast)
 {
     AST *idlist, *typ;
     AST *ident;
-
+    int is_private = 0;
+    
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
         ERROR(ast, "Internal error, unexpected sequence");
@@ -215,11 +216,11 @@ DeclareBASICMemberVariables(AST *ast)
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
-            MaybeDeclareMemberVar(current, ident, typ);
+            MaybeDeclareMemberVar(current, ident, typ, is_private);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareMemberVar(current, idlist, typ);
+        MaybeDeclareMemberVar(current, idlist, typ, is_private);
     }
     return;
 }
@@ -721,7 +722,7 @@ assign_statement:
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x1) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL);
+            MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
         $$ = assign;
     }
@@ -733,7 +734,7 @@ assign_statement:
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x2) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL);
+            MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
         $$ = assign;
     }
@@ -850,7 +851,7 @@ inputitem:
         Symbol *sym = GetExplicitDeclares();
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x4)) {
-            MaybeDeclareMemberVar(current, $1, NULL);
+            MaybeDeclareMemberVar(current, $1, NULL, 0);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
     }
