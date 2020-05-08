@@ -260,6 +260,7 @@ left$
 len
 log
 mid$
+mount
 oct$
 outa
 outb
@@ -1793,6 +1794,22 @@ Note that if both the quotient and remainder are desired, it is best to put the 
   r = x mod y
 ```
 
+### MOUNT
+
+Gives a name to a file system. For example, after
+```
+mount "/host", _vfs_open_host()
+mount "/sd", _vfs_open_sdcard()
+```
+files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
+
+This only works on P2, because it requires a lot of HUB memory, and also needs the host file server built in to `loadp2`.
+
+Available file systems are:
+
+  * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+
 ### NEW
 
 Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array limit. Note that as in `dim` statements, the value given is the last valid index, so for arrays starting at 0 (the default) it is one greater than the number of elements.
@@ -1869,10 +1886,12 @@ Here the `SendRecvDevice` is given pointers to functions to call to send a singl
 
 The second form uses a file name:
 ```
-   open "file.txt" for input as #2
+   open "/host/file.txt" for input as #2
    open name$ for output as #3
 ```
 This opens the given file for input or output. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long.
+
+This second form is really only useful after a MOUNT call is used to establish a file system.
 
 ### OPTION
 
