@@ -1,4 +1,4 @@
-//#define DEBUG
+//#define _DEBUG
 
 #include <sys/types.h>
 #include <sys/vfs.h>
@@ -10,6 +10,9 @@ int __default_flush(vfs_file_t *f)
     int cnt = b->cnt;
     int r;
 
+#ifdef _DEBUG
+    __builtin_printf("default_flush: cnt=%d\n", cnt);
+#endif    
     if (cnt > 0) {
         r = (*f->write)(f, b->buf, cnt);
     } else {
@@ -41,6 +44,9 @@ int __default_putc(int c,  vfs_file_t *f)
 {
     struct _default_buffer *b = (struct _default_buffer *)f->vfsdata;
     int i = b->cnt;
+#ifdef _DEBUG    
+    __builtin_printf("putc: %d f=%x b=%x cnt=%d\n", c, (unsigned)f, (unsigned)b, i);
+#endif    
     b->buf[i++] = c;
     c &= 0xff;
     b->cnt = i;
@@ -57,12 +63,12 @@ int __default_getc(vfs_file_t *f) {
     int i = b->cnt;
     unsigned char *ptr;
 
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("getc: %d\n", i);
 #endif    
     if (i == 0) {
         i = __default_filbuf(f);
-#ifdef DEBUG        
+#ifdef _DEBUG        
         __builtin_printf("filbuf: %d\n", i);
 #endif        
     }
