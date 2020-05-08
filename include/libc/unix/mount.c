@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include <errno.h>
 
+//#define _DEBUG
+
+#define MAX_MOUNTS 4
+static char *mounttab[MAX_MOUNTS];
+static void *vfstab[MAX_MOUNTS];
+static char curdir[_PATH_MAX];
+
 char *__getfilebuffer()
 {
     static char tmpname[_PATH_MAX];
@@ -12,11 +19,64 @@ char *__getfilebuffer()
 struct vfs *
 __getvfsforfile(char *name, const char *orig_name)
 {
-    strncpy(name, orig_name, _PATH_MAX);
+    int i, len;
+    struct vfs *v;
+    if (orig_name[0] == '/') {
+        strncpy(name, orig_name, _PATH_MAX);
+    } else {
+        strncpy(name, curdir, _PATH_MAX);
+        strncat(name, orig_name, _PATH_MAX);
+    }
+    for (i = 0; i < MAX_MOUNTS; i++) {
+        if (!mounttab[i]) continue;
+        len = strlen(mounttab[i]);
+        if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
+            v = (struct vfs *)vfstab[i];
+            /* remove prefix */
+            strcpy(name, name+len+1);
+            return v;
+        }
+    }
     return _getrootvfs();
 }
 
-static char curdir[_PATH_MAX];
+int mount(char *name, struct vfs *v)
+{
+    int i, len;
+    int lastfree = -1;
+    
+    if (name[0] != '/') {
+#ifdef _DEBUG
+        __builtin_printf("mount %s: EINVAL\n", name);
+#endif        
+        return _seterror(EINVAL);
+    }
+    for (i = 0; i < MAX_MOUNTS; i++) {
+        if (!mounttab[i]) {
+            lastfree = i;
+            continue;
+        }
+        len = strlen(mounttab[i]);
+        if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
+            lastfree = i;
+            break;
+        }
+    }
+    if (lastfree == -1) {
+#ifdef _DEBUG
+        __builtin_printf("mount %s: EINVAL\n", name);
+#endif        
+        return _seterror(EMFILE);
+    }
+    i = lastfree;
+    vfstab[i] = (void *)v;
+    if (!v) {
+        mounttab[i] = 0;
+    } else {
+        mounttab[i] = name;
+    }
+    return 0;
+}
 
 char *getcwd(char *buf, size_t size)
 {
