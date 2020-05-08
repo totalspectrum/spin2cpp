@@ -2,7 +2,7 @@
 // simple test program for 9p access to host files
 //
 
-//#define DEBUG
+//#define _DEBUG
 
 #include <string.h>
 #include <stdlib.h>
@@ -289,7 +289,7 @@ int fs_read(fs9_file *f, uint8_t *buf, int count)
     int left;
     uint32_t oldlo;
     while (count > 0) {
-#ifdef DEBUG
+#ifdef _DEBUG
         __builtin_printf("fs_read count=%d offset=%d\n", count, f->offlo);
 #endif        
         ptr = doPut4(txbuf, 0); // space for size
@@ -344,7 +344,7 @@ int fs_write(fs9_file *f, const uint8_t *buf, int count)
     int left;
     uint32_t oldlo;
     while (count > 0) {
-#ifdef DEBUG
+#ifdef _DEBUG
         __builtin_printf("fs_write count=%d offset=%d\n", count, f->offlo);
 #endif        
         ptr = doPut4(txbuf, 0); // space for size
@@ -464,7 +464,7 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
   }
   memset(f, 0, sizeof(*f));
   r = fs_create(f, pathname, mode);
-#ifdef DEBUG
+#ifdef _DEBUG
   __builtin_printf("v_create(%s) returned %d\n", pathname, r);
 #endif  
   if (r) {
@@ -487,17 +487,17 @@ static int v_opendir(DIR *dir, const char *name)
     fs9_file *f = malloc(sizeof(*f));
     int r;
 
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_opendir(%s)\n", name);
 #endif    
     if (!f) {
-#ifdef DEBUG
+#ifdef _DEBUG
       __builtin_printf("malloc failed\n");
 #endif    
       return _seterror(ENOMEM);
     }
     r = fs_open_relative(&rootdir, f, name, 0);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("fs_open returned %d\n", r);
 #endif    
     
@@ -528,12 +528,12 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     int r;
     uint16_t siz;
 
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_readdir()\n");
 #endif    
  again:
     if (bufdata > 0 && bufptr) {
-#ifdef DEBUG      
+#ifdef _DEBUG      
         __builtin_printf("v_readdir(bufdata=%d)\n", bufdata);
 #endif	
         siz = bufptr[0] + (bufptr[1]<<8); siz += 2;
@@ -553,13 +553,13 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 	ent->d_name[siz] = 0;
 	bufptr = nextbufptr;
 
-#ifdef DEBUG       
+#ifdef _DEBUG       
 	__builtin_printf("readdir name: %s\n", ent->d_name);
 #endif	
 	return 0;
     }
     r = fs_read(dir->vfsdata, buf, sizeof(buf));
-#ifdef DEBUG       
+#ifdef _DEBUG       
     __builtin_printf("readdir fs_read: %d\n", r);
 #endif	
     if (r == 0) return -1; // EOF
@@ -573,7 +573,7 @@ static int v_readdir(DIR *dir, struct dirent *ent)
 static int v_stat(const char *name, struct stat *buf)
 {
     int r;
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_stat(%s)\n", name);
 #endif    
     r = fs_stat(&rootdir, name, buf);
@@ -588,11 +588,11 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
     if (!f) {
         return _seterror(EBADF);
     }
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_read: fs_read at %u:", f->offlo);
 #endif    
     r = fs_read(f, buf, siz);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf(" ...returned %d\n", r);
 #endif    
     if (r < 0) {
@@ -612,11 +612,11 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
     if (!f) {
         return _seterror(EBADF);
     }
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_write: fs_write %d at %u:", siz, f->offlo);
 #endif    
     r = fs_write(f, buf, siz);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("returned %d\n", r);
 #endif    
     if (r < 0) {
@@ -632,7 +632,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     if (!f) {
         return _seterror(EBADF);
     }
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("v_lseek(%d, %d) start=%d ", offset, whence, f->offlo);
 #endif    
     if (whence == SEEK_SET) {
@@ -647,7 +647,7 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
         // FIXME: should do a stat on the file and then seek accordingly
         return _seterror(EINVAL);
     }
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("end=%d\n", f->offlo);
 #endif    
     return f->offlo;
@@ -688,7 +688,7 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
       fs_flags |= FS9_OTRUNC;
   }
   r = fs_open(f, name, fs_flags);
-#ifdef DEBUG
+#ifdef _DEBUG
   __builtin_printf("fs_open(%s) returned %d, offset=%d\n", name, r, f->offlo);
   __builtin_printf("offset at %d, size at %d\n", offsetof(fs9_file, offlo), sizeof(fs9_file));
   __builtin_printf("default buffer size=%d\n", sizeof(struct _default_buffer));
