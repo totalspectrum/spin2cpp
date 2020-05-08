@@ -664,7 +664,7 @@ RxFunc _getrxfunc(unsigned h) {
 int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 {
     struct _bas_wrap_sender *wrapper;
-    struct vfs_file_t *v;
+    vfs_file_t *v;
 
     v = __getftab(h);
     if (!v) return -1;
@@ -686,7 +686,7 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
 
 int _basic_open_string(unsigned h, char *fname, unsigned iomode)
 {
-    struct vfs_file_t *v;
+    vfs_file_t *v;
     int r;
     
     v = __getftab(h);
