@@ -99,11 +99,15 @@ Note that FlexC supports calling Spin methods directly, so to adapt existing Spi
 
 ### Classes
 
-The C `struct` declaration is extended slightly to allow functions (methods) to be declared. These must be declared like C++ "inline" functions, that is in the struct definition itself, but are not necessarily implemented inline. For example, a simple counter class might be implemented as:
+The C `struct` declaration is extended slightly to allow functions (methods) to be declared. All methods must be defined in the struct definition itself; there is at present no way to declare a method outside of the definition.
+
+For example, a simple counter class might be implemented as:
 ```
 typedef struct counter {
   int val;
-  void setval(int x) { val = x; }
+  void setval(int x) {
+      val = x;
+  }
   int getval() { return val; }
   int incval() { return ++val; }
 } Counter;
