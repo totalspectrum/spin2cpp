@@ -670,6 +670,9 @@ void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename);
 
+/* declare a single global variable */
+void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
+
 /* declare a single member variable of P */
 void DeclareOneMemberVar(Module *P, AST *ident, AST *typ);
 
@@ -678,9 +681,6 @@ void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);
-
-/* declare a single global variable */
-void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ);
 
 // type inference based on BASIC name (e.g. A$ is a string)
 AST *InferTypeFromName(AST *identifier);

@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include "frontends/common.h"
 #include "frontends/lexer.h"
+
+#define IN_DAT 1
     
 /* special flag */
     AST *ast_type_c_signed = NULL;
@@ -250,7 +252,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
             }
         }
         if (nameAst->kind == AST_LOCAL_IDENTIFIER) {
-            DeclareOneGlobalVar(P, decl, basetype);
+            DeclareOneGlobalVar(P, decl, basetype, IN_DAT);
         } else {
             // OK, "nameAst" is the name we want it to be known as inside
             // the function, but we will want to create a global variable
@@ -261,7 +263,7 @@ DeclareStatics(Module *P, AST *basetype, AST *decllist)
             EnterLocalAlias(currentTypes, globalname, nameString);
             // and enter a new global definition
             *nameAst = *globalname;
-            DeclareOneGlobalVar(P, decl, basetype);
+            DeclareOneGlobalVar(P, decl, basetype, IN_DAT);
         }
     }
     return results;
