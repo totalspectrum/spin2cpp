@@ -27,8 +27,6 @@
     extern AST *last_ast;
     extern AST *CommentedListHolder(AST *); // in spin.y
 
-    extern void DeclareBASICGlobalVariables(AST *);
-    
 #define YYERROR_VERBOSE 1
 #define YYSTYPE AST*
 
@@ -317,8 +315,15 @@ static void
 DeclareCGlobalVariables(AST *slist)
 {
     AST *temp;
+    int inDat;
+
+    if (!current || IsTopLevel(current) || !strcmp(current->classname, "_system_")) {
+        inDat = 1;
+    } else {
+        inDat = 0;
+    }
     if (slist && slist->kind == AST_DECLARE_VAR) {
-        DeclareBASICGlobalVariables(slist);
+        DeclareTypedGlobalVariables(slist, inDat);
         return;
     }
     while (slist) {
@@ -326,7 +331,7 @@ DeclareCGlobalVariables(AST *slist)
             ERROR(slist, "internal error in DeclareCGlobalVars");
         }
         temp = slist->left;
-        DeclareBASICGlobalVariables(temp);
+        DeclareTypedGlobalVariables(temp, inDat);
         slist = slist->right;
     }
 }

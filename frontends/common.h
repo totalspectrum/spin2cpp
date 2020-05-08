@@ -733,7 +733,13 @@ void FixupParameters(Function *func);
 /* add a subclass to a class */
 void AddSubClass(Module *P, Module *subP);
 
+/* declare all member variables in a module */
 void DeclareMemberVariables(Module *);
+
+/* declare some global variables; if inDat is true, put them in
+ * DAT, otherwise make them member variables
+ */
+void DeclareTypedGlobalVariables(AST *ast, int inDat);
 
 /* add a symbol for a label in the current function */
 void AddSymbolForLabel(AST *ast);

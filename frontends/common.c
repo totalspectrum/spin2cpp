@@ -1176,6 +1176,48 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
     AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
 }
 
+// Declare typed global variables
+// if inDat is 1, put them in the DAT section, otherwise make them
+// member variables
+// "ast" is a list of declarations
+void
+DeclareTypedGlobalVariables(AST *ast, int inDat)
+{
+    AST *idlist, *typ;
+    AST *ident;
+
+    if (!ast) return;
+    if (ast->kind == AST_SEQUENCE) {
+        ERROR(ast, "Internal error, unexpected sequence");
+        return;
+    }
+    idlist = ast->right;
+    typ = ast->left;
+    if (!idlist) {
+        return;
+    }
+    if (typ && typ->kind == AST_EXTERN) {
+        return;
+    }
+    if (IsBasicLang(current->curLanguage)) {
+        // BASIC does not require pointer notation for pointers to functions
+        AST *subtype = RemoveTypeModifiers(typ);
+        if (subtype && subtype->kind == AST_FUNCTYPE) {
+            typ = NewAST(AST_PTRTYPE, typ, NULL);
+        }
+    }
+    if (idlist->kind == AST_LISTHOLDER) {
+        while (idlist) {
+            ident = idlist->left;
+            DeclareOneGlobalVar(current, ident, typ);
+            idlist = idlist->right;
+        }
+    } else {
+        DeclareOneGlobalVar(current, idlist, typ);
+    }
+    return;
+}
+
 // returns true if P is the top level module for this project
 int
 IsTopLevel(Module *P)
