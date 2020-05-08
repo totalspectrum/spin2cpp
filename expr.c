@@ -2453,6 +2453,13 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return typ;
             }
             return ExprTypeRelative(table, (AST *)sym->val, P);
+#if 0            
+        case SYM_LABEL:
+        {
+            Label *lref = (Label *)sym->val;
+            return lref->type;
+        }
+#endif        
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
             return NULL;
