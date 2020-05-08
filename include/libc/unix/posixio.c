@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-//#define DEBUG
+//#define _DEBUG
 
 static int _rxtxioctl(vfs_file_t *f, unsigned long req, void *argp)
 {
@@ -93,6 +93,9 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
     char *name = __getfilebuffer();
     v = (struct vfs *)__getvfsforfile(name, orig_name);
     if (!v || !v->open) {
+#ifdef _DEBUG
+        __builtin_printf("ENOSYS: vfs == %x\n", (unsigned)v);
+#endif        
         return _seterror(ENOSYS);
     }
     memset(fil, 0, sizeof(*fil));
@@ -100,7 +103,7 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
     if (r != 0 && (flags & O_CREAT)) {
         r = (*v->creat)(fil, name, mode);
     }
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("_openraw(%s) flags=%d returned %d\n", name, flags, r);
 #endif    
     if (r == 0) {
@@ -111,7 +114,7 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
         if (rdwr != O_WRONLY) {
             state |= _VFS_STATE_RDOK;
         }
-#ifdef DEBUG
+#ifdef _DEBUG
         __builtin_printf("openraw rdwr=%d state=%d\n", rdwr, state);
 #endif    
         fil->state = state;
@@ -122,10 +125,16 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
         if (!fil->ioctl) fil->ioctl = v->ioctl;
         if (!fil->putcf) {
             fil->putcf = &__default_putc;
+#ifdef _DEBUG
+            {
+                unsigned *ptr = (unsigned *)fil->putcf;
+                __builtin_printf("openraw: using default putc (%x: %x %x)\n", (unsigned)ptr, ptr[0], ptr[1]);
+            }
+#endif                
         }
         if (!fil->getcf) {
             fil->getcf = &__default_getc;
-#ifdef DEBUG
+#ifdef _DEBUG
             {
                 unsigned *ptr = (unsigned *)fil->getcf;
                 __builtin_printf("openraw: using default getc (%x: %x %x)\n", (unsigned)ptr, ptr[0], ptr[1]);
@@ -134,18 +143,21 @@ _openraw(struct vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
         }
         if (!fil->flush) {
             if (v->flush) {
-#ifdef DEBUG
+#ifdef _DEBUG
                 __builtin_printf("openraw: using vfs flush\n");
 #endif                
                 fil->flush = v->flush;
             } else {
-#ifdef DEBUG
+#ifdef _DEBUG
                 __builtin_printf("openraw: using default flush\n");
 #endif                
                 fil->flush = &__default_flush;
             }
         }
     }
+#ifdef _DEBUG
+    __builtin_printf("openraw: fil=%x vfsdata=%x\n", (unsigned)fil, (unsigned)fil->vfsdata);
+#endif    
     return r;
 }
 
