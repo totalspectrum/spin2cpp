@@ -170,6 +170,22 @@ _openraw(vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
     return r;
 }
 
+int _closeraw(vfs_file_t *f)
+{
+    int r = 0;
+    if (!f->state) {
+        return _seterror(EBADF);
+    }
+    if (f->flush) {
+        (*f->flush)(f);
+    }
+    if (f->close) {
+        r = (*f->close)(f);
+    }
+    memset(f, 0, sizeof(*f));
+    return r;
+}
+
 int open(const char *orig_name, int flags, mode_t mode=0644)
 {
     vfs_file_t *tab = &__filetab[0];
@@ -189,20 +205,9 @@ int open(const char *orig_name, int flags, mode_t mode=0644)
     return r;
 }
 
-int _closeraw(vfs_file_t *f)
+int creat(const char *name, mode_t mode)
 {
-    int r = 0;
-    if (!f->state) {
-        return _seterror(EBADF);
-    }
-    if (f->flush) {
-        (*f->flush)(f);
-    }
-    if (f->close) {
-        r = (*f->close)(f);
-    }
-    memset(f, 0, sizeof(*f));
-    return r;
+    return open(name, O_WRONLY|O_CREAT|O_TRUNC, mode);
 }
 
 int close(int fd)
@@ -295,4 +300,76 @@ ssize_t read(int fd, void *vbuf, size_t count)
     }
     f = &__filetab[fd];
     return _vfsread(f, vbuf, count);
+}
+
+int
+chmod(const char *pathname, mode_t mode)
+{
+    return _seterror(ENOSYS);
+}
+
+int
+chown(const char *pathname, uid_t owner, gid_t group)
+{
+    return _seterror(ENOSYS);
+}
+
+int
+unlink(const char *orig_name)
+{
+    int r;
+    struct vfs *v;
+    char *name = __getfilebuffer();
+    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    if (!v || !v->open) {
+#ifdef _DEBUG
+        __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
+#endif        
+        return _seterror(ENOSYS);
+    }
+    r = (*v->remove)(name);
+    if (r != 0) {
+        return _seterror(-r);
+    }
+    return r;
+}
+
+int
+rmdir(const char *orig_name)
+{
+    struct vfs *v;
+    char *name = __getfilebuffer();
+    int r;
+    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    if (!v || !v->open) {
+#ifdef _DEBUG
+        __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
+#endif        
+        return _seterror(ENOSYS);
+    }
+    r = (*v->rmdir)(name);
+    if (r != 0) {
+        return _seterror(-r);
+    }
+    return r;
+}
+
+int
+mkdir(const char *orig_name, mode_t mode)
+{
+    int r;
+    struct vfs *v;
+    char *name = __getfilebuffer();
+    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    if (!v || !v->open) {
+#ifdef _DEBUG
+        __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
+#endif        
+        return _seterror(ENOSYS);
+    }
+    r = (*v->mkdir)(name, mode);
+    if (r != 0) {
+        return _seterror(-r);
+    }
+    return r;
 }

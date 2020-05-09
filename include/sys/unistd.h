@@ -26,9 +26,8 @@ extern "C" {
   int read(int fd, void *buf, int count) _IMPL("libc/unix/posixio.c");
   int close(int fd) _IMPL("libc/unix/posixio.c");
   off_t lseek(int fd, off_t offset, int whence) _IMPL("libc/unix/posixio.c");
-  int access(const char *path, int mode) _IMPL("libc/unix/access.c");
-
   int ioctl(int fd, unsigned long req, void *argp) _IMPL("libc/unix/ioctl.c");
+  int access(const char *path, int mode) _IMPL("libc/unix/access.c");
     
   /* access mode bits */
 #define F_OK (0)
@@ -38,11 +37,15 @@ extern "C" {
 
   int isatty(int fd) _IMPL("libc/unix/isatty.c");
 
-  char *getcwd(char *buf, int size);
-  int chdir(const char *path);
-  int rmdir(const char *path);
-  int mkdir(const char *path, int mode);
+  char *getcwd(char *buf, int size) _IMPL("libc/unix/mount.c");
+  int chdir(const char *path) _IMPL("libc/unix/mount.c");
+  int rmdir(const char *path) _IMPL("libc/unix/posixio.c");
+  int mkdir(const char *path, int mode) _IMPL("libc/unix/posixio.c");
 
+  int unlink(const char *path) _IMPL("libc/unix/posixio.c");
+  int chown(const char *pathname, uid_t owner, gid_t group) _IMPL("libc/unix/posixio.c");
+  int chmod(const char *pathname, mode_t mode) _IMPL("libc/unix/posixio.c");
+    
   unsigned int sleep(unsigned int seconds) _IMPL("libc/time/sleep.c");
   int usleep(useconds_t usec) _IMPL("libc/time/usleep.c");
 

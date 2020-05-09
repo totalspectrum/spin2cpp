@@ -1,5 +1,6 @@
 #include <sys/vfs.h>
 #include <sys/limits.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -99,4 +100,23 @@ char *getcwd(char *buf, size_t size)
     buf[0] = '/';
     strcpy(buf+1, curdir);
     return buf;
+}
+
+int chdir(const char *path)
+{
+    struct stat s;
+    char *tmp;
+    int r;
+    
+    r = stat(path, &s);
+    if (r != 0) {
+        return r;
+    }
+    if (!S_ISDIR(s.st_mode)) {
+        return _seterror(ENOTDIR);
+    }
+    tmp = __getfilebuffer();
+    __getvfsforfile(tmp, path);
+    strcpy(curdir, tmp);
+    return 0;
 }

@@ -172,7 +172,10 @@ extern "C" {
 
     int _seterror(int errnum) _IMPL("libc/stdlib/errno.c");
     int _geterror() _IMPL("libc/stdlib/errno.c");
-    
+    int *_geterrnoptr() _IMPL("libc/stdlib/errno.c");
+
+#define errno (*(_geterrnoptr()))
+
 #if defined(__cplusplus)
 }
 #endif
