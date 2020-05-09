@@ -7157,6 +7157,12 @@ static int v_rmdir(const char *name)
     return _set_dos_error(r);
 }
 
+static int v_rename(const char *old, const char *new)
+{
+    r = f_rename(old, new);
+    return _set_dos_error(r);
+}
+ 
 static int v_open(vfs_file_t *fil, const char *name, int flags)
 {
   int r;
@@ -7215,6 +7221,8 @@ struct vfs fat_vfs =
     &v_mkdir,
     &v_rmdir,
     &v_remove,
+
+    &v_rename,
 };
 
 struct vfs *

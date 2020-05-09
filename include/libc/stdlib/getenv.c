@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-static const char **_environ_ptr;
+const char **_environ_ptr;
 static int _environ_size; // max size of environment table
 
 char *

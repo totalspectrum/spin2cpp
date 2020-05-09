@@ -64,4 +64,6 @@ int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
 #define feof(f)   (0 != ((f)->state & _VFS_STATE_EOF))
 #define ferror(f) (0 != ((f)->state & _VFS_STATE_ERR))
 
+int rename(const char *oldpath, const char *newpath) _IMPL("libc/unix/rename.c");
+
 #endif

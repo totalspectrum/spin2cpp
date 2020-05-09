@@ -27,6 +27,8 @@ struct vfs {
     int (*mkdir)(const char *name, mode_t mode);
     int (*rmdir)(const char *name);
     int (*remove)(const char *pathname);
+
+    int (*rename)(const char *oldname, const char *newname);
 };
 
 int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");

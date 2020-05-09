@@ -297,6 +297,30 @@ int fs_close(fs9_file *f)
     return 0;
 }
 
+int fs_fdelete(fs9_file *f)
+{
+    uint8_t *ptr;
+    int r;
+    ptr = doPut4(txbuf, 0); // space for size
+    ptr = doPut1(ptr, t_remove);
+    ptr = doPut2(ptr, NOTAG);
+    ptr = doPut4(ptr, (uint32_t)f);
+    r = (*sendRecv)(txbuf, ptr, maxlen);
+    if (r < 0 || txbuf[4] != r_remove) {
+        return -EINVAL;
+    }
+    return 0;
+}
+
+int fs_delete(fs9_file *dir, const char *path)
+{
+    fs9_file f;
+    int r = fs_open_relative(dir, &f, path, 0);
+    if (r != 0) return r;
+    r = fs_fdelete(&f);
+    return r;
+}
+
 int fs_read(fs9_file *f, uint8_t *buf, int count)
 {
     uint8_t *ptr;
@@ -672,17 +696,19 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
 
 int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 {
-    return _seterror(EINVAL);
+    return -EINVAL;
 }
 
 int v_mkdir(const char *name, mode_t mode)
 {
-    return _seterror(EACCES);
+    return -EACCES;
 }
 
 int v_remove(const char *name)
 {
-    return _seterror(EACCES);
+    int r;
+    r = fs_delete(&rootdir, name);
+    return r;
 }
 
 int v_rmdir(const char *name)
@@ -744,6 +770,8 @@ static struct vfs fs9_vfs =
     &v_mkdir,
     &v_rmdir,
     &v_remove,
+
+    &v_rename,
 };
 
 struct vfs *
