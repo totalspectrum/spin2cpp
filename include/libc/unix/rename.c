@@ -7,7 +7,7 @@ int rename(const char *oldpath, const char *newpath)
 {
     int r;
     struct vfs *v, *newv;
-    char *oldname = __getfilebuffer;
+    char *oldname = __getfilebuffer();
     char newname[_PATH_MAX];
     
     v = (struct vfs *)__getvfsforfile(oldname, oldpath);

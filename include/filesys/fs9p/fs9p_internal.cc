@@ -694,26 +694,32 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
     return f->offlo;
 }
 
-int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
+static int v_ioctl(vfs_file_t *fil, unsigned long req, void *argp)
 {
     return -EINVAL;
 }
 
-int v_mkdir(const char *name, mode_t mode)
+static int v_mkdir(const char *name, mode_t mode)
 {
     return -EACCES;
 }
 
-int v_remove(const char *name)
+static int v_remove(const char *name)
 {
     int r;
     r = fs_delete(&rootdir, name);
     return r;
 }
 
-int v_rmdir(const char *name)
+static int v_rmdir(const char *name)
 {
     return v_remove(name);
+}
+
+static int v_rename(const char *oldname, const char *newname)
+{
+    // FIXME: should use wstat to implement the rename
+    return -ENOSYS;
 }
 
 static int v_open(vfs_file_t *fil, const char *name, int flags)
@@ -726,7 +732,7 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   __builtin_printf("fs9 v_open\n");
 #endif  
   if (!f) {
-      return _seterror(ENOMEM);
+      return -ENOMEM;
   }
   memset(f, 0, sizeof(*f));
   fs_flags = flags & 3; // basic stuff like O_RDONLY are the same

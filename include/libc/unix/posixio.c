@@ -132,6 +132,7 @@ _openraw(vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
         if (!fil->write) fil->write = v->write;
         if (!fil->close) fil->close = v->close;
         if (!fil->ioctl) fil->ioctl = v->ioctl;
+        if (!fil->lseek) fil->lseek = v->lseek;
         if (!fil->putcf) {
             fil->putcf = &__default_putc;
 #ifdef _DEBUG
@@ -300,6 +301,25 @@ ssize_t read(int fd, void *vbuf, size_t count)
     }
     f = &__filetab[fd];
     return _vfsread(f, vbuf, count);
+}
+
+off_t lseek(int fd, off_t offset, int whence)
+{
+    vfs_file_t *f;
+    off_t r;
+    
+    if ((unsigned)fd >= (unsigned)_MAX_FILES) {
+        return _seterror(EBADF);
+    }
+    f = &__filetab[fd];
+    if (!f->lseek) {
+        return _seterror(ENOSYS);
+    }
+    r = (*f->lseek)(f, offset, whence);
+    if (r < 0) {
+        return _seterror(-r);
+    }
+    return r;
 }
 
 int

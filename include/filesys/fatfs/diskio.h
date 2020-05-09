@@ -29,11 +29,11 @@ typedef enum {
 /* Prototypes for disk control functions */
 
 
-    DSTATUS disk_initialize (BYTE pdrv) _IMPL("sdmm.c");
-    DSTATUS disk_status (BYTE pdrv) _IMPL("sdmm.c");
-    DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.c");
-    DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.c");
-    DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff) _IMPL("sdmm.c");
+    DSTATUS disk_initialize (BYTE pdrv) _IMPL("sdmm.cc");
+    DSTATUS disk_status (BYTE pdrv) _IMPL("sdmm.cc");
+    DRESULT disk_read (BYTE pdrv, BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.cc");
+    DRESULT disk_write (BYTE pdrv, const BYTE* buff, LBA_t sector, UINT count) _IMPL("sdmm.cc");
+    DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff) _IMPL("sdmm.cc");
 
 
 /* Disk Status Bits (DSTATUS) */
