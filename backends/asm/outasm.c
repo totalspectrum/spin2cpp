@@ -1512,9 +1512,6 @@ NeedToSaveLocals(Function *func)
     if (IS_LEAF(func) || func->toplevel) {
         return false;
     }
-    if (ALL_VARS_ON_STACK(func)) {
-        return false;
-    }
     if (func->is_recursive) {
         return true;
     }
@@ -1524,7 +1521,6 @@ NeedToSaveLocals(Function *func)
     if (func->cog_code) {
         return false;
     }
-    // maybe skip saving locals for cog functions?
     return true;
 }
 
