@@ -6865,7 +6865,7 @@ typedef struct fat_file {
 static int _set_dos_error(int derr)
 {
     int r;
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("_set_dos_error(%d)\n", derr);
 #endif    
     switch (derr) {
@@ -6920,7 +6920,7 @@ static int v_creat(vfs_file_t *fil, const char *pathname, mode_t mode)
   memset(f, 0, sizeof(*f));
   fatmode = FA_CREATE_NEW | FA_WRITE | FA_READ;
   r = f_open(&f->fil, pathname, fatmode);
-#ifdef DEBUG
+#ifdef _DEBUG
   __builtin_printf("v_create(%s) returned %d\n", pathname, r);
 #endif  
   if (r) {
@@ -6945,17 +6945,17 @@ static int v_opendir(DIR *dir, const char *name)
     FFDIR *f = malloc(sizeof(*f));
     int r;
 
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_opendir(%s)\n", name);
 #endif    
     if (!f) {
-#ifdef DEBUG
+#ifdef _DEBUG
       __builtin_printf("malloc failed\n");
 #endif    
       return _seterror(ENOMEM);
     }
     r = f_opendir(f, name, 0);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("f_opendir returned %d\n", r);
 #endif    
     
@@ -6982,11 +6982,8 @@ static int v_readdir(DIR *dir, struct dirent *ent)
     FILINFO finfo;
     int r;
 
-#ifdef DEBUG    
-    __builtin_printf("v_readdir()\n");
-#endif    
     r = f_readdir(dir->vfsdata, &finfo);
-#ifdef DEBUG       
+#ifdef _DEBUG       
     __builtin_printf("readdir fs_read: %d\n", r);
 #endif	
     if (r != 0) {
@@ -7023,7 +7020,7 @@ static int v_stat(const char *name, struct stat *buf)
     int r;
     FILINFO finfo;
     unsigned mode;
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("v_stat(%s)\n", name);
 #endif
     memset(buf, 0, sizeof(*buf));
@@ -7050,7 +7047,7 @@ static int v_stat(const char *name, struct stat *buf)
     buf->st_blksize = 512;
     buf->st_blocks = buf->st_size / 512;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("v_stat returning %d\n", r);
 #endif
     return r;
@@ -7065,11 +7062,11 @@ static ssize_t v_read(vfs_file_t *fil, void *buf, size_t siz)
     if (!f) {
         return _seterror(EBADF);
     }
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_read: fs_read of %u bytes:", siz);
 #endif    
     r = f_read(&f->fil, buf, siz, &x);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf(" ...returned %d\n", r);
 #endif    
     if (r != 0) {
@@ -7089,11 +7086,11 @@ static ssize_t v_write(vfs_file_t *fil, void *buf, size_t siz)
     if (!f) {
         return _seterror(EBADF);
     }
-#ifdef DEBUG    
+#ifdef _DEBUG    
     __builtin_printf("v_write: f_write %d bytes:", siz);
 #endif    
     r = f_write(&f->fil, buf, siz, &x);
-#ifdef DEBUG
+#ifdef _DEBUG
     __builtin_printf("returned %d\n", r);
 #endif    
     if (r != 0) {
@@ -7162,7 +7159,7 @@ static int v_rmdir(const char *name)
 
 static int v_rename(const char *old, const char *new)
 {
-    r = f_rename(old, new);
+    int r = f_rename(old, new);
     return _set_dos_error(r);
 }
  

@@ -30,6 +30,9 @@ __getvfsforfile(char *name, const char *orig_name)
     }
     for (i = 0; i < MAX_MOUNTS; i++) {
         if (!mounttab[i]) continue;
+#ifdef _DEBUG
+        __builtin_printf("_getvfsforfile(%s): trying [%s]\n", name, mounttab[i]);
+#endif        
         len = strlen(mounttab[i]);
         if ( (name[len] == '/' || name[len] == 0) && !strncmp(name, mounttab[i], len)) {
             v = (struct vfs *)vfstab[i];
@@ -51,7 +54,7 @@ __getvfsforfile(char *name, const char *orig_name)
 int mount(char *name, struct vfs *v)
 {
     int i, len;
-    int lastfree = -1;
+    int firstfree = -1;
 
 #ifdef _DEBUG
     __builtin_printf("mount(%s, %x) called\n", name, (unsigned)v);
@@ -63,32 +66,37 @@ int mount(char *name, struct vfs *v)
         return _seterror(EINVAL);
     }
     for (i = 0; i < MAX_MOUNTS; i++) {
-        if (!mounttab[i]) {
-            lastfree = i;
-            continue;
+        if (mounttab[i] == 0) {
+            if (firstfree < 0) {
+                firstfree = i;
+                continue;
+            }
         }
         len = strlen(mounttab[i]);
         if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
-            lastfree = i;
+            firstfree = i;
             break;
         }
     }
-    if (lastfree == -1) {
+    if (firstfree == -1) {
 #ifdef _DEBUG
         __builtin_printf("mount %s: EINVAL\n", name);
 #endif        
         return _seterror(EMFILE);
     }
-    i = lastfree;
+    i = firstfree;
     vfstab[i] = (void *)v;
     if (!v) {
+#ifdef _DEBUG
+        __builtin_printf("mount: slot %d set empty\n", i);
+#endif    
         mounttab[i] = 0;
     } else {
         mounttab[i] = name;
-    }
 #ifdef _DEBUG
-    __builtin_printf("mount: using slot %d\n", i);
+        __builtin_printf("mount: using slot %d for %s\n", i, name);
 #endif    
+    }
     return 0;
 }
 
