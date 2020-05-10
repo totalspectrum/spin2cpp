@@ -322,7 +322,8 @@ DeclareCGlobalVariables(AST *slist)
     if (!current || IsTopLevel(current) || !strcmp(current->classname, "_system_")) {
         inDat = 1;
     } else {
-        inDat = 0;
+//        inDat = 0;
+        inDat = 1;
     }
     if (slist && slist->kind == AST_DECLARE_VAR) {
         DeclareTypedGlobalVariables(slist, inDat);
