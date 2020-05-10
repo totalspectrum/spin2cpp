@@ -29,8 +29,8 @@ pri cogstop(id)
   return 0
 
 pri _clkset(mode, freq)
-  _clkfreq := freq
-  _clkmode := mode
+  __clkfreq_var := freq
+  __clkmode_var := mode
   asm
     clkset mode
   endasm
@@ -137,7 +137,7 @@ pri _rxraw | val, rxmask, waitcycles, i, bitcycles
   return val
 
 pri _setbaud(rate)
-  _bitcycles := _clkfreq / rate
+  _bitcycles := __clkfreq_var / rate
 
 pri _call_method(o, f, x=0) | r
   asm

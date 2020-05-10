@@ -215,10 +215,10 @@ pri __sendstring(func, str) | c
   until c == 0
 
 pri __builtin_clkfreq
-  return _clkfreq
+  return __clkfreq_var
 
 pri __builtin_clkmode
-  return _clkmode
+  return __clkmode_var
   
 pri __builtin_inf
   return $7f800000
@@ -262,11 +262,11 @@ pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
 '' pause for m milliseconds
 pri _waitms(m=long)
-  _waitx(m * (_clkfreq / 1000))
+  _waitx(m * (__clkfreq_var / 1000))
 
 '' pause for m microseconds
 pri _waitus(m=long)
-  _waitx(m * (_clkfreq / 1000000))
+  _waitx(m * (__clkfreq_var / 1000000))
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long

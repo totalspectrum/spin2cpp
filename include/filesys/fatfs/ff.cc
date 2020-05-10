@@ -7023,7 +7023,7 @@ static int v_stat(const char *name, struct stat *buf)
     int r;
     FILINFO finfo;
     unsigned mode;
-#ifdef DEBUG    
+#ifdef DEBUG
     __builtin_printf("v_stat(%s)\n", name);
 #endif
     memset(buf, 0, sizeof(*buf));
@@ -7050,6 +7050,9 @@ static int v_stat(const char *name, struct stat *buf)
     buf->st_blksize = 512;
     buf->st_blocks = buf->st_size / 512;
     buf->st_atime = buf->st_mtime = buf->st_ctime = unixtime(finfo.fdate, finfo.ftime);
+#ifdef DEBUG
+    __builtin_printf("v_stat returning %d\n", r);
+#endif
     return r;
 }
 
