@@ -1,4 +1,4 @@
-Version 4.2.0
+Version 4.1.9
 - Fixed REG[] dereferencing
 - Fixed a problem with passing pointers to pointers to functions
 - Fixed a problem with subclasses in system module
