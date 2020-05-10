@@ -31,12 +31,12 @@ __getvfsforfile(char *name, const char *orig_name)
     for (i = 0; i < MAX_MOUNTS; i++) {
         if (!mounttab[i]) continue;
         len = strlen(mounttab[i]);
-        if (name[len] == '/' && !strncmp(name, mounttab[i], len)) {
+        if ( (name[len] == '/' || name[len] == 0) && !strncmp(name, mounttab[i], len)) {
             v = (struct vfs *)vfstab[i];
             /* remove prefix */
             strcpy(name, name+len+1);
 #ifdef _DEBUG
-            __builtin_printf("_getvfsforfile: returning %x for %s\n", (unsigned)v, name);
+            __builtin_printf("_getvfsforfile: slot %d returning %x for %s\n", i, (unsigned)v, name);
 #endif            
             return v;
         }
@@ -54,7 +54,7 @@ int mount(char *name, struct vfs *v)
     int lastfree = -1;
 
 #ifdef _DEBUG
-    __builtin_printf("mount(%s) called\n", name);
+    __builtin_printf("mount(%s, %x) called\n", name, (unsigned)v);
 #endif    
     if (name[0] != '/') {
 #ifdef _DEBUG
@@ -86,6 +86,9 @@ int mount(char *name, struct vfs *v)
     } else {
         mounttab[i] = name;
     }
+#ifdef _DEBUG
+    __builtin_printf("mount: using slot %d\n", i);
+#endif    
     return 0;
 }
 
