@@ -2,6 +2,7 @@ Version 4.2.0
 - Fixed REG[] dereferencing
 - Fixed a problem with passing pointers to pointers to functions
 - Fixed a problem with subclasses in system module
+- Fixed SIGNX and ZEROX operators to work like Spin2
 - Implemented mount() and getcwd()
 - Implemented OPEN FOR in BASIC
 - Implemented "public" and "private" keywords in C++ class declarations (they are currently ignored though).

@@ -879,9 +879,9 @@ expr:
   | expr SP_LIMITMAX expr
     { $$ = AstOperator(K_LIMITMAX, $1, $3); }
   | expr SP_ZEROX expr
-    { $$ = AstOperator(K_ZEROEXTEND, $1, $3); }
+    { $$ = AstOperator(K_ZEROEXTEND, $1, AstOperator('+', $3, AstInteger(1))); }
   | expr SP_SIGNX expr
-    { $$ = AstOperator(K_SIGNEXTEND, $1, $3); }
+    { $$ = AstOperator(K_SIGNEXTEND, $1, AstOperator('+', $3, AstInteger(1))); }
   | expr SP_REV expr
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_REV2 expr
