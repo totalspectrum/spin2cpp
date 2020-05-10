@@ -361,7 +361,7 @@ rmdir(const char *orig_name)
     char *name = __getfilebuffer();
     int r;
     v = (struct vfs *)__getvfsforfile(name, orig_name);
-    if (!v || !v->open) {
+    if (!v || !v->rmdir) {
 #ifdef _DEBUG
         __builtin_printf("rmdir: ENOSYS: vfs=%x\n", (unsigned)v);
 #endif        
