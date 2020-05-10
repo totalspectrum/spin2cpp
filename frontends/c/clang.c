@@ -3,13 +3,14 @@
  * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
- * code for BASIC specific features
+ * code for C specific features
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "spinc.h"
 
+// genPrintf is in basic/basiclang.c
 extern AST *genPrintf(AST *);
 
 // "cflags" is reserved for future use
