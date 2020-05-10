@@ -1131,6 +1131,8 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return ModifyLookup(ast);
     default:
         ldecl = NormalizeFunc(ast->left, func);
