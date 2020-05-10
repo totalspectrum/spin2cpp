@@ -1413,10 +1413,12 @@ AST *CheckTypes(AST *ast)
             Module *P;
             AST *supers = NULL;
             static AST *superref = NULL;
+            ASTReportInfo saveinfo;
             Symbol *sym = LookupAstSymbol(ast, NULL);
             if (!sym) {
                 return NULL;
             }
+            AstReportAs(ast, &saveinfo);
             ltype = ExprType(ast);
             // if this is a REFTYPE then dereference it
             if (ltype && IsRefType(ltype)) {
@@ -1431,11 +1433,13 @@ AST *CheckTypes(AST *ast)
             if (sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (f->module == current || f->module == globalModule) {
+                    AstReportDone(&saveinfo);
                     return ltype;
                 }
             }
             if (sym->kind == SYM_VARIABLE || sym->kind == SYM_FUNCTION) {
                 const char *name = sym->our_name;
+                int supersValid = 1;
                 P = current;
                 while (P) {
                     sym = FindSymbol(&P->objsyms, name);
@@ -1456,11 +1460,22 @@ AST *CheckTypes(AST *ast)
                                            supers),
                                     AstInteger(0));
                     P = P->superclass;
+                    if (P && !FindSymbol(&P->objsyms, "__super")) {
+                        supersValid = 0;
+                    }
                 }
                 if (sym && supers) {
-                    *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                    if (supersValid) {
+                        *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                    } else if (P) {
+                        // produce a warning if P is not the top level class
+                        if (!IsTopLevel(P)) {
+                            ERROR(ast, "Cannot handle reference to method of enclosing class");
+                        }
+                    }
                 }
             }
+            AstReportDone(&saveinfo);
             return ltype;
         }
     case AST_EXPRLIST:
