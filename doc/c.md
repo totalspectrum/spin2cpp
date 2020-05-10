@@ -150,6 +150,10 @@ Note that allowing function definitions inside a struct is an extension to C (it
 
 Because Spin and BASIC are case insensitive languages, all of their identifiers are translated internally to lower case. So a constant like `VGA` in Spin class `sp` would be referenced in C as `sp.vga`.
 
+#### RESTRICTIONS ON C CLASSES
+
+Class support for C/C++ is very much incomplete, and probably will not work in all cases. In particular, calling functions outside of the class may not work (so simple self contained classes should be fine, but classes which call into other classes may not work properly).
+
 ### Header file external function definitions
 
 There is no linker as yet, so in order to use standard library functions we use a FlexC specific construct, `__fromfile`. The declaration:
