@@ -1880,7 +1880,14 @@ CheckFunctionCalls(AST *ast)
             goto skipcheck;
         }
         if (doExpandArgs) {
-            if (AstListLen(ast->right) > 1) {
+            int numArgs = AstListLen(ast->right);
+            if (numArgs == 1 && ast->right->kind == AST_EXPRLIST) {
+                AST *subexpr = ast->right->left;
+                if (subexpr && subexpr->kind == AST_STRING) {
+                    numArgs = strlen(subexpr->d.string);
+                }
+            }
+            if (numArgs > 1) {
                 initseq = ExpandArguments(ast->left, ast->right);
                 *ast = *initseq;
             }
