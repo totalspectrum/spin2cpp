@@ -91,8 +91,8 @@ typedef struct alias {
 
 Aliases spinalias[] = {
     { "call", "_call" },
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__clkfreq_var" },
+    { "clkmode", "__clkmode_var" },
     { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
 #ifdef NEVER    
@@ -206,8 +206,8 @@ Aliases basicalias[] = {
     /* ugh, not sure if we want to keep supporting the clk* variables,
      * but changing them to functions is difficult
      */
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__clkfreq_var" },
+    { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "err", "_geterror" },
@@ -239,8 +239,8 @@ Aliases basicalias[] = {
 };
 Aliases calias[] = {
     /* these are obsolete but we'll support them for now */
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "_clkfreq", "__clkfreq_var" },
+    { "_clkmode", "__clkmode_var" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },

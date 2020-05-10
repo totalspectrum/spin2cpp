@@ -1859,8 +1859,8 @@ static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 
 // c2name is the P2 C version of the name
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
-    { "clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
+    { "__clkfreq_var", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
+    { "__clkmode_var", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
     { "clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
 
     { "__builtin_clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
