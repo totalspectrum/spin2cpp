@@ -118,6 +118,9 @@ typedef enum IROpcode {
     */
     OPC_ORG,
 
+    /* reset ORG and force padding */
+    OPC_ORGF,
+    
     /* make sure code fits in a specific size */
     OPC_FIT,
     

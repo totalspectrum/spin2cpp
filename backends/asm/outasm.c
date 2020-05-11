@@ -5697,7 +5697,10 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp1(irl, OPC_HUBSET, pa_reg);
     EmitOp2(irl, OPC_WRLONG, pa_reg, clkmode_addr);
     EmitOp2(irl, OPC_WRLONG, NewImmediate(clkfreq), clkfreq_addr);
-
+    EmitJump(irl, COND_TRUE, skip_clock_label);
+    // make sure $0-$1f are free for inline assembly
+    EmitOp1(irl, OPC_ORGF, NewImmediate(32));
+    
     EmitLabel(irl, skip_clock_label);
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));

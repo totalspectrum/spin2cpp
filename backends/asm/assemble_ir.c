@@ -1237,10 +1237,20 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2);
         break;
     case OPC_FIT:
-        flexbuf_addstr(fb, "\tfit\t496\n");
+        if (gl_p2) {
+            // reserve space at end of COG memory
+            flexbuf_addstr(fb, "\tfit\t480\n");
+        } else {
+            flexbuf_addstr(fb, "\tfit\t496\n");
+        }
         break;
     case OPC_ORG:
         flexbuf_printf(fb, "\torg\t");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_printf(fb, "\n");
+        break;
+    case OPC_ORGF:
+        flexbuf_printf(fb, "\torgf\t");
         PrintOperandAsValue(fb, ir->dst);
         flexbuf_printf(fb, "\n");
         break;

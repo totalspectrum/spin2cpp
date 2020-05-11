@@ -474,7 +474,7 @@ Note that labels normally have two values, their COG memory address (specified b
 
 ## New intrinsics for both P1 and P2
 
-Fastspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in P2 mode many of these are available without the leading underscore.
+Fastspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore.
 
 ### _PINW
 
@@ -573,6 +573,8 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 ## Compatibility with Spin2
 
+Generally fastspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available, except for those listed below.
+
 ### ORG/END
 
 No address may be given in an ORG/END pair. In fastspin inline assembly is always run from HUB rather than from COG.
@@ -581,3 +583,4 @@ No address may be given in an ORG/END pair. In fastspin inline assembly is alway
 
 The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
 
+COG memory is also laid out differently. fastspin leaves COG locations $0 to $f and $1e0 to $1ef free for use by inline assembly, and does not use the LUT (except as fcache). This is in contrast to the official compiler, which leaves a large block of COG memory starting at $0 "free" (although it is occupied by inline assembly) and which uses LUT to store code.
