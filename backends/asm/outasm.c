@@ -6103,9 +6103,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
     
-    // only the top level variable space is needed
-    EmitVarSection(&hubdata, P);
-
     // emit heap space, if we need it
     if (heaplabel) {
         Symbol *sym = LookupSymbol("__real_heapsize__");
@@ -6125,6 +6122,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     
+    // only the top level variable space is needed
+    EmitVarSection(&hubdata, P);
+
     // finally the stack, if we need it
     if (stacklabel) {
         if (HUB_DATA) {

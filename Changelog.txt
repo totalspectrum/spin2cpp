@@ -5,9 +5,11 @@ Version 4.1.9
 - Fixed SIGNX and ZEROX operators to work like Spin2
 - Fixed conflict of _clkfreq with CLKFREQ
 - Fixed a problem with SEND of simple strings
+- Fixed a problem with heap initialization in -O2
 - Implemented mount() and getcwd()
 - Implemented OPEN FOR in BASIC
 - Implemented "public" and "private" keywords in C++ class declarations (they are currently ignored though).
+- Reserved some COG memory in P2 mode
 
 Version 4.1.8
 - Added CALL and REG builtins for Spin2
