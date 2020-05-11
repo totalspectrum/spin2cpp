@@ -35,11 +35,11 @@ _getval2_ret
 result1
 	long	0
 COG_BSS_START
-	fit	496
+	fit	480
 	orgh
 	org	COG_BSS_START
 _var01
 	res	1
 arg01
 	res	1
-	fit	496
+	fit	480

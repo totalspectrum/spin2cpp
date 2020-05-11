@@ -31,11 +31,11 @@ _test3_ret
 objptr
 	long	@objmem
 COG_BSS_START
-	fit	496
+	fit	480
 	orgh
 objmem
 	long	0[1]
 	org	COG_BSS_START
 _var01
 	res	1
-	fit	496
+	fit	480

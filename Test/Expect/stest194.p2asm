@@ -26,11 +26,11 @@ _check2_ret
 result1
 	long	0
 COG_BSS_START
-	fit	496
+	fit	480
 	orgh
 	org	COG_BSS_START
 arg01
 	res	1
 arg02
 	res	1
-	fit	496
+	fit	480
