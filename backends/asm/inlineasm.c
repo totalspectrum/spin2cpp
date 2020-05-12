@@ -358,6 +358,18 @@ CompileInlineInstr(IRList *irl, AST *ast)
             ERROR(ast, "Too many operands to instruction");
             break;
         }
+        if (op->kind == IMM_INT && (unsigned)op->val > (unsigned)511) {
+            int ok = 0;
+            if (gl_p2) {
+                /* check for ##; see ANY_BIG_IMM definition in outdat.c  */
+                if (opimm[i] & 3) {
+                    ok = 1;
+                }
+            }
+            if (!ok) {
+                ERROR(ast, "immediate operand %d out of range", op->val);
+            }
+        }
     }
     AppendIR(irl, ir);
     return ir;
