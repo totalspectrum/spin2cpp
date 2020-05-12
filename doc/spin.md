@@ -583,4 +583,4 @@ No address may be given in an ORG/END pair. In fastspin inline assembly is alway
 
 The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
 
-COG memory is also laid out differently. fastspin leaves COG locations $0 to $f and $1e0 to $1ef free for use by inline assembly, and does not use the LUT (except as fcache). This is in contrast to the official compiler, which leaves a large block of COG memory starting at $0 "free" (although it is occupied by inline assembly) and which uses LUT to store code.
+COG memory is also laid out differently. fastspin leaves COG locations $0 to $1f and $1e0 to $1ef free for use by inline assembly, and does not use the LUT (except as fcache). This is in contrast to the official compiler, which leaves a large block of COG memory starting at $0 "free" (although it is occupied by inline assembly) and which uses LUT to store code.
