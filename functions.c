@@ -794,14 +794,14 @@ doDeclareFunction(AST *funcblock)
         // we already saw a definition for the function; if this was just
         // an alias then it may be OK
         if (fdef->body->kind == AST_STRING) {
-            if (!body || body->kind == AST_STRING) {
+            if (body && body->kind == AST_STRING) {
                 if (0 != strcmp(fdef->body->d.string, body->d.string)) {
                     ERROR(funcdef, "different __fromfile strings for function %s", funcname_user);
                 }
                 return fdef; // nothing else we need to do here
             }
         } else {
-            if (!body || body->kind == AST_STRING) {
+            if (body && body->kind == AST_STRING) {
                 /* providing a __fromfile() declaration after we saw
                    a real declaration; just ignore it */
                 return fdef;
