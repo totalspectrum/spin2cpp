@@ -69,6 +69,17 @@ static int parseargnum(const char *n)
 
 extern Operand *LabelRef(IRList *irl, Symbol *sym);
 
+Operand *ImmediateRef(int immflag, intptr_t val)
+{
+    char buf[100];
+    if (immflag) {
+        return NewImmediate(val);
+    } else {
+        sprintf(buf, "%lu", (unsigned long)val);
+        return NewOperand(REG_HW, strdup(buf), 0);
+    }
+}
+    
 //
 // compile an expression as an inline asm operand
 //
@@ -149,9 +160,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             case SYM_CONSTANT:
                 v = EvalPasmExpr(expr);
                 if (!immflag) {
-                    ERROR(expr, "must use an immediate with constants in inline asm");
+                    WARNING(expr, "symbol %s used without #", sym->user_name);
                 }
-                r = NewImmediate(v);
+                r = ImmediateRef(immflag, v);
                 break;
             case SYM_LOCALLABEL:
                 if (!immflag) {
@@ -195,13 +206,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
         return r;
     } else if (expr->kind == AST_INTEGER) {
-        if (immflag) {
-            return NewImmediate(expr->d.ival);
-        } else {
-            char buf[100];
-            sprintf(buf, "%d", expr->d.ival);
-            return NewOperand(REG_HW, strdup(buf), 0);
-        }
+        return ImmediateRef(immflag, expr->d.ival);
     } else if (expr->kind == AST_ADDROF) {
         r = CompileInlineOperand(irl, expr->left, effects, 0);
         if (r && effects) {
@@ -251,7 +256,8 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
         }
         if (IsConstExpr(expr)) {
-            return NewImmediate(EvalPasmExpr(expr));
+            int x = EvalPasmExpr(expr);
+            return ImmediateRef(immflag, x);
         }
     }
     
