@@ -1,4 +1,5 @@
 Version 4.1.9
+- Added an error for out of range immediate values in inline asm
 - Fixed REG[] dereferencing
 - Fixed a problem with passing pointers to pointers to functions
 - Fixed a problem with subclasses in system module
