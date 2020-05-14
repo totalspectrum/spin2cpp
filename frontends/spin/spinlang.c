@@ -430,8 +430,8 @@ doSpinTransform(AST **astptr, int level)
     case AST_INLINEASM:
         return;
     case AST_EXPRLIST:
-        doSpinTransform(&ast->left, level);
-        doSpinTransform(&ast->right, level);
+        doSpinTransform(&ast->left, level == 2 ? level : 0);
+        doSpinTransform(&ast->right, level == 2 ? level : 0);
         break;
     case AST_THENELSE:
         doSpinTransform(&ast->left, level);
