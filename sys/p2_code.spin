@@ -353,4 +353,21 @@ pri _call(hubaddr)
   asm
     call hubaddr
   endasm
-  
+
+pri _ones(v) : r
+  asm
+    ones r, v
+  endasm
+
+pri _qexp(v) : r
+  asm
+    qexp v
+    getqx r
+  endasm
+
+pri _qlog(v) : r
+  asm
+    qlog v
+    getqx r
+  endasm
+

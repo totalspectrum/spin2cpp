@@ -2337,6 +2337,50 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       AstReportDone(&saveinfo);
       return left;
   }
+  case K_ONES_COUNT:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_ones"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_QLOG:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      if (!gl_p2) {
+          ERROR(expr, "QLOG only supported on P2");
+          return EmptyOperand();
+      }
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qlog"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_QEXP:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      if (!gl_p2) {
+          ERROR(expr, "QEXP only supported on P2");
+          return EmptyOperand();
+      }
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qexp"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
   case '?':
   {
       AST *fcall;

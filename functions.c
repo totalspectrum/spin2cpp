@@ -2436,6 +2436,15 @@ MarkUsedBody(AST *body, const char *caller)
         case K_SQRT:
             UseInternal("_sqrt");
             break;
+        case K_ONES_COUNT:
+            UseInternal("_ones");
+            break;
+        case K_QEXP:
+            UseInternal("_qexp");
+            break;
+        case K_QLOG:
+            UseInternal("_qlog");
+            break;
         case '?':
             if (body->left) {
                 UseInternal("_lfsr_forward");

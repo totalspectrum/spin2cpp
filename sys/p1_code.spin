@@ -211,3 +211,11 @@ pri _call(hubaddr)
   asm
     call hubaddr
   endasm
+
+pri _ones(v) : r
+  r := 0
+  repeat while v <> 0
+    if v & 1
+      r++
+    v := v >> 1
+    

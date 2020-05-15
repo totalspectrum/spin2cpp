@@ -1,5 +1,6 @@
 Version 4.1.10
 - Added APPEND mode for open
+- Implemented ONES, QEXP, and QLOG Spin2 operators
 - Fixed a problem with negative numbers in Spin CASE statements
 
 Version 4.1.9
