@@ -145,6 +145,7 @@ abs
 and
 andalso
 any
+append
 as
 asm
 __builtin_alloca
@@ -900,6 +901,10 @@ number:
     print u
   end sub
 ```
+
+### APPEND
+
+Reserved word. For now, its only use is in `open` statements to specify that an existing file should be opened in append mode.
 
 ### AS
 
@@ -1888,10 +1893,11 @@ The second form uses a file name:
 ```
    open "/host/file.txt" for input as #2
    open name$ for output as #3
+   open name$ for append as #4
 ```
-This opens the given file for input or output. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long.
+This opens the given file for input, output, or append. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long. A file opened for append will be created if it does not exist, but if it does exist it will be opened for output at the end of the file.
 
-This second form is really only useful after a MOUNT call is used to establish a file system.
+This second form of `open` is really only useful after a `mount` call is used to establish a file system.
 
 ### OPTION
 

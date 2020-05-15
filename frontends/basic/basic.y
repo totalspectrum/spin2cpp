@@ -375,6 +375,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_AND        "and"
 %token BAS_ANDALSO    "andalso"
 %token BAS_ANY        "any"
+%token BAS_APPEND     "append"
 %token BAS_AS         "as"
 %token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
@@ -834,8 +835,17 @@ iostmt:
                 AstIdentifier("_basic_open_string"),
                 NewAST(AST_EXPRLIST, $7,
                        NewAST(AST_EXPRLIST, $2,
-                              /* mode 5 is O_WRONLY | O_CREAT | O_TRUNC */
+                              /* mode is O_WRONLY | O_CREAT | O_TRUNC */
                               NewAST(AST_EXPRLIST, AstInteger(1 + 4 + 8), NULL))), $1);
+    }
+  | BAS_OPEN expr BAS_FOR BAS_APPEND BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode is O_WRONLY | O_CREAT | O_APPEND */
+                              NewAST(AST_EXPRLIST, AstInteger(1 + 4 + 32), NULL))), $1);
     }
   | BAS_CLOSE '#' expr
     {

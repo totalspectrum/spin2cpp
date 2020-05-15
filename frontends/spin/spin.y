@@ -191,6 +191,10 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_EMPTY      "empty assignment marker _"
 %token SP_SIGNX      "SIGNX"
 %token SP_ZEROX      "ZEROX"
+%token SP_ONES       "ONES"
+%token SP_BMASK      "BMASK"
+%token SP_QLOG       "QLOG"
+%token SP_QEXP       "QEXP"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -207,7 +211,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS SP_ONES SP_BMASK SP_QLOG SP_QEXP
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -1008,6 +1012,20 @@ expr:
     { $$ = AstOperator(K_DECODE, NULL, $2); }
   | SP_ENCODE expr
     { $$ = AstOperator(K_ENCODE, NULL, $2); }
+  | SP_QLOG expr
+    { $$ = AstOperator(K_QLOG, NULL, $2); }
+  | SP_QEXP expr
+    { $$ = AstOperator(K_QEXP, NULL, $2); }
+  | SP_ONES expr
+    { $$ = AstOperator(K_ONES_COUNT, NULL, $2); }
+  | SP_BMASK expr
+    {
+        AST *ast;
+
+        ast = AstOperator(K_SHL, AstInteger(2), $2);
+        ast = AstOperator('-', ast, AstInteger(1));
+        $$ = ast;
+    }
   | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
   | lhs SP_INCREMENT
