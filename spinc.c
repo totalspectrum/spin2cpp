@@ -940,7 +940,7 @@ GetMainFunction(Module *P)
         }
     }
 
-    if (mainName) {
+    if (mainName && P->functions) {
         // look for function named "program" or "main"
         Function *f;
         for (f = P->functions; f; f = f->next) {

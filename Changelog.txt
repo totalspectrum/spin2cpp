@@ -1,6 +1,7 @@
 Version 4.1.10
 - Added APPEND mode for open
 - Allow @"stuff" notation in Spin in place of STRING("stuff")
+- Allow assembly-only C and BASIC files (similar to Spin with only DAT)
 - Implemented ONES, QEXP, and QLOG Spin2 operators
 - Fixed a problem with negative numbers in Spin CASE statements
 - Fixed bytemove, wordmove, longmove to work with overlapping extents
