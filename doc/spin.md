@@ -160,6 +160,10 @@ VAR
 ```
 then one may write `S.x` to access member variable `x` of `S`, and `S.rows` to access the constant `rows`. The original Spin syntax `S#rows` is still accepted for accessing constants.
 
+### Alternate string notation
+
+Fastspin interprets the notation `@"some chars"` to mean the same thing as `STRING("some chars")`. This provides a shorter way to write some messages.
+
 ### Bitfield access
 
 Bits `m` to `n` of a variable `x` may be accessed via the notation `x.[m..n]`. If `m` is the same as `n` this may be simplified to `x.[n]`. This notation may also be applied to hardware registers.

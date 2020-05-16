@@ -816,7 +816,16 @@ expr:
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
   | '@' expr
-    { $$ = NewAST(AST_ADDROF, $2, NULL); }
+    {
+        AST *e = $2;
+        if (e && e->kind == AST_STRING) {
+            $$ = NewAST(AST_STRINGPTR,
+                        NewAST(AST_EXPRLIST, e, NULL),
+                        NULL);
+        } else {
+            $$ = NewAST(AST_ADDROF, e, NULL);
+        }
+    }
   | SP_DOUBLEAT expr
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
   | SP_TRIPLEAT expr
