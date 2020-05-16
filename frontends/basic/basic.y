@@ -75,7 +75,7 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
  *  4 == read statements
  *  8 == for loop variables
  */
- #define DEFAULT_EXPLICIT_DECLARES 0x5
+#define DEFAULT_EXPLICIT_DECLARES 0x5
 #define GetExplicitDeclares() GetCurOptionSymbol(EXPLICIT_DECL_NAME, DEFAULT_EXPLICIT_DECLARES)
 
 Symbol *
@@ -1053,9 +1053,15 @@ forstmt:
       AST *closeident = $11;
       AST *declare;
       AST *loop;
-      
-      /* create a WEAK definition for ident (it will not override any existing definition) */
-      declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
+      Symbol *sym = GetExplicitDeclares();
+      int explicit = EvalConstExpr(sym->val);
+
+      if (0 == (explicit & 0x8)) {
+          /* create a WEAK definition for ident (it will not override any existing definition) */
+          declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
+      } else {
+          declare = 0;
+      }
       step = NewAST(AST_STEP, $8, $10);
       to = NewAST(AST_TO, $7, step);
       from = NewAST(AST_FROM, $5, to);
@@ -1065,8 +1071,12 @@ forstmt:
           ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
       }
-      $$ = NewAST(AST_STMTLIST, declare,
-                  NewAST(AST_STMTLIST, loop, NULL));
+      loop = NewAST(AST_STMTLIST, loop, NULL);
+      if (declare) {
+          loop = NewAST(AST_STMTLIST, declare,
+                        NewAST(AST_STMTLIST, loop, NULL));
+      }
+      $$ = loop;
       PopLoop();
     }
 ;

@@ -4,6 +4,7 @@ Version 4.1.10
 - Implemented ONES, QEXP, and QLOG Spin2 operators
 - Fixed a problem with negative numbers in Spin CASE statements
 - Fixed bytemove, wordmove, longmove to work with overlapping extents
+- Made OPTION EXPLICIT apply to FOR loop variables
 
 Version 4.1.9
 - Added an error for out of range immediate values in inline asm
