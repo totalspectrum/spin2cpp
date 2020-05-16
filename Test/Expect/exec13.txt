@@ -5,3 +5,6 @@ x = 16
 x = 256
 x = 256
 x = 65536
+Original: test text
+Deleted: est text
+Inserted: best text

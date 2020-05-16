@@ -3,6 +3,7 @@ Version 4.1.10
 - Allow @"stuff" notation in Spin in place of STRING("stuff")
 - Implemented ONES, QEXP, and QLOG Spin2 operators
 - Fixed a problem with negative numbers in Spin CASE statements
+- Fixed bytemove, wordmove, longmove to work with overlapping extents
 
 Version 4.1.9
 - Added an error for out of range immediate values in inline asm

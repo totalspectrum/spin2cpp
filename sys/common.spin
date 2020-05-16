@@ -14,32 +14,60 @@ pri longfill(ptr, val, count)
   repeat count
     long[ptr] := val
     ptr += 4
-pri longmove(dst, src, count) : origdst
-  origdst := dst
-  repeat count
-    long[dst] := long[src]
-    dst += 4
-    src += 4
 pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val
     ptr += 2
-pri wordmove(dst, src, count) : origdst
-  origdst := dst
-  repeat count
-    word[dst] := word[src]
-    dst += 2
-    src += 2
 pri bytefill(ptr, val, count)
   repeat count
     byte[ptr] := val
     ptr += 1
+    
+pri longmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      long[dst] := long[src]
+      dst += 4
+      src += 4
+  else
+    dst += 4*count
+    src += 4*count
+    repeat count
+      dst -= 4
+      src -= 4
+      long[dst] := long[src]
+      
+pri wordmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      word[dst] := word[src]
+      dst += 2
+      src += 2
+  else
+    dst += 2*count
+    src += 2*count
+    repeat count
+      dst -= 2
+      src -= 2
+      word[dst] := word[src]
+  
 pri bytemove(dst, src, count) : origdst
   origdst := dst
-  repeat count
-    byte[dst] := byte[src]
-    dst += 1
-    src += 1
+  if (dst < src)
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+      
 pri __builtin_strlen(str) : r=long
   r := 0
   repeat while byte[str] <> 0
