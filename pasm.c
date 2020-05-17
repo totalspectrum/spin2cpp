@@ -110,6 +110,10 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
 
     name = origLabel->d.string;
     sym = FindSymbol(&P->objsyms, name);
+    if (sym && sym->kind == SYM_WEAK_ALIAS) {
+        // it's OK to redefine a weak alias
+        sym = NULL;
+    }
     if (sym) {
         // redefining a label with the exact same values is OK
         if (sym->kind != SYM_LABEL) {
