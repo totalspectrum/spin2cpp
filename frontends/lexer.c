@@ -1525,6 +1525,8 @@ struct reservedword init_spin2_words[] = {
     { "!!", SP_NOT },
     { "<=", SP_LE },
     { ">=", SP_GE },
+    { "+<=", SP_LEU },
+    { "+>=", SP_GEU },
     
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
