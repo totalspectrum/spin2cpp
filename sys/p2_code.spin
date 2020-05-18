@@ -97,6 +97,14 @@ pri _coginit(id, code, param)
   endasm
   return id
 
+pri _cogchk(id) : r
+  r := -1
+  asm
+    cogid id wc
+ if_nc mov r, #0 
+  endasm
+  return r
+
 dat
     orgh
 _bitcycles long 0
