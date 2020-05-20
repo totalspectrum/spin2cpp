@@ -231,10 +231,11 @@ Spin2cpp accepts the following options:
   type (e.g. `--elf`).
   
 `--ccode`
-  Output C code instead of C++. Note that in C mode methods typically
+  Output C code instead of C++. Note that in C mode the translated methods
   have a first parameter "self" which points to the object's data.
   This is similar to the way the C++ compiler implements object methods
-  internally, but in C it has to be exposed explicitly.
+  internally, but in C it has to be exposed explicitly. This extra parameter
+  is added automatically by spin2cpp.
 
 `--cse`
   Enable common subexpression elimination. This optimization is the default
