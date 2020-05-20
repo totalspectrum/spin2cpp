@@ -121,12 +121,16 @@ pri _txraw(c) | val, nextcnt, bitcycles
     val >>= 1
   return 1
   
-pri _rxraw | val, rxmask, waitcycles, i, bitcycles
+pri _rxraw | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   dira[_rxpin] := 0
-  rxmask := 1<<_rxpin
-  if ina[_rxpin] <> 0
-    return -1
+
+  waitcycles := cnt + (bitcycles*16)
+  repeat
+    if ina[_rxpin] == 0
+      quit
+    if waitcycles - cnt < 0
+      return -1
 
   waitcycles := cnt + (bitcycles>>1)
   val := 0
