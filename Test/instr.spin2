@@ -22,7 +22,7 @@ DAT
 		rdlong a, --PTRB
 		popb   a
 		
-		lutson
+'		lutson
 		setluts	#1
 		modcz   _c_or_z, _clr wc
 		modc	_c_or_z wc
@@ -41,3 +41,5 @@ a		long	1
 		wrbyte  y,ptra++[15]
 		setbyte a
 		setbyte 0, a, #0
+
+		rdfast ##(1<<31), ##$4000

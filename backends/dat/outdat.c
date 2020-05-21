@@ -102,7 +102,9 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     curlen = flexbuf_curlen(&fb);
     fwrite(flexbuf_peek(&fb), curlen, 1, f);
     if (gl_p2) {
-        desiredlen = (curlen + 31) & ~31;
+        // round up to multiple of 32 bytes, like PNut does
+        // desiredlen = (curlen + 31) & ~31;
+        desiredlen = curlen; // PNut no longer rounds up
     } else {
         desiredlen = (curlen + 3) & ~3;
     }
