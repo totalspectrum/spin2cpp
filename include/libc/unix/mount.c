@@ -26,6 +26,7 @@ __getvfsforfile(char *name, const char *orig_name)
         strncpy(name, orig_name, _PATH_MAX);
     } else {
         strncpy(name, curdir, _PATH_MAX);
+        strncat(name, "/", _PATH_MAX);
         strncat(name, orig_name, _PATH_MAX);
     }
     for (i = 0; i < MAX_MOUNTS; i++) {

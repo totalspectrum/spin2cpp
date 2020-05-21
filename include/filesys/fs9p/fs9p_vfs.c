@@ -80,6 +80,9 @@ _vfs_open_host(void)
     int r;
     struct vfs *v;
 
+#ifdef _DEBUG
+    __builtin_printf("vfs_open_host called\n");
+#endif    
     r = FS.fs_init(&basic_sendrecv);
     if (r != 0) {
 #ifdef _DEBUG

@@ -22,6 +22,7 @@ int stat(const char *orig_name, struct stat *buf)
 #ifdef _DEBUG
     {
         unsigned *ptr = (unsigned *)v->stat;
+        __builtin_printf("v == %x\n", (unsigned)v);
         __builtin_printf("calling v->stat %x (%x : %x)\n", (unsigned)ptr, ptr[0], ptr[1]);
     }
 #endif    

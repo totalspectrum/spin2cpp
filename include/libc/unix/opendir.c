@@ -3,13 +3,15 @@
 #include <string.h>
 #include <errno.h>
 
-DIR *opendir(const char *name)
+DIR *opendir(const char *orig_name)
 {
-    struct vfs *v = _getrootvfs();
+    struct vfs *v;
+    char *name;
     DIR *dir;
     int r;
-    
-    if (!v) {
+    name = __getfilebuffer();
+    v = (struct vfs *)__getvfsforfile(name, orig_name);
+    if (!v || !v->opendir) {
         _seterror(ENOSYS);
         return 0;
     }
