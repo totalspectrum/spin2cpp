@@ -7,7 +7,7 @@ Version 4.1.11
 Version 4.1.10
 - Added APPEND mode for open
 - Added +<= and +>= aliases for +=< and +=> in Spin2
-- Allow @"stuff" notation in Spin in place of STRING("stuff")
+- Allow @"stuff" notation in Spin; means the same as STRING("stuff")
 - Added COGCHK function
 - Allowed assembly-only C and BASIC files (similar to Spin with only DAT)
 - Implemented ONES, QEXP, and QLOG Spin2 operators
