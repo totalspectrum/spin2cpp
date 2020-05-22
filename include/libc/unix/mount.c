@@ -109,8 +109,11 @@ char *getcwd(char *buf, size_t size)
         _seterror(ERANGE);
         return NULL;
     }
-    buf[0] = '/';
-    strcpy(buf+1, curdir);
+    if (curdir[0] == '/') {
+        strcpy(buf, curdir);
+    } else {
+        strcpy(buf, "/");
+    }
     return buf;
 }
 
@@ -122,13 +125,23 @@ int chdir(const char *path)
     
     r = stat(path, &s);
     if (r != 0) {
+#ifdef _DEBUG
+        __builtin_printf("chdir: stat failed\n");
+#endif        
         return r;
     }
     if (!S_ISDIR(s.st_mode)) {
+#ifdef _DEBUG
+        __builtin_printf("chdir: not a directory\n");
+#endif        
         return _seterror(ENOTDIR);
     }
-    tmp = __getfilebuffer();
-    __getvfsforfile(tmp, path);
-    strcpy(curdir, tmp);
+    if (path[0] == '/') {
+        strncpy(curdir, path, _PATH_MAX);
+    } else {
+        tmp = __getfilebuffer();
+        __getvfsforfile(tmp, path);
+        strncat(curdir, tmp, _PATH_MAX);
+    }
     return 0;
 }
