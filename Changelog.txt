@@ -2,6 +2,7 @@ Version 4.1.11
 - Made _rxraw more forgiving (but slower) in P1
 - No longer align P2 output to 32 bytes (matches newer PNut)
 - Fixed various bugs in POSIX file functions
+- Special case @ operation in REP @x, #N in inline asm
 
 Version 4.1.10
 - Added APPEND mode for open

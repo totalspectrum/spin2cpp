@@ -208,7 +208,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     } else if (expr->kind == AST_INTEGER) {
         return ImmediateRef(immflag, expr->d.ival);
     } else if (expr->kind == AST_ADDROF) {
-        r = CompileInlineOperand(irl, expr->left, effects, 0);
+        r = CompileInlineOperand(irl, expr->left, effects, immflag);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEHUB;
         }
@@ -347,7 +347,12 @@ CompileInlineInstr(IRList *irl, AST *ast)
     for (i = 0; i < numoperands; i++) {
         Operand *op;
         effects[i] = 0;
-        op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
+        // special case rep instruction
+        if (gl_p2 && i == 0 && !opimm[i] && !strcmp(instr->name, "rep") && operands[0] && operands[0]->kind == AST_ADDROF) {
+            op = CompileInlineOperand(irl, operands[i], &effects[i], 1);
+        } else {
+            op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
+        }
         switch(i) {
         case 0:
             ir->dst = op;
