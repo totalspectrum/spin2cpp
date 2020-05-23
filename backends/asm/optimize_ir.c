@@ -2994,29 +2994,35 @@ ExpandInlines(IRList *irl)
 // convert loops to FCACHE when we can
 //
 
-static bool
+// see if a loop can be cached
+// "root" is a label
+// returns NULL if no fcache, otherwise
+// a new label which can point to the end
+// of the loop
+static IR *
 LoopCanBeFcached(IRList *irl, IR *root)
 {
     IR *endjmp;
     IR *endlabel;
+    IR *newlabel;
     IR *ir = root;
     int size = 0;
     
     if (!IsHubDest(ir->dst)) {
         // this loop is not in HUB memory
-        return false;
+        return 0;
     }
     endjmp = ir->aux;
     if (!endjmp || !IsJump(endjmp)) {
         // we don't know who jumps here
-        return false;
+        return 0;
     }
     endlabel = endjmp;
     while (endlabel->next && endlabel->next->opc == OPC_LABEL) {
         endlabel = endlabel->next;
     }
     if (IsForwardJump(endjmp)) {
-        return false;
+        return 0;
     }
     {
         ir = ir->next;
@@ -3024,46 +3030,49 @@ LoopCanBeFcached(IRList *irl, IR *root)
             if (ir->opc == OPC_CALL) {
                 // no calls to hub memory!
                 if (MaybeHubDest(ir->dst)) {
-                    return false;
+                    return 0;
                 }
             }
             if (IsJump(ir)) {
                 if (!JumpIsAfterOrEqual(root, ir))
-                    return false;
+                    return 0;
                 if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
-                    return false;
+                    return 0;
             }
             if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
                 size++;
                 if (size >= gl_fcache_size) {
-                    return false;
+                    return 0;
                 }
             }
             ir = ir->next;
         }
     }
-    return true;
+    Operand *dst = NewHubLabel();
+    newlabel = NewIR(OPC_LABEL);
+    newlabel->dst = dst;
+    InsertAfterIR(irl, endjmp, newlabel);
+    return newlabel;
 }
 
 void
 OptimizeFcache(IRList *irl)
 {
     IR *ir;
-
+    IR *endlabel;
+    
     ir = irl->head;
     while (ir) {
         if (IsLabel(ir)) {
+            endlabel = LoopCanBeFcached(irl, ir);
             if (LoopCanBeFcached(irl, ir)) {
                 Operand *src = ir->dst;
-                Operand *dst = NewHubLabel();
+                Operand *dst = endlabel->dst;
                 IR *startlabel = ir;
-                IR *endlabel = NewIR(OPC_LABEL);
                 IR *fcache = NewIR(OPC_FCACHE);
-                IR *jmp = (IR *)ir->aux;
                 IR *loopstart = ir->prev;
                 fcache->src = src;
                 fcache->dst = dst;
-                endlabel->dst = dst;
                 while (loopstart && IsDummy(loopstart)) {
                     loopstart = loopstart->prev;
                 }
@@ -3074,7 +3083,6 @@ OptimizeFcache(IRList *irl)
                     InsertAfterIR(irl, loopstart, startlabel);
                     ir = startlabel;
                 }
-                InsertAfterIR(irl, jmp, endlabel);
                 InsertAfterIR(irl, loopstart, fcache);
                 while (ir != endlabel) {
                     ir->fcache = src;
