@@ -6088,6 +6088,12 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 return;
             }
         }
+        // guesstimate how much space we will have for FCACHE, if
+        // a dynamic size is requested
+        if (gl_fcache_size < 0) {
+            gl_fcache_size = GuessFcacheSize(&cogcode);
+        }
+    
         if (HUB_CODE) {
             ValidateStackptr();
             if (!gl_p2) {
@@ -6110,12 +6116,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         } else {
             CompileSystemModule(&cogcode, globalModule);
         }
-        // guesstimate how much space we will have for FCACHE, if
-        // a dynamic size is requested
-        if (gl_fcache_size < 0) {
-            gl_fcache_size = GuessFcacheSize(&cogcode);
-        }
-    
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
 
