@@ -1702,16 +1702,14 @@ asm_statement:
     {
         AST *asmcode;
         AST *vol = $2;
-        asmcode = NewAST(AST_INLINEASM, $4, NULL);
-        asmcode->d.ival = (vol != 0);
+        asmcode = NewAST(AST_INLINEASM, $4, vol);
         $$ = asmcode;
     }
   | C_ASM opt_asm_volatile C_EOLN '{' asmlist '}'
     {
         AST *asmcode;
         AST *vol = $2;
-        asmcode = NewAST(AST_INLINEASM, $5, NULL);
-        asmcode->d.ival = (vol != 0);
+        asmcode = NewAST(AST_INLINEASM, $5, vol);
         $$ = asmcode;
     }
   ;
@@ -1720,9 +1718,9 @@ opt_asm_volatile:
   /* nothing */
     { $$ = 0; }
   | C_VOLATILE
-    { $$ = ast_type_void; }
+    { $$ = AstInteger(1); }
   | C_CONST
-    { $$ = ast_type_void; }
+    { $$ = AstInteger(3); }
 ;
 
 top_asm:

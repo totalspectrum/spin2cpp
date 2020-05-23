@@ -142,7 +142,10 @@ typedef struct asmmoddata {
 Instruction *FindInstrForOpc(IROpcode kind);
 
 // compile inline assembly
-void CompileInlineAsm(IRList *irl, AST *ast, int isConst);
+#define INLINE_ASM_FLAG_CONST  0x01
+#define INLINE_ASM_FLAG_FCACHE 0x02
+
+void CompileInlineAsm(IRList *irl, AST *ast, unsigned asmFlags);
 Operand *CompileIdentifier(IRList *irl, AST *expr);
 
 /* assign variable space in COG memory */

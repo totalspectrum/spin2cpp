@@ -549,13 +549,14 @@ repeatstmt:
     }
   | SP_ASM datblock SP_ENDASM
     {
-        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
-        $$->d.ival = 0; // not volatile
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
+        $$ = ast;
     }
   | SP_ORG datblock SP_END
     {
-        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
-        $$->d.ival = 1; // volatile, do not optimize
+        // flag 3 means const (do not optimize) & FCACHE
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(3), $1);
+        $$ = ast;
     }
   | SP_INLINECCODE
     {  $$ = $1; }

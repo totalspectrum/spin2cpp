@@ -958,6 +958,10 @@ end function
 
 If a `const` keyword appears after `asm` then the optimizer will leave untouched all code within the `asm` block. Normally this code is optimized along with the generated code, and this is usually what is desired, because often the compiler can make helpful changes like re-using registers for arguments and local variables. `asm const` should thus be avoided in general, but if there is some particular sequence that you need to have compiled exactly as-is, then you may use it.
 
+#### ASM CPU
+
+`asm cpu` is like `asm const` but as well as leaving the code unoptimized it will copy it to the internal FCACHE area (rather than executing it from HUB memory). This can be useful if precise timing is required for loops.
+
 #### ASM SHARED
 
 An `asm shared` block declares some static code and/or data which is not intended to be executed immediately, but may be invoked with `cpu`. In this respect it is like a Spin language `DAT` block.

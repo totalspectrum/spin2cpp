@@ -425,18 +425,37 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
 }
 
 void
-CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
+CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
 {
     AST *ast;
     AST *top = origtop;
     unsigned relpc;
     IR *firstir;
+    IR *fcache = NULL;
+    IR *startlabel, *endlabel;
+    Operand *enddst, *startdst;
+    bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
         return;
     }
-    
+
+    if (asmFlags & INLINE_ASM_FLAG_FCACHE) {
+        if (gl_fcache_size <= 0) {
+            WARNING(origtop, "FCACHE is disabled, asm will be in HUB");
+        } else {
+            startdst = NewHubLabel();
+            enddst = NewHubLabel();
+            fcache = NewIR(OPC_FCACHE);
+            fcache->src = startdst;
+            fcache->dst = enddst;
+            startlabel = NewIR(OPC_LABEL);
+            startlabel->dst = startdst;
+            endlabel = NewIR(OPC_LABEL);
+            endlabel->dst = enddst;
+        }
+    }
     // first run through and define all the labels
     while (top) {
         ast = top;
@@ -453,6 +472,10 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
     // now go back and emit code
     top = origtop;
     relpc = 0;
+    if (fcache) {
+        AppendIR(irl, fcache);
+        AppendIR(irl, startlabel);
+    }        
     firstir = NULL;
     while(top) {
         ast = top;
@@ -494,7 +517,12 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
             break;
         }
     }
-
+    if (fcache) {
+        if (relpc > gl_fcache_size) {
+            ERROR(origtop, "Inline assembly too large to fit in fcache");
+        }
+        AppendIR(irl, endlabel);
+    }
     // now fixup any relative addresses
     for (IR *ir = firstir; ir; ir = ir->next) {
         if (!IsDummy(ir)) {

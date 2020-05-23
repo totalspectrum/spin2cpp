@@ -126,8 +126,8 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
 #define OPT_AUTO_FCACHE         0x40  /* use FCACHE for P2 */
 
-#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM)
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS|OPT_AUTO_FCACHE) /* extras added with -O2 */
+#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */

@@ -79,13 +79,13 @@ int getcogid() {
    return x;
 }
 ```
-The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code. `__asm const` suppresses optimization of the assembly code (see below) and should generally be avoided.
+The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code. `__asm const` suppresses optimization of the assembly code (see below) and forces the code to be placed into FCACHE memory. `__asm volatile` is similar, but does not force the code into FCACHE (it will execute from HUB as usual).
 
 For inline assembly inside a function, any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 
 Some conditional execution directives (like `if_c_and_z`) are not accepted in inline assembly. In general, inline assembly is restricted, and is no substitute for full assembly in top level `__pasm` blocks.
 
-Inline assembly inside a function is normally optimized along with the generated code; this produces opportunities to improve the generated code based on knowledge of the assembly. This may be suppressed by using `__asm const` (equivalently `__asm volatile`) instead of `__asm`. Generally this will hurt the output code, but may be necessary if there is inline assembly with very sensitive timing.
+Inline assembly inside a function is normally optimized along with the generated code; this produces opportunities to improve the generated code based on knowledge of the assembly. This may be suppressed by using `__asm const` (or `__asm volatile`) instead of `__asm`. Generally this will hurt the output code, but may be necessary if there is inline assembly with very sensitive timing.
 
 Inline assembly may also appear outside of any function. In this case the inline assembly block is similar to a Spin `DAT` section, and creates a global block of code and/or data.
 

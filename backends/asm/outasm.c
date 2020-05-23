@@ -4406,9 +4406,15 @@ static void CompileStatement(IRList *irl, AST *ast)
 	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
+    {
         //EmitDebugComment(irl, ast);
-        CompileInlineAsm(irl, ast->left, ast->d.ival);
+        unsigned flags = 0;
+        if (ast->right && ast->right->kind == AST_INTEGER) {
+            flags = ast->right->d.ival;
+        }
+        CompileInlineAsm(irl, ast->left, flags);
         break;
+    }
     case AST_CASE:
         CompileCaseStmt(irl, ast);
         break;
@@ -5912,12 +5918,10 @@ GuessFcacheSize(IRList *irl)
 {
 #    /* for now, just go by p2/p1 */
     if (gl_p2) {
-        // fcache disabled by default on P2
-        // if we use -O2 though then use LUT for fcache
-        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
             return 240;
         }
-        return 0; // disable fcache by default
+        return 0; // disable fcache if no optimization
     } else {
 #ifdef REALLY_GUESS_FCACHE_SIZE    
     int n = 0;
