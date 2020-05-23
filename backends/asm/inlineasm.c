@@ -371,9 +371,15 @@ CompileInlineInstr(IRList *irl, AST *ast)
         }
         if (op->kind == IMM_INT && (unsigned)op->val > (unsigned)511) {
             int ok = 0;
-            if (gl_p2) {
+            if (instr->ops == CALL_OPERAND) {
+                ok = 1;
+            }
+            else if (gl_p2) {
                 /* check for ##; see ANY_BIG_IMM definition in outdat.c  */
                 if (opimm[i] & 3) {
+                    ok = 1;
+                }
+                if (instr->ops == P2_JUMP ||  instr->ops == P2_LOC || instr->ops == P2_CALLD) {
                     ok = 1;
                 }
             }

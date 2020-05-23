@@ -201,6 +201,11 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
+    default:
+        /* fall through */
+        if (!useabsaddr) {
+            useimm = 0;
+        }
     case IMM_COG_LABEL:
         if (useimm) {
             flexbuf_addstr(fb, "#");
@@ -211,8 +216,6 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
                 flexbuf_addstr(fb, "@");
             }
         }
-        /* fall through */
-    default:
         if (effect == OPEFFECT_PREINC) {
             flexbuf_printf(fb, "++");
         } else if (effect == OPEFFECT_PREDEC) {
