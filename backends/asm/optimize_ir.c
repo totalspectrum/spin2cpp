@@ -3027,7 +3027,7 @@ LoopCanBeFcached(IRList *irl, IR *root)
     {
         ir = ir->next;
         while (ir != endjmp) {
-            if (ir->fcache) {
+            if (ir->fcache || InstrIsVolatile(ir)) {
                 return 0;
             }
             if (ir->opc == OPC_CALL) {
