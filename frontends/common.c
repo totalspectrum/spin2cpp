@@ -258,10 +258,6 @@ Aliases calias[] = {
     { "_waitx", "__builtin_propeller_waitx" },
     { "_pinr", "__builtin_propeller_pinr" },
 
-    { "_wrpin", "__builtin_propeller_wrpin" },
-    { "_wxpin", "__builtin_propeller_wxpin" },
-    { "_wypin", "__builtin_propeller_wypin" },
-
     { "_rdpin", "__builtin_propeller_rdpin" },
     
     { NULL, NULL },
