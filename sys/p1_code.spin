@@ -29,8 +29,8 @@ pri cogstop(id)
   return 0
 
 pri _clkset(mode, freq)
-  _clkfreq := freq
-  _clkmode := mode
+  __clkfreq_var := freq
+  __clkmode_var := mode
   asm
     clkset mode
   endasm
@@ -121,12 +121,16 @@ pri _txraw(c) | val, nextcnt, bitcycles
     val >>= 1
   return 1
   
-pri _rxraw | val, rxmask, waitcycles, i, bitcycles
+pri _rxraw | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   dira[_rxpin] := 0
-  rxmask := 1<<_rxpin
-  if ina[_rxpin] <> 0
-    return -1
+
+  waitcycles := cnt + (bitcycles*16)
+  repeat
+    if ina[_rxpin] == 0
+      quit
+    if waitcycles - cnt < 0
+      return -1
 
   waitcycles := cnt + (bitcycles>>1)
   val := 0
@@ -137,7 +141,7 @@ pri _rxraw | val, rxmask, waitcycles, i, bitcycles
   return val
 
 pri _setbaud(rate)
-  _bitcycles := _clkfreq / rate
+  _bitcycles := __clkfreq_var / rate
 
 pri _call_method(o, f, x=0) | r
   asm
@@ -211,3 +215,11 @@ pri _call(hubaddr)
   asm
     call hubaddr
   endasm
+
+pri _ones(v) : r
+  r := 0
+  repeat while v <> 0
+    if v & 1
+      r++
+    v := v >> 1
+    

@@ -1103,6 +1103,17 @@ EvalFixedOperator(int op, int32_t lval, int32_t rval, int *valid)
 }
 
 static int32_t
+CountOnes(uint32_t v)
+{
+    int r = 0;
+    while (v != 0) {
+        if (v & 1) r++;
+        v = v>>1;
+    }
+    return r;
+}
+
+static int32_t
 BoolValue(int v)
 {
     if (!v) return 0;
@@ -1228,6 +1239,11 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
             ERROR(NULL, "unexpected operator ++ in constant expression", (op == K_INCREMENT) ? "++" : "--");
         }
         return 0;
+    case K_ONES_COUNT:
+        {
+            return CountOnes(rval);
+        }
+        break;
     default:
         if (valid)
             *valid = 0;
@@ -2453,6 +2469,13 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 return typ;
             }
             return ExprTypeRelative(table, (AST *)sym->val, P);
+#if 0            
+        case SYM_LABEL:
+        {
+            Label *lref = (Label *)sym->val;
+            return lref->type;
+        }
+#endif        
         default:
             ERROR(expr, "Unable to handle member %s", methodname);
             return NULL;

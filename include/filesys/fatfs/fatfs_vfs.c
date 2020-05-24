@@ -11,15 +11,23 @@ struct vfs *
 _vfs_open_sdcard(void)
 {
     int r;
-
+    struct vfs *v;
+    
     r = FFS.f_mount(&FatFs, "", 0);
     if (r != 0) {
-#ifdef DEBUG
-       __builtin_printf("fs_init failed: result=[%d]\n", r);
+#ifdef _DEBUG
+       __builtin_printf("sd card fs_init failed: result=[%d]\n", r);
        waitms(1000);
 #endif      
        _seterror(-r);
        return 0;
     }
-    return FFS.get_vfs();
+    v = FFS.get_vfs();
+#ifdef _DEBUG
+    {
+        unsigned *ptr = (unsigned *)v;
+        __builtin_printf("sd card get_vfs: returning %x\n", (unsigned)ptr);
+    }
+#endif
+    return v;
 }

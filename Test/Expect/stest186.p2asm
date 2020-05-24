@@ -1,6 +1,11 @@
-pub main
-  coginit(0, @entry, 0)
 dat
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
 	org	0
 entry
 
@@ -9,7 +14,7 @@ _go
 	mov	result2, arg01
 	mov	result1, result2
 _go_ret
-	ret
+	reta
 
 _addsub
 	mov	result1, arg01
@@ -17,17 +22,18 @@ _addsub
 	sub	arg01, arg02
 	mov	result2, arg01
 _addsub_ret
-	ret
+	reta
 
 result1
 	long	0
 result2
 	long	0
 COG_BSS_START
-	fit	496
+	fit	480
+	orgh
 	org	COG_BSS_START
 arg01
 	res	1
 arg02
 	res	1
-	fit	496
+	fit	480

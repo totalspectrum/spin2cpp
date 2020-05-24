@@ -9,7 +9,10 @@ CON
 
 VAR
   long SqStack[64]	' Stack space for Square cog
-  
+
+DAT
+astr byte "test text ", 0, 0, 0, 0
+
 OBJ
 #ifdef __P2__
   ser: "spin/SmartSerial"
@@ -29,15 +32,31 @@ PUB demo | x,y
   x := 2
   cognew(Square(@X), @SqStack)
   repeat 7
-    Report(x)
+    ReportN(x)
     PauseABit
+
+  ' test bytemove
+  ReportAstr(@"Original: ", @astr)
+  ' delete first character
+  bytemove(@astr, @astr+1, 9)
+  ReportAstr(@"Deleted: ", @astr)
+  ' insert another char
+  bytemove(@astr+1, @astr, 9)
+  astr[0] := "b"
+  ReportAstr(@"Inserted: ", @astr)
+  PauseABit
   exit
 
-PUB Report(n)
+PUB ReportN(n)
   ser.str(string("x = "))
   ser.dec(n)
   ser.str(string(13, 10))
 
+PUB ReportAstr(msg, s)
+  ser.str(msg)
+  ser.str(s)
+  ser.str(string(13, 10))
+  
 PUB Square(XAddr)
  ' Square the value at XAddr
  repeat

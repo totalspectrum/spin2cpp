@@ -355,7 +355,8 @@ genPrintf(AST *ast)
     int minwidth;
     int zeropad;
     int justify;
-
+    ASTReportInfo saveinfo;
+    
     if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
         return NULL; // convert directly to C
     }
@@ -381,6 +382,7 @@ genPrintf(AST *ast)
         //ERROR(ast, "__builtin_printf only works with a constant string");
         return NULL;
     }
+    AstReportAs(ast, &saveinfo);
     while (*fmtstring) {
         c = *fmtstring++;
         if (!c) {
@@ -390,6 +392,7 @@ genPrintf(AST *ast)
             c = *fmtstring++;
             if (!c) {
                 //ERROR(ast, "bad format in __builtin_printf");
+                AstReportDone(&saveinfo);
                 return NULL;
             }
             if (c == '%') {
@@ -475,6 +478,7 @@ genPrintf(AST *ast)
     if (exprlist) {
         seq = addPrintCall(seq, Handle, basic_print_string, exprlist->left, Zero);
     }
+    AstReportDone(&saveinfo);
     return seq;
 }
 
@@ -499,6 +503,7 @@ static void
 adjustFuncCall(AST *ast)
 {
     AST *left = ast->left;
+    AST *leftparent = NULL;
     AST *index = ast->right;
     AST *typ;
     AST *func = NULL;
@@ -516,6 +521,7 @@ adjustFuncCall(AST *ast)
         templident = left;
 	methodref = NULL;
         methodcall = NULL;
+        leftparent = ast;
     }
     /* check for template instantiation */
     if (templident->kind == AST_IDENTIFIER || templident->kind == AST_LOCAL_IDENTIFIER) {
@@ -558,7 +564,17 @@ adjustFuncCall(AST *ast)
                     *ast = *left;
                 }
             }
-	}
+	} else {
+            if (left->kind == AST_IDENTIFIER && leftparent && typ) {
+                if (!strcmp(left->d.string, "_basic_open") && IsStringType(typ)) {
+                    /* change to _basic_open_string */
+                    AST *newleft = AstIdentifier("_basic_open_string");
+                    leftparent->left = newleft;
+                    /* append O_RDWR | O_CREAT */
+                    leftparent->right = AddToList(leftparent->right, AstInteger(6));
+                }
+            }
+        }
     }
 }
 

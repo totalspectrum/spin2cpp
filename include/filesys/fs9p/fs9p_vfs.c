@@ -3,7 +3,7 @@
 #include <sys/vfs.h>
 #include <dirent.h>
 
-struct __using("filesys/fs9p/fs9p_internal.cc") FS;
+static struct __using("filesys/fs9p/fs9p_internal.cc") FS;
 
 // receive 1 byte
 static unsigned int zdoGet1()
@@ -78,15 +78,24 @@ struct vfs *
 _vfs_open_host(void)
 {
     int r;
+    struct vfs *v;
 
+#ifdef _DEBUG
+    __builtin_printf("vfs_open_host called\n");
+#endif    
     r = FS.fs_init(&basic_sendrecv);
     if (r != 0) {
-#ifdef DEBUG
+#ifdef _DEBUG
        __builtin_printf("fs_init failed: result=[%d]\n", r);
        waitms(1000);
 #endif      
        _seterror(-r);
        return 0;
     }
-    return FS.get_vfs();
+    v = FS.get_vfs();
+#ifdef _DEBUG
+    __builtin_printf("_vfs_open_host: returning %x\n", (unsigned)v);
+    __builtin_printf("v->open == %x\n", (unsigned)(v->open));
+#endif    
+    return v;
 }

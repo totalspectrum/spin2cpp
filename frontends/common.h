@@ -126,8 +126,8 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
 #define OPT_AUTO_FCACHE         0x40  /* use FCACHE for P2 */
 
-#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM)
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS|OPT_AUTO_FCACHE) /* extras added with -O2 */
+#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
@@ -205,6 +205,7 @@ typedef struct label {
 #define LABEL_IN_HUB            0x04
 #define LABEL_HAS_INSTR         0x08 /* an instruction follows the label */
 #define LABEL_HAS_JMP           0x10 /* a jmp instruction follows the label */
+    unsigned size;
 } Label;
 
 
@@ -670,17 +671,17 @@ void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
 Module *ParseFile(const char *filename);
 
+/* declare a single global variable */
+void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
+
 /* declare a single member variable of P */
-void DeclareOneMemberVar(Module *P, AST *ident, AST *typ);
+void DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member variable of P if it does not already exist */
-void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ);
+void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);
-
-/* declare a single global variable */
-void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ);
 
 // type inference based on BASIC name (e.g. A$ is a string)
 AST *InferTypeFromName(AST *identifier);
@@ -733,7 +734,13 @@ void FixupParameters(Function *func);
 /* add a subclass to a class */
 void AddSubClass(Module *P, Module *subP);
 
+/* declare all member variables in a module */
 void DeclareMemberVariables(Module *);
+
+/* declare some global variables; if inDat is true, put them in
+ * DAT, otherwise make them member variables
+ */
+void DeclareTypedGlobalVariables(AST *ast, int inDat);
 
 /* add a symbol for a label in the current function */
 void AddSymbolForLabel(AST *ast);

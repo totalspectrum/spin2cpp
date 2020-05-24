@@ -191,6 +191,10 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_EMPTY      "empty assignment marker _"
 %token SP_SIGNX      "SIGNX"
 %token SP_ZEROX      "ZEROX"
+%token SP_ONES       "ONES"
+%token SP_BMASK      "BMASK"
+%token SP_QLOG       "QLOG"
+%token SP_QEXP       "QEXP"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -207,7 +211,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS SP_ONES SP_BMASK SP_QLOG SP_QEXP
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -545,13 +549,14 @@ repeatstmt:
     }
   | SP_ASM datblock SP_ENDASM
     {
-        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
-        $$->d.ival = 0; // not volatile
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
+        $$ = ast;
     }
   | SP_ORG datblock SP_END
     {
-        $$ = NewCommentedAST(AST_INLINEASM, $2, NULL, $1);
-        $$->d.ival = 1; // volatile, do not optimize
+        // flag 3 means const (do not optimize) & FCACHE
+        AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(3), $1);
+        $$ = ast;
     }
   | SP_INLINECCODE
     {  $$ = $1; }
@@ -699,7 +704,8 @@ objline:
   | identdecl ':' string
     {
         AST *typ = NewObject($1, $3);
-        DeclareOneMemberVar(current, $1, typ);
+        /* last parameter is 1 for a private member */
+        DeclareOneMemberVar(current, $1, typ, 0);
         $$ = typ;
     }
   | identdecl '=' string
@@ -811,7 +817,16 @@ expr:
     { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
   | lhs
   | '@' expr
-    { $$ = NewAST(AST_ADDROF, $2, NULL); }
+    {
+        AST *e = $2;
+        if (e && e->kind == AST_STRING) {
+            $$ = NewAST(AST_STRINGPTR,
+                        NewAST(AST_EXPRLIST, e, NULL),
+                        NULL);
+        } else {
+            $$ = NewAST(AST_ADDROF, e, NULL);
+        }
+    }
   | SP_DOUBLEAT expr
     { $$ = NewAST(AST_DATADDROF, $2, NULL); }
   | SP_TRIPLEAT expr
@@ -878,9 +893,9 @@ expr:
   | expr SP_LIMITMAX expr
     { $$ = AstOperator(K_LIMITMAX, $1, $3); }
   | expr SP_ZEROX expr
-    { $$ = AstOperator(K_ZEROEXTEND, $1, $3); }
+    { $$ = AstOperator(K_ZEROEXTEND, $1, AstOperator('+', $3, AstInteger(1))); }
   | expr SP_SIGNX expr
-    { $$ = AstOperator(K_SIGNEXTEND, $1, $3); }
+    { $$ = AstOperator(K_SIGNEXTEND, $1, AstOperator('+', $3, AstInteger(1))); }
   | expr SP_REV expr
     { $$ = AstOperator(K_REV, $1, $3); }
   | expr SP_REV2 expr
@@ -1007,6 +1022,20 @@ expr:
     { $$ = AstOperator(K_DECODE, NULL, $2); }
   | SP_ENCODE expr
     { $$ = AstOperator(K_ENCODE, NULL, $2); }
+  | SP_QLOG expr
+    { $$ = AstOperator(K_QLOG, NULL, $2); }
+  | SP_QEXP expr
+    { $$ = AstOperator(K_QEXP, NULL, $2); }
+  | SP_ONES expr
+    { $$ = AstOperator(K_ONES_COUNT, NULL, $2); }
+  | SP_BMASK expr
+    {
+        AST *ast;
+
+        ast = AstOperator(K_SHL, AstInteger(2), $2);
+        ast = AstOperator('-', ast, AstInteger(1));
+        $$ = ast;
+    }
   | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
   | lhs SP_INCREMENT

@@ -27,6 +27,8 @@ struct vfs {
     int (*mkdir)(const char *name, mode_t mode);
     int (*rmdir)(const char *name);
     int (*remove)(const char *pathname);
+
+    int (*rename)(const char *oldname, const char *newname);
 };
 
 int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
@@ -54,5 +56,9 @@ struct _default_buffer {
 int __default_getc(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
+
+/* directory functions */
+char *__getfilebuffer() _IMPL("libc/unix/mount.c");
+struct vfs *__getvfsforfile(char *fullname, const char *orig_name) _IMPL("libc/unix/mount.c");
 
 #endif

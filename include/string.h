@@ -28,7 +28,7 @@ extern "C" {
     
     char * strdup (const char *s1) _IMPL("libc/string/strdup.c");
 
-    void * memchr(const void *s, int c, size_t n);
+    void * memchr(const void *s, int c, size_t n) _IMPL("libc/string/memchr.c");
     char * strchr(const char *, int) _IMPL("libc/string/strchr.c");
     size_t strcspn(const char *s1, const char *s2);
     char * strpbrk(const char *str, const char *accept);

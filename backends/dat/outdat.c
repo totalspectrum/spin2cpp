@@ -102,7 +102,9 @@ OutputDatFile(const char *fname, Module *P, int prefixBin)
     curlen = flexbuf_curlen(&fb);
     fwrite(flexbuf_peek(&fb), curlen, 1, f);
     if (gl_p2) {
-        desiredlen = (curlen + 31) & ~31;
+        // round up to multiple of 32 bytes, like PNut does
+        // desiredlen = (curlen + 31) & ~31;
+        desiredlen = curlen; // PNut no longer rounds up
     } else {
         desiredlen = (curlen + 3) & ~3;
     }
@@ -1802,7 +1804,7 @@ GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     int32_t multiplier = 1;
     uint8_t clkreg;
     
-    if (!clkmodesym) {
+    if (!clkmodesym || clkmodesym->kind == SYM_ALIAS) {
         return 0;  // nothing to do
     }
     ast = (AST *)clkmodesym->val;
@@ -1814,7 +1816,7 @@ GetClkFreqP1(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
     // now we need to figure out the frequency
     clkfreq = 0;
     sym = FindSymbol(&P->objsyms, "_clkfreq");
-    if (sym) {
+    if (sym && sym->kind != SYM_WEAK_ALIAS) {
         if (sym->kind == SYM_CONSTANT) {
             clkfreq = EvalConstExpr((AST*)sym->val);
         } else {
@@ -1935,13 +1937,9 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
             zzzz = 15; // 0b11_11
         }
     }
-    if (clkmodesym) {
+    if (clkmodesym && clkmodesym->kind == SYM_CONSTANT) {
         if (xinfreqsym || xtlfreqsym) {
             ERROR(NULL, "_xinfreq and _xtlfreq are redundant with _clkmode");
-            return 0;
-        }
-        if (clkmodesym->kind != SYM_CONSTANT) {
-            WARNING(NULL, "_clkmode is not a constant");
             return 0;
         }
         if (!clkfreqsym) {
@@ -1951,9 +1949,13 @@ GetClkFreqP2(Module *P, unsigned int *clkfreqptr, unsigned int *clkregptr)
         *clkregptr = EvalConstSym(clkmodesym);
         *clkfreqptr = EvalConstSym(clkfreqsym);
         return 1;
+    } else {
+        clkmodesym = 0;
     }
-    if (clkfreqsym) {
+    if (clkfreqsym && clkfreqsym->kind == SYM_CONSTANT) {
         clkfreq = (double)EvalConstSym(clkfreqsym);
+    } else {
+        clkfreqsym = 0;
     }
     if (errfreqsym) {
         errtolerance = (double)EvalConstSym(errfreqsym);

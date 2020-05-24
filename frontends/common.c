@@ -91,8 +91,8 @@ typedef struct alias {
 
 Aliases spinalias[] = {
     { "call", "_call" },
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__clkfreq_var" },
+    { "clkmode", "__clkmode_var" },
     { "clkset", "_clkset" },
     { "strsize", "__builtin_strlen" },
 #ifdef NEVER    
@@ -134,7 +134,8 @@ Aliases spinalias[] = {
 };
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
-
+    { "cogchk", "_cogchk" },
+    
     { "locktry", "_locktry" },
     { "lockrel", "lockclr" },
     
@@ -206,10 +207,11 @@ Aliases basicalias[] = {
     /* ugh, not sure if we want to keep supporting the clk* variables,
      * but changing them to functions is difficult
      */
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "clkfreq", "__clkfreq_var" },
+    { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
+    { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },
@@ -238,8 +240,8 @@ Aliases basicalias[] = {
 };
 Aliases calias[] = {
     /* these are obsolete but we'll support them for now */
-    { "clkfreq", "_clkfreq" },
-    { "clkmode", "_clkmode" },
+    { "_clkfreq", "__clkfreq_var" },
+    { "_clkmode", "__clkmode_var" },
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
@@ -255,10 +257,6 @@ Aliases calias[] = {
     { "_pinw", "__builtin_propeller_drv" },
     { "_waitx", "__builtin_propeller_waitx" },
     { "_pinr", "__builtin_propeller_pinr" },
-
-    { "_wrpin", "__builtin_propeller_wrpin" },
-    { "_wxpin", "__builtin_propeller_wxpin" },
-    { "_wypin", "__builtin_propeller_wypin" },
 
     { "_rdpin", "__builtin_propeller_rdpin" },
     
@@ -432,7 +430,7 @@ DeclareConstants(AST **conlist_ptr)
                             }
                             typ = NewAST(AST_MODIFIER_CONST, typ, NULL);
                             // pull it out and put it in the DAT section
-                            DeclareOneGlobalVar(current, ast, typ);
+                            DeclareOneGlobalVar(current, ast, typ, 1);
                             RemoveFromList(conlist_ptr, upper);
                             upper->right = NULL;
                             conlist = *conlist_ptr;
@@ -1175,6 +1173,48 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
     AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
 }
 
+// Declare typed global variables
+// if inDat is 1, put them in the DAT section, otherwise make them
+// member variables
+// "ast" is a list of declarations
+void
+DeclareTypedGlobalVariables(AST *ast, int inDat)
+{
+    AST *idlist, *typ;
+    AST *ident;
+
+    if (!ast) return;
+    if (ast->kind == AST_SEQUENCE) {
+        ERROR(ast, "Internal error, unexpected sequence");
+        return;
+    }
+    idlist = ast->right;
+    typ = ast->left;
+    if (!idlist) {
+        return;
+    }
+    if (typ && typ->kind == AST_EXTERN) {
+        return;
+    }
+    if (IsBasicLang(current->curLanguage)) {
+        // BASIC does not require pointer notation for pointers to functions
+        AST *subtype = RemoveTypeModifiers(typ);
+        if (subtype && subtype->kind == AST_FUNCTYPE) {
+            typ = NewAST(AST_PTRTYPE, typ, NULL);
+        }
+    }
+    if (idlist->kind == AST_LISTHOLDER) {
+        while (idlist) {
+            ident = idlist->left;
+            DeclareOneGlobalVar(current, ident, typ, inDat);
+            idlist = idlist->right;
+        }
+    } else {
+        DeclareOneGlobalVar(current, idlist, typ, inDat);
+    }
+    return;
+}
+
 // returns true if P is the top level module for this project
 int
 IsTopLevel(Module *P)
@@ -1214,5 +1254,324 @@ int TypeGoesOnStack(AST *typ)
     }
     default:
         return 0;
+    }
+}
+
+static int
+GetExprlistLen(AST *list)
+{
+    int len = 0;
+    AST *sub;
+    while (list) {
+        sub = list->left;
+        list = list->right;
+        if (sub->kind == AST_EXPRLIST) {
+            len += GetExprlistLen(sub);
+        } else if (sub->kind == AST_STRING) {
+            len += strlen(sub->d.string);
+        } else {
+            len++;
+        }
+    }
+    return len;
+}
+
+//
+// find any previous declaration of name
+//
+static AST *
+FindDeclaration(AST *datlist, const char *name)
+{
+    AST *ident;
+    AST *declare;
+    
+    while (datlist) {
+        if (datlist->kind == AST_COMMENTEDNODE
+            && datlist->left
+            && datlist->left->kind == AST_DECLARE_VAR)
+        {
+            declare = datlist->left;
+            ident = declare->right;
+            if (ident->kind == AST_ASSIGN) {
+                ident = ident->left;
+            }
+            if (ident->kind == AST_LOCAL_IDENTIFIER) {
+                ident = ident->left;
+            }
+            if (ident->kind == AST_IDENTIFIER) {
+                if (!strcmp(name, ident->d.string)) {
+                    return declare;
+                }
+            } else {
+                ERROR(ident, "Internal error, expected identifier while searching for %s", name);
+                return NULL;
+            }
+        }
+        datlist = datlist->right;
+    }
+    return NULL;
+}
+
+void
+DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
+{
+    AST *ast;
+    AST *declare;
+    AST *initializer = NULL;
+    Symbol *olddef;
+    SymbolTable *table = &P->objsyms;
+    const char *name = NULL;
+    const char *user_name = "variable";
+    int is_typedef = 0;
+    
+    if (!type) {
+        type = InferTypeFromName(ident);
+    }
+
+    // this may be a typedef
+    if (type->kind == AST_TYPEDEF) {
+        type = type->left;
+        is_typedef = 1;
+    }
+    if (type->kind == AST_STATIC) {
+        // FIXME: this case probably shouldn't happen any more??
+        WARNING(ident, "internal error: did not expect static in code");
+        type = type->left;
+    }
+    if (type->kind == AST_FUNCTYPE && !is_typedef) {
+        // dummy declaration...
+        return;
+    }
+    if (ident->kind == AST_ASSIGN) {
+        if (is_typedef) {
+            ERROR(ident, "typedef cannot have initializer");
+        }
+        initializer = ident->right;
+        ident = ident->left;
+    }
+    if (ident->kind == AST_ARRAYDECL) {
+        type = MakeArrayType(type, ident->right);
+        type->d.ptr = ident->d.ptr;
+        ident = ident->left;
+    }
+    if (!IsIdentifier(ident)) {
+        ERROR(ident, "Internal error, expected identifier");
+        return;
+    }
+    name = GetIdentifierName(ident);
+    user_name = GetUserIdentifierName(ident);
+    olddef = FindSymbol(table, name);
+    if (is_typedef) {
+        if (olddef) {
+            ERROR(ident, "Redefining symbol %s", user_name);
+        }
+        AddSymbol(currentTypes, name, SYM_TYPEDEF, type, NULL);
+        return;
+    }
+    if (olddef) {
+        ERROR(ident, "Redefining symbol %s", user_name);
+    }
+    // if this is an array type with no size, there must be an
+    // initializer
+    if (type->kind == AST_ARRAYTYPE && !type->right) {
+        if (!initializer) {
+            ERROR(ident, "global array %s declared with no size and no initializer", user_name);
+            type->right = AstInteger(1);
+        } else {
+            if (initializer->kind == AST_EXPRLIST) {
+                type->right = AstInteger(AstListLen(initializer));
+            } else if (initializer->kind == AST_STRINGPTR) {
+                type->right = AstInteger(GetExprlistLen(initializer->left) + 1);
+            } else {
+                type->right = AstInteger(1);
+            }
+        }
+    }
+    if (!inDat) {
+        /* make this a member variable */
+        DeclareOneMemberVar(P, ident, type, 0);
+        return;
+    }
+    // look through the globals to see if there's already a definition
+    // if there is, and that definition has an initializer, we have a conflict
+    declare = FindDeclaration(P->datblock, name);
+    if (declare && declare->right) {
+        if (declare->right->kind == AST_ASSIGN && initializer) {
+            ERROR(initializer, "Variable %s is initialized twice",
+                  user_name);
+        } else if (initializer) {
+            declare->right = AstAssign(DupAST(ident), initializer);
+        }
+    } else {
+        if (initializer) {
+            ident = AstAssign(ident, initializer);
+        }
+        declare = NewAST(AST_DECLARE_VAR, type, ident);
+        ast = NewAST(AST_COMMENTEDNODE, declare, NULL);
+        P->datblock = AddToList(P->datblock, ast);
+    }
+    return;
+}
+
+static int
+DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
+{
+    AST *upper;
+    AST *ast;
+    AST *curtype;
+    int curtypesize = basetypesize;
+    int isUnion = P->isUnion;
+    AST *varblocklist;
+    int oldoffset = offset;
+    unsigned sym_flags = 0;
+
+    if (P->defaultPrivate) {
+        sym_flags = SYMF_PRIVATE;
+    }
+    varblocklist = P->pendingvarblock;
+    if (basetypesize == 0) {
+        P->finalvarblock = AddToList(P->finalvarblock, varblocklist);
+        P->pendingvarblock = NULL;
+    }
+    for (upper = varblocklist; upper; upper = upper->right) {
+        AST *idlist;
+        if (upper->kind != AST_LISTHOLDER) {
+            ERROR(upper, "Expected list holder\n");
+        }
+        ast = upper->left;
+        if (ast->kind == AST_COMMENTEDNODE)
+            ast = ast->left;
+        switch (ast->kind) {
+        case AST_BYTELIST:
+            curtype = ast_type_byte;
+            curtypesize = 1;
+            idlist = ast->left;
+            break;
+        case AST_WORDLIST:
+            curtype = ast_type_word;
+            curtypesize = 2;
+            idlist = ast->left;
+            break;
+        case AST_LONGLIST:
+	    curtype = NULL; // was ast_type_generic;
+            curtypesize = 4;
+            idlist = ast->left;
+            break;
+        case AST_DECLARE_VAR:
+        case AST_DECLARE_VAR_WEAK:
+            curtype = ast->left;
+            idlist = ast->right;
+            curtypesize = CheckedTypeSize(curtype); // make sure module variables are declared
+            if (curtype->kind == AST_ASSIGN) {
+                if (basetypesize == 4 || basetypesize == 0) {
+                    ERROR(ast, "Member variables cannot have initial values");
+                    return offset;
+                }
+            }
+            break;
+        case AST_COMMENT:
+            /* skip */
+            continue;
+        default:
+            ERROR(ast, "bad type  %d in variable list\n", ast->kind);
+            return offset;
+        }
+        if (isUnion) {
+            curtypesize = (curtypesize+3) & ~3;
+            if (curtypesize > P->varsize) {
+                P->varsize = curtypesize;
+            }
+        }
+        if (basetypesize == 0) {
+            // round offset up to necessary alignment
+            if (!gl_p2) {
+                if (curtypesize == 2) {
+                    offset = (offset + 1) & ~1;
+                } else if (curtypesize >= 4) {
+                    offset = (offset + 3) & ~3;
+                }
+            }
+            // declare all the variables
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
+        } else if (basetypesize == curtypesize || (basetypesize == 4 && (curtypesize >= 4 || curtypesize == 0))) {
+            offset = EnterVars(SYM_VARIABLE, &P->objsyms, curtype, idlist, offset, P->isUnion, sym_flags);
+        }
+    }
+    if (curtypesize != 4 && offset != oldoffset) {
+        P->longOnly = 0;
+    }
+    return offset;   
+}
+
+void
+DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
+{
+    if (!type) {
+        type = InferTypeFromName(ident);
+    }
+    if (1) {
+        AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
+        AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
+        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+    }
+}
+
+void
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
+{
+    AST *sub;
+    const char *name;
+    sub = identifier;
+    if (sub && sub->kind == AST_ASSIGN) {
+        sub = sub->left;
+    }
+    while (sub && sub->kind == AST_ARRAYDECL) {
+        sub = sub->left;
+    }
+    if (!sub || sub->kind != AST_IDENTIFIER) {
+        return;
+    }
+    name = GetIdentifierName(sub);
+    Symbol *sym = FindSymbol(&P->objsyms, name);
+    if (sym && sym->kind == SYM_VARIABLE) {
+        return;
+    }
+    if (!typ) {
+        typ = InferTypeFromName(identifier);
+    }
+    if (!AstUses(P->pendingvarblock, identifier)) {
+        AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
+        AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
+        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+    }
+}
+
+void
+DeclareMemberVariables(Module *P)
+{
+    int offset;
+
+    if (P->isUnion) {
+        offset = 0;
+    } else {
+        offset = P->varsize;
+    }
+    if (IsSpinLang(P->mainLanguage)) {
+        // Spin always declares longs first, then words, then bytes
+        // but other languages may have other preferences
+        offset = DeclareMemberVariablesOfSize(P, 4, offset); // also declares >= 4
+        offset = DeclareMemberVariablesOfSize(P, 2, offset);
+        offset = DeclareMemberVariablesOfSize(P, 1, offset);
+    } else {
+        offset = DeclareMemberVariablesOfSize(P, 0, offset);
+    }
+    if (!P->isUnion) {
+        // round up to next LONG boundary
+        offset = (offset + 3) & ~3;
+        P->varsize = offset;
+    }
+    if (P->pendingvarblock) {
+        P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
+        P->pendingvarblock = NULL;
     }
 }

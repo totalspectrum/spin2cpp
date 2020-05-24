@@ -1,6 +1,6 @@
 /*
  * BASIC compiler parser
- * Copyright (c) 2011-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -75,7 +75,7 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
  *  4 == read statements
  *  8 == for loop variables
  */
- #define DEFAULT_EXPLICIT_DECLARES 0x5
+#define DEFAULT_EXPLICIT_DECLARES 0x5
 #define GetExplicitDeclares() GetCurOptionSymbol(EXPLICIT_DECL_NAME, DEFAULT_EXPLICIT_DECLARES)
 
 Symbol *
@@ -204,7 +204,8 @@ DeclareBASICMemberVariables(AST *ast)
 {
     AST *idlist, *typ;
     AST *ident;
-
+    int is_private = 0;
+    
     if (!ast) return;
     if (ast->kind == AST_SEQUENCE) {
         ERROR(ast, "Internal error, unexpected sequence");
@@ -215,51 +216,20 @@ DeclareBASICMemberVariables(AST *ast)
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
-            MaybeDeclareMemberVar(current, ident, typ);
+            MaybeDeclareMemberVar(current, ident, typ, is_private);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareMemberVar(current, idlist, typ);
+        MaybeDeclareMemberVar(current, idlist, typ, is_private);
     }
     return;
 }
 
 void
-DeclareBASICGlobalVariables(AST *ast)
+DeclareBASICSharedVariables(AST *ast)
 {
-    AST *idlist, *typ;
-    AST *ident;
-
-    if (!ast) return;
-    if (ast->kind == AST_SEQUENCE) {
-        ERROR(ast, "Internal error, unexpected sequence");
-        return;
-    }
-    idlist = ast->right;
-    typ = ast->left;
-    if (!idlist) {
-        return;
-    }
-    if (typ && typ->kind == AST_EXTERN) {
-        return;
-    }
-    if (IsBasicLang(current->curLanguage)) {
-        // BASIC does not require pointer notation for pointers to functions
-        AST *subtype = RemoveTypeModifiers(typ);
-        if (subtype && subtype->kind == AST_FUNCTYPE) {
-            typ = NewAST(AST_PTRTYPE, typ, NULL);
-        }
-    }
-    if (idlist->kind == AST_LISTHOLDER) {
-        while (idlist) {
-            ident = idlist->left;
-            DeclareOneGlobalVar(current, ident, typ);
-            idlist = idlist->right;
-        }
-    } else {
-        DeclareOneGlobalVar(current, idlist, typ);
-    }
-    return;
+    // declare globals in DAT section
+    DeclareTypedGlobalVariables(ast, 1);
 }
 
 AST *BASICArrayRef(AST *id, AST *expr)
@@ -405,6 +375,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_AND        "and"
 %token BAS_ANDALSO    "andalso"
 %token BAS_ANY        "any"
+%token BAS_APPEND     "append"
 %token BAS_AS         "as"
 %token BAS_ASC        "asc"
 %token BAS_ASM        "asm"
@@ -752,7 +723,7 @@ assign_statement:
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x1) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL);
+            MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
         $$ = assign;
     }
@@ -764,7 +735,7 @@ assign_statement:
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x2) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL);
+            MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
         $$ = assign;
     }
@@ -849,6 +820,33 @@ iostmt:
                 NewAST(AST_EXPRLIST, $5,
                        NewAST(AST_EXPRLIST, $2, NULL)), $1);
     }
+  | BAS_OPEN expr BAS_FOR BAS_INPUT BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode 0 is O_RDONLY */
+                              NewAST(AST_EXPRLIST, AstInteger(0), NULL))), $1);
+    }
+  | BAS_OPEN expr BAS_FOR BAS_OUTPUT BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode is O_WRONLY | O_CREAT | O_TRUNC */
+                              NewAST(AST_EXPRLIST, AstInteger(1 + 4 + 8), NULL))), $1);
+    }
+  | BAS_OPEN expr BAS_FOR BAS_APPEND BAS_AS '#' expr
+    {
+        $$ = NewCommentedAST(AST_FUNCCALL,
+                AstIdentifier("_basic_open_string"),
+                NewAST(AST_EXPRLIST, $7,
+                       NewAST(AST_EXPRLIST, $2,
+                              /* mode is O_WRONLY | O_CREAT | O_APPEND */
+                              NewAST(AST_EXPRLIST, AstInteger(1 + 4 + 32), NULL))), $1);
+    }
   | BAS_CLOSE '#' expr
     {
         $$ = NewCommentedAST(AST_FUNCCALL,
@@ -863,7 +861,7 @@ inputitem:
         Symbol *sym = GetExplicitDeclares();
         int explicit = EvalConstExpr(sym->val);
         if (0 == (explicit & 0x4)) {
-            MaybeDeclareMemberVar(current, $1, NULL);
+            MaybeDeclareMemberVar(current, $1, NULL, 0);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
     }
@@ -1055,9 +1053,15 @@ forstmt:
       AST *closeident = $11;
       AST *declare;
       AST *loop;
-      
-      /* create a WEAK definition for ident (it will not override any existing definition) */
-      declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
+      Symbol *sym = GetExplicitDeclares();
+      int explicit = EvalConstExpr(sym->val);
+
+      if (0 == (explicit & 0x8)) {
+          /* create a WEAK definition for ident (it will not override any existing definition) */
+          declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
+      } else {
+          declare = 0;
+      }
       step = NewAST(AST_STEP, $8, $10);
       to = NewAST(AST_TO, $7, step);
       from = NewAST(AST_FROM, $5, to);
@@ -1067,8 +1071,12 @@ forstmt:
           ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
       }
-      $$ = NewAST(AST_STMTLIST, declare,
-                  NewAST(AST_STMTLIST, loop, NULL));
+      loop = NewAST(AST_STMTLIST, loop, NULL);
+      if (declare) {
+          loop = NewAST(AST_STMTLIST, declare,
+                        NewAST(AST_STMTLIST, loop, NULL));
+      }
+      $$ = loop;
       PopLoop();
     }
 ;
@@ -1221,7 +1229,7 @@ topdecl:
     {
         AST *ast = $1;
         if (ast->kind == AST_GLOBALVARS) {
-            DeclareBASICGlobalVariables(ast->left);
+            DeclareBASICSharedVariables(ast->left);
         } else {
             DeclareBASICMemberVariables(ast);
         }
@@ -1780,7 +1788,7 @@ classdeclitem:
     {
         AST *ast = $1;
         if (ast->kind == AST_GLOBALVARS) {
-            DeclareBASICGlobalVariables(ast->left);
+            DeclareBASICSharedVariables(ast->left);
         } else {
             DeclareBASICMemberVariables(ast);
         }
@@ -2024,13 +2032,18 @@ identdecl:
 asmstmt:
   BAS_ASM eoln asmlist BAS_END BAS_ASM
       {
-          $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1);
-          $$->d.ival = 0; /* not volatile */
+          // integer 0 means default asm
+          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(0), $1);
       }
   | BAS_ASM BAS_CONST eoln asmlist BAS_END BAS_ASM
       {
-          $$ = NewCommentedAST(AST_INLINEASM, $3, NULL, $1);
-          $$->d.ival = 1; /* volatile, do not touch */
+          // integer 1 means const asm
+          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(1), $1);
+      }
+  | BAS_ASM BAS_CPU eoln asmlist BAS_END BAS_ASM
+      {
+          // integer 3 means const asm execute from FCACHE
+          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(3), $1);
       }
   | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}

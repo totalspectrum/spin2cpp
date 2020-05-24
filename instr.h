@@ -92,7 +92,9 @@ typedef enum IROpcode {
     OPC_JMPREL,
     OPC_NOT,
     OPC_QFRAC,
+    OPC_SIGNX,
     OPC_WAITX,
+    OPC_ZEROX,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
     
@@ -118,6 +120,9 @@ typedef enum IROpcode {
     */
     OPC_ORG,
 
+    /* reset ORG and force padding */
+    OPC_ORGF,
+    
     /* make sure code fits in a specific size */
     OPC_FIT,
     

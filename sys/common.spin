@@ -14,32 +14,60 @@ pri longfill(ptr, val, count)
   repeat count
     long[ptr] := val
     ptr += 4
-pri longmove(dst, src, count) : origdst
-  origdst := dst
-  repeat count
-    long[dst] := long[src]
-    dst += 4
-    src += 4
 pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val
     ptr += 2
-pri wordmove(dst, src, count) : origdst
-  origdst := dst
-  repeat count
-    word[dst] := word[src]
-    dst += 2
-    src += 2
 pri bytefill(ptr, val, count)
   repeat count
     byte[ptr] := val
     ptr += 1
+    
+pri longmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      long[dst] := long[src]
+      dst += 4
+      src += 4
+  else
+    dst += 4*count
+    src += 4*count
+    repeat count
+      dst -= 4
+      src -= 4
+      long[dst] := long[src]
+      
+pri wordmove(dst, src, count) : origdst
+  origdst := dst
+  if dst < src
+    repeat count
+      word[dst] := word[src]
+      dst += 2
+      src += 2
+  else
+    dst += 2*count
+    src += 2*count
+    repeat count
+      dst -= 2
+      src -= 2
+      word[dst] := word[src]
+  
 pri bytemove(dst, src, count) : origdst
   origdst := dst
-  repeat count
-    byte[dst] := byte[src]
-    dst += 1
-    src += 1
+  if (dst < src)
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+      
 pri __builtin_strlen(str) : r=long
   r := 0
   repeat while byte[str] <> 0
@@ -215,10 +243,10 @@ pri __sendstring(func, str) | c
   until c == 0
 
 pri __builtin_clkfreq
-  return _clkfreq
+  return __clkfreq_var
 
 pri __builtin_clkmode
-  return _clkmode
+  return __clkmode_var
   
 pri __builtin_inf
   return $7f800000
@@ -262,11 +290,11 @@ pri file "libsys/readdata.spin" _basic_get_float(src = "") : r=float, ptr
 
 '' pause for m milliseconds
 pri _waitms(m=long)
-  _waitx(m * (_clkfreq / 1000))
+  _waitx(m * (__clkfreq_var / 1000))
 
 '' pause for m microseconds
 pri _waitus(m=long)
-  _waitx(m * (_clkfreq / 1000000))
+  _waitx(m * (__clkfreq_var / 1000000))
 
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
@@ -279,6 +307,7 @@ pri file "libsys/random.c" _basic_rnd(x=long) : r=float
   
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
+pri file "libsys/fmt.c" _basic_open_string(h, str, iomode)
 pri file "libsys/fmt.c" _basic_close(h)
 pri file "libsys/fmt.c" _basic_print_nl(h)
 pri file "libsys/fmt.c" _basic_print_char(h, c, fmt = 0)

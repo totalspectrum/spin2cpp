@@ -1525,13 +1525,17 @@ struct reservedword init_spin2_words[] = {
     { "!!", SP_NOT },
     { "<=", SP_LE },
     { ">=", SP_GE },
+    { "+<=", SP_LEU },
+    { "+>=", SP_GEU },
     
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
+    { "bmask", SP_BMASK },
     { "cogspin", SP_COGINIT },
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE },
     { "frac", SP_FRAC },
+    { "ones", SP_ONES },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_HIGHMULT },
@@ -1547,6 +1551,7 @@ struct reservedword basic_keywords[] = {
   { "and", BAS_AND },
   { "andalso", BAS_ANDALSO },
   { "any", BAS_ANY },
+  { "append", BAS_APPEND },
   { "as", BAS_AS },
   { "asc", BAS_ASC },
   { "asm", BAS_ASM },
@@ -1791,6 +1796,7 @@ static char *c_words[] = {
     "long",
     "malloc",
     "memcpy",
+    "memmove",
     "memset",
     "mutable",
     "namespace",
@@ -1859,8 +1865,8 @@ static void lockhook(Builtin *dummy) { /*current->needsLockFuncs = 1;*/ }
 
 // c2name is the P2 C version of the name
 Builtin builtinfuncs[] = {
-    { "clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
-    { "clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
+    { "__clkfreq_var", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
+    { "__clkmode_var", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
     { "clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
 
     { "__builtin_clkfreq", 0, defaultVariable, "_clkfreq", "_clockfreq()", NULL, 0, NULL },
@@ -1889,7 +1895,7 @@ Builtin builtinfuncs[] = {
     { "wordfill", 3, memFillBuiltin, "memset", NULL, NULL, 2, NULL },
     { "wordmove", 3, memBuiltin, "memmove", NULL, NULL, 2, NULL },
     { "bytefill", 3, memBuiltin, "memset", NULL, NULL, 1, NULL },
-    { "bytemove", 3, memBuiltin, "memcpy", NULL, NULL, 1, NULL },
+    { "bytemove", 3, memBuiltin, "memmove", NULL, NULL, 1, NULL },
 
     { "getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },
     { "_getcnt", 0, defaultBuiltin, "getcnt", "_cnt", "_getcnt", 0, NULL },
@@ -2484,8 +2490,8 @@ instr_p2[] = {
 
     { "incmod", 0x07000000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
     { "decmod", 0x07200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-    { "zerox",  0x07400000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
-    { "signx",  0x07600000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
+    { "zerox",  0x07400000, TWO_OPERANDS, OPC_ZEROX, FLAG_P2_STD },
+    { "signx",  0x07600000, TWO_OPERANDS, OPC_SIGNX, FLAG_P2_STD },
 
     { "encod",  0x07800000, TWO_OPERANDS_OPTIONAL, OPC_ENCOD, FLAG_P2_STD },
     { "ones",   0x07a00000, TWO_OPERANDS_OPTIONAL, OPC_GENERIC, FLAG_P2_STD },

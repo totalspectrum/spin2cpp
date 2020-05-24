@@ -1,3 +1,43 @@
+Version 4.1.12
+- Accept large addresses for jump instructions in inline assembly.
+- Enabled fcache by default for P2
+- Fixed C builtin function definitions for _wypin, _wrpin, etc.
+- Made ORG in Spin2 fcache the asm
+- Used ZEROX/SIGNX for sign extension on P2
+
+Version 4.1.11
+- Made _rxraw more forgiving (but slower) in P1
+- No longer align P2 output to 32 bytes (matches newer PNut)
+- Fixed various bugs in POSIX file functions
+- Special case @ operation in REP @x, #N in inline asm
+
+Version 4.1.10
+- Added APPEND mode for open
+- Added +<= and +>= aliases for +=< and +=> in Spin2
+- Allow @"stuff" notation in Spin; means the same as STRING("stuff")
+- Added COGCHK function
+- Allowed assembly-only C and BASIC files (similar to Spin with only DAT)
+- Implemented ONES, QEXP, and QLOG Spin2 operators
+- Fixed a problem with negative numbers in Spin CASE statements
+- Fixed bytemove, wordmove, longmove to work with overlapping extents
+- Fixed a bogus name conflict with some internal variables like "_dir"
+- Made OPTION EXPLICIT apply to FOR loop variables
+
+Version 4.1.9
+- Added an error for out of range immediate values in inline asm
+- Fixed REG[] dereferencing
+- Fixed a problem with passing pointers to pointers to functions
+- Fixed a problem with subclasses in system module
+- Fixed SIGNX and ZEROX operators to work like Spin2
+- Fixed conflict of _clkfreq with CLKFREQ
+- Fixed a problem with SEND of simple strings
+- Fixed a problem with heap initialization in -O2
+- Fixed some issues with register operands in inline assembly
+- Implemented mount() and getcwd()
+- Implemented OPEN FOR in BASIC
+- Implemented "public" and "private" keywords in C++ class declarations (they are currently ignored though).
+- Reserved some COG memory in P2 mode
+
 Version 4.1.8
 - Added CALL and REG builtins for Spin2
 - Fixed a problem with coginit of Spin functions which do not return a value

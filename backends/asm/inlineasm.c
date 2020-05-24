@@ -69,6 +69,17 @@ static int parseargnum(const char *n)
 
 extern Operand *LabelRef(IRList *irl, Symbol *sym);
 
+Operand *ImmediateRef(int immflag, intptr_t val)
+{
+    char buf[100];
+    if (immflag) {
+        return NewImmediate(val);
+    } else {
+        sprintf(buf, "%lu", (unsigned long)val);
+        return NewOperand(REG_HW, strdup(buf), 0);
+    }
+}
+    
 //
 // compile an expression as an inline asm operand
 //
@@ -149,9 +160,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             case SYM_CONSTANT:
                 v = EvalPasmExpr(expr);
                 if (!immflag) {
-                    ERROR(expr, "must use an immediate with constants in inline asm");
+                    WARNING(expr, "symbol %s used without #", sym->user_name);
                 }
-                r = NewImmediate(v);
+                r = ImmediateRef(immflag, v);
                 break;
             case SYM_LOCALLABEL:
                 if (!immflag) {
@@ -195,15 +206,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         }
         return r;
     } else if (expr->kind == AST_INTEGER) {
-        if (immflag) {
-            return NewImmediate(expr->d.ival);
-        } else {
-            char buf[100];
-            sprintf(buf, "%d", expr->d.ival);
-            return NewOperand(REG_HW, strdup(buf), 0);
-        }
+        return ImmediateRef(immflag, expr->d.ival);
     } else if (expr->kind == AST_ADDROF) {
-        r = CompileInlineOperand(irl, expr->left, effects, 0);
+        r = CompileInlineOperand(irl, expr->left, effects, immflag);
         if (r && effects) {
             *effects |= OPEFFECT_FORCEHUB;
         }
@@ -251,7 +256,8 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
             }
         }
         if (IsConstExpr(expr)) {
-            return NewImmediate(EvalPasmExpr(expr));
+            int x = EvalPasmExpr(expr);
+            return ImmediateRef(immflag, x);
         }
     }
     
@@ -341,7 +347,12 @@ CompileInlineInstr(IRList *irl, AST *ast)
     for (i = 0; i < numoperands; i++) {
         Operand *op;
         effects[i] = 0;
-        op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
+        // special case rep instruction
+        if (gl_p2 && i == 0 && !opimm[i] && !strcmp(instr->name, "rep") && operands[0] && operands[0]->kind == AST_ADDROF) {
+            op = CompileInlineOperand(irl, operands[i], &effects[i], 1);
+        } else {
+            op = CompileInlineOperand(irl, operands[i], &effects[i], opimm[i]);
+        }
         switch(i) {
         case 0:
             ir->dst = op;
@@ -357,6 +368,24 @@ CompileInlineInstr(IRList *irl, AST *ast)
         default:
             ERROR(ast, "Too many operands to instruction");
             break;
+        }
+        if (op->kind == IMM_INT && (unsigned)op->val > (unsigned)511) {
+            int ok = 0;
+            if (instr->ops == CALL_OPERAND) {
+                ok = 1;
+            }
+            else if (gl_p2) {
+                /* check for ##; see ANY_BIG_IMM definition in outdat.c  */
+                if (opimm[i] & 3) {
+                    ok = 1;
+                }
+                if (instr->ops == P2_JUMP ||  instr->ops == P2_LOC || instr->ops == P2_CALLD) {
+                    ok = 1;
+                }
+            }
+            if (!ok) {
+                ERROR(ast, "immediate operand %d out of range", op->val);
+            }
         }
     }
     AppendIR(irl, ir);
@@ -396,18 +425,37 @@ FixupHereLabel(IRList *irl, IR *firstir, int addr, Operand *dst)
 }
 
 void
-CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
+CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
 {
     AST *ast;
     AST *top = origtop;
     unsigned relpc;
     IR *firstir;
+    IR *fcache = NULL;
+    IR *startlabel, *endlabel;
+    Operand *enddst, *startdst;
+    bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     
     if (!curfunc) {
         ERROR(origtop, "Internal error, no context for inline assembly");
         return;
     }
-    
+
+    if (asmFlags & INLINE_ASM_FLAG_FCACHE) {
+        if (gl_fcache_size <= 0) {
+            WARNING(origtop, "FCACHE is disabled, asm will be in HUB");
+        } else {
+            startdst = NewHubLabel();
+            enddst = NewHubLabel();
+            fcache = NewIR(OPC_FCACHE);
+            fcache->src = startdst;
+            fcache->dst = enddst;
+            startlabel = NewIR(OPC_LABEL);
+            startlabel->dst = startdst;
+            endlabel = NewIR(OPC_LABEL);
+            endlabel->dst = enddst;
+        }
+    }
     // first run through and define all the labels
     while (top) {
         ast = top;
@@ -424,6 +472,10 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
     // now go back and emit code
     top = origtop;
     relpc = 0;
+    if (fcache) {
+        AppendIR(irl, fcache);
+        AppendIR(irl, startlabel);
+    }        
     firstir = NULL;
     while(top) {
         ast = top;
@@ -465,7 +517,12 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
             break;
         }
     }
-
+    if (fcache) {
+        if (relpc > gl_fcache_size) {
+            ERROR(origtop, "Inline assembly too large to fit in fcache");
+        }
+        AppendIR(irl, endlabel);
+    }
     // now fixup any relative addresses
     for (IR *ir = firstir; ir; ir = ir->next) {
         if (!IsDummy(ir)) {
@@ -475,6 +532,9 @@ CompileInlineAsm(IRList *irl, AST *origtop, int isConst)
             if (ir->src && ir->src->kind == IMM_PCRELATIVE) {
                 ir->src = FixupHereLabel(irl, firstir, ir->addr, ir->src);
             }
+        }
+        if (fcache) {
+            ir->fcache = fcache->src;
         }
     }
 }

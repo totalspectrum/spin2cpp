@@ -2,14 +2,14 @@ DAT
 	orgh $400
 
 	byte 1
-start
+astart
 	long $BBBBBBBB
 	word $AA
-end
+aend
 	alignl
 
-	long start	' should be $401
-	long end	' should be $407
+	long astart	' should be $401
+	long aend	' should be $407
 
 	org  0
 	nop

@@ -1,0 +1,7 @@
+PUB sum(x) : r
+  r := x
+  org
+    rep @.loop, #4
+    add r, r
+ .loop
+  end

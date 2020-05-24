@@ -1512,9 +1512,6 @@ NeedToSaveLocals(Function *func)
     if (IS_LEAF(func) || func->toplevel) {
         return false;
     }
-    if (ALL_VARS_ON_STACK(func)) {
-        return false;
-    }
     if (func->is_recursive) {
         return true;
     }
@@ -1524,7 +1521,6 @@ NeedToSaveLocals(Function *func)
     if (func->cog_code) {
         return false;
     }
-    // maybe skip saving locals for cog functions?
     return true;
 }
 
@@ -2231,7 +2227,14 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   case K_ZEROEXTEND:
   case K_SIGNEXTEND:
-      if (!IsConstExpr(rhs)) {
+      if (gl_p2) {
+          AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
+          rhs_temp = FoldIfConst(rhs_temp);
+          right = CompileExpression(irl, rhs_temp, NULL);
+          left = CompileExpression(irl, lhs, temp);
+          EmitMove(irl, temp, left);
+          EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
+      } else if (!IsConstExpr(rhs)) {
           ERROR(rhs, "Error: only constant values are supported for sign/zero extension");
       } else {
           int shift = 32 - EvalConstExpr(rhs);
@@ -2336,6 +2339,50 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       
       AstReportAs(expr, &saveinfo);
       fcall = NewAST(AST_FUNCCALL, AstIdentifier("_sqrt"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_ONES_COUNT:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_ones"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_QLOG:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      if (!gl_p2) {
+          ERROR(expr, "QLOG only supported on P2");
+          return EmptyOperand();
+      }
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qlog"),
+                     NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_QEXP:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      if (!gl_p2) {
+          ERROR(expr, "QEXP only supported on P2");
+          return EmptyOperand();
+      }
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qexp"),
                      NewAST(AST_EXPRLIST, expr->right, NULL));
       left = CompileFunccallFirstResult(irl, fcall);
       AstReportDone(&saveinfo);
@@ -3844,7 +3891,7 @@ static Operand *ImmCogRef(Operand *addr)
 {
     char *immname = calloc(1, 16);
     sprintf(immname, "%lu + 0", (unsigned long)addr->val);
-    return NewOperand(IMM_COG_LABEL, immname, 0);
+    return NewOperand(REG_REG, immname, 0);
 }
 
 static IR *EmitCogread(IRList *irl, Operand *dst, Operand *src)
@@ -4366,9 +4413,15 @@ static void CompileStatement(IRList *irl, AST *ast)
 	CompileForLoop(irl, ast, ast->kind == AST_FORATLEASTONCE);
         break;
     case AST_INLINEASM:
+    {
         //EmitDebugComment(irl, ast);
-        CompileInlineAsm(irl, ast->left, ast->d.ival);
+        unsigned flags = 0;
+        if (ast->right && ast->right->kind == AST_INTEGER) {
+            flags = ast->right->d.ival;
+        }
+        CompileInlineAsm(irl, ast->left, flags);
         break;
+    }
     case AST_CASE:
         CompileCaseStmt(irl, ast);
         break;
@@ -5701,7 +5754,10 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp1(irl, OPC_HUBSET, pa_reg);
     EmitOp2(irl, OPC_WRLONG, pa_reg, clkmode_addr);
     EmitOp2(irl, OPC_WRLONG, NewImmediate(clkfreq), clkfreq_addr);
-
+    EmitJump(irl, COND_TRUE, skip_clock_label);
+    // make sure $0-$1f are free for inline assembly
+    EmitOp1(irl, OPC_ORGF, NewImmediate(32));
+    
     EmitLabel(irl, skip_clock_label);
     if (firstfunc->cog_code || COG_CODE) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
@@ -5869,12 +5925,10 @@ GuessFcacheSize(IRList *irl)
 {
 #    /* for now, just go by p2/p1 */
     if (gl_p2) {
-        // fcache disabled by default on P2
-        // if we use -O2 though then use LUT for fcache
-        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
             return 240;
         }
-        return 0; // disable fcache by default
+        return 0; // disable fcache if no optimization
     } else {
 #ifdef REALLY_GUESS_FCACHE_SIZE    
     int n = 0;
@@ -5910,11 +5964,7 @@ GuessFcacheSize(IRList *irl)
 static void
 CompileSystemModule(IRList *where, Module *M)
 {
-    Module *P;
-    CompileToIR_internal(where, M);
-    for (P = M->subclasses; P; P = P->next) {
-        CompileSystemModule(where, P);
-    }
+    VisitRecursive(where, M, CompileToIR_internal, VISITFLAG_COMPILEIR);
 }
 
 void
@@ -6045,6 +6095,12 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 return;
             }
         }
+        // guesstimate how much space we will have for FCACHE, if
+        // a dynamic size is requested
+        if (gl_fcache_size < 0) {
+            gl_fcache_size = GuessFcacheSize(&cogcode);
+        }
+    
         if (HUB_CODE) {
             ValidateStackptr();
             if (!gl_p2) {
@@ -6067,12 +6123,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         } else {
             CompileSystemModule(&cogcode, globalModule);
         }
-        // guesstimate how much space we will have for FCACHE, if
-        // a dynamic size is requested
-        if (gl_fcache_size < 0) {
-            gl_fcache_size = GuessFcacheSize(&cogcode);
-        }
-    
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
 
@@ -6108,9 +6158,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
     
-    // only the top level variable space is needed
-    EmitVarSection(&hubdata, P);
-
     // emit heap space, if we need it
     if (heaplabel) {
         Symbol *sym = LookupSymbol("__real_heapsize__");
@@ -6130,6 +6177,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
     
+    // only the top level variable space is needed
+    EmitVarSection(&hubdata, P);
+
     // finally the stack, if we need it
     if (stacklabel) {
         if (HUB_DATA) {

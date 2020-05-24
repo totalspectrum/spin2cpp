@@ -145,6 +145,7 @@ abs
 and
 andalso
 any
+append
 as
 asm
 __builtin_alloca
@@ -260,6 +261,7 @@ left$
 len
 log
 mid$
+mount
 oct$
 outa
 outb
@@ -900,6 +902,10 @@ number:
   end sub
 ```
 
+### APPEND
+
+Reserved word. For now, its only use is in `open` statements to specify that an existing file should be opened in append mode.
+
 ### AS
 
 `as` is a keyword that introduces a type for a function, function parameter, or dimensioned variable.
@@ -951,6 +957,10 @@ end function
 #### ASM CONST
 
 If a `const` keyword appears after `asm` then the optimizer will leave untouched all code within the `asm` block. Normally this code is optimized along with the generated code, and this is usually what is desired, because often the compiler can make helpful changes like re-using registers for arguments and local variables. `asm const` should thus be avoided in general, but if there is some particular sequence that you need to have compiled exactly as-is, then you may use it.
+
+#### ASM CPU
+
+`asm cpu` is like `asm const` but as well as leaving the code unoptimized it will copy it to the internal FCACHE area (rather than executing it from HUB memory). This can be useful if precise timing is required for loops.
 
 #### ASM SHARED
 
@@ -1793,6 +1803,22 @@ Note that if both the quotient and remainder are desired, it is best to put the 
   r = x mod y
 ```
 
+### MOUNT
+
+Gives a name to a file system. For example, after
+```
+mount "/host", _vfs_open_host()
+mount "/sd", _vfs_open_sdcard()
+```
+files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
+
+This only works on P2, because it requires a lot of HUB memory, and also needs the host file server built in to `loadp2`.
+
+Available file systems are:
+
+  * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+
 ### NEW
 
 Allocates memory from the heap for a new object, and returns a pointer to it. May also be used to allocate arrays of objects. The name of the type of the new object appears after the `new`, optionally followed by an array limit. Note that as in `dim` statements, the value given is the last valid index, so for arrays starting at 0 (the default) it is one greater than the number of elements.
@@ -1855,7 +1881,7 @@ This construct is deprecated, and should not be used in new programs.
 
 ### OPEN
 
-Open a handle for input and/or output. The general form is:
+Open a handle for input and/or output. There are two forms. The most general form is:
 ```
   open device as #n
 ```
@@ -1866,6 +1892,16 @@ Example:
   open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
 ```
 Here the `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
+
+The second form uses a file name:
+```
+   open "/host/file.txt" for input as #2
+   open name$ for output as #3
+   open name$ for append as #4
+```
+This opens the given file for input, output, or append. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long. A file opened for append will be created if it does not exist, but if it does exist it will be opened for output at the end of the file.
+
+This second form of `open` is really only useful after a `mount` call is used to establish a file system.
 
 ### OPTION
 

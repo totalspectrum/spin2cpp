@@ -35,10 +35,10 @@ do
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 250 --noheader $i
-  if  diff -ub Expect/$j.pasm $j.pasm
+  $PROG --p2 --asm --optimize 250 --noheader $i
+  if  diff -ub Expect/$j.p2asm $j.p2asm
   then
-      rm -f $j.pasm
+      rm -f $j.p2asm
       echo $j passed
   else
       echo $j failed

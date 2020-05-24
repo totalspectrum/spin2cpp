@@ -15,7 +15,7 @@
 #define FILENAME_MAX _PATH_MAX
 #endif
 
-typedef struct vfs_file_t FILE;
+typedef vfs_file_t FILE;
 
 FILE *__getftab(int i) _IMPL("libc/unix/posixio.c");
 #define stdin  __getftab(0)
@@ -56,12 +56,14 @@ void perror(const char *s) _IMPL("libc/string/strerror.c");
 
 int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
 
-#ifdef __FLEXC__
+#if defined(__FLEXC__) && !defined(_NO_BUILTIN_PRINTF)
 // FLEXC can optimize printf
 #define printf __builtin_printf
 #endif
 
 #define feof(f)   (0 != ((f)->state & _VFS_STATE_EOF))
 #define ferror(f) (0 != ((f)->state & _VFS_STATE_ERR))
+
+int rename(const char *oldpath, const char *newpath) _IMPL("libc/unix/rename.c");
 
 #endif

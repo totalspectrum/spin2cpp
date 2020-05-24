@@ -71,8 +71,8 @@ pri _clkset(mode, freq) | oldmode, xsel
   if xsel == 0 and mode > 1
     xsel := 3
   oldmode := clkmode & !3  ' remove low bits, if any
-  _clkfreq := freq
-  _clkmode := mode
+  __clkfreq_var := freq
+  __clkmode_var := mode
   mode := mode & !3
   asm
     hubset oldmode	' go to RCFAST using known prior mode
@@ -97,6 +97,14 @@ pri _coginit(id, code, param)
   endasm
   return id
 
+pri _cogchk(id) : r
+  r := -1
+  asm
+    cogid id wc
+ if_nc mov r, #0 
+  endasm
+  return r
+
 dat
     orgh
 _bitcycles long 0
@@ -109,7 +117,7 @@ con
   _rxmode       = %0000_0000_000_0000000000000_00_11111_0 'async rx mode, input  enabled for smart input
 
 pri _setbaud(baudrate) | bitperiod, bit_mode
-  bitperiod := (clkfreq / baudrate)
+  bitperiod := (__clkfreq_var / baudrate)
   _dirl(_txpin)
   _dirl(_rxpin)
   _bitcycles := bitperiod
@@ -353,4 +361,21 @@ pri _call(hubaddr)
   asm
     call hubaddr
   endasm
-  
+
+pri _ones(v) : r
+  asm
+    ones r, v
+  endasm
+
+pri _qexp(v) : r
+  asm
+    qexp v
+    getqx r
+  endasm
+
+pri _qlog(v) : r
+  asm
+    qlog v
+    getqx r
+  endasm
+

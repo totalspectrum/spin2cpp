@@ -262,6 +262,15 @@ PrintSymbol(Flexbuf *f, Symbol *sym, int flags)
         }
         break;
     case SYM_VARIABLE:
+        if (sym->flags & SYMF_GLOBAL) {
+            if (!strcmp(sym->user_name, "__clkfreq_var")) {
+                CppPrintName(f, "_clkfreq", flags);
+                break;
+            } else if (!strcmp(sym->user_name, "__clkmode_var")) {
+                CppPrintName(f, "_clkmode", flags);
+                break;
+            }
+        }
         if ( (gl_ccode || (curfunc && curfunc->force_static))
              && !(sym->flags & SYMF_GLOBAL) )
         {

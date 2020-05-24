@@ -690,7 +690,7 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     if (!typ) {
         typ = ExprTypeRelative(&f->localsyms, ident, P);
     }
-    MaybeDeclareMemberVar(P, ident, typ);
+    MaybeDeclareMemberVar(P, ident, typ, 0);
 }
 
 static void
@@ -794,14 +794,14 @@ doDeclareFunction(AST *funcblock)
         // we already saw a definition for the function; if this was just
         // an alias then it may be OK
         if (fdef->body->kind == AST_STRING) {
-            if (!body || body->kind == AST_STRING) {
+            if (body && body->kind == AST_STRING) {
                 if (0 != strcmp(fdef->body->d.string, body->d.string)) {
                     ERROR(funcdef, "different __fromfile strings for function %s", funcname_user);
                 }
                 return fdef; // nothing else we need to do here
             }
         } else {
-            if (!body || body->kind == AST_STRING) {
+            if (body && body->kind == AST_STRING) {
                 /* providing a __fromfile() declaration after we saw
                    a real declaration; just ignore it */
                 return fdef;
@@ -1131,6 +1131,8 @@ NormalizeFunc(AST *ast, Function *func)
         return NULL;
     case AST_LOOKUP:
     case AST_LOOKDOWN:
+        ldecl = NormalizeFunc(ast->left, func);
+        rdecl = NormalizeFunc(ast->right, func);
         return ModifyLookup(ast);
     default:
         ldecl = NormalizeFunc(ast->left, func);
@@ -1878,7 +1880,14 @@ CheckFunctionCalls(AST *ast)
             goto skipcheck;
         }
         if (doExpandArgs) {
-            if (AstListLen(ast->right) > 1) {
+            int numArgs = AstListLen(ast->right);
+            if (numArgs == 1 && ast->right->kind == AST_EXPRLIST) {
+                AST *subexpr = ast->right->left;
+                if (subexpr && subexpr->kind == AST_STRING) {
+                    numArgs = strlen(subexpr->d.string);
+                }
+            }
+            if (numArgs > 1) {
                 initseq = ExpandArguments(ast->left, ast->right);
                 *ast = *initseq;
             }
@@ -2426,6 +2435,15 @@ MarkUsedBody(AST *body, const char *caller)
         switch (body->d.ival) {
         case K_SQRT:
             UseInternal("_sqrt");
+            break;
+        case K_ONES_COUNT:
+            UseInternal("_ones");
+            break;
+        case K_QEXP:
+            UseInternal("_qexp");
+            break;
+        case K_QLOG:
+            UseInternal("_qlog");
             break;
         case '?':
             if (body->left) {

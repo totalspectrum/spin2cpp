@@ -45,12 +45,12 @@ fopen(const char *pathname, const char *mode)
                 want_read = 1;
                 break;
             } else {
-                errno = EINVAL;
+                _seterror(EINVAL);
                 return 0;
             }
             break;
         default:
-            errno = EINVAL;
+            _seterror(EINVAL);
             return 0;
         }
     }
@@ -63,7 +63,7 @@ fopen(const char *pathname, const char *mode)
     } else if (want_write) {
         open_mode = O_WRONLY;
     } else {
-        errno = EINVAL;
+        _seterror(EINVAL);
         return 0;
     }
     if (want_append) open_mode |= O_APPEND;

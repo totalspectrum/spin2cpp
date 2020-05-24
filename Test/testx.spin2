@@ -27,10 +27,10 @@ DAT
    RDLONG  regx,--ptra 'POPA    reg
    RDLONG  regx,--ptrb 'POPB    reg
 
-   CALLD   INB,INB     WC,WZ 'reti0
-   CALLD   INB,$1F5    WC,WZ 'reti1
-   CALLD   INB,$1F3    WC,WZ 'reti2
-   CALLD   INB,$1F1    WC,WZ 'reti3
+   CALLD   INB,INB     WCZ 'reti0
+   CALLD   INB,$1F5    WCZ 'reti1
+   CALLD   INB,$1F3    WCZ 'reti2
+   CALLD   INB,$1F1    WCZ 'reti3
 
 regx long 0
 x    long 0

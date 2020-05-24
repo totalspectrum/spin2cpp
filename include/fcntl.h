@@ -52,6 +52,9 @@
  */
 #define F_SETFD    0x20000
 
+#ifdef __FLEXC__
+int open(const char *name, int flags, mode_t mode=0644) _IMPL("libc/unix/posixio.c");
+#else
 /**
  * Open a file; this translates into a call to fopen.
  * Note that open may be declared with either 2 or 3 arguments,
@@ -60,5 +63,8 @@
  * make its declaration old-style and without prototypes.
  */
 extern int open();
+#endif
+
+int creat(const char *name, mode_t mode) _IMPL("libc/unix/posixio.c");
 
 #endif

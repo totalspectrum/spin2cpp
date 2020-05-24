@@ -79,11 +79,13 @@ int getcogid() {
    return x;
 }
 ```
-The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code.
+The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code. `__asm const` suppresses optimization of the assembly code (see below) and forces the code to be placed into FCACHE memory. `__asm volatile` is similar, but does not force the code into FCACHE (it will execute from HUB as usual).
 
 For inline assembly inside a function, any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 
-Inline assembly inside a function is normally optimized along with the generated code; this produces opportunities to improve the generated code based on knowledge of the assembly. This may be suppressed by using `asm const` (equivalently `asm volatile`) instead of `asm`. Generally this will hurt the output code, but may be necessary if there is inline assembly with very sensitive timing.
+Some conditional execution directives (like `if_c_and_z`) are not accepted in inline assembly. In general, inline assembly is restricted, and is no substitute for full assembly in top level `__pasm` blocks.
+
+Inline assembly inside a function is normally optimized along with the generated code; this produces opportunities to improve the generated code based on knowledge of the assembly. This may be suppressed by using `__asm const` (or `__asm volatile`) instead of `__asm`. Generally this will hurt the output code, but may be necessary if there is inline assembly with very sensitive timing.
 
 Inline assembly may also appear outside of any function. In this case the inline assembly block is similar to a Spin `DAT` section, and creates a global block of code and/or data.
 
@@ -99,11 +101,15 @@ Note that FlexC supports calling Spin methods directly, so to adapt existing Spi
 
 ### Classes
 
-The C `struct` declaration is extended slightly to allow functions (methods) to be declared. These must be declared like C++ "inline" functions, that is in the struct definition itself, but are not necessarily implemented inline. For example, a simple counter class might be implemented as:
+The C `struct` declaration is extended slightly to allow functions (methods) to be declared. All methods must be defined in the struct definition itself; there is at present no way to declare a method outside of the definition.
+
+For example, a simple counter class might be implemented as:
 ```
 typedef struct counter {
   int val;
-  void setval(int x) { val = x; }
+  void setval(int x) {
+      val = x;
+  }
   int getval() { return val; }
   int incval() { return ++val; }
 } Counter;
@@ -114,7 +120,9 @@ x.setval(0);
 x.incval();
 ```
 
-In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. The difference between `class` and `struct` is that member variables are private in `class` and cannot be accessed outside the class, whereas they are public in `struct`.
+In C++ mode (that is, if the file being compiled has an extension like `.cpp` or `.cc`) then the keyword `class` may be used instead of `struct`. At the moment `class` and `struct` are treated identically, although eventually they will have different defaults for whether members are public or private.
+
+The keywords `public` and `private` are recognized by the parser, but currently do nothing (all members are public).
 
 ### External Classes (e.g. Spin Objects)
 
@@ -143,6 +151,10 @@ Note that allowing function definitions inside a struct is an extension to C (it
 #### Gotchas with Spin and BASIC classes
 
 Because Spin and BASIC are case insensitive languages, all of their identifiers are translated internally to lower case. So a constant like `VGA` in Spin class `sp` would be referenced in C as `sp.vga`.
+
+#### RESTRICTIONS ON C CLASSES
+
+Class support for C/C++ is very much incomplete, and probably will not work in all cases. In particular, calling functions outside of the class may not work (so simple self contained classes should be fine, but classes which call into other classes may not work properly).
 
 ### Header file external function definitions
 

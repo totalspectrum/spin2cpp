@@ -911,7 +911,7 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
     }
     if (!CompatibleTypes(desttype, srctype)) {
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
-            if (IsBasicLang(curfunc->language) && IsRefType(desttype) && TypeSize(desttype->left) == 0) {
+            if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && TypeSize(desttype->left) == 0) {
                 /* OK, parameter declared as foo() so can accept any array */
             } else {
                 WARNING(line, "incompatible pointer types in %s", msg);
@@ -1071,7 +1071,11 @@ BuildMethodPointer(AST *ast)
     
     sym = FindCalledFuncSymbol(ast, &objast, 0);
     if (!sym || sym->kind != SYM_FUNCTION) {
-        ERROR(ast, "Internal error, unable to find function address");
+        if (sym) {
+            ERROR(ast, "%s is not a function", sym->user_name);
+        } else {
+            ERROR(ast, "Internal error, unable to find function address");
+        }
         return ast;
     }
     func = (Function *)sym->val;
@@ -1286,7 +1290,7 @@ AST *CheckTypes(AST *ast)
         return ast_type_ptr_byte;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        if (IsFunctionType(ltype)) {
+        if (IsFunctionType(ltype) && !IsPointerType(ltype)) {
             *ast = *BuildMethodPointer(ast);
             return ltype;
         }
@@ -1409,10 +1413,12 @@ AST *CheckTypes(AST *ast)
             Module *P;
             AST *supers = NULL;
             static AST *superref = NULL;
+            ASTReportInfo saveinfo;
             Symbol *sym = LookupAstSymbol(ast, NULL);
             if (!sym) {
                 return NULL;
             }
+            AstReportAs(ast, &saveinfo);
             ltype = ExprType(ast);
             // if this is a REFTYPE then dereference it
             if (ltype && IsRefType(ltype)) {
@@ -1427,11 +1433,13 @@ AST *CheckTypes(AST *ast)
             if (sym->kind == SYM_FUNCTION) {
                 Function *f = (Function *)sym->val;
                 if (f->module == current || f->module == globalModule) {
+                    AstReportDone(&saveinfo);
                     return ltype;
                 }
             }
             if (sym->kind == SYM_VARIABLE || sym->kind == SYM_FUNCTION) {
                 const char *name = sym->our_name;
+                int supersValid = 1;
                 P = current;
                 while (P) {
                     sym = FindSymbol(&P->objsyms, name);
@@ -1452,11 +1460,22 @@ AST *CheckTypes(AST *ast)
                                            supers),
                                     AstInteger(0));
                     P = P->superclass;
+                    if (P && !FindSymbol(&P->objsyms, "__super")) {
+                        supersValid = 0;
+                    }
                 }
                 if (sym && supers) {
-                    *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                    if (supersValid) {
+                        *ast = *NewAST(AST_METHODREF, supers, DupAST(ast));
+                    } else if (P) {
+                        // produce a warning if P is not the top level class
+                        if (!IsTopLevel(P)) {
+                            ERROR(ast, "Cannot handle reference to method of enclosing class");
+                        }
+                    }
                 }
             }
+            AstReportDone(&saveinfo);
             return ltype;
         }
     case AST_EXPRLIST:
