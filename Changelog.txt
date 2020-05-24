@@ -2,6 +2,7 @@ Version 4.1.12
 - Accept large addresses for jump instructions in inline assembly.
 - Enabled fcache by default for P2
 - Made ORG in Spin2 fcache the asm
+- Used ZEROX/SIGNX for sign extension on P2
 
 Version 4.1.11
 - Made _rxraw more forgiving (but slower) in P1

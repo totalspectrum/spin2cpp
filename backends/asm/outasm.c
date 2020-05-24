@@ -2227,7 +2227,14 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       return temp;
   case K_ZEROEXTEND:
   case K_SIGNEXTEND:
-      if (!IsConstExpr(rhs)) {
+      if (gl_p2) {
+          AST *rhs_temp = AstOperator('-', rhs, AstInteger(1));
+          rhs_temp = FoldIfConst(rhs_temp);
+          right = CompileExpression(irl, rhs_temp, NULL);
+          left = CompileExpression(irl, lhs, temp);
+          EmitMove(irl, temp, left);
+          EmitOp2(irl, op == K_ZEROEXTEND ? OPC_ZEROX : OPC_SIGNX, temp, right);
+      } else if (!IsConstExpr(rhs)) {
           ERROR(rhs, "Error: only constant values are supported for sign/zero extension");
       } else {
           int shift = 32 - EvalConstExpr(rhs);
