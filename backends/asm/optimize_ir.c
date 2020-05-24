@@ -3027,6 +3027,9 @@ LoopCanBeFcached(IRList *irl, IR *root)
     {
         ir = ir->next;
         while (ir != endjmp) {
+            if (ir->fcache) {
+                return 0;
+            }
             if (ir->opc == OPC_CALL) {
                 // no calls to hub memory!
                 if (MaybeHubDest(ir->dst)) {

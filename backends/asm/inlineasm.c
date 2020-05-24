@@ -533,5 +533,8 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
                 ir->src = FixupHereLabel(irl, firstir, ir->addr, ir->src);
             }
         }
+        if (fcache) {
+            ir->fcache = fcache->src;
+        }
     }
 }
