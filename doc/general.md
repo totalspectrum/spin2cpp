@@ -176,6 +176,28 @@ All of the languages allow inline assembly within functions. There are 3 differe
 
 Inline assembly within a function follows a different path through the compiler than "regular" assembly in a DAT section (Spin) or `asm shared` (BASIC). This has a number of consequences; not all constructions will work properly, and the inline assembly can be limited.
 
+#### Only local variables
+
+Only hardware registers and variables local to the function may be used in inline assembly. Global or method variables may not be referenced.
+
+#### Local variables not usable in some functions
+
+If a function takes the address of a parameter, or of a local variable, then its local variables are placed on the stack and may not be referred to in inline assembly.
+
+#### No branches outside the function
+
+Branching within a function is supported in inline assembly, but trying to branch outside the function or to call another function is not supported. The results are undefined; calls in particular may appear to work in some cases, but then fail when the called function is modified.
+
+It is also not legal to return from inside inline assembly.
+
+#### No register declarations
+
+Do not try to declare registers; the inline assembly probably will not be running from COG memory. If you need some scratch registers in inline assembly, declare them as local variables in the function.
+
+#### General Guidelines
+
+Try to keep inline assembly as simple as possible. Use the high level language for loops and conditional control structures; the high level language is there for a reason!
+
 ## Command Line Options
 
 There are various command line options for the compiler which may modify the compilation:
