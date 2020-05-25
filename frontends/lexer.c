@@ -2744,8 +2744,8 @@ instr_p2[] = {
     { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
-    { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
+    { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
     { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },

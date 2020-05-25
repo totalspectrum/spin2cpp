@@ -5181,18 +5181,24 @@ static const char *builtin_div_p2 =
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
-    "    rdlong\tpb, --ptra\n"
-    "    add\tpb, pa\n"
-    "    wrlong\tpb, ptra++\n"
-    "    sub\tpb, pa\n"
+    "    rdlong\tfcache_tmpb_, --ptra\n"
+    "    add\tfcache_tmpb_, pa\n"
+    "    wrlong\tfcache_tmpb_, ptra++\n"
+    "    sub\tfcache_tmpb_, pa\n"
     "    shr\tpa, #2\n" // convert to words
-    "    wrlut reta_instr_, pa\n" 
+    "    mov\tfcache_tmpa_, pa\n"
+    "    add\tfcache_tmpa_, #$100\n"
+    "    wrlut reta_instr_, fcache_tmpa_\n" 
     "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the reta instruction after the loop
     "    setq2\tpa\n"
-    "    rdlong\t0, pb\n"
-    "    jmp\t#\\$200 ' jmp to cache\n"
+    "    rdlong\t$100-0, fcache_tmpb_\n"
+    "    jmp\t#\\$300 ' jmp to cache\n"
     "reta_instr_\n"
     "    reta\n"
+    "fcache_tmpa_\n"
+    "    long 0\n"
+    "fcache_tmpb_\n"
+    "    long 0\n"
     ;
 
 //
@@ -5926,7 +5932,7 @@ GuessFcacheSize(IRList *irl)
 #    /* for now, just go by p2/p1 */
     if (gl_p2) {
          if (gl_optimize_flags & OPT_AUTO_FCACHE) {
-            return 240;
+             return 220; // really 256, but leave slop for bad calcs of ##
         }
         return 0; // disable fcache if no optimization
     } else {

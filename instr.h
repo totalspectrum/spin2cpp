@@ -92,6 +92,8 @@ typedef enum IROpcode {
     OPC_JMPREL,
     OPC_NOT,
     OPC_QFRAC,
+    OPC_SETQ,
+    OPC_SETQ2,
     OPC_SIGNX,
     OPC_WAITX,
     OPC_WRC,

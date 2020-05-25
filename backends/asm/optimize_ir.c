@@ -91,6 +91,8 @@ InstrSetsDst(IR *ir)
   case OPC_CMPS:
   case OPC_TEST:
   case OPC_TESTN:
+  case OPC_SETQ:
+  case OPC_SETQ2:
   case OPC_GENERIC_NR:
       return (ir->flags & FLAG_WR) != 0;
   default:
@@ -1215,6 +1217,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_SETQ:
+    case OPC_SETQ2:
     case OPC_WAITCNT:
     case OPC_WAITX:
     case OPC_WRBYTE:
@@ -1942,6 +1946,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNC:
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_SETQ:
+    case OPC_SETQ2:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:
@@ -2744,7 +2750,15 @@ restart_check:
         while (next_ir && IsDummy(next_ir)) {
             next_ir = next_ir->next;
         }
+        if (InstrIsVolatile(ir)) {
+            goto get_next;
+        }
         if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
+            // don't mess with it if prev instr was OPC_SETQ
+            if (prev_ir && (prev_ir->opc == OPC_SETQ || prev_ir->opc == OPC_SETQ2)) {
+                prev_ir->flags |= FLAG_KEEP_INSTR;
+                goto get_next;
+            }
             dst1 = ir->dst;
             base = ir->src;
             nextread = FindNextRead(ir, dst1, base);
@@ -2862,8 +2876,8 @@ again:
         change = 0;
         AssignTemporaryAddresses(irl);
         change |= CheckLabelUsage(irl);
-        change |= EliminateDeadCode(irl);
         change |= OptimizeReadWrite(irl);
+        change |= EliminateDeadCode(irl);
         change |= OptimizeCogWrites(irl);
         change |= OptimizeSimpleAssignments(irl);
         change |= OptimizeMoves(irl);

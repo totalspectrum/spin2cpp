@@ -46,7 +46,7 @@ Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are le
 
 ### LUT
 
-The LUT memory is used for fcache. To keep it free, pass --fcache=0 to the compiler.
+The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep it free, pass --fcache=0 to the compiler.
 
 
 ## Register Usage
@@ -57,7 +57,7 @@ Pretty much all of COG RAM is used by the compiler. No specific hardware registe
 
 ### P2
 
-Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The LUT is used for FCACHE, if that is enabled by -O2 or by an explicit --fcache=.
+Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The second half of LUT is used for FCACHE; the first half is left free for the application.
 
 `ptra` is used for the stack pointer.
 
@@ -118,7 +118,7 @@ In generated assembly code, various shorter combinations of instructions can som
 
 In some circumstances the optimizer can re-arrange counting loops so that the `djnz` instruction may be used instead of a combination of add/sub, compare, and branch. In -O2 a more thorough loop analysis makes this possible in more cases.
 
-### Fcache (-O1 for P1, -O2 for P2)
+### Fcache (-O1)
 
 Small loops are copied to internal memory (COG on P1, LUT on P2) to be executed there. These loops cannot have any non-inlined calls in them.
 

@@ -3,6 +3,7 @@ Version 4.1.12
 - Enabled fcache by default for P2
 - Fixed C builtin function definitions for _wypin, _wrpin, etc.
 - Made ORG in Spin2 fcache the asm
+- Move P2 FCACHE to second half of LUT
 - Used ZEROX/SIGNX for sign extension on P2
 
 Version 4.1.11
