@@ -7,7 +7,7 @@ entry
 _blah
 	and	arg01, #15
 	mov	_var01, outa
-	andn	_var01, #15
+	and	_var01, imm_4294967280_
 	or	_var01, arg01
 	mov	outa, _var01
 _blah_ret
@@ -19,6 +19,8 @@ _onepin
 _onepin_ret
 	ret
 
+imm_4294967280_
+	long	-16
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

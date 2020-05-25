@@ -1308,8 +1308,8 @@ RenameLabels(IRList *list)
 }
 
 /* assemble an IR list */
-char *
-IRAssemble(IRList *list, Module *P)
+static char *
+doIRAssemble(IRList *list, Module *P, int flags)
 {
     IR *ir;
     struct flexbuf fb;
@@ -1329,6 +1329,9 @@ IRAssemble(IRList *list, Module *P)
     }
     flexbuf_init(&fb, 512);
     for (ir = list->head; ir; ir = ir->next) {
+        if (flags && (0 != (ir->flags & FLAG_KEEP_INSTR))) {
+            flexbuf_printf(&fb, "*");
+        }
         DoAssembleIR(&fb, ir, P);
         if (gl_output == OUTPUT_COGSPIN) {
             if (pending_fixup) {
@@ -1351,11 +1354,17 @@ IRAssemble(IRList *list, Module *P)
     return ret;
 }
 
+char *
+IRAssemble(IRList *list, Module *P)
+{
+    return doIRAssemble(list, P, 0);
+}
+
 void
 DumpIRL(IRList *irl)
 {
     int saveLmmMode = lmmMode;
     lmmMode = 1;
-    puts(IRAssemble(irl, NULL));
+    puts(doIRAssemble(irl, NULL, 1));
     lmmMode = saveLmmMode;
 }

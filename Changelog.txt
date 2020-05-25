@@ -2,6 +2,7 @@ Version 4.1.12
 - Accept large addresses for jump instructions in inline assembly.
 - Enabled fcache by default for P2
 - Fixed C builtin function definitions for _wypin, _wrpin, etc.
+- Fixed some cases where user code might be optimized when it shouldn't
 - Made ORG in Spin2 fcache the asm
 - Move P2 FCACHE to second half of LUT
 - Used ZEROX/SIGNX for sign extension on P2

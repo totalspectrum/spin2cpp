@@ -3103,6 +3103,7 @@ CompileMaskMove(IRList *irl, AST *expr)
     Operand *dest;
     Operand *val = CompileExpression(irl, valast, NULL);
     Operand *mask = CompileExpression(irl, maskast, NULL);
+    unsigned keepflag = 0;
     IR *ir;
 
     switch(destast->kind) {
@@ -3114,6 +3115,7 @@ CompileMaskMove(IRList *irl, AST *expr)
         break;
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
+        keepflag = FLAG_KEEP_INSTR;
         break;
     case AST_METHODREF:
         dest = CompileExpression(irl, destast, NULL);
@@ -3123,11 +3125,11 @@ CompileMaskMove(IRList *irl, AST *expr)
         return tmp;
     }
     ir = EmitMove(irl, tmp, dest);
-    ir->flags |= FLAG_KEEP_INSTR;
+    ir->flags |= keepflag;
     ir = EmitOp2(irl, OPC_AND, tmp, mask);
-    ir->flags |= FLAG_KEEP_INSTR;
+    ir->flags |= keepflag;
     ir = EmitOp2(irl, OPC_OR, tmp, val);
-    ir->flags |= FLAG_KEEP_INSTR;
+    ir->flags |= keepflag;
     return tmp;
 }
 
