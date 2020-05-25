@@ -79,7 +79,7 @@ int getcogid() {
    return x;
 }
 ```
-The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code. `__asm const` suppresses optimization of the assembly code (see below) and forces the code to be placed into FCACHE memory. `__asm volatile` is similar, but does not force the code into FCACHE (it will execute from HUB as usual).
+The `__asm` keyword must be followed by a `{` or else `const` (or `volatile`) and then a `{`; everything between that and the next `}` is taken to be assembly code. `__asm volatile` suppresses optimization of the assembly code (see below) and forces the code to be placed into FCACHE memory. `__asm const` is similar, but does not force the code into FCACHE (it will execute from HUB as usual).
 
 For inline assembly inside a function, any instructions may be used, but the only legal operands are integer constants (preceded by `#`) and local variables, including parameters, of the function which contains the inline assembly. Labels may be defined, and may be used as the target for `goto` elsewhere in the function.
 

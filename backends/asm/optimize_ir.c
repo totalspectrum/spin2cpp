@@ -62,6 +62,10 @@ InstrReadsDst(IR *ir)
   case OPC_GETQY:
   case OPC_GETRND:
   case OPC_GETCT:
+  case OPC_WRC:
+  case OPC_WRNC:
+  case OPC_WRZ:
+  case OPC_WRNZ:
     return false;
   default:
     break;
@@ -265,9 +269,13 @@ InstrUsesFlags(IR *ir, unsigned flags)
         return true;
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_WRC:
+    case OPC_WRNC:
         return (flags & FLAG_WC) != 0;
     case OPC_MUXZ:
     case OPC_MUXNZ:
+    case OPC_WRZ:
+    case OPC_WRNZ:
         return (flags & FLAG_WZ) != 0;
     default:
         return false;

@@ -94,6 +94,10 @@ typedef enum IROpcode {
     OPC_QFRAC,
     OPC_SIGNX,
     OPC_WAITX,
+    OPC_WRC,
+    OPC_WRNC,
+    OPC_WRNZ,
+    OPC_WRZ,
     OPC_ZEROX,
     OPC_REPEAT,
     OPC_REPEAT_END,  // dummy instruction to mark end of repeat loop
