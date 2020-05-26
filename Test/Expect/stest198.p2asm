@@ -10,18 +10,16 @@ dat
 entry
 
 _setval2
-	mov	_var01, arg01
-	andn	_var01, #3
-	or	_var01, #1
-	mov	result1, _var01
+	andn	arg01, #3
+	or	arg01, #1
+	mov	result1, arg01
 _setval2_ret
 	reta
 
 _setval1
-	mov	_var01, arg01
-	andn	_var01, #3
-	or	_var01, #1
-	mov	result1, _var01
+	andn	arg01, #3
+	or	arg01, #1
+	mov	result1, arg01
 _setval1_ret
 	reta
 
@@ -38,8 +36,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
 arg01
 	res	1
 	fit	480

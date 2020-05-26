@@ -1718,9 +1718,9 @@ opt_asm_volatile:
   /* nothing */
     { $$ = 0; }
   | C_VOLATILE
-    { $$ = AstInteger(1); }
-  | C_CONST
     { $$ = AstInteger(3); }
+  | C_CONST
+    { $$ = AstInteger(1); }
 ;
 
 top_asm:

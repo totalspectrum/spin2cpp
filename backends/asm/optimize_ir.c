@@ -62,6 +62,10 @@ InstrReadsDst(IR *ir)
   case OPC_GETQY:
   case OPC_GETRND:
   case OPC_GETCT:
+  case OPC_WRC:
+  case OPC_WRNC:
+  case OPC_WRZ:
+  case OPC_WRNZ:
     return false;
   default:
     break;
@@ -87,6 +91,8 @@ InstrSetsDst(IR *ir)
   case OPC_CMPS:
   case OPC_TEST:
   case OPC_TESTN:
+  case OPC_SETQ:
+  case OPC_SETQ2:
   case OPC_GENERIC_NR:
       return (ir->flags & FLAG_WR) != 0;
   default:
@@ -265,9 +271,13 @@ InstrUsesFlags(IR *ir, unsigned flags)
         return true;
     case OPC_MUXC:
     case OPC_MUXNC:
+    case OPC_WRC:
+    case OPC_WRNC:
         return (flags & FLAG_WC) != 0;
     case OPC_MUXZ:
     case OPC_MUXNZ:
+    case OPC_WRZ:
+    case OPC_WRNZ:
         return (flags & FLAG_WZ) != 0;
     default:
         return false;
@@ -1207,6 +1217,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_SETQ:
+    case OPC_SETQ2:
     case OPC_WAITCNT:
     case OPC_WAITX:
     case OPC_WRBYTE:
@@ -1307,6 +1319,11 @@ int EliminateDeadCode(IRList *irl)
     ir = irl->head;
     while (ir) {
       ir_next = ir->next;
+
+      if (ir->opc == OPC_SETQ || ir->opc == OPC_SETQ2) {
+          ir->flags |= FLAG_KEEP_INSTR;
+          ir->next->flags |= FLAG_KEEP_INSTR;
+      }
       if (InstrIsVolatile(ir)) {
           /* do nothing */
       } else if (ir->opc == OPC_JUMP) {
@@ -1644,6 +1661,7 @@ OptimizeCompares(IRList *irl)
         if ( (ir->opc == OPC_CMP||ir->opc == OPC_CMPS) && ir->cond == COND_TRUE
              && (FLAG_WZ == (ir->flags & (FLAG_WZ|FLAG_WC)))
              && IsImmediateVal(ir->src, 0)
+             && !InstrIsVolatile(ir)
             )
         {
             ir_prev = FindPrevSetterForCompare(ir, ir->dst);
@@ -1694,6 +1712,7 @@ OptimizeCompares(IRList *irl)
             else if (ir_prev
                 && !InstrSetsAnyFlags(ir_prev)
                 && !InstrIsVolatile(ir_prev)
+                && !InstrIsVolatile(ir)
                 && (ir_prev->flags == COND_TRUE)
                 && CanTestZero(ir_prev->opc))
             {
@@ -1734,6 +1753,9 @@ OptimizeImmediates(IRList *irl)
     int change = 0;
     
     for (ir = irl->head; ir; ir = ir->next) {
+        if (InstrIsVolatile(ir)) {
+            continue;
+        }
         src = ir->src;
         if (! (src && src->kind == IMM_INT) ) {
             continue;
@@ -1786,7 +1808,7 @@ OptimizeAddSub(IRList *irl)
             ir_next = ir_next->next;
         }
         if (!ir_next) break;
-        if (ir->opc == OPC_ADD || ir->opc == OPC_SUB) {
+        if ((ir->opc == OPC_ADD || ir->opc == OPC_SUB) && !InstrIsVolatile(ir)) {
             prev = FindPrevSetterForReplace(ir, ir->dst);
             if (prev && (prev->opc == OPC_ADD || prev->opc == OPC_SUB) ) {
                 if (ir->src->kind == IMM_INT && prev->src->kind == IMM_INT
@@ -1934,6 +1956,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNC:
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_SETQ:
+    case OPC_SETQ2:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:
@@ -2048,6 +2072,9 @@ OptimizePeepholes(IRList *irl)
         ir_next = ir->next;
         while (ir_next && IsDummy(ir_next)) {
             ir_next = ir_next->next;
+        }
+        if (InstrIsVolatile(ir)) {
+            goto done;
         }
         opc = ir->opc;
         if ( (opc == OPC_AND || opc == OPC_OR)
@@ -2698,6 +2725,7 @@ static bool
 CanSwap(IR *a, IR *b)
 {
     if (InstrSetsAnyFlags(a)) return false;
+    if (InstrIsVolatile(a) || InstrIsVolatile(b)) return false;
     if (IsBranch(a) || IsBranch(b)) return false;
     if (InstrModifies(a, b->src)) return false;
     if (InstrUses(b, a->dst)) return false;
@@ -2736,7 +2764,15 @@ restart_check:
         while (next_ir && IsDummy(next_ir)) {
             next_ir = next_ir->next;
         }
+        if (InstrIsVolatile(ir)) {
+            goto get_next;
+        }
         if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
+            // don't mess with it if prev instr was OPC_SETQ
+            if (prev_ir && (prev_ir->opc == OPC_SETQ || prev_ir->opc == OPC_SETQ2)) {
+                prev_ir->flags |= FLAG_KEEP_INSTR;
+                goto get_next;
+            }
             dst1 = ir->dst;
             base = ir->src;
             nextread = FindNextRead(ir, dst1, base);
@@ -2821,7 +2857,7 @@ OptimizeJumps(IRList *irl)
     int change = 0;
     
     while (ir) {
-        if (ir->opc == OPC_JUMP) {
+        if (ir->opc == OPC_JUMP && !InstrIsVolatile(ir)) {
             // ptr to jump destination (if known) is in aux; see if it's also a jump
             jmpdest = NextInstruction(ir->aux);
             if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir && jmpdest->dst != ir->dst) {
@@ -2854,8 +2890,8 @@ again:
         change = 0;
         AssignTemporaryAddresses(irl);
         change |= CheckLabelUsage(irl);
-        change |= EliminateDeadCode(irl);
         change |= OptimizeReadWrite(irl);
+        change |= EliminateDeadCode(irl);
         change |= OptimizeCogWrites(irl);
         change |= OptimizeSimpleAssignments(irl);
         change |= OptimizeMoves(irl);

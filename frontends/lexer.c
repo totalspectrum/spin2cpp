@@ -2744,8 +2744,8 @@ instr_p2[] = {
     { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC, 0 },
 
-    { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
+    { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
     { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
@@ -2835,10 +2835,10 @@ instr_p2[] = {
     
     { "rczr",   0x0d60006a, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
     { "rczl",   0x0d60006b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "wrc",    0x0d60006c, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "wrnc",   0x0d60006d, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "wrz",    0x0d60006e, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "wrnz",   0x0d60006f, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
+    { "wrc",    0x0d60006c, DST_OPERAND_ONLY, OPC_WRC, 0 },
+    { "wrnc",   0x0d60006d, DST_OPERAND_ONLY, OPC_WRNC, 0 },
+    { "wrz",    0x0d60006e, DST_OPERAND_ONLY, OPC_WRZ, 0 },
+    { "wrnz",   0x0d60006f, DST_OPERAND_ONLY, OPC_WRNZ, 0 },
     { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD | FLAG_WARN_NOTUSED },
     { "modc",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WC | FLAG_WARN_NOTUSED },
     { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WZ | FLAG_WARN_NOTUSED },

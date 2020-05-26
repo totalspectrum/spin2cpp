@@ -345,7 +345,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
         return NULL;
     }
     for (i = 0; i < numoperands; i++) {
-        Operand *op;
+        Operand *op = 0;
         effects[i] = 0;
         // special case rep instruction
         if (gl_p2 && i == 0 && !opimm[i] && !strcmp(instr->name, "rep") && operands[0] && operands[0]->kind == AST_ADDROF) {
@@ -369,7 +369,7 @@ CompileInlineInstr(IRList *irl, AST *ast)
             ERROR(ast, "Too many operands to instruction");
             break;
         }
-        if (op->kind == IMM_INT && (unsigned)op->val > (unsigned)511) {
+        if (op && op->kind == IMM_INT && (unsigned)op->val > (unsigned)511) {
             int ok = 0;
             if (instr->ops == CALL_OPERAND) {
                 ok = 1;
