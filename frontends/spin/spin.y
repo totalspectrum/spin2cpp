@@ -287,13 +287,6 @@ funcdef:
   identifier optparamlist resultname localvars SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
-    funcdecl->d.ival = 0;
-    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-  }
-|  SP_COGINIT identifier optparamlist resultname localvars SP_EOLN
-  { AST *funcdecl = NewAST(AST_FUNCDECL, $2, $4);
-    AST *funcvars = NewAST(AST_FUNCVARS, $3, $5);
-    funcdecl->d.ival = 1;
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
 ;

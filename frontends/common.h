@@ -443,7 +443,7 @@ void DeclareLabels(Module *);
 AST *DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 
 /* streamlined DeclareFunction: "ftype" is the function type (return + parameters) */
-AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body);
+AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body, AST *annotation, AST *comment);
 
 /* declare a template for a function */
 void DeclareFunctionTemplate(Module *P, AST *templ);

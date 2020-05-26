@@ -278,7 +278,7 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
 
 /* like DeclareFunction, but takes a function type */
 AST *
-DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody)
+DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody, AST *annotations, AST *comment)
 {
     AST *funcvars, *funcdef;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
@@ -292,7 +292,7 @@ DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody
     funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
     funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
-    return DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
+    return DeclareFunction(P, type, is_public, funcdef, fbody, annotations, comment);
 }
 
 static AST *
@@ -657,7 +657,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 ftype->left = GuessLambdaReturnType(ftype->right, fbody);
             }
             // declare the lambda function
-            DeclareTypedFunction(func->closure, ftype, name, 1, fbody);
+            DeclareTypedFunction(func->closure, ftype, name, 1, fbody, NULL, NULL);
             // now turn the lambda into a pointer deref
             ptrref = NewAST(AST_METHODREF, AstIdentifier(func->closure->classname), name);
             // AST_ADDROF can allow a type on the right, which will help
@@ -721,6 +721,27 @@ AdjustParameterTypes(AST *paramlist, int lang)
     }
 }
 
+static int
+FindAnnotation(AST *annotations, const char *key)
+{
+    const char *ptr;
+    int len = strlen(key);
+    while (annotations) {
+        if (annotations->kind == AST_ANNOTATION) {
+            ptr = annotations->d.string;
+            while (ptr && *ptr) {
+                if (!strncmp(ptr, key, len) && (ptr[len] == 0 || ptr[len] == ',')) {
+                    return 1;
+                }
+                while (*ptr && *ptr != ',') ptr++;
+                if (*ptr == ',') ptr++;
+            }
+        }
+        annotations = annotations->right;
+    }
+    return 0;
+}
+
 static Function *
 doDeclareFunction(AST *funcblock)
 {
@@ -758,7 +779,7 @@ doDeclareFunction(AST *funcblock)
         return NULL;
     }
     src = funcdef->left;
-    is_cog = src->d.ival;
+    is_cog = FindAnnotation(annotation, "cog");
     srcname = src->left;
     if (srcname->kind == AST_LOCAL_IDENTIFIER) {
         funcname_internal = srcname->left->d.string;
@@ -2927,7 +2948,7 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
     Function *fdef;
     current = P;
     functype = fixupFunctype(pairs, DupAST(functype));
-    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body));
+    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body), NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {
         fdef->is_static = 1;

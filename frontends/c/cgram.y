@@ -449,7 +449,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             type = list->left; list = list->right;
             ident = list->left; list = list->right;
             body = list->left;
-            DeclareTypedFunction(P, type, ident, is_public, body);
+            DeclareTypedFunction(P, type, ident, is_public, body, NULL, NULL);
             continue;
         }
         if (ast->kind == AST_PUBFUNC) {
@@ -695,7 +695,7 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
         // to the original name are replaced with the new name
         ReplaceAst(body, origName, nameAst);
     }
-    return DeclareTypedFunction(P, ftype, nameAst, is_public, body);
+    return DeclareTypedFunction(P, ftype, nameAst, is_public, body, NULL, NULL);
 }
 
 static AST *
