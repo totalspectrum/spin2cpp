@@ -5987,9 +5987,9 @@ GuessFcacheSize(IRList *irl)
 }
 
 static void
-CompileSystemModule(IRList *where, Module *M)
+CompileSystemModule(IRList *where, Module *M, int flag)
 {
-    VisitRecursive(where, M, CompileToIR_internal, VISITFLAG_COMPILEIR_HUB);
+    VisitRecursive(where, M, CompileToIR_internal, flag);
 }
 
 void
@@ -6144,11 +6144,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitJump(&hubcode, COND_TRUE, cogexit);
         }
         // output global functions
-        if (HUB_CODE) {
-            CompileSystemModule(&hubcode, globalModule);
-        } else {
-            CompileSystemModule(&cogcode, globalModule);
-        }
+        CompileSystemModule(&cogcode, globalModule, VISITFLAG_COMPILEIR_COG);
+        CompileSystemModule(&hubcode, globalModule, VISITFLAG_COMPILEIR_HUB);
+
         // now copy the hub code into place
         EmitBuiltins(&cogcode);
 
