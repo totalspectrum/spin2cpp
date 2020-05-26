@@ -1246,6 +1246,10 @@ Note that `cpu` is not a function call, it is a special form which does not eval
 
 The `cpu` directive may also be used to execute shared assembly code, that is, assembly code started with `asm shared`. In this case the first parameter to `cpu` is the address of a label in the assembly code, where the program should start, and the second parameter is the parameter to be passed to the assembly code. This parameter is passed in the `par` register in P1, and in `ptra` in P2.
 
+#### Using CPU to declare a function to be placed in COG memory
+
+The `cpu` directive may also be used to modify a function or subroutine declaration, to indicate that the function should be placed in CPU internal memory. This allows the routine to run much faster, but internal memory is a very limited resource, so this directive should be used sparingly.
+
 ### DATA
 
 Introduces raw data to be read via the `read` keyword. This is usually used for initializing arrays or other data structures. The calculations for converting values from strings to integers or floats are done at run time, so consider using array initializers instead (which are more efficient).
@@ -1546,6 +1550,18 @@ var c = makecounter(7, 3)
 for i = 1 to 4
   print c()
 next
+```
+
+#### Placing functions in CPU internal memory
+
+If `cpu` follows the `function` keyword, the function will be placed in CPU internal memory rather than main memory. This memory is generally much faster, but is a very limited resource. This directive should be used only for small leaf functions (which do not call other functions) and should be used sparingly.
+```
+function cpu toupper(c as ubyte) as ubyte
+  if c >= asc("a") and c <= asc("z") then
+    c = c + (asc("A") - asc("a"))
+  end if
+  return c
+end function
 ```
 
 ### GETCNT

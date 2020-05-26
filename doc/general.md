@@ -34,6 +34,42 @@ Fcache is a special feature of the compiler whereby small loops are copied from 
 
 Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
 
+## Functions in COG memory
+
+Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in COG memory, where they will execute much more quickly. This must be done with care, because COG memory is a very limited resource.
+
+Only small functions should be placed in COG memory, and these functions should not call any other function.
+
+### Spin/Spin2
+
+Place a special comment `{++cog}` after the `PUB` or `PRI` declaration in order to force a method to be placed in COG memory.
+```
+  pub {++cog} add(x, y)
+    return x+y
+```
+
+### BASIC
+
+Place the keyword `cpu` before the function or subroutine's name in its declaration:
+```
+function cpu toupper(c as ubyte) as ubyte
+  if c >= asc("a") and c <= asc("z") then
+    c = c + (asc("A") - asc("a"))
+  end if
+  return c
+end function
+```
+
+### C/C++
+
+Place `__attribute__((cog))` after the function declaration but before its body:
+```
+int add(int x, int y) __attribute__((cog))
+{
+  return x+y;
+}
+```
+
 ## Memory Map
 
 ### HUB

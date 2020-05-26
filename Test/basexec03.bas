@@ -1,7 +1,12 @@
-sub putx(c as ubyte)
+function cpu toupper(c as ubyte) as ubyte
   if c >= asc("a") and c <= asc("z") then
     c = c + (asc("A") - asc("a"))
   end if
+  return c
+end function
+
+sub putx(c as ubyte)
+  c = toupper(c)
   print \c;
 end sub
 

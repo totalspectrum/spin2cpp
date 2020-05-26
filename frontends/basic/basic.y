@@ -1626,41 +1626,66 @@ endfunc:
   | BAS_END BAS_FUNCTION
 ;
 
+attributes:
+  /* empty */
+    { $$ = 0; }
+  | BAS_CPU
+    {
+        AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
+        ast->d.string = "cog";
+        $$ = ast;
+    }
+;
+    
 subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
+  BAS_SUB attributes BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
   {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *attrib = $2;
+    AST *ident = $3;
+    AST *parms = $5;
+    AST *body = $8;
+    AST *funcdecl = NewAST(AST_FUNCDECL, ident, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $1);
   }
-  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody
+  | BAS_SUB attributes BAS_IDENTIFIER paramdecl eoln subbody
   {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
+    AST *attrib = $2;
+    AST *ident = $3;
+    AST *parms = $4;
+    AST *body = $6;
+    AST *funcdecl = NewAST(AST_FUNCDECL, ident, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $5, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $1);
   }
   ;
 
 funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
+  BAS_FUNCTION attributes BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
   {
-    AST *name = $2;
+    AST *attrib = $2;
+    AST *name = $3;
+    AST *parms = $5;
+    AST *body = $8;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     AST *rettype = InferTypeFromName(name);
-    DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
   }
-  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
+  | BAS_FUNCTION attributes BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
   {
-    AST *name = $2;
+    AST *attrib = $2;
+    AST *name = $3;
+    AST *parms = $5;
+    AST *rettype = $8;
+    AST *body = $10;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    AST *rettype = $7;
-    DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
   }
   | BAS_DEF BAS_IDENTIFIER '(' paramdecl ')' '=' expr
   {
