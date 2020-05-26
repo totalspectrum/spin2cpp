@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "spinc.h"
 
 // marked in MarkUsed(); checks for things like try()/catch() that
@@ -721,7 +722,7 @@ AdjustParameterTypes(AST *paramlist, int lang)
     }
 }
 
-static int
+static const char *
 FindAnnotation(AST *annotations, const char *key)
 {
     const char *ptr;
@@ -729,9 +730,12 @@ FindAnnotation(AST *annotations, const char *key)
     while (annotations) {
         if (annotations->kind == AST_ANNOTATION) {
             ptr = annotations->d.string;
+            while (ptr && *ptr == '(') ptr++;
             while (ptr && *ptr) {
-                if (!strncmp(ptr, key, len) && (ptr[len] == 0 || ptr[len] == ',')) {
-                    return 1;
+                if (!strncmp(ptr, key, len)) {
+                    if (ptr[len] == 0 || !isalpha(ptr[len])) {
+                        return ptr+len;
+                    }
                 }
                 while (*ptr && *ptr != ',') ptr++;
                 if (*ptr == ',') ptr++;
@@ -779,7 +783,7 @@ doDeclareFunction(AST *funcblock)
         return NULL;
     }
     src = funcdef->left;
-    is_cog = FindAnnotation(annotation, "cog");
+    is_cog = FindAnnotation(annotation, "cog") != 0;
     srcname = src->left;
     if (srcname->kind == AST_LOCAL_IDENTIFIER) {
         funcname_internal = srcname->left->d.string;

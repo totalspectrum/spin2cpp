@@ -3472,6 +3472,30 @@ basicyylex(BASICYYSTYPE *yval)
 }
 
 static int
+ParseCAttribute(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    int balance = 0;
+    struct flexbuf fb;
+    AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
+    
+    flexbuf_init(&fb, 32);
+    do {
+        c = lexgetc(L);
+        if (c < 0) break;
+        if (c == '(') {
+            balance++;
+        } else if (c == ')') {
+            --balance;
+        }
+        flexbuf_addchar(&fb, c);
+    } while (balance > 0);
+    ast->d.string = flexbuf_get(&fb);
+    *ast_ptr = ast;
+    return C_ATTRIBUTE;
+}
+
+static int
 parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
@@ -3566,6 +3590,8 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->block_type = (c == C_PASM) ? BLOCK_PASM : BLOCK_ASM;
             }
             break;
+        case C_ATTRIBUTE:
+            return ParseCAttribute(L, ast_ptr);
         default:
             break;
         }

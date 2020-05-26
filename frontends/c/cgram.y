@@ -682,7 +682,7 @@ static int IsStatic(AST *ftype) {
 
 /* declare a typed function, optionally using a local identifier (if the function is STATIC) */
 static AST *
-DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body)
+DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body, AST *attribute)
 {
     if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
@@ -695,7 +695,7 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
         // to the original name are replaced with the new name
         ReplaceAst(body, origName, nameAst);
     }
-    return DeclareTypedFunction(P, ftype, nameAst, is_public, body, NULL, NULL);
+    return DeclareTypedFunction(P, ftype, nameAst, is_public, body, attribute, NULL);
 }
 
 static AST *
@@ -2003,66 +2003,80 @@ external_declaration
 function_definition
 	: declaration_specifiers declarator func_declaration_list compound_statement
             {
-                AST *type;
-                AST *ident;
-                AST *body = $4;
+                AST *type = $1;
                 AST *decl = $2;
+                AST *decl_list = $3;
+                AST *body = $4;
+                AST *ident;
                 int is_public = 1;
 
-                decl = MergeOldStyleDeclarationList(decl, $3);
-                type = CombineTypes($1, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                decl = MergeOldStyleDeclarationList(decl, decl_list);
+                type = CombineTypes(type, decl, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declaration_specifiers declarator compound_statement
+	| declaration_specifiers declarator attribute_decl compound_statement
             {
-                AST *type;
-                AST *ident;
-                AST *body = $3;
+                AST *type = $1;
                 AST *decl = $2;
+                AST *anno = $3;
+                AST *body = $4;
+                AST *ident;
                 int is_public = 1;
-                type = CombineTypes($1, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(type, decl, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
 	| declarator func_declaration_list compound_statement
             {
                 AST *type;
                 AST *ident;
-                AST *body = $3;
                 AST *decl = $1;
+                AST *decl_list = $2;
+                AST *body = $3;
                 int is_public = 1;
-                decl = MergeOldStyleDeclarationList(decl, $2);
+                decl = MergeOldStyleDeclarationList(decl, decl_list);
                 type = CombineTypes(NULL, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declarator compound_statement
+	| declarator attribute_decl compound_statement
             {
                 AST *type;
                 AST *ident;
-                AST *body = $2;
                 AST *decl = $1;
+                AST *anno = $2;
+                AST *body = $3;
                 int is_public = 1;
                 type = CombineTypes(NULL, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
 	| declaration_specifiers declarator fromfile_decl
             {
-                AST *type;
                 AST *ident;
+                AST *decl_list = $1;
+                AST *type = $2;
                 AST *body = $3;
                 int is_public = 1;
-                type = CombineTypes($1, $2, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(decl_list, type, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	| declarator fromfile_decl
             {
-                AST *type;
+                AST *type = $1;
                 AST *ident;
                 AST *body = $2;
                 int is_public = 1;
-                type = CombineTypes(NULL, $1, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(NULL, type, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	;
+
+attribute_decl
+        : C_ATTRIBUTE
+            {
+                $$ = $1;
+            }
+         | /* empty */
+            { $$ = NULL; }
+        ;
 
 fromfile_decl
         : C_FROMFILE '(' C_STRING_LITERAL ')' ';'
