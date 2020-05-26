@@ -284,24 +284,16 @@ topelement:
 ;
 
 funcdef:
-  identifier optparamlist SP_EOLN
-  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
-    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-  }
-|  identifier optparamlist localvars SP_EOLN
-  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $2, $3);
-    $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-  }
-|  identifier optparamlist resultname localvars SP_EOLN
+  identifier optparamlist resultname localvars SP_EOLN
   { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
     AST *funcvars = NewAST(AST_FUNCVARS, $2, $4);
+    funcdecl->d.ival = 0;
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
-|  identifier optparamlist resultname SP_EOLN
-  { AST *funcdecl = NewAST(AST_FUNCDECL, $1, $3);
-    AST *funcvars = NewAST(AST_FUNCVARS, $2, NULL);
+|  SP_COGINIT identifier optparamlist resultname localvars SP_EOLN
+  { AST *funcdecl = NewAST(AST_FUNCDECL, $2, $4);
+    AST *funcvars = NewAST(AST_FUNCVARS, $3, $5);
+    funcdecl->d.ival = 1;
     $$ = NewAST(AST_FUNCDEF, funcdecl, funcvars);
   }
 ;
@@ -317,7 +309,10 @@ optparamlist:
   { $$ = $2; }
   ;
 
-resultname: ':' paramidentlist
+resultname:
+/* empty */
+  { $$ = NULL; }
+| ':' paramidentlist
   {
       // handle the common case of just one identifier by
       // unwrapping the list
@@ -330,7 +325,9 @@ resultname: ':' paramidentlist
   ;
 
 localvars:
- '|' vardecllist
+/* empty */
+  { $$ = NULL; }
+| '|' vardecllist
   { $$ = $2; }
     ;
 

@@ -4696,7 +4696,8 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
     EmitAsmVars(&hubGlobalVars, hubdata, NULL, NO_SORT);
 }
 
-#define VISITFLAG_COMPILEIR     0x01230001
+#define VISITFLAG_COMPILEIR_COG 0x01230000
+#define VISITFLAG_COMPILEIR_HUB 0x01230001
 #define VISITFLAG_FUNCNAMES     0x01230002
 #define VISITFLAG_COMPILEFUNCS  0x01230003
 #define VISITFLAG_EXPANDINLINE  0x01230004
@@ -4805,7 +4806,10 @@ AssignOneFuncName(Function *f)
         // at one time we also forced the global module stuff into
         // COG memory, so we still have the capability to put code
         // into COG on a per-function basis; may be useful later
-        f->cog_code = COG_CODE ? 1 : 0;
+        if (COG_CODE) {
+            // force everything into cog code
+            f->cog_code = 1;
+        }
         fname = IdentifierModuleName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
@@ -4953,9 +4957,9 @@ static void
 CompileFunc_internal(IRList *irl, Module *P)
 {
     Function *savecurf = curfunc;
-    
     Function *f;
     (void)irl; // not used
+    
     for(f = P->functions; f; f = f->next) {
       if (ShouldSkipFunction(f))
           continue;
@@ -5001,7 +5005,10 @@ CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
     Function *save = curfunc;
+    int docog;
 
+    docog = (P->visitflag == VISITFLAG_COMPILEIR_COG) ? 1 : 0;
+    
     // emit output for P
     for(f = P->functions; f; f = f->next) {
         // if the function was private and has
@@ -5020,6 +5027,10 @@ CompileToIR_internal(IRList *irl, Module *P)
                 continue;
             }
         }
+        // only do cog or hub
+        if (f->cog_code != docog) {
+            continue;
+        }
         curfunc = f;
 	EmitNewline(irl);
         CompileWholeFunction(irl, f);
@@ -5028,12 +5039,18 @@ CompileToIR_internal(IRList *irl, Module *P)
 }
 
 bool
-CompileToIR(IRList *irl, Module *P)
+CompileToIR_cog(IRList *irl, Module *P)
 {
-    // generate code for inlining
-    CompileIntermediate(P);
     // and generate real output
-    VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR);
+    VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_COG);
+    
+    return gl_errors == 0;
+}
+bool
+CompileToIR_hub(IRList *irl, Module *P)
+{
+    // and generate real output
+    VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_HUB);
     
     return gl_errors == 0;
 }
@@ -5972,7 +5989,7 @@ GuessFcacheSize(IRList *irl)
 static void
 CompileSystemModule(IRList *where, Module *M)
 {
-    VisitRecursive(where, M, CompileToIR_internal, VISITFLAG_COMPILEIR);
+    VisitRecursive(where, M, CompileToIR_internal, VISITFLAG_COMPILEIR_HUB);
 }
 
 void
@@ -6097,12 +6114,13 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                 EmitMain_P1(&cogcode, P);
             }
         }
+        // generate code for inlining
+        CompileIntermediate(P);
         // compile COG functions
-        if (COG_CODE) {
-            if (!CompileToIR(&cogcode, P)) {
-                return;
-            }
+        if (!CompileToIR_cog(&cogcode, P)) {
+            return;
         }
+
         // guesstimate how much space we will have for FCACHE, if
         // a dynamic size is requested
         if (gl_fcache_size < 0) {
@@ -6117,7 +6135,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
                          NewOperand(IMM_COG_LABEL, "LMM_CALL_FROM_COG_ret", 0));
             }
             EmitLabel(&hubcode, NewOperand(IMM_HUB_LABEL, "hubentry", 0));
-            if (!CompileToIR(&hubcode, P)) {
+            if (!CompileToIR_hub(&hubcode, P)) {
                 return;
             }
         }

@@ -742,6 +742,7 @@ doDeclareFunction(AST *funcblock)
     const char *funcname_user;
     AST *oldtype = NULL;
     Symbol *sym;
+    int is_cog;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
@@ -757,6 +758,7 @@ doDeclareFunction(AST *funcblock)
         return NULL;
     }
     src = funcdef->left;
+    is_cog = src->d.ival;
     srcname = src->left;
     if (srcname->kind == AST_LOCAL_IDENTIFIER) {
         funcname_internal = srcname->left->d.string;
@@ -824,6 +826,7 @@ doDeclareFunction(AST *funcblock)
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
+    fdef->cog_code = is_cog;
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");
