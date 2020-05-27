@@ -998,6 +998,7 @@ void PushCurrentTypes(void)
     SymbolTable *tab = (SymbolTable *)calloc(1, sizeof(SymbolTable));
 
     tab->next = currentTypes;
+    tab->flags = currentTypes->flags;
     currentTypes = tab;
 }
 

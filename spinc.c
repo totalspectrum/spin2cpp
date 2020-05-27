@@ -501,6 +501,9 @@ doParseFile(const char *name, Module *P, int *is_dup)
     saveCurrentTypes = currentTypes;
     currentTypes = (SymbolTable *)calloc(1, sizeof(*currentTypes));
     currentTypes->next = &P->objsyms;
+    if (LangCaseInSensitive(language)) {
+        currentTypes->flags = SYMTAB_FLAG_NOCASE;
+    }
     AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0, NULL);
     
     if (gl_preprocess) {

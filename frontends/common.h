@@ -668,6 +668,7 @@ void initSpinLexer(int flags);
 // language features
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
 #define LangCaseSensitive(lang) (IsCLang(lang))
+#define LangCaseInSensitive(lang) (!LangCaseSensitive(lang))
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
