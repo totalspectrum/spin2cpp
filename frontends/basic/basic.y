@@ -535,7 +535,7 @@ topitem:
   | BAS_DATA
     {
         AST *list = NewAST(AST_EXPRLIST, $1, NULL);
-        current->bas_data = AddToList(current->bas_data, list);
+        current->bas_data = AddToListEx(current->bas_data, list, &current->bas_data_tail);
     }
   | toplabel topitem
     {
@@ -1255,7 +1255,11 @@ deflist:
   defitem
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   | deflist ',' defitem
-    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+    {
+        AST *list = $1;
+        AST *item = NewAST(AST_EXPRLIST, $3, NULL);
+        $$ = AddToListEx(list, item, (AST **)&list->d.ptr);
+    }
 ;
 
 varexpr:

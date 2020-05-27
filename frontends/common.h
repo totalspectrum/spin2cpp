@@ -337,6 +337,7 @@ struct modulestate {
 
     /* BASIC data section */
     AST *bas_data;
+    AST *bas_data_tail;
     
     /* list of methods */
     Function *functions;

@@ -1601,14 +1601,22 @@ initializer
 
 initializer_list
 	: initializer
-            { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+            {
+                AST *ast = NewAST(AST_EXPRLIST, $1, NULL);
+                $$ = ast;
+            }
         | designation initializer
             {
                 SYNTAX_ERROR("designators not supported yet");
                 $$ = NULL;
             }
 	| initializer_list ',' initializer
-            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+            {
+                AST *list = $1;
+                AST *ast = $3;
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = AddToListEx(list, ast, (AST **)&list->d.ptr);
+            }
         | initializer_list ',' designation initializer
             {
                 SYNTAX_ERROR("designators not supported yet");
