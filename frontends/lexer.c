@@ -103,7 +103,7 @@ strgetc(LexStream *L)
 void strToLex(LexStream *L, const char *s, const char *name, int language)
 {
     if (!L) {
-        current->Lptr = L = malloc(sizeof(*L));
+        current->Lptr = L = (LexStream *)malloc(sizeof(*L));
     }
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
@@ -192,7 +192,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name, int language)
     int c1, c2;
 
     if (!L) {
-        current->Lptr = L = malloc(sizeof(*L));
+        current->Lptr = L = (LexStream *)malloc(sizeof(*L));
     }
     memset(L, 0, sizeof(*L));
     L->ptr = (void *)f;
@@ -284,7 +284,7 @@ lexpeekc(LexStream *L)
 AST *IntegerLabel(AST *num)
 {
     int x = EvalConstExpr(num);
-    char *name = calloc(1, 32);
+    char *name = (char *)calloc(1, 32);
     sprintf(name, "LINE_%d", x);
     return AstIdentifier(name);
 }
@@ -533,7 +533,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         if (!sym) {
             int i;
             int len = strlen(idstr)+1;
-            char *lowerSym = alloca(len);
+            char *lowerSym = (char *)alloca(len);
             for (i = 0; i < len; i++) {
                 lowerSym[i] = tolower(idstr[i]);
             }
@@ -3561,7 +3561,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     if (InDatBlock(L)) {
         int i;
         int len = strlen(idstr)+1;
-        char *lowerSym = alloca(len);
+        char *lowerSym = (char *)alloca(len);
         for (i = 0; i < len; i++) {
             lowerSym[i] = tolower(idstr[i]);
         }

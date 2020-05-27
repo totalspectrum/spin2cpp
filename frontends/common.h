@@ -449,7 +449,7 @@ AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *
 void DeclareFunctionTemplate(Module *P, AST *templ);
 
 /* instantiate a templated function */
-AST *InstantiateTemplateFunction(Module *P, AST *template, AST *call);
+AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
 void DeclareToplevelAnnotation(AST *annotation);
 
