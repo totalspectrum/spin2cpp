@@ -341,7 +341,9 @@ NewModule(const char *fullname, int language)
         P->objsyms.next = &spinReservedWords;
     }
     /* set appropriate case sensititity */
-    P->objsyms.flags |= SYMTAB_FLAG_NOCASE;
+    if (LangCaseInSensitive(language)) {
+        P->objsyms.flags |= SYMTAB_FLAG_NOCASE;
+    }
     /* set up */
     initSymbols(P, language);
     P->body = NULL;

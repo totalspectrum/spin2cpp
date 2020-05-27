@@ -62,7 +62,7 @@ static void ReinitFunction(Function *f, int language)
     f->module = current;
     memset(&f->localsyms, 0, sizeof(f->localsyms));
     f->localsyms.next = &current->objsyms;
-    if (!IsCLang(language)) {
+    if (LangCaseInSensitive(language)) {
         f->localsyms.flags = SYMTAB_FLAG_NOCASE;
     }
 }
