@@ -1,5 +1,5 @@
 Version 4.2.0
-- Added {++cog} to force functions into COG
+- Added {++cog} and {++lut} to force functions into COG or LUT
 - Made ORG in Spin2 fcache the asm
 - Enabled fcache by default for P2
 - Moved P2 FCACHE to second half of LUT

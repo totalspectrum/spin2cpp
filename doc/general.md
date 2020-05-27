@@ -34,23 +34,25 @@ Fcache is a special feature of the compiler whereby small loops are copied from 
 
 Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
 
-## Functions in COG memory
+## Functions in COG or LUT memory
 
-Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in COG memory, where they will execute much more quickly. This must be done with care, because COG memory is a very limited resource.
+Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in the chip's internal memory, where they will execute much more quickly. This must be done with care, because internal memory is a very limited resource.
 
-Only small functions should be placed in COG memory, and these functions should not call any other function.
+Only small functions should be placed in internal memory, and these functions should not call any other function.
 
 ### Spin/Spin2
 
-Place a special comment `{++cog}` after the `PUB` or `PRI` declaration in order to force a method to be placed in COG memory.
+To put a method into COG memory, place a special comment `{++cog}` after the `PUB` or `PRI` declaration of the method.
 ```
   pub {++cog} add(x, y)
     return x+y
 ```
 
+Similarly, to put the method into LUT memory (on the P2 only, obviously) then use the comment `{++lut}`.
+
 ### BASIC
 
-Place the keyword `for` before the function or subroutine's name in its declaration, followed by a string specifying the memory (`"cog"`):
+Place the keyword `for` before the function or subroutine's name in its declaration, followed by a string specifying the memory (`"cog"` or `"lut"`):
 ```
 function for "cog" toupper(c as ubyte) as ubyte
   if c >= asc("a") and c <= asc("z") then
@@ -69,6 +71,7 @@ int add(int x, int y) __attribute__((cog))
   return x+y;
 }
 ```
+Similarly use `__attribute__((lut))` to place the function into LUT memory.
 
 ## Memory Map
 
@@ -82,8 +85,7 @@ Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are le
 
 ### LUT
 
-The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep it free, pass --fcache=0 to the compiler.
-
+The first part of LUT memory (from $200 to $300) is used for any functions explicitly placed into LUT. The LUT memory from $300 to $400 (the second half of LUT) is used for fcache. To keep this area free, pass --fcache=0 to the compiler.
 
 ## Register Usage
 
@@ -93,7 +95,7 @@ Pretty much all of COG RAM is used by the compiler. No specific hardware registe
 
 ### P2
 
-Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The second half of LUT is used for FCACHE; the first half is left free for the application.
+Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The second half of LUT is used for FCACHE; the first half is used by any functions placed into LUT.
 
 `ptra` is used for the stack pointer.
 
