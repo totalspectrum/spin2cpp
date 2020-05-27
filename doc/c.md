@@ -148,9 +148,9 @@ struct {
 ```
 Note that allowing function definitions inside a struct is an extension to C (it is feature of C++).
 
-#### Gotchas with Spin and BASIC classes
+#### Name resolution in Spin and BASIC classes
 
-Because Spin and BASIC are case insensitive languages, all of their identifiers are translated internally to lower case. So a constant like `VGA` in Spin class `sp` would be referenced in C as `sp.vga`.
+Because Spin and BASIC are case insensitive languages, their identifiers may be accessed in a case insensitive way (e.g. `x.Vga`, `x.VGA`, and `x.vga` are all equivalent if `x` is a Spin or BASIC class. It is strongly recommended to be consistent though, because this will avoid confusion for readers who are used to C being a case sensitive language.
 
 #### RESTRICTIONS ON C CLASSES
 
