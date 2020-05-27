@@ -499,7 +499,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     int startColumn = L->colCounter - 1;
     char *idstr;
     int gatherComments = 1;
-    bool forceLower = !gl_caseSensitive;
+    bool forceLower = 0; // !gl_caseSensitive;
 
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
@@ -530,16 +530,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     /* check for reserved words */
     if (InDatBlock(L)) {
         sym = FindSymbol(&pasmWords, idstr);
-        if (!sym) {
-            int i;
-            int len = strlen(idstr)+1;
-            char *lowerSym = alloca(len);
-            for (i = 0; i < len; i++) {
-                lowerSym[i] = tolower(idstr[i]);
-            }
-            lowerSym[i] = 0;
-            sym = FindSymbol(&pasmWords, lowerSym);
-        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
@@ -1889,6 +1879,7 @@ Builtin builtinfuncs[] = {
     { "waitpne", 3, waitpeqBuiltin, "waitpne", "_waitpne", "__builtin_propeller_waitpne", 0, NULL },
 
     { "reboot", 0, rebootBuiltin, "reboot", NULL, NULL, 0, NULL },
+    { "_reboot", 0, rebootBuiltin, "reboot", NULL, NULL, 0, NULL },
 
     { "longfill", 3, memFillBuiltin, "memset", NULL, NULL, 4, NULL },
     { "longmove", 3, memBuiltin, "memmove", NULL, NULL, 4, NULL },
@@ -2258,6 +2249,11 @@ initSpinLexer(int flags)
 {
     int i;
 
+    spinReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
         AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
@@ -2284,17 +2280,17 @@ initSpinLexer(int flags)
     
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
+        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p2_constants[i].name), p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
+            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p1_constants[i].name), p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
+            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
     
@@ -3065,7 +3061,8 @@ InitPasm(int flags)
         modifiers = modifiers_p1;
     }
     
-
+    pasmWords.flags |= SYMTAB_FLAG_NOCASE;
+    
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
         AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
@@ -3151,7 +3148,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     Symbol *sym;
     AST *ast = NULL;
     char *idstr;
-    bool forceLower = !gl_caseSensitive;
+    bool forceLower = 0; // !gl_caseSensitive;
     
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);

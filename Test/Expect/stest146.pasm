@@ -4,25 +4,25 @@ dat
 	org	0
 entry
 
-_geta
+_getA
 	add	ptr__dat__, #8
 	rdlong	result1, ptr__dat__
 	sub	ptr__dat__, #8
-_geta_ret
+_getA_ret
 	ret
 
-_getb
+_getB
 	add	ptr__dat__, #16
 	rdlong	result1, ptr__dat__
 	sub	ptr__dat__, #16
-_getb_ret
+_getB_ret
 	ret
 
-_getc
+_getC
 	add	ptr__dat__, #20
 	rdlong	result1, ptr__dat__
 	sub	ptr__dat__, #20
-_getc_ret
+_getC_ret
 	ret
 
 ptr__dat__

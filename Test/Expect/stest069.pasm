@@ -22,11 +22,11 @@ LR__0003
 _exit_ret
 	ret
 
-_pauseabit
+_PauseABit
 	mov	arg01, imm_40000000_
 	add	arg01, cnt
 	waitcnt	arg01, #0
-_pauseabit_ret
+_PauseABit_ret
 	ret
 
 imm_40000000_

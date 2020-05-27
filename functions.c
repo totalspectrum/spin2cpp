@@ -57,15 +57,18 @@ NumExprItemsOnStack(AST *expr)
 Function *curfunc;
 static int visitPass = 1;
 
-static void ReinitFunction(Function *f)
+static void ReinitFunction(Function *f, int language)
 {
     f->module = current;
     memset(&f->localsyms, 0, sizeof(f->localsyms));
     f->localsyms.next = &current->objsyms;
+    if (!IsCLang(language)) {
+        f->localsyms.flags = SYMTAB_FLAG_NOCASE;
+    }
 }
 
 Function *
-NewFunction(void)
+NewFunction(int language)
 {
     Function *f;
     Function *pf;
@@ -85,7 +88,7 @@ NewFunction(void)
         pf->next = f;
     }
     /* and initialize */
-    ReinitFunction(f);
+    ReinitFunction(f, language);
     return f;
 }
 
@@ -804,7 +807,7 @@ doDeclareFunction(AST *funcblock)
         fdef = (Function *)sym->val;
         oldtype = fdef->overalltype;
     } else {
-        fdef = NewFunction();
+        fdef = NewFunction(language);
         /* define the function symbol itself */
         /* note: static functions may get alias names, so we have to look
          * for an alias and declare under that name; that's what AliasName()
@@ -843,7 +846,7 @@ doDeclareFunction(AST *funcblock)
         // if we get here then we are redefining a previously seen __fromfile
         // ignore the old stub function and start with a fresh one
         // BEWARE: there's some stuff (like fdef->next) we do not want to lose
-        ReinitFunction(fdef);
+        ReinitFunction(fdef, fdef->language);
     }
 
     fdef->name = funcname_internal;
@@ -1567,7 +1570,7 @@ DeclareToplevelAnnotation(AST *anno)
         str += 1;
         ParseDirectives(str);
     } else {
-        f = NewFunction();
+        f = NewFunction(0);
         f->annotations = anno;
     }
 }

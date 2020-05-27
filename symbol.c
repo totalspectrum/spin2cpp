@@ -5,13 +5,6 @@
 #include "symbol.h"
 #include "util/util.h"
 
-#if 0
-/* do case insensitive comparisons */
-#define STRCMP strcasecmp
-#else
-#define STRCMP strcmp
-#endif
-
 /*
  * hash function
  */
@@ -22,7 +15,7 @@ RawSymbolHash(const char *str)
     unsigned c;
 
     while (*str) {
-        c = *str++;
+        c = (*str++) & ~0x20; // ignore case distinction
         hash = hash * 65537;
         hash = hash ^ c;
     }
@@ -43,14 +36,24 @@ FindSymbol(SymbolTable *table, const char *name)
 {
     unsigned hash;
     Symbol *sym;
-
+    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
     hash = SymbolHash(name);
     sym = table->hash[hash];
-    while (sym) {
-        if (!STRCMP(sym->our_name, name)) {
-            return sym;
+
+    if (nocase) {
+        while (sym) {
+            if (!strcasecmp(sym->our_name, name)) {
+                return sym;
+            }
+            sym = sym->next;
         }
-        sym = sym->next;
+    } else {
+        while (sym) {
+            if (!strcmp(sym->our_name, name)) {
+                return sym;
+            }
+            sym = sym->next;
+        }
     }
     /* symbol was not found, give up */
     /* it's up to our caller to look through a containing context */
@@ -170,20 +173,33 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
 {
     unsigned hash;
     Symbol *sym;
+    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
     
     hash = SymbolHash(name);
     sym = table->hash[hash];
-    while (sym) {
-        if (!STRCMP(sym->our_name, name)) {
-            if (sym->kind == SYM_WEAK_ALIAS) {
-                // it's OK to override aliases
-                break;
+    if (nocase) {
+        while (sym) {
+            if (!strcasecmp(sym->our_name, name)) {
+                if (sym->kind == SYM_WEAK_ALIAS) {
+                    // it's OK to override aliases
+                    break;
+                }
+                return NULL;
             }
-            return NULL;
+            sym = sym->next;
         }
-        sym = sym->next;
+    } else {
+        while (sym) {
+            if (!strcmp(sym->our_name, name)) {
+                if (sym->kind == SYM_WEAK_ALIAS) {
+                    // it's OK to override aliases
+                    break;
+                }
+                return NULL;
+            }
+            sym = sym->next;
+        }
     }
-
     if (!sym) {
         sym = NewSymbol();
         sym->next = table->hash[hash];

@@ -4,16 +4,16 @@ dat
 	org	0
 entry
 
-_unpack_x
+_Unpack_x
 	mov	arg02, #0
 	call	#_dounpack_x
-_unpack_x_ret
+_Unpack_x_ret
 	ret
 
-_unpack_m
+_Unpack_m
 	mov	arg02, #1
 	call	#_dounpack_x
-_unpack_m_ret
+_Unpack_m_ret
 	ret
 
 _dounpack_x

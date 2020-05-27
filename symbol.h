@@ -72,7 +72,9 @@ typedef struct symbol {
 typedef struct symtab {
     Symbol *hash[SYMTABLE_HASH_SIZE];
     struct symtab *next;
+    unsigned flags;
 } SymbolTable;
+#define SYMTAB_FLAG_NOCASE 0x01  /* do case insensitive comparisons */
 
 unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);
