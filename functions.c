@@ -786,7 +786,15 @@ doDeclareFunction(AST *funcblock)
         return NULL;
     }
     src = funcdef->left;
-    is_cog = FindAnnotation(annotation, "cog") != 0;
+    is_cog = CODE_PLACE_DEFAULT;
+    if (gl_p2 && FindAnnotation(annotation, "lut") != 0) {
+        is_cog = CODE_PLACE_LUT;
+        gl_have_lut++;
+    } else if (FindAnnotation(annotation, "cog") != 0) {
+        is_cog = CODE_PLACE_COG;
+    } else if (FindAnnotation(annotation, "hub") != 0) {
+        is_cog = CODE_PLACE_HUB;
+    }
     srcname = src->left;
     if (srcname->kind == AST_LOCAL_IDENTIFIER) {
         funcname_internal = srcname->left->d.string;
@@ -854,7 +862,7 @@ doDeclareFunction(AST *funcblock)
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
-    fdef->cog_code = is_cog;
+    fdef->code_placement = is_cog;
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");

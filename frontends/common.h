@@ -104,6 +104,7 @@ extern int gl_p2;      /* set for P2 output */
 # define P2_REV_B 2
 #define DEFAULT_P2_VERSION P2_REV_B
 
+extern int gl_have_lut; /* are there any functions placed in LUT? */
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */
 extern int gl_nospin; /* if set, suppress output of Spin methods */
@@ -258,11 +259,15 @@ typedef struct funcdef {
     Module *module;
 
     /* various flags */
+    unsigned code_placement:2;
+#define CODE_PLACE_DEFAULT 0
+#define CODE_PLACE_HUB 1
+#define CODE_PLACE_COG 2
+#define CODE_PLACE_LUT 3    
     unsigned result_used:1;
     unsigned is_static:1; // nonzero if no member variables referenced
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
-    unsigned cog_code:1;     // 1 if function should always be placed in cog
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken

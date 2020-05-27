@@ -36,6 +36,7 @@
 /* lists of instructions in hub and cog */
 static IRList cogcode;
 static IRList hubcode;
+static IRList lutcode;
 static IRList cogdata;
 static IRList cogbss;
 static IRList hubdata;
@@ -109,6 +110,12 @@ static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int
 static void AssignOneFuncName(Function *f);
 
 static bool IsCogMem(Operand *addr);
+static int InCog(Function *f) {
+    if (f->code_placement == CODE_PLACE_DEFAULT) {
+        return COG_CODE;
+    }
+    return f->code_placement != CODE_PLACE_HUB;
+}
 
 typedef struct AsmVariable {
     Operand *op;
@@ -518,7 +525,7 @@ void ReplaceIRWithInline(IRList *irl, IR *origir, Function *func)
             } else {
                 // make the label kind match the appropriate type
                 // of label for this function
-                if (curfunc->cog_code) {
+                if (InCog(curfunc)) {
                     newir->dst->kind = IMM_COG_LABEL;
                 } else {
                     newir->dst->kind = IMM_HUB_LABEL;
@@ -771,7 +778,7 @@ NewCodeLabel()
 {
   Operand *label;
   const char *id = NewTempLabelName();
-  if (curfunc && !curfunc->cog_code) {
+  if (curfunc && !InCog(curfunc)) {
       label = NewOperand(IMM_HUB_LABEL, id, 0);
   } else {
       label = NewOperand(IMM_COG_LABEL, id, 0);
@@ -792,7 +799,7 @@ NewNamedCodeLabel(const char *id)
       id = temp;
   }
   id = strdup(id);
-  if (curfunc && !curfunc->cog_code) {
+  if (curfunc && !InCog(curfunc)) {
       label = NewOperand(IMM_HUB_LABEL, id, 0);
   } else {
       label = NewOperand(IMM_COG_LABEL, id, 0);
@@ -1519,7 +1526,7 @@ NeedToSaveLocals(Function *func)
     if (gl_output == OUTPUT_COGSPIN) {
         return false;
     }
-    if (func->cog_code) {
+    if (InCog(func)) {
         return false;
     }
     return true;
@@ -1575,7 +1582,7 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     EmitLabel(irl, FuncData(func)->asmname);
 
     // push return address, if we are in cog mode
-    if (func->is_recursive && func->cog_code && !gl_p2) {
+    if (func->is_recursive && InCog(func) && !gl_p2) {
         EmitPush(irl, FuncData(func)->asmretname);
     }
     
@@ -1656,7 +1663,7 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             }
         }
     }
-    if (func->is_recursive && func->cog_code && !gl_p2) {
+    if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;
         EmitPop(irl, FuncData(func)->asmretname);
         // WARNING: 
@@ -3255,8 +3262,8 @@ CompileCoginit(IRList *irl, AST *expr)
             ERROR(expr, "coginit/cognew of Spin objects is not permitted from COG code");
             return OPERAND_DUMMY;
         }
-        if (remote && remote->cog_code) {
-            ERROR(expr, "Coginit target must be in hub memory. Try compiling with --code=hub.");
+        if (remote && InCog(remote)) {
+            ERROR(expr, "Coginit target must be in hub memory.");
             return OPERAND_DUMMY;
         }
         
@@ -4699,10 +4706,11 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 
 #define VISITFLAG_COMPILEIR_COG 0x01230000
 #define VISITFLAG_COMPILEIR_HUB 0x01230001
-#define VISITFLAG_FUNCNAMES     0x01230002
-#define VISITFLAG_COMPILEFUNCS  0x01230003
-#define VISITFLAG_EXPANDINLINE  0x01230004
-#define VISITFLAG_EMITDAT       0x01230005
+#define VISITFLAG_COMPILEIR_LUT 0x01230002
+#define VISITFLAG_FUNCNAMES     0x01230008
+#define VISITFLAG_COMPILEFUNCS  0x01230009
+#define VISITFLAG_EXPANDINLINE  0x0123000a
+#define VISITFLAG_EMITDAT       0x0123000b
 
 typedef void (*VisitorFunc)(IRList *irl, Module *P);
 
@@ -4807,14 +4815,17 @@ AssignOneFuncName(Function *f)
         // at one time we also forced the global module stuff into
         // COG memory, so we still have the capability to put code
         // into COG on a per-function basis; may be useful later
-        if (COG_CODE) {
-            // force everything into cog code
-            f->cog_code = 1;
+        if (f->code_placement == CODE_PLACE_DEFAULT) {
+            if (COG_CODE) {
+                f->code_placement = CODE_PLACE_COG;
+            } else {
+                f->code_placement = CODE_PLACE_HUB;
+            }
         }
         fname = IdentifierModuleName(P, f->name);
 	frname = (char *)malloc(strlen(fname) + 5);
 	sprintf(frname, "%s_ret", fname);
-        if (gl_output == OUTPUT_COGSPIN && f->cog_code && f->is_public) {
+        if (gl_output == OUTPUT_COGSPIN && InCog(f) && f->is_public) {
             faltname = (char *)malloc(strlen(fname) + 6);
             sprintf(faltname, "pasm%s", fname);
         } else {
@@ -4829,13 +4840,13 @@ AssignOneFuncName(Function *f)
         // figure out calling convention
         if (0 && f->local_address_taken) {
             FuncData(f)->convention = STACK_CALL;
-        } else if (f->cog_code) {
+        } else if (InCog(f)) {
             FuncData(f)->convention = FAST_CALL;
         } else {
             FuncData(f)->convention = FAST_CALL; // default
         }
 
-        if (f->cog_code) {
+        if (InCog(f)) {
             FuncData(f)->asmname = NewOperand(IMM_COG_LABEL, fname, 0);
             FuncData(f)->asmretname = NewOperand(IMM_COG_LABEL, frname, 0);
             if (fentername) {
@@ -5008,7 +5019,13 @@ CompileToIR_internal(IRList *irl, Module *P)
     Function *save = curfunc;
     int docog;
 
-    docog = (P->visitflag == VISITFLAG_COMPILEIR_COG) ? 1 : 0;
+    if (P->visitflag == VISITFLAG_COMPILEIR_COG) {
+        docog = CODE_PLACE_COG;
+    } else if (P->visitflag == VISITFLAG_COMPILEIR_LUT) {
+        docog = CODE_PLACE_LUT;
+    } else {
+        docog = CODE_PLACE_HUB;
+    }
     
     // emit output for P
     for(f = P->functions; f; f = f->next) {
@@ -5029,7 +5046,7 @@ CompileToIR_internal(IRList *irl, Module *P)
             }
         }
         // only do cog or hub
-        if (f->cog_code != docog) {
+        if (f->code_placement != docog) {
             continue;
         }
         curfunc = f;
@@ -5045,6 +5062,15 @@ CompileToIR_cog(IRList *irl, Module *P)
     // and generate real output
     VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_COG);
     
+    return gl_errors == 0;
+}
+bool
+CompileToIR_lut(IRList *irl, Module *P)
+{
+    if (gl_have_lut) {
+        // and generate real output
+        VisitRecursive(irl, P, CompileToIR_internal, VISITFLAG_COMPILEIR_LUT);
+    }
     return gl_errors == 0;
 }
 bool
@@ -5680,7 +5706,7 @@ EmitMain_P1(IRList *irl, Module *P)
         }
     }
 
-    if (firstfunc->cog_code || COG_CODE) {
+    if (InCog(firstfunc)) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_HUB_LABEL, firstfuncname, 0));
@@ -5721,7 +5747,7 @@ EmitMain_P1(IRList *irl, Module *P)
 }
 
 static void
-EmitMain_P2(IRList *irl, Module *P)
+EmitMain_P2(IRList *irl, Module *P, Operand *lutstart)
 {
     Function *firstfunc;
     const char *firstfuncname;
@@ -5785,7 +5811,13 @@ EmitMain_P2(IRList *irl, Module *P)
     EmitOp1(irl, OPC_ORGF, NewImmediate(32));
     
     EmitLabel(irl, skip_clock_label);
-    if (firstfunc->cog_code || COG_CODE) {
+    // force LUT code, if any, to be loaded
+    if (lutstart) {
+        ir = EmitOp2(irl, OPC_MOV, pa_reg, lutstart);
+        EmitOp1(irl, OPC_SETQ2, NewImmediate(255));
+        EmitOp2(irl, OPC_RDLONG, NewOperand(REG_HW, "0", 0), pa_reg);
+    }
+    if (InCog(firstfunc)) {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_COG_LABEL, firstfuncname, 0));
     } else {
         EmitOp1(irl, OPC_CALL, NewOperand(IMM_HUB_LABEL, firstfuncname, 0));
@@ -6000,6 +6032,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     Module *save;
     IR *orgh = NULL;
     Operand *entrylabel = NewOperand(IMM_COG_LABEL, ENTRYNAME, 0);
+    Operand *lutstart = NULL;
     Operand *cog_bss_start = NewOperand(IMM_COG_LABEL, "COG_BSS_START", 0);
     bool emitSpinCode = true;
     
@@ -6106,11 +6139,16 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     if (emitSpinCode) {
         // output the main stub
         EmitLabel(&cogcode, entrylabel);
+        if (gl_have_lut) {
+            lutstart = NewOperand(STRING_DEF, "lutentry", 0);
+            EmitOp1(&lutcode, OPC_ORG, NewImmediate(0x200));
+            EmitLabel(&lutcode, lutstart);
+        }
         if (gl_output == OUTPUT_COGSPIN) {
             EmitMain_CogSpin(&cogcode, P, maxargs, maxrets);
         } else if (outputMain) {
             if (gl_p2) {
-                EmitMain_P2(&cogcode, P);
+                EmitMain_P2(&cogcode, P, lutstart);
             } else {
                 EmitMain_P1(&cogcode, P);
             }
@@ -6119,6 +6157,9 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         CompileIntermediate(P);
         // compile COG functions
         if (!CompileToIR_cog(&cogcode, P)) {
+            return;
+        }
+        if (!CompileToIR_lut(&lutcode, P)) {
             return;
         }
 
@@ -6160,6 +6201,7 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
 
     if (emitSpinCode) {
+        AppendIR(&cogcode, lutcode.head);
         AppendIR(&cogcode, hubcode.head);
 
         // we have to optimize all code before emitting any variables
@@ -6178,7 +6220,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             EmitNamedCogLabel(&cogbss, "LMM_FCACHE_END");
         }
     }
-    
+
+    // add LUT checks
+    if (gl_have_lut) {
+        EmitOp1(&lutcode, OPC_FIT, NewImmediate(0x300));
+    }
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
@@ -6217,11 +6263,19 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
 
     if (emitSpinCode) {
+        int cog_limit;
+        Operand *limitop;
+        if (gl_p2) {
+            cog_limit = 480;
+        } else {
+            cog_limit = 496;
+        }
+        limitop = NewImmediate(cog_limit);
         // now insert the cog data after the cog code, before the orgh
         EmitLabel(&cogdata, cog_bss_start);
-        EmitOp0(&cogdata, OPC_FIT);
+        EmitOp1(&cogdata, OPC_FIT, limitop);
     
-        EmitOp0(&cogbss, OPC_FIT);
+        EmitOp1(&cogbss, OPC_FIT, limitop);
         if (orgh) {
             InsertAfterIR(&cogcode, orgh->prev, cogdata.head);
         }

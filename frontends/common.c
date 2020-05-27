@@ -41,6 +41,7 @@ Module *globalModule;
 SymbolTable *currentTypes;
 
 int gl_p2;
+int gl_have_lut;
 int gl_errors;
 int gl_output;
 int gl_outputflags;

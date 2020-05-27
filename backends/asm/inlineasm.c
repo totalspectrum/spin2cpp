@@ -12,7 +12,7 @@ GetLabelOperand(const char *name)
         name = IdentifierLocalName(curfunc, name);
     }
 #endif    
-    if (curfunc && !curfunc->cog_code) {
+    if (curfunc && curfunc->code_placement == CODE_PLACE_HUB) {
         op = NewOperand(IMM_HUB_LABEL, name, 0);
     } else {
         op = NewOperand(IMM_COG_LABEL, name, 0);
