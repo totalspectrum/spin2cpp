@@ -6201,7 +6201,11 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
 
     if (emitSpinCode) {
-        AppendIR(&cogcode, lutcode.head);
+        // add LUT checks
+        if (gl_have_lut) {
+            EmitOp1(&lutcode, OPC_FIT, NewImmediate(0x300));
+            AppendIR(&hubcode, lutcode.head);
+        }
         AppendIR(&cogcode, hubcode.head);
 
         // we have to optimize all code before emitting any variables
@@ -6221,10 +6225,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
         }
     }
 
-    // add LUT checks
-    if (gl_have_lut) {
-        EmitOp1(&lutcode, OPC_FIT, NewImmediate(0x300));
-    }
     // we need to emit all dat sections
     VisitRecursive(&hubdata, P, EmitDatSection, VISITFLAG_EMITDAT);
     VisitRecursive(&hubdata, globalModule, EmitDatSection, VISITFLAG_EMITDAT);
