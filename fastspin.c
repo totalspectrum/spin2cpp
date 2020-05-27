@@ -225,7 +225,7 @@ main(int argc, const char **argv)
         while (nameRoot > gl_progname && nameRoot[-1] != '/' && nameRoot[-1] != '\\') --nameRoot;
         if (nameRoot > gl_progname) {
             n = nameRoot - gl_progname;
-            default_include = malloc(n + 32);
+            default_include = (char *)malloc(n + 32);
             strncpy(default_include, gl_progname, n);
             strcpy(default_include+n, "../include");
             pp_add_to_path(&gl_pp, default_include);

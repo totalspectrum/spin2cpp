@@ -363,7 +363,7 @@ EnterConstant(const char *name, AST *expr)
             int32_t origval;
             int32_t newval;
 
-            origval = EvalConstExpr(sym->val);
+            origval = EvalConstExpr((AST *)sym->val);
             newval = EvalConstExpr(expr);
             if (origval != newval) {
                 ERROR(expr, "Redefining %s with a different value", name);
@@ -995,7 +995,7 @@ CheckYield(AST *body)
 /* push/pop current type symbols */
 void PushCurrentTypes(void)
 {
-    SymbolTable *tab = calloc(1, sizeof(SymbolTable));
+    SymbolTable *tab = (SymbolTable *)calloc(1, sizeof(SymbolTable));
 
     tab->next = currentTypes;
     currentTypes = tab;

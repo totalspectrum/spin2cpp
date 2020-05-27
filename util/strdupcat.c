@@ -5,7 +5,7 @@
 char *strdupcat(const char *a, const char *b)
 {
     size_t len = strlen(a) + strlen(b);
-    char *c = malloc(len+1);
+    char *c = (char *)malloc(len+1);
     strcpy(c, a);
     strcat(c, b);
     return c;

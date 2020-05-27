@@ -337,6 +337,7 @@ struct modulestate {
 
     /* BASIC data section */
     AST *bas_data;
+    AST *bas_data_tail;
     
     /* list of methods */
     Function *functions;
@@ -449,7 +450,7 @@ AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *
 void DeclareFunctionTemplate(Module *P, AST *templ);
 
 /* instantiate a templated function */
-AST *InstantiateTemplateFunction(Module *P, AST *template, AST *call);
+AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
 void DeclareToplevelAnnotation(AST *annotation);
 
@@ -666,6 +667,7 @@ void initSpinLexer(int flags);
 
 // language features
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
+#define LangCaseSensitive(lang) (IsCLang(lang))
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);

@@ -1386,6 +1386,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
             if (ast && ast->kind != AST_INTTYPE && ast->kind != AST_UNSIGNEDTYPE) {
                 basedst = CompileIdentifierForFunc(irl, ast, func);
             } else {
+                basedst = NULL;
                 size = 0;
             }
             for (i = 0; i < size; i++) {

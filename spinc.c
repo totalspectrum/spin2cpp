@@ -137,7 +137,7 @@ InitGlobalModule(void)
             syscode = (const char *)sys_p1_code_spin;
         }
         gl_normalizeIdents = 0;
-        globalModule->Lptr = calloc(sizeof(*globalModule->Lptr), 1);
+        globalModule->Lptr = (LexStream *)calloc(sizeof(*globalModule->Lptr), 1);
         globalModule->Lptr->flags |= LEXSTREAM_FLAG_NOSRC;
         strToLex(globalModule->Lptr, syscode, "_system_", LANG_SPIN_SPIN1);
         spinyyparse();
@@ -218,7 +218,7 @@ InferTypeFromName(AST *identifier)
             if (sym->kind != SYM_CONSTANT) {
                 ERROR(identifier, "bad default type information");
             } else {
-                typemask = EvalConstExpr(sym->val);
+                typemask = EvalConstExpr((AST *)sym->val);
             }
             if (typemask & checkmask) {
                 return ast_type_float;
@@ -499,9 +499,8 @@ doParseFile(const char *name, Module *P, int *is_dup)
     }
     current = P;
     saveCurrentTypes = currentTypes;
-    currentTypes = calloc(1, sizeof(*currentTypes));
+    currentTypes = (SymbolTable *)calloc(1, sizeof(*currentTypes));
     currentTypes->next = &P->objsyms;
-
     AddSymbol(&P->objsyms, fname, SYM_FILE, (void *)0, NULL);
     
     if (gl_preprocess) {

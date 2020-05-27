@@ -1,10 +1,11 @@
 Version 4.2.0
 - Added {++cog} to force functions into COG
 - Made ORG in Spin2 fcache the asm
-- Changed symbol resolution so Spin symbols are case insensitive in C
-- Moved P2 FCACHE to second half of LUT
-- Accepted large addresses for jump instructions in inline assembly.
 - Enabled fcache by default for P2
+- Moved P2 FCACHE to second half of LUT
+- Changed symbol resolution so Spin symbols are case insensitive in C
+- Dramatically improved parsing of large initializer lists
+- Accepted large addresses for jump instructions in inline assembly.
 - Fixed C builtin function definitions for _wypin, _wrpin, etc.
 - Fixed some cases where user code might be optimized when it shouldn't
 - Used ZEROX/SIGNX for sign extension on P2
