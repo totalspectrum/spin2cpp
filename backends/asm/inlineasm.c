@@ -432,7 +432,8 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     unsigned relpc;
     IR *firstir;
     IR *fcache = NULL;
-    IR *startlabel, *endlabel;
+    IR *startlabel = NULL;
+    IR *endlabel = NULL;
     Operand *enddst, *startdst;
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     
