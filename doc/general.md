@@ -50,9 +50,9 @@ Place a special comment `{++cog}` after the `PUB` or `PRI` declaration in order 
 
 ### BASIC
 
-Place the keyword `cpu` before the function or subroutine's name in its declaration:
+Place the keyword `for` before the function or subroutine's name in its declaration, followed by a string specifying the memory (`"cog"`):
 ```
-function cpu toupper(c as ubyte) as ubyte
+function for "cog" toupper(c as ubyte) as ubyte
   if c >= asc("a") and c <= asc("z") then
     c = c + (asc("A") - asc("a"))
   end if

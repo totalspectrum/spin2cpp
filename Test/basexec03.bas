@@ -1,4 +1,4 @@
-function cpu toupper(c as ubyte) as ubyte
+function for "cog" toupper(c as ubyte) as ubyte
   if c >= asc("a") and c <= asc("z") then
     c = c + (asc("A") - asc("a"))
   end if

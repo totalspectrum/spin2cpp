@@ -1633,10 +1633,10 @@ endfunc:
 attributes:
   /* empty */
     { $$ = 0; }
-  | BAS_CPU
+  | BAS_FOR BAS_STRING
     {
-        AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
-        ast->d.string = "cog";
+        AST *ast = $2;
+        ast->kind = AST_ANNOTATION;
         $$ = ast;
     }
 ;
