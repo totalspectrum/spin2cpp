@@ -540,7 +540,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     int is_union;
     int is_class;
     const char *name;
-    char *typename;
+    char *typname;
     Module *C;
     SymbolTable *symtable = currentTypes; // &P->objsyms;
     Symbol *sym;
@@ -568,37 +568,37 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         return NULL;
     }
     name = identifier->d.string;
-    typename = malloc(strlen(name)+16);
-    strcpy(typename, "__struct_");
-    strcat(typename, name);
+    typname = (char *)malloc(strlen(name)+16);
+    strcpy(typname, "__struct_");
+    strcat(typname, name);
 
     /* see if there is already a type with that name */
-    sym = LookupSymbolInTable(symtable, typename);
+    sym = LookupSymbolInTable(symtable, typname);
     if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
         if (!IsClassType(class_type)) {
-            SYNTAX_ERROR("%s is not a class", typename);
+            SYNTAX_ERROR("%s is not a class", typname);
             return NULL;
         }
-        C = class_type->d.ptr;
+        C = (Module *)class_type->d.ptr;
         if (C->isUnion != is_union) {
-            SYNTAX_ERROR("Inconsistent use of union/struct for %s", typename);
+            SYNTAX_ERROR("Inconsistent use of union/struct for %s", typname);
         }
         C->Lptr = current->Lptr;
     } else {
         if (body && body->kind == AST_STRING) {
-            class_type = NewAbstractObject(AstIdentifier(typename), body);
+            class_type = NewAbstractObject(AstIdentifier(typname), body);
             current->objblock = AddToList(current->objblock, class_type);
             body = NULL;
             C = NULL;
         } else {
-            C = NewModule(typename, LANG_CFAMILY_C);
+            C = NewModule(typname, LANG_CFAMILY_C);
             C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
-            class_type = NewAbstractObject(AstIdentifier(typename), NULL);
+            class_type = NewAbstractObject(AstIdentifier(typname), NULL);
             class_type->d.ptr = C;
-            AddSymbol(symtable, typename, SYM_TYPEDEF, class_type, NULL);
+            AddSymbol(symtable, typname, SYM_TYPEDEF, class_type, NULL);
             AddSubClass(P, C);
         }
     }

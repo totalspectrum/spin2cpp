@@ -720,8 +720,8 @@ assign_statement:
         AST *assign = $1;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x1) ) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x1) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
@@ -732,8 +732,8 @@ assign_statement:
         AST *assign = $2;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x2) ) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x2) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
@@ -859,8 +859,8 @@ inputitem:
   varexpr
     {
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x4)) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x4)) {
             MaybeDeclareMemberVar(current, $1, NULL, 0);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
@@ -1054,9 +1054,9 @@ forstmt:
       AST *declare;
       AST *loop;
       Symbol *sym = GetExplicitDeclares();
-      int explicit = EvalConstExpr(sym->val);
+      int explicit_flag = EvalConstExpr((AST *)sym->val);
 
-      if (0 == (explicit & 0x8)) {
+      if (0 == (explicit_flag & 0x8)) {
           /* create a WEAK definition for ident (it will not override any existing definition) */
           declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
       } else {
