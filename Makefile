@@ -48,7 +48,7 @@ DEFS=-DFLEXSPIN_BUILD
 #
 # note: to produce detailed debug, use YACC="bison --report=all"
 YACC = bison
-CFLAGS = -g -Og -Wall $(INC) $(DEFS)
+CFLAGS = -g -Wall $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
