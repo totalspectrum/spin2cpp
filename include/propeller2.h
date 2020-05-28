@@ -156,22 +156,12 @@ void      _pinf(int pin);
 int       _pinr(int pin);
 
 /* smart pin controls */
-#ifdef __FLEXC__
-#define _wrpin(pin, val) __builtin_propeller_wrpin(val, pin)
-#define _wxpin(pin, val) __builtin_propeller_wxpin(val, pin)
-#define _wypin(pin, val) __builtin_propeller_wypin(val, pin)
-#define _akpin(pin)      __builtin_propeller_akpin(pin)
-#define _rdpin(pin)      __builtin_propeller_rdpin(pin)
-#define _rqpin(pin)      __builtin_propeller_rqpin(pin)
-
-#else
 void      _wrpin(int pin, uint32_t val);
 void      _wxpin(int pin, uint32_t val);
 void      _wypin(int pin, uint32_t val);
 void      _akpin(int pin);
 uint32_t  _rdpin(int pin);
 uint32_t  _rqpin(int pin);
-#endif
 
 /* access to previously set clock mode and frequency */
 extern uint32_t _clockfreq(void);

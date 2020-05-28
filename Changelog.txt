@@ -10,6 +10,7 @@ Version 4.2.0
 - Fixed some cases where user code might be optimized when it shouldn't
 - Used ZEROX/SIGNX for sign extension on P2
 - Improved warning messages for indirect jumps
+- Reduced namespace clutter (accidental Spin influences) in C and BASIC
 
 Version 4.1.11
 - Made _rxraw more forgiving (but slower) in P1

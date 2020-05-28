@@ -122,17 +122,17 @@ pri _setbaud(baudrate) | bitperiod, bit_mode
   _dirl(_rxpin)
   _bitcycles := bitperiod
   bit_mode := 7 + (bitperiod << 16)
-  wrpin(_txpin, _txmode)
-  wxpin(_txpin, bit_mode)
-  wrpin(_rxpin, _rxmode)
-  wxpin(_rxpin, bit_mode)
+  _wrpin(_txpin, _txmode)
+  _wxpin(_txpin, bit_mode)
+  _wrpin(_rxpin, _rxmode)
+  _wxpin(_rxpin, bit_mode)
   _dirh(_txpin)
   _dirh(_rxpin)
   
 pri _txraw(c) | z
   if _bitcycles == 0
     _setbaud(230_400)
-  wypin(_txpin, c)
+  _wypin(_txpin, c)
   _waitx(1)
   repeat
     z := _pinr(_txpin)
@@ -143,9 +143,9 @@ pri _rxraw : rxbyte = long | z
   if _bitcycles == 0
     _setbaud(230_400)
   rxbyte := -1
-  z := pinr(_rxpin)
+  z := _pinr(_rxpin)
   if z
-    rxbyte := rdpin(_rxpin)>>24
+    rxbyte := _rdpin(_rxpin)>>24
 
 pri _call_method(o, f, x=0) | r
   asm
@@ -160,130 +160,118 @@ pri _call_method(o, f, x=0) | r
   endasm
   return r
   
-pri __builtin_propeller_dirl(pin)
+pri _dirl(pin)
   asm
     dirl pin
   endasm
-pri __builtin_propeller_dirh(pin)
+pri _dirh(pin)
   asm
     dirh pin
   endasm
-pri __builtin_propeller_dirnot(pin)
+pri _dirnot(pin)
   asm
     dirnot pin
   endasm
-pri __builtin_propeller_dirrnd(pin)
+pri _dirrnd(pin)
   asm
     dirrnd pin
   endasm
-pri __builtin_propeller_dir(pin, c)
+pri _dirw(pin, c)
   asm
     test   c,#1 wc
     dirc pin
   endasm
 
-pri __builtin_propeller_drvl(pin)
+pri _drvl(pin)
   asm
     drvl pin
   endasm
-pri __builtin_propeller_drvh(pin)
+pri _drvh(pin)
   asm
     drvh pin
   endasm
-pri __builtin_propeller_drvnot(pin)
+pri _drvnot(pin)
   asm
     drvnot pin
   endasm
-pri __builtin_propeller_drvrnd(pin)
+pri _drvrnd(pin)
   asm
     drvnot pin
   endasm
-pri __builtin_propeller_drv(pin, c)
+pri _drvw(pin, c)
   asm
     test   c,#1 wc
     drvc pin
   endasm
 
-pri __builtin_propeller_outl(pin)
+pri _outl(pin)
   asm
     outl pin
   endasm
-pri __builtin_propeller_outh(pin)
+pri _outh(pin)
   asm
     outh pin
   endasm
-pri __builtin_propeller_outnot(pin)
+pri _outnot(pin)
   asm
     outnot pin
   endasm
-pri __builtin_propeller_outrnd(pin)
+pri _outrnd(pin)
   asm
     outnot pin
   endasm
-pri __builtin_propeller_out(pin, c)
+pri _out(pin, c)
   asm
     test   c,#1 wc
     outc pin
   endasm
 
-pri __builtin_propeller_fltl(pin)
+pri _fltl(pin)
   asm
     fltl pin
   endasm
-pri __builtin_propeller_flth(pin)
+pri _flth(pin)
   asm
     flth pin
   endasm
-pri __builtin_propeller_fltnot(pin)
+pri _fltnot(pin)
   asm
     fltnot pin
   endasm
-pri __builtin_propeller_fltrnd(pin)
+pri _fltrnd(pin)
   asm
     fltnot pin
   endasm
-pri __builtin_propeller_flt(pin, val)
+pri _fltw(pin, val)
   asm
     test   val,#1 wc
     fltc pin
   endasm
 
-pri __builtin_propeller_pinr(pin) : val
+pri _pinr(pin) : val
   asm
     testp   pin wc
     wrc val
   endasm
   
-pri __builtin_propeller_wrpin(val, pin)
-  asm
-    wrpin val, pin
-  endasm
-pri __builtin_propeller_wxpin(val, pin)
-  asm
-    wxpin val, pin
-  endasm
-pri __builtin_propeller_wypin(val, pin)
-  asm
-    wypin val, pin
-  endasm
-pri __builtin_propeller_waitx(tim)
+pri _waitx(tim)
   asm
     waitx tim
   endasm
 
-pri __builtin_propeller_cogatn(mask)
+pri _cogatn(mask)
   asm
     cogatn mask
   endasm
-pri __builtin_propeller_rdpin(pin) : r
+pri _rdpin(pin) : r
   asm
     rdpin r, pin
   endasm
-pri __builtin_propeller_rqpin(pin) : r
+pri _rqpin(pin) : r
   asm
     rqpin r, pin
   endasm
-pri __builtin_propeller_akpin(pin)
+pri _akpin(pin)
   asm
     akpin pin
   endasm
@@ -333,7 +321,7 @@ pri _pinclear(pin)
     wrpin #0, pin
   endasm
   
-' versions of smartpin instructions with the Spin order of parameters
+' NOTE: the order of parameters is reversed from the instruction
 pri _wrpin(pin, val)
   asm
     wrpin val, pin
