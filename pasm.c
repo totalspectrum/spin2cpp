@@ -426,7 +426,11 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 static bool
 IsJmpRetInstruction(AST *ast)
 {
-    if (ast && ast->kind == AST_COMPRESS_INSTR) {
+    while (ast && ast->kind == AST_COMMENT) {
+        ast = ast->right;
+    }
+    if (!ast) return false;
+    if (ast->kind == AST_COMPRESS_INSTR) {
         ast = ast->left;
     }
     if (ast && ast->kind == AST_INSTR) {
