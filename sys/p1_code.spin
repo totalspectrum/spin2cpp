@@ -156,6 +156,16 @@ pri _call_method(o, f, x=0) | r
   endasm
   return r
 
+pri _fltl(pin) | mask
+  mask := 1<<pin
+  dira &= !mask
+  outa &= !mask
+  
+pri _flth(pin) | mask
+  mask := 1<<pin
+  dira &= !mask
+  outa |= mask
+
 pri _dirl(pin) | mask
   mask := 1<<pin
   dira &= !mask
