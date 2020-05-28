@@ -70,7 +70,7 @@ pri _clkset(mode, freq) | oldmode, xsel
   xsel := mode & 3
   if xsel == 0 and mode > 1
     xsel := 3
-  oldmode := clkmode & !3  ' remove low bits, if any
+  oldmode := __clkmode_var & !3  ' remove low bits, if any
   __clkfreq_var := freq
   __clkmode_var := mode
   mode := mode & !3
