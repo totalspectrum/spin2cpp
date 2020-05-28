@@ -296,6 +296,10 @@ pri _waitms(m=long)
 pri _waitus(m=long)
   _waitx(m * (__clkfreq_var / 1000000))
 
+'' alias for _fltl
+pri _pinf(p)
+  _fltl(p)
+  
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
 
