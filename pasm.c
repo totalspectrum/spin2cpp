@@ -424,14 +424,14 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 #define MARK_COG(label_flags) label_flags &= ~LABEL_IN_HUB
 
 static bool
-IsRetInstruction(AST *ast)
+IsJmpRetInstruction(AST *ast)
 {
     if (ast && ast->kind == AST_COMPRESS_INSTR) {
         ast = ast->left;
     }
     if (ast && ast->kind == AST_INSTR) {
         Instruction *instr = (Instruction *)ast->d.ptr;
-        if (instr && instr->opc == OPC_RET && !gl_p2) {
+        if (instr && (instr->opc == OPC_RET || instr->opc == OPC_JMPRET) && !gl_p2) {
             return true;
         }
     }
@@ -501,7 +501,7 @@ DeclareLabels(Module *P)
                 ALIGNPC(4);
             }
             /* check to see if the following instruction is a "ret" */
-            if (!gl_p2 && IsRetInstruction(ast->left)) {
+            if (!gl_p2 && IsJmpRetInstruction(ast->left)) {
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags | LABEL_HAS_JMP);
             } else {
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
