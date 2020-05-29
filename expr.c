@@ -2458,6 +2458,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_VARIABLE:
             return (AST *)sym->val;
         case SYM_CONSTANT:
+        case SYM_FLOAT_CONSTANT:
             return ExprTypeRelative(table, (AST *)sym->val, P);
         case SYM_ALIAS:
             typexpr = (AST *)sym->val;

@@ -9,6 +9,7 @@ Version 4.2.0
 - Fixed C builtin function definitions for _wypin, _wrpin, etc.
 - Fixed some cases where user code might be optimized when it shouldn't
 - Used ZEROX/SIGNX for sign extension on P2
+- Improved handling of floating point constants
 - Improved warning messages for indirect jumps
 - Reduced namespace clutter (accidental Spin influences) in C and BASIC
 
