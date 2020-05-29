@@ -1442,6 +1442,9 @@ AST *CheckTypes(AST *ast)
             }
             AstReportAs(ast, &saveinfo);
             ltype = ExprType(ast);
+            if (!ltype && sym->kind == SYM_HWREG) {
+                ltype = ast_type_unsigned_long;
+            }
             // if this is a REFTYPE then dereference it
             if (ltype && IsRefType(ltype)) {
                 AST *deref;
