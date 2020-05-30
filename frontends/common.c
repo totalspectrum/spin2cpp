@@ -1085,14 +1085,14 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
     }
             
     if (decl->kind == AST_TYPEDEF) {
-        AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
+        AddSymbolPlaced(table, name, SYM_TYPEDEF, decl->left, NULL, decl);
         return NULL;
     } else {
         const char *oldname = name;
         const char *newName = NewTemporaryVariable(oldname);
         AST *newIdent = AstIdentifier(newName);
 
-        AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
+        AddSymbolPlaced(table, oldname, SYM_REDEF, (void *)newIdent, newName, decl);
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
             RemapIdentifiers(restOfList, newIdent, name);
@@ -1154,7 +1154,7 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
         ERROR(ident, "Redefining %s", userName);
         return;
     }
-    AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
+    AddSymbolPlaced(&P->objsyms, name, SYM_ALIAS, expr, NULL, ident);
 }
 
 // Declare typed global variables
@@ -1349,7 +1349,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         if (olddef) {
             ERROR(ident, "Redefining symbol %s", user_name);
         }
-        AddSymbol(currentTypes, name, SYM_TYPEDEF, type, NULL);
+        AddSymbolPlaced(currentTypes, name, SYM_TYPEDEF, type, NULL, ident);
         return;
     }
     if (olddef) {
@@ -1558,4 +1558,14 @@ DeclareMemberVariables(Module *P)
         P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
         P->pendingvarblock = NULL;
     }
+}
+
+
+Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def)
+{
+    Symbol *sym = AddSymbol(table, name, type, val, user_name);
+    if (sym) {
+        sym->def = (void *)def;
+    }
+    return sym;
 }

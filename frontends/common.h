@@ -765,6 +765,9 @@ Module *GetTopLevelModule(void);
 // returns non-zero if a variable of type typ must go on the stack
 int TypeGoesOnStack(AST *typ);
 
+// declare a symbol together with a location of its definition
+Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;

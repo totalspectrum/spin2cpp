@@ -111,7 +111,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         return NULL;
     }
     
-    sym = AddSymbol(stab, name, kind, (void *)type, username);
+    sym = AddSymbolPlaced(stab, name, kind, (void *)type, username, astname);
     if (!sym) {
         ERROR(astname, "duplicate definition for %s", username);
     } else {
@@ -527,7 +527,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
         /* this case may be obsolete now */
         name = ast->left;
         ident = ast->right;
-        AddSymbol(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL);
+        AddSymbolPlaced(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL, ast);
         AstNullify(ast);
         return;
     case AST_GLOBALVARS:
@@ -821,7 +821,7 @@ doDeclareFunction(AST *funcblock)
          * for an alias and declare under that name; that's what AliasName()
          * does
          */
-        sym = AddSymbol(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user);
+        sym = AddSymbolPlaced(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user, funcdef);
         if (!is_public) {
             sym->flags |= SYMF_PRIVATE;
         }
@@ -898,7 +898,7 @@ doDeclareFunction(AST *funcblock)
     if (!src->right || src->right->kind == AST_RESULT) {
         if (IsSpinLang(language)) {
             fdef->resultexpr = AstIdentifier("result");
-            AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL);
+            AddSymbolPlaced(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL, src);
         } else {
             fdef->resultexpr = AstIdentifier("__result");
             AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL, NULL);
@@ -912,7 +912,7 @@ doDeclareFunction(AST *funcblock)
             resultexpr = resultexpr->right;
         }
         if (resultexpr->kind == AST_IDENTIFIER) {
-            AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL);
+            AddSymbolPlaced(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL, resultexpr);
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
             int count;
@@ -2759,7 +2759,11 @@ DeclareFunctionTemplate(Module *P, AST *templ)
     /* check for existing definition */
     sym = FindSymbol(&P->objsyms, name_internal);
     if (sym) {
-      ERROR(templ, "Redefining symbol %s", name_user);
+        AST *olddef = (AST *)sym->def;
+        ERROR(templ, "Redefining symbol %s", name_user);
+        if (olddef) {
+            ERROR(olddef, "...previous definition was here");
+        }
     }
     /* create */
     sym = AddSymbol(&P->objsyms, name_internal, SYM_TEMPLATE, (void *)templ, name_user);

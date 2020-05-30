@@ -117,7 +117,11 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     if (sym) {
         // redefining a label with the exact same values is OK
         if (sym->kind != SYM_LABEL) {
+            AST *olddef = (AST *)sym->def;
             ERROR(origLabel, "Redefining symbol %s", name);
+            if (olddef) {
+                ERROR(olddef, "...previous definition was here");
+            }
             return;
         }
         labelref = (Label *)sym->val;
@@ -172,7 +176,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     labelref->flags = flags;
 
     if (!sym) {
-        sym=AddSymbol(&P->objsyms, name, SYM_LABEL, labelref, NULL);
+        sym=AddSymbolPlaced(&P->objsyms, name, SYM_LABEL, labelref, NULL, origLabel);
     }
 }
 
