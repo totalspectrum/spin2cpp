@@ -208,6 +208,8 @@ Aliases basicalias[] = {
     { "pow", "__builtin_powf" },
     { "sin", "__builtin_sinf" },
     { "tan", "__builtin_tanf" },
+
+    { "round", "_float_round" },
     
     { NULL, NULL },
 };
@@ -224,6 +226,9 @@ Aliases calias[] = {
     { "_pinh", "_drvh" },
     { "_pinnot", "_drvnot" },
     { "_pinw", "_drvw" },
+
+    /* some math functions */
+    { "__builtin_round", "_float_round" },
     
     { NULL, NULL },
 };

@@ -270,6 +270,7 @@ rdpin
 _reboot
 right$
 rnd
+round
 sendrecvdevice
 _setbaud
 sin
@@ -2151,6 +2152,10 @@ A predefined function which returns a random floating point number `x` such that
   f = rnd(0) ' start a new sequence
   i = int(rnd(1)*6) + 1 ' generate random between 1 and 6
 ```
+
+### ROUND
+
+A predefined function which takes a floating point number and converts it to an integer, doing rounding towards the nearest integer.
 
 ### SELECT CASE
 
