@@ -1,3 +1,6 @@
+Version 4.2.1
+- Fixed last minute bug in ORG/END which was causing it not to fcache
+
 Version 4.2.0
 - Added {++cog} and {++lut} to force functions into COG or LUT
 - Made ORG in Spin2 fcache the asm

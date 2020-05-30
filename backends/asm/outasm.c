@@ -5953,70 +5953,25 @@ InitAsmCode()
     initDone = 1;
 }
 
-// guessing fcache size still needs work...
-//#define REALLY_GUESS_FCACHE_SIZE
-
-#ifdef REALLY_GUESS_FCACHE_SIZE
-static int guess_instructions_in_literal(const char *s)
-{
-    int n = 0;
-    int line_had_data = 0;
-    int c;
-    
-    while ( (c = *s++) != 0) {
-        if (c == '\n') {
-            n += line_had_data;
-            line_had_data = 0;
-        } else if (c == ' ' || c == '\t') {
-            line_had_data = 1;
-        }
-    }
-    return n;
-}
-#endif
-
 /* routine to try to guess how much room we need for fcache */
-/* this does not work very well at present */
+/* this does not work very well at present, and may be impossible
+   in general if the user places functions in the same memory as
+   fcache. Certainly some major re-arrangement will be necessary :(
+   So for now it just punts
+ */
 
 static int
 GuessFcacheSize(IRList *irl)
 {
-#    /* for now, just go by p2/p1 */
+    /* for now, just go by p2/p1 */
     if (gl_p2) {
-         if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
              return 220; // really 256, but leave slop for bad calcs of ##
         }
         return 0; // disable fcache if no optimization
     } else {
-#ifdef REALLY_GUESS_FCACHE_SIZE    
-    int n = 0;
-    int datsize;
-    
-    IR *ir;
-    for (ir = irl->head; ir; ir = ir->next) {
-        if (ir->opc == OPC_LITERAL) {
-            n += guess_instructions_in_literal(ir->dst->name);
-        }
-        if (IsDummy(ir)) continue;
-        if (ir->opc == OPC_LABEL) continue;
-        n++;
+        return 96; // default size of P1
     }
-
-    // now guess at variable size (this is conservative, we haven't
-    // pruned unused variables yet)
-    datsize = EmitAsmVars(&cogGlobalVars, NULL, NULL, NO_SORT);
-    n += datsize;
-    if (n < 464) {
-        n = 464 - n;
-    } else {
-        n = 0;
-    }
-    //printf("guessed fcache size = %d\n", n);
-    return n;
-#else
-    return 96; // default size of P1
-#endif
-}
 }
 
 static void
@@ -6136,6 +6091,12 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
     }
     CompileConsts(&cogcode, P->conblock);
 
+    // guesstimate how much space we will have for FCACHE, if
+    // a dynamic size is requested
+    if (gl_fcache_size < 0) {
+        gl_fcache_size = GuessFcacheSize(&cogcode);
+    }
+    
     if (emitSpinCode) {
         // output the main stub
         EmitLabel(&cogcode, entrylabel);
@@ -6163,12 +6124,6 @@ OutputAsmCode(const char *fname, Module *P, int outputMain)
             return;
         }
 
-        // guesstimate how much space we will have for FCACHE, if
-        // a dynamic size is requested
-        if (gl_fcache_size < 0) {
-            gl_fcache_size = GuessFcacheSize(&cogcode);
-        }
-    
         if (HUB_CODE) {
             ValidateStackptr();
             if (!gl_p2) {
