@@ -22,7 +22,7 @@ fgets(char *buf, int size, FILE *fp)
     if (tty) {
         if (c == '\r') {
             c = '\n';
-        } else if (c == '\b') {
+        } else if (c == '\b' || c == 127) {
             if (count > 0) --count;
             continue;
         }

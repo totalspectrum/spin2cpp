@@ -230,8 +230,10 @@ pri _tx(c)
 
 pri _rx : r
   repeat
-    r := _rxraw
+    r := _rxraw()
   until r <> -1
+  if (r == 13) and ((__rxtxflags & _rxtx_crnl) <> 0)
+    r := 10
   if (__rxtxflags & _rxtx_echo)
     _tx(r)
 

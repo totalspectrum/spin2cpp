@@ -17,7 +17,7 @@ _vfs_open_sdcard(void)
     if (r != 0) {
 #ifdef _DEBUG
        __builtin_printf("sd card fs_init failed: result=[%d]\n", r);
-       waitms(1000);
+       _waitms(1000);
 #endif      
        _seterror(-r);
        return 0;
