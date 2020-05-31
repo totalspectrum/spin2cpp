@@ -37,11 +37,15 @@ __getvfsforfile(char *name, const char *orig_name)
         len = strlen(mounttab[i]);
         if ( (name[len] == '/' || name[len] == 0) && !strncmp(name, mounttab[i], len)) {
             v = (struct vfs *)vfstab[i];
+            /* remove any leading ./ */
+            while (name[len+1] == '.' && (name[len+2] == '/' || name[len+2] == 0)) {
+                len++;
+            }
             /* remove prefix */
             strcpy(name, name+len+1);
 #ifdef _DEBUG
             __builtin_printf("_getvfsforfile: slot %d returning %x for %s\n", i, (unsigned)v, name);
-#endif            
+#endif
             return v;
         }
     }
