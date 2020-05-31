@@ -1,0 +1,26 @@
+dat
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+	org	0
+entry
+
+_signex
+	zerox	arg01, #15
+	mov	result1, arg01
+_signex_ret
+	reta
+
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+arg01
+	res	1
+	fit	480

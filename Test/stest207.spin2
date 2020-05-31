@@ -1,0 +1,2 @@
+pub signex(x)
+  return (x<<16) >> 16
