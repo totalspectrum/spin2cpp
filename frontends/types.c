@@ -375,6 +375,9 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
     if (lefttype == righttype && IsConstExpr(ast)) {
         AST *newast = FoldIfConst(ast);
         *ast = *newast;
+        if (IsFloatType(lefttype)) {
+            ast->kind = AST_FLOAT;
+        }
         return lefttype;
     }
     if (isfloat) {
