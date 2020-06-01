@@ -19,26 +19,25 @@ _Unpack_m_ret
 _dounpack_x
 	mov	_var01, arg01
 	shl	_var01, #1
-	shr	_var01, #24
-	mov	_var02, _var01 wz
+	shr	_var01, #24 wz
 	and	arg01, imm_8388607_
  if_ne	shl	arg01, #6
  if_ne	or	arg01, imm_536870912_
  if_ne	jmp	#LR__0002
-	mov	_var03, arg01
-	mov	_var04, #32
+	mov	_var02, arg01
+	mov	_var03, #32
 LR__0001
-	shl	_var03, #1 wc
- if_nc	djnz	_var04, #LR__0001
-	sub	_var04, #23
-	mov	_var02, _var04
-	mov	_var05, #7
-	sub	_var05, _var04
-	shl	arg01, _var05
+	shl	_var02, #1 wc
+ if_nc	djnz	_var03, #LR__0001
+	sub	_var03, #23
+	mov	_var01, _var03
+	mov	_var04, #7
+	sub	_var04, _var03
+	shl	arg01, _var04
 LR__0002
-	sub	_var02, #127
+	sub	_var01, #127
 	cmp	arg02, #0 wz
- if_ne	mov	result1, _var02
+ if_ne	mov	result1, _var01
  if_e	mov	result1, arg01
 _dounpack_x_ret
 	ret
@@ -59,8 +58,6 @@ _var02
 _var03
 	res	1
 _var04
-	res	1
-_var05
 	res	1
 arg01
 	res	1

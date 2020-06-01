@@ -168,10 +168,8 @@ __system___gc_nextBlockPtr
 	mov	__system___gc_nextBlockPtr_ptr, arg01
 	rdword	__system___gc_nextBlockPtr_t, __system___gc_nextBlockPtr_ptr wz
  if_ne	jmp	#LR__0009
-	mov	_system___gc_nextBlockPtr_tmp001_, ptr_L__0110_
-	mov	arg01, _system___gc_nextBlockPtr_tmp001_
+	mov	arg01, ptr_L__0110_
 	call	#__system___gc_errmsg
-	mov	_system___gc_nextBlockPtr_tmp002_, result1
 	jmp	#__system___gc_nextBlockPtr_ret
 LR__0009
 	shl	__system___gc_nextBlockPtr_t, #4
@@ -304,15 +302,12 @@ __system___gc_alloc_managed
 	mov	__system___gc_alloc_managed_size, arg01
 	mov	arg02, #0
 	call	#__system___gc_doalloc
-	mov	_system___gc_alloc_managed_tmp003_, result1
-	mov	__system___gc_alloc_managed_r, _system___gc_alloc_managed_tmp003_ wz
+	mov	__system___gc_alloc_managed_r, result1 wz
  if_ne	jmp	#LR__0016
 	cmps	__system___gc_alloc_managed_size, #0 wc,wz
  if_be	jmp	#LR__0016
-	mov	_system___gc_alloc_managed_tmp001_, ptr_L__0122_
-	mov	arg01, _system___gc_alloc_managed_tmp001_
+	mov	arg01, ptr_L__0122_
 	call	#__system___gc_errmsg
-	mov	_system___gc_alloc_managed_tmp002_, result1
 	jmp	#__system___gc_alloc_managed_ret
 LR__0016
 	mov	result1, __system___gc_alloc_managed_r
@@ -367,9 +362,8 @@ __system___gc_isvalidptr
  if_ne	mov	result1, #0
  if_ne	jmp	#__system___gc_isvalidptr_ret
 	sub	_var01, #8
-	mov	_var02, _var01
-	andn	_var02, imm_4293918720_
-	mov	_var03, _var02
+	mov	_var03, _var01
+	andn	_var03, imm_4293918720_
 	cmps	_var03, arg01 wc,wz
  if_b	jmp	#LR__0021
 	cmps	_var03, arg02 wc,wz
@@ -596,10 +590,8 @@ LR__0033
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_collect_nextptr, result1 wz
  if_ne	jmp	#LR__0034
-	mov	_system___gc_collect_tmp001_, ptr_L__0148_
-	mov	arg01, _system___gc_collect_tmp001_
+	mov	arg01, ptr_L__0148_
 	call	#__system___gc_errmsg
-	mov	_system___gc_collect_tmp002_, result1
 	jmp	#__system___gc_collect_ret
 LR__0034
 LR__0035
@@ -900,12 +892,6 @@ __system___txraw_val
 	res	1
 _fetchv__cse__0001
 	res	1
-_system___gc_alloc_managed_tmp001_
-	res	1
-_system___gc_alloc_managed_tmp002_
-	res	1
-_system___gc_alloc_managed_tmp003_
-	res	1
 _system___gc_collect_tmp001_
 	res	1
 _system___gc_collect_tmp002_
@@ -925,10 +911,6 @@ _system___gc_markcog_tmp001_
 _system___gc_markcog_tmp002_
 	res	1
 _system___gc_markhub_tmp002_
-	res	1
-_system___gc_nextBlockPtr_tmp001_
-	res	1
-_system___gc_nextBlockPtr_tmp002_
 	res	1
 _system___gc_tryalloc_tmp001_
 	res	1

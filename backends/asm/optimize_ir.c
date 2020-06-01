@@ -552,6 +552,10 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     } else if (IsJump(ir)) {
         // if the jump is to an unknown place give up
         if (!ir->aux) {
+            // jump to return is like running off the end
+            if (ir->dst == FuncData(curfunc)->asmreturnlabel && ir->cond == COND_TRUE) {
+                goto done;
+            }
             return false;
         }
         stack[level] = ir; // remember where we were
@@ -567,6 +571,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
 #endif        
     }
   }
+done:  
   /* if we reach the end without seeing any use */
   return IsLocalOrArg(op);
 }
