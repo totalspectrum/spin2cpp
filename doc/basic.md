@@ -250,6 +250,7 @@ delete$
 dira
 dirb
 exp
+false
 hex$
 ina
 inb
@@ -276,6 +277,7 @@ _setbaud
 sin
 str$
 tan
+true
 val
 val%
 waitcnt
@@ -538,11 +540,11 @@ and
    x = 1 : y = 2
 ```
 
-## Language features
-
-### Types
+## Data Types
 
 There are a number of data types built in to the FlexBASIC language.
+
+### Numeric Data types
 
 #### Unsigned integer types
 
@@ -560,11 +562,35 @@ There are a number of data types built in to the FlexBASIC language.
 
 `double` is reserved for future use as a double precision (64 bit) floating point number, but this is not implemented yet.
 
-#### Pointer types
+#### Numeric data types summary
+
+Type    |    Storage size  |   Range      
+--------|------------------|--------------
+ubyte   |     1 byte       |   0 to 255
+byte    |     1 byte       |  -128 to 127
+short   |     2 bytes      |   0 to 65,535
+ushort  |     2 bytes      |  -32,768 to 32,767
+integer |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+uinteger |    4 bytes      |   0 to 4,294,967,295
+long    |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+ulong   |     4 bytes      |   0 to 4,294,967,295
+longint |     8 bytes      |  -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+ulongint |    8 bytes      |  0 to 18,446,744,073,709,551,615
+single  |     4 bytes      |  1.2E-38 to 3.4E+38     (~6 decimal places of precision)
+double  |     8 bytes      |  2.3E-308 to 1.7E+308     (~15 decimal places of precision)   
+------------------------------------------------------------------
+Notes:
+Types INTEGER and LONG are synonyms and may be used interchangably.
+Types UINTEGER and ULONG are synonyms and may be used interchangably.
+Types LONGINT, and ULONGINT are not yet fully unimplemented/reserved for future use.
+Type DOUBLE is not implemented yet, instead being a synonym for the SINGLE type at this time
+
+
+### Pointer types
 
 Pointers to any other type may be declared. `T pointer` is a pointer to type `T`. Thus `ushort pointer` is a pointer to an unsigned 16 bit number, and `ubyte pointer pointer` is a pointer to a pointer to an unsigned 8 bit number.
 
-#### String type
+### String type
 
 The `string` type is a special pointer. Functionally it is almost the same as a `const ubyte pointer`, but there is one big difference; comparisons involving a string compare the pointed to data, rather than the pointer itself. For example:
 ```
@@ -594,7 +620,7 @@ cmpptrs(x, y)
 ```
 will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison. While the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
 
-#### Classes
+### Classes
 
 FlexBASIC supports classes, which are similar to records or structs in other languages. There are two ways to define classes. A whole BASIC (or Spin, or C) file may be included as a class with the `using` keyword:
 ```
@@ -621,13 +647,21 @@ print x.get()
 ```
 Note that `end class` must be spelled out in full (unlike many "`end x`" pairs which may be abbreviated as just `end`). 
 
-#### Type Aliases
+### Type Aliases
 
 An alias for an existing type may be declared with the `type` keyword. For example:
 ```
 type numptr as integer pointer
 type fullduplexserial as class using "FullDuplexSerial.spin"
 ```
+
+## Language features
+
+### TRUE and FALSE
+
+In general `false` is the value 0, and `true` is normally the value with all bits set (`$FFFFFFFF`). These are the "canonical" values that are returned from comparisons like `x < y`.
+
+However, note that _any_ non-zero value can act as `true`. For example, in an IF statement if the condition evaluates to non-zero then it will be regarded as `true`.
 
 ### Function declarations
 
@@ -1438,6 +1472,10 @@ Exit from the innermost enclosing loop if it is a `while` loop. If it is not a `
 ### EXP
 
 Predefined function. `exp(x)` returns the natural exponential of `x`, that is `e ^ x` where `e` is 2.71828...
+
+### FALSE
+
+A predefined constant 0. Any value equal to 0 or `nil` will be considered as false in a boolean context.
 
 ### FOR
 
@@ -2330,6 +2368,10 @@ Example:
 ### TO
 
 A syntactical element typically used for giving ranges of items.
+
+### TRUE
+
+A predefined constant equal to `$ffffffff` (all bits set). This is the official result returned by comparison operators if they evaluate to true. However, note that any non-zero result will be considered "true" in the context of a boolean test. So the constant `true` is not unique, and you should never write `if a = true` or anything like that.
 
 ### TRY
 
