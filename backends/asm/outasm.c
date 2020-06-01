@@ -4493,7 +4493,9 @@ static void CompileStatement(IRList *irl, AST *ast)
         Operand *shift;
         IR *ir;
 
-        if (gl_p2 || COG_CODE) {
+        if (curfunc && InCog(curfunc)) {
+            shift = 0;
+        } else if (gl_p2) {
             shift = NewImmediate(2);
         } else {
             shift = NewImmediate(3);
@@ -4504,7 +4506,9 @@ static void CompileStatement(IRList *irl, AST *ast)
             EmitOp1(irl, OPC_JMPREL, switchval);
         } else {
             jumptabptr = NewImmediatePtr(NULL, jumptab);
-            EmitOp2(irl, OPC_SHL, switchval, shift);
+            if (shift) {
+                EmitOp2(irl, OPC_SHL, switchval, shift);
+            }
             EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
             EmitJump(irl, COND_TRUE, switchval);
         }
