@@ -3098,7 +3098,6 @@ CompileCondResult(IRList *irl, AST *expr)
 // compile a masked fetch:
 //   (a & mask) | val
 // here a is expr->left, mask = expr->right->left, val = expr->right->right
-// note that this is marked volatile to prevent later optimization
 // useful for manipulating groups of bits in OUTA and DIRA
 //
 static Operand *
@@ -3123,7 +3122,8 @@ CompileMaskMove(IRList *irl, AST *expr)
         break;
     case AST_HWREG:
         dest = CompileHWReg(irl, destast);
-        keepflag = FLAG_KEEP_INSTR;
+// is this really necessary? it certainly hinders optimization        
+//        keepflag = FLAG_KEEP_INSTR;
         break;
     case AST_METHODREF:
         dest = CompileExpression(irl, destast, NULL);
@@ -4519,7 +4519,7 @@ static void CompileStatement(IRList *irl, AST *ast)
             op = GetLabelFromSymbol(ast, ast->left->d.string);
             if (op) {
                 ir = EmitJump(irl, COND_TRUE, op);
-                ir->flags |= FLAG_KEEP_INSTR;
+                ir->flags |= (FLAG_KEEP_INSTR | FLAG_JMPTABLE_INSTR);
             }
             ast = ast->right;
         }

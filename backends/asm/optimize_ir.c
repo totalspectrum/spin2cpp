@@ -2898,7 +2898,10 @@ OptimizeJumps(IRList *irl)
     int change = 0;
     
     while (ir) {
-        if (ir->opc == OPC_JUMP && !InstrIsVolatile(ir)) {
+        // internal jumptables are marked volatile (to avoid removal) but
+        // we should allow jmp to jmp, so they're also marked with
+        // FLAG_JMPTABLE_INSTR
+        if (ir->opc == OPC_JUMP && (!InstrIsVolatile(ir) || ir->flags & FLAG_JMPTABLE_INSTR)) {
             // ptr to jump destination (if known) is in aux; see if it's also a jump
             jmpdest = NextInstruction(ir->aux);
             if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir && jmpdest->dst != ir->dst) {
@@ -3364,14 +3367,16 @@ static int OptimizePeephole2(IRList *irl)
             ir = ir->next;
         }
         if (!ir) break;
-        for (i = 0; i < sizeof(peep2) / sizeof(peep2[0]); i++) {
-            r = MatchPattern(peep2[i].check, ir);
-            if (r) {
-                r = (*peep2[i].replace)(peep2[i].arg, irl, ir);
+        if (!InstrIsVolatile(ir)) {
+            for (i = 0; i < sizeof(peep2) / sizeof(peep2[0]); i++) {
+                r = MatchPattern(peep2[i].check, ir);
                 if (r) {
-                    change++;
+                    r = (*peep2[i].replace)(peep2[i].arg, irl, ir);
+                    if (r) {
+                        change++;
+                    }
+                    break;
                 }
-                break;
             }
         }
         ir = ir->next;

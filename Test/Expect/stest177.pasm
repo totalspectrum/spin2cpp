@@ -11,7 +11,6 @@ _calcresult
 	mov	_var04, _var01
 	add	_var04, #3
 	max	_var04, #8
-	shl	_var04, #2
 	add	_var04, ptr_L__0009_
 	jmp	_var04
 LR__0001
