@@ -3313,6 +3313,12 @@ static PeepholePattern pat_signex[] = {
     { COND_ANY, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+static PeepholePattern pat_wrc[] = {
+    { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
@@ -3339,6 +3345,25 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     DeleteIR(irl, ir->next);
     return 1;
 }
+static int ReplaceZWithC(int arg, IRList *irl, IR *ir)
+{
+    while (ir && arg > 0) {
+        ir = ir->next;
+        --arg;
+    }
+    if (!ir || InstrIsVolatile(ir)) {
+        return 0;
+    }
+    if (ir->cond == COND_NE) {
+        ir->cond = COND_C;
+        return 1;
+    }
+    if (ir->cond == COND_EQ) {
+        ir->cond = COND_NC;
+        return 1;
+    }
+    return 0;
+}
 
 struct Peepholes {
     PeepholePattern *check;
@@ -3352,6 +3377,8 @@ struct Peepholes {
 
     { pat_zeroex, OPC_ZEROX, ReplaceExtend },
     { pat_signex, OPC_SIGNX, ReplaceExtend },
+
+    { pat_wrc, 2, ReplaceZWithC },
 };
 
 
