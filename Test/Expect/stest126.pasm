@@ -17,9 +17,7 @@ _mystrlen_ret
 
 _wordxpand
 LR__0002
-	rdword	_var01, arg02
-	shl	_var01, #16
-	shr	_var01, #16 wz
+	rdword	_var01, arg02 wz
 	wrlong	_var01, arg01
 	add	arg01, #4
 	add	arg02, #2

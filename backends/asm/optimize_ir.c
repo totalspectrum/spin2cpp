@@ -3196,6 +3196,7 @@ typedef struct PeepholePattern {
 
 #define PEEP_FLAGS_NONE 0x0000
 #define PEEP_FLAGS_P2   0x0001
+#define PEEP_FLAGS_WCZ_OK 0x0002
 #define PEEP_FLAGS_DONE 0xffff
 
 #define OPERAND_ANY -1
@@ -3287,12 +3288,12 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
 
 // cmp + mov -> max/min
 static PeepholePattern pat_maxs[] = {
-    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
     { COND_GT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_maxu[] = {
-    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
     { COND_GT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
@@ -3326,25 +3327,25 @@ static PeepholePattern pat_wrc[] = {
 
 // remove redundant zero extends after rdbyte/rdword
 static PeepholePattern pat_rdbyte1[] = {
-    { COND_ANY, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
-    { COND_ANY, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
-    { COND_ANY, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_rdword1[] = {
-    { COND_ANY, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
-    { COND_ANY, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_NONE },
-    { COND_ANY, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_rdbyte2[] = {
-    { COND_ANY, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
-    { COND_ANY, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|7, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|7, PEEP_FLAGS_P2 | PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_rdword2[] = {
-    { COND_ANY, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
-    { COND_ANY, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|15, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|15, PEEP_FLAGS_P2 | PEEP_FLAGS_WCZ_OK},
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -3393,16 +3394,21 @@ static int ReplaceZWithC(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
-static int RemoveN(int arg, IRList *irl, IR *ir)
+static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
 {
     IR *irlast, *irnext;
+    unsigned wcz_flags = 0;
     irnext = ir->next;
     while (arg > 0 && irnext) {
         irlast = irnext;
         irnext = irlast->next;
-        DeleteIR(irl, irlast);
         --arg;
+        if (arg == 0) {
+            wcz_flags = irlast->flags & 0xff;
+        }
+        DeleteIR(irl, irlast);
     }
+    ir->flags |= wcz_flags;
     return 1;
 }
 
@@ -3421,10 +3427,10 @@ struct Peepholes {
 
     { pat_wrc, 2, ReplaceZWithC },
 
-    { pat_rdbyte1, 2, RemoveN },
-    { pat_rdword1, 2, RemoveN },
-    { pat_rdbyte2, 1, RemoveN },
-    { pat_rdword2, 1, RemoveN },
+    { pat_rdbyte1, 2, RemoveNFlagged },
+    { pat_rdword1, 2, RemoveNFlagged },
+    { pat_rdbyte2, 1, RemoveNFlagged },
+    { pat_rdword2, 1, RemoveNFlagged },
 };
 
 
