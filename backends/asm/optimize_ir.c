@@ -3273,6 +3273,13 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
         if (patrn->opc != ir->opc && patrn->opc != OPC_ANY) {
             return 0;
         }
+        // not all patterns are compatible with wcz bits
+        if (ir->flags & 0xff) {
+            if (!(flags & PEEP_FLAGS_WCZ_OK)) {
+                return 0;
+            }
+        }
+        
         if (!PeepOperandMatch(patrn->dst, ir->dst)) {
             return 0;
         }
@@ -3298,12 +3305,12 @@ static PeepholePattern pat_maxu[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_mins[] = {
-    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
     { COND_LT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_minu[] = {
-    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
     { COND_LT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
