@@ -134,10 +134,15 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             ERROR(origLabel, "Changing cog value for symbol %s", name);
             return;
         }
+#ifdef NEVER
+        // labelref->org is never actually used, so do not bother checking it
+        // also, a proper check would actually involve the value rather than
+        // just the pointer
         if (labelref->org != lastorg) {
             ERROR(origLabel, "Changing lastorg value for symbol %s", name);
             return;
         }
+#endif        
         if (!CompatibleTypes(labelref->type, ltype)) {
             ERROR(origLabel, "Changing type of symbol %s", name);
             return;
