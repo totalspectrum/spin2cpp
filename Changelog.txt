@@ -2,6 +2,8 @@ Version 4.2.1
 - Fixed last minute bug in ORG/END which was causing it not to fcache
 - Improved some warning messages for undefined symbols
 - Added a number of additional peephole optimizations
+- Fixed float constant calculations for calls to functions
+- Fixed a spurious error about lastorg mismatch
 
 Version 4.2.0
 - Added {++cog} and {++lut} to force functions into COG or LUT
