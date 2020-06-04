@@ -1070,7 +1070,7 @@ LabelRef(IRList *irl, Symbol *sym)
 }
 
 static Operand *
-CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
+CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
 {
   int stype;
   int size;
@@ -1116,7 +1116,7 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func)
               /* do nothing, this is OK */
               stype = SYM_RESULT;
           } else {
-              ERROR(NULL, "Symbol %s is of a type not handled by PASM output yet", sym->user_name);
+              ERROR(ast, "Undefined symbol %s", sym->user_name);
               return EmptyOperand();
           }
           /* fall through */
@@ -1177,7 +1177,7 @@ CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func)
   }
   sym = LookupSymbolInFunc(func, name);
   if (sym) {
-      return CompileSymbolForFunc(irl, sym, func);
+      return CompileSymbolForFunc(irl, sym, func, expr);
   } else {
       ERROR_UNKNOWN_SYMBOL(expr);
   }
@@ -3621,7 +3621,7 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
   case AST_SYMBOL:
   {
       Symbol *sym = (Symbol *)expr->d.ptr;
-      r = CompileSymbolForFunc(irl, sym, curfunc);
+      r = CompileSymbolForFunc(irl, sym, curfunc, expr);
       if (dest) {
           EmitMove(irl, dest, r);
           r = dest;
