@@ -69,6 +69,10 @@ dataListLen(AST *ast, int elemsize)
             }
             if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
                 numelems = EvalPasmExpr(ast->left->right);
+                if ((int)numelems < 0) {
+                    ERROR(sub, "Negative repeat count not allowed");
+                    numelems = 0;
+                }
             } else if (sub->kind == AST_STRING) {
                 numelems = strlen(sub->d.string);
             } else if (sub->kind == AST_RANGE) {
