@@ -611,9 +611,13 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case P2_CALLD:
     case P2_AUG:
     case P2_JINT_OPERANDS:
-    case SRC_OPERAND_ONLY:
     case JMP_OPERAND:
     case CALL_OPERAND:
+        if (bigImm) {
+            ERROR(ast, "## is not legal with %s", instr->name);
+        }
+        return mask;
+    case SRC_OPERAND_ONLY:
         return mask;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
