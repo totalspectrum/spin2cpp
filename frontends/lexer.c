@@ -967,7 +967,7 @@ docomment:
         lineno = strtol(ptr, &ptr, 10);
         if (lineno > 0) {
             while (*ptr == ' ') ptr++;
-            L->lineCounter = lineno - 1;
+            L->lineCounter = lineno;
             L->fileName = getFileName(ptr);
         }
     } else if (!strncmp(commentLine, "#pragma ", 8)) {
