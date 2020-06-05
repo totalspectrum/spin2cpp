@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2020 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
