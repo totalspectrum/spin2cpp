@@ -5,6 +5,8 @@ Version 4.2.1
 - Fixed float constant calculations for calls to functions
 - Fixed a spurious error about lastorg mismatch
 - Fixed use of return variables in inline assembly not adding an automatic return
+- Fixed line numbers in error messages after #include
+- Added error message for use of ## with jmp, call, etc.
 
 Version 4.2.0
 - Added {++cog} and {++lut} to force functions into COG or LUT
