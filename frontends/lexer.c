@@ -960,6 +960,7 @@ docomment:
     flexbuf_addchar(cbp, c);
     flexbuf_addchar(cbp, 0);
     commentLine = flexbuf_get(cbp);
+    //printf("comment: %s", commentLine);
     if (!strncmp(commentLine, "#line ", 6)) {
         char *ptr = commentLine + 6;
         int lineno;
@@ -2221,15 +2222,14 @@ void SetPreprocessorLanguage(int language)
 {
     if (IsBasicLang(language)) {
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
-        pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
+        //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
         //pp_setlinedirective(&gl_pp, "");   
     } else if (IsCLang(language)) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
-        pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
-        //pp_setlinedirective(&gl_pp, "");   
+        //pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
-        pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+        //pp_setlinedirective(&gl_pp, "{#line %d %s}");   
     }
 }
 
