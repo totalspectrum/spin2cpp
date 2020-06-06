@@ -1453,8 +1453,9 @@ Returns from the current function (just like a plain `return`). The value of the
 ```
 function sumif(a, x, y)
   sumif = x + y
-  if (a <> 0)
+  if (a <> 0) then
     exit function
+  end if
   sumif = 0
 end function
 ```
