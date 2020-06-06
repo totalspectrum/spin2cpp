@@ -8,6 +8,7 @@ Version 4.2.1
 - Fixed line numbers in error messages after #include
 - Added error message for use of ## with jmp, call, etc.
 - Added an error for negative repeat counts
+- Made BASIC OPTION case insensitive again
 
 Version 4.2.0
 - Added {++cog} and {++lut} to force functions into COG or LUT

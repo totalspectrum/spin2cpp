@@ -118,7 +118,7 @@ HandleBASICOption(AST *optid, AST *exprlist)
         SYNTAX_ERROR("Error in option list");
         return NULL;
     }
-    if (!strcmp(name, "base")) {
+    if (!strcasecmp(name, "base")) {
         int arrayBase;
         expr = NULL;
         if (exprlist && exprlist->kind == AST_EXPRLIST) {
@@ -133,10 +133,10 @@ HandleBASICOption(AST *optid, AST *exprlist)
         arrayBase = EvalConstExpr(expr);
         sym = GetCurArrayBase();
         sym->val = AstInteger(arrayBase);
-    } else if (!strcmp(name, "explicit")) {
+    } else if (!strcasecmp(name, "explicit")) {
         sym = GetExplicitDeclares();
         sym->val = AstInteger(255);
-    } else if (!strcmp(name, "implicit")) {
+    } else if (!strcasecmp(name, "implicit")) {
         sym = GetExplicitDeclares();
         sym->val = AstInteger(0);
     } else {
