@@ -1,3 +1,6 @@
+Version 4.2.2
+- Added <>= operator for Spin
+
 Version 4.2.1
 - Fixed last minute bug in ORG/END which was causing it not to fcache
 - Improved some warning messages for undefined symbols
