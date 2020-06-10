@@ -1407,7 +1407,52 @@ Main loop construct. A `do` loop may have the loop test either at the beginning 
 ```
 will wait until pin 9 is 0.
 
-See also WHILE.
+The various forms are discussed below
+
+#### DO / LOOP
+
+```
+  do
+    ' do stuff here
+  loop
+```
+This is the basic form, which loops forever (unless an `exit` statement is invoked within the loop).
+
+#### DO UNTIL / LOOP
+
+```
+  do until (condition)
+    ' do stuff here
+  loop
+```
+Code within the loop is executed until a specific condition is met. If the condition is true before entry to the loop, the loop is never executed.
+
+#### DO / LOOP UNTIL
+
+```
+  do
+    ' do stuff here
+  loop until (condition)
+```
+In this variant the code within the loop is always executed at least once, and will continue to be executed until the specified condition is met.
+
+#### DO WHILE / LOOP
+
+```
+  do while (condition)
+    ' do stuff here
+  loop
+```
+Similar to `do until` but the sense of the condition is reversed; as long as the condition is true the loop is executed. If the condition is false the first time the loop is encountered, then the loop body is never executed.
+
+#### DO / LOOP WHILE
+
+```
+  do
+    ' do stuff here
+  loop while (condition)
+```
+Executes the loop body at least once, and continues to execute it as long as the condition remains true.
 
 ### DOUBLE
 
@@ -1421,9 +1466,41 @@ See IF
 
 Used to mark the end of most blocks. For example, `end function` marks the end of a function declaration, and `end if` the end of a multi-line `if` statement. In most cases the name after the `end` is optional.
 
+#### END ASM
+
+Closes an `asm` (inline assembly) block.
+
+#### END CLASS
+
+Closes a `class` definition.
+
+#### END FUNCTION
+
+Closes a function definition.
+
+#### END IF
+
+Marks the end of an `if` statement. As a special exception to the normal rules, this may also be written without the space (as `endif`). This is for compatibility with some other BASIC dialects.
+
+#### END SELECT
+
+Closes a `select case` block.
+
+#### END SUB
+
+Closes a subroutine definition.
+
+#### END TRY
+
+Closes a `try`/`catch` error handling block.
+
+#### END WHILE
+
+Marks the end of a `while` loop; this may be used in place of `wend`.
+
 ### ENDIF
 
-Marks the end of a multi-line `if` statement. Same as `end if`.
+Marks the end of a multi-line `if` statement. Same as `end if`. Note that this is the only special form of `end`. For example, it is _not_ legal to write `endasm`; only `end asm` will work.
 
 ### ENUM
 
@@ -2461,6 +2538,10 @@ Propeller specific builtin function. Waits for pins to have a specific value (gi
 ### WAITPNE (only available on P1)
 
 Propeller specific builtin function. Waits for pins to not have a specific value (given by a bit mask). Same as the Spin `waitpne` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
+
+### WEND
+
+Marks the end of a `while` loop; this is a short form of `end while`.
 
 ### WITH
 
