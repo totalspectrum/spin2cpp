@@ -267,6 +267,7 @@ oct$
 outa
 outb
 pausems
+pauseus
 rdpin
 _reboot
 right$
@@ -2112,6 +2113,14 @@ Also note that before using a pin as output its direction should be set as outpu
 A built-in subroutine to pause for a number of milliseconds. For example, to pause for 2 seconds, do
 ```
   pausems 2000
+```
+
+### PAUSEUS
+
+
+A built-in subroutine to pause for a number of microseconds. For example, to pause for 1/2 millisecond, do
+```
+  pauseus 500
 ```
 
 ### PINLO
