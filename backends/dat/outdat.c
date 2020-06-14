@@ -611,9 +611,13 @@ ImmMask(Instruction *instr, int opnum, bool bigImm, AST *ast)
     case P2_CALLD:
     case P2_AUG:
     case P2_JINT_OPERANDS:
-    case SRC_OPERAND_ONLY:
     case JMP_OPERAND:
     case CALL_OPERAND:
+        if (bigImm) {
+            ERROR(ast, "## is not legal with %s", instr->name);
+        }
+        return mask;
+    case SRC_OPERAND_ONLY:
         return mask;
     case TWO_OPERANDS:
     case TWO_OPERANDS_OPTIONAL:
@@ -1058,7 +1062,7 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
             if (sym && sym->kind == SYM_LABEL) {
                 Label *lab = (Label *)sym->val;
                 if (lab && (lab->flags & LABEL_HAS_INSTR) && !(lab->flags & LABEL_HAS_JMP)) {
-                    WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the branch target to %s+0 to suppress this warning", instr->name, user_name, user_name);
+                    WARNING(line, "%s to %s without #; are you sure this is correct? If so, change the %s operand to %s-0 to suppress this warning", instr->name, user_name, instr->name, user_name);
                 }
             }
         }

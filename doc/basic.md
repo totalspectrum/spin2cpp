@@ -250,6 +250,7 @@ delete$
 dira
 dirb
 exp
+false
 hex$
 ina
 inb
@@ -266,15 +267,18 @@ oct$
 outa
 outb
 pausems
+pauseus
 rdpin
 _reboot
 right$
 rnd
+round
 sendrecvdevice
 _setbaud
 sin
 str$
 tan
+true
 val
 val%
 waitcnt
@@ -537,11 +541,11 @@ and
    x = 1 : y = 2
 ```
 
-## Language features
-
-### Types
+## Data Types
 
 There are a number of data types built in to the FlexBASIC language.
+
+### Numeric Data types
 
 #### Unsigned integer types
 
@@ -559,11 +563,35 @@ There are a number of data types built in to the FlexBASIC language.
 
 `double` is reserved for future use as a double precision (64 bit) floating point number, but this is not implemented yet.
 
-#### Pointer types
+#### Numeric data types summary
+
+Type    |    Storage size  |   Range      
+--------|------------------|--------------
+ubyte   |     1 byte       |   0 to 255
+byte    |     1 byte       |  -128 to 127
+short   |     2 bytes      |   0 to 65,535
+ushort  |     2 bytes      |  -32,768 to 32,767
+integer |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+uinteger |    4 bytes      |   0 to 4,294,967,295
+long    |     4 bytes      |  -2,147,483,648 to 2,147,483,647
+ulong   |     4 bytes      |   0 to 4,294,967,295
+longint |     8 bytes      |  -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+ulongint |    8 bytes      |  0 to 18,446,744,073,709,551,615
+single  |     4 bytes      |  1.2E-38 to 3.4E+38     (~6 decimal places of precision)
+double  |     8 bytes      |  2.3E-308 to 1.7E+308     (~15 decimal places of precision)   
+------------------------------------------------------------------
+Notes:
+Types INTEGER and LONG are synonyms and may be used interchangably.
+Types UINTEGER and ULONG are synonyms and may be used interchangably.
+Types LONGINT, and ULONGINT are not yet fully unimplemented/reserved for future use.
+Type DOUBLE is not implemented yet, instead being a synonym for the SINGLE type at this time
+
+
+### Pointer types
 
 Pointers to any other type may be declared. `T pointer` is a pointer to type `T`. Thus `ushort pointer` is a pointer to an unsigned 16 bit number, and `ubyte pointer pointer` is a pointer to a pointer to an unsigned 8 bit number.
 
-#### String type
+### String type
 
 The `string` type is a special pointer. Functionally it is almost the same as a `const ubyte pointer`, but there is one big difference; comparisons involving a string compare the pointed to data, rather than the pointer itself. For example:
 ```
@@ -593,7 +621,7 @@ cmpptrs(x, y)
 ```
 will always print "strings equal" followed by "pointers differ". That is because the `cmpstrings` function does a comparison with strings (so the contents are tested) but `cmppointers` does a pointer comparison. While the pointers point at memory containing the same values, they are located in two distinct regions of memory and hence have different addresses.
 
-#### Classes
+### Classes
 
 FlexBASIC supports classes, which are similar to records or structs in other languages. There are two ways to define classes. A whole BASIC (or Spin, or C) file may be included as a class with the `using` keyword:
 ```
@@ -620,13 +648,21 @@ print x.get()
 ```
 Note that `end class` must be spelled out in full (unlike many "`end x`" pairs which may be abbreviated as just `end`). 
 
-#### Type Aliases
+### Type Aliases
 
 An alias for an existing type may be declared with the `type` keyword. For example:
 ```
 type numptr as integer pointer
 type fullduplexserial as class using "FullDuplexSerial.spin"
 ```
+
+## Language features
+
+### TRUE and FALSE
+
+In general `false` is the value 0, and `true` is normally the value with all bits set (`$FFFFFFFF`). These are the "canonical" values that are returned from comparisons like `x < y`.
+
+However, note that _any_ non-zero value can act as `true`. For example, in an IF statement if the condition evaluates to non-zero then it will be regarded as `true`.
 
 ### Function declarations
 
@@ -1372,7 +1408,52 @@ Main loop construct. A `do` loop may have the loop test either at the beginning 
 ```
 will wait until pin 9 is 0.
 
-See also WHILE.
+The various forms are discussed below
+
+#### DO / LOOP
+
+```
+  do
+    ' do stuff here
+  loop
+```
+This is the basic form, which loops forever (unless an `exit` statement is invoked within the loop).
+
+#### DO UNTIL / LOOP
+
+```
+  do until (condition)
+    ' do stuff here
+  loop
+```
+Code within the loop is executed until a specific condition is met. If the condition is true before entry to the loop, the loop is never executed.
+
+#### DO / LOOP UNTIL
+
+```
+  do
+    ' do stuff here
+  loop until (condition)
+```
+In this variant the code within the loop is always executed at least once, and will continue to be executed until the specified condition is met.
+
+#### DO WHILE / LOOP
+
+```
+  do while (condition)
+    ' do stuff here
+  loop
+```
+Similar to `do until` but the sense of the condition is reversed; as long as the condition is true the loop is executed. If the condition is false the first time the loop is encountered, then the loop body is never executed.
+
+#### DO / LOOP WHILE
+
+```
+  do
+    ' do stuff here
+  loop while (condition)
+```
+Executes the loop body at least once, and continues to execute it as long as the condition remains true.
 
 ### DOUBLE
 
@@ -1386,9 +1467,41 @@ See IF
 
 Used to mark the end of most blocks. For example, `end function` marks the end of a function declaration, and `end if` the end of a multi-line `if` statement. In most cases the name after the `end` is optional.
 
+#### END ASM
+
+Closes an `asm` (inline assembly) block.
+
+#### END CLASS
+
+Closes a `class` definition.
+
+#### END FUNCTION
+
+Closes a function definition.
+
+#### END IF
+
+Marks the end of an `if` statement. As a special exception to the normal rules, this may also be written without the space (as `endif`). This is for compatibility with some other BASIC dialects.
+
+#### END SELECT
+
+Closes a `select case` block.
+
+#### END SUB
+
+Closes a subroutine definition.
+
+#### END TRY
+
+Closes a `try`/`catch` error handling block.
+
+#### END WHILE
+
+Marks the end of a `while` loop; this may be used in place of `wend`.
+
 ### ENDIF
 
-Marks the end of a multi-line `if` statement. Same as `end if`.
+Marks the end of a multi-line `if` statement. Same as `end if`. Note that this is the only special form of `end`. For example, it is _not_ legal to write `endasm`; only `end asm` will work.
 
 ### ENUM
 
@@ -1418,8 +1531,9 @@ Returns from the current function (just like a plain `return`). The value of the
 ```
 function sumif(a, x, y)
   sumif = x + y
-  if (a <> 0)
+  if (a <> 0) then
     exit function
+  end if
   sumif = 0
 end function
 ```
@@ -1438,6 +1552,10 @@ Exit from the innermost enclosing loop if it is a `while` loop. If it is not a `
 
 Predefined function. `exp(x)` returns the natural exponential of `x`, that is `e ^ x` where `e` is 2.71828...
 
+### FALSE
+
+A predefined constant 0. Any value equal to 0 or `nil` will be considered as false in a boolean context.
+
 ### FOR
 
 Repeat a loop while incrementing (or decrementing) a variable. The default step value is 1, but if an explicit `step` is given this is used instead:
@@ -1453,6 +1571,15 @@ next i
 ```
 
 If the variable given in the loop is not already defined, it is created as a local variable (local to the current sub or function, or to the implicit program function for loops outside of any sub or function).
+
+#### As a function modifier
+
+`for` placed after `function` or `sub` may be used to specify some attributes of that function or subroutine. For example, to place a function in COG memory one may write:
+```
+function for "cog" add(x, y)
+  return x+y
+end
+```
 
 ### FUNCTION
 
@@ -1546,6 +1673,18 @@ var c = makecounter(7, 3)
 for i = 1 to 4
   print c()
 next
+```
+
+#### Placing functions in internal memory
+
+If `for "cog"` follows the `function` keyword, the function will be placed in CPU internal memory rather than main memory. This memory is generally much faster, but is a very limited resource. This directive should be used only for small leaf functions (which do not call other functions) and should be used sparingly.
+```
+function for "cog" toupper(c as ubyte) as ubyte
+  if c >= asc("a") and c <= asc("z") then
+    c = c + (asc("A") - asc("a"))
+  end if
+  return c
+end function
 ```
 
 ### GETCNT
@@ -1976,6 +2115,14 @@ A built-in subroutine to pause for a number of milliseconds. For example, to pau
   pausems 2000
 ```
 
+### PAUSEUS
+
+
+A built-in subroutine to pause for a number of microseconds. For example, to pause for 1/2 millisecond, do
+```
+  pauseus 500
+```
+
 ### PINLO
 
 Force a pin to be output as 0.
@@ -2130,6 +2277,10 @@ A predefined function which returns a random floating point number `x` such that
   f = rnd(0) ' start a new sequence
   i = int(rnd(1)*6) + 1 ' generate random between 1 and 6
 ```
+
+### ROUND
+
+A predefined function which takes a floating point number and converts it to an integer, doing rounding towards the nearest integer.
 
 ### SELECT CASE
 
@@ -2305,6 +2456,10 @@ Example:
 
 A syntactical element typically used for giving ranges of items.
 
+### TRUE
+
+A predefined constant equal to `$ffffffff` (all bits set). This is the official result returned by comparison operators if they evaluate to true. However, note that any non-zero result will be considered "true" in the context of a boolean test. So the constant `true` is not unique, and you should never write `if a = true` or anything like that.
+
 ### TRY
 
 Example:
@@ -2392,6 +2547,10 @@ Propeller specific builtin function. Waits for pins to have a specific value (gi
 ### WAITPNE (only available on P1)
 
 Propeller specific builtin function. Waits for pins to not have a specific value (given by a bit mask). Same as the Spin `waitpne` routine. Note that the arguments are bit masks, not pin numbers, so take care when porting code from PropBasic.
+
+### WEND
+
+Marks the end of a `while` loop; this is a short form of `end while`.
 
 ### WITH
 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "spinc.h"
 
 // marked in MarkUsed(); checks for things like try()/catch() that
@@ -56,15 +57,18 @@ NumExprItemsOnStack(AST *expr)
 Function *curfunc;
 static int visitPass = 1;
 
-static void ReinitFunction(Function *f)
+static void ReinitFunction(Function *f, int language)
 {
     f->module = current;
     memset(&f->localsyms, 0, sizeof(f->localsyms));
     f->localsyms.next = &current->objsyms;
+    if (LangCaseInSensitive(language)) {
+        f->localsyms.flags = SYMTAB_FLAG_NOCASE;
+    }
 }
 
 Function *
-NewFunction(void)
+NewFunction(int language)
 {
     Function *f;
     Function *pf;
@@ -84,7 +88,7 @@ NewFunction(void)
         pf->next = f;
     }
     /* and initialize */
-    ReinitFunction(f);
+    ReinitFunction(f, language);
     return f;
 }
 
@@ -107,7 +111,7 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
         return NULL;
     }
     
-    sym = AddSymbol(stab, name, kind, (void *)type, username);
+    sym = AddSymbolPlaced(stab, name, kind, (void *)type, username, astname);
     if (!sym) {
         ERROR(astname, "duplicate definition for %s", username);
     } else {
@@ -278,7 +282,7 @@ DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body,
 
 /* like DeclareFunction, but takes a function type */
 AST *
-DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody)
+DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody, AST *annotations, AST *comment)
 {
     AST *funcvars, *funcdef;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
@@ -292,7 +296,7 @@ DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *fbody
     funcvars = NewAST(AST_FUNCVARS, ftype->right, NULL);
     funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
 
-    return DeclareFunction(P, type, is_public, funcdef, fbody, NULL, NULL);
+    return DeclareFunction(P, type, is_public, funcdef, fbody, annotations, comment);
 }
 
 static AST *
@@ -523,7 +527,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
         /* this case may be obsolete now */
         name = ast->left;
         ident = ast->right;
-        AddSymbol(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL);
+        AddSymbolPlaced(&func->localsyms, name->d.string, SYM_WEAK_ALIAS, (void *)ident->d.string, NULL, ast);
         AstNullify(ast);
         return;
     case AST_GLOBALVARS:
@@ -657,7 +661,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
                 ftype->left = GuessLambdaReturnType(ftype->right, fbody);
             }
             // declare the lambda function
-            DeclareTypedFunction(func->closure, ftype, name, 1, fbody);
+            DeclareTypedFunction(func->closure, ftype, name, 1, fbody, NULL, NULL);
             // now turn the lambda into a pointer deref
             ptrref = NewAST(AST_METHODREF, AstIdentifier(func->closure->classname), name);
             // AST_ADDROF can allow a type on the right, which will help
@@ -721,6 +725,30 @@ AdjustParameterTypes(AST *paramlist, int lang)
     }
 }
 
+static const char *
+FindAnnotation(AST *annotations, const char *key)
+{
+    const char *ptr;
+    int len = strlen(key);
+    while (annotations) {
+        if (annotations->kind == AST_ANNOTATION) {
+            ptr = annotations->d.string;
+            while (ptr && *ptr == '(') ptr++;
+            while (ptr && *ptr) {
+                if (!strncmp(ptr, key, len)) {
+                    if (ptr[len] == 0 || !isalpha(ptr[len])) {
+                        return ptr+len;
+                    }
+                }
+                while (*ptr && *ptr != ',') ptr++;
+                if (*ptr == ',') ptr++;
+            }
+        }
+        annotations = annotations->right;
+    }
+    return 0;
+}
+
 static Function *
 doDeclareFunction(AST *funcblock)
 {
@@ -742,6 +770,7 @@ doDeclareFunction(AST *funcblock)
     const char *funcname_user;
     AST *oldtype = NULL;
     Symbol *sym;
+    int is_cog;
     
     is_public = (funcblock->kind == AST_PUBFUNC);
     holder = funcblock->left;
@@ -757,6 +786,15 @@ doDeclareFunction(AST *funcblock)
         return NULL;
     }
     src = funcdef->left;
+    is_cog = CODE_PLACE_DEFAULT;
+    if (gl_p2 && FindAnnotation(annotation, "lut") != 0) {
+        is_cog = CODE_PLACE_LUT;
+        gl_have_lut++;
+    } else if (FindAnnotation(annotation, "cog") != 0) {
+        is_cog = CODE_PLACE_COG;
+    } else if (FindAnnotation(annotation, "hub") != 0) {
+        is_cog = CODE_PLACE_HUB;
+    }
     srcname = src->left;
     if (srcname->kind == AST_LOCAL_IDENTIFIER) {
         funcname_internal = srcname->left->d.string;
@@ -777,13 +815,13 @@ doDeclareFunction(AST *funcblock)
         fdef = (Function *)sym->val;
         oldtype = fdef->overalltype;
     } else {
-        fdef = NewFunction();
+        fdef = NewFunction(language);
         /* define the function symbol itself */
         /* note: static functions may get alias names, so we have to look
          * for an alias and declare under that name; that's what AliasName()
          * does
          */
-        sym = AddSymbol(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user);
+        sym = AddSymbolPlaced(&current->objsyms, funcname_internal, SYM_FUNCTION, fdef, funcname_user, funcdef);
         if (!is_public) {
             sym->flags |= SYMF_PRIVATE;
         }
@@ -816,7 +854,7 @@ doDeclareFunction(AST *funcblock)
         // if we get here then we are redefining a previously seen __fromfile
         // ignore the old stub function and start with a fresh one
         // BEWARE: there's some stuff (like fdef->next) we do not want to lose
-        ReinitFunction(fdef);
+        ReinitFunction(fdef, fdef->language);
     }
 
     fdef->name = funcname_internal;
@@ -824,6 +862,7 @@ doDeclareFunction(AST *funcblock)
     fdef->annotations = annotation;
     fdef->decl = funcdef;
     fdef->language = language;
+    fdef->code_placement = is_cog;
     if (comment) {
         if (comment->kind != AST_COMMENT && comment->kind != AST_SRCCOMMENT) {
             ERROR(comment, "Internal error: expected comment");
@@ -859,7 +898,7 @@ doDeclareFunction(AST *funcblock)
     if (!src->right || src->right->kind == AST_RESULT) {
         if (IsSpinLang(language)) {
             fdef->resultexpr = AstIdentifier("result");
-            AddSymbol(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL);
+            AddSymbolPlaced(&fdef->localsyms, "result", SYM_RESULT, NULL, NULL, src);
         } else {
             fdef->resultexpr = AstIdentifier("__result");
             AddSymbol(&fdef->localsyms, "__result", SYM_RESULT, NULL, NULL);
@@ -873,7 +912,7 @@ doDeclareFunction(AST *funcblock)
             resultexpr = resultexpr->right;
         }
         if (resultexpr->kind == AST_IDENTIFIER) {
-            AddSymbol(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL);
+            AddSymbolPlaced(&fdef->localsyms, resultexpr->d.string, SYM_RESULT, type, NULL, resultexpr);
         } else if (resultexpr->kind == AST_LISTHOLDER) {
             AST *rettype;
             int count;
@@ -1120,6 +1159,18 @@ NormalizeFunc(AST *ast, Function *func)
         }
         if (rdecl && AstUses(rdecl, ast))
             func->result_used = 1;
+        return NULL;
+    case AST_INLINEASM:
+        // inline asm is a mess and not laid out the way lists normally are
+        // for now, punt and assume the result is used if it's explicitly declared
+        rdecl = func->resultexpr;
+        if (rdecl) {
+            if (rdecl->kind == AST_DECLARE_VAR) {
+                func->result_used = 1;
+            } else if  (rdecl->kind == AST_IDENTIFIER && strcmp(rdecl->d.string, "result")!=0 ) {
+                func->result_used = 1;
+            }
+        }
         return NULL;
     case AST_INTEGER:
     case AST_FLOAT:
@@ -1539,7 +1590,7 @@ DeclareToplevelAnnotation(AST *anno)
         str += 1;
         ParseDirectives(str);
     } else {
-        f = NewFunction();
+        f = NewFunction(0);
         f->annotations = anno;
     }
 }
@@ -2720,7 +2771,11 @@ DeclareFunctionTemplate(Module *P, AST *templ)
     /* check for existing definition */
     sym = FindSymbol(&P->objsyms, name_internal);
     if (sym) {
-      ERROR(templ, "Redefining symbol %s", name_user);
+        AST *olddef = (AST *)sym->def;
+        ERROR(templ, "Redefining symbol %s", name_user);
+        if (olddef) {
+            ERROR(olddef, "...previous definition was here");
+        }
     }
     /* create */
     sym = AddSymbol(&P->objsyms, name_internal, SYM_TEMPLATE, (void *)templ, name_user);
@@ -2924,7 +2979,7 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
     Function *fdef;
     current = P;
     functype = fixupFunctype(pairs, DupAST(functype));
-    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body));
+    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body), NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {
         fdef->is_static = 1;

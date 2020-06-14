@@ -360,8 +360,11 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         }
         ast->right = AddToList(ast->right,
                                NewAST(AST_LISTHOLDER, curcase->label, NULL));
-        lastval++;
         curcase++;
+        if (curcase->val == lastval) {
+            ERROR(curcase->label, "Duplicate case value");
+        }
+        lastval++;
     }
     ast->right = AddToList(ast->right,
                            NewAST(AST_LISTHOLDER, defaultlabel, NULL));

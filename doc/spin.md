@@ -130,6 +130,15 @@ Temporary memory may be allocated on the stack by means of the call `__builtin_a
 
 C and BASIC files may be included as objects in Spin1 and Spin2 programs. To do this, be sure to include the entire file name (including any extension, like `.c` or `.bas`) in the `OBJ` line.
 
+Note that C is a case sensitive language, so you must use the exact same name that C uses: if `VGA` is a constant defined in a C file `video.c` then it must be used always as all upper case, not as `Vga` or `vga`. For example:
+```
+OBJ
+  screen: "video.c"
+...
+  x := screen.VGA  ' this is fine
+  x := screen.Vga  ' this is an error, the case does not match
+```
+
 ### Calling C standard library functions
 
 A simple way to include the C standard library is to declare an object using `libc.a`. C standard library functions may then be accessed as methods of that object. For example, to call `sprintf` you could do:
@@ -140,9 +149,9 @@ OBJ
   c.sprintf(@buf, string("the value is %x", 10), val)
 ```
 
-## Extensions to Spin 1
+## Extensions to Spin
 
-Fastspin has a number of extensions to the Spin language.
+Fastspin has a number of extensions to the Spin languages (both Spin1 and Spin2). Many Spin2 features may be used in Spin1, and vice-versa. For example in Spin2 functions with no arguments must be called like `foo()`, whereas fastspin still accepts the Spin1 version `foo`.
 
 ### Absolute address
 
@@ -566,6 +575,15 @@ which will be the same as
 ```
 The difference is rarely noticeable, because fastspin does convert string literals to lists in many places.
 
+As an extension, fastspin allows you to write:
+```
+   foo(@"ABC")
+```
+instead of
+```
+   foo(string("ABC"))
+```
+
 # P2 Considerations
 
 ## Spin1 on P2
@@ -581,6 +599,12 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 ## Compatibility with Spin2
 
 Generally fastspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available, except for those listed below.
+
+### @ Operator
+
+The `@` operator always gives an absolute address in fastspin's Spin2 dialect, even inside assembly code. This is different from the standard Spin2 interpreter, where it produces an address relative to the start of the current object. In most contexts the fastspin behavior is more convenient, but it is something to keep in mind.
+
+If you really need a relative offset, declare a label like `entry` at the start of your assembly and use `@label - @entry` to find the offset of `label` from `entry`. This will work in all compilers.
 
 ### ORG/END
 

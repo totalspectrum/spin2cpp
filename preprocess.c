@@ -1,6 +1,6 @@
 /*
  * Generic and very simple preprocessor
- * Copyright (c) 2012-2019 Total Spectrum Software Inc.
+ * Copyright (c) 2012-2020 Total Spectrum Software Inc.
  * MIT Licensed, see terms of use at end of file
  *
  * Reads UTF-16LE or UTF-8 encoded files, and returns a
@@ -310,7 +310,7 @@ pp_push_file_struct(struct preprocess *pp, FILE *f, const char *filename)
     pp->fil = A;
     if (A->name) {
         size_t tempsiz = 128 + strlen(A->name);
-        char *temp = alloca(tempsiz);
+        char *temp = (char *)alloca(tempsiz);
         snprintf(temp, tempsiz, pp->linechange, A->lineno, A->name);
         temp[tempsiz-1] = 0; /* make sure it is 0 terminated */
         flexbuf_addstr(&pp->whole, temp);
@@ -1035,7 +1035,7 @@ pp_get_defines_as_args(struct preprocess *pp, int argc, char **argv, int max_arg
     inc_paths = (char **)flexbuf_peek(&pp->inc_path);
     for (i = 0; i < num_inc_paths; i++) {
         n = strlen(inc_paths[i]) + 4;
-        cdef = malloc(n);
+        cdef = (char *)malloc(n);
         sprintf(cdef, "-I%s", inc_paths[i]);
         argv[argc++] = cdef;
         if (argc >= max_argc) return argc;
@@ -1053,7 +1053,7 @@ pp_get_defines_as_args(struct preprocess *pp, int argc, char **argv, int max_arg
             }
             n += strlen(def);
             n += 4; /* room for "-D", "=", and trailing 0 */
-            cdef = malloc(n);
+            cdef = (char *)malloc(n);
             sprintf(cdef, "-D%s=%s", x->name, def);
             x->argcdef = cdef;
         }

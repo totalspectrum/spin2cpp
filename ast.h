@@ -294,7 +294,7 @@ AST *AstAbort(AST *expr, AST *comment);
 AST *AstCatch(AST *expr);
 AST *AstSprRef(AST *index, int offset);
 AST *CheckYield(AST *loopbody);
-void ReplaceAst(AST *body, AST *old, AST *new);
+void ReplaceAst(AST *body, AST *old, AST *newast);
 
 // checks for a list with just one element, and returns that element
 AST *ExpectOneListElem(AST *list);

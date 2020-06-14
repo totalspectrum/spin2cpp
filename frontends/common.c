@@ -41,6 +41,7 @@ Module *globalModule;
 SymbolTable *currentTypes;
 
 int gl_p2;
+int gl_have_lut;
 int gl_errors;
 int gl_output;
 int gl_outputflags;
@@ -102,33 +103,17 @@ Aliases spinalias[] = {
     { "lockret", "__builtin_lockret" },
 #endif
 
-    { "_dirl", "__builtin_propeller_dirl" },
-    { "_dirh", "__builtin_propeller_dirh" },
-    { "_dirnot", "__builtin_propeller_dirnot" },
-    { "_dir", "__builtin_propeller_dir" },
-
-    { "_pinw", "__builtin_propeller_drv" },
-    { "_pinl", "__builtin_propeller_drvl" },    
-    { "_pinh", "__builtin_propeller_drvh" },
-    { "_pinnot", "__builtin_propeller_drvnot" },
-    { "_pinr", "__builtin_propeller_pinr" },
-
     { "reboot", "_reboot" },
 
     { "send", "__sendptr" },
     
-    { "_waitx", "__builtin_propeller_waitx" },
-    
     /* obsolete aliases */
-    { "dirl_", "__builtin_propeller_dirl" },
-    { "dirh_", "__builtin_propeller_dirh" },
-    { "dirnot_", "__builtin_propeller_dirnot" },
-    { "dir_", "__builtin_propeller_dir" },
-    { "drvl_", "__builtin_propeller_drvl" },
-    { "drvh_", "__builtin_propeller_drvh" },
-    { "drvnot_", "__builtin_propeller_drvnot" },
-    { "drv_", "__builtin_propeller_drv" },
-    { "waitx_", "__builtin_propeller_waitx" },
+    { "dirl_", "_dirl" },
+    { "dirh_", "_dirh" },
+    { "drvl_", "_drvl" },
+    { "drvh_", "_drvh" },
+    { "drvnot_", "_drvnot" },
+    { "drv_", "_drv" },
 
     { NULL, NULL },
 };
@@ -140,22 +125,22 @@ Aliases spin2alias[] = {
     { "lockrel", "lockclr" },
     
     { "pinw", "_pinwrite" },
-    { "pinl", "__builtin_propeller_drvl" },    
-    { "pinh", "__builtin_propeller_drvh" },
-    { "pint", "__builtin_propeller_drvnot" },
-    { "pinr", "__builtin_propeller_pinr" },
-    { "pinf", "__builtin_propeller_fltl" },
+    { "pinl", "_drvl" },    
+    { "pinh", "_drvh" },
+    { "pint", "_drvnot" },
+    { "pinr", "_pinr" },
+    { "pinf", "_fltl" },
     { "pinstart", "_pinstart" },
     { "pinsetup", "_pinsetup" },
     { "pinclear", "_pinclear" },
     
-//    { "pinrnd", "__builtin_propeller_drvrnd" },
+//    { "pinrnd", "_drvrnd" },
     { "pinwrite", "_pinwrite" },
-    { "pinlow", "__builtin_propeller_drvl" },    
-    { "pinhigh", "__builtin_propeller_drvh" },
-    { "pintoggle", "__builtin_propeller_drvnot" },
-    { "pinread", "__builtin_propeller_pinr" },
-    { "pinfloat", "__builtin_propeller_fltl" },
+    { "pinlow", "_drvl" },    
+    { "pinhigh", "_drvh" },
+    { "pintoggle", "_drvnot" },
+    { "pinread", "_pinr" },
+    { "pinfloat", "_fltl" },
     { "pinmode", "_pinmode" },
     
     { "getct", "_getcnt" },
@@ -164,39 +149,27 @@ Aliases spin2alias[] = {
     { "wxpin", "_wxpin" },
     { "wypin", "_wypin" },
     
-    { "akpin", "__builtin_propeller_akpin" },
-    { "rdpin", "__builtin_propeller_rdpin" },
-    { "rqpin", "__builtin_propeller_rqpin" },
+    { "akpin", "_akpin" },
+    { "rdpin", "_rdpin" },
+    { "rqpin", "_rqpin" },
 
     { "rotxy", "_rotxy" },
     { "polxy", "_polxy" },
     { "xypol", "_xypol" },
 
-    { "cogatn", "__builtin_propeller_cogatn" },
+    { "cogatn", "_cogatn" },
     { "muldiv64", "_muldiv64" },
-    { "waitx", "__builtin_propeller_waitx" },
+    { "waitx", "_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
     { "waitct", "waitcnt" },
     
-    /* for C usage */
-    { "_pinf", "__builtin_propeller_fltl" },
-    { "_pinrnd", "__builtin_propeller_drvrnd" },
-
     /* obsolete aliases */
-    { "dirrnd_", "__builtin_propeller_dirrnd" },
-    { "drvrnd_", "__builtin_propeller_drvrnd" },
-    { "outl_", "__builtin_propeller_outl" },
-    { "outh_", "__builtin_propeller_outh" },
-    { "outrnd_", "__builtin_propeller_outrnd" },
-    { "outnot_", "__builtin_propeller_outnot" },
-    { "out_", "__builtin_propeller_out" },
+    { "outl_", "_outl" },
+    { "outh_", "_outh" },
 
     { "fltl_", "__builtin_propeller_fltl" },
     { "flth_", "__builtin_propeller_flth" },
-    { "fltrnd_", "__builtin_propeller_fltrnd" },
-    { "fltnot_", "__builtin_propeller_fltnot" },
-    { "flt_", "__builtin_propeller_flt" },
 
     { "wrpin_", "__builtin_propeller_wrpin" },
     { "wxpin_", "__builtin_propeller_wxpin" },
@@ -216,10 +189,10 @@ Aliases basicalias[] = {
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },
     { "pauseus", "_waitus" },
-    { "pinlo", "__builtin_propeller_drvl" },
-    { "pinhi", "__builtin_propeller_drvh" },
-    { "pinset", "__builtin_propeller_drv" },
-    { "pintoggle", "__builtin_propeller_drvnot" },
+    { "pinlo", "_drvl" },
+    { "pinhi", "_drvh" },
+    { "pinset", "_drv" },
+    { "pintoggle", "_drvnot" },
     { "rnd", "_basic_rnd" },
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
@@ -235,6 +208,8 @@ Aliases basicalias[] = {
     { "pow", "__builtin_powf" },
     { "sin", "__builtin_sinf" },
     { "tan", "__builtin_tanf" },
+
+    { "round", "_float_round" },
     
     { NULL, NULL },
 };
@@ -247,18 +222,13 @@ Aliases calias[] = {
     { "_cnt",  "_getcnt" },
     { "_clockfreq", "__builtin_clkfreq" },
     { "_clockmode", "__builtin_clkmode" },
-    { "_dirl", "__builtin_propeller_dirl" },
-    { "_dirh", "__builtin_propeller_dirh" },
-    { "_dirnot", "__builtin_propeller_dirnot" },
-    { "_dirw", "__builtin_propeller_dir" },
-    { "_pinl", "__builtin_propeller_drvl" },
-    { "_pinh", "__builtin_propeller_drvh" },
-    { "_pinnot", "__builtin_propeller_drvnot" },
-    { "_pinw", "__builtin_propeller_drv" },
-    { "_waitx", "__builtin_propeller_waitx" },
-    { "_pinr", "__builtin_propeller_pinr" },
+    { "_pinl", "_drvl" },
+    { "_pinh", "_drvh" },
+    { "_pinnot", "_drvnot" },
+    { "_pinw", "_drvw" },
 
-    { "_rdpin", "__builtin_propeller_rdpin" },
+    /* some math functions */
+    { "__builtin_round", "_float_round" },
     
     { NULL, NULL },
 };
@@ -279,6 +249,14 @@ static void
 initSymbols(Module *P, int language)
 {
     Aliases *A;
+
+    /* NOTE: we do not want the Spin aliases polluting the
+     * C namespace, so do not add the aliases to the
+     * system (global) module
+     */
+    if (!globalModule || P == globalModule) {
+        return;
+    }
     if (IsBasicLang(language)) {
         A = basicalias;
     } else if (IsCLang(language)) {
@@ -340,6 +318,11 @@ NewModule(const char *fullname, int language)
     } else {
         P->objsyms.next = &spinReservedWords;
     }
+    /* set appropriate case sensititity */
+    if (LangCaseInSensitive(language)) {
+        P->objsyms.flags |= SYMTAB_FLAG_NOCASE;
+    }
+    /* set up default symbols */
     initSymbols(P, language);
     P->body = NULL;
     return P;
@@ -360,7 +343,7 @@ EnterConstant(const char *name, AST *expr)
             int32_t origval;
             int32_t newval;
 
-            origval = EvalConstExpr(sym->val);
+            origval = EvalConstExpr((AST *)sym->val);
             newval = EvalConstExpr(expr);
             if (origval != newval) {
                 ERROR(expr, "Redefining %s with a different value", name);
@@ -992,9 +975,10 @@ CheckYield(AST *body)
 /* push/pop current type symbols */
 void PushCurrentTypes(void)
 {
-    SymbolTable *tab = calloc(1, sizeof(SymbolTable));
+    SymbolTable *tab = (SymbolTable *)calloc(1, sizeof(SymbolTable));
 
     tab->next = currentTypes;
+    tab->flags = currentTypes->flags;
     currentTypes = tab;
 }
 
@@ -1101,14 +1085,14 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
     }
             
     if (decl->kind == AST_TYPEDEF) {
-        AddSymbol(table, name, SYM_TYPEDEF, decl->left, NULL);
+        AddSymbolPlaced(table, name, SYM_TYPEDEF, decl->left, NULL, decl);
         return NULL;
     } else {
         const char *oldname = name;
         const char *newName = NewTemporaryVariable(oldname);
         AST *newIdent = AstIdentifier(newName);
 
-        AddSymbol(table, oldname, SYM_REDEF, (void *)newIdent, newName);
+        AddSymbolPlaced(table, oldname, SYM_REDEF, (void *)newIdent, newName, decl);
         if (identptr) {
             *identptr = NewAST(AST_LOCAL_IDENTIFIER, newIdent, ident);
             RemapIdentifiers(restOfList, newIdent, name);
@@ -1170,7 +1154,7 @@ DeclareMemberAlias(Module *P, AST *ident, AST *expr)
         ERROR(ident, "Redefining %s", userName);
         return;
     }
-    AddSymbol(&P->objsyms, name, SYM_ALIAS, expr, NULL);
+    AddSymbolPlaced(&P->objsyms, name, SYM_ALIAS, expr, NULL, ident);
 }
 
 // Declare typed global variables
@@ -1365,7 +1349,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
         if (olddef) {
             ERROR(ident, "Redefining symbol %s", user_name);
         }
-        AddSymbol(currentTypes, name, SYM_TYPEDEF, type, NULL);
+        AddSymbolPlaced(currentTypes, name, SYM_TYPEDEF, type, NULL, ident);
         return;
     }
     if (olddef) {
@@ -1574,4 +1558,14 @@ DeclareMemberVariables(Module *P)
         P->finalvarblock = AddToList(P->finalvarblock, P->pendingvarblock);
         P->pendingvarblock = NULL;
     }
+}
+
+
+Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def)
+{
+    Symbol *sym = AddSymbol(table, name, type, val, user_name);
+    if (sym) {
+        sym->def = (void *)def;
+    }
+    return sym;
 }

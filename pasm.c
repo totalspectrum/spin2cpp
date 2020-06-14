@@ -69,6 +69,10 @@ dataListLen(AST *ast, int elemsize)
             }
             if (sub->kind == AST_ARRAYDECL || sub->kind == AST_ARRAYREF) {
                 numelems = EvalPasmExpr(ast->left->right);
+                if ((int)numelems < 0) {
+                    ERROR(sub, "Negative repeat count not allowed");
+                    numelems = 0;
+                }
             } else if (sub->kind == AST_STRING) {
                 numelems = strlen(sub->d.string);
             } else if (sub->kind == AST_RANGE) {
@@ -117,7 +121,11 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     if (sym) {
         // redefining a label with the exact same values is OK
         if (sym->kind != SYM_LABEL) {
+            AST *olddef = (AST *)sym->def;
             ERROR(origLabel, "Redefining symbol %s", name);
+            if (olddef) {
+                ERROR(olddef, "...previous definition was here");
+            }
             return;
         }
         labelref = (Label *)sym->val;
@@ -130,10 +138,15 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
             ERROR(origLabel, "Changing cog value for symbol %s", name);
             return;
         }
+#ifdef NEVER
+        // labelref->org is never actually used, so do not bother checking it
+        // also, a proper check would actually involve the value rather than
+        // just the pointer
         if (labelref->org != lastorg) {
             ERROR(origLabel, "Changing lastorg value for symbol %s", name);
             return;
         }
+#endif        
         if (!CompatibleTypes(labelref->type, ltype)) {
             ERROR(origLabel, "Changing type of symbol %s", name);
             return;
@@ -172,7 +185,7 @@ EnterLabel(Module *P, AST *origLabel, long hubpc, long cogpc, AST *ltype, Symbol
     labelref->flags = flags;
 
     if (!sym) {
-        sym=AddSymbol(&P->objsyms, name, SYM_LABEL, labelref, NULL);
+        sym=AddSymbolPlaced(&P->objsyms, name, SYM_LABEL, labelref, NULL, origLabel);
     }
 }
 
@@ -424,14 +437,18 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 #define MARK_COG(label_flags) label_flags &= ~LABEL_IN_HUB
 
 static bool
-IsRetInstruction(AST *ast)
+IsJmpRetInstruction(AST *ast)
 {
-    if (ast && ast->kind == AST_COMPRESS_INSTR) {
+    while (ast && ast->kind == AST_COMMENT) {
+        ast = ast->right;
+    }
+    if (!ast) return false;
+    if (ast->kind == AST_COMPRESS_INSTR) {
         ast = ast->left;
     }
     if (ast && ast->kind == AST_INSTR) {
         Instruction *instr = (Instruction *)ast->d.ptr;
-        if (instr && instr->opc == OPC_RET && !gl_p2) {
+        if (instr && (instr->opc == OPC_RET || instr->opc == OPC_JMPRET) && !gl_p2) {
             return true;
         }
     }
@@ -501,7 +518,7 @@ DeclareLabels(Module *P)
                 ALIGNPC(4);
             }
             /* check to see if the following instruction is a "ret" */
-            if (!gl_p2 && IsRetInstruction(ast->left)) {
+            if (!gl_p2 && IsJmpRetInstruction(ast->left)) {
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags | LABEL_HAS_JMP);
             } else {
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);

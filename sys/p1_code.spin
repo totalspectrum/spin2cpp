@@ -156,41 +156,51 @@ pri _call_method(o, f, x=0) | r
   endasm
   return r
 
-pri __builtin_propeller_dirl(pin) | mask
+pri _fltl(pin) | mask
+  mask := 1<<pin
+  dira &= !mask
+  outa &= !mask
+  
+pri _flth(pin) | mask
+  mask := 1<<pin
+  dira &= !mask
+  outa |= mask
+
+pri _dirl(pin) | mask
   mask := 1<<pin
   dira &= !mask
 
-pri __builtin_propeller_dirh(pin) | mask
+pri _dirh(pin) | mask
   mask := 1<<pin
   dira |= mask
 
-pri __builtin_propeller_dirnot(pin) | mask
+pri _dirnot(pin) | mask
   mask := 1<<pin
   dira ^= mask
 
-pri __builtin_propeller_dir(pin, c) | mask
+pri _dirw(pin, c) | mask
   mask := 1<<pin
   if (c)
     dira |= mask
   else
     dira &= !mask
 
-pri __builtin_propeller_drvl(pin) | mask
+pri _drvl(pin) | mask
   mask := 1<<pin
   dira |= mask
   outa &= !mask
 
-pri __builtin_propeller_drvh(pin) | mask
+pri _drvh(pin) | mask
   mask := 1<<pin
   dira |= mask
   outa |= mask
 
-pri __builtin_propeller_drvnot(pin) | mask
+pri _drvnot(pin) | mask
   mask := 1<<pin
   dira |= mask
   outa ^= mask
 
-pri __builtin_propeller_drv(pin, c) | mask
+pri _drvw(pin, c) | mask
   mask := 1<<pin
   dira |= mask
   if (c)
@@ -198,14 +208,14 @@ pri __builtin_propeller_drv(pin, c) | mask
   else
     outa &= !mask
 
-pri __builtin_propeller_pinr(pin) | mask
+pri _pinr(pin) | mask
   mask := 1<<pin
   if (ina & mask)
     return 1
   else
     return 0
     
-pri __builtin_propeller_waitx(tim)
+pri _waitx(tim)
   asm
     add  tim, cnt
     waitcnt tim, #0

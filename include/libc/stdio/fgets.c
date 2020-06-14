@@ -13,11 +13,20 @@ fgets(char *buf, int size, FILE *fp)
 {
   int c;
   int count = 0;
-
+  int tty = isatty(fileno(fp));
+  
   --size;
   while (count < size) {
     c = fgetc(fp);
     if (c < 0) break;
+    if (tty) {
+        if (c == '\r') {
+            c = '\n';
+        } else if (c == '\b' || c == 127) {
+            if (count > 0) --count;
+            continue;
+        }
+    }
     buf[count++] = c;
     if (c == '\n') break;
   }

@@ -722,7 +722,7 @@ static void doASTDump(AST *ast, int indent)
     {
         int arraybase = 0;
         if (ast->d.ptr) {
-            arraybase = EvalConstExpr(ast->d.ptr);
+            arraybase = EvalConstExpr((AST *)ast->d.ptr);
         }
         sprintf(buf, "<arraydecl %d>", arraybase);
         break;
@@ -731,7 +731,7 @@ static void doASTDump(AST *ast, int indent)
     {
         int arraybase = 0;
         if (ast->d.ptr) {
-            arraybase = EvalConstExpr(ast->d.ptr);
+            arraybase = EvalConstExpr((AST *)ast->d.ptr);
         }
         sprintf(buf, "<arraytype %d>", arraybase);
         break;
@@ -977,21 +977,21 @@ AstNullify(AST *ast)
 // replace occurances of "old" within body by "new"
 //
 void
-ReplaceAst(AST *body, AST *old, AST *new)
+ReplaceAst(AST *body, AST *old, AST *newast)
 {
     if (!body) return;
     if (body->left) {
         if (body->left->kind == old->kind && AstMatch(body->left, old)) {
-            body->left = new;
+            body->left = newast;
         } else {
-            ReplaceAst(body->left, old, new);
+            ReplaceAst(body->left, old, newast);
         }
     }
     if (body->right) {
         if (body->right->kind == old->kind && AstMatch(body->right, old)) {
-            body->right = new;
+            body->right = newast;
         } else {
-            ReplaceAst(body->right, old, new);
+            ReplaceAst(body->right, old, newast);
         }
     }
 }

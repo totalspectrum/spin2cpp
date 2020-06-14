@@ -230,8 +230,10 @@ pri _tx(c)
 
 pri _rx : r
   repeat
-    r := _rxraw
+    r := _rxraw()
   until r <> -1
+  if (r == 13) and ((__rxtxflags & _rxtx_crnl) <> 0)
+    r := 10
   if (__rxtxflags & _rxtx_echo)
     _tx(r)
 
@@ -296,6 +298,10 @@ pri _waitms(m=long)
 pri _waitus(m=long)
   _waitx(m * (__clkfreq_var / 1000000))
 
+'' alias for _fltl
+pri _pinf(p)
+  _fltl(p)
+  
 '' get some random bits 0-$FFFFFF
 pri file "libsys/random.c" _randbits : r=long
 

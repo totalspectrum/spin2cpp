@@ -449,7 +449,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
             type = list->left; list = list->right;
             ident = list->left; list = list->right;
             body = list->left;
-            DeclareTypedFunction(P, type, ident, is_public, body);
+            DeclareTypedFunction(P, type, ident, is_public, body, NULL, NULL);
             continue;
         }
         if (ast->kind == AST_PUBFUNC) {
@@ -540,7 +540,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     int is_union;
     int is_class;
     const char *name;
-    char *typename;
+    char *typname;
     Module *C;
     SymbolTable *symtable = currentTypes; // &P->objsyms;
     Symbol *sym;
@@ -568,37 +568,37 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         return NULL;
     }
     name = identifier->d.string;
-    typename = malloc(strlen(name)+16);
-    strcpy(typename, "__struct_");
-    strcat(typename, name);
+    typname = (char *)malloc(strlen(name)+16);
+    strcpy(typname, "__struct_");
+    strcat(typname, name);
 
     /* see if there is already a type with that name */
-    sym = LookupSymbolInTable(symtable, typename);
+    sym = LookupSymbolInTable(symtable, typname);
     if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
         if (!IsClassType(class_type)) {
-            SYNTAX_ERROR("%s is not a class", typename);
+            SYNTAX_ERROR("%s is not a class", typname);
             return NULL;
         }
-        C = class_type->d.ptr;
+        C = (Module *)class_type->d.ptr;
         if (C->isUnion != is_union) {
-            SYNTAX_ERROR("Inconsistent use of union/struct for %s", typename);
+            SYNTAX_ERROR("Inconsistent use of union/struct for %s", typname);
         }
         C->Lptr = current->Lptr;
     } else {
         if (body && body->kind == AST_STRING) {
-            class_type = NewAbstractObject(AstIdentifier(typename), body);
+            class_type = NewAbstractObject(AstIdentifier(typname), body);
             current->objblock = AddToList(current->objblock, class_type);
             body = NULL;
             C = NULL;
         } else {
-            C = NewModule(typename, LANG_CFAMILY_C);
+            C = NewModule(typname, LANG_CFAMILY_C);
             C->defaultPrivate = is_class;
             C->Lptr = current->Lptr;
             C->isUnion = is_union;
-            class_type = NewAbstractObject(AstIdentifier(typename), NULL);
+            class_type = NewAbstractObject(AstIdentifier(typname), NULL);
             class_type->d.ptr = C;
-            AddSymbol(symtable, typename, SYM_TYPEDEF, class_type, NULL);
+            AddSymbol(symtable, typname, SYM_TYPEDEF, class_type, NULL);
             AddSubClass(P, C);
         }
     }
@@ -682,7 +682,7 @@ static int IsStatic(AST *ftype) {
 
 /* declare a typed function, optionally using a local identifier (if the function is STATIC) */
 static AST *
-DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body)
+DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *body, AST *attribute)
 {
     if (IsStatic(ftype) && nameAst->kind == AST_IDENTIFIER) {
         /* declare a local alias for the name */
@@ -695,7 +695,7 @@ DeclareCTypedFunction(Module *P, AST *ftype, AST *nameAst, int is_public, AST *b
         // to the original name are replaced with the new name
         ReplaceAst(body, origName, nameAst);
     }
-    return DeclareTypedFunction(P, ftype, nameAst, is_public, body);
+    return DeclareTypedFunction(P, ftype, nameAst, is_public, body, attribute, NULL);
 }
 
 static AST *
@@ -1601,14 +1601,22 @@ initializer
 
 initializer_list
 	: initializer
-            { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
+            {
+                AST *ast = NewAST(AST_EXPRLIST, $1, NULL);
+                $$ = ast;
+            }
         | designation initializer
             {
                 SYNTAX_ERROR("designators not supported yet");
                 $$ = NULL;
             }
 	| initializer_list ',' initializer
-            { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+            {
+                AST *list = $1;
+                AST *ast = $3;
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = AddToListEx(list, ast, (AST **)&list->d.ptr);
+            }
         | initializer_list ',' designation initializer
             {
                 SYNTAX_ERROR("designators not supported yet");
@@ -2003,66 +2011,80 @@ external_declaration
 function_definition
 	: declaration_specifiers declarator func_declaration_list compound_statement
             {
-                AST *type;
-                AST *ident;
-                AST *body = $4;
+                AST *type = $1;
                 AST *decl = $2;
+                AST *decl_list = $3;
+                AST *body = $4;
+                AST *ident;
                 int is_public = 1;
 
-                decl = MergeOldStyleDeclarationList(decl, $3);
-                type = CombineTypes($1, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                decl = MergeOldStyleDeclarationList(decl, decl_list);
+                type = CombineTypes(type, decl, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declaration_specifiers declarator compound_statement
+	| declaration_specifiers declarator attribute_decl compound_statement
             {
-                AST *type;
-                AST *ident;
-                AST *body = $3;
+                AST *type = $1;
                 AST *decl = $2;
+                AST *anno = $3;
+                AST *body = $4;
+                AST *ident;
                 int is_public = 1;
-                type = CombineTypes($1, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(type, decl, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
 	| declarator func_declaration_list compound_statement
             {
                 AST *type;
                 AST *ident;
-                AST *body = $3;
                 AST *decl = $1;
+                AST *decl_list = $2;
+                AST *body = $3;
                 int is_public = 1;
-                decl = MergeOldStyleDeclarationList(decl, $2);
+                decl = MergeOldStyleDeclarationList(decl, decl_list);
                 type = CombineTypes(NULL, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
-	| declarator compound_statement
+	| declarator attribute_decl compound_statement
             {
                 AST *type;
                 AST *ident;
-                AST *body = $2;
                 AST *decl = $1;
+                AST *anno = $2;
+                AST *body = $3;
                 int is_public = 1;
                 type = CombineTypes(NULL, decl, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                DeclareCTypedFunction(current, type, ident, is_public, body, anno);
             }
 	| declaration_specifiers declarator fromfile_decl
             {
-                AST *type;
                 AST *ident;
+                AST *decl_list = $1;
+                AST *type = $2;
                 AST *body = $3;
                 int is_public = 1;
-                type = CombineTypes($1, $2, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(decl_list, type, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	| declarator fromfile_decl
             {
-                AST *type;
+                AST *type = $1;
                 AST *ident;
                 AST *body = $2;
                 int is_public = 1;
-                type = CombineTypes(NULL, $1, &ident);
-                DeclareCTypedFunction(current, type, ident, is_public, body);
+                type = CombineTypes(NULL, type, &ident);
+                DeclareCTypedFunction(current, type, ident, is_public, body, NULL);
             }
 	;
+
+attribute_decl
+        : C_ATTRIBUTE
+            {
+                $$ = $1;
+            }
+         | /* empty */
+            { $$ = NULL; }
+        ;
 
 fromfile_decl
         : C_FROMFILE '(' C_STRING_LITERAL ')' ';'

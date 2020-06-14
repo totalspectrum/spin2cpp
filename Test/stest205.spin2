@@ -1,0 +1,7 @@
+pub demo
+  org
+loop 
+    drvl #56
+    jmp  #$
+  end
+  

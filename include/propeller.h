@@ -29,6 +29,7 @@
 
 #define _clkfreq _clockfreq()
 #define CLKFREQ _clockfreq()
+#define clkset(a, b) _clkset(a, b)
 
 /**
  * @brief Start a new propeller LMM function/thread in another COG.

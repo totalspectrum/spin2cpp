@@ -104,6 +104,7 @@ extern int gl_p2;      /* set for P2 output */
 # define P2_REV_B 2
 #define DEFAULT_P2_VERSION P2_REV_B
 
+extern int gl_have_lut; /* are there any functions placed in LUT? */
 extern int gl_output;  /* type of output to produce */
 extern int gl_outputflags; /* modifiers (e.g. LMM or COG code */
 extern int gl_nospin; /* if set, suppress output of Spin methods */
@@ -258,11 +259,15 @@ typedef struct funcdef {
     Module *module;
 
     /* various flags */
+    unsigned code_placement:2;
+#define CODE_PLACE_DEFAULT 0
+#define CODE_PLACE_HUB 1
+#define CODE_PLACE_COG 2
+#define CODE_PLACE_LUT 3    
     unsigned result_used:1;
     unsigned is_static:1; // nonzero if no member variables referenced
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static
-    unsigned cog_code:1;     // 1 if function should always be placed in cog
     unsigned cog_task:1;     // 1 if function is started in another cog
     unsigned used_as_ptr:1;  // 1 if function's address is taken as a pointer
     unsigned local_address_taken: 1; // 1 if a local variable or parameter has its address taken
@@ -337,6 +342,7 @@ struct modulestate {
 
     /* BASIC data section */
     AST *bas_data;
+    AST *bas_data_tail;
     
     /* list of methods */
     Function *functions;
@@ -443,13 +449,13 @@ void DeclareLabels(Module *);
 AST *DeclareFunction(Module *P, AST *rettype, int is_public, AST *funcdef, AST *body, AST *annotate, AST *comment);
 
 /* streamlined DeclareFunction: "ftype" is the function type (return + parameters) */
-AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body);
+AST *DeclareTypedFunction(Module *P, AST *ftype, AST *name, int is_public, AST *body, AST *annotation, AST *comment);
 
 /* declare a template for a function */
 void DeclareFunctionTemplate(Module *P, AST *templ);
 
 /* instantiate a templated function */
-AST *InstantiateTemplateFunction(Module *P, AST *template, AST *call);
+AST *InstantiateTemplateFunction(Module *P, AST *templ, AST *call);
 
 void DeclareToplevelAnnotation(AST *annotation);
 
@@ -666,6 +672,8 @@ void initSpinLexer(int flags);
 
 // language features
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))
+#define LangCaseSensitive(lang) (IsCLang(lang))
+#define LangCaseInSensitive(lang) (!LangCaseSensitive(lang))
 
 void InitGlobalModule(void);
 Module *NewModule(const char *modulename, int language);
@@ -756,6 +764,9 @@ Module *GetTopLevelModule(void);
 
 // returns non-zero if a variable of type typ must go on the stack
 int TypeGoesOnStack(AST *typ);
+
+// declare a symbol together with a location of its definition
+Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def);
 
 // external vars
 extern AST *basic_get_float;

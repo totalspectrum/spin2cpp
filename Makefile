@@ -1,6 +1,6 @@
 #
 # Makefile for spin compiler
-# Copyright (c) 2011-2019 Total Spectrum Software Inc.
+# Copyright (c) 2011-2020 Total Spectrum Software Inc.
 # Distributed under the MIT License (see COPYING for details)
 #
 # if CROSS is defined, we are building a cross compiler
@@ -49,6 +49,7 @@ DEFS=-DFLEXSPIN_BUILD
 # note: to produce detailed debug, use YACC="bison --report=all"
 YACC = bison
 CFLAGS = -g -Wall $(INC) $(DEFS)
+#CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
 LIBS = -lm
 RM = rm -rf

@@ -240,13 +240,15 @@ domakefloat(AST *typ, AST *ast)
     if (IsGenericType(typ)) return ast;
     if (gl_fixedreal) {
         ret = AstOperator(K_SHL, ast, AstInteger(G_FIXPOINT));
-        return ret;
+        return FoldIfConst(ret);
     }
     ast = forcepromote(typ, ast);
     if (IsConstExpr(ast)) {
-        int x = EvalConstExpr(ast);
         // FIXME: assumes 32 bit floats only
-        return AstFloat((float)x);
+        int x = EvalConstExpr(ast);
+        float f;
+        f = (IsUnsignedType(typ)) ? (float)(unsigned)x : (float) x;
+        return AstFloat(f);
     }
     if (IsUnsignedType(typ)) {
         ret = MakeOperatorCall(float_fromuns, ast, NULL, NULL);
@@ -260,12 +262,22 @@ static AST *
 dofloatToInt(AST *ast)
 {
     AST *ret;
+
     if (gl_fixedreal) {
         // FIXME: should we round here??
         ret = AstOperator(K_SAR, ast, AstInteger(G_FIXPOINT));
         return ret;
     }
-    ast = MakeOperatorCall(float_toint, ast, NULL, NULL);
+    if (IsConstExpr(ast)) {
+        union f_or_i {
+            float floatbits;
+            int intbits;
+        } g;
+        g.intbits = EvalConstExpr(ast);
+        ast = AstInteger((int)g.floatbits);
+    } else {
+        ast = MakeOperatorCall(float_toint, ast, NULL, NULL);
+    }
     return ast;
 }
 
@@ -281,6 +293,8 @@ bool MakeBothIntegers(AST *ast, AST *ltyp, AST *rtyp, const char *opname)
     }
     return VerifyIntegerType(ast, ltyp, opname) && VerifyIntegerType(ast, rtyp, opname);
 }
+
+#define DEFAULT_FLOAT_TYPE ast_type_float
 
 static AST *
 HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
@@ -313,6 +327,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             } else {
                 ast->right = domakefloat(righttype, ast->right);
             }
+            righttype = DEFAULT_FLOAT_TYPE;
         }
     } else if (IsFloatType(righttype)) {
         isfloat = 1;
@@ -326,12 +341,14 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         } else {
             ast->left = domakefloat(lefttype, ast->left);
         }
+        lefttype = DEFAULT_FLOAT_TYPE;
     } else {
         // for exponentiation both sides need to be floats
         if (op == K_POWER) {
             isfloat = 1;
             ast->left = domakefloat(lefttype, ast->left);
             ast->right = domakefloat(righttype, ast->right);
+            lefttype = righttype = DEFAULT_FLOAT_TYPE;
         }
         // in C we need to promote both sides to  long
         else if (curfunc && IsCLang(curfunc->language)) {
@@ -355,6 +372,14 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
         }
     }
             
+    if (lefttype == righttype && IsConstExpr(ast)) {
+        AST *newast = FoldIfConst(ast);
+        *ast = *newast;
+        if (IsFloatType(lefttype)) {
+            ast->kind = AST_FLOAT;
+        }
+        return lefttype;
+    }
     if (isfloat) {
         switch (op) {
         case '+':
@@ -1420,6 +1445,9 @@ AST *CheckTypes(AST *ast)
             }
             AstReportAs(ast, &saveinfo);
             ltype = ExprType(ast);
+            if (!ltype && sym->kind == SYM_HWREG) {
+                ltype = ast_type_unsigned_long;
+            }
             // if this is a REFTYPE then dereference it
             if (ltype && IsRefType(ltype)) {
                 AST *deref;

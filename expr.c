@@ -1806,7 +1806,7 @@ GetArrayBase(AST *arraytype)
 {
     arraytype = RemoveTypeModifiers(arraytype);
     if (arraytype->kind == AST_ARRAYTYPE) {
-        return arraytype->d.ptr;
+        return (AST *)arraytype->d.ptr;
     }
     return NULL;
 }
@@ -2393,7 +2393,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             case SYM_PARAMETER:
             case SYM_LOCALVAR:
             case SYM_TEMPVAR:
-                typexpr = sym->val;
+                typexpr = (AST *)sym->val;
                 if (typexpr && (typexpr->kind == AST_PTRTYPE || typexpr->kind == AST_REFTYPE || typexpr->kind == AST_COPYREFTYPE)) {
                     typexpr = RemoveTypeModifiers(typexpr->left);
                 }
@@ -2458,6 +2458,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         case SYM_VARIABLE:
             return (AST *)sym->val;
         case SYM_CONSTANT:
+        case SYM_FLOAT_CONSTANT:
             return ExprTypeRelative(table, (AST *)sym->val, P);
         case SYM_ALIAS:
             typexpr = (AST *)sym->val;

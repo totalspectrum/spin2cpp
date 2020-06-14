@@ -1,11 +1,32 @@
-Version 4.1.12
-- Accept large addresses for jump instructions in inline assembly.
+Version 4.2.2
+- Added <>= operator for Spin
+
+Version 4.2.1
+- Fixed last minute bug in ORG/END which was causing it not to fcache
+- Improved some warning messages for undefined symbols
+- Added a number of additional peephole optimizations
+- Fixed float constant calculations for calls to functions
+- Fixed a spurious error about lastorg mismatch
+- Fixed use of return variables in inline assembly not adding an automatic return
+- Fixed line numbers in error messages after #include
+- Added error message for use of ## with jmp, call, etc.
+- Added an error for negative repeat counts
+- Made BASIC OPTION case insensitive again
+
+Version 4.2.0
+- Added {++cog} and {++lut} to force functions into COG or LUT
+- Made ORG in Spin2 fcache the asm
 - Enabled fcache by default for P2
+- Moved P2 FCACHE to second half of LUT
+- Changed symbol resolution so Spin symbols are case insensitive in C
+- Dramatically improved parsing of large initializer lists
+- Accepted large addresses for jump instructions in inline assembly.
 - Fixed C builtin function definitions for _wypin, _wrpin, etc.
 - Fixed some cases where user code might be optimized when it shouldn't
-- Made ORG in Spin2 fcache the asm
-- Move P2 FCACHE to second half of LUT
 - Used ZEROX/SIGNX for sign extension on P2
+- Improved handling of floating point constants
+- Improved warning messages for indirect jumps
+- Reduced namespace clutter (accidental Spin influences) in C and BASIC
 
 Version 4.1.11
 - Made _rxraw more forgiving (but slower) in P1

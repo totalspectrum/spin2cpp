@@ -103,7 +103,7 @@ strgetc(LexStream *L)
 void strToLex(LexStream *L, const char *s, const char *name, int language)
 {
     if (!L) {
-        current->Lptr = L = malloc(sizeof(*L));
+        current->Lptr = L = (LexStream *)malloc(sizeof(*L));
     }
     memset(L, 0, sizeof(*L));
     L->arg = L->ptr = (void *)s;
@@ -192,7 +192,7 @@ void fileToLex(LexStream *L, FILE *f, const char *name, int language)
     int c1, c2;
 
     if (!L) {
-        current->Lptr = L = malloc(sizeof(*L));
+        current->Lptr = L = (LexStream *)malloc(sizeof(*L));
     }
     memset(L, 0, sizeof(*L));
     L->ptr = (void *)f;
@@ -284,7 +284,7 @@ lexpeekc(LexStream *L)
 AST *IntegerLabel(AST *num)
 {
     int x = EvalConstExpr(num);
-    char *name = calloc(1, 32);
+    char *name = (char *)calloc(1, 32);
     sprintf(name, "LINE_%d", x);
     return AstIdentifier(name);
 }
@@ -499,7 +499,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     int startColumn = L->colCounter - 1;
     char *idstr;
     int gatherComments = 1;
-    bool forceLower = !gl_caseSensitive;
+    bool forceLower = 0; // !gl_caseSensitive;
 
     flexbuf_init(&fb, INCSTR);
     if (prefix) {
@@ -530,16 +530,6 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     /* check for reserved words */
     if (InDatBlock(L)) {
         sym = FindSymbol(&pasmWords, idstr);
-        if (!sym) {
-            int i;
-            int len = strlen(idstr)+1;
-            char *lowerSym = alloca(len);
-            for (i = 0; i < len; i++) {
-                lowerSym[i] = tolower(idstr[i]);
-            }
-            lowerSym[i] = 0;
-            sym = FindSymbol(&pasmWords, lowerSym);
-        }
         if (sym) {
             free(idstr);
             if (sym->kind == SYM_INSTR) {
@@ -970,6 +960,7 @@ docomment:
     flexbuf_addchar(cbp, c);
     flexbuf_addchar(cbp, 0);
     commentLine = flexbuf_get(cbp);
+    //printf("comment: %s", commentLine);
     if (!strncmp(commentLine, "#line ", 6)) {
         char *ptr = commentLine + 6;
         int lineno;
@@ -1889,6 +1880,7 @@ Builtin builtinfuncs[] = {
     { "waitpne", 3, waitpeqBuiltin, "waitpne", "_waitpne", "__builtin_propeller_waitpne", 0, NULL },
 
     { "reboot", 0, rebootBuiltin, "reboot", NULL, NULL, 0, NULL },
+    { "_reboot", 0, rebootBuiltin, "reboot", NULL, NULL, 0, NULL },
 
     { "longfill", 3, memFillBuiltin, "memset", NULL, NULL, 4, NULL },
     { "longmove", 3, memBuiltin, "memmove", NULL, NULL, 4, NULL },
@@ -2230,18 +2222,18 @@ void SetPreprocessorLanguage(int language)
 {
     if (IsBasicLang(language)) {
         pp_setcomments(&gl_pp, "\'", "/'", "'/");
-        pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
+        //pp_setlinedirective(&gl_pp, "/'#line %d %s'/");   
         //pp_setlinedirective(&gl_pp, "");   
     } else if (IsCLang(language)) {
         pp_setcomments(&gl_pp, "//", "/*", "*/");
-        pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
-        //pp_setlinedirective(&gl_pp, "");   
+        //pp_setlinedirective(&gl_pp, "/*#line %d %s*/");   
     } else {
         pp_setcomments(&gl_pp, "\'", "{", "}");
-        pp_setlinedirective(&gl_pp, "{#line %d %s}");   
+        //pp_setlinedirective(&gl_pp, "{#line %d %s}");   
     }
 }
 
+#ifdef NOTUSED
 static char *
 NormalizedName(const char *nameOrig)
 {
@@ -2252,12 +2244,18 @@ NormalizedName(const char *nameOrig)
     }
     return name;
 }
+#endif
 
 void
 initSpinLexer(int flags)
 {
     int i;
 
+    spinReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
         AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
@@ -2284,17 +2282,17 @@ initSpinLexer(int flags)
     
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, NormalizedName(builtinfuncs[i].name), SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
+        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p2_constants[i].name), p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
+            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, NormalizedName(p1_constants[i].name), p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
+            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
     
@@ -3065,7 +3063,8 @@ InitPasm(int flags)
         modifiers = modifiers_p1;
     }
     
-
+    pasmWords.flags |= SYMTAB_FLAG_NOCASE;
+    
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
         AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
@@ -3151,7 +3150,7 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     Symbol *sym;
     AST *ast = NULL;
     char *idstr;
-    bool forceLower = !gl_caseSensitive;
+    bool forceLower = 0; // !gl_caseSensitive;
     
     flexbuf_init(&fb, INCSTR);
     c = lexgetc(L);
@@ -3472,6 +3471,30 @@ basicyylex(BASICYYSTYPE *yval)
 }
 
 static int
+ParseCAttribute(LexStream *L, AST **ast_ptr)
+{
+    int c;
+    int balance = 0;
+    struct flexbuf fb;
+    AST *ast = NewAST(AST_ANNOTATION, NULL, NULL);
+    
+    flexbuf_init(&fb, 32);
+    do {
+        c = lexgetc(L);
+        if (c < 0) break;
+        if (c == '(') {
+            balance++;
+        } else if (c == ')') {
+            --balance;
+        }
+        flexbuf_addchar(&fb, c);
+    } while (balance > 0);
+    ast->d.string = flexbuf_get(&fb);
+    *ast_ptr = ast;
+    return C_ATTRIBUTE;
+}
+
+static int
 parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
 {
     int c;
@@ -3537,7 +3560,7 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     if (InDatBlock(L)) {
         int i;
         int len = strlen(idstr)+1;
-        char *lowerSym = alloca(len);
+        char *lowerSym = (char *)alloca(len);
         for (i = 0; i < len; i++) {
             lowerSym[i] = tolower(idstr[i]);
         }
@@ -3566,6 +3589,8 @@ parseCIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                 L->block_type = (c == C_PASM) ? BLOCK_PASM : BLOCK_ASM;
             }
             break;
+        case C_ATTRIBUTE:
+            return ParseCAttribute(L, ast_ptr);
         default:
             break;
         }

@@ -118,7 +118,7 @@ HandleBASICOption(AST *optid, AST *exprlist)
         SYNTAX_ERROR("Error in option list");
         return NULL;
     }
-    if (!strcmp(name, "base")) {
+    if (!strcasecmp(name, "base")) {
         int arrayBase;
         expr = NULL;
         if (exprlist && exprlist->kind == AST_EXPRLIST) {
@@ -133,10 +133,10 @@ HandleBASICOption(AST *optid, AST *exprlist)
         arrayBase = EvalConstExpr(expr);
         sym = GetCurArrayBase();
         sym->val = AstInteger(arrayBase);
-    } else if (!strcmp(name, "explicit")) {
+    } else if (!strcasecmp(name, "explicit")) {
         sym = GetExplicitDeclares();
         sym->val = AstInteger(255);
-    } else if (!strcmp(name, "implicit")) {
+    } else if (!strcasecmp(name, "implicit")) {
         sym = GetExplicitDeclares();
         sym->val = AstInteger(0);
     } else {
@@ -535,7 +535,7 @@ topitem:
   | BAS_DATA
     {
         AST *list = NewAST(AST_EXPRLIST, $1, NULL);
-        current->bas_data = AddToList(current->bas_data, list);
+        current->bas_data = AddToListEx(current->bas_data, list, &current->bas_data_tail);
     }
   | toplabel topitem
     {
@@ -720,8 +720,8 @@ assign_statement:
         AST *assign = $1;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x1) ) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x1) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
@@ -732,8 +732,8 @@ assign_statement:
         AST *assign = $2;
         AST *ident;
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x2) ) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x2) ) {
             ident = assign->left;
             MaybeDeclareMemberVar(current, ident, NULL, 0);
         }
@@ -859,8 +859,8 @@ inputitem:
   varexpr
     {
         Symbol *sym = GetExplicitDeclares();
-        int explicit = EvalConstExpr(sym->val);
-        if (0 == (explicit & 0x4)) {
+        int explicit_flag = EvalConstExpr((AST *)sym->val);
+        if (0 == (explicit_flag & 0x4)) {
             MaybeDeclareMemberVar(current, $1, NULL, 0);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
@@ -1054,9 +1054,9 @@ forstmt:
       AST *declare;
       AST *loop;
       Symbol *sym = GetExplicitDeclares();
-      int explicit = EvalConstExpr(sym->val);
+      int explicit_flag = EvalConstExpr((AST *)sym->val);
 
-      if (0 == (explicit & 0x8)) {
+      if (0 == (explicit_flag & 0x8)) {
           /* create a WEAK definition for ident (it will not override any existing definition) */
           declare = NewAST(AST_DECLARE_VAR_WEAK, InferTypeFromName(ident), ident);
       } else {
@@ -1255,7 +1255,11 @@ deflist:
   defitem
     { $$ = NewAST(AST_EXPRLIST, $1, NULL); }
   | deflist ',' defitem
-    { $$ = AddToList($1, NewAST(AST_EXPRLIST, $3, NULL)); }
+    {
+        AST *list = $1;
+        AST *item = NewAST(AST_EXPRLIST, $3, NULL);
+        $$ = AddToListEx(list, item, (AST **)&list->d.ptr);
+    }
 ;
 
 varexpr:
@@ -1626,41 +1630,66 @@ endfunc:
   | BAS_END BAS_FUNCTION
 ;
 
+attributes:
+  /* empty */
+    { $$ = 0; }
+  | BAS_FOR BAS_STRING
+    {
+        AST *ast = $2;
+        ast->kind = AST_ANNOTATION;
+        $$ = ast;
+    }
+;
+    
 subdecl:
-  BAS_SUB BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
+  BAS_SUB attributes BAS_IDENTIFIER '(' paramdecl ')' eoln subbody
   {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *attrib = $2;
+    AST *ident = $3;
+    AST *parms = $5;
+    AST *body = $8;
+    AST *funcdecl = NewAST(AST_FUNCDECL, ident, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $1);
   }
-  | BAS_SUB BAS_IDENTIFIER paramdecl eoln subbody
+  | BAS_SUB attributes BAS_IDENTIFIER paramdecl eoln subbody
   {
-    AST *funcdecl = NewAST(AST_FUNCDECL, $2, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $3, NULL);
+    AST *attrib = $2;
+    AST *ident = $3;
+    AST *parms = $4;
+    AST *body = $6;
+    AST *funcdecl = NewAST(AST_FUNCDECL, ident, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    DeclareFunction(current, ast_type_void, 1, funcdef, $5, NULL, $1);
+    DeclareFunction(current, ast_type_void, 1, funcdef, body, attrib, $1);
   }
   ;
 
 funcdecl:
-  BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
+  BAS_FUNCTION attributes BAS_IDENTIFIER '(' paramdecl ')' eoln funcbody
   {
-    AST *name = $2;
+    AST *attrib = $2;
+    AST *name = $3;
+    AST *parms = $5;
+    AST *body = $8;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
     AST *rettype = InferTypeFromName(name);
-    DeclareFunction(current, rettype, 1, funcdef, $7, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
   }
-  | BAS_FUNCTION BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
+  | BAS_FUNCTION attributes BAS_IDENTIFIER '(' paramdecl ')' BAS_AS typelist eoln funcbody
   {
-    AST *name = $2;
+    AST *attrib = $2;
+    AST *name = $3;
+    AST *parms = $5;
+    AST *rettype = $8;
+    AST *body = $10;
     AST *funcdecl = NewAST(AST_FUNCDECL, name, NULL);
-    AST *funcvars = NewAST(AST_FUNCVARS, $4, NULL);
+    AST *funcvars = NewAST(AST_FUNCVARS, parms, NULL);
     AST *funcdef = NewAST(AST_FUNCDEF, funcdecl, funcvars);
-    AST *rettype = $7;
-    DeclareFunction(current, rettype, 1, funcdef, $9, NULL, $1);
+    DeclareFunction(current, rettype, 1, funcdef, body, attrib, $1);
   }
   | BAS_DEF BAS_IDENTIFIER '(' paramdecl ')' '=' expr
   {

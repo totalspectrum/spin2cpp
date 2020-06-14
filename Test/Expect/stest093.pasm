@@ -1,12 +1,12 @@
 con
-	fft_size = 1024
+	FFT_SIZE = 1024
 pub main
   coginit(0, @entry, 0)
 dat
 	org	0
 entry
 
-_fillinput
+_fillInput
 	mov	_var01, #0
 	mov	_var02, objptr
 	mov	_var03, #0
@@ -23,7 +23,7 @@ LR__0001
 	add	_var03, #17
 	sub	_var04, #1
 	djnz	_var06, #LR__0001
-_fillinput_ret
+_fillInput_ret
 	ret
 
 imm_1023_

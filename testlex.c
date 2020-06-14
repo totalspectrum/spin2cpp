@@ -32,6 +32,7 @@ AST *ast_type_unsigned_long;
 AST *ast_type_void;
 
 int gl_p2 = 0;
+int gl_have_lut = 0;
 int gl_output = 0;
 int gl_gas_dat = 0;
 int gl_normalizeIdents = 1;  /* for compatibility with ident tests */

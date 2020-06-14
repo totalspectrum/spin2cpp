@@ -3,14 +3,14 @@
 
 int32_t btest006::testfloat(int32_t x)
 {
-  if (x > (1 << 16)) {
+  if (x > 65536) {
     return x;
   }
-  return ((int32_t)(1 << 16));
+  return ((int32_t)65536);
 }
 
 void btest006::program(void)
 {
-  testfloat(2 << 16);
+  testfloat(131072);
 }
 

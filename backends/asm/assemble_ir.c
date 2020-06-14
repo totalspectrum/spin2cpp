@@ -195,8 +195,8 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
             flexbuf_addstr(fb, "#");
             if (useabsaddr) {
                 flexbuf_addstr(fb, "\\");
+                flexbuf_addstr(fb, "@");
             }
-            //flexbuf_addstr(fb, "@");
         }
         
         flexbuf_addstr(fb, RemappedName(reg->name));
@@ -1240,12 +1240,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         OutputBlob(fb, ir->dst, ir->src, (Module *)ir->src2);
         break;
     case OPC_FIT:
-        if (gl_p2) {
-            // reserve space at end of COG memory
-            flexbuf_addstr(fb, "\tfit\t480\n");
-        } else {
-            flexbuf_addstr(fb, "\tfit\t496\n");
-        }
+        flexbuf_printf(fb, "\tfit\t");
+        PrintOperandAsValue(fb, ir->dst);
+        flexbuf_printf(fb, "\n");
         break;
     case OPC_ORG:
         flexbuf_printf(fb, "\torg\t");

@@ -17,6 +17,9 @@
 
 #define scalbnf(x) __builtin_scalbnf(x)
 
+#define round(x) __builtin_round(x)
+#define roundf(x) __builtin_round(x)
+
 #define exp(x) __builtin_expf(x)
 #define log(x) __builtin_logf(x)
 #define sin(x) __builtin_sinf(x)

@@ -209,6 +209,9 @@ enum flags {
     // be touched by the optimizer
     FLAG_KEEP_INSTR = 0x1000,
 
+    // to mark jump table instructions
+    FLAG_JMPTABLE_INSTR = 0x2000,
+    
     // rest of the bits are used by the optimizer
 
     FLAG_LABEL_USED = 0x10000,

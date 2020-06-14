@@ -48,6 +48,7 @@ typedef struct symbol {
     int           flags;  /* various flags */
     int           offset;  /* extra value recording symbol order within a function */
     void         *module;  /* module info */
+    void         *def;     /* info about original definition */
 } Symbol;
 
 /* symbol flags */
@@ -72,7 +73,9 @@ typedef struct symbol {
 typedef struct symtab {
     Symbol *hash[SYMTABLE_HASH_SIZE];
     struct symtab *next;
+    unsigned flags;
 } SymbolTable;
+#define SYMTAB_FLAG_NOCASE 0x01  /* do case insensitive comparisons */
 
 unsigned RawSymbolHash(const char *str);
 unsigned SymbolHash(const char *str);

@@ -13,6 +13,9 @@
 #include "spinc.h"
 #include "outasm.h"
 
+// forward declarations
+static int OptimizePeephole2(IRList *irl);
+
 // fcache size in longs; -1 means take a guess
 int gl_fcache_size = -1;
 
@@ -549,6 +552,10 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
     } else if (IsJump(ir)) {
         // if the jump is to an unknown place give up
         if (!ir->aux) {
+            // jump to return is like running off the end
+            if (ir->dst == FuncData(curfunc)->asmreturnlabel && ir->cond == COND_TRUE) {
+                goto done;
+            }
             return false;
         }
         stack[level] = ir; // remember where we were
@@ -564,6 +571,7 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
 #endif        
     }
   }
+done:  
   /* if we reach the end without seeing any use */
   return IsLocalOrArg(op);
 }
@@ -905,7 +913,19 @@ SameImmediate(Operand *a, Operand *b)
         return 0;
     return a->val == b->val;
 }
-    
+
+static bool
+SameOperand(Operand *a, Operand *b)
+{
+    if (a == b) {
+        return true;
+    }
+    if (!a || !b) {
+        return false;
+    }
+    return SameImmediate(a, b);
+}
+
 // try to transform an operation with a destination that is
 // known to be the constant "imm"
 // if the src is also constant, convert it to a move immediate
@@ -2015,6 +2035,32 @@ static int P2CheckBitMask(unsigned int x)
     }
 }
 
+static bool
+FlagsDeadAfter(IRList *irl, IR *ir, unsigned flags)
+{
+    if (!ir) return true;
+    ir = ir->next;
+    while (ir && flags) {
+        if (IsLabel(ir)) {
+            return true;
+        }
+        if (ir->cond != COND_TRUE) {
+            return false;
+        }
+        if (InstrUsesFlags(ir, flags)) {
+            return false;
+        }
+        if (InstrSetsFlags(ir, flags)) {
+            flags &= ~(ir->flags);
+        }
+        if (!flags) {
+            return true;
+        }
+        ir = ir->next;
+    }
+    return true;
+}
+
 //
 // basic peephole substitution
 //
@@ -2857,7 +2903,10 @@ OptimizeJumps(IRList *irl)
     int change = 0;
     
     while (ir) {
-        if (ir->opc == OPC_JUMP && !InstrIsVolatile(ir)) {
+        // internal jumptables are marked volatile (to avoid removal) but
+        // we should allow jmp to jmp, so they're also marked with
+        // FLAG_JMPTABLE_INSTR
+        if (ir->opc == OPC_JUMP && (!InstrIsVolatile(ir) || ir->flags & FLAG_JMPTABLE_INSTR)) {
             // ptr to jump destination (if known) is in aux; see if it's also a jump
             jmpdest = NextInstruction(ir->aux);
             if (jmpdest && jmpdest->opc == OPC_JUMP && jmpdest->cond == COND_TRUE && jmpdest->aux && jmpdest != ir && jmpdest->dst != ir->dst) {
@@ -2900,6 +2949,7 @@ again:
         change |= OptimizeShortBranches(irl);
         change |= OptimizeAddSub(irl);
         change |= OptimizePeepholes(irl);
+        change |= OptimizePeephole2(irl);
         change |= OptimizeIncDec(irl);
         change |= OptimizeJumps(irl);
         if (gl_p2) {
@@ -3131,4 +3181,291 @@ OptimizeFcache(IRList *irl)
         }
         ir = ir->next;
     }
+}
+
+/////////////////////////////////////////////////////
+// new peephole optimization scheme
+/////////////////////////////////////////////////////
+typedef struct PeepholePattern {
+    int cond;
+    int opc;
+    int dst;
+    int src1;
+    unsigned flags;
+} PeepholePattern;
+
+#define PEEP_FLAGS_NONE 0x0000
+#define PEEP_FLAGS_P2   0x0001
+#define PEEP_FLAGS_WCZ_OK 0x0002
+#define PEEP_FLAGS_DONE 0xffff
+
+#define OPERAND_ANY -1
+#define COND_ANY    -1
+#define OPC_ANY     -1
+#define MAX_OPERANDS_IN_PATTERN 4
+
+#define PEEP_OP_SET   0x0100
+#define PEEP_OP_MATCH 0x0200
+#define PEEP_OP_IMM   0x0300
+#define PEEP_OP_SET_IMM 0x0400
+#define PEEP_OPNUM_MASK 0x00ff
+#define PEEP_OP_MASK    0xff00
+
+static Operand *peep_ops[MAX_OPERANDS_IN_PATTERN];
+
+static int PeepOperandMatch(int patrn_dst, Operand *dst)
+{
+    int opnum, opflag;
+    
+    if (patrn_dst != OPERAND_ANY) {
+        opnum = patrn_dst & PEEP_OPNUM_MASK;
+        opflag = patrn_dst & PEEP_OP_MASK;
+        if (opflag == PEEP_OP_SET) {
+            peep_ops[opnum] = dst;
+        } else if (opflag == PEEP_OP_SET_IMM) {
+            if (dst->kind != IMM_INT) {
+                return 0;
+            }
+            peep_ops[opnum] = dst;
+        } else if (opflag == PEEP_OP_MATCH) {
+            if (!SameOperand(peep_ops[opnum], dst)) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_IMM) {
+            if (dst->kind != IMM_INT) {
+                return 0;
+            }
+            if (dst->val != opnum) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+static int MatchPattern(PeepholePattern *patrn, IR *ir)
+{
+    int ircount = 0;
+    unsigned flags;
+    int cur_cond = COND_ANY;
+    for(;;) {
+        flags = patrn->flags;
+        if (flags == PEEP_FLAGS_DONE) {
+            break; // we've matched so far
+        }
+        if ( (flags & PEEP_FLAGS_P2) && !gl_p2 ) {
+            return 0;
+        }
+        if (!ir) {
+            return 0; // no match, ran out of instructions
+        }
+        if (patrn->cond == COND_ANY) {
+            if (cur_cond == COND_ANY) {
+                cur_cond = ir->cond;
+            }
+            if (cur_cond != ir->cond) {
+                return 0;
+            }
+        }
+        else if ((ir->cond != patrn->cond)) {
+            return 0;
+        }
+        if (patrn->opc != ir->opc && patrn->opc != OPC_ANY) {
+            return 0;
+        }
+        // not all patterns are compatible with wcz bits
+        if (ir->flags & 0xff) {
+            if (!(flags & PEEP_FLAGS_WCZ_OK)) {
+                return 0;
+            }
+        }
+        
+        if (!PeepOperandMatch(patrn->dst, ir->dst)) {
+            return 0;
+        }
+        if (!PeepOperandMatch(patrn->src1, ir->src)) {
+            return 0;
+        }
+        patrn++;
+        ir = ir->next;
+        ircount++;
+    }
+    return ircount;
+}
+
+// cmp + mov -> max/min
+static PeepholePattern pat_maxs[] = {
+    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_GT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_maxu[] = {
+    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_GT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_mins[] = {
+    { COND_TRUE, OPC_CMPS, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_LT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_minu[] = {
+    { COND_TRUE, OPC_CMP, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_WCZ_OK },
+    { COND_LT, OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// zero/sign extend via x = (x<<N) >> N
+static PeepholePattern pat_zeroex[] = {
+    { COND_ANY, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_signex[] = {
+    { COND_ANY, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_SET_IMM|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_wrc[] = {
+    { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// remove redundant zero extends after rdbyte/rdword
+static PeepholePattern pat_rdbyte1[] = {
+    { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_rdword1[] = {
+    { COND_TRUE, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_rdbyte2[] = {
+    { COND_TRUE, OPC_RDBYTE, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|7, PEEP_FLAGS_P2 | PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_rdword2[] = {
+    { COND_TRUE, OPC_RDWORD, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_ZEROX, PEEP_OP_MATCH|0, PEEP_OP_IMM|15, PEEP_FLAGS_P2 | PEEP_FLAGS_WCZ_OK},
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
+{
+    if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
+        return 0;
+    }
+    if (!FlagsDeadAfter(irl, ir->next, FLAG_WZ|FLAG_WC)) {
+        return 0;
+    }
+    ReplaceOpcode(ir, arg);
+    DeleteIR(irl, ir->next);
+    return 1;
+}
+static int ReplaceExtend(int arg, IRList *irl, IR *ir)
+{
+    Operand *src = ir->src;
+    int zbit;
+    if (src->kind != IMM_INT) {
+        return 0;
+    }
+    zbit = 31 - src->val;
+    ir->src = NewImmediate(zbit);
+    ReplaceOpcode(ir, arg);
+    DeleteIR(irl, ir->next);
+    return 1;
+}
+static int ReplaceZWithC(int arg, IRList *irl, IR *ir)
+{
+    while (ir && arg > 0) {
+        ir = ir->next;
+        --arg;
+    }
+    if (!ir || InstrIsVolatile(ir)) {
+        return 0;
+    }
+    if (ir->cond == COND_NE) {
+        ir->cond = COND_C;
+        return 1;
+    }
+    if (ir->cond == COND_EQ) {
+        ir->cond = COND_NC;
+        return 1;
+    }
+    return 0;
+}
+
+static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
+{
+    IR *irlast, *irnext;
+    unsigned wcz_flags = 0;
+    irnext = ir->next;
+    while (arg > 0 && irnext) {
+        irlast = irnext;
+        irnext = irlast->next;
+        --arg;
+        if (arg == 0) {
+            wcz_flags = irlast->flags & 0xff;
+        }
+        DeleteIR(irl, irlast);
+    }
+    ir->flags |= wcz_flags;
+    return 1;
+}
+
+struct Peepholes {
+    PeepholePattern *check;
+    int arg;
+    int (*replace)(int arg, IRList *irl, IR *ir);
+} peep2[] = {
+    { pat_maxs, OPC_MAXS, ReplaceMaxMin },
+    { pat_maxu, OPC_MAXU, ReplaceMaxMin },
+    { pat_mins, OPC_MINS, ReplaceMaxMin },
+    { pat_minu, OPC_MINU, ReplaceMaxMin },
+
+    { pat_zeroex, OPC_ZEROX, ReplaceExtend },
+    { pat_signex, OPC_SIGNX, ReplaceExtend },
+
+    { pat_wrc, 2, ReplaceZWithC },
+
+    { pat_rdbyte1, 2, RemoveNFlagged },
+    { pat_rdword1, 2, RemoveNFlagged },
+    { pat_rdbyte2, 1, RemoveNFlagged },
+    { pat_rdword2, 1, RemoveNFlagged },
+};
+
+
+static int OptimizePeephole2(IRList *irl)
+{
+    IR *ir;
+    int change = 0;
+    int i, r;
+
+    ir = irl->head;
+    for(;;) {
+        while (ir && IsDummy(ir)) {
+            ir = ir->next;
+        }
+        if (!ir) break;
+        if (!InstrIsVolatile(ir)) {
+            for (i = 0; i < sizeof(peep2) / sizeof(peep2[0]); i++) {
+                r = MatchPattern(peep2[i].check, ir);
+                if (r) {
+                    r = (*peep2[i].replace)(peep2[i].arg, irl, ir);
+                    if (r) {
+                        change++;
+                    }
+                    break;
+                }
+            }
+        }
+        ir = ir->next;
+    }
+    return change;
 }

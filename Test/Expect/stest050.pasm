@@ -6,11 +6,11 @@ dat
 	org	0
 entry
 
-_pushdata
+_pushData
 	andn	outa, #252
 	shl	arg01, #2
 	or	outa, arg01
-_pushdata_ret
+_pushData_ret
 	ret
 
 _all_pin_low

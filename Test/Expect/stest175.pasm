@@ -11,14 +11,12 @@ _calcresult
  if_e	jmp	#LR__0002
 	jmp	#LR__0003
 LR__0001
-	mov	_var01, arg02
-	add	_var01, arg03
-	mov	result1, _var01
+	mov	result1, arg02
+	add	result1, arg03
 	jmp	#_calcresult_ret
 LR__0002
-	mov	_var02, arg02
-	sub	_var02, arg03
-	mov	result1, _var02
+	mov	result1, arg02
+	sub	result1, arg03
 	jmp	#_calcresult_ret
 LR__0003
 	mov	result1, arg02
@@ -32,10 +30,6 @@ result1
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
 arg01
 	res	1
 arg02
