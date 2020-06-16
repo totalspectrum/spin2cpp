@@ -120,18 +120,22 @@ pri _txraw(c) | val, nextcnt, bitcycles
     outa[_txpin] := val
     val >>= 1
   return 1
-  
-pri _rxraw | val, waitcycles, i, bitcycles
+
+' timeout is in 1024ths of a second (roughly milliseconds)
+pri _rxraw(timeout = 0) | val, waitcycles, i, bitcycles
   bitcycles := _bitcycles
   dira[_rxpin] := 0
 
-  waitcycles := cnt + (bitcycles*16)
-  repeat
-    if ina[_rxpin] == 0
-      quit
-    if waitcycles - cnt < 0
-      return -1
-
+  if timeout
+    waitcycles := cnt + timeout * (__clkfreq_var >> 10)   
+    repeat
+      if ina[_rxpin] == 0
+        quit
+      if waitcycles - cnt < 0
+        return -1
+  else
+    repeat until ina[_rxpin] == 0
+    
   waitcycles := cnt + (bitcycles>>1)
   val := 0
   repeat 8
