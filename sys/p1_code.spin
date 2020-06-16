@@ -36,7 +36,7 @@ pri _clkset(mode, freq)
   endasm
 
 pri _reboot
-  clkset($80, 0)
+  _clkset($80, 0)
 
 pri lockclr(id) | mask, rval
   mask := -1
