@@ -2,6 +2,7 @@ Version 4.2.2
 - Added <>= operator for Spin
 - Improved handling of serial input by providing an explicit timeout
 - Fixed _reboot() function for P1
+- Implemented use of MULS/MUL for 16 bit multiplies on P2
 
 Version 4.2.1
 - Fixed last minute bug in ORG/END which was causing it not to fcache

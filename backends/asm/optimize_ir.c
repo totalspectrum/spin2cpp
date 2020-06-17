@@ -1538,6 +1538,10 @@ CanTestZero(int opc)
     case OPC_SAR:
     case OPC_SHR:
     case OPC_SHL:
+    case OPC_SIGNX:
+    case OPC_ZEROX:
+    case OPC_MULU:
+    case OPC_MULS:
         return 1;
     default:
         return 0;

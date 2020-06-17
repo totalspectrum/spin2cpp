@@ -2533,8 +2533,8 @@ instr_p2[] = {
     { "muxq",   0x09f00000, TWO_OPERANDS, OPC_GENERIC, 0 },
     { "movbyts", 0x09f80000, TWO_OPERANDS, OPC_GENERIC, 0 },
 
-    { "mul",    0x0a000000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
-    { "muls",   0x0a100000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
+    { "mul",    0x0a000000, TWO_OPERANDS, OPC_MULU, FLAG_WZ },
+    { "muls",   0x0a100000, TWO_OPERANDS, OPC_MULS, FLAG_WZ },
     { "sca",    0x0a200000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
     { "scas",   0x0a300000, TWO_OPERANDS, OPC_GENERIC, FLAG_WZ },
 

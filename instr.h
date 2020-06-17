@@ -90,6 +90,8 @@ typedef enum IROpcode {
     OPC_GETRND,
     OPC_HUBSET,
     OPC_JMPREL,
+    OPC_MULS,
+    OPC_MULU,
     OPC_NOT,
     OPC_QFRAC,
     OPC_SETQ,
