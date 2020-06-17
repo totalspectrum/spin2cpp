@@ -139,11 +139,16 @@ pri _txraw(c) | z
   while z == 0
   return 1
 
-pri _rxraw : rxbyte = long | z
+' timeout is approximately in milliseconds (actually in 1024ths of a second)
+pri _rxraw(timeout = 0) : rxbyte = long | z, endtime
   if _bitcycles == 0
     _setbaud(230_400)
+  if timeout
+    endtime := _getcnt() + timeout * (__clkfreq_var >> 10)
   rxbyte := -1
-  z := _pinr(_rxpin)
+  repeat
+    z := _pinr(_rxpin)
+  until z or (timeout and (_getcnt() - endtime < 0))
   if z
     rxbyte := _rdpin(_rxpin)>>24
 

@@ -2028,11 +2028,16 @@ where `device` is a device driver structure returned by a system function such a
 
 Example:
 ```
+  ' declare ser as an object based on a Spin object
+  dim ser as class using("SerialDriver.spin")
+  ' initialize the serial device
+  ser.start(31, 30, 0, 115_200)
+  ' now connect it to handle #2
   open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
 ```
-Here the `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
+Here `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
 
-The second form uses a file name:
+The second form of `open` uses a file name:
 ```
    open "/host/file.txt" for input as #2
    open name$ for output as #3
