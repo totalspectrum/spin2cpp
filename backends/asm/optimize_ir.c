@@ -3360,6 +3360,13 @@ static PeepholePattern pat_rdword2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// potentially eliminate a redundant mov+add sequence
+static PeepholePattern pat_movadd[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ADD, PEEP_OP_SET|2, PEEP_OP_MATCH|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -3423,6 +3430,17 @@ static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+static int FixupMovAdd(int arg, IRList *irl, IR *ir)
+{
+    Operand *newsrc = ir->src;
+    ir = ir->next;
+    if (ir->src != newsrc) {
+        ir->src = newsrc;
+        return 1;
+    }
+    return 0;
+}
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3442,6 +3460,9 @@ struct Peepholes {
     { pat_rdword1, 2, RemoveNFlagged },
     { pat_rdbyte2, 1, RemoveNFlagged },
     { pat_rdword2, 1, RemoveNFlagged },
+
+    { pat_movadd, 0, FixupMovAdd },
+    
 };
 
 
