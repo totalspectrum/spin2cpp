@@ -1820,6 +1820,23 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
 {
     Operand *lhs = CompileExpression(irl, expr->left, NULL);
     Operand *rhs = CompileExpression(irl, expr->right, NULL);
+    if (gl_p2 && gethi == 0) {
+        AST *lefttype = ExprType(expr->left);
+        if (IsIntType(lefttype) && TypeSize(lefttype) == 2) {
+            AST *righttype = ExprType(expr->right);
+            if (righttype == lefttype) {
+                Operand *temp = NewFunctionTempRegister();
+                EmitMove(irl, temp, lhs);
+                rhs = Dereference(irl, rhs);
+                if (IsUnsignedType(lefttype)) {
+                    EmitOp2(irl, OPC_MULU, temp, rhs);
+                } else {
+                    EmitOp2(irl, OPC_MULS, temp, rhs);
+                }
+                return temp;
+            }
+        }
+    }
     return doCompileMul(irl, lhs, rhs, gethi, dest);
 }
 
