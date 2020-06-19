@@ -187,6 +187,7 @@ Aliases basicalias[] = {
     { "clkset", "_clkset" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
+    { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },
     { "pauseus", "_waitus" },
