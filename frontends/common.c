@@ -120,7 +120,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
     { "cogchk", "_cogchk" },
-    
+
     { "locktry", "_locktry" },
     { "lockrel", "lockclr" },
     
@@ -144,7 +144,8 @@ Aliases spin2alias[] = {
     { "pinmode", "_pinmode" },
     
     { "getct", "_getcnt" },
-
+    { "getsec", "_getsec" },
+    
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
     { "wypin", "_wypin" },
@@ -220,6 +221,8 @@ Aliases calias[] = {
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
+    { "_cnth",  "_getcnth" },
+    { "_cnthl",  "_getcnthl" },
     { "_clockfreq", "__builtin_clkfreq" },
     { "_clockmode", "__builtin_clkmode" },
     { "_pinl", "_drvl" },

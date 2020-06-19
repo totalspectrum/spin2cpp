@@ -6,6 +6,18 @@ pri _getcnt | r
     getct r
   endasm
   return r
+pri _getcnth | r
+  asm
+    getct r wc
+  endasm
+  return r
+pri _getcnthl | rl, rh
+  asm
+    getct rh wc
+    getct rl
+  endasm
+  return rl, rh
+  
 pri waitcnt(x)
   asm
     addct1  x, #0
@@ -372,3 +384,13 @@ pri _qlog(v) : r
     getqx r
   endasm
 
+pri _getsec() | hi, lo, freq
+  freq := __clkfreq_var
+  asm
+    getct hi wc
+    getct lo
+    setq hi
+    qdiv lo, freq
+    getqx lo
+  endasm
+  return lo
