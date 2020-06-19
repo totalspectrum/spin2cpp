@@ -562,6 +562,20 @@ NewAbstractObject(AST *identifier, AST *string)
     return NewObject( NewAST(AST_OBJDECL, identifier, 0), string );
 }
 
+int
+DifferentLineNumbers(AST *a, AST *b)
+{
+    LineInfo *infoa = GetLineInfo(a);
+    LineInfo *infob = GetLineInfo(b);
+    if (infoa->lineno != infob->lineno) {
+        return 1;
+    }
+    if (strcmp(infoa->fileName, infob->fileName) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
 void
 ERRORHEADER(const char *fileName, int lineno, const char *msg)
 {

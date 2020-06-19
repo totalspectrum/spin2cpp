@@ -847,8 +847,10 @@ doDeclareFunction(AST *funcblock)
                 ERROR(funcdef, "redefining function %s", funcname_user);
                 NOTE(fdef->decl, "the previous definition is here");
             } else {
-                WARNING(funcdef, "duplicate definition for %s", funcname_user);
-                NOTE(fdef->decl, "the previous definition is here");
+                if (DifferentLineNumbers(funcdef, fdef->decl)) {
+                    WARNING(funcdef, "duplicate definition for %s", funcname_user);
+                    NOTE(fdef->decl, "the previous definition is here");
+                }
             }
         }
         // if we get here then we are redefining a previously seen __fromfile
