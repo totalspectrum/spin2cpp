@@ -394,3 +394,15 @@ pri _getsec() | hi, lo, freq
     getqx lo
   endasm
   return lo
+
+pri _getms() | lo, hi, freq
+  lo,hi := _getcnthl()
+  freq := __clkfreq_var
+  asm
+    qdiv freq, ##1000
+    getqx freq
+    setq hi
+    qdiv lo, freq
+    getqx freq
+  endasm
+  return freq
