@@ -240,4 +240,8 @@ pri _ones(v) : r
 pri _getsec() : r
   r := _getcnt()
   return r +/ __clkfreq_var
-  
+
+pri _getms() : r | freq
+  freq := __clkfreq_var +/ 1000
+  r := _getcnt()
+  return r +/ freq
