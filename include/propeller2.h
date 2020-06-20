@@ -138,6 +138,7 @@ uint32_t  _isqrt(uint32_t val); /* Spin integer square root */
 uint32_t  _cnt(void);
 uint32_t  _cnth(void); /* high 32 bits of CNT, on processors that support it */
 counter64_t _cnthl();  /* fetch both together */
+uint32_t  _getsec();   /* seconds elapsed */
 
 uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);

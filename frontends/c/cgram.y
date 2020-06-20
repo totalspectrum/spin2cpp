@@ -540,12 +540,19 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     int is_union;
     int is_class;
     const char *name;
+    const char *classname;
     char *typname;
     Module *C;
-    SymbolTable *symtable = currentTypes; // &P->objsyms;
     Symbol *sym;
     AST *class_type;
-    
+
+    /* attempt to better handle class inside class */
+    if (0 && current && !IsTopLevel(current)) {
+        /* this causes problems with struct references inside structs */
+        classname = current->classname;
+    } else {
+        classname = "";
+    }
     if (skind->kind == AST_STRUCT) {
         is_union = 0;
         is_class = skind->d.ival != 0;
@@ -568,12 +575,16 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         return NULL;
     }
     name = identifier->d.string;
-    typname = (char *)malloc(strlen(name)+16);
-    strcpy(typname, "__struct_");
+    typname = (char *)malloc(strlen(name)+strlen(classname)+16);
+    strcpy(typname, classname);
+    strcat(typname, "__struct_");
     strcat(typname, name);
 
     /* see if there is already a type with that name */
-    sym = LookupSymbolInTable(symtable, typname);
+    sym = LookupSymbolInTable(currentTypes, typname);
+    if (!sym) {
+        sym = LookupSymbolInTable(&P->objsyms, typname);
+    }
     if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
         if (!IsClassType(class_type)) {
@@ -598,7 +609,8 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             C->isUnion = is_union;
             class_type = NewAbstractObject(AstIdentifier(typname), NULL);
             class_type->d.ptr = C;
-            AddSymbol(symtable, typname, SYM_TYPEDEF, class_type, NULL);
+            AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
+            AddSymbol(&P->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
             AddSubClass(P, C);
         }
     }

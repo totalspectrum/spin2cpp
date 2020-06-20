@@ -1,5 +1,7 @@
 Version 4.2.2
 - Added <>= operator for Spin
+- Added getsec() builtin for Spin2 and BASIC
+- Added _cnth() and _cnthl() functions for C
 - Improved handling of serial input by providing an explicit timeout
 - Fixed _reboot() function for P1
 - Implemented use of MULS/MUL for 16 bit multiplies on P2

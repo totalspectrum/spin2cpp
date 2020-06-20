@@ -120,7 +120,7 @@ Aliases spinalias[] = {
 Aliases spin2alias[] = {
     { "cnt", "_getcnt" },
     { "cogchk", "_cogchk" },
-    
+
     { "locktry", "_locktry" },
     { "lockrel", "lockclr" },
     
@@ -144,7 +144,8 @@ Aliases spin2alias[] = {
     { "pinmode", "_pinmode" },
     
     { "getct", "_getcnt" },
-
+    { "getsec", "_getsec" },
+    
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
     { "wypin", "_wypin" },
@@ -186,6 +187,7 @@ Aliases basicalias[] = {
     { "clkset", "_clkset" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
+    { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },
     { "pauseus", "_waitus" },
@@ -220,6 +222,8 @@ Aliases calias[] = {
 
     /* new propeller2.h standard */
     { "_cnt",  "_getcnt" },
+    { "_cnth",  "_getcnth" },
+    { "_cnthl",  "_getcnthl" },
     { "_clockfreq", "__builtin_clkfreq" },
     { "_clockmode", "__builtin_clkmode" },
     { "_pinl", "_drvl" },
@@ -556,6 +560,20 @@ AST *
 NewAbstractObject(AST *identifier, AST *string)
 {
     return NewObject( NewAST(AST_OBJDECL, identifier, 0), string );
+}
+
+int
+DifferentLineNumbers(AST *a, AST *b)
+{
+    LineInfo *infoa = GetLineInfo(a);
+    LineInfo *infob = GetLineInfo(b);
+    if (infoa->lineno != infob->lineno) {
+        return 1;
+    }
+    if (strcmp(infoa->fileName, infob->fileName) != 0) {
+        return 1;
+    }
+    return 0;
 }
 
 void

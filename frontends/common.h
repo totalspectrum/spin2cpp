@@ -542,6 +542,7 @@ void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
 void ERROR_UNKNOWN_SYMBOL(AST *);
 void NOTE(AST *, const char *msg, ...);
+int DifferentLineNumbers(AST *, AST *);
 
 /* this one is used by the lexer */
 void SYNTAX_ERROR(const char *msg, ...);

@@ -136,16 +136,42 @@ DupASTWithReplace(AST *ast, AST *orig, AST *replace)
     return dup;
 }
 
+static AST *
+skipCommentsAndDeclares(AST *a)
+{
+    while (a && a->kind == AST_STMTLIST) {
+        if (!a->left) {
+            break;
+        }
+        if (a->left->kind == AST_COMMENT) {
+            /* just skip */
+        } else if (a->left->kind == AST_DECLARE_VAR) {
+            /* just skip */
+        } else {
+            break;
+        }
+        a = a->right;
+    }
+    return a;
+}
+
+    
 /* see if two trees match */
 /* if "ignoreStatic" is true, ignore local identifier differences */
 
 static int
 doAstMatch(AST *a, AST *b, int ignoreStatic)
 {
-    if (a == NULL)
-        return b == NULL;
-    if (b == NULL)
+    if (ignoreStatic) {
+        a = skipCommentsAndDeclares(a);
+        b = skipCommentsAndDeclares(b);
+    }
+    if (a == NULL && b == NULL) {
+        return 1;
+    }
+    if (a == NULL || b == NULL) {
         return 0;
+    }
     if (a == b) {
         return 1;
     }

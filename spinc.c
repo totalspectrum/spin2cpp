@@ -725,6 +725,7 @@ RemoveUnusedMethods(int isBinary)
     } else {
         // mark stuff called via public functions
         for (P = allparse; P; P = P->next) {
+            if (P == globalModule) continue;
             for (pf = P->functions; pf; pf = pf->next) {
                 if (pf->callSites == 0) {
                     if (pf->is_public) {
