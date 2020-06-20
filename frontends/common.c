@@ -144,6 +144,7 @@ Aliases spin2alias[] = {
     { "pinmode", "_pinmode" },
     
     { "getct", "_getcnt" },
+    { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
     
     { "wrpin", "_wrpin" },
