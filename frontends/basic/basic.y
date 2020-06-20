@@ -2110,15 +2110,15 @@ basedatline:
     { $$ = NULL; }
   | BAS_BYTE BAS_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | BAS_BYTE exprlist BAS_EOLN
+  | BAS_BYTE operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | BAS_WORD BAS_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | BAS_WORD exprlist BAS_EOLN
+  | BAS_WORD operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
   | BAS_LONG BAS_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | BAS_LONG exprlist BAS_EOLN
+  | BAS_LONG operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction BAS_EOLN
     { $$ = NewCommentedInstr($1); }
