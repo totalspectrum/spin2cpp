@@ -777,6 +777,10 @@ paramidentdecl:
   { $$ = AstAssign($1, $3); }
   | identifier '=' SP_LONG
   { $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1); }
+  | identifier '=' '-' SP_LONG
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1); }
+  | identifier '=' '+' SP_LONG
+  { $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long, $1); }
   | identifier '=' SP_FLOAT
   { $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1); }
   | identifier '=' '@' SP_LONG

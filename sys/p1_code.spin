@@ -3,8 +3,8 @@ pri waitcnt(x)
     waitcnt x,#0
   endasm
 
-pri _getcnt
-  return cnt
+pri _getcnt : r = +long
+  r := cnt
 
 pri waitpeq(pin, mask, c = 0)
   asm
@@ -237,11 +237,11 @@ pri _ones(v) : r
       r++
     v := v >> 1
     
-pri _getsec() : r
+pri _getsec() : r = +long
   r := _getcnt()
   return r +/ __clkfreq_var
 
-pri _getms() : r | freq
+pri _getms() : r = +long | freq
   freq := __clkfreq_var +/ 1000
   r := _getcnt()
   return r +/ freq

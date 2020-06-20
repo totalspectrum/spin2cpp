@@ -1,17 +1,17 @@
 ''
 '' P2 specific system calls
 ''
-pri _getcnt | r
+pri _getcnt : r = +long
   asm
     getct r
   endasm
   return r
-pri _getcnth | r
+pri _getcnth : r = +long
   asm
     getct r wc
   endasm
   return r
-pri _getcnthl | rl, rh
+pri _getcnthl : rl = +long, rh = +long
   asm
     getct rh wc
     getct rl
@@ -293,7 +293,7 @@ pri _akpin(pin)
     akpin pin
   endasm
 
-pri _rnd : r
+pri _rnd : r = +long
   asm
     getrnd r
   endasm
@@ -384,7 +384,7 @@ pri _qlog(v) : r
     getqx r
   endasm
 
-pri _getsec() | hi, lo, freq
+pri _getsec() : freq = +long | hi, lo
   freq := __clkfreq_var
   asm
     getct hi wc
@@ -395,7 +395,7 @@ pri _getsec() | hi, lo, freq
   endasm
   return lo
 
-pri _getms() | lo, hi, freq
+pri _getms() : freq = +long | lo, hi
   lo,hi := _getcnthl()
   freq := __clkfreq_var
   asm

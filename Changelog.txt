@@ -1,6 +1,6 @@
 Version 4.2.2
 - Added <>= operator for Spin
-- Added getsec() builtin for Spin2 and BASIC
+- Added getsec() and getrnd() builtins for Spin2 and BASIC
 - Added _cnth() and _cnthl() functions for C
 - Improved handling of serial input by providing an explicit timeout
 - Fixed _reboot() function for P1

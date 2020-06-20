@@ -251,6 +251,9 @@ dira
 dirb
 exp
 false
+getcnt
+getrnd
+getsec
 hex$
 ina
 inb
@@ -1696,6 +1699,14 @@ Propeller specific builtin function.
   x = getcnt()
 ```
 Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds on propeller 1 and 27 seconds on propeller 2.
+
+### GETRND
+
+```
+  function getrnd() as uinteger
+  x = getrnd()
+```
+Builtin function. Returns a 32 bit random number (unsigned integer).
 
 ### GETSEC
 
