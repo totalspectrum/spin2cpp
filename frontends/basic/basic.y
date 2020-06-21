@@ -2067,12 +2067,12 @@ asmstmt:
   | BAS_ASM BAS_CONST eoln asmlist BAS_END BAS_ASM
       {
           // integer 1 means const asm
-          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(1), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(1), $1);
       }
   | BAS_ASM BAS_CPU eoln asmlist BAS_END BAS_ASM
       {
           // integer 3 means const asm execute from FCACHE
-          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(3), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(3), $1);
       }
   | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
