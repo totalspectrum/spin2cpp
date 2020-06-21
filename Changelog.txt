@@ -4,6 +4,7 @@ Version 4.2.2
 - Added _cnth() and _cnthl() functions for C
 - Improved handling of serial input by providing an explicit timeout
 - Fixed _reboot() function for P1
+- Fixed serious problem with ASM CONST in BASIC
 - Implemented use of MULS/MUL for 16 bit multiplies on P2
 
 Version 4.2.1
