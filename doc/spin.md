@@ -409,7 +409,7 @@ Beware that functions declared with `file` are treated the same as other functio
 
 ### Typed parameters and return values
 
-The "expression" in a default parameter may also be a type name, for example `long`, `float`, or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.
+The "expression" in a default parameter may also be a type name, for example `long`, `float`, a flag indicating an unsigned type `+long`, (or one of the pointer types `@long` (pointer to long), `@word` (pointer to word), `@byte`, or `@float`. These do not provide a default value, but do provide a hint to the compiler about what type of value is expected. This isn't terribly useful for Spin, but does make it possible for the compiler to check types and/or convert them if necessary for Spin functions called from C or BASIC.
 
 Variables declared as return values may also be given type hints, which will be used to determine the type of the function when it is accessed from another language.
 

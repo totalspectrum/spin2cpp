@@ -2067,12 +2067,12 @@ asmstmt:
   | BAS_ASM BAS_CONST eoln asmlist BAS_END BAS_ASM
       {
           // integer 1 means const asm
-          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(1), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(1), $1);
       }
   | BAS_ASM BAS_CPU eoln asmlist BAS_END BAS_ASM
       {
           // integer 3 means const asm execute from FCACHE
-          $$ = NewCommentedAST(AST_INLINEASM, $3, AstInteger(3), $1);
+          $$ = NewCommentedAST(AST_INLINEASM, $4, AstInteger(3), $1);
       }
   | BAS_ASM BAS_SHARED eoln asmlist BAS_END BAS_ASM
       { current->datblock = AddToListEx(current->datblock, $4, &current->datblock_tail); $$ = 0;}
@@ -2110,15 +2110,15 @@ basedatline:
     { $$ = NULL; }
   | BAS_BYTE BAS_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | BAS_BYTE exprlist BAS_EOLN
+  | BAS_BYTE operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
   | BAS_WORD BAS_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | BAS_WORD exprlist BAS_EOLN
+  | BAS_WORD operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
   | BAS_LONG BAS_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | BAS_LONG exprlist BAS_EOLN
+  | BAS_LONG operandlist BAS_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
   | instruction BAS_EOLN
     { $$ = NewCommentedInstr($1); }

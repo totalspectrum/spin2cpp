@@ -244,16 +244,16 @@ pri __sendstring(func, str) | c
       func(c)
   until c == 0
 
-pri __builtin_clkfreq
+pri __builtin_clkfreq : r=+long
   return __clkfreq_var
 
-pri __builtin_clkmode
+pri __builtin_clkmode : r=+long
   return __clkmode_var
   
-pri __builtin_inf
+pri __builtin_inf : r=float
   return $7f800000
 
-pri __builtin_nan(p)
+pri __builtin_nan(p) : r=float
   return $7fc00000
 
 pri _pinwrite(pingrp, val) | mask, basepin, reg
@@ -353,4 +353,4 @@ pri file "libsys/stringlibp2.bas" _instr(off, x, y): r=long
 pri file "libsys/stringlibp2.bas" _instrrev(off, x, y): r=long
 
 
-pri file "libsys/c_startup.c" _c_startup
+pri file "libsys/c_startup.c" _c_startup()

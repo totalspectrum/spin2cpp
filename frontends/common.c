@@ -144,6 +144,7 @@ Aliases spin2alias[] = {
     { "pinmode", "_pinmode" },
     
     { "getct", "_getcnt" },
+    { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
     
     { "wrpin", "_wrpin" },
@@ -187,6 +188,7 @@ Aliases basicalias[] = {
     { "clkset", "_clkset" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
+    { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
     { "pausems", "_waitms" },
