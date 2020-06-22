@@ -1,3 +1,6 @@
+Version 4.2.3
+- Fixed some spurious "duplicate case label" errors
+
 Version 4.2.2
 - Added <>= operator for Spin
 - Added getsec() and getrnd() builtins for Spin2 and BASIC
