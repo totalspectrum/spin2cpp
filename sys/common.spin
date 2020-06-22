@@ -270,6 +270,10 @@ pri _pinwrite(pingrp, val) | mask, basepin, reg
     dira |= mask
     outa := (outa & !mask) | val
 
+'' wait for a COG to finish
+pri _cogwait(id)
+  repeat while _cogchk(id) <> 0
+
 '' read a line of data from handle h
 pri file "libsys/readdata.spin" _basic_read_line(h=0)
 

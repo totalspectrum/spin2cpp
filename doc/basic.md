@@ -1285,6 +1285,29 @@ Note that `cpu` is not a function call, it is a special form which does not eval
 
 The `cpu` directive may also be used to execute shared assembly code, that is, assembly code started with `asm shared`. In this case the first parameter to `cpu` is the address of a label in the assembly code, where the program should start, and the second parameter is the parameter to be passed to the assembly code. This parameter is passed in the `par` register in P1, and in `ptra` in P2.
 
+### CPUCHK
+
+```
+i = cpuchk(n)
+```
+Checks to see if the CPU whose id is `n` is running. Returns `true` (-1) if running, `false` (0) if not.
+
+### CPUWAIT
+
+This builtin subroutine waits for a CPU started via `cpu` to finish. For example, to launch 4 helper programs and then wait for them you could do:
+```
+const STACKSIZE = 64
+dim taskid(3)
+' start the tasks
+for i = 0 to 3
+  taskid(i) = cpu(helperfunc, new ulong(STACKSIZE))
+next i
+' wait for them
+for i = 0 to 3
+  cpuwait(taskid(i))
+next i
+```
+
 ### DATA
 
 Introduces raw data to be read via the `read` keyword. This is usually used for initializing arrays or other data structures. The calculations for converting values from strings to integers or floats are done at run time, so consider using array initializers instead (which are more efficient).

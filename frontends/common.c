@@ -186,6 +186,8 @@ Aliases basicalias[] = {
     { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
+    { "cpuchk",  "_cogchk" },
+    { "cpuwait", "_cogwait" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
     { "getrnd", "_rnd" },

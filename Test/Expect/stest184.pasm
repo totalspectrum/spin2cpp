@@ -77,9 +77,9 @@ __system___tx
 	mov	__system___tx_c, arg01
 	cmp	__system___tx_c, #10 wz
  if_ne	jmp	#LR__0007
-	add	ptr___system__dat__, #4
+	add	ptr___system__dat__, #24
 	rdlong	_system___tx_tmp001_, ptr___system__dat__
-	sub	ptr___system__dat__, #4
+	sub	ptr___system__dat__, #24
 	test	_system___tx_tmp001_, #2 wz
  if_e	jmp	#LR__0007
 	mov	_system___tx_tmp001_, #13
@@ -340,14 +340,14 @@ LR__0017
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
  if_b	neg	_system___gc_doalloc_tmp001_, _system___gc_doalloc_tmp001_
-	mov	__system___gc_doalloc__idx__90022, _system___gc_doalloc_tmp001_ wz
+	mov	__system___gc_doalloc__idx__90023, _system___gc_doalloc_tmp001_ wz
 	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
  if_e	jmp	#LR__0019
 LR__0018
 	mov	_system___gc_doalloc_tmp001_, #0
 	wrlong	_system___gc_doalloc_tmp001_, __system___gc_doalloc_zptr
 	add	__system___gc_doalloc_zptr, #4
-	djnz	__system___gc_doalloc__idx__90022, #LR__0018
+	djnz	__system___gc_doalloc__idx__90023, #LR__0018
 LR__0019
 LR__0020
 	mov	result1, __system___gc_doalloc_ptr
@@ -718,7 +718,8 @@ _dat_
 	byte	$00[20]
 	long
 __system__dat_
-	byte	$b6, $02, $00, $00, $03, $00, $00, $00
+	byte	$b6, $02, $00, $00, $f0, $09, $bc, $0a, $00, $00, $68, $5c, $01, $08, $fc, $0c
+	byte	$03, $08, $7c, $0c, $00, $00, $00, $00, $03, $00, $00, $00
 __heap_base
 	long	0[258]
 stackspace
@@ -746,7 +747,7 @@ __system___gc_collect_ptr
 	res	1
 __system___gc_collect_startheap
 	res	1
-__system___gc_doalloc__idx__90022
+__system___gc_doalloc__idx__90023
 	res	1
 __system___gc_doalloc_ptr
 	res	1

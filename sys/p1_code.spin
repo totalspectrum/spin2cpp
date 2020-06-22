@@ -245,3 +245,28 @@ pri _getms() : r = +long | freq
   freq := __clkfreq_var +/ 1000
   r := _getcnt()
   return r +/ freq
+
+''
+'' _cogchk(id): check to see if cog id is still running
+'' on P1 there is no instruction for this, so we use
+'' coginit to start helpers until no more are left
+'' returns -1 if running, 0 if not
+dat
+	org 0
+_cogchk_helper
+	rdlong	tmp, par wz
+  if_z	jmp	#_cogchk_helper
+  	cogid	tmp
+	cogstop	tmp
+tmp	long	0
+
+pri _cogchk(id) | flag, n
+  flag := 0
+  repeat
+    n := _coginit(8, @_cogchk_helper, @flag)
+  while n => 0 and n < id
+  flag := 1 ' shut down all helpers
+  ' if n is id, then the cog was free
+  ' otherwise it is running
+  return n <> id
+  
