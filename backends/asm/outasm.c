@@ -3297,9 +3297,12 @@ CompileCoginit(IRList *irl, AST *expr)
         if (stack->kind != AST_ADDROF && stack->kind != AST_DATADDROF
             && stack->kind != AST_ABSADDROF)
         {
-            WARNING(stack, "Normally the coginit stack parameter should be an address");
+            if (!IsPointerType(ExprType(stack))) {
+                WARNING(stack, "Normally the coginit stack parameter should be an address");
+            }
         }
         newstackptr = CompileExpression(irl, stack, NULL);
+        newstackptr = Dereference(irl, newstackptr);
         if (COG_DATA) {
             newstacktop = CogMemRef(newstackptr, 0);
             const4 = NewImmediate(1);
