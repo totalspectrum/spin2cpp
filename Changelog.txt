@@ -2,6 +2,7 @@ Version 4.2.3
 - Fixed some spurious "duplicate case label" errors
 - Added new cpuchk() and cpuwait() functions for BASIC
 - Implemented cogchk() for P1
+- Simplified and optimized P2 multiply routines
 
 Version 4.2.2
 - Added <>= operator for Spin

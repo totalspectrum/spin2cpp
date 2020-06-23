@@ -1835,6 +1835,13 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
                 }
                 return temp;
             }
+        } else {
+            Operand *temp = NewFunctionTempRegister();
+            lhs = Dereference(irl, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_QMUL, lhs, rhs);
+            EmitOp1(irl, OPC_GETQX, temp);
+            return temp;
         }
     }
     return doCompileMul(irl, lhs, rhs, gethi, dest);
@@ -5161,21 +5168,21 @@ static const char *builtin_mul_p1_fast =
 
 static const char *builtin_mul_p2 =
 "\nunsmultiply_\n"
-"\tmov\titmp2_, #0\n"
-"\tjmp\t#do_multiply_\n"
-"\nmultiply_\n"
-"\tmov\titmp2_, muldiva_\n"
-"\txor\titmp2_, muldivb_\n"
-"\tabs\tmuldiva_, muldiva_\n"
-"\tabs\tmuldivb_, muldivb_\n"
-"do_multiply_\n"
 "\tqmul\tmuldiva_, muldivb_\n"
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
-"\tshr\titmp2_, #31 wz\n"
-" if_nz\tneg\tmuldivb_, muldivb_\n"
-" if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-" if_nz\tsub\tmuldivb_, #1\n"
+"\treta\n"
+
+"\nmultiply_\n"
+"\tqmul\tmuldiva_, muldivb_\n"
+"\tmov\titmp2_, #0\n"
+"\tcmps\tmuldiva_, #0 wc\n"
+"  if_c\tadd\titmp2_, muldivb_\n"
+"\tcmps\tmuldivb_, #0 wc\n"
+"  if_c\tadd\titmp2_, muldiva_\n"
+"\tgetqx\tmuldiva_\n"
+"\tgetqy\tmuldivb_\n"
+"\tsub\tmuldivb_, itmp2_\n"
 "\treta\n"
 ;
 
