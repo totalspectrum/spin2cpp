@@ -3,6 +3,7 @@ Version 4.2.3
 - Added new cpuchk() and cpuwait() functions for BASIC
 - Implemented cogchk() for P1
 - Simplified and optimized P2 multiply routines
+- Fixed identifier lookup inside ASM SHARED in BASIC
 
 Version 4.2.2
 - Added <>= operator for Spin

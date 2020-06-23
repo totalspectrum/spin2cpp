@@ -1712,12 +1712,18 @@ struct reservedword cpp_keywords[] = {
 struct reservedword bas_pasm_keywords[] = {
   { "alignl", BAS_ALIGNL },
   { "alignw", BAS_ALIGNW },
+  { "asm", BAS_ASM },
+  { "byte", BAS_BYTE },
+  { "end", BAS_END },
   { "file", BAS_FILE },
   { "fit", BAS_FIT },
+  { "long", BAS_LONG },
   { "org", BAS_ORG },
   { "orgf", BAS_ORGF },
   { "orgh", BAS_ORGH },
   { "res", BAS_RES },
+  { "shared", BAS_SHARED },
+  { "word", BAS_WORD },
 };
 // keywords reserved in C only with __asm blocks
 struct reservedword c_pasm_keywords[] = {
@@ -3209,9 +3215,6 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     if (InDatBlock(L)) {
         sym = FindSymbol(&basicAsmReservedWords, idstr);
     } else {
-        sym = NULL;
-    }
-    if (!sym) {
         sym = FindSymbol(&basicReservedWords, idstr);
     }
     if (sym != NULL) {
