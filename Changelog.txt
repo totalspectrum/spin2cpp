@@ -5,7 +5,9 @@ Version 4.2.3
 - Implemented many additional assignment operators for Spin2
 - Simplified and optimized P2 multiply routines
 - Fixed identifier lookup inside ASM SHARED in BASIC
-
+- Changed sub-module names to include the suffix (so foo.spin may
+  include foo.c as an object, which will be named foo_c)
+  
 Version 4.2.2
 - Added <>= operator for Spin
 - Added getsec() and getrnd() builtins for Spin2 and BASIC
