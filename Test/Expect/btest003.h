@@ -2,13 +2,13 @@
 #define btest003_Class_Defined__
 
 #include <stdint.h>
-#include "FullDuplexSerial.h"
+#include "FullDuplexSerial_spin.h"
 
 class btest003 {
 public:
   void 	program(void);
 private:
-  FullDuplexSerial 	ser;
+  FullDuplexSerial_spin 	ser;
   char 	i;
 };
 
