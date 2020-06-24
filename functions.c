@@ -2729,7 +2729,11 @@ SimplifyAssignments(AST **astptr)
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
-                    preseq = AstAssign(temp, rhs);
+                    if (rhs) {
+                        preseq = AstAssign(temp, rhs);
+                    } else {
+                        preseq = AstAssign(temp, lhs);
+                    }
                     rhs = temp;
                 }
                 lhs = ExtractSideEffects(lhs, &preseq);
@@ -2737,7 +2741,11 @@ SimplifyAssignments(AST **astptr)
             if (op == K_ASSIGN) {
                 ast = AstAssign(lhs, rhs);
             } else {
-                ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+                if (rhs) {
+                    ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+                } else {
+                    ast = AstAssign(lhs, AstOperator(op, NULL, lhs));
+                }                    
             }
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);

@@ -1271,7 +1271,7 @@ again:
 }
 
 
-static char operator_chars[] = "-+*/|<>=!@~#^.?";
+static char operator_chars[] = "-+*/|<>=!@~#^.?&";
 
 int
 getSpinToken(LexStream *L, AST **ast_ptr)

@@ -908,16 +908,12 @@ expr:
     { $$ = AstOperator(K_SHR, $1, $3); }
   | expr SP_SAR expr
     { $$ = AstOperator(K_SAR, $1, $3); }
-  | expr SP_OR expr
-    { $$ = AstOperator(K_BOOL_OR, $1, $3); }
   | expr SP_AND expr
     { $$ = AstOperator(K_BOOL_AND, $1, $3); }
+  | expr SP_OR expr
+    { $$ = AstOperator(K_BOOL_OR, $1, $3); }
   | expr SP_XOR expr
     { $$ = AstOperator(K_BOOL_XOR, $1, $3); }
-  | expr '&' '&' expr %prec SP_AND
-    { $$ = AstOperator(K_BOOL_AND, $1, $4); }
-  | expr '|' '|' expr %prec SP_OR
-    { $$ = AstOperator(K_BOOL_OR, $1, $4); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN
@@ -940,12 +936,41 @@ expr:
     { $$ = AstOpAssign(K_UNS_MOD, $1, $4); }
   | expr SP_HIGHMULT '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_HIGHMULT, $1, $4); }
+  | expr SP_UNSHIGHMULT '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_UNS_HIGHMULT, $1, $4); }
+  | expr SP_FRAC '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_FRAC64, $1, $4); }
   | expr SP_LIMITMIN '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_LIMITMIN, $1, $4); }
   | expr SP_LIMITMAX '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_LIMITMAX, $1, $4); }
+  | expr SP_ZEROX '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ZEROEXTEND, $1, $4); }
+  | expr SP_SIGNX '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SIGNEXTEND, $1, $4); }
   | expr SP_REV '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_REV, $1, $4); }
+  | expr SP_REV2 '=' expr %prec SP_ASSIGN
+    {
+        AST *lhs = $1;
+        AST *rhs = $4;
+        $$ = AstOpAssign(K_REV, lhs,
+                         AstOperator('+', rhs, AstInteger(1)));
+    }
+  | expr SP_ADDBITS '=' expr %prec SP_ASSIGN
+    {
+        AST *lhs = $1;
+        AST *rhs = $4;
+        $$ = AstOpAssign('|', lhs,
+                       AstOperator(K_SHL, rhs, AstInteger(5)));
+    }
+  | expr SP_ADDPINS '=' expr %prec SP_ASSIGN
+    {
+        AST *lhs = $1;
+        AST *rhs = $4;
+        $$ = AstOpAssign('|', lhs,
+                       AstOperator(K_SHL, rhs, AstInteger(6)));
+    }
   | expr SP_ROTL '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_ROTL, $1, $4); }
   | expr SP_ROTR '=' expr %prec SP_ASSIGN
@@ -998,6 +1023,8 @@ expr:
     }
   | '!' expr %prec SP_BIT_NOT
     { $$ = AstOperator(K_BIT_NOT, NULL, $2); }
+  | '!' '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_BIT_NOT, $3, NULL); }
   | '~' expr
     { AST *shf;
       shf = AstOperator(K_SHL, $2, AstInteger(24));
@@ -1010,20 +1037,32 @@ expr:
     }
   | SP_NOT expr
     { $$ = AstOperator(K_BOOL_NOT, NULL, $2); }
+  | SP_NOT '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_BOOL_NOT, $3, NULL); }
   | SP_ABS expr
     { $$ = AstOperator(K_ABS, NULL, $2); }
+  | SP_ABS '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ABS, $3, NULL); }
   | SP_SQRT expr
     { $$ = AstOperator(K_SQRT, NULL, $2); }
+  | SP_SQRT '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SQRT, $3, NULL); }
   | SP_DECODE expr
     { $$ = AstOperator(K_DECODE, NULL, $2); }
+  | SP_DECODE '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_DECODE, $3, NULL); }
   | SP_ENCODE expr
     { $$ = AstOperator(K_ENCODE, NULL, $2); }
+  | SP_ENCODE '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ENCODE, $3, NULL); }
   | SP_QLOG expr
     { $$ = AstOperator(K_QLOG, NULL, $2); }
   | SP_QEXP expr
     { $$ = AstOperator(K_QEXP, NULL, $2); }
   | SP_ONES expr
     { $$ = AstOperator(K_ONES_COUNT, NULL, $2); }
+  | SP_ONES '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ONES_COUNT, $3, NULL); }
   | SP_BMASK expr
     {
         AST *ast;
