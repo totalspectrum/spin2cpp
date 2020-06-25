@@ -56,7 +56,7 @@ __getvfsforfile(char *name, const char *orig_name)
     return v;
 }
 
-int mount(char *name, struct vfs *v)
+int _mount(char *name, struct vfs *v)
 {
     int i, len;
     int firstfree = -1;

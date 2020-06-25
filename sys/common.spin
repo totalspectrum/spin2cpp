@@ -324,7 +324,14 @@ pri file "libsys/random.c" _randfloat : r=float
 
 '' basic RND function
 pri file "libsys/random.c" _basic_rnd(x=long) : r=float
-  
+
+'' low level file system functions
+pri file "libc/unix/vfs.c" _getrootvfs()
+pri file "libc/unix/vfs.c" _setrootvfs(root)
+pri file "libc/unix/mount.c" _mount(name, volume)
+pri file "libc/unix/mount.c" __getfilebuffer() : r=@byte
+pri file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
+
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
 pri file "libsys/fmt.c" _basic_open_string(h, str, iomode)

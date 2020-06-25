@@ -34,8 +34,10 @@ struct vfs {
 int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
 int _closeraw(struct vfs_file_t *f) _IMPL("libc/unix/posixio.c");
 
-struct vfs *_getrootvfs(void) _IMPL("libc/unix/vfs.c");
-void _setrootvfs(struct vfs *) _IMPL("libc/unix/vfs.c");
+// in FlexC these have definitions built in to the system module,
+// so no need to _IMPL them
+struct vfs *_getrootvfs(void);
+void _setrootvfs(struct vfs *);
 
 struct vfs *_vfs_open_host(void) _IMPL("filesys/fs9p/fs9p_vfs.c");
 struct vfs *_vfs_open_sdcard(void) _IMPL("filesys/fatfs/fatfs_vfs.c");
@@ -58,7 +60,7 @@ int __default_putc(int c, vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 int __default_flush(vfs_file_t *f) _IMPL("libc/unix/bufio.c");
 
 /* directory functions */
-char *__getfilebuffer() _IMPL("libc/unix/mount.c");
-struct vfs *__getvfsforfile(char *fullname, const char *orig_name) _IMPL("libc/unix/mount.c");
+char *__getfilebuffer();
+struct vfs *__getvfsforfile(char *fullname, const char *orig_name);
 
 #endif

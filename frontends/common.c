@@ -193,6 +193,7 @@ Aliases basicalias[] = {
     { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
+    { "mount", "_mount" },
     { "pausems", "_waitms" },
     { "pauseus", "_waitus" },
     { "pinlo", "_drvl" },
@@ -237,7 +238,9 @@ Aliases calias[] = {
 
     /* some math functions */
     { "__builtin_round", "_float_round" },
-    
+
+    /* useful I/O functions */
+    { "mount", "_mount" },
     { NULL, NULL },
 };
 
