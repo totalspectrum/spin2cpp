@@ -1066,10 +1066,21 @@ expr:
   | SP_BMASK expr
     {
         AST *ast;
-
-        ast = AstOperator(K_SHL, AstInteger(2), $2);
+        AST *expr = $2;
+        ast = AstOperator(K_SHL, AstInteger(2), expr);
         ast = AstOperator('-', ast, AstInteger(1));
         $$ = ast;
+    }
+  | SP_BMASK '=' expr
+    {
+        AST *ast;
+        AST *expr = $3;
+        ast = AstOperator(K_SHL, AstInteger(2), expr);
+        ast = AstOperator('-', ast, AstInteger(1));
+        if (ExprHasSideEffects(expr)) {
+            SYNTAX_ERROR("expression following BMASK= should not have side effects");
+        }
+        $$ = AstAssign(expr, ast);
     }
   | SP_HERE
     { $$ = NewAST(AST_HERE, NULL, NULL); }
