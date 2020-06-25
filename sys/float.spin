@@ -403,6 +403,7 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
 }}
 
 pri file "libsys/s_floorf.c" __builtin_floorf(x = float) : r=float
+pri file "libsys/s_ceilf.c" __builtin_ceilf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_sinf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_cosf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_tanf(x = float) : r=float
@@ -414,4 +415,5 @@ pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
 pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float
 pri file "libsys/e_expf.c" __builtin_expf(x = float) : r=float
 pri file "libsys/e_logf.c" __builtin_logf(x = float) : r=float
+pri file "libsys/e_log10f.c" __builtin_log10f(x = float) : r=float
 pri file "libsys/e_powf.c" __builtin_powf(x = float, y = float) : r=float
