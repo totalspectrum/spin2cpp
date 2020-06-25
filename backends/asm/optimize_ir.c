@@ -3371,6 +3371,21 @@ static PeepholePattern pat_movadd[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
+static PeepholePattern pat_bmask1[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|2, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace add y, #1; decod x, y; sub x, #1  with bmask x, y
+static PeepholePattern pat_bmask2[] = {
+    { COND_ANY, OPC_ADD, PEEP_OP_SET|1, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_DECOD, PEEP_OP_SET|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -3445,6 +3460,20 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
+static int FixupBmask(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext, *irnext2;
+
+    irnext = ir->next;
+    irnext2 = irnext->next;
+    
+    ReplaceOpcode(irnext2, OPC_BMASK);
+    irnext2->src = peep_ops[1];
+    DeleteIR(irl, ir);
+    DeleteIR(irl, irnext);
+    return 1;
+}
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3466,7 +3495,9 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
-    
+
+    { pat_bmask1, 0, FixupBmask },
+    { pat_bmask2, 0, FixupBmask },
 };
 
 
