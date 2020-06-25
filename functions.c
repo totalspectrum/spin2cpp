@@ -2498,6 +2498,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_QLOG:
             UseInternal("_qlog");
             break;
+        case K_SCAS:
+            UseInternal("_scas");
+            break;
         case '?':
             if (body->left) {
                 UseInternal("_lfsr_forward");

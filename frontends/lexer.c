@@ -1529,7 +1529,7 @@ struct reservedword init_spin2_words[] = {
     { "ones", SP_ONES },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
-    { "scas", SP_HIGHMULT },
+    { "scas", SP_SCAS },
     { "signx", SP_SIGNX },
     { "sqrt", SP_SQRT },
     { "zerox", SP_ZEROX },

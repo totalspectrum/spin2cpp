@@ -160,7 +160,8 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_UNSDIV     "~/"
 %token SP_UNSMOD     "~//"
 %token SP_FRAC       "FRAC"
-%token SP_HIGHMULT   "SCAS (**)"
+%token SP_HIGHMULT   "**"
+%token SP_SCAS        "SCAS"
 %token SP_UNSHIGHMULT "SCA (+**)"
 %token SP_ROTR       "ROR (->)"
 %token SP_ROTL       "ROL (<-)"
@@ -207,7 +208,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
 %left SP_LIMITMIN SP_LIMITMAX
 %left '-' '+'
-%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_UNSDIV SP_UNSMOD SP_FRAC
+%left '*' '/' SP_REMAINDER SP_HIGHMULT SP_UNSHIGHMULT SP_SCAS SP_UNSDIV SP_UNSMOD SP_FRAC
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
@@ -878,6 +879,8 @@ expr:
     { $$ = AstOperator(K_UNS_MOD, $1, $3); }
   | expr SP_HIGHMULT expr
     { $$ = AstOperator(K_HIGHMULT, $1, $3); }
+  | expr SP_SCAS expr
+    { $$ = AstOperator(K_SCAS, $1, $3); }
   | expr SP_UNSHIGHMULT expr
     { $$ = AstOperator(K_UNS_HIGHMULT, $1, $3); }
   | expr SP_FRAC expr
@@ -938,6 +941,8 @@ expr:
     { $$ = AstOpAssign(K_HIGHMULT, $1, $4); }
   | expr SP_UNSHIGHMULT '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_UNS_HIGHMULT, $1, $4); }
+  | expr SP_SCAS '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_SCAS, $1, $4); }
   | expr SP_FRAC '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_FRAC64, $1, $4); }
   | expr SP_LIMITMIN '=' expr %prec SP_ASSIGN
@@ -1071,7 +1076,7 @@ expr:
         ast = AstOperator('-', ast, AstInteger(1));
         $$ = ast;
     }
-  | SP_BMASK '=' expr
+  | SP_BMASK '=' expr %prec SP_ASSIGN
     {
         AST *ast;
         AST *expr = $3;

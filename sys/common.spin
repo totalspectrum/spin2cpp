@@ -142,6 +142,16 @@ pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
   return r
 
 ''
+'' x*y >> 30, signed scaled multiply
+''
+pri _scas(x, y) : r | hi, lo
+  lo := x * y
+  hi := x ** y
+  lo := lo >> 30
+  hi := hi << 2
+  return hi | lo
+  
+''
 '' fixed point multiply
 ''
 pri _fixed_mul(x, y) | hi, lo

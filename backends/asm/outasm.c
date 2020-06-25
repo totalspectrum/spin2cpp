@@ -2420,6 +2420,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       AstReportDone(&saveinfo);
       return left;
   }
+  case K_SCAS:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_scas"),
+                     NewAST(AST_EXPRLIST, expr->left,
+                            NewAST(AST_EXPRLIST, expr->right, NULL)));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
   case '?':
   {
       AST *fcall;

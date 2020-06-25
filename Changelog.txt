@@ -3,6 +3,7 @@ Version 4.2.3
 - Added new cpuchk() and cpuwait() functions for BASIC
 - Implemented cogchk() for P1
 - Implemented many additional assignment operators for Spin2
+- Fixed SCAS operator for Spin2
 - Simplified and optimized P2 multiply routines
 - Fixed identifier lookup inside ASM SHARED in BASIC
 - Changed sub-module names to include the suffix (so foo.spin may

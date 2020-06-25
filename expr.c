@@ -1161,6 +1161,10 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return lval & rval;
     case K_HIGHMULT:
         return (int)(((long long)lval * (long long)rval) >> 32LL);
+    case K_UNS_HIGHMULT:
+        return (int)(((unsigned long long)lval * (unsigned long long)rval) >> 32ULL);
+    case K_SCAS:
+        return (int)(((long long)lval * (long long)rval) >> 30LL);
     case K_SHL:
         return lval << (rval & 0x1f);
     case K_SHR:
