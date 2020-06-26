@@ -1,0 +1,11 @@
+var
+  long a
+  
+pub test1()
+  a := reg[$100]
+
+pub test2()
+  reg[$101] := a
+
+pub test3()
+  reg[$1fe] := reg[$102]

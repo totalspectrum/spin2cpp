@@ -1,0 +1,15 @@
+con
+  _clkfreq = 180_000_000
+  
+pub {++cog} syncsend(a) | val, c
+  repeat
+    val := long[a\a+4]
+    repeat 32
+      c := (val&1)
+      val := val >> 1
+      if c
+        pinh(57)
+      else
+        pinl(57)
+	
+  
