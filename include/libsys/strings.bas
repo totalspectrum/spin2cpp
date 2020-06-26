@@ -31,7 +31,7 @@ function right$(x as string, n as integer) as string
 end function
 
 ' retrieve the middle substring starting at i and j characters long
-function mid$(x as string, i=0, j=9999999) as string
+function mid$(x as string, i=1, j=9999999) as string
   dim p as ubyte pointer
   dim m, n
   if (j <= 0) return ""
