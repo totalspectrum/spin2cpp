@@ -735,8 +735,22 @@ PrintOperator(Flexbuf *f, int op, AST *left, AST *right, int flags)
         PrintExpr(f, right, flags);
         flexbuf_printf(f, ")");
         break;
+    case K_UNS_HIGHMULT:
+        flexbuf_printf(f, "(int32_t)( ((uint64_t)");
+        PrintExpr(f, left, flags);
+        flexbuf_printf(f, ") * ((uint64_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ") >> 32 )");
+        break;
+    case K_SCAS:
+        flexbuf_printf(f, "(int32_t)( ((int64_t)");
+        PrintExpr(f, left, flags);
+        flexbuf_printf(f, ") * ((int64_t)");
+        PrintExpr(f, right, flags);
+        flexbuf_printf(f, ") >> 30 )");
+        break;
     default:
-        ERROR(NULL, "unsupported operator %d", op);
+        ERROR(NULL, "unsupported operator 0x%x", op);
         break;
     }
 }
