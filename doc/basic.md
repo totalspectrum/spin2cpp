@@ -1898,19 +1898,19 @@ until s$ = ""        ' stop at end of file
 ```
   a$ = insert$(b$, y$, pos)
 ```
-`insert$` inserts string `y$` into (a copy of) `b$` at position `pos`. If `pos` is greater than the length of `b$` then it is appended to `b$`.
+`insert$` inserts string `y$` into (a copy of) `b$` at position `pos`. If `pos` is greater than the length of `b$` then it is appended to `b$`. Note that string positions start at 1.
 
 ### INSTR
 ```
   n = instr(off, src$, target$)
 ```
-Returns the position of the first occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned.
+Returns the position (with 1 being the first character) of the first occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned.
 
 ### INSTRREV
 ```
   n = instrrev(off, src$, target$)
 ```
-Returns the position of the last occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned.
+Returns the position of the last occurance of the string `target$` in the string `src$`. The search begins at offset `off`. If the string is not found, then 0 is returned. Positions count from 1 up.
 
 ### INT
 
