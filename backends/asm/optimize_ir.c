@@ -3385,6 +3385,12 @@ static PeepholePattern pat_bmask2[] = {
     { COND_ANY, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+// replace mov a, x; waitx a  with waitx x
+static PeepholePattern pat_waitx[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_WAITX, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
@@ -3474,6 +3480,16 @@ static int FixupBmask(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+static int FixupWaitx(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext;
+
+    irnext = ir->next;    
+    irnext->dst = peep_ops[1];
+    DeleteIR(irl, ir);
+    return 1;
+}
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3498,6 +3514,8 @@ struct Peepholes {
 
     { pat_bmask1, 0, FixupBmask },
     { pat_bmask2, 0, FixupBmask },
+
+    { pat_waitx, 0, FixupWaitx },
 };
 
 
