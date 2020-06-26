@@ -9,6 +9,7 @@ Version 4.2.3
 - Changed sub-module names to include the suffix (so foo.spin may
   include foo.c as an object, which will be named foo_c)
 - Replaced runs of duplicate lines in listing file with "..."
+- Optimized plain REPEAT in spin to use REP instruction on P2
 
 Version 4.2.2
 - Added <>= operator for Spin

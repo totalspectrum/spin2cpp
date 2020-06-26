@@ -2633,15 +2633,24 @@ OptimizeP2(IRList *irl)
                 changed = 1;
             }
         }
-        if (opc == OPC_DJNZ && ir->cond == COND_TRUE) {
+        if ( (opc == OPC_DJNZ || opc == OPC_JUMP) && ir->cond == COND_TRUE) {
             // see if we can change the loop to use "repeat"
-            Operand *var = ir->dst;
-            Operand *dst = ir->src;
+            Operand *var;
+            Operand *dst;
             IR *labir = NULL;
             IR *pir = NULL;
             IR *repir = NULL;
             bool canRepeat = true;
-            if (IsDeadAfter(ir, var)) {
+            bool didAnything = false;
+            
+            if (opc == OPC_DJNZ) {
+                var = ir->dst;
+                dst = ir->src;
+            } else {
+                var = NULL;
+                dst = ir->dst;
+            }
+            if (var == NULL || IsDeadAfter(ir, var)) {
                 for (pir = ir->prev; pir; pir = pir->prev) {
                     if (pir->opc == OPC_LABEL) {
                         if (pir->dst != dst) {
@@ -2651,18 +2660,20 @@ OptimizeP2(IRList *irl)
                     } else if (IsBranch(pir)) {
                         canRepeat = false;
                         break;
-                    } else if (pir->src == var || pir->dst == var) {
+                    } else if (var && (pir->src == var || pir->dst == var)) {
                         canRepeat = false;
                         break;
+                    } else if (!IsDummy(pir)) {
+                        didAnything = true;
                     }
                 }
-                if (pir && canRepeat && pir->prev) {
-                    pir = pir->prev;
+                if (pir && canRepeat && didAnything) {
+                    pir = pir->prev;   // WARNING: could be NULL, but InsertAfterIR will handle that
                     labir = NewIR(OPC_LABEL);
                     labir->dst = NewCodeLabel();
                     repir = NewIR(OPC_REPEAT);
                     repir->dst = labir->dst;
-                    repir->src = var;
+                    repir->src = var ? var : NewImmediate(0);
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
                     ir->opc = OPC_REPEAT_END;
