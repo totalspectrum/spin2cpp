@@ -2226,6 +2226,9 @@ OptimizePeepholes(IRList *irl)
                     {
                         ReplaceZWithNC(testir);
                     }
+                    if (IsBranch(lastir)) {
+                        ReplaceZWithNC(lastir);
+                    }
                     DeleteIR(irl, ir);
                     changed = 1;
                     goto done;
