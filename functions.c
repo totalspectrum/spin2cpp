@@ -882,7 +882,9 @@ doDeclareFunction(AST *funcblock)
         ERROR(funcdef, "Internal error in function declaration structure");
     }
     fdef->numresults = 1;
+    fdef->result_declared = (src->right != NULL); // were number of results declared?
     if (fdef->overalltype->left) {
+        fdef->result_declared = 1;
         if (fdef->overalltype->left == ast_type_void) {
             fdef->numresults = 0;
         } else if (fdef->overalltype->left->kind == AST_TUPLE_TYPE) {
@@ -1842,6 +1844,19 @@ ExpandArguments(AST *sendptr, AST *args)
                 break;
             case AST_FUNCCALL:
                 typ = ExprType(arg);
+                if (!typ) {
+                    // hmmm, foo(x) might be a Spin void function
+                    // we need to check for that case
+                    if (IsIdentifier(arg->left)) {
+                        Symbol *sym = LookupAstSymbol(arg->left, NULL);
+                        if (sym && sym->kind == SYM_FUNCTION) {
+                            Function *f = (Function *)sym->val;
+                            if (f->numresults == 0 || !f->result_declared) {
+                                typ = ast_type_void;
+                            }
+                        }
+                    }
+                }
                 if (typ == ast_type_void) {
                     call = arg;
                 } else {
@@ -2098,8 +2113,6 @@ ProcessOneFunc(Function *pf)
     CheckRecursive(pf);  /* check for recursive functions */
     pf->extradecl = NormalizeFunc(pf->body, pf);
 
-    CheckFunctionCalls(pf->body);
-        
     /* check for void functions */
     sawreturn = CheckRetStatementList(pf, pf->body);
     if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
@@ -2129,6 +2142,9 @@ ProcessOneFunc(Function *pf)
             pf->body = AddToList(pf->body, retstmt);
         }
     }
+    
+    CheckFunctionCalls(pf->body);
+        
     pf->lang_processed = 1;
     current = savecurrent;
     curfunc = savefunc;

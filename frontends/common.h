@@ -265,6 +265,7 @@ typedef struct funcdef {
 #define CODE_PLACE_COG 2
 #define CODE_PLACE_LUT 3    
     unsigned result_used:1;
+    unsigned result_declared:1; // if 1, function result was explicitly declared
     unsigned is_static:1; // nonzero if no member variables referenced
     unsigned is_recursive:1; // if 1, function is called recursively
     unsigned force_static:1; // 1 if the function is forced to be static

@@ -10,6 +10,7 @@ Version 4.2.3
   include foo.c as an object, which will be named foo_c)
 - Replaced runs of duplicate lines in listing file with "..."
 - Optimized plain REPEAT in spin to use REP instruction on P2
+- Fixed SEND of functions with no return values
 
 Version 4.2.2
 - Added <>= operator for Spin
