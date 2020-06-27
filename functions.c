@@ -2710,6 +2710,14 @@ ExtractSideEffects(AST *expr, AST **preseq)
     return expr;
 }
 
+// look out for short-circuiting assignments
+// flag ||= x should always evaluate x, at least in Spin
+
+static int IsBoolOp(int op)
+{
+    return (op == K_BOOL_OR || op == K_BOOL_AND || op == K_BOOL_XOR);
+}
+
 void
 SimplifyAssignments(AST **astptr)
 {
@@ -2744,7 +2752,7 @@ SimplifyAssignments(AST **astptr)
             ASTReportInfo saveinfo;
             AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
-            if (ExprHasSideEffects(lhs)) {
+            if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
