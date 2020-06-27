@@ -4951,7 +4951,9 @@ AssignOneFuncName(Function *f)
                     ERROR(table, "Internal error: expected expression list");
                     break;
                 }
-                P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
+                if (!gl_p2) {
+                    P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
+                }
                 label = (Label *)calloc(sizeof(*label), 1);
                 sym->offset = label->hubval = P->datsize;
                 label->type = ast_type_long;

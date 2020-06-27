@@ -11,6 +11,7 @@ Version 4.2.3
 - Replaced runs of duplicate lines in listing file with "..."
 - Optimized plain REPEAT in spin to use REP instruction on P2
 - Fixed SEND of functions with no return values
+- Fixed an alignment bug affecting LOOKUP/LOOKDOWN on P2
 
 Version 4.2.2
 - Added <>= operator for Spin
