@@ -1164,18 +1164,6 @@ NormalizeFunc(AST *ast, Function *func)
         if (rdecl && AstUses(rdecl, ast))
             func->result_used = 1;
         return NULL;
-    case AST_INLINEASM:
-        // inline asm is a mess and not laid out the way lists normally are
-        // for now, punt and assume the result is used if it's explicitly declared
-        rdecl = func->resultexpr;
-        if (rdecl) {
-            if (rdecl->kind == AST_DECLARE_VAR) {
-                func->result_used = 1;
-            } else if  (rdecl->kind == AST_IDENTIFIER && strcmp(rdecl->d.string, "result")!=0 ) {
-                func->result_used = 1;
-            }
-        }
-        return NULL;
     case AST_INTEGER:
     case AST_FLOAT:
     case AST_STRING:
@@ -1189,6 +1177,13 @@ NormalizeFunc(AST *ast, Function *func)
         ldecl = NormalizeFunc(ast->left, func);
         rdecl = NormalizeFunc(ast->right, func);
         return ModifyLookup(ast);
+    case AST_INLINEASM:
+        /* assume declared result variables are used in
+           inline assembly */
+        if (func->result_declared) {
+            func->result_used = 1;
+        }
+        return NULL;
     default:
         ldecl = NormalizeFunc(ast->left, func);
         rdecl = NormalizeFunc(ast->right, func);
@@ -2114,7 +2109,12 @@ ProcessOneFunc(Function *pf)
     pf->extradecl = NormalizeFunc(pf->body, pf);
 
     /* check for void functions */
+    if (pf->result_declared && pf->language == LANG_SPIN_SPIN2) {
+        // there was an explicit result declared, so it is returned
+        pf->result_used = 1;
+    }
     sawreturn = CheckRetStatementList(pf, pf->body);
+
     if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
         /* there really is a return type */
         SetFunctionReturnType(pf, ast_type_generic);
