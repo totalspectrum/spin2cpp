@@ -1,3 +1,6 @@
+Version 4.2.4
+- Fixed detection of result variables in inline asm (e.g. polxy builtin)
+
 Version 4.2.3
 - Fixed some spurious "duplicate case label" errors
 - Added new cpuchk() and cpuwait() functions for BASIC
