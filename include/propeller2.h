@@ -105,10 +105,12 @@ int       _coginit(int cog, void *pgm, void *ptr);
 int _cogstart(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_size);
 #endif
 
+// alias used by Catalina
+#define _cogstart_C(func, arg, stack, size) _cogstart(func, arg, stack, size)
+
 /* stop/check status of COGs */
 void      _cogstop(int cog);
 int       _cogchk(int cog);
-
 int       _cogid(void);
 
 int       _locknew(void);

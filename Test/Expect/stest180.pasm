@@ -11,8 +11,8 @@ _gety
 _gety_ret
 	ret
 
-_userdef_start
-_userdef_start_ret
+_userdef_spin_start
+_userdef_spin_start_ret
 	ret
 
 imm_10000_

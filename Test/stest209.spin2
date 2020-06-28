@@ -1,0 +1,23 @@
+var
+  long a
+  
+pub maskit()
+  bmask= a
+
+pub mask(n)
+  return bmask n
+
+pub mask2(n)
+  return (1<<(n+1)) - 1
+
+pub op1
+  != a
+
+pub op2
+  ones= a
+
+pub op3
+  sqrt= a
+
+
+  

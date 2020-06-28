@@ -9,7 +9,7 @@ _msg
 	mov	arg01, #1
 	mov	msg_tmp003_, objptr
 	mov	objptr, msg_tmp001_
-	call	#_simplepin_tx
+	call	#_simplepin_spin_tx
 	mov	objptr, msg_tmp003_
 _msg_ret
 	ret
@@ -21,18 +21,18 @@ _init
 	mov	arg01, #0
 	mov	init_tmp003_, objptr
 	mov	objptr, init_tmp001_
-	call	#_simplepin_tx
+	call	#_simplepin_spin_tx
 	mov	objptr, init_tmp003_
 _init_ret
 	ret
 
-_simplepin_tx
+_simplepin_spin_tx
 	mov	_var01, #1
 	rdlong	_var02, objptr
 	shl	_var01, _var02
 	test	arg01, #1 wz
 	muxnz	outa, _var01
-_simplepin_tx_ret
+_simplepin_spin_tx_ret
 	ret
 
 objptr

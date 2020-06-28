@@ -186,11 +186,14 @@ Aliases basicalias[] = {
     { "clkmode", "__clkmode_var" },
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
+    { "cpuchk",  "_cogchk" },
+    { "cpuwait", "_cogwait" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
     { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
+    { "mount", "_mount" },
     { "pausems", "_waitms" },
     { "pauseus", "_waitus" },
     { "pinlo", "_drvl" },
@@ -235,7 +238,9 @@ Aliases calias[] = {
 
     /* some math functions */
     { "__builtin_round", "_float_round" },
-    
+
+    /* useful I/O functions */
+    { "mount", "_mount" },
     { NULL, NULL },
 };
 
@@ -299,7 +304,14 @@ NewModule(const char *fullname, int language)
     P->fullname = fullname;
     P->basename = strdup(fullname);
     s = strrchr(P->basename, '.');
-    if (s) *s = 0;
+    if (s) {
+        /* make sure sub-object names cannot conflict with the main object name, even if the roots match (like foo.spin and foo.c) */
+        if (allparse && ( (strncmp(s, ".spin", 5) != 0) || !IsSpinLang(allparse->mainLanguage) ) ) {
+            *s = '_';
+        } else {
+            *s = 0;
+        }
+    }
     root = strrchr(P->basename, '/');
 #if defined(WIN32) || defined(WIN64)
     if (!root) {

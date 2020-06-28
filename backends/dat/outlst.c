@@ -250,6 +250,77 @@ static DataBlockOutFuncs lstOutputFuncs = {
     lstEndAst,
 };
 
+//
+// compress the listing file by removing duplicate lines
+//
+
+// utility: decide if two lines are the same
+static int
+MatchLines(char *line1, char *line2)
+{
+    if (!line1 || !line2) return 0;
+
+    if (line2 - line1 < 12) return 0;
+    // ignore the addresses, just look at the hex output
+    // addresses are 5 + 1 + 3 + 1 bytes
+    // hex are 12 bytes
+#define LINE_ADDRLEN 10    
+#define LINE_HEXLEN 12    
+    if (!strncmp(line1+LINE_ADDRLEN, line2+LINE_ADDRLEN, LINE_HEXLEN)) {
+        // OK, they may match
+        // make sure neither line ends with a '|'
+        if (line1[LINE_ADDRLEN + LINE_HEXLEN] != '\n') return 0;
+        if (line2[LINE_ADDRLEN + LINE_HEXLEN] != '\n') return 0;
+        return 1;
+    }
+    return 0;
+}
+
+static size_t
+CompressListing(char *listing)
+{
+#if 1
+    char *line1 = listing;
+    char *line2 = NULL;
+    char *line3 = NULL;
+    int skipping = 0;
+
+    line2 = strchr(line1, '\n');
+    if (!line2) return strlen(listing);
+    line2++;
+    line3 = strchr(line2, '\n');
+    
+    while (line3) {
+        line3++;
+        // OK, now if line1, line2, and line3 are identical then
+        // enter the skipping state
+        if (MatchLines(line1, line2) && MatchLines(line2, line3)) {
+            skipping++;
+        } else if (skipping) {
+            // we were skipping, so line1...line2 are identical, but line3 is different
+            if (skipping > 4) {
+                size_t delta;
+                line1 = strchr(line1, '\n') + 1;
+                memset(line1, ' ', LINE_ADDRLEN + LINE_HEXLEN);
+                memset(line1 + 6, '.', 3);
+                line1 = strchr(line1, '\n') + 1;
+                strcpy(line1, line2);
+                delta = line2 - line1;
+                line2 = line1;
+                line3 -= delta;
+            }
+            skipping = 0;
+        }
+        if (!skipping) {
+            line1 = line2;
+        }
+        line2 = line3;
+        line3 = strchr(line2, '\n');
+   }
+#endif    
+    return strlen(listing);
+}
+
 void
 OutputLstFile(const char *fname, Module *P)
 {
@@ -257,6 +328,7 @@ OutputLstFile(const char *fname, Module *P)
     Module *save = current;
     Flexbuf fb;
     size_t curlen;
+    char *listing;
     
     f = fopen(fname, "wb");
     if (!f) {
@@ -269,9 +341,11 @@ OutputLstFile(const char *fname, Module *P)
     initOutput(P);
     
     PrintDataBlock(&fb, P, &lstOutputFuncs, NULL);
+    flexbuf_addchar(&fb, 0);
     
-    curlen = flexbuf_curlen(&fb);
-    fwrite(flexbuf_peek(&fb), curlen, 1, f);
+    listing = flexbuf_get(&fb);
+    curlen = CompressListing(listing);
+    fwrite(listing, curlen, 1, f);
     fclose(f);
     flexbuf_delete(&fb);
     current = save;

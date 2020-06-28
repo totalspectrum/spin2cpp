@@ -88,7 +88,9 @@ InstrSetsDst(IR *ir)
   case OPC_WRLONG:
   case OPC_WRWORD:
   case OPC_WRBYTE:
+  case OPC_QDIV:
   case OPC_QFRAC:
+  case OPC_QMUL:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
@@ -1248,7 +1250,9 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_COGID:
     case OPC_ADDCT1:
     case OPC_HUBSET:
+    case OPC_QDIV:
     case OPC_QFRAC:
+    case OPC_QMUL:
         return true;
     default:
         return false;
@@ -2222,6 +2226,9 @@ OptimizePeepholes(IRList *irl)
                     {
                         ReplaceZWithNC(testir);
                     }
+                    if (IsBranch(lastir)) {
+                        ReplaceZWithNC(lastir);
+                    }
                     DeleteIR(irl, ir);
                     changed = 1;
                     goto done;
@@ -2629,15 +2636,24 @@ OptimizeP2(IRList *irl)
                 changed = 1;
             }
         }
-        if (opc == OPC_DJNZ && ir->cond == COND_TRUE) {
+        if ( (opc == OPC_DJNZ || opc == OPC_JUMP) && ir->cond == COND_TRUE) {
             // see if we can change the loop to use "repeat"
-            Operand *var = ir->dst;
-            Operand *dst = ir->src;
+            Operand *var;
+            Operand *dst;
             IR *labir = NULL;
             IR *pir = NULL;
             IR *repir = NULL;
             bool canRepeat = true;
-            if (IsDeadAfter(ir, var)) {
+            bool didAnything = false;
+            
+            if (opc == OPC_DJNZ) {
+                var = ir->dst;
+                dst = ir->src;
+            } else {
+                var = NULL;
+                dst = ir->dst;
+            }
+            if (var == NULL || IsDeadAfter(ir, var)) {
                 for (pir = ir->prev; pir; pir = pir->prev) {
                     if (pir->opc == OPC_LABEL) {
                         if (pir->dst != dst) {
@@ -2647,18 +2663,20 @@ OptimizeP2(IRList *irl)
                     } else if (IsBranch(pir)) {
                         canRepeat = false;
                         break;
-                    } else if (pir->src == var || pir->dst == var) {
+                    } else if (var && (pir->src == var || pir->dst == var)) {
                         canRepeat = false;
                         break;
+                    } else if (!IsDummy(pir)) {
+                        didAnything = true;
                     }
                 }
-                if (pir && canRepeat && pir->prev) {
-                    pir = pir->prev;
+                if (pir && canRepeat && didAnything) {
+                    pir = pir->prev;   // WARNING: could be NULL, but InsertAfterIR will handle that
                     labir = NewIR(OPC_LABEL);
                     labir->dst = NewCodeLabel();
                     repir = NewIR(OPC_REPEAT);
                     repir->dst = labir->dst;
-                    repir->src = var;
+                    repir->src = var ? var : NewImmediate(0);
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
                     ir->opc = OPC_REPEAT_END;
@@ -3367,6 +3385,27 @@ static PeepholePattern pat_movadd[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// replace mov x, #2; shl x, y; sub x, #1  with bmask x, y
+static PeepholePattern pat_bmask1[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|2, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SHL, PEEP_OP_MATCH|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace add y, #1; decod x, y; sub x, #1  with bmask x, y
+static PeepholePattern pat_bmask2[] = {
+    { COND_ANY, OPC_ADD, PEEP_OP_SET|1, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_DECOD, PEEP_OP_SET|0, PEEP_OP_MATCH|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_SUB, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace mov a, x; waitx a  with waitx x
+static PeepholePattern pat_waitx[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_ANY, OPC_WAITX, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -3441,6 +3480,30 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
+static int FixupBmask(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext, *irnext2;
+
+    irnext = ir->next;
+    irnext2 = irnext->next;
+    
+    ReplaceOpcode(irnext2, OPC_BMASK);
+    irnext2->src = peep_ops[1];
+    DeleteIR(irl, ir);
+    DeleteIR(irl, irnext);
+    return 1;
+}
+
+static int FixupWaitx(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext;
+
+    irnext = ir->next;    
+    irnext->dst = peep_ops[1];
+    DeleteIR(irl, ir);
+    return 1;
+}
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3462,7 +3525,11 @@ struct Peepholes {
     { pat_rdword2, 1, RemoveNFlagged },
 
     { pat_movadd, 0, FixupMovAdd },
-    
+
+    { pat_bmask1, 0, FixupBmask },
+    { pat_bmask2, 0, FixupBmask },
+
+    { pat_waitx, 0, FixupWaitx },
 };
 
 

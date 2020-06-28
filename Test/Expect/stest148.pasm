@@ -12,13 +12,13 @@ _program
 _program_ret
 	ret
 
-_simplepin_tx
+_simplepin_spin_tx
 	mov	_var01, #1
 	rdlong	_var02, objptr
 	shl	_var01, _var02
 	test	arg01, #1 wz
 	muxnz	outa, _var01
-_simplepin_tx_ret
+_simplepin_spin_tx_ret
 	ret
 
 objptr

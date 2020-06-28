@@ -1835,6 +1835,13 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
                 }
                 return temp;
             }
+        } else {
+            Operand *temp = NewFunctionTempRegister();
+            lhs = Dereference(irl, lhs);
+            rhs = Dereference(irl, rhs);
+            EmitOp2(irl, OPC_QMUL, lhs, rhs);
+            EmitOp1(irl, OPC_GETQX, temp);
+            return temp;
         }
     }
     return doCompileMul(irl, lhs, rhs, gethi, dest);
@@ -2409,6 +2416,19 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
       AstReportAs(expr, &saveinfo);
       fcall = NewAST(AST_FUNCCALL, AstIdentifier("_qexp"),
                      NewAST(AST_EXPRLIST, expr->right, NULL));
+      left = CompileFunccallFirstResult(irl, fcall);
+      AstReportDone(&saveinfo);
+      return left;
+  }
+  case K_SCAS:
+  {
+      AST *fcall;
+      ASTReportInfo saveinfo;
+      
+      AstReportAs(expr, &saveinfo);
+      fcall = NewAST(AST_FUNCCALL, AstIdentifier("_scas"),
+                     NewAST(AST_EXPRLIST, expr->left,
+                            NewAST(AST_EXPRLIST, expr->right, NULL)));
       left = CompileFunccallFirstResult(irl, fcall);
       AstReportDone(&saveinfo);
       return left;
@@ -3297,9 +3317,12 @@ CompileCoginit(IRList *irl, AST *expr)
         if (stack->kind != AST_ADDROF && stack->kind != AST_DATADDROF
             && stack->kind != AST_ABSADDROF)
         {
-            WARNING(stack, "Normally the coginit stack parameter should be an address");
+            if (!IsPointerType(ExprType(stack))) {
+                WARNING(stack, "Normally the coginit stack parameter should be an address");
+            }
         }
         newstackptr = CompileExpression(irl, stack, NULL);
+        newstackptr = Dereference(irl, newstackptr);
         if (COG_DATA) {
             newstacktop = CogMemRef(newstackptr, 0);
             const4 = NewImmediate(1);
@@ -4928,7 +4951,9 @@ AssignOneFuncName(Function *f)
                     ERROR(table, "Internal error: expected expression list");
                     break;
                 }
-                P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
+                if (!gl_p2) {
+                    P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
+                }
                 label = (Label *)calloc(sizeof(*label), 1);
                 sym->offset = label->hubval = P->datsize;
                 label->type = ast_type_long;
@@ -5158,21 +5183,21 @@ static const char *builtin_mul_p1_fast =
 
 static const char *builtin_mul_p2 =
 "\nunsmultiply_\n"
-"\tmov\titmp2_, #0\n"
-"\tjmp\t#do_multiply_\n"
-"\nmultiply_\n"
-"\tmov\titmp2_, muldiva_\n"
-"\txor\titmp2_, muldivb_\n"
-"\tabs\tmuldiva_, muldiva_\n"
-"\tabs\tmuldivb_, muldivb_\n"
-"do_multiply_\n"
 "\tqmul\tmuldiva_, muldivb_\n"
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
-"\tshr\titmp2_, #31 wz\n"
-" if_nz\tneg\tmuldivb_, muldivb_\n"
-" if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-" if_nz\tsub\tmuldivb_, #1\n"
+"\treta\n"
+
+"\nmultiply_\n"
+"\tqmul\tmuldiva_, muldivb_\n"
+"\tmov\titmp2_, #0\n"
+"\tcmps\tmuldiva_, #0 wc\n"
+"  if_c\tadd\titmp2_, muldivb_\n"
+"\tcmps\tmuldivb_, #0 wc\n"
+"  if_c\tadd\titmp2_, muldiva_\n"
+"\tgetqx\tmuldiva_\n"
+"\tgetqy\tmuldivb_\n"
+"\tsub\tmuldivb_, itmp2_\n"
 "\treta\n"
 ;
 

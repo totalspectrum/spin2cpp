@@ -142,6 +142,16 @@ pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
   return r
 
 ''
+'' x*y >> 30, signed scaled multiply
+''
+pri _scas(x, y) : r | hi, lo
+  lo := x * y
+  hi := x ** y
+  lo := lo >> 30
+  hi := hi << 2
+  return hi | lo
+  
+''
 '' fixed point multiply
 ''
 pri _fixed_mul(x, y) | hi, lo
@@ -270,6 +280,10 @@ pri _pinwrite(pingrp, val) | mask, basepin, reg
     dira |= mask
     outa := (outa & !mask) | val
 
+'' wait for a COG to finish
+pri _cogwait(id)
+  repeat while _cogchk(id) <> 0
+
 '' read a line of data from handle h
 pri file "libsys/readdata.spin" _basic_read_line(h=0)
 
@@ -310,7 +324,14 @@ pri file "libsys/random.c" _randfloat : r=float
 
 '' basic RND function
 pri file "libsys/random.c" _basic_rnd(x=long) : r=float
-  
+
+'' low level file system functions
+pri file "libc/unix/vfs.c" _getrootvfs()
+pri file "libc/unix/vfs.c" _setrootvfs(root)
+pri file "libc/unix/mount.c" _mount(name, volume)
+pri file "libc/unix/mount.c" __getfilebuffer() : r=@byte
+pri file "libc/unix/mount.c" __getvfsforfile(name, orig_name)
+
 '' I/O functions
 pri file "libsys/fmt.c" _basic_open(h, sendf, recf, closef)
 pri file "libsys/fmt.c" _basic_open_string(h, str, iomode)

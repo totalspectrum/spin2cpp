@@ -882,7 +882,9 @@ doDeclareFunction(AST *funcblock)
         ERROR(funcdef, "Internal error in function declaration structure");
     }
     fdef->numresults = 1;
+    fdef->result_declared = (src->right != NULL); // were number of results declared?
     if (fdef->overalltype->left) {
+        fdef->result_declared = 1;
         if (fdef->overalltype->left == ast_type_void) {
             fdef->numresults = 0;
         } else if (fdef->overalltype->left->kind == AST_TUPLE_TYPE) {
@@ -1842,6 +1844,19 @@ ExpandArguments(AST *sendptr, AST *args)
                 break;
             case AST_FUNCCALL:
                 typ = ExprType(arg);
+                if (!typ) {
+                    // hmmm, foo(x) might be a Spin void function
+                    // we need to check for that case
+                    if (IsIdentifier(arg->left)) {
+                        Symbol *sym = LookupAstSymbol(arg->left, NULL);
+                        if (sym && sym->kind == SYM_FUNCTION) {
+                            Function *f = (Function *)sym->val;
+                            if (f->numresults == 0 || !f->result_declared) {
+                                typ = ast_type_void;
+                            }
+                        }
+                    }
+                }
                 if (typ == ast_type_void) {
                     call = arg;
                 } else {
@@ -2098,8 +2113,6 @@ ProcessOneFunc(Function *pf)
     CheckRecursive(pf);  /* check for recursive functions */
     pf->extradecl = NormalizeFunc(pf->body, pf);
 
-    CheckFunctionCalls(pf->body);
-        
     /* check for void functions */
     sawreturn = CheckRetStatementList(pf, pf->body);
     if (GetFunctionReturnType(pf) == NULL && pf->result_used) {
@@ -2129,6 +2142,9 @@ ProcessOneFunc(Function *pf)
             pf->body = AddToList(pf->body, retstmt);
         }
     }
+    
+    CheckFunctionCalls(pf->body);
+        
     pf->lang_processed = 1;
     current = savecurrent;
     curfunc = savefunc;
@@ -2498,6 +2514,9 @@ MarkUsedBody(AST *body, const char *caller)
         case K_QLOG:
             UseInternal("_qlog");
             break;
+        case K_SCAS:
+            UseInternal("_scas");
+            break;
         case '?':
             if (body->left) {
                 UseInternal("_lfsr_forward");
@@ -2691,6 +2710,14 @@ ExtractSideEffects(AST *expr, AST **preseq)
     return expr;
 }
 
+// look out for short-circuiting assignments
+// flag ||= x should always evaluate x, at least in Spin
+
+static int IsBoolOp(int op)
+{
+    return (op == K_BOOL_OR || op == K_BOOL_AND || op == K_BOOL_XOR);
+}
+
 void
 SimplifyAssignments(AST **astptr)
 {
@@ -2725,11 +2752,15 @@ SimplifyAssignments(AST **astptr)
             ASTReportInfo saveinfo;
             AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
-            if (ExprHasSideEffects(lhs)) {
+            if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
-                    preseq = AstAssign(temp, rhs);
+                    if (rhs) {
+                        preseq = AstAssign(temp, rhs);
+                    } else {
+                        preseq = AstAssign(temp, lhs);
+                    }
                     rhs = temp;
                 }
                 lhs = ExtractSideEffects(lhs, &preseq);
@@ -2737,7 +2768,11 @@ SimplifyAssignments(AST **astptr)
             if (op == K_ASSIGN) {
                 ast = AstAssign(lhs, rhs);
             } else {
-                ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+                if (rhs) {
+                    ast = AstAssign(lhs, AstOperator(op, lhs, rhs));
+                } else {
+                    ast = AstAssign(lhs, AstOperator(op, NULL, lhs));
+                }                    
             }
             if (preseq) {
                 ast = NewAST(AST_SEQUENCE, preseq, ast);

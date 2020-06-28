@@ -581,6 +581,9 @@ AST *StructAddress(AST *expr)
     if (expr->kind == AST_MEMREF) {
         return expr->right;
     }
+    if (expr->kind == AST_FUNCCALL) {
+        return expr;
+    }
     return NewAST(AST_ABSADDROF, expr, NULL);
 }
 

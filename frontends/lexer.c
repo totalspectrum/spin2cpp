@@ -1271,7 +1271,7 @@ again:
 }
 
 
-static char operator_chars[] = "-+*/|<>=!@~#^.?";
+static char operator_chars[] = "-+*/|<>=!@~#^.?&";
 
 int
 getSpinToken(LexStream *L, AST **ast_ptr)
@@ -1529,7 +1529,7 @@ struct reservedword init_spin2_words[] = {
     { "ones", SP_ONES },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
-    { "scas", SP_HIGHMULT },
+    { "scas", SP_SCAS },
     { "signx", SP_SIGNX },
     { "sqrt", SP_SQRT },
     { "zerox", SP_ZEROX },
@@ -1712,12 +1712,18 @@ struct reservedword cpp_keywords[] = {
 struct reservedword bas_pasm_keywords[] = {
   { "alignl", BAS_ALIGNL },
   { "alignw", BAS_ALIGNW },
+  { "asm", BAS_ASM },
+  { "byte", BAS_BYTE },
+  { "end", BAS_END },
   { "file", BAS_FILE },
   { "fit", BAS_FIT },
+  { "long", BAS_LONG },
   { "org", BAS_ORG },
   { "orgf", BAS_ORGF },
   { "orgh", BAS_ORGH },
   { "res", BAS_RES },
+  { "shared", BAS_SHARED },
+  { "word", BAS_WORD },
 };
 // keywords reserved in C only with __asm blocks
 struct reservedword c_pasm_keywords[] = {
@@ -2652,8 +2658,8 @@ instr_p2[] = {
     { "rep",    0x0cd00000, P2_TWO_OPERANDS, OPC_REPEAT, 0 },
   
     { "coginit",0x0ce00000, P2_TWO_OPERANDS, OPC_GENERIC, FLAG_WC },
-    { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
+    { "qmul",   0x0d000000, P2_TWO_OPERANDS, OPC_QMUL, 0 },
+    { "qdiv",   0x0d100000, P2_TWO_OPERANDS, OPC_QDIV, 0 },
     { "qfrac",  0x0d200000, P2_TWO_OPERANDS, OPC_QFRAC, 0 },
     { "qsqrt",  0x0d300000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
     { "qrotate",0x0d400000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
@@ -3209,9 +3215,6 @@ parseBasicIdentifier(LexStream *L, AST **ast_ptr)
     if (InDatBlock(L)) {
         sym = FindSymbol(&basicAsmReservedWords, idstr);
     } else {
-        sym = NULL;
-    }
-    if (!sym) {
         sym = FindSymbol(&basicReservedWords, idstr);
     }
     if (sym != NULL) {
