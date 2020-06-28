@@ -914,6 +914,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
 {
     AST *ast;
     char *commentLine;
+    int cameFromHash = 0;
     
     // look for #line directives
     if (c == '#' && L->colCounter == 1) {
@@ -924,6 +925,7 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
             if ( !(c2 == 'l' || (c2 == 'p') ) ) {
                 goto not_comment;
             }
+            cameFromHash = 1;
         }
         goto docomment;
     }
@@ -981,7 +983,7 @@ docomment:
         }
     } else if (!strncmp(commentLine, "#pragma ", 8)) {
         handlePragma(L, commentLine);
-    } else if (IsSpinLang(language) && commentLine[0] == '#') {
+    } else if (IsSpinLang(language) && commentLine[0] == '#' && cameFromHash) {
         SYNTAX_ERROR("# at start of line not handled properly");
     } else {
         ast = NewAST(AST_COMMENT, NULL, NULL);
