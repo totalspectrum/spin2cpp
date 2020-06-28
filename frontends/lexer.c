@@ -917,8 +917,17 @@ checkCommentedLine(struct flexbuf *cbp, LexStream *L, int c, int language)
     
     // look for #line directives
     if (c == '#' && L->colCounter == 1) {
+        // UGH! it's actually legal in Spin to put #N at the beginning of
+        // the line in a CON block
+        if (IsSpinLang(language)) {
+            int c2 = lexpeekc(L);
+            if ( !(c2 == 'l' || (c2 == 'p') ) ) {
+                goto not_comment;
+            }
+        }
         goto docomment;
     }
+not_comment:        
     if ( IsBasicLang(language) && (c == 'r' || c == 'R') ) {
         int c2, c3, c4;
         c2 = lexgetc(L);
@@ -972,6 +981,8 @@ docomment:
         }
     } else if (!strncmp(commentLine, "#pragma ", 8)) {
         handlePragma(L, commentLine);
+    } else if (IsSpinLang(language) && commentLine[0] == '#') {
+        SYNTAX_ERROR("# at start of line not handled properly");
     } else {
         ast = NewAST(AST_COMMENT, NULL, NULL);
         ast->d.string = commentLine;
