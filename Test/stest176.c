@@ -6,5 +6,6 @@ char *fillbuf(char *orig_str, unsigned num)
         num = num >> 1;
     } while (num > 0);
     *str++ = 0;
+    return 0;
 }
 
