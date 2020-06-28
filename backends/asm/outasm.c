@@ -1794,6 +1794,14 @@ doCompileMul(IRList *irl, Operand *lhs, Operand *rhs, int gethi, Operand *dest)
             return temp;
         }
     }
+    if (gl_p2 && gethi == 0) {
+        lhs = Dereference(irl, lhs);
+        rhs = Dereference(irl, rhs);
+        EmitOp2(irl, OPC_QMUL, lhs, rhs);
+        EmitOp1(irl, OPC_GETQX, temp);
+        return temp;
+    }
+    
     if (!mulfunc) {
         mulfunc = NewOperand(IMM_COG_LABEL, "multiply_", 0);
         unsmulfunc = NewOperand(IMM_COG_LABEL, "unsmultiply_", 0);
@@ -1835,13 +1843,6 @@ CompileMul(IRList *irl, AST *expr, int gethi, Operand *dest)
                 }
                 return temp;
             }
-        } else {
-            Operand *temp = NewFunctionTempRegister();
-            lhs = Dereference(irl, lhs);
-            rhs = Dereference(irl, rhs);
-            EmitOp2(irl, OPC_QMUL, lhs, rhs);
-            EmitOp1(irl, OPC_GETQX, temp);
-            return temp;
         }
     }
     return doCompileMul(irl, lhs, rhs, gethi, dest);

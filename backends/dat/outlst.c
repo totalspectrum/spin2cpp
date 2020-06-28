@@ -304,7 +304,8 @@ CompressListing(char *listing)
                 memset(line1, ' ', LINE_ADDRLEN + LINE_HEXLEN);
                 memset(line1 + 6, '.', 3);
                 line1 = strchr(line1, '\n') + 1;
-                strcpy(line1, line2);
+                // line1 and line2 overlap, so we cannot use strcpy
+                memcpy(line1, line2, strlen(line2) + 1);
                 delta = line2 - line1;
                 line2 = line1;
                 line3 -= delta;
