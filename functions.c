@@ -1182,8 +1182,9 @@ NormalizeFunc(AST *ast, Function *func)
            inline assembly */
         if (func->result_declared) {
             func->result_used = 1;
+            return NULL;
         }
-        return NULL;
+        /* otherwise, fall through */
     default:
         ldecl = NormalizeFunc(ast->left, func);
         rdecl = NormalizeFunc(ast->right, func);
