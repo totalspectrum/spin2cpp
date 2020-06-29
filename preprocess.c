@@ -947,6 +947,8 @@ do_line(struct preprocess *pp)
                 )
             {
                 /* no warning for these directives */
+            } else if (isdigit(func[0]) || func[0] == '$' || func[0] == '%') {
+                /* could be a Spin constant decl, ignore */
             } else {
                 dowarning(pp, "Ignoring unknown preprocessor directive `%s'", func);
             }   
