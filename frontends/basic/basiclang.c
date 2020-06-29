@@ -192,7 +192,7 @@ harvest(AST *exprlist, Flexbuf *fb)
     if (flexbuf_curlen(fb) > 0) {
         flexbuf_addchar(fb, 0);
         str = flexbuf_get(fb);
-        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstStringLiteral(strdup(str)), NULL));
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstStringPtr(strdup(str)), NULL));
     }
     return exprlist;
 }

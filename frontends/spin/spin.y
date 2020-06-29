@@ -55,6 +55,66 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
     return NewAST(AST_FUNCCALL, func, params);
 }
 
+// special handling for things like "abc" | x
+// in Spin this is the same as "ab", "c" | x
+
+static int IsLongString(AST *ast)
+{
+    if (ast && ast->kind == AST_STRING) {
+        return strlen(ast->d.string) > 1;
+    }
+    return 0;
+}
+
+// Fix up an expression list
+// convert any long string operator entries by folding the operation
+// into the first/last character of the string
+
+static AST *
+FixupList(AST *list)
+{
+    AST *item, *left, *right;
+    AST *origlist = list;
+    char *shortstr;
+    char *singlechar;
+    int slen;
+    int op;
+    
+    while (list && list->kind == AST_EXPRLIST) {
+        item = list->left;
+        if (item && item->kind == AST_OPERATOR) {
+            op = item->d.ival;
+            left = item->left;
+            right = item->right;
+            if (IsLongString(left)) {
+                if (IsLongString(right)) {
+                    SYNTAX_ERROR("unable to apply operator to two strings");
+                } else {
+                    // convert to AST_EXPRLIST( most of left, left_last_char OP right )
+                    shortstr = strdup(left->d.string);
+                    slen = strlen(left->d.string);
+                    singlechar = strdup(shortstr + slen - 1);
+                    shortstr[slen - 1] = 0;
+                    left = AstPlainString(shortstr);
+                    right = AstOperator(op, AstPlainString(singlechar), right);
+                    list->left = left;
+                    list->right = NewAST(AST_EXPRLIST, right, list->right);
+                }
+            } else if (IsLongString(right)) {
+                shortstr = strdup(right->d.string+1);
+                singlechar = calloc(1, 2);
+                singlechar[0] = right->d.string[0];
+                left = AstOperator(op, left, AstPlainString(singlechar));
+                right = AstPlainString(shortstr);
+                list->left = left;
+                list->right = NewAST(AST_EXPRLIST, right, list->right);
+            }
+        }
+        list = list->right;
+    }
+    return origlist;
+}
+
 #define YYERROR_VERBOSE 1
 %}
 
@@ -639,15 +699,15 @@ basedatline:
   | SP_BYTE SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
   | SP_BYTE datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_BYTELIST, FixupList($2), NULL, $1); }
   | SP_WORD SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
   | SP_WORD datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_WORDLIST, FixupList($2), NULL, $1); }
   | SP_LONG SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
   | SP_LONG datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_LONGLIST, FixupList($2), NULL, $1); }
   | instruction SP_EOLN
     { $$ = NewCommentedInstr($1); }
   | instruction operandlist SP_EOLN
@@ -1200,22 +1260,23 @@ opt_numrets:
 
 funccall:
   identifier '(' exprlist ')' opt_numrets
-    { $$ = MakeFunccall($1, $3, $5); }
+    { $$ = MakeFunccall($1, FixupList($3), $5); }
   | identifier '(' ')' opt_numrets
     { $$ = MakeFunccall($1, NULL, $4); }
   | SP_COGINIT '(' exprlist ')'
-    { $$ = NewAST(AST_COGINIT, $3, NULL); }
+    { $$ = NewAST(AST_COGINIT, FixupList($3), NULL); }
   | SP_COGNEW '(' exprlist ')'
     {
         AST *elist;
         AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
         elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
+        elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
     }
   | identifier '.' identifier '(' exprlist ')' opt_numrets
     { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), $5, $7);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), FixupList($5), $7);
     }
   | identifier '.' identifier '(' ')' opt_numrets
     { 
@@ -1228,7 +1289,7 @@ funccall:
   | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), $8, $10);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
     }
   | identifier '[' expr ']' '.' identifier
     { 

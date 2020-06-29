@@ -316,11 +316,18 @@ AstIdentifier(const char *name)
 }
 /* create a string literal */
 AST *
-AstStringLiteral(const char *name)
+AstStringPtr(const char *name)
 {
     AST *ast = NewAST(AST_STRING, NULL, NULL);
     ast->d.string = name;
     return NewAST(AST_STRINGPTR, ast, NULL);
+}
+AST *
+AstPlainString(const char *name)
+{
+    AST *ast = NewAST(AST_STRING, NULL, NULL);
+    ast->d.string = name;
+    return ast;
 }
 
 /*
