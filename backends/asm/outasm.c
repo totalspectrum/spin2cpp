@@ -2213,7 +2213,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   Operand *right;
   Operand *temp;
   IR *ir;
-
+  int specialcase = 0;
+  
   // beware of things like a = b - a
   // so make sure we re-use temp for dest only
   // if it isn't already in use
@@ -2312,18 +2313,30 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           EmitOp2(irl, OPC_XOR, temp, left);
       }
       return temp;
+  case K_ENCODE2:
+      specialcase = 1;
+      /* fall through */
   case K_ENCODE:
       right = CompileExpression(irl, rhs, temp);
       if (gl_p2) {
           IR *ir;
           ir = EmitOp2(irl, OPC_ENCOD, temp, right);
-          ir->flags |= FLAG_WC;
-          ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
-          ir->cond = COND_LT; // if c is set, src was nonzero and add 1
+          if (!specialcase) {
+              // the Spin operator returns 0-32; the Spin2 one returns
+              // 0-31 with ENCOD(0) == 0
+              ir->flags |= FLAG_WC;
+              ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
+              ir->cond = COND_LT; // if c is set, src was nonzero and add 1
+          }
       } else {
           left = NewFunctionTempRegister();
           EmitMove(irl, left, right);
-          EmitMove(irl, temp, NewImmediate(32));
+          if (specialcase) {
+              // Spin2 ENCOD only goes 0-31, not 0-32
+              EmitMove(irl, temp, NewImmediate(31));
+          } else {
+              EmitMove(irl, temp, NewImmediate(32));
+          }
           right = NewCodeLabel();
           EmitLabel(irl, right);
           ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));

@@ -50,4 +50,6 @@
 #define K_QLOG      0x12b
 #define K_QEXP      0x12c
 #define K_SCAS      0x12d
+#define K_ENCODE2   0x12e
+
 #endif
