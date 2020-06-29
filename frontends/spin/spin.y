@@ -260,6 +260,10 @@ FixupList(AST *list)
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
 
+/* special token for foo() : N indicating the number of return values from foo, N */
+/* FIXME: this is not implemented yet in lexer.c! */
+%token SP_FUNCCOLON   ":"
+
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
@@ -1261,7 +1265,7 @@ memref:
 opt_numrets:
   /* nothing */
     { $$ = NULL; }
-  | ':' SP_NUM
+  | SP_FUNCCOLON SP_NUM
     { $$ = $2; }
 ;
 
