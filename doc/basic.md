@@ -1859,6 +1859,11 @@ The input may optionally be preceded by a prompt string, so the above could be r
 ```
 If the prompt string is separated from the variables by a semicolon `;` rather than a comma, then `"? "` is automatically appended to the prompt.
 
+A file handle may be specified after the `input` keyword with a `#` and an integer, for any of these variations:
+```
+  input #2, "enter a string and a number: ", s$, n
+```
+
 #### Used for accessing pins
 
 `input` may also be used to refer to a pseudo-array of bits representing the state of input pins. On the Propeller 1 this is the 32 bit INA register, but on Propeller 2 it is 64 bits.
