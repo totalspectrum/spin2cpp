@@ -117,6 +117,7 @@ static bool IsJump(IR *ir)
   case OPC_REPEAT_END:
   case OPC_JMPREL:
   case OPC_GENERIC_BRANCH:
+  case OPC_GENERIC_BRCOND:
     return true;
   default:
     return false;
@@ -272,6 +273,7 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
     case OPC_GENERIC_BRANCH:
+    case OPC_GENERIC_BRCOND:
         /* it might use flags, we don't know (e.g. addx) */
         return true;
     case OPC_MUXC:
@@ -313,8 +315,10 @@ bool MaybeHubDest(Operand *dst)
 Operand *
 JumpDest(IR *jmp)
 {
+    
     switch (jmp->opc) {
     case OPC_DJNZ:
+    case OPC_GENERIC_BRCOND:
         return jmp->src;
     default:
         return jmp->dst;

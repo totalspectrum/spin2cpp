@@ -117,6 +117,9 @@ typedef enum IROpcode {
 
     /* a branch that the optimizer does not know about */
     OPC_GENERIC_BRANCH,
+
+    /* a branch with condition (like "tjz") where jmp destination is in src field */
+    OPC_GENERIC_BRCOND,
     
     /* place non-instructions below here */
     OPC_PUSH_REGS,   /* pseudo-instruction to save registers on stack */
