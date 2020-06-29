@@ -4,6 +4,7 @@ Version 4.2.4
 - Fixed handling of # at start of line in Spin CON blocks
 - Fixed label detection on instructions like djnf
 - Optimized P2 multiplication by constants
+- Implemented INPUT #n in BASIC
 
 Version 4.2.3
 - Fixed some spurious "duplicate case label" errors
