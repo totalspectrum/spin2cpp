@@ -71,6 +71,12 @@ InputHandle(AST *h)
     return h ? h : AstInteger(0);
 }
 
+static AST *
+OutputHandle(AST *h)
+{
+    return h ? h : AstInteger(1);
+}
+
 #define ARRAY_BASE_NAME "__array_base"
 #define IMPLICIT_TYPE_NAME "__implicit_types"
 #define EXPLICIT_DECL_NAME "__explicit_declares_required"
@@ -767,9 +773,11 @@ branchstmt:
     }
 ;
 
+optcomma: /* nothing */ | ',' ;
+
 file_handle:
    { $$ = NULL; }
-| '#' expr
+| '#' expr optcomma
    { $$ = $2; }
 ;
 
@@ -786,12 +794,13 @@ iostmt:
     { $$ = NewCommentedAST(AST_READ, $3, InputHandle($2), $1); }
   | BAS_INPUT file_handle BAS_STRING ',' inputlist
     {
-        AST *handle = InputHandle($2);
+        AST *inhandle = InputHandle($2);
+        AST *outhandle = OutputHandle($2);
         AST *string = NewAST(AST_STRINGPTR,
                              NewAST(AST_EXPRLIST, $3, NULL), NULL);
         AST *printlist = NewAST(AST_EXPRLIST, string, NULL);
-        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, NULL, $1);
-        AST *inpstmt = NewAST(AST_READ, $5, handle);
+        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, outhandle, $1);
+        AST *inpstmt = NewAST(AST_READ, $5, inhandle);
         AST *stmt;
         stmt = NewAST(AST_STMTLIST,
                       printstmt,
@@ -800,15 +809,16 @@ iostmt:
     }
   | BAS_INPUT file_handle BAS_STRING ';' inputlist
     {
-        AST *handle = InputHandle($2);
+        AST *inhandle = InputHandle($2);
+        AST *outhandle = InputHandle($2);
         AST *question = NewAST(AST_EXPRLIST,
                                AstInteger(63),
                                NewAST(AST_EXPRLIST, AstInteger(32), NULL));
         AST *string = NewAST(AST_STRINGPTR,
                              NewAST(AST_EXPRLIST, $3, question), NULL);
         AST *printlist = NewAST(AST_EXPRLIST, string, NULL);
-        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, NULL, $1);
-        AST *inpstmt = NewAST(AST_READ, $5, handle);
+        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, outhandle, $1);
+        AST *inpstmt = NewAST(AST_READ, $5, inhandle);
         AST *stmt;
         stmt = NewAST(AST_STMTLIST,
                       printstmt,
