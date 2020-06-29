@@ -5,6 +5,8 @@
 #include "symbol.h"
 #include "util/util.h"
 
+extern int gl_caseSensitive;
+
 /*
  * hash function
  */
@@ -36,7 +38,7 @@ FindSymbol(SymbolTable *table, const char *name)
 {
     unsigned hash;
     Symbol *sym;
-    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
+    int nocase = ((table->flags & SYMTAB_FLAG_NOCASE) != 0) && !gl_caseSensitive;
     hash = SymbolHash(name);
     sym = table->hash[hash];
 
@@ -173,7 +175,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
 {
     unsigned hash;
     Symbol *sym;
-    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
+    int nocase = ((table->flags & SYMTAB_FLAG_NOCASE) != 0) && !gl_caseSensitive;
     
     hash = SymbolHash(name);
     sym = table->hash[hash];
