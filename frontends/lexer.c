@@ -1540,6 +1540,7 @@ struct reservedword init_spin2_words[] = {
     { "encod", SP_ENCODE2 },
     { "frac", SP_FRAC },
     { "fvar", SP_FVAR },
+    { "fvars", SP_FVARS },
     { "ones", SP_ONES },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },

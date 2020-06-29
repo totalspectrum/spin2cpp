@@ -144,6 +144,7 @@ FixupList(AST *list)
 %token SP_WORD       "WORD"
 %token SP_LONG       "LONG"
 %token SP_FVAR       "FVAR"
+%token SP_FVARS      "FVARS"
 
 %token SP_INSTR      "instruction"
 %token SP_INSTRMODIFIER "instruction modifier"
@@ -1349,6 +1350,10 @@ datexpritem:
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_WORDLIST, $2, NULL), NULL); }
    | SP_BYTE expritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BYTELIST, $2, NULL), NULL); }
+   | SP_FVAR expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVAR_LIST, $2, NULL), NULL); }
+   | SP_FVARS expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVARS_LIST, $2, NULL), NULL); }
 ;
 
 datexprlist:

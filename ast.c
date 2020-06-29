@@ -690,6 +690,8 @@ static const char *astnames[] = {
 
     "empty",
     "sendargs",
+    "fvar",
+    "fvars",
 };
 
 //

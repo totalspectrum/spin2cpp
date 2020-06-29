@@ -516,6 +516,36 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     }
 }
 
+/* output an FVAR or FVARS item */
+static void
+outputFvar(Flexbuf *f, Flexbuf *relocs, AST *ast, int isSigned, int32_t *relocOff)
+{
+    int32_t val;
+    int32_t maxval;
+    int i;
+
+    if (!ast || ast->kind != AST_EXPRLIST) {
+        ERROR(ast, "bad FVAR expression");
+        return;
+    }
+    ast = ast->left;
+    val = EvalRelocPasmExpr(ast, f, relocs, relocOff, false, RELOC_KIND_I32);
+    if (!isSigned && val < 0) {
+        ERROR(ast, "FVAR item is out of range");
+        return;
+    }
+    maxval = isSigned ? (1<<6) : (1<<7);
+    for (i = 0; i < 3; i++) {
+        if (val >= -maxval && val < maxval) {
+            outputByte(f, val & 0x7f);
+            return;
+        }
+        outputByte(f, 0x80 | (val & 0x7f));
+        val = val >> 7;
+    }
+    outputByte(f, val);
+}
+        
 /* output a data list as found in PASM "long", "byte", etc. */
 void
 outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
@@ -565,6 +595,12 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
                 }
                 start++;
             }
+            reps = 0;
+        } else if (sub->kind == AST_FVAR_LIST) {
+            outputFvar(f, relocs, sub->left, 0, &relocOff);
+            reps = 0;
+        } else if (sub->kind == AST_FVARS_LIST) {
+            outputFvar(f, relocs, sub->left, 0, &relocOff);
             reps = 0;
         } else {
             origval = EvalRelocPasmExpr(sub, f, relocs, &relocOff, false, RELOC_KIND_I32);

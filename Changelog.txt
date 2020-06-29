@@ -1,4 +1,5 @@
 Version 4.2.4
+- Added FVAR and FVARS for Spin2
 - Fixed "-C" option for case sensitivity
 - Fixed detection of result variables in inline asm (e.g. polxy builtin)
 - Fixed handling of # at start of line in Spin CON blocks

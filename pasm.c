@@ -42,6 +42,38 @@ InstrSize(AST *instr)
 }
 
 /*
+ * find number of bytes required for an FVAR item
+ */
+unsigned
+BytesForFvar(AST *item, int isSigned)
+{
+    int32_t val;
+
+    if (!item || item->kind != AST_EXPRLIST) {
+        return 0;
+    }
+    
+    val = EvalPasmExpr(item->left);
+
+    if (isSigned) {
+        if (val >= -64 && val < 64) return 1;
+        if (val >= -(2<<13) && val < (2<<13)) return 2;
+        if (val >= -(2<<20) && val < (2<<20)) return 3;
+        if (val >= -(2<<28) && val < (2<<28)) return 4;
+        ERROR(item, "FVARS value ($%lx) out of range", val);
+    } else {
+        if (val < 0) {
+            ERROR(item, "FVARS value ($%lx) out of range", val);
+        }
+        if (val < (2<<7)) return 1;
+        if (val < (2<<14)) return 2;
+        if (val < (2<<21)) return 3;
+        if (val < (2<<29)) return 4;
+    }
+    return 4;
+}
+
+/*
  * find the length of a data list, in bytes
  */
 unsigned
@@ -62,6 +94,13 @@ dataListLen(AST *ast, int elemsize)
                 elemsize = 2;
                 sub = ExpectOneListElem(sub->left);
             } else if (sub->kind == AST_BYTELIST) {
+                elemsize = 1;
+                sub = ExpectOneListElem(sub->left);
+            } else if (sub->kind == AST_FVAR_LIST) {
+                elemsize = BytesForFvar(sub->left, 0);
+                sub = ExpectOneListElem(sub->left);
+            } else if (sub->kind == AST_FVARS_LIST) {
+                elemsize = BytesForFvar(sub->left, 1);
                 elemsize = 1;
                 sub = ExpectOneListElem(sub->left);
             } else {
