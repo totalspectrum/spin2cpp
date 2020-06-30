@@ -334,7 +334,7 @@ NewModule(const char *fullname, int language)
     } else if (IsCLang(language)) {
         P->objsyms.next = &cReservedWords;
     } else {
-        P->objsyms.next = &spinReservedWords;
+        P->objsyms.next = &spinCommonReservedWords;
     }
     /* set appropriate case sensititity */
     if (LangCaseInSensitive(language)) {

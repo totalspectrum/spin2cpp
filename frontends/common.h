@@ -418,7 +418,7 @@ struct cmddefs {
     const char *val;
 };
 
-extern SymbolTable spinReservedWords;  // in the lexer
+extern SymbolTable spinCommonReservedWords;  // in the lexer
 extern SymbolTable basicReservedWords;
 extern SymbolTable cReservedWords;
 extern Module *globalModule;       // global functions and variables

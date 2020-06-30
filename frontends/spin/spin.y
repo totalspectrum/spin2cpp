@@ -1069,8 +1069,10 @@ expr:
     { $$ = AstOpAssign(K_GE, $1, $4); }
   | expr SP_NE '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_NE, $1, $4); }
-  | '(' expr ')' '?' expr ':' expr %prec SP_ELSE
+  | '(' expr ')' SP_RANDOM expr ':' expr %prec SP_ELSE
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
+  | expr  '?' expr ':' expr %prec SP_ELSE
+    { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' expr
@@ -1168,12 +1170,8 @@ expr:
     { $$ = AstOperator(K_INCREMENT, NULL, $2); }
   | SP_DECREMENT lhs
     { $$ = AstOperator(K_DECREMENT, NULL, $2); }
-  | lhs '?'
-    { $$ = AstOperator('?', $1, NULL); }
   | lhs SP_RANDOM
     { $$ = AstOperator('?', $1, NULL); }
-  | '?' lhs
-    { $$ = AstOperator('?', NULL, $2); }
   | SP_RANDOM lhs
     { $$ = AstOperator('?', NULL, $2); }
   | lhs '~'

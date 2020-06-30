@@ -66,7 +66,8 @@ safe_isdigit(unsigned int x) {
     return (x < 255) ? isdigit(x) : 0;
 }
 
-SymbolTable spinReservedWords;
+SymbolTable spinCommonReservedWords;
+SymbolTable spin1ReservedWords;
 SymbolTable spin2ReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable basicAsmReservedWords;
@@ -560,10 +561,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     if (L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
     } else {
-        sym = NULL;
+        sym = FindSymbol(&spin1ReservedWords, idstr);
     }
     if (sym == NULL) {
-        sym = FindSymbol(&spinReservedWords, idstr);
+        sym = FindSymbol(&spinCommonReservedWords, idstr);
     }
     if (sym != NULL) {
         if (sym->kind == SYM_BUILTIN)
@@ -1352,6 +1353,18 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         Symbol *sym = NULL;
 
         op[0] = token = c;
+        op[1] = 0;
+        
+        // have to special case single character operators
+        if (L->language == LANG_SPIN_SPIN2) {
+            sym = FindSymbol(&spin2ReservedWords, op);
+        } else {
+            sym = FindSymbol(&spin1ReservedWords, op);
+        }
+        if (sym) {
+            token = INTVAL(sym);
+        }
+        // now check for more characters    
         for (i = 1; i < sizeof(op)-1; i++) {
             c = lexgetc(L);
             if (c >= 128 || c < 0 || strchr(operator_chars, c) == NULL) {
@@ -1363,10 +1376,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             if (L->language == LANG_SPIN_SPIN2) {
                 sym = FindSymbol(&spin2ReservedWords, op);
             } else {
-                sym = NULL;
+                sym = FindSymbol(&spin1ReservedWords, op);
             }
             if (!sym) {
-                sym = FindSymbol(&spinReservedWords, op);
+                sym = FindSymbol(&spinCommonReservedWords, op);
             }
             if (sym) {
                 token = INTVAL(sym);
@@ -1407,7 +1420,6 @@ struct reservedword {
     { "cognew", SP_COGNEW },
     { "coginit", SP_COGINIT },
     { "con", SP_CON },
-    { "constant", SP_CONSTANT },
 
     { "dat", SP_DAT },
 
@@ -1519,6 +1531,12 @@ struct reservedword {
     
     { "@@", SP_DOUBLEAT },
     { "@@@", SP_TRIPLEAT },
+};
+
+struct reservedword init_spin1_words[] = {
+    { "constant", SP_CONSTANT },
+
+    { "?", SP_RANDOM },
 };
 
 struct reservedword init_spin2_words[] = {
@@ -2272,17 +2290,21 @@ initSpinLexer(int flags)
 {
     int i;
 
-    spinReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spinCommonReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spin1ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
-        AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
+        AddSymbol(&spinCommonReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(init_spin2_words); i++) {
         AddSymbol(&spin2ReservedWords, init_spin2_words[i].name, SYM_RESERVED, (void *)init_spin2_words[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(init_spin1_words); i++) {
+        AddSymbol(&spin1ReservedWords, init_spin1_words[i].name, SYM_RESERVED, (void *)init_spin1_words[i].val, NULL);
     }
 
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
@@ -2303,17 +2325,17 @@ initSpinLexer(int flags)
     
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
+        AddSymbol(&spinCommonReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
+            AddSymbol(&spinCommonReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
+            AddSymbol(&spinCommonReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
     
@@ -2330,9 +2352,13 @@ int
 IsReservedWord(const char *name)
 {
     int x;
-    x = FindSymbol(&spinReservedWords, name) != 0;
-    if (gl_p2 && !x) {
-        x = FindSymbol(&spin2ReservedWords, name) != 0;
+    x = FindSymbol(&spinCommonReservedWords, name) != 0;
+    if (!x) {
+        if (gl_p2) {
+            x = FindSymbol(&spin2ReservedWords, name) != 0;
+        } else {
+            x = FindSymbol(&spin1ReservedWords, name) != 0;
+        }
     }
     return x;
 }
@@ -3088,7 +3114,7 @@ InitPasm(int flags)
     
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
-        AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&spinCommonReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&pasmWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
