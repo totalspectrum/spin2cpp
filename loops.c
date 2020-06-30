@@ -723,6 +723,10 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (entry->flags & LVFLAG_LOOPUSED) {
                 continue;
             }
+            // if this assignment is conditional don't mess with it
+            if (entry->flags & LVFLAG_CONDITIONAL) {
+                continue;
+            }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
             if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == K_NEGATE) {
                 replace = AstAssign(entry->name,
