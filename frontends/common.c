@@ -198,7 +198,7 @@ Aliases basicalias[] = {
     { "pauseus", "_waitus" },
     { "pinlo", "_drvl" },
     { "pinhi", "_drvh" },
-    { "pinset", "_drv" },
+    { "pinset", "_drvw" },
     { "pintoggle", "_drvnot" },
     { "rnd", "_basic_rnd" },
     { "val", "__builtin_atof" },
