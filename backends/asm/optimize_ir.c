@@ -2382,6 +2382,19 @@ OptimizePeepholes(IRList *irl)
                 }
             }
         }
+        else if (gl_p2 && ir->opc == OPC_TEST && ir->flags == FLAG_WZ)
+        {
+            // this code isn't finished yet
+            int mask = P2CheckBitMask(ir->src->val);
+            if (mask==(mask & 0x1f)    // just one bit set
+                && ((unsigned)ir->src->val) > 511) // and a large constant
+            {
+                ReplaceOpcode(ir, OPC_TESTBN);
+                ir->src = NewImmediate(mask);
+                changed = 1;
+                goto done;
+            }
+        }
     done:
         ir = ir_next;
     }
