@@ -1994,9 +1994,9 @@ CheckFunctionCalls(AST *ast)
                         Symbol *sym;
                         exprlist = NULL;
                         for (i = 0; i < n; i++) {
-                            sym = FindSymbolByOffsetAndKind(&P->objsyms, i*4, SYM_VARIABLE);
+                            sym = FindSymbolByOffsetAndKind(&P->objsyms, i*LONG_SIZE, SYM_VARIABLE);
                             if (!sym || sym->kind != SYM_VARIABLE) {
-                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*4);
+                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*LONG_SIZE);
                                 return;
                             }
                             temp = NewAST(AST_METHODREF, id, AstIdentifier(sym->our_name));
