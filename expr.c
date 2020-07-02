@@ -2625,15 +2625,24 @@ CompatibleTypes(AST *A, AST *B)
     }
 
     if (A == B) return 1;
+
     if (A && A->kind == AST_TUPLE_TYPE) {
         if (B && B->kind == AST_TUPLE_TYPE) {
             return CompatibleTypes(A->left, B->left) && CompatibleTypes(A->right, B->right);
+        } else if (B && B->kind == AST_OBJECT) {
+            /* special hack: tuple types should be compatible with
+             * any object of the same size
+             */
+            return TypeSize(A) == TypeSize(B);
         } else if (A->right) {
             return 0;
         } else {
             return CompatibleTypes(A->left, B);
         }
     } else if (B && B->kind == AST_TUPLE_TYPE) {
+        if (A && A->kind == AST_OBJECT) {
+            return TypeSize(A) == TypeSize(B);
+        }
         if (B->right) {
             return 0;
         }
@@ -2894,4 +2903,42 @@ CleanupType(AST *typ)
         break;
     }
     return typ;
+}
+
+//
+// build an AST_EXPRLIST containing method references for each method
+// within an object
+// "typ" is the object type
+//
+AST *
+BuildExprlistFromObject(AST *expr, AST *typ)
+{
+    AST *exprlist = NULL;
+    AST *temp;
+    Module *P;
+    Symbol *sym;
+    ASTReportInfo saveinfo;
+    
+    int i;
+    int n;
+    exprlist = NULL;
+    if (!IsClassType(typ)) {
+        return expr;
+    }
+    P = GetClassPtr(typ);
+    n = TypeSize(typ);
+    i = 0;
+    AstReportAs(expr, &saveinfo);
+    for(i = 0; i < n; i += LONG_SIZE) {
+        sym = FindSymbolByOffsetAndKind(&P->objsyms, i, SYM_VARIABLE);
+        if (!sym || sym->kind != SYM_VARIABLE) {
+            ERROR(expr, "Unable to find symbol at offset %d", i);
+            break;
+        }
+        temp = NewAST(AST_METHODREF, expr, AstIdentifier(sym->our_name));
+        temp = NewAST(AST_EXPRLIST, temp, NULL);
+        exprlist = AddToList(exprlist, temp);
+    }
+    AstReportDone(&saveinfo);
+    return exprlist;
 }

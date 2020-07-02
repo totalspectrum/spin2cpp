@@ -177,6 +177,15 @@ static char *cleanname(const char *name)
     return temp;
 }
 
+static char *
+OffsetName(const char *basename, unsigned long offset)
+{
+    size_t len = strlen(basename) + 5;
+    char *tempname = calloc(1, len);
+    sprintf(tempname, "%s_%02lu", basename, (unsigned long)offset / LONG_SIZE);
+    return tempname;
+}
+
 static Operand *
 EmptyOperand(void)
 {
@@ -1408,7 +1417,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                     }
                 }
                 if (size > 1) {
-                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), 4);
+                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), LONG_SIZE);
                 } else {
                     dst = basedst;
                 }
@@ -2992,10 +3001,16 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
-#if 0            
-            /* special case offsets of 0 */
-            if (offset->kind == IMM_INT && offset->val == 0) {
-                return base;
+#if 1      
+            /* special case immediate offsets */
+            if (offset->kind == IMM_INT) {
+                char *tempname;
+                base->used = 1;
+                if (offset->val == 0) {
+                    return base;
+                }
+                tempname = OffsetName(base->name, offset->val);
+                return NewOperand(REG_REG, tempname, 0);
             }
 #endif            
             base->used = 1;
@@ -3058,6 +3073,18 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
+#if 1      
+            /* special case immediate offsets */
+            if (offset->kind == IMM_INT) {
+                char *tempname;
+                base->used = 1;
+                if (offset->val == 0) {
+                    return base;
+                }
+                tempname = OffsetName(base->name, offset->val * siz);
+                return NewOperand(REG_REG, tempname, 0);
+            }
+#endif            
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
@@ -3714,9 +3741,27 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
       }
-      if (expr->left && expr->left->kind == AST_EXPRLIST) {
-          // do a series of assignments
-          return CompileMultipleAssign(irl, expr->left, expr->right);
+      if (expr->left) {
+          AST *typ;
+          int n;
+          typ = ExprType(expr->left);
+          if (typ && !TypeGoesOnStack(typ)) {
+              // construct a list of object members
+              n = (TypeSize(typ) + (LONG_SIZE-1)) / LONG_SIZE;
+              if (n > 1) {
+                  expr->left = BuildExprlistFromObject(expr->left, typ);
+              }
+          }
+          if (expr->left->kind == AST_EXPRLIST) {
+              // do a series of assignments
+              if (expr->right->kind != AST_EXPRLIST) {
+                  typ = ExprType(expr->right);
+                  if (typ && !TypeGoesOnStack(typ)) {
+                      expr->right = BuildExprlistFromObject(expr->right, typ);
+                  }
+              }
+              return CompileMultipleAssign(irl, expr->left, expr->right);
+          }
       }
       if ( IsSpinLang(curfunc->language)) {
           // Spin always evaluates RHS first, then LHS
@@ -4371,7 +4416,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                         Operand *derefptr;
                         int offset = 0;
                         while (items-- > 0) {
-                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), 0);
+                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), LONG_SIZE);
                             tempreg = NewFunctionTempRegister();
                             EmitMove(irl, tempreg, derefptr);
                             offset++;
@@ -4731,7 +4776,18 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
    	      EmitLabel(bssirl, g[i].op);
 	      varsize = g[i].count / LONG_SIZE;
 	      if (varsize == 0) varsize = 1;
-	      EmitReserve(bssirl, varsize, COG_RESERVE);
+              if (varsize > 1) {
+                  int n;
+                  char *label;
+                  EmitReserve(bssirl, 1, COG_RESERVE);
+                  for (n = 1; n < varsize; n++) {
+                      label = OffsetName(g[i].op->name, n * LONG_SIZE);
+                      EmitNamedCogLabel(bssirl, label);
+                      EmitReserve(bssirl, 1, COG_RESERVE);
+                  }
+              } else {                  
+                  EmitReserve(bssirl, varsize, COG_RESERVE);
+              }
               count += varsize * 4;
 	      break;
 	  }

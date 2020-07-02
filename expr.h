@@ -126,4 +126,7 @@ int FuncNumParams(AST *functype);
 // declared in
 AST *CleanupType(AST *typ);
 
+// build an expression list containing individual object member references
+AST *BuildExprlistFromObject(AST *expr, AST *typ);
+
 #endif

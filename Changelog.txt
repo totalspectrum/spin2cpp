@@ -7,6 +7,7 @@ Version 4.2.4
 - Fixed label detection on instructions like djnf
 - Fixed Spin2 ENCOD operator
 - Fixed a -O2 loop optimization bug which could lose assignments inside IF
+- Improved handling of structure returns in C
 - Made the ?: ternary operator parse better in Spin2
 - Optimized P2 multiplication by constants
 - Properly supported expressions on strings (like "abc"|m) in Spin
