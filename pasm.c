@@ -57,18 +57,18 @@ BytesForFvar(AST *item, int isSigned)
 
     if (isSigned) {
         if (val >= -64 && val < 64) return 1;
-        if (val >= -(2<<13) && val < (2<<13)) return 2;
-        if (val >= -(2<<20) && val < (2<<20)) return 3;
-        if (val >= -(2<<28) && val < (2<<28)) return 4;
+        if (val >= -(1<<13) && val < (1<<13)) return 2;
+        if (val >= -(1<<20) && val < (1<<20)) return 3;
+        if (val >= -(1<<28) && val < (1<<28)) return 4;
         ERROR(item, "FVARS value ($%lx) out of range", val);
     } else {
         if (val < 0) {
             ERROR(item, "FVARS value ($%lx) out of range", val);
         }
-        if (val < (2<<7)) return 1;
-        if (val < (2<<14)) return 2;
-        if (val < (2<<21)) return 3;
-        if (val < (2<<29)) return 4;
+        if (val < (1<<7)) return 1;
+        if (val < (1<<14)) return 2;
+        if (val < (1<<21)) return 3;
+        if (val < (1<<29)) return 4;
     }
     return 4;
 }
@@ -96,13 +96,6 @@ dataListLen(AST *ast, int elemsize)
             } else if (sub->kind == AST_BYTELIST) {
                 elemsize = 1;
                 sub = ExpectOneListElem(sub->left);
-            } else if (sub->kind == AST_FVAR_LIST) {
-                elemsize = BytesForFvar(sub->left, 0);
-                sub = ExpectOneListElem(sub->left);
-            } else if (sub->kind == AST_FVARS_LIST) {
-                elemsize = BytesForFvar(sub->left, 1);
-                elemsize = 1;
-                sub = ExpectOneListElem(sub->left);
             } else {
                 elemsize = origelemsize;
             }
@@ -121,6 +114,12 @@ dataListLen(AST *ast, int elemsize)
                     ERROR(sub, "Backwards range not supported");
                     numelems = 0;
                 }
+            } else if (sub->kind == AST_FVAR_LIST) {
+                elemsize = 1;
+                numelems = BytesForFvar(sub->left, 0);
+            } else if (sub->kind == AST_FVARS_LIST) {
+                elemsize = 1;
+                numelems = BytesForFvar(sub->left, 1);
             } else {
                 numelems = 1;
             }
