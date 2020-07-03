@@ -4984,57 +4984,9 @@ AssignOneFuncName(Function *f)
         if (faltname) {
             FuncData(f)->asmaltname = NewOperand(IMM_COG_LABEL, faltname, 0);
         }
-        // also fix up any extra declarations
         if (f->extradecl) {
-            AST *ast = f->extradecl;
-            AST *decl;
-            AST *table;
-            AST *name;
-            Symbol *sym;
-            int tablelen;
-            Label *label;
-            while (ast) {
-                if (ast->kind != AST_LISTHOLDER) {
-                    ERROR(ast, "Internal error: expected list holder");
-                    break;
-                }
-                decl = ast->left;
-                if (decl->kind != AST_TEMPARRAYDECL) {
-                    ERROR(ast, "Internal error: expected temp array decl");
-                    break;
-                }
-                name = decl->left;  // this is the array def
-                tablelen = EvalConstExpr(name->right);
-                name = name->left;
-                if (!IsIdentifier(name)) {
-                    ERROR(ast, "Internal error: expected identifier");
-                    break;
-                }
-                sym = FindSymbol(&P->objsyms, GetIdentifierName(name));
-                if (!sym || sym->kind != SYM_TEMPVAR) {
-                    ERROR(name, "Internal error: unable to find symbol");
-                    break;
-                }
-                
-                table = decl->right;
-                if (table->kind != AST_EXPRLIST) {
-                    ERROR(table, "Internal error: expected expression list");
-                    break;
-                }
-                if (!gl_p2) {
-                    P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
-                }
-                label = (Label *)calloc(sizeof(*label), 1);
-                sym->offset = label->hubval = P->datsize;
-                label->type = ast_type_long;
-                label->flags = LABEL_IN_HUB;
-                sym->kind = SYM_LABEL;
-                sym->val = (void *)label;
-                table = NewAST(AST_LONGLIST, table, NULL);
-                P->datblock = AddToList(P->datblock, table);
-                P->datsize += tablelen * LONG_SIZE;
-                ast = ast->right;
-            }
+            // this case should be handled at an earlier level
+            ERROR(f->extradecl, "Unexpected data while assembling");
         }
     }
     curfunc = savecur;
