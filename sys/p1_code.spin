@@ -269,4 +269,29 @@ pri _cogchk(id) | flag, n
   ' if n is id, then the cog was free
   ' otherwise it is running
   return n <> id
-  
+
+''
+'' bytefill/bytemove are here (in processor specific code)
+'' because on P2 we can optimize them (long operations do
+'' not have to be aligned)
+''
+pri bytefill(ptr, val, count)
+  repeat count
+    byte[ptr] := val
+    ptr += 1
+    
+pri bytemove(dst, src, count) : origdst
+  origdst := dst
+  if (dst < src)
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+      

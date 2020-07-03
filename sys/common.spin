@@ -18,11 +18,6 @@ pri wordfill(ptr, val, count)
   repeat count
     word[ptr] := val
     ptr += 2
-pri bytefill(ptr, val, count)
-  repeat count
-    byte[ptr] := val
-    ptr += 1
-    
 pri longmove(dst, src, count) : origdst
   origdst := dst
   if dst < src
@@ -53,21 +48,6 @@ pri wordmove(dst, src, count) : origdst
       src -= 2
       word[dst] := word[src]
   
-pri bytemove(dst, src, count) : origdst
-  origdst := dst
-  if (dst < src)
-    repeat count
-      byte[dst] := byte[src]
-      dst += 1
-      src += 1
-  else
-    dst += count
-    src += count
-    repeat count
-      dst -= 1
-      src -= 1
-      byte[dst] := byte[src]
-      
 pri __builtin_strlen(str) : r=long
   r := 0
   repeat while byte[str] <> 0
