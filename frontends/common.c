@@ -387,6 +387,7 @@ DeclareConstants(AST **conlist_ptr)
     AST *completed_declarations = NULL;
     int default_val;
     int default_val_ok = 0;
+    int default_skip;
     int n;
     
     conlist = *conlist_ptr;
@@ -398,6 +399,7 @@ DeclareConstants(AST **conlist_ptr)
     do {
         n = 0; // no assignments yet
         default_val = 0;
+        default_skip = 1;
         default_val_ok = 1;
         upper = conlist;
         while (upper) {
@@ -442,6 +444,7 @@ DeclareConstants(AST **conlist_ptr)
                     if (IsConstExpr(ast->left)) {
                         default_val = EvalConstExpr(ast->left);
                         default_val_ok = 1;
+                        default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                         RemoveFromList(conlist_ptr, upper);
                         upper->right = NULL;
                         completed_declarations = AddToList(completed_declarations, upper);
@@ -470,7 +473,7 @@ DeclareConstants(AST **conlist_ptr)
                 case AST_IDENTIFIER:
                     if (default_val_ok) {
                         EnterConstant(ast->d.string, AstInteger(default_val));
-                        default_val++;
+                        default_val += default_skip;
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
@@ -490,6 +493,7 @@ DeclareConstants(AST **conlist_ptr)
 
     default_val = 0;
     default_val_ok = 1;
+    default_skip = 1;
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
@@ -498,10 +502,11 @@ DeclareConstants(AST **conlist_ptr)
             switch (ast->kind) {
             case AST_ENUMSET:
                 default_val = EvalConstExpr(ast->left);
+                default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                 break;
             case AST_IDENTIFIER:
                 EnterConstant(ast->d.string, AstInteger(default_val));
-                default_val++;
+                default_val += default_skip;
                 break;
             case AST_ENUMSKIP:
                 id = ast->left;
@@ -514,7 +519,7 @@ DeclareConstants(AST **conlist_ptr)
                 break;
             case AST_ASSIGN:
                 EnterConstant(ast->left->d.string, ast->right);
-                default_val = EvalConstExpr(ast->right) + 1;
+                default_val = EvalConstExpr(ast->right) + default_skip;
                 break;
             case AST_COMMENT:
                 /* just skip it for now */

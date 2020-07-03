@@ -666,7 +666,9 @@ enumitem:
         $$ = NewAST(AST_ENUMSKIP, $1, $3);
     }
   | '#' expr
-  { $$ = NewAST(AST_ENUMSET, $2, NULL); }
+    { $$ = NewAST(AST_ENUMSET, $2, NULL); }
+  | '#' expr '[' expr ']'
+    { $$ = NewAST(AST_ENUMSET, $2, $4); }
   ;
 
 datblock:
