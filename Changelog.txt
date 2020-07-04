@@ -9,6 +9,7 @@ Version 4.2.4
 - Fixed a -O2 loop optimization bug which could lose assignments inside IF
 - Implemented INPUT #n in BASIC
 - Improved handling of structure returns in C
+- Improved handling of passing methods as function pointers
 - Made the ?: ternary operator parse better in Spin2
 - Optimized P2 multiplication by constants
 - Optimized bytefill/bytemove on P2
