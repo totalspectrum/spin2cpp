@@ -91,13 +91,19 @@ InstrSetsDst(IR *ir)
   case OPC_QDIV:
   case OPC_QFRAC:
   case OPC_QMUL:
+  case OPC_DRVH:
+  case OPC_DRVL:
+  case OPC_DRVC:
+  case OPC_DRVNC:
+  case OPC_SETQ:
+  case OPC_SETQ2:
+  case OPC_TESTB:
+  case OPC_TESTBN:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
   case OPC_TESTN:
-  case OPC_SETQ:
-  case OPC_SETQ2:
   case OPC_GENERIC_NR:
       return (ir->flags & FLAG_WR) != 0;
   default:
@@ -275,6 +281,10 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_GENERIC_BRANCH:
     case OPC_GENERIC_BRCOND:
         /* it might use flags, we don't know (e.g. addx) */
+        return true;
+    case OPC_DRVC:
+    case OPC_DRVNC:
+        /* definitely use flags */
         return true;
     case OPC_MUXC:
     case OPC_MUXNC:
@@ -1257,6 +1267,10 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_QDIV:
     case OPC_QFRAC:
     case OPC_QMUL:
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_DRVL:
+    case OPC_DRVH:
         return true;
     default:
         return false;
@@ -3422,6 +3436,17 @@ static PeepholePattern pat_waitx[] = {
     { COND_ANY, OPC_WAITX, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+// replace if_c drvh / if_nc drvl with drvc
+static PeepholePattern pat_drvc1[] = {
+    { COND_C,  OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NC, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvc2[] = {
+    { COND_NC, OPC_DRVL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_C,  OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
@@ -3521,6 +3546,14 @@ static int FixupWaitx(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
+{
+    ReplaceOpcode(ir, arg);
+    ir->cond = COND_TRUE;
+    DeleteIR(irl, ir->next);
+    return 1;
+}
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3533,6 +3566,9 @@ struct Peepholes {
 
     { pat_zeroex, OPC_ZEROX, ReplaceExtend },
     { pat_signex, OPC_SIGNX, ReplaceExtend },
+
+    { pat_drvc1, OPC_DRVC, ReplaceDrvc },
+    { pat_drvc2, OPC_DRVC, ReplaceDrvc },
 
     { pat_wrc, 2, ReplaceZWithC },
 

@@ -1,3 +1,6 @@
+Version 4.2.5
+- Added some more peephole optimizations
+
 Version 4.2.4
 - Added FVAR and FVARS for Spin2
 - Fixed "-C" option for case sensitivity

@@ -19,8 +19,7 @@ LR__0001
 	rep	@LR__0003, #32
 LR__0002
 	shr	_syncsend_val, #1 wc
- if_c	drvh	#57
- if_nc	drvl	#57
+	drvc	#57
 LR__0003
 	jmp	#LR__0001
 _syncsend_ret

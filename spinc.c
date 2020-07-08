@@ -834,7 +834,10 @@ FixupFuncData(Module *P)
 {
     Function *f;
     Function *savecur;
-    
+
+    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        return;
+    }
     for (f = P->functions; f; f = f->next) {
         if (f->extradecl) {
             AST *ast = f->extradecl;

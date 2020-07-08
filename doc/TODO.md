@@ -3,15 +3,13 @@ Things to do
 
 C Improvements
 --------------
-stdio FILE routines and vfs
-
 __attribute__ for constructors and cogexec
 
 Finish porting simpletools.h
 
 virtual methods?
 
-allow method declarations outside the class?
+allow method declarations outside classes
 
 C++ lambdas
 
