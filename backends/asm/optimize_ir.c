@@ -3448,6 +3448,20 @@ static PeepholePattern pat_drvc2[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// replace mov x, #0 / cmp a, b wz / if_e mov x, #1
+static PeepholePattern pat_seteq[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, OPERAND_ANY, OPERAND_ANY, PEEP_FLAGS_WCZ_OK },
+    { COND_EQ,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setne[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, OPERAND_ANY, OPERAND_ANY, PEEP_FLAGS_WCZ_OK },
+    { COND_NE,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -3546,6 +3560,26 @@ static int FixupWaitx(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+// pattern is
+//   mov x, #0
+//   cmp arg01, arg02 wz
+// if_e mov x, #1
+//
+// delete first move, and replace second with wrz x
+
+static int FixupEq(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext, *irnext2;
+
+    irnext = ir->next;
+    irnext2 = irnext->next;
+    ReplaceOpcode(irnext2, arg);
+    irnext2->src = NULL;
+    irnext2->cond = COND_TRUE;
+    DeleteIR(irl, ir);
+    return 1;
+}
+
 static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
 {
     ReplaceOpcode(ir, arg);
@@ -3583,6 +3617,9 @@ struct Peepholes {
     { pat_bmask2, 0, FixupBmask },
 
     { pat_waitx, 0, FixupWaitx },
+    
+    { pat_seteq, OPC_WRZ, FixupEq },
+    { pat_setne, OPC_WRNZ, FixupEq },
 };
 
 
