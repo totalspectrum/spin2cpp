@@ -209,6 +209,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     upper->right = funccall;
                 }
                 AstReportDone(&saveinfo);
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, body, "omitting () on function calls is a fastspin extension");
             }
         }
         return;
@@ -324,6 +325,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     upper->right = funccall;
                 }
                 AstReportDone(&saveinfo);
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, body, "omitting () on function calls is a fastspin extension");
             }
         }
         break;

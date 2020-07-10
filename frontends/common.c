@@ -52,6 +52,7 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
+int gl_warn_flags = 0;
 int gl_exit_status = 0;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
@@ -638,6 +639,38 @@ SYNTAX_ERROR(const char *msg, ...)
     va_end(args);
     fprintf(stderr, "\n");
     gl_errors++;
+}
+
+void
+LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
+{
+    va_list args;
+
+    if (!(gl_warn_flags & WARN_LANG_EXTENSIONS)) {
+        return;
+    }
+    if (!current || current == globalModule) {
+        return;
+    }
+    if (language != LANG_ANY && language != current->curLanguage) {
+        return;
+    }
+    if (ast) {
+        LineInfo *info = GetLineInfo(ast);
+        if (info) {
+            ERRORHEADER(info->fileName, info->lineno, "warning");
+        } else {
+            ERRORHEADER(NULL, 0, "warning");
+        }
+    } else if (current) {
+        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "warning");
+    } else {
+        ERRORHEADER(NULL, 0, "warning");
+    }
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
 }
 
 void

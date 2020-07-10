@@ -81,6 +81,7 @@ Usage(void)
     fprintf(stderr, "  -I dir:     add dir to the object search path\n");
     fprintf(stderr, "  -L dir:     same as -I\n");
     fprintf(stderr, "  -o file:    place final output in file\n");
+    fprintf(stderr, "  -Wall:      enable all warnings\n");
     fprintf(stderr, "  -y:         debug parser\n");
     fprintf(stderr, "  --version:  print version and exit\n");
     exit(2);
@@ -312,6 +313,9 @@ main(int argc, const char **argv)
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;
+            argv++; --argc;
+        } else if (!strcmp(argv[0], "-Wall")) {
+            gl_warn_flags = WARN_ALL;
             argv++; --argc;
         } else if (!strncmp(argv[0], "--version", 7) || !strcmp(argv[0], "-v")) {
             printf("Spin to C++ converter version %s\n", VERSIONSTR);

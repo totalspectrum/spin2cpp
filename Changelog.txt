@@ -1,5 +1,6 @@
 Version 4.2.5
 - Added some more peephole optimizations
+- Added -Wall flag to warning about everything, including language extensions
 
 Version 4.2.4
 - Added FVAR and FVARS for Spin2

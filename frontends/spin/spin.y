@@ -361,9 +361,15 @@ funcdef:
 
 optparamlist:
 /* empty */
-  { $$ = NULL; }
+  {
+      $$ = NULL;
+      LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "omitting () for empty parameter lists is a fastspin extension");
+  }
 | '(' ')'
-  { $$ = NULL; }
+  {
+      $$ = NULL;
+      LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "() for empty parameter lists is a fastspin extension");
+  }
 | paramidentlist
   { $$ = $1; }
 | '(' paramidentlist ')'
@@ -609,6 +615,7 @@ repeatstmt:
     {
         AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
         $$ = ast;
+        LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a fastspin extension");
     }
   | SP_ORG datblock SP_END
     {
@@ -1273,9 +1280,14 @@ funccall:
   identifier '(' exprlist ')' opt_numrets
     { $$ = MakeFunccall($1, FixupList($3), $5); }
   | identifier '(' ')' opt_numrets
-    { $$ = MakeFunccall($1, NULL, $4); }
+    {
+        $$ = MakeFunccall($1, NULL, $4);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
+    }
   | SP_COGINIT '(' exprlist ')'
-    { $$ = NewAST(AST_COGINIT, FixupList($3), NULL); }
+    {
+        $$ = NewAST(AST_COGINIT, FixupList($3), NULL);
+    }
   | SP_COGNEW '(' exprlist ')'
     {
         AST *elist;
@@ -1284,6 +1296,7 @@ funccall:
         elist = AddToList(elist, $3);
         elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a fastspin extension");
     }
   | identifier '.' identifier '(' exprlist ')' opt_numrets
     { 
@@ -1292,6 +1305,7 @@ funccall:
   | identifier '.' identifier '(' ')' opt_numrets
     { 
         $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
     }
   | identifier '.' identifier
     { 
