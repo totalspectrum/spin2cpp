@@ -25,8 +25,7 @@ _setval1_ret
 
 _getval2
 	sar	arg01, #4
-	and	arg01, #255
-	mov	result1, arg01
+	getbyte	result1, arg01, #0
 _getval2_ret
 	reta
 
