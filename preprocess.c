@@ -933,7 +933,7 @@ do_line(struct preprocess *pp)
             handle_endif(pp, &P);
         } else if (!strcasecmp(func, "error")) {
             handle_error(pp, &P);
-        } else if (!strcasecmp(func, "warning")) {
+        } else if (!strcasecmp(func, "warn")) {
             handle_warn(pp, &P);
         } else if (!strcasecmp(func, "define")) {
             handle_define(pp, &P, 1);
