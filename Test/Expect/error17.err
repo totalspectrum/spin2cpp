@@ -1,0 +1,2 @@
+error17.spin2:5: warning: definition of x hides a member variable
+error17.spin2:5: warning: definition of y hides a member variable

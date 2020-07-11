@@ -117,6 +117,23 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     } else {
         sym->flags |= sym_flag;
         sym->module = (void *)current;
+        if (current && current != globalModule) {
+            if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
+                 || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
+            {
+                switch (kind) {
+                case SYM_PARAMETER:
+                case SYM_RESULT:
+                case SYM_LOCALVAR:
+                    if (FindSymbol(&current->objsyms, username) != 0) {
+                        WARNING(astname, "definition of %s hides a member variable", username);
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
     }
     return sym;
 }

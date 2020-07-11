@@ -935,6 +935,9 @@ do_line(struct preprocess *pp)
             handle_error(pp, &P);
         } else if (!strcasecmp(func, "warn")) {
             handle_warn(pp, &P);
+        } else if (!strcasecmp(func, "warning")) {
+            // obsolete form of #warn
+            handle_warn(pp, &P);
         } else if (!strcasecmp(func, "define")) {
             handle_define(pp, &P, 1);
         } else if (!strcasecmp(func, "undef")) {

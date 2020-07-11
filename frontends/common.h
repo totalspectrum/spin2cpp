@@ -132,6 +132,7 @@ extern int gl_optimize_flags; /* flags for optimization */
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
+#define WARN_HIDE_MEMBERS       0x02
 #define WARN_ALL                0xFFFF
 
 extern int gl_printprogress;  /* print files as we process them */
