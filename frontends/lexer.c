@@ -2785,14 +2785,14 @@ instr_p2[] = {
     { "nixint2",0x0d604c24, NO_OPERANDS, OPC_GENERIC, 0 },
     { "nixint3",0x0d604e24, NO_OPERANDS, OPC_GENERIC, 0 },
   
-    { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
     { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
     { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
-    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
 
   // indirect jumps via register
@@ -2808,25 +2808,25 @@ instr_p2[] = {
 
     { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_JMPREL, 0 },
   
-    { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
     { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC, 0 },
-    { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC, 0 },
+    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC_NR, 0 },
   
-    { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcfrq",0x0d60003b, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcmod",0x0d60003c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpiv", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpix", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcfrq",0x0d60003b, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcmod",0x0d60003c, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setpiv", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setpix", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
     { "testp",  0x0d600040, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_P2_CZTEST },
     { "testpn", 0x0d600041, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_P2_CZTEST },
@@ -2887,7 +2887,7 @@ instr_p2[] = {
     { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD | FLAG_WARN_NOTUSED },
     { "modc",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WC | FLAG_WARN_NOTUSED },
     { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WZ | FLAG_WARN_NOTUSED },
-    { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "getscp", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     
   // long jumps
