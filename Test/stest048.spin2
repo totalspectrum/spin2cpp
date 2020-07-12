@@ -1,0 +1,15 @@
+''
+'' return duration of low-going pulse
+'' -- value returned is in system ticks
+'' -- blocks until pulse arrives
+''
+pub {++cog} getpulse(pin) : delay | t0
+  pinf(pin)  ' make pin an input
+  repeat
+    t0 := getct()
+  until pinr(pin) <> 0
+  repeat
+    delay := getct()
+  until pinr(pin) == 0
+  return delay - t0
+
