@@ -3383,7 +3383,7 @@ static PeepholePattern pat_signex[] = {
 };
 static PeepholePattern pat_wrc[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -3539,24 +3539,53 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     DeleteIR(irl, ir->next);
     return 1;
 }
-static int ReplaceZWithC(int arg, IRList *irl, IR *ir)
+//
+// looks at the sequence
+//   wrc x
+//   cmp x, #0 wz
+// and if possible deletes it and replaces subsequent uses of C with NZ
+//
+static int ReplaceWrc(int arg, IRList *irl, IR *ir)
 {
-    while (ir && arg > 0) {
-        ir = ir->next;
-        --arg;
-    }
-    if (!ir || InstrIsVolatile(ir)) {
+    IR *ir0 = ir;
+    IR *ir1 = ir->next;
+    IR *lastir = NULL;
+    
+    if (InstrIsVolatile(ir0) || !ir1 || InstrIsVolatile(ir1)) {
         return 0;
     }
-    if (ir->cond == COND_NE) {
-        ir->cond = COND_C;
-        return 1;
+    ir = ir1->next;
+    for(lastir = ir; lastir; lastir = lastir->next) {
+        if (!lastir || InstrIsVolatile(lastir)) {
+            return 0;
+        }
+        if (IsBranch(lastir)) {
+            // we assume flags do not have to be preserved across branches */
+            break;
+        }
+        if (InstrUsesFlags(lastir, FLAG_WC)) {
+            // C is explicitly used, so preserve it
+            return 0;
+        }
+        if (InstrSetsAnyFlags(lastir)) {
+            // flags are to be replaced
+            break;
+        }
     }
-    if (ir->cond == COND_EQ) {
-        ir->cond = COND_NC;
-        return 1;
+    if (!lastir) {
+        return 0;
     }
-    return 0;
+    // OK, let's go ahead and change Z to NC
+    while (ir != lastir) {
+        ReplaceZWithNC(ir);
+        ir = ir->next;
+    }
+    if (IsBranch(lastir)) {
+        ReplaceZWithNC(lastir);
+    }
+    DeleteIR(irl, ir0);
+    DeleteIR(irl, ir1);
+    return 1;
 }
 
 static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
@@ -3697,7 +3726,7 @@ struct Peepholes {
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
     { pat_drvc2, OPC_DRVC, ReplaceDrvc },
 
-    { pat_wrc, 2, ReplaceZWithC },
+    { pat_wrc, 0, ReplaceWrc },
 
     { pat_rdbyte1, 2, RemoveNFlagged },
     { pat_rdword1, 2, RemoveNFlagged },
