@@ -1665,7 +1665,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         if (IsBranch(ir)) {
             return NULL;
         }
-        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST)) {
+        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
             if (ir->cond != COND_TRUE) {
                 // cannot be sure that we set the value here,
                 // since the set is conditional
@@ -1696,6 +1696,24 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         ir = ir->next;
     }
     return saveir;
+}
+
+//
+// check for flags used between ir1 and ir2
+//
+static int
+FlagsNotUsedBetween(IR *ir1, IR *ir2, unsigned flags)
+{
+    while (ir1 && ir1 != ir2) {
+        if (InstrUsesFlags(ir1, flags)) {
+            return 0;
+        }
+        ir1 = ir1->next;
+    }
+    if (!ir1) {
+        return 0;
+    }
+    return 1;
 }
 
 //
@@ -1779,7 +1797,8 @@ OptimizeCompares(IRList *irl)
                 && !InstrIsVolatile(ir_prev)
                 && !InstrIsVolatile(ir)
                 && (ir_prev->flags == COND_TRUE)
-                && CanTestZero(ir_prev->opc))
+                && CanTestZero(ir_prev->opc)
+                && FlagsNotUsedBetween(ir_prev, ir, FLAG_WC|FLAG_WZ))
             {
                 ir_prev->flags |= FLAG_WZ;
                 DeleteIR(irl, ir);
@@ -2117,6 +2136,8 @@ FlagsDeadAfter(IRList *irl, IR *ir, unsigned flags)
 // shr  tmp, #1
 //    becomes shr tmp, #1 wc if we can replace NZ with C
 //
+// similarly for test tmp, #$8000_0000 wz ; shl tmp, #1
+// 
 // if_c  or a, b
 // if_nc andn a, b
 //    becomes muxc a, b
@@ -2226,6 +2247,66 @@ OptimizePeepholes(IRList *irl)
                 && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
             {
                 /* maybe we can replace the test with the shr */
+                /* we already know the result isn't used between previr
+                   and ir; check the instructions in between for use
+                   of C, and also verify that the flags aren't used
+                   in subsequent instructions
+                */
+                IR *testir;
+                IR *lastir = NULL;
+                bool sawir = false;
+                bool changeok = true;
+                int irflags = (ir->flags & FLAG_WZ) | FLAG_WC;
+                for (testir = previr->next; testir && changeok; testir = testir->next) {
+                    if (testir == ir) {
+                        sawir = true;
+                    }
+                    if (IsBranch(testir)) {
+                        /* we assume flags do not have to be preserved  across branches*/
+                        lastir = testir;
+                        break;
+                    }
+                    if (InstrUsesFlags(testir, FLAG_WC)) {
+                        changeok = false;
+                    } else if (InstrSetsAnyFlags(testir)) {
+                        changeok = sawir;
+                        lastir = testir;
+                        break;
+                    }
+                }
+                if (changeok) {
+                    /* ok, let's go ahead and change it */
+                    ReplaceOpcode(previr, opc);
+                    previr->flags &= ~(FLAG_WZ|FLAG_WC);
+                    previr->flags |= irflags;
+                    for (testir = previr->next; testir && testir != lastir;
+                         testir = testir->next)
+                    {
+                        ReplaceZWithNC(testir);
+                    }
+                    if (IsBranch(lastir)) {
+                        ReplaceZWithNC(lastir);
+                    }
+                    DeleteIR(irl, ir);
+                    changed = 1;
+                    goto done;
+                }
+            }
+        } else if ( (opc == OPC_SHL || opc == OPC_ROL)
+		   && !InstrSetsFlags(ir, FLAG_WC)
+                   && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
+                   && IsImmediateVal(ir->src, 1))
+        {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr &&
+                (    (previr->opc == OPC_TEST
+                      && IsImmediateVal(previr->src, 0x80000000))
+                  || (previr->opc == OPC_TESTBN
+                      && IsImmediateVal(previr->src, 31))
+                    )
+                && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
+            {
+                /* maybe we can replace the test with the shl */
                 /* we already know the result isn't used between previr
                    and ir; check the instructions in between for use
                    of C, and also verify that the flags aren't used
