@@ -121,6 +121,7 @@ static bool IsJump(IR *ir)
 {
   switch (ir->opc) {
   case OPC_JUMP:
+  case OPC_REPEAT:
   case OPC_DJNZ:
   case OPC_REPEAT_END:
   case OPC_JMPREL:
@@ -402,7 +403,7 @@ static IR *
 NextInstructionFollowJumps(IR *ir)
 {
     ir = NextInstruction(ir);
-    if (!ir || ir->opc != OPC_JUMP || ir->cond != COND_TRUE)
+    if (!ir || (ir->opc != OPC_JUMP) || ir->cond != COND_TRUE)
         return ir;
     if (!ir->aux) {
         return ir;
@@ -1238,6 +1239,12 @@ HasSideEffectsOtherThanReg(IR *ir)
         for (irnext = ir->next; irnext; irnext = irnext->next) {
             if (InstrUsesFlags(irnext, flagsSet)) {
                 return true;
+            }
+            if (InstrIsVolatile(irnext)) {
+                return true;
+            }
+            if (IsBranch(irnext) && ir->cond == COND_TRUE) {
+                break;
             }
         }
     }
@@ -2710,12 +2717,14 @@ OptimizeP2(IRList *irl)
                     repir = NewIR(OPC_REPEAT);
                     repir->dst = labir->dst;
                     repir->src = var ? var : NewImmediate(0);
+                    repir->aux = labir;
+                    labir->aux = repir;
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
+                    ir->dst = dst;
+                    ir->src = NULL;
                     ir->opc = OPC_REPEAT_END;
                     ir->instr = NULL;
-                    ir->dst = ir->src;
-                    ir->src = NULL;
                     changed = 1;
                 }
             }
@@ -3263,12 +3272,13 @@ typedef struct PeepholePattern {
 #define PEEP_OP_MATCH 0x0200
 #define PEEP_OP_IMM   0x0300
 #define PEEP_OP_SET_IMM 0x0400
+#define PEEP_OP_MATCH_DEAD 0x0500  /* like PEEP_OP_MATCH, but operand is dead after this instr */
 #define PEEP_OPNUM_MASK 0x00ff
 #define PEEP_OP_MASK    0xff00
 
 static Operand *peep_ops[MAX_OPERANDS_IN_PATTERN];
 
-static int PeepOperandMatch(int patrn_dst, Operand *dst)
+static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
 {
     int opnum, opflag;
     
@@ -3284,6 +3294,13 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst)
             peep_ops[opnum] = dst;
         } else if (opflag == PEEP_OP_MATCH) {
             if (!SameOperand(peep_ops[opnum], dst)) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_MATCH_DEAD) {
+            if (!SameOperand(peep_ops[opnum], dst)) {
+                return 0;
+            }
+            if (!IsDeadAfter(ir, dst)) {
                 return 0;
             }
         } else if (opflag == PEEP_OP_IMM) {
@@ -3335,10 +3352,10 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
             }
         }
         
-        if (!PeepOperandMatch(patrn->dst, ir->dst)) {
+        if (!PeepOperandMatch(patrn->dst, ir->dst, ir)) {
             return 0;
         }
-        if (!PeepOperandMatch(patrn->src1, ir->src)) {
+        if (!PeepOperandMatch(patrn->src1, ir->src, ir)) {
             return 0;
         }
         patrn++;
@@ -3384,6 +3401,22 @@ static PeepholePattern pat_signex[] = {
 static PeepholePattern pat_wrc[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static PeepholePattern pat_clrc[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setc1[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setc2[] = {
+    { COND_ANY, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -3617,6 +3650,43 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
+/* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
+static int FixupClrC(int arg, IRList *irl, IR *ir)
+{
+    IR *testir = ir->next;
+    int newflags;
+    newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
+    ir->flags |= newflags;
+    DeleteIR(irl, testir);
+
+    /* an interesting other thing to check: if we have
+     * a "drvc x" instruction following, replace it with
+     * "drvl x"
+     */
+    if (ir->next && ir->next->opc == OPC_DRVC) {
+        ReplaceOpcode(ir->next, OPC_DRVL);
+    }
+    return 1;
+}
+/* mov x, #1 ; test x, #1 wc => neg x, #1 wc */
+static int FixupSetC(int arg, IRList *irl, IR *ir)
+{
+    IR *testir = ir->next;
+    int newflags;
+    ReplaceOpcode(ir, OPC_NEG);
+    newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
+    ir->flags |= newflags;
+    DeleteIR(irl, testir);
+    /* an interesting other thing to check: if we have
+     * a "drvc x" instruction following, replace it with
+     * "drvh x"
+     */
+    if (ir->next && ir->next->opc == OPC_DRVC) {
+        ReplaceOpcode(ir->next, OPC_DRVH);
+    }
+    return 1;
+}
+
 // and x, #255 ; mov y, x  => getbyte y, x, #0
 // shr x, #24 ; getbyte y, x, #0 => getbyte y, x, #3
 static int FixupGetByte(int arg, IRList *irl, IR *ir)
@@ -3756,6 +3826,9 @@ struct Peepholes {
     { pat_sar16getword, 1, FixupGetWord },
     { pat_shr16getword, 1, FixupGetWord },
 
+    { pat_clrc, 0, FixupClrC },
+    { pat_setc1, 0, FixupSetC },
+    { pat_setc2, 0, FixupSetC },
 };
 
 

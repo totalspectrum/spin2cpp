@@ -14,7 +14,6 @@ entry
 _syncsend
 LR__0001
 	rdlong	_syncsend_val, arg01
-	mov	_syncsend__idx__0002, #32
 	add	arg01, #4
 	rep	@LR__0003, #32
 LR__0002
@@ -29,8 +28,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_syncsend__idx__0002
-	res	1
 _syncsend_val
 	res	1
 arg01
