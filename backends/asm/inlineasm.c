@@ -453,8 +453,10 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             fcache->dst = enddst;
             startlabel = NewIR(OPC_LABEL);
             startlabel->dst = startdst;
+            startlabel->flags |= FLAG_LABEL_NOJUMP;
             endlabel = NewIR(OPC_LABEL);
             endlabel->dst = enddst;
+            endlabel->flags |= FLAG_LABEL_NOJUMP;
         }
     }
     // first run through and define all the labels

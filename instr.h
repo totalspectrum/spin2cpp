@@ -226,9 +226,11 @@ enum flags {
 
     // to mark jump table instructions
     FLAG_JMPTABLE_INSTR = 0x2000,
+
+    // label is not associated with any jump
+    FLAG_LABEL_NOJUMP = 0x4000,
     
     // rest of the bits are used by the optimizer
-
     FLAG_LABEL_USED = 0x10000,
     FLAG_INSTR_NEW  = 0x20000,
     FLAG_OPTIMIZER = 0xFFF0000,

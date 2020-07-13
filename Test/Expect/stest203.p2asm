@@ -10,16 +10,14 @@ dat
 entry
 
 _sum
-	mov	_var01, arg01
-	mov	_var02, _var01
 	loc	pa,	#(@LR__0003-@LR__0001)
 	calla	#FCACHE_LOAD_
 LR__0001
 	rep	@LR__0002, #4
-	add	_var02, _var02
+	add	arg01, arg01
 LR__0002
 LR__0003
-	mov	result1, _var02
+	mov	result1, arg01
 _sum_ret
 	reta
 
@@ -29,10 +27,6 @@ COG_BSS_START
 	fit	480
 	orgh
 	org	COG_BSS_START
-_var01
-	res	1
-_var02
-	res	1
 arg01
 	res	1
 	fit	480

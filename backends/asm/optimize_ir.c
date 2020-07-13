@@ -508,7 +508,13 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         // that goes to LABEL then we might miss a set
         // so check
         IR *comefrom = (IR *)ir->aux;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            // this label isn't a jump target, so don't worry about it
+            continue;
+        }
         if (!comefrom) {
+            // we don't know what branches come here,
+            // so for caution give up
             return false;
         }
         if (level == 0 && comefrom->addr < instr->addr) {
@@ -755,6 +761,10 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     }
     if (ir->opc == OPC_LABEL) {
         IR *comefrom;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            // this label is not a jump target, so ignore it
+            continue;
+        }
         // do we know who jumps to this label?
         comefrom = (IR *)ir->aux;
         if (comefrom) {
