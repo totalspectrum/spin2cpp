@@ -45,5 +45,5 @@ int rand()
   if ( _lseed < 0 )
     _lseed += M;
 
-  return( (int) _lseed );
+  return( (int) _lseed ) & RAND_MAX;
 }
