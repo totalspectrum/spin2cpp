@@ -2337,6 +2337,7 @@ OptimizePeepholes(IRList *irl)
                 if (changeok) {
                     /* ok, let's go ahead and change it */
                     ReplaceOpcode(previr, opc);
+                    previr->src = NewImmediate(1); // change to shl #1 wc
                     previr->flags &= ~(FLAG_WZ|FLAG_WC);
                     previr->flags |= irflags;
                     for (testir = previr->next; testir && testir != lastir;
