@@ -1,13 +1,13 @@
 #include <propeller.h>
 #include "test089.h"
 
+#define INLINE__ static inline
+INLINE__ int32_t Shr__(uint32_t a, uint32_t b) { return (a>>b); }
 void test089::Catchlong(int32_t Longvar)
 {
-  int32_t _parm__0001[1];
-  _parm__0001[0] = Longvar;
-  B0 = ((char *)(&_parm__0001[0]))[0];
-  B1 = ((char *)(&_parm__0001[0]))[1];
-  B2 = ((char *)(&_parm__0001[0]))[2];
-  B3 = ((char *)(&_parm__0001[0]))[3];
+  B0 = Longvar & 0xff;
+  B1 = (Shr__(Longvar, 8)) & 0xff;
+  B2 = (Shr__(Longvar, 16)) & 0xff;
+  B3 = Shr__(Longvar, 24);
 }
 

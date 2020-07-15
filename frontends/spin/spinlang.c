@@ -601,8 +601,6 @@ doSpinTransform(AST **astptr, int level)
     case AST_ARRAYREF:
         // array references like T[x] may actually
         // be a memory lookup if T is a typename
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
             AST *typ;
@@ -642,7 +640,40 @@ doSpinTransform(AST **astptr, int level)
                     break;
                 } 
             }
+        } else if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
+            AST *left = ast->left;
+            int index = EvalConstExpr(ast->right);
+            AST *typ = left->left;
+            AST *id = left->right;
+            int mask = -1;
+            int shift = 0;
+
+            if (typ && id && id->kind == AST_ADDROF) {
+                id = id->left;
+                if (IsIdentifier(id) && IsLocalVariable(id)) {
+                    if (typ == ast_type_word && index < 2) {
+                        shift = index * 16;
+                        mask = (index == 1) ? 0 : 0xffff;
+                    } else if (typ == ast_type_byte && index < 4) {
+                        shift = index * 8;
+                        mask = (index == 3) ? 0 : 0xff;
+                    }
+                    if (mask >= 0) {
+                        AST *newexpr = id;
+                        if (shift) {
+                            newexpr = AstOperator(K_SHR, newexpr, AstInteger(shift));
+                        }
+                        if (mask) {
+                            newexpr = AstOperator('&', newexpr, AstInteger(mask));
+                        }
+                        *astptr = newexpr;
+                        return;
+                    }
+                }
+            }
         }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
         break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
