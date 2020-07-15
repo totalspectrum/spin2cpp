@@ -4653,7 +4653,11 @@ CompileFunctionBody(Function *f)
     EmitComments(irheader, f->doccomment);
     
     nextlabel = quitlabel = NULL;
-    
+
+    // check for __fromfile
+    if (f->body && f->body->kind == AST_STRING) {
+        return;
+    }
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
     if (f->resultexpr && !IsConstExpr(f->resultexpr))
@@ -4677,10 +4681,7 @@ CompileFunctionBody(Function *f)
             }
         }
     }
-    // check for __fromfile
-    if (f->body && f->body->kind != AST_STRING) {
-        CompileStatementList(irl, f->body);
-    }
+    CompileStatementList(irl, f->body);
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
 }
@@ -5066,6 +5067,9 @@ ExpandInline_internal(IRList *irl, Module *P)
             if (!change) break;
             // may be new opportunities for optimization
             OptimizeIRLocal(firl, f);
+            // revisit the question of whether it should be inlined, given that
+            // we've perhaps changed its size
+            FuncData(f)->isInline = ShouldBeInlined(f);
         }
     }
 }

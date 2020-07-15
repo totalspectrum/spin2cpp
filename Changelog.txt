@@ -3,8 +3,12 @@ Version 4.2.5
 - Added -Wall flag to warning about everything, including language extensions
 - Fixed the #warn preprocessor directive
 - Fixed a bug in operator assignment (like +=) when both sides have side effects
+- Fixed an optimizer bug where some conditional instructions were overlooked in optimizing cmp #0 cases
 - Improved optimization around ORG/END blocks (without touching the code inside)
 - Improved FCACHE code to merge loops in some cases
+- Improved inlining of functions
+- On P2, use constants in the D field when we can
+- Various other minor optimizations
 
 Version 4.2.4
 - Added FVAR and FVARS for Spin2

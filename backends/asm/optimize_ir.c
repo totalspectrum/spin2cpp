@@ -965,12 +965,21 @@ TransformConstDst(IR *ir, Operand *imm)
   intptr_t val1, val2;
   int setsResult = 1;
 
-  if (ir->src == NULL) {
+  if (gl_p2 && !InstrSetsDst(ir)) {
       // this may be a case where we can replace dst with src
-      if (ir->instr && ir->instr->ops == P2_DST_CONST_OK) {
-          ir->dst = imm;
-          return 1;
+      if (ir->instr) {
+          switch (ir->instr->ops) {
+          case P2_DST_CONST_OK:
+          case P2_TWO_OPERANDS:
+          case P2_RDWR_OPERANDS:
+              ir->dst = imm;
+              return 1;
+          default:
+              break;
+          }
       }
+  }
+  if (ir->src == NULL) {
       return 0;
   }
   if (imm->kind == IMM_INT && imm->val == 0) {
@@ -3155,14 +3164,23 @@ NeverInline(Function *f)
 //
 // check a function to see if it should be inlined
 //
-#define INLINE_THRESHOLD 4
+#define INLINE_THRESHOLD_P1 2
+#define INLINE_THRESHOLD_P2 4
 
 bool
 ShouldBeInlined(Function *f)
 {
     IR *ir;
     int n = 0;
+    int paramfactor;
+    int threshold;
 
+    if (gl_p2) {
+        threshold = INLINE_THRESHOLD_P2;
+    } else {
+        threshold = INLINE_THRESHOLD_P1;
+    }
+    
     if (!(gl_optimize_flags & (OPT_INLINE_SMALLFUNCS|OPT_INLINE_SINGLEUSE))) {
         return false;
     }
@@ -3199,12 +3217,22 @@ ShouldBeInlined(Function *f)
         if (f->callSites == 1) {
             return true;
         } else if (f->callSites == 2) {
-            return (n <= 2*INLINE_THRESHOLD);
+            return (n <= 2*threshold);
         }
     }
 
     // otherwise only inline small functions
-    return (n <= INLINE_THRESHOLD);
+    // also note that we should consider the cost of moving instructions
+    // into argument registers when considering this
+    paramfactor = f->numparams;
+    if (paramfactor < 2) {
+        paramfactor = 2;
+    } else if (paramfactor > 4) {
+        paramfactor = 4;
+    } else {
+        paramfactor = f->numparams;
+    }
+    return n <= (threshold + paramfactor);
 }
 
 //
