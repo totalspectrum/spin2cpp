@@ -3242,7 +3242,7 @@ ExpandInlines(IRList *irl)
 // a new label which can point to the end
 // of the loop
 static IR *
-LoopCanBeFcached(IRList *irl, IR *root)
+LoopCanBeFcached(IRList *irl, IR *root, int *size_ptr)
 {
     IR *endjmp;
     IR *endlabel;
@@ -3297,6 +3297,9 @@ LoopCanBeFcached(IRList *irl, IR *root)
     newlabel = NewIR(OPC_LABEL);
     newlabel->dst = dst;
     InsertAfterIR(irl, endjmp, newlabel);
+    if (size_ptr) {
+        *size_ptr = size;
+    }
     return newlabel;
 }
 
@@ -3309,8 +3312,8 @@ OptimizeFcache(IRList *irl)
     ir = irl->head;
     while (ir) {
         if (IsLabel(ir)) {
-            endlabel = LoopCanBeFcached(irl, ir);
-            if (LoopCanBeFcached(irl, ir)) {
+            endlabel = LoopCanBeFcached(irl, ir, NULL);
+            if (endlabel) {
                 Operand *src = ir->dst;
                 Operand *dst = endlabel->dst;
                 IR *startlabel = ir;
