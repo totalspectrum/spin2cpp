@@ -3242,13 +3242,12 @@ ExpandInlines(IRList *irl)
 // a new label which can point to the end
 // of the loop
 static IR *
-LoopCanBeFcached(IRList *irl, IR *root, int *size_ptr)
+LoopCanBeFcached(IRList *irl, IR *root, int size_left)
 {
     IR *endjmp;
     IR *endlabel;
     IR *newlabel;
     IR *ir = root;
-    int size = 0;
     
     if (!IsHubDest(ir->dst)) {
         // this loop is not in HUB memory
@@ -3266,29 +3265,55 @@ LoopCanBeFcached(IRList *irl, IR *root, int *size_ptr)
     if (IsForwardJump(endjmp)) {
         return 0;
     }
-    {
-        ir = ir->next;
-        while (ir != endjmp) {
-            if (ir->fcache || InstrIsVolatile(ir)) {
+
+    ir = ir->next;
+    while (ir != endjmp) {
+        if (ir->fcache || InstrIsVolatile(ir)) {
+            return 0;
+        }
+        if (ir->opc == OPC_CALL) {
+            // no calls to hub memory!
+            if (MaybeHubDest(ir->dst)) {
                 return 0;
             }
-            if (ir->opc == OPC_CALL) {
-                // no calls to hub memory!
-                if (MaybeHubDest(ir->dst)) {
-                    return 0;
-                }
+        }
+        if (IsJump(ir)) {
+            if (!JumpIsAfterOrEqual(root, ir))
+                return 0;
+            if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
+                return 0;
+        }
+        if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
+            --size_left;
+            if (size_left <= 0) {
+                return 0;
             }
-            if (IsJump(ir)) {
-                if (!JumpIsAfterOrEqual(root, ir))
-                    return 0;
-                if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
-                    return 0;
-            }
-            if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
-                size++;
-                if (size >= gl_fcache_size) {
-                    return 0;
+        }
+        ir = ir->next;
+    }
+
+    //
+    // OK, if we got here then the stuff from "root" to "endjmp"
+    // is eligible for fcache
+    // if there's another loop just after this one, it may be worth
+    // trying to fit it in as well
+    //
+    if (ir == endjmp && size_left > gl_fcache_size/2) {
+        // peek ahead a few instructions
+        // if there's a loop there we can stick into fcache as well,
+        // combine them both into one big block
+        int n = 4;
+        while (n > 0 && ir && size_left > 0) {
+            if (IsLabel(ir)) {
+                IR *newend = LoopCanBeFcached(irl, ir, size_left);
+                if (newend) {
+                    return newend;
+                } else {
+                    break;
                 }
+            } else if (!IsDummy(ir)) {
+                --n;
+                --size_left;
             }
             ir = ir->next;
         }
@@ -3297,9 +3322,6 @@ LoopCanBeFcached(IRList *irl, IR *root, int *size_ptr)
     newlabel = NewIR(OPC_LABEL);
     newlabel->dst = dst;
     InsertAfterIR(irl, endjmp, newlabel);
-    if (size_ptr) {
-        *size_ptr = size;
-    }
     return newlabel;
 }
 
@@ -3312,7 +3334,7 @@ OptimizeFcache(IRList *irl)
     ir = irl->head;
     while (ir) {
         if (IsLabel(ir)) {
-            endlabel = LoopCanBeFcached(irl, ir, NULL);
+            endlabel = LoopCanBeFcached(irl, ir, gl_fcache_size);
             if (endlabel) {
                 Operand *src = ir->dst;
                 Operand *dst = endlabel->dst;
