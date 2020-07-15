@@ -340,14 +340,14 @@ LR__0017
 	abs	_system___gc_doalloc_tmp001_, __system___gc_doalloc_size wc
 	shr	_system___gc_doalloc_tmp001_, #2
  if_b	neg	_system___gc_doalloc_tmp001_, _system___gc_doalloc_tmp001_
-	mov	__system___gc_doalloc__idx__90023, _system___gc_doalloc_tmp001_ wz
+	mov	__system___gc_doalloc__idx__90026, _system___gc_doalloc_tmp001_ wz
 	mov	__system___gc_doalloc_zptr, __system___gc_doalloc_ptr
  if_e	jmp	#LR__0019
 LR__0018
 	mov	_system___gc_doalloc_tmp001_, #0
 	wrlong	_system___gc_doalloc_tmp001_, __system___gc_doalloc_zptr
 	add	__system___gc_doalloc_zptr, #4
-	djnz	__system___gc_doalloc__idx__90023, #LR__0018
+	djnz	__system___gc_doalloc__idx__90026, #LR__0018
 LR__0019
 LR__0020
 	mov	result1, __system___gc_doalloc_ptr
@@ -747,7 +747,7 @@ __system___gc_collect_ptr
 	res	1
 __system___gc_collect_startheap
 	res	1
-__system___gc_doalloc__idx__90023
+__system___gc_doalloc__idx__90026
 	res	1
 __system___gc_doalloc_ptr
 	res	1

@@ -2773,14 +2773,31 @@ SimplifyAssignments(AST **astptr)
             ASTReportInfo saveinfo;
             AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
+            // if B has side effects,
+            // transform A op= B
+            // into tmp = B, A op= tmp
+            // then if A has side effects, further decompose
+            // those so eventually we can get A = A' op tmp
+            if (rhs && ExprHasSideEffects(rhs)) {
+                AST *typ = ExprType(rhs);
+                AST *temp = AstTempLocalVariable("_temp_", typ);
+                preseq = AstAssign(temp, rhs);
+                rhs = temp;
+            }
             if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
+                    AST *p2;
                     if (rhs) {
-                        preseq = AstAssign(temp, rhs);
+                        p2 = AstAssign(temp, rhs);
                     } else {
-                        preseq = AstAssign(temp, lhs);
+                        p2 = AstAssign(temp, lhs);
+                    }
+                    if (preseq) {
+                        preseq = NewAST(AST_SEQUENCE, preseq, p2);
+                    } else {
+                        preseq = p2;
                     }
                     rhs = temp;
                 }

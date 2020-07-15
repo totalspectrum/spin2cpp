@@ -2345,6 +2345,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             return ast_type_float;
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
+        case SYM_TEMPVAR:
         case SYM_PARAMETER:
         case SYM_CLOSURE:
         case SYM_TYPEDEF:

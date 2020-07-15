@@ -5,8 +5,7 @@
 
 int32_t test127::Asc2val(char *P_str)
 {
-  int32_t 	C;
-  int32_t 	_tmp__0001;
+  int32_t 	C, _tmp__0001;
   while (1) {
     C = P_str[0];
     _tmp__0001 = C;
