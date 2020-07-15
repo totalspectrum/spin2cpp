@@ -2,6 +2,7 @@ Version 4.2.5
 - Added many more peephole optimizations
 - Added -Wall flag to warning about everything, including language extensions
 - Fixed the #warn preprocessor directive
+- Fixed a bug in operator assignment (like +=) when both sides have side effects
 - Improved optimization around ORG/END blocks (without touching the code inside)
 
 Version 4.2.4
