@@ -212,12 +212,8 @@ pri _drvw(pin, c) | mask
   else
     outa &= !mask
 
-pri _pinr(pin) | mask
-  mask := 1<<pin
-  if (ina & mask)
-    return 1
-  else
-    return 0
+pri _pinr(pin)
+  return (ina >> pin) & 1
     
 pri _waitx(tim)
   asm
