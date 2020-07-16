@@ -498,6 +498,7 @@ static void
 ReplaceJumpTarget(IR *jmpir, Operand *dst)
 {
     switch(jmpir->opc) {
+    case OPC_REPEAT:
     case OPC_REPEAT_END:
     case OPC_JUMP:
         jmpir->dst = dst;
@@ -507,6 +508,7 @@ ReplaceJumpTarget(IR *jmpir, Operand *dst)
         break;
     default:
         ERROR(NULL, "Unable to replace jump target");
+        break;
     }
 }
 
@@ -2870,7 +2872,7 @@ CompileFunccall(IRList *irl, AST *expr)
   }
   
   ir->aux = (void *)func; // remember the function for optimization purposes
-  
+
   /* now get the results */
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
@@ -5056,22 +5058,32 @@ ExpandInline_internal(IRList *irl, Module *P)
 {
     Function *f;
     int change;
-    
-    for (f = P->functions; f; f = f->next) {
-        IRList *firl = FuncIRL(f);
-        if (ShouldSkipFunction(f))
-            continue;
-        curfunc = f;
-        for(;;) {
-            change = ExpandInlines(firl);
-            if (!change) break;
-            // may be new opportunities for optimization
-            OptimizeIRLocal(firl, f);
-            // revisit the question of whether it should be inlined, given that
-            // we've perhaps changed its size
-            FuncData(f)->isInline = ShouldBeInlined(f);
+    int newInlines;
+    int inlineStatus;
+    do {
+        newInlines = 0;
+        for (f = P->functions; f; f = f->next) {
+            IRList *firl = FuncIRL(f);
+            if (ShouldSkipFunction(f))
+                continue;
+            curfunc = f;
+            for(;;) {
+                change = ExpandInlines(firl);
+                if (!change) break;
+                // may be new opportunities for optimization
+                OptimizeIRLocal(firl, f);
+                // revisit the question of whether it should be inlined, given that
+                // we've perhaps changed its size
+                if (!FuncData(f)->isInline) {
+                    inlineStatus = ShouldBeInlined(f);
+                    if (inlineStatus) {
+                        newInlines++;
+                        FuncData(f)->isInline = true;
+                    }
+                }
+            }
         }
-    }
+    } while (newInlines);
 }
 
 void

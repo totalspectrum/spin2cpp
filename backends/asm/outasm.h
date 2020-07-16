@@ -120,7 +120,7 @@ typedef struct ir_bedata {
     
     /* flag for whether we should inline the function */
     bool isInline;
-
+    
     /* type of calling convention */
     CallConvention convention;
 } IRFuncData;
