@@ -1,0 +1,8 @@
+pub sendout(p, x)
+  repeat 32
+    if x & $80000000
+      pinh(p)
+    else
+      pinl(p)
+    x := x<<1
+
