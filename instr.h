@@ -87,6 +87,8 @@ typedef enum IROpcode {
     OPC_DRVH,
     OPC_DRVL,
     OPC_DRVNC,
+    OPC_DRVNZ,
+    OPC_DRVZ,
     OPC_ENCOD,
     OPC_GETBYTE,
     OPC_GETCT,

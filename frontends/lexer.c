@@ -2881,8 +2881,8 @@ instr_p2[] = {
     { "drvh",   0x0d600059, P2_DST_CONST_OK, OPC_DRVH, FLAG_WCZ },
     { "drvc",   0x0d60005a, P2_DST_CONST_OK, OPC_DRVC, FLAG_WCZ },
     { "drvnc",  0x0d60005b, P2_DST_CONST_OK, OPC_DRVNC, FLAG_WCZ },
-    { "drvz",   0x0d60005c, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
-    { "drvnz",  0x0d60005d, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "drvz",   0x0d60005c, P2_DST_CONST_OK, OPC_DRVZ, FLAG_WCZ },
+    { "drvnz",  0x0d60005d, P2_DST_CONST_OK, OPC_DRVNZ, FLAG_WCZ },
     { "drvrnd", 0x0d60005e, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
     { "drvnot", 0x0d60005f, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
 

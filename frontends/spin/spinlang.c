@@ -157,6 +157,71 @@ TransformLongMove(AST **astptr, AST *ast)
     return true;
 }
 
+// special processing for various Spin functions
+//   longmove(@x, @y, n) gets turned into direct moves
+//   pinw(p, n) gets turned into _drvw(p, n) if we can prove
+//     n is just 1 bit
+// returns true if anything changed
+// ast is the FUNCCALL ast, with ast->left known to be an identifier
+// *astptr should match ast
+//
+
+static bool
+SpinFunctionSpecialCase(AST **astptr, AST *ast)
+{
+    const char *name = ast->left->d.string;
+    if (!strcasecmp(name, "longmove")) {
+        return TransformLongMove(astptr, ast);
+    }
+    if (!strcasecmp(name, "pinw") || !strcasecmp(name, "pinwrite")) {
+        // check for simple cases: 0, 1, x & 1, or !(x & 1)
+        // change function name
+        AST *args;
+        args = ast->right;
+        if (!args || !args->right) {
+            return false;
+        }
+        args = args->right->left;
+        if (!args) {
+            return false;
+        }
+        if (IsConstExpr(args)) {
+            int x = EvalConstExpr(args);
+            if (x != 0 && x != 1) {
+                return false;
+            }
+        } else if (args->kind == AST_OPERATOR) {
+            int x = 9999;
+            if (args->d.ival == '&') {
+                if (IsConstExpr(args->left)) {
+                    x = EvalConstExpr(args->left);
+                } else if (IsConstExpr(args->right)) {
+                    x = EvalConstExpr(args->right);
+                }
+                if (x != 0 && x != 1) {
+                    return false;
+                }
+            } else if (args->d.ival == K_SHR) {
+                if (!IsConstExpr(args->right)) {
+                    return false;
+                }
+                x = EvalConstExpr(args->right);
+                if (x != 31) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        ast->left = AstIdentifier("_drvw");
+        return true;
+    }
+    return false;
+}
+
+// create a local array for 
 static void
 SetLocalArray(Function *fdef, Symbol *sym, AST *body)
 {
@@ -529,9 +594,8 @@ doSpinTransform(AST **astptr, int level)
         /* check for longmove(@x, @y, n) where n is a small
            number */
         if (level == 1 && ast->left && ast->left->kind == AST_IDENTIFIER
-            && !strcasecmp(ast->left->d.string, "longmove"))
+            && SpinFunctionSpecialCase(astptr, ast) )
         {
-            TransformLongMove(astptr, ast);
             ast = *astptr;
         }
         doSpinTransform(&ast->left, 0);

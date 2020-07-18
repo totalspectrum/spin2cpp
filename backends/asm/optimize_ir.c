@@ -97,6 +97,8 @@ InstrSetsDst(IR *ir)
   case OPC_DRVL:
   case OPC_DRVC:
   case OPC_DRVNC:
+  case OPC_DRVZ:
+  case OPC_DRVNZ:
   case OPC_SETQ:
   case OPC_SETQ2:
   case OPC_TESTB:
@@ -285,19 +287,21 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_GENERIC_BRCOND:
         /* it might use flags, we don't know (e.g. addx) */
         return true;
-    case OPC_DRVC:
-    case OPC_DRVNC:
-        /* definitely use flags */
-        return true;
-    case OPC_MUXC:
-    case OPC_MUXNC:
     case OPC_WRC:
     case OPC_WRNC:
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_MUXC:
+    case OPC_MUXNC:
+        /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
+    case OPC_DRVZ:
+    case OPC_DRVNZ:
     case OPC_MUXZ:
     case OPC_MUXNZ:
     case OPC_WRZ:
     case OPC_WRNZ:
+        /* definitely uses the Z flag */
         return (flags & FLAG_WZ) != 0;
     default:
         return false;
@@ -348,6 +352,9 @@ JumpIsAfterOrEqual(IR *ir, IR *jmp)
     // ptr to jump destination gets stored in aux
     if (jmp->aux) {
         IR *label = (IR *)jmp->aux;
+        if (!label) {
+            return false;
+        }
         if (label->addr >= ir->addr) {
             return true;
         }
@@ -622,6 +629,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           continue;
       }
       if (ir->opc == OPC_LABEL) {
+          if (ir->flags & FLAG_LABEL_NOJUMP) {
+              continue;
+          }
           return false;
       }
       if (ir->opc == OPC_LIVE) {
@@ -1299,6 +1309,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVNC:
     case OPC_DRVL:
     case OPC_DRVH:
+    case OPC_DRVNZ:
+    case OPC_DRVZ:
         return true;
     default:
         return false;
@@ -2045,6 +2057,12 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNZ:
         ReplaceOpcode(ir, OPC_MUXC);
         break;
+    case OPC_DRVZ:
+        ReplaceOpcode(ir, OPC_DRVNC);
+        break;
+    case OPC_DRVNZ:
+        ReplaceOpcode(ir, OPC_DRVC);
+        break;
     case OPC_MUXC:
     case OPC_MUXNC:
     case OPC_GENERIC:
@@ -2252,8 +2270,7 @@ OptimizePeepholes(IRList *irl)
         {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_TEST
-                && IsImmediateVal(previr->src, 1)
-                && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
+                && IsImmediateVal(previr->src, 1))
             {
                 /* maybe we can replace the test with the shr */
                 /* we already know the result isn't used between previr
@@ -2261,10 +2278,12 @@ OptimizePeepholes(IRList *irl)
                    of C, and also verify that the flags aren't used
                    in subsequent instructions
                 */
+                int test_is_z = (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ;
+                int test_is_c = (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WC;
                 IR *testir;
                 IR *lastir = NULL;
                 bool sawir = false;
-                bool changeok = true;
+                bool changeok = test_is_z || test_is_c;
                 int irflags = (ir->flags & FLAG_WZ) | FLAG_WC;
                 for (testir = previr->next; testir && changeok; testir = testir->next) {
                     if (testir == ir) {
@@ -2275,7 +2294,7 @@ OptimizePeepholes(IRList *irl)
                         lastir = testir;
                         break;
                     }
-                    if (InstrUsesFlags(testir, FLAG_WC)) {
+                    if (test_is_z && InstrUsesFlags(testir, FLAG_WC)) {
                         changeok = false;
                     } else if (InstrSetsAnyFlags(testir)) {
                         changeok = sawir;
@@ -2288,13 +2307,15 @@ OptimizePeepholes(IRList *irl)
                     ReplaceOpcode(previr, opc);
                     previr->flags &= ~(FLAG_WZ|FLAG_WC);
                     previr->flags |= irflags;
-                    for (testir = previr->next; testir && testir != lastir;
-                         testir = testir->next)
-                    {
-                        ReplaceZWithNC(testir);
-                    }
-                    if (IsBranch(lastir)) {
-                        ReplaceZWithNC(lastir);
+                    if (test_is_z) {
+                        for (testir = previr->next; testir && testir != lastir;
+                             testir = testir->next)
+                        {
+                            ReplaceZWithNC(testir);
+                        }
+                        if (IsBranch(lastir)) {
+                            ReplaceZWithNC(lastir);
+                        }
                     }
                     DeleteIR(irl, ir);
                     changed = 1;
@@ -2443,7 +2464,23 @@ OptimizePeepholes(IRList *irl)
             changed = 1;
             goto done;
         }
-
+        // check for and a, x ;; test a, x wcz
+        if (ir->opc == OPC_TEST && ir->cond == COND_TRUE)
+        {
+            IR *previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_AND && !InstrSetsAnyFlags(previr) && previr->cond == COND_TRUE )
+            {
+                if (IsDeadAfter(ir, ir->dst)) {
+                    DeleteIR(irl, previr);
+                } else {
+                    previr->flags |= (ir->flags & (FLAG_WC|FLAG_WZ));
+                    DeleteIR(irl, ir);
+                }
+                changed = 1;
+                goto done;
+            }
+        }
+        
         // check for add a,b ;; mov b,a ;; isdead a
         // becomes add b, a
         
@@ -3627,6 +3664,22 @@ static PeepholePattern pat_drvc2[] = {
     { COND_C,  OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+// replace if_z drvh / if_nz drvl with drvz
+static PeepholePattern pat_drvz[] = {
+    { COND_EQ, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NE, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvnz1[] = {
+    { COND_NE, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_EQ, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvnz2[] = {
+    { COND_EQ, OPC_DRVL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NE, OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 
 // replace mov x, #0 / cmp a, b wz / if_e mov x, #1
 static PeepholePattern pat_seteq[] = {
@@ -3925,6 +3978,7 @@ static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3940,6 +3994,9 @@ struct Peepholes {
 
     { pat_drvc1, OPC_DRVC, ReplaceDrvc },
     { pat_drvc2, OPC_DRVC, ReplaceDrvc },
+    { pat_drvz, OPC_DRVZ, ReplaceDrvc },
+    { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
+    { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
 
     { pat_wrc, 0, ReplaceWrc },
 
