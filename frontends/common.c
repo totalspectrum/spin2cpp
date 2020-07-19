@@ -915,11 +915,11 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     gl_caseSensitive = 0;
     sym = FindSymbol(&current->objsyms, "_STACK");
     if (sym && sym->kind == SYM_CONSTANT) {
-        reserveSize += EvalConstExpr((AST *)sym->val);
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
     }
     sym = FindSymbol(&current->objsyms, "_FREE");
     if (sym && sym->kind == SYM_CONSTANT) {
-        reserveSize += EvalConstExpr((AST *)sym->val);
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
     }
     gl_caseSensitive = save_casesensitive;
     // do sanity check on length
