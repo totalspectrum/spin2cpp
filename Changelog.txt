@@ -11,6 +11,7 @@ Version 4.2.5
 - Improved inlining of functions
 - On P2, use constants in the D field when we can
 - Optimized special cases like x.byte[1] in Spin
+- Optimized case statements with constant expressions
 - Various other minor optimizations
 
 Version 4.2.4
