@@ -1020,7 +1020,7 @@ TransformConstDst(IR *ir, Operand *imm)
   if (ir->flags & FLAG_WC) {
     // we don't know how to set the WC flag for anything other
     // than cmps
-    if (ir->opc != OPC_CMPS) {
+    if (ir->opc != OPC_CMPS && ir->opc != OPC_CMP) {
       return 0;
     }
   }
@@ -1054,9 +1054,21 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_SAR:
       val1 = val1 >> val2;
       break;
+    case OPC_SHR:
+      val1 = ((unsigned)val1) >> val2;
+      break;
     case OPC_CMPS:
-    case OPC_CMP:
       val1 -= val2;
+      setsResult = 0;
+      break;
+    case OPC_CMP:
+      if ((unsigned)val1 < (unsigned)val2) {
+          val1 = -1;
+      } else if (val1 == val2) {
+          val1 = 0;
+      } else {
+          val1 = 1;
+      }
       setsResult = 0;
       break;
     default:
@@ -1066,8 +1078,13 @@ TransformConstDst(IR *ir, Operand *imm)
       ApplyConditionAfter(ir, val1);
   }
   if (setsResult) {
-    ReplaceOpcode(ir, OPC_MOV);
-    ir->src = NewImmediate(val1);
+      if (val1 < 0) {
+          ReplaceOpcode(ir, OPC_NEG);
+          ir->src = NewImmediate(-val1);
+      } else {
+          ReplaceOpcode(ir, OPC_MOV);
+          ir->src = NewImmediate(val1);
+      }
   } else {
     ir->cond = COND_FALSE;
   }
@@ -1099,12 +1116,15 @@ IsOnlySetterFor(IRList *irl, IR *orig_ir, Operand *orig)
 // to beware of jumps and labels
 //
 static int
-PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *imm)
+PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
 {
   IR *ir;
   int change = 0;
   bool unconditional;
 
+  if (orig_ir->opc == OPC_NEG) {
+      immval = NewImmediate(-immval->val);
+  }
   unconditional = IsOnlySetterFor(irl, orig_ir, orig);
   for (ir = orig_ir->next; ir; ir = ir->next) {
     if (IsDummy(ir)) {
@@ -1124,7 +1144,7 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *imm)
         }
         return change;
     }
-    if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, imm)) {
+    if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, immval)) {
         if ( ir->dst == orig ) {
             // updating same register, so kill it
             ir->opc = OPC_DUMMY;
@@ -1138,9 +1158,9 @@ PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *imm)
         }
     } else if (ir->dst == orig) {
         // we can perhaps replace the operation with a mov
-        change |= TransformConstDst(ir, imm);
+        change |= TransformConstDst(ir, immval);
     } else if (ir->src == orig) {
-      ir->src = imm;
+      ir->src = immval;
       change = 1;
     }
     if (InstrModifies(ir, orig)) {
@@ -1248,22 +1268,22 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 }
+            } else if ((ir->opc == OPC_MOV || ir->opc == OPC_NEG) && ir->cond == COND_TRUE && IsImmediate(ir->src)) {
+                int sawchange;
+                if (ir->flags == FLAG_WZ) {
+                    // because this is a mov immediate, we know how
+                    // WZ will be set
+                    change |= ApplyConditionAfter(ir, ir->src->val);
+                }
+                change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
+                if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
+                    // we no longer need the original mov
+                    DeleteIR(irl, ir);
+                }
             } else if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
                 if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-                } else if (IsImmediate(ir->src)) {
-                    int sawchange;
-                    if (ir->flags == FLAG_WZ) {
-                        // because this is a mov immediate, we know how
-                        // WZ will be set
-                        change |= ApplyConditionAfter(ir, ir->src->val);
-                    }
-                    change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
-                    if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
-                        // we no longer need the original mov
-                        DeleteIR(irl, ir);
-                    }
                 } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
