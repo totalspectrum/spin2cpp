@@ -1055,6 +1055,7 @@ TransformConstDst(IR *ir, Operand *imm)
       val1 = val1 >> val2;
       break;
     case OPC_CMPS:
+    case OPC_CMP:
       val1 -= val2;
       setsResult = 0;
       break;
@@ -1062,7 +1063,7 @@ TransformConstDst(IR *ir, Operand *imm)
       return 0;
     }
   if (InstrSetsAnyFlags(ir)) {
-    ApplyConditionAfter(ir, val1);
+      ApplyConditionAfter(ir, val1);
   }
   if (setsResult) {
     ReplaceOpcode(ir, OPC_MOV);

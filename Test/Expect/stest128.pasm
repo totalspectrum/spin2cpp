@@ -5,7 +5,7 @@ dat
 entry
 
 _main
-	mov	_var01, #4 wz
+	mov	_var01, #4
 LR__0001
 	rdlong	_var02, ptr__dat__
 	sar	_var02, #2
