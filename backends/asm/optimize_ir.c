@@ -1073,26 +1073,55 @@ TransformConstDst(IR *ir, Operand *imm)
   return 1;
 }
 
+static bool
+IsOnlySetterFor(IRList *irl, IR *orig_ir, Operand *orig)
+{
+    IR *ir;
+    if (!IsLocal(orig)) {
+        return false;
+    }
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (IsDummy(ir) || IsLabel(ir)) {
+            continue;
+        }
+        if (ir != orig_ir && InstrModifies(ir, orig)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 //
 // if we see x:=2 then replace future uses of x with 2
+// if orig_ir is the only setter for orig in the whole irl,
+// then we can do this unconditionally; otherwise we have
+// to beware of jumps and labels
 //
 static int
-PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
+PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *imm)
 {
   IR *ir;
   int change = 0;
-  for (ir = instr; ir; ir = ir->next) {
+  bool unconditional;
+
+  unconditional = IsOnlySetterFor(irl, orig_ir, orig);
+  for (ir = orig_ir->next; ir; ir = ir->next) {
     if (IsDummy(ir)) {
         continue;
     }
-    if (IsLabel(ir)) {
+    if (IsLabel(ir) && !unconditional) {
         return change;
     }
     if (ir->opc == OPC_CALL) {
-        return change;
+        if (!unconditional || !IsLocal(orig)) {
+            return change;
+        }
     }
-    if (IsJump(ir) && !JumpIsAfterOrEqual(instr, ir)) {
-      return change;
+    if (IsJump(ir) && !JumpIsAfterOrEqual(orig_ir, ir)) {
+        if (unconditional) {
+            continue;
+        }
+        return change;
     }
     if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, imm)) {
         if ( ir->dst == orig ) {
@@ -1229,7 +1258,7 @@ OptimizeMoves(IRList *irl)
                         // WZ will be set
                         change |= ApplyConditionAfter(ir, ir->src->val);
                     }
-                    change |= (sawchange = PropagateConstForward(ir_next, ir->dst, ir->src));
+                    change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
                     if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
                         // we no longer need the original mov
                         DeleteIR(irl, ir);

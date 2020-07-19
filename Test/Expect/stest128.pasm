@@ -5,18 +5,17 @@ dat
 entry
 
 _main
-	mov	_var01, #2
-	mov	_var02, #4 wz
+	mov	_var01, #4 wz
 LR__0001
-	rdlong	_var03, ptr__dat__
-	sar	_var03, _var01
-	wrlong	_var03, ptr__dat__
+	rdlong	_var02, ptr__dat__
+	sar	_var02, #2
+	wrlong	_var02, ptr__dat__
 	add	ptr__dat__, #4
-	rdlong	_var03, ptr__dat__
-	shr	_var03, _var01
-	wrlong	_var03, ptr__dat__
+	rdlong	_var02, ptr__dat__
+	shr	_var02, #2
+	wrlong	_var02, ptr__dat__
 	sub	ptr__dat__, #4
-	djnz	_var02, #LR__0001
+	djnz	_var01, #LR__0001
 _main_ret
 	ret
 
@@ -31,7 +30,5 @@ _dat_
 _var01
 	res	1
 _var02
-	res	1
-_var03
 	res	1
 	fit	496

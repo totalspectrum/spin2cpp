@@ -27,10 +27,9 @@ _main3
 LR__0003
 	mov	arg01, _main3_s wz
  if_e	mov	arg01, #1
-	mov	__system___lfsr_backward_a, #23
 	mov	__system___lfsr_backward__idx__90016, #32
 LR__0004
-	test	arg01, __system___lfsr_backward_a wc
+	test	arg01, #23 wc
 	rcr	arg01, #1
 	djnz	__system___lfsr_backward__idx__90016, #LR__0004
 	mov	_main3_s, arg01
@@ -55,8 +54,6 @@ COG_BSS_START
 	fit	496
 	org	COG_BSS_START
 __system___lfsr_backward__idx__90016
-	res	1
-__system___lfsr_backward_a
 	res	1
 _main3_s
 	res	1
