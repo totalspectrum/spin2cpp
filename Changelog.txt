@@ -5,6 +5,7 @@ Version 4.2.5
 - Fixed a bug in operator assignment (like +=) when both sides have side effects
 - Fixed an optimizer bug where some conditional instructions were overlooked in optimizing cmp #0 cases
 - Fixed a typo in TAN causing it to return bad values
+- Implemented _FREE and _STACK
 - Improved optimization around ORG/END blocks (without touching the code inside)
 - Improved FCACHE code to merge loops in some cases
 - Improved inlining of functions

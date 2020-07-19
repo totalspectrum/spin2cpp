@@ -518,11 +518,9 @@ In Spin2 mode all of the above are available without the underscore.
 
 ## Limitations
 
-There are very few Spin features that are not supported yet. `_FREE` and
-`_STACK` are recognized, but do nothing.
-
-There may be other features that do not work; if you find any,
-please report them so they can be fixed.
+Most Spin language features are supported. There may be some features
+that do not work; if you find any, please report them so they can be
+fixed.
 
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.

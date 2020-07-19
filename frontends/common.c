@@ -682,7 +682,7 @@ WARNING(AST *instr, const char *msg, ...)
     if (info)
         ERRORHEADER(info->fileName, info->lineno, "warning");
     else
-        ERRORHEADER(NULL, 0, "warning: ");
+        ERRORHEADER(NULL, 0, "warning");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -881,24 +881,66 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     int c, r;
     size_t len;
     size_t padbytes;
-
-    if (gl_p2) return 0; // no checksum required
+    size_t maxlen;
+    size_t reserveSize = 0;
+    Symbol *sym;
+    int save_casesensitive;
     
     if (!f) {
-        fprintf(stderr, "checksum: ");
         perror(fname);
         return -1;
     }
     fseek(f, 0L, SEEK_END);
     len = ftell(f);  // find length of file
+
     // pad file to multiple of 4, if necessary
-    padbytes = ((len + 3) & ~3) - len;
+    if (gl_p2) {
+        padbytes = 0;
+    } else {    
+        padbytes = ((len + 3) & ~3) - len;
+    }
     if (padbytes) {
         while (padbytes > 0) {
             fputc(0, f);
             padbytes--;
             len++;
         }
+    }
+
+    // check for special symbols
+    current = GetTopLevelModule();
+    // we are at the end of compilation, check for stack info in a
+    // case insensitive manner
+    save_casesensitive = gl_caseSensitive;
+    gl_caseSensitive = 0;
+    sym = FindSymbol(&current->objsyms, "_STACK");
+    if (sym && sym->kind == SYM_CONSTANT) {
+        reserveSize += EvalConstExpr((AST *)sym->val);
+    }
+    sym = FindSymbol(&current->objsyms, "_FREE");
+    if (sym && sym->kind == SYM_CONSTANT) {
+        reserveSize += EvalConstExpr((AST *)sym->val);
+    }
+    gl_caseSensitive = save_casesensitive;
+    // do sanity check on length
+    if (eepromSize) {
+        maxlen = eepromSize;
+    } else if (gl_p2) {
+        maxlen = 512 * 1024;
+    } else {
+        maxlen = 32768;
+    }
+    if ( (len + reserveSize) > maxlen) {
+        if (reserveSize) {
+            WARNING(NULL, "final output size of %d bytes + %d reserved bytes exceeds maximum of %d", len, reserveSize, maxlen);
+        } else {
+            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d", len, maxlen);
+        }
+    }
+    // if P2, no checksum needed
+    if (gl_p2) {
+        fclose(f);
+        return 0;
     }
     // update header fields
     fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field

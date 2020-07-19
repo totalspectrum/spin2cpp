@@ -42,8 +42,6 @@ Code cleanup
 
 Better error messages.
 
-Support for `_FREE` and `_STACK` (these are read, but ignored at present).
-
 Add in the missing openspin options to fastspin.
 
 Add an option to get a report of method sizes and free space left.
