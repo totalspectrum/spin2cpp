@@ -3500,13 +3500,13 @@ typedef struct PeepholePattern {
 #define OPC_ANY     -1
 #define MAX_OPERANDS_IN_PATTERN 4
 
-#define PEEP_OP_SET   0x0100
-#define PEEP_OP_MATCH 0x0200
-#define PEEP_OP_IMM   0x0300
-#define PEEP_OP_SET_IMM 0x0400
-#define PEEP_OP_MATCH_DEAD 0x0500  /* like PEEP_OP_MATCH, but operand is dead after this instr */
-#define PEEP_OPNUM_MASK 0x00ff
-#define PEEP_OP_MASK    0xff00
+#define PEEP_OP_SET     0x01000000
+#define PEEP_OP_MATCH   0x02000000
+#define PEEP_OP_IMM     0x03000000
+#define PEEP_OP_SET_IMM 0x04000000
+#define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
+#define PEEP_OPNUM_MASK 0x00ffffff
+#define PEEP_OP_MASK    0xff000000
 
 static Operand *peep_ops[MAX_OPERANDS_IN_PATTERN];
 
