@@ -932,9 +932,9 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     }
     if ( (len + reserveSize) > maxlen) {
         if (reserveSize) {
-            WARNING(NULL, "final output size of %d bytes + %d reserved bytes exceeds maximum of %d", len, reserveSize, maxlen);
+            WARNING(NULL, "final output size of %d bytes + %d reserved bytes exceeds maximum of %d by %d bytes", len, reserveSize, maxlen,(len + reserveSize) - maxlen);
         } else {
-            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d", len, maxlen);
+            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d by %d bytes", len, maxlen,len - maxlen);
         }
     }
     // if P2, no checksum needed
