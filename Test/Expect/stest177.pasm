@@ -11,7 +11,7 @@ _calcresult
 	mov	_var04, _var01
 	add	_var04, #3
 	max	_var04, #8
-	add	_var04, ptr_L__0009_
+	add	_var04, ptr_L__0008_
 	jmp	_var04
 LR__0001
 	jmp	#LR__0005
@@ -43,7 +43,7 @@ LR__0007
 _calcresult_ret
 	ret
 
-ptr_L__0009_
+ptr_L__0008_
 	long	LR__0001
 result1
 	long	0

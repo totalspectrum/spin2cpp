@@ -1954,7 +1954,7 @@ basetypename:
   | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
-        const char *name = NewTemporaryVariable("_class_");
+        const char *name = NewTemporaryVariable("_class_", NULL);
         AST *newobj;
 
         tempnam->d.string = name;

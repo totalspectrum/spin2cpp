@@ -769,7 +769,7 @@ void EmitNamedCogLabel(IRList *irl, const char *name)
 char *
 NewTempLabelName()
 {
-    return NewTemporaryVariable("L_");
+    return NewTemporaryVariable("L_", NULL);
 }
 
 Operand *

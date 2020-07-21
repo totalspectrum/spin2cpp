@@ -85,7 +85,8 @@ Symbol *FindSymbolByOffsetAndKind(SymbolTable *table, int offset, int kind);
 Symbol *LookupSymbolInTable(SymbolTable *table, const char *name);
 
 /* create a new temporary variable */
-char *NewTemporaryVariable(const char *prefix);
+/* counter is an optional pointer to the counter to increment */
+char *NewTemporaryVariable(const char *prefix, int *counter);
 
 /* set the number to use in temporary variables, and the max allowed */
 /* if max <= 0 then the max is left alone */

@@ -649,7 +649,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             Module *C;
             Module *Parent = func->module;
             AST *closure_type;
-            closure_name = NewTemporaryVariable("__closure__");
+            closure_name = NewTemporaryVariable("__closure__", NULL);
             C = func->closure = NewModule(closure_name, current->curLanguage);
             C->Lptr = current->Lptr;
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
@@ -670,7 +670,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
         {
             AST *ftype = ast->left;
             AST *fbody = ast->right;
-            AST *name = AstIdentifier(NewTemporaryVariable("func_"));
+            AST *name = AstIdentifier(NewTemporaryVariable("func_", NULL));
             AST *ptrref;
             
             // check for the return type; we may have to infer this
@@ -1253,8 +1253,12 @@ AstTempLocalVariable(const char *prefix, AST *type)
 {
     char *name;
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    int *counter = NULL;
 
-    name = NewTemporaryVariable(prefix);
+    if (curfunc) {
+        counter = &curfunc->local_var_counter;
+    }
+    name = NewTemporaryVariable(prefix, counter);
     ast->d.string = name;
     AddLocalVariable(curfunc, ast, type, SYM_TEMPVAR);
     return ast;

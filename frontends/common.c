@@ -1201,7 +1201,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         return NULL;
     } else {
         const char *oldname = name;
-        const char *newName = NewTemporaryVariable(oldname);
+        const char *newName = NewTemporaryVariable(oldname, NULL);
         AST *newIdent = AstIdentifier(newName);
 
         AddSymbolPlaced(table, oldname, SYM_REDEF, (void *)newIdent, newName, decl);

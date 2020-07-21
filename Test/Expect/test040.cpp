@@ -9,7 +9,7 @@ void test040::Tx(int32_t Character)
 
 int32_t test040::Dec(int32_t Value)
 {
-  int32_t 	I, X, _idx__0001;
+  int32_t 	I, X, _idx__0000;
   int32_t result = 0;
   // Print a decimal number
   // Check for max negative
@@ -22,7 +22,7 @@ int32_t test040::Dec(int32_t Value)
   }
   // Initialize divisor
   I = 1000000000;
-  for(_idx__0001 = 0; _idx__0001 < 10; _idx__0001++) {
+  for(_idx__0000 = 0; _idx__0000 < 10; _idx__0000++) {
     // Loop for 10 digits
     if (Value >= I) {
       // If non-zero digit, output digit; adjust for max negative

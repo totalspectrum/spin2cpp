@@ -20,11 +20,11 @@ LR__0002
 	add	_str_s, #1
  if_e	jmp	#LR__0004
 	mov	arg01, _str_c
-	mov	_tx__idx__0001, #4
+	mov	_tx__idx__0000, #4
 LR__0003
 	mov	outa, arg01
 	add	arg01, #1
-	djnz	_tx__idx__0001, #LR__0003
+	djnz	_tx__idx__0000, #LR__0003
 	jmp	#LR__0002
 LR__0004
 _str_ret
@@ -37,7 +37,7 @@ _str_c
 	res	1
 _str_s
 	res	1
-_tx__idx__0001
+_tx__idx__0000
 	res	1
 _var01
 	res	1

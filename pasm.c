@@ -368,7 +368,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         return;
     }
     if (initval->kind == AST_STRINGPTR) {
-        *initializer = *reduceStrings(initializer->left);
+        *initializer = *reduceStrings(initval->left);
     }
     if (initval->kind == AST_SIMPLEFUNCPTR) {
         return;

@@ -305,6 +305,9 @@ typedef struct funcdef {
 
     /* true if language specific processing has been done */
     char lang_processed;
+
+    /* counter for local variables */
+    int local_var_counter;
     
 } Function;
 

@@ -394,7 +394,7 @@ AstTempIdentifier(const char *prefix)
 {
     char *name;
 
-    name = NewTemporaryVariable(prefix);
+    name = NewTemporaryVariable(prefix, NULL);
     return AstIdentifier(name);
 }
 

@@ -227,12 +227,12 @@ SetLocalArray(Function *fdef, Symbol *sym, AST *body)
 {
     if (sym->kind == SYM_PARAMETER) {
         if (!fdef->parmarray) {
-            fdef->parmarray = NewTemporaryVariable("_parm_");
+            fdef->parmarray = NewTemporaryVariable("_parm_", &fdef->local_var_counter);
         }
         fdef->localarray = fdef->parmarray;
     } else if (sym->kind == SYM_LOCALVAR && (!body || IsAddrRef(body, sym)) ) {
         if (!fdef->localarray) {
-            fdef->localarray = NewTemporaryVariable("_local_");
+            fdef->localarray = NewTemporaryVariable("_local_", &fdef->local_var_counter);
         }
     }
 }
@@ -321,7 +321,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                so force all of those into the _parm_ array
             */
             if (!fdef->parmarray) {
-                fdef->parmarray = NewTemporaryVariable("_parm_");
+                fdef->parmarray = NewTemporaryVariable("_parm_", &fdef->local_var_counter);
             }
             fdef->localarray = fdef->parmarray;
             if (!fdef->result_in_parmarray) {

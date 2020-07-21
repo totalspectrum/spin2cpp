@@ -238,20 +238,26 @@ SetTempVariableBase(int base, int max)
  * create a temporary variable name
  */
 char *
-NewTemporaryVariable(const char *prefix)
+NewTemporaryVariable(const char *prefix, int *counter)
 {
     char *str;
     char buf[32];
+    int countval;
     
-    if (!prefix)
+    if (!prefix) {
         prefix = "_tmp_";
-
-    sprintf(buf, "_%04d", tmpvarnum);
+    }
+    if (!counter) {
+        counter = &tmpvarnum;
+    }
+    countval = *counter;
+    sprintf(buf, "_%04d", countval);
     str = strdupcat(prefix, buf);
-    tmpvarnum++;
-    if (tmpvarnum > tmpvarmax) {
+    countval++;
+    if (countval > tmpvarmax) {
         fprintf(stderr, "Temporary variable limit of %d exceeded", tmpvarmax);
         abort();
     }
+    *counter = countval;
     return str;
 }

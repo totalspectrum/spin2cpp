@@ -137,9 +137,9 @@ memFillBuiltin(Flexbuf *f, Builtin *b, AST *params)
         flexbuf_printf(f, ")");
         return;
     }
-    idxname = NewTemporaryVariable("_fill_");
-    valname = NewTemporaryVariable("_val_");
-    ptrname = NewTemporaryVariable("_ptr_");
+    idxname = NewTemporaryVariable("_fill_", NULL);
+    valname = NewTemporaryVariable("_val_", NULL);
+    ptrname = NewTemporaryVariable("_ptr_", NULL);
     flexbuf_printf(f, "{ %s %s; ", gl_intstring, idxname);
     flexbuf_printf(f, "%s *%s = (%s *)", type_name, ptrname, type_name);
     PrintAsAddr(f, dst, PRINTEXPR_DEFAULT);
