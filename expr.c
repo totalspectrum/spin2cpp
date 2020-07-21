@@ -2292,7 +2292,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         // (actually no -- "abc" is the same as "a", "b", "c")
-        if (IsSpinLang(curfunc->language)) {
+        if (curfunc && IsSpinLang(curfunc->language)) {
             return ast_type_long;
         }
         /* otherwise fall through */
