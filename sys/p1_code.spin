@@ -250,11 +250,12 @@ pri _getms() : r = +long | freq
 dat
 	org 0
 _cogchk_helper
-	rdlong	tmp, par wz
+	rdlong	_cogchk_tmp, par wz
   if_z	jmp	#_cogchk_helper
-  	cogid	tmp
-	cogstop	tmp
-tmp	long	0
+  	cogid	_cogchk_tmp
+	cogstop	_cogchk_tmp
+_cogchk_tmp
+	long	0
 
 pri _cogchk(id) | flag, n
   flag := 0
