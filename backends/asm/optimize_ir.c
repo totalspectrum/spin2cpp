@@ -3795,6 +3795,15 @@ static PeepholePattern pat_shr16getword[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+// mov x, y; and x, #1; add z, x => test y, #1 wz; if_nz add z, #1
+
+static PeepholePattern pat_mov_and_add[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ADD, PEEP_OP_SET|2, PEEP_OP_MATCH_DEAD|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
     if (!InstrSetsFlags(ir, FLAG_WZ|FLAG_WC)) {
@@ -4028,6 +4037,33 @@ static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+// pattern is
+//   mov x, y
+//   and x, #1
+//   add z, x  '' x is dead
+//
+// change to
+//    test y, #1 wz
+// if_nz add z, #1
+//
+static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1, *ir2;
+
+    ir1 = ir0->next;
+    ir2 = ir1->next;
+
+    ir1->dst = ir0->src;
+    ReplaceOpcode(ir1, OPC_TEST);
+    ir1->flags |= FLAG_WZ;
+
+    ir2->src = NewImmediate(1);
+    ir2->cond = COND_NE;
+
+    DeleteIR(irl, ir0);
+    return 1;
+}
+
 
 struct Peepholes {
     PeepholePattern *check;
@@ -4081,6 +4117,8 @@ struct Peepholes {
     { pat_clrc, 0, FixupClrC },
     { pat_setc1, 0, FixupSetC },
     { pat_setc2, 0, FixupSetC },
+
+    { pat_mov_and_add, 0, FixupAndAdd },
 };
 
 
