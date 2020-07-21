@@ -1528,7 +1528,7 @@ RenameLocalRegs(IRList *irl, int isLeaf)
 static bool
 NeedToSaveLocals(Function *func)
 {
-    if (IS_LEAF(func) || func->toplevel) {
+    if (IS_LEAF(func)) {
         return false;
     }
     if (func->is_recursive) {
