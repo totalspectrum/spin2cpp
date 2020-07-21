@@ -13,9 +13,12 @@ strcpy(char * __restrict dst, const char * __restrict src)
 {
 	register char *dscan = dst;
 	register const char *sscan = src;
-
+        int c;
+        
 	if (!sscan) return(dst);
-	while ((*dscan++ = *sscan++) != '\0')
-		continue;
+        do {
+            c = *sscan++;
+            *dscan++ = c;
+        } while (c != 0);
 	return(dst);
 }

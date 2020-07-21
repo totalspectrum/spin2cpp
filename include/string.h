@@ -57,4 +57,9 @@ extern "C" {
 }
 #endif
 
+#ifdef __FLEXC__
+#define strcpy(a, b) __builtin_strcpy(a, b)
+#define strlen(a, b) __builtin_strlen(a, b)
+#endif
+
 #endif
