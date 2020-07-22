@@ -525,11 +525,20 @@ fixed.
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
 
+
+## Differences
+
+### Timing
+
 Timing of produced code is different, of course (in general much faster than
 the native Spin interpreter). This may affect some objects; sometimes
 developers left out delay loops in time critical code because the Spin
 interpreter is so slow they weren't necessary. Watch out for this when porting
 I2C, SPI and similar functions.
+
+### @@ Operator
+
+The Spin1 `@@` operator always truncates its result to 16 bits; fastspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
 ## Symbols
 
