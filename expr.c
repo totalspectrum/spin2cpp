@@ -1499,6 +1499,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         break;
     case AST_OPERATOR:
+        /* special case hack: '-' allows evaluation of @
+           even if both sides are relative addresses
+        */
+        if (expr->d.ival == '-') {
+            flags |= PASM_FLAG;
+        }
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (expr->d.ival == K_BOOL_OR && lval.val)
             return lval;

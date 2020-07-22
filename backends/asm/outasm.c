@@ -3961,6 +3961,10 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       EmitOp2(irl, OPC_ADD, stackptr, r);
       return temp;
   }
+  case AST_CONSTANT:
+  {
+      return CompileExpression(irl, expr->left, dest);
+  }
   default:
     ERROR(expr, "Cannot handle expression yet");
     return NewOperand(REG_REG, "???", 0);
