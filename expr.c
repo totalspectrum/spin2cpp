@@ -1502,7 +1502,7 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         /* special case hack: '-' allows evaluation of @
            even if both sides are relative addresses
         */
-        if (expr->d.ival == '-') {
+        if (expr->d.ival == '-' && expr->left->kind == AST_ADDROF && expr->right->kind == AST_ADDROF) {
             flags |= PASM_FLAG;
         }
         lval = EvalExpr(expr->left, flags, valid, depth+1);
