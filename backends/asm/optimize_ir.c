@@ -3342,6 +3342,7 @@ ExpandInlines(IRList *irl)
             f = (Function *)ir->aux;
             if (f && FuncData(f)->isInline) {
                 ReplaceIRWithInline(irl, ir, f);
+                FuncData(f)->actual_callsites--;
                 change = 1;
             }
         }

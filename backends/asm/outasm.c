@@ -2870,7 +2870,9 @@ CompileFunccall(IRList *irl, AST *expr)
   } else {
       ir = EmitOp1(irl, OPC_CALL, funcaddr);
   }
-  
+  if (func) {
+      FuncData(func)->actual_callsites++;
+  }
   ir->aux = (void *)func; // remember the function for optimization purposes
 
   /* now get the results */
@@ -4833,23 +4835,24 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 #define VISITFLAG_EXPANDINLINE  0x0123000a
 #define VISITFLAG_EMITDAT       0x0123000b
 
-typedef void (*VisitorFunc)(IRList *irl, Module *P);
+typedef int (*VisitorFunc)(IRList *irl, Module *P);
 
-static void
+static int
 VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 {
     Module *Q;
     AST *subobj;
     Module *save = current;
     Function *savecurf = curfunc;
+    int change = 0;
     
     if (P->visitflag == visitval)
-        return;
+        return change;
 
     current = P;
 
     P->visitflag = visitval;
-    (*func)(irl, P);
+    change |= (*func)(irl, P);
 
     // compile intermediate code for submodules
     for (subobj = P->objblock; subobj; subobj = subobj->right) {
@@ -4858,14 +4861,15 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
             break;
         }
         Q = (Module *)subobj->d.ptr;
-        VisitRecursive(irl, Q, func, visitval);
+        change |= VisitRecursive(irl, Q, func, visitval);
     }
     // and for sub-submodules
     for (Q = P->subclasses; Q; Q = Q->subclasses) {
-        VisitRecursive(irl, Q, func, visitval);
+        change |= VisitRecursive(irl, Q, func, visitval);
     }
     current = save;
     curfunc = savecurf;
+    return change;
 }
 
 static bool
@@ -4911,6 +4915,22 @@ RemoveIfInlined(Function *f)
     if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return true;
     return false;
+}
+
+// return true if the function was actually inlined
+static bool
+ActuallyInlined(Function *f)
+{
+    if (!FuncData(f)->isInline) {
+        return false;
+    }
+    if (FuncData(f)->actual_callsites > 0) {
+        return false;
+    }
+    if (!f->callSites) {
+        return false;
+    }
+    return true;
 }
 
 // assign one function name
@@ -5024,7 +5044,7 @@ static int FixupTypes(Symbol *sym, void *arg)
 }
 
 // we also resolve type sizes here
-static void
+static int
 AssignFuncNames(IRList *irl, Module *P)
 {
     Function *f;
@@ -5038,9 +5058,10 @@ AssignFuncNames(IRList *irl, Module *P)
         IterateOverSymbols(&f->localsyms, FixupTypes, (void *)0);
     }
     IterateOverSymbols(&P->objsyms, FixupTypes, (void *)0);
+    return 0;
 }
 
-static void
+static int
 CompileFunc_internal(IRList *irl, Module *P)
 {
     Function *savecurf = curfunc;
@@ -5055,15 +5076,18 @@ CompileFunc_internal(IRList *irl, Module *P)
       FuncData(f)->isInline = ShouldBeInlined(f);
     }
     curfunc = savecurf;
+    return 0;
 }
 
-static void
+static int
 ExpandInline_internal(IRList *irl, Module *P)
 {
     Function *f;
     int change;
     int newInlines;
     int inlineStatus;
+    int anyChange = 0;
+    
     do {
         newInlines = 0;
         for (f = P->functions; f; f = f->next) {
@@ -5087,20 +5111,25 @@ ExpandInline_internal(IRList *irl, Module *P)
                 }
             }
         }
+        anyChange |= newInlines;
     } while (newInlines);
+    return anyChange;
 }
 
 void
 CompileIntermediate(Module *P)
 {
+    int change;
     InitAsmCode();
     
     VisitRecursive(NULL, P, AssignFuncNames, VISITFLAG_FUNCNAMES);
     VisitRecursive(NULL, P, CompileFunc_internal, VISITFLAG_COMPILEFUNCS);
-    VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
+    do {
+        change = VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
+    } while (change);
 }
 
-static void
+static int
 CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
@@ -5122,16 +5151,8 @@ CompileToIR_internal(IRList *irl, Module *P)
         if (ShouldSkipFunction(f)) {
             continue;
         }
-        if (RemoveIfInlined(f)) {
-            // system functions were not skipped in ShouldSkipFunction,
-            // so skip them here if they are not used
-            // also skip inlined private and single-use functions
-            if (FuncData(f)->isInline) {
-                continue;
-            }
-            if (!f->callSites) {
-                continue;
-            }
+        if (RemoveIfInlined(f) && ActuallyInlined(f)) {
+            continue;
         }
         // only do cog or hub
         if (f->code_placement != docog) {
@@ -5142,6 +5163,7 @@ CompileToIR_internal(IRList *irl, Module *P)
         CompileWholeFunction(irl, f);
     }
     curfunc = save;
+    return 0;
 }
 
 bool
@@ -5677,7 +5699,7 @@ CompileConsts(IRList *irl, AST *conblock)
     }
 }
 
-void
+int
 EmitDatSection(IRList *irl, Module *P)
 {
   Flexbuf *fb;
@@ -5686,7 +5708,7 @@ EmitDatSection(IRList *irl, Module *P)
   IR *ir;
   
   if (!ModData(P) || !ModData(P)->datbase)
-      return;
+      return 0;
   fb = (Flexbuf *)calloc(1, sizeof(*fb));
   relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
   flexbuf_init(fb, 32768);
@@ -5695,14 +5717,15 @@ EmitDatSection(IRList *irl, Module *P)
   op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
   ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
   ir->src2 = (Operand *)P;
+  return 0;
 }
 
-void
+int
 EmitVarSection(IRList *irl, Module *P)
 {
     int len;
     if (!objlabel)
-        return;
+        return 0;
     len = P->varsize;
     len = (len+3) & ~3; // round up to long boundary
     EmitLabel(irl, objlabel);
@@ -5713,6 +5736,7 @@ EmitVarSection(IRList *irl, Module *P)
     } else {
         EmitReserve(irl, len / 4, HUB_DATA ? HUB_RESERVE : COG_RESERVE);
     }
+    return 0;
 }
 
 extern Module *globalModule;

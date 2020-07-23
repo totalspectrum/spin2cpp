@@ -123,6 +123,9 @@ typedef struct ir_bedata {
     
     /* type of calling convention */
     CallConvention convention;
+
+    /* actual call instructions emitted for this function */
+    int actual_callsites;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)
