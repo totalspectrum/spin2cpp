@@ -851,7 +851,10 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
     if (ir->opc == OPC_LABEL) {
-      break;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            continue;
+        }
+        break;
     }
     if (ir->dst == orig) {
       ir->dst = replace;
