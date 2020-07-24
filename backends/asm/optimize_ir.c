@@ -3509,8 +3509,11 @@ typedef struct PeepholePattern {
 #define PEEP_OP_IMM     0x03000000
 #define PEEP_OP_SET_IMM 0x04000000
 #define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
+#define PEEP_OP_CLRBITS 0x06000000
 #define PEEP_OPNUM_MASK 0x00ffffff
 #define PEEP_OP_MASK    0xff000000
+
+#define PEEP_OP_CLRMASK(bits, shift) (PEEP_OP_CLRBITS|(bits<<6)|(shift))
 
 static Operand *peep_ops[MAX_OPERANDS_IN_PATTERN];
 
@@ -3544,6 +3547,18 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
                 return 0;
             }
             if (dst->val != opnum) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_CLRBITS) {
+            uint32_t mask, shift;
+            if (dst->kind != IMM_INT) {
+                return 0;
+            }
+            mask = (opnum>>6) & 0x3f;
+            shift = (opnum & 0x3f);
+            mask = ((1<<mask)-1)<<shift;
+            mask = ~mask;
+            if ( ((uint32_t)dst->val) != mask) {
                 return 0;
             }
         }
@@ -3797,6 +3812,31 @@ static PeepholePattern pat_shr16getword[] = {
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
+static PeepholePattern pat_shl8setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,8), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl16setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,16), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl24setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,24), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl16setword[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(16,16), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
 // mov x, y; and x, #1; add z, x => test y, #1 wz; if_nz add z, #1
 
 static PeepholePattern pat_mov_and_add[] = {
@@ -3979,6 +4019,33 @@ static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
     DeleteIR(irl, ir2);
     return 1;
 }
+// shl x, #N; and y, #MASK; or y, x => setbyte y, x, #N/8
+
+static int FixupSetByteWord(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1 = ir0->next;
+    IR *ir2 = ir1->next;
+    int shift = 0;
+    
+    if (ir0->opc == OPC_SHL || ir0->opc == OPC_ROL) {
+        shift = ir0->src->val;
+    } else {
+        return 0;
+    }
+
+    ReplaceOpcode(ir2, arg);
+    if (arg == OPC_SETBYTE) {
+        shift = shift/8;
+    } else {
+        shift = shift/16;
+    }
+    ir2->src2 = NewImmediate(shift);
+    if (IsDeadAfter(ir2, ir0->dst)) {
+        DeleteIR(irl, ir0);
+    }
+    DeleteIR(irl, ir1);
+    return 1;
+}
 
 static int FixupBmask(int arg, IRList *irl, IR *ir)
 {
@@ -4106,6 +4173,12 @@ struct Peepholes {
     { pat_sar16getword, OPC_GETWORD, FixupGetByteWord },
     { pat_shr16getword, OPC_GETWORD, FixupGetByteWord },
 
+    { pat_shl8setbyte, OPC_SETBYTE, FixupSetByteWord },
+    { pat_shl16setbyte, OPC_SETBYTE, FixupSetByteWord },
+    { pat_shl24setbyte, OPC_SETBYTE, FixupSetByteWord },
+    
+    { pat_shl16setword, OPC_SETWORD, FixupSetByteWord },
+    
     { pat_clrc, 0, FixupClrC },
     { pat_setc1, 0, FixupSetC },
     { pat_setc2, 0, FixupSetC },

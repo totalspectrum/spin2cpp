@@ -104,6 +104,8 @@ typedef enum IROpcode {
     OPC_QDIV,
     OPC_QFRAC,
     OPC_QMUL,
+    OPC_SETBYTE,
+    OPC_SETWORD,
     OPC_SETQ,
     OPC_SETQ2,
     OPC_SIGNX,
