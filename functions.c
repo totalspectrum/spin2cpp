@@ -2735,6 +2735,53 @@ ExtractSideEffects(AST *expr, AST **preseq)
     return expr;
 }
 
+// check for simple array references like:
+// x.byte[N] := Y
+// return a transformed expression like
+// x.[N+7..N] := Y
+// we may assume that ast is an arrayref
+
+AST *
+CheckSimpleArrayref(AST *ast)
+{
+    AST *newexpr = NULL;
+    if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
+        AST *left = ast->left;
+        int index = EvalConstExpr(ast->right);
+        AST *typ = left->left;
+        AST *id = left->right;
+        int shift = 0;
+        int bits = 0;
+        ASTReportInfo saveinfo;
+        
+        if (typ && id && id->kind == AST_ADDROF) {
+            id = id->left;
+            if (IsIdentifier(id) && IsLocalVariable(id)) {
+                if (typ == ast_type_word && index < 2) {
+                    shift = index * 16;
+                    bits = 16;
+                } else if (typ == ast_type_byte && index < 4) {
+                    shift = index * 8;
+                    bits = 8;
+                }
+                if (bits >= 0) {
+                    AstReportAs(ast, &saveinfo);
+                    newexpr = id;
+                    newexpr = NewAST(AST_RANGEREF, newexpr,
+                                     NewAST(AST_RANGE,
+                                            AstInteger(shift+bits-1),
+                                            AstInteger(shift)));
+                    AstReportDone(&saveinfo);
+                    // OK, if we're on the LHS we have to transform this
+                    // to an assignment, otherwise to a use
+                    return newexpr;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 // look out for short-circuiting assignments
 // flag ||= x should always evaluate x, at least in Spin
 
@@ -2748,11 +2795,13 @@ SimplifyAssignments(AST **astptr)
 {
     AST *ast = *astptr;
     AST *preseq = NULL;
+    AST *lhs, *rhs;
     
     if (!ast) return;
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
-        AST *lhs = ast->left;
+        lhs = ast->left;
+        rhs = ast->right;
         if (IsIdentifier(lhs)) {
             // check for CON := x
             Symbol *sym = LookupAstSymbol(lhs, NULL);
@@ -2775,7 +2824,6 @@ SimplifyAssignments(AST **astptr)
         else if (op != K_ASSIGN )
         {
             ASTReportInfo saveinfo;
-            AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
             // if B has side effects,
             // transform A op= B
@@ -2821,6 +2869,16 @@ SimplifyAssignments(AST **astptr)
             }
             AstReportDone(&saveinfo);
             *astptr = ast;
+            lhs = ast->left;
+            rhs = ast->right;
+        }
+
+        // check for special cases like local.byte[N] := X where N is a constant
+        if (lhs && lhs->kind == AST_ARRAYREF) {
+            AST *newexpr = CheckSimpleArrayref(lhs);
+            if (newexpr) {
+                ast->left = lhs = newexpr;
+            }
         }
     }
     SimplifyAssignments(&ast->left);

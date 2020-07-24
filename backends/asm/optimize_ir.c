@@ -3748,54 +3748,52 @@ static PeepholePattern pat_setne[] = {
     { COND_NE,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
-static PeepholePattern pat_getbyte[] = {
-    { COND_TRUE, OPC_AND, PEEP_OP_SET|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
-static PeepholePattern pat_getword[] = {
-    { COND_TRUE, OPC_AND, PEEP_OP_SET|0, PEEP_OP_IMM|65535, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_MOV, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
-    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
-};
 static PeepholePattern pat_sar24getbyte[] = {
-    { COND_TRUE, OPC_SAR, PEEP_OP_SET|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_shr24getbyte[] = {
-    { COND_TRUE, OPC_SHR, PEEP_OP_SET|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_sar16getbyte[] = {
-    { COND_TRUE, OPC_SAR, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_shr16getbyte[] = {
-    { COND_TRUE, OPC_SHR, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_sar8getbyte[] = {
-    { COND_TRUE, OPC_SAR, PEEP_OP_SET|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_shr8getbyte[] = {
-    { COND_TRUE, OPC_SHR, PEEP_OP_SET|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETBYTE, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_sar16getword[] = {
-    { COND_TRUE, OPC_SAR, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETWORD, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|0xffff, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 static PeepholePattern pat_shr16getword[] = {
-    { COND_TRUE, OPC_SHR, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_GETWORD, PEEP_OP_SET|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|0xffff, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -3948,45 +3946,38 @@ static int FixupSetC(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
-// and x, #255 ; mov y, x  => getbyte y, x, #0
-// shr x, #24 ; getbyte y, x, #0 => getbyte y, x, #3
-static int FixupGetByte(int arg, IRList *irl, IR *ir)
+// mov x, y; shr x, #N; and x, #255 => getbyte x, y, #N/8
+// mov x, y; shr x, #N; and x, #65535 => getword x, y, #N/16
+
+static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
 {
-    Operand *origdst = ir->dst;
-    IR *irnext;
-    irnext = ir->next;
-    if (IsDeadAfter(irnext, origdst)) {
-        if (irnext->opc == OPC_GETBYTE) {
-            if (!irnext->src2 || irnext->src2->kind != IMM_INT || irnext->src2->val != 0) {
-                return 0;
-            }
-        } else {
-            ReplaceOpcode(irnext, OPC_GETBYTE);
-        }
-        irnext->src2 = NewImmediate(arg);
-        DeleteIR(irl, ir);
-        return 1;
+    IR *ir1 = ir0->next;
+    IR *ir2;
+    int shift = 0;
+    
+    if (ir1->opc == OPC_SHR || ir1->opc == OPC_SAR) {
+        ir2 = ir1->next;
+        shift = ir1->src->val;
+    } else if (ir1->opc == OPC_AND) {
+        ir2 = ir1;
+        ir1 = NULL;
+        shift = 0;
+    } else {
+        return 0;
     }
-    return 0;
-}
-static int FixupGetWord(int arg, IRList *irl, IR *ir)
-{
-    Operand *origdst = ir->dst;
-    IR *irnext;
-    irnext = ir->next;
-    if (IsDeadAfter(irnext, origdst)) {
-        if (irnext->opc == OPC_GETWORD) {
-            if (!irnext->src2 || irnext->src2->kind != IMM_INT || irnext->src2->val != 0) {
-                return 0;
-            }
-        } else {
-            ReplaceOpcode(irnext, OPC_GETWORD);
-        }
-        irnext->src2 = NewImmediate(arg);
-        DeleteIR(irl, ir);
-        return 1;
+
+    ReplaceOpcode(ir0, arg);
+    if (arg == OPC_GETBYTE) {
+        shift = shift/8;
+    } else {
+        shift = shift/16;
     }
-    return 0;
+    ir0->src2 = NewImmediate(shift);
+    if (ir1) {
+        DeleteIR(irl, ir1);
+    }
+    DeleteIR(irl, ir2);
+    return 1;
 }
 
 static int FixupBmask(int arg, IRList *irl, IR *ir)
@@ -4105,18 +4096,15 @@ struct Peepholes {
     { pat_seteq, OPC_WRZ, FixupEq },
     { pat_setne, OPC_WRNZ, FixupEq },
 
-    { pat_getbyte, 0, FixupGetByte },
-    { pat_getword, 0, FixupGetWord },
-    
-    { pat_sar24getbyte, 3, FixupGetByte },
-    { pat_shr24getbyte, 3, FixupGetByte },
-    { pat_sar16getbyte, 2, FixupGetByte },
-    { pat_shr16getbyte, 2, FixupGetByte },
-    { pat_sar8getbyte, 1, FixupGetByte },
-    { pat_shr8getbyte, 1, FixupGetByte },
+    { pat_sar24getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr24getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_sar16getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr16getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_sar8getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr8getbyte, OPC_GETBYTE, FixupGetByteWord },
 
-    { pat_sar16getword, 1, FixupGetWord },
-    { pat_shr16getword, 1, FixupGetWord },
+    { pat_sar16getword, OPC_GETWORD, FixupGetByteWord },
+    { pat_shr16getword, OPC_GETWORD, FixupGetByteWord },
 
     { pat_clrc, 0, FixupClrC },
     { pat_setc1, 0, FixupSetC },

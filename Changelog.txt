@@ -1,6 +1,7 @@
 Version 4.2.6
 - Added sanity check for removing inlined functions.
 - Fixed an optimizer bug in renaming registers
+- Fixed assignments like x.byte[1] := y
 
 Version 4.2.5
 - Added many more peephole optimizations

@@ -707,35 +707,10 @@ doSpinTransform(AST **astptr, int level)
                 } 
             }
         } else if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
-            AST *left = ast->left;
-            int index = EvalConstExpr(ast->right);
-            AST *typ = left->left;
-            AST *id = left->right;
-            int mask = -1;
-            int shift = 0;
-
-            if (typ && id && id->kind == AST_ADDROF) {
-                id = id->left;
-                if (IsIdentifier(id) && IsLocalVariable(id)) {
-                    if (typ == ast_type_word && index < 2) {
-                        shift = index * 16;
-                        mask = (index == 1) ? 0 : 0xffff;
-                    } else if (typ == ast_type_byte && index < 4) {
-                        shift = index * 8;
-                        mask = (index == 3) ? 0 : 0xff;
-                    }
-                    if (mask >= 0) {
-                        AST *newexpr = id;
-                        if (shift) {
-                            newexpr = AstOperator(K_SHR, newexpr, AstInteger(shift));
-                        }
-                        if (mask) {
-                            newexpr = AstOperator('&', newexpr, AstInteger(mask));
-                        }
-                        *astptr = newexpr;
-                        return;
-                    }
-                }
+            AST *newexpr = CheckSimpleArrayref(ast);
+            if (newexpr) {
+                newexpr = TransformRangeUse(newexpr);
+                *astptr = ast = newexpr;
             }
         }
         doSpinTransform(&ast->left, 0);
