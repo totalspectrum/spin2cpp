@@ -5,21 +5,19 @@ dat
 entry
 
 _gethibit
-	sar	arg01, #31
-	and	arg01, #1
+	shr	arg01, #31
 	mov	result1, arg01
 _gethibit_ret
 	ret
 
 _gethibits
-	sar	arg01, #30
-	and	arg01, #3
+	shr	arg01, #30
 	mov	result1, arg01
 _gethibits_ret
 	ret
 
 _getbit
-	sar	arg01, arg02
+	shr	arg01, arg02
 	and	arg01, #1
 	mov	result1, arg01
 _getbit_ret

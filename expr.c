@@ -960,8 +960,21 @@ TransformRangeUse(AST *src)
     /* we want to end up with:
        ((src->left >> lo) & mask)
     */
-    val = FoldIfConst(AstOperator(K_SAR, src->left, lo));
-    val = FoldIfConst(AstOperator('&', val, mask));
+    if (IsConstExpr(lo) && IsConstExpr(mask)) {
+        unsigned maskval = EvalConstExpr(mask);
+        unsigned loval = EvalConstExpr(lo);
+        // optimize a common case: if the shift leaves fewer
+        // bits than the mask will take out, then
+        // just do the shift
+        loval = 0xffffffffU >> loval;
+        if ( (loval & maskval) == loval ) {
+            mask = NULL; // no need for the mask at all
+        }
+    }
+    val = FoldIfConst(AstOperator(K_SHR, src->left, lo));
+    if (mask) {
+        val = FoldIfConst(AstOperator('&', val, mask));
+    }
     revval = FoldIfConst(AstOperator(K_REV, val, nbits));
     
     if (IsConstExpr(test)) {

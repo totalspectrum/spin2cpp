@@ -16,7 +16,7 @@ _key
 	or	result1, _var01
 	getbyte	_var01, arg01, #1
 	setbyte	result1, _var01, #2
-	sar	arg01, #16
+	shr	arg01, #16
 	and	arg01, #255
 	setbyte	result1, arg01, #1
 _key_ret
