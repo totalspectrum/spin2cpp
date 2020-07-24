@@ -44,7 +44,7 @@ mdiv2__
         rcl     muldivb_,#1
         shr     itmp1_,#1
         djnz    DIVCNT,#mdiv2__
-        shr     itmp2_,#1        wc,wz    'restore sign
+        shr     itmp2_,#31       wc,wz    'restore sign
         negnz   muldiva_,muldiva_         'remainder
         negc    muldivb_,muldivb_ wz      'division result
 divbyzero__
