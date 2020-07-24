@@ -5294,7 +5294,7 @@ static const char *builtin_div_p1 =
 "        shr     itmp1_,#1\n"
 "        djnz    DIVCNT,#mdiv2__\n"
 
-"        shr     itmp2_,#1        wc,wz    'restore sign\n"
+"        shr     itmp2_,#31       wc,wz    'restore sign\n"
 "        negnz   muldiva_,muldiva_         'remainder\n"
 "        negc    muldivb_,muldivb_ wz      'division result\n"
 
