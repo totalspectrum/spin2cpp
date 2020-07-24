@@ -1370,6 +1370,7 @@ TransformCountRepeat(AST *ast)
             loopvar = ast->left;
         } else {
             ERROR(ast, "Need a variable name for the loop");
+            AstReportDone(&saveinfo);
             return origast;
         }
     }
@@ -1552,8 +1553,17 @@ TransformCountRepeat(AST *ast)
     if (!condtest) {
         /* otherwise, we have to just test for loopvar between to and from */
         if (isIntegerLoop) {
-            condtest = NewAST(AST_ISBETWEEN, loopvar,
-                              NewAST(AST_RANGE, fromval, toval));
+            // optimize cases where we know the step direction and value
+            if (knownStepDir && knownStepVal) {
+                if (knownStepVal > 0) {
+                    condtest = AstOperator(K_LE, loopvar, toval);
+                } else {
+                    condtest = AstOperator(K_GE, loopvar, toval);
+                }
+            } else {
+                condtest = NewAST(AST_ISBETWEEN, loopvar,
+                                  NewAST(AST_RANGE, fromval, toval));
+            }
         } else if (knownStepDir > 0) {
             condtest = AstOperator(K_LE, loopvar, toval);
         } else if (knownStepDir < 0) {
