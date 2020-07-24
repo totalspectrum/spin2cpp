@@ -51,5 +51,9 @@
 #define K_QEXP      0x12c
 #define K_SCAS      0x12d
 #define K_ENCODE2   0x12e
+/* spin versions of && and ||, which cannot short-circuit */
+#define K_LOGIC_AND 0x12f
+#define K_LOGIC_OR  0x130
+#define K_LOGIC_XOR 0x131
 
 #endif

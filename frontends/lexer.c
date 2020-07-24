@@ -1410,6 +1410,7 @@ struct reservedword {
     { "alignl", SP_ALIGNL }, // NON-STANDARD
     { "alignw", SP_ALIGNW }, // NON-STANDARD
     { "and", SP_AND },
+    { "__andthen__", SP_ANDTHEN },
     { "asm", SP_ASM },  // NON-STANDARD
 
     { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
@@ -1448,6 +1449,7 @@ struct reservedword {
 
     { "obj", SP_OBJ },
     { "or", SP_OR },
+    { "__orelse__", SP_ORELSE },
     { "org", SP_ORG },
     { "orgh", SP_ORGH }, // NON-STANDARD
     { "orgf", SP_ORGF }, // NON-STANDARD

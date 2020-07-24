@@ -1197,10 +1197,18 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return BoolValue(lval == rval);
     case K_BOOL_OR:
         return BoolValue(lval || rval);
+    case K_BOOL_XOR:
+        return BoolValue((lval != 0) ^ (rval != 0));
     case K_BOOL_AND:
         return BoolValue(lval && rval);
     case K_BOOL_NOT:
         return BoolValue(!rval);
+    case K_LOGIC_OR:
+        return BoolValue(lval) | BoolValue(rval);
+    case K_LOGIC_XOR:
+        return BoolValue(lval) ^ BoolValue(rval);
+    case K_LOGIC_AND:
+        return BoolValue(lval) & BoolValue(rval);
     case K_NEGATE:
         return -rval;
     case K_BIT_NOT:

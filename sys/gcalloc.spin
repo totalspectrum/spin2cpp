@@ -288,7 +288,7 @@ pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
   repeat
     '' walk back the chain to the last previous free block
     prevptr := _gc_pageptr(heapbase, word[prevptr + OFF_PREV])
-  until prevptr == 0 or _gc_isFree(prevptr)
+  until prevptr == 0 __orelse__ _gc_isFree(prevptr)
   if (prevptr == 0)
     prevptr := heapbase
     
@@ -311,7 +311,7 @@ pri _gc_dofree(ptr) | prevptr, tmpptr, nextptr, heapbase, heapend, n
       
   '' see if we should merge with following block
   tmpptr := _gc_nextBlockPtr(ptr)
-  if tmpptr and (tmpptr < heapend) and _gc_isFree(tmpptr)
+  if tmpptr __andthen__ (tmpptr < heapend) __andthen__ _gc_isFree(tmpptr)
     prevptr := ptr
     ptr := tmpptr
     word[prevptr + OFF_SIZE] += word[ptr + OFF_SIZE]
@@ -388,7 +388,7 @@ pri _gc_markhub(startaddr, endaddr) | ptr, flags, heap_base, heap_end
     ptr := long[startaddr]
     startaddr += 4
     ptr := _gc_isvalidptr(heap_base, heap_end, ptr)
-    if ptr and not _gc_isFree(ptr)
+    if ptr __andthen__ not _gc_isFree(ptr)
       flags := word[ptr + OFF_FLAGS]
       flags &= !GC_OWNER_MASK
       flags |= GC_FLAG_INUSE | GC_OWNER_HUB

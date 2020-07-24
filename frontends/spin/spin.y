@@ -207,6 +207,8 @@ FixupList(AST *list)
 %token SP_XOR        "XOR (^^)"
 %token SP_OR         "OR (||)"
 %token SP_AND        "AND (&&)"
+%token SP_ORELSE     "__ORELSE__"
+%token SP_ANDTHEN    "__ANDTHEN__"
 %token SP_GE         "=>"
 %token SP_LE         "=<"
 %token SP_GEU        "+=>"
@@ -269,8 +271,8 @@ FixupList(AST *list)
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
-%left SP_OR SP_XOR
-%left SP_AND
+%left SP_OR SP_XOR SP_ORELSE
+%left SP_AND SP_ANDTHEN
 %left SP_NOT
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
 %left SP_LIMITMIN SP_LIMITMAX
@@ -987,12 +989,16 @@ expr:
     { $$ = AstOperator(K_SHR, $1, $3); }
   | expr SP_SAR expr
     { $$ = AstOperator(K_SAR, $1, $3); }
-  | expr SP_AND expr
+  | expr SP_ANDTHEN expr
     { $$ = AstOperator(K_BOOL_AND, $1, $3); }
-  | expr SP_OR expr
+  | expr SP_ORELSE expr
     { $$ = AstOperator(K_BOOL_OR, $1, $3); }
+  | expr SP_AND expr
+    { $$ = AstOperator(K_LOGIC_AND, $1, $3); }
+  | expr SP_OR expr
+    { $$ = AstOperator(K_LOGIC_OR, $1, $3); }
   | expr SP_XOR expr
-    { $$ = AstOperator(K_BOOL_XOR, $1, $3); }
+    { $$ = AstOperator(K_LOGIC_XOR, $1, $3); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN

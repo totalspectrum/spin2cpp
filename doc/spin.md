@@ -177,6 +177,10 @@ Fastspin interprets the notation `@"some chars"` to mean the same thing as `STRI
 
 Bits `m` to `n` of a variable `x` may be accessed via the notation `x.[m..n]`. If `m` is the same as `n` this may be simplified to `x.[n]`. This notation may also be applied to hardware registers.
 
+### Boolean short-circuit operators
+
+fastspin has operators `x __andthen__ y` and `x __orelse__ y` which only evaluate the right hand side (`y`) if they need to (like C's `&&` and `||`). Ordinary boolean `AND` and `OR` operators will be optimized to these in the cases where `x` and `y` do not have side effects.
+
 ### CASE_FAST
 
 `CASE_FAST` is just like `CASE`, except that each of the case items must be a constant expression. It is guaranteed to compile to a jump table (regular `CASE` may sometimes compile to a sequence of `IF`/`ELSE IF`).

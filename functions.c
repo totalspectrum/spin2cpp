@@ -2881,6 +2881,44 @@ SimplifyAssignments(AST **astptr)
             }
         }
     }
+    /* optimize K_LOGIC_AND and K_LOGIC_OR (which do not short-circuit)
+       to K_BOOL_AND/K_BOOL_OR (which do short-circuit) if we can
+    */
+    if (ast->kind == AST_OPERATOR) {
+        int op;
+        op = ast->d.ival;
+        switch (op) {
+        case K_LOGIC_AND:
+        case K_LOGIC_OR:
+        case K_LOGIC_XOR:
+            if (ExprHasSideEffects(ast->right)) {
+                ASTReportInfo saveinfo;
+                AstReportAs(ast, &saveinfo);
+                ast->left = AstOperator(K_NE, ast->left, AstInteger(0));
+                ast->right = AstOperator(K_NE, ast->right, AstInteger(0));
+                if (op == K_LOGIC_XOR) {
+                    ast->d.ival = '^';
+                } else if (op == K_LOGIC_AND) {
+                    ast->d.ival = '&';
+                } else {
+                    ast->d.ival = '|';
+                }
+                AstReportDone(&saveinfo);
+            } else {
+                if (op == K_LOGIC_XOR) {
+                    ast->d.ival = K_BOOL_XOR;
+                } else if (op == K_LOGIC_AND) {
+                    ast->d.ival = K_BOOL_AND;
+                } else {
+                    ast->d.ival = K_BOOL_OR;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+       
     SimplifyAssignments(&ast->left);
     SimplifyAssignments(&ast->right);
 }
