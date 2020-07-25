@@ -1,9 +1,10 @@
 Version 4.2.6
-- Added sanity check for removing inlined functions.
+- Added sanity check for removing inlined functions (fixes an optimizer bug)
 - Added __andthen__ and __orelse__ operators to Spin/Spin2.
 - Fixed an optimizer bug in renaming registers
 - Fixed assignments like x.byte[1] := y
 - Fixed Spin AND and OR operators to evaluate both sides if they have side effects.
+- Improved some error messages
 - Merged improved P1 multiply/divide routines from Wuerfel21.
 
 Version 4.2.5
