@@ -1301,16 +1301,28 @@ TransformCountRepeat(AST *ast)
             }
         }
     }
-    if (IsConstExpr(fromval) && IsConstExpr(toval) && isIntegerLoop) {
-        int32_t fromi, toi;
+    if (isIntegerLoop) {
+        if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+            int32_t fromi, toi;
 
-        fromi = EvalConstExpr(fromval);
-        toi = EvalConstExpr(toval);
-        if (!knownStepDir) {
-            knownStepDir = (fromi > toi) ? -1 : 1;
-        }
-        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-            loopkind = AST_FORATLEASTONCE;
+            fromi = EvalConstExpr(fromval);
+            toi = EvalConstExpr(toval);
+            if (!knownStepDir) {
+                knownStepDir = (fromi > toi) ? -1 : 1;
+            }
+            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+                loopkind = AST_FORATLEASTONCE;
+            }
+        } else {
+            // check for loops like repeat i from @label1 to @label2
+            // where the actual start and end are not known, but
+            // the difference @label2 - @label1 is in fact constant
+            AST *delta = AstOperator('-', toval, fromval);
+            int32_t deltaval;
+            if (IsConstExpr(delta)) {
+                deltaval = EvalConstExpr(delta);
+                knownStepDir = (deltaval >= 0) ? 1 : -1;
+            }
         }
     }
 
