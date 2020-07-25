@@ -22,12 +22,13 @@ unsdivide_
 
 divide_
        abs     muldiva_,muldiva_     wc       'abs(x)
-       muxc    itmp2_,#%11                    'store sign of x
+       muxc    itmp2_,divide_haxx_            'store sign of x (mov x,#1 has bits 0 and 31 set)
        abs     muldivb_,muldivb_     wc,wz    'abs(y)
- if_c  xor     itmp2_,#%10                    'store sign of y
  if_z  jmp     #divbyzero__
+ if_c  xor     itmp2_,#1                      'store sign of y
 udiv__
-        mov     itmp1_,#0                    'unsigned divide
+divide_haxx_
+        mov     itmp1_,#1                    'unsigned divide (bit 0 is discarded)
         mov     DIVCNT,#32
 mdiv__
         shr     muldivb_,#1        wc,wz
@@ -38,10 +39,9 @@ mdiv2__
         rcl     muldivb_,#1
         shr     itmp1_,#1
         djnz    DIVCNT,#mdiv2__
-        test    itmp2_,#1        wc       'restore sign, remainder
-        negc    muldiva_,muldiva_ 
-        test    itmp2_,#%10      wc       'restore sign, division result
-        negc    muldivb_,muldivb_
+        shr     itmp2_,#31       wc,wz    'restore sign
+        negnz   muldiva_,muldiva_         'remainder
+        negc    muldivb_,muldivb_ wz      'division result
 divbyzero__
 divide__ret
 unsdivide__ret

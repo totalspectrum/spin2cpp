@@ -254,6 +254,7 @@ There are various command line options for the compiler which may modify the com
                        -O0 disable all optimization
                        -O1 apply default optimization (same as no -O flag)
 		       -O2 apply all optimization (same as -O)
+  [ -Wall ]          enable all warnings, including warnings about language extensions
   [ -D <define> ]    add a define
   [ -2 ]             compile for Prop2 (-2a for original Rev A silicon)
   [ -w ]             produce Spin wrappers for PASM code

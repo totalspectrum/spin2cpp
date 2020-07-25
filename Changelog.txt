@@ -1,7 +1,45 @@
+Version 4.2.6
+- Added sanity check for removing inlined functions (fixes an optimizer bug)
+- Added __andthen__ and __orelse__ operators to Spin/Spin2.
+- Fixed an optimizer bug in renaming registers
+- Fixed assignments like x.byte[1] := y
+- Fixed Spin AND and OR operators to evaluate both sides if they have side effects.
+- Improved some error messages
+- Merged improved P1 multiply/divide routines from Wuerfel21.
+
+Version 4.2.5
+- Added many more peephole optimizations
+- Added -Wall flag for more warnings, including about language extensions
+- Fixed the #warn preprocessor directive
+- Fixed a bug in operator assignment (like +=) when both sides have side effects
+- Fixed an optimizer bug where some conditional instructions were overlooked in optimizing cmp #0 cases
+- Fixed a typo in TAN causing it to return bad values
+- Fixed constant(@x - @y)
+- Implemented _FREE and _STACK
+- Improved optimization around ORG/END blocks (without touching the code inside)
+- Improved FCACHE code to merge loops in some cases
+- Improved inlining of functions
+- On P2, use constants in the D field when we can
+- Optimized special cases like x.byte[1] in Spin
+- Optimized case statements with constant expressions
+- Various other minor optimizations
+
 Version 4.2.4
+- Added FVAR and FVARS for Spin2
+- Fixed "-C" option for case sensitivity
 - Fixed detection of result variables in inline asm (e.g. polxy builtin)
 - Fixed handling of # at start of line in Spin CON blocks
+- Fixed handling of some Spin1 only keywords and operators
+- Fixed label detection on instructions like djnf
+- Fixed Spin2 ENCOD operator
+- Fixed a -O2 loop optimization bug which could lose assignments inside IF
+- Implemented INPUT #n in BASIC
+- Improved handling of structure returns in C
+- Improved handling of passing methods as function pointers
+- Made the ?: ternary operator parse better in Spin2
 - Optimized P2 multiplication by constants
+- Optimized bytefill/bytemove on P2
+- Properly supported expressions on strings (like "abc"|m) in Spin
 
 Version 4.2.3
 - Fixed some spurious "duplicate case label" errors

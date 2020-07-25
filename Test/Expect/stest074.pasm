@@ -10,13 +10,13 @@ _get
 	mov	fp, sp
 	add	sp, #60
 	mov	_get_sum, #0
-	mov	_get__cse__0001, objptr
+	mov	_get__cse__0000, objptr
 	mov	_get_i, #0
 LR__0001
 	mov	_tmp001_, _get_i
 	shl	_tmp001_, #2
 	add	fp, #4
-	rdlong	_tmp003_, _get__cse__0001
+	rdlong	_tmp003_, _get__cse__0000
 	add	_tmp001_, fp
 	wrlong	_tmp003_, _tmp001_
 	mov	_tmp002_, _get_i
@@ -25,7 +25,7 @@ LR__0001
 	rdlong	_tmp004_, _tmp002_
 	add	_get_sum, _tmp004_
 	add	_get_i, #1
-	add	_get__cse__0001, #4
+	add	_get__cse__0000, #4
 	cmps	_get_i, #10 wc,wz
 	sub	fp, #4
  if_b	jmp	#LR__0001
@@ -51,7 +51,7 @@ objmem
 stackspace
 	long	0[1]
 	org	COG_BSS_START
-_get__cse__0001
+_get__cse__0000
 	res	1
 _get_i
 	res	1

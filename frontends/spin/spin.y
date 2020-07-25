@@ -55,6 +55,66 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
     return NewAST(AST_FUNCCALL, func, params);
 }
 
+// special handling for things like "abc" | x
+// in Spin this is the same as "ab", "c" | x
+
+static int IsLongString(AST *ast)
+{
+    if (ast && ast->kind == AST_STRING) {
+        return strlen(ast->d.string) > 1;
+    }
+    return 0;
+}
+
+// Fix up an expression list
+// convert any long string operator entries by folding the operation
+// into the first/last character of the string
+
+static AST *
+FixupList(AST *list)
+{
+    AST *item, *left, *right;
+    AST *origlist = list;
+    char *shortstr;
+    char *singlechar;
+    int slen;
+    int op;
+    
+    while (list && list->kind == AST_EXPRLIST) {
+        item = list->left;
+        if (item && item->kind == AST_OPERATOR) {
+            op = item->d.ival;
+            left = item->left;
+            right = item->right;
+            if (IsLongString(left)) {
+                if (IsLongString(right)) {
+                    SYNTAX_ERROR("unable to apply operator to two strings");
+                } else {
+                    // convert to AST_EXPRLIST( most of left, left_last_char OP right )
+                    shortstr = strdup(left->d.string);
+                    slen = strlen(left->d.string);
+                    singlechar = strdup(shortstr + slen - 1);
+                    shortstr[slen - 1] = 0;
+                    left = AstPlainString(shortstr);
+                    right = AstOperator(op, AstPlainString(singlechar), right);
+                    list->left = left;
+                    list->right = NewAST(AST_EXPRLIST, right, list->right);
+                }
+            } else if (IsLongString(right)) {
+                shortstr = strdup(right->d.string+1);
+                singlechar = calloc(1, 2);
+                singlechar[0] = right->d.string[0];
+                left = AstOperator(op, left, AstPlainString(singlechar));
+                right = AstPlainString(shortstr);
+                list->left = left;
+                list->right = NewAST(AST_EXPRLIST, right, list->right);
+            }
+        }
+        list = list->right;
+    }
+    return origlist;
+}
+
 #define YYERROR_VERBOSE 1
 %}
 
@@ -83,6 +143,8 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_BYTE       "BYTE"
 %token SP_WORD       "WORD"
 %token SP_LONG       "LONG"
+%token SP_FVAR       "FVAR"
+%token SP_FVARS      "FVARS"
 
 %token SP_INSTR      "instruction"
 %token SP_INSTRMODIFIER "instruction modifier"
@@ -145,6 +207,8 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_XOR        "XOR (^^)"
 %token SP_OR         "OR (||)"
 %token SP_AND        "AND (&&)"
+%token SP_ORELSE     "__ORELSE__"
+%token SP_ANDTHEN    "__ANDTHEN__"
 %token SP_GE         "=>"
 %token SP_LE         "=<"
 %token SP_GEU        "+=>"
@@ -177,7 +241,8 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_SQRT       "SQRT (^^)"
 %token SP_ABS        "ABS (||)"
 %token SP_DECODE     "DECOD (|<)"
-%token SP_ENCODE     "ENCOD (>|)"
+%token SP_ENCODE     ">|"
+%token SP_ENCODE2    "ENCOD"
 %token SP_NOT        "NOT (!!)"
 %token SP_DOUBLETILDE "~~"
 %token SP_INCREMENT  "++"
@@ -197,13 +262,17 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
 
+/* special token for foo() : N indicating the number of return values from foo, N */
+/* FIXME: this is not implemented yet in lexer.c! */
+%token SP_FUNCCOLON   ":"
+
 /* operator precedence */
 %right SP_ASSIGN
 %left '\\'
 %right SP_THEN
 %right SP_ELSE
-%left SP_OR SP_XOR
-%left SP_AND
+%left SP_OR SP_XOR SP_ORELSE
+%left SP_AND SP_ANDTHEN
 %left SP_NOT
 %left '<' '>' SP_GE SP_LE SP_NE SP_EQ SP_SGNCOMP SP_GEU SP_LEU SP_GTU SP_LTU
 %left SP_LIMITMIN SP_LIMITMAX
@@ -212,7 +281,7 @@ MakeFunccall(AST *func, AST *params, AST *numresults)
 %left '|' '^'
 %left '&'
 %left SP_ROTL SP_ROTR SP_SHL SP_SHR SP_SAR SP_REV SP_REV2 SP_SIGNX SP_ZEROX
-%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ALLOCA SP_ADDPINS SP_ADDBITS SP_ONES SP_BMASK SP_QLOG SP_QEXP
+%left SP_NEGATE SP_BIT_NOT SP_ABS SP_SQRT SP_DECODE SP_ENCODE SP_ENCODE2 SP_ALLOCA SP_ADDPINS SP_ADDBITS SP_ONES SP_BMASK SP_QLOG SP_QEXP
 %left '@' '~' '?' SP_RANDOM SP_DOUBLETILDE SP_INCREMENT SP_DECREMENT SP_DOUBLEAT SP_TRIPLEAT
 %left SP_CONSTANT SP_FLOAT SP_TRUNC SP_ROUND
 
@@ -294,9 +363,15 @@ funcdef:
 
 optparamlist:
 /* empty */
-  { $$ = NULL; }
+  {
+      $$ = NULL;
+      LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "omitting () for empty parameter lists is a fastspin extension");
+  }
 | '(' ')'
-  { $$ = NULL; }
+  {
+      $$ = NULL;
+      LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "() for empty parameter lists is a fastspin extension");
+  }
 | paramidentlist
   { $$ = $1; }
 | '(' paramidentlist ')'
@@ -542,6 +617,7 @@ repeatstmt:
     {
         AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
         $$ = ast;
+        LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a fastspin extension");
     }
   | SP_ORG datblock SP_END
     {
@@ -599,7 +675,9 @@ enumitem:
         $$ = NewAST(AST_ENUMSKIP, $1, $3);
     }
   | '#' expr
-  { $$ = NewAST(AST_ENUMSET, $2, NULL); }
+    { $$ = NewAST(AST_ENUMSET, $2, NULL); }
+  | '#' expr '[' expr ']'
+    { $$ = NewAST(AST_ENUMSET, $2, $4); }
   ;
 
 datblock:
@@ -639,15 +717,15 @@ basedatline:
   | SP_BYTE SP_EOLN
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
   | SP_BYTE datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_BYTELIST, FixupList($2), NULL, $1); }
   | SP_WORD SP_EOLN
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
   | SP_WORD datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_WORDLIST, FixupList($2), NULL, $1); }
   | SP_LONG SP_EOLN
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
   | SP_LONG datexprlist SP_EOLN
-    { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
+    { $$ = NewCommentedAST(AST_LONGLIST, FixupList($2), NULL, $1); }
   | instruction SP_EOLN
     { $$ = NewCommentedInstr($1); }
   | instruction operandlist SP_EOLN
@@ -911,12 +989,16 @@ expr:
     { $$ = AstOperator(K_SHR, $1, $3); }
   | expr SP_SAR expr
     { $$ = AstOperator(K_SAR, $1, $3); }
-  | expr SP_AND expr
+  | expr SP_ANDTHEN expr
     { $$ = AstOperator(K_BOOL_AND, $1, $3); }
-  | expr SP_OR expr
+  | expr SP_ORELSE expr
     { $$ = AstOperator(K_BOOL_OR, $1, $3); }
+  | expr SP_AND expr
+    { $$ = AstOperator(K_LOGIC_AND, $1, $3); }
+  | expr SP_OR expr
+    { $$ = AstOperator(K_LOGIC_OR, $1, $3); }
   | expr SP_XOR expr
-    { $$ = AstOperator(K_BOOL_XOR, $1, $3); }
+    { $$ = AstOperator(K_LOGIC_XOR, $1, $3); }
   | expr '+' '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign('+', $1, $4); }
   | expr '-' '=' expr %prec SP_ASSIGN
@@ -1002,8 +1084,10 @@ expr:
     { $$ = AstOpAssign(K_GE, $1, $4); }
   | expr SP_NE '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_NE, $1, $4); }
-  | '(' expr ')' '?' expr ':' expr %prec SP_ELSE
+  | '(' expr ')' SP_RANDOM expr ':' expr %prec SP_ELSE
     { $$ = NewAST(AST_CONDRESULT, $2, NewAST(AST_THENELSE, $5, $7)); }
+  | expr  '?' expr ':' expr %prec SP_ELSE
+    { $$ = NewAST(AST_CONDRESULT, $1, NewAST(AST_THENELSE, $3, $5)); }
   | '(' expr ')'
     { $$ = $2; }
   | '\\' expr
@@ -1058,8 +1142,12 @@ expr:
     { $$ = AstOpAssign(K_DECODE, $3, NULL); }
   | SP_ENCODE expr
     { $$ = AstOperator(K_ENCODE, NULL, $2); }
+  | SP_ENCODE2 expr
+    { $$ = AstOperator(K_ENCODE2, NULL, $2); }
   | SP_ENCODE '=' expr %prec SP_ASSIGN
     { $$ = AstOpAssign(K_ENCODE, $3, NULL); }
+  | SP_ENCODE2 '=' expr %prec SP_ASSIGN
+    { $$ = AstOpAssign(K_ENCODE2, $3, NULL); }
   | SP_QLOG expr
     { $$ = AstOperator(K_QLOG, NULL, $2); }
   | SP_QEXP expr
@@ -1097,12 +1185,8 @@ expr:
     { $$ = AstOperator(K_INCREMENT, NULL, $2); }
   | SP_DECREMENT lhs
     { $$ = AstOperator(K_DECREMENT, NULL, $2); }
-  | lhs '?'
-    { $$ = AstOperator('?', $1, NULL); }
   | lhs SP_RANDOM
     { $$ = AstOperator('?', $1, NULL); }
-  | '?' lhs
-    { $$ = AstOperator('?', NULL, $2); }
   | SP_RANDOM lhs
     { $$ = AstOperator('?', NULL, $2); }
   | lhs '~'
@@ -1194,32 +1278,40 @@ memref:
 opt_numrets:
   /* nothing */
     { $$ = NULL; }
-  | ':' SP_NUM
+  | SP_FUNCCOLON SP_NUM
     { $$ = $2; }
 ;
 
 funccall:
   identifier '(' exprlist ')' opt_numrets
-    { $$ = MakeFunccall($1, $3, $5); }
+    { $$ = MakeFunccall($1, FixupList($3), $5); }
   | identifier '(' ')' opt_numrets
-    { $$ = MakeFunccall($1, NULL, $4); }
+    {
+        $$ = MakeFunccall($1, NULL, $4);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
+    }
   | SP_COGINIT '(' exprlist ')'
-    { $$ = NewAST(AST_COGINIT, $3, NULL); }
+    {
+        $$ = NewAST(AST_COGINIT, FixupList($3), NULL);
+    }
   | SP_COGNEW '(' exprlist ')'
     {
         AST *elist;
         AST *immval = AstInteger(0x1e); // works to cognew both P1 and P2
         elist = NewAST(AST_EXPRLIST, immval, NULL);
         elist = AddToList(elist, $3);
+        elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a fastspin extension");
     }
   | identifier '.' identifier '(' exprlist ')' opt_numrets
     { 
-        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), $5, $7);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), FixupList($5), $7);
     }
   | identifier '.' identifier '(' ')' opt_numrets
     { 
         $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
     }
   | identifier '.' identifier
     { 
@@ -1228,7 +1320,7 @@ funccall:
   | identifier '[' expr ']' '.' identifier '(' exprlist ')' opt_numrets
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
-        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), $8, $10);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
     }
   | identifier '[' expr ']' '.' identifier
     { 
@@ -1282,6 +1374,10 @@ datexpritem:
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_WORDLIST, $2, NULL), NULL); }
    | SP_BYTE expritem
        { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BYTELIST, $2, NULL), NULL); }
+   | SP_FVAR expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVAR_LIST, $2, NULL), NULL); }
+   | SP_FVARS expritem
+       { $$ = NewAST(AST_EXPRLIST, NewAST(AST_FVARS_LIST, $2, NULL), NULL); }
 ;
 
 datexprlist:

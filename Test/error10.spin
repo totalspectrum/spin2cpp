@@ -1,1 +1,1 @@
-VAR  long a,b,cPUB testit(x)  (a,b,c) := foo(x)PRI foo(a) : s, x, m  s := a&1  x := a&2  result := 2  m := a&4
+VAR  long a,b,cPUB testit(x)  (a,b,c) := foo(x)PRI foo(a1) : s, x, m  s := a1&1  x := a1&2  result := 2  m := a1&4

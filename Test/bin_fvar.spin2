@@ -1,0 +1,3 @@
+dat
+  byte fvar $abcd, fvar $99, fvar $123456
+

@@ -1,0 +1,7 @@
+var
+  long x
+  long y
+  
+pub myfunc(x) | y
+  y := x
+  outa := y

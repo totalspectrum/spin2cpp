@@ -10,7 +10,7 @@ _casetest1
 	add	_var02, #3
 	max	_var02, #4
 	mov	_var03, _var02
-	add	_var03, ptr_L__0013_
+	add	_var03, ptr_L__0010_
 	jmp	_var03
 LR__0001
 	jmp	#LR__0002
@@ -32,7 +32,7 @@ _casetest2
 	add	_var02, #3
 	max	_var02, #3
 	mov	_var03, _var02
-	add	_var03, ptr_L__0017_
+	add	_var03, ptr_L__0014_
 	jmp	_var03
 LR__0004
 	jmp	#LR__0005
@@ -52,7 +52,7 @@ _casetest3
 	mov	_var02, _var01
 	max	_var02, #3
 	mov	_var03, _var02
-	add	_var03, ptr_L__0021_
+	add	_var03, ptr_L__0018_
 	jmp	_var03
 LR__0007
 	jmp	#LR__0008
@@ -67,11 +67,11 @@ LR__0009
 _casetest3_ret
 	ret
 
-ptr_L__0013_
+ptr_L__0010_
 	long	LR__0001
-ptr_L__0017_
+ptr_L__0014_
 	long	LR__0004
-ptr_L__0021_
+ptr_L__0018_
 	long	LR__0007
 result1
 	long	0

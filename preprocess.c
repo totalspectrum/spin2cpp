@@ -933,7 +933,10 @@ do_line(struct preprocess *pp)
             handle_endif(pp, &P);
         } else if (!strcasecmp(func, "error")) {
             handle_error(pp, &P);
+        } else if (!strcasecmp(func, "warn")) {
+            handle_warn(pp, &P);
         } else if (!strcasecmp(func, "warning")) {
+            // obsolete form of #warn
             handle_warn(pp, &P);
         } else if (!strcasecmp(func, "define")) {
             handle_define(pp, &P, 1);
@@ -947,6 +950,8 @@ do_line(struct preprocess *pp)
                 )
             {
                 /* no warning for these directives */
+            } else if (isdigit(func[0]) || func[0] == '$' || func[0] == '%') {
+                /* could be a Spin constant decl, ignore */
             } else {
                 dowarning(pp, "Ignoring unknown preprocessor directive `%s'", func);
             }   

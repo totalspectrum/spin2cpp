@@ -1,0 +1,39 @@
+dat
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+	org	0
+entry
+
+_getpulse
+	fltl	arg01
+LR__0001
+	getct	_getpulse_t0
+	testp	arg01 wc
+ if_nc	jmp	#LR__0001
+LR__0002
+	getct	_getpulse_delay
+	testp	arg01 wc
+ if_c	jmp	#LR__0002
+	sub	_getpulse_delay, _getpulse_t0
+	mov	result1, _getpulse_delay
+_getpulse_ret
+	reta
+
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+_getpulse_delay
+	res	1
+_getpulse_t0
+	res	1
+arg01
+	res	1
+	fit	480

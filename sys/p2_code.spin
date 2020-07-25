@@ -406,3 +406,40 @@ pri _getms() : freq = +long | lo, hi
     getqx freq
   endasm
   return freq
+
+''
+'' bytefill/bytemove are here (in processor specific code)
+'' because on P2 we can optimize them (long operations do
+'' not have to be aligned)
+''
+pri bytefill(ptr, val, count) | lval
+  lval := (val << 8) | val
+  lval := (lval << 16) | lval
+  repeat while (count > 3)
+    long[ptr] := lval
+    ptr += 4
+    count -= 4
+  repeat count
+    byte[ptr] := val
+    ptr += 1
+    
+pri bytemove(dst, src, count) : origdst
+  origdst := dst
+  if (dst < src)
+    repeat while (count > 3)
+      long[dst] := long[src]
+      dst += 4
+      src += 4
+      count -= 4
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+      

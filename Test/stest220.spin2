@@ -1,0 +1,5 @@
+PUB key(tmp) : data
+    data.byte[3] := tmp.byte[3]
+    data.byte[2] := tmp.byte[1]
+    data.byte[1] := tmp.byte[2]
+    

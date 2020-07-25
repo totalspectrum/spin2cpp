@@ -52,6 +52,7 @@ int gl_debug;
 int gl_expand_constants;
 int gl_optimize_flags;
 int gl_dat_offset;
+int gl_warn_flags = 0;
 int gl_exit_status = 0;
 int gl_printprogress = 0;
 int gl_infer_ctypes = 0;
@@ -198,7 +199,7 @@ Aliases basicalias[] = {
     { "pauseus", "_waitus" },
     { "pinlo", "_drvl" },
     { "pinhi", "_drvh" },
-    { "pinset", "_drv" },
+    { "pinset", "_drvw" },
     { "pintoggle", "_drvnot" },
     { "rnd", "_basic_rnd" },
     { "val", "__builtin_atof" },
@@ -334,7 +335,7 @@ NewModule(const char *fullname, int language)
     } else if (IsCLang(language)) {
         P->objsyms.next = &cReservedWords;
     } else {
-        P->objsyms.next = &spinReservedWords;
+        P->objsyms.next = &spinCommonReservedWords;
     }
     /* set appropriate case sensititity */
     if (LangCaseInSensitive(language)) {
@@ -387,6 +388,7 @@ DeclareConstants(AST **conlist_ptr)
     AST *completed_declarations = NULL;
     int default_val;
     int default_val_ok = 0;
+    int default_skip;
     int n;
     
     conlist = *conlist_ptr;
@@ -398,6 +400,7 @@ DeclareConstants(AST **conlist_ptr)
     do {
         n = 0; // no assignments yet
         default_val = 0;
+        default_skip = 1;
         default_val_ok = 1;
         upper = conlist;
         while (upper) {
@@ -442,6 +445,7 @@ DeclareConstants(AST **conlist_ptr)
                     if (IsConstExpr(ast->left)) {
                         default_val = EvalConstExpr(ast->left);
                         default_val_ok = 1;
+                        default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                         RemoveFromList(conlist_ptr, upper);
                         upper->right = NULL;
                         completed_declarations = AddToList(completed_declarations, upper);
@@ -470,7 +474,7 @@ DeclareConstants(AST **conlist_ptr)
                 case AST_IDENTIFIER:
                     if (default_val_ok) {
                         EnterConstant(ast->d.string, AstInteger(default_val));
-                        default_val++;
+                        default_val += default_skip;
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
@@ -490,6 +494,7 @@ DeclareConstants(AST **conlist_ptr)
 
     default_val = 0;
     default_val_ok = 1;
+    default_skip = 1;
     for (upper = conlist; upper; upper = upper->right) {
         if (upper->kind == AST_LISTHOLDER) {
             ast = upper->left;
@@ -498,10 +503,11 @@ DeclareConstants(AST **conlist_ptr)
             switch (ast->kind) {
             case AST_ENUMSET:
                 default_val = EvalConstExpr(ast->left);
+                default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                 break;
             case AST_IDENTIFIER:
                 EnterConstant(ast->d.string, AstInteger(default_val));
-                default_val++;
+                default_val += default_skip;
                 break;
             case AST_ENUMSKIP:
                 id = ast->left;
@@ -514,7 +520,7 @@ DeclareConstants(AST **conlist_ptr)
                 break;
             case AST_ASSIGN:
                 EnterConstant(ast->left->d.string, ast->right);
-                default_val = EvalConstExpr(ast->right) + 1;
+                default_val = EvalConstExpr(ast->right) + default_skip;
                 break;
             case AST_COMMENT:
                 /* just skip it for now */
@@ -636,6 +642,38 @@ SYNTAX_ERROR(const char *msg, ...)
 }
 
 void
+LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
+{
+    va_list args;
+
+    if (!(gl_warn_flags & WARN_LANG_EXTENSIONS)) {
+        return;
+    }
+    if (!current || current == globalModule) {
+        return;
+    }
+    if (language != LANG_ANY && language != current->curLanguage) {
+        return;
+    }
+    if (ast) {
+        LineInfo *info = GetLineInfo(ast);
+        if (info) {
+            ERRORHEADER(info->fileName, info->lineno, "warning");
+        } else {
+            ERRORHEADER(NULL, 0, "warning");
+        }
+    } else if (current) {
+        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "warning");
+    } else {
+        ERRORHEADER(NULL, 0, "warning");
+    }
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+void
 WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;
@@ -644,7 +682,7 @@ WARNING(AST *instr, const char *msg, ...)
     if (info)
         ERRORHEADER(info->fileName, info->lineno, "warning");
     else
-        ERRORHEADER(NULL, 0, "warning: ");
+        ERRORHEADER(NULL, 0, "warning");
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -843,24 +881,66 @@ DoPropellerChecksum(const char *fname, size_t eepromSize)
     int c, r;
     size_t len;
     size_t padbytes;
-
-    if (gl_p2) return 0; // no checksum required
+    size_t maxlen;
+    size_t reserveSize = 0;
+    Symbol *sym;
+    int save_casesensitive;
     
     if (!f) {
-        fprintf(stderr, "checksum: ");
         perror(fname);
         return -1;
     }
     fseek(f, 0L, SEEK_END);
     len = ftell(f);  // find length of file
+
     // pad file to multiple of 4, if necessary
-    padbytes = ((len + 3) & ~3) - len;
+    if (gl_p2) {
+        padbytes = 0;
+    } else {    
+        padbytes = ((len + 3) & ~3) - len;
+    }
     if (padbytes) {
         while (padbytes > 0) {
             fputc(0, f);
             padbytes--;
             len++;
         }
+    }
+
+    // check for special symbols
+    current = GetTopLevelModule();
+    // we are at the end of compilation, check for stack info in a
+    // case insensitive manner
+    save_casesensitive = gl_caseSensitive;
+    gl_caseSensitive = 0;
+    sym = FindSymbol(&current->objsyms, "_STACK");
+    if (sym && sym->kind == SYM_CONSTANT) {
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
+    }
+    sym = FindSymbol(&current->objsyms, "_FREE");
+    if (sym && sym->kind == SYM_CONSTANT) {
+        reserveSize += LONG_SIZE * EvalConstExpr((AST *)sym->val);
+    }
+    gl_caseSensitive = save_casesensitive;
+    // do sanity check on length
+    if (eepromSize) {
+        maxlen = eepromSize;
+    } else if (gl_p2) {
+        maxlen = 512 * 1024;
+    } else {
+        maxlen = 32768;
+    }
+    if ( (len + reserveSize) > maxlen) {
+        if (reserveSize) {
+            WARNING(NULL, "final output size of %d bytes + %d reserved bytes exceeds maximum of %d by %d bytes", len, reserveSize, maxlen,(len + reserveSize) - maxlen);
+        } else {
+            WARNING(NULL, "final output size of %d bytes exceeds maximum of %d by %d bytes", len, maxlen,len - maxlen);
+        }
+    }
+    // if P2, no checksum needed
+    if (gl_p2) {
+        fclose(f);
+        return 0;
     }
     // update header fields
     fseek(f, 8L, SEEK_SET); // seek to 16 bit vbase field
@@ -1121,7 +1201,7 @@ MakeOneDeclaration(AST *origdecl, SymbolTable *table, AST *restOfList)
         return NULL;
     } else {
         const char *oldname = name;
-        const char *newName = NewTemporaryVariable(oldname);
+        const char *newName = NewTemporaryVariable(oldname, NULL);
         AST *newIdent = AstIdentifier(newName);
 
         AddSymbolPlaced(table, oldname, SYM_REDEF, (void *)newIdent, newName, decl);

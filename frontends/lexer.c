@@ -66,7 +66,8 @@ safe_isdigit(unsigned int x) {
     return (x < 255) ? isdigit(x) : 0;
 }
 
-SymbolTable spinReservedWords;
+SymbolTable spinCommonReservedWords;
+SymbolTable spin1ReservedWords;
 SymbolTable spin2ReservedWords;
 SymbolTable basicReservedWords;
 SymbolTable basicAsmReservedWords;
@@ -560,10 +561,10 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
     if (L->language == LANG_SPIN_SPIN2) {
         sym = FindSymbol(&spin2ReservedWords, idstr);
     } else {
-        sym = NULL;
+        sym = FindSymbol(&spin1ReservedWords, idstr);
     }
     if (sym == NULL) {
-        sym = FindSymbol(&spinReservedWords, idstr);
+        sym = FindSymbol(&spinCommonReservedWords, idstr);
     }
     if (sym != NULL) {
         if (sym->kind == SYM_BUILTIN)
@@ -1352,6 +1353,18 @@ getSpinToken(LexStream *L, AST **ast_ptr)
         Symbol *sym = NULL;
 
         op[0] = token = c;
+        op[1] = 0;
+        
+        // have to special case single character operators
+        if (L->language == LANG_SPIN_SPIN2) {
+            sym = FindSymbol(&spin2ReservedWords, op);
+        } else {
+            sym = FindSymbol(&spin1ReservedWords, op);
+        }
+        if (sym) {
+            token = INTVAL(sym);
+        }
+        // now check for more characters    
         for (i = 1; i < sizeof(op)-1; i++) {
             c = lexgetc(L);
             if (c >= 128 || c < 0 || strchr(operator_chars, c) == NULL) {
@@ -1363,10 +1376,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             if (L->language == LANG_SPIN_SPIN2) {
                 sym = FindSymbol(&spin2ReservedWords, op);
             } else {
-                sym = NULL;
+                sym = FindSymbol(&spin1ReservedWords, op);
             }
             if (!sym) {
-                sym = FindSymbol(&spinReservedWords, op);
+                sym = FindSymbol(&spinCommonReservedWords, op);
             }
             if (sym) {
                 token = INTVAL(sym);
@@ -1397,6 +1410,7 @@ struct reservedword {
     { "alignl", SP_ALIGNL }, // NON-STANDARD
     { "alignw", SP_ALIGNW }, // NON-STANDARD
     { "and", SP_AND },
+    { "__andthen__", SP_ANDTHEN },
     { "asm", SP_ASM },  // NON-STANDARD
 
     { "__builtin_alloca", SP_ALLOCA }, // NON-STANDARD
@@ -1407,7 +1421,6 @@ struct reservedword {
     { "cognew", SP_COGNEW },
     { "coginit", SP_COGINIT },
     { "con", SP_CON },
-    { "constant", SP_CONSTANT },
 
     { "dat", SP_DAT },
 
@@ -1436,6 +1449,7 @@ struct reservedword {
 
     { "obj", SP_OBJ },
     { "or", SP_OR },
+    { "__orelse__", SP_ORELSE },
     { "org", SP_ORG },
     { "orgh", SP_ORGH }, // NON-STANDARD
     { "orgf", SP_ORGF }, // NON-STANDARD
@@ -1521,6 +1535,12 @@ struct reservedword {
     { "@@@", SP_TRIPLEAT },
 };
 
+struct reservedword init_spin1_words[] = {
+    { "constant", SP_CONSTANT },
+
+    { "?", SP_RANDOM },
+};
+
 struct reservedword init_spin2_words[] = {
     { "_", SP_EMPTY },
     { "^^", SP_XOR },
@@ -1537,8 +1557,10 @@ struct reservedword init_spin2_words[] = {
     { "bmask", SP_BMASK },
     { "cogspin", SP_COGINIT },
     { "decod", SP_DECODE },
-    { "encod", SP_ENCODE },
+    { "encod", SP_ENCODE2 },
     { "frac", SP_FRAC },
+    { "fvar", SP_FVAR },
+    { "fvars", SP_FVARS },
     { "ones", SP_ONES },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
@@ -2121,8 +2143,8 @@ struct constants p2_constants[] = {
     { "p_state_ticks", SYM_CONSTANT, 0x20 },
     { "p_high_ticks",  SYM_CONSTANT, 0x22 },
     { "p_events_ticks", SYM_CONSTANT, 0x24 },
-    { "p_period_ticks", SYM_CONSTANT, 0x26 },
-    { "p_period_highs", SYM_CONSTANT, 0x28 },
+    { "p_periods_ticks", SYM_CONSTANT, 0x26 },
+    { "p_periods_highs", SYM_CONSTANT, 0x28 },
     { "p_counter_ticks", SYM_CONSTANT, 0x2a },
     { "p_counter_highs", SYM_CONSTANT, 0x2c },
     { "p_counter_periods", SYM_CONSTANT, 0x2e },
@@ -2136,6 +2158,25 @@ struct constants p2_constants[] = {
     { "p_async_tx", SYM_CONSTANT, 0x3c },
     { "p_async_rx", SYM_CONSTANT, 0x3e },
 
+    { "x_rfbyte_1p_1dac1", SYM_CONSTANT, 0x8000 << 16 },
+    { "x_rfbyte_2p_2dac1", SYM_CONSTANT, 0x9000 << 16 },
+    { "x_rfbyte_2p_1dac2", SYM_CONSTANT, 0x9002 << 16 },
+    { "x_rfbyte_4p_4dac1", SYM_CONSTANT, 0xa000 << 16 },
+    { "x_rfbyte_4p_2dac2", SYM_CONSTANT, 0xa002 << 16 },
+    { "x_rfbyte_4p_1dac4", SYM_CONSTANT, 0xa004 << 16 },
+    { "x_rfbyte_8p_4dac2", SYM_CONSTANT, 0xa006 << 16 },
+    { "x_rfbyte_8p_2dac4", SYM_CONSTANT, 0xa007 << 16 },
+    { "x_rfbyte_8p_1dac8", SYM_CONSTANT, 0xa00e << 16 },
+    { "x_rfword_16p_4dac4", SYM_CONSTANT, 0xa00f << 16 },
+    { "x_rfword_16p_2dac8", SYM_CONSTANT, 0xb000 << 16 },
+    { "x_rflong_32p_4dac8", SYM_CONSTANT, 0xb001 << 16 },
+
+    { "x_rfbyte_luma8", SYM_CONSTANT, 0xb002 << 16 },
+    { "x_rfbyte_rgbi8", SYM_CONSTANT, 0xb003 << 16 },
+    { "x_rfbyte_rgb8", SYM_CONSTANT, 0xb004 << 16 },
+    { "x_rfword_rgb16", SYM_CONSTANT, 0xb005 << 16 },
+    { "x_rflong_rgb24", SYM_CONSTANT, 0xb006 << 16 },
+    
     { "cogexec", SYM_CONSTANT, 0 },
     { "cogexec_new", SYM_CONSTANT, 0x10 },
     { "hubexec", SYM_CONSTANT, 0x20 },
@@ -2270,17 +2311,21 @@ initSpinLexer(int flags)
 {
     int i;
 
-    spinReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spinCommonReservedWords.flags |= SYMTAB_FLAG_NOCASE;
+    spin1ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     spin2ReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     basicAsmReservedWords.flags |= SYMTAB_FLAG_NOCASE;
     
     /* add our reserved words */
     for (i = 0; i < N_ELEMENTS(init_spin_words); i++) {
-        AddSymbol(&spinReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
+        AddSymbol(&spinCommonReservedWords, init_spin_words[i].name, SYM_RESERVED, (void *)init_spin_words[i].val, NULL);
     }
     for (i = 0; i < N_ELEMENTS(init_spin2_words); i++) {
         AddSymbol(&spin2ReservedWords, init_spin2_words[i].name, SYM_RESERVED, (void *)init_spin2_words[i].val, NULL);
+    }
+    for (i = 0; i < N_ELEMENTS(init_spin1_words); i++) {
+        AddSymbol(&spin1ReservedWords, init_spin1_words[i].name, SYM_RESERVED, (void *)init_spin1_words[i].val, NULL);
     }
 
     for (i = 0; i < N_ELEMENTS(basic_keywords); i++) {
@@ -2301,17 +2346,17 @@ initSpinLexer(int flags)
     
     /* add builtin functions */
     for (i = 0; i < N_ELEMENTS(builtinfuncs); i++) {
-        AddSymbol(&spinReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
+        AddSymbol(&spinCommonReservedWords, builtinfuncs[i].name, SYM_BUILTIN, (void *)&builtinfuncs[i], NULL);
     }
 
     /* and builtin constants */
     if (gl_p2) {
         for (i = 0; i < N_ELEMENTS(p2_constants); i++) {
-            AddSymbol(&spinReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
+            AddSymbol(&spinCommonReservedWords, p2_constants[i].name, p2_constants[i].type, AstInteger(p2_constants[i].val), NULL);
         }
     } else {
         for (i = 0; i < N_ELEMENTS(p1_constants); i++) {
-            AddSymbol(&spinReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
+            AddSymbol(&spinCommonReservedWords, p1_constants[i].name, p1_constants[i].type, AstInteger(p1_constants[i].val), NULL);
         }
     }
     
@@ -2328,9 +2373,13 @@ int
 IsReservedWord(const char *name)
 {
     int x;
-    x = FindSymbol(&spinReservedWords, name) != 0;
-    if (gl_p2 && !x) {
-        x = FindSymbol(&spin2ReservedWords, name) != 0;
+    x = FindSymbol(&spinCommonReservedWords, name) != 0;
+    if (!x) {
+        if (gl_p2) {
+            x = FindSymbol(&spin2ReservedWords, name) != 0;
+        } else {
+            x = FindSymbol(&spin1ReservedWords, name) != 0;
+        }
     }
     return x;
 }
@@ -2419,8 +2468,8 @@ instr_p1[] = {
 
     { "test",   0x60000000, TWO_OPERANDS, OPC_TEST, FLAG_P1_STD | FLAG_WARN_NOTUSED },
     { "testn",  0x64000000, TWO_OPERANDS, OPC_TESTN, FLAG_P1_STD | FLAG_WARN_NOTUSED },
-    { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P1_STD },
-    { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P1_STD },
+    { "tjnz",   0xe8000000, JMPRET_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P1_STD },
+    { "tjz",    0xec000000, JMPRET_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P1_STD },
 
     { "waitcnt", 0xf8800000, TWO_OPERANDS, OPC_WAITCNT, FLAG_P1_STD },
     { "waitpeq", 0xf0000000, TWO_OPERANDS, OPC_GENERIC_NR, FLAG_P1_STD },
@@ -2475,8 +2524,8 @@ instr_p2[] = {
     { "sumz",   0x03c00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
     { "sumnz",  0x03e00000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_STD },
 
-    { "testb",   0x04000000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_CZTEST },
-    { "testbn",  0x04200000, TWO_OPERANDS, OPC_GENERIC, FLAG_P2_CZTEST },
+    { "testb",   0x04000000, TWO_OPERANDS, OPC_TESTB, FLAG_P2_CZTEST },
+    { "testbn",  0x04200000, TWO_OPERANDS, OPC_TESTBN, FLAG_P2_CZTEST },
 
     { "bitl",   0x04000000, TWO_OPERANDS, OPC_BITL, FLAG_WCZ },
     { "bith",   0x04200000, TWO_OPERANDS, OPC_BITH, FLAG_WCZ },
@@ -2519,11 +2568,11 @@ instr_p2[] = {
     { "setnib", 0x08000000, THREE_OPERANDS_NIBBLE, OPC_GENERIC, 0 },
     { "getnib", 0x08400000, THREE_OPERANDS_NIBBLE, OPC_GENERIC, 0 },
     { "rolnib", 0x08800000, THREE_OPERANDS_NIBBLE, OPC_GENERIC, 0 },
-    { "setbyte", 0x08c00000, THREE_OPERANDS_BYTE, OPC_GENERIC, 0 },
-    { "getbyte", 0x08e00000, THREE_OPERANDS_BYTE, OPC_GENERIC, 0 },
+    { "setbyte", 0x08c00000, THREE_OPERANDS_BYTE, OPC_SETBYTE, 0 },
+    { "getbyte", 0x08e00000, THREE_OPERANDS_BYTE, OPC_GETBYTE, 0 },
     { "rolbyte", 0x09000000, THREE_OPERANDS_BYTE, OPC_GENERIC, 0 },
-    { "setword", 0x09200000, THREE_OPERANDS_WORD, OPC_GENERIC, 0 },
-    { "getword", 0x09300000, THREE_OPERANDS_WORD, OPC_GENERIC, 0 },
+    { "setword", 0x09200000, THREE_OPERANDS_WORD, OPC_SETWORD, 0 },
+    { "getword", 0x09300000, THREE_OPERANDS_WORD, OPC_GETWORD, 0 },
     { "rolword", 0x09400000, THREE_OPERANDS_WORD, OPC_GENERIC, 0 },
 
     { "altsn",  0x09500000, TWO_OPERANDS_DEFZ, OPC_GENERIC, 0 },
@@ -2579,7 +2628,7 @@ instr_p2[] = {
     { "popa",  0x0b00015f, TWO_OPERANDS_DEFZ, OPC_GENERIC, FLAG_P2_STD },
     { "popb",  0x0b0001df, TWO_OPERANDS_DEFZ, OPC_GENERIC, FLAG_P2_STD },
     
-    { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "calld",  0x0b200000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, FLAG_P2_STD },
     { "reti0",  0x0b3bffff, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti1",  0x0b3bfff5, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "reti2",  0x0b3bfff3, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
@@ -2589,22 +2638,22 @@ instr_p2[] = {
     { "resi2",  0x0b3be5f3, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "resi3",  0x0b3be1f1, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
 
-    { "callpa", 0x0b400000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "callpb", 0x0b500000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
+    { "callpa", 0x0b400000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "callpb", 0x0b500000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
 
-    { "djz",    0x0b600000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
+    { "djz",    0x0b600000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
     { "djnz",   0x0b680000, P2_TJZ_OPERANDS, OPC_DJNZ, 0 },
-    { "djf",    0x0b700000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "djnf",   0x0b780000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "ijz",    0x0b800000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "ijnz",   0x0b880000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjz",    0x0b900000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjnz",   0x0b980000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjf",    0x0ba00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjnf",   0x0ba80000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjs",    0x0bb00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjns",   0x0bb80000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
-    { "tjv",    0x0bc00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH, 0 },
+    { "djf",    0x0b700000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "djnf",   0x0b780000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "ijz",    0x0b800000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "ijnz",   0x0b880000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjz",    0x0b900000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjnz",   0x0b980000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjf",    0x0ba00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjnf",   0x0ba80000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjs",    0x0bb00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjns",   0x0bb80000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
+    { "tjv",    0x0bc00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRCOND, 0 },
 
 //  { "jp",     0x0ba00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
 //  { "jnp",    0x0bb00000, P2_TJZ_OPERANDS, OPC_GENERIC_BRANCH },
@@ -2644,12 +2693,12 @@ instr_p2[] = {
     { "jnatn",  0x0bc83c00, P2_JINT_OPERANDS, OPC_GENERIC_BRANCH, 0 },
     { "jnqmt",  0x0bc83e00, P2_JINT_OPERANDS, OPC_GENERIC_BRANCH, 0 },
 
-    { "setpat", 0x0bf00000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "wrpin",  0x0c000000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "akpin",  0x0c080200, SRC_OPERAND_ONLY, OPC_GENERIC, 0 },
-    { "wxpin",  0x0c100000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "wypin",  0x0c200000, P2_TWO_OPERANDS, OPC_GENERIC, 0 },
-    { "wrlut",  0x0c300000, P2_RDWR_OPERANDS, OPC_GENERIC, 0 },
+    { "setpat", 0x0bf00000, P2_TWO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "wrpin",  0x0c000000, P2_TWO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "akpin",  0x0c080200, SRC_OPERAND_ONLY, OPC_GENERIC_NR, 0 },
+    { "wxpin",  0x0c100000, P2_TWO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "wypin",  0x0c200000, P2_TWO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "wrlut",  0x0c300000, P2_RDWR_OPERANDS, OPC_GENERIC_NR, 0 },
 
     { "wrbyte", 0x0c400000, P2_RDWR_OPERANDS, OPC_WRBYTE, 0 },
     { "wrword", 0x0c500000, P2_RDWR_OPERANDS, OPC_WRWORD, 0 },
@@ -2757,14 +2806,14 @@ instr_p2[] = {
     { "nixint2",0x0d604c24, NO_OPERANDS, OPC_GENERIC, 0 },
     { "nixint3",0x0d604e24, NO_OPERANDS, OPC_GENERIC, 0 },
   
-    { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setint1",0x0d600025, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setint2",0x0d600026, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setint3",0x0d600027, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
     { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
     { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
-    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
 
   // indirect jumps via register
@@ -2780,64 +2829,64 @@ instr_p2[] = {
 
     { "jmprel", 0x0d600030, P2_DST_CONST_OK, OPC_JMPREL, 0 },
   
-    { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "skip",   0x0d600031, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "skipf",  0x0d600032, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "execf",  0x0d600033, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
     { "getptr", 0x0d600034, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "getbrk", 0x0d600035, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
-    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC, 0 },
-    { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC, 0 },
+    { "brk",    0x0d600036, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setluts",0x0d600037, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "lutsoff",0x0d640037, NO_OPERANDS, OPC_GENERIC_NR, 0 },
+    { "lutson", 0x0d640237, NO_OPERANDS, OPC_GENERIC_NR, 0 },
   
-    { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcfrq",0x0d60003b, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setcmod",0x0d60003c, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpiv", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "setpix", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC, 0 },
-    { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setcy",  0x0d600038, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setci",  0x0d600039, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcq",  0x0d60003a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcfrq",0x0d60003b, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setcmod",0x0d60003c, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setpiv", 0x0d60003d, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "setpix", 0x0d60003e, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
+    { "cogatn", 0x0d60003f, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
 
-    { "testp",  0x0d600040, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_CZTEST },
-    { "testpn", 0x0d600041, P2_DST_CONST_OK, OPC_GENERIC, FLAG_P2_CZTEST },
+    { "testp",  0x0d600040, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_P2_CZTEST },
+    { "testpn", 0x0d600041, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_P2_CZTEST },
 
-    { "dirl",   0x0d600040, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirh",   0x0d600041, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirc",   0x0d600042, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirnc",  0x0d600043, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirz",   0x0d600044, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirnz",  0x0d600045, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirrnd", 0x0d600046, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "dirnot", 0x0d600047, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
+    { "dirl",   0x0d600040, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirh",   0x0d600041, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirc",   0x0d600042, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirnc",  0x0d600043, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirz",   0x0d600044, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirnz",  0x0d600045, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirrnd", 0x0d600046, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "dirnot", 0x0d600047, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
   
-    { "outl",   0x0d600048, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outh",   0x0d600049, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outc",   0x0d60004a, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outnc",  0x0d60004b, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outz",   0x0d60004c, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outnz",  0x0d60004d, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outrnd", 0x0d60004e, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "outnot", 0x0d60004f, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
+    { "outl",   0x0d600048, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outh",   0x0d600049, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outc",   0x0d60004a, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outnc",  0x0d60004b, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outz",   0x0d60004c, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outnz",  0x0d60004d, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outrnd", 0x0d60004e, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "outnot", 0x0d60004f, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
 
-    { "fltl",   0x0d600050, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "flth",   0x0d600051, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltc",   0x0d600052, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltnc",  0x0d600053, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltz",   0x0d600054, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltnz",  0x0d600055, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltrnd", 0x0d600056, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "fltnot", 0x0d600057, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
+    { "fltl",   0x0d600050, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "flth",   0x0d600051, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltc",   0x0d600052, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltnc",  0x0d600053, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltz",   0x0d600054, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltnz",  0x0d600055, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltrnd", 0x0d600056, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "fltnot", 0x0d600057, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
   
-    { "drvl",   0x0d600058, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvh",   0x0d600059, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvc",   0x0d60005a, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvnc",  0x0d60005b, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvz",   0x0d60005c, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvnz",  0x0d60005d, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvrnd", 0x0d60005e, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
-    { "drvnot", 0x0d60005f, P2_DST_CONST_OK, OPC_GENERIC, FLAG_WCZ },
+    { "drvl",   0x0d600058, P2_DST_CONST_OK, OPC_DRVL, FLAG_WCZ },
+    { "drvh",   0x0d600059, P2_DST_CONST_OK, OPC_DRVH, FLAG_WCZ },
+    { "drvc",   0x0d60005a, P2_DST_CONST_OK, OPC_DRVC, FLAG_WCZ },
+    { "drvnc",  0x0d60005b, P2_DST_CONST_OK, OPC_DRVNC, FLAG_WCZ },
+    { "drvz",   0x0d60005c, P2_DST_CONST_OK, OPC_DRVZ, FLAG_WCZ },
+    { "drvnz",  0x0d60005d, P2_DST_CONST_OK, OPC_DRVNZ, FLAG_WCZ },
+    { "drvrnd", 0x0d60005e, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
+    { "drvnot", 0x0d60005f, P2_DST_CONST_OK, OPC_GENERIC_NR, FLAG_WCZ },
 
     { "splitb", 0x0d600060, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     { "mergeb", 0x0d600061, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
@@ -2859,7 +2908,7 @@ instr_p2[] = {
     { "modcz",  0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_P2_STD | FLAG_WARN_NOTUSED },
     { "modc",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WC | FLAG_WARN_NOTUSED },
     { "modz",   0x0d64006f, P2_MODCZ, OPC_GENERIC, FLAG_WZ | FLAG_WARN_NOTUSED },
-    { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC, 0 },
+    { "setscp", 0x0d600070, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
     { "getscp", 0x0d600071, DST_OPERAND_ONLY, OPC_GENERIC, 0 },
     
   // long jumps
@@ -3086,7 +3135,7 @@ InitPasm(int flags)
     
     /* add hardware registers */
     for (i = 0; hwreg[i].name != NULL; i++) {
-        AddSymbol(&spinReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
+        AddSymbol(&spinCommonReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&basicReservedWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&cReservedWords, hwreg[i].cname, SYM_HWREG, (void *)&hwreg[i], NULL);
         AddSymbol(&pasmWords, hwreg[i].name, SYM_HWREG, (void *)&hwreg[i], NULL);

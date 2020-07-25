@@ -3,18 +3,18 @@
 
 void test063::Test(int32_t Exponent)
 {
-  int32_t 	_tmp__0001;
-  _tmp__0001 = Exponent;
-  if (_tmp__0001 == 0) {
-    goto _case__0003;
+  int32_t 	_tmp__0000;
+  _tmp__0000 = Exponent;
+  if (_tmp__0000 == 0) {
+    goto _case__0002;
   }
-  goto _case__0004;
-  _case__0003: ;
+  goto _case__0003;
+  _case__0002: ;
   (++Exponent);
-  goto _endswitch_0002;
-  _case__0004: ;
+  goto _endswitch_0001;
+  _case__0003: ;
   (--Exponent);
-  goto _endswitch_0002;
-  _endswitch_0002: ;
+  goto _endswitch_0001;
+  _endswitch_0001: ;
 }
 

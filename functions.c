@@ -117,6 +117,23 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
     } else {
         sym->flags |= sym_flag;
         sym->module = (void *)current;
+        if (current && current != globalModule) {
+            if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
+                 || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
+            {
+                switch (kind) {
+                case SYM_PARAMETER:
+                case SYM_RESULT:
+                case SYM_LOCALVAR:
+                    if (FindSymbol(&current->objsyms, username) != 0) {
+                        WARNING(astname, "definition of %s hides a member variable", username);
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
     }
     return sym;
 }
@@ -632,7 +649,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
             Module *C;
             Module *Parent = func->module;
             AST *closure_type;
-            closure_name = NewTemporaryVariable("__closure__");
+            closure_name = NewTemporaryVariable("__closure__", NULL);
             C = func->closure = NewModule(closure_name, current->curLanguage);
             C->Lptr = current->Lptr;
             closure_type = NewAbstractObject(AstIdentifier(closure_name), NULL);
@@ -653,7 +670,7 @@ findLocalsAndDeclare(Function *func, AST *ast)
         {
             AST *ftype = ast->left;
             AST *fbody = ast->right;
-            AST *name = AstIdentifier(NewTemporaryVariable("func_"));
+            AST *name = AstIdentifier(NewTemporaryVariable("func_", NULL));
             AST *ptrref;
             
             // check for the return type; we may have to infer this
@@ -1182,8 +1199,9 @@ NormalizeFunc(AST *ast, Function *func)
            inline assembly */
         if (func->result_declared) {
             func->result_used = 1;
+            return NULL;
         }
-        return NULL;
+        /* otherwise, fall through */
     default:
         ldecl = NormalizeFunc(ast->left, func);
         rdecl = NormalizeFunc(ast->right, func);
@@ -1235,8 +1253,12 @@ AstTempLocalVariable(const char *prefix, AST *type)
 {
     char *name;
     AST *ast = NewAST(AST_IDENTIFIER, NULL, NULL);
+    int *counter = NULL;
 
-    name = NewTemporaryVariable(prefix);
+    if (curfunc) {
+        counter = &curfunc->local_var_counter;
+    }
+    name = NewTemporaryVariable(prefix, counter);
     ast->d.string = name;
     AddLocalVariable(curfunc, ast, type, SYM_TEMPVAR);
     return ast;
@@ -1295,263 +1317,6 @@ TransformCaseExprList(AST *var, AST *ast)
         AstReportDone(&saveinfo);
     }
     return listexpr;
-}
-
-/*
- * transform AST for a counting repeat loop
- */
-AST *
-TransformCountRepeat(AST *ast)
-{
-    AST *origast = ast;
-
-    // initial values for the loop
-    AST *loopvar = NULL;
-    AST *fromval, *toval;
-    AST *stepval;
-    AST *body;
-
-    AST *looptype; // type of loop
-    int isIntegerLoop = 1;
-    
-    // what kind of test to perform (loopvar < toval, loopvar != toval, etc.)
-    // note that if not set, we haven't figured it out yet (and probably
-    // need to use between)
-    int testOp = 0;
-
-    // if the step value is known, put +1 (for increasing) or -1 (for decreasing) here
-    int knownStepDir = 0;
-
-    // if the step value is constant, put it here
-    int knownStepVal = 0;
-    
-    // test for terminating the loop
-    AST *condtest = NULL;
-
-    int loopkind = AST_FOR;
-    AST *forast;
-    
-    AST *initstmt;
-    AST *stepstmt;
-
-    AST *limitvar = NULL;
-
-    ASTReportInfo saveinfo;
-    
-    /* create new ast elements using this ast's line info, at least for now */
-    AstReportAs(ast, &saveinfo);
-
-    if (ast->left) {
-        if (ast->left->kind == AST_IDENTIFIER) {
-            loopvar = ast->left;
-        } else if (ast->left->kind == AST_RESULT) {
-            loopvar = ast->left;
-        } else {
-            ERROR(ast, "Need a variable name for the loop");
-            return origast;
-        }
-    }
-    looptype = ExprType(loopvar);
-    isIntegerLoop = (looptype == NULL) || IsIntType(looptype);
-    ast = ast->right;
-    if (ast->kind != AST_FROM) {
-        ERROR(ast, "expected FROM");
-        AstReportDone(&saveinfo);
-        return origast;
-    }
-    fromval = ast->left;
-    ast = ast->right;
-    if (ast->kind != AST_TO) {
-        ERROR(ast, "expected TO");
-        AstReportDone(&saveinfo);
-        return origast;
-    }
-    toval = ast->left;
-    ast = ast->right;
-    if (ast->kind != AST_STEP) {
-        ERROR(ast, "expected STEP");
-        AstReportDone(&saveinfo);
-        return origast;
-    }
-    if (ast->left) {
-        stepval = ast->left;
-    } else {
-        stepval = AstInteger(1);
-    }
-    if (IsConstExpr(stepval)) {
-        knownStepVal = EvalConstExpr(stepval);
-    }
-    if (!IsSpinLang(curfunc->language)) {
-        // only Spin does the weirdness where
-        // repeat i from a to b step 1
-        // walks backwards if a > b; other languages
-        // just count up if the step is constant
-        if (knownStepVal) {
-            knownStepDir = (knownStepVal > 0) ? 1 : -1;
-        }
-    }
-    
-    body = ast->right;
-
-    /* for fixed counts (like "REPEAT expr") we get a NULL value
-       for fromval; this signals that we should be counting
-       from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
-       it also means that we don't have to do the "between" check,
-       we can just count one way
-    */
-    if (fromval == NULL && isIntegerLoop) {
-        if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
-            // for (i = 0; i < 10; i++) is more idiomatic
-            fromval = AstInteger(0);
-            testOp = '<';
-            knownStepDir = 1;
-        } else {
-            fromval = toval;
-            toval = AstInteger(0);
-            testOp = '>';
-            knownStepDir = -1;
-            if (knownStepVal == 1) {
-                testOp = K_NE;
-            }
-        }
-    }
-    if (IsConstExpr(fromval) && IsConstExpr(toval) && isIntegerLoop) {
-        int32_t fromi, toi;
-
-        fromi = EvalConstExpr(fromval);
-        toi = EvalConstExpr(toval);
-        if (!knownStepDir) {
-            knownStepDir = (fromi > toi) ? -1 : 1;
-        }
-        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-            loopkind = AST_FORATLEASTONCE;
-        }
-    }
-
-    /* get the loop variable, if we don't already have one */
-    if (!loopvar) {
-        loopvar = AstTempLocalVariable("_idx_", looptype);
-    }
-
-    if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
-        AST *initvar = AstTempLocalVariable("_start_", looptype);
-        initstmt = AstAssign(loopvar, AstAssign(initvar, fromval));
-        fromval = initvar;
-    } else {
-        initstmt = AstAssign(loopvar, fromval);
-    }
-    /* set the limit variable */
-    if (IsConstExpr(toval)) {
-        if (gl_expand_constants && isIntegerLoop) {
-            toval = AstInteger(EvalConstExpr(toval));
-        }
-    } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
-        /* do nothing, toval is already OK */
-    } else {
-        limitvar = AstTempLocalVariable("_limit_", looptype);
-        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
-        toval = limitvar;
-    }
-
-    /* set the step variable */
-    if (knownStepVal && knownStepDir) {
-        if (knownStepDir < 0 && IsSpinLang(curfunc->language)) {
-            stepval = AstOperator(K_NEGATE, NULL, stepval);
-            knownStepVal = -knownStepVal;
-        }
-    } else {
-        AST *stepvar = AstTempLocalVariable("_step_", looptype);
-        initstmt = NewAST(AST_SEQUENCE, initstmt,
-                          AstAssign(stepvar,
-                                    NewAST(AST_CONDRESULT,
-                                           AstOperator('>', toval, fromval),
-                                           NewAST(AST_THENELSE, stepval,
-                                                  AstOperator(K_NEGATE, NULL, stepval)))));
-        stepval = stepvar;
-    }
-
-    stepstmt = NULL;
-    if (knownStepDir) {
-        if (knownStepVal == 1 && isIntegerLoop) {
-            stepstmt = AstOperator(K_INCREMENT, loopvar, NULL);
-        } else if (knownStepVal == -1 && isIntegerLoop) {
-            stepstmt = AstOperator(K_DECREMENT, NULL, loopvar);
-        } else if (knownStepVal < 0) {
-            stepstmt = AstAssign(loopvar, AstOperator('-', loopvar, AstInteger(-knownStepVal)));
-        }
-    }
-    if (stepstmt == NULL) {
-        stepstmt = AstAssign(loopvar, AstOperator('+', loopvar, stepval));
-    }
-
-    if (!condtest && testOp) {
-        // we know how to construct the test
-        // we may want to adjust the test slightly though
-        condtest = AstOperator(testOp, loopvar, toval);
-    }
-    
-    if (!condtest && knownStepVal == 1) {
-        // we can optimize the condition test by adjusting the to value
-        // and testing for loopvar != to
-        if (IsConstExpr(toval)) {
-            if (knownStepDir) {
-                testOp = (knownStepDir > 0) ? '+' : '-';
-                toval = SimpleOptimizeExpr(AstOperator(testOp, toval, AstInteger(1)));
-                /* no limit variable change necessary here */
-            } else {
-                /* toval is constant, but step isn't, so we need to introduce
-                   a variable for the limit = toval + step */
-                if (!limitvar) {
-                    limitvar = AstTempLocalVariable("_limit_", looptype);
-                }
-                initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
-                toval = limitvar;
-            }
-        } else {
-            if (!limitvar) {
-                limitvar = AstTempLocalVariable("_limit_", looptype);
-            }
-            initstmt = NewAST(AST_SEQUENCE, initstmt,
-                              AstAssign(limitvar,
-                                        SimpleOptimizeExpr(
-                                            AstOperator('+', toval, stepval))));
-            toval = limitvar;
-        }
-        if (knownStepDir > 0) {
-            condtest = AstOperator('<', loopvar, toval);
-        } else {
-            condtest = AstOperator(K_NE, loopvar, toval);
-            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-                loopkind = AST_FORATLEASTONCE;
-            }
-        }
-    }
-    
-    if (!condtest) {
-        /* otherwise, we have to just test for loopvar between to and from */
-        if (isIntegerLoop) {
-            condtest = NewAST(AST_ISBETWEEN, loopvar,
-                              NewAST(AST_RANGE, fromval, toval));
-        } else if (knownStepDir > 0) {
-            condtest = AstOperator(K_LE, loopvar, toval);
-        } else if (knownStepDir < 0) {
-            condtest = AstOperator(K_GE, loopvar, toval);
-        } else {
-            condtest = AstInteger(0);
-            ERROR(fromval, "internal error, cannot find loop direction");
-        }
-        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
-            loopkind = AST_FORATLEASTONCE;
-        }
-    }
-
-    stepstmt = NewAST(AST_STEP, stepstmt, body);
-    condtest = NewAST(AST_TO, condtest, stepstmt);
-    forast = NewAST((enum astkind)loopkind, initstmt, condtest);
-    forast->lineidx = origast->lineidx;
-    forast->lexdata = origast->lexdata;
-    AstReportDone(&saveinfo);
-    return forast;
 }
 
 /*
@@ -1993,9 +1758,9 @@ CheckFunctionCalls(AST *ast)
                         Symbol *sym;
                         exprlist = NULL;
                         for (i = 0; i < n; i++) {
-                            sym = FindSymbolByOffsetAndKind(&P->objsyms, i*4, SYM_VARIABLE);
+                            sym = FindSymbolByOffsetAndKind(&P->objsyms, i*LONG_SIZE, SYM_VARIABLE);
                             if (!sym || sym->kind != SYM_VARIABLE) {
-                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*4);
+                                ERROR(ast, "Internal error: couldn't find object variable with offset %d", i*LONG_SIZE);
                                 return;
                             }
                             temp = NewAST(AST_METHODREF, id, AstIdentifier(sym->our_name));
@@ -2132,6 +1897,9 @@ ProcessOneFunc(Function *pf)
         if (!pf->result_used) {
             pf->resultexpr = AstInteger(0);
             pf->result_used = 1;
+            if (sawreturn && pf->numresults > 0) {
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, pf->decl, "function %s returns a value but was declared without a return variable", pf->name);
+            }
         }
         if (!sawreturn) {
             AST *retstmt;
@@ -2710,6 +2478,53 @@ ExtractSideEffects(AST *expr, AST **preseq)
     return expr;
 }
 
+// check for simple array references like:
+// x.byte[N] := Y
+// return a transformed expression like
+// x.[N+7..N] := Y
+// we may assume that ast is an arrayref
+
+AST *
+CheckSimpleArrayref(AST *ast)
+{
+    AST *newexpr = NULL;
+    if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
+        AST *left = ast->left;
+        int index = EvalConstExpr(ast->right);
+        AST *typ = left->left;
+        AST *id = left->right;
+        int shift = 0;
+        int bits = 0;
+        ASTReportInfo saveinfo;
+        
+        if (typ && id && id->kind == AST_ADDROF) {
+            id = id->left;
+            if (IsIdentifier(id) && IsLocalVariable(id)) {
+                if (typ == ast_type_word && index < 2) {
+                    shift = index * 16;
+                    bits = 16;
+                } else if (typ == ast_type_byte && index < 4) {
+                    shift = index * 8;
+                    bits = 8;
+                }
+                if (bits >= 0) {
+                    AstReportAs(ast, &saveinfo);
+                    newexpr = id;
+                    newexpr = NewAST(AST_RANGEREF, newexpr,
+                                     NewAST(AST_RANGE,
+                                            AstInteger(shift+bits-1),
+                                            AstInteger(shift)));
+                    AstReportDone(&saveinfo);
+                    // OK, if we're on the LHS we have to transform this
+                    // to an assignment, otherwise to a use
+                    return newexpr;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 // look out for short-circuiting assignments
 // flag ||= x should always evaluate x, at least in Spin
 
@@ -2723,11 +2538,13 @@ SimplifyAssignments(AST **astptr)
 {
     AST *ast = *astptr;
     AST *preseq = NULL;
+    AST *lhs, *rhs;
     
     if (!ast) return;
     if (ast->kind == AST_ASSIGN) {
         int op = ast->d.ival;
-        AST *lhs = ast->left;
+        lhs = ast->left;
+        rhs = ast->right;
         if (IsIdentifier(lhs)) {
             // check for CON := x
             Symbol *sym = LookupAstSymbol(lhs, NULL);
@@ -2750,16 +2567,32 @@ SimplifyAssignments(AST **astptr)
         else if (op != K_ASSIGN )
         {
             ASTReportInfo saveinfo;
-            AST *rhs = ast->right;
             AstReportAs(ast, &saveinfo);
+            // if B has side effects,
+            // transform A op= B
+            // into tmp = B, A op= tmp
+            // then if A has side effects, further decompose
+            // those so eventually we can get A = A' op tmp
+            if (rhs && ExprHasSideEffects(rhs)) {
+                AST *typ = ExprType(rhs);
+                AST *temp = AstTempLocalVariable("_temp_", typ);
+                preseq = AstAssign(temp, rhs);
+                rhs = temp;
+            }
             if (ExprHasSideEffects(lhs) || IsBoolOp(op) ) {
                 if (curfunc && IsSpinLang(curfunc->language)) {
                     // Spin must maintain a strict evaluation order
                     AST *temp = AstTempLocalVariable("_temp_", NULL);
+                    AST *p2;
                     if (rhs) {
-                        preseq = AstAssign(temp, rhs);
+                        p2 = AstAssign(temp, rhs);
                     } else {
-                        preseq = AstAssign(temp, lhs);
+                        p2 = AstAssign(temp, lhs);
+                    }
+                    if (preseq) {
+                        preseq = NewAST(AST_SEQUENCE, preseq, p2);
+                    } else {
+                        preseq = p2;
                     }
                     rhs = temp;
                 }
@@ -2779,8 +2612,56 @@ SimplifyAssignments(AST **astptr)
             }
             AstReportDone(&saveinfo);
             *astptr = ast;
+            lhs = ast->left;
+            rhs = ast->right;
+        }
+
+        // check for special cases like local.byte[N] := X where N is a constant
+        if (lhs && lhs->kind == AST_ARRAYREF) {
+            AST *newexpr = CheckSimpleArrayref(lhs);
+            if (newexpr) {
+                ast->left = lhs = newexpr;
+            }
         }
     }
+    /* optimize K_LOGIC_AND and K_LOGIC_OR (which do not short-circuit)
+       to K_BOOL_AND/K_BOOL_OR (which do short-circuit) if we can
+    */
+    if (ast->kind == AST_OPERATOR) {
+        int op;
+        op = ast->d.ival;
+        switch (op) {
+        case K_LOGIC_AND:
+        case K_LOGIC_OR:
+        case K_LOGIC_XOR:
+            if (ExprHasSideEffects(ast->right)) {
+                ASTReportInfo saveinfo;
+                AstReportAs(ast, &saveinfo);
+                ast->left = AstOperator(K_NE, ast->left, AstInteger(0));
+                ast->right = AstOperator(K_NE, ast->right, AstInteger(0));
+                if (op == K_LOGIC_XOR) {
+                    ast->d.ival = '^';
+                } else if (op == K_LOGIC_AND) {
+                    ast->d.ival = '&';
+                } else {
+                    ast->d.ival = '|';
+                }
+                AstReportDone(&saveinfo);
+            } else {
+                if (op == K_LOGIC_XOR) {
+                    ast->d.ival = K_BOOL_XOR;
+                } else if (op == K_LOGIC_AND) {
+                    ast->d.ival = K_BOOL_AND;
+                } else {
+                    ast->d.ival = K_BOOL_OR;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+       
     SimplifyAssignments(&ast->left);
     SimplifyAssignments(&ast->right);
 }

@@ -83,11 +83,19 @@ typedef enum IROpcode {
     OPC_BITNOT,
     OPC_BMASK,
     OPC_DECOD,
+    OPC_DRVC,
+    OPC_DRVH,
+    OPC_DRVL,
+    OPC_DRVNC,
+    OPC_DRVNZ,
+    OPC_DRVZ,
     OPC_ENCOD,
+    OPC_GETBYTE,
     OPC_GETCT,
     OPC_GETQX,
     OPC_GETQY,
     OPC_GETRND,
+    OPC_GETWORD,
     OPC_HUBSET,
     OPC_JMPREL,
     OPC_MULS,
@@ -96,9 +104,13 @@ typedef enum IROpcode {
     OPC_QDIV,
     OPC_QFRAC,
     OPC_QMUL,
+    OPC_SETBYTE,
+    OPC_SETWORD,
     OPC_SETQ,
     OPC_SETQ2,
     OPC_SIGNX,
+    OPC_TESTB,
+    OPC_TESTBN,
     OPC_WAITX,
     OPC_WRC,
     OPC_WRNC,
@@ -117,6 +129,9 @@ typedef enum IROpcode {
 
     /* a branch that the optimizer does not know about */
     OPC_GENERIC_BRANCH,
+
+    /* a branch with condition (like "tjz") where jmp destination is in src field */
+    OPC_GENERIC_BRCOND,
     
     /* place non-instructions below here */
     OPC_PUSH_REGS,   /* pseudo-instruction to save registers on stack */
@@ -215,9 +230,11 @@ enum flags {
 
     // to mark jump table instructions
     FLAG_JMPTABLE_INSTR = 0x2000,
+
+    // label is not associated with any jump
+    FLAG_LABEL_NOJUMP = 0x4000,
     
     // rest of the bits are used by the optimizer
-
     FLAG_LABEL_USED = 0x10000,
     FLAG_INSTR_NEW  = 0x20000,
     FLAG_OPTIMIZER = 0xFFF0000,

@@ -1,0 +1,5 @@
+pub myfunc
+  outa := otherfunc
+
+pub otherfunc
+  return 1

@@ -15,8 +15,8 @@ Tuple2__ test147::Dbl64(int32_t Ahi, int32_t Alo)
 // function to quadruple a 64 bit number
 Tuple2__ test147::Quad64(int32_t Ahi, int32_t Alo)
 {
-  int32_t 	_parm__0001, _parm__0002;
-  { Tuple2__ tmp__ = Dbl64(Ahi, Alo); _parm__0001 = tmp__.v0; _parm__0002 = tmp__.v1;  };
-  return Dbl64(_parm__0001, _parm__0002);
+  int32_t 	_parm__0000, _parm__0001;
+  { Tuple2__ tmp__ = Dbl64(Ahi, Alo); _parm__0000 = tmp__.v0; _parm__0001 = tmp__.v1;  };
+  return Dbl64(_parm__0000, _parm__0001);
 }
 

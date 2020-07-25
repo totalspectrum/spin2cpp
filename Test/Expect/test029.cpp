@@ -10,12 +10,12 @@ void test029::Tx(int32_t Val)
 
 void test029::Str(int32_t Stringptr)
 {
-  int32_t 	_idx__0001;
+  int32_t 	_idx__0000;
   // Send string                    
   while (lockset(Strlock)) {
     Yield__();
   }
-  for(_idx__0001 = strlen((const char *)Stringptr); _idx__0001 != 0; --_idx__0001) {
+  for(_idx__0000 = strlen((const char *)Stringptr); _idx__0000 != 0; --_idx__0000) {
     Tx(((char *)(Stringptr++))[0]);
   }
   lockclr(Strlock);

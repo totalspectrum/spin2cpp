@@ -157,17 +157,82 @@ TransformLongMove(AST **astptr, AST *ast)
     return true;
 }
 
+// special processing for various Spin functions
+//   longmove(@x, @y, n) gets turned into direct moves
+//   pinw(p, n) gets turned into _drvw(p, n) if we can prove
+//     n is just 1 bit
+// returns true if anything changed
+// ast is the FUNCCALL ast, with ast->left known to be an identifier
+// *astptr should match ast
+//
+
+static bool
+SpinFunctionSpecialCase(AST **astptr, AST *ast)
+{
+    const char *name = ast->left->d.string;
+    if (!strcasecmp(name, "longmove")) {
+        return TransformLongMove(astptr, ast);
+    }
+    if (!strcasecmp(name, "pinw") || !strcasecmp(name, "pinwrite")) {
+        // check for simple cases: 0, 1, x & 1, or !(x & 1)
+        // change function name
+        AST *args;
+        args = ast->right;
+        if (!args || !args->right) {
+            return false;
+        }
+        args = args->right->left;
+        if (!args) {
+            return false;
+        }
+        if (IsConstExpr(args)) {
+            int x = EvalConstExpr(args);
+            if (x != 0 && x != 1) {
+                return false;
+            }
+        } else if (args->kind == AST_OPERATOR) {
+            int x = 9999;
+            if (args->d.ival == '&') {
+                if (IsConstExpr(args->left)) {
+                    x = EvalConstExpr(args->left);
+                } else if (IsConstExpr(args->right)) {
+                    x = EvalConstExpr(args->right);
+                }
+                if (x != 0 && x != 1) {
+                    return false;
+                }
+            } else if (args->d.ival == K_SHR) {
+                if (!IsConstExpr(args->right)) {
+                    return false;
+                }
+                x = EvalConstExpr(args->right);
+                if (x != 31) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        ast->left = AstIdentifier("_drvw");
+        return true;
+    }
+    return false;
+}
+
+// create a local array for 
 static void
 SetLocalArray(Function *fdef, Symbol *sym, AST *body)
 {
     if (sym->kind == SYM_PARAMETER) {
         if (!fdef->parmarray) {
-            fdef->parmarray = NewTemporaryVariable("_parm_");
+            fdef->parmarray = NewTemporaryVariable("_parm_", &fdef->local_var_counter);
         }
         fdef->localarray = fdef->parmarray;
     } else if (sym->kind == SYM_LOCALVAR && (!body || IsAddrRef(body, sym)) ) {
         if (!fdef->localarray) {
-            fdef->localarray = NewTemporaryVariable("_local_");
+            fdef->localarray = NewTemporaryVariable("_local_", &fdef->local_var_counter);
         }
     }
 }
@@ -209,6 +274,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     upper->right = funccall;
                 }
                 AstReportDone(&saveinfo);
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, body, "omitting () on function calls is a fastspin extension");
             }
         }
         return;
@@ -255,7 +321,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                so force all of those into the _parm_ array
             */
             if (!fdef->parmarray) {
-                fdef->parmarray = NewTemporaryVariable("_parm_");
+                fdef->parmarray = NewTemporaryVariable("_parm_", &fdef->local_var_counter);
             }
             fdef->localarray = fdef->parmarray;
             if (!fdef->result_in_parmarray) {
@@ -324,6 +390,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                     upper->right = funccall;
                 }
                 AstReportDone(&saveinfo);
+                LANGUAGE_WARNING(LANG_SPIN_SPIN2, body, "omitting () on function calls is a fastspin extension");
             }
         }
         break;
@@ -485,10 +552,12 @@ doSpinTransform(AST **astptr, int level)
         const char *case_name = ast->kind == AST_CASETABLE ? "case_fast" : NULL;
         doSpinTransform(&ast->left, level);
         AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
+#ifdef NEVER // handled in CreateSwitch now        
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
             AST *var = AstTempLocalVariable("_tmp_", NULL);
             ast->left = AstAssign(var, ast->left);
         }
+#endif        
         while (list) {
             AST *caseitem;
             if (list->kind != AST_STMTLIST) {
@@ -527,9 +596,8 @@ doSpinTransform(AST **astptr, int level)
         /* check for longmove(@x, @y, n) where n is a small
            number */
         if (level == 1 && ast->left && ast->left->kind == AST_IDENTIFIER
-            && !strcasecmp(ast->left->d.string, "longmove"))
+            && SpinFunctionSpecialCase(astptr, ast) )
         {
-            TransformLongMove(astptr, ast);
             ast = *astptr;
         }
         doSpinTransform(&ast->left, 0);
@@ -599,8 +667,6 @@ doSpinTransform(AST **astptr, int level)
     case AST_ARRAYREF:
         // array references like T[x] may actually
         // be a memory lookup if T is a typename
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             Symbol *sym = LookupSymbol(ast->left->d.string);
             AST *typ;
@@ -640,7 +706,15 @@ doSpinTransform(AST **astptr, int level)
                     break;
                 } 
             }
+        } else if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
+            AST *newexpr = CheckSimpleArrayref(ast);
+            if (newexpr) {
+                newexpr = TransformRangeUse(newexpr);
+                *astptr = ast = newexpr;
+            }
         }
+        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->right, 0);
         break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:

@@ -7,11 +7,11 @@ entry
 _test
 LR__0001
 	mov	_var01, ina
-	sar	_var01, #1
+	shr	_var01, #1
 	test	_var01, #1 wz
  if_ne	jmp	#LR__0002
 	mov	_var02, ina
-	sar	_var02, #2
+	shr	_var02, #2
 	test	_var02, #1 wz
  if_ne	jmp	#LR__0001
 	xor	outa, #1

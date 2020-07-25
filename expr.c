@@ -960,8 +960,21 @@ TransformRangeUse(AST *src)
     /* we want to end up with:
        ((src->left >> lo) & mask)
     */
-    val = FoldIfConst(AstOperator(K_SAR, src->left, lo));
-    val = FoldIfConst(AstOperator('&', val, mask));
+    if (IsConstExpr(lo) && IsConstExpr(mask)) {
+        unsigned maskval = EvalConstExpr(mask);
+        unsigned loval = EvalConstExpr(lo);
+        // optimize a common case: if the shift leaves fewer
+        // bits than the mask will take out, then
+        // just do the shift
+        loval = 0xffffffffU >> loval;
+        if ( (loval & maskval) == loval ) {
+            mask = NULL; // no need for the mask at all
+        }
+    }
+    val = FoldIfConst(AstOperator(K_SHR, src->left, lo));
+    if (mask) {
+        val = FoldIfConst(AstOperator('&', val, mask));
+    }
     revval = FoldIfConst(AstOperator(K_REV, val, nbits));
     
     if (IsConstExpr(test)) {
@@ -1197,10 +1210,18 @@ EvalIntOperator(int op, int32_t lval, int32_t rval, int *valid)
         return BoolValue(lval == rval);
     case K_BOOL_OR:
         return BoolValue(lval || rval);
+    case K_BOOL_XOR:
+        return BoolValue((lval != 0) ^ (rval != 0));
     case K_BOOL_AND:
         return BoolValue(lval && rval);
     case K_BOOL_NOT:
         return BoolValue(!rval);
+    case K_LOGIC_OR:
+        return BoolValue(lval) | BoolValue(rval);
+    case K_LOGIC_XOR:
+        return BoolValue(lval) ^ BoolValue(rval);
+    case K_LOGIC_AND:
+        return BoolValue(lval) & BoolValue(rval);
     case K_NEGATE:
         return -rval;
     case K_BIT_NOT:
@@ -1499,6 +1520,12 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         break;
     case AST_OPERATOR:
+        /* special case hack: '-' allows evaluation of @
+           even if both sides are relative addresses
+        */
+        if (expr->d.ival == '-' && expr->left->kind == AST_ADDROF && expr->right->kind == AST_ADDROF) {
+            flags |= PASM_FLAG;
+        }
         lval = EvalExpr(expr->left, flags, valid, depth+1);
         if (expr->d.ival == K_BOOL_OR && lval.val)
             return lval;
@@ -2292,7 +2319,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         // in Spin, a string is always dereferenced
         // so "abc" is the same as "a" is the same as 0x65
         // (actually no -- "abc" is the same as "a", "b", "c")
-        if (IsSpinLang(curfunc->language)) {
+        if (curfunc && IsSpinLang(curfunc->language)) {
             return ast_type_long;
         }
         /* otherwise fall through */
@@ -2345,6 +2372,7 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             return ast_type_float;
         case SYM_VARIABLE:
         case SYM_LOCALVAR:
+        case SYM_TEMPVAR:
         case SYM_PARAMETER:
         case SYM_CLOSURE:
         case SYM_TYPEDEF:
@@ -2625,15 +2653,24 @@ CompatibleTypes(AST *A, AST *B)
     }
 
     if (A == B) return 1;
+
     if (A && A->kind == AST_TUPLE_TYPE) {
         if (B && B->kind == AST_TUPLE_TYPE) {
             return CompatibleTypes(A->left, B->left) && CompatibleTypes(A->right, B->right);
+        } else if (B && B->kind == AST_OBJECT) {
+            /* special hack: tuple types should be compatible with
+             * any object of the same size
+             */
+            return TypeSize(A) == TypeSize(B);
         } else if (A->right) {
             return 0;
         } else {
             return CompatibleTypes(A->left, B);
         }
     } else if (B && B->kind == AST_TUPLE_TYPE) {
+        if (A && A->kind == AST_OBJECT) {
+            return TypeSize(A) == TypeSize(B);
+        }
         if (B->right) {
             return 0;
         }
@@ -2894,4 +2931,42 @@ CleanupType(AST *typ)
         break;
     }
     return typ;
+}
+
+//
+// build an AST_EXPRLIST containing method references for each method
+// within an object
+// "typ" is the object type
+//
+AST *
+BuildExprlistFromObject(AST *expr, AST *typ)
+{
+    AST *exprlist = NULL;
+    AST *temp;
+    Module *P;
+    Symbol *sym;
+    ASTReportInfo saveinfo;
+    
+    int i;
+    int n;
+    exprlist = NULL;
+    if (!IsClassType(typ)) {
+        return expr;
+    }
+    P = GetClassPtr(typ);
+    n = TypeSize(typ);
+    i = 0;
+    AstReportAs(expr, &saveinfo);
+    for(i = 0; i < n; i += LONG_SIZE) {
+        sym = FindSymbolByOffsetAndKind(&P->objsyms, i, SYM_VARIABLE);
+        if (!sym || sym->kind != SYM_VARIABLE) {
+            ERROR(expr, "Unable to find symbol at offset %d", i);
+            break;
+        }
+        temp = NewAST(AST_METHODREF, expr, AstIdentifier(sym->our_name));
+        temp = NewAST(AST_EXPRLIST, temp, NULL);
+        exprlist = AddToList(exprlist, temp);
+    }
+    AstReportDone(&saveinfo);
+    return exprlist;
 }

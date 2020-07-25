@@ -210,6 +210,9 @@ enum astkind {
 
     AST_EMPTY = 148,
     AST_MODIFIER_SEND_ARGS = 149,
+    AST_FVAR_LIST = 150,
+    AST_FVARS_LIST = 151,
+    
 };
 
 /* forward reference */
@@ -242,7 +245,8 @@ AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);
 AST *AstInteger(long intval);
 AST *AstFloat(float f);
 AST *AstBitValue(long intval);
-AST *AstStringLiteral(const char *string);
+AST *AstPlainString(const char *string);
+AST *AstStringPtr(const char *string);
 AST *AstIdentifier(const char *name);
 AST *AstTempIdentifier(const char *name);
 AST *AstInstrModifier(int32_t intval);

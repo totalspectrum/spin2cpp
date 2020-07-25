@@ -65,6 +65,18 @@ AST *GetPinRange(const char *name1, const char *name2, AST *range)
     return ast;
 }
 
+static AST *
+InputHandle(AST *h)
+{
+    return h ? h : AstInteger(0);
+}
+
+static AST *
+OutputHandle(AST *h)
+{
+    return h ? h : AstInteger(1);
+}
+
 #define ARRAY_BASE_NAME "__array_base"
 #define IMPLICIT_TYPE_NAME "__implicit_types"
 #define EXPLICIT_DECL_NAME "__explicit_declares_required"
@@ -761,42 +773,52 @@ branchstmt:
     }
 ;
 
+optcomma: /* nothing */ | ',' ;
+
+file_handle:
+   { $$ = NULL; }
+| '#' expr optcomma
+   { $$ = $2; }
+;
+
 iostmt:
-  BAS_PRINT printlist
-    { $$ = NewCommentedAST(AST_PRINT, $2, NULL, $1); }
-  | BAS_PRINT '#' expr
-    { $$ = NewCommentedAST(AST_PRINT, AstCharItem('\n'), $3, $1); }
-  | BAS_PRINT '#' expr ',' printlist
-    { $$ = NewCommentedAST(AST_PRINT, $5, $3, $1); }
+  BAS_PRINT file_handle printlist
+    { $$ = NewCommentedAST(AST_PRINT, $3, $2, $1); }
+  | BAS_PRINT file_handle ',' printlist
+    { $$ = NewCommentedAST(AST_PRINT, $4, $2, $1); }
   | BAS_PUT expr
     { $$ = NewCommentedAST(AST_PRINT,
                   NewAST(AST_EXPRLIST, NewAST(AST_HERE, $2, NULL), NULL),
                            NULL, $1); }
-  | BAS_INPUT inputlist
-    { $$ = NewCommentedAST(AST_READ, $2, AstInteger(0), $1); }
-  | BAS_INPUT BAS_STRING ',' inputlist
+  | BAS_INPUT file_handle inputlist
+    { $$ = NewCommentedAST(AST_READ, $3, InputHandle($2), $1); }
+  | BAS_INPUT file_handle BAS_STRING ',' inputlist
     {
+        AST *inhandle = InputHandle($2);
+        AST *outhandle = OutputHandle($2);
         AST *string = NewAST(AST_STRINGPTR,
-                             NewAST(AST_EXPRLIST, $2, NULL), NULL);
+                             NewAST(AST_EXPRLIST, $3, NULL), NULL);
         AST *printlist = NewAST(AST_EXPRLIST, string, NULL);
-        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, NULL, $1);
-        AST *inpstmt = NewAST(AST_READ, $4, AstInteger(0));
+        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, outhandle, $1);
+        AST *inpstmt = NewAST(AST_READ, $5, inhandle);
         AST *stmt;
         stmt = NewAST(AST_STMTLIST,
                       printstmt,
                       NewAST(AST_STMTLIST, inpstmt, NULL));
         $$ = stmt;
     }
-  | BAS_INPUT BAS_STRING ';' inputlist
+  | BAS_INPUT file_handle BAS_STRING ';' inputlist
     {
+        AST *inhandle = InputHandle($2);
+        AST *outhandle = InputHandle($2);
         AST *question = NewAST(AST_EXPRLIST,
                                AstInteger(63),
                                NewAST(AST_EXPRLIST, AstInteger(32), NULL));
         AST *string = NewAST(AST_STRINGPTR,
-                             NewAST(AST_EXPRLIST, $2, question), NULL);
+                             NewAST(AST_EXPRLIST, $3, question), NULL);
         AST *printlist = NewAST(AST_EXPRLIST, string, NULL);
-        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, NULL, $1);
-        AST *inpstmt = NewAST(AST_READ, $4, AstInteger(0));
+        AST *printstmt = NewCommentedAST(AST_PRINT, printlist, outhandle, $1);
+        AST *inpstmt = NewAST(AST_READ, $5, inhandle);
         AST *stmt;
         stmt = NewAST(AST_STMTLIST,
                       printstmt,
@@ -1932,7 +1954,7 @@ basetypename:
   | BAS_CLASS BAS_USING BAS_STRING
     {
         AST *tempnam = NewAST(AST_IDENTIFIER, NULL, NULL);
-        const char *name = NewTemporaryVariable("_class_");
+        const char *name = NewTemporaryVariable("_class_", NULL);
         AST *newobj;
 
         tempnam->d.string = name;

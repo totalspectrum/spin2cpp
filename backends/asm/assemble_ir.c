@@ -1114,7 +1114,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             break;
         default:
             flexbuf_addstr(fb, "\t");
-            if (ir->opc == OPC_REPEAT) {
+            if (ir->opc == OPC_REPEAT && ir->dst->kind != IMM_INT) {
                 flexbuf_addstr(fb, "@");
             }
             PrintOperand(fb, ir->dst);

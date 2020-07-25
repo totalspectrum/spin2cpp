@@ -212,12 +212,8 @@ pri _drvw(pin, c) | mask
   else
     outa &= !mask
 
-pri _pinr(pin) | mask
-  mask := 1<<pin
-  if (ina & mask)
-    return 1
-  else
-    return 0
+pri _pinr(pin)
+  return (ina >> pin) & 1
     
 pri _waitx(tim)
   asm
@@ -254,11 +250,12 @@ pri _getms() : r = +long | freq
 dat
 	org 0
 _cogchk_helper
-	rdlong	tmp, par wz
+	rdlong	_cogchk_tmp, par wz
   if_z	jmp	#_cogchk_helper
-  	cogid	tmp
-	cogstop	tmp
-tmp	long	0
+  	cogid	_cogchk_tmp
+	cogstop	_cogchk_tmp
+_cogchk_tmp
+	long	0
 
 pri _cogchk(id) | flag, n
   flag := 0
@@ -269,4 +266,29 @@ pri _cogchk(id) | flag, n
   ' if n is id, then the cog was free
   ' otherwise it is running
   return n <> id
-  
+
+''
+'' bytefill/bytemove are here (in processor specific code)
+'' because on P2 we can optimize them (long operations do
+'' not have to be aligned)
+''
+pri bytefill(ptr, val, count)
+  repeat count
+    byte[ptr] := val
+    ptr += 1
+    
+pri bytemove(dst, src, count) : origdst
+  origdst := dst
+  if (dst < src)
+    repeat count
+      byte[dst] := byte[src]
+      dst += 1
+      src += 1
+  else
+    dst += count
+    src += count
+    repeat count
+      dst -= 1
+      src -= 1
+      byte[dst] := byte[src]
+      

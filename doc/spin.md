@@ -177,6 +177,10 @@ Fastspin interprets the notation `@"some chars"` to mean the same thing as `STRI
 
 Bits `m` to `n` of a variable `x` may be accessed via the notation `x.[m..n]`. If `m` is the same as `n` this may be simplified to `x.[n]`. This notation may also be applied to hardware registers.
 
+### Boolean short-circuit operators
+
+fastspin has operators `x __andthen__ y` and `x __orelse__ y` which only evaluate the right hand side (`y`) if they need to (like C's `&&` and `||`). Ordinary boolean `AND` and `OR` operators will be optimized to these in the cases where `x` and `y` do not have side effects.
+
 ### CASE_FAST
 
 `CASE_FAST` is just like `CASE`, except that each of the case items must be a constant expression. It is guaranteed to compile to a jump table (regular `CASE` may sometimes compile to a sequence of `IF`/`ELSE IF`).
@@ -518,20 +522,27 @@ In Spin2 mode all of the above are available without the underscore.
 
 ## Limitations
 
-There are very few Spin features that are not supported yet. `_FREE` and
-`_STACK` are recognized, but do nothing.
-
-There may be other features that do not work; if you find any,
-please report them so they can be fixed.
+Most Spin language features are supported. There may be some features
+that do not work; if you find any, please report them so they can be
+fixed.
 
 The lexer and parser are different from the Parallax ones, so they may
 well report errors on code the Parallax compiler accepts.
+
+
+## Differences
+
+### Timing
 
 Timing of produced code is different, of course (in general much faster than
 the native Spin interpreter). This may affect some objects; sometimes
 developers left out delay loops in time critical code because the Spin
 interpreter is so slow they weren't necessary. Watch out for this when porting
 I2C, SPI and similar functions.
+
+### @@ Operator
+
+The Spin1 `@@` operator always truncates its result to 16 bits; fastspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
 ## Symbols
 

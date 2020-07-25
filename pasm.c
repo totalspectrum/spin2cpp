@@ -42,6 +42,38 @@ InstrSize(AST *instr)
 }
 
 /*
+ * find number of bytes required for an FVAR item
+ */
+unsigned
+BytesForFvar(AST *item, int isSigned)
+{
+    int32_t val;
+
+    if (!item || item->kind != AST_EXPRLIST) {
+        return 0;
+    }
+    
+    val = EvalPasmExpr(item->left);
+
+    if (isSigned) {
+        if (val >= -64 && val < 64) return 1;
+        if (val >= -(1<<13) && val < (1<<13)) return 2;
+        if (val >= -(1<<20) && val < (1<<20)) return 3;
+        if (val >= -(1<<28) && val < (1<<28)) return 4;
+        ERROR(item, "FVARS value ($%lx) out of range", val);
+    } else {
+        if (val < 0) {
+            ERROR(item, "FVARS value ($%lx) out of range", val);
+        }
+        if (val < (1<<7)) return 1;
+        if (val < (1<<14)) return 2;
+        if (val < (1<<21)) return 3;
+        if (val < (1<<29)) return 4;
+    }
+    return 4;
+}
+
+/*
  * find the length of a data list, in bytes
  */
 unsigned
@@ -82,6 +114,12 @@ dataListLen(AST *ast, int elemsize)
                     ERROR(sub, "Backwards range not supported");
                     numelems = 0;
                 }
+            } else if (sub->kind == AST_FVAR_LIST) {
+                elemsize = 1;
+                numelems = BytesForFvar(sub->left, 0);
+            } else if (sub->kind == AST_FVARS_LIST) {
+                elemsize = 1;
+                numelems = BytesForFvar(sub->left, 1);
             } else {
                 numelems = 1;
             }
@@ -330,7 +368,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         return;
     }
     if (initval->kind == AST_STRINGPTR) {
-        *initializer = *reduceStrings(initializer->left);
+        *initializer = *reduceStrings(initval->left);
     }
     if (initval->kind == AST_SIMPLEFUNCPTR) {
         return;

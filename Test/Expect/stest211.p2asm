@@ -1,0 +1,39 @@
+con
+	CLOCKFREQ = 200000000
+	_CLKFREQ = 200000000
+dat
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 200000000
+	long	0 ' clock mode: will default to $10009fb
+	orgh	$400
+	org	0
+entry
+
+_start
+	mov	arg01, #8
+	calla	#_djnfTest
+LR__0001
+	jmp	#LR__0001
+_start_ret
+	reta
+
+_djnfTest
+	loc	pa,	#(@LR__0004-@LR__0002)
+	calla	#FCACHE_LOAD_
+LR__0002
+LR__0003
+	djnf	arg01, #LR__0003
+LR__0004
+_djnfTest_ret
+	reta
+
+COG_BSS_START
+	fit	480
+	orgh
+	org	COG_BSS_START
+arg01
+	res	1
+	fit	480

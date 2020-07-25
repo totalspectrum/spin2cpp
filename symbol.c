@@ -5,6 +5,8 @@
 #include "symbol.h"
 #include "util/util.h"
 
+extern int gl_caseSensitive;
+
 /*
  * hash function
  */
@@ -36,7 +38,7 @@ FindSymbol(SymbolTable *table, const char *name)
 {
     unsigned hash;
     Symbol *sym;
-    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
+    int nocase = ((table->flags & SYMTAB_FLAG_NOCASE) != 0) && !gl_caseSensitive;
     hash = SymbolHash(name);
     sym = table->hash[hash];
 
@@ -173,7 +175,7 @@ AddSymbol(SymbolTable *table, const char *name, int type, void *val, const char 
 {
     unsigned hash;
     Symbol *sym;
-    int nocase = (table->flags & SYMTAB_FLAG_NOCASE) != 0;
+    int nocase = ((table->flags & SYMTAB_FLAG_NOCASE) != 0) && !gl_caseSensitive;
     
     hash = SymbolHash(name);
     sym = table->hash[hash];
@@ -236,20 +238,26 @@ SetTempVariableBase(int base, int max)
  * create a temporary variable name
  */
 char *
-NewTemporaryVariable(const char *prefix)
+NewTemporaryVariable(const char *prefix, int *counter)
 {
     char *str;
     char buf[32];
+    int countval;
     
-    if (!prefix)
+    if (!prefix) {
         prefix = "_tmp_";
-
-    sprintf(buf, "_%04d", tmpvarnum);
+    }
+    if (!counter) {
+        counter = &tmpvarnum;
+    }
+    countval = *counter;
+    sprintf(buf, "_%04d", countval);
     str = strdupcat(prefix, buf);
-    tmpvarnum++;
-    if (tmpvarnum > tmpvarmax) {
+    countval++;
+    if (countval > tmpvarmax) {
         fprintf(stderr, "Temporary variable limit of %d exceeded", tmpvarmax);
         abort();
     }
+    *counter = countval;
     return str;
 }

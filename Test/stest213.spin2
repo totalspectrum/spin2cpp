@@ -1,0 +1,20 @@
+pub demo
+  outb := func1()
+  outb := func2()
+  
+pub func1(): b
+  org
+    rep @.loop,#8
+    testp #15 wc
+    rcl b,#1
+.loop
+  end
+
+pub func2(): b
+  org
+    rep #2,#8
+    testp #15 wc
+    rcl b,#1
+.loop
+  end
+

@@ -6,7 +6,7 @@ char test075::dat[] = {
 };
 void test075::Start(int32_t Code)
 {
-  int32_t _local__0001[5];
-  cognew((int32_t)(((int32_t *)&dat[0])), (int32_t)(_local__0001[1]));
+  int32_t _local__0000[5];
+  cognew((int32_t)(((int32_t *)&dat[0])), (int32_t)(_local__0000[1]));
 }
 

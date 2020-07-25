@@ -41,8 +41,7 @@ mul_lp_
 	shl    muldiva_, #1
  if_ne	jmp    #mul_lp_
        shr    itmp2_, #31 wz
- if_nz neg    result1, result1
-	mov    muldiva_, result1
+       negnz  muldiva_, result1
 multiply__ret
 	ret
 

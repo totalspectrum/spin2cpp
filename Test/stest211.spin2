@@ -1,0 +1,20 @@
+con
+	CLOCKFREQ  = 200_000_000
+	_CLKFREQ = CLOCKFREQ
+
+pub start()
+
+  djnftest(8)
+
+	repeat
+
+
+pub djnfTest(numbytes)
+
+          org
+.lp
+'	 	sub 		numbytes, #1		wc
+'	 if_nc  jmp 		#.lp
+		djnf		numbytes, #.lp		'Replace djnf with djnz and all is fine - except that I need the djnf for my code
+
+	  end

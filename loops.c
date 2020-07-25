@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for handling loops
@@ -723,6 +723,10 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
             if (entry->flags & LVFLAG_LOOPUSED) {
                 continue;
             }
+            // if this assignment is conditional don't mess with it
+            if (entry->flags & LVFLAG_CONDITIONAL) {
+                continue;
+            }
             pullvalue = DupASTWithReplace(entry->value, entry->basename, initEntry->value);
             if (entry->loopstep->kind == AST_OPERATOR && entry->loopstep->d.ival == K_NEGATE) {
                 replace = AstAssign(entry->name,
@@ -1176,4 +1180,283 @@ DumpLVS(LoopValueSet *lvs)
         printf("hits=%d flags=0x%04x", e->hits, e->flags);
         printf("\n");
     }
+}
+
+/*
+ * transform AST for a counting repeat loop
+ */
+AST *
+TransformCountRepeat(AST *ast)
+{
+    AST *origast = ast;
+
+    // initial values for the loop
+    AST *loopvar = NULL;
+    AST *fromval, *toval;
+    AST *stepval;
+    AST *body;
+
+    AST *looptype; // type of loop
+    int isIntegerLoop = 1;
+    
+    // what kind of test to perform (loopvar < toval, loopvar != toval, etc.)
+    // note that if not set, we haven't figured it out yet (and probably
+    // need to use between)
+    int testOp = 0;
+
+    // if the step value is known, put +1 (for increasing) or -1 (for decreasing) here
+    int knownStepDir = 0;
+
+    // if the step value is constant, put it here
+    int knownStepVal = 0;
+    
+    // test for terminating the loop
+    AST *condtest = NULL;
+
+    int loopkind = AST_FOR;
+    AST *forast;
+    
+    AST *initstmt;
+    AST *stepstmt;
+
+    AST *limitvar = NULL;
+
+    ASTReportInfo saveinfo;
+    
+    /* create new ast elements using this ast's line info, at least for now */
+    AstReportAs(ast, &saveinfo);
+
+    if (ast->left) {
+        if (ast->left->kind == AST_IDENTIFIER) {
+            loopvar = ast->left;
+        } else if (ast->left->kind == AST_RESULT) {
+            loopvar = ast->left;
+        } else {
+            ERROR(ast, "Need a variable name for the loop");
+            AstReportDone(&saveinfo);
+            return origast;
+        }
+    }
+    looptype = ExprType(loopvar);
+    isIntegerLoop = (looptype == NULL) || IsIntType(looptype);
+    ast = ast->right;
+    if (ast->kind != AST_FROM) {
+        ERROR(ast, "expected FROM");
+        AstReportDone(&saveinfo);
+        return origast;
+    }
+    fromval = ast->left;
+    ast = ast->right;
+    if (ast->kind != AST_TO) {
+        ERROR(ast, "expected TO");
+        AstReportDone(&saveinfo);
+        return origast;
+    }
+    toval = ast->left;
+    ast = ast->right;
+    if (ast->kind != AST_STEP) {
+        ERROR(ast, "expected STEP");
+        AstReportDone(&saveinfo);
+        return origast;
+    }
+    if (ast->left) {
+        stepval = ast->left;
+    } else {
+        stepval = AstInteger(1);
+    }
+    if (IsConstExpr(stepval)) {
+        knownStepVal = EvalConstExpr(stepval);
+    }
+    if (!IsSpinLang(curfunc->language)) {
+        // only Spin does the weirdness where
+        // repeat i from a to b step 1
+        // walks backwards if a > b; other languages
+        // just count up if the step is constant
+        if (knownStepVal) {
+            knownStepDir = (knownStepVal > 0) ? 1 : -1;
+        }
+    }
+    
+    body = ast->right;
+
+    /* for fixed counts (like "REPEAT expr") we get a NULL value
+       for fromval; this signals that we should be counting
+       from 0 to toval - 1 (in C) or from toval down to 1 (in asm)
+       it also means that we don't have to do the "between" check,
+       we can just count one way
+    */
+    if (fromval == NULL && isIntegerLoop) {
+        if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
+            // for (i = 0; i < 10; i++) is more idiomatic
+            fromval = AstInteger(0);
+            testOp = '<';
+            knownStepDir = 1;
+        } else {
+            fromval = toval;
+            toval = AstInteger(0);
+            testOp = '>';
+            knownStepDir = -1;
+            if (knownStepVal == 1) {
+                testOp = K_NE;
+            }
+        }
+    }
+    if (isIntegerLoop) {
+        if (IsConstExpr(fromval) && IsConstExpr(toval)) {
+            int32_t fromi, toi;
+
+            fromi = EvalConstExpr(fromval);
+            toi = EvalConstExpr(toval);
+            if (!knownStepDir) {
+                knownStepDir = (fromi > toi) ? -1 : 1;
+            }
+            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+                loopkind = AST_FORATLEASTONCE;
+            }
+        } else {
+            // check for loops like repeat i from @label1 to @label2
+            // where the actual start and end are not known, but
+            // the difference @label2 - @label1 is in fact constant
+            AST *delta = AstOperator('-', toval, fromval);
+            int32_t deltaval;
+            if (IsConstExpr(delta)) {
+                deltaval = EvalConstExpr(delta);
+                knownStepDir = (deltaval >= 0) ? 1 : -1;
+            }
+        }
+    }
+
+    /* get the loop variable, if we don't already have one */
+    if (!loopvar) {
+        loopvar = AstTempLocalVariable("_idx_", looptype);
+    }
+
+    if (!IsConstExpr(fromval) && AstUses(fromval, loopvar)) {
+        AST *initvar = AstTempLocalVariable("_start_", looptype);
+        initstmt = AstAssign(loopvar, AstAssign(initvar, fromval));
+        fromval = initvar;
+    } else {
+        initstmt = AstAssign(loopvar, fromval);
+    }
+    /* set the limit variable */
+    if (IsConstExpr(toval)) {
+        if (gl_expand_constants && isIntegerLoop) {
+            toval = AstInteger(EvalConstExpr(toval));
+        }
+    } else if (toval->kind == AST_IDENTIFIER && !AstModifiesIdentifier(body, toval)) {
+        /* do nothing, toval is already OK */
+    } else {
+        limitvar = AstTempLocalVariable("_limit_", looptype);
+        initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, toval));
+        toval = limitvar;
+    }
+
+    /* set the step variable */
+    if (knownStepVal && knownStepDir) {
+        if (knownStepDir < 0 && IsSpinLang(curfunc->language)) {
+            stepval = AstOperator(K_NEGATE, NULL, stepval);
+            knownStepVal = -knownStepVal;
+        }
+    } else {
+        AST *stepvar = AstTempLocalVariable("_step_", looptype);
+        initstmt = NewAST(AST_SEQUENCE, initstmt,
+                          AstAssign(stepvar,
+                                    NewAST(AST_CONDRESULT,
+                                           AstOperator('>', toval, fromval),
+                                           NewAST(AST_THENELSE, stepval,
+                                                  AstOperator(K_NEGATE, NULL, stepval)))));
+        stepval = stepvar;
+    }
+
+    stepstmt = NULL;
+    if (knownStepDir) {
+        if (knownStepVal == 1 && isIntegerLoop) {
+            stepstmt = AstOperator(K_INCREMENT, loopvar, NULL);
+        } else if (knownStepVal == -1 && isIntegerLoop) {
+            stepstmt = AstOperator(K_DECREMENT, NULL, loopvar);
+        } else if (knownStepVal < 0) {
+            stepstmt = AstAssign(loopvar, AstOperator('-', loopvar, AstInteger(-knownStepVal)));
+        }
+    }
+    if (stepstmt == NULL) {
+        stepstmt = AstAssign(loopvar, AstOperator('+', loopvar, stepval));
+    }
+
+    if (!condtest && testOp) {
+        // we know how to construct the test
+        // we may want to adjust the test slightly though
+        condtest = AstOperator(testOp, loopvar, toval);
+    }
+    
+    if (!condtest && knownStepVal == 1) {
+        // we can optimize the condition test by adjusting the to value
+        // and testing for loopvar != to
+        if (IsConstExpr(toval)) {
+            if (knownStepDir) {
+                testOp = (knownStepDir > 0) ? '+' : '-';
+                toval = SimpleOptimizeExpr(AstOperator(testOp, toval, AstInteger(1)));
+                /* no limit variable change necessary here */
+            } else {
+                /* toval is constant, but step isn't, so we need to introduce
+                   a variable for the limit = toval + step */
+                if (!limitvar) {
+                    limitvar = AstTempLocalVariable("_limit_", looptype);
+                }
+                initstmt = NewAST(AST_SEQUENCE, initstmt, AstAssign(limitvar, SimpleOptimizeExpr(AstOperator('+', toval, stepval))));
+                toval = limitvar;
+            }
+        } else {
+            if (!limitvar) {
+                limitvar = AstTempLocalVariable("_limit_", looptype);
+            }
+            initstmt = NewAST(AST_SEQUENCE, initstmt,
+                              AstAssign(limitvar,
+                                        SimpleOptimizeExpr(
+                                            AstOperator('+', toval, stepval))));
+            toval = limitvar;
+        }
+        if (knownStepDir > 0) {
+            condtest = AstOperator('<', loopvar, toval);
+        } else {
+            condtest = AstOperator(K_NE, loopvar, toval);
+            if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+                loopkind = AST_FORATLEASTONCE;
+            }
+        }
+    }
+    
+    if (!condtest) {
+        /* otherwise, we have to just test for loopvar between to and from */
+        if (isIntegerLoop) {
+            // optimize cases where we know the step direction and value
+            if (knownStepDir && knownStepVal) {
+                if (knownStepVal > 0) {
+                    condtest = AstOperator(K_LE, loopvar, toval);
+                } else {
+                    condtest = AstOperator(K_GE, loopvar, toval);
+                }
+            } else {
+                condtest = NewAST(AST_ISBETWEEN, loopvar,
+                                  NewAST(AST_RANGE, fromval, toval));
+            }
+        } else if (knownStepDir > 0) {
+            condtest = AstOperator(K_LE, loopvar, toval);
+        } else if (knownStepDir < 0) {
+            condtest = AstOperator(K_GE, loopvar, toval);
+        } else {
+            condtest = AstInteger(0);
+            ERROR(fromval, "internal error, cannot find loop direction");
+        }
+        if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
+            loopkind = AST_FORATLEASTONCE;
+        }
+    }
+
+    stepstmt = NewAST(AST_STEP, stepstmt, body);
+    condtest = NewAST(AST_TO, condtest, stepstmt);
+    forast = NewAST((enum astkind)loopkind, initstmt, condtest);
+    forast->lineidx = origast->lineidx;
+    forast->lexdata = origast->lexdata;
+    AstReportDone(&saveinfo);
+    return forast;
 }

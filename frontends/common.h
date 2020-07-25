@@ -130,6 +130,11 @@ extern int gl_optimize_flags; /* flags for optimization */
 #define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
+extern int gl_warn_flags;     /* flags for warnings */
+#define WARN_LANG_EXTENSIONS    0x01
+#define WARN_HIDE_MEMBERS       0x02
+#define WARN_ALL                0xFFFF
+
 extern int gl_printprogress;  /* print files as we process them */
 extern int gl_fcache_size;   /* size of fcache for LMM mode */
 extern const char *gl_cc; /* C compiler to use; NULL means default (PropGCC) */
@@ -300,6 +305,9 @@ typedef struct funcdef {
 
     /* true if language specific processing has been done */
     char lang_processed;
+
+    /* counter for local variables */
+    int local_var_counter;
     
 } Function;
 
@@ -418,7 +426,7 @@ struct cmddefs {
     const char *val;
 };
 
-extern SymbolTable spinReservedWords;  // in the lexer
+extern SymbolTable spinCommonReservedWords;  // in the lexer
 extern SymbolTable basicReservedWords;
 extern SymbolTable cReservedWords;
 extern Module *globalModule;       // global functions and variables
@@ -548,6 +556,9 @@ int DifferentLineNumbers(AST *, AST *);
 /* this one is used by the lexer */
 void SYNTAX_ERROR(const char *msg, ...);
 
+/* also used by lexer and some other places */
+void LANGUAGE_WARNING(int lang, AST *ast, const char *msg, ...);
+
 /* just prints the start of the error message, formatted appropriately
    with file name and line number */
 void ERRORHEADER(const char *fileName, int lineno, const char *msg);
@@ -671,6 +682,7 @@ void initSpinLexer(int flags);
 #define IsPythonLang(lang) ((lang)==LANG_PYTHON_CIRCUS)
 
 #define LANG_DEFAULT LANG_SPIN_SPIN1
+#define LANG_ANY     (0xffff)
 
 // language features
 #define LangBoolIsOne(lang) (IsCLang(lang)||IsPythonLang(lang))

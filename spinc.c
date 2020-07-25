@@ -830,6 +830,85 @@ doTypeInference(void)
 }
 
 static void
+FixupFuncData(Module *P)
+{
+    Function *f;
+    Function *savecur;
+
+    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        return;
+    }
+    for (f = P->functions; f; f = f->next) {
+        if (f->extradecl) {
+            AST *ast = f->extradecl;
+            AST *decl;
+            AST *table;
+            AST *name;
+            Symbol *sym;
+            int tablelen;
+            Label *label;
+
+            savecur = curfunc;
+            curfunc = f;
+            while (ast) {
+                if (ast->kind != AST_LISTHOLDER) {
+                    ERROR(ast, "Internal error: expected list holder");
+                    break;
+                }
+                decl = ast->left;
+                if (decl->kind != AST_TEMPARRAYDECL) {
+                    ERROR(ast, "Internal error: expected temp array decl");
+                    break;
+                }
+                name = decl->left;  // this is the array def
+                tablelen = EvalConstExpr(name->right);
+                name = name->left;
+                if (!IsIdentifier(name)) {
+                    ERROR(ast, "Internal error: expected identifier");
+                    break;
+                }
+                sym = FindSymbol(&P->objsyms, GetIdentifierName(name));
+                if (!sym || sym->kind != SYM_TEMPVAR) {
+                    ERROR(name, "Internal error: unable to find symbol");
+                    break;
+                }
+                
+                table = decl->right;
+                if (table->kind != AST_EXPRLIST) {
+                    ERROR(table, "Internal error: expected expression list");
+                    break;
+                }
+                if (1 || !gl_p2) {
+                    size_t newsize, padding;
+                    AST *astpad;
+                    newsize = (P->datsize + 3) & ~3; // round up to long boundary
+                    padding = newsize - P->datsize;
+                    if (padding) {
+                        astpad = NewAST(AST_ARRAYDECL, AstInteger(0), AstInteger(padding));
+                        astpad = NewAST(AST_EXPRLIST, astpad, NULL);
+                        astpad = NewAST(AST_BYTELIST, astpad, NULL);
+                        P->datblock = AddToList(P->datblock, astpad);
+                    }
+                    P->datsize = newsize;
+                }
+                label = (Label *)calloc(sizeof(*label), 1);
+                sym->offset = label->hubval = P->datsize;
+                label->type = ast_type_long;
+                label->flags = LABEL_IN_HUB;
+                sym->kind = SYM_LABEL;
+                sym->val = (void *)label;
+                table = NewAST(AST_LONGLIST, table, NULL);
+                P->datblock = AddToList(P->datblock, table);
+                P->datsize += tablelen * LONG_SIZE;
+                ast = ast->right;
+            }
+            f->extradecl = NULL;
+            curfunc = savecur;
+        }
+    }
+}
+
+static void
 FixupCode(Module *P, int isBinary)
 {
     Module *Q, *LastQ, *subQ;
@@ -861,6 +940,12 @@ FixupCode(Module *P, int isBinary)
     for (Q = allparse; Q; Q = Q->next) {
         PerformCSE(Q);
     }
+
+    // fix up any internal array references (e.g. for LOOKUP/LOOKDOWN)
+    for (Q = allparse; Q; Q = Q->next) {
+        FixupFuncData(Q);
+    }
+    
     // see if we need a heap for garbage collection
     {
         Function *pf;

@@ -3,15 +3,13 @@ Things to do
 
 C Improvements
 --------------
-stdio FILE routines and vfs
-
 __attribute__ for constructors and cogexec
 
 Finish porting simpletools.h
 
 virtual methods?
 
-allow method declarations outside the class?
+allow method declarations outside classes
 
 C++ lambdas
 
@@ -43,8 +41,6 @@ More documentation.
 Code cleanup
 
 Better error messages.
-
-Support for `_FREE` and `_STACK` (these are read, but ignored at present).
 
 Add in the missing openspin options to fastspin.
 

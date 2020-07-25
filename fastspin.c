@@ -114,9 +114,10 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -H nnnn ]        set starting hub address\n");
     fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
+    fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
-    fprintf(f, "  [ -z ]             compress code\n");
+    //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
@@ -463,6 +464,17 @@ main(int argc, const char **argv)
                 gl_compress = 1;
             } else {
                 fprintf(stderr, "-z option %c is not supported\n", flag);
+                Usage(stderr, bstcMode);
+            }
+            argv++; --argc;
+        } else if (!strncmp(argv[0], "-W", 2)) {
+            // -Wall means enable all warnings
+            // other -W values reserved
+            const char *flags = &argv[0][2];
+            if (!strcmp(flags, "all")) {
+                gl_warn_flags = WARN_ALL;
+            } else {
+                fprintf(stderr, "-W option %s is not supported\n", flags);
                 Usage(stderr, bstcMode);
             }
             argv++; --argc;

@@ -120,9 +120,12 @@ typedef struct ir_bedata {
     
     /* flag for whether we should inline the function */
     bool isInline;
-
+    
     /* type of calling convention */
     CallConvention convention;
+
+    /* actual call instructions emitted for this function */
+    int actual_callsites;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)

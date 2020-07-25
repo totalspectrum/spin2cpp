@@ -107,6 +107,7 @@ AST *BaseType(AST *ast);
 AST *TransformRangeAssign(AST *dst, AST *src, int toplevel);
 AST *TransformRangeUse(AST *src);
 AST *TransformCaseExprList(AST *var, AST *list);
+AST *CheckSimpleArrayref(AST *ast);
 
 // optimize things like ((a+N)-N) -> a
 AST *SimpleOptimizeExpr(AST *);
@@ -125,5 +126,8 @@ int FuncNumParams(AST *functype);
 // sizes that are symbolic constants can be found outside of the module they're
 // declared in
 AST *CleanupType(AST *typ);
+
+// build an expression list containing individual object member references
+AST *BuildExprlistFromObject(AST *expr, AST *typ);
 
 #endif

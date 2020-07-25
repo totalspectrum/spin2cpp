@@ -590,6 +590,13 @@ AST *StructAddress(AST *expr)
 // return the address of a function
 AST *FunctionAddress(AST *expr)
 {
+    if (expr && expr->kind == AST_METHODREF) {
+        if (IsSymbol(expr->right)) {
+            expr = NewAST(AST_ABSADDROF, expr, NULL);
+            expr = BuildMethodPointer(expr);
+            return expr;
+        }
+    }
     if (IsSymbol(expr)) {
         expr = NewAST(AST_ABSADDROF, expr, NULL);
         expr = BuildMethodPointer(expr);

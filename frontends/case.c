@@ -302,6 +302,10 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         return NULL;
     }
     ident = assign->left;
+    if (IsConstExpr(assign->right)) {
+        // no point in doing a jump table for a constant expression
+        return NULL;
+    }
     exprtype = ExprType(ident);
     if (exprtype && !IsIntOrGenericType(exprtype)) {
         return NULL;
@@ -410,6 +414,7 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AST *defaultlabel = NULL;
     AST *gostmt;
     AST *endlabel;
+    AST *use_expr;
     ASTReportInfo saveinfo;
 
     //DumpAST(stmt);
@@ -420,14 +425,20 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     endswitch = AstTempIdentifier("_endswitch");
     
     switchstmt = NewAST(AST_STMTLIST, AstAssign(tmpvar, expr), NULL);
+
     // find all CASE labels within stmt; turn them into labels, and
     // create if(tmpvar == val) goto label;
 
     endlabel = NewAST(AST_LABEL, endswitch, NULL);
     AddSymbolForLabel(endlabel);
     
-    // switchstmt will have all the gotos
-    switchstmt = CreateGotos(tmpvar, switchstmt, stmt, &defaultlabel, endswitch);
+    // switchstmt will have all the gotos we make
+    if (IsConstExpr(expr)) {
+        use_expr = expr;
+    } else {
+        use_expr = tmpvar;
+    }
+    switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"
     if (!defaultlabel) {
         defaultlabel = endswitch;

@@ -15,7 +15,7 @@
 
 #define MAX_COGSPIN_ARGS 8
 #define MAX_ARG_REGISTER 32
-#define MAX_LOCAL_REGISTER 100
+#define MAX_LOCAL_REGISTER 150
 
 #define SETJMP_BUF_SIZE (8*LONG_SIZE)
 
@@ -175,6 +175,15 @@ static char *cleanname(const char *name)
     }
     temp[i++] = 0;
     return temp;
+}
+
+static char *
+OffsetName(const char *basename, unsigned long offset)
+{
+    size_t len = strlen(basename) + 5;
+    char *tempname = calloc(1, len);
+    sprintf(tempname, "%s_%02lu", basename, (unsigned long)offset / LONG_SIZE);
+    return tempname;
 }
 
 static Operand *
@@ -489,6 +498,7 @@ static void
 ReplaceJumpTarget(IR *jmpir, Operand *dst)
 {
     switch(jmpir->opc) {
+    case OPC_REPEAT:
     case OPC_REPEAT_END:
     case OPC_JUMP:
         jmpir->dst = dst;
@@ -498,6 +508,7 @@ ReplaceJumpTarget(IR *jmpir, Operand *dst)
         break;
     default:
         ERROR(NULL, "Unable to replace jump target");
+        break;
     }
 }
 
@@ -758,7 +769,7 @@ void EmitNamedCogLabel(IRList *irl, const char *name)
 char *
 NewTempLabelName()
 {
-    return NewTemporaryVariable("L_");
+    return NewTemporaryVariable("L_", NULL);
 }
 
 Operand *
@@ -1408,7 +1419,7 @@ static void EmitFunctionProlog(IRList *irl, Function *func)
                     }
                 }
                 if (size > 1) {
-                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), 4);
+                    dst = ApplyArrayIndex(irl, basedst, NewImmediate(i), LONG_SIZE);
                 } else {
                     dst = basedst;
                 }
@@ -1517,7 +1528,7 @@ RenameLocalRegs(IRList *irl, int isLeaf)
 static bool
 NeedToSaveLocals(Function *func)
 {
-    if (IS_LEAF(func) || func->toplevel) {
+    if (IS_LEAF(func)) {
         return false;
     }
     if (func->is_recursive) {
@@ -2213,7 +2224,8 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
   Operand *right;
   Operand *temp;
   IR *ir;
-
+  int specialcase = 0;
+  
   // beware of things like a = b - a
   // so make sure we re-use temp for dest only
   // if it isn't already in use
@@ -2312,18 +2324,30 @@ CompileBasicOperator(IRList *irl, AST *expr, Operand *dest)
           EmitOp2(irl, OPC_XOR, temp, left);
       }
       return temp;
+  case K_ENCODE2:
+      specialcase = 1;
+      /* fall through */
   case K_ENCODE:
       right = CompileExpression(irl, rhs, temp);
       if (gl_p2) {
           IR *ir;
           ir = EmitOp2(irl, OPC_ENCOD, temp, right);
-          ir->flags |= FLAG_WC;
-          ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
-          ir->cond = COND_LT; // if c is set, src was nonzero and add 1
+          if (!specialcase) {
+              // the Spin operator returns 0-32; the Spin2 one returns
+              // 0-31 with ENCOD(0) == 0
+              ir->flags |= FLAG_WC;
+              ir = EmitOp2(irl, OPC_ADD, temp, NewImmediate(1));
+              ir->cond = COND_LT; // if c is set, src was nonzero and add 1
+          }
       } else {
           left = NewFunctionTempRegister();
           EmitMove(irl, left, right);
-          EmitMove(irl, temp, NewImmediate(32));
+          if (specialcase) {
+              // Spin2 ENCOD only goes 0-31, not 0-32
+              EmitMove(irl, temp, NewImmediate(31));
+          } else {
+              EmitMove(irl, temp, NewImmediate(32));
+          }
           right = NewCodeLabel();
           EmitLabel(irl, right);
           ir = EmitOp2(irl, OPC_SHL, left, NewImmediate(1));
@@ -2846,9 +2870,11 @@ CompileFunccall(IRList *irl, AST *expr)
   } else {
       ir = EmitOp1(irl, OPC_CALL, funcaddr);
   }
-  
+  if (func) {
+      FuncData(func)->actual_callsites++;
+  }
   ir->aux = (void *)func; // remember the function for optimization purposes
-  
+
   /* now get the results */
   /* NOTE: we cannot assume this is unchanged over future calls,
      so save it in a temp register
@@ -2979,10 +3005,16 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
-#if 0            
-            /* special case offsets of 0 */
-            if (offset->kind == IMM_INT && offset->val == 0) {
-                return base;
+#if 1      
+            /* special case immediate offsets */
+            if (offset->kind == IMM_INT) {
+                char *tempname;
+                base->used = 1;
+                if (offset->val == 0) {
+                    return base;
+                }
+                tempname = OffsetName(base->name, offset->val);
+                return NewOperand(REG_REG, tempname, 0);
             }
 #endif            
             base->used = 1;
@@ -3045,6 +3077,18 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
         case REG_TEMP:
         case REG_ARG:
         case REG_HW:
+#if 1      
+            /* special case immediate offsets */
+            if (offset->kind == IMM_INT) {
+                char *tempname;
+                base->used = 1;
+                if (offset->val == 0) {
+                    return base;
+                }
+                tempname = OffsetName(base->name, offset->val * siz);
+                return NewOperand(REG_REG, tempname, 0);
+            }
+#endif            
             base->used = 1;
             addr = NewOperand(IMM_COG_LABEL, base->name, 0);
             temp = NewFunctionTempRegister();
@@ -3701,9 +3745,27 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       if (expr->d.ival != K_ASSIGN) {
           ERROR(expr, "Internal error: asm code cannot handle assignment");
       }
-      if (expr->left && expr->left->kind == AST_EXPRLIST) {
-          // do a series of assignments
-          return CompileMultipleAssign(irl, expr->left, expr->right);
+      if (expr->left) {
+          AST *typ;
+          int n;
+          typ = ExprType(expr->left);
+          if (typ && !TypeGoesOnStack(typ)) {
+              // construct a list of object members
+              n = (TypeSize(typ) + (LONG_SIZE-1)) / LONG_SIZE;
+              if (n > 1) {
+                  expr->left = BuildExprlistFromObject(expr->left, typ);
+              }
+          }
+          if (expr->left->kind == AST_EXPRLIST) {
+              // do a series of assignments
+              if (expr->right->kind != AST_EXPRLIST) {
+                  typ = ExprType(expr->right);
+                  if (typ && !TypeGoesOnStack(typ)) {
+                      expr->right = BuildExprlistFromObject(expr->right, typ);
+                  }
+              }
+              return CompileMultipleAssign(irl, expr->left, expr->right);
+          }
       }
       if ( IsSpinLang(curfunc->language)) {
           // Spin always evaluates RHS first, then LHS
@@ -3900,6 +3962,10 @@ CompileExpression(IRList *irl, AST *expr, Operand *dest)
       EmitMove(irl, temp, stackptr);
       EmitOp2(irl, OPC_ADD, stackptr, r);
       return temp;
+  }
+  case AST_CONSTANT:
+  {
+      return CompileExpression(irl, expr->left, dest);
   }
   default:
     ERROR(expr, "Cannot handle expression yet");
@@ -4358,7 +4424,7 @@ static void CompileStatement(IRList *irl, AST *ast)
                         Operand *derefptr;
                         int offset = 0;
                         while (items-- > 0) {
-                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), 0);
+                            derefptr = ApplyArrayIndex(irl, base, NewImmediate(offset), LONG_SIZE);
                             tempreg = NewFunctionTempRegister();
                             EmitMove(irl, tempreg, derefptr);
                             offset++;
@@ -4595,7 +4661,11 @@ CompileFunctionBody(Function *f)
     EmitComments(irheader, f->doccomment);
     
     nextlabel = quitlabel = NULL;
-    
+
+    // check for __fromfile
+    if (f->body && f->body->kind == AST_STRING) {
+        return;
+    }
     EmitFunctionProlog(irl, f);
     // emit initializations if any required
     if (f->resultexpr && !IsConstExpr(f->resultexpr))
@@ -4619,10 +4689,7 @@ CompileFunctionBody(Function *f)
             }
         }
     }
-    // check for __fromfile
-    if (f->body && f->body->kind != AST_STRING) {
-        CompileStatementList(irl, f->body);
-    }
+    CompileStatementList(irl, f->body);
     EmitFunctionEpilog(irl, f);
     OptimizeIRLocal(irl, f);
 }
@@ -4718,7 +4785,18 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
    	      EmitLabel(bssirl, g[i].op);
 	      varsize = g[i].count / LONG_SIZE;
 	      if (varsize == 0) varsize = 1;
-	      EmitReserve(bssirl, varsize, COG_RESERVE);
+              if (varsize > 1) {
+                  int n;
+                  char *label;
+                  EmitReserve(bssirl, 1, COG_RESERVE);
+                  for (n = 1; n < varsize; n++) {
+                      label = OffsetName(g[i].op->name, n * LONG_SIZE);
+                      EmitNamedCogLabel(bssirl, label);
+                      EmitReserve(bssirl, 1, COG_RESERVE);
+                  }
+              } else {                  
+                  EmitReserve(bssirl, varsize, COG_RESERVE);
+              }
               count += varsize * 4;
 	      break;
 	  }
@@ -4757,23 +4835,24 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
 #define VISITFLAG_EXPANDINLINE  0x0123000a
 #define VISITFLAG_EMITDAT       0x0123000b
 
-typedef void (*VisitorFunc)(IRList *irl, Module *P);
+typedef int (*VisitorFunc)(IRList *irl, Module *P);
 
-static void
+static int
 VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
 {
     Module *Q;
     AST *subobj;
     Module *save = current;
     Function *savecurf = curfunc;
+    int change = 0;
     
     if (P->visitflag == visitval)
-        return;
+        return change;
 
     current = P;
 
     P->visitflag = visitval;
-    (*func)(irl, P);
+    change |= (*func)(irl, P);
 
     // compile intermediate code for submodules
     for (subobj = P->objblock; subobj; subobj = subobj->right) {
@@ -4782,14 +4861,15 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
             break;
         }
         Q = (Module *)subobj->d.ptr;
-        VisitRecursive(irl, Q, func, visitval);
+        change |= VisitRecursive(irl, Q, func, visitval);
     }
     // and for sub-submodules
     for (Q = P->subclasses; Q; Q = Q->subclasses) {
-        VisitRecursive(irl, Q, func, visitval);
+        change |= VisitRecursive(irl, Q, func, visitval);
     }
     current = save;
     curfunc = savecurf;
+    return change;
 }
 
 static bool
@@ -4835,6 +4915,22 @@ RemoveIfInlined(Function *f)
     if (!f->is_public || (gl_optimize_flags & OPT_REMOVE_UNUSED_FUNCS))
         return true;
     return false;
+}
+
+// return true if the function was actually inlined
+static bool
+ActuallyInlined(Function *f)
+{
+    if (!FuncData(f)->isInline) {
+        return false;
+    }
+    if (FuncData(f)->actual_callsites > 0) {
+        return false;
+    }
+    if (!f->callSites) {
+        return false;
+    }
+    return true;
 }
 
 // assign one function name
@@ -4915,57 +5011,9 @@ AssignOneFuncName(Function *f)
         if (faltname) {
             FuncData(f)->asmaltname = NewOperand(IMM_COG_LABEL, faltname, 0);
         }
-        // also fix up any extra declarations
         if (f->extradecl) {
-            AST *ast = f->extradecl;
-            AST *decl;
-            AST *table;
-            AST *name;
-            Symbol *sym;
-            int tablelen;
-            Label *label;
-            while (ast) {
-                if (ast->kind != AST_LISTHOLDER) {
-                    ERROR(ast, "Internal error: expected list holder");
-                    break;
-                }
-                decl = ast->left;
-                if (decl->kind != AST_TEMPARRAYDECL) {
-                    ERROR(ast, "Internal error: expected temp array decl");
-                    break;
-                }
-                name = decl->left;  // this is the array def
-                tablelen = EvalConstExpr(name->right);
-                name = name->left;
-                if (!IsIdentifier(name)) {
-                    ERROR(ast, "Internal error: expected identifier");
-                    break;
-                }
-                sym = FindSymbol(&P->objsyms, GetIdentifierName(name));
-                if (!sym || sym->kind != SYM_TEMPVAR) {
-                    ERROR(name, "Internal error: unable to find symbol");
-                    break;
-                }
-                
-                table = decl->right;
-                if (table->kind != AST_EXPRLIST) {
-                    ERROR(table, "Internal error: expected expression list");
-                    break;
-                }
-                if (!gl_p2) {
-                    P->datsize = (P->datsize + 3) & ~3; // round up to long boundary
-                }
-                label = (Label *)calloc(sizeof(*label), 1);
-                sym->offset = label->hubval = P->datsize;
-                label->type = ast_type_long;
-                label->flags = LABEL_IN_HUB;
-                sym->kind = SYM_LABEL;
-                sym->val = (void *)label;
-                table = NewAST(AST_LONGLIST, table, NULL);
-                P->datblock = AddToList(P->datblock, table);
-                P->datsize += tablelen * LONG_SIZE;
-                ast = ast->right;
-            }
+            // this case should be handled at an earlier level
+            ERROR(f->extradecl, "Unexpected data while assembling");
         }
     }
     curfunc = savecur;
@@ -4996,7 +5044,7 @@ static int FixupTypes(Symbol *sym, void *arg)
 }
 
 // we also resolve type sizes here
-static void
+static int
 AssignFuncNames(IRList *irl, Module *P)
 {
     Function *f;
@@ -5010,9 +5058,10 @@ AssignFuncNames(IRList *irl, Module *P)
         IterateOverSymbols(&f->localsyms, FixupTypes, (void *)0);
     }
     IterateOverSymbols(&P->objsyms, FixupTypes, (void *)0);
+    return 0;
 }
 
-static void
+static int
 CompileFunc_internal(IRList *irl, Module *P)
 {
     Function *savecurf = curfunc;
@@ -5027,39 +5076,60 @@ CompileFunc_internal(IRList *irl, Module *P)
       FuncData(f)->isInline = ShouldBeInlined(f);
     }
     curfunc = savecurf;
+    return 0;
 }
 
-static void
+static int
 ExpandInline_internal(IRList *irl, Module *P)
 {
     Function *f;
     int change;
+    int newInlines;
+    int inlineStatus;
+    int anyChange = 0;
     
-    for (f = P->functions; f; f = f->next) {
-        IRList *firl = FuncIRL(f);
-        if (ShouldSkipFunction(f))
-            continue;
-        curfunc = f;
-        for(;;) {
-            change = ExpandInlines(firl);
-            if (!change) break;
-            // may be new opportunities for optimization
-            OptimizeIRLocal(firl, f);
+    do {
+        newInlines = 0;
+        for (f = P->functions; f; f = f->next) {
+            IRList *firl = FuncIRL(f);
+            if (ShouldSkipFunction(f))
+                continue;
+            curfunc = f;
+            for(;;) {
+                change = ExpandInlines(firl);
+                if (!change) break;
+                // may be new opportunities for optimization
+                OptimizeIRLocal(firl, f);
+                // revisit the question of whether it should be inlined, given that
+                // we've perhaps changed its size
+                if (!FuncData(f)->isInline) {
+                    inlineStatus = ShouldBeInlined(f);
+                    if (inlineStatus) {
+                        newInlines++;
+                        FuncData(f)->isInline = true;
+                    }
+                }
+            }
         }
-    }
+        anyChange |= newInlines;
+    } while (newInlines);
+    return anyChange;
 }
 
 void
 CompileIntermediate(Module *P)
 {
+    int change;
     InitAsmCode();
     
     VisitRecursive(NULL, P, AssignFuncNames, VISITFLAG_FUNCNAMES);
     VisitRecursive(NULL, P, CompileFunc_internal, VISITFLAG_COMPILEFUNCS);
-    VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
+    do {
+        change = VisitRecursive(NULL, P, ExpandInline_internal, VISITFLAG_EXPANDINLINE);
+    } while (change);
 }
 
-static void
+static int
 CompileToIR_internal(IRList *irl, Module *P)
 {
     Function *f;
@@ -5081,16 +5151,8 @@ CompileToIR_internal(IRList *irl, Module *P)
         if (ShouldSkipFunction(f)) {
             continue;
         }
-        if (RemoveIfInlined(f)) {
-            // system functions were not skipped in ShouldSkipFunction,
-            // so skip them here if they are not used
-            // also skip inlined private and single-use functions
-            if (FuncData(f)->isInline) {
-                continue;
-            }
-            if (!f->callSites) {
-                continue;
-            }
+        if (RemoveIfInlined(f) && ActuallyInlined(f)) {
+            continue;
         }
         // only do cog or hub
         if (f->code_placement != docog) {
@@ -5101,6 +5163,7 @@ CompileToIR_internal(IRList *irl, Module *P)
         CompileWholeFunction(irl, f);
     }
     curfunc = save;
+    return 0;
 }
 
 bool
@@ -5151,10 +5214,9 @@ static const char *builtin_mul_p1 =
 "\tdjnz\titmp1_, #mul_lp_\n"
 
 "\tshr\titmp2_, #31 wz\n"
-" if_nz\tneg\tresult1, result1\n"
+"\tnegnz\tmuldivb_, result1\n"
 " if_nz\tneg\tmuldiva_, muldiva_ wz\n"
-" if_nz\tsub\tresult1, #1\n"
-"\tmov\tmuldivb_, result1\n"
+" if_nz\tsub\tmuldivb_, #1\n"
 "multiply__ret\n"
 "\tret\n"
 ;
@@ -5176,8 +5238,7 @@ static const char *builtin_mul_p1_fast =
 "	shl    muldiva_, #1\n"
 " if_ne	jmp    #mul_lp_\n"
 "       shr    itmp2_, #31 wz\n"
-" if_nz neg    result1, result1\n"
-"	mov    muldiva_, result1\n"
+"       negnz  muldiva_, result1\n"
 "multiply__ret\n"
 "	ret\n"
 ;
@@ -5215,12 +5276,13 @@ static const char *builtin_div_p1 =
 "       jmp     #udiv__\n"
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
-"       muxc    itmp2_,#%11                    'store sign of x\n"
+"       muxc    itmp2_,divide_haxx_            'store sign of x (mov x,#1 has bits 0 and 31 set)\n"
 "       abs     muldivb_,muldivb_     wc,wz    'abs(y)\n"
-" if_c  xor     itmp2_,#%10                    'store sign of y\n"
 " if_z  jmp     #divbyzero__\n"
+" if_c  xor     itmp2_,#1                      'store sign of y\n"
 "udiv__\n"
-"        mov     itmp1_,#0                    'unsigned divide\n"
+"divide_haxx_\n"
+"        mov     itmp1_,#1                    'unsigned divide (bit 0 is discarded)\n"
 "        mov     DIVCNT,#32\n"
 "mdiv__\n"
 "        shr     muldivb_,#1        wc,wz\n"
@@ -5232,10 +5294,9 @@ static const char *builtin_div_p1 =
 "        shr     itmp1_,#1\n"
 "        djnz    DIVCNT,#mdiv2__\n"
 
-"        test    itmp2_,#1        wc       'restore sign, remainder\n"
-"        negc    muldiva_,muldiva_ \n"
-"        test    itmp2_,#%10      wc       'restore sign, division result\n"
-"        negc    muldivb_,muldivb_\n"
+"        shr     itmp2_,#31       wc,wz    'restore sign\n"
+"        negnz   muldiva_,muldiva_         'remainder\n"
+"        negc    muldivb_,muldivb_ wz      'division result\n"
 
 "divbyzero__\n"
 "divide__ret\n"
@@ -5636,7 +5697,7 @@ CompileConsts(IRList *irl, AST *conblock)
     }
 }
 
-void
+int
 EmitDatSection(IRList *irl, Module *P)
 {
   Flexbuf *fb;
@@ -5645,7 +5706,7 @@ EmitDatSection(IRList *irl, Module *P)
   IR *ir;
   
   if (!ModData(P) || !ModData(P)->datbase)
-      return;
+      return 0;
   fb = (Flexbuf *)calloc(1, sizeof(*fb));
   relocs = (Flexbuf *)calloc(1, sizeof(*relocs));
   flexbuf_init(fb, 32768);
@@ -5654,14 +5715,15 @@ EmitDatSection(IRList *irl, Module *P)
   op = NewOperand(IMM_BINARY, (const char *)fb, (intptr_t)relocs);
   ir = EmitOp2(irl, OPC_LABELED_BLOB, ModData(P)->datlabel, op);
   ir->src2 = (Operand *)P;
+  return 0;
 }
 
-void
+int
 EmitVarSection(IRList *irl, Module *P)
 {
     int len;
     if (!objlabel)
-        return;
+        return 0;
     len = P->varsize;
     len = (len+3) & ~3; // round up to long boundary
     EmitLabel(irl, objlabel);
@@ -5672,6 +5734,7 @@ EmitVarSection(IRList *irl, Module *P)
     } else {
         EmitReserve(irl, len / 4, HUB_DATA ? HUB_RESERVE : COG_RESERVE);
     }
+    return 0;
 }
 
 extern Module *globalModule;

@@ -65,6 +65,8 @@ InstrReadsDst(IR *ir)
   case OPC_GETQY:
   case OPC_GETRND:
   case OPC_GETCT:
+  case OPC_GETBYTE:
+  case OPC_GETWORD:
   case OPC_WRC:
   case OPC_WRNC:
   case OPC_WRZ:
@@ -91,13 +93,21 @@ InstrSetsDst(IR *ir)
   case OPC_QDIV:
   case OPC_QFRAC:
   case OPC_QMUL:
+  case OPC_DRVH:
+  case OPC_DRVL:
+  case OPC_DRVC:
+  case OPC_DRVNC:
+  case OPC_DRVZ:
+  case OPC_DRVNZ:
+  case OPC_SETQ:
+  case OPC_SETQ2:
+  case OPC_TESTB:
+  case OPC_TESTBN:
       return false;
   case OPC_CMP:
   case OPC_CMPS:
   case OPC_TEST:
   case OPC_TESTN:
-  case OPC_SETQ:
-  case OPC_SETQ2:
   case OPC_GENERIC_NR:
       return (ir->flags & FLAG_WR) != 0;
   default:
@@ -113,10 +123,12 @@ static bool IsJump(IR *ir)
 {
   switch (ir->opc) {
   case OPC_JUMP:
+  case OPC_REPEAT:
   case OPC_DJNZ:
   case OPC_REPEAT_END:
   case OPC_JMPREL:
   case OPC_GENERIC_BRANCH:
+  case OPC_GENERIC_BRCOND:
     return true;
   default:
     return false;
@@ -272,17 +284,24 @@ InstrUsesFlags(IR *ir, unsigned flags)
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
     case OPC_GENERIC_BRANCH:
+    case OPC_GENERIC_BRCOND:
         /* it might use flags, we don't know (e.g. addx) */
         return true;
-    case OPC_MUXC:
-    case OPC_MUXNC:
     case OPC_WRC:
     case OPC_WRNC:
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_MUXC:
+    case OPC_MUXNC:
+        /* definitely uses the C flag */
         return (flags & FLAG_WC) != 0;
+    case OPC_DRVZ:
+    case OPC_DRVNZ:
     case OPC_MUXZ:
     case OPC_MUXNZ:
     case OPC_WRZ:
     case OPC_WRNZ:
+        /* definitely uses the Z flag */
         return (flags & FLAG_WZ) != 0;
     default:
         return false;
@@ -313,8 +332,10 @@ bool MaybeHubDest(Operand *dst)
 Operand *
 JumpDest(IR *jmp)
 {
+    
     switch (jmp->opc) {
     case OPC_DJNZ:
+    case OPC_GENERIC_BRCOND:
         return jmp->src;
     default:
         return jmp->dst;
@@ -331,6 +352,9 @@ JumpIsAfterOrEqual(IR *ir, IR *jmp)
     // ptr to jump destination gets stored in aux
     if (jmp->aux) {
         IR *label = (IR *)jmp->aux;
+        if (!label) {
+            return false;
+        }
         if (label->addr >= ir->addr) {
             return true;
         }
@@ -386,7 +410,7 @@ static IR *
 NextInstructionFollowJumps(IR *ir)
 {
     ir = NextInstruction(ir);
-    if (!ir || ir->opc != OPC_JUMP || ir->cond != COND_TRUE)
+    if (!ir || (ir->opc != OPC_JUMP) || ir->cond != COND_TRUE)
         return ir;
     if (!ir->aux) {
         return ir;
@@ -491,7 +515,13 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
         // that goes to LABEL then we might miss a set
         // so check
         IR *comefrom = (IR *)ir->aux;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            // this label isn't a jump target, so don't worry about it
+            continue;
+        }
         if (!comefrom) {
+            // we don't know what branches come here,
+            // so for caution give up
             return false;
         }
         if (level == 0 && comefrom->addr < instr->addr) {
@@ -599,6 +629,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
           continue;
       }
       if (ir->opc == OPC_LABEL) {
+          if (ir->flags & FLAG_LABEL_NOJUMP) {
+              continue;
+          }
           return false;
       }
       if (ir->opc == OPC_LIVE) {
@@ -738,6 +771,10 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     }
     if (ir->opc == OPC_LABEL) {
         IR *comefrom;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            // this label is not a jump target, so ignore it
+            continue;
+        }
         // do we know who jumps to this label?
         comefrom = (IR *)ir->aux;
         if (comefrom) {
@@ -814,7 +851,10 @@ ReplaceBack(IR *instr, Operand *orig, Operand *replace)
   IR *ir;
   for (ir = instr; ir; ir = ir->prev) {
     if (ir->opc == OPC_LABEL) {
-      break;
+        if (ir->flags & FLAG_LABEL_NOJUMP) {
+            continue;
+        }
+        break;
     }
     if (ir->dst == orig) {
       ir->dst = replace;
@@ -938,12 +978,21 @@ TransformConstDst(IR *ir, Operand *imm)
   intptr_t val1, val2;
   int setsResult = 1;
 
-  if (ir->src == NULL) {
+  if (gl_p2 && !InstrSetsDst(ir)) {
       // this may be a case where we can replace dst with src
-      if (ir->instr && ir->instr->ops == P2_DST_CONST_OK) {
-          ir->dst = imm;
-          return 1;
+      if (ir->instr) {
+          switch (ir->instr->ops) {
+          case P2_DST_CONST_OK:
+          case P2_TWO_OPERANDS:
+          case P2_RDWR_OPERANDS:
+              ir->dst = imm;
+              return 1;
+          default:
+              break;
+          }
       }
+  }
+  if (ir->src == NULL) {
       return 0;
   }
   if (imm->kind == IMM_INT && imm->val == 0) {
@@ -974,7 +1023,7 @@ TransformConstDst(IR *ir, Operand *imm)
   if (ir->flags & FLAG_WC) {
     // we don't know how to set the WC flag for anything other
     // than cmps
-    if (ir->opc != OPC_CMPS) {
+    if (ir->opc != OPC_CMPS && ir->opc != OPC_CMP) {
       return 0;
     }
   }
@@ -1008,47 +1057,97 @@ TransformConstDst(IR *ir, Operand *imm)
     case OPC_SAR:
       val1 = val1 >> val2;
       break;
+    case OPC_SHR:
+      val1 = ((unsigned)val1) >> val2;
+      break;
     case OPC_CMPS:
       val1 -= val2;
+      setsResult = 0;
+      break;
+    case OPC_CMP:
+      if ((unsigned)val1 < (unsigned)val2) {
+          val1 = -1;
+      } else if (val1 == val2) {
+          val1 = 0;
+      } else {
+          val1 = 1;
+      }
       setsResult = 0;
       break;
     default:
       return 0;
     }
   if (InstrSetsAnyFlags(ir)) {
-    ApplyConditionAfter(ir, val1);
+      ApplyConditionAfter(ir, val1);
   }
   if (setsResult) {
-    ReplaceOpcode(ir, OPC_MOV);
-    ir->src = NewImmediate(val1);
+      if (val1 < 0) {
+          ReplaceOpcode(ir, OPC_NEG);
+          ir->src = NewImmediate(-val1);
+      } else {
+          ReplaceOpcode(ir, OPC_MOV);
+          ir->src = NewImmediate(val1);
+      }
   } else {
     ir->cond = COND_FALSE;
   }
   return 1;
 }
 
+static bool
+IsOnlySetterFor(IRList *irl, IR *orig_ir, Operand *orig)
+{
+    IR *ir;
+    if (!IsLocal(orig)) {
+        return false;
+    }
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (IsDummy(ir) || IsLabel(ir)) {
+            continue;
+        }
+        if (ir != orig_ir && InstrModifies(ir, orig)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 //
 // if we see x:=2 then replace future uses of x with 2
+// if orig_ir is the only setter for orig in the whole irl,
+// then we can do this unconditionally; otherwise we have
+// to beware of jumps and labels
 //
 static int
-PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
+PropagateConstForward(IRList *irl, IR *orig_ir, Operand *orig, Operand *immval)
 {
   IR *ir;
   int change = 0;
-  for (ir = instr; ir; ir = ir->next) {
+  bool unconditional;
+
+  if (orig_ir->opc == OPC_NEG) {
+      immval = NewImmediate(-immval->val);
+  }
+  unconditional = IsOnlySetterFor(irl, orig_ir, orig);
+  for (ir = orig_ir->next; ir; ir = ir->next) {
     if (IsDummy(ir)) {
         continue;
     }
-    if (IsLabel(ir)) {
+    if (IsLabel(ir) && !unconditional) {
         return change;
     }
     if (ir->opc == OPC_CALL) {
+        if (!unconditional || !IsLocal(orig)) {
+            return change;
+        }
+    }
+    if (IsJump(ir) && !JumpIsAfterOrEqual(orig_ir, ir)) {
+        if (unconditional) {
+            continue;
+        }
         return change;
     }
-    if (IsJump(ir) && !JumpIsAfterOrEqual(instr, ir)) {
-      return change;
-    }
-    if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, imm)) {
+    if (ir->opc == OPC_MOV && !InstrSetsAnyFlags(ir) && SameImmediate(ir->src, immval)) {
         if ( ir->dst == orig ) {
             // updating same register, so kill it
             ir->opc = OPC_DUMMY;
@@ -1062,9 +1161,9 @@ PropagateConstForward(IR *instr, Operand *orig, Operand *imm)
         }
     } else if (ir->dst == orig) {
         // we can perhaps replace the operation with a mov
-        change |= TransformConstDst(ir, imm);
+        change |= TransformConstDst(ir, immval);
     } else if (ir->src == orig) {
-      ir->src = imm;
+      ir->src = immval;
       change = 1;
     }
     if (InstrModifies(ir, orig)) {
@@ -1172,22 +1271,22 @@ OptimizeMoves(IRList *irl)
                     DeleteIR(irl, ir);
                     change = 1;
                 }
+            } else if ((ir->opc == OPC_MOV || ir->opc == OPC_NEG) && ir->cond == COND_TRUE && IsImmediate(ir->src)) {
+                int sawchange;
+                if (ir->flags == FLAG_WZ) {
+                    // because this is a mov immediate, we know how
+                    // WZ will be set
+                    change |= ApplyConditionAfter(ir, ir->src->val);
+                }
+                change |= (sawchange = PropagateConstForward(irl, ir, ir->dst, ir->src));
+                if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
+                    // we no longer need the original mov
+                    DeleteIR(irl, ir);
+                }
             } else if (ir->opc == OPC_MOV && ir->cond == COND_TRUE) {
                 if (ir->src == ir->dst && !InstrSetsAnyFlags(ir)) {
                     DeleteIR(irl, ir);
                     change = 1;
-                } else if (IsImmediate(ir->src)) {
-                    int sawchange;
-                    if (ir->flags == FLAG_WZ) {
-                        // because this is a mov immediate, we know how
-                        // WZ will be set
-                        change |= ApplyConditionAfter(ir, ir->src->val);
-                    }
-                    change |= (sawchange = PropagateConstForward(ir_next, ir->dst, ir->src));
-                    if (sawchange && !InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->dst)) {
-                        // we no longer need the original mov
-                        DeleteIR(irl, ir);
-                    }
                 } else if (!InstrSetsAnyFlags(ir) && IsDeadAfter(ir, ir->src) && SafeToReplaceBack(ir->prev, ir->src, ir->dst)) {
                     ReplaceBack(ir->prev, ir->src, ir->dst);
                     DeleteIR(irl, ir);
@@ -1223,6 +1322,12 @@ HasSideEffectsOtherThanReg(IR *ir)
             if (InstrUsesFlags(irnext, flagsSet)) {
                 return true;
             }
+            if (InstrIsVolatile(irnext)) {
+                return true;
+            }
+            if (IsBranch(irnext) && ir->cond == COND_TRUE) {
+                break;
+            }
         }
     }
     if (IsBranch(ir)) {
@@ -1253,6 +1358,12 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_QDIV:
     case OPC_QFRAC:
     case OPC_QMUL:
+    case OPC_DRVC:
+    case OPC_DRVNC:
+    case OPC_DRVL:
+    case OPC_DRVH:
+    case OPC_DRVNZ:
+    case OPC_DRVZ:
         return true;
     default:
         return false;
@@ -1628,7 +1739,7 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         if (IsBranch(ir)) {
             return NULL;
         }
-        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST)) {
+        if (ir->dst == dst && (InstrSetsDst(ir) || ir->opc == OPC_TEST || ir->opc == OPC_TESTBN)) {
             if (ir->cond != COND_TRUE) {
                 // cannot be sure that we set the value here,
                 // since the set is conditional
@@ -1659,6 +1770,24 @@ FindPrevSetterForReplace(IR *irorig, Operand *dst)
         ir = ir->next;
     }
     return saveir;
+}
+
+//
+// check for flags used between ir1 and ir2
+//
+static int
+FlagsNotUsedBetween(IR *ir1, IR *ir2, unsigned flags)
+{
+    while (ir1 && ir1 != ir2) {
+        if (InstrUsesFlags(ir1, flags)) {
+            return 0;
+        }
+        ir1 = ir1->next;
+    }
+    if (!ir1) {
+        return 0;
+    }
+    return 1;
 }
 
 //
@@ -1742,7 +1871,8 @@ OptimizeCompares(IRList *irl)
                 && !InstrIsVolatile(ir_prev)
                 && !InstrIsVolatile(ir)
                 && (ir_prev->flags == COND_TRUE)
-                && CanTestZero(ir_prev->opc))
+                && CanTestZero(ir_prev->opc)
+                && FlagsNotUsedBetween(ir_prev, ir, FLAG_WC|FLAG_WZ))
             {
                 ir_prev->flags |= FLAG_WZ;
                 DeleteIR(irl, ir);
@@ -1980,6 +2110,12 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNZ:
         ReplaceOpcode(ir, OPC_MUXC);
         break;
+    case OPC_DRVZ:
+        ReplaceOpcode(ir, OPC_DRVNC);
+        break;
+    case OPC_DRVNZ:
+        ReplaceOpcode(ir, OPC_DRVC);
+        break;
     case OPC_MUXC:
     case OPC_MUXNC:
     case OPC_GENERIC:
@@ -2080,6 +2216,8 @@ FlagsDeadAfter(IRList *irl, IR *ir, unsigned flags)
 // shr  tmp, #1
 //    becomes shr tmp, #1 wc if we can replace NZ with C
 //
+// similarly for test tmp, #$8000_0000 wz ; shl tmp, #1
+// 
 // if_c  or a, b
 // if_nc andn a, b
 //    becomes muxc a, b
@@ -2185,10 +2323,73 @@ OptimizePeepholes(IRList *irl)
         {
             previr = FindPrevSetterForReplace(ir, ir->dst);
             if (previr && previr->opc == OPC_TEST
-                && IsImmediateVal(previr->src, 1)
-                && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
+                && IsImmediateVal(previr->src, 1))
             {
                 /* maybe we can replace the test with the shr */
+                /* we already know the result isn't used between previr
+                   and ir; check the instructions in between for use
+                   of C, and also verify that the flags aren't used
+                   in subsequent instructions
+                */
+                int test_is_z = (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ;
+                int test_is_c = (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WC;
+                IR *testir;
+                IR *lastir = NULL;
+                bool sawir = false;
+                bool changeok = test_is_z || test_is_c;
+                int irflags = (ir->flags & FLAG_WZ) | FLAG_WC;
+                for (testir = previr->next; testir && changeok; testir = testir->next) {
+                    if (testir == ir) {
+                        sawir = true;
+                    }
+                    if (IsBranch(testir)) {
+                        /* we assume flags do not have to be preserved  across branches*/
+                        lastir = testir;
+                        break;
+                    }
+                    if (test_is_z && InstrUsesFlags(testir, FLAG_WC)) {
+                        changeok = false;
+                    } else if (InstrSetsAnyFlags(testir)) {
+                        changeok = sawir;
+                        lastir = testir;
+                        break;
+                    }
+                }
+                if (changeok) {
+                    /* ok, let's go ahead and change it */
+                    ReplaceOpcode(previr, opc);
+                    previr->flags &= ~(FLAG_WZ|FLAG_WC);
+                    previr->flags |= irflags;
+                    if (test_is_z) {
+                        for (testir = previr->next; testir && testir != lastir;
+                             testir = testir->next)
+                        {
+                            ReplaceZWithNC(testir);
+                        }
+                        if (IsBranch(lastir)) {
+                            ReplaceZWithNC(lastir);
+                        }
+                    }
+                    DeleteIR(irl, ir);
+                    changed = 1;
+                    goto done;
+                }
+            }
+        } else if ( (opc == OPC_SHL || opc == OPC_ROL)
+		   && !InstrSetsFlags(ir, FLAG_WC)
+                   && !InstrUsesFlags(ir, FLAG_WC|FLAG_WZ)
+                   && IsImmediateVal(ir->src, 1))
+        {
+            previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr &&
+                (    (previr->opc == OPC_TEST
+                      && IsImmediateVal(previr->src, 0x80000000))
+                  || (previr->opc == OPC_TESTBN
+                      && IsImmediateVal(previr->src, 31))
+                    )
+                && (previr->flags & (FLAG_WZ|FLAG_WC)) == FLAG_WZ)
+            {
+                /* maybe we can replace the test with the shl */
                 /* we already know the result isn't used between previr
                    and ir; check the instructions in between for use
                    of C, and also verify that the flags aren't used
@@ -2219,6 +2420,7 @@ OptimizePeepholes(IRList *irl)
                 if (changeok) {
                     /* ok, let's go ahead and change it */
                     ReplaceOpcode(previr, opc);
+                    previr->src = NewImmediate(1); // change to shl #1 wc
                     previr->flags &= ~(FLAG_WZ|FLAG_WC);
                     previr->flags |= irflags;
                     for (testir = previr->next; testir && testir != lastir;
@@ -2315,7 +2517,23 @@ OptimizePeepholes(IRList *irl)
             changed = 1;
             goto done;
         }
-
+        // check for and a, x ;; test a, x wcz
+        if (ir->opc == OPC_TEST && ir->cond == COND_TRUE)
+        {
+            IR *previr = FindPrevSetterForReplace(ir, ir->dst);
+            if (previr && previr->opc == OPC_AND && !InstrSetsAnyFlags(previr) && previr->cond == COND_TRUE )
+            {
+                if (IsDeadAfter(ir, ir->dst)) {
+                    DeleteIR(irl, previr);
+                } else {
+                    previr->flags |= (ir->flags & (FLAG_WC|FLAG_WZ));
+                    DeleteIR(irl, ir);
+                }
+                changed = 1;
+                goto done;
+            }
+        }
+        
         // check for add a,b ;; mov b,a ;; isdead a
         // becomes add b, a
         
@@ -2376,6 +2594,19 @@ OptimizePeepholes(IRList *irl)
                     changed = 1;
                     goto done;
                 }
+            }
+        }
+        else if (gl_p2 && ir->opc == OPC_TEST && ir->flags == FLAG_WZ)
+        {
+            // this code isn't finished yet
+            int mask = P2CheckBitMask(ir->src->val);
+            if (mask==(mask & 0x1f)    // just one bit set
+                && ((unsigned)ir->src->val) > 511) // and a large constant
+            {
+                ReplaceOpcode(ir, OPC_TESTBN);
+                ir->src = NewImmediate(mask);
+                changed = 1;
+                goto done;
             }
         }
     done:
@@ -2677,12 +2908,14 @@ OptimizeP2(IRList *irl)
                     repir = NewIR(OPC_REPEAT);
                     repir->dst = labir->dst;
                     repir->src = var ? var : NewImmediate(0);
+                    repir->aux = labir;
+                    labir->aux = repir;
                     InsertAfterIR(irl, pir, repir);
                     InsertAfterIR(irl, ir, labir);
+                    ir->dst = dst;
+                    ir->src = NULL;
                     ir->opc = OPC_REPEAT_END;
                     ir->instr = NULL;
-                    ir->dst = ir->src;
-                    ir->src = NULL;
                     changed = 1;
                 }
             }
@@ -3021,14 +3254,23 @@ NeverInline(Function *f)
 //
 // check a function to see if it should be inlined
 //
-#define INLINE_THRESHOLD 4
+#define INLINE_THRESHOLD_P1 2
+#define INLINE_THRESHOLD_P2 4
 
 bool
 ShouldBeInlined(Function *f)
 {
     IR *ir;
     int n = 0;
+    int paramfactor;
+    int threshold;
 
+    if (gl_p2) {
+        threshold = INLINE_THRESHOLD_P2;
+    } else {
+        threshold = INLINE_THRESHOLD_P1;
+    }
+    
     if (!(gl_optimize_flags & (OPT_INLINE_SMALLFUNCS|OPT_INLINE_SINGLEUSE))) {
         return false;
     }
@@ -3065,12 +3307,22 @@ ShouldBeInlined(Function *f)
         if (f->callSites == 1) {
             return true;
         } else if (f->callSites == 2) {
-            return (n <= 2*INLINE_THRESHOLD);
+            return (n <= 2*threshold);
         }
     }
 
     // otherwise only inline small functions
-    return (n <= INLINE_THRESHOLD);
+    // also note that we should consider the cost of moving instructions
+    // into argument registers when considering this
+    paramfactor = f->numparams;
+    if (paramfactor < 2) {
+        paramfactor = 2;
+    } else if (paramfactor > 4) {
+        paramfactor = 4;
+    } else {
+        paramfactor = f->numparams;
+    }
+    return n <= (threshold + paramfactor);
 }
 
 //
@@ -3090,6 +3342,7 @@ ExpandInlines(IRList *irl)
             f = (Function *)ir->aux;
             if (f && FuncData(f)->isInline) {
                 ReplaceIRWithInline(irl, ir, f);
+                FuncData(f)->actual_callsites--;
                 change = 1;
             }
         }
@@ -3108,13 +3361,12 @@ ExpandInlines(IRList *irl)
 // a new label which can point to the end
 // of the loop
 static IR *
-LoopCanBeFcached(IRList *irl, IR *root)
+LoopCanBeFcached(IRList *irl, IR *root, int size_left)
 {
     IR *endjmp;
     IR *endlabel;
     IR *newlabel;
     IR *ir = root;
-    int size = 0;
     
     if (!IsHubDest(ir->dst)) {
         // this loop is not in HUB memory
@@ -3132,29 +3384,55 @@ LoopCanBeFcached(IRList *irl, IR *root)
     if (IsForwardJump(endjmp)) {
         return 0;
     }
-    {
-        ir = ir->next;
-        while (ir != endjmp) {
-            if (ir->fcache || InstrIsVolatile(ir)) {
+
+    ir = ir->next;
+    while (ir != endjmp) {
+        if (ir->fcache || InstrIsVolatile(ir)) {
+            return 0;
+        }
+        if (ir->opc == OPC_CALL) {
+            // no calls to hub memory!
+            if (MaybeHubDest(ir->dst)) {
                 return 0;
             }
-            if (ir->opc == OPC_CALL) {
-                // no calls to hub memory!
-                if (MaybeHubDest(ir->dst)) {
-                    return 0;
-                }
+        }
+        if (IsJump(ir)) {
+            if (!JumpIsAfterOrEqual(root, ir))
+                return 0;
+            if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
+                return 0;
+        }
+        if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
+            --size_left;
+            if (size_left <= 0) {
+                return 0;
             }
-            if (IsJump(ir)) {
-                if (!JumpIsAfterOrEqual(root, ir))
-                    return 0;
-                if (JumpDest(ir) != endlabel->dst && JumpIsAfterOrEqual(endlabel, ir))
-                    return 0;
-            }
-            if (!IsDummy(ir) && ir->opc != OPC_LABEL) {
-                size++;
-                if (size >= gl_fcache_size) {
-                    return 0;
+        }
+        ir = ir->next;
+    }
+
+    //
+    // OK, if we got here then the stuff from "root" to "endjmp"
+    // is eligible for fcache
+    // if there's another loop just after this one, it may be worth
+    // trying to fit it in as well
+    //
+    if (ir == endjmp && size_left > gl_fcache_size/2) {
+        // peek ahead a few instructions
+        // if there's a loop there we can stick into fcache as well,
+        // combine them both into one big block
+        int n = 4;
+        while (n > 0 && ir && size_left > 0) {
+            if (IsLabel(ir)) {
+                IR *newend = LoopCanBeFcached(irl, ir, size_left);
+                if (newend) {
+                    return newend;
+                } else {
+                    break;
                 }
+            } else if (!IsDummy(ir)) {
+                --n;
+                --size_left;
             }
             ir = ir->next;
         }
@@ -3175,8 +3453,8 @@ OptimizeFcache(IRList *irl)
     ir = irl->head;
     while (ir) {
         if (IsLabel(ir)) {
-            endlabel = LoopCanBeFcached(irl, ir);
-            if (LoopCanBeFcached(irl, ir)) {
+            endlabel = LoopCanBeFcached(irl, ir, gl_fcache_size);
+            if (endlabel) {
                 Operand *src = ir->dst;
                 Operand *dst = endlabel->dst;
                 IR *startlabel = ir;
@@ -3226,16 +3504,20 @@ typedef struct PeepholePattern {
 #define OPC_ANY     -1
 #define MAX_OPERANDS_IN_PATTERN 4
 
-#define PEEP_OP_SET   0x0100
-#define PEEP_OP_MATCH 0x0200
-#define PEEP_OP_IMM   0x0300
-#define PEEP_OP_SET_IMM 0x0400
-#define PEEP_OPNUM_MASK 0x00ff
-#define PEEP_OP_MASK    0xff00
+#define PEEP_OP_SET     0x01000000
+#define PEEP_OP_MATCH   0x02000000
+#define PEEP_OP_IMM     0x03000000
+#define PEEP_OP_SET_IMM 0x04000000
+#define PEEP_OP_MATCH_DEAD 0x05000000  /* like PEEP_OP_MATCH, but operand is dead after this instr */
+#define PEEP_OP_CLRBITS 0x06000000
+#define PEEP_OPNUM_MASK 0x00ffffff
+#define PEEP_OP_MASK    0xff000000
+
+#define PEEP_OP_CLRMASK(bits, shift) (PEEP_OP_CLRBITS|(bits<<6)|(shift))
 
 static Operand *peep_ops[MAX_OPERANDS_IN_PATTERN];
 
-static int PeepOperandMatch(int patrn_dst, Operand *dst)
+static int PeepOperandMatch(int patrn_dst, Operand *dst, IR *ir)
 {
     int opnum, opflag;
     
@@ -3253,11 +3535,30 @@ static int PeepOperandMatch(int patrn_dst, Operand *dst)
             if (!SameOperand(peep_ops[opnum], dst)) {
                 return 0;
             }
+        } else if (opflag == PEEP_OP_MATCH_DEAD) {
+            if (!SameOperand(peep_ops[opnum], dst)) {
+                return 0;
+            }
+            if (!IsDeadAfter(ir, dst)) {
+                return 0;
+            }
         } else if (opflag == PEEP_OP_IMM) {
             if (dst->kind != IMM_INT) {
                 return 0;
             }
             if (dst->val != opnum) {
+                return 0;
+            }
+        } else if (opflag == PEEP_OP_CLRBITS) {
+            uint32_t mask, shift;
+            if (dst->kind != IMM_INT) {
+                return 0;
+            }
+            mask = (opnum>>6) & 0x3f;
+            shift = (opnum & 0x3f);
+            mask = ((1<<mask)-1)<<shift;
+            mask = ~mask;
+            if ( ((uint32_t)dst->val) != mask) {
                 return 0;
             }
         }
@@ -3302,10 +3603,10 @@ static int MatchPattern(PeepholePattern *patrn, IR *ir)
             }
         }
         
-        if (!PeepOperandMatch(patrn->dst, ir->dst)) {
+        if (!PeepOperandMatch(patrn->dst, ir->dst, ir)) {
             return 0;
         }
-        if (!PeepOperandMatch(patrn->src1, ir->src)) {
+        if (!PeepOperandMatch(patrn->src1, ir->src, ir)) {
             return 0;
         }
         patrn++;
@@ -3350,7 +3651,23 @@ static PeepholePattern pat_signex[] = {
 };
 static PeepholePattern pat_wrc[] = {
     { COND_TRUE, OPC_WRC, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
-    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, PEEP_OP_MATCH|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2|PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static PeepholePattern pat_clrc[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setc1[] = {
+    { COND_ANY, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setc2[] = {
+    { COND_ANY, OPC_NEG, PEEP_OP_SET|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_ANY, OPC_TEST, PEEP_OP_MATCH_DEAD|0, PEEP_OP_IMM|1, PEEP_FLAGS_WCZ_OK },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
 
@@ -3405,6 +3722,129 @@ static PeepholePattern pat_waitx[] = {
     { COND_ANY, OPC_WAITX, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
     { 0, 0, 0, 0, PEEP_FLAGS_DONE }
 };
+// replace if_c drvh / if_nc drvl with drvc
+static PeepholePattern pat_drvc1[] = {
+    { COND_C,  OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NC, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvc2[] = {
+    { COND_NC, OPC_DRVL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_C,  OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+// replace if_z drvh / if_nz drvl with drvz
+static PeepholePattern pat_drvz[] = {
+    { COND_EQ, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NE, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvnz1[] = {
+    { COND_NE, OPC_DRVH, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_EQ, OPC_DRVL, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_drvnz2[] = {
+    { COND_EQ, OPC_DRVL, PEEP_OP_SET|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { COND_NE, OPC_DRVH, PEEP_OP_MATCH|0, OPERAND_ANY, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// replace mov x, #0 / cmp a, b wz / if_e mov x, #1
+static PeepholePattern pat_seteq[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, OPERAND_ANY, OPERAND_ANY, PEEP_FLAGS_WCZ_OK },
+    { COND_EQ,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_setne[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_IMM|0, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_CMP, OPERAND_ANY, OPERAND_ANY, PEEP_FLAGS_WCZ_OK },
+    { COND_NE,  OPC_MOV, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sar24getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shr24getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sar16getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shr16getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sar8getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shr8getbyte[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SHR, PEEP_OP_MATCH|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|255, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_sar16getword[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|0xffff, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shr16getword[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_SAR, PEEP_OP_MATCH|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|0xffff, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+static PeepholePattern pat_shl8setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|8, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,8), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl16setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,16), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl24setbyte[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|24, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(8,24), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+static PeepholePattern pat_shl16setword[] = {
+    { COND_TRUE, OPC_SHL, PEEP_OP_SET|0, PEEP_OP_IMM|16, PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_AND, PEEP_OP_SET|1, PEEP_OP_CLRMASK(16,16), PEEP_FLAGS_P2 },
+    { COND_TRUE, OPC_OR, PEEP_OP_MATCH|1, PEEP_OP_MATCH|0, PEEP_FLAGS_P2 },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
+
+// mov x, y; and x, #1; add z, x => test y, #1 wz; if_nz add z, #1
+
+static PeepholePattern pat_mov_and_add[] = {
+    { COND_TRUE, OPC_MOV, PEEP_OP_SET|0, PEEP_OP_SET|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_AND, PEEP_OP_MATCH|0, PEEP_OP_IMM|1, PEEP_FLAGS_NONE },
+    { COND_TRUE, OPC_ADD, PEEP_OP_SET|2, PEEP_OP_MATCH_DEAD|0, PEEP_FLAGS_NONE },
+    { 0, 0, 0, 0, PEEP_FLAGS_DONE }
+};
 
 static int ReplaceMaxMin(int arg, IRList *irl, IR *ir)
 {
@@ -3431,24 +3871,53 @@ static int ReplaceExtend(int arg, IRList *irl, IR *ir)
     DeleteIR(irl, ir->next);
     return 1;
 }
-static int ReplaceZWithC(int arg, IRList *irl, IR *ir)
+//
+// looks at the sequence
+//   wrc x
+//   cmp x, #0 wz
+// and if possible deletes it and replaces subsequent uses of C with NZ
+//
+static int ReplaceWrc(int arg, IRList *irl, IR *ir)
 {
-    while (ir && arg > 0) {
-        ir = ir->next;
-        --arg;
-    }
-    if (!ir || InstrIsVolatile(ir)) {
+    IR *ir0 = ir;
+    IR *ir1 = ir->next;
+    IR *lastir = NULL;
+    
+    if (InstrIsVolatile(ir0) || !ir1 || InstrIsVolatile(ir1)) {
         return 0;
     }
-    if (ir->cond == COND_NE) {
-        ir->cond = COND_C;
-        return 1;
+    ir = ir1->next;
+    for(lastir = ir; lastir; lastir = lastir->next) {
+        if (!lastir || InstrIsVolatile(lastir)) {
+            return 0;
+        }
+        if (IsBranch(lastir)) {
+            // we assume flags do not have to be preserved across branches */
+            break;
+        }
+        if (InstrUsesFlags(lastir, FLAG_WC)) {
+            // C is explicitly used, so preserve it
+            return 0;
+        }
+        if (InstrSetsAnyFlags(lastir)) {
+            // flags are to be replaced
+            break;
+        }
     }
-    if (ir->cond == COND_EQ) {
-        ir->cond = COND_NC;
-        return 1;
+    if (!lastir) {
+        return 0;
     }
-    return 0;
+    // OK, let's go ahead and change Z to NC
+    while (ir != lastir) {
+        ReplaceZWithNC(ir);
+        ir = ir->next;
+    }
+    if (IsBranch(lastir)) {
+        ReplaceZWithNC(lastir);
+    }
+    DeleteIR(irl, ir0);
+    DeleteIR(irl, ir1);
+    return 1;
 }
 
 static int RemoveNFlagged(int arg, IRList *irl, IR *ir)
@@ -3480,6 +3949,104 @@ static int FixupMovAdd(int arg, IRList *irl, IR *ir)
     return 0;
 }
 
+/* mov x, #0 ; test x, #1 wc => mov x, #0 wc */
+static int FixupClrC(int arg, IRList *irl, IR *ir)
+{
+    IR *testir = ir->next;
+    int newflags;
+    newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
+    ir->flags |= newflags;
+    DeleteIR(irl, testir);
+
+    /* an interesting other thing to check: if we have
+     * a "drvc x" instruction following, replace it with
+     * "drvl x"
+     */
+    if (ir->next && ir->next->opc == OPC_DRVC) {
+        ReplaceOpcode(ir->next, OPC_DRVL);
+    }
+    return 1;
+}
+/* mov x, #1 ; test x, #1 wc => neg x, #1 wc */
+static int FixupSetC(int arg, IRList *irl, IR *ir)
+{
+    IR *testir = ir->next;
+    int newflags;
+    ReplaceOpcode(ir, OPC_NEG);
+    newflags = (testir->flags & (FLAG_WC|FLAG_WZ));
+    ir->flags |= newflags;
+    DeleteIR(irl, testir);
+    /* an interesting other thing to check: if we have
+     * a "drvc x" instruction following, replace it with
+     * "drvh x"
+     */
+    if (ir->next && ir->next->opc == OPC_DRVC) {
+        ReplaceOpcode(ir->next, OPC_DRVH);
+    }
+    return 1;
+}
+
+// mov x, y; shr x, #N; and x, #255 => getbyte x, y, #N/8
+// mov x, y; shr x, #N; and x, #65535 => getword x, y, #N/16
+
+static int FixupGetByteWord(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1 = ir0->next;
+    IR *ir2;
+    int shift = 0;
+    
+    if (ir1->opc == OPC_SHR || ir1->opc == OPC_SAR) {
+        ir2 = ir1->next;
+        shift = ir1->src->val;
+    } else if (ir1->opc == OPC_AND) {
+        ir2 = ir1;
+        ir1 = NULL;
+        shift = 0;
+    } else {
+        return 0;
+    }
+
+    ReplaceOpcode(ir0, arg);
+    if (arg == OPC_GETBYTE) {
+        shift = shift/8;
+    } else {
+        shift = shift/16;
+    }
+    ir0->src2 = NewImmediate(shift);
+    if (ir1) {
+        DeleteIR(irl, ir1);
+    }
+    DeleteIR(irl, ir2);
+    return 1;
+}
+// shl x, #N; and y, #MASK; or y, x => setbyte y, x, #N/8
+
+static int FixupSetByteWord(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1 = ir0->next;
+    IR *ir2 = ir1->next;
+    int shift = 0;
+    
+    if (ir0->opc == OPC_SHL || ir0->opc == OPC_ROL) {
+        shift = ir0->src->val;
+    } else {
+        return 0;
+    }
+
+    ReplaceOpcode(ir2, arg);
+    if (arg == OPC_SETBYTE) {
+        shift = shift/8;
+    } else {
+        shift = shift/16;
+    }
+    ir2->src2 = NewImmediate(shift);
+    if (IsDeadAfter(ir2, ir0->dst)) {
+        DeleteIR(irl, ir0);
+    }
+    DeleteIR(irl, ir1);
+    return 1;
+}
+
 static int FixupBmask(int arg, IRList *irl, IR *ir)
 {
     IR *irnext, *irnext2;
@@ -3504,6 +4071,62 @@ static int FixupWaitx(int arg, IRList *irl, IR *ir)
     return 1;
 }
 
+// pattern is
+//   mov x, #0
+//   cmp arg01, arg02 wz
+// if_e mov x, #1
+//
+// delete first move, and replace second with wrz x
+
+static int FixupEq(int arg, IRList *irl, IR *ir)
+{
+    IR *irnext, *irnext2;
+
+    irnext = ir->next;
+    irnext2 = irnext->next;
+    ReplaceOpcode(irnext2, arg);
+    irnext2->src = NULL;
+    irnext2->cond = COND_TRUE;
+    DeleteIR(irl, ir);
+    return 1;
+}
+
+static int ReplaceDrvc(int arg, IRList *irl, IR *ir)
+{
+    ReplaceOpcode(ir, arg);
+    ir->cond = COND_TRUE;
+    DeleteIR(irl, ir->next);
+    return 1;
+}
+
+// pattern is
+//   mov x, y
+//   and x, #1
+//   add z, x  '' x is dead
+//
+// change to
+//    test y, #1 wz
+// if_nz add z, #1
+//
+static int FixupAndAdd(int arg, IRList *irl, IR *ir0)
+{
+    IR *ir1, *ir2;
+
+    ir1 = ir0->next;
+    ir2 = ir1->next;
+
+    ir1->dst = ir0->src;
+    ReplaceOpcode(ir1, OPC_TEST);
+    ir1->flags |= FLAG_WZ;
+
+    ir2->src = NewImmediate(1);
+    ir2->cond = COND_NE;
+
+    DeleteIR(irl, ir0);
+    return 1;
+}
+
+
 struct Peepholes {
     PeepholePattern *check;
     int arg;
@@ -3517,7 +4140,13 @@ struct Peepholes {
     { pat_zeroex, OPC_ZEROX, ReplaceExtend },
     { pat_signex, OPC_SIGNX, ReplaceExtend },
 
-    { pat_wrc, 2, ReplaceZWithC },
+    { pat_drvc1, OPC_DRVC, ReplaceDrvc },
+    { pat_drvc2, OPC_DRVC, ReplaceDrvc },
+    { pat_drvz, OPC_DRVZ, ReplaceDrvc },
+    { pat_drvnz1, OPC_DRVNZ, ReplaceDrvc },
+    { pat_drvnz2, OPC_DRVNZ, ReplaceDrvc },
+
+    { pat_wrc, 0, ReplaceWrc },
 
     { pat_rdbyte1, 2, RemoveNFlagged },
     { pat_rdword1, 2, RemoveNFlagged },
@@ -3530,6 +4159,31 @@ struct Peepholes {
     { pat_bmask2, 0, FixupBmask },
 
     { pat_waitx, 0, FixupWaitx },
+    
+    { pat_seteq, OPC_WRZ, FixupEq },
+    { pat_setne, OPC_WRNZ, FixupEq },
+
+    { pat_sar24getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr24getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_sar16getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr16getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_sar8getbyte, OPC_GETBYTE, FixupGetByteWord },
+    { pat_shr8getbyte, OPC_GETBYTE, FixupGetByteWord },
+
+    { pat_sar16getword, OPC_GETWORD, FixupGetByteWord },
+    { pat_shr16getword, OPC_GETWORD, FixupGetByteWord },
+
+    { pat_shl8setbyte, OPC_SETBYTE, FixupSetByteWord },
+    { pat_shl16setbyte, OPC_SETBYTE, FixupSetByteWord },
+    { pat_shl24setbyte, OPC_SETBYTE, FixupSetByteWord },
+    
+    { pat_shl16setword, OPC_SETWORD, FixupSetByteWord },
+    
+    { pat_clrc, 0, FixupClrC },
+    { pat_setc1, 0, FixupSetC },
+    { pat_setc2, 0, FixupSetC },
+
+    { pat_mov_and_add, 0, FixupAndAdd },
 };
 
 
