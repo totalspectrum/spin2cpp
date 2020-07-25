@@ -605,6 +605,11 @@ The parser has the wrong precedence for `@`, so a DAT section declaration like:
 ```
 will produce a single value of `@foo+12`, rather than 3 values of `@foo`.
 
+As a workaround, enclose the value in parentheses:
+```
+   long (@foo)[3]
+```
+
 
 # P2 Considerations
 
