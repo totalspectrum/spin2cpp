@@ -31,8 +31,8 @@ struct vfs {
     int (*rename)(const char *oldname, const char *newname);
 };
 
-int _openraw(struct vfs_file_t *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
-int _closeraw(struct vfs_file_t *f) _IMPL("libc/unix/posixio.c");
+int _openraw(void *f, const char *name, unsigned flags, unsigned perm) _IMPL("libc/unix/posixio.c");
+int _closeraw(void *f) _IMPL("libc/unix/posixio.c");
 
 // in FlexC these have definitions built in to the system module,
 // so no need to _IMPL them

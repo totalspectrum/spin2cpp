@@ -84,12 +84,13 @@ __getftab(int i)
 }
 
 int
-_openraw(vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
+_openraw(void *fil_ptr, const char *orig_name, int flags, mode_t mode)
 {
     int r;
     struct vfs *v;
     unsigned state = _VFS_STATE_INUSE;
-
+    vfs_file_t *fil = fil_ptr;
+    
     char *name = __getfilebuffer();
     v = (struct vfs *)__getvfsforfile(name, orig_name);
     if (!v || !v->open) {
@@ -171,8 +172,9 @@ _openraw(vfs_file_t *fil, const char *orig_name, int flags, mode_t mode)
     return r;
 }
 
-int _closeraw(vfs_file_t *f)
+int _closeraw(void *f_ptr)
 {
+    vfs_file_t *f = f_ptr;
     int r = 0;
     if (!f->state) {
         return _seterror(EBADF);
