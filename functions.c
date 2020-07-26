@@ -2507,7 +2507,7 @@ CheckSimpleArrayref(AST *ast)
                     shift = index * 8;
                     bits = 8;
                 }
-                if (bits >= 0) {
+                if (bits > 0) {
                     AstReportAs(ast, &saveinfo);
                     newexpr = id;
                     newexpr = NewAST(AST_RANGEREF, newexpr,
