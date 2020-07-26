@@ -480,7 +480,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
  * level == 2 inside a coginit
  */
 static void
-doSpinTransform(AST **astptr, int level)
+doSpinTransform(AST **astptr, int level, AST *parent)
 {
     AST *ast = *astptr;
     Symbol *sym;
@@ -497,19 +497,19 @@ doSpinTransform(AST **astptr, int level)
     case AST_INLINEASM:
         return;
     case AST_EXPRLIST:
-        doSpinTransform(&ast->left, level == 2 ? level : 0);
-        doSpinTransform(&ast->right, level == 2 ? level : 0);
+        doSpinTransform(&ast->left, level == 2 ? level : 0, ast);
+        doSpinTransform(&ast->right, level == 2 ? level : 0, ast);
         break;
     case AST_THENELSE:
-        doSpinTransform(&ast->left, level);
-        doSpinTransform(&ast->right, level);
+        doSpinTransform(&ast->left, level, ast);
+        doSpinTransform(&ast->right, level, ast);
         break;
     case AST_RETURN:
     case AST_THROW:
-        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->left, 0, ast);
         break;
     case AST_CATCH:
-        doSpinTransform(&ast->left, level);
+        doSpinTransform(&ast->left, level, ast);
         curfunc->local_address_taken = 1; // if we do a catch we will want data on stack
         AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
         *astptr = ast = NewAST(AST_TRYENV,
@@ -526,31 +526,31 @@ doSpinTransform(AST **astptr, int level)
     case AST_IF:
     case AST_WHILE:
     case AST_DOWHILE:
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, level);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, level, ast);
         break;
     case AST_COUNTREPEAT:
         ast = ast->right; // from value
-        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->left, 0, ast);
         ast = ast->right; // to value
-        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->left, 0, ast);
         ast = ast->right; // step value
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, level);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, level, ast);
 
         /* now fix it up */
         *astptr = TransformCountRepeat(*astptr);
         break;
     case AST_STMTLIST:
-        doSpinTransform(&ast->left, 1);
-        doSpinTransform(&ast->right, 1);
+        doSpinTransform(&ast->left, 1, ast);
+        doSpinTransform(&ast->right, 1, ast);
         break;
     case AST_CASE:
     case AST_CASETABLE:
     {
         AST *list = ast->right;
         const char *case_name = ast->kind == AST_CASETABLE ? "case_fast" : NULL;
-        doSpinTransform(&ast->left, level);
+        doSpinTransform(&ast->left, level, ast);
         AstReportAs(ast, &saveinfo); // any newly created AST nodes should reflect debug info from this one
 #ifdef NEVER // handled in CreateSwitch now        
         if (ast->left->kind != AST_IDENTIFIER && ast->left->kind != AST_ASSIGN) {
@@ -564,8 +564,8 @@ doSpinTransform(AST **astptr, int level)
                 ERROR(list, "internal error, expected list holder");
             }
             caseitem = list->left;
-            doSpinTransform(&caseitem->left, level);
-            doSpinTransform(&caseitem->right, level);
+            doSpinTransform(&caseitem->left, level, ast);
+            doSpinTransform(&caseitem->right, level, ast);
             list = list->right;
         }
         *ast = *CreateSwitch(ast->left, ast->right, case_name);
@@ -577,8 +577,8 @@ doSpinTransform(AST **astptr, int level)
             func->cog_task = 1;
             func->force_static = 1;
         }
-        doSpinTransform(&ast->left, 2);
-        doSpinTransform(&ast->right, 2);
+        doSpinTransform(&ast->left, 2, ast);
+        doSpinTransform(&ast->right, 2, ast);
         return;
     case AST_FUNCCALL:
         if (level == 0) {
@@ -600,8 +600,8 @@ doSpinTransform(AST **astptr, int level)
         {
             ast = *astptr;
         }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         break;
     case AST_POSTSET:
     {
@@ -626,20 +626,20 @@ doSpinTransform(AST **astptr, int level)
         }
         // we may have a range reference in here, so do the
         // transform on the result
-        doSpinTransform(astptr, level);
+        doSpinTransform(astptr, level, ast);
 	break;
     }
     case AST_ASSIGN:
         if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, level == 1);
         }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         break;
     case AST_METHODREF:
     case AST_CONSTREF:
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         // if we have v.x and v is an array, convert to v[0].x
         if (ast->left && ast->left->kind == AST_IDENTIFIER) {
             AST *objtype = ExprType(ast->left);
@@ -654,12 +654,12 @@ doSpinTransform(AST **astptr, int level)
         *astptr = ast = TransformRangeUse(ast);
         break;
     case AST_ALLOCA:
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->right, 0, ast);
         curfunc->uses_alloca = 1;
         break;
     case AST_ADDROF:
     case AST_ABSADDROF:
-        doSpinTransform(&ast->left, 0);
+        doSpinTransform(&ast->left, 0, ast);
         if (IsLocalVariable(ast->left)) {
             curfunc->local_address_taken = 1;
         }
@@ -707,14 +707,25 @@ doSpinTransform(AST **astptr, int level)
                 } 
             }
         } else if (ast->left && ast->left->kind == AST_MEMREF && IsConstExpr(ast->right)) {
-            AST *newexpr = CheckSimpleArrayref(ast);
-            if (newexpr) {
-                newexpr = TransformRangeUse(newexpr);
-                *astptr = ast = newexpr;
+            switch (parent->kind) {
+            case AST_EXPRLIST:
+            case AST_ASSIGN:
+            case AST_OPERATOR:
+            case AST_RETURN:
+            {
+                AST *newexpr = CheckSimpleArrayref(ast);
+                if (newexpr) {
+                    newexpr = TransformRangeUse(newexpr);
+                    *astptr = ast = newexpr;
+                }
+                break;
+            }
+            default:
+                break;
             }
         }
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         break;
     case AST_LOCAL_IDENTIFIER:
     case AST_IDENTIFIER:
@@ -742,7 +753,7 @@ doSpinTransform(AST **astptr, int level)
             case K_ENCODE:
                 lhsast = DupAST(ast->right);
                 *astptr = ast = AstAssign(lhsast, ast);
-                doSpinTransform(astptr, level);
+                doSpinTransform(astptr, level, parent);
                 break;
             }
         } else {
@@ -800,8 +811,8 @@ doSpinTransform(AST **astptr, int level)
         }
         /* fall through */
     default:
-        doSpinTransform(&ast->left, 0);
-        doSpinTransform(&ast->right, 0);
+        doSpinTransform(&ast->left, 0, ast);
+        doSpinTransform(&ast->right, 0, ast);
         break;
     }
 }
@@ -814,7 +825,7 @@ SpinTransform(Function *func)
     SimplifyAssignments(&func->body);
         
     // spin specific stuff
-    doSpinTransform(&func->body, 1);
+    doSpinTransform(&func->body, 1, func->body);
 
     // ScanFunctionBody is left over from older code
     // it should probably be merged in with doSpinTransform
