@@ -28,24 +28,24 @@ pri _waitcnt(x)
     addct1  x, #0
     waitct1
   endasm
-pri cogid | rval
+pri _cogid | rval
   asm
     cogid rval
   endasm
   return rval
-pri cogstop(id)
+pri _cogstop(id)
   asm
     cogstop id
   endasm
   return 0
-pri lockclr(id) | mask, rval
+pri _lockclr(id) | mask, rval
   mask := -1
   asm
     lockrel id wc
     muxc   rval,mask
   endasm
   return rval
-pri lockset(id) | mask, rval
+pri _lockset(id) | mask, rval
   mask := -1
   asm
     locktry id wc
@@ -61,12 +61,12 @@ pri _locktry(id) | mask, rval
     muxc   rval,mask
   endasm
   return rval
-pri locknew | rval
+pri _locknew | rval
   asm
     locknew rval
   endasm
   return rval
-pri lockret(id)
+pri _lockret(id)
   asm
     lockret id
   endasm

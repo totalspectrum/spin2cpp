@@ -1905,13 +1905,13 @@ Builtin builtinfuncs[] = {
     { "__builtin_clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
     { "_clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
 
-    { "cogstop", 1, defaultBuiltin, "cogstop", "_cogstop", "__builtin_propeller_cogstop", 0, NULL },
-    { "cogid", 0, defaultBuiltin, "cogid", "_cogid", "__builtin_propeller_cogid", 0, NULL },
+    { "_cogstop", 1, defaultBuiltin, "cogstop", "_cogstop", "__builtin_propeller_cogstop", 0, NULL },
+    { "_cogid", 0, defaultBuiltin, "cogid", "_cogid", "__builtin_propeller_cogid", 0, NULL },
 
-    { "locknew", 0, defaultBuiltin, "locknew", "_locknew", "__builtin_propeller_locknew", 0, lockhook },
-    { "lockset", 1, defaultBuiltin, "lockset", "_lockset", "__builtin_propeller_lockset", 0, lockhook },
-    { "lockclr", 1, defaultBuiltin, "lockclr", "_lockclr", "__builtin_propeller_lockclr", 0, lockhook },
-    { "lockret", 1, defaultBuiltin, "lockret", "_lockret", "__builtin_propeller_lockret", 0, lockhook },
+    { "_locknew", 0, defaultBuiltin, "locknew", "_locknew", "__builtin_propeller_locknew", 0, lockhook },
+    { "_lockset", 1, defaultBuiltin, "lockset", "_lockset", "__builtin_propeller_lockset", 0, lockhook },
+    { "_lockclr", 1, defaultBuiltin, "lockclr", "_lockclr", "__builtin_propeller_lockclr", 0, lockhook },
+    { "_lockret", 1, defaultBuiltin, "lockret", "_lockret", "__builtin_propeller_lockret", 0, lockhook },
 
     { "strsize", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },
     { "__builtin_strlen", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },

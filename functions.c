@@ -121,12 +121,24 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
             if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
                  || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
             {
+                Symbol *sym2;
                 switch (kind) {
                 case SYM_PARAMETER:
                 case SYM_RESULT:
                 case SYM_LOCALVAR:
-                    if (FindSymbol(&current->objsyms, username) != 0) {
-                        WARNING(astname, "definition of %s hides a member variable", username);
+                    if ( (sym2 = FindSymbol(&current->objsyms, username)) != 0) {
+                        switch (sym2->kind) {
+                        case SYM_WEAK_ALIAS:
+                        case SYM_FUNCTION:
+                            /* no warning for this */
+                            break;
+                        default:
+                            WARNING(astname, "definition of %s hides a member variable", username);
+                            if (sym2->def) {
+                                WARNING(sym2->def, "previous definition of %s is here", username);
+                            }
+                            break;
+                        }
                     }
                     break;
                 default:

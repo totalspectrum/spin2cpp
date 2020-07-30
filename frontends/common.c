@@ -96,13 +96,16 @@ Aliases spinalias[] = {
     { "clkfreq", "__clkfreq_var" },
     { "clkmode", "__clkmode_var" },
     { "clkset", "_clkset" },
+    { "cogid", "_cogid" },
+    { "cogstop", "_cogstop" },
+    
     { "strsize", "__builtin_strlen" },
-#ifdef NEVER    
-    { "lockclr", "__builtin_lockclr" },
-    { "lockset", "__builtin_lockset" },
-    { "locknew", "__builtin_locknew" },
-    { "lockret", "__builtin_lockret" },
-#endif
+
+    { "lockclr", "_lockclr" },
+    { "lockset", "_lockset" },
+    { "locknew", "_locknew" },
+    { "lockret", "_lockret" },
+
 
     { "reboot", "_reboot" },
 
@@ -188,6 +191,7 @@ Aliases basicalias[] = {
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "cpuchk",  "_cogchk" },
+    { "cpuid",   "_cogid" },
     { "cpuwait", "_cogwait" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },

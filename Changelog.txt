@@ -1,3 +1,7 @@
+Version 4.2.7
+- Better warning messages for redefining member variables
+- Fixed some C definitions in propeller2.h
+
 Version 4.2.6
 - Added sanity check for removing inlined functions (fixes an optimizer bug)
 - Added __andthen__ and __orelse__ operators to Spin/Spin2.
