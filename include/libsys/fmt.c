@@ -407,7 +407,14 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     hash_format = (fmt >> ALTFMT_BIT) & 1;
     
     if (prec == 0) {
-        prec = DEFAULT_PREC;
+        // if precision is missing, %a needs enough digits
+        // to precisely represent the number
+        if (spec == 'a') {
+            prec = 13;
+            stripTrailingZeros = 1;
+        } else {
+            prec = DEFAULT_PREC;
+        }
     } else {
         prec = prec-1;
     }
@@ -420,19 +427,8 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
         isExpFmt = 1;
         expchar = needUpper ? 'P' : 'p';
         base = 2;
-        // if precision is missing, %a needs enough digits
-        // to precisely represent the number
-        if (prec < 0) {
-            prec = 13;
-            stripTrailingZeros = 1;
-        }
         expprec = 1;
         hexSign = needUpper ? 'X' : 'x';
-    } else {
-        // default precision
-        if (prec < 0) {
-            prec = DEFAULT_PREC;
-        }
     }
 
     signclass = (fmt >> SIGNCHAR_BIT) & SIGNCHAR_MASK;
@@ -484,7 +480,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
 
     if (spec == 'g' || spec == '#') {
         // find the exponent
-        disassemble(x, &ai, &exp, prec ? prec - 1 : 0, base);
+        disassemble(x, &ai, &exp, prec, base);
         if (spec == '#') {
             if (exp > prec) {
                 isExpFmt = 1;
