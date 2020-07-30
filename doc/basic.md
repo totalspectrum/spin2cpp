@@ -273,6 +273,7 @@ outa
 outb
 pausems
 pauseus
+pi
 rdpin
 _reboot
 right$
@@ -2182,6 +2183,10 @@ A built-in subroutine to pause for a number of microseconds. For example, to pau
 ```
   pauseus 500
 ```
+
+### PI
+
+Predefined single precision constant 3.1415926.
 
 ### PINLO
 
