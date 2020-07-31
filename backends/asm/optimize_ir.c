@@ -1185,7 +1185,7 @@ DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand
     ir3 = ir2->next;
     if (!ir3) return false;
     if (ir2->opc != OPC_MOV) return false;
-    if (ir2->dst != muldivb || ir2->src != opb) return false;
+    if (ir2->dst != muldivb || !SameOperand(ir2->src, opb)) return false;
     if (ir3->opc != OPC_CALL || ir3->dst != lastop) return false;
     ir->opc = OPC_DUMMY;
     ir2->opc = OPC_DUMMY;
