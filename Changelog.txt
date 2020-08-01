@@ -3,6 +3,7 @@ Version 4.2.7
 - Better warning messages for redefining member variables
 - Fixed some C definitions in propeller2.h
 - Fixed BASIC printing of floats
+- Fixed unnecessary jmp warning when listing file is output
 - Optimized mul/div sequences with immediates
 
 Version 4.2.6
