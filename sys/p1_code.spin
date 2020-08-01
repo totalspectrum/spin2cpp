@@ -16,6 +16,11 @@ pri waitpne(pin, mask, c = 0)
     waitpne pin,mask
   endasm
 
+pri waitvid(colors, pixels)
+  asm
+    waitvid colors, pixels
+  endasm
+  
 pri _cogid | rval
   asm
     cogid rval
