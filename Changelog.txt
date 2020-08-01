@@ -6,6 +6,7 @@ Version 4.2.7
 - Fixed unnecessary jmp warning when listing file is output
 - Improved heuristic for deciding between if statements and jump tables for case statements
 - Optimized mul/div sequences with immediates
+- Optimized jump tables on P1
 
 Version 4.2.6
 - Added sanity check for removing inlined functions (fixes an optimizer bug)

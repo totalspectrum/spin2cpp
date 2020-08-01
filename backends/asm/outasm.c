@@ -4599,13 +4599,15 @@ static void CompileStatement(IRList *irl, AST *ast)
         Operand *jumptabptr;
         Operand *shift;
         IR *ir;
-
+        int needAlign = 0;
+        
         if (curfunc && InCog(curfunc)) {
             shift = 0;
         } else if (gl_p2) {
             shift = NewImmediate(2);
         } else {
-            shift = NewImmediate(3);
+            shift = NewImmediate(1);
+            needAlign = 1;
         }
         switchval = CompileExpression(irl, ast->left, NULL);
         jumptab = NewCodeLabel();
@@ -4615,9 +4617,14 @@ static void CompileStatement(IRList *irl, AST *ast)
             jumptabptr = NewImmediatePtr(NULL, jumptab);
             if (shift) {
                 EmitOp2(irl, OPC_SHL, switchval, shift);
+                EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+                EmitOp2(irl, OPC_RDWORD, switchval, switchval);
+                EmitJump(irl, COND_TRUE, switchval);
+            } else {
+                // in COG memory
+                EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+                EmitJump(irl, COND_TRUE, switchval);
             }
-            EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
-            EmitJump(irl, COND_TRUE, switchval);
         }
         ir = EmitLabel(irl, jumptab);
         ir->flags |= FLAG_KEEP_INSTR;
@@ -4629,6 +4636,9 @@ static void CompileStatement(IRList *irl, AST *ast)
                 ir->flags |= (FLAG_KEEP_INSTR | FLAG_JMPTABLE_INSTR);
             }
             ast = ast->right;
+        }
+        if (needAlign) {
+            EmitOp0(irl, OPC_ALIGNL);
         }
         if (ast->kind != AST_STMTLIST) {
             ERROR(ast, "Expected statement list!");

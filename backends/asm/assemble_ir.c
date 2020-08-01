@@ -1037,7 +1037,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
-                if (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & FLAG_KEEP_INSTR)) {
+                if (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & (FLAG_KEEP_INSTR|FLAG_JMPTABLE_INSTR))) {
                     int offset;
                     dest = (IR *)ir->aux;
                     offset = dest->addr - ir->addr;
@@ -1054,13 +1054,18 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                         return;
                     }
                 }
-                if (gl_lmm_kind == LMM_KIND_ORIG) {
-                    flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                if ((ir->flags & FLAG_JMPTABLE_INSTR)) {
+                    flexbuf_addstr(fb, "word\t");
+                    PrintOperandAsValue(fb, ir->dst);
                 } else {
-                    flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                    if (gl_lmm_kind == LMM_KIND_ORIG) {
+                        flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                    } else {
+                        flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                    }
+                    flexbuf_addstr(fb, "\tlong\t");
+                    PrintOperandAsValue(fb, ir->dst);
                 }
-                flexbuf_addstr(fb, "\tlong\t");
-                PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;
             }
@@ -1214,6 +1219,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         flexbuf_printf(fb, "\tlong\t0[");
         PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "]\n");
+        break;
+    case OPC_ALIGNL:
+        flexbuf_printf(fb, "\tlong\n");
         break;
     case OPC_FCACHE:
         if (gl_p2) {
