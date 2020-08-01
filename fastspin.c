@@ -536,6 +536,11 @@ main(int argc, const char **argv)
     pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
     pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
+    {
+        static char quoted_version[256];
+        sprintf(quoted_version, "\"%s\"", version_string);
+        pp_define(&gl_pp, "__VERSION__", quoted_version);
+    }
     if (gl_exit_status) {
         pp_define(&gl_pp, "__EXIT_STATUS__", "1");
     }
