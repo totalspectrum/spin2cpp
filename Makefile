@@ -142,7 +142,7 @@ $(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BUILD)/version.o: version.c version.h FORCE
-	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --always) -o $@ -c $<
+	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --tags --always) -o $@ -c $<
 
 $(BUILD)/%.o: %.c
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<
