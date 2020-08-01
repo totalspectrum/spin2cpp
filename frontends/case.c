@@ -193,6 +193,13 @@ static int caseCmp(const void *av, const void *bv)
     return a->val - b->val;
 }
 
+static int labelCmp(const void *av, const void *bv)
+{
+    const CaseHolder *a = (const CaseHolder *)av;
+    const CaseHolder *b = (const CaseHolder *)bv;
+    return a->label - b->label;
+}
+
 static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *force_reason)
 {
     CaseHolder temp;
@@ -285,6 +292,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     int density; // at least density/maxrange items must be non-default
     int lastval;
     int defaults_seen = 0;
+    int distinct_cases = 0;
     
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
@@ -339,6 +347,20 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         return NULL;
     }
     cases = (CaseHolder *)flexbuf_get(&fb);
+    if (!force_reason) {
+        // initial sort to see how many distinct labels there are
+        qsort(cases, siz, sizeof(CaseHolder), labelCmp);
+        for (i = 0; i < siz-1; i++) {
+            if (cases[i].label != cases[i+1].label) {
+                distinct_cases++;
+            }
+        }
+        // if only 1/6 of the cases are distinct, skip it
+        if (distinct_cases * 6 < siz) {
+            return NULL;
+        }
+    }
+    // final sort to get into numerical order
     qsort(cases, siz, sizeof(CaseHolder), caseCmp);
     minval = cases[0].val;
     range = (cases[siz-1].val - minval)+1;

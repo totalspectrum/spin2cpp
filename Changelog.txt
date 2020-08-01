@@ -4,6 +4,7 @@ Version 4.2.7
 - Fixed some C definitions in propeller2.h
 - Fixed BASIC printing of floats
 - Fixed unnecessary jmp warning when listing file is output
+- Improved heuristic for deciding between if statements and jump tables for case statements
 - Optimized mul/div sequences with immediates
 
 Version 4.2.6
