@@ -2,6 +2,7 @@ Version 4.2.7
 - Added missing waitvid builtin for P1
 - Added some additional language compatibility warnings
 - Better warning messages for redefining member variables
+- Changed default C preprocessor mode to be GCC compatible
 - Fixed some C definitions in propeller2.h
 - Fixed BASIC printing of floats
 - Fixed some problems with .word[N] assignments

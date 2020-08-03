@@ -290,7 +290,8 @@ void    init_system( void)
     incend = incdir = NULL;
     fnamelist = once_list = NULL;
     search_rule = SEARCH_INIT;
-    mb_changed = nflag = compat_mode = FALSE;
+    mb_changed = nflag = FALSE;
+    compat_mode = TRUE; /* for flexc */
     mkdep_fp = NULL;
     mkdep_target = mkdep_mf = mkdep_md = mkdep_mq = mkdep_mt = NULL;
     std_val = -1L;
@@ -593,6 +594,7 @@ static void     chk_opts(
  * Set default value of some variables for each 'mcpp_mode'.
  */
 {
+    extern int mcpp_mode;
     int     incompat = FALSE;
 
     if (trad)
@@ -600,7 +602,7 @@ static void     chk_opts(
     if (! stdc_val)
         stdc_val = STDC;
 
-    if (compat_mode)
+    if (compat_mode && mcpp_mode == POST_STD)
         incompat = TRUE;
     if ((mcpp_debug & MACRO_CALL)
                 && option_flags.c) {
