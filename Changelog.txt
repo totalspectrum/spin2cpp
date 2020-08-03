@@ -1,5 +1,6 @@
 Version 4.2.7
 - Added missing waitvid builtin for P1
+- Added some additional language compatibility warnings
 - Better warning messages for redefining member variables
 - Fixed some C definitions in propeller2.h
 - Fixed BASIC printing of floats
