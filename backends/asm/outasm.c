@@ -3207,6 +3207,7 @@ CompileMaskMove(IRList *irl, AST *expr)
 // is this really necessary? it certainly hinders optimization        
 //        keepflag = FLAG_KEEP_INSTR;
         break;
+    case AST_ARRAYREF:
     case AST_METHODREF:
         dest = CompileExpression(irl, destast, NULL);
         break;
