@@ -8,5 +8,5 @@ void _Exit(int status)
     _tx(status);
     _waitx(CLKFREQ / 64); // wait >10ms for all characters to be transmitted
 #endif
-    cogstop(cogid());
+    _cogstop(_cogid());
 }
