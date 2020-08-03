@@ -46,26 +46,6 @@ const char *gl_progname;
 const char *gl_cc = NULL;
 const char *gl_intstring = "int32_t";
 
-Module *current;
-Module *allparse;
-Module *globalModule;
-
-int gl_p2;
-int gl_errors;
-int gl_output;
-int gl_outputflags;
-int gl_nospin;
-int gl_gas_dat;
-int gl_normalizeIdents;
-int gl_debug;
-int gl_expand_constants;
-int gl_optimize_flags;
-int gl_dat_offset;
-AST *ast_type_word, *ast_type_long, *ast_type_byte;
-AST *ast_type_float, *ast_type_string;
-AST *ast_type_generic;
-AST *ast_type_void;
-
 const char *gl_outname = NULL;
 
 double gl_start_time;
