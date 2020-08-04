@@ -1325,7 +1325,7 @@ HasSideEffectsOtherThanReg(IR *ir)
             if (InstrIsVolatile(irnext)) {
                 return true;
             }
-            if (IsBranch(irnext) && ir->cond == COND_TRUE) {
+            if (IsBranch(irnext) && irnext->cond == COND_TRUE) {
                 break;
             }
         }
@@ -2438,7 +2438,7 @@ OptimizePeepholes(IRList *irl)
             }
         }
         else if (opc == OPC_OR && ir->cond == COND_C && !InstrSetsAnyFlags(ir)
-                 && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
+                 && ir_next && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
                  && ir->dst == ir_next->dst)
@@ -2450,6 +2450,7 @@ OptimizePeepholes(IRList *irl)
             goto done;
         }
         else if (opc == OPC_OR && ir->cond == COND_NE && !InstrSetsAnyFlags(ir)
+                 && ir_next
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_EQ
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src

@@ -1,3 +1,6 @@
+Version 4.2.8
+- Fixed an optimizer bug which could incorrectly delete some conditional statements
+
 Version 4.2.7
 - Added missing waitvid builtin for P1
 - Added some additional language compatibility warnings
