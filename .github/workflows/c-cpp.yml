@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: spin2cpp CI
 
 on:
   push:
@@ -9,7 +9,6 @@ on:
       - "*"
 
 jobs:
-  
   build:
     runs-on: ubuntu-18.04
     steps:
@@ -29,4 +28,9 @@ jobs:
       with:
         name: spin2cpp-git
         path: "spin2cpp-zip/*"
-      
+  test:
+    runs-on: ubuntu-18.04
+    steps:
+     - uses: actions/checkout@v2
+     - name: make
+       run: make test
