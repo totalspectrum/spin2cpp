@@ -19,7 +19,7 @@ jobs:
     - name: make
       run: make zip
     - name: succ
-      run: unzip fastpin.zip -d fastspin-zip
+      run: unzip fastspin.zip -d fastspin-zip
     - run: unzip spin2cpp.zip -d spin2cpp-zip
     - uses: actions/upload-artifact@v2.1.3
       with:
