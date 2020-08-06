@@ -35,18 +35,11 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
+#include "cmdline.h"
 
 //#define DEBUG_YACC
 
 extern int yyparse(void);
-
-extern int spinyydebug;
-
-const char *gl_progname;
-const char *gl_cc = NULL;
-const char *gl_intstring = "int32_t";
-
-const char *gl_outname = NULL;
 
 double gl_start_time;
 
@@ -137,33 +130,22 @@ const char *file_argv[MAX_FILES_ON_CMD_LINE];
 int
 main(int argc, const char **argv)
 {
-    int outputMain = 0;
-    int outputDat = 0;
-    int outputFiles = 0;
-    int outputBin = 0;
-    int outputAsm = 0;
-    int compile = 0;
-    int quiet = 0;
+    CmdLineOptions cmd_base;
+    CmdLineOptions *cmd = &cmd_base;
     int bstcMode = 0;
     Module *P;
+    
     int retval = 0;
     struct flexbuf argbuf;
     time_t timep;
     int i;
-    const char *outname = NULL;
     size_t eepromSize = 32768;
-    int useEeprom = 0;
     const char *listFile = NULL;
     
     gl_start_time = getCurTime();
-    
-    /* Initialize the global preprocessor; we need to do this here
-       so that the -D command line option can define preprocessor
-       symbols. The rest of initialization happens after command line
-       options have been parsed
-    */
-    InitPreprocessor(argv);
 
+    InitializeSystem(cmd, argv);
+    
     /* save our command line arguments and comments describing
        how we were run
     */
@@ -224,10 +206,10 @@ main(int argc, const char **argv)
         }
     }
     gl_normalizeIdents = 0;
-    compile = 1;
-    outputMain = 1;
-    outputBin = 1;
-    outputAsm = 1;
+    cmd->compile = 1;
+    cmd->outputMain = 1;
+    cmd->outputBin = 1;
+    cmd->outputAsm = 1;
     gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
@@ -300,16 +282,16 @@ main(int argc, const char **argv)
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
             gl_debug = 1;
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
+            cmd->compile = 0;
+            cmd->outputMain = 0;
+            cmd->outputBin = 0;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
+            cmd->compile = 0;
+            cmd->outputMain = 0;
+            cmd->outputBin = 0;
             gl_output = OUTPUT_DAT;
-            outputDat = 1;
+            cmd->outputDat = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-C")) {
             gl_caseSensitive = 1;
@@ -321,11 +303,11 @@ main(int argc, const char **argv)
             gl_listing = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
-            outputFiles = 1;
-            quiet = 1;
+            cmd->outputFiles = 1;
+            cmd->quiet = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-q")) {
-            quiet = 1;
+            cmd->quiet = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-u")) {
             // ignore -u, we always eliminate unused methods
@@ -343,11 +325,11 @@ main(int argc, const char **argv)
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
         {
-            compile = 1;
-            outputMain = 1;
-	    outputBin = 1;
+            cmd->compile = 1;
+            cmd->outputMain = 1;
+	    cmd->outputBin = 1;
             if (!strcmp(argv[0], "-e")) {
-                useEeprom = 1;
+                cmd->useEeprom = 1;
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
@@ -367,7 +349,7 @@ main(int argc, const char **argv)
             } else {
                 opt += 2;
             }
-	    gl_outname = outname = strdup(opt);
+	    gl_outname = cmd->outname = strdup(opt);
         } else if (!strncmp(argv[0], "-g", 2)) {
             argv++; --argc;
             gl_debug = 1;
@@ -482,7 +464,7 @@ main(int argc, const char **argv)
         }
     }
     
-    if (!quiet) {
+    if (!cmd->quiet) {
         PrintInfo(stdout, bstcMode);
     }
     if (file_argc == 0) {
@@ -490,91 +472,11 @@ main(int argc, const char **argv)
     }
 
     /* tweak flags */
-    if (gl_output == OUTPUT_COGSPIN) {
-        gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
-    }
-    if (gl_relocatable) {
-        if (!gl_p2) {
-            fprintf(stderr, "ERROR: --relocatable only supported for P2\n");
-            exit(1);
-        }
-        gl_no_coginit = 1;
-        if (gl_hub_base != 0) {
-            fprintf(stderr, "Warning: --relocatable overrides -H\n");
-            gl_hub_base = 0;
-        }
-    }
-    /* add some predefined symbols */
+    ProcessCommandLine(cmd);
     
-    if (gl_p2) {
-        pp_define(&gl_pp, "__propeller__", "2");
-    } else {
-        pp_define(&gl_pp, "__propeller__", "1");
-    }
-    pp_define(&gl_pp, "__FASTSPIN__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXSPIN__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
-    {
-        static char quoted_version[256];
-        sprintf(quoted_version, "\"%s\"", version_string);
-        pp_define(&gl_pp, "__VERSION__", quoted_version);
-    }
-    if (gl_exit_status) {
-        pp_define(&gl_pp, "__EXIT_STATUS__", "1");
-    }
-    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
-        pp_define(&gl_pp, "__SPIN2PASM__", "1");
-    }
-    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
-        pp_define(&gl_pp, "__SPIN2CPP__", "1");
-        if (gl_output == OUTPUT_CPP) {
-            pp_define(&gl_pp, "__cplusplus", "1");
-        }
-    }
-    pp_define(&gl_pp, "__ILP32__", "1");
-    if (gl_p2) {
-        pp_define(&gl_pp, "__P2__", "1");
-        pp_define(&gl_pp, "__propeller2__", "1");
-    }
-    /* set up the binary offset */
-    gl_dat_offset = -1; // by default offset is unknown
-    if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
-        // a 32 byte spin header is prepended to binary output of dat
-        // (but not in p2 mode)
-        gl_dat_offset = gl_p2 ? 0 : 32;
-    } else if (gl_output == OUTPUT_DAT && gl_gas_dat) {
-        // GAS output for dat uses symbols, so @@@ is OK there
-        gl_dat_offset = 0;
-    }
+    P = ParseTopFiles(file_argv, file_argc, cmd->outputBin);
 
-    // compression
-    if (gl_compress) {
-        gl_lmm_kind = LMM_KIND_COMPRESS;
-        gl_fcache_size = 0;
-        gl_optimize_flags |= OPT_REMOVE_HUB_BSS;
-        if (gl_p2) {
-            fprintf(stderr, "-z is not supported on P2 yet");
-            exit(2);
-        }
-    }
-    // listing file
-    if (gl_listing && !(gl_output == OUTPUT_DAT)) {
-        gl_srccomments = 1;
-    }
-    
-    /* initialize the parser; we do that after command line processing
-       so that command line options can influence it */
-    Init();
-
-    /* now actually parse the file */
-    if (!quiet) {
-        gl_printprogress = 1;
-    }
-    P = ParseTopFiles(file_argv, file_argc, outputBin);
-
-    if (outputFiles) {
+    if (cmd->outputFiles) {
         Module *Q;
         for (Q = allparse; Q; Q = Q->next) {
             printf("%s\n", Q->fullname);
@@ -594,45 +496,45 @@ main(int argc, const char **argv)
             listFile = ReplaceExtension(P->fullname, ".lst");
         }
     
-        if (outputDat) {
-            outname = gl_outname;
+        if (cmd->outputDat) {
+            cmd->outname = gl_outname;
             if (gl_gas_dat) {
-	        if (!outname) {
-                    outname = ReplaceExtension(P->fullname, ".S");
+	        if (!cmd->outname) {
+                    cmd->outname = ReplaceExtension(P->fullname, ".S");
                 }
-                OutputGasFile(outname, P);
+                OutputGasFile(cmd->outname, P);
             } else {
-	        if (!outname) {
-                    if (outputBin) {
-                        if (useEeprom) {
-                            outname = ReplaceExtension(P->fullname, ".eeprom");
+	        if (!cmd->outname) {
+                    if (cmd->outputBin) {
+                        if (cmd->useEeprom) {
+                            cmd->outname = ReplaceExtension(P->fullname, ".eeprom");
                         } else {
-                            outname = ReplaceExtension(P->fullname, ".binary");
+                            cmd->outname = ReplaceExtension(P->fullname, ".binary");
                         }
                     } else {
-                        outname = ReplaceExtension(P->fullname, ".dat");
+                        cmd->outname = ReplaceExtension(P->fullname, ".dat");
                     }
                 }
                 if (bstcMode && !listFile) {
-                    outname = ReplaceExtension(outname, ".binary");
+                    cmd->outname = ReplaceExtension(cmd->outname, ".binary");
                 }
                 if (listFile) {
                     OutputLstFile(listFile, P);
                 }
-                OutputDatFile(outname, P, outputBin);
-                if (outputBin) {
-                    DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
+                OutputDatFile(cmd->outname, P, cmd->outputBin);
+                if (cmd->outputBin) {
+                    DoPropellerChecksum(cmd->outname, cmd->useEeprom ? eepromSize : 0);
                 }
             }
-        } else if (outputAsm) {
+        } else if (cmd->outputAsm) {
             const char *binname = NULL;
             const char *asmname = NULL;
-            if (compile) {
+            if (cmd->compile) {
                 binname = gl_outname;
                 if (binname) {
                     asmname = ReplaceExtension(binname, gl_p2 ? ".p2asm" : ".pasm");
                 } else {
-                    if (useEeprom) {
+                    if (cmd->useEeprom) {
                         binname = ReplaceExtension(P->fullname, ".eeprom");
                     } else {
                         binname = ReplaceExtension(P->fullname, ".binary");
@@ -653,9 +555,9 @@ main(int argc, const char **argv)
                 asmname = strdup(P->fullname);
                 compile_original = 1;
             } else {
-                OutputAsmCode(asmname, P, outputMain);
+                OutputAsmCode(asmname, P, cmd->outputMain);
             }
-            if (compile)  {
+            if (cmd->compile)  {
                 if (gl_errors > 0) {
                     remove(binname);
                     if (listFile) {
@@ -671,9 +573,9 @@ main(int argc, const char **argv)
                         OutputLstFile(listFile, Q);
                     }
                     OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, useEeprom ? eepromSize : 0);
+                    DoPropellerChecksum(binname, cmd->useEeprom ? eepromSize : 0);
                 }
-                if (!quiet) {
+                if (!cmd->quiet) {
                     printf("Done.\n");
                     if (gl_errors == 0) {
                         PrintFileSize(binname);

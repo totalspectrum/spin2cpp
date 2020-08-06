@@ -120,10 +120,10 @@ p2test: $(PROGS)
 runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
 
-$(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
+$(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/fastspin$(EXT): fastspin.c $(OBJS)
+$(BUILD)/fastspin$(EXT): fastspin.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):

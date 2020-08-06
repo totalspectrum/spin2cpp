@@ -33,11 +33,8 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
+#include "cmdline.h"
 
-const char *gl_outname = NULL;
-const char *gl_progname;
-const char *gl_cc = NULL;
-const char *gl_intstring = "int32_t";
 Module *allparse = NULL;
 extern int spinyydebug;
 
