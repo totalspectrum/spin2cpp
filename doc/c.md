@@ -235,7 +235,7 @@ Starts a function running in another COG. This builtin is more of a macro than a
   static long stack[32];
   id = __builtin_cogstart(somefunc(a, b), &stack[0]);
 ```
-runs `somefunc` with parameters `a` and `b` in a new COG, using the given stack space.
+runs `somefunc` with parameters `a` and `b` in a new COG, with a stack starting at `&stack[0]` (stacks grow up in FlexC).
 
 The amount of space required for the stack depends on the complexity of the code to run, but must be at least 16 longs (64 bytes).
 
