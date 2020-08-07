@@ -45,11 +45,29 @@ const char *gl_outname = NULL;
 void InitializeSystem(CmdLineOptions *cmd, const char **argv)
 {
     memset(cmd, 0, sizeof(*cmd));
+    cmd->eepromSize = 32768;
     InitPreprocessor(argv);
 }
 
-void ProcessCommandLine(CmdLineOptions *cmd)
+void
+PrintFileSize(const char *fname)
 {
+    FILE *f = fopen(fname, "rb");
+    unsigned len;
+
+    if (f) {
+        fseek(f, 0L, SEEK_END);
+        len = ftell(f);
+        fclose(f);
+        printf("Program size is %u bytes\n", len);
+    }
+}
+
+int ProcessCommandLine(CmdLineOptions *cmd)
+{
+    Module *P;
+    const char *listFile = NULL;
+    
     if (gl_output == OUTPUT_COGSPIN) {
         gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
     }
@@ -133,4 +151,120 @@ void ProcessCommandLine(CmdLineOptions *cmd)
         gl_printprogress = 1;
     }
 
+    P = ParseTopFiles(cmd->file_argv, cmd->file_argc, cmd->outputBin);
+
+    if (cmd->outputFiles) {
+        Module *Q;
+        for (Q = allparse; Q; Q = Q->next) {
+            printf("%s\n", Q->fullname);
+        }
+        return 0;
+    }
+    
+    if (P) {
+        Module *Q;
+        int compile_original = 0;
+        
+        if (gl_errors > 0) {
+            return 1;
+        }
+        /* set up output file names */
+        if (gl_listing) {
+            listFile = ReplaceExtension(P->fullname, ".lst");
+        }
+    
+        if (cmd->outputDat) {
+            cmd->outname = gl_outname;
+            if (gl_gas_dat) {
+	        if (!cmd->outname) {
+                    cmd->outname = ReplaceExtension(P->fullname, ".S");
+                }
+                OutputGasFile(cmd->outname, P);
+            } else {
+	        if (!cmd->outname) {
+                    if (cmd->outputBin) {
+                        if (cmd->useEeprom) {
+                            cmd->outname = ReplaceExtension(P->fullname, ".eeprom");
+                        } else {
+                            cmd->outname = ReplaceExtension(P->fullname, ".binary");
+                        }
+                    } else {
+                        cmd->outname = ReplaceExtension(P->fullname, ".dat");
+                    }
+                }
+                if (cmd->bstcMode && !listFile) {
+                    cmd->outname = ReplaceExtension(cmd->outname, ".binary");
+                }
+                if (listFile) {
+                    OutputLstFile(listFile, P);
+                }
+                OutputDatFile(cmd->outname, P, cmd->outputBin);
+                if (cmd->outputBin) {
+                    DoPropellerChecksum(cmd->outname, cmd->useEeprom ? cmd->eepromSize : 0);
+                }
+            }
+        } else if (cmd->outputAsm) {
+            const char *binname = NULL;
+            const char *asmname = NULL;
+            if (cmd->compile) {
+                binname = gl_outname;
+                if (binname) {
+                    asmname = ReplaceExtension(binname, gl_p2 ? ".p2asm" : ".pasm");
+                } else {
+                    if (cmd->useEeprom) {
+                        binname = ReplaceExtension(P->fullname, ".eeprom");
+                    } else {
+                        binname = ReplaceExtension(P->fullname, ".binary");
+                    }
+                }
+            } else {
+                asmname = gl_outname;
+            }
+            if (!asmname) {
+                if (gl_output == OUTPUT_COGSPIN) {
+                    asmname = ReplaceExtension(P->fullname, ".cog.spin");
+                } else {
+                    asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
+                }
+            }
+            if (P->functions == NULL) {
+                // we can just assemble the .spin file directoy
+                asmname = strdup(P->fullname);
+                compile_original = 1;
+            } else {
+                OutputAsmCode(asmname, P, cmd->outputMain);
+            }
+            if (cmd->compile)  {
+                if (gl_errors > 0) {
+                    remove(binname);
+                    if (listFile) {
+                        remove(listFile);
+                    }
+                    exit(1);
+                }
+                gl_output = OUTPUT_DAT;
+                gl_caseSensitive = !compile_original;
+                Q = ParseTopFiles(&asmname, 1, 1);
+                if (gl_errors == 0) {
+                    if (listFile) {
+                        OutputLstFile(listFile, Q);
+                    }
+                    OutputDatFile(binname, Q, 1);
+                    DoPropellerChecksum(binname, cmd->useEeprom ? cmd->eepromSize : 0);
+                }
+                if (!cmd->quiet) {
+                    printf("Done.\n");
+                    if (gl_errors == 0) {
+                        PrintFileSize(binname);
+                    }
+                }
+            }
+        } else {
+            fprintf(stderr, "fastspin cannot convert to C\n");
+        }
+    } else {
+        fprintf(stderr, "parse error\n");
+        return 1;
+    }
+    return 0;
 }
