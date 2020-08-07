@@ -2256,7 +2256,7 @@ MarkUsedBody(AST *body, const char *caller)
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);
         }
-        break;
+        return;
     case AST_METHODREF:
         objref = body->left;
         objtype = BaseType(ExprType(objref));
