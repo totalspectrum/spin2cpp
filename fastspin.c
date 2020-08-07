@@ -88,6 +88,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
+    fprintf(f, "  [ -Werror ]        make warnings into errors\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
@@ -409,12 +410,15 @@ main(int argc, const char **argv)
                 Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
-        } else if (!strncmp(argv[0], "-W", 2)) {
+        } else if (!strncmp(argv[0], "-W", 2) && argv[0][2]) {
+            // -W alone is for "wrap"
             // -Wall means enable all warnings
             // other -W values reserved
             const char *flags = &argv[0][2];
             if (!strcmp(flags, "all")) {
                 gl_warn_flags = WARN_ALL;
+            } else if (!strcmp(flags, "error")) {
+                gl_warnings_are_errors = 1;
             } else {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
                 Usage(stderr, cmd->bstcMode);
