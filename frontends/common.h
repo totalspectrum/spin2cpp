@@ -547,6 +547,7 @@ void CheckRecursive(Function *f);
 
 /* code for printing errors */
 extern int gl_errors;
+extern int gl_warnings_are_errors;
 void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
 void ERROR_UNKNOWN_SYMBOL(AST *);
