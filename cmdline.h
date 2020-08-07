@@ -17,11 +17,16 @@ typedef struct CmdLineOptions {
     int outputAsm;
     int compile;
     int useEeprom;
+    int eepromSize;
     int quiet;
+    int bstcMode;
     const char *outname;
+#define MAX_FILES_ON_CMD_LINE 1024
+    int file_argc;
+    const char *file_argv[MAX_FILES_ON_CMD_LINE];
 } CmdLineOptions;
 
 void InitializeSystem(CmdLineOptions *opts, const char **argv);
-void ProcessCommandLine(CmdLineOptions *opts);
+int ProcessCommandLine(CmdLineOptions *opts);
 
 #endif
