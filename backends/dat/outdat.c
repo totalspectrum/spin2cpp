@@ -1805,6 +1805,9 @@ PrintDataBlock(Flexbuf *f, Module *P, DataBlockOutFuncs *funcs, Flexbuf *relocs)
             break;
         case AST_ORG:
             inHub = 0;
+            if (NEED_ALIGNMENT) {
+                AlignPc(f, 4);
+            }
             break;
         case AST_RES:
         case AST_FIT:
