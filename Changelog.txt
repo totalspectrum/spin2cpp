@@ -2,6 +2,7 @@ Version 4.2.8
 - Added -Werror flag to turn warnings into errors
 - Fixed an optimizer bug which could incorrectly delete some conditional statements
 - Fixed inlining of static functions
+- Made ORG force long alignment
 
 Version 4.2.7
 - Added missing waitvid builtin for P1

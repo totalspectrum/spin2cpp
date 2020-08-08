@@ -571,6 +571,7 @@ DeclareLabels(Module *P)
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
+            MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             if (ast->left) {
                 replaceHeres(ast->left, HEREPC, lastOrg);
