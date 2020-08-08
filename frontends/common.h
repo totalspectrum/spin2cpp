@@ -119,16 +119,17 @@ extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */
-#define OPT_REMOVE_UNUSED_FUNCS 0x01
-#define OPT_PERFORM_CSE         0x02
-#define OPT_REMOVE_HUB_BSS      0x04
-#define OPT_BASIC_ASM           0x08  /* basic peephole optimizations &c */
-#define OPT_INLINE_SMALLFUNCS   0x10  /* inline small functions */
-#define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
-#define OPT_AUTO_FCACHE         0x40  /* use FCACHE for P2 */
+#define OPT_REMOVE_UNUSED_FUNCS 0x0001
+#define OPT_PERFORM_CSE         0x0002
+#define OPT_REMOVE_HUB_BSS      0x0004
+#define OPT_BASIC_ASM           0x0008  /* basic peephole optimizations &c */
+#define OPT_INLINE_SMALLFUNCS   0x0010  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x0020  /* inline single use functions */
+#define OPT_AUTO_FCACHE         0x0040  /* use FCACHE for P2 */
+#define OPT_PERFORM_LOOPREDUCE  0x0080  /* loop reduction */
 
 #define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
@@ -264,6 +265,7 @@ typedef struct funcdef {
     Module *module;
 
     /* various flags */
+    int optimize_flags;   // optimizations to be applied
     unsigned code_placement:2;
 #define CODE_PLACE_DEFAULT 0
 #define CODE_PLACE_HUB 1
@@ -782,6 +784,11 @@ int TypeGoesOnStack(AST *typ);
 
 // declare a symbol together with a location of its definition
 Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def);
+
+// parse an optimization string
+// updates flags based on what we find
+// returns 0 on failure to parse, 1 otherwise
+int ParseOptimizeString(const char *str, int *flags);
 
 // external vars
 extern AST *basic_get_float;

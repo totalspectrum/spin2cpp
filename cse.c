@@ -705,14 +705,14 @@ PerformCSE(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
     
-    if ((gl_optimize_flags & OPT_PERFORM_CSE) == 0)
-        return;
     InitCSESet(&cse);
     current = Q;
     for (func = Q->functions; func; func = func->next) {
-        curfunc = func;
-        doPerformCSE(NULL, &func->body, &cse, 0, NULL);
-        ClearCSESet(&cse);
+        if (func->optimize_flags & OPT_PERFORM_CSE) {
+            curfunc = func;
+            doPerformCSE(NULL, &func->body, &cse, 0, NULL);
+            ClearCSESet(&cse);
+        }
     }
     curfunc = savefunc;
     current = savecur;

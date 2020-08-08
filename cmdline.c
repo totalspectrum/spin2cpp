@@ -268,3 +268,38 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     }
     return 0;
 }
+
+int ParseOptimizeString(const char *str, int *flag_ptr)
+{
+    int balance = 0;
+    int flags = *flag_ptr;
+    int c;
+    
+    if (!(*str)) {
+        // default to -O2
+        *flag_ptr = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
+        return 1;
+    }
+    for(;;) {
+        c = *str++;
+        if (c == 0) {
+            break;
+        } else if (c == '(') {
+            balance++;
+        } else if (c == ')') {
+            --balance;
+            if (balance <= 0) break;
+        } else if (c == '0') {
+            flags = 0;
+        } else if (c == '1') {
+            flags = DEFAULT_ASM_OPTS;
+        } else if (c == '2') {
+            flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
+        } else {
+            ERROR(NULL, "Unknown optimization character: %c", c);
+            return 0;
+        }
+    }
+    *flag_ptr = flags;
+    return 1;
+}
