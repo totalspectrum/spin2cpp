@@ -3554,6 +3554,7 @@ ParseCAttribute(LexStream *L, AST **ast_ptr)
         }
         flexbuf_addchar(&fb, c);
     } while (balance > 0);
+    flexbuf_addchar(&fb, 0);
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
     return C_ATTRIBUTE;
