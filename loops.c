@@ -1150,15 +1150,15 @@ PerformLoopOptimization(Module *Q)
     Function *savefunc = curfunc;
     LoopValueSet lv;
     
-    if ((gl_optimize_flags & OPT_PERFORM_CSE) == 0)
-        return;
     current = Q;
     for (func = Q->functions; func; func = func->next) {
         curfunc = func;
-        if (func->body && func->body->kind != AST_STRING) {
-            InitLoopValueSet(&lv);
-            doLoopOptimizeList(&lv, func->body);
-            FreeLoopValueSet(&lv);
+        if (func->optimize_flags & OPT_PERFORM_LOOPREDUCE) {
+            if (func->body && func->body->kind != AST_STRING) {
+                InitLoopValueSet(&lv);
+                doLoopOptimizeList(&lv, func->body);
+                FreeLoopValueSet(&lv);
+            }
         }
     }
     curfunc = savefunc;

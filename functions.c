@@ -65,6 +65,7 @@ static void ReinitFunction(Function *f, int language)
     if (LangCaseInSensitive(language)) {
         f->localsyms.flags = SYMTAB_FLAG_NOCASE;
     }
+    f->optimize_flags = gl_optimize_flags;
 }
 
 Function *
@@ -888,6 +889,13 @@ doDeclareFunction(AST *funcblock)
         ReinitFunction(fdef, fdef->language);
     }
 
+    {
+        const char *opts = FindAnnotation(annotation, "opt");
+        if (opts) {
+            //printf("Optimize string: [%s]\n", opt);
+            ParseOptimizeString(opts, &fdef->optimize_flags);
+        }
+    }
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
     fdef->annotations = annotation;
