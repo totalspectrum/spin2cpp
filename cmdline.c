@@ -274,6 +274,7 @@ int ParseOptimizeString(const char *str, int *flag_ptr)
     int balance = 0;
     int flags = *flag_ptr;
     int c;
+    int notflag = 0;
     
     if (!(*str)) {
         // default to -O2
@@ -289,6 +290,12 @@ int ParseOptimizeString(const char *str, int *flag_ptr)
         } else if (c == ')') {
             --balance;
             if (balance <= 0) break;
+        } else if (c == ',') {
+            if (balance > 0) {
+                continue;
+            } else {
+                break;
+            }
         } else if (c == '0') {
             flags = 0;
         } else if (c == '1') {
@@ -296,8 +303,33 @@ int ParseOptimizeString(const char *str, int *flag_ptr)
         } else if (c == '2') {
             flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
         } else {
-            ERROR(NULL, "Unknown optimization character: %c", c);
-            return 0;
+            int subflag = 0;
+            if (c == '!') {
+                notflag = 1;
+                c = *str++;
+                if (!c) {
+                    ERROR(NULL, "no character after ! in optimization string");
+                    return 0;
+                }
+            } else {
+                notflag = 0;
+            }
+            switch (c) {
+            case 'c':
+                subflag = OPT_PERFORM_CSE;
+                break;
+            case 'L':
+                subflag = OPT_PERFORM_LOOPREDUCE;
+                break;
+            default:
+                ERROR(NULL, "Unknown optimization character: %c", c);
+                return 0;
+            }
+            if (notflag) {
+                flags &= ~subflag;
+            } else {
+                flags |= subflag;
+            }
         }
     }
     *flag_ptr = flags;
