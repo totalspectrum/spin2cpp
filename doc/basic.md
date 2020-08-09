@@ -796,11 +796,11 @@ any(t) function mymin(x as t, y as t) as t
   end if
 end function
 ```
-This declares a family of functions `mymin__T`, where `T` can be any type. Whenever the compiler sees `mymin(some_expr)` it checks the type of `some_expr` and changes the function call to `mymin__T(some_expr)`. So for example:
+This declares a family of functions `mymin__T`, where `T` can be any type. Whenever the compiler sees `mymin(some_expr)` it checks the type of `some_expr` and changes the function call to `mymin__xxx(some_expr)`, where `xxx` is the type of `some_expr`. So for example:
 ```
    print mymin(1.7, 2.4), mymin("zzz", "aaa")
 ```
-will print `1.7` and `aaa`.
+will create functions `mymin__single` and `mymin__string` which will be called and ultimately cause `1.7` and `aaa` to be printed.
 
 ## Libraries
 
