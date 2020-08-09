@@ -2754,6 +2754,7 @@ appendType(const char *base, AST *typ)
     return concatstr(base, buf);
   case AST_GENERICTYPE:
     return concatstr(base, "g");
+  case AST_REFTYPE:
   case AST_PTRTYPE:
     base = concatstr(base, "p");
     return appendType(base, typ->left);
@@ -2795,6 +2796,9 @@ const char *TemplateFuncName(AST *templpairs, const char *orig_base)
 
 static AST *matchType(AST *decl, AST *use, AST *var)
 {
+  if (decl->kind == AST_REFTYPE) {
+      decl = decl->left;
+  }
   if (decl->kind == AST_IDENTIFIER) {
     return use;
   }
@@ -2837,8 +2841,15 @@ static AST *deduceTemplateTypes(AST *templateVars, AST *functype, AST *call)
 	    if (AstMatch(thispair->left, templVar)) {
 	      // already found; verify the type
 	      if (!CompatibleTypes(thispair->right, typ)) {
-		ERROR(callparams, "Incosistent types for template parameter %s", templName);
-	      }
+                  const char *name = NULL;
+                  if (call->kind == AST_FUNCCALL) {
+                      name = GetUserIdentifierName(call->left);
+                  }
+                  if (!name) {
+                      name = "function call";
+                  }
+                  ERROR(callparams, "Inconsistent types for template parameter %s in %s", templName, name);
+              }
 	      break;
 	    }
 	  }
@@ -2921,7 +2932,8 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
     Function *fdef;
     current = P;
     functype = fixupFunctype(pairs, DupAST(functype));
-    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body), NULL, NULL);
+    body = fixupFunctype(pairs, DupAST(body));
+    funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {
         fdef->is_static = 1;
