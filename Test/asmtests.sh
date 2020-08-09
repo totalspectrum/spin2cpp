@@ -15,10 +15,10 @@ endmsg=$ok
 for i in stest*.spin
 do
   j=`basename $i .spin`
-  # NOTE: optimize 250 is all optimizations except
+  # NOTE: all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 250 --noheader $i
+  $PROG --asm --optimize 'all,!unused,!nobss' --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm
@@ -35,7 +35,7 @@ do
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --p2 --asm --optimize 250 --noheader $i
+  $PROG --p2 --asm --optimize 'all,!unused,!nobss' --noheader $i
   if  diff -ub Expect/$j.p2asm $j.p2asm
   then
       rm -f $j.p2asm
@@ -52,7 +52,7 @@ do
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 250 --noheader $i
+  $PROG --asm --optimize 'all,!unused,!nobss' --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm
@@ -69,7 +69,7 @@ do
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 250 --noheader $i
+  $PROG --asm --optimize 'all,!unused,!nobss' --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm
@@ -86,7 +86,7 @@ do
   # NOTE: optimize 250 is all optimizations except
   #   remove_unused_funcs (0x01)
   #   remove_hub_bss (0x04)
-  $PROG --asm --optimize 250 --noheader $i
+  $PROG --asm --optimize 'all,!unused,!nobss' --noheader $i
   if  diff -ub Expect/$j.pasm $j.pasm
   then
       rm -f $j.pasm

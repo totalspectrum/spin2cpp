@@ -388,7 +388,7 @@ main(int argc, const char **argv)
             // -O1 means default optimization
             // -O2 means extra optimization
             const char *flagstr = &argv[0][2];
-            ParseOptimizeString(flagstr, &gl_optimize_flags);
+            ParseOptimizeString(NULL, flagstr, &gl_optimize_flags);
             argv++; --argc;
         } else if (!strncmp(argv[0], "-z", 2)) {
             // -z0 means no compression (default)

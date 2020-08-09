@@ -893,7 +893,11 @@ doDeclareFunction(AST *funcblock)
         const char *opts = FindAnnotation(annotation, "opt");
         if (opts) {
             //printf("Optimize string: [%s]\n", opt);
-            ParseOptimizeString(opts, &fdef->optimize_flags);
+            if (opts[0] != '(') {
+                ERROR(annotation, "optimization options must be enclosed in parentheses");
+            } else {
+                ParseOptimizeString(annotation, opts, &fdef->optimize_flags);
+            }
         }
     }
     fdef->name = funcname_internal;

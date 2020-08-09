@@ -1,5 +1,7 @@
 Version 4.3.0
 - P2 API Change: use call/ret instead of calla/reta
+- Added finer-grained control over optimizations
+- Added per-function control over optimizations
 
 Version 4.2.8
 - Added -Werror flag to turn warnings into errors

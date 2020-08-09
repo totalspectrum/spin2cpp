@@ -269,67 +269,122 @@ int ProcessCommandLine(CmdLineOptions *cmd)
     return 0;
 }
 
-int ParseOptimizeString(const char *str, int *flag_ptr)
+const char * GetOptionString(char *buf, size_t n, const char *opts)
 {
-    int balance = 0;
-    int flags = *flag_ptr;
+    int i = 0;
     int c;
-    int notflag = 0;
+    int balance = 0;
+
+    if (n <= 1) {
+        return NULL;
+    }
+    --n;
+    for(;;) {
+        c = *opts;
+        if (c == 0) {
+            *buf = 0;
+            return opts;
+        }
+        if (c == ')' && balance == 0) {
+            *buf = 0;
+            return NULL;
+        }
+        opts++;
+        if (c == ',') {
+            *buf = 0;
+            return opts;
+        }
+        if (i < n) {
+            *buf++ = c;
+            i++;
+        }
+        if (c == '(') {
+            balance++;
+        } else if (c == ')') {
+            balance--;
+        }
+    }
+}
+
+static struct optflag_table {
+    const char *name;
+    int bits;
+} optflag[] = {
+    { "unused", OPT_REMOVE_UNUSED_FUNCS },
+    { "dead", OPT_DEADCODE },
+    { "inline-small", OPT_INLINE_SMALLFUNCS },
+    { "regs", OPT_BASIC_REGS },
+    { "branch-convert", OPT_BRANCHES },
+    { "const", OPT_CONST_PROPAGATE },
+    { "peephole", OPT_PEEPHOLE },
+    { "tail-calls", OPT_TAIL_CALLS },
+    { "loop-basic", OPT_LOOP_BASIC },
+    { "loop-reduce", OPT_PERFORM_LOOPREDUCE },
+    { "fcache", OPT_AUTO_FCACHE },
+    { "inline-single", OPT_INLINE_SINGLEUSE },
+    { "cse", OPT_PERFORM_CSE },
+    { "nobss", OPT_REMOVE_HUB_BSS },
+    { "all", OPT_FLAGS_ALL },
+};
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
+int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
+{
+    int flags = *flag_ptr;
+    int notflag;
+    int bits, i;
+    char buf_base[80];
+    char *buf;
     
     if (!(*str)) {
         // default to -O2
         *flag_ptr = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
         return 1;
     }
-    for(;;) {
-        c = *str++;
-        if (c == 0) {
-            break;
-        } else if (c == '(') {
-            balance++;
-        } else if (c == ')') {
-            --balance;
-            if (balance <= 0) break;
-        } else if (c == ',') {
-            if (balance > 0) {
-                continue;
-            } else {
-                break;
-            }
-        } else if (c == '0') {
-            flags = 0;
-        } else if (c == '1') {
-            flags = DEFAULT_ASM_OPTS;
-        } else if (c == '2') {
-            flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
+    while (str && *str) {
+        buf = buf_base;
+        str = GetOptionString(buf, sizeof(buf_base), str);
+        if (*buf == '!') {
+            buf++;
+            notflag = 1;
         } else {
-            int subflag = 0;
-            if (c == '!') {
-                notflag = 1;
-                c = *str++;
-                if (!c) {
-                    ERROR(NULL, "no character after ! in optimization string");
-                    return 0;
-                }
-            } else {
-                notflag = 0;
-            }
-            switch (c) {
-            case 'c':
-                subflag = OPT_PERFORM_CSE;
-                break;
-            case 'L':
-                subflag = OPT_PERFORM_LOOPREDUCE;
-                break;
+            notflag = 0;
+        }
+        if (*buf == 0) {
+            continue;
+        }
+        /* basic values like -O1, -O2, etc */
+        if (buf[1] == 0) {
+            switch(buf[0]) {
+            case '0':
+                flags = 0;
+                continue;
+            case '1':
+                flags = DEFAULT_ASM_OPTS;
+                continue;
+            case '2':
+                flags = EXTRA_ASM_OPTS;
+                continue;
             default:
-                ERROR(NULL, "Unknown optimization character: %c", c);
+                ERROR(line, "Unrecognized asm option: %s", buf);
                 return 0;
             }
-            if (notflag) {
-                flags &= ~subflag;
-            } else {
-                flags |= subflag;
+        }
+        bits = 0;
+        for (i = 0; i < ARRAY_SIZE(optflag); i++) {
+            if (!strcmp(optflag[i].name, buf)) {
+                bits = optflag[i].bits;
+                break;
             }
+        }
+        if (!bits) {
+            ERROR(line, "Unrecognized optimization flag: %s", buf);
+            return 0;
+        }
+        if (notflag) {
+            flags &= ~bits;
+        } else {
+            flags |= bits;
         }
     }
     *flag_ptr = flags;
