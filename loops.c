@@ -783,6 +783,8 @@ doLoopHelper(LoopValueSet *lvs, AST *initial, AST *condtest, AST *update,
     FreeLoopValueSet(&sub);
     // pull out loop invariants
     pull = doLoopStrengthReduction(lvs, body, condtest, update);
+    // and update assignments based on loop
+    FindAllAssignments(lvs, NULL, body, 0);
     return pull;
 }
 
