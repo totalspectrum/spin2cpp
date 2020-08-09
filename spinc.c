@@ -933,7 +933,11 @@ FixupCode(Module *P, int isBinary)
     do {
         CheckUnusedMethods(isBinary);
         changes = ResolveSymbols();
-    } while (changes);
+    } while (changes && gl_errors == 0);
+
+    if (gl_errors) {
+        return;
+    }
     RemoveUnusedMethods(isBinary);
     doTypeInference();
     
