@@ -1961,7 +1961,9 @@ Builtin builtinfuncs[] = {
     { "_wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
     { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
     { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
-    
+
+    /* some useful C functions */
+    { "printf",    -1, defaultBuiltin, "printf", "printf", NULL, 0, NULL },
 };
 
 struct constants {
