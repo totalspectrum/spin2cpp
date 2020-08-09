@@ -109,6 +109,7 @@ InstrSetsDst(IR *ir)
   case OPC_TEST:
   case OPC_TESTN:
   case OPC_GENERIC_NR:
+  case OPC_PUSH:
       return (ir->flags & FLAG_WR) != 0;
   default:
       return (ir->flags & FLAG_NR) == 0;
@@ -1364,6 +1365,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVH:
     case OPC_DRVNZ:
     case OPC_DRVZ:
+    case OPC_PUSH:
+    case OPC_POP:
         return true;
     default:
         return false;
@@ -2122,6 +2125,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_GENERIC_NR:
     case OPC_SETQ:
     case OPC_SETQ2:
+    case OPC_PUSH:
+    case OPC_POP:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:

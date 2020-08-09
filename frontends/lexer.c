@@ -2813,17 +2813,17 @@ instr_p2[] = {
     { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
     { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
-    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
+    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_PUSH, 0 },
+    { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_POP, FLAG_P2_STD },
 
   // indirect jumps via register
   // normally the user will write "jmp x" and the assembler will
   // recognize if x is a register and rewrite it as "jmp.ind x"
     { "jmp.ind", 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "call.ind",0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
-    { "ret",    0x0d64002d, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "ret",    0x0d64002d, NO_OPERANDS, OPC_RET, FLAG_P2_STD },
     { "calla.ind",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
-    { "reta",   0x0d64002e, NO_OPERANDS, OPC_RET, FLAG_P2_STD },
+    { "reta",   0x0d64002e, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "callb.ind",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
 
@@ -2913,8 +2913,8 @@ instr_p2[] = {
     
   // long jumps
     { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, 0 },
-    { "call",   0x0da00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
-    { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },  /* internally we use calla for generated subroutine calls */
+    { "call",   0x0da00000, P2_JUMP, OPC_CALL, 0 },
+    { "calla",  0x0dc00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
 
     { "calld.loc",  0x0e000000, P2_CALLD, OPC_GENERIC_BRANCH, 0 },

@@ -5259,7 +5259,7 @@ static const char *builtin_mul_p2 =
 "\tqmul\tmuldiva_, muldivb_\n"
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
-"\treta\n"
+"\tret\n"
 
 "\nmultiply_\n"
 "\tqmul\tmuldiva_, muldivb_\n"
@@ -5271,7 +5271,7 @@ static const char *builtin_mul_p2 =
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
 "\tsub\tmuldivb_, itmp2_\n"
-"\treta\n"
+"\tret\n"
 ;
 
 /*
@@ -5321,21 +5321,20 @@ static const char *builtin_div_p2 =
 "       setq    #0\n"
 "       qdiv    muldiva_, muldivb_\n"
 "       getqx   muldivb_\n"  // get quotient
-"       getqy   muldiva_\n"  // get remainder
-"       reta\n"
+" _ret_ getqy   muldiva_\n"  // get remainder
     
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
-" if_z  reta\n"
-"       calla   #unsdivide_\n"
+" if_z  ret\n"
+"       call    #unsdivide_\n"
 "       test    itmp2_,#1        wc       'restore sign, remainder\n"
 "       negc    muldiva_,muldiva_ \n"
 "       test    itmp2_,#%10      wc       'restore sign, division result\n"
-"       negc    muldivb_,muldivb_\n"
-"       reta\n"
+" _ret_ negc    muldivb_,muldivb_\n"
+
 ;
 
 #include "sys/lmm_orig.spin.h"
@@ -5346,20 +5345,20 @@ static const char *builtin_div_p2 =
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
-    "    rdlong\tfcache_tmpb_, --ptra\n"
+    "    pop\tfcache_tmpb_\n"
     "    add\tfcache_tmpb_, pa\n"
-    "    wrlong\tfcache_tmpb_, ptra++\n"
+    "    push\tfcache_tmpb_\n"
     "    sub\tfcache_tmpb_, pa\n"
     "    shr\tpa, #2\n" // convert to words
     "    mov\tfcache_tmpa_, pa\n"
     "    add\tfcache_tmpa_, #$100\n"
-    "    wrlut reta_instr_, fcache_tmpa_\n" 
-    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the reta instruction after the loop
+    "    wrlut ret_instr_, fcache_tmpa_\n" 
+    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the ret instruction after the loop
     "    setq2\tpa\n"
     "    rdlong\t$100-0, fcache_tmpb_\n"
     "    jmp\t#\\$300 ' jmp to cache\n"
-    "reta_instr_\n"
-    "    reta\n"
+    "ret_instr_\n"
+    "    ret\n"
     "fcache_tmpa_\n"
     "    long 0\n"
     "fcache_tmpb_\n"
@@ -5422,7 +5421,8 @@ const char *builtin_pushregs_p2 =
     "RETADDR_\n"
     "    long 0\n"
     "pushregs_\n"
-    "    rdlong RETADDR_, --ptra\n"
+    "    pop  pa\n"
+    "    pop  RETADDR_\n"
     "    tjz  COUNT_, #pushregs_done_\n"
     "    sub  COUNT_, #1\n"  // adjust for setq/wrlong
     "    setq COUNT_\n"
@@ -5433,13 +5433,15 @@ const char *builtin_pushregs_p2 =
     "    add  ptra, COUNT_\n"
     "    shr  COUNT_, #2\n"
     "    wrlong COUNT_, ptra++\n"
+    "    wrlong RETADDR_, ptra++\n"
     "    wrlong fp, ptra++\n"
     "    mov    fp, ptra\n"
-    "    jmp RETADDR_\n"
+    "    jmp  pa\n"
 
     " popregs_\n"
-    "    rdlong RETADDR_, --ptra\n"
+    "    pop    pa\n"
     "    rdlong fp, --ptra\n"
+    "    rdlong RETADDR_, --ptra\n"
     "    rdlong COUNT_, --ptra\n"
     "    tjz    COUNT_, #popregs__ret\n"
     "    shl    COUNT_, #2\n"
@@ -5449,7 +5451,8 @@ const char *builtin_pushregs_p2 =
     "    setq   COUNT_\n"
     "    rdlong local01, ptra\n"
     "popregs__ret\n"
-    "    jmp    RETADDR_\n"
+    "    push   RETADDR_\n"
+    "    jmp    pa\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
@@ -5527,7 +5530,7 @@ static const char *builtin_abortcode_p2 =
     "   cmp  arg01, arg02 wz\n"
     "  if_z jmp #__unwind_stack_ret\n"
     "   mov   ptra, arg01\n"
-    "   calla #popregs_\n"
+    "   call  #popregs_\n"
     "   mov   arg01, fp\n"
     "   jmp   #__unwind_stack\n"
     "__unwind_stack_ret\n"
