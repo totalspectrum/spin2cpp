@@ -306,12 +306,19 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     CSEEntry *entry = calloc(1, sizeof(*entry));
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
     ASTReportInfo saveinfo;
+    static int added = 0; // FIXME
     
     if (expr->kind == AST_ARRAYREF && !ArrayBaseType(expr->left)) {
         // cannot figure out type of array
         return NULL;
     }
-    
+#if 1 //defined(FIXME)
+    if (added == 7) {
+        added++;
+        return NULL;
+    }
+    added++;
+#endif    
     // do not add entries for some simple expressions
     if (expr->kind == AST_ARRAYREF &&
         IsConstExpr(expr->right))
@@ -484,10 +491,10 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
                 name = name->left;
             }
         }
-        // now we have to invalidate any CSE involving the destination
-        RemoveCSEUsing(cse, name ? name : ast->left);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
+        // now we have to invalidate any CSE involving the destination
+        RemoveCSEUsing(cse, name ? name : ast->left);
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
@@ -527,8 +534,7 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
                 RemoveCSEUsing(cse, ast->right);
             }
             newflags |= CSE_NO_REPLACE;
-            return newflags;;
-                
+            return newflags;
         default:
             break;
         }
@@ -670,6 +676,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             }
             // after the function call memory may be modified
             ClearMemoryCSESet(cse);
+            // also, in general, we cannot CSE function results
+            newflags |= CSE_NO_REPLACE;
         }
         return newflags;
     case AST_CONSTREF:
