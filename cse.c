@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Common Subexpression Elimination
@@ -218,10 +218,13 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     for (i = 0; i < CSE_HASH_SIZE; i++) {
         pCur = &set->list[i];
         for(;;) {
+            CSEEntry *old;
             cur = *pCur;
             if (!cur) break;
             if (AstUses(cur->expr, modified) || AstUses(cur->replace, modified)) {
+                old = cur;
                 *pCur = cur->next;
+                DestroyCSEEntry(old);
             } else {
                 pCur = &cur->next;
             }
@@ -485,9 +488,9 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             }
         }
         // now we have to invalidate any CSE involving the destination
-        RemoveCSEUsing(cse, name ? name : ast->left);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
+        RemoveCSEUsing(cse, name ? name : ast->left);
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
@@ -670,6 +673,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             }
             // after the function call memory may be modified
             ClearMemoryCSESet(cse);
+            // also, in general, we cannot CSE function results
+            newflags |= CSE_NO_REPLACE;
         }
         return newflags;
     case AST_CONSTREF:
