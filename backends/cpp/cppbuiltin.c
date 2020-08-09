@@ -19,7 +19,7 @@
 void
 defaultBuiltin(Flexbuf *f, Builtin *b, AST *params)
 {
-    if (AstListLen(params) != b->numparameters) {
+    if (b->numparameters >= 0 && AstListLen(params) != b->numparameters) {
         ERROR(params, "wrong number of parameters to %s", b->name);
     }
     if (gl_p2 && b->p2_cname) {
