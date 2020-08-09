@@ -16,24 +16,24 @@ _maskit
 	sub	_var01, #1
 	wrlong	_var01, objptr
 _maskit_ret
-	reta
+	ret
 
 _mask
 	bmask	result1, arg01
 _mask_ret
-	reta
+	ret
 
 _mask2
 	bmask	result1, arg01
 _mask2_ret
-	reta
+	ret
 
 _op1
 	rdlong	_var01, objptr
 	not	_var01, _var01
 	wrlong	_var01, objptr
 _op1_ret
-	reta
+	ret
 
 _op2
 	rdlong	arg01, objptr
@@ -41,7 +41,7 @@ _op2
 	ones	result1, arg01
 	wrlong	result1, objptr
 _op2_ret
-	reta
+	ret
 
 _op3
 	rdlong	arg01, objptr
@@ -51,7 +51,7 @@ _op3
  if_a	getqx	result1
 	wrlong	result1, objptr
 _op3_ret
-	reta
+	ret
 
 objptr
 	long	@objmem

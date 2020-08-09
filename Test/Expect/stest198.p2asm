@@ -14,21 +14,21 @@ _setval2
 	or	arg01, #1
 	mov	result1, arg01
 _setval2_ret
-	reta
+	ret
 
 _setval1
 	andn	arg01, #3
 	or	arg01, #1
 	mov	result1, arg01
 _setval1_ret
-	reta
+	ret
 
 _getval2
 	shr	arg01, #4
 	and	arg01, #255
 	mov	result1, arg01
 _getval2_ret
-	reta
+	ret
 
 result1
 	long	0

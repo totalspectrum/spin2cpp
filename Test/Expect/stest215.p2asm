@@ -16,7 +16,7 @@ LR__0001
 	drvc	arg01
 LR__0002
 _sendout_ret
-	reta
+	ret
 
 COG_BSS_START
 	fit	480

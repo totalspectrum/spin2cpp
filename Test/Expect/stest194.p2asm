@@ -14,14 +14,14 @@ _check1
  if_be	mov	result1, #9
  if_a	neg	result1, #1
 _check1_ret
-	reta
+	ret
 
 _check2
 	cmps	arg01, arg02 wcz
  if_be	mov	result1, #9
  if_a	neg	result1, #1
 _check2_ret
-	reta
+	ret
 
 result1
 	long	0

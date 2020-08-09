@@ -17,7 +17,7 @@ _check
  if_be	mov	result1, #2
  if_a	mov	result1, #0
 _check_ret
-	reta
+	ret
 
 result1
 	long	0
