@@ -14,7 +14,7 @@ _go
 	mov	result2, arg01
 	mov	result1, result2
 _go_ret
-	reta
+	ret
 
 _addsub
 	mov	result1, arg01
@@ -22,7 +22,7 @@ _addsub
 	sub	arg01, arg02
 	mov	result2, arg01
 _addsub_ret
-	reta
+	ret
 
 result1
 	long	0

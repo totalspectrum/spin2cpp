@@ -13,7 +13,7 @@ _signex
 	zerox	arg01, #15
 	mov	result1, arg01
 _signex_ret
-	reta
+	ret
 
 result1
 	long	0

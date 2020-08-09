@@ -11,14 +11,14 @@ entry
 
 _demo
 	loc	pa,	#(@LR__0003-@LR__0001)
-	calla	#FCACHE_LOAD_
+	call	#FCACHE_LOAD_
 LR__0001
 	drvl	#56
 LR__0002
 	jmp	#LR__0002
 LR__0003
 _demo_ret
-	reta
+	ret
 COG_BSS_START
 	fit	480
 	orgh

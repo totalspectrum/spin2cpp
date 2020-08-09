@@ -20,7 +20,7 @@ _key
 	and	arg01, #255
 	setbyte	result1, arg01, #1
 _key_ret
-	reta
+	ret
 
 result1
 	long	0
