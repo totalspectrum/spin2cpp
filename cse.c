@@ -306,19 +306,11 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
     CSEEntry *entry = calloc(1, sizeof(*entry));
     unsigned idx = exprHash & (CSE_HASH_SIZE-1);
     ASTReportInfo saveinfo;
-    static int added = 0; // FIXME
     
     if (expr->kind == AST_ARRAYREF && !ArrayBaseType(expr->left)) {
         // cannot figure out type of array
         return NULL;
     }
-#if 1 //defined(FIXME)
-    if (added == 7) {
-        added++;
-        return NULL;
-    }
-    added++;
-#endif    
     // do not add entries for some simple expressions
     if (expr->kind == AST_ARRAYREF &&
         IsConstExpr(expr->right))
