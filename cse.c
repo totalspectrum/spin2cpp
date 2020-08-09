@@ -218,10 +218,13 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     for (i = 0; i < CSE_HASH_SIZE; i++) {
         pCur = &set->list[i];
         for(;;) {
+            CSEEntry *old;
             cur = *pCur;
             if (!cur) break;
             if (AstUses(cur->expr, modified) || AstUses(cur->replace, modified)) {
+                old = cur;
                 *pCur = cur->next;
+                DestroyCSEEntry(old);
             } else {
                 pCur = &cur->next;
             }
