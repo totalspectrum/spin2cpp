@@ -265,19 +265,19 @@ LR__0013
 	wrword	__system___gc_tryalloc_linkindex, __system___gc_tryalloc_lastptr
 	mov	_system___gc_tryalloc_tmp001_, imm_27776_
 	or	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc_reserveflag
+	mov	__system___gc_tryalloc__cse__0014, __system___gc_tryalloc_ptr
+	add	__system___gc_tryalloc__cse__0014, #2
 	cogid	result1
 	or	_system___gc_tryalloc_tmp001_, result1
-	mov	__system___gc_tryalloc__cse__0015, __system___gc_tryalloc_ptr
-	add	__system___gc_tryalloc__cse__0015, #2
-	wrword	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc__cse__0015
-	mov	__system___gc_tryalloc__cse__0016, __system___gc_tryalloc_heap_base
-	add	__system___gc_tryalloc__cse__0016, #8
-	rdword	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc__cse__0016
+	wrword	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc__cse__0014
+	mov	__system___gc_tryalloc__cse__0015, __system___gc_tryalloc_heap_base
+	add	__system___gc_tryalloc__cse__0015, #8
+	rdword	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc__cse__0015
 	wrword	_system___gc_tryalloc_tmp001_, __system___gc_tryalloc__cse__0002
 	mov	arg01, __system___gc_tryalloc_heap_base
 	mov	arg02, __system___gc_tryalloc_ptr
 	call	#__system___gc_pageindex
-	wrword	result1, __system___gc_tryalloc__cse__0016
+	wrword	result1, __system___gc_tryalloc__cse__0015
 	add	__system___gc_tryalloc_ptr, #8
 	or	__system___gc_tryalloc_ptr, imm_1669332992_
 	mov	result1, __system___gc_tryalloc_ptr
@@ -857,9 +857,9 @@ __system___gc_tryalloc__cse__0010
 	res	1
 __system___gc_tryalloc__cse__0011
 	res	1
-__system___gc_tryalloc__cse__0015
+__system___gc_tryalloc__cse__0014
 	res	1
-__system___gc_tryalloc__cse__0016
+__system___gc_tryalloc__cse__0015
 	res	1
 __system___gc_tryalloc_availsize
 	res	1
