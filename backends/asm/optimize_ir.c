@@ -3187,9 +3187,8 @@ void
 OptimizeIRLocal(IRList *irl, Function *f)
 {
     int change;
-
+    int flags = f->optimize_flags;
     if (gl_errors > 0) return;
-    if (!(gl_optimize_flags & OPT_BASIC_ASM)) return;
     if (!irl->head) return;
 
     // multiply divide optimization need only be performed once,
@@ -3199,25 +3198,39 @@ again:
     do {
         change = 0;
         AssignTemporaryAddresses(irl);
-        change |= CheckLabelUsage(irl);
-        change |= OptimizeReadWrite(irl);
-        change |= EliminateDeadCode(irl);
-        change |= OptimizeCogWrites(irl);
-        change |= OptimizeSimpleAssignments(irl);
-        change |= OptimizeMoves(irl);
-        change |= OptimizeImmediates(irl);
-        change |= OptimizeCompares(irl);
-        change |= OptimizeShortBranches(irl);
-        change |= OptimizeAddSub(irl);
-        change |= OptimizePeepholes(irl);
-        change |= OptimizePeephole2(irl);
-        change |= OptimizeIncDec(irl);
-        change |= OptimizeJumps(irl);
-        if (gl_p2) {
+        if (flags & OPT_BASIC_REGS) {
+            change |= CheckLabelUsage(irl);
+            change |= OptimizeReadWrite(irl);
+            change |= EliminateDeadCode(irl);
+            change |= OptimizeCogWrites(irl);
+            change |= OptimizeSimpleAssignments(irl);
+            change |= OptimizeMoves(irl);
+        }
+        if (flags & OPT_CONST_PROPAGATE) {
+            change |= OptimizeImmediates(irl);
+        }
+        if (flags & OPT_BASIC_REGS) {
+            change |= OptimizeCompares(irl);
+            change |= OptimizeAddSub(irl);
+        }
+        if (flags & OPT_BRANCHES) {
+            change |= OptimizeShortBranches(irl);
+        }
+        if (flags & OPT_PEEPHOLE) {
+            change |= OptimizePeepholes(irl);
+            change |= OptimizePeephole2(irl);
+        }
+        if (flags & OPT_BASIC_REGS) {
+            change |= OptimizeIncDec(irl);
+            change |= OptimizeJumps(irl);
+        }
+        if (gl_p2 && (flags & OPT_BASIC_REGS)) {
             change |= OptimizeP2(irl);
         }
     } while (change != 0);
-    change = OptimizeTailCalls(irl, f);
+    if (flags & OPT_TAIL_CALLS) {
+        change = OptimizeTailCalls(irl, f);
+    }
     if (change) goto again;
     
 }

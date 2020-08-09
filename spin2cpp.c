@@ -306,7 +306,7 @@ main(int argc, const char **argv)
                 fprintf(stderr, "Error: expected another argument after --optimize\n");
                 exit(2);
             }
-            gl_optimize_flags = strtoul(argv[0], NULL, 0);
+            ParseOptimizeString(NULL, argv[0], &gl_optimize_flags);
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;

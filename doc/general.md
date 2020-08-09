@@ -103,6 +103,8 @@ Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are le
 
 ## Optimizations
 
+Listed below are optimizations which may be enabled on the command line or on a per-function basis.
+
 ### Multiplication conversion (always)
 
 Multiplies by powers of two, or numbers near a power of two, are converted to shifts. For example
@@ -116,11 +118,11 @@ is converted to
 
 A similar optimization is performed for divisions by powers of two.
 
-### Unused method removal (-O1)
+### Unused method removal (-O1, -Ounused)
 
 This is pretty standard; if a method is not used, no code is emitted for it.
 
-### Dead code elimination (-O1)
+### Dead code elimination (-O1, -Odead)
 
 Within functions if code can obviously never be reached it is also removed. So for instance in something like:
 ```
@@ -132,39 +134,43 @@ Within functions if code can obviously never be reached it is also removed. So f
 ```
 The if statement and call to `foo` are removed since the condition is always false.
 
-### Small Method inlining (-O1)
+### Small Method inlining (-O1, -Oinline-small)
 
 Very small methods are expanded inline.
 
-### Register optimization (-O1)
+### Register optimization (-O1, -Oregs)
 
 The compiler analyzes assignments to registers and attempts to minimize the number of moves (and temporary registers) required.
 
-### Branch elimination (-O1)
+### Branch elimination (-O1, -Obranch-convert)
 
 Short branch sequences are converted to conditional execution where possible.
 
-### Constant propagation (-O1)
+### Constant propagation (-O1, -Oconst)
 
 If a register is known to contain a constant, arithmetic on that register can often be replaced with move of another constant.
 
-### Peephole optimization (-O1)
+### Peephole optimization (-O1, -Opeephole)
 
 In generated assembly code, various shorter combinations of instructions can sometimes be substituted for longer combinations.
 
-### Loop optimization (basic in -O1, stronger in -O2)
+### Tail call optimization (-O1, -Otail-calls)
+
+Convert recursive calls into jumps when possible
+
+### Loop optimization (-O1, -Oloop-basic)
 
 In some circumstances the optimizer can re-arrange counting loops so that the `djnz` instruction may be used instead of a combination of add/sub, compare, and branch. In -O2 a more thorough loop analysis makes this possible in more cases.
 
-### Fcache (-O1)
+### Fcache (-O1, -Ofcache)
 
 Small loops are copied to internal memory (COG on P1, LUT on P2) to be executed there. These loops cannot have any non-inlined calls in them.
 
-### Single Use Method inlining (-O2)
+### Single Use Method inlining (-O2, -Oinline-single)
 
 If a method is called only once in a whole program, it is expanded inline at the call site.
 
-### Common Subexpression Elimination (-O2)
+### Common Subexpression Elimination (-O2, -Ocse)
 
 Code like:
 ```
@@ -176,7 +182,7 @@ is automaticaly converted to something like:
     c := tmp + tmp
 ```
 
-### Loop Strength Reduction (-O2)
+### Loop Strength Reduction (-O2, -Oloop-reduce)
 
 #### Array indexes
 
@@ -199,6 +205,30 @@ is converted to the equivalent of
 
 An expression like `(i*100)` where `i` is a loop index can be converted to
 something like `itmp \ itmp + 100`
+
+### Per-function control of optimizations
+
+It is possible to enable or disable individual optimizations in a function by using attributes. For example, to disable loop reduction for a particular C function, one would add an attribute:
+```
+int foo(int x) __attribute__(opt(!loop-reduce)) {
+...
+}
+```
+
+A similar effect is achieved in Spin by adding a comment `{++opt(!loop-reduce)}` between the `pub` or `pri` and the function name.
+
+In BASIC we use the `for` keyword followed by a string giving the optimization options:
+```
+function for "opt(!loop-reduce)" myfunc()
+```
+
+Multiple options may be given, separated by commas. To turn an option off, prefix it with `!`. To enable all options for a particular optimization level, start the string with `0`, `1`, `2`, etc., or with the word `all` to enable all optimizations (regardless of the compiler optimization level chosen).
+
+Thus, a Spin function with `{++opt(0,peephole)}` will always be compiled with no optimization except peepholes, even when the `-O2` option is given to the compiler.
+
+### Optimization control on the command line
+
+Multiple `-O` options may be given, or combined separated by commas. So for example to compile with no optimizations except basic register and peephole, one would give `-O0,regs,peephole`. To compile with `-O2` but with peepholes turned off, one would give `-O2,!peephole`.
 
 ## Inline assembly
 

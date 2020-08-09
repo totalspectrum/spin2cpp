@@ -119,16 +119,24 @@ extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */
-#define OPT_REMOVE_UNUSED_FUNCS 0x0001
-#define OPT_PERFORM_CSE         0x0002
-#define OPT_REMOVE_HUB_BSS      0x0004
-#define OPT_BASIC_ASM           0x0008  /* basic peephole optimizations &c */
-#define OPT_INLINE_SMALLFUNCS   0x0010  /* inline small functions */
-#define OPT_INLINE_SINGLEUSE    0x0020  /* inline single use functions */
-#define OPT_AUTO_FCACHE         0x0040  /* use FCACHE for P2 */
-#define OPT_PERFORM_LOOPREDUCE  0x0080  /* loop reduction */
+#define OPT_REMOVE_UNUSED_FUNCS 0x000001
+#define OPT_PERFORM_CSE         0x000002
+#define OPT_REMOVE_HUB_BSS      0x000004
+#define OPT_BASIC_REGS          0x000008  /* basic register optimization */
+#define OPT_INLINE_SMALLFUNCS   0x000010  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x000020  /* inline single use functions */
+#define OPT_AUTO_FCACHE         0x000040  /* use FCACHE for P2 */
+#define OPT_PERFORM_LOOPREDUCE  0x000080  /* loop reduction */
+#define OPT_DEADCODE            0x000100  /* dead code elimination */
+#define OPT_BRANCHES            0x000200  /* branch conditionalization */
+#define OPT_PEEPHOLE            0x000400  /* peephole optimization */
+#define OPT_CONST_PROPAGATE     0x000800  /* constant propagation */
+#define OPT_LOOP_BASIC          0x001000  /* simple loop conversion */
+#define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
 
-#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
+#define OPT_FLAGS_ALL           0xffffff
+#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE)                        
+#define DEFAULT_ASM_OPTS        (OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_ASM_BASIC|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS)
 #define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 extern int gl_warn_flags;     /* flags for warnings */
@@ -788,7 +796,7 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
 // parse an optimization string
 // updates flags based on what we find
 // returns 0 on failure to parse, 1 otherwise
-int ParseOptimizeString(const char *str, int *flags);
+int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
 
 // external vars
 extern AST *basic_get_float;
