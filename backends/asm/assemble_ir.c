@@ -1230,7 +1230,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             flexbuf_printf(fb, "-");
             PrintOperandAsValue(fb, ir->src);
             flexbuf_printf(fb, ")\n");
-            flexbuf_printf(fb, "\tcalla\t#FCACHE_LOAD_\n");
+            flexbuf_printf(fb, "\tcall\t#FCACHE_LOAD_\n");
         } else {
             flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
             flexbuf_printf(fb, "\tlong\t(");

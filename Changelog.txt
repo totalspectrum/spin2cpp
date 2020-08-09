@@ -1,3 +1,6 @@
+Version 4.3.0
+- P2 API Change: use call/ret instead of calla/reta
+
 Version 4.2.8
 - Added -Werror flag to turn warnings into errors
 - Fixed an optimizer bug which could incorrectly delete some conditional statements
