@@ -1441,9 +1441,14 @@ int EliminateDeadCode(IRList *irl)
 {
     int change;
     IR *ir, *ir_next;
-
+    int remove_jumps;
     change = 0;
 
+    if (curfunc) {
+        remove_jumps = (curfunc->optimize_flags & OPT_DEADCODE) != 0;
+    } else {
+        remove_jumps = (gl_optimize_flags & OPT_DEADCODE) != 0;
+    }
     // first case: a jump at the end to the ret label
     ir = irl->tail;
     while (ir && IsDummy(ir)) {
@@ -1464,7 +1469,7 @@ int EliminateDeadCode(IRList *irl)
       }
       if (InstrIsVolatile(ir)) {
           /* do nothing */
-      } else if (ir->opc == OPC_JUMP) {
+      } else if (ir->opc == OPC_JUMP && remove_jumps) {
           if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
               // dead code from here to next label
               IR *x = ir->next;
@@ -3253,7 +3258,9 @@ OptimizeIRGlobal(IRList *irl)
     }
     if (gl_lmm_kind == LMM_KIND_ORIG) {
         // check for fcache
-        OptimizeFcache(irl);
+        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+            OptimizeFcache(irl);
+        }
     }
     // check for usage
     CheckUsage(irl);
