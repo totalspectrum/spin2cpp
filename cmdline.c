@@ -310,8 +310,8 @@ static struct optflag_table {
     const char *name;
     int bits;
 } optflag[] = {
-    { "unused", OPT_REMOVE_UNUSED_FUNCS },
-    { "dead", OPT_DEADCODE },
+    { "remove-unused", OPT_REMOVE_UNUSED_FUNCS },
+    { "remove-dead", OPT_DEADCODE },
     { "inline-small", OPT_INLINE_SMALLFUNCS },
     { "regs", OPT_BASIC_REGS },
     { "branch-convert", OPT_BRANCHES },
@@ -323,7 +323,7 @@ static struct optflag_table {
     { "fcache", OPT_AUTO_FCACHE },
     { "inline-single", OPT_INLINE_SINGLEUSE },
     { "cse", OPT_PERFORM_CSE },
-    { "nobss", OPT_REMOVE_HUB_BSS },
+    { "remove-bss", OPT_REMOVE_HUB_BSS },
     { "all", OPT_FLAGS_ALL },
 };
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
