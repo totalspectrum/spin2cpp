@@ -539,7 +539,11 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     if (filterCases) {
         // do not want jump table
         // instead, just pick the active part
-        stmt = SelectActiveCase(switchstmt, stmt, endswitch);
+        AST *pick;
+        pick = SelectActiveCase(switchstmt, stmt, endswitch);
+        if (pick) {
+            stmt = pick;
+        }
         gostmt = NULL;
     } else {
         gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
