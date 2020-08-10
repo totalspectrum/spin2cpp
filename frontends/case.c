@@ -100,6 +100,11 @@ static AST *MakeCaseTest(AST *ident, AST *expr)
 /*
  * returns a list of if x goto y; statments where x is a case condition and
  * y is the case label
+ * "tmpvar" is the case selector (may be a constant)
+ * "switchstmt" is the list of gotos
+ * "stmt" points to the case statement itself
+ * "defaultlabel" will be set to the default case, if any
+ * "endswitch" points to a label after the switch
  */
 static AST *
 CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *endswitch)
@@ -126,7 +131,7 @@ again:
         AddSymbolForLabel(label);
         ifcond = MakeCaseTest(tmpvar, stmt->left);
         *stmt = *NewAST(AST_STMTLIST, label,
-                        NewAST(AST_STMTLIST, stmt->right, NULL));
+                            NewAST(AST_STMTLIST, stmt->right, NULL));
         ifgoto = NewAST(AST_GOTO, labelid, NULL);
         ifgoto = NewAST(AST_STMTLIST, ifgoto, NULL);
         ifgoto = NewAST(AST_THENELSE, ifgoto, NULL);
@@ -438,7 +443,9 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AST *endlabel;
     AST *use_expr;
     ASTReportInfo saveinfo;
-
+    int filterCases;
+    int optimize_flags = curfunc->optimize_flags;
+    
     //DumpAST(stmt);
     
     AstReportAs(stmt, &saveinfo);
@@ -457,15 +464,22 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     // switchstmt will have all the gotos we make
     if (IsConstExpr(expr)) {
         use_expr = expr;
+        filterCases = (optimize_flags & OPT_DEADCODE) != 0;
     } else {
         use_expr = tmpvar;
+        filterCases = 0;
     }
     switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"
     if (!defaultlabel) {
         defaultlabel = endswitch;
     }
-    gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
+    if (filterCases) {
+        // do not want jump table
+        gostmt = NULL;
+    } else {
+        gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
+    }
     if (gostmt) {
         switchstmt = gostmt;
     } else {
