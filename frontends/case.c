@@ -103,7 +103,7 @@ static AST *MakeCaseTest(AST *ident, AST *expr)
  * (call this only if the case selection expression is known constant)
  */
 static AST *
-SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel)
+SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
 {
     AST *goodlabel = NULL;
     AST *ast;
@@ -135,8 +135,8 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel)
         }
     }
     if (!goodlabel) {
-        // we really just want a "goto endlabel" here
-        return NULL;
+        // choose just the default case
+        goodlabel = defaultlabel;
     }
     block = NULL;
     for (ast = stmts; ast; ast=ast->right) {
@@ -551,7 +551,7 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
         // do not want jump table
         // instead, just pick the active part
         AST *pick;
-        pick = SelectActiveCase(switchstmt, stmt, endswitch);
+        pick = SelectActiveCase(switchstmt, stmt, endswitch, defaultlabel);
         if (pick) {
             return pick;
         }
