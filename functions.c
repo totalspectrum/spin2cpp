@@ -896,7 +896,7 @@ doDeclareFunction(AST *funcblock)
             if (opts[0] != '(') {
                 ERROR(annotation, "optimization options must be enclosed in parentheses");
             } else {
-                ParseOptimizeString(annotation, opts, &fdef->optimize_flags);
+                ParseOptimizeString(annotation, opts+1, &fdef->optimize_flags);
             }
         }
     }
