@@ -98,6 +98,68 @@ static AST *MakeCaseTest(AST *ident, AST *expr)
 }
 
 /*
+ * SelectActiveCase:
+ * selects just the case that is going to run
+ * (call this only if the case selection expression is known constant)
+ */
+static AST *
+SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel)
+{
+    AST *goodlabel = NULL;
+    AST *ast;
+    AST *ifstmt;
+    AST *block;
+    
+    for (ast = switchstmt; ast; ast = ast->right) {
+        if (ast->kind != AST_STMTLIST) {
+            return NULL;
+        }
+        ifstmt = ast->left;
+        if (ifstmt->kind == AST_ASSIGN) {
+            // ignore the initial assignment
+            continue;
+        }
+        if (ifstmt->kind != AST_IF) {
+            return NULL;
+        }
+        if (!IsConstExpr(ifstmt->left)) {
+            return NULL;
+        }
+        if (EvalConstExpr(ifstmt->left) != 0) {
+            goodlabel = ifstmt->right->left->left;
+            if (goodlabel->kind != AST_GOTO) {
+                return NULL;
+            }
+            goodlabel = goodlabel->left;
+            break;
+        }
+    }
+    if (!goodlabel) {
+        // we really just want a "goto endlabel" here
+        return NULL;
+    }
+    block = NULL;
+    for (ast = stmts; ast; ast=ast->left) {
+        block = ast->left;
+        if (block->kind != AST_STMTLIST) {
+            return NULL;
+        }
+        if (block->left->kind != AST_LABEL) {
+            return NULL;
+        }
+        if (AstMatch(block->left->left, goodlabel)) {
+            break;
+        }
+    }
+    if (!block) {
+        return NULL;
+    }
+    // verify that "block" ends with "goto endlabel"
+    // if it does, then we can replace all of the stmt with just "block"
+    return NULL;
+}
+
+/*
  * returns a list of if x goto y; statments where x is a case condition and
  * y is the case label
  * "tmpvar" is the case selector (may be a constant)
@@ -476,6 +538,8 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     }
     if (filterCases) {
         // do not want jump table
+        // instead, just pick the active part
+        stmt = SelectActiveCase(switchstmt, stmt, endswitch);
         gostmt = NULL;
     } else {
         gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
