@@ -4,6 +4,7 @@ Version 4.3.0
 - Added per-function control over optimizations
 - Fixed some bugs in cse and loop optimizations
 - Fixed byref parameters in BASIC template functions
+- Improved dead code removal
 
 Version 4.2.8
 - Added -Werror flag to turn warnings into errors
