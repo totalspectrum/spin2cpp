@@ -139,8 +139,11 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel)
         return NULL;
     }
     block = NULL;
-    for (ast = stmts; ast; ast=ast->left) {
+    for (ast = stmts; ast; ast=ast->right) {
         block = ast->left;
+        if (block->kind == AST_GOTO) {
+            continue;
+        }
         if (block->kind != AST_STMTLIST) {
             return NULL;
         }
@@ -154,8 +157,16 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel)
     if (!block) {
         return NULL;
     }
-    // verify that "block" ends with "goto endlabel"
+    // verify that "goto endlabel" follows block
+    // as it happens our construction leaves the goto just after "ast"
     // if it does, then we can replace all of the stmt with just "block"
+    if (ast) {
+        ast = ast->right;
+    }
+    if (ast && ast->left && ast->left->kind == AST_GOTO && AstMatch(ast->left->left, endlabel))
+    {
+        return block;
+    }
     return NULL;
 }
 
@@ -542,7 +553,7 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
         AST *pick;
         pick = SelectActiveCase(switchstmt, stmt, endswitch);
         if (pick) {
-            stmt = pick;
+            return pick;
         }
         gostmt = NULL;
     } else {
