@@ -930,6 +930,17 @@ FixupCode(Module *P, int isBinary)
         LastQ->next = globalModule;
     }
 
+    /* perform generic high-level optimizations
+       (including dead code removal) */
+    if (gl_errors != 0) {
+        return;
+    }
+    
+    for (Q = allparse; Q; Q = Q->next) {
+        DoHighLevelOptimize(Q);
+        if (gl_errors) return;
+    }
+    
     do {
         CheckUnusedMethods(isBinary);
         changes = ResolveSymbols();

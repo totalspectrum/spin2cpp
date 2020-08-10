@@ -653,6 +653,9 @@ void Init();
 void InitPreprocessor(const char *argv[]);
 void SetPreprocessorLanguage(int language);
 
+// perform various high level optimizations
+void DoHighLevelOptimize(Module *P);
+
 // perform common sub-expression elimination on a function
 void PerformCSE(Module *P);
 void PerformLoopOptimization(Module *P);
