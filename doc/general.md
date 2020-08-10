@@ -118,11 +118,11 @@ is converted to
 
 A similar optimization is performed for divisions by powers of two.
 
-### Unused method removal (-O1, -Ounused)
+### Unused method removal (-O1, -Oremove-unused)
 
 This is pretty standard; if a method is not used, no code is emitted for it.
 
-### Dead code elimination (-O1, -Odead)
+### Dead code elimination (-O1, -Oremove-dead)
 
 Within functions if code can obviously never be reached it is also removed. So for instance in something like:
 ```
