@@ -1,3 +1,7 @@
+Version 4.2.9
+- Fixed use of byref in function templates
+- Fixed some optimizer bugs at level -O2
+
 Version 4.2.8
 - Added -Werror flag to turn warnings into errors
 - Fixed an optimizer bug which could incorrectly delete some conditional statements
