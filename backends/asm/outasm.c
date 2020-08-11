@@ -5510,7 +5510,7 @@ static const char *builtin_abortcode_p1 =
 static const char *builtin_abortcode_p2 =
     "__pc long 0\n"
     "__setjmp\n"
-    "    rdlong __pc, --ptra\n"
+    "    pop __pc\n"
     "    mov result1, #0\n"
     "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
@@ -5538,7 +5538,7 @@ static const char *builtin_abortcode_p2 =
 
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
-    "    rdlong __pc, --ptra\n"
+    "    pop __pc\n"
     "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
     "    mov result1, arg02\n"
