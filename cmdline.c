@@ -363,7 +363,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
                 flags = DEFAULT_ASM_OPTS;
                 continue;
             case '2':
-                flags = EXTRA_ASM_OPTS;
+                flags = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
                 continue;
             default:
                 ERROR(line, "Unrecognized asm option: %s", buf);
