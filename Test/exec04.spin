@@ -9,7 +9,7 @@ OBJ
 
 PUB demo | x,y,n
 
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   fds.str(string("lookup/lookdown tests", 13, 10))
 
