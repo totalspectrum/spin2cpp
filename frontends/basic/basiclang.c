@@ -726,8 +726,7 @@ ParsePrintStatement(AST *ast)
         }
         type = ExprType(expr);
         if (!type) {
-            ERROR(ast, "Unknown type in print");
-            continue;
+            type = ast_type_long;
         }
         if (IsFloatType(type)) {
             seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, '#');

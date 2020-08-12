@@ -10,6 +10,8 @@
 #include <string.h>
 #include "spinc.h"
 
+extern AST *ParsePrintStatement(AST *ast); /* in basiclang.c */
+
 bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;
@@ -814,12 +816,19 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         doSpinTransform(&ast->left, 0, ast);
         doSpinTransform(&ast->right, 0, ast);
         break;
+    case AST_PRINT:
+        doSpinTransform(&ast->left, 1, ast);
+        doSpinTransform(&ast->right, 1, ast);
+        *astptr = ast = ParsePrintStatement(ast);
+        break;
     }
 }
 
 void
 SpinTransform(Function *func)
 {
+    InitGlobalFuncs();
+    
     // simplify assignments: this is required for some of
     // the other passes to work
     SimplifyAssignments(&func->body);

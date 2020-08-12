@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "spinc.h"
+
+extern AST *AstCharItem();
     
 #define YYSTYPE AST*
     
@@ -261,6 +263,7 @@ FixupList(AST *list)
 %token SP_BMASK      "BMASK"
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
+%token SP_DEBUG      "DEBUG"
 
 /* special token for foo() : N indicating the number of return values from foo, N */
 /* FIXME: this is not implemented yet in lexer.c! */
@@ -449,6 +452,12 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
+  | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
+    { $$ = NewCommentedAST(AST_PRINT, $3, NULL, $1); }
+;
+
+debug_exprlist: exprlist
+   { $$ = AddToList($1, AstCharItem('\n')); }
 ;
 
 multiassign:
