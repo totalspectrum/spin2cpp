@@ -108,6 +108,7 @@ Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
 
 static void AssignOneFuncName(Function *f);
+static void ValidatePushregs(void);
 
 static bool IsCogMem(Operand *addr);
 static int InCog(Function *f) {
@@ -296,7 +297,12 @@ static void
 ValidateFrameptr(void)
 {
     if (!frameptr) {
-        frameptr = GetOneGlobal(REG_REG, "fp", 0);
+        if (gl_p2) {
+            // fp is defined with the pushregs
+            ValidatePushregs();
+        } else {
+            frameptr = GetOneGlobal(REG_REG, "fp", 0);
+        }
     }
     ValidateStackptr();
 }
@@ -330,6 +336,9 @@ ValidatePushregs(void)
         pushregs_ = NewOperand(IMM_COG_LABEL, "pushregs_", 0);
         popregs_ = NewOperand(IMM_COG_LABEL, "popregs_", 0);
         count_ = NewOperand(REG_REG, "COUNT_", 0);
+        if (gl_p2) {
+            frameptr = NewOperand(REG_REG, "fp", 0);
+        }
     }
 }
         
@@ -5420,6 +5429,8 @@ const char *builtin_pushregs_p2 =
     "    long 0\n"
     "RETADDR_\n"
     "    long 0\n"
+    "fp\n"
+    "    long 0\n"
     "pushregs_\n"
     "    pop  pa\n"
     "    pop  RETADDR_\n"
@@ -5432,17 +5443,16 @@ const char *builtin_pushregs_p2 =
     "    shl  COUNT_, #2\n"
     "    add  ptra, COUNT_\n"
     "    shr  COUNT_, #2\n"
+    "    setq #2 ' push 3 registers starting at COUNT_\n"
     "    wrlong COUNT_, ptra++\n"
-    "    wrlong RETADDR_, ptra++\n"
-    "    wrlong fp, ptra++\n"
     "    mov    fp, ptra\n"
     "    jmp  pa\n"
 
     " popregs_\n"
     "    pop    pa\n"
-    "    rdlong fp, --ptra\n"
-    "    rdlong RETADDR_, --ptra\n"
-    "    rdlong COUNT_, --ptra\n"
+    "    sub    ptra, #12\n"
+    "    setq   #2\n"
+    "    rdlong COUNT_, ptra\n"
     "    tjz    COUNT_, #popregs__ret\n"
     "    shl    COUNT_, #2\n"
     "    sub    ptra, COUNT_\n"

@@ -18,6 +18,27 @@ AST *GetEffectiveNode(AST *ast)
     return ast;
 }
 
+//
+// check to see if a block contains a label (so somebody could
+// jump into it
+//
+int
+BlockContainsLabel(AST *body)
+{
+#if 0    
+    if (!body) return 0;
+    if (body->kind == AST_LABEL) {
+        return 1;
+    }
+    return BlockContainsLabel(body->left) || BlockContainsLabel(body->right);
+#else
+    return 0;
+#endif
+}
+
+//
+// remove dead code
+//
 void RemoveDeadCode(AST *body)
 {
     if (!body) return;
@@ -26,16 +47,25 @@ void RemoveDeadCode(AST *body)
         if (IsConstExpr(body->left)) {
             int32_t val = EvalConstExpr(body->left);
             AST *thenelse = GetEffectiveNode(body->right);
-            AST *newbody = val ? thenelse->left : thenelse->right;
-            if (newbody) {
-                *body = *newbody;
-                RemoveDeadCode(body);
-                return;
+            AST *newbody, *deletebody;
+
+            if (val) {
+                newbody = thenelse->left;
+                deletebody = thenelse->right;
             } else {
-                /* replace with a dummy */
-                thenelse->left = thenelse->right = NULL;
+                newbody = thenelse->right;
+                deletebody = thenelse->right;
             }
-            return;
+            if (!BlockContainsLabel(deletebody)) {
+                if (newbody) {
+                    *body = *newbody;
+                    RemoveDeadCode(body);
+                } else {
+                    /* replace with a dummy */
+                    thenelse->left = thenelse->right = NULL;
+                }
+                return;
+            }
         }
         break;
     default:
