@@ -25,15 +25,11 @@ AST *GetEffectiveNode(AST *ast)
 int
 BlockContainsLabel(AST *body)
 {
-#if 0    
     if (!body) return 0;
     if (body->kind == AST_LABEL) {
         return 1;
     }
     return BlockContainsLabel(body->left) || BlockContainsLabel(body->right);
-#else
-    return 0;
-#endif
 }
 
 //
@@ -54,7 +50,7 @@ void RemoveDeadCode(AST *body)
                 deletebody = thenelse->right;
             } else {
                 newbody = thenelse->right;
-                deletebody = thenelse->right;
+                deletebody = thenelse->left;
             }
             if (!BlockContainsLabel(deletebody)) {
                 if (newbody) {
