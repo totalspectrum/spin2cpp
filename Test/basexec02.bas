@@ -13,7 +13,11 @@ class util
   end function
 end class
 
+#ifdef __P2__
+class FDS using "../include/spin/SmartSerial.spin"
+#else
 class FDS using "FullDuplexSerial.spin"
+#endif
 dim ser as FDS
 dim u as util
 dim msg as string
@@ -36,7 +40,11 @@ sub doit
   g()
 end sub
 
+#ifdef __P2__
+ser.start(63, 62, 0, 230_400)
+#else
 ser.start(31, 30, 0, 115_200)
+#endif
 ser.str("pointer test... ")
 
 msg = "hi!"

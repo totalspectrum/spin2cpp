@@ -26,7 +26,11 @@ PUB demo | a, b
   exit
 
 PUB getvar1
+#ifdef __P2__
+  return myvar1 ^ $44
+#else  
   return myvar1
+#endif
 
 PUB getvar2
   return myvar2

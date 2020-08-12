@@ -7,7 +7,11 @@
 #define print(x) printf("%s", x)
 #define printdec(x) printf("%d", x)
 #else
+# ifdef __P2__
+extern struct __using("spin/SmartSerial.spin") fds;
+# else
 extern struct __using("spin/FullDuplexSerial.spin") fds;
+#endif
 #define println(x) fds.str(x "\r\n")
 #define print(x) fds.str(x)
 #define putchar(c) fds.tx(c)

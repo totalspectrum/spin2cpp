@@ -1,6 +1,10 @@
 #include "sub/cexec01.hh"
 
+#ifdef __P2__
+struct __using("spin/SmartSerial.spin") fds;
+#else
 struct __using("spin/FullDuplexSerial.spin") fds;
+#endif
 
 enum MYKIND {
     BIT0 = 0x1,
@@ -77,7 +81,11 @@ void main()
     int v = 1;
     
 #ifndef USE_STDIO
+# ifdef __P2__
+    fds.start(63, 62, 0, 230400);
+# else    
     fds.start(31, 30, 0, 115200);
+# endif    
 #endif
     testswitch(1);
     testswitch(0);
