@@ -170,7 +170,7 @@ pri _call_method(o, f, x=0) | r
     add	   ptra, #4
     mov    objptr, o
     mov    arg01, x
-    calla  f
+    call   f
     sub	   ptra, #4
     rdlong objptr, ptra
     mov    r, result1
