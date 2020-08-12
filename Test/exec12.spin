@@ -1,16 +1,11 @@
 ''
 '' test of address operators
 ''
-CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
-  
-OBJ
-  fds : "spin/FullDuplexSerial"
+#include "stdconsts.spinh"
 
 PUB main | start,elapsed,idx
   '' start up the serial port
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   fds.str(string("Str1 is: "))
   fds.str(@Str1)
