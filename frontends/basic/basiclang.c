@@ -672,6 +672,81 @@ ConvertPrintToPrintf(AST *ast)
     return printit;
 }
 
+AST *
+ParsePrintStatement(AST *ast)
+{
+    // convert PRINT to a series of calls to basic_print_xxx
+    AST *seq = NULL;
+    AST *type;
+    AST *exprlist = ast->left;
+    AST *expr;
+    AST *handle = ast->right;
+    AST *defaultFmt = AstInteger(0);
+    AST *fmtAst;
+
+    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
+        return ConvertPrintToPrintf(ast);
+    }
+    if (!handle) {
+        handle = AstInteger(0);
+    }
+    while (exprlist) {
+        fmtAst = defaultFmt;
+        if (exprlist->kind != AST_EXPRLIST) {
+            ERROR(exprlist, "internal error in print list");
+        }
+        expr = exprlist->left;
+        exprlist = exprlist->right;
+        if (expr->kind == AST_USING) {
+            fmtAst = expr->left;
+            expr = expr->right;
+        }
+        if (!expr) {
+            continue;
+        }
+        // PUT gets translated to a PRINT with an AST_HERE node
+        // this requests that we write out the literal bytes of
+        // an expression
+        if (expr->kind == AST_HERE) {
+            // request to put literal data
+            int size;
+            expr = expr->left;
+            size = TypeSize(ExprType(expr));
+            seq = addPutCall(seq, handle, basic_put, expr, size);
+            continue;
+        }
+        if (expr->kind == AST_CHAR) {
+            expr = expr->left;
+            if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
+                seq = addPrintCall(seq, handle, basic_print_nl, NULL, NULL);
+            } else {
+                seq = addPrintCall(seq, handle, basic_print_char, expr, NULL);
+            }
+            continue;
+        }
+        type = ExprType(expr);
+        if (!type) {
+            ERROR(ast, "Unknown type in print");
+            continue;
+        }
+        if (IsFloatType(type)) {
+            seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, '#');
+        } else if (IsStringType(type)) {
+            seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
+        } else if (IsGenericType(type)) {
+            // create a hex call
+            seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
+        } else if (IsUnsignedType(type)) {
+            seq = addPrintDec(seq, handle, basic_print_unsigned, expr, fmtAst);
+        } else if (IsIntType(type)) {
+            seq = addPrintDec(seq, handle, basic_print_integer, expr, fmtAst);
+        } else {
+            ERROR(ast, "Unable to print expression of this type");
+        }
+    }
+    return seq;
+}
+
 static void
 doBasicTransform(AST **astptr)
 {
@@ -840,76 +915,7 @@ doBasicTransform(AST **astptr)
     case AST_PRINT:
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
-        if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
-            *astptr = ast = ConvertPrintToPrintf(ast);
-        } else {
-            // convert PRINT to a series of calls to basic_print_xxx
-            AST *seq = NULL;
-            AST *type;
-            AST *exprlist = ast->left;
-            AST *expr;
-            AST *handle = ast->right;
-            AST *defaultFmt = AstInteger(0);
-            AST *fmtAst;
-            if (!handle) {
-                handle = AstInteger(0);
-            }
-            while (exprlist) {
-                fmtAst = defaultFmt;
-                if (exprlist->kind != AST_EXPRLIST) {
-                    ERROR(exprlist, "internal error in print list");
-                }
-                expr = exprlist->left;
-                exprlist = exprlist->right;
-                if (expr->kind == AST_USING) {
-                    fmtAst = expr->left;
-                    expr = expr->right;
-                }
-                if (!expr) {
-                    continue;
-                }
-                // PUT gets translated to a PRINT with an AST_HERE node
-                // this requests that we write out the literal bytes of
-                // an expression
-                if (expr->kind == AST_HERE) {
-                    // request to put literal data
-                    int size;
-                    expr = expr->left;
-                    size = TypeSize(ExprType(expr));
-                    seq = addPutCall(seq, handle, basic_put, expr, size);
-                    continue;
-                }
-                if (expr->kind == AST_CHAR) {
-                    expr = expr->left;
-                    if (IsConstExpr(expr) && EvalConstExpr(expr) == 10) {
-                        seq = addPrintCall(seq, handle, basic_print_nl, NULL, NULL);
-                    } else {
-                        seq = addPrintCall(seq, handle, basic_print_char, expr, NULL);
-                    }
-                    continue;
-                }
-                type = ExprType(expr);
-                if (!type) {
-                    ERROR(ast, "Unknown type in print");
-                    continue;
-                }
-                if (IsFloatType(type)) {
-                    seq = addFloatPrintCall(seq, handle, basic_print_float, expr, fmtAst, '#');
-                } else if (IsStringType(type)) {
-                    seq = addPrintCall(seq, handle, basic_print_string, expr, fmtAst);
-                } else if (IsGenericType(type)) {
-                    // create a hex call
-                    seq = addPrintHex(seq, handle, basic_print_unsigned, expr, fmtAst);
-                } else if (IsUnsignedType(type)) {
-                    seq = addPrintDec(seq, handle, basic_print_unsigned, expr, fmtAst);
-                } else if (IsIntType(type)) {
-                    seq = addPrintDec(seq, handle, basic_print_integer, expr, fmtAst);
-                } else {
-                    ERROR(ast, "Unable to print expression of this type");
-                }
-            }
-            *astptr = ast = seq;
-        }
+        *astptr = ast = ParsePrintStatement(ast);
         break;
     case AST_LABEL:
         if (!ast->left || !IsIdentifier(ast->left)) {
