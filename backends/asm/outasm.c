@@ -5536,15 +5536,18 @@ static const char *builtin_abortcode_p2 =
     // unwind_stack(curfp, lastfp) walks the frame pointer list and restores everything
     // NOTE: call this with "call", not "calla"!
     // until it reaches lastfp
+    "__unwind_pc long 0\n"
     "__unwind_stack\n"
+    "   pop  __unwind_pc\n"
+    "__unwind_loop\n"
     "   cmp  arg01, arg02 wz\n"
     "  if_z jmp #__unwind_stack_ret\n"
     "   mov   ptra, arg01\n"
     "   call  #popregs_\n"
     "   mov   arg01, fp\n"
-    "   jmp   #__unwind_stack\n"
+    "   jmp   #__unwind_loop\n"
     "__unwind_stack_ret\n"
-    "   ret\n"
+    "   jmp  __unwind_pc\n"
 
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
