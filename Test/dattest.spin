@@ -1,9 +1,4 @@
-CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
-
-OBJ
-  fds : "spin/FullDuplexSerial"
+#include "stdconsts.spinh"
 
 PUB demo | n, i, b
 
@@ -27,7 +22,9 @@ PUB demo | n, i, b
 
 PUB exit
   waitcnt(cnt + 40000000)
+#ifndef __P2__  
   fds.stop
+#endif
 
 PUB getvar
   return myvar
