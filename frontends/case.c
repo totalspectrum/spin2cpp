@@ -109,6 +109,8 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
     AST *ast;
     AST *ifstmt;
     AST *block;
+    AST *tryblock;
+    AST *blockast;
     
     for (ast = switchstmt; ast; ast = ast->right) {
         if (ast->kind != AST_STMTLIST) {
@@ -140,18 +142,25 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
     }
     block = NULL;
     for (ast = stmts; ast; ast=ast->right) {
-        block = ast->left;
-        if (block->kind == AST_GOTO) {
+        tryblock = ast->left;
+        if (tryblock->kind == AST_GOTO) {
             continue;
         }
-        if (block->kind != AST_STMTLIST) {
+        if (tryblock->kind != AST_STMTLIST) {
             return NULL;
         }
-        if (block->left->kind != AST_LABEL) {
+        if (tryblock->left->kind != AST_LABEL) {
             return NULL;
         }
-        if (AstMatch(block->left->left, goodlabel)) {
-            break;
+        if (BlockContainsLabel(tryblock->right)) {
+            // goto may happen into this block; we
+            // cannot remove it
+            return NULL;
+        }
+        if (AstMatch(tryblock->left->left, goodlabel)) {
+            block = tryblock;
+            blockast = ast;
+            continue;
         }
     }
     if (!block) {
@@ -160,6 +169,7 @@ SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
     // verify that "goto endlabel" follows block
     // as it happens our construction leaves the goto just after "ast"
     // if it does, then we can replace all of the stmt with just "block"
+    ast = blockast;
     if (ast) {
         ast = ast->right;
     }

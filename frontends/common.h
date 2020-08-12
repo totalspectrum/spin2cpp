@@ -752,6 +752,9 @@ AST *MakeDeclarations(AST *decl, SymbolTable *table);
 /* find the symbol containing a mask for implicit types, as defined by DEFINT and DEFSNG */
 Symbol *GetCurImplicitTypes(void);
 
+/* returns 1 if a block contains a label, 0 if not */
+int BlockContainsLabel(AST *block);
+
 /* create a "normalized" form of a file name that we can use for comparison */
 char *NormalizePath(const char *path);
 
