@@ -1,9 +1,4 @@
-CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
-
-OBJ
-  fds : "spin/FullDuplexSerial"
+#include "stdconsts.spinh"
 
 VAR
   long x
@@ -11,7 +6,7 @@ VAR
 PUB demo | a, b
 
   '' start up the serial port
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   a := getvar1
   fds.str(string("a="))

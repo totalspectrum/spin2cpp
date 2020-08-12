@@ -1,15 +1,12 @@
+#include "stdconsts.spinh"
+
 CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
   twof = -2.0
   abstwof = ||twof
 
-OBJ
-  fds: "spin/FullDuplexSerial"
-
 PUB demo | x,y
 
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   fds.str(string("2, abs(2)", 13, 10))
 

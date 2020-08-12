@@ -1,12 +1,6 @@
 '' check for whether DAT sections are shared between objects
 '' (they should be)
-
-CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
-
-OBJ
-  fds : "spin/FullDuplexSerial"
+#include "stdconsts.spinh"
 
 OBJ
   A : "dattest.spin"
@@ -14,7 +8,7 @@ OBJ
 
 PUB main | n
   '' start up the serial port
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   A.setvar(1)
   n := A.getvar
