@@ -136,11 +136,12 @@ static struct s_dbgfmt {
     { 0, 0, 0 }
 };
 
-static AST *GetFormatForDebug(const char *itemname_orig, AST *args, char *buf)
+static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST *args, int needcomma)
 {
     char itemname[128];
     struct s_dbgfmt *ptr = &dbgfmt[0];
     AST *arg;
+    AST *outlist = NULL;
     int len;
     int output_name = 1;
     const char *idname;
@@ -165,23 +166,34 @@ static AST *GetFormatForDebug(const char *itemname_orig, AST *args, char *buf)
         WARNING(args, "Unhandled debug format %s", itemname_orig);
         return NULL;
     }
-    arg = args->left;
+
+    // now output all the arguments
+    while (args) {
+        arg = args->left;
+        args = args->right;
     
-    if (output_name) {
-        idname = GetUserIdentifierName(arg);
-        sprintf(buf, "%s = %s", idname, ptr->cfmt);
-    } else {
-        strcpy(buf, ptr->cfmt);
-    }
-    if (ptr->bits) {
-        int bits = ptr->bits;
-        if (bits < 0) {
-            arg = AstOperator(K_SIGNEXTEND, arg, AstInteger(-bits));
-        } else {
-            arg = AstOperator(K_ZEROEXTEND, arg, AstInteger(bits));
+        if (needcomma) {
+            flexbuf_addstr(fb, ", ");
         }
+        if (output_name) {
+            idname = GetUserIdentifierName(arg);
+            flexbuf_printf(fb, "%s = %s", idname, ptr->cfmt);
+        } else {
+            flexbuf_addstr(fb, ptr->cfmt);
+        }
+        needcomma = 1;
+        if (ptr->bits) {
+            int bits = ptr->bits;
+            if (bits < 0) {
+                arg = AstOperator(K_SIGNEXTEND, arg, AstInteger(-bits));
+            } else {
+                arg = AstOperator(K_ZEROEXTEND, arg, AstInteger(bits));
+            }
+        }
+        arg = NewAST(AST_EXPRLIST, arg, NULL);
+        outlist = AddToList(outlist, arg);
     }
-    return NewAST(AST_EXPRLIST, arg, NULL);
+    return outlist;
 }
 
 extern AST *genPrintf(AST *);
@@ -201,27 +213,29 @@ BuildDebugList(AST *exprlist)
         return NULL;
     }
     flexbuf_init(&fb, 1024);
+    flexbuf_addstr(&fb, "Cog%d  ");
+    outlist = NewAST(AST_FUNCCALL,
+                     AstIdentifier("cogid"),
+                     NULL);
+    outlist = NewAST(AST_EXPRLIST, outlist, NULL);
     while (exprlist && exprlist->kind == AST_EXPRLIST) {
         item = exprlist->left;
         if (item->kind == AST_STRING) {
             sub = NewAST(AST_STRINGPTR, item, NULL);
             sub = NewAST(AST_EXPRLIST, sub, NULL);
             outlist = AddToList(outlist, sub);
+            if (needcomma) {
+                flexbuf_addstr(&fb, ", ");
+            }
             flexbuf_addstr(&fb, "%s");
+            needcomma=0;
         } else if (item->kind == AST_FUNCCALL) {
             const char *name = GetUserIdentifierName(item->left);
             AST *newarg;
-            static char fmtbuf[80];
             
             item = item->right; /* the parameter list */
-            newarg = GetFormatForDebug(name, item, fmtbuf);
+            newarg = GetFormatForDebug(&fb, name, item, needcomma);
             if (newarg) {
-                item->right = NULL; /* only pass first parameter */
-
-                if (needcomma) {
-                    flexbuf_addchar(&fb, ',');
-                }
-                flexbuf_addstr(&fb, fmtbuf);
                 needcomma = 1;
                 outlist = AddToList(outlist, newarg);
             }
