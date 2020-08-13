@@ -423,7 +423,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             AST *paramType;
             AST *actualParam;
             int n;
-            
+
             // scan through parameters, adjusting for expected return types
             Symbol *calledSym = FindFuncSymbol(body, NULL, 1);
             if (calledSym && calledSym->kind == SYM_FUNCTION) {
@@ -815,11 +815,6 @@ doSpinTransform(AST **astptr, int level, AST *parent)
     default:
         doSpinTransform(&ast->left, 0, ast);
         doSpinTransform(&ast->right, 0, ast);
-        break;
-    case AST_PRINT:
-        doSpinTransform(&ast->left, 1, ast);
-        doSpinTransform(&ast->right, 1, ast);
-        *astptr = ast = ParsePrintStatement(ast);
         break;
     }
 }
