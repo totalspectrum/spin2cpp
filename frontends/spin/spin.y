@@ -12,8 +12,6 @@
 #include <ctype.h>
 #include "spinc.h"
 
-extern AST *AstCharItem();
-    
 #define YYSTYPE AST*
     
 /* Yacc functions */
@@ -115,6 +113,132 @@ FixupList(AST *list)
         list = list->right;
     }
     return origlist;
+}
+
+static struct s_dbgfmt {
+    const char *name;
+    const char *cfmt;
+    int bits;
+} dbgfmt[] = {
+    { "zstr", "%s", 0 },
+    { "udec", "%u", 0 },
+    { "udec_byte", "%03u", 8 },
+    { "udec_word", "%05u", 16 },
+    { "udec_long", "%09u", 0 },
+    { "sdec", "%d", 0 },
+    { "sdec_byte", "%3d", -8 },
+    { "sdec_word", "%5d", -16 },
+    { "sdec_long", "%9d", 0 },
+    { "uhex", "$%x", -1 },
+    { "uhex_byte", "$%02x", 8 },
+    { "uhex_word", "$%04x", 16 },
+    { "uhex_long", "$%08x", 0 },
+    { 0, 0, 0 }
+};
+
+static AST *GetFormatForDebug(const char *itemname_orig, AST *args, char *buf)
+{
+    char itemname[128];
+    struct s_dbgfmt *ptr = &dbgfmt[0];
+    AST *arg;
+    int len;
+    int output_name = 1;
+    const char *idname;
+    
+    len = strlen(itemname_orig);
+    if (len > sizeof(itemname)-1) {
+        WARNING(args, "Unhandled debug format %s", itemname_orig);
+        return NULL;
+    }
+    strcpy(itemname, itemname_orig);
+    if (itemname[len-1] == '_') {
+        output_name = 0;
+        itemname[len-1] = 0;
+    }
+    while (ptr && ptr->name) {
+        if (!strcmp(ptr->name, itemname)) {
+            break;
+        }
+        ptr++;
+    }
+    if (!ptr->name) {
+        WARNING(args, "Unhandled debug format %s", itemname_orig);
+        return NULL;
+    }
+    arg = args->left;
+    
+    if (output_name) {
+        idname = GetUserIdentifierName(arg);
+        sprintf(buf, "%s = %s", idname, ptr->cfmt);
+    } else {
+        strcpy(buf, ptr->cfmt);
+    }
+    if (ptr->bits) {
+        int bits = ptr->bits;
+        if (bits < 0) {
+            arg = AstOperator(K_SIGNEXTEND, arg, AstInteger(-bits));
+        } else {
+            arg = AstOperator(K_ZEROEXTEND, arg, AstInteger(bits));
+        }
+    }
+    return NewAST(AST_EXPRLIST, arg, NULL);
+}
+
+extern AST *genPrintf(AST *);
+
+AST *
+BuildDebugList(AST *exprlist)
+{
+    AST *outlist = NULL;
+    AST *item;
+    AST *printf_call;
+    AST *sub;
+    struct flexbuf fb;
+    const char *fmtstr;
+    int needcomma = 0;
+    
+    if (!gl_debug) {
+        return NULL;
+    }
+    flexbuf_init(&fb, 1024);
+    while (exprlist && exprlist->kind == AST_EXPRLIST) {
+        item = exprlist->left;
+        if (item->kind == AST_STRING) {
+            sub = NewAST(AST_STRINGPTR, item, NULL);
+            sub = NewAST(AST_EXPRLIST, sub, NULL);
+            outlist = AddToList(outlist, sub);
+            flexbuf_addstr(&fb, "%s");
+        } else if (item->kind == AST_FUNCCALL) {
+            const char *name = GetUserIdentifierName(item->left);
+            AST *newarg;
+            static char fmtbuf[80];
+            
+            item = item->right; /* the parameter list */
+            newarg = GetFormatForDebug(name, item, fmtbuf);
+            if (newarg) {
+                item->right = NULL; /* only pass first parameter */
+
+                if (needcomma) {
+                    flexbuf_addchar(&fb, ',');
+                }
+                flexbuf_addstr(&fb, fmtbuf);
+                needcomma = 1;
+                outlist = AddToList(outlist, newarg);
+            }
+        }
+        exprlist = exprlist->right;
+    }
+    flexbuf_addstr(&fb, "\r\n");
+    flexbuf_addchar(&fb, 0);
+    fmtstr = flexbuf_get(&fb);
+    flexbuf_delete(&fb);
+
+    sub = AstStringPtr(fmtstr);
+    sub = NewAST(AST_EXPRLIST, sub, NULL);
+    outlist = AddToList(sub, outlist);
+    printf_call = NewAST(AST_PRINT, NULL, NULL);
+    printf_call = NewAST(AST_FUNCCALL, printf_call, outlist);
+    return genPrintf(printf_call);
 }
 
 #define YYERROR_VERBOSE 1
@@ -453,11 +577,18 @@ basicstmt:
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
   | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
-    { $$ = NewCommentedAST(AST_PRINT, $3, NULL, $1); }
+    {
+        AST *ast = BuildDebugList($3);
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
 ;
 
 debug_exprlist: exprlist
-   { $$ = AddToList($1, AstCharItem('\n')); }
+    { $$ = $1; }
 ;
 
 multiassign:

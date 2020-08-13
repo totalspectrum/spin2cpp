@@ -374,9 +374,11 @@ genPrintf(AST *ast)
     if (str && str->kind == AST_STRINGPTR) {
         str = str->left;
     }
-    if (str && str->kind == AST_EXPRLIST && str->left && str->left->kind == AST_STRING && str->right == NULL)
-    {
-        fmtstring = str->left->d.string;
+    if (str && str->kind == AST_EXPRLIST && !str->right) {
+        str = str->left;
+    }
+    if (str && str->kind == AST_STRING) {
+        fmtstring = str->d.string;
     }
     if (!fmtstring) {
         //ERROR(ast, "__builtin_printf only works with a constant string");
