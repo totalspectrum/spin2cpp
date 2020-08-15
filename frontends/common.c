@@ -151,6 +151,7 @@ Aliases spin2alias[] = {
     { "getct", "_getcnt" },
     { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
+    { "hubset", "_hubset" },
     
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
@@ -165,11 +166,15 @@ Aliases spin2alias[] = {
     { "xypol", "_xypol" },
 
     { "cogatn", "_cogatn" },
+    { "pollatn", "_pollatn" },
+    { "waitatn", "_waitatn" },
+    
     { "muldiv64", "_muldiv64" },
     { "waitx", "_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
-    { "waitct", "waitcnt" },
+    { "pollct", "_pollct" },
+    { "waitct", "_waitcnt" },
     
     /* obsolete aliases */
     { "outl_", "_outl" },
