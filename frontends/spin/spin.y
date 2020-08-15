@@ -157,7 +157,7 @@ static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST
         itemname[len-1] = 0;
     }
     while (ptr && ptr->name) {
-        if (!strcmp(ptr->name, itemname)) {
+        if (!strcasecmp(ptr->name, itemname)) {
             break;
         }
         ptr++;
@@ -224,9 +224,6 @@ BuildDebugList(AST *exprlist)
             sub = NewAST(AST_STRINGPTR, item, NULL);
             sub = NewAST(AST_EXPRLIST, sub, NULL);
             outlist = AddToList(outlist, sub);
-            if (needcomma) {
-                flexbuf_addstr(&fb, ", ");
-            }
             flexbuf_addstr(&fb, "%s");
             needcomma=0;
         } else if (item->kind == AST_FUNCCALL) {
