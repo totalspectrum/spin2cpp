@@ -1650,6 +1650,18 @@ ExpandArguments(AST *sendptr, AST *args)
                                   NewAST(AST_EXPRLIST, arg, NULL));
                 }
                 break;
+            case AST_SEQUENCE:
+                /* ignore sequence like (f(x),0), which we
+                   generated before for a void f; just do f(x) */
+                if (arg->left && arg->left->kind == AST_FUNCCALL
+                    && arg->right && arg->right->kind == AST_INTEGER
+                    && arg->right->d.ival == 0
+                    && ExprType(arg->left) == ast_type_void)
+                {
+                    call = arg->left;
+                    break;
+                }
+                /* otherwise fall through */
             default:
                 call = NewAST(AST_FUNCCALL, sendptr,
                               NewAST(AST_EXPRLIST, arg, NULL));
