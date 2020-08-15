@@ -292,6 +292,14 @@ pri _waitms(m=long)
 pri _waitus(m=long)
   _waitx(m * (__clkfreq_var / 1000000))
 
+' check to see if cnt > x
+pri _pollct(x) : flag
+  flag := x - _getcnt()
+  asm
+    sar flag, #31
+  endasm
+  'return (flag < 0) ? -1 : 0
+  
 '' alias for _fltl
 pri _pinf(p)
   _fltl(p)

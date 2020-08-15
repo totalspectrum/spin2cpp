@@ -28,6 +28,7 @@ pri _waitcnt(x)
     addct1  x, #0
     waitct1
   endasm
+
 pri _cogid | rval
   asm
     cogid rval
@@ -76,6 +77,11 @@ pri _reboot
   _clkset(0, 0)
   asm
     hubset ##%0001 << 28
+  endasm
+
+pri _hubset(x)
+  asm
+    hubset x
   endasm
   
 pri _clkset(mode, freq) | oldmode, xsel
@@ -280,6 +286,19 @@ pri _cogatn(mask)
   asm
     cogatn mask
   endasm
+
+pri _pollatn() : flag
+  flag := 0
+  asm
+    pollatn wc
+    subx flag, #0  ' turns c bit into -1
+  endasm
+
+pri _waitatn()
+  asm
+    waitatn
+  endasm
+  
 pri _rdpin(pin) : r
   asm
     rdpin r, pin
