@@ -1,6 +1,8 @@
 #ifndef _MATH_H
 #define _MATH_H
 
+#include <compiler.h>
+
 #pragma once
 
 #ifdef __FLEXC__
@@ -40,6 +42,21 @@
 
 #define isinf(x) (__builtin_ilogb(x) == 0x7fffffff)
 #define isnan(x) (__builtin_ilogb(x) == FP_ILOGBNAN)
+
+#endif
+
+#if FLT_EVAL_METHOD == 0
+typedef float float_t;
+typedef double double_t;
+#elif FLT_EVAL_METHOD == 1
+typedef double float_t;
+typedef double double_t;
+#elif FLT_EVAL_METHOD == 2
+typedef long double float_t;
+typedef long double double_t;
+#else
+#error FLT_EVAL_METHOD not handled
+#endif
 
 #endif
 
