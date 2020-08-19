@@ -119,16 +119,25 @@ extern int gl_listing;     /* if set, produce an assembly listing */
 extern int gl_expand_constants; /* flag: if set, print constant values rather than symbolic references */
 extern int gl_infer_ctypes; /* flag: use inferred types for generated C/C++ code */
 extern int gl_optimize_flags; /* flags for optimization */
-#define OPT_REMOVE_UNUSED_FUNCS 0x01
-#define OPT_PERFORM_CSE         0x02
-#define OPT_REMOVE_HUB_BSS      0x04
-#define OPT_BASIC_ASM           0x08  /* basic peephole optimizations &c */
-#define OPT_INLINE_SMALLFUNCS   0x10  /* inline small functions */
-#define OPT_INLINE_SINGLEUSE    0x20  /* inline single use functions */
-#define OPT_AUTO_FCACHE         0x40  /* use FCACHE for P2 */
+#define OPT_REMOVE_UNUSED_FUNCS 0x000001
+#define OPT_PERFORM_CSE         0x000002
+#define OPT_REMOVE_HUB_BSS      0x000004
+#define OPT_BASIC_REGS          0x000008  /* basic register optimization */
+#define OPT_INLINE_SMALLFUNCS   0x000010  /* inline small functions */
+#define OPT_INLINE_SINGLEUSE    0x000020  /* inline single use functions */
+#define OPT_AUTO_FCACHE         0x000040  /* use FCACHE for P2 */
+#define OPT_PERFORM_LOOPREDUCE  0x000080  /* loop reduction */
+#define OPT_DEADCODE            0x000100  /* dead code elimination */
+#define OPT_BRANCHES            0x000200  /* branch conditionalization */
+#define OPT_PEEPHOLE            0x000400  /* peephole optimization */
+#define OPT_CONST_PROPAGATE     0x000800  /* constant propagation */
+#define OPT_LOOP_BASIC          0x001000  /* simple loop conversion */
+#define OPT_TAIL_CALLS          0x002000  /* tail call optimization */
 
-#define DEFAULT_ASM_OPTS        (OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_BASIC_ASM|OPT_AUTO_FCACHE)
-#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
+#define OPT_FLAGS_ALL           0xffffff
+#define OPT_ASM_BASIC  (OPT_BASIC_REGS|OPT_BRANCHES|OPT_PEEPHOLE|OPT_CONST_PROPAGATE)                        
+#define DEFAULT_ASM_OPTS        (OPT_DEADCODE|OPT_REMOVE_UNUSED_FUNCS|OPT_INLINE_SMALLFUNCS|OPT_ASM_BASIC|OPT_AUTO_FCACHE|OPT_LOOP_BASIC|OPT_TAIL_CALLS)
+#define EXTRA_ASM_OPTS          (OPT_INLINE_SINGLEUSE|OPT_PERFORM_CSE|OPT_PERFORM_LOOPREDUCE|OPT_REMOVE_HUB_BSS) /* extras added with -O2 */
 
 extern int gl_warn_flags;     /* flags for warnings */
 #define WARN_LANG_EXTENSIONS    0x01
@@ -264,6 +273,7 @@ typedef struct funcdef {
     Module *module;
 
     /* various flags */
+    int optimize_flags;   // optimizations to be applied
     unsigned code_placement:2;
 #define CODE_PLACE_DEFAULT 0
 #define CODE_PLACE_HUB 1
@@ -547,6 +557,7 @@ void CheckRecursive(Function *f);
 
 /* code for printing errors */
 extern int gl_errors;
+extern int gl_warnings_are_errors;
 void ERROR(AST *, const char *msg, ...);
 void WARNING(AST *, const char *msg, ...);
 void ERROR_UNKNOWN_SYMBOL(AST *);
@@ -641,6 +652,9 @@ int DoPropellerChecksum(const char *fname, size_t eepromSize);
 void Init();
 void InitPreprocessor(const char *argv[]);
 void SetPreprocessorLanguage(int language);
+
+// perform various high level optimizations
+void DoHighLevelOptimize(Module *P);
 
 // perform common sub-expression elimination on a function
 void PerformCSE(Module *P);
@@ -738,6 +752,9 @@ AST *MakeDeclarations(AST *decl, SymbolTable *table);
 /* find the symbol containing a mask for implicit types, as defined by DEFINT and DEFSNG */
 Symbol *GetCurImplicitTypes(void);
 
+/* returns 1 if a block contains a label, 0 if not */
+int BlockContainsLabel(AST *block);
+
 /* create a "normalized" form of a file name that we can use for comparison */
 char *NormalizePath(const char *path);
 
@@ -781,6 +798,11 @@ int TypeGoesOnStack(AST *typ);
 
 // declare a symbol together with a location of its definition
 Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *val, const char *user_name, AST *def);
+
+// parse an optimization string
+// updates flags based on what we find
+// returns 0 on failure to parse, 1 otherwise
+int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
 
 // external vars
 extern AST *basic_get_float;

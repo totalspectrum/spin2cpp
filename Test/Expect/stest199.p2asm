@@ -12,21 +12,21 @@ entry
 _test1
 	wrlong	256 + 0, objptr
 _test1_ret
-	reta
+	ret
 
 _test2
 	rdlong	_var01, objptr
 	'.live	_var01
 	mov	257 + 0, _var01
 _test2_ret
-	reta
+	ret
 
 _test3
 	mov	_var01, 258 + 0
 	'.live	_var01
 	mov	510 + 0, _var01
 _test3_ret
-	reta
+	ret
 
 objptr
 	long	@objmem

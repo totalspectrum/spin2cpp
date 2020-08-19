@@ -109,6 +109,7 @@ InstrSetsDst(IR *ir)
   case OPC_TEST:
   case OPC_TESTN:
   case OPC_GENERIC_NR:
+  case OPC_PUSH:
       return (ir->flags & FLAG_WR) != 0;
   default:
       return (ir->flags & FLAG_NR) == 0;
@@ -1185,7 +1186,7 @@ DeleteMulDivSequence(IRList *irl, IR *ir, Operand *lastop, Operand *opa, Operand
     ir3 = ir2->next;
     if (!ir3) return false;
     if (ir2->opc != OPC_MOV) return false;
-    if (ir2->dst != muldivb || ir2->src != opb) return false;
+    if (ir2->dst != muldivb || !SameOperand(ir2->src, opb)) return false;
     if (ir3->opc != OPC_CALL || ir3->dst != lastop) return false;
     ir->opc = OPC_DUMMY;
     ir2->opc = OPC_DUMMY;
@@ -1325,7 +1326,7 @@ HasSideEffectsOtherThanReg(IR *ir)
             if (InstrIsVolatile(irnext)) {
                 return true;
             }
-            if (IsBranch(irnext) && ir->cond == COND_TRUE) {
+            if (IsBranch(irnext) && irnext->cond == COND_TRUE) {
                 break;
             }
         }
@@ -1364,6 +1365,8 @@ HasSideEffectsOtherThanReg(IR *ir)
     case OPC_DRVH:
     case OPC_DRVNZ:
     case OPC_DRVZ:
+    case OPC_PUSH:
+    case OPC_POP:
         return true;
     default:
         return false;
@@ -1438,9 +1441,14 @@ int EliminateDeadCode(IRList *irl)
 {
     int change;
     IR *ir, *ir_next;
-
+    int remove_jumps;
     change = 0;
 
+    if (curfunc) {
+        remove_jumps = (curfunc->optimize_flags & OPT_DEADCODE) != 0;
+    } else {
+        remove_jumps = (gl_optimize_flags & OPT_DEADCODE) != 0;
+    }
     // first case: a jump at the end to the ret label
     ir = irl->tail;
     while (ir && IsDummy(ir)) {
@@ -1461,7 +1469,7 @@ int EliminateDeadCode(IRList *irl)
       }
       if (InstrIsVolatile(ir)) {
           /* do nothing */
-      } else if (ir->opc == OPC_JUMP) {
+      } else if (ir->opc == OPC_JUMP && remove_jumps) {
           if (ir->cond == COND_TRUE && !IsRegister(ir->dst->kind)) {
               // dead code from here to next label
               IR *x = ir->next;
@@ -2122,6 +2130,8 @@ ReplaceZWithNC(IR *ir)
     case OPC_GENERIC_NR:
     case OPC_SETQ:
     case OPC_SETQ2:
+    case OPC_PUSH:
+    case OPC_POP:
         ERROR(NULL, "Internal error, unexpected use of C");
         break;
     default:
@@ -2438,7 +2448,7 @@ OptimizePeepholes(IRList *irl)
             }
         }
         else if (opc == OPC_OR && ir->cond == COND_C && !InstrSetsAnyFlags(ir)
-                 && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
+                 && ir_next && ir_next->opc == OPC_ANDN && ir_next->cond == COND_NC
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
                  && ir->dst == ir_next->dst)
@@ -2450,6 +2460,7 @@ OptimizePeepholes(IRList *irl)
             goto done;
         }
         else if (opc == OPC_OR && ir->cond == COND_NE && !InstrSetsAnyFlags(ir)
+                 && ir_next
                  && ir_next->opc == OPC_ANDN && ir_next->cond == COND_EQ
                  && !InstrSetsAnyFlags(ir_next)
                  && ir->src == ir_next->src
@@ -3181,9 +3192,8 @@ void
 OptimizeIRLocal(IRList *irl, Function *f)
 {
     int change;
-
+    int flags = f->optimize_flags;
     if (gl_errors > 0) return;
-    if (!(gl_optimize_flags & OPT_BASIC_ASM)) return;
     if (!irl->head) return;
 
     // multiply divide optimization need only be performed once,
@@ -3193,25 +3203,39 @@ again:
     do {
         change = 0;
         AssignTemporaryAddresses(irl);
-        change |= CheckLabelUsage(irl);
-        change |= OptimizeReadWrite(irl);
-        change |= EliminateDeadCode(irl);
-        change |= OptimizeCogWrites(irl);
-        change |= OptimizeSimpleAssignments(irl);
-        change |= OptimizeMoves(irl);
-        change |= OptimizeImmediates(irl);
-        change |= OptimizeCompares(irl);
-        change |= OptimizeShortBranches(irl);
-        change |= OptimizeAddSub(irl);
-        change |= OptimizePeepholes(irl);
-        change |= OptimizePeephole2(irl);
-        change |= OptimizeIncDec(irl);
-        change |= OptimizeJumps(irl);
-        if (gl_p2) {
+        if (flags & OPT_BASIC_REGS) {
+            change |= CheckLabelUsage(irl);
+            change |= OptimizeReadWrite(irl);
+            change |= EliminateDeadCode(irl);
+            change |= OptimizeCogWrites(irl);
+            change |= OptimizeSimpleAssignments(irl);
+            change |= OptimizeMoves(irl);
+        }
+        if (flags & OPT_CONST_PROPAGATE) {
+            change |= OptimizeImmediates(irl);
+        }
+        if (flags & OPT_BASIC_REGS) {
+            change |= OptimizeCompares(irl);
+            change |= OptimizeAddSub(irl);
+        }
+        if (flags & OPT_BRANCHES) {
+            change |= OptimizeShortBranches(irl);
+        }
+        if (flags & OPT_PEEPHOLE) {
+            change |= OptimizePeepholes(irl);
+            change |= OptimizePeephole2(irl);
+        }
+        if (flags & OPT_BASIC_REGS) {
+            change |= OptimizeIncDec(irl);
+            change |= OptimizeJumps(irl);
+        }
+        if (gl_p2 && (flags & OPT_BASIC_REGS)) {
             change |= OptimizeP2(irl);
         }
     } while (change != 0);
-    change = OptimizeTailCalls(irl, f);
+    if (flags & OPT_TAIL_CALLS) {
+        change = OptimizeTailCalls(irl, f);
+    }
     if (change) goto again;
     
 }
@@ -3234,7 +3258,9 @@ OptimizeIRGlobal(IRList *irl)
     }
     if (gl_lmm_kind == LMM_KIND_ORIG) {
         // check for fcache
-        OptimizeFcache(irl);
+        if (gl_optimize_flags & OPT_AUTO_FCACHE) {
+            OptimizeFcache(irl);
+        }
     }
     // check for usage
     CheckUsage(irl);

@@ -1,3 +1,36 @@
+Version 4.3.1
+- Added HUBSET(), POLLATN(), WAITATN()
+- Fix void function calls in SEND
+- Fixed some debug function formatting
+
+Version 4.3.0
+- P2 API Change: use call/ret instead of calla/reta
+- Added finer-grained control over optimizations
+- Added per-function control over optimizations
+- Added preliminary implementation of DEBUG() for Spin2
+- Fixed some bugs in cse and loop optimizations
+- Fixed byref parameters in BASIC template functions
+- Improved dead code removal
+
+Version 4.2.8
+- Added -Werror flag to turn warnings into errors
+- Fixed an optimizer bug which could incorrectly delete some conditional statements
+- Fixed inlining of static functions
+- Made ORG force long alignment
+
+Version 4.2.7
+- Added missing waitvid builtin for P1
+- Added some additional language compatibility warnings
+- Better warning messages for redefining member variables
+- Changed default C preprocessor mode to be GCC compatible
+- Fixed some C definitions in propeller2.h
+- Fixed BASIC printing of floats
+- Fixed some problems with .word[N] assignments
+- Fixed unnecessary jmp warning when listing file is output
+- Improved heuristic for deciding between if statements and jump tables for case statements
+- Optimized mul/div sequences with immediates
+- Optimized jump tables on P1
+
 Version 4.2.6
 - Added sanity check for removing inlined functions (fixes an optimizer bug)
 - Added __andthen__ and __orelse__ operators to Spin/Spin2.

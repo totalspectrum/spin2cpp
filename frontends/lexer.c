@@ -1556,12 +1556,15 @@ struct reservedword init_spin2_words[] = {
     { "addpins", SP_ADDPINS },
     { "bmask", SP_BMASK },
     { "cogspin", SP_COGINIT },
+    { "debug", SP_DEBUG },
     { "decod", SP_DECODE },
     { "encod", SP_ENCODE2 },
     { "frac", SP_FRAC },
     { "fvar", SP_FVAR },
     { "fvars", SP_FVARS },
     { "ones", SP_ONES },
+    { "qexp", SP_QEXP },
+    { "qlog", SP_QLOG },
     { "reg", SP_COGREG },
     { "sca", SP_UNSHIGHMULT },
     { "scas", SP_SCAS },
@@ -1905,13 +1908,13 @@ Builtin builtinfuncs[] = {
     { "__builtin_clkmode", 0, defaultVariable, "_clkmode", "_clockmode()", NULL, 0, NULL },
     { "_clkset", 2, defaultBuiltin, "clkset", "_clkset", "_clkset", 0, NULL },
 
-    { "cogstop", 1, defaultBuiltin, "cogstop", "_cogstop", "__builtin_propeller_cogstop", 0, NULL },
-    { "cogid", 0, defaultBuiltin, "cogid", "_cogid", "__builtin_propeller_cogid", 0, NULL },
+    { "_cogstop", 1, defaultBuiltin, "cogstop", "_cogstop", "__builtin_propeller_cogstop", 0, NULL },
+    { "_cogid", 0, defaultBuiltin, "cogid", "_cogid", "__builtin_propeller_cogid", 0, NULL },
 
-    { "locknew", 0, defaultBuiltin, "locknew", "_locknew", "__builtin_propeller_locknew", 0, lockhook },
-    { "lockset", 1, defaultBuiltin, "lockset", "_lockset", "__builtin_propeller_lockset", 0, lockhook },
-    { "lockclr", 1, defaultBuiltin, "lockclr", "_lockclr", "__builtin_propeller_lockclr", 0, lockhook },
-    { "lockret", 1, defaultBuiltin, "lockret", "_lockret", "__builtin_propeller_lockret", 0, lockhook },
+    { "_locknew", 0, defaultBuiltin, "locknew", "_locknew", "__builtin_propeller_locknew", 0, lockhook },
+    { "_lockset", 1, defaultBuiltin, "lockset", "_lockset", "__builtin_propeller_lockset", 0, lockhook },
+    { "_lockclr", 1, defaultBuiltin, "lockclr", "_lockclr", "__builtin_propeller_lockclr", 0, lockhook },
+    { "_lockret", 1, defaultBuiltin, "lockret", "_lockret", "__builtin_propeller_lockret", 0, lockhook },
 
     { "strsize", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },
     { "__builtin_strlen", 1, str1Builtin, "strlen", NULL, NULL, 0, NULL },
@@ -1961,7 +1964,9 @@ Builtin builtinfuncs[] = {
     { "_wrpin",    2, defaultBuiltin, "_wrpin", "_wrpin", NULL, 0, NULL },
     { "_wxpin",    2, defaultBuiltin, "_wxpin", "_wxpin", NULL, 0, NULL },
     { "_wypin",    2, defaultBuiltin, "_wypin", "_wypin", NULL, 0, NULL },
-    
+
+    /* some useful C functions */
+    { "printf",    -1, defaultBuiltin, "printf", "printf", NULL, 0, NULL },
 };
 
 struct constants {
@@ -2813,17 +2818,17 @@ instr_p2[] = {
     { "setq",   0x0d600028, P2_DST_CONST_OK, OPC_SETQ, 0 },
     { "setq2",  0x0d600029, P2_DST_CONST_OK, OPC_SETQ2, 0 },
 
-    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_GENERIC_NR, 0 },
-    { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_GENERIC, FLAG_P2_STD },
+    { "push",   0x0d60002a, P2_DST_CONST_OK, OPC_PUSH, 0 },
+    { "pop",    0x0d60002b, DST_OPERAND_ONLY, OPC_POP, FLAG_P2_STD },
 
   // indirect jumps via register
   // normally the user will write "jmp x" and the assembler will
   // recognize if x is a register and rewrite it as "jmp.ind x"
     { "jmp.ind", 0x0d60002c, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "call.ind",0x0d60002d, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
-    { "ret",    0x0d64002d, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
+    { "ret",    0x0d64002d, NO_OPERANDS, OPC_RET, FLAG_P2_STD },
     { "calla.ind",0x0d60002e, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
-    { "reta",   0x0d64002e, NO_OPERANDS, OPC_RET, FLAG_P2_STD },
+    { "reta",   0x0d64002e, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "callb.ind",0x0d60002f, DST_OPERAND_ONLY, OPC_GENERIC_BRANCH, FLAG_P2_STD },
     { "retb",   0x0d64002f, NO_OPERANDS, OPC_GENERIC_BRANCH, FLAG_P2_STD },
 
@@ -2913,8 +2918,8 @@ instr_p2[] = {
     
   // long jumps
     { "jmp" ,   0x0d800000, P2_JUMP, OPC_JUMP, 0 },
-    { "call",   0x0da00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
-    { "calla",  0x0dc00000, P2_JUMP, OPC_CALL, 0 },  /* internally we use calla for generated subroutine calls */
+    { "call",   0x0da00000, P2_JUMP, OPC_CALL, 0 },
+    { "calla",  0x0dc00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
     { "callb",  0x0de00000, P2_JUMP, OPC_GENERIC_BRANCH, 0 },
 
     { "calld.loc",  0x0e000000, P2_CALLD, OPC_GENERIC_BRANCH, 0 },
@@ -3554,6 +3559,7 @@ ParseCAttribute(LexStream *L, AST **ast_ptr)
         }
         flexbuf_addchar(&fb, c);
     } while (balance > 0);
+    flexbuf_addchar(&fb, 0);
     ast->d.string = flexbuf_get(&fb);
     *ast_ptr = ast;
     return C_ATTRIBUTE;

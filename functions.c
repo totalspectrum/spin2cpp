@@ -65,6 +65,7 @@ static void ReinitFunction(Function *f, int language)
     if (LangCaseInSensitive(language)) {
         f->localsyms.flags = SYMTAB_FLAG_NOCASE;
     }
+    f->optimize_flags = gl_optimize_flags;
 }
 
 Function *
@@ -121,12 +122,24 @@ EnterVariable(int kind, SymbolTable *stab, AST *astname, AST *type, unsigned sym
             if ( (gl_warn_flags & WARN_HIDE_MEMBERS)
                  || ( (gl_warn_flags & WARN_LANG_EXTENSIONS) && current->curLanguage == LANG_SPIN_SPIN2 ) )
             {
+                Symbol *sym2;
                 switch (kind) {
                 case SYM_PARAMETER:
                 case SYM_RESULT:
                 case SYM_LOCALVAR:
-                    if (FindSymbol(&current->objsyms, username) != 0) {
-                        WARNING(astname, "definition of %s hides a member variable", username);
+                    if ( (sym2 = FindSymbol(&current->objsyms, username)) != 0) {
+                        switch (sym2->kind) {
+                        case SYM_WEAK_ALIAS:
+                        case SYM_FUNCTION:
+                            /* no warning for this */
+                            break;
+                        default:
+                            WARNING(astname, "definition of %s hides a member variable", username);
+                            if (sym2->def) {
+                                WARNING(sym2->def, "previous definition of %s is here", username);
+                            }
+                            break;
+                        }
                     }
                     break;
                 default:
@@ -876,6 +889,17 @@ doDeclareFunction(AST *funcblock)
         ReinitFunction(fdef, fdef->language);
     }
 
+    {
+        const char *opts = FindAnnotation(annotation, "opt");
+        if (opts) {
+            //printf("Optimize string: [%s]\n", opt);
+            if (opts[0] != '(') {
+                ERROR(annotation, "optimization options must be enclosed in parentheses");
+            } else {
+                ParseOptimizeString(annotation, opts+1, &fdef->optimize_flags);
+            }
+        }
+    }
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
     fdef->annotations = annotation;
@@ -1626,6 +1650,18 @@ ExpandArguments(AST *sendptr, AST *args)
                                   NewAST(AST_EXPRLIST, arg, NULL));
                 }
                 break;
+            case AST_SEQUENCE:
+                /* ignore sequence like (f(x),0), which we
+                   generated before for a void f; just do f(x) */
+                if (arg->left && arg->left->kind == AST_FUNCCALL
+                    && arg->right && arg->right->kind == AST_INTEGER
+                    && arg->right->d.ival == 0
+                    && ExprType(arg->left) == ast_type_void)
+                {
+                    call = arg->left;
+                    break;
+                }
+                /* otherwise fall through */
             default:
                 call = NewAST(AST_FUNCCALL, sendptr,
                               NewAST(AST_EXPRLIST, arg, NULL));
@@ -2244,7 +2280,7 @@ MarkUsedBody(AST *body, const char *caller)
             Function *func = (Function *)sym->val;
             MarkUsed(func, sym->our_name);
         }
-        break;
+        return;
     case AST_METHODREF:
         objref = body->left;
         objtype = BaseType(ExprType(objref));
@@ -2730,6 +2766,7 @@ appendType(const char *base, AST *typ)
     return concatstr(base, buf);
   case AST_GENERICTYPE:
     return concatstr(base, "g");
+  case AST_REFTYPE:
   case AST_PTRTYPE:
     base = concatstr(base, "p");
     return appendType(base, typ->left);
@@ -2771,6 +2808,9 @@ const char *TemplateFuncName(AST *templpairs, const char *orig_base)
 
 static AST *matchType(AST *decl, AST *use, AST *var)
 {
+  if (decl->kind == AST_REFTYPE) {
+      decl = decl->left;
+  }
   if (decl->kind == AST_IDENTIFIER) {
     return use;
   }
@@ -2813,8 +2853,15 @@ static AST *deduceTemplateTypes(AST *templateVars, AST *functype, AST *call)
 	    if (AstMatch(thispair->left, templVar)) {
 	      // already found; verify the type
 	      if (!CompatibleTypes(thispair->right, typ)) {
-		ERROR(callparams, "Incosistent types for template parameter %s", templName);
-	      }
+                  const char *name = NULL;
+                  if (call->kind == AST_FUNCCALL) {
+                      name = GetUserIdentifierName(call->left);
+                  }
+                  if (!name) {
+                      name = "function call";
+                  }
+                  ERROR(callparams, "Inconsistent types for template parameter %s in %s", templName, name);
+              }
 	      break;
 	    }
 	  }
@@ -2897,7 +2944,8 @@ InstantiateTemplateFunction(Module *P, AST *templ, AST *call)
     Function *fdef;
     current = P;
     functype = fixupFunctype(pairs, DupAST(functype));
-    funcblock = DeclareTypedFunction(P, functype, ident, 1, DupAST(body), NULL, NULL);
+    body = fixupFunctype(pairs, DupAST(body));
+    funcblock = DeclareTypedFunction(P, functype, ident, 1, body, NULL, NULL);
     fdef = doDeclareFunction(funcblock);
     if (fdef) {
         fdef->is_static = 1;

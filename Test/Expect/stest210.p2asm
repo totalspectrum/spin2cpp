@@ -22,7 +22,7 @@ LR__0002
 LR__0003
 	jmp	#LR__0001
 _syncsend_ret
-	reta
+	ret
 
 COG_BSS_START
 	fit	480

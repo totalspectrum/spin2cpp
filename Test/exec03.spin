@@ -1,16 +1,30 @@
 CON
+#ifdef __P2__
+  _clkfreq = 160_000_000
+  rx_pin = 63
+  tx_pin = 62
+  default_baud = 230_400
+#else  
   _clkmode = xtal1 + pll16x
   _clkfreq = 80_000_000
+  rx_pin = 31
+  tx_pin = 30
+  default_baud = 115_200
+#endif  
   twof = 2.0
   roottwof = ^^twof
 
 OBJ
+#ifdef __P2__
+  fds: "spin/SmartSerial"
+#else  
   fds: "spin/FullDuplexSerial"
+#endif  
   sa: "setabort.spin"
   
 PUB demo | x,y,z,i,r
 
-  fds.start(31, 30, 0, 115200)
+  fds.start(rx_pin, tx_pin, 0, default_baud)
 
   fds.str(string("2, sqrt(2)", 13, 10))
 

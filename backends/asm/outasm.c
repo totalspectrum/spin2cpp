@@ -108,6 +108,7 @@ Operand *CogMemRef(Operand *addr, int offset);
 static Operand *ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int size);
 
 static void AssignOneFuncName(Function *f);
+static void ValidatePushregs(void);
 
 static bool IsCogMem(Operand *addr);
 static int InCog(Function *f) {
@@ -296,7 +297,12 @@ static void
 ValidateFrameptr(void)
 {
     if (!frameptr) {
-        frameptr = GetOneGlobal(REG_REG, "fp", 0);
+        if (gl_p2) {
+            // fp is defined with the pushregs
+            ValidatePushregs();
+        } else {
+            frameptr = GetOneGlobal(REG_REG, "fp", 0);
+        }
     }
     ValidateStackptr();
 }
@@ -330,6 +336,9 @@ ValidatePushregs(void)
         pushregs_ = NewOperand(IMM_COG_LABEL, "pushregs_", 0);
         popregs_ = NewOperand(IMM_COG_LABEL, "popregs_", 0);
         count_ = NewOperand(REG_REG, "COUNT_", 0);
+        if (gl_p2) {
+            frameptr = NewOperand(REG_REG, "fp", 0);
+        }
     }
 }
         
@@ -3207,6 +3216,7 @@ CompileMaskMove(IRList *irl, AST *expr)
 // is this really necessary? it certainly hinders optimization        
 //        keepflag = FLAG_KEEP_INSTR;
         break;
+    case AST_ARRAYREF:
     case AST_METHODREF:
         dest = CompileExpression(irl, destast, NULL);
         break;
@@ -4599,13 +4609,15 @@ static void CompileStatement(IRList *irl, AST *ast)
         Operand *jumptabptr;
         Operand *shift;
         IR *ir;
-
+        int needAlign = 0;
+        
         if (curfunc && InCog(curfunc)) {
             shift = 0;
         } else if (gl_p2) {
             shift = NewImmediate(2);
         } else {
-            shift = NewImmediate(3);
+            shift = NewImmediate(1);
+            needAlign = 1;
         }
         switchval = CompileExpression(irl, ast->left, NULL);
         jumptab = NewCodeLabel();
@@ -4615,9 +4627,14 @@ static void CompileStatement(IRList *irl, AST *ast)
             jumptabptr = NewImmediatePtr(NULL, jumptab);
             if (shift) {
                 EmitOp2(irl, OPC_SHL, switchval, shift);
+                EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+                EmitOp2(irl, OPC_RDWORD, switchval, switchval);
+                EmitJump(irl, COND_TRUE, switchval);
+            } else {
+                // in COG memory
+                EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
+                EmitJump(irl, COND_TRUE, switchval);
             }
-            EmitOp2(irl, OPC_ADD, switchval, jumptabptr);
-            EmitJump(irl, COND_TRUE, switchval);
         }
         ir = EmitLabel(irl, jumptab);
         ir->flags |= FLAG_KEEP_INSTR;
@@ -4629,6 +4646,9 @@ static void CompileStatement(IRList *irl, AST *ast)
                 ir->flags |= (FLAG_KEEP_INSTR | FLAG_JMPTABLE_INSTR);
             }
             ast = ast->right;
+        }
+        if (needAlign) {
+            EmitOp0(irl, OPC_ALIGNL);
         }
         if (ast->kind != AST_STMTLIST) {
             ERROR(ast, "Expected statement list!");
@@ -5248,7 +5268,7 @@ static const char *builtin_mul_p2 =
 "\tqmul\tmuldiva_, muldivb_\n"
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
-"\treta\n"
+"\tret\n"
 
 "\nmultiply_\n"
 "\tqmul\tmuldiva_, muldivb_\n"
@@ -5260,7 +5280,7 @@ static const char *builtin_mul_p2 =
 "\tgetqx\tmuldiva_\n"
 "\tgetqy\tmuldivb_\n"
 "\tsub\tmuldivb_, itmp2_\n"
-"\treta\n"
+"\tret\n"
 ;
 
 /*
@@ -5310,21 +5330,20 @@ static const char *builtin_div_p2 =
 "       setq    #0\n"
 "       qdiv    muldiva_, muldivb_\n"
 "       getqx   muldivb_\n"  // get quotient
-"       getqy   muldiva_\n"  // get remainder
-"       reta\n"
+" _ret_ getqy   muldiva_\n"  // get remainder
     
 "\ndivide_\n"
 "       abs     muldiva_,muldiva_     wc       'abs(x)\n"
 "       muxc    itmp2_,#%11                    'store sign of x\n"
 "       abs     muldivb_,muldivb_     wcz      'abs(y)\n"
 " if_c  xor     itmp2_,#%10                    'store sign of y\n"
-" if_z  reta\n"
-"       calla   #unsdivide_\n"
+" if_z  ret\n"
+"       call    #unsdivide_\n"
 "       test    itmp2_,#1        wc       'restore sign, remainder\n"
 "       negc    muldiva_,muldiva_ \n"
 "       test    itmp2_,#%10      wc       'restore sign, division result\n"
-"       negc    muldivb_,muldivb_\n"
-"       reta\n"
+" _ret_ negc    muldivb_,muldivb_\n"
+
 ;
 
 #include "sys/lmm_orig.spin.h"
@@ -5335,20 +5354,20 @@ static const char *builtin_div_p2 =
 
 const char *builtin_fcache_p2 =
     "FCACHE_LOAD_\n"
-    "    rdlong\tfcache_tmpb_, --ptra\n"
+    "    pop\tfcache_tmpb_\n"
     "    add\tfcache_tmpb_, pa\n"
-    "    wrlong\tfcache_tmpb_, ptra++\n"
+    "    push\tfcache_tmpb_\n"
     "    sub\tfcache_tmpb_, pa\n"
     "    shr\tpa, #2\n" // convert to words
     "    mov\tfcache_tmpa_, pa\n"
     "    add\tfcache_tmpa_, #$100\n"
-    "    wrlut reta_instr_, fcache_tmpa_\n" 
-    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the reta instruction after the loop
+    "    wrlut ret_instr_, fcache_tmpa_\n" 
+    "    sub\tpa, #1\n" // normally we would want to subtract 1, but in fact we want to grab the ret instruction after the loop
     "    setq2\tpa\n"
     "    rdlong\t$100-0, fcache_tmpb_\n"
     "    jmp\t#\\$300 ' jmp to cache\n"
-    "reta_instr_\n"
-    "    reta\n"
+    "ret_instr_\n"
+    "    ret\n"
     "fcache_tmpa_\n"
     "    long 0\n"
     "fcache_tmpb_\n"
@@ -5410,8 +5429,11 @@ const char *builtin_pushregs_p2 =
     "    long 0\n"
     "RETADDR_\n"
     "    long 0\n"
+    "fp\n"
+    "    long 0\n"
     "pushregs_\n"
-    "    rdlong RETADDR_, --ptra\n"
+    "    pop  pa\n"
+    "    pop  RETADDR_\n"
     "    tjz  COUNT_, #pushregs_done_\n"
     "    sub  COUNT_, #1\n"  // adjust for setq/wrlong
     "    setq COUNT_\n"
@@ -5421,15 +5443,16 @@ const char *builtin_pushregs_p2 =
     "    shl  COUNT_, #2\n"
     "    add  ptra, COUNT_\n"
     "    shr  COUNT_, #2\n"
+    "    setq #2 ' push 3 registers starting at COUNT_\n"
     "    wrlong COUNT_, ptra++\n"
-    "    wrlong fp, ptra++\n"
     "    mov    fp, ptra\n"
-    "    jmp RETADDR_\n"
+    "    jmp  pa\n"
 
     " popregs_\n"
-    "    rdlong RETADDR_, --ptra\n"
-    "    rdlong fp, --ptra\n"
-    "    rdlong COUNT_, --ptra\n"
+    "    pop    pa\n"
+    "    sub    ptra, #12\n"
+    "    setq   #2\n"
+    "    rdlong COUNT_, ptra\n"
     "    tjz    COUNT_, #popregs__ret\n"
     "    shl    COUNT_, #2\n"
     "    sub    ptra, COUNT_\n"
@@ -5438,7 +5461,8 @@ const char *builtin_pushregs_p2 =
     "    setq   COUNT_\n"
     "    rdlong local01, ptra\n"
     "popregs__ret\n"
-    "    jmp    RETADDR_\n"
+    "    push   RETADDR_\n"
+    "    jmp    pa\n"
     ;
 
 /* WARNING: make sure to increase SETJMP_BUF_SIZE if you add
@@ -5496,7 +5520,7 @@ static const char *builtin_abortcode_p1 =
 static const char *builtin_abortcode_p2 =
     "__pc long 0\n"
     "__setjmp\n"
-    "    rdlong __pc, --ptra\n"
+    "    pop __pc\n"
     "    mov result1, #0\n"
     "    mov result2, #0\n"
     "    mov abortchain, arg01\n"
@@ -5512,19 +5536,22 @@ static const char *builtin_abortcode_p2 =
     // unwind_stack(curfp, lastfp) walks the frame pointer list and restores everything
     // NOTE: call this with "call", not "calla"!
     // until it reaches lastfp
+    "__unwind_pc long 0\n"
     "__unwind_stack\n"
+    "   pop  __unwind_pc\n"
+    "__unwind_loop\n"
     "   cmp  arg01, arg02 wz\n"
     "  if_z jmp #__unwind_stack_ret\n"
     "   mov   ptra, arg01\n"
-    "   calla #popregs_\n"
+    "   call  #popregs_\n"
     "   mov   arg01, fp\n"
-    "   jmp   #__unwind_stack\n"
+    "   jmp   #__unwind_loop\n"
     "__unwind_stack_ret\n"
-    "   ret\n"
+    "   jmp  __unwind_pc\n"
 
     // __longjmp(buf, n) should jump to buf and return n
     "__longjmp\n"
-    "    rdlong __pc, --ptra\n"
+    "    pop __pc\n"
     "    cmp    arg01, #0 wz\n"
     " if_z jmp #cogexit\n"
     "    mov result1, arg02\n"

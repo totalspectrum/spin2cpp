@@ -40,11 +40,12 @@ Flex C uses the open source mcpp preprocessor (originally from mcpp.sourceforge.
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
-`__FLEXC__`      | always defined to the fastspin version number
-`__FASTSPIN__`   | always defined to the fastspin version number
+`__FLEXC__`      | always defined to the fastspin major version number
+`__FASTSPIN__`   | always defined to the fastspin major version number
 `__P2__`         | only defined if compiling for Propeller 2 (obsolete)
 `__propeller2__` | only defined if compiling for Propeller 2
 `__ILP32__`      | always defined; some programs use this to determine pointer size
+`__VERSION__`    | defined to a string containing the full fastspin version
 
 ## Runtime Environment
 
@@ -234,7 +235,7 @@ Starts a function running in another COG. This builtin is more of a macro than a
   static long stack[32];
   id = __builtin_cogstart(somefunc(a, b), &stack[0]);
 ```
-runs `somefunc` with parameters `a` and `b` in a new COG, using the given stack space.
+runs `somefunc` with parameters `a` and `b` in a new COG, with a stack starting at `&stack[0]` (stacks grow up in FlexC).
 
 The amount of space required for the stack depends on the complexity of the code to run, but must be at least 16 longs (64 bytes).
 

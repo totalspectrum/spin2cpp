@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ converter
- * Copyright 2011-2019 Total Spectrum Software Inc.
+ * Copyright 2011-2020 Total Spectrum Software Inc.
  * See the file COPYING for terms of use
  *
  * code for Common Subexpression Elimination
@@ -218,10 +218,13 @@ RemoveCSEUsing(CSESet *set, AST *modified)
     for (i = 0; i < CSE_HASH_SIZE; i++) {
         pCur = &set->list[i];
         for(;;) {
+            CSEEntry *old;
             cur = *pCur;
             if (!cur) break;
             if (AstUses(cur->expr, modified) || AstUses(cur->replace, modified)) {
+                old = cur;
                 *pCur = cur->next;
+                DestroyCSEEntry(old);
             } else {
                 pCur = &cur->next;
             }
@@ -311,7 +314,6 @@ AddToCSESet(AST *name, CSESet *cse, AST *expr, unsigned exprHash, AST **replacep
         // cannot figure out type of array
         return NULL;
     }
-    
     // do not add entries for some simple expressions
     if (expr->kind == AST_ARRAYREF &&
         IsConstExpr(expr->right))
@@ -484,10 +486,10 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
                 name = name->left;
             }
         }
-        // now we have to invalidate any CSE involving the destination
-        RemoveCSEUsing(cse, name ? name : ast->left);
         newflags |= doPerformCSE(stmtptr, &ast->right, cse, flags, name);
         newflags |= doPerformCSE(stmtptr, &ast->left, cse, flags, NULL);
+        // now we have to invalidate any CSE involving the destination
+        RemoveCSEUsing(cse, name ? name : ast->left);
         return newflags;
     case AST_OPERATOR:
         // handle various special cases
@@ -527,8 +529,7 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
                 RemoveCSEUsing(cse, ast->right);
             }
             newflags |= CSE_NO_REPLACE;
-            return newflags;;
-                
+            return newflags;
         default:
             break;
         }
@@ -670,6 +671,8 @@ doPerformCSE(AST *stmtptr, AST **astptr, CSESet *cse, unsigned flags, AST *name)
             }
             // after the function call memory may be modified
             ClearMemoryCSESet(cse);
+            // also, in general, we cannot CSE function results
+            newflags |= CSE_NO_REPLACE;
         }
         return newflags;
     case AST_CONSTREF:
@@ -705,14 +708,14 @@ PerformCSE(Module *Q)
     Function *func;
     Function *savefunc = curfunc;
     
-    if ((gl_optimize_flags & OPT_PERFORM_CSE) == 0)
-        return;
     InitCSESet(&cse);
     current = Q;
     for (func = Q->functions; func; func = func->next) {
-        curfunc = func;
-        doPerformCSE(NULL, &func->body, &cse, 0, NULL);
-        ClearCSESet(&cse);
+        if (func->optimize_flags & OPT_PERFORM_CSE) {
+            curfunc = func;
+            doPerformCSE(NULL, &func->body, &cse, 0, NULL);
+            ClearCSESet(&cse);
+        }
     }
     curfunc = savefunc;
     current = savecur;

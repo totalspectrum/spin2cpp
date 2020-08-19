@@ -10,6 +10,8 @@
 #include <string.h>
 #include "spinc.h"
 
+extern AST *ParsePrintStatement(AST *ast); /* in basiclang.c */
+
 bool
 IsLocalVariable(AST *ast) {
     Symbol *sym;
@@ -421,7 +423,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
             AST *paramType;
             AST *actualParam;
             int n;
-            
+
             // scan through parameters, adjusting for expected return types
             Symbol *calledSym = FindFuncSymbol(body, NULL, 1);
             if (calledSym && calledSym->kind == SYM_FUNCTION) {
@@ -820,6 +822,8 @@ doSpinTransform(AST **astptr, int level, AST *parent)
 void
 SpinTransform(Function *func)
 {
+    InitGlobalFuncs();
+    
     // simplify assignments: this is required for some of
     // the other passes to work
     SimplifyAssignments(&func->body);

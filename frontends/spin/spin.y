@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "spinc.h"
-    
+
 #define YYSTYPE AST*
     
 /* Yacc functions */
@@ -113,6 +113,143 @@ FixupList(AST *list)
         list = list->right;
     }
     return origlist;
+}
+
+static struct s_dbgfmt {
+    const char *name;
+    const char *cfmt;
+    int bits;
+} dbgfmt[] = {
+    { "zstr", "%s", 0 },
+    { "udec", "%u", 0 },
+    { "udec_byte", "%03u", 8 },
+    { "udec_word", "%05u", 16 },
+    { "udec_long", "%09u", 0 },
+    { "sdec", "%d", 0 },
+    { "sdec_byte", "%3d", -8 },
+    { "sdec_word", "%5d", -16 },
+    { "sdec_long", "%9d", 0 },
+    { "uhex", "$%x", -1 },
+    { "uhex_byte", "$%02x", 8 },
+    { "uhex_word", "$%04x", 16 },
+    { "uhex_long", "$%08x", 0 },
+    { 0, 0, 0 }
+};
+
+static AST *GetFormatForDebug(struct flexbuf *fb, const char *itemname_orig, AST *args, int needcomma)
+{
+    char itemname[128];
+    struct s_dbgfmt *ptr = &dbgfmt[0];
+    AST *arg;
+    AST *outlist = NULL;
+    int len;
+    int output_name = 1;
+    const char *idname;
+    
+    len = strlen(itemname_orig);
+    if (len > sizeof(itemname)-1) {
+        WARNING(args, "Unhandled debug format %s", itemname_orig);
+        return NULL;
+    }
+    strcpy(itemname, itemname_orig);
+    if (itemname[len-1] == '_') {
+        output_name = 0;
+        itemname[len-1] = 0;
+    }
+    while (ptr && ptr->name) {
+        if (!strcasecmp(ptr->name, itemname)) {
+            break;
+        }
+        ptr++;
+    }
+    if (!ptr->name) {
+        WARNING(args, "Unhandled debug format %s", itemname_orig);
+        return NULL;
+    }
+
+    // now output all the arguments
+    while (args) {
+        arg = args->left;
+        args = args->right;
+    
+        if (needcomma) {
+            flexbuf_addstr(fb, ", ");
+        }
+        if (output_name) {
+            idname = GetUserIdentifierName(arg);
+            flexbuf_printf(fb, "%s = %s", idname, ptr->cfmt);
+        } else {
+            flexbuf_addstr(fb, ptr->cfmt);
+        }
+        needcomma = 1;
+        if (ptr->bits) {
+            int bits = ptr->bits;
+            if (bits < 0) {
+                arg = AstOperator(K_SIGNEXTEND, arg, AstInteger(-bits));
+            } else {
+                arg = AstOperator(K_ZEROEXTEND, arg, AstInteger(bits));
+            }
+        }
+        arg = NewAST(AST_EXPRLIST, arg, NULL);
+        outlist = AddToList(outlist, arg);
+    }
+    return outlist;
+}
+
+extern AST *genPrintf(AST *);
+
+AST *
+BuildDebugList(AST *exprlist)
+{
+    AST *outlist = NULL;
+    AST *item;
+    AST *printf_call;
+    AST *sub;
+    struct flexbuf fb;
+    const char *fmtstr;
+    int needcomma = 0;
+    
+    if (!gl_debug) {
+        return NULL;
+    }
+    flexbuf_init(&fb, 1024);
+    flexbuf_addstr(&fb, "Cog%d  ");
+    outlist = NewAST(AST_FUNCCALL,
+                     AstIdentifier("cogid"),
+                     NULL);
+    outlist = NewAST(AST_EXPRLIST, outlist, NULL);
+    while (exprlist && exprlist->kind == AST_EXPRLIST) {
+        item = exprlist->left;
+        if (item->kind == AST_STRING) {
+            sub = NewAST(AST_STRINGPTR, item, NULL);
+            sub = NewAST(AST_EXPRLIST, sub, NULL);
+            outlist = AddToList(outlist, sub);
+            flexbuf_addstr(&fb, "%s");
+            needcomma=0;
+        } else if (item->kind == AST_FUNCCALL) {
+            const char *name = GetUserIdentifierName(item->left);
+            AST *newarg;
+            
+            item = item->right; /* the parameter list */
+            newarg = GetFormatForDebug(&fb, name, item, needcomma);
+            if (newarg) {
+                needcomma = 1;
+                outlist = AddToList(outlist, newarg);
+            }
+        }
+        exprlist = exprlist->right;
+    }
+    flexbuf_addstr(&fb, "\r\n");
+    flexbuf_addchar(&fb, 0);
+    fmtstr = flexbuf_get(&fb);
+    flexbuf_delete(&fb);
+
+    sub = AstStringPtr(fmtstr);
+    sub = NewAST(AST_EXPRLIST, sub, NULL);
+    outlist = AddToList(sub, outlist);
+    printf_call = NewAST(AST_PRINT, NULL, NULL);
+    printf_call = NewAST(AST_FUNCCALL, printf_call, outlist);
+    return genPrintf(printf_call);
 }
 
 #define YYERROR_VERBOSE 1
@@ -261,6 +398,7 @@ FixupList(AST *list)
 %token SP_BMASK      "BMASK"
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
+%token SP_DEBUG      "DEBUG"
 
 /* special token for foo() : N indicating the number of return values from foo, N */
 /* FIXME: this is not implemented yet in lexer.c! */
@@ -449,6 +587,19 @@ basicstmt:
     { $$ = NewCommentedAST(AST_QUITLOOP, NULL, NULL, $1); }
   | SP_NEXT SP_EOLN
     { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
+  | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
+    {
+        AST *ast = BuildDebugList($3);
+        AST *comment = $1;
+        if (comment) {
+            ast = NewAST(AST_COMMENTEDNODE, ast, comment);
+        }
+        $$ = ast;
+    }
+;
+
+debug_exprlist: exprlist
+    { $$ = $1; }
 ;
 
 multiassign:
@@ -853,23 +1004,50 @@ paramidentdecl:
   | identifier '[' expr ']'
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
   | identifier '=' expr
-  { $$ = AstAssign($1, $3); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a fastspin extension");
+      $$ = AstAssign($1, $3);
+  }
   | identifier '=' SP_LONG
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1);
+  }
   | identifier '=' '-' SP_LONG
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1);
+  }
   | identifier '=' '+' SP_LONG
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long, $1);
+  }
   | identifier '=' SP_FLOAT
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1);
+  }
   | identifier '=' '@' SP_LONG
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_long, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_long, $1);
+  }
   | identifier '=' '@' SP_WORD
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_word, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_word, $1);
+  }
   | identifier '=' '@' SP_BYTE
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_byte, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_byte, $1);
+  }
   | identifier '=' SP_STRINGPTR
-  { $$ = NewAST(AST_DECLARE_VAR, ast_type_string, $1); }
+  {
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      $$ = NewAST(AST_DECLARE_VAR, ast_type_string, $1);
+  }
   ;
 
 paramidentlist:

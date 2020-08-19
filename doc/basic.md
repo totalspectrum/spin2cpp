@@ -243,8 +243,10 @@ bin$
 _clkfreq
 clkfreq
 clkset
-cnt
 cos
+cpuchk
+cpuid
+cpustop
 decuns$
 delete$
 dira
@@ -271,6 +273,7 @@ outa
 outb
 pausems
 pauseus
+pi
 rdpin
 _reboot
 right$
@@ -793,11 +796,11 @@ any(t) function mymin(x as t, y as t) as t
   end if
 end function
 ```
-This declares a family of functions `mymin__T`, where `T` can be any type. Whenever the compiler sees `mymin(some_expr)` it checks the type of `some_expr` and changes the function call to `mymin__T(some_expr)`. So for example:
+This declares a family of functions `mymin__T`, where `T` can be any type. Whenever the compiler sees `mymin(some_expr)` it checks the type of `some_expr` and changes the function call to `mymin__xxx(some_expr)`, where `xxx` is the type of `some_expr`. So for example:
 ```
    print mymin(1.7, 2.4), mymin("zzz", "aaa")
 ```
-will print `1.7` and `aaa`.
+will create functions `mymin__single` and `mymin__string` which will be called and ultimately cause `1.7` and `aaa` to be printed.
 
 ## Libraries
 
@@ -1292,6 +1295,12 @@ i = cpuchk(n)
 ```
 Checks to see if the CPU whose id is `n` is running. Returns `true` (-1) if running, `false` (0) if not.
 
+### CPUID
+
+```
+i = cpuid()
+```
+Finds the ID of the currently running CPU.
 ### CPUWAIT
 
 This builtin subroutine waits for a CPU started via `cpu` to finish. For example, to launch 4 helper programs and then wait for them you could do:
@@ -2174,6 +2183,10 @@ A built-in subroutine to pause for a number of microseconds. For example, to pau
 ```
   pauseus 500
 ```
+
+### PI
+
+Predefined single precision constant 3.1415926.
 
 ### PINLO
 

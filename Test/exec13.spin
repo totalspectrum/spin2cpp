@@ -1,6 +1,5 @@
 CON
 #ifdef __P2__
-  _clkmode = $010c3f04
   _clkfreq = 160_000_000
 #else
   _clkmode = xtal1 + pll16x
@@ -23,8 +22,7 @@ OBJ
 PUB demo | x,y
 
 #ifdef __P2__
-  clkset(_clkmode, _clkfreq)
-  ser.start(63, 62, 0, 2000000)
+  ser.start(63, 62, 0, 230400)
 #else
   ser.start(31, 30, 0, 115200)
 #endif

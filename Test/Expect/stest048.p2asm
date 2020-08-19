@@ -22,7 +22,7 @@ LR__0002
 	sub	_getpulse_delay, _getpulse_t0
 	mov	result1, _getpulse_delay
 _getpulse_ret
-	reta
+	ret
 
 result1
 	long	0

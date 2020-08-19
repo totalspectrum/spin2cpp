@@ -67,7 +67,7 @@ MCPP = directive.c expand.c mbchar.c mcpp_eval.c mcpp_main.c mcpp_system.c mcpp_
 LEXSRCS = lexer.c symbol.c ast.c expr.c $(UTIL) preprocess.c
 PASMBACK = outasm.c assemble_ir.c optimize_ir.c inlineasm.c compress_ir.c
 CPPBACK = outcpp.c cppfunc.c outgas.c cppexpr.c cppbuiltin.c
-SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c types.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) $(MCPP) version.c
+SPINSRCS = common.c case.c spinc.c $(LEXSRCS) functions.c cse.c loops.c hloptimize.c types.c pasm.c outdat.c outlst.c spinlang.c basiclang.c clang.c $(PASMBACK) $(CPPBACK) $(MCPP) version.c
 
 LEXOBJS = $(LEXSRCS:%.c=$(BUILD)/%.o)
 SPINOBJS = $(SPINSRCS:%.c=$(BUILD)/%.o)
@@ -120,10 +120,10 @@ p2test: $(PROGS)
 runtest: $(PROGS)
 	(cd Test; ./runtests.sh)
 
-$(BUILD)/spin2cpp$(EXT): spin2cpp.c $(OBJS)
+$(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/fastspin$(EXT): fastspin.c $(OBJS)
+$(BUILD)/fastspin$(EXT): fastspin.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):
@@ -142,7 +142,7 @@ $(BUILD)/lexer.o: frontends/lexer.c $(LEXHEADERS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BUILD)/version.o: version.c version.h FORCE
-	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --always) -o $@ -c $<
+	$(CC) $(CFLAGS) -DGITREV=$(shell git describe --tags --always) -o $@ -c $<
 
 $(BUILD)/%.o: %.c
 	$(CC) -MMD -MP $(CFLAGS) -o $@ -c $<

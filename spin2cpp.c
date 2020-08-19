@@ -33,11 +33,8 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
+#include "cmdline.h"
 
-const char *gl_outname = NULL;
-const char *gl_progname;
-const char *gl_cc = NULL;
-const char *gl_intstring = "int32_t";
 Module *allparse = NULL;
 extern int spinyydebug;
 
@@ -309,7 +306,7 @@ main(int argc, const char **argv)
                 fprintf(stderr, "Error: expected another argument after --optimize\n");
                 exit(2);
             }
-            gl_optimize_flags = strtoul(argv[0], NULL, 0);
+            ParseOptimizeString(NULL, argv[0], &gl_optimize_flags);
             argv++; --argc;
         } else if (!strncmp(argv[0], "--files", 7)) {
             outputFiles = 1;

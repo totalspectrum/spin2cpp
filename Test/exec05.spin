@@ -1,14 +1,9 @@
-CON
-  _clkmode = xtal1 + pll16x
-  _clkfreq = 80_000_000
-
-OBJ
-  fds : "spin/FullDuplexSerial.spin"
+#include "stdconsts.spinh"
 
 PUB demo
 
   '' start up the serial port
-  fds.start(31, 30, 0, 115200)
+  fds.start(rxpin, txpin, 0, baud)
 
   fds.str(string("Counting demo:", 13, 10))
   count(1,4,1)

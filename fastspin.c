@@ -35,38 +35,11 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
+#include "cmdline.h"
 
 //#define DEBUG_YACC
 
 extern int yyparse(void);
-
-extern int spinyydebug;
-
-const char *gl_progname;
-const char *gl_cc = NULL;
-const char *gl_intstring = "int32_t";
-
-Module *current;
-Module *allparse;
-Module *globalModule;
-
-int gl_p2;
-int gl_errors;
-int gl_output;
-int gl_outputflags;
-int gl_nospin;
-int gl_gas_dat;
-int gl_normalizeIdents;
-int gl_debug;
-int gl_expand_constants;
-int gl_optimize_flags;
-int gl_dat_offset;
-AST *ast_type_word, *ast_type_long, *ast_type_byte;
-AST *ast_type_float, *ast_type_string;
-AST *ast_type_generic;
-AST *ast_type_void;
-
-const char *gl_outname = NULL;
 
 double gl_start_time;
 
@@ -115,6 +88,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
     fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
+    fprintf(f, "  [ -Werror ]        make warnings into errors\n");
     fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
@@ -129,20 +103,6 @@ Usage(FILE *f, int bstcMode)
     exit(2);
 }
 
-void
-PrintFileSize(const char *fname)
-{
-    FILE *f = fopen(fname, "rb");
-    unsigned len;
-
-    if (f) {
-        fseek(f, 0L, SEEK_END);
-        len = ftell(f);
-        fclose(f);
-        printf("Program size is %u bytes\n", len);
-    }
-}
-
 double
 getCurTime()
 {
@@ -150,40 +110,23 @@ getCurTime()
     return (double)tick / (double)CLOCKS_PER_SEC;
 }
 
-#define MAX_FILES_ON_CMD_LINE 1024
-int file_argc;
-const char *file_argv[MAX_FILES_ON_CMD_LINE];
 
 int
 main(int argc, const char **argv)
 {
-    int outputMain = 0;
-    int outputDat = 0;
-    int outputFiles = 0;
-    int outputBin = 0;
-    int outputAsm = 0;
-    int compile = 0;
-    int quiet = 0;
-    int bstcMode = 0;
-    Module *P;
+    static CmdLineOptions cmd_base;
+    CmdLineOptions *cmd = &cmd_base;
+    int result;
+    
     int retval = 0;
     struct flexbuf argbuf;
     time_t timep;
     int i;
-    const char *outname = NULL;
-    size_t eepromSize = 32768;
-    int useEeprom = 0;
-    const char *listFile = NULL;
     
     gl_start_time = getCurTime();
-    
-    /* Initialize the global preprocessor; we need to do this here
-       so that the -D command line option can define preprocessor
-       symbols. The rest of initialization happens after command line
-       options have been parsed
-    */
-    InitPreprocessor(argv);
 
+    InitializeSystem(cmd, argv);
+    
     /* save our command line arguments and comments describing
        how we were run
     */
@@ -232,7 +175,7 @@ main(int argc, const char **argv)
             pp_add_to_path(&gl_pp, default_include);
         }
         if (strncmp(nameRoot, "bstc", 4) == 0) {
-            bstcMode = 1;
+            cmd->bstcMode = 1;
         }
         n = strlen(nameRoot);
         if (n > 4) {
@@ -244,10 +187,10 @@ main(int argc, const char **argv)
         }
     }
     gl_normalizeIdents = 0;
-    compile = 1;
-    outputMain = 1;
-    outputBin = 1;
-    outputAsm = 1;
+    cmd->compile = 1;
+    cmd->outputMain = 1;
+    cmd->outputBin = 1;
+    cmd->outputAsm = 1;
     gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
@@ -256,11 +199,11 @@ main(int argc, const char **argv)
     
     while (argv[0] && argv[0][0] != 0) {
         if (argv[0][0] != '-') {
-            if (file_argc >= MAX_FILES_ON_CMD_LINE) {
+            if (cmd->file_argc >= MAX_FILES_ON_CMD_LINE) {
                 fprintf(stderr, "too many input files\n");
                 exit(1);
             }
-            file_argv[file_argc++] = argv[0];
+            cmd->file_argv[cmd->file_argc++] = argv[0];
             --argc; ++argv;
             continue;
         }
@@ -274,7 +217,7 @@ main(int argc, const char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
                 fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
-                Usage(stderr, bstcMode);
+                Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--fcache=", 9)) {
@@ -293,7 +236,7 @@ main(int argc, const char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_CODE;
             } else {
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
-                Usage(stderr, bstcMode);
+                Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--lmm=", 6)) {
@@ -309,7 +252,7 @@ main(int argc, const char **argv)
                 gl_lmm_kind = LMM_KIND_CACHE;
             } else {
                 fprintf(stderr, "Unknown --lmm= choice: %s\n", lmmtype);
-                Usage(stderr, bstcMode);
+                Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "--relocatable")) {
@@ -320,16 +263,16 @@ main(int argc, const char **argv)
             gl_outputflags |= OUTFLAG_COG_CODE;
             gl_output = OUTPUT_COGSPIN;
             gl_debug = 1;
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
+            cmd->compile = 0;
+            cmd->outputMain = 0;
+            cmd->outputBin = 0;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
-            compile = 0;
-            outputMain = 0;
-            outputBin = 0;
+            cmd->compile = 0;
+            cmd->outputMain = 0;
+            cmd->outputBin = 0;
             gl_output = OUTPUT_DAT;
-            outputDat = 1;
+            cmd->outputDat = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-C")) {
             gl_caseSensitive = 1;
@@ -341,11 +284,11 @@ main(int argc, const char **argv)
             gl_listing = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-f")) {
-            outputFiles = 1;
-            quiet = 1;
+            cmd->outputFiles = 1;
+            cmd->quiet = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-q")) {
-            quiet = 1;
+            cmd->quiet = 1;
             argv++; --argc;
         } else if (!strcmp(argv[0], "-u")) {
             // ignore -u, we always eliminate unused methods
@@ -357,17 +300,17 @@ main(int argc, const char **argv)
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
-            PrintInfo(stdout, bstcMode);
-            Usage(stdout, bstcMode);
+            PrintInfo(stdout, cmd->bstcMode);
+            Usage(stdout, cmd->bstcMode);
             exit(0);
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
         {
-            compile = 1;
-            outputMain = 1;
-	    outputBin = 1;
+            cmd->compile = 1;
+            cmd->outputMain = 1;
+	    cmd->outputBin = 1;
             if (!strcmp(argv[0], "-e")) {
-                useEeprom = 1;
+                cmd->useEeprom = 1;
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-p")) {
@@ -387,7 +330,7 @@ main(int argc, const char **argv)
             } else {
                 opt += 2;
             }
-	    gl_outname = outname = strdup(opt);
+	    gl_outname = cmd->outname = strdup(opt);
         } else if (!strncmp(argv[0], "-g", 2)) {
             argv++; --argc;
             gl_debug = 1;
@@ -444,14 +387,8 @@ main(int argc, const char **argv)
             // -O0 means no optimization
             // -O1 means default optimization
             // -O2 means extra optimization
-            int flag = argv[0][2];
-            if (flag == '0') {
-                gl_optimize_flags = 0;
-            } else if (flag == '1') {
-                gl_optimize_flags = DEFAULT_ASM_OPTS;
-            } else {
-                gl_optimize_flags = DEFAULT_ASM_OPTS|EXTRA_ASM_OPTS;
-            }
+            const char *flagstr = &argv[0][2];
+            ParseOptimizeString(NULL, flagstr, &gl_optimize_flags);
             argv++; --argc;
         } else if (!strncmp(argv[0], "-z", 2)) {
             // -z0 means no compression (default)
@@ -464,18 +401,21 @@ main(int argc, const char **argv)
                 gl_compress = 1;
             } else {
                 fprintf(stderr, "-z option %c is not supported\n", flag);
-                Usage(stderr, bstcMode);
+                Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
-        } else if (!strncmp(argv[0], "-W", 2)) {
+        } else if (!strncmp(argv[0], "-W", 2) && argv[0][2]) {
+            // -W alone is for "wrap"
             // -Wall means enable all warnings
             // other -W values reserved
             const char *flags = &argv[0][2];
             if (!strcmp(flags, "all")) {
                 gl_warn_flags = WARN_ALL;
+            } else if (!strcmp(flags, "error")) {
+                gl_warnings_are_errors = 1;
             } else {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
-                Usage(stderr, bstcMode);
+                Usage(stderr, cmd->bstcMode);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "-H", 2)) {
@@ -498,219 +438,31 @@ main(int argc, const char **argv)
             gl_exit_status = 1;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
-            Usage(stderr, bstcMode);
+            Usage(stderr, cmd->bstcMode);
         }
     }
     
-    if (!quiet) {
-        PrintInfo(stdout, bstcMode);
+    if (!cmd->quiet) {
+        PrintInfo(stdout, cmd->bstcMode);
     }
-    if (file_argc == 0) {
-        Usage(stderr, bstcMode);
+    if (cmd->file_argc == 0) {
+        Usage(stderr, cmd->bstcMode);
     }
 
     /* tweak flags */
-    if (gl_output == OUTPUT_COGSPIN) {
-        gl_optimize_flags &= ~OPT_REMOVE_UNUSED_FUNCS;
+    result = ProcessCommandLine(cmd);
+    if (result) {
+        return result;
     }
-    if (gl_relocatable) {
-        if (!gl_p2) {
-            fprintf(stderr, "ERROR: --relocatable only supported for P2\n");
-            exit(1);
-        }
-        gl_no_coginit = 1;
-        if (gl_hub_base != 0) {
-            fprintf(stderr, "Warning: --relocatable overrides -H\n");
-            gl_hub_base = 0;
-        }
-    }
-    /* add some predefined symbols */
-    
-    if (gl_p2) {
-        pp_define(&gl_pp, "__propeller__", "2");
-    } else {
-        pp_define(&gl_pp, "__propeller__", "1");
-    }
-    pp_define(&gl_pp, "__FASTSPIN__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXSPIN__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXBASIC__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__FLEXC__", str_(VERSION_MAJOR));
-    pp_define(&gl_pp, "__SPINCVT__", str_(VERSION_MAJOR));
-    if (gl_exit_status) {
-        pp_define(&gl_pp, "__EXIT_STATUS__", "1");
-    }
-    if (gl_output == OUTPUT_ASM || gl_output == OUTPUT_COGSPIN) {
-        pp_define(&gl_pp, "__SPIN2PASM__", "1");
-    }
-    if (gl_output == OUTPUT_CPP || gl_output == OUTPUT_C) {
-        pp_define(&gl_pp, "__SPIN2CPP__", "1");
-        if (gl_output == OUTPUT_CPP) {
-            pp_define(&gl_pp, "__cplusplus", "1");
-        }
-    }
-    pp_define(&gl_pp, "__ILP32__", "1");
-    if (gl_p2) {
-        pp_define(&gl_pp, "__P2__", "1");
-        pp_define(&gl_pp, "__propeller2__", "1");
-    }
-    /* set up the binary offset */
-    gl_dat_offset = -1; // by default offset is unknown
-    if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && outputBin) {
-        // a 32 byte spin header is prepended to binary output of dat
-        // (but not in p2 mode)
-        gl_dat_offset = gl_p2 ? 0 : 32;
-    } else if (gl_output == OUTPUT_DAT && gl_gas_dat) {
-        // GAS output for dat uses symbols, so @@@ is OK there
-        gl_dat_offset = 0;
-    }
-
-    // compression
-    if (gl_compress) {
-        gl_lmm_kind = LMM_KIND_COMPRESS;
-        gl_fcache_size = 0;
-        gl_optimize_flags |= OPT_REMOVE_HUB_BSS;
-        if (gl_p2) {
-            fprintf(stderr, "-z is not supported on P2 yet");
-            exit(2);
-        }
-    }
-    // listing file
-    if (gl_listing && !(gl_output == OUTPUT_DAT)) {
-        gl_srccomments = 1;
-    }
-    
-    /* initialize the parser; we do that after command line processing
-       so that command line options can influence it */
-    Init();
-
-    /* now actually parse the file */
-    if (!quiet) {
-        gl_printprogress = 1;
-    }
-    P = ParseTopFiles(file_argv, file_argc, outputBin);
-
-    if (outputFiles) {
+    if (cmd->bstcMode && cmd->compile) {
+        int loc = 0;
         Module *Q;
+        double now = getCurTime();
         for (Q = allparse; Q; Q = Q->next) {
-            printf("%s\n", Q->fullname);
+            loc += Q->Lptr->lineCounter;
         }
-        return 0;
+        printf("Compiled %d Lines of Code in %.3f Seconds\n", loc, now - gl_start_time);
     }
-    
-    if (P) {
-        Module *Q;
-        int compile_original = 0;
-        
-        if (gl_errors > 0) {
-            exit(1);
-        }
-        /* set up output file names */
-        if (gl_listing) {
-            listFile = ReplaceExtension(P->fullname, ".lst");
-        }
-    
-        if (outputDat) {
-            outname = gl_outname;
-            if (gl_gas_dat) {
-	        if (!outname) {
-                    outname = ReplaceExtension(P->fullname, ".S");
-                }
-                OutputGasFile(outname, P);
-            } else {
-	        if (!outname) {
-                    if (outputBin) {
-                        if (useEeprom) {
-                            outname = ReplaceExtension(P->fullname, ".eeprom");
-                        } else {
-                            outname = ReplaceExtension(P->fullname, ".binary");
-                        }
-                    } else {
-                        outname = ReplaceExtension(P->fullname, ".dat");
-                    }
-                }
-                if (bstcMode && !listFile) {
-                    outname = ReplaceExtension(outname, ".binary");
-                }
-                if (listFile) {
-                    OutputLstFile(listFile, P);
-                }
-                OutputDatFile(outname, P, outputBin);
-                if (outputBin) {
-                    DoPropellerChecksum(outname, useEeprom ? eepromSize : 0);
-                }
-            }
-        } else if (outputAsm) {
-            const char *binname = NULL;
-            const char *asmname = NULL;
-            if (compile) {
-                binname = gl_outname;
-                if (binname) {
-                    asmname = ReplaceExtension(binname, gl_p2 ? ".p2asm" : ".pasm");
-                } else {
-                    if (useEeprom) {
-                        binname = ReplaceExtension(P->fullname, ".eeprom");
-                    } else {
-                        binname = ReplaceExtension(P->fullname, ".binary");
-                    }
-                }
-            } else {
-                asmname = gl_outname;
-            }
-            if (!asmname) {
-                if (gl_output == OUTPUT_COGSPIN) {
-                    asmname = ReplaceExtension(P->fullname, ".cog.spin");
-                } else {
-                    asmname = ReplaceExtension(P->fullname, gl_p2 ? ".p2asm" : ".pasm");
-                }
-            }
-            if (P->functions == NULL) {
-                // we can just assemble the .spin file directoy
-                asmname = strdup(P->fullname);
-                compile_original = 1;
-            } else {
-                OutputAsmCode(asmname, P, outputMain);
-            }
-            if (compile)  {
-                if (gl_errors > 0) {
-                    remove(binname);
-                    if (listFile) {
-                        remove(listFile);
-                    }
-                    exit(1);
-                }
-                gl_output = OUTPUT_DAT;
-                gl_caseSensitive = !compile_original;
-                Q = ParseTopFiles(&asmname, 1, 1);
-                if (gl_errors == 0) {
-                    if (listFile) {
-                        OutputLstFile(listFile, Q);
-                    }
-                    OutputDatFile(binname, Q, 1);
-                    DoPropellerChecksum(binname, useEeprom ? eepromSize : 0);
-                }
-                if (!quiet) {
-                    printf("Done.\n");
-                    if (gl_errors == 0) {
-                        PrintFileSize(binname);
-                    }
-                    if (bstcMode) {
-                        int loc = 0;
-                        double now = getCurTime();
-                        for (Q = allparse; Q; Q = Q->next) {
-                            loc += Q->Lptr->lineCounter;
-                        }
-                        printf("Compiled %d Lines of Code in %.3f Seconds\n", loc, now - gl_start_time);
-                    }
-                }
-            }
-        } else {
-            fprintf(stderr, "fastspin cannot convert to C\n");
-        }
-    } else {
-        fprintf(stderr, "parse error\n");
-        return 1;
-    }
-
     if (gl_errors > 0) {
         exit(1);
     }

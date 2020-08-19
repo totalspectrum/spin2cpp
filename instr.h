@@ -101,6 +101,8 @@ typedef enum IROpcode {
     OPC_MULS,
     OPC_MULU,
     OPC_NOT,
+    OPC_POP,
+    OPC_PUSH,
     OPC_QDIV,
     OPC_QFRAC,
     OPC_QMUL,
@@ -166,7 +168,7 @@ typedef enum IROpcode {
     OPC_LABELED_BLOB, // binary blob
     OPC_RESERVE,   // reserve space in cog
     OPC_RESERVEH,  // reserve space in hub
-    
+    OPC_ALIGNL,    // align to long boundary
     /* pseudo-instruction to load FCACHE */
     OPC_FCACHE,
 

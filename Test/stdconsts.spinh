@@ -1,0 +1,25 @@
+''
+'' standard constants for Exec tests
+''
+CON
+
+#ifdef __P2__
+  _clkfreq = 80_000_000
+  rxpin = 63
+  txpin = 62
+  baud = 230400
+
+#else
+  _clkmode = xtal1 + pll16x
+  _clkfreq = 80_000_000
+  rxpin = 31
+  txpin = 30
+  baud = 115200
+#endif
+
+OBJ
+#ifdef __P2__
+   fds: "spin/SmartSerial"
+#else
+   fds: "spin/FullDuplexSerial"
+#endif

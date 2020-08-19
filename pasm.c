@@ -477,7 +477,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
 static bool
 IsJmpRetInstruction(AST *ast)
 {
-    while (ast && ast->kind == AST_COMMENT) {
+    while (ast && (ast->kind == AST_COMMENT || ast->kind == AST_SRCCOMMENT)) {
         ast = ast->right;
     }
     if (!ast) return false;
@@ -571,6 +571,7 @@ DeclareLabels(Module *P)
             pendingLabels = AddToList(pendingLabels, NewAST(AST_LISTHOLDER, ast, NULL));
             break;
         case AST_ORG:
+            MAYBEALIGNPC(4);
             pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, ast_type_long, lastOrg, inHub, label_flags);
             if (ast->left) {
                 replaceHeres(ast->left, HEREPC, lastOrg);

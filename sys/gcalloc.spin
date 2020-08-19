@@ -172,7 +172,7 @@ pri _gc_tryalloc(size, reserveflag) | ptr, availsize, lastptr, nextptr, heap_bas
   word[lastptr + OFF_LINK] := linkindex
   
   '' mark as used, reserved, owned by a cog
-  word[ptr + OFF_FLAGS] := GC_MAGIC | reserveflag | cogid
+  word[ptr + OFF_FLAGS] := GC_MAGIC | reserveflag | _cogid()
   
   '' link us to the used list
   word[ptr + OFF_LINK] := word[heap_base + OFF_USED_LINK]
@@ -341,7 +341,7 @@ pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid, size
 
   ' clear the "IN USE" flags for all blocks
   ptr := _gc_nextBlockPtr(startheap)
-  ourid := cogid
+  ourid := _cogid()
   repeat while ptr and ptr < endheap
     word[ptr + OFF_FLAGS] &= !GC_FLAG_INUSE
     ptr := _gc_nextBlockPtr(ptr)

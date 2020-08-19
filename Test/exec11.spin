@@ -1,17 +1,27 @@
 '' check for clock frequency setting
 
 CON
+#ifndef __P2__
   _clkmode = xtal1 + pll4x
+#endif  
   _clkfreq = 20_000_000
 ''  _clkmode = xtal1 + pll16x
 ''  _clkfreq = 80_000_000
 
 OBJ
+#ifdef __P2__
+  fds : "spin/SmartSerial"
+#else
   fds : "spin/FullDuplexSerial"
+#endif
 
 PUB main | start,elapsed
   '' start up the serial port
+#ifdef __P2__  
+  fds.start(63, 62, 0, 230400)
+#else  
   fds.start(31, 30, 0, 115200)
+#endif
 
   start := CNT
   '' transmit (12*10) = 120 characters, or about 1200 bits

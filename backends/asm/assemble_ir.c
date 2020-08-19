@@ -1037,7 +1037,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintCond(fb, ir->cond);
                 // if we know the destination we may be able to optimize
                 // the branch
-                if (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & FLAG_KEEP_INSTR)) {
+                if (ir->aux && gl_lmm_kind == LMM_KIND_ORIG && !(ir->flags & (FLAG_KEEP_INSTR|FLAG_JMPTABLE_INSTR))) {
                     int offset;
                     dest = (IR *)ir->aux;
                     offset = dest->addr - ir->addr;
@@ -1054,13 +1054,18 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                         return;
                     }
                 }
-                if (gl_lmm_kind == LMM_KIND_ORIG) {
-                    flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                if ((ir->flags & FLAG_JMPTABLE_INSTR)) {
+                    flexbuf_addstr(fb, "word\t");
+                    PrintOperandAsValue(fb, ir->dst);
                 } else {
-                    flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                    if (gl_lmm_kind == LMM_KIND_ORIG) {
+                        flexbuf_addstr(fb, "rdlong\tpc,pc\n");
+                    } else {
+                        flexbuf_addstr(fb, "call\t#LMM_JUMP\n");
+                    }
+                    flexbuf_addstr(fb, "\tlong\t");
+                    PrintOperandAsValue(fb, ir->dst);
                 }
-                flexbuf_addstr(fb, "\tlong\t");
-                PrintOperandAsValue(fb, ir->dst);
                 flexbuf_addstr(fb, "\n");
                 return;
             }
@@ -1215,6 +1220,9 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         PrintOperandAsValue(fb, ir->dst);
         flexbuf_addstr(fb, "]\n");
         break;
+    case OPC_ALIGNL:
+        flexbuf_printf(fb, "\tlong\n");
+        break;
     case OPC_FCACHE:
         if (gl_p2) {
             flexbuf_printf(fb, "\tloc\tpa,\t#(");
@@ -1222,7 +1230,7 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
             flexbuf_printf(fb, "-");
             PrintOperandAsValue(fb, ir->src);
             flexbuf_printf(fb, ")\n");
-            flexbuf_printf(fb, "\tcalla\t#FCACHE_LOAD_\n");
+            flexbuf_printf(fb, "\tcall\t#FCACHE_LOAD_\n");
         } else {
             flexbuf_printf(fb, "\tcall\t#LMM_FCACHE_LOAD\n");
             flexbuf_printf(fb, "\tlong\t(");

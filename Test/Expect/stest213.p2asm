@@ -10,17 +10,17 @@ dat
 entry
 
 _demo
-	calla	#_func1
+	call	#_func1
 	mov	outb, result1
-	calla	#_func2
+	call	#_func2
 	mov	outb, result1
 _demo_ret
-	reta
+	ret
 
 _func1
 	mov	_var01, #0
 	loc	pa,	#(@LR__0003-@LR__0001)
-	calla	#FCACHE_LOAD_
+	call	#FCACHE_LOAD_
 LR__0001
 	rep	@LR__0002, #8
 	testp	#15 wc
@@ -29,12 +29,12 @@ LR__0002
 LR__0003
 	mov	result1, _var01
 _func1_ret
-	reta
+	ret
 
 _func2
 	mov	_var01, #0
 	loc	pa,	#(@LR__0005-@LR__0004)
-	calla	#FCACHE_LOAD_
+	call	#FCACHE_LOAD_
 LR__0004
 	rep	#2, #8
 	testp	#15 wc
@@ -42,7 +42,7 @@ LR__0004
 LR__0005
 	mov	result1, _var01
 _func2_ret
-	reta
+	ret
 
 result1
 	long	0

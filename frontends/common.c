@@ -43,6 +43,7 @@ SymbolTable *currentTypes;
 int gl_p2;
 int gl_have_lut;
 int gl_errors;
+int gl_warnings_are_errors;
 int gl_output;
 int gl_outputflags;
 int gl_nospin;
@@ -96,13 +97,16 @@ Aliases spinalias[] = {
     { "clkfreq", "__clkfreq_var" },
     { "clkmode", "__clkmode_var" },
     { "clkset", "_clkset" },
+    { "cogid", "_cogid" },
+    { "cogstop", "_cogstop" },
+    
     { "strsize", "__builtin_strlen" },
-#ifdef NEVER    
-    { "lockclr", "__builtin_lockclr" },
-    { "lockset", "__builtin_lockset" },
-    { "locknew", "__builtin_locknew" },
-    { "lockret", "__builtin_lockret" },
-#endif
+
+    { "lockclr", "_lockclr" },
+    { "lockset", "_lockset" },
+    { "locknew", "_locknew" },
+    { "lockret", "_lockret" },
+
 
     { "reboot", "_reboot" },
 
@@ -147,6 +151,7 @@ Aliases spin2alias[] = {
     { "getct", "_getcnt" },
     { "getrnd", "_rnd" },
     { "getsec", "_getsec" },
+    { "hubset", "_hubset" },
     
     { "wrpin", "_wrpin" },
     { "wxpin", "_wxpin" },
@@ -161,11 +166,15 @@ Aliases spin2alias[] = {
     { "xypol", "_xypol" },
 
     { "cogatn", "_cogatn" },
+    { "pollatn", "_pollatn" },
+    { "waitatn", "_waitatn" },
+    
     { "muldiv64", "_muldiv64" },
     { "waitx", "_waitx" },
     { "waitms", "_waitms" },
     { "waitus", "_waitus" },
-    { "waitct", "waitcnt" },
+    { "pollct", "_pollct" },
+    { "waitct", "_waitcnt" },
     
     /* obsolete aliases */
     { "outl_", "_outl" },
@@ -188,6 +197,7 @@ Aliases basicalias[] = {
     /* the rest of these are OK, I think */
     { "clkset", "_clkset" },
     { "cpuchk",  "_cogchk" },
+    { "cpuid",   "_cogid" },
     { "cpuwait", "_cogwait" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
@@ -645,7 +655,8 @@ void
 LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
 {
     va_list args;
-
+    const char *banner;
+    
     if (!(gl_warn_flags & WARN_LANG_EXTENSIONS)) {
         return;
     }
@@ -655,17 +666,23 @@ LANGUAGE_WARNING(int language, AST *ast, const char *msg, ...)
     if (language != LANG_ANY && language != current->curLanguage) {
         return;
     }
+    if (gl_warnings_are_errors) {
+        banner = "ERROR";
+        gl_errors++;
+    } else {
+        banner = "warning";
+    }
     if (ast) {
         LineInfo *info = GetLineInfo(ast);
         if (info) {
-            ERRORHEADER(info->fileName, info->lineno, "warning");
+            ERRORHEADER(info->fileName, info->lineno, banner);
         } else {
-            ERRORHEADER(NULL, 0, "warning");
+            ERRORHEADER(NULL, 0, banner);
         }
     } else if (current) {
-        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "warning");
+        ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, banner);
     } else {
-        ERRORHEADER(NULL, 0, "warning");
+        ERRORHEADER(NULL, 0, banner);
     }
     va_start(args, msg);
     vfprintf(stderr, msg, args);
@@ -678,11 +695,18 @@ WARNING(AST *instr, const char *msg, ...)
 {
     va_list args;
     LineInfo *info = GetLineInfo(instr);
+    const char *banner;
 
+    if (gl_warnings_are_errors) {
+        gl_errors++;
+        banner = "ERROR";
+    } else {
+        banner = "warning";
+    }
     if (info)
-        ERRORHEADER(info->fileName, info->lineno, "warning");
+        ERRORHEADER(info->fileName, info->lineno, banner);
     else
-        ERRORHEADER(NULL, 0, "warning");
+        ERRORHEADER(NULL, 0, banner);
 
     va_start(args, msg);
     vfprintf(stderr, msg, args);

@@ -98,8 +98,96 @@ static AST *MakeCaseTest(AST *ident, AST *expr)
 }
 
 /*
+ * SelectActiveCase:
+ * selects just the case that is going to run
+ * (call this only if the case selection expression is known constant)
+ */
+static AST *
+SelectActiveCase(AST *switchstmt, AST *stmts, AST *endlabel, AST *defaultlabel)
+{
+    AST *goodlabel = NULL;
+    AST *ast;
+    AST *ifstmt;
+    AST *block;
+    AST *tryblock;
+    AST *blockast;
+    
+    for (ast = switchstmt; ast; ast = ast->right) {
+        if (ast->kind != AST_STMTLIST) {
+            return NULL;
+        }
+        ifstmt = ast->left;
+        if (ifstmt->kind == AST_ASSIGN) {
+            // ignore the initial assignment
+            continue;
+        }
+        if (ifstmt->kind != AST_IF) {
+            return NULL;
+        }
+        if (!IsConstExpr(ifstmt->left)) {
+            return NULL;
+        }
+        if (EvalConstExpr(ifstmt->left) != 0) {
+            goodlabel = ifstmt->right->left->left;
+            if (goodlabel->kind != AST_GOTO) {
+                return NULL;
+            }
+            goodlabel = goodlabel->left;
+            break;
+        }
+    }
+    if (!goodlabel) {
+        // choose just the default case
+        goodlabel = defaultlabel;
+    }
+    block = NULL;
+    for (ast = stmts; ast; ast=ast->right) {
+        tryblock = ast->left;
+        if (tryblock->kind == AST_GOTO) {
+            continue;
+        }
+        if (tryblock->kind != AST_STMTLIST) {
+            return NULL;
+        }
+        if (tryblock->left->kind != AST_LABEL) {
+            return NULL;
+        }
+        if (BlockContainsLabel(tryblock->right)) {
+            // goto may happen into this block; we
+            // cannot remove it
+            return NULL;
+        }
+        if (AstMatch(tryblock->left->left, goodlabel)) {
+            block = tryblock;
+            blockast = ast;
+            continue;
+        }
+    }
+    if (!block) {
+        return NULL;
+    }
+    // verify that "goto endlabel" follows block
+    // as it happens our construction leaves the goto just after "ast"
+    // if it does, then we can replace all of the stmt with just "block"
+    ast = blockast;
+    if (ast) {
+        ast = ast->right;
+    }
+    if (ast && ast->left && ast->left->kind == AST_GOTO && AstMatch(ast->left->left, endlabel))
+    {
+        return block;
+    }
+    return NULL;
+}
+
+/*
  * returns a list of if x goto y; statments where x is a case condition and
  * y is the case label
+ * "tmpvar" is the case selector (may be a constant)
+ * "switchstmt" is the list of gotos
+ * "stmt" points to the case statement itself
+ * "defaultlabel" will be set to the default case, if any
+ * "endswitch" points to a label after the switch
  */
 static AST *
 CreateGotos(AST *tmpvar, AST *switchstmt, AST *stmt, AST **defaultlabel, AST *endswitch)
@@ -126,7 +214,7 @@ again:
         AddSymbolForLabel(label);
         ifcond = MakeCaseTest(tmpvar, stmt->left);
         *stmt = *NewAST(AST_STMTLIST, label,
-                        NewAST(AST_STMTLIST, stmt->right, NULL));
+                            NewAST(AST_STMTLIST, stmt->right, NULL));
         ifgoto = NewAST(AST_GOTO, labelid, NULL);
         ifgoto = NewAST(AST_STMTLIST, ifgoto, NULL);
         ifgoto = NewAST(AST_THENELSE, ifgoto, NULL);
@@ -191,6 +279,13 @@ static int caseCmp(const void *av, const void *bv)
     const CaseHolder *a = (const CaseHolder *)av;
     const CaseHolder *b = (const CaseHolder *)bv;
     return a->val - b->val;
+}
+
+static int labelCmp(const void *av, const void *bv)
+{
+    const CaseHolder *a = (const CaseHolder *)av;
+    const CaseHolder *b = (const CaseHolder *)bv;
+    return a->label - b->label;
 }
 
 static int AddCases(Flexbuf *fb, AST *ident, AST *expr, AST *label, const char *force_reason)
@@ -285,6 +380,7 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
     int density; // at least density/maxrange items must be non-default
     int lastval;
     int defaults_seen = 0;
+    int distinct_cases = 0;
     
     if (gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) {
         return NULL;
@@ -339,6 +435,20 @@ AST *CreateJumpTable(AST *switchstmt, AST *defaultlabel, const char *force_reaso
         return NULL;
     }
     cases = (CaseHolder *)flexbuf_get(&fb);
+    if (!force_reason) {
+        // initial sort to see how many distinct labels there are
+        qsort(cases, siz, sizeof(CaseHolder), labelCmp);
+        for (i = 0; i < siz-1; i++) {
+            if (cases[i].label != cases[i+1].label) {
+                distinct_cases++;
+            }
+        }
+        // if only 1/6 of the cases are distinct, skip it
+        if (distinct_cases * 6 < siz) {
+            return NULL;
+        }
+    }
+    // final sort to get into numerical order
     qsort(cases, siz, sizeof(CaseHolder), caseCmp);
     minval = cases[0].val;
     range = (cases[siz-1].val - minval)+1;
@@ -416,7 +526,9 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     AST *endlabel;
     AST *use_expr;
     ASTReportInfo saveinfo;
-
+    int filterCases;
+    int optimize_flags = curfunc->optimize_flags;
+    
     //DumpAST(stmt);
     
     AstReportAs(stmt, &saveinfo);
@@ -435,15 +547,28 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     // switchstmt will have all the gotos we make
     if (IsConstExpr(expr)) {
         use_expr = expr;
+        filterCases = (optimize_flags & OPT_DEADCODE) != 0;
     } else {
         use_expr = tmpvar;
+        filterCases = 0;
     }
     switchstmt = CreateGotos(use_expr, switchstmt, stmt, &defaultlabel, endswitch);
     // add a "goto default"
     if (!defaultlabel) {
         defaultlabel = endswitch;
     }
-    gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
+    if (filterCases) {
+        // do not want jump table
+        // instead, just pick the active part
+        AST *pick;
+        pick = SelectActiveCase(switchstmt, stmt, endswitch, defaultlabel);
+        if (pick) {
+            return pick;
+        }
+        gostmt = NULL;
+    } else {
+        gostmt = CreateJumpTable(switchstmt, defaultlabel, force_reason);
+    }
     if (gostmt) {
         switchstmt = gostmt;
     } else {
