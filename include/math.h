@@ -59,5 +59,3 @@ typedef long double double_t;
 #endif
 
 #endif
-
-#endif
