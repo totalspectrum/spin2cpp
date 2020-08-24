@@ -412,3 +412,26 @@ Makes pin `pin` an input and returns its current value (0 or 1).
 void      _pinw(int pin, int val);
 ```
 Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined.
+
+
+## Disk I/O routines (P2 Only)
+
+On the P2 there are some methods available for disk I/O. The `mount` call must be made before any other calls.
+
+### Mount
+
+The `mount` call gives a name to a file system. For example, after
+```
+mount("/host", _vfs_open_host());
+mount("/sd", _vfs_open_sdcard());
+```
+files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
+
+This only works on P2, because it requires a lot of HUB memory, and also needs the host file server built in to `loadp2`.
+
+Available file systems are:
+
+  * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+
+
