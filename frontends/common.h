@@ -386,7 +386,8 @@ struct modulestate {
     char *datname;     /* the name of the dat section (normally "dat") */
 
     /* for walking through modules and avoiding visiting the same one multiple times */
-    unsigned visitflag;
+    unsigned visitFlag;
+    unsigned all_visitflags;
 
     /* flags for output */
     char pasmLabels;

@@ -126,6 +126,9 @@ typedef struct ir_bedata {
 
     /* actual call instructions emitted for this function */
     int actual_callsites;
+
+    /* firl emitted already */
+    bool firl_done;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)
