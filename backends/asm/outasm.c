@@ -4723,10 +4723,13 @@ static void
 CompileWholeFunction(IRList *irl, Function *f)
 {
     IRList *firl = FuncIRL(f);
-
+    if (FuncData(f)->firl_done) {
+        ERROR(NULL, "firl done");
+    }
     EmitFunctionHeader(irl, f);
     AppendIRList(irl, firl);
     EmitFunctionFooter(irl, f);
+    FuncData(f)->firl_done = 1;
 }
 
 static Operand *newlineOp;
@@ -4847,13 +4850,13 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
     EmitAsmVars(&hubGlobalVars, hubdata, NULL, NO_SORT);
 }
 
-#define VISITFLAG_COMPILEIR_COG 0x01230000
-#define VISITFLAG_COMPILEIR_HUB 0x01230001
-#define VISITFLAG_COMPILEIR_LUT 0x01230002
-#define VISITFLAG_FUNCNAMES     0x01230008
-#define VISITFLAG_COMPILEFUNCS  0x01230009
-#define VISITFLAG_EXPANDINLINE  0x0123000a
-#define VISITFLAG_EMITDAT       0x0123000b
+#define VISITFLAG_COMPILEIR_COG 0x00000001
+#define VISITFLAG_COMPILEIR_HUB 0x00000002
+#define VISITFLAG_COMPILEIR_LUT 0x00000004
+#define VISITFLAG_FUNCNAMES     0x00000008
+#define VISITFLAG_COMPILEFUNCS  0x00000010
+#define VISITFLAG_EXPANDINLINE  0x00000020
+#define VISITFLAG_EMITDAT       0x00000040
 
 typedef int (*VisitorFunc)(IRList *irl, Module *P);
 
@@ -4866,12 +4869,13 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
     Function *savecurf = curfunc;
     int change = 0;
     
-    if (P->visitflag == visitval)
+    if (P->all_visitflags & visitval)
         return change;
 
     current = P;
 
-    P->visitflag = visitval;
+    P->all_visitflags |= visitval;
+    P->visitFlag = visitval;
     change |= (*func)(irl, P);
 
     // compile intermediate code for submodules
@@ -5156,9 +5160,9 @@ CompileToIR_internal(IRList *irl, Module *P)
     Function *save = curfunc;
     int docog;
 
-    if (P->visitflag == VISITFLAG_COMPILEIR_COG) {
+    if (P->visitFlag == VISITFLAG_COMPILEIR_COG) {
         docog = CODE_PLACE_COG;
-    } else if (P->visitflag == VISITFLAG_COMPILEIR_LUT) {
+    } else if (P->visitFlag == VISITFLAG_COMPILEIR_LUT) {
         docog = CODE_PLACE_LUT;
     } else {
         docog = CODE_PLACE_HUB;
