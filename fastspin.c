@@ -73,6 +73,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -c ]             output only DAT sections\n");
     fprintf(f, "  [ -l ]             output DAT as a listing file\n");
     fprintf(f, "  [ -f ]             output list of file names\n");
+    fprintf(f, "  [ -g ]             enable debug statements\n");
     fprintf(f, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
     fprintf(f, "  [ -p ]             disable the preprocessor\n");
     fprintf(f, "  [ -D <define> ]    add a define\n");
