@@ -434,4 +434,32 @@ Available file systems are:
   * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
   * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
 
+It is OK to make multiple mount calls, but they should have different names.
 
+### Stdio
+
+After mounting a file system, the standard FILE functions like `fopen`, `fprintf`, `fgets` and so on are available and usable.
+
+### Posix directory functions
+
+A number of standard POSIX directory functions are available, including:
+
+`int chdir(const char *path)`
+
+Sets the current directory to `path`. Returns 0 on success, non-zero on failure.
+
+`char *getcwd(char *buf, size_t size)`
+
+Copies the current directory into `buf`, which must have at least `size` bytes available. Returns `buf`, or NULL if `buf` is not larget enough to hold the directory.
+
+`DIR *opendir(const char *path)`
+
+Opens `path` for reading with `readdir`. Returns NULL on error, otherwise a handle to use with `readdir`.
+
+`int closedir(DIR *dir)`
+
+Closes directory previously opened with `opendir`.
+
+`struct dirent *readdir(DIR *dir)`
+
+Reads the next directory entry.
