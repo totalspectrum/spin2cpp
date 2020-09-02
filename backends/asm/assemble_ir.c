@@ -870,6 +870,8 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
         }
         if (gl_output == OUTPUT_COGSPIN) {
             // use call/ret instead of calla/reta
+            // (this is obsolete, call/ret is now standard, but it's
+            // also harmless)
             if (ir->opc == OPC_CALL) {
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "call\t");
@@ -881,6 +883,25 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
                 PrintCond(fb, ir->cond);
                 flexbuf_addstr(fb, "ret\n");
                 return;
+            }
+        }
+        // watch out for djnz going out of range
+        // (it can only address +-256 longs
+        if (ir->opc == OPC_DJNZ) {
+            if (ir->aux) {
+                IR *dest = (IR *)ir->aux;
+                int offset = dest->addr - ir->addr;
+                if (offset < -MAX_REL_JUMP_OFFSET || offset > MAX_REL_JUMP_OFFSET) {
+                    static int djzlab = 0;
+                    djzlab++;
+                    flexbuf_printf(fb, "\tdjz\t");
+                    PrintOperand(fb, ir->dst);
+                    flexbuf_printf(fb, ", #tmp_djnz_%03u\n", djzlab);
+                    flexbuf_printf(fb, "\tjmp\t");
+                    PrintOperandSrc(fb, ir->src, ir->srceffect);
+                    flexbuf_printf(fb, "\ntmp_djnz_%03u\n", djzlab);
+                    return;
+                }
             }
         }
     } else {
