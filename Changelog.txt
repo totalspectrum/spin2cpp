@@ -1,5 +1,6 @@
 Version 4.3.2
 - Fixed a hang due to multiply processing modules
+- Fixed djnz out of range on P2
 
 Version 4.3.1
 - Added HUBSET(), POLLATN(), WAITATN()
