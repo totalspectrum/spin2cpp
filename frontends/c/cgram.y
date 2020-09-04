@@ -868,7 +868,7 @@ primary_expression
         | C_NULLPTR
             { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL
-            { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
+            { $$ = NewAST(AST_STRINGPTR, $1, NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
 	| '(' expression ')'
