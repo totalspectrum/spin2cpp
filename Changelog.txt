@@ -3,6 +3,7 @@ Version 4.3.2
 - Fixed a hang due to multiply processing modules
 - Fixed djnz out of range on P2
 - Fixed \0 inside C strings
+- Improved warnings about missing #
 - Made SEND pointer per-COG
 
 Version 4.3.1
