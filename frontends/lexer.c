@@ -831,6 +831,7 @@ again:
             c = getEscapedChar(L);
             if (c < 0) break;
             if (c == 0) {
+                flexbuf_addchar(&fb, 0);
                 str = flexbuf_get(&fb);
                 if (*str) {
                     ast = NewAST(AST_STRING, NULL, NULL);
@@ -853,13 +854,16 @@ again:
     } else {
         lexungetc(L, c);
     }
+    flexbuf_addchar(&fb, 0);
     str = flexbuf_get(&fb);
-    if (str) {
+    if (str && *str) {
         ast = NewAST(AST_STRING, NULL, NULL);
         ast->d.string = str;
         exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, ast, NULL));
     }
-    exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    if (!exprlist) {
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    }
     *ast_ptr = exprlist;
 }
 
