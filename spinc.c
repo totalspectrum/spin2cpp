@@ -232,9 +232,19 @@ InferTypeFromName(AST *identifier)
 AST *
 GetFullFileName(AST *baseString)
 {
-    const char *basename = baseString->d.string;
+    const char *basename;
     char *newname;
     AST *ret;
+
+    if (baseString->kind == AST_EXPRLIST) {
+        baseString = baseString->left;
+    }
+    if (baseString->kind != AST_STRING) {
+        ERROR(baseString, "Expected string");
+        basename = "error";
+    } else {
+        basename = baseString->d.string;
+    }
     newname = find_file_on_path(&gl_pp, basename, NULL, current->fullname);
     if (!newname) {
         newname = strdup(basename);

@@ -1065,7 +1065,10 @@ expr:
   | float
   | string
   | SP_STRINGPTR '(' exprlist ')'
-    { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
+    {
+        AST *elist = $3;
+        $$ = NewAST(AST_STRINGPTR, elist, NULL);
+    }
   | lhs
   | '@' expr
     {

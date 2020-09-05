@@ -323,13 +323,14 @@ reduceStrings(AST *orig_exprlist)
         elem = exprlist->left;
         next = exprlist->right;
         if (elem->kind == AST_STRING) {
-            AST *ast;
+            AST *ast = NULL;
             const char *t = elem->d.string;
             int c;
             first = elem;
             AstReportAs(elem, &saveinfo);
             do {
                 c = *t++;
+                if (!c) break;
                 ast = AstInteger(c);
                 if (first) {
                     *first = *ast;
@@ -345,7 +346,9 @@ reduceStrings(AST *orig_exprlist)
         }
         exprlist = next;
     }
-    return orig_exprlist;
+    // add a trailing 0
+    exprlist = AddToList(orig_exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    return exprlist;
 }
 
 static void
