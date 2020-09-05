@@ -66,6 +66,7 @@ Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
 Operand *localreg[MAX_LOCAL_REGISTER];
 Operand *leafreg[MAX_LOCAL_REGISTER];
+Operand *sendreg;
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -1101,8 +1102,17 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
       switch (stype) {
       case SYM_VARIABLE:
           if (sym->flags & SYMF_GLOBAL) {
-              Operand *addr = NewImmediate(sym->offset);
+              int off = sym->offset;
+              Operand *addr;
               Operand *ref;
+              if (off == -1) {
+                  // this is a special internal COG variable
+                  if (!sendreg) {
+                      sendreg = GetOneGlobal(REG_REG, "__sendreg", 0);
+                  }
+                  return sendreg;
+              }
+              addr = NewImmediate(off);
               ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
               ref->size = LONG_SIZE;
               return ref;

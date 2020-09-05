@@ -115,7 +115,7 @@ InitGlobalModule(void)
 
     sym = AddSymbol(table, "__sendptr", SYM_VARIABLE, ast_type_sendptr, NULL);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x30) : 8;
+    sym->offset = -1; // special flag for COG internal memory
 
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
