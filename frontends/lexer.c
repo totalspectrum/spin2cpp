@@ -812,13 +812,15 @@ parseCString(LexStream *L, AST **ast_ptr)
 {
     int c;
     struct flexbuf fb;
+    AST *exprlist;
     AST *ast;
-
-    ast = NewAST(AST_STRING, NULL, NULL);
+    char *str;
+    
+    exprlist = NULL;
     flexbuf_init(&fb, INCSTR);
 again:
     c = lexgetc(L);
-    while (c != '"' && c > 0 && c < 256) {
+    while (c != '"' && c >= 0 && c < 256) {
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
             SYNTAX_ERROR("unterminated string");
@@ -828,8 +830,21 @@ again:
         if (c == '\\') {
             c = getEscapedChar(L);
             if (c < 0) break;
-        }   
-        flexbuf_addchar(&fb, c);
+            if (c == 0) {
+                flexbuf_addchar(&fb, 0);
+                str = flexbuf_get(&fb);
+                if (*str) {
+                    ast = NewAST(AST_STRING, NULL, NULL);
+                    ast->d.string = str;
+                    exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, ast, NULL));
+                }
+                exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+            } else {
+                flexbuf_addchar(&fb, c);
+            }
+        } else {
+            flexbuf_addchar(&fb, c);
+        }
         c = lexgetc(L);
     }
     // handle "x" "y" as "xy"
@@ -839,9 +854,17 @@ again:
     } else {
         lexungetc(L, c);
     }
-    flexbuf_addchar(&fb, '\0');
-    ast->d.string = flexbuf_get(&fb);
-    *ast_ptr = ast;
+    flexbuf_addchar(&fb, 0);
+    str = flexbuf_get(&fb);
+    if (str && *str) {
+        ast = NewAST(AST_STRING, NULL, NULL);
+        ast->d.string = str;
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, ast, NULL));
+    }
+    if (!exprlist) {
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    }
+    *ast_ptr = exprlist;
 }
 
 //

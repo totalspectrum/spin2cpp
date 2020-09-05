@@ -868,7 +868,7 @@ primary_expression
         | C_NULLPTR
             { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL
-            { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
+            { $$ = NewAST(AST_STRINGPTR, $1, NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
 	| '(' expression ')'
@@ -1304,7 +1304,13 @@ struct_or_union
 
 fromfile_clause
         : '(' C_STRING_LITERAL ')'
-            { $$ = $2; }
+            {
+                AST *str = $2;
+                if (str && str->kind == AST_EXPRLIST) {
+                    str = str->left;
+                }
+                $$ = str;
+            }
         ;
 
 struct_open
@@ -2100,7 +2106,13 @@ attribute_decl
 
 fromfile_decl
         : C_FROMFILE '(' C_STRING_LITERAL ')' ';'
-            {  $$ = $3; }
+            {
+                AST *str = $3;
+                if (str && str->kind == AST_EXPRLIST) {
+                    str = str->left;
+                }
+                $$ = str;
+            }
         ;
 
 /* PASM syntax: this is awkward, so not fully supported yet */
