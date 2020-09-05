@@ -3704,7 +3704,9 @@ FRESULT f_open (
 #endif
 	DEF_NAMBUF
 
-
+#if defined(_DEBUG) && defined(__FLEXC__)
+	  __builtin_printf("f_open(%s, 0x%x)\n", path, mode);
+#endif	
 	if (!fp) return FR_INVALID_OBJECT;
 
 	/* Get logical drive number */
@@ -7186,11 +7188,11 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   }
   
   if (flags & O_TRUNC) {
-      fs_flags |= FA_CREATE_ALWAYS;
+      fs_flags |= FA_CREATE_ALWAYS | FA_OPEN_ALWAYS;
   } else if (flags & O_APPEND) {
       fs_flags |= FA_OPEN_APPEND;
   } else {
-      fs_flags |= FA_OPEN_ALWAYS;
+    //fs_flags |= FA_OPEN_ALWAYS; // no, FA_OPEN_ALWAYS creates a file
   }
   r = f_open(&f->fil, name, fs_flags);
   if (r) {
