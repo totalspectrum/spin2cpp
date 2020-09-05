@@ -440,9 +440,23 @@ It is OK to make multiple mount calls, but they should have different names.
 
 After mounting a file system, the standard FILE functions like `fopen`, `fprintf`, `fgets` and so on are available and usable.
 
+### Posix file functions
+
+`int remove(const char *path)`
+
+Removes the regular file specified by `path`. Returns non-zero if the removal failed for some reason.
+
 ### Posix directory functions
 
 A number of standard POSIX directory functions are available, including:
+
+`int mkdir(const char *path)`
+
+Creates a new directory named `path`. Returns 0 on success, non-zero on error (in which case errno is set to the specific error).
+
+`int rmdir(const char *path)`
+
+Removes the directory specified by `path`. Returns 0 on success, non-zero on failure (in the latter case sets `errno` to the precise error.
 
 `int chdir(const char *path)`
 
