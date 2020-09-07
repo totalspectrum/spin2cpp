@@ -982,9 +982,17 @@ FixupCode(Module *P, int isBinary)
             }
         }
         if (need_heap) {
-            Symbol *sym = FindSymbol(&P->objsyms, "heapsize");
+            Symbol *sym = FindSymbol(&P->objsyms, "HEAPSIZE");
             uint32_t heapsize = 0;
             AST *heapAst;
+
+            if (!sym || sym->kind != SYM_CONSTANT) {
+                Symbol *sym2;
+                sym2 = FindSymbol(&P->objsyms, "heapsize");
+                if (sym2) {
+                    sym = sym2;
+                }
+            }
             if (sym) {
                 if (sym->kind != SYM_CONSTANT) {
                     WARNING(NULL, "heapsize is not a constant");
