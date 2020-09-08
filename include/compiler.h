@@ -89,7 +89,7 @@
 #define _INLINE inline
 
 #ifndef _WCHAR_T_TYPE
-#define _WCHAR_T_TYPE __WCHAR_TYPE__
+#define _WCHAR_T_TYPE unsigned char
 #endif
 
 #define _IMPL(x) __fromfile(x)
