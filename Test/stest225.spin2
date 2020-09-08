@@ -1,0 +1,6 @@
+OBJ
+  p[4] : "substest01.spin"
+
+PUB fetch(i) : r
+  r := p[i].get()
+  

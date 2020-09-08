@@ -1503,6 +1503,12 @@ funccall:
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
         $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
     }
+  | identifier '[' expr ']' '.' identifier '(' ')' opt_numrets
+    { 
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), NULL, $9);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
+    }
   | identifier '[' expr ']' '.' identifier
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);

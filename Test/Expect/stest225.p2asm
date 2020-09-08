@@ -1,0 +1,44 @@
+dat
+	cogid	pa
+	coginit	pa,##$400
+	orgh	$10
+	long	0	'reserved
+	long	0 ' clock frequency: will default to 20000000
+	long	0 ' clock mode: will default to $100094b
+	orgh	$400
+	org	0
+entry
+
+_fetch
+	shl	arg01, #2
+	add	objptr, arg01
+	rdlong	result1, objptr
+	sub	objptr, arg01
+_fetch_ret
+	ret
+
+_substest01_get
+	rdlong	result1, objptr
+_substest01_get_ret
+	ret
+
+_substest01_add
+	rdlong	result1, objptr
+	add	result1, arg01
+	wrlong	result1, objptr
+_substest01_add_ret
+	ret
+
+objptr
+	long	@objmem
+result1
+	long	0
+COG_BSS_START
+	fit	480
+	orgh
+objmem
+	long	0[4]
+	org	COG_BSS_START
+arg01
+	res	1
+	fit	480
