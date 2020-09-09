@@ -212,7 +212,8 @@ enum astkind {
     AST_MODIFIER_SEND_ARGS = 149,
     AST_FVAR_LIST = 150,
     AST_FVARS_LIST = 151,
-    
+
+    AST_INITMODIFIER = 152,
 };
 
 /* forward reference */
