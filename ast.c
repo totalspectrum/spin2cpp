@@ -692,6 +692,8 @@ static const char *astnames[] = {
     "sendargs",
     "fvar",
     "fvars",
+
+    "initializer_modifier",
 };
 
 //

@@ -369,6 +369,93 @@ AlignPc(Flexbuf *f, int size)
         }
 }
 
+/* fix up an initializer list of a given type */
+/* creates an array containing the initializer expressions;
+ * each of these may in turn be an array of initializers
+ * returns an EXPRLIST containing the items
+ */
+static AST *
+FixupInitList(AST *type, AST *initval)
+{
+    int elemsize;
+    int typesize;
+    int numelems;
+    AST **astarr = 0;
+    int curelem;
+    
+    if (!initval) {
+        return initval;
+    }
+    type = RemoveTypeModifiers(type);
+    //typealign = TypeAlign(type);
+    elemsize = typesize = TypeSize(type);
+    numelems  = 1;
+
+    if (initval->kind != AST_EXPRLIST) {
+        initval = NewAST(AST_EXPRLIST, initval, NULL);
+    }
+    
+    type = RemoveTypeModifiers(type);
+    switch(type->kind) {
+    case AST_ARRAYTYPE:
+    {
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (!numelems) {
+            WARNING(initval, "empty array cannot be initialized");
+            return 0;
+        }
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_ARRAYREF) {
+                    ERROR(fixup, "initialization designator for array is not an array element");
+                    val->left = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    val->left = AstInteger(0);
+                } else if (!IsConstExpr(fixup->right)) {
+                    ERROR(fixup, "initialization designator for array is not constant");
+                    val->left = AstInteger(0);
+                } else {
+                    curelem = EvalConstExpr(fixup->right);
+                    val->left = newval;
+                }
+            }
+            if (astarr[curelem]) {
+                ERROR(val, "Duplicate definition for element %d of array", curelem);
+            }
+            astarr[curelem] = val;
+            curelem++;
+        }
+        for (curelem = 0; curelem < numelems; curelem++) {
+            if (!astarr[curelem]) {
+                astarr[curelem] = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+            }
+        }
+        initval = astarr[0];
+        for (curelem = 0; curelem < numelems-1; curelem++) {
+            astarr[curelem]->right = astarr[curelem+1];
+        }
+        return initval;
+    }
+    default:
+        return initval;
+    }
+}
+
 /* output a single data item element */
 void
 outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, AST *type)
@@ -455,6 +542,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
+    initval = FixupInitList(type, initval);
+    
     AlignPc(f, typealign);
     if (!initval) {
         // just fill with 0s

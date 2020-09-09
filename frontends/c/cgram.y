@@ -1625,8 +1625,13 @@ initializer_list
             }
         | designation initializer
             {
-                SYNTAX_ERROR("designators not supported yet");
-                $$ = NULL;
+                AST *desig = $1;
+                AST *initval = $2;
+                AST *ast;
+
+                ast = NewAST(AST_INITMODIFIER, desig, initval);
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = ast;
             }
 	| initializer_list ',' initializer
             {
@@ -1637,8 +1642,14 @@ initializer_list
             }
         | initializer_list ',' designation initializer
             {
-                SYNTAX_ERROR("designators not supported yet");
-                $$ = $1;
+                AST *list = $1;
+                AST *desig = $3;
+                AST *initval = $4;
+                AST *ast;
+                
+                ast = NewAST(AST_INITMODIFIER, desig, initval);
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = AddToListEx(list, ast, (AST **)&list->d.ptr);
             }
 	;
 
@@ -1647,14 +1658,27 @@ designation
             { $$ = $1; };
         ;
 
+/* a designator list like [2].x should come out as
+ * ARRAYREF( METHODREF (NULL, x), 2 )
+ */
+
 designator_list
         : designator
+            { $$ = $1; }
         | designator_list designator
+            {
+                AST *upper = $1;
+                AST *lower = $2;
+                upper->left = lower;
+                $$ = upper;
+            }
         ;
 
 designator
          : '[' constant_expression ']'
+            { $$ = NewAST(AST_ARRAYREF, NULL, $2); }
          | '.' any_identifier
+            { $$ = NewAST(AST_METHODREF, NULL, $2); }
          ;
 
 statement
