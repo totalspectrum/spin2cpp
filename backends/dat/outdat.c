@@ -411,6 +411,20 @@ FixupInitList(AST *type, AST *initval)
             ERROR(NULL, "out of memory");
             return 0;
         }
+        /* if the first element is not an initializer list, then
+           assume we've got a flat initializer like
+             int a[2][2] = { 1, 2, 3, 4 }
+        */
+        if (IsArrayType(type) && initval->left && initval->left->kind != AST_EXPRLIST) {
+            while (type && IsArrayType(type)) {
+                int subsize = elemsize;
+                int subelems;
+                type = RemoveTypeModifiers(BaseType(type));
+                elemsize = TypeSize(type);
+                subelems = subsize / elemsize;
+                numelems *= subelems;
+            }
+        }
         curelem = 0;
         while (initval) {
             AST *val = initval;
@@ -435,7 +449,9 @@ FixupInitList(AST *type, AST *initval)
                 }
             }
             if (astarr[curelem]) {
-                ERROR(val, "Duplicate definition for element %d of array", curelem);
+                // C99 says the last definition applies, so this probably isn't
+                // an error
+                WARNING(val, "Duplicate definition for element %d of array", curelem);
             }
             astarr[curelem] = val;
             curelem++;
@@ -542,14 +558,15 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
-    initval = FixupInitList(type, initval);
-    
     AlignPc(f, typealign);
     if (!initval) {
         // just fill with 0s
         outputInitList(f, elemsize, initval, numelems, relocs, type);
         return;
     }
+
+    initval = FixupInitList(type, initval);
+    
     switch(type->kind) {
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -563,7 +580,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         elemsize = TypeSize(type);
         numelems = typesize / elemsize;
         if (initval->kind != AST_EXPRLIST) {
-            initval = NewAST(AST_EXPRLIST, initval, NULL);
+            ERROR(initval, "Internal compiler error, expected initializer list");
+            break;
         }
         while (numelems > 0 && initval) {
             --numelems;
@@ -593,7 +611,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
             if (initval) initval = initval->right;
         }
         if (initval) {
-            ERROR(initval, "too many initializers");
+            WARNING(initval, "too many initializers");
         }
         // objects are padded to a long boundary
         AlignPc(f, LONG_SIZE);
