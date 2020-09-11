@@ -432,8 +432,10 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         AST *elem;
         subtype = type->left;
         if (initializer->kind != AST_EXPRLIST) {
-            ERROR(initializer, "wrong kind of initializer for array type");
-            return;
+            /* could be a raw list */
+            while (IsArrayType(subtype)) {
+                subtype = BaseType(subtype);
+            }
         }
         for (elem = initializer; elem; elem = elem->right) {
             fixupInitializer(P, elem->left, subtype);
