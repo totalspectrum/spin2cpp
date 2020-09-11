@@ -4,6 +4,7 @@
 #include <compiler.h>
 #include <sys/types.h>
 #include <sys/limits.h>
+#include <unistd.h>
 
 #ifndef EOF
 #define EOF (-1)
@@ -55,6 +56,9 @@ void clearerr(FILE *f) _IMPL("libc/stdio/clearerr.c");
 void perror(const char *s) _IMPL("libc/string/strerror.c");
 
 int fileno(FILE *f) _IMPL("libc/stdio/fileno.c");
+
+int  fseek(FILE *f, long offset, int whence) _IMPL("libc/stdio/fseek.c");
+long ftell(FILE *f)                          _IMPL("libc/stdio/fseek.c");
 
 #if defined(__FLEXC__) && !defined(_NO_BUILTIN_PRINTF)
 // FLEXC can optimize printf

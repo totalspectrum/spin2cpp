@@ -1,6 +1,7 @@
 Version 4.3.2
 - Added simplified designated initializers (like { .x=1 }) for structs and arrays
 - Added float_t and double_t to math.h
+- Added fseek() and ftell() stdio functions
 - Fixed a hang due to multiply processing modules
 - Fixed djnz out of range on P2
 - Fixed \0 inside C strings
