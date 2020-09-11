@@ -369,6 +369,41 @@ AlignPc(Flexbuf *f, int size)
         }
 }
 
+/* pull a single element of type "type" out of a list, and update that list */
+/* needs to be able to handle nested arrays, so if "type" is an array type then
+ * call recursively
+ */
+AST *PullElement(AST *type, AST **rawlist_ptr)
+{
+    AST *item = NULL;
+    AST *rawlist = *rawlist_ptr;
+    if (IsArrayType(type)) {
+        int numelems;
+        int elemsize;
+        int i;
+        int typesize = TypeSize(type);
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (!numelems) {
+            return NULL;
+        }
+        for (i = 0; i < numelems; i++) {
+            item = AddToList(item, PullElement(type, rawlist_ptr));
+        }
+        return item;
+    }
+    if (rawlist) {
+        item = rawlist->left;
+        rawlist = rawlist->right;
+    } else {
+        item = AstInteger(0);
+    }
+    *rawlist_ptr = rawlist;
+    return item;
+}
+
+
 /* fix up an initializer list of a given type */
 /* creates an array containing the initializer expressions;
  * each of these may in turn be an array of initializers
@@ -413,16 +448,17 @@ FixupInitList(AST *type, AST *initval)
         }
         /* if the first element is not an initializer list, then
            assume we've got a flat initializer like
-             int a[2][2] = { 1, 2, 3, 4 }
+             int a[2][3] = { 1, 2, 3, 4, 5, 6 }
+           we need to conver this to { {1, 2, 3}, {4, 5, 6} }
         */
         if (IsArrayType(type) && initval->left && initval->left->kind != AST_EXPRLIST) {
-            while (type && IsArrayType(type)) {
-                int subsize = elemsize;
-                int subelems;
-                type = RemoveTypeModifiers(BaseType(type));
-                elemsize = TypeSize(type);
-                subelems = subsize / elemsize;
-                numelems *= subelems;
+            AST *rawlist = initval;
+            AST *item;
+            int i;
+            initval = NULL;
+            for (i = 0; i < numelems; i++) {
+                item = PullElement(type, &rawlist);
+                initval = AddToList(initval, item);
             }
         }
         curelem = 0;
