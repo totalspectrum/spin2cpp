@@ -479,6 +479,7 @@ FixupInitList(AST *type, AST *initval)
             initval = NULL;
             for (i = 0; i < numelems; i++) {
                 item = PullElement(type, &rawlist);
+                item = NewAST(AST_EXPRLIST, item, NULL);
                 initval = AddToList(initval, item);
             }
         }
