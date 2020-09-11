@@ -23,13 +23,29 @@ An incomplete list of things that still need to be implemented:
 
 There are several known bugs and deviations from the C standard:
 
-(1) Name Spaces
+#### Name Spaces
 
 The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
 
-(2) Doubles
+#### Doubles
 
 The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
+
+#### Designated initializers
+
+C99 desginated initializers are supported only in their simplest form, that is, for only one level of initializer. So for example a statement like:
+```
+  struct point c = { .x = 1, .y = 2 };
+```
+will work, but a designated initializer for a sub structure field like:
+```
+  struct person p = { .address.streetnum = 10 };
+```
+will not work: the double levels of ".address.streetnum" will fail.
+
+#### Union initializers
+
+Union initializers are not properly implemented yet.
 
 ## Preprocessor
 
