@@ -43,10 +43,6 @@ will work, but a designated initializer for a sub structure field like:
 ```
 will not work: the double levels of ".address.streetnum" will fail.
 
-#### Union initializers
-
-Union initializers are not properly implemented yet.
-
 ## Preprocessor
 
 Flex C uses the open source mcpp preprocessor (originally from mcpp.sourceforge.net), which is a very well respected and standards compliant preprocessor.

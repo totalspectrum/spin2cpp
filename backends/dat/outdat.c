@@ -519,6 +519,7 @@ FixupInitList(AST *type, AST *initval)
     case AST_OBJECT:
     {
         Module *P = GetClassPtr(type);
+        int is_union = P->isUnion;
         AST *varlist = P->finalvarblock;
         if (initval && initval->kind != AST_EXPRLIST) {
             initval = NewAST(AST_EXPRLIST, initval, NULL);
@@ -527,7 +528,7 @@ FixupInitList(AST *type, AST *initval)
         if (!varlist) {
             return NULL;
         }
-        if (P->isUnion) {
+        if (is_union) {
             numelems = 1;
         } else {
             while (varlist) {
@@ -566,7 +567,13 @@ FixupInitList(AST *type, AST *initval)
                 }
                 val->left = newval;
             }
-            //subtype = ExprType(varlist->left);
+            if (is_union) {
+                curelem = 0;
+            }
+            if (is_union) {
+                AST *subtype = ExprType(varlist->left);
+                val->left = NewAST(AST_CAST, subtype, val->left);
+            }
             if (curelem < numelems) {
                 astarr[curelem] = val;
                 curelem++;
@@ -674,6 +681,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     int numelems;
     AST *varlist;
     Module *P;
+    int is_union = 0;
     
     type = RemoveTypeModifiers(type);
     typealign = TypeAlign(type);
@@ -720,6 +728,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     
     case AST_OBJECT:
         P = GetClassPtr(type);
+        is_union = P->isUnion;
         varlist = P->finalvarblock;
         if (initval->kind != AST_EXPRLIST) {
             initval = NewAST(AST_EXPRLIST, initval, NULL);
@@ -727,10 +736,23 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         while (varlist) {
             AST *subtype;
             AST *subinit = initval ? initval->left : NULL;
-            subtype = ExprType(varlist->left);
+            if (is_union) {
+                if (subinit->kind != AST_CAST) {
+                    ERROR(subinit, "Internal error, expected cast for union");
+                    subtype = ExprType(varlist->left);
+                } else {
+                    subtype = subinit->left;
+                    subinit = subinit->right;
+                }
+            } else {
+                subtype = ExprType(varlist->left);
+            }
             outputInitializer(f, subtype, subinit, relocs);
             varlist = varlist->right;
             if (initval) initval = initval->right;
+            if (is_union) {
+                break;
+            }
         }
         if (initval) {
             WARNING(initval, "too many initializers");
