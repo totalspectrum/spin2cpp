@@ -1,3 +1,8 @@
+/* simple fopen implementation */
+/* written by Eric R. Smith, Total Spectrum Software Inc.
+ * and dedicated to the public domain
+ */
+
 //#define DEBUG
 
 #include <sys/types.h>
