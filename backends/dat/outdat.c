@@ -399,10 +399,31 @@ AST *PullElement(AST *type, AST **rawlist_ptr)
     } else {
         item = AstInteger(0);
     }
+    item = NewAST(AST_EXPRLIST, item, NULL);
     *rawlist_ptr = rawlist;
     return item;
 }
 
+/* find identifier "ident" in variable list "list" */
+/* if curptr != NULL, set it to the index */
+AST *FindMethodInList(AST *list, AST *ident, int *curptr)
+{
+    int curelem = 0;
+    if (!IsIdentifier(ident)) {
+        ERROR(ident, "Expected identifier");
+        return NULL;
+    }
+    while (list) {
+        if (AstUses(list->left, ident)) {
+            break;
+        }
+        list = list->right;
+        curelem++;
+    }
+    if (!list) return NULL;
+    if (curptr) *curptr = curelem;
+    return list;
+}
 
 /* fix up an initializer list of a given type */
 /* creates an array containing the initializer expressions;
@@ -492,20 +513,84 @@ FixupInitList(AST *type, AST *initval)
             astarr[curelem] = val;
             curelem++;
         }
-        for (curelem = 0; curelem < numelems; curelem++) {
-            if (!astarr[curelem]) {
-                astarr[curelem] = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+        break;
+    }
+    case AST_OBJECT:
+    {
+        Module *P = GetClassPtr(type);
+        AST *varlist = P->finalvarblock;
+        if (initval && initval->kind != AST_EXPRLIST) {
+            initval = NewAST(AST_EXPRLIST, initval, NULL);
+        }
+        numelems = 0;
+        if (!varlist) {
+            return NULL;
+        }
+        if (P->isUnion) {
+            numelems = 1;
+        } else {
+            while (varlist) {
+                numelems++;
+                varlist = varlist->right;
+            }
+            varlist = P->finalvarblock;
+        }
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        /* now pull out the initializers */
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_METHODREF) {
+                    ERROR(fixup, "initialization designator for struct is not a method reference");
+                    newval = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    newval = AstInteger(0);
+                } else {
+                    varlist = FindMethodInList(P->finalvarblock, fixup->right, &curelem);
+                    if (!varlist) {
+                        ERROR(fixup, "%s not found in struct", GetUserIdentifierName(fixup->right));
+                        break;
+                    }
+                }
+                val->left = newval;
+            }
+            //subtype = ExprType(varlist->left);
+            if (curelem < numelems) {
+                astarr[curelem] = val;
+                curelem++;
+                varlist = varlist->right;
+            } else {
+                WARNING(val, "ignoring excess element in initializer");
             }
         }
-        initval = astarr[0];
-        for (curelem = 0; curelem < numelems-1; curelem++) {
-            astarr[curelem]->right = astarr[curelem+1];
-        }
-        return initval;
+        break;
     }
     default:
         return initval;
     }
+
+    for (curelem = 0; curelem < numelems; curelem++) {
+        if (!astarr[curelem]) {
+            astarr[curelem] = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+        }
+    }
+    initval = astarr[0];
+    for (curelem = 0; curelem < numelems-1; curelem++) {
+        astarr[curelem]->right = astarr[curelem+1];
+    }
+    free(astarr);
+    return initval;
 }
 
 /* output a single data item element */
@@ -615,7 +700,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         type = RemoveTypeModifiers(BaseType(type));
         elemsize = TypeSize(type);
         numelems = typesize / elemsize;
-        if (initval->kind != AST_EXPRLIST) {
+        if (initval && initval->kind != AST_EXPRLIST) {
             ERROR(initval, "Internal compiler error, expected initializer list");
             break;
         }
