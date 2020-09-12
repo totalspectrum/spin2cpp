@@ -39,6 +39,8 @@ Operand *NewHubLabel();
 Operand *CogMemRef(Operand *addr, int offset);
 void FreeTempRegisters(IRList *irl, int starttempreg);
 
+char *OffsetName(const char *basename, unsigned long offset);
+
 // utility functions
 IRCond InvertCond(IRCond v);
 
