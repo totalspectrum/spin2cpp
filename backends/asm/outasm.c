@@ -1507,8 +1507,12 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->dst = update;
             } else if (ir->dst && ir->dst->kind == COGMEM_REF && ir->dst->name == (char *)old) {
                 ir->dst->name = (char *)update;
+            } else if (old->kind == REG_SUBREG || ir->dst->kind == REG_SUBREG) {
+                if (old->kind == ir->dst->kind && old->name == ir->dst->name && old->val == ir->dst->val) {
+                    ir->dst = update;
+                }
             } else if (IsCogMem(ir->dst) && !strcmp(ir->dst->name, old->name)) {
-                ir->dst = update;
+                ir->dst->name = update->name;
             }
         }
         if (ir->src) {
@@ -1516,8 +1520,12 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->src = update;
             } else if (ir->src->kind == COGMEM_REF && ir->src->name == (char *)old) {
                 ir->src->name = (char *)update;
+            } else if (old->kind == REG_SUBREG || ir->src->kind == REG_SUBREG) {
+                if (old->kind == ir->src->kind && old->name == ir->src->name && old->val == ir->src->val) {
+                    ir->src = update;
+                }
             } else if (IsCogMem(ir->src) && !strcmp(ir->src->name, old->name)) {
-                ir->src = update;
+                ir->src->name = update->name;
             }
         }
         ir = ir->next;

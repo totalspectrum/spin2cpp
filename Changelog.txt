@@ -6,6 +6,7 @@ Version 4.3.2
 - Fixed djnz out of range on P2
 - Fixed \0 inside C strings
 - Fixed x[n].method() type calls in Spin2
+- Fixed some bugs in structure passing/return
 - Improved warnings about missing #
 - Made SEND pointer per-COG
 - Reduced the delay for SD card communication to speed up FatFs
