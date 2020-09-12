@@ -1356,6 +1356,7 @@ GetTopLevelModule(void)
 
 int TypeGoesOnStack(AST *typ)
 {
+    AST *subtyp;
     if (!typ) return 0;
     typ = RemoveTypeModifiers(typ);
     if (TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
@@ -1363,6 +1364,11 @@ int TypeGoesOnStack(AST *typ)
     }
     switch (typ->kind) {
     case AST_ARRAYTYPE:
+        /* array of longs only are OK */
+        subtyp = BaseType(typ);
+        if (!subtyp || TypeSize(subtyp) == 4) {
+            return 0;
+        }
         return 1;
     case AST_OBJECT:
     {
