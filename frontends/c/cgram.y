@@ -958,11 +958,32 @@ postfix_expression
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
         | '(' type_name ')' '{' initializer_list '}'
             {
-                /* maybe treat this like { type_name t = initializer_list; t; } */
-                SYNTAX_ERROR("inline struct expressions not supported yet");
+                /* treat this like ({ type_name t = initializer_list; t; }) */
+                AST *typ = $2;
+                AST *initlist = $5;
+                AST *id = AstTempIdentifier("_initval_");
+
+                AST *decl = AstAssign(id, initlist);
+                AST *stmt;
+
+                DeclareOneGlobalVar(current, decl, typ, IN_DAT);
+                stmt = NewAST(AST_STMTLIST, id, NULL);
+                $$ = stmt;
             }
         | '(' type_name ')' '{' initializer_list ',' '}'
-            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
+            {
+                /* treat this like ({ type_name t = initializer_list; t; }) */
+                AST *typ = $2;
+                AST *initlist = $5;
+                AST *id = AstTempIdentifier("_initval_");
+
+                AST *decl = AstAssign(id, initlist);
+                AST *stmt;
+
+                DeclareOneGlobalVar(current, decl, typ, IN_DAT);
+                stmt = NewAST(AST_STMTLIST, id, NULL);
+                $$ = stmt;
+            }
 	;
 
 argument_expression_list
