@@ -179,13 +179,21 @@ static char *cleanname(const char *name)
     return temp;
 }
 
-static char *
+char *
 OffsetName(const char *basename, unsigned long offset)
 {
     size_t len = strlen(basename) + 5;
     char *tempname = calloc(1, len);
-    sprintf(tempname, "%s_%02lu", basename, (unsigned long)offset / LONG_SIZE);
+    sprintf(tempname, "%s_%02lu", basename, offset);
     return tempname;
+}
+
+static Operand *
+SubRegister(Operand *reg, unsigned long offset)
+{
+    Operand *sub = NewOperand(REG_SUBREG, (char *)reg, 0);
+    sub->val = offset / LONG_SIZE;
+    return sub;
 }
 
 static Operand *
@@ -1500,7 +1508,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
             } else if (ir->dst && ir->dst->kind == COGMEM_REF && ir->dst->name == (char *)old) {
                 ir->dst->name = (char *)update;
             } else if (IsCogMem(ir->dst) && !strcmp(ir->dst->name, old->name)) {
-                ir->dst->name = update->name;
+                ir->dst = update;
             }
         }
         if (ir->src) {
@@ -1509,7 +1517,7 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
             } else if (ir->src->kind == COGMEM_REF && ir->src->name == (char *)old) {
                 ir->src->name = (char *)update;
             } else if (IsCogMem(ir->src) && !strcmp(ir->src->name, old->name)) {
-                ir->src->name = update->name;
+                ir->src = update;
             }
         }
         ir = ir->next;
@@ -2979,6 +2987,7 @@ IsCogMem(Operand *addr)
     case REG_TEMP:
     case REG_LOCAL:
     case REG_ARG:
+    case REG_SUBREG:
         return true;
     case IMM_HUB_LABEL:
     case IMM_STRING:
@@ -3014,10 +3023,16 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     int idx;
     int shift;
     int siz;
-    
+
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
+        long offval = offset->val;
+        
+        if (base->kind == REG_SUBREG) {
+            offval += base->val * LONG_SIZE;
+            base = (Operand *)base;
+        }
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
@@ -3027,13 +3042,11 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
 #if 1      
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
-                char *tempname;
                 base->used = 1;
-                if (offset->val == 0) {
+                if (offval == 0) {
                     return base;
                 }
-                tempname = OffsetName(base->name, offset->val);
-                return NewOperand(REG_REG, tempname, 0);
+                return SubRegister(base, offval);
             }
 #endif            
             base->used = 1;
@@ -3090,6 +3103,11 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
+        long offval = offset->val * siz;
+        if (base->kind == REG_SUBREG) {
+            offval += base->val * LONG_SIZE;
+            base = (Operand *)base->name;
+        }
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
@@ -3099,13 +3117,11 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
 #if 1      
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
-                char *tempname;
                 base->used = 1;
-                if (offset->val == 0) {
+                if (offval == 0) {
                     return base;
                 }
-                tempname = OffsetName(base->name, offset->val * siz);
-                return NewOperand(REG_REG, tempname, 0);
+                return SubRegister(base, offval);
             }
 #endif            
             base->used = 1;
@@ -3253,6 +3269,12 @@ GetLea(IRList *irl, Operand *src)
     // check for COG memory references
     if (!IsMemRef(src) && IsCogMem(src)) {
         Operand *addr;
+        long offset = 0;
+        if (src->kind == REG_SUBREG) {
+            addr = (Operand *)src->name;
+            offset = src->val;
+            return NewOperand(IMM_COG_LABEL, OffsetName(addr->name, offset / LONG_SIZE), 0);
+        }
         switch(src->kind) {
         case IMM_COG_LABEL:
             return src;
@@ -3262,8 +3284,9 @@ GetLea(IRList *irl, Operand *src)
         case REG_ARG:
         case REG_HW:
             src->used = 1;
-            addr = NewOperand(IMM_COG_LABEL, src->name, 0);
+            addr = NewOperand(IMM_COG_LABEL, src->name, offset);
             return addr;
+
         default:
             break;
         }
@@ -4823,7 +4846,7 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
                   char *label;
                   EmitReserve(bssirl, 1, COG_RESERVE);
                   for (n = 1; n < varsize; n++) {
-                      label = OffsetName(g[i].op->name, n * LONG_SIZE);
+                      label = OffsetName(g[i].op->name, n);
                       EmitNamedCogLabel(bssirl, label);
                       EmitReserve(bssirl, 1, COG_RESERVE);
                   }

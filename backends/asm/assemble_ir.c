@@ -106,6 +106,7 @@ static void
 doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect effect)
 {
     char temp[128];
+    const char *regname;
     int usehubaddr;
     int useabsaddr;
 
@@ -202,11 +203,11 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         flexbuf_addstr(fb, RemappedName(reg->name));
         break;
     default:
-        /* fall through */
-        if (!useabsaddr) {
+         if (!useabsaddr) {
             useimm = 0;
         }
-    case IMM_COG_LABEL:
+        /* fall through */
+   case IMM_COG_LABEL:
         if (useimm) {
             flexbuf_addstr(fb, "#");
             if (useabsaddr) {
@@ -221,7 +222,12 @@ doPrintOperand(struct flexbuf *fb, Operand *reg, int useimm, enum OperandEffect 
         } else if (effect == OPEFFECT_PREDEC) {
             flexbuf_printf(fb, "--");
         }
-        flexbuf_addstr(fb, RemappedName(reg->name));
+        if (reg->kind == REG_SUBREG) {
+            regname = OffsetName( ((Operand *)reg->name)->name, reg->val );
+        } else {
+            regname = reg->name;
+        }
+        flexbuf_addstr(fb, RemappedName(regname));
         if ( (reg->kind == REG_HW || reg->kind == IMM_COG_LABEL) && reg->val != 0) {
             flexbuf_printf(fb, " + %d", reg->val);
         }
