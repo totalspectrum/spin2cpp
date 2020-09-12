@@ -98,6 +98,7 @@ static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 static Operand *CompileFunccallFirstResult(IRList *irl, AST *expr);
 static OperandList *CompileFunccall(IRList *irl, AST *expr);
+static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
@@ -2940,6 +2941,18 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     OperandList *opList, *ptr ;
     Operand *r = NULL;
 
+    // compile out statement lists
+    while (rhs && rhs->kind == AST_STMTLIST) {
+        // OK, this is slightly tricky, we have to chase the sequence
+        // down, compiling the parts, until we get to the final
+        // function call
+        if (rhs->right) {
+            CompileStatement(irl, rhs->left);
+            rhs = rhs->right;
+        } else {
+            rhs = rhs->left;
+        }
+    }
     while (rhs && rhs->kind == AST_SEQUENCE) {
         // OK, this is slightly tricky, we have to chase the sequence
         // down, compiling the parts, until we get to the final
@@ -3667,8 +3680,6 @@ EvalStringConst(AST *expr)
         }
     }
 }
-
-static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)

@@ -2594,6 +2594,18 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         }
         return ExprTypeRelative(table, expr, P);
     }
+    case AST_STMTLIST:
+    {
+        // find the last item in the statement list
+        while (expr && expr->kind == AST_STMTLIST) {
+            if (expr->right) {
+                expr = expr->right;
+            } else {
+                expr = expr->left;
+            }
+        }
+        return ExprTypeRelative(table, expr, P);
+    }
     case AST_NEW:
         return expr->left;
     case AST_SIZEOF:
