@@ -957,7 +957,10 @@ postfix_expression
 	| postfix_expression C_DEC_OP
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
         | '(' type_name ')' '{' initializer_list '}'
-            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
+            {
+                /* maybe treat this like { type_name t = initializer_list; t; } */
+                SYNTAX_ERROR("inline struct expressions not supported yet");
+            }
         | '(' type_name ')' '{' initializer_list ',' '}'
             {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
 	;
