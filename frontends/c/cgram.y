@@ -570,11 +570,11 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         sprintf(buf, "_anon_%08x%08x", hash, current->Lptr->lineCounter);
         identifier = AstIdentifier(strdup(buf));
     }
-    if (identifier->kind != AST_IDENTIFIER) {
+    if (!IsIdentifier(identifier)) {
         ERROR(identifier, "internal error: bad struct def");
         return NULL;
     }
-    name = identifier->d.string;
+    name = GetIdentifierName(identifier);
     typname = (char *)malloc(strlen(name)+strlen(classname)+16);
     strcpy(typname, classname);
     strcat(typname, "__struct_");
