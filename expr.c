@@ -2951,16 +2951,32 @@ CleanupType(AST *typ)
 // "typ" is the object type
 //
 AST *
-BuildExprlistFromObject(AST *expr, AST *typ)
+BuildExprlistFromObject(AST *origexpr, AST *typ)
 {
     AST *exprlist = NULL;
     AST *temp;
     Module *P;
     Symbol *sym;
     ASTReportInfo saveinfo;
+    AST *expr = origexpr;
+    AST **exprptr = NULL;
     
     int i;
     int n;
+
+    /* chase down any expression statements */
+    while ((expr->kind == AST_STMTLIST) || (expr->kind == AST_SEQUENCE)) {
+        if (expr->right) {
+            exprptr = &expr->right;
+        } else {
+            exprptr = &expr->left;
+        }
+        expr = *exprptr;
+    }
+    if (!expr || expr->kind == AST_EXPRLIST) {
+        /* already an expression list */
+        return expr;
+    }
     exprlist = NULL;
     if (!IsClassType(typ)) {
         return expr;
@@ -2980,5 +2996,9 @@ BuildExprlistFromObject(AST *expr, AST *typ)
         exprlist = AddToList(exprlist, temp);
     }
     AstReportDone(&saveinfo);
+    if (exprptr) {
+        *exprptr = exprlist;
+        return origexpr;
+    }
     return exprlist;
 }
