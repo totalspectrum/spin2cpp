@@ -99,6 +99,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     {
         expr = expr->left;
     }
+
     if (expr->kind == AST_LOCAL_IDENTIFIER || expr->kind == AST_IDENTIFIER || expr->kind == AST_RESULT) {
         Symbol *sym;
         const char *name;
@@ -248,11 +249,26 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
         /* handle $+x / $-x */
         if (expr->d.ival == '+' || expr->d.ival == '-') {
             int sign = expr->d.ival == '-' ? -1 : +1;
+
+            // move constant part to rhs
+            if (sign > 0 && IsConstExpr(expr->left)) {
+                AST *tmp = expr->left;
+                expr->left = expr->right;
+                expr->right = tmp;
+            }
             if (expr->left && expr->left->kind == AST_HERE) {
                 if (expr->right && IsConstExpr(expr->right)) {
                     v = sign * EvalPasmExpr(expr->right);
                     return NewPcRelative(v);
                 }
+            }
+            // handle a+n where a is an array
+            if (expr->left && expr->left->kind == AST_ARRAYREF && IsConstExpr(expr->left->right) && IsConstExpr(expr->right)) {
+                int offset = EvalConstExpr(expr->left->right);
+                offset = offset + sign * EvalConstExpr(expr->right);
+                r = CompileInlineOperand(irl, expr->left->left, effects, 0);
+                r = SubRegister(r, offset * LONG_SIZE);
+                return r;
             }
         }
         if (IsConstExpr(expr)) {

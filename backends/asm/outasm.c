@@ -189,7 +189,7 @@ OffsetName(const char *basename, unsigned long offset)
     return tempname;
 }
 
-static Operand *
+Operand *
 SubRegister(Operand *reg, unsigned long offset)
 {
     Operand *sub = NewOperand(REG_SUBREG, (char *)reg, 0);
