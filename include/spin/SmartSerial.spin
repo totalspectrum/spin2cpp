@@ -2,6 +2,25 @@
 ' SmartSerial.spin2
 ' simple smart pin serial object for P2 eval board
 ' implements a subset of FullDuplexSerial functionality
+' This version uses some fastspin features, so it will not
+' work on PNut.
+'
+' Written by Eric R. Smith
+' Copyright 2020 Total Spectrum Software Inc.
+' Distributed under the MIT License (See LICENSE.md)
+'
+' methods:
+' start(baud):
+'   start serial on pins 63 and 62 at given baud rate
+' startx(rxpin, txpin, flags, baud):
+'   start on pins rxpin,txpin and given baud rate; `flags` is ignored
+' tx(c)
+'   send character `c` (must call start or startx first)
+' rxcheck()
+'   see if a character is available; returns -1 if no character, otherwise
+'   returns the character
+' rx()
+'   waits for a character to become available, then returns it
 '
 con
   _txmode       = %0000_0000_000_0000000000000_01_11110_0 'async tx mode, output enabled for smart output
@@ -10,13 +29,25 @@ con
 var
   long rx_pin, tx_pin
 
-'' if baudrate of -1 is given, auto baud detection is employed
+'' There are two ways we might call start():
+'' start(rxpin, txpin, mode, baudrate) - FullDuplexSerial way
+'' start(baud)                         - PST way
+''
+'' fastspin can handle this by giving default parameter values;
+'' if a "txpin" of -1 is detected, then we assume the second way
+'' was called
+''
 
-pub start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
-  if baudrate == -1
-    bitperiod := autobaud(rxpin)
-  else
-    bitperiod := (clkfreq / baudrate)
+pub start(rxpin, txpin=-1, mode=0, baudrate=230400)
+  if txpin == -1
+     baudrate := rxpin
+     rxpin := 63
+     txpin := 62
+     
+  startx(rxpin, txpin, mode, baudrate)
+
+pub startx(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
+  bitperiod := (clkfreq / baudrate)
 
   ' save parameters in the object
   rx_pin := rxpin
@@ -37,53 +68,7 @@ pub start(rxpin, txpin, mode, baudrate) | bitperiod, bit_mode
   wxpin(rxpin, bit_mode)
   pinl(rxpin)  ' turn smartpin on
 
-
-pri autobaud(pin) | a, b, c, delay, port, mask
-  pinf(pin)   ' set pin as input
-  waitx(1000) ' wait to settle
-  if pin => 32
-    port := 1
-    mask := 1<<(pin-32)
-  else
-    port := 0
-    mask := 1<<pin
-
-  ' code for detecting HI->LO->HI->LO transition
-  ' we time the length of the first 1 bit sequence in the character,
-  ' then the next 0 bit sequence
-  ' we assume one of these is the correct length
-  ' this works if the character sent is space ($20), which has 1 bit high
-  ' or CR ($0d) which has 1 bit low after the high bit
-  '
-  org
-    test port, #1 wc	' set C to distinguish INA/OUTA
-    test port, #2 wz    ' set Z (match on =)
-
-    setpat mask, #0	' wait for pin lo (start bit)
-    waitpat
-    setpat mask, mask	' wait for pin hi (first 1)
-    waitpat
-    getct a
-    setpat mask, #0	' wait for pin lo again (following 0)
-    waitpat
-    getct b
-    setpat mask,mask	' wait for pin hi again (end of 0 sequence)
-    waitpat
-    getct c
-  end
-  delay := b - a	' length of first 1 bit sequence
-  c := c - b            ' length of following 0
-  if c < delay
-    delay := c
-
-  ' now want to wait for idle
-  waitx(16*delay)
-  return delay
-  
-' start with default serial pins and mode
-pub start_default(baudrate)
-  return start(63, 62, 0, baudrate)
-  
+' transmit the 8 bit value "val"
 pub tx(val)
   wypin(tx_pin, val)
   txflush
@@ -107,7 +92,7 @@ pub rxcheck() : rxbyte | rxpin, z
 ' receive a byte (waits until one ready)
 pub rx() : v
   repeat
-    v := rxcheck
+    v := rxcheck()
   while v == -1
 
 
