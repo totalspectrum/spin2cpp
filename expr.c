@@ -3002,3 +3002,235 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
     }
     return exprlist;
 }
+
+/* pull a single element of type "type" out of a list, and update that list */
+/* needs to be able to handle nested arrays, so if "type" is an array type then
+ * call recursively
+ */
+AST *PullElement(AST *type, AST **rawlist_ptr)
+{
+    AST *item = NULL;
+    AST *rawlist = *rawlist_ptr;
+    if (IsArrayType(type)) {
+        int numelems;
+        int elemsize;
+        int i;
+        int typesize = TypeSize(type);
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (!numelems) {
+            return NULL;
+        }
+        for (i = 0; i < numelems; i++) {
+            item = AddToList(item, PullElement(type, rawlist_ptr));
+        }
+        return item;
+    }
+    if (rawlist) {
+        item = rawlist->left;
+        rawlist = rawlist->right;
+    } else {
+        item = AstInteger(0);
+    }
+    item = NewAST(AST_EXPRLIST, item, NULL);
+    *rawlist_ptr = rawlist;
+    return item;
+}
+
+/* find identifier "ident" in variable list "list" */
+/* if curptr != NULL, set it to the index */
+AST *FindMethodInList(AST *list, AST *ident, int *curptr)
+{
+    int curelem = 0;
+    if (!IsIdentifier(ident)) {
+        ERROR(ident, "Expected identifier");
+        return NULL;
+    }
+    while (list) {
+        if (AstUses(list->left, ident)) {
+            break;
+        }
+        list = list->right;
+        curelem++;
+    }
+    if (!list) return NULL;
+    if (curptr) *curptr = curelem;
+    return list;
+}
+
+/* fix up an initializer list of a given type */
+/* creates an array containing the initializer expressions;
+ * each of these may in turn be an array of initializers
+ * returns an EXPRLIST containing the items
+ */
+AST *
+FixupInitList(AST *type, AST *initval)
+{
+    int elemsize;
+    int typesize;
+    int numelems;
+    AST **astarr = 0;
+    int curelem;
+    
+    if (!initval) {
+        return initval;
+    }
+    type = RemoveTypeModifiers(type);
+    //typealign = TypeAlign(type);
+    elemsize = typesize = TypeSize(type);
+    numelems  = 1;
+
+    if (initval->kind != AST_EXPRLIST) {
+        initval = NewAST(AST_EXPRLIST, initval, NULL);
+    }
+    
+    type = RemoveTypeModifiers(type);
+    switch(type->kind) {
+    case AST_ARRAYTYPE:
+    {
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (!numelems) {
+            WARNING(initval, "empty array cannot be initialized");
+            return 0;
+        }
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        /* if the first element is not an initializer list, then
+           assume we've got a flat initializer like
+             int a[2][3] = { 1, 2, 3, 4, 5, 6 }
+           we need to conver this to { {1, 2, 3}, {4, 5, 6} }
+        */
+        if (IsArrayType(type) && initval->left && initval->left->kind != AST_EXPRLIST) {
+            AST *rawlist = initval;
+            AST *item;
+            int i;
+            initval = NULL;
+            for (i = 0; i < numelems; i++) {
+                item = PullElement(type, &rawlist);
+                item = NewAST(AST_EXPRLIST, item, NULL);
+                initval = AddToList(initval, item);
+            }
+        }
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_ARRAYREF) {
+                    ERROR(fixup, "initialization designator for array is not an array element");
+                    val->left = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    val->left = AstInteger(0);
+                } else if (!IsConstExpr(fixup->right)) {
+                    ERROR(fixup, "initialization designator for array is not constant");
+                    val->left = AstInteger(0);
+                } else {
+                    curelem = EvalConstExpr(fixup->right);
+                    val->left = newval;
+                }
+            }
+            if (astarr[curelem]) {
+                // C99 says the last definition applies, so this probably isn't
+                // an error
+                WARNING(val, "Duplicate definition for element %d of array", curelem);
+            }
+            astarr[curelem] = val;
+            curelem++;
+        }
+        break;
+    }
+    case AST_OBJECT:
+    {
+        Module *P = GetClassPtr(type);
+        int is_union = P->isUnion;
+        AST *varlist = P->finalvarblock;
+        if (initval && initval->kind != AST_EXPRLIST) {
+            initval = NewAST(AST_EXPRLIST, initval, NULL);
+        }
+        numelems = 0;
+        if (!varlist) {
+            return NULL;
+        }
+        if (is_union) {
+            numelems = 1;
+        } else {
+            while (varlist) {
+                numelems++;
+                varlist = varlist->right;
+            }
+            varlist = P->finalvarblock;
+        }
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        /* now pull out the initializers */
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_METHODREF) {
+                    ERROR(fixup, "initialization designator for struct is not a method reference");
+                    newval = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    newval = AstInteger(0);
+                } else {
+                    varlist = FindMethodInList(P->finalvarblock, fixup->right, &curelem);
+                    if (!varlist) {
+                        ERROR(fixup, "%s not found in struct", GetUserIdentifierName(fixup->right));
+                        break;
+                    }
+                }
+                val->left = newval;
+            }
+            if (is_union) {
+                curelem = 0;
+            }
+            if (is_union) {
+                AST *subtype = ExprType(varlist->left);
+                val->left = NewAST(AST_CAST, subtype, val->left);
+            }
+            if (curelem < numelems) {
+                astarr[curelem] = val;
+                curelem++;
+                varlist = varlist->right;
+            } else {
+                WARNING(val, "ignoring excess element in initializer");
+            }
+        }
+        break;
+    }
+    default:
+        return initval;
+    }
+
+    for (curelem = 0; curelem < numelems; curelem++) {
+        if (!astarr[curelem]) {
+            astarr[curelem] = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+        }
+    }
+    initval = astarr[0];
+    for (curelem = 0; curelem < numelems-1; curelem++) {
+        astarr[curelem]->right = astarr[curelem+1];
+    }
+    free(astarr);
+    return initval;
+}

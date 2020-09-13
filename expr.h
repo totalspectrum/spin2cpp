@@ -130,4 +130,8 @@ AST *CleanupType(AST *typ);
 // build an expression list containing individual object member references
 AST *BuildExprlistFromObject(AST *expr, AST *typ);
 
+// fix up an initializer list of type "type"
+// handles designators like .x = n, and adds any missing 0's
+AST *FixupInitList(AST *typ, AST *initval);
+
 #endif

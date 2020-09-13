@@ -457,6 +457,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
         AstReportDone(&saveinfo);
         return seq;
     } else if (expr->kind == AST_EXPRLIST) {
+        expr = FixupInitList(basetype, expr);
         if (IsArrayType(basetype)) {
             if (!IsConstExpr(basetype->right)) {
                 ERROR(ident, "Variable length arrays not supported yet");
