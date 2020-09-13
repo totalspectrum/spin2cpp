@@ -31,6 +31,10 @@ The namespaces for types and variable names are not separated as they should be,
 
 The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
 
+#### long long
+
+The 64 bit integer type ("long long") is only partially implemented at this time, and does not work properly.
+
 #### Designated initializers
 
 C99 desginated initializers are supported only in their simplest form, that is, for only one level of initializer. So for example a statement like:
@@ -42,6 +46,14 @@ will work, but a designated initializer for a sub structure field like:
   struct person p = { .address.streetnum = 10 };
 ```
 will not work: the double levels of ".address.streetnum" will fail.
+
+#### Anonymous Structs and Unions
+
+Anonymous structs and unions (i.e. nested struct members without a name) are not supported.
+
+#### Variable sized arrays
+
+Variable sized arrays are not supported.
 
 ## Preprocessor
 
