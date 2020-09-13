@@ -78,7 +78,7 @@ TransformLongMove(AST **astptr, AST *ast)
     AST *assign;
     Symbol *syms, *symd;
     int srcoff, dstoff;
-    int n;
+    int i, n;
     SymbolTable *srctab, *dsttab;
     ASTReportInfo saveinfo;
     int srcarray = 0;
@@ -142,11 +142,11 @@ TransformLongMove(AST **astptr, AST *ast)
     srcoff = syms->offset;
     dstoff = symd->offset;
     sequence = NULL;
+    i = 0;
     for(;;) {
         AST *src_id = AstIdentifier(syms->our_name);
         AST *dst_id = AstIdentifier(symd->our_name);
         AST *src_tmp, *dst_tmp;
-        int i = 0;
         if (srcarray) {
             src_tmp = NewAST(AST_ARRAYREF, src_id, AstInteger(i));
         } else {
