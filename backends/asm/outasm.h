@@ -37,6 +37,7 @@ Operand *NewPcRelative(int32_t val);
 Operand *NewCodeLabel();  // use only while compiling a function
 Operand *NewHubLabel();
 Operand *CogMemRef(Operand *addr, int offset);
+Operand *SubRegister(Operand *reg, unsigned long offset);
 void FreeTempRegisters(IRList *irl, int starttempreg);
 
 char *OffsetName(const char *basename, unsigned long offset);
