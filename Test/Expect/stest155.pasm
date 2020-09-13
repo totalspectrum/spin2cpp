@@ -6,8 +6,8 @@ entry
 
 _ident
 	mov	result1, arg01
-	mov	_var01, arg02
-	mov	result2, _var01
+	mov	_var02, arg02
+	mov	result2, _var02
 _ident_ret
 	ret
 
@@ -30,6 +30,8 @@ _ident_x
 _ident_x_01
 	res	1
 _var01
+	res	1
+_var02
 	res	1
 arg01
 	res	1
