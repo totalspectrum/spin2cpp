@@ -193,6 +193,10 @@ static Operand *
 SubRegister(Operand *reg, unsigned long offset)
 {
     Operand *sub = NewOperand(REG_SUBREG, (char *)reg, 0);
+    if (reg->size < offset) {
+        reg->size = offset;
+    }
+    reg->used++;
     sub->val = offset / LONG_SIZE;
     return sub;
 }
@@ -1532,7 +1536,38 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
         ir = ir->next;
     }
     // now we can mark "old" as unused in the global variable table
-    old->used = 0;
+    if (old->used) {
+        --old->used;
+    }
+}
+
+static int
+RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
+{
+    int num = (base->size + LONG_SIZE) / LONG_SIZE;
+    IR *ir;
+    Operand *replace;
+    
+    replace = GetLocalReg(numlocals, isLeaf);
+    RenameOneReg(irl->head, base, replace);
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->dst && ir->dst->kind == REG_SUBREG && base == (Operand *)ir->dst->name) {
+            replace = GetLocalReg(numlocals + ir->dst->val, isLeaf);
+            RenameOneReg(ir, ir->dst, replace);
+            if (base->used > 0) {
+                base->used--;
+            }
+        }
+        if (ir->src && ir->src->kind == REG_SUBREG && base == (Operand *)ir->src->name) {
+            replace = GetLocalReg(numlocals + ir->src->val, isLeaf);
+            RenameOneReg(ir, ir->src, replace);
+            if (base->used > 0) {
+                base->used--;
+            }
+        }
+    }
+        
+    return num;
 }
 
 /*
@@ -1547,6 +1582,17 @@ RenameLocalRegs(IRList *irl, int isLeaf)
     Operand *replace = NULL;
     int numlocals = 0;
 
+    /* first, look for any subregisters; if found, rename those
+     * in a way that guarantees the arrays stay in order
+     */
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->dst && ir->dst->kind == REG_SUBREG && IsLocal(ir->dst)) {
+            numlocals += RenameSubregs(irl, (Operand *)ir->dst->name, numlocals, isLeaf);
+        }
+        if (ir->src && ir->src->kind == REG_SUBREG && IsLocal(ir->src)) {
+            numlocals += RenameSubregs(irl, (Operand *)ir->src->name, numlocals, isLeaf);
+        }
+    }
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
@@ -1602,6 +1648,26 @@ NeedFramePointer(Function *func)
     return FRAME_NO;
 }
 
+static void
+MarkUsedOneReg(Operand *reg)
+{
+    if (reg && reg->kind == REG_SUBREG) {
+        reg = (Operand *)reg->name;
+    }
+    if (reg) {
+        reg->used = 1;
+    }
+}
+static void
+MarkUsedSubregs(IRList *irl)
+{
+    IR *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        MarkUsedOneReg(ir->dst);
+        MarkUsedOneReg(ir->src);
+    }
+}
+
 //
 // the header/footer are code that should only be emitted for
 // non-inline function invocations, at the beginning and
@@ -1646,7 +1712,11 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         if (NeedToSaveLocals(func)) {
             n = RenameLocalRegs(FuncIRL(func), IS_LEAF(func));
+        } else {
+            MarkUsedSubregs(FuncIRL(func));
         }
+    } else {
+        MarkUsedSubregs(FuncIRL(func));
     }
     if (needFrame == FRAME_MAYBE) {
         needFrame = (n > 0) ? FRAME_YES : FRAME_NO;

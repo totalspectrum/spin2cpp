@@ -81,6 +81,8 @@ TransformLongMove(AST **astptr, AST *ast)
     int n;
     SymbolTable *srctab, *dsttab;
     ASTReportInfo saveinfo;
+    int srcarray = 0;
+    int dstarray = 0;
     
     ast = ast->right; // ast->left is the longmove function
     dst = ast->left; ast = ast->right;
@@ -130,20 +132,44 @@ TransformLongMove(AST **astptr, AST *ast)
     default:
         return false;
     }
+    if (IsArrayType(ExprType(src))) {
+        srcarray = TypeSize(ExprType(src)) / LONG_SIZE;
+    }
+    if (IsArrayType(ExprType(dst))) {
+        dstarray = TypeSize(ExprType(dst)) / LONG_SIZE;
+    }
     AstReportAs(dst, &saveinfo);
     srcoff = syms->offset;
     dstoff = symd->offset;
     sequence = NULL;
     for(;;) {
-        assign = AstAssign(AstIdentifier(symd->our_name),
-                           AstIdentifier(syms->our_name));
+        AST *src_id = AstIdentifier(syms->our_name);
+        AST *dst_id = AstIdentifier(symd->our_name);
+        AST *src_tmp, *dst_tmp;
+        int i = 0;
+        if (srcarray) {
+            src_tmp = NewAST(AST_ARRAYREF, src_id, AstInteger(i));
+        } else {
+            src_tmp = src_id;
+        }
+        if (dstarray) {
+            dst_tmp = NewAST(AST_ARRAYREF, dst_id, AstInteger(i));
+        } else {
+            dst_tmp = dst_id;
+        }
+        i++;
+        assign = AstAssign(dst_tmp, src_tmp);
         sequence = AddToList(sequence, NewAST(AST_SEQUENCE, assign, NULL));
         --n;
         if (n == 0) break;
         srcoff += 4;
         dstoff += 4;
-        symd = FindSymbolByOffsetAndKind(dsttab, dstoff, symd->kind);
-        syms = FindSymbolByOffsetAndKind(srctab, srcoff, syms->kind);
+        if (!dstarray) {
+            symd = FindSymbolByOffsetAndKind(dsttab, dstoff, symd->kind);
+        }
+        if (!srcarray) {
+            syms = FindSymbolByOffsetAndKind(srctab, srcoff, syms->kind);
+        }
         if (!symd || !syms) {
             AstReportDone(&saveinfo);
             return false;
