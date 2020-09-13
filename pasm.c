@@ -409,7 +409,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             AstReportAs(elem, &saveinfo);
             /* need to move it to its own declaration */
             if (elem->kind == AST_EXPRLIST) {
-                subtype = type->left;
+                subtype = ExprType(type->left);
                 subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(elem)));
             } else {
                 subtype = ast_type_ptr_void;
