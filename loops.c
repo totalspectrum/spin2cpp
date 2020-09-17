@@ -1200,6 +1200,7 @@ TransformCountRepeat(AST *ast)
 
     AST *looptype; // type of loop
     int isIntegerLoop = 1;
+    int isUnsignedLoop = 0;
     
     // what kind of test to perform (loopvar < toval, loopvar != toval, etc.)
     // note that if not set, we haven't figured it out yet (and probably
@@ -1241,6 +1242,9 @@ TransformCountRepeat(AST *ast)
     }
     looptype = ExprType(loopvar);
     isIntegerLoop = (looptype == NULL) || IsIntType(looptype);
+    if (isIntegerLoop && looptype && IsUnsignedType(looptype)) {
+        isUnsignedLoop = 1;
+    }
     ast = ast->right;
     if (ast->kind != AST_FROM) {
         ERROR(ast, "expected FROM");
@@ -1291,12 +1295,12 @@ TransformCountRepeat(AST *ast)
         if ((gl_output == OUTPUT_C || gl_output == OUTPUT_CPP) && IsConstExpr(toval)) {
             // for (i = 0; i < 10; i++) is more idiomatic
             fromval = AstInteger(0);
-            testOp = '<';
+            testOp = isUnsignedLoop ? K_LTU : '<';
             knownStepDir = 1;
         } else {
             fromval = toval;
             toval = AstInteger(0);
-            testOp = '>';
+            testOp = isUnsignedLoop ? K_GTU : '>';
             knownStepDir = -1;
             if (knownStepVal == 1) {
                 testOp = K_NE;
@@ -1310,7 +1314,11 @@ TransformCountRepeat(AST *ast)
             fromi = EvalConstExpr(fromval);
             toi = EvalConstExpr(toval);
             if (!knownStepDir) {
-                knownStepDir = (fromi > toi) ? -1 : 1;
+                if (isUnsignedLoop) {
+                    knownStepDir = ((uint32_t)fromi > (uint32_t)toi) ? -1 : 1;
+                } else {
+                    knownStepDir = (fromi > toi) ? -1 : 1;
+                }
             }
             if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
                 loopkind = AST_FORATLEASTONCE;
@@ -1361,10 +1369,11 @@ TransformCountRepeat(AST *ast)
         }
     } else {
         AST *stepvar = AstTempLocalVariable("_step_", looptype);
+        int op = isUnsignedLoop ? K_GTU : '>';
         initstmt = NewAST(AST_SEQUENCE, initstmt,
                           AstAssign(stepvar,
                                     NewAST(AST_CONDRESULT,
-                                           AstOperator('>', toval, fromval),
+                                           AstOperator(op, toval, fromval),
                                            NewAST(AST_THENELSE, stepval,
                                                   AstOperator(K_NEGATE, NULL, stepval)))));
         stepval = stepvar;
@@ -1384,7 +1393,7 @@ TransformCountRepeat(AST *ast)
         stepstmt = AstAssign(loopvar, AstOperator('+', loopvar, stepval));
     }
 
-    if (!condtest && testOp) {
+    if (!condtest && testOp && !isUnsignedLoop) {
         // we know how to construct the test
         // we may want to adjust the test slightly though
         condtest = AstOperator(testOp, loopvar, toval);
@@ -1418,12 +1427,39 @@ TransformCountRepeat(AST *ast)
             toval = limitvar;
         }
         if (knownStepDir > 0) {
-            condtest = AstOperator('<', loopvar, toval);
+            condtest = AstOperator( isUnsignedLoop ? K_LTU : '<', loopvar, toval);
         } else {
             condtest = AstOperator(K_NE, loopvar, toval);
             if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
                 loopkind = AST_FORATLEASTONCE;
             }
+        }
+    }
+
+    // special case some unsigned loops
+    if (!condtest && isUnsignedLoop) {
+        if (IsConstExpr(toval) && knownStepDir) {
+            int32_t to_i = EvalConstExpr(toval);
+            if (knownStepDir < 0) {
+                // count until we wrap around
+                if (to_i == 0) {
+                    condtest = AstOperator(K_LEU, loopvar, fromval);
+                } else {
+                    condtest = AstOperator(K_GEU, loopvar, toval);
+                }
+            } else if (knownStepDir > 0) {
+                // watch for wrapping around at $FFFF_FFFF
+                if (to_i == -1) {
+                    condtest = AstOperator(K_GEU, loopvar, fromval);
+                } else {
+                    condtest = AstOperator(K_LEU, loopvar, toval);
+                }
+            }
+        } else {
+            // beware if destination is unknown and stepping using an
+            // unsigned variable!
+            condtest = NewAST(AST_ISBETWEEN, loopvar,
+                              NewAST(AST_RANGE, fromval, toval));
         }
     }
     
