@@ -1491,7 +1491,6 @@ struct reservedword {
     { "round", SP_ROUND },
 
     { "sar", SP_SAR },
-    { "spr", SP_SPR },
     { "step", SP_STEP },
     { "string", SP_STRINGPTR },
     { "to", SP_TO },
@@ -1560,6 +1559,7 @@ struct reservedword {
 
 struct reservedword init_spin1_words[] = {
     { "constant", SP_CONSTANT },
+    { "spr", SP_SPR },
 
     { "?", SP_RANDOM },
 };
