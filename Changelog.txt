@@ -7,6 +7,7 @@ Version 4.3.2
 - Fixed \0 inside C strings
 - Fixed x[n].method() type calls in Spin2
 - Fixed some bugs in structure passing/return
+- Fixed incorrect FOR loops using unsigned integers if counting down to 0 or up to MAXINT
 - Improved warnings about missing #
 - Made SEND pointer per-COG
 - Made some local Spin arrays be held in registers
