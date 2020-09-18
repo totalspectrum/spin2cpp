@@ -1405,8 +1405,14 @@ lhs: identifier
     }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
-  | memref '.' '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $4); }
+  | memref '[' expr ']' '.' '[' range ']'
+    {
+        AST *ast = NewAST(AST_ARRAYREF, $1, $3);
+        AST *range = $7;
+        $$ = NewAST(AST_RANGEREF, ast, range);
+    }
+  | memref '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4); }
   | '(' expr ')' '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $2, $5); }
   | memref

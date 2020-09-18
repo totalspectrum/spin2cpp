@@ -1,0 +1,6 @@
+pub setfield1(inputHandle)
+  long[inputHandle+20].[2] := true
+
+pub setfield2(inputHandle)
+  long[inputHandle][5].[2] := true
+  
