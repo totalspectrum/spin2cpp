@@ -1394,7 +1394,15 @@ expr:
 
 lhs: identifier
   | identifier '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+    {
+        $$ = NewAST(AST_ARRAYREF, $1, $3);
+    }
+  | identifier '[' expr ']' '.' '[' range ']'
+    {
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        AST *range = $7;
+        $$ = NewAST(AST_ARRAYREF, arr, range);
+    }
   | hwreg
     { $$ = $1; }
   | hwreg '[' range ']'
