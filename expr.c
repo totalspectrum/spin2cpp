@@ -3047,6 +3047,10 @@ AST *FindMethodInList(AST *list, AST *ident, int *curptr)
         ERROR(ident, "Expected identifier");
         return NULL;
     }
+    if (ident->kind == AST_LOCAL_IDENTIFIER) {
+        // look for the "raw" form
+        ident = ident->right;
+    }
     while (list) {
         if (AstUses(list->left, ident)) {
             break;
