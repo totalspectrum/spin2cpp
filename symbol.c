@@ -261,3 +261,26 @@ NewTemporaryVariable(const char *prefix, int *counter)
     *counter = countval;
     return str;
 }
+
+/*
+ * debug: dump all symbols
+ */
+static const char *
+safe_str(const char *s)
+{
+    if (!s) return "<null>";
+    return s;
+}
+
+static int
+PrintSymbol(Symbol *sym, void *arg)
+{
+    printf("%s (%s)\n", safe_str(sym->user_name), safe_str(sym->our_name));
+    return 1;
+}
+
+void
+DumpSymbolTable(SymbolTable *table)
+{
+    IterateOverSymbols(table, PrintSymbol, NULL);
+}
