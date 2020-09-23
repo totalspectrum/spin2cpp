@@ -361,12 +361,12 @@ NewModule(const char *fullname, int language)
  * declare constant symbols
  */
 static Symbol *
-EnterConstant(const char *name, AST *expr)
+EnterConstant(Module *P, const char *name, AST *expr)
 {
     Symbol *sym;
 
     // check to see if the symbol already has a definition
-    sym = FindSymbol(&current->objsyms, name);
+    sym = FindSymbol(&P->objsyms, name);
     if (sym) {
         if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
             int32_t origval;
@@ -382,15 +382,15 @@ EnterConstant(const char *name, AST *expr)
         }
     }
     if (IsFloatConst(expr)) {
-        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
+        sym = AddSymbol(&P->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
     } else {
-        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr, NULL);
+        sym = AddSymbol(&P->objsyms, name, SYM_CONSTANT, (void *)expr, NULL);
     }
     return sym;
 }
 
 void
-DeclareConstants(AST **conlist_ptr)
+DeclareConstants(Module *P, AST **conlist_ptr)
 {
     AST *conlist;
     AST *upper, *ast, *id;
@@ -427,7 +427,7 @@ DeclareConstants(AST **conlist_ptr)
                             ERROR(ast, "Internal error, bad constant declaration");
                             return;
                         }                            
-                        EnterConstant(GetIdentifierName(ast->left), ast->right);
+                        EnterConstant(P, GetIdentifierName(ast->left), ast->right);
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
@@ -470,7 +470,7 @@ DeclareConstants(AST **conlist_ptr)
                         if (id->kind != AST_IDENTIFIER) {
                             ERROR(ast, "Internal error, expected identifier in constant list");
                         } else {
-                            EnterConstant(id->d.string, AstInteger(default_val));
+                            EnterConstant(P, id->d.string, AstInteger(default_val));
                             default_val += EvalConstExpr(ast->right);
                         }
                         n++;
@@ -483,7 +483,7 @@ DeclareConstants(AST **conlist_ptr)
                     break;
                 case AST_IDENTIFIER:
                     if (default_val_ok) {
-                        EnterConstant(ast->d.string, AstInteger(default_val));
+                        EnterConstant(P, ast->d.string, AstInteger(default_val));
                         default_val += default_skip;
                         n++;
                         // now pull the assignment out so we don't see it again
@@ -516,7 +516,7 @@ DeclareConstants(AST **conlist_ptr)
                 default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                 break;
             case AST_IDENTIFIER:
-                EnterConstant(ast->d.string, AstInteger(default_val));
+                EnterConstant(P, ast->d.string, AstInteger(default_val));
                 default_val += default_skip;
                 break;
             case AST_ENUMSKIP:
@@ -524,12 +524,12 @@ DeclareConstants(AST **conlist_ptr)
                 if (id->kind != AST_IDENTIFIER) {
                     ERROR(ast, "Internal error, expected identifier in constant list");
                 } else {
-                    EnterConstant(id->d.string, AstInteger(default_val));
+                    EnterConstant(P, id->d.string, AstInteger(default_val));
                     default_val += EvalConstExpr(ast->right);
                 }
                 break;
             case AST_ASSIGN:
-                EnterConstant(ast->left->d.string, ast->right);
+                EnterConstant(P, ast->left->d.string, ast->right);
                 default_val = EvalConstExpr(ast->right) + default_skip;
                 break;
             case AST_COMMENT:
