@@ -24,12 +24,6 @@ extern Module *allparse;
 
 /* printing functions */
 
-/* declare constants */
-void DeclareConstants(AST **conlist);
-
-/* declare all functions */
-void DeclareFunctions(Module *);
-
 extern int IsReservedWord(const char *str);
 
 /* function to canonicalize an identifier */

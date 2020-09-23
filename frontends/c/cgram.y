@@ -409,7 +409,10 @@ AddEnumerators(AST *identifier, AST *enumlist)
         // they're declared in
         P = current;
     }
+    // we have to process the enumerators now so that they may be used
+    // in struct definitions and such
     P->conblock = AddToList(P->conblock, enumlist);
+    DeclareConstants(P, &P->conblock);
     return ast_type_long;
 }
 

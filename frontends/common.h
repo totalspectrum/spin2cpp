@@ -805,6 +805,12 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
 // returns 0 on failure to parse, 1 otherwise
 int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
 
+/* declare constants */
+void DeclareConstants(Module *P, AST **conlist);
+
+/* declare all functions */
+void DeclareFunctions(Module *);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;
