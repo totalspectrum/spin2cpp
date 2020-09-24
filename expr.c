@@ -2053,7 +2053,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         while (objtype && IsRefType(objtype)) {
             objtype = objtype->left;
         }
-        thename = GetIdentifierName(expr->right);
+        thename = GetUserIdentifierName(expr->right);
         if (!thename) {
             return NULL;
         }
