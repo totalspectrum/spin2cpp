@@ -72,6 +72,12 @@ struct lexstream {
 
     unsigned flags;
 #define LEXSTREAM_FLAG_NOSRC 0x01
+
+    /* Spin2 hack for handling ':' in LOOKUP/LOOKDOWN
+       (there's a context dependence parsing method calls like 'foo():1'
+       versus 'lookup(foo() : 1, 2, 3)'
+    */
+    int look_counter;
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))

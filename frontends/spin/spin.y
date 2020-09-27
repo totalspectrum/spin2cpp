@@ -399,10 +399,7 @@ BuildDebugList(AST *exprlist)
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
 %token SP_DEBUG      "DEBUG"
-
-/* special token for foo() : N indicating the number of return values from foo, N */
-/* FIXME: this is not implemented yet in lexer.c! */
-%token SP_FUNCCOLON   ":"
+%token SP_LOOK_SEP   ":"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -781,15 +778,15 @@ repeatstmt:
 ;
 
 lookupexpr:
-  SP_LOOKUPZ '(' expr ':' rangeexprlist ')'
+SP_LOOKUPZ '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 0, $3, $5); }
-  | SP_LOOKUP '(' expr ':' rangeexprlist ')'
+  | SP_LOOKUP '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 1, $3, $5); }
 ;
 lookdownexpr:
-  SP_LOOKDOWNZ '(' expr ':' rangeexprlist ')'
+  SP_LOOKDOWNZ '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 0, $3, $5); }
-  | SP_LOOKDOWN '(' expr ':' rangeexprlist ')'
+  | SP_LOOKDOWN '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 1, $3, $5); }
 ;
 
@@ -1473,7 +1470,7 @@ memref:
 opt_numrets:
   /* nothing */
     { $$ = NULL; }
-  | SP_FUNCCOLON SP_NUM
+  | ':' SP_NUM
     { $$ = $2; }
 ;
 
