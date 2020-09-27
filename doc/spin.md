@@ -625,8 +625,22 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 ## Compatibility with Spin2
 
-Generally fastspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available, except for those listed below.
+Generally fastspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
 
+### Expressions involving `:`
+
+The `:` character is used in multiple conflicting ways in Spin2:
+```
+  a ? b : 2
+  x := b():1
+  x := lookup(b : 1, 2)
+```
+The fastspin parser works differently from the PNut parser, and in complicated nested expressions with multiple `:` it may not give the same results. Some tips for writing code that will work with both compilers:
+
+  - In general try not to nest expressions involving `:`
+  - Do not use `:` in `lookup`/`lookdown` type expressions except as the separator between the selection expression and the list of results
+  - Make liberal use of parentheses to resolve ambiguity, e.g. write `a ? (b()) : 1` or `a ? (b():1) : 2` to distinguish between `:1` as an indirect method marker nad `:1` as the "else" part of the `?` operator.
+  
 ### @ Operator
 
 The `@` operator always gives an absolute address in fastspin's Spin2 dialect, even inside assembly code. This is different from the standard Spin2 interpreter, where it produces an address relative to the start of the current object. In most contexts the fastspin behavior is more convenient, but it is something to keep in mind.
