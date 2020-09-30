@@ -817,6 +817,9 @@ void DeclareConstants(Module *P, AST **conlist);
 /* declare all functions */
 void DeclareFunctions(Module *);
 
+/* find number of elements in aggregate (struct or array) */
+int AggregateCount(AST *typ);
+
 // external vars
 extern AST *basic_get_float;
 extern AST *basic_get_string;

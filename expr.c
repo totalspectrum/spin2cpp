@@ -3238,3 +3238,28 @@ FixupInitList(AST *type, AST *initval)
     free(astarr);
     return initval;
 }
+
+/* get number of elements in an array or class */
+int
+AggregateCount(AST *typ)
+{
+    int size;
+    if (IsArrayType(typ)) {
+        if (!IsConstExpr(typ->right)) {
+            ERROR(typ, "Unable to determine size of array");
+            size = 1;
+        } else {
+            size = EvalConstExpr(typ->right);
+        }
+        return size;
+    }
+    if (IsClassType(typ)) {
+        Module *P = (Module *)typ->d.ptr;
+        if (P->pendingvarblock) {
+            ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
+        }
+        return P->varsize;        
+    }
+    ERROR(typ, "Internal error, expected aggregate type in AggregateCount");
+    return 1;
+}
