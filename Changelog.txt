@@ -10,6 +10,7 @@ Version 4.3.2
 - Fixed some bugs in structure passing/return
 - Fixed incorrect FOR loops using unsigned integers if counting down to 0 or up to MAXINT
 - Fixed order of declarations for C enums
+- Fixed nested initializers in C
 - Improved warnings about missing #
 - Made SEND pointer per-COG
 - Made some local Spin arrays be held in registers
