@@ -17,6 +17,7 @@ Version 4.3.2
 - Made SPR keyword be Spin1 only (in Spin2 it is "REG")
 - Modified inline assembly to allow for some array addressing
 - Reduced the delay for SD card communication to speed up FatFs
+- Save/restore SEND pointer in Spin2 if it is modified by a function
 
 Version 4.3.1
 - Added HUBSET(), POLLATN(), WAITATN()
