@@ -71,7 +71,7 @@ int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 int IsRefType(AST *typ);
 
-#define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
+#define IsIntOrGenericType(t) (!t || IsGenericType(t) || IsIntType(t))
 int IsBoolCompatibleType(AST *typ);
 int IsClassType(AST *typ);
 
