@@ -1699,6 +1699,10 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         EmitPush(irl, FuncData(func)->asmretname);
     }
     
+    // if SEND is set in function, save it
+    if (func->sets_send) {
+        EmitPush(irl, sendreg);
+    }
     //
     // if recursive function, push all local registers
     // we also have to push any local temporary registers that
@@ -1779,6 +1783,10 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
                 EmitPop(irl, GetLocalReg(i, 0));
             }
         }
+    }
+    // if SEND is set in function, restore it
+    if (func->sets_send) {
+        EmitPop(irl, sendreg);
     }
     if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;

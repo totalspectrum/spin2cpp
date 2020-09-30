@@ -299,7 +299,8 @@ typedef struct funcdef {
     unsigned stack_local:1;  // 1 if function has a local that must go on stack
     unsigned has_throw:1;    // 1 if function has a "throw" in it
     unsigned toplevel:1;     // 1 if function is top level
-
+    unsigned sets_send:1;    // 1 if function sets SEND function
+    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;
@@ -679,7 +680,6 @@ extern unsigned int gl_hub_base;
    0x18 == CLKSET mode setting
    0x1c == baud rate
    0x20 - 0x30 (VGA settings (not used by fastspin)
-   0x30 == SEND pointer
 */
 
 /*
