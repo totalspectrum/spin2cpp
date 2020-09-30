@@ -637,6 +637,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     gatherComments = 0;
                 }
                 break;
+            case SP_LOOKUP:
+            case SP_LOOKDOWN:
+            case SP_LOOKUPZ:
+            case SP_LOOKDOWNZ:
+                L->look_counter++;
+                gatherComments = 0;
+                break;
             default:
                 gatherComments = 0;
                 break;
@@ -1366,6 +1373,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
+            if (L->look_counter) {
+                c = SP_LOOK_SEP;
+                --L->look_counter;
+            }
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
