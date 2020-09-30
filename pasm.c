@@ -351,6 +351,32 @@ reduceStrings(AST *orig_exprlist)
     return exprlist;
 }
 
+static AST *
+PullFromList(int n, AST *list, AST **leftover)
+{
+    AST *first;
+    
+    if (n > 0) {
+        ASTReportInfo saveinfo;
+        AstReportAs(list, &saveinfo);
+        first = NewAST(AST_EXPRLIST, list->left, NULL);
+        AstReportDone(&saveinfo);
+        first->right = list->right;
+        --n;
+    } else {
+        first = NULL;
+    }
+    while (n > 0 && list->right) {
+        list = list->right;
+        --n;
+    }
+    if (leftover) {
+        *leftover = list->right;
+    }
+    list->right = NULL;
+    return first;
+}
+
 static void
 fixupInitializer(Module *P, AST *initializer, AST *type)
 {
@@ -453,6 +479,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             return;
         }
         for (elem = initializer; elem; elem = elem->right) {
+            int n;
             if (!varlist) {
                 ERROR(initializer, "too many initializers for struct or union");
                 return;
@@ -460,6 +487,14 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             subtype = ExprType(varlist->left);
             varlist = varlist->right;
             if (Q->isUnion) varlist = NULL;
+            if ( (IsArrayType(subtype) || IsClassType(subtype)) && elem->left && elem->left->kind != AST_EXPRLIST) {
+                AST *newsub;
+                AST *oldlist;
+                n = AggregateCount(subtype);
+                newsub = PullFromList(n, elem, &oldlist);
+                elem->left = newsub;
+                elem->right = oldlist;
+            }
             fixupInitializer(P, elem->left, subtype);
         }
     }
