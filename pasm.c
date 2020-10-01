@@ -487,7 +487,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             subtype = ExprType(varlist->left);
             varlist = varlist->right;
             if (Q->isUnion) varlist = NULL;
-            if ( (IsArrayType(subtype) || IsClassType(subtype)) && elem->left && elem->left->kind != AST_EXPRLIST) {
+            if ( (IsArrayType(subtype) || IsClassType(subtype)) && elem->left && (elem->left->kind != AST_EXPRLIST && elem->left->kind != AST_STRINGPTR)) {
                 AST *newsub;
                 AST *oldlist;
                 n = AggregateCount(subtype);
