@@ -450,6 +450,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
     IR *fcache = NULL;
     IR *startlabel = NULL;
     IR *endlabel = NULL;
+    IR *ir;
     Operand *enddst, *startdst;
     bool isConst = asmFlags & INLINE_ASM_FLAG_CONST;
     
@@ -543,7 +544,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         AppendIR(irl, endlabel);
     }
     // now fixup any relative addresses
-    for (IR *ir = firstir; ir; ir = ir->next) {
+    for (ir = firstir; ir; ir = ir->next) {
         if (!IsDummy(ir)) {
             if (ir->dst && ir->dst->kind == IMM_PCRELATIVE) {
                 ir->dst = FixupHereLabel(irl, firstir, ir->addr, ir->dst);
