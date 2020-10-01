@@ -538,7 +538,7 @@ AddStructBody(Module *C, AST *body)
 // file name and line number
 //
 static AST *
-MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
+MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
 {
     int is_union;
     int is_class;
@@ -548,7 +548,17 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     Module *C;
     Symbol *sym;
     AST *class_type;
-
+    
+    if (identifier && identifier->kind == AST_LOCAL_IDENTIFIER) {
+        identifier = identifier->right;
+    }
+    if (Parent->mainLanguage == LANG_CFAMILY_C) {
+        // structs inside structs get declared with global scope
+        Module *Q = GetTopLevelModule();
+        if (Q->mainLanguage == LANG_CFAMILY_C) {
+            Parent = Q;
+        }
+    }
     /* attempt to better handle class inside class */
     if (0 && current && !IsTopLevel(current)) {
         /* this causes problems with struct references inside structs */
@@ -586,7 +596,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     /* see if there is already a type with that name */
     sym = LookupSymbolInTable(currentTypes, typname);
     if (!sym) {
-        sym = LookupSymbolInTable(&P->objsyms, typname);
+        sym = LookupSymbolInTable(&Parent->objsyms, typname);
     }
     if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
@@ -602,7 +612,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     } else {
         if (body && body->kind == AST_STRING) {
             class_type = NewAbstractObject(AstIdentifier(typname), body);
-            current->objblock = AddToList(current->objblock, class_type);
+            Parent->objblock = AddToList(Parent->objblock, class_type);
             body = NULL;
             C = NULL;
         } else {
@@ -613,8 +623,8 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             class_type = NewAbstractObject(AstIdentifier(typname), NULL);
             class_type->d.ptr = C;
             AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
-            AddSymbol(&P->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
-            AddSubClass(P, C);
+            AddSymbol(&Parent->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
+            AddSubClass(Parent, C);
         }
     }
     AddStructBody(C, body);
