@@ -3255,6 +3255,9 @@ AggregateCount(AST *typ)
     }
     if (IsClassType(typ)) {
         Module *P = (Module *)typ->d.ptr;
+        if (P->isUnion) {
+            return 1;
+        }
         if (P->pendingvarblock) {
             ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
         }
