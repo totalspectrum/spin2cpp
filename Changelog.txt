@@ -1,7 +1,8 @@
-Version 4.3.2
+Version 4.4.0
 - Added simplified designated initializers (like { .x=1 }) for structs and arrays
 - Added float_t and double_t to math.h
 - Added fseek() and ftell() stdio functions
+- Added Spin2 RECV pointer
 - Fixed a hang due to multiply processing modules
 - Fixed djnz out of range on P2
 - Fixed \0 inside C strings
@@ -11,11 +12,11 @@ Version 4.3.2
 - Fixed incorrect FOR loops using unsigned integers if counting down to 0 or up to MAXINT
 - Fixed order of declarations for C enums
 - Fixed nested initializers in C
-- Improved warnings about missing #
+- Improved warnings about missing # in PASM
 - Made SEND pointer per-COG
 - Made some local Spin arrays be held in registers
 - Made SPR keyword be Spin1 only (in Spin2 it is "REG")
-- Modified inline assembly to allow for some array addressing
+- Modified inline assembly to allow for accessing array variables
 - Reduced the delay for SD card communication to speed up FatFs
 - Save/restore SEND pointer in Spin2 if it is modified by a function
 

@@ -110,8 +110,6 @@ Aliases spinalias[] = {
 
     { "reboot", "_reboot" },
 
-    { "send", "__sendptr" },
-    
     /* obsolete aliases */
     { "dirl_", "_dirl" },
     { "dirh_", "_dirh" },
@@ -175,6 +173,9 @@ Aliases spin2alias[] = {
     { "waitus", "_waitus" },
     { "pollct", "_pollct" },
     { "waitct", "_waitcnt" },
+    
+    { "recv", "__recvptr" },    
+    { "send", "__sendptr" },
     
     /* obsolete aliases */
     { "outl_", "_outl" },

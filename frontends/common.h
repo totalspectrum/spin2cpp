@@ -300,6 +300,7 @@ typedef struct funcdef {
     unsigned has_throw:1;    // 1 if function has a "throw" in it
     unsigned toplevel:1;     // 1 if function is top level
     unsigned sets_send:1;    // 1 if function sets SEND function
+    unsigned sets_recv:1;    // 1 if function sets RECV function
     
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */

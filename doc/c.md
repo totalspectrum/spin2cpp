@@ -12,16 +12,9 @@ This document assumes that you are familiar with programming in C and with the P
 
 The C compiler is mostly implemented and could probably be considered "beta" software now, but there are a few missing features.
 
-### Missing Features
-
-An incomplete list of things that still need to be implemented:
-
-  * 64 bit integers (long long) are recognized but mostly do not work
-  * only part of the C standard library is finished
-
 ### Known Bugs
 
-There are several known bugs and deviations from the C standard:
+There are several known bugs and deviations from the C99 standard:
 
 #### Name Spaces
 
@@ -51,9 +44,9 @@ will not work: the double levels of ".address.streetnum" will fail.
 
 Anonymous structs and unions (i.e. nested struct members without a name) are not supported.
 
-#### Variable sized arrays
+#### Variable length arrays
 
-Variable sized arrays are not supported.
+Variable length arrays are not supported.
 
 ## Preprocessor
 

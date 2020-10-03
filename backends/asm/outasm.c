@@ -66,7 +66,7 @@ Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
 Operand *localreg[MAX_LOCAL_REGISTER];
 Operand *leafreg[MAX_LOCAL_REGISTER];
-Operand *sendreg;
+Operand *sendreg, *recvreg;
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -1125,6 +1125,13 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
                   }
                   return sendreg;
               }
+              if (off == -2) {
+                  // this is a special internal COG variable
+                  if (!recvreg) {
+                      recvreg = GetOneGlobal(REG_REG, "__recvreg", 0);
+                  }
+                  return recvreg;
+              }
               addr = NewImmediate(off);
               ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
               ref->size = LONG_SIZE;
@@ -1703,6 +1710,9 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (func->sets_send) {
         EmitPush(irl, sendreg);
     }
+    if (func->sets_recv) {
+        EmitPush(irl, recvreg);
+    }
     //
     // if recursive function, push all local registers
     // we also have to push any local temporary registers that
@@ -1784,7 +1794,10 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
             }
         }
     }
-    // if SEND is set in function, restore it
+    // if SEND/RECV is set in function, restore it
+    if (func->sets_recv) {
+        EmitPop(irl, recvreg);
+    }
     if (func->sets_send) {
         EmitPop(irl, sendreg);
     }
