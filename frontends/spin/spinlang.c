@@ -661,8 +661,13 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         if (ast->left && ast->left->kind == AST_RANGEREF) {
             *astptr = ast = TransformRangeAssign(ast->left, ast->right, level == 1);
         }
-        if (ast->left && IsIdentifier(ast->left) && !strcasecmp("send", GetUserIdentifierName(ast->left)) ) {
-            curfunc->sets_send = 1;
+        if (ast->left && IsIdentifier(ast->left)) {
+            const char *name = GetUserIdentifierName(ast->left);
+            if ( !strcasecmp("send", name) ) {
+                curfunc->sets_send = 1;
+            } else if (!strcasecmp("recv", name)) {
+                curfunc->sets_recv = 1;
+            }
         }
         doSpinTransform(&ast->left, 0, ast);
         doSpinTransform(&ast->right, 0, ast);
