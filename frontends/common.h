@@ -719,10 +719,11 @@ Module *ParseFile(const char *filename);
 void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
 
 /* declare a single member variable of P */
-void DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
+AST *DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member variable of P if it does not already exist */
-void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private);
+/* returns a pointer to the P->varlist entry for it */
+AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);
