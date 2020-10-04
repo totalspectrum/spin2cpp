@@ -1630,22 +1630,26 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     return offset;   
 }
 
-void
+AST *
 DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
 {
+    AST *r = 0;
     if (!type) {
         type = InferTypeFromName(ident);
     }
     if (1) {
         AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
-        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        r = NewAST(AST_LISTHOLDER, newdecl, NULL);
+        P->pendingvarblock = AddToList(P->pendingvarblock, r);
     }
+    return r;
 }
 
-void
+AST *
 MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
 {
+    AST *ret = 0;
     AST *sub;
     const char *name;
     sub = identifier;
@@ -1656,12 +1660,12 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
         sub = sub->left;
     }
     if (!sub || sub->kind != AST_IDENTIFIER) {
-        return;
+        return 0;
     }
     name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
     if (sym && sym->kind == SYM_VARIABLE) {
-        return;
+        return 0;
     }
     if (!typ) {
         typ = InferTypeFromName(identifier);
@@ -1669,8 +1673,10 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
-        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
+        P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     }
+    return ret;
 }
 
 void
