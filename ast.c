@@ -93,6 +93,29 @@ AST *AddToListEx(AST *head, AST *newelem, AST **tailptr)
 }
 
 /*
+ * insert "newelem" in a list, before "member"
+ */
+AST *
+ListInsertBefore(AST *list, AST *member, AST *newelem)
+{
+    AST *orig = list;
+    if (!list || list == member) {
+        newelem->right = list;
+        return newelem;
+    }
+    while (list && list->right != member) {
+        list = list->right;
+    }
+    if (!list) {
+        ERROR(member, "Internal error, unable to find item in list");
+        return orig;
+    }
+    newelem->right = list->right;
+    list->right = newelem;
+    return orig;
+}
+
+/*
  * duplicate an AST
  */
 AST *
@@ -694,6 +717,7 @@ static const char *astnames[] = {
     "fvars",
 
     "initializer_modifier",
+    "declare_bitfield",
 };
 
 //

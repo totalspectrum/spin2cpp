@@ -1596,6 +1596,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 }
             }
             break;
+        case AST_DECLARE_BITFIELD:
+            /* skip */
+            continue;
         case AST_COMMENT:
             /* skip */
             continue;
@@ -1647,7 +1650,7 @@ DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
 }
 
 AST *
-MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags)
 {
     AST *ret = 0;
     AST *sub;

@@ -427,7 +427,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     int max_bitfield_size = 0;
     AST *bitfield_ident = 0;
     int is_private = 0;
-
+    AST *last_pos = 0;
+    
     if (!astlist) return;
     if (astlist->kind != AST_STMTLIST) {
         ERROR(astlist, "Internal error, expected stmt list");
@@ -478,7 +479,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 ident = idlist->left;
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private);
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
                 idlist = idlist->right;
             }
         } else {
@@ -487,6 +488,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 AST *bfield_ast = typ->right;
                 AST *bfield_typ = typ->left;
                 AST *bfield_access;
+                AST *bfield_list = 0;
                 int tsize;
                 int bsize = EvalConstExpr(bfield_ast);
                 tsize = TypeSize(bfield_typ) * 8;
@@ -495,7 +497,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                     max_bitfield_size = tsize;
                     bitfield_offset = 0;
                     bitfield_ident = AstTempIdentifier("__bitfield_");
-                    MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ, is_private);
+                    last_pos = MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ, is_private, HIDDEN_VAR);
                 }
                 if (bsize > max_bitfield_size) {
                     ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
@@ -509,11 +511,14 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 bfield_access = NewAST(AST_RANGEREF, bitfield_ident, bfield_access);
                 bfield_access = NewAST(AST_CAST, bfield_typ, bfield_access);
                 DeclareMemberAlias(P, ident, bfield_access);
+                bfield_list = NewAST(AST_DECLARE_BITFIELD, bfield_access, ident);
+                bfield_list = NewAST(AST_LISTHOLDER, bfield_list, NULL);
+                P->pendingvarblock = ListInsertBefore(P->pendingvarblock, last_pos, bfield_list);
                 bitfield_offset += bsize;
             } else {
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private);
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
             }
         }
     }

@@ -385,6 +385,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     AST *subtype;
     AST *elem;
     AST *initval = initializer;
+    AST *thiselem = 0;
     
     type = RemoveTypeModifiers(type);
     if (!type) {
@@ -469,6 +470,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     } else if (type->kind == AST_OBJECT) {
         Module *Q = GetClassPtr(type);
         AST *varlist, *elem;
+        AST *thisval = NULL;
         varlist = Q->finalvarblock;
         if (Q->pendingvarblock) {
             ERROR(initializer, "internal error, got something in pendingvarblock");
@@ -484,18 +486,61 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
                 ERROR(initializer, "too many initializers for struct or union");
                 return;
             }
+            thiselem = 0;
+            while (varlist && varlist->left && varlist->left->kind == AST_DECLARE_BITFIELD) {
+                AST *baseval;
+                AST *casttype;
+                baseval = varlist->left->left;
+                if (baseval->kind != AST_CAST) {
+                    ERROR(varlist, "internal error 0");
+                    return;
+                }
+                casttype = baseval->left;
+                baseval = baseval->right;
+                if (baseval->kind != AST_RANGEREF) {
+                    ERROR(varlist, "internal error 1");
+                    return;
+                }
+                baseval = baseval->right;
+                if (baseval->kind != AST_RANGE) {
+                    ERROR(varlist, "internal error 2");
+                    return;
+                }
+                baseval = elem ? AstOperator(K_SHL, elem->left, baseval->right) : AstInteger(0);
+                if (thisval) {
+                    thisval->right = AstOperator('|', thisval->right, baseval);
+                    if (elem) {
+                        thiselem->right = elem->right;  /* remove "elem" from list */
+                    }
+                } else {
+                    thisval = NewAST(AST_CAST, casttype, baseval);
+                    thiselem = elem;
+                    elem->left = thisval;
+                }
+                varlist = varlist->right;
+                if (elem) {
+                    elem = elem->right;
+                }
+            }
+            if (!thisval) {
+                thisval = elem ? elem->left : AstInteger(0);
+            }
+            if (thiselem) {
+                elem = thiselem;
+            }
             subtype = ExprType(varlist->left);
             varlist = varlist->right;
             if (Q->isUnion) varlist = NULL;
-            if ( (IsArrayType(subtype) || IsClassType(subtype)) && elem->left && (elem->left->kind != AST_EXPRLIST && elem->left->kind != AST_STRINGPTR)) {
+            if ( (IsArrayType(subtype) || IsClassType(subtype)) && thisval && (thisval->kind != AST_EXPRLIST && thisval->kind != AST_STRINGPTR)) {
                 AST *newsub;
                 AST *oldlist;
                 n = AggregateCount(subtype);
                 newsub = PullFromList(n, elem, &oldlist);
-                elem->left = newsub;
+                elem->left = thisval = newsub;
                 elem->right = oldlist;
             }
-            fixupInitializer(P, elem->left, subtype);
+            fixupInitializer(P, thisval, subtype);
+            thisval = 0;
         }
     }
 }
