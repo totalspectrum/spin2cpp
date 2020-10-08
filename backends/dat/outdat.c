@@ -463,7 +463,8 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         return;
     }
 
-    initval = FixupInitList(type, initval);
+    // done in pasm.c now
+    //initval = FixupInitList(type, initval);
     
     switch(type->kind) {
     case AST_INTTYPE:
