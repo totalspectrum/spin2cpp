@@ -504,6 +504,10 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         while (varlist) {
             AST *subtype;
             AST *subinit = initval ? initval->left : NULL;
+            if (varlist->left->kind == AST_DECLARE_BITFIELD) {
+                varlist = varlist->right;
+                continue;
+            }
             if (is_union) {
                 if (subinit->kind != AST_CAST) {
                     ERROR(subinit, "Internal error, expected cast for union");

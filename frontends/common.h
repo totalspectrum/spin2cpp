@@ -722,8 +722,11 @@ void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
 AST *DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member variable of P if it does not already exist */
+/* "flags" is HIDDEN_VAR (for a dummy bitfield holder) or NORMAL_VAR */
 /* returns a pointer to the P->varlist entry for it */
-AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private);
+#define NORMAL_VAR 0
+#define HIDDEN_VAR 1
+AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);

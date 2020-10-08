@@ -214,6 +214,7 @@ enum astkind {
     AST_FVARS_LIST = 151,
 
     AST_INITMODIFIER = 152,
+    AST_DECLARE_BITFIELD = 153,
 };
 
 /* forward reference */
@@ -240,6 +241,7 @@ AST *NewAST(enum astkind kind, AST *left, AST *right);
 AST *AddToList(AST *list, AST *newelement);
 AST *AddToLeftList(AST *list, AST *newelement);
 AST *AddToListEx(AST *list, AST *newelement, AST **tail);
+AST *ListInsertBefore(AST *list, AST *member, AST *newelem);
 void RemoveFromList(AST **listptr, AST *newelement);
 AST *DupAST(AST *ast);
 AST *DupASTWithReplace(AST *ast, AST *orig, AST *replace);

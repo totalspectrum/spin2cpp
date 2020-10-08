@@ -281,7 +281,7 @@ InitBasicData(Module *P)
     P->datblock = AddToList(datinfo, P->datblock);
 
     // Add a definition for __basic_data_ptr
-    MaybeDeclareMemberVar(P, varname, ast_type_string, 0);
+    MaybeDeclareMemberVar(P, varname, ast_type_string, 0, NORMAL_VAR);
     
     // now add in an initializer
     init = AstAssign(varname,

@@ -3162,19 +3162,10 @@ FixupInitList(AST *type, AST *initval)
         if (initval && initval->kind != AST_EXPRLIST) {
             initval = NewAST(AST_EXPRLIST, initval, NULL);
         }
-        numelems = 0;
         if (!varlist) {
             return NULL;
         }
-        if (is_union) {
-            numelems = 1;
-        } else {
-            while (varlist) {
-                numelems++;
-                varlist = varlist->right;
-            }
-            varlist = P->finalvarblock;
-        }
+        numelems = AggregateCount(type);
         astarr = calloc( numelems, sizeof(AST *) );
         if (!astarr) {
             ERROR(NULL, "out of memory");
@@ -3244,6 +3235,7 @@ int
 AggregateCount(AST *typ)
 {
     int size;
+    int sawBitfield = 0;
     if (IsArrayType(typ)) {
         if (!IsConstExpr(typ->right)) {
             ERROR(typ, "Unable to determine size of array");
@@ -3255,13 +3247,29 @@ AggregateCount(AST *typ)
     }
     if (IsClassType(typ)) {
         Module *P = (Module *)typ->d.ptr;
+        AST *list, *elem;
         if (P->isUnion) {
             return 1;
         }
         if (P->pendingvarblock) {
             ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
         }
-        return P->varsize;        
+        list = P->finalvarblock;
+        size = 0;
+        while (list) {
+            elem = list->left;
+            if (elem->kind == AST_DECLARE_BITFIELD) {
+                sawBitfield = 1;
+                size++;
+            } else {
+                if (!sawBitfield) {
+                    size++;
+                }
+                sawBitfield = 0;
+            }
+            list = list->right;
+        }
+        return size;
     }
     ERROR(typ, "Internal error, expected aggregate type in AggregateCount");
     return 1;
