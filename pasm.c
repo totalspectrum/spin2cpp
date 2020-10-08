@@ -477,7 +477,11 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             return;
         }
         if (initializer->kind != AST_EXPRLIST) {
-            ERROR(initializer, "wrong kind of initializer for struct type");
+            if (initializer->kind == AST_INTEGER && initializer->d.ival == 0) {
+                /* do nothing */
+            } else {
+                ERROR(initializer, "wrong kind of initializer for struct type");
+            }
             return;
         }
         for (elem = initializer; elem; elem = elem->right) {
@@ -757,6 +761,7 @@ DeclareLabels(Module *P)
                 AST *type = ast->left;
                 AST *ident = ast->right;
                 AST *initializer = NULL;
+                AST **initptr = NULL;
                 ASTReportInfo saveinfo;
                 int typalign;
                 int typsize;
@@ -766,6 +771,7 @@ DeclareLabels(Module *P)
                 MARK_DATA(label_flags);
                 AstReportAs(ident, &saveinfo);
                 if (ident->kind == AST_ASSIGN) {
+                    initptr = &ident->right;
                     initializer = ident->right;
                     ident = ident->left;
                 }
@@ -782,7 +788,10 @@ DeclareLabels(Module *P)
                         ERROR(ast, "empty or undefined class used to define %s", GetUserIdentifierName(ident));
                     }
                 }
-                
+                if (initptr && (IsClassType(type) || IsArrayType(type)) ) {
+                    initializer = FixupInitList(type, initializer);
+                    *initptr = initializer;
+                }
                 ALIGNPC(typalign);
                 if (ident->kind == AST_LOCAL_IDENTIFIER) {
                     ident = ident->left;
@@ -794,6 +803,7 @@ DeclareLabels(Module *P)
                 }
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, type, lastOrg, inHub, label_flags);
                 INCPC(typsize);
+                
                 fixupInitializer(P, initializer, type);
                 AstReportDone(&saveinfo);
             }
