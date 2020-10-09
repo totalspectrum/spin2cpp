@@ -3115,6 +3115,9 @@ FixupInitList(AST *type, AST *initval)
     //typealign = TypeAlign(type);
     numelems  = 1;
 
+    if (initval->kind == AST_STRINGPTR) {
+        return initval;
+    }
     if (initval->kind != AST_EXPRLIST) {
         initval = NewAST(AST_EXPRLIST, initval, NULL);
     }
