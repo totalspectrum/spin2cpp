@@ -1445,6 +1445,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     AST *ast;
     AST *declare;
     AST *initializer = NULL;
+    AST **initptr = NULL;
     Symbol *olddef;
     SymbolTable *table = &P->objsyms;
     const char *name = NULL;
@@ -1474,6 +1475,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             ERROR(ident, "typedef cannot have initializer");
         }
         initializer = ident->right;
+        initptr = &ident->right;
         ident = ident->left;
     }
     if (ident->kind == AST_ARRAYDECL) {
@@ -1506,6 +1508,8 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             type->right = AstInteger(1);
         } else {
             if (initializer->kind == AST_EXPRLIST) {
+                initializer = FixupInitList(type, initializer);
+                *initptr = initializer;
                 type->right = AstInteger(AstListLen(initializer));
             } else if (initializer->kind == AST_STRINGPTR) {
                 type->right = AstInteger(GetExprlistLen(initializer->left) + 1);

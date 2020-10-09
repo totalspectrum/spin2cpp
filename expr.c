@@ -3011,6 +3011,8 @@ AST *PullElement(AST *type, AST **rawlist_ptr)
 {
     AST *item = NULL;
     AST *rawlist = *rawlist_ptr;
+
+    if (!rawlist) return NULL;
     if (IsArrayType(type)) {
         int numelems;
         int elemsize;
@@ -3024,6 +3026,35 @@ AST *PullElement(AST *type, AST **rawlist_ptr)
         }
         for (i = 0; i < numelems; i++) {
             item = AddToList(item, PullElement(type, rawlist_ptr));
+        }
+        return item;
+    } else if (IsClassType(type)) {
+        AST *varlist;
+        AST *elem;
+        AST *subtype;
+        int sawBitfield = 0;
+        Module *P = (Module *)type->d.ptr;
+        if (P->pendingvarblock) {
+            ERROR(type, "Internal error: pending variables on object");
+            return NULL;
+        }
+        varlist = P->finalvarblock;
+        while (varlist) {
+            elem = varlist->left;
+            varlist = varlist->right;
+            if (elem->kind == AST_DECLARE_BITFIELD) {
+                sawBitfield = 1;
+                subtype = ast_type_long;
+                item = AddToList(item, PullElement(subtype, rawlist_ptr));
+            } else if (sawBitfield) {
+                sawBitfield = 0;
+            } else {
+                subtype = ExprType(elem);
+                item = AddToList(item, PullElement(subtype, rawlist_ptr));
+            }
+            if (P->isUnion) {
+                break;
+            }
         }
         return item;
     }
@@ -3067,22 +3098,21 @@ AST *FindMethodInList(AST *list, AST *ident, int *curptr)
 /* creates an array containing the initializer expressions;
  * each of these may in turn be an array of initializers
  * returns an EXPRLIST containing the items
+ * returns NULL if list is empty
  */
 AST *
 FixupInitList(AST *type, AST *initval)
 {
-    int elemsize;
-    int typesize;
     int numelems;
     AST **astarr = 0;
     int curelem;
+    AST *origtype = type;
     
     if (!initval) {
         return initval;
     }
     type = RemoveTypeModifiers(type);
     //typealign = TypeAlign(type);
-    elemsize = typesize = TypeSize(type);
     numelems  = 1;
 
     if (initval->kind != AST_EXPRLIST) {
@@ -3094,32 +3124,34 @@ FixupInitList(AST *type, AST *initval)
     case AST_ARRAYTYPE:
     {
         type = RemoveTypeModifiers(BaseType(type));
-        elemsize = TypeSize(type);
-        numelems = typesize / elemsize;
-        if (!numelems) {
-            WARNING(initval, "empty array cannot be initialized");
-            return 0;
+        /* if the first element is not an initializer list, then
+           assume we've got a flat initializer like
+             int a[2][3] = { 1, 2, 3, 4, 5, 6 }
+           we need to convert this to { {1, 2, 3}, {4, 5, 6} }
+        */
+        if ( (IsArrayType(type) || IsClassType(type) ) && initval->left && initval->left->kind != AST_EXPRLIST) {
+            AST *rawlist = initval;
+            AST *item;
+            initval = NULL;
+            numelems = 0;
+            for (;;) {
+                item = PullElement(type, &rawlist);
+                if (!item) break;
+                item = NewAST(AST_EXPRLIST, item, NULL);
+                initval = AddToList(initval, item);
+                numelems++;
+            }
+        } else {
+            if (origtype->right) {
+                numelems = EvalConstExpr(origtype->right);
+            } else {
+                numelems = AstListLen(initval);
+            }
         }
         astarr = calloc( numelems, sizeof(AST *) );
         if (!astarr) {
             ERROR(NULL, "out of memory");
             return 0;
-        }
-        /* if the first element is not an initializer list, then
-           assume we've got a flat initializer like
-             int a[2][3] = { 1, 2, 3, 4, 5, 6 }
-           we need to conver this to { {1, 2, 3}, {4, 5, 6} }
-        */
-        if (IsArrayType(type) && initval->left && initval->left->kind != AST_EXPRLIST) {
-            AST *rawlist = initval;
-            AST *item;
-            int i;
-            initval = NULL;
-            for (i = 0; i < numelems; i++) {
-                item = PullElement(type, &rawlist);
-                item = NewAST(AST_EXPRLIST, item, NULL);
-                initval = AddToList(initval, item);
-            }
         }
         curelem = 0;
         while (initval) {
@@ -3159,9 +3191,6 @@ FixupInitList(AST *type, AST *initval)
         Module *P = GetClassPtr(type);
         int is_union = P->isUnion;
         AST *varlist = P->finalvarblock;
-        if (initval && initval->kind != AST_EXPRLIST) {
-            initval = NewAST(AST_EXPRLIST, initval, NULL);
-        }
         if (!varlist) {
             return NULL;
         }
