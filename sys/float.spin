@@ -382,7 +382,23 @@ pri __builtin_ilogb(a=float) : r=long | s, x, m
       return $7fffffff
     return $8000_0000  ' NaN
   return x
-  
+
+pri __builtin_ilogb_fixed(a) : r=long | n
+  n := >|a
+  r := n - 17
+
+pri __builtin_copysign_fixed(x, s) : r=long
+  if s < 0
+    if x < 0
+      r := x
+    else
+      r := -x
+  else
+    if x < 0
+      r := -x
+    else
+      r := x
+
 {{
 
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
