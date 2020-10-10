@@ -10,12 +10,21 @@
 #define fabsf(x) __builtin_abs(x)
 #define sqrt(x) __builtin_sqrt(x)
 #define sqrtf(x) __builtin_sqrt(x)
+#ifdef __fixedreal__
+#define copysign(x, y) __builtin_copysign_fixed((x), (y))
+#define copysignf(x, y) __builtin_copysign_fixed((x), (y))
+#define ilogb(x) __builtin_ilogb_fixed(x)
+#define FP_ILOGB0 (-0x7fffffff)
+#define FP_ILOGBNAN (0x80000000)
+#else
 #define copysign(x, y) __builtin_copysign((x), (y))
 #define copysignf(x, y) __builtin_copysign((x), (y))
-#define signbit(x) __builtin_signbit(x)
 #define ilogb(x) __builtin_ilogb(x)
 #define FP_ILOGB0 (-0x7fffffff)
 #define FP_ILOGBNAN (0x80000000)
+#endif
+
+#define signbit(x) __builtin_signbit(x)
 
 #define scalbnf(x) __builtin_scalbnf(x)
 

@@ -116,6 +116,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         pp_define(&gl_pp, "__P2__", "1");
         pp_define(&gl_pp, "__propeller2__", "1");
     }
+    if (gl_fixedreal) {
+        pp_define(&gl_pp, "__fixedreal__", "1");
+    }
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && cmd->outputBin) {
