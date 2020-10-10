@@ -100,6 +100,8 @@ pri _lfsr_backward(x) | a
     endasm
   return x
 
+{{
+' obsolete, use _basic_print_float
 pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
   if (x < 0)
     r := _basic_print_char(h, "-")
@@ -120,6 +122,7 @@ pri _basic_print_fixed(h, x, fmt, ch) : r | i, f
     f := f & $ffff
     r += _basic_print_char(h, i + "0")
   return r
+}}
 
 ''
 '' x*y >> 30, signed scaled multiply

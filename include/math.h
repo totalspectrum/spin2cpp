@@ -16,12 +16,19 @@
 #define ilogb(x) __builtin_ilogb_fixed(x)
 #define FP_ILOGB0 (-0x7fffffff)
 #define FP_ILOGBNAN (0x80000000)
+
+#define isinf(x) (__builtin_ilogb_fixed(x) == 0x7fffffff)
+#define isnan(x) (__builtin_ilogb_fixed(x) == FP_ILOGBNAN)
+
 #else
 #define copysign(x, y) __builtin_copysign((x), (y))
 #define copysignf(x, y) __builtin_copysign((x), (y))
 #define ilogb(x) __builtin_ilogb(x)
 #define FP_ILOGB0 (-0x7fffffff)
 #define FP_ILOGBNAN (0x80000000)
+#define isinf(x) (__builtin_ilogb(x) == 0x7fffffff)
+#define isnan(x) (__builtin_ilogb(x) == FP_ILOGBNAN)
+
 #endif
 
 #define signbit(x) __builtin_signbit(x)
@@ -48,9 +55,6 @@
 #define frexp(x, p) __builtin_frexpf((x), (p))
 #define ldexp(x, n) __builtin_ldexpf((x), (n))
 #define modf(x, p) __builtin_modff((x), (p))
-
-#define isinf(x) (__builtin_ilogb(x) == 0x7fffffff)
-#define isnan(x) (__builtin_ilogb(x) == FP_ILOGBNAN)
 
 #endif
 

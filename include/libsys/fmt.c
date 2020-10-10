@@ -208,39 +208,57 @@ UITYPE asInt(FTYPE d)
 }
 #endif
 
+#ifdef __fixedreal__
+#define _float_pow_n(a, n) _fixed_pow_n(a, n)
+double _fixed_pow_n(double b, int n)
+{
+    double r;
+    int flip = 0;
+    r = 1.0;
+
+#ifdef DEBUG_PRINTF
+    __builtin_printf("!!!\n");
+#endif    
+    if (n < 0) {
+        flip = 1;
+        n = -n;
+    }
+    while (n > 0) {
+        r = r*b;
+        --n;
+    }
+    if (flip) {
+        double t = r;
+        if (t == 10.0) {
+            r = 0.1;
+        } else {
+            r = 1.0 / t;
+        }
+#ifdef DEBUG_PRINTF
+        __builtin_printf("t=%x r=%x\n", asInt(t), asInt(r));
+#endif
+    }
+    return r;
+}
+#endif
+
 #ifdef __propeller__
+
 # ifdef __GNUC__
 extern long double _intpow(long double a, long double b, int n);
 #define _float_pow_n(a, n) _intpow(1.0, a, n)
 # endif
-#else
 # ifdef __FLEXC__
-#  ifdef __fixedreal__
-double _float_pow_n(double b, int n)
-{
-    if (n == 0) return b;
-    if (n > 0) {
-        while (n) {
-            b = b*10;
-            --n;
-        }
-    } else {
-        n = -n;
-        while (n > 0) {
-            b = b / 10;
-            --n;
-        }
-    }
-}
-#  endif
-# else
+// nothing to do here
+# endif
+#else
 // calculate b^n with as much precision as possible
 double _float_pow_n(long double b, int n)
 {
     long double r = powl((long double)b, (long double)n);
     return r;
 }
-# endif
+
 #endif
 
 /*
@@ -255,8 +273,91 @@ double _float_pow_n(long double b, int n)
  */
 #ifdef __fixedreal__
 #define DOUBLE_BITS 16
-#define MAX_DEC_DIGITS 5
+#define MAX_DEC_DIGITS 6
 #define DOUBLE_ONE ((unsigned)(1<<DOUBLE_BITS))
+#define DOUBLE_MASK ((DOUBLE_ONE) - 1)
+
+static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
+{
+    DI un;
+    UITYPE ai;
+    UITYPE afrac;
+    UITYPE limit;
+    FTYPE based;
+    int n;
+    int maxdigits;
+    
+    if (x == 0.0) {
+        *aip = 0;
+        *np = 0;
+        return;
+    }
+    un.d = x;
+    ai = un.i;
+
+    // base 2 we will group digits into 4 to print as hex
+    if (base == 2) {
+        numdigits *= 4;
+        maxdigits = 24;
+    } else {
+        maxdigits = MAX_DEC_DIGITS;
+    }
+
+    afrac = ai & DOUBLE_MASK;
+    ai = ai >> DOUBLE_BITS;
+
+    n = 0;
+    based = (float)base;
+    while (x >= based) {
+        n++;
+        x = x / based;
+    }
+    while (x < 1.0) {
+        --n;
+        x *= based;
+    }
+    if (numdigits < 0) {
+        numdigits = n - (numdigits+1);
+        if (numdigits < 0) {
+            *aip = 0;
+            *np = 0;
+            return;
+        }
+    } else {
+        numdigits = numdigits+1;
+    }
+    if (numdigits > maxdigits) {
+        numdigits = maxdigits;
+    }
+
+    limit = base;
+    n = numdigits;
+    --numdigits;
+    while (numdigits > 0) {
+        limit = limit * base;
+        --numdigits;
+    }
+
+    while (ai >= limit) {
+        UITYPE d;
+        d = ai % base;
+        ai = ai / base;
+        afrac = (afrac + (d<<DOUBLE_BITS)) / base;
+        ++n;
+    }
+    while (ai < limit) {
+#ifdef DEBUG_PRINTF
+        __builtin_printf("ai=%d n=%d\n", ai, n);
+#endif        
+        --n;
+        afrac = afrac * base;
+        ai = (ai * base) + (afrac >> DOUBLE_BITS);
+        afrac = afrac & DOUBLE_MASK;
+    }        
+    *aip = ai;
+    *np = n;
+}
+
 #else
 #ifdef SMALL_INT
 #define DOUBLE_BITS 23
@@ -266,7 +367,6 @@ double _float_pow_n(long double b, int n)
 #define DOUBLE_BITS 52
 #define MAX_DEC_DIGITS 17
 #define DOUBLE_ONE (1ULL<<DOUBLE_BITS)
-#endif
 #endif
 
 #define DOUBLE_MASK (DOUBLE_ONE-1)
@@ -285,10 +385,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     int trys = 0;
     DI un;
 
-#ifdef DEBUG_PRINTF
-    un.d = x;
-    __builtin_printf("x=%x\n", un.i);
-#endif    
     if (x == 0.0) {
         *aip = 0;
         *np = 0;
@@ -298,9 +394,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     // first, find (a,n) such that
     // 1.0 <= a < base and x = a * base^n
     n = ilogb(x);
-#ifdef DEBUG_PRINTF
-    __builtin_printf("n=%d\n", n);
-#endif    
     if (base == 10) {
         // initial estimate: 2^10 ~= 10^3, so 3/10 of ilogb is a good first guess
         n = (3 * n)/10 ;
@@ -314,9 +407,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
         //
         p = _float_pow_n(based, n);
         a = x / p;
-#ifdef DEBUG_PRINTF
-        __builtin_printf("a=%x p=%x based=%d\n", asInt(p), asInt(based), n);
-#endif
         if (a < 1.0) {
             --n;
         } else if (a >= based) {
@@ -335,9 +425,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     ai = un.i & DOUBLE_MASK;
     ai |= DOUBLE_ONE;
     ai = ai<<i;
-#ifdef DEBUG_PRINTF
-    __builtin_printf("ai=%x\n", ai);
-#endif    
     // base 2 we will group digits into 4 to print as hex
     if (base == 2) {
         numdigits *= 4;
@@ -345,9 +432,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     // now extract as many significant digits as we can
     // into u
     u = 0;
-#ifdef DEBUG_PRINTF
-    __builtin_printf("numdigits=%d n = %d\n", numdigits, n);
-#endif    
     if (numdigits< 0) {
         numdigits = n - numdigits;
 
@@ -360,17 +444,11 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     } else {
         numdigits = numdigits+1;
     }
-#ifdef DEBUG_PRINTF
-    __builtin_printf("final numdigits=%d\n", numdigits);
-#endif    
     if (numdigits > maxdigits)
         numdigits = maxdigits;
     maxu = 1; // for overflow
     while ( u < DOUBLE_ONE && numdigits-- > 0) {
         FTYPE d;
-#ifdef DEBUG_PRINTF
-        __builtin_printf("u=%d ai=%x\n", u, ai);
-#endif    
         d = (ai >> DOUBLE_BITS); // next digit
         ai &= DOUBLE_MASK;
         u = u * base;
@@ -388,12 +466,10 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
         }
     }
 done:
-#ifdef DEBUG_PRINTF
-    __builtin_printf("final u=%d\n", u);
-#endif    
     *aip = u;
     *np = n;
 }
+#endif
 
 //
 // output the sign and any hex digits required

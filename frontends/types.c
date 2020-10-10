@@ -1547,12 +1547,11 @@ void
 InitGlobalFuncs(void)
 {
     if (!basic_print_integer) {
+        basic_print_float = getBasicPrimitive("_basic_print_float");
         if (gl_fixedreal) {
-            basic_print_float = getBasicPrimitive("_basic_print_fixed");
             float_mul = getBasicPrimitive("_fixed_mul");
             float_div = getBasicPrimitive("_fixed_div");
         } else {
-            basic_print_float = getBasicPrimitive("_basic_print_float");
             basic_get_float = getBasicPrimitive("_basic_get_float");
             float_cmp = getBasicPrimitive("_float_cmp");
             float_add = getBasicPrimitive("_float_add");
