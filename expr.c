@@ -1640,9 +1640,17 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         break;
     case AST_CAST:
+        rval = EvalExpr(expr->right, flags, valid, depth+1);
         if (IsGenericType(expr->left)) {
-            return EvalExpr(expr->right, flags, valid, depth+1);
+            return rval;
         }
+        if (IsFloatType(expr->left)) {
+            return convToFloat(rval);
+        } else if (IsFloatType(rval.type)) {
+            rval.val = (int)intAsFloat(rval.val);
+        }
+        rval.type = expr->left;
+        return rval;
     default:
         break;
     }
