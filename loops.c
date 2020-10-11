@@ -1272,6 +1272,10 @@ TransformCountRepeat(AST *ast)
     }
     if (IsConstExpr(stepval)) {
         knownStepVal = EvalConstExpr(stepval);
+        if (!isIntegerLoop) {
+            knownStepDir = (knownStepVal < 0) ? -1 : 1;
+            knownStepVal = 0;
+        }
     }
     if (!IsSpinLang(curfunc->language)) {
         // only Spin does the weirdness where
@@ -1370,6 +1374,9 @@ TransformCountRepeat(AST *ast)
     } else {
         AST *stepvar = AstTempLocalVariable("_step_", looptype);
         int op = isUnsignedLoop ? K_GTU : '>';
+        if (knownStepDir < 0) {
+            op = isUnsignedLoop ? K_LTU : '<';
+        }
         initstmt = NewAST(AST_SEQUENCE, initstmt,
                           AstAssign(stepvar,
                                     NewAST(AST_CONDRESULT,
@@ -1482,8 +1489,8 @@ TransformCountRepeat(AST *ast)
         } else if (knownStepDir < 0) {
             condtest = AstOperator(K_GE, loopvar, toval);
         } else {
-            condtest = AstInteger(0);
-            ERROR(fromval, "internal error, cannot find loop direction");
+            condtest = NewAST(AST_ISBETWEEN, loopvar,
+                              NewAST(AST_RANGE, fromval, toval));
         }
         if (!(gl_output == OUTPUT_C || gl_output == OUTPUT_CPP)) {
             loopkind = AST_FORATLEASTONCE;

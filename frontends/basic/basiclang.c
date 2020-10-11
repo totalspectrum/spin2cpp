@@ -150,13 +150,10 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 // each field discovered in the string causes the corresponding parameter
 // to be prefixed with an AST_USING with an AST_INTEGER left side "fmtparam"
 // "fmtparam" has the following fields:
-//   bit 0-7: minimum width 0-255; 0 means "no particular width"
-//   bit 8-15: maximum width 0-255: 0 means "no particular maximum"
+//   bit 0-7: maximum width 0-255; 0 means "no particular width"
+//   bit 8-15: minimum width 0-255: 0 means "no particular maximum"
 //   bit 16-21: precision (digits after decimal point)
 //   bit 22: 1=left justify, 2=right justify, 3=center
-//   bits 10-15: reserved
-//   bit 16-21: minimum number of digits to show
-//   bits 22-23: sign field: 0 = print nothing for positive sign, 1 = print space, 2 = print +
 //
 
 #define MAXWIDTH_BIT (0)
@@ -164,6 +161,9 @@ addPrintDec(AST *seq, AST *handle, AST *func, AST *expr, AST *fmtAst)
 #define PREC_BIT     (16)
 #define JUSTIFY_BIT  (22)
 #define PADDING_BIT  (24)
+#define PADCHAR_SPACE (1)
+#define PADCHAR_ZERO (2)
+
 #define SIGNCHAR_BIT (26)
 #define ALT_BIT      (28)
 #define UPCASE_BIT   (29)
@@ -225,8 +225,9 @@ TransformUsing(const char *usestr, AST *params)
     int minwidth;
     unsigned fmtparam;
     unsigned signchar = 0;
+    unsigned padchar = 0;
     ASTReportInfo saveinfo;
-
+    
     AstReportAs(params, &saveinfo);
     
     // scan through the use str until we find a special character
@@ -280,15 +281,30 @@ TransformUsing(const char *usestr, AST *params)
         case '%':
         case '#':
             signchar = 0;
+            padchar = 0;
             exprlist = harvest(exprlist, &fb);
-            width = minwidth = 1;
+            width = 1;
+            minwidth = 1;
         handlenumeric:
             while (*usestr && *usestr == c) {
                 usestr++;
                 width++;
                 if (c == '%') minwidth++;
             }
-            fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY;
+            if (*usestr == '.') {
+                usestr++;
+                width++;
+                if (minwidth > 1) {
+                    padchar = PADCHAR_ZERO<<PADDING_BIT;
+                }
+                minwidth = 0;
+                while (*usestr && (*usestr == '#' || *usestr == '%')) {
+                    usestr++;
+                    width++;
+                    minwidth++;
+                }
+            }
+            fmtparam = FMTPARAM_ALLWIDTH(width) | FMTPARAM_MINDIGITS(minwidth) | signchar | FMTPARAM_RIGHTJUSTIFY | padchar;
             lastFormat = AstInteger(fmtparam);
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
