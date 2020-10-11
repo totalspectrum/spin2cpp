@@ -1855,8 +1855,12 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         } else {
-            if (gotArgs != expectArgs && !(f && IsCLang(f->language))) {
-                ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+            if (gotArgs != expectArgs) {
+                if (f && IsCLang(f->language)) {
+                    WARNING(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+                } else {
+                    ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+                }
                 return;
             }
         }

@@ -850,7 +850,7 @@ int _basic_print_char(unsigned h, int c, unsigned fmt)
 
 int _basic_print_nl(unsigned h)
 {
-    _basic_print_char(h, 10);
+    _basic_print_char(h, 10, 0);
     return 1;
 }
 
