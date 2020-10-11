@@ -1068,7 +1068,7 @@ casematch:
 // (AST_FOR (initstmt) (AST_TO (condtest (AST_STEP step body))))
 //
 forstmt:
-    BAS_FOR { PushLoop(BAS_FOR); } BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
+    BAS_FOR { PushLoop(BAS_FOR); } BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln optstatementlist endfor
     {
       AST *from, *to, *step;
       AST *ident = $3;
