@@ -273,7 +273,7 @@ double _float_pow_n(long double b, int n)
  */
 #ifdef __fixedreal__
 #define DOUBLE_BITS 16
-#define MAX_DEC_DIGITS 6
+#define MAX_DEC_DIGITS 7
 #define DOUBLE_ONE ((unsigned)(1<<DOUBLE_BITS))
 #define DOUBLE_MASK ((DOUBLE_ONE) - 1)
 
@@ -338,13 +338,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
         --numdigits;
     }
 
-    while (ai >= limit) {
-        UITYPE d;
-        d = ai % base;
-        ai = ai / base;
-        afrac = (afrac + (d<<DOUBLE_BITS)) / base;
-        ++n;
-    }
     while (ai < limit) {
 #ifdef DEBUG_PRINTF
         __builtin_printf("ai=%d n=%d\n", ai, n);
@@ -353,7 +346,22 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
         afrac = afrac * base;
         ai = (ai * base) + (afrac >> DOUBLE_BITS);
         afrac = afrac & DOUBLE_MASK;
-    }        
+    }
+    limit = limit*base;
+    while (ai >= limit) {
+        UITYPE d;
+        d = ai % base;
+        ai = ai / base;
+        afrac = (afrac + (d<<DOUBLE_BITS)) / base;
+        ++n;
+    }
+    if (afrac >= (1<<(DOUBLE_BITS-1))) {
+        ai++;
+        if (ai >= limit) {
+            ++n;
+            ai = ai / base;
+        }
+    }
     *aip = ai;
     *np = n;
 }
