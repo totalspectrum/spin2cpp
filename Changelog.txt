@@ -5,6 +5,7 @@ Version 4.4.1
 - Fixed a number of problems in C struct initialization
 - Fixed printing floats in C when --fixedreal is given
 - Fixed BASIC FOR loops with negative floating point steps
+- Fixed binary and hex constants in C to be unsigned when appropriate
 
 Version 4.4.0
 - Added simplified designated initializers (like { .x=1 }) for structs and arrays
