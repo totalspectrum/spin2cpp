@@ -216,7 +216,13 @@ doAstMatch(AST *a, AST *b, int ignoreStatic)
     case AST_FLOAT:
         return a->d.ival == b->d.ival;
     case AST_STRING:
+        return strcmp(a->d.string, b->d.string) == 0;
     case AST_IDENTIFIER:
+        if ( (curfunc && LangCaseSensitive(curfunc->language))
+             || (current && LangCaseSensitive(current->curLanguage)) )
+        {
+            return strcmp(a->d.string, b->d.string) == 0;
+        }
         return strcasecmp(a->d.string, b->d.string) == 0;
     case AST_LOCAL_IDENTIFIER:
         if (ignoreStatic) {
