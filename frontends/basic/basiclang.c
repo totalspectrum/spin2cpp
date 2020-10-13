@@ -272,6 +272,10 @@ TransformUsing(const char *usestr, AST *params)
             width = 1;
             minwidth = 0;
             c = *usestr;
+            if (c == '.') {
+                c = '#';
+                width++;
+            }
             if (c == '#' || c == '%') {
                 goto handlenumeric;
             }
@@ -333,10 +337,23 @@ TransformUsing(const char *usestr, AST *params)
             using = NewAST(AST_USING, lastFormat, NextParam(&params));
             exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, using, NULL));
             break;
+        case '.':
+            signchar = 0;
+            padchar = 0;
+            exprlist = harvest(exprlist, &fb);
+            width = 1;
+            minwidth = 0;
+            c = *usestr;
+            if (c == '#') {
+                --usestr;
+                goto handlenumeric;
+            }
+            ERROR(params, ". in print using must be followed by #");
+            AstReportDone(&saveinfo);
+            return exprlist;
         case '*':
         case '^':
         case '$':
-        case '.':
             ERROR(params, "Unimplemented print using character '%c'", c);
             AstReportDone(&saveinfo);
             return exprlist;
@@ -874,7 +891,10 @@ doBasicTransform(AST **astptr)
         doBasicTransform(&ast->left);
         doBasicTransform(&ast->right);
         if (ast->left && ast->left->kind == AST_STRING) {
-            *ast = *TransformUsing(ast->left->d.string, ast->right);
+            AST *x = TransformUsing(ast->left->d.string, ast->right);
+            if (x) {
+                *ast = *x;
+            }
         } else {
             WARNING(ast, "Unexpected using method");
         }
