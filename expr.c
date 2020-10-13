@@ -1041,6 +1041,8 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
         return (rval < 0) ? -rval : rval;
     case K_SQRT:
         return sqrtf(rval);
+    case K_POWER:
+        return powf(lval, rval);
     default:
         if (valid)
             *valid = 0;
