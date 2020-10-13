@@ -42,7 +42,10 @@
 #define ceil(x)   __builtin_ceilf(x)
 #define ceilf(x)  __builtin_ceilf(x)
 
+#define pow(x, y) __builtin_powf(x, y)
+#define powf(x, y) __builtin_powf(x, y)
 #define exp(x) __builtin_expf(x)
+#define expf(x) __builtin_expf(x)
 #define log(x) __builtin_logf(x)
 #define logf(x) __builtin_logf(x)
 #define log10(x) __builtin_log10f(x)
