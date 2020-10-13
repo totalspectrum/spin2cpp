@@ -571,6 +571,9 @@ static AST *ScalePointer(AST *type, AST *val)
 // return the address of an array
 AST *ArrayAddress(AST *expr)
 {
+    if (curfunc && IsLocalVariable(expr)) {
+        curfunc->local_address_taken = 1;
+    }
     return NewAST(AST_ABSADDROF,
                   NewAST(AST_ARRAYREF, expr, AstInteger(0)),
                   NULL);
