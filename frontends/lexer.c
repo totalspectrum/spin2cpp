@@ -382,9 +382,11 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             break;
         }
     }
-    if ( (base <= 10) && (c == '.' || c == 'e' || c == 'E') ) {
+    if ( ((base <= 10) && (c == '.' || c == 'e' || c == 'E') )
+         || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
+    {
         /* potential floating point number */
-        float f = (float)tenval;
+        float f = (base == 16) ? (float)uval : (float)tenval;
         float ff = 0.0;
         static float divby[45] = {
             1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
@@ -408,13 +410,39 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 goto donefloat;
             }
         }
-        while ( (c >= '0' && c <= '9') || (c == '_')) {
-            if (c != '_') {
-                ff = ff + divby[counter]*(float)(c-'0');
-                counter++;
+        if (base == 16) {
+            float hexplace = 1.0f/16.0f;
+            for(;;) {
+                if (c == '_') {
+                    /* just skip */
+                } else if (c >= '0' && c <= '9') {
+                    c = c - '0';
+                } else if (c >= 'a' && c <= 'f') {
+                    c = 10 + (c - 'a');
+                } else if (c >= 'A' && c <= 'F') {
+                    c = 10 + (c - 'A');
+                } else {
+                    break;
+                }
+                if (c >= 0 && c < 16) {
+                    ff = ff + hexplace * c;
+                    hexplace /= 16.0f;
+                    sawdigit = 1;
+                }
+                c = lexgetc(L);
             }
-            sawdigit = 1;
-            c = lexgetc(L);
+            if (c == 'p' || c == 'P') {
+                c = 'E';
+            }
+        } else {
+            while ( (c >= '0' && c <= '9') || (c == '_')) {
+                if (c != '_') {
+                    ff = ff + divby[counter]*(float)(c-'0');
+                    counter++;
+                }
+                sawdigit = 1;
+                c = lexgetc(L);
+            }
         }
         if (c == 'e' || c == 'E') {
             int expval = 0;
@@ -435,10 +463,14 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             exponent += expval;
         }
         f = f + ff;
-        if (exponent < 0 && exponent >= -45) {
+        if (base == 10 && exponent < 0 && exponent >= -45) {
             f *= divby[-(exponent+1)];
         } else if (exponent != 0) {
-            f *= powf(10.0f, (float)exponent);
+            if (base == 16) {
+                f *= powf(2.0f, (float)exponent);
+            } else {
+                f *= powf(10.0f, (float)exponent);
+            }
         }
         if (gl_fixedreal) {
             uval = ((1<<G_FIXPOINT) * f) + 0.5;
@@ -447,6 +479,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         }
         kind = SP_FLOATNUM;
     }
+
 donefloat:
     lexungetc(L, c);
     *num = uval;
@@ -3799,6 +3832,15 @@ parse_number:
                 // check for hex or binary prefixes like 0x or 0h
                 if (c2 == 'x' || c2 == 'X') {
                     c = parseNumber(L, 16, &ast->d.ival);
+                    if (c == SP_FLOATNUM) {
+                        ast->kind = AST_FLOAT;
+                        c = C_CONSTANT;
+                        c2 = lexpeekc(L);
+                        if (c2 == 'f' || c2 == 'F') {
+                            lexgetc(L);
+                        }
+                        goto done_number;
+                    }
                     c2 = lexgetc(L);
                 } else if (c2 == 'b' || c2 == 'B') {
                     c = parseNumber(L, 2, &ast->d.ival);
@@ -3819,6 +3861,7 @@ parse_number:
                 c2 = lexgetc(L);
             }
             lexungetc(L, c2);
+        done_number:            
             c = C_CONSTANT;
         }
     } else if (isIdentifierStart(c)) {
