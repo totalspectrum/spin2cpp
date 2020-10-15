@@ -856,6 +856,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 
 // builtin functions
 %token C_BUILTIN_ABS    "__builtin_abs"
+%token C_BUILTIN_CLZ    "__builtin_clz"
 %token C_BUILTIN_SQRT   "__builtin_sqrt"
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
@@ -900,6 +901,12 @@ postfix_expression
             { $$ = $1; }
         | C_BUILTIN_ABS '(' assignment_expression ')'
             { $$ = AstOperator(K_ABS, NULL, $3); }
+        | C_BUILTIN_CLZ '(' assignment_expression ')'
+            {
+                AST *expr = AstOperator(K_ENCODE, NULL, $3);
+                expr = AstOperator('-', AstInteger(32), expr);
+                $$ = expr;
+            }
         | C_BUILTIN_SQRT '(' assignment_expression ')'
             { $$ = AstOperator(K_SQRT, NULL, $3); }
         | C_BUILTIN_REV '(' argument_expression_list ')'

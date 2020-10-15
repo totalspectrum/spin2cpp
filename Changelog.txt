@@ -2,6 +2,7 @@ Version 4.4.1
 - Added a warning for C functions with mismatched parameters (it used to silently accept this)
 - Added "." character for PRINT USING in BASIC
 - Added support for binary floating point constants in C
+- Added __builtin_clz() for C
 - Allowed empty FOR loops in BASIC
 - Fixed a number of problems in C struct initialization
 - Fixed printing floats in C when --fixedreal is given
