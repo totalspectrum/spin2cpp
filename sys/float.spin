@@ -403,8 +403,9 @@ pri file "libsys/math.c"  __builtin_atan2f(y = float, x = float) : r=float
 pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=long) : r=float
 pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
 pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float
-pri file "libsys/e_expf.c" __builtin_expf(x = float) : r=float
-pri file "libsys/e_logf.c" __builtin_logf(x = float) : r=float
-pri file "libsys/e_log10f.c" __builtin_log10f(x = float) : r=float
-pri file "libsys/e_powf.c" __builtin_powf(x = float, y = float) : r=float
+pri file "libsys/powers.c" __builtin_expf(x = float) : r=float
+pri file "libsys/powers.c" __builtin_logf(x = float) : r=float
+pri file "libsys/powers.c" __builtin_log10f(x = float) : r=float
+pri file "libsys/powers.c" __builtin_powf(x = float, y = float) : r=float
+pri file "libsys/powers.c" __builtin_logbase(x = float, y = float) : r=float
 pri file "libsys/float_support.c" _float_pow_n(b=float, a=float, n=long) : r=float
