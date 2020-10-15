@@ -153,31 +153,6 @@ pri _float_div(singleA=float, singleB=float) : single=float | sa, xa, ma, sb, xb
   return _float_Pack(sa, xa, ma)              'pack result
 
 ''
-'' compute a^n, where a is a float and n is an integer
-'' keeps as many bits of precision as possible
-''
-pri _float_pow_n(a=float, n=long) : r=float | sgnflag, invflag
-  if (n < 0)
-    invflag := 1
-    n := -n
-  else
-    invflag := 0
-  if (a < 0)
-    sgnflag := n & 1
-  else
-    sgnflag := 0
-  r := 1.0
-  repeat while (n > 0)
-    if (n & 1)
-      r := _float_mul(r, a)
-    n := n >> 1
-    a := _float_mul(a, a)
-  if (invflag)
-    r := _float_div(1.0, r)
-  if (sgnflag)
-    r := -r
-
-''
 '' compare a and b;
 '' return 0 if a = b, -N if a < b, +N if a > b
 '' for a or b NaN, should return $8000000
@@ -267,7 +242,7 @@ pri _float_getpowten(x) | midf, lo, hi, mid, t, sanity
   sanity := 0
   repeat while lo < hi and (sanity++ < 100)
     mid := (lo + hi) / 2
-    midf := _float_pow_n(10.0, mid)
+    midf := _float_pow_n(1.0, 10.0, mid)
     t := _float_div(x, midf)
     if (_float_cmp(t, 10.0) => 0)
       lo := mid
@@ -275,7 +250,7 @@ pri _float_getpowten(x) | midf, lo, hi, mid, t, sanity
       hi := mid
     else
       return (midf, mid)
-  return (_float_pow_n(10.0, hi), hi)
+  return (_float_pow_n(1.0, 10.0, hi), hi)
 
 pri file "libsys/fmt.c" _basic_print_float(h, f, fmtparam, ch)
 
@@ -357,8 +332,7 @@ pri __builtin_atof(s = "0") : r=float | c, exp, scaleexp, sawpoint, negate
   else
     exp := scaleexp
     
-  exp := _float_pow_n(10.0, exp)
-  r := _float_mul(r, exp)
+  r := _float_pow_n(r, 10.0, exp)
   if negate
     r := _float_negate(r)
 
@@ -433,3 +407,4 @@ pri file "libsys/e_expf.c" __builtin_expf(x = float) : r=float
 pri file "libsys/e_logf.c" __builtin_logf(x = float) : r=float
 pri file "libsys/e_log10f.c" __builtin_log10f(x = float) : r=float
 pri file "libsys/e_powf.c" __builtin_powf(x = float, y = float) : r=float
+pri file "libsys/float_support.c" _float_pow_n(b=float, a=float, n=long) : r=float
