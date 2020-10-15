@@ -208,55 +208,22 @@ UITYPE asInt(FTYPE d)
 }
 #endif
 
-#ifdef __fixedreal__
-#define _float_pow_n(a, n) _fixed_pow_n(a, n)
-double _fixed_pow_n(double b, int n)
-{
-    double r;
-    int flip = 0;
-    r = 1.0;
-
-#ifdef DEBUG_PRINTF
-    __builtin_printf("!!!\n");
-#endif    
-    if (n < 0) {
-        flip = 1;
-        n = -n;
-    }
-    while (n > 0) {
-        r = r*b;
-        --n;
-    }
-    if (flip) {
-        double t = r;
-        if (t == 10.0) {
-            r = 0.1;
-        } else {
-            r = 1.0 / t;
-        }
-#ifdef DEBUG_PRINTF
-        __builtin_printf("t=%x r=%x\n", asInt(t), asInt(r));
-#endif
-    }
-    return r;
-}
-#endif
 
 #ifdef __propeller__
 
 # ifdef __GNUC__
 extern long double _intpow(long double a, long double b, int n);
-#define _float_pow_n(a, n) _intpow(1.0, a, n)
+#define _float_pow_n(b, a, n) _intpow(b, a, n)
 # endif
 # ifdef __FLEXC__
 // nothing to do here
 # endif
 #else
-// calculate b^n with as much precision as possible
-double _float_pow_n(long double b, int n)
+// calculate a * b^n with as much precision as possible
+double _float_pow_n(long double a, long double b, int n)
 {
     long double r = powl((long double)b, (long double)n);
-    return r;
+    return a*r;
 }
 
 #endif
@@ -382,7 +349,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
 static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
 {
     FTYPE a;
-    FTYPE p;
     int maxdigits;
     FTYPE based = (FTYPE)base;
     UITYPE ai;
@@ -411,9 +377,8 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     }
     
     while (trys++ < 8) {
-        //
-        //
-        p = _float_pow_n(based, n);
+        FTYPE p;
+        p = _float_pow_n(1.0, based, n);
         a = x / p;
         if (a < 1.0) {
             --n;
@@ -579,7 +544,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     if ( signbit(x) ) {
         // work on non-negative values only
         sign = '-';
-        x = copysign(x, 1.0);
+        x = -x;
     } else {
         // sometimes we need positive sign
         if (signclass == SIGNCHAR_PLUS) {
