@@ -245,6 +245,13 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
+### Count Leading Zeros
+
+```
+  x = __builtin_clz(y)
+```
+Calculates the number of 0 bits at the start of the unsigned integer `y`. The result is between 0 and 32 (inclusive).
+
 ### COGSTART
 
 Starts a function running in another COG. This builtin is more of a macro than a traditional function, because it does not immediately evaluate its first parameter (which should be a function call); instead, it causes that function call to run in a new COG. For example:
