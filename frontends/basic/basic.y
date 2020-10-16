@@ -418,6 +418,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_ENDIF      "endif"
 %token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
+%token BAS_FIXED      "fixed"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
 %token BAS_GOTO       "goto"
@@ -1939,6 +1940,17 @@ basetypename:
     { $$ = ast_type_float; }
   | BAS_DOUBLE
     { $$ = ast_type_float; }
+  | BAS_FIXED '(' BAS_INTEGER ')'
+    {
+        AST *sizeexpr = $3;
+        int siz = sizeexpr->d.ival;
+        if (siz < 1 || siz > 31) {
+            SYNTAX_ERROR("Fixed point size %d is out of range 1..31", siz);
+            siz = 16;
+        }
+        SYNTAX_ERROR("Fixed point types not implemented yet");
+        $$ = ast_type_float;
+    }
   | BAS_STRING_KW
     { $$ = ast_type_string; }
   | BAS_ANY

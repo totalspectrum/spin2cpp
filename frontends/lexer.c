@@ -1678,6 +1678,7 @@ struct reservedword basic_keywords[] = {
   { "endif", BAS_ENDIF },
   { "enum", BAS_ENUM },
   { "exit", BAS_EXIT },
+  { "fixed", BAS_FIXED },
   { "for", BAS_FOR },
   { "function", BAS_FUNCTION },
   { "goto", BAS_GOTO },
