@@ -10,7 +10,9 @@ Version 4.4.1
 - Fixed binary and hex constants in C to be unsigned when appropriate
 - Fixed a problem with passing small arrays as parameters in C
 - Fixed ^ in BASIC
-- Made expf and logf use the CORDIC on P2
+- Made expf and logf use the CORDIC on P2 and ROM on P1
+- Made FIXED a reserved keyword in BASIC (for future expansion)
+- Updated time functions to work sensibly.
 
 Version 4.4.0
 - Added simplified designated initializers (like { .x=1 }) for structs and arrays

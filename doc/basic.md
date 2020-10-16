@@ -174,6 +174,7 @@ end
 endif
 enum
 exit
+fixed
 for
 function
 gosub
@@ -1590,6 +1591,10 @@ Predefined function. `exp(x)` returns the natural exponential of `x`, that is `e
 ### FALSE
 
 A predefined constant 0. Any value equal to 0 or `nil` will be considered as false in a boolean context.
+
+### FIXED
+
+Reserved for future use as a fixed point data type.
 
 ### FOR
 
