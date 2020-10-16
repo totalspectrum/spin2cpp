@@ -100,7 +100,7 @@ float __builtin_tanf(float x)
 // Approximates atan(x) normalized to the [-1,1] range
 // with a maximum error of 0.1620 degrees.
 
-float normalized_atanf( float x )
+static float normalized_atanf( float x )
 {
     static const uint32_t sign_mask = 0x80000000;
     static const float b = 0.596227f;
@@ -126,7 +126,7 @@ float __builtin_atanf(float x)
 // Approximates atan2(y, x) normalized to the -2 to 2 range
 // with a maximum error of 0.1620 degrees
 
-float normalized_atan2f(float y, float x)
+static float normalized_atan2f(float y, float x)
 {
     static const uint32_t sign_mask = 0x80000000;
     static const float b = 0.596227f;
@@ -153,4 +153,15 @@ float normalized_atan2f(float y, float x)
 float __builtin_atan2f(float y, float x)
 {
     return normalized_atan2f(y,x) * PI_2;
+}
+
+float __builtin_asinf(float x)
+{
+    float y = __builtin_sqrt(1-x*x);
+    return __builtin_atan2f(x, y);
+}
+
+float __builtin_acosf(float x)
+{
+    return PI_2 - __builtin_asinf(x);
 }
