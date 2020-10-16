@@ -4,7 +4,7 @@
 
 FlexC is the C dialect implemented by the fastspin compiler used in FlexGUI. It eventually will implement the C99 standard with some C++ extensions.
 
-fastspin recognizes the language by the extension of the file being compiled. If a file ends in `.c` it is treated as a C file. If a file ends in `.cpp`, `.cc`, or `.cxx` then it is treated as a C++ file; this enables a few keywords not available in C, but otherwise is very similar to C mode (FlexC is not a full featured C++ compiler).
+fastspin recognizes the language by the extension of the file being compiled. If a file ends in `.c` it is treated as a C file. If a file ends in `.cpp`, `.cc`, or `.cxx` then it is treated as a C++ file; this enables a few keywords not available in C, but otherwise is very similar to C mode (FlexC is not a fully featured C++ compiler).
 
 This document assumes that you are familiar with programming in C and with the Parallax Propeller chip. It mostly covers the differences between standard C and FlexC.
 
@@ -46,7 +46,7 @@ Anonymous structs and unions (i.e. nested struct members without a name) are not
 
 #### Variable length arrays
 
-Variable length arrays are not supported.
+Variable length arrays are not supported. A work-around is to use the `__builtin_alloca()` function to allocate memory on the stack.
 
 ## Preprocessor
 
@@ -72,11 +72,11 @@ In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal a
 
 ### P2 Clock Frequency
 
-The P2 does not have a default clock frequency. You may set up the frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+The P2 has a default clock frequency of 160 MHz in C mode. You may set up a different frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
 
-Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 160 MHz you would do:
+Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 180 MHz you would do:
 ```
-#define P2_TARGET_MHZ 160
+#define P2_TARGET_MHZ 180
 #include <sys/p2es_clock.h>
 ...
 _clkset(_SETFREQ, _CLOCKFREQ);
@@ -378,6 +378,20 @@ Stops the given COG.
 void _reboot(void);
 ```
 Reboots the P2. Needless to say, this function never returns.
+
+#### _getsec
+
+```
+uint32_t _getsec(void);
+```
+Gets the seconds elapsed on the system timer. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used, so it will wrap around only after many years.
+
+#### _getms
+
+```
+uint32_t _getms(void);
+```
+Gets the time elapsed on the system timer in milliseconds. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used for the system timer, so it will wrap around only after about 50 days.
 
 #### _waitx
 
