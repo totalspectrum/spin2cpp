@@ -4,10 +4,11 @@
 time_t
 time(time_t *tp)
 {
-  time_t now;
-
-  now = getcnt() / CLKFREQ;
-  if (tp)
-    *tp = now;
-  return now;
+    struct timeval tv;
+    time_t now;
+    gettimeofday(&tv, NULL);
+    now = tv.tv_sec;
+    if (tp)
+        *tp = now;
+    return now;
 }
