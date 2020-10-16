@@ -141,6 +141,8 @@ uint32_t  _cnt(void);
 uint32_t  _cnth(void); /* high 32 bits of CNT, on processors that support it */
 counter64_t _cnthl();  /* fetch both together */
 uint32_t  _getsec();   /* seconds elapsed */
+uint32_t  _getms();    /* get milliseconds elapsed */
+uint32_t  _getus();    /* get microseconds elapsed */
 
 uint32_t  _pollcnt(uint32_t tick);
 void      _waitcnt(uint32_t tick);
