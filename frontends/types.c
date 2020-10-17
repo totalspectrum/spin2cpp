@@ -844,23 +844,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 // returns the new type (should normally be desttype)
 // NOTE: if **astptr is NULL, then we cannot do coercion
 //
-AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg)
 {
     ASTReportInfo saveinfo;
     AST *expr = astptr ? *astptr : NULL;
-    const char *msg;
     int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_CFAMILY_C);
     
-    if (kind == AST_RETURN) {
-        msg = "return";
-    } else if (kind == AST_FUNCCALL) {
-        msg = "parameter passing";
-    } else if (kind == AST_ARRAYREF) {
-        msg = "array indexing";
-    } else {
-        msg = "assignment";
-    }
-
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
         // handle literal '0' specially for C
         if (curfunc && IsCLang(curfunc->language)) {
@@ -1205,7 +1194,7 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_ASSIGN:
         if (rtype) {
-            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype, "assignment");
         }
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
@@ -1223,7 +1212,7 @@ AST *CheckTypes(AST *ast)
         if (ast->left) {
             rtype = ltype; // type of actual expression
             ltype = GetFunctionReturnType(curfunc);
-            ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype, "return");
         }
         break;
     case AST_FUNCCALL:
@@ -1276,10 +1265,10 @@ AST *CheckTypes(AST *ast)
                     }
                     if (tupleType) {
                         // cannot coerce function arguments, really
-                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType);
+                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
                         tupleType = tupleType->right;
                     } else {
-                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
                     }
                     if (!tupleType) {
                         actualParamList = actualParamList->right;
@@ -1341,7 +1330,7 @@ AST *CheckTypes(AST *ast)
 
             righttype = ExprType(ast->right);
             if (IsFloatType(righttype)) {
-                righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype);
+                righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
             }
             if (!lefttype) {
                 lefttype = ExprType(ast->left);

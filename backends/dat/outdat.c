@@ -385,7 +385,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
     if (item) {
         exprType = CheckTypes(item);
         if (exprType) {
-            type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType);
+            type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType, "initialization");
             // ignore any casts added
             while (item->kind == AST_CAST) {
                 item = item->right;
