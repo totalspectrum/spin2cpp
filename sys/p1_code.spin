@@ -247,7 +247,7 @@ pri _getms() : r = +long | freq
   r := _getcnt()
   return r +/ freq
 
-pri _getms() : r = +long | freq
+pri _getus() : r = +long | freq
   freq := __clkfreq_var +/ 1000000
   r := _getcnt()
   return r +/ freq
