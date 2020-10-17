@@ -9,13 +9,13 @@
 
 int sscanf(const char *str, const char *fmt, ...)
 {
-  FILE tmpfile;
+  _STRING_FILE tmpfile;
   va_list args;
   int r;
   size_t len = strlen(str);
   va_start(args, fmt);
   r = vfscanf(__string_file(&tmpfile, (char *)str, "r", len), fmt, args);
-  fclose(&tmpfile);
+  fclose(&tmpfile.file);
   va_end(args);
   return r;
 }

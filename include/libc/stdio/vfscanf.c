@@ -110,7 +110,7 @@ mywgetc(int c, wchar_t *wc_ptr, FILE *stream, MyState *ms, const unsigned char *
       return c;
     }
     /* NOTE: assumes c is little-endian here */
-    count = _mbrtowc_ptr(wc_ptr, (char *)&c, 1, &ms->mbs);
+    count = mbrtowc(wc_ptr, (char *)&c, 1, &ms->mbs);
     if (count != ((size_t)-2)) break;
     /* need more bytes */
     c = fgetc(stream);

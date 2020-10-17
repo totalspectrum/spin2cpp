@@ -17,7 +17,7 @@ mbsrtowcs(wchar_t *dest, const char **src_ptr, size_t n, mbstate_t *state)
   if (!dest) n = INT_MAX;
   memset(&state, 0, sizeof(state));
   for (count = 0; count < n; count++) {
-    mbn = (*_mbrtowc_ptr)(dest, src, MB_LEN_MAX, state);
+    mbn = mbrtowc(dest, src, MB_LEN_MAX, state);
     if (0 > (long)mbn) {
       *src_ptr = src;
       return mbn;
