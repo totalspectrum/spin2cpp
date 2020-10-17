@@ -5,7 +5,6 @@
  *
  * for gcc, the default for wchar_t is "int" and for wint_t is "unsigned int"
  */
-#pragma once
 
 #ifndef _WCHAR_T_DEFINED
 #ifndef _WCHAR_T_TYPE
@@ -22,15 +21,11 @@ typedef _WINT_T_DEFINED wint_t;
 #endif
 
 #if !defined(_MBSTATE_T_DEFINED)
-#  ifdef __FLEXC__
-typedef unsigned int _Mbstate_t;
-#  else
 typedef struct _Mbstate {
   unsigned int total:5;    /* total bytes in character */
   unsigned int left:5;     /* number of bytes remaining in the character */
   unsigned int partial:22; /* partial wide character constructed/output */
 } _Mbstate_t;
-#  endif
 
 #define _MBSTATE_T_DEFINED _Mbstate_t
 #endif
