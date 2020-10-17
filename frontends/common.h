@@ -774,7 +774,7 @@ char *NormalizePath(const char *path);
 AST *CheckTypes(AST *expr);
 /* type conversion */
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
-AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype);
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg);
 
 /* change parameter types as necessary for calling conventions; for example,
  * "large" values are passed as reference to data on the stack rather than
