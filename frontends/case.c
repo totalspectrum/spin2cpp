@@ -533,7 +533,7 @@ CreateSwitch(AST *expr, AST *stmt, const char *force_reason)
     
     AstReportAs(stmt, &saveinfo);
     casetype = ExprType(expr);
-    tmpvar = AstTempLocalVariable("_tmp_", casetype);
+    tmpvar = AstTempLocalVariable("_tmp_", RemoveTypeModifiers(casetype));
     endswitch = AstTempIdentifier("_endswitch");
     
     switchstmt = NewAST(AST_STMTLIST, AstAssign(tmpvar, expr), NULL);
