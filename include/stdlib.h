@@ -6,6 +6,12 @@
 #include <sys/wchar_t.h>
 #include <sys/null.h>
 
+#ifdef __FLEXC__
+# ifndef abs
+#define abs(x) __builtin_abs(x)
+# endif
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
