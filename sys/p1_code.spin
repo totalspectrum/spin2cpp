@@ -247,6 +247,11 @@ pri _getms() : r = +long | freq
   r := _getcnt()
   return r +/ freq
 
+pri _getms() : r = +long | freq
+  freq := __clkfreq_var +/ 1000000
+  r := _getcnt()
+  return r +/ freq
+
 ''
 '' _cogchk(id): check to see if cog id is still running
 '' on P1 there is no instruction for this, so we use
