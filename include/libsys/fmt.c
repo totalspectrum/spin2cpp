@@ -81,9 +81,14 @@ int _fmtpad(putfunc fn, unsigned fmt, int width, unsigned leftright)
 int _fmtstr(putfunc fn, unsigned fmt, const char *str)
 {
     int maxwidth = (fmt >> MAXWIDTH_BIT) & 0xff;
+    int prec = ((fmt >> PREC_BIT) & PREC_MASK) - 1;
     int width = strlen(str);
     int n;
     int r, i;
+
+    if (prec >= 0 && width > prec) {
+        width = prec;
+    }
     if (maxwidth && width > maxwidth) {
         width = maxwidth;
     }
