@@ -51,7 +51,9 @@ struct tm {
     struct tm *gmtime(const time_t *) _IMPL("libc/time/localtim.c");
     struct tm *_localtime_r(const time_t *, struct tm *) _IMPL("libc/time/localtim.c");
     struct tm *localtime(const time_t *) _IMPL("libc/time/localtim.c");
-
+#define localtime_r _localtime_r
+#define gmtime_r    _gmtime_r
+    
     __SIZE_TYPE__ strftime(char *s, __SIZE_TYPE__ max, const char *format, const struct tm *tm) _IMPL("libc/time/strftime.c");
 
     char *asctime(const struct tm *stm) _IMPL("libc/time/asctime.c");
