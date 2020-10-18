@@ -393,6 +393,13 @@ uint32_t _getms(void);
 ```
 Gets the time elapsed on the system timer in milliseconds. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used for the system timer, so it will wrap around only after about 50 days.
 
+#### _getms
+
+```
+uint32_t _getus(void);
+```
+Gets the time elapsed on the system timer in microseconds. On the P1 this will wrap around after about 54 seconds.
+
 #### _waitx
 
 ```
@@ -515,3 +522,57 @@ Closes directory previously opened with `opendir`.
 `struct dirent *readdir(DIR *dir)`
 
 Reads the next directory entry.
+
+## Time Functions
+
+The standard C99 library functions like `asctime`, `localtime`, `mktime`, and `strftime` are all available. The `time_t` type is an unsigned 32 bit integer, counting the number of non-leap seconds since midnight Jan. 1, 1970. Note that most P2 boards do not have a real time clock built in, so the time returned will not be accurate unless it is first set by `settimeofday` (see below). Also note that all of the time functions make use of an internal counter which is based on the system frequency, and hence must be called at least once every 54 seconds or so (on P1) in order to avoid losing time.
+
+The POSIX functions `settimeofday` and `gettimeofday` are also available, in the header file `<sys/time.h>`. These use a `struct timeval` structure giving the number of (non leap) seconds and microseconds elapsed since midnight Jan. 1, 1970. `settimeofday` is the best way to interface with a hardware RTC. To use it, read the time from the hardware RTC periodically (e.g. once every 30 seconds) and call `settimeofday` to update the internal time based on it. See the example below.
+
+### Sample time program
+
+Here is a simple example of setting the clock and then reading it repeatedly to display the time:
+```
+//
+// simple clock program
+// shows how to set the time to a specific date/time
+// and then display it
+//
+#include <stdio.h>
+#include <sys/time.h>
+
+int main()
+{
+    struct timeval tv;
+    struct tm tm_now;
+    char dispbuf[40];
+    
+    // set the time to 2020-October-17, 1:30 pm
+    // set up struct tm structure
+    memset(&tm_now, 0, sizeof(tm_now));
+    tm_now.tm_sec = 0;
+    tm_now.tm_min = 30;
+    tm_now.tm_hour = 13; // 1pm
+    tm_now.tm_mon = 10 - 1;  // month is offset by 1
+    tm_now.tm_mday = 17;
+    tm_now.tm_year = 2020 - 1900;  // year is offset relative to 1900
+
+    // convert to seconds + microseconds
+    tv.tv_sec = mktime(&tm_now); // set seconds
+    tv.tv_usec = 0;              // no microsecond offset
+
+    // and set the time
+    settimeofday(&tv, 0);
+
+    // now continuously display the time
+    for(;;) {
+        // get current time
+        gettimeofday(&tv, 0);
+        // get an ASCII version of the time
+        // uses the standard C library strftime function to format the time
+        strftime(dispbuf, sizeof(dispbuf), "%a %b %d %H:%M:%S %Y", localtime(&tv.tv_sec));
+        // print it; use carriage return but no linefeed so we keep writing on the same line
+        printf("%s\r", dispbuf);
+    }
+}
+```
