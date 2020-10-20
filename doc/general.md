@@ -270,7 +270,8 @@ Try to keep inline assembly as simple as possible. Use the high level language f
 
 There are various command line options for the compiler which may modify the compilation:
 ```
-  [ -h ]              display this help
+  [ --version ]      print just the compiler version, then exit
+  [ -h ]             display this help
   [ -L or -I <path> ] add a directory to the include path
   [ -o ]             output filename
   [ -b ]             output binary file format

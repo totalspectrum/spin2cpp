@@ -406,12 +406,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(float_div, ast->left, ast->right, scale);
             break;
         case K_POWER:
-            if (gl_fixedreal) {
-                ERROR(ast, "exponentiation operator not supported in fixed point mode");
-                ast->d.ival = '*'; // pretend it's multiply instead
-            } else {
-                *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
-            }
+            *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
             break;
         default:
             ERROR(ast, "internal error unhandled operator");
@@ -1540,6 +1535,8 @@ InitGlobalFuncs(void)
 {
     if (!basic_print_integer) {
         basic_print_float = getBasicPrimitive("_basic_print_float");
+        float_pow_n = getBasicPrimitive("_float_pow_n");
+        float_powf = getBasicPrimitive("__builtin_powf");
         if (gl_fixedreal) {
             float_mul = getBasicPrimitive("_fixed_mul");
             float_div = getBasicPrimitive("_fixed_div");
@@ -1556,8 +1553,6 @@ InitGlobalFuncs(void)
             float_abs = getBasicPrimitive("_float_abs");
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
-            float_pow_n = getBasicPrimitive("_float_pow_n");
-            float_powf = getBasicPrimitive("__builtin_powf");
         }
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");
