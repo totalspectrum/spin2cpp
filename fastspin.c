@@ -99,6 +99,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
     fprintf(f, "           xxx = orig uses original fastspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    fprintf(f, "  [ --version ]      just show compiler version\n");
     
     fflush(stderr);
     exit(2);
@@ -303,6 +304,9 @@ main(int argc, const char **argv)
         } else if (!strcmp(argv[0], "-h")) {
             PrintInfo(stdout, cmd->bstcMode);
             Usage(stdout, cmd->bstcMode);
+            exit(0);
+        } else if (!strcmp(argv[0], "--version")) {
+            PrintInfo(stdout, cmd->bstcMode);
             exit(0);
         } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
                    || !strcmp(argv[0], "-e"))
