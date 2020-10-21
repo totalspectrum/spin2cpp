@@ -180,6 +180,7 @@ extern int gl_lmm_kind;
 #define OUTPUT_DAT  2
 #define OUTPUT_ASM  3
 #define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
+#define OUTPUT_OBJ  5     /* outputs an object file */
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
