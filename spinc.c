@@ -364,6 +364,38 @@ doparse(int language)
     AstReportDone(&saveinfo);
 }
 
+static char *
+getObjFileExtension(const char *fname)
+{
+    static char buf[1024];
+    char *ext = 0;
+    char *ptr;
+    FILE *f = fopen(fname, "r");
+    if (!f) {
+        return NULL;
+    }
+    buf[0] = 0;
+    ptr = fgets(buf, sizeof(buf), f);
+    if (ptr) {
+        if (!strncmp(ptr, "#line", 5)) {
+            ptr = strrchr(ptr, '.');
+            if (ptr) {
+                ext = ptr;
+                ptr = buf + strlen(buf) - 1;
+                if (ptr[0] == '\n') {
+                    ptr[0] = 0;
+                    --ptr;
+                }
+                if (ptr[0] == '\"') {
+                    ptr[0] = 0;
+                }
+            }
+        }
+    }
+    fclose(f);
+    return ext;
+}
+
 static Module *
 doParseFile(const char *name, Module *P, int *is_dup)
 {
@@ -379,48 +411,61 @@ doParseFile(const char *name, Module *P, int *is_dup)
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
-      if (!strcmp(langptr, ".bas")
-          || !strcmp(langptr, ".basic")
-          || !strcmp(langptr, ".bi")
-          )
-      {
-	language = LANG_BASIC_FBASIC;
-      } else if (!strcmp(langptr, ".c")
-                 || !strcmp(langptr, ".h")
-                 || !strcmp(langptr, ".a")
-          )
-      {
-	language = LANG_CFAMILY_C;
-      } else if (!strcmp(langptr, ".cpp")
-                 || !strcmp(langptr, ".cc")
-                 || !strcmp(langptr, ".cxx")
-                 || !strcmp(langptr, ".c++")
-                 || !strcmp(langptr, ".hpp")
-                 || !strcmp(langptr, ".hh")
-          )
-      {
-          language = LANG_CFAMILY_CPP;
-      }
-      else if (!strcmp(langptr, ".spin2"))
-      {
-        language = LANG_SPIN_SPIN2;
-        langptr = ".spin2";
-      }
-      else if (!strcmp(langptr, ".spin"))
-      {
-        language = LANG_SPIN_SPIN1;
-        langptr = ".spin";
-      }
-      else if (gl_p2)
-      {
-        language = LANG_SPIN_SPIN2;
-        langptr = ".spin2";
-      }
-      else
-      {
-        language = LANG_SPIN_SPIN1;
-        langptr = ".spin";
-      }
+        if (!strcmp(langptr, ".o")) {
+            // try to figure out language based on contents of file
+            fname = find_file_on_path(&gl_pp, name, langptr, NULL);
+            if (fname) {
+                langptr = getObjFileExtension(fname);
+            } else {
+                langptr = NULL;
+            }
+            if (!langptr) {
+                WARNING(NULL, "Unable to find file type for %s, assuming C", name);
+                langptr = ".c";
+            }
+        }
+        if (!strcmp(langptr, ".bas")
+            || !strcmp(langptr, ".basic")
+            || !strcmp(langptr, ".bi")
+            )
+        {
+            language = LANG_BASIC_FBASIC;
+        } else if (!strcmp(langptr, ".c")
+                   || !strcmp(langptr, ".h")
+                   || !strcmp(langptr, ".a")
+            )
+        {
+            language = LANG_CFAMILY_C;
+        } else if (!strcmp(langptr, ".cpp")
+                   || !strcmp(langptr, ".cc")
+                   || !strcmp(langptr, ".cxx")
+                   || !strcmp(langptr, ".c++")
+                   || !strcmp(langptr, ".hpp")
+                   || !strcmp(langptr, ".hh")
+            )
+        {
+            language = LANG_CFAMILY_CPP;
+        }
+        else if (!strcmp(langptr, ".spin2"))
+        {
+            language = LANG_SPIN_SPIN2;
+            langptr = ".spin2";
+        }
+        else if (!strcmp(langptr, ".spin"))
+        {
+            language = LANG_SPIN_SPIN1;
+            langptr = ".spin";
+        }
+        else if (gl_p2)
+        {
+            language = LANG_SPIN_SPIN2;
+            langptr = ".spin2";
+        }
+        else
+        {
+            language = LANG_SPIN_SPIN1;
+            langptr = ".spin";
+        }
     } else {
         // no extension, see if we can figure one out
       langptr = ".spin2";
