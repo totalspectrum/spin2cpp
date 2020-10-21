@@ -58,7 +58,7 @@ VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backe
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
-PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT)
+PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT) $(BUILD)/flexcc$(EXT)
 
 UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c
 
@@ -124,6 +124,9 @@ $(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/fastspin$(EXT): fastspin.c cmdline.c $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+$(BUILD)/flexcc$(EXT): flexcc.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD):
