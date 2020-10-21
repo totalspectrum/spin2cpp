@@ -11,30 +11,30 @@ the Propeller ROM. This works well -- Spin programs are compact, and
 perform reasonably well. But sometimes you need more performance than
 an interpreter can give.
 
-The fastspin compiler can convert Spin programs to PASM
-automatically. Originally fastspin only worked on whole programs,
+The flexspin compiler can convert Spin programs to PASM
+automatically. Originally flexspin only worked on whole programs,
 which was fine if you wanted to speed up a small program. But PASM
 code is a lot bigger then bytecode, so converting a whole program to
 PASM increases its size quite a lot, and may not be feasible for
 larger programs.
 
-The latest release of fastspin (3.7.0) allows individual Spin objects
+The latest release of flexspin (3.7.0) allows individual Spin objects
 to be converted to PASM and then integrated with regular Spin programs
 (compiled with the Propeller Tool, openspin, or other Spin bytecode
 compilers).
 
-Installing Fastspin
+Installing Flexspin
 -------------------
 
-This is straightforward. Just download fastspin.zip from
+This is straightforward. Just download flexspin.zip from
 https://github.com/totalspectrum/spin2cpp/releases. (Make sure you get
 version 3.7.0 or later.) Unzip it to a folder on your hard
-drive. You'll get two files: fastspin.exe (the program) and
-fastspin.md (the documentation). For convenience you may want to add
-the folder containing fastspin.exe to your system PATH; or, you can
-just copy fastspin.exe into the folder you're working in.
+drive. You'll get two files: flexspin.exe (the program) and
+flexspin.md (the documentation). For convenience you may want to add
+the folder containing flexspin.exe to your system PATH; or, you can
+just copy flexspin.exe into the folder you're working in.
 
-Using Fastspin to Convert to PASM
+Using Flexspin to Convert to PASM
 ---------------------------------
 
 This is very easy. For example, to convert a Spin object Fibo.spin
@@ -42,7 +42,7 @@ to a PASM object that can run in another COG, called Fibo.cog.spin,
 just do:
 
 ```
-   fastspin -w Fibo.spin
+   flexspin -w Fibo.spin
 ```
 
 in a command line (Windows or Linux or Mac).  This produces a file
@@ -111,7 +111,7 @@ in fact can use the original Fibo.spin alongside the converted
 Fibo.cog.spin. But you don't have to! After it's been created,
 Fibo.cog.spin does not rely on Fibo.spin at all.
 
-The `__cognew` method was automatically added by `fastspin` when it
+The `__cognew` method was automatically added by `flexspin` when it
 translated blinker.spin from Spin to PASM. It does all the
 housekeeping involved with getting communication going between the
 Spin code and the PASM code running on another processor. Similarly
@@ -123,7 +123,7 @@ state which makes it hard to start again, so `__cogstop` is better.
 To compile and run this on the command line I do:
 
 ```
-fastspin -w Fibo.spin
+flexspin -w Fibo.spin
 openspin fibodemo.spin
 propeller-load fibodemo.binary -r -t
 ```
@@ -204,14 +204,14 @@ PUB demo | id
 Convert blinker.spin to the PASM blinker.cog.spin as usual...
 
 ```
-fastspin -w blinker.spin
+flexspin -w blinker.spin
 ```
 
 ...and then you can compile and run `blinkdemo.spin` in the Propeller
 tool of your choice. In my case it's the command line:
 
 ```
-   fastspin -w blinker.spin
+   flexspin -w blinker.spin
    openspin -q blinkdemo.spin
    propeller-load blinkdemo.binary -r -t
 ```
@@ -223,9 +223,9 @@ If you've been watching carefully you've noticed that the fibo demo
 got results back from the PASM COG (i.e. the Spin COG waited for the PASM
 COG to finish) but the blink demo did not (the blinking ran alongside
 the Spin COG). The first case is "synchronous" operation, and the
-second is "asynchronous". You may wonder how fastspin knew to wait in
+second is "asynchronous". You may wonder how flexspin knew to wait in
 one case and not in the other. The answer is simple: if a method
-returns a value, fastspin adds code to make the Spin bytecode wait for
+returns a value, flexspin adds code to make the Spin bytecode wait for
 the PASM's result. If the method never returns a value (and never
 assigns to the `result` variable) then there's no wait, and the Spin
 bytecode can continue on its way.
@@ -319,7 +319,7 @@ somebody else's PASM code :).
 
 ### The Generated Code
 
-The .cog.spin produced by fastspin is somewhat readable, and we can look in
+The .cog.spin produced by flexspin is somewhat readable, and we can look in
 it to see how the compiler does. For example, the code generated for
 the `tx` method of the trival serial driver looks like:
 ```
@@ -359,7 +359,7 @@ Some other things you will note in the .cog.spin file:
     memory is tight you may be able to reduce this size. Conversely, if
     you have recursive functions you may find you need more space and
     can increase it here. If you add a definition for `__STACK_SIZE` to
-    your original .spin file, fastspin will notice it and use that value
+    your original .spin file, flexspin will notice it and use that value
     instead of the one it calculates. (`__STACK_SIZE` is basically the
     same as the Spin constant `_STACK`, but is used for PASM code instead
     of bytecode.)

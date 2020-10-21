@@ -1,6 +1,6 @@
 # PASM Output
 
-This document describes some details of the PASM code output by fastspin.
+This document describes some details of the PASM code output by flexprop.
 
 Calling Conventions
 ===================
