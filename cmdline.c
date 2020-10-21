@@ -176,7 +176,13 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             listFile = ReplaceExtension(P->fullname, ".lst");
         }
     
-        if (cmd->outputDat) {
+        if (gl_output == OUTPUT_OBJ) {
+            const char *binname = gl_outname;
+            if (!binname) {
+                binname = ReplaceExtension(P->fullname, ".o");
+            }
+            OutputObjFile(binname, P);
+        } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
 	        if (!cmd->outname) {
