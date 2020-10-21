@@ -575,7 +575,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
             int argc = 0;
             int r;
             const char *errString;
-            argv[argc++] = "fastspin";
+            argv[argc++] = "flexspin";
             argc = pp_get_defines_as_args(&gl_pp, argc, argv, MAX_MCPP_ARGC);
             if (argc >= MAX_MCPP_ARGC-1) {
                 ERROR(NULL, "ERROR: too many defines\n");

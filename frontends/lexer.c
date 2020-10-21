@@ -2345,6 +2345,9 @@ void InitPreprocessor(const char **argv)
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
     if (!envpath) {
+        envpath = getenv("FLEXSPIN_INCLUDE_PATH");
+    }
+    if (!envpath) {
         envpath = getenv("FASTSPIN_INCLUDE_PATH");
     }
     if (envpath) {

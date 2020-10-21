@@ -269,7 +269,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
             }
         } else {
-            fprintf(stderr, "fastspin cannot convert to C\n");
+            fprintf(stderr, "This front end cannot convert to C\n");
         }
     } else {
         fprintf(stderr, "parse error\n");
