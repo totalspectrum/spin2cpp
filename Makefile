@@ -58,7 +58,7 @@ VPATH=.:util:frontends:frontends/basic:frontends/spin:frontends/c:backends:backe
 
 LEXHEADERS = $(BUILD)/spin.tab.h $(BUILD)/basic.tab.h $(BUILD)/cgram.tab.h ast.h frontends/common.h
 
-PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/fastspin$(EXT) $(BUILD)/flexcc$(EXT)
+PROGS = $(BUILD)/testlex$(EXT) $(BUILD)/spin2cpp$(EXT) $(BUILD)/flexspin$(EXT) $(BUILD)/flexcc$(EXT)
 
 UTIL = dofmt.c flexbuf.c lltoa_prec.c strupr.c strrev.c strdupcat.c to_utf8.c from_utf8.c
 
@@ -123,7 +123,7 @@ runtest: $(PROGS)
 $(BUILD)/spin2cpp$(EXT): spin2cpp.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/fastspin$(EXT): fastspin.c cmdline.c $(OBJS)
+$(BUILD)/flexspin$(EXT): flexspin.c cmdline.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/flexcc$(EXT): flexcc.c cmdline.c $(OBJS)
@@ -178,22 +178,28 @@ spin2cpp.exe: .PHONY
 	$(MAKE) CROSS=win32
 	cp build-win32/spin2cpp.exe .
 
-fastspin.exe: .PHONY
+flexspin.exe: .PHONY
 	$(MAKE) CROSS=win32
-	cp build-win32/fastspin.exe .
+	cp build-win32/flexspin.exe .
+
+flexcc.exe: .PHONY
+	$(MAKE) CROSS=win32
+	cp build-win32/flexcc.exe .
 
 spin2cpp.linux: .PHONY
 	$(MAKE) CROSS=linux32
 	cp build-linux32/spin2cpp ./spin2cpp.linux
 
 COMMONDOCS=COPYING Changelog.txt doc
-ALLDOCS=README.md Fastspin.md $(COMMONDOCS)
+ALLDOCS=README.md Flexspin.md $(COMMONDOCS)
 
-zip: fastspin.exe spin2cpp.exe
-	$(SIGN) fastspin
-	mv fastspin.signed.exe fastspin.exe
-	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe fastspin.exe
-	zip -r fastspin.zip fastspin.exe Fastspin.md doc include
+zip: flexcc.exe flexspin.exe spin2cpp.exe
+	$(SIGN) flexspin
+	mv flexspin.signed.exe flexspin.exe
+	$(SIGN) flexcc
+	mv flexcc.signed.exe flexcc.exe
+	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe flexspin.exe flexcc.exe
+	zip -r flexspin.zip flexcc.exe flexspin.exe Flexspin.md doc include
 
 #
 # target to build a windows spincvt GUI
