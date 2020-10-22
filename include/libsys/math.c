@@ -2,13 +2,28 @@
 
 #define PI 3.14159265f
 #define PI_2 1.570796327f
-#define FIXPT_ONE 1073741824.0f
+#ifdef __fixedreal__
+#define FIXPT_ONE 16384.0f /* 1<<14 */
+#else
+#define FIXPT_ONE 1073741824.0f /* 1<<30 */
+#endif
 #define PI_SCALE (FIXPT_ONE / (2.0f*PI))
 
 typedef union f_or_i {
     float f;
     uint32_t i;
 } FI;
+
+static uint32_t __asuint(float f) {
+    FI u;
+    u.f = f;
+    return u.i;
+}
+static float __asfloat(uint32_t i) {
+    FI u;
+    u.i = i;
+    return u.f;
+}
 
 float __builtin_fabsf(float f)
 {
@@ -35,6 +50,7 @@ int32_t _isin(int32_t x)
 {
     int32_t cx, rx, ry;
 
+    //__builtin_printf(" [x=%08x] ", x);
     x = x<<2;  // convert to 0.32 fixed point
     cx = (1<<30);
     __asm {
@@ -83,7 +99,12 @@ float __builtin_sinf(float x)
 {
     float s;
     x = x * PI_SCALE;
+#ifdef __fixedreal__
+    //__builtin_printf(" [f=%f] ", x);
+    s = __asfloat(_isin(__asuint(x)) >> 14);
+#else    
     s = _isin(x) / FIXPT_ONE;
+#endif    
     return s;
 }
 
