@@ -393,7 +393,7 @@ uint32_t _getms(void);
 ```
 Gets the time elapsed on the system timer in milliseconds. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used for the system timer, so it will wrap around only after about 50 days.
 
-#### _getms
+#### _getus
 
 ```
 uint32_t _getus(void);
