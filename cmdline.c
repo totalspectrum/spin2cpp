@@ -369,9 +369,13 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
                 flags = 0;
                 continue;
             case '1':
+            case 's':
                 flags = DEFAULT_ASM_OPTS;
                 continue;
             case '2':
+            case '3':
+            case '4':
+            case '5':
                 flags = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
                 continue;
             default:
