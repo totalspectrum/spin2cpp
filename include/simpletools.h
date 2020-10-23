@@ -32,8 +32,46 @@ int input(int pin) _IMPL("libsimpletools/input.c");
 #define set_output(p,v) _pinw((p), (v))
 #define set_direction(p,v) _dirw((p), (v))
 
+#define st_msTicks 		(_clockfreq() / 1000)
+#define st_usTicks 		(_clockfreq() / 1000000)
+#define st_iodt 		st_usTicks
+#define st_timeout		(_clockfreq() / 4);
+#define st_pauseTicks	st_msTicks;
+
+//void set_io_timeout(long clockTicks) { st_timeout = clockTicks; }
+//void set_io_dt(long clockticks) { st_iodt = clockTicks; }
 
 unsigned get_states(int endPin, int startPin) _IMPL("libsimpletools/getStates.c");
+void set_directions(int endPin, int startPin, unsigned int pattern) _IMPL("libsimpletools/setDirections.c");
+void set_outputs(int endPin, int startPin, unsigned int pattern) _IMPL("libsimpletools/setOutputs.c");
+
+long count(int pin, long duration, int pinToCount = -1) _IMPL("libsimpletools/count.c");
+
+void dac_ctr(int pin, int channel, int dacVal) _IMPL("libsimpletools/dac.c");
+void dac_ctr_res(int bits) _IMPL("libsimpletools/dac.c");
+void dac_ctr_stop(void) _IMPL("libsimpletools/dac.c");
+
+void freqout(int pin, int msTime, int frequency) _IMPL("libsimpletools/freqout.c");
+
+int pwm_start(unsigned int cycleMicroseconds) _IMPL("libsimpletools/pwm.c");
+void pwm_set(int pin, int channel, int tHigh) _IMPL("libsimpletools/pwm.c");
+void pwm_stop(void) _IMPL("libsimpletools/pwm.c");
+
+long pulse_in(int pin, int state) _IMPL("libsimpletools/pulseIn.c");
+void pulse_out(int pin, int time) _IMPL("libsimpletools/pulseOut.c");
+
+long rc_time(int pin, int state) _IMPL("libsimpletools/rcTime.c");
+
+void square_wave(int pin, int channel, int freq) _IMPL("libsimpletools/squareWave.c");
+void square_wave_stop(void) _IMPL("libsimpletools/squareWave.c");
+#ifdef __propeller2__
+// since P2 doesn't use a cog like on P1, this variant is needed to stop specific pins, since square_wave_stop() will only stop the last pin started.
+void square_wave_stop_pin(int pin) _IMPL("libsimpletools/squareWave.c");
+#else
+// this one is only used/needed for P1
+void square_wave_setup(int pin, int freq, int* _ctr, int* _frq) _IMPL("libsimpletools/squareWave.c");
+#endif
+int int_fraction(int a, int b, int shift) _IMPL("libsimpletools/squareWave.c");
 
 // Constants for shift_in & shift_out
 #define   MSBPRE     0
