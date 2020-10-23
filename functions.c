@@ -457,6 +457,7 @@ AddInitializers(AST *seq, AST *ident, AST *expr, AST *basetype)
         AstReportDone(&saveinfo);
         return seq;
     } else if (expr->kind == AST_EXPRLIST) {
+        expr = FixupInitList(basetype, expr);
         if (IsArrayType(basetype)) {
             if (!IsConstExpr(basetype->right)) {
                 ERROR(ident, "Variable length arrays not supported yet");
@@ -724,7 +725,7 @@ AddClosureSymbol(Function *f, Module *P, AST *ident)
     if (!typ) {
         typ = ExprTypeRelative(&f->localsyms, ident, P);
     }
-    MaybeDeclareMemberVar(P, ident, typ, 0);
+    MaybeDeclareMemberVar(P, ident, typ, 0, NORMAL_VAR);
 }
 
 static void
@@ -1854,8 +1855,12 @@ CheckFunctionCalls(AST *ast)
                 return;
             }
         } else {
-            if (gotArgs != expectArgs && !(f && IsCLang(f->language))) {
-                ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+            if (gotArgs != expectArgs) {
+                if (f && IsCLang(f->language)) {
+                    WARNING(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+                } else {
+                    ERROR(ast, "Bad number of parameters in call to %s: expected %d found %d", fname, expectArgs, gotArgs);
+                }
                 return;
             }
         }

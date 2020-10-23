@@ -382,9 +382,11 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             break;
         }
     }
-    if ( (base <= 10) && (c == '.' || c == 'e' || c == 'E') ) {
+    if ( ((base <= 10) && (c == '.' || c == 'e' || c == 'E') )
+         || (base == 16 && (c=='.' || c == 'p' || c == 'P') ) )
+    {
         /* potential floating point number */
-        float f = (float)tenval;
+        float f = (base == 16) ? (float)uval : (float)tenval;
         float ff = 0.0;
         static float divby[45] = {
             1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f,
@@ -408,13 +410,39 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
                 goto donefloat;
             }
         }
-        while ( (c >= '0' && c <= '9') || (c == '_')) {
-            if (c != '_') {
-                ff = ff + divby[counter]*(float)(c-'0');
-                counter++;
+        if (base == 16) {
+            float hexplace = 1.0f/16.0f;
+            for(;;) {
+                if (c == '_') {
+                    /* just skip */
+                } else if (c >= '0' && c <= '9') {
+                    c = c - '0';
+                } else if (c >= 'a' && c <= 'f') {
+                    c = 10 + (c - 'a');
+                } else if (c >= 'A' && c <= 'F') {
+                    c = 10 + (c - 'A');
+                } else {
+                    break;
+                }
+                if (c >= 0 && c < 16) {
+                    ff = ff + hexplace * c;
+                    hexplace /= 16.0f;
+                    sawdigit = 1;
+                }
+                c = lexgetc(L);
             }
-            sawdigit = 1;
-            c = lexgetc(L);
+            if (c == 'p' || c == 'P') {
+                c = 'E';
+            }
+        } else {
+            while ( (c >= '0' && c <= '9') || (c == '_')) {
+                if (c != '_') {
+                    ff = ff + divby[counter]*(float)(c-'0');
+                    counter++;
+                }
+                sawdigit = 1;
+                c = lexgetc(L);
+            }
         }
         if (c == 'e' || c == 'E') {
             int expval = 0;
@@ -435,10 +463,14 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
             exponent += expval;
         }
         f = f + ff;
-        if (exponent < 0 && exponent >= -45) {
+        if (base == 10 && exponent < 0 && exponent >= -45) {
             f *= divby[-(exponent+1)];
         } else if (exponent != 0) {
-            f *= powf(10.0f, (float)exponent);
+            if (base == 16) {
+                f *= powf(2.0f, (float)exponent);
+            } else {
+                f *= powf(10.0f, (float)exponent);
+            }
         }
         if (gl_fixedreal) {
             uval = ((1<<G_FIXPOINT) * f) + 0.5;
@@ -447,6 +479,7 @@ parseNumber(LexStream *L, unsigned int base, uint32_t *num)
         }
         kind = SP_FLOATNUM;
     }
+
 donefloat:
     lexungetc(L, c);
     *num = uval;
@@ -637,6 +670,13 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
                     gatherComments = 0;
                 }
                 break;
+            case SP_LOOKUP:
+            case SP_LOOKDOWN:
+            case SP_LOOKUPZ:
+            case SP_LOOKDOWNZ:
+                L->look_counter++;
+                gatherComments = 0;
+                break;
             default:
                 gatherComments = 0;
                 break;
@@ -812,13 +852,15 @@ parseCString(LexStream *L, AST **ast_ptr)
 {
     int c;
     struct flexbuf fb;
+    AST *exprlist;
     AST *ast;
-
-    ast = NewAST(AST_STRING, NULL, NULL);
+    char *str;
+    
+    exprlist = NULL;
     flexbuf_init(&fb, INCSTR);
 again:
     c = lexgetc(L);
-    while (c != '"' && c > 0 && c < 256) {
+    while (c != '"' && c >= 0 && c < 256) {
         if (c == 10 || c == 13) {
             // newline in mid-string, this is bad news
             SYNTAX_ERROR("unterminated string");
@@ -828,8 +870,21 @@ again:
         if (c == '\\') {
             c = getEscapedChar(L);
             if (c < 0) break;
-        }   
-        flexbuf_addchar(&fb, c);
+            if (c == 0) {
+                flexbuf_addchar(&fb, 0);
+                str = flexbuf_get(&fb);
+                if (*str) {
+                    ast = NewAST(AST_STRING, NULL, NULL);
+                    ast->d.string = str;
+                    exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, ast, NULL));
+                }
+                exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+            } else {
+                flexbuf_addchar(&fb, c);
+            }
+        } else {
+            flexbuf_addchar(&fb, c);
+        }
         c = lexgetc(L);
     }
     // handle "x" "y" as "xy"
@@ -839,9 +894,17 @@ again:
     } else {
         lexungetc(L, c);
     }
-    flexbuf_addchar(&fb, '\0');
-    ast->d.string = flexbuf_get(&fb);
-    *ast_ptr = ast;
+    flexbuf_addchar(&fb, 0);
+    str = flexbuf_get(&fb);
+    if (str && *str) {
+        ast = NewAST(AST_STRING, NULL, NULL);
+        ast->d.string = str;
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, ast, NULL));
+    }
+    if (!exprlist) {
+        exprlist = AddToList(exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    }
+    *ast_ptr = exprlist;
 }
 
 //
@@ -1343,6 +1406,10 @@ getSpinToken(LexStream *L, AST **ast_ptr)
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
         } else {
             lexungetc(L, peekc);
+            if (L->look_counter) {
+                c = SP_LOOK_SEP;
+                --L->look_counter;
+            }
         }
     } else if (gl_p2 && c == '.' && isIdentifierStart(lexpeekc(L)) && InDatBlock(L)) {
             c = parseSpinIdentifier(L, &ast, L->lastGlobal ? L->lastGlobal : "");
@@ -1468,7 +1535,6 @@ struct reservedword {
     { "round", SP_ROUND },
 
     { "sar", SP_SAR },
-    { "spr", SP_SPR },
     { "step", SP_STEP },
     { "string", SP_STRINGPTR },
     { "to", SP_TO },
@@ -1537,6 +1603,7 @@ struct reservedword {
 
 struct reservedword init_spin1_words[] = {
     { "constant", SP_CONSTANT },
+    { "spr", SP_SPR },
 
     { "?", SP_RANDOM },
 };
@@ -1611,6 +1678,7 @@ struct reservedword basic_keywords[] = {
   { "endif", BAS_ENDIF },
   { "enum", BAS_ENUM },
   { "exit", BAS_EXIT },
+  { "fixed", BAS_FIXED },
   { "for", BAS_FOR },
   { "function", BAS_FUNCTION },
   { "goto", BAS_GOTO },
@@ -1682,8 +1750,9 @@ struct reservedword c_keywords[] = {
   { "__attribute__", C_ATTRIBUTE },
   { "_Bool", C_BOOL },
   { "break", C_BREAK },
-  {"__builtin_abs", C_BUILTIN_ABS },
+  { "__builtin_abs", C_BUILTIN_ABS },
   { "__builtin_alloca", C_BUILTIN_ALLOCA },
+  { "__builtin_clz", C_BUILTIN_CLZ },
   { "__builtin_cogstart", C_BUILTIN_COGSTART },
   { "__builtin_expect", C_BUILTIN_EXPECT },
   { "__builtin_longjmp", C_BUILTIN_LONGJMP },
@@ -2275,6 +2344,9 @@ void InitPreprocessor(const char **argv)
     }
     // check for environment variables
     envpath = getenv("FLEXCC_INCLUDE_PATH");
+    if (!envpath) {
+        envpath = getenv("FLEXSPIN_INCLUDE_PATH");
+    }
     if (!envpath) {
         envpath = getenv("FASTSPIN_INCLUDE_PATH");
     }
@@ -3729,6 +3801,7 @@ getCToken(LexStream *L, AST **ast_ptr)
     int c, c2;
     AST *ast = NULL;
     int at_startofline = (L->eoln == 1);
+    int is_binary = 0;
     
     c = skipSpace(L, &ast, LANG_CFAMILY_C);
 
@@ -3744,8 +3817,10 @@ parse_number:
         if (c == '0') {
             // 0ddd is an octal number in C
             c = parseNumber(L, 8, &ast->d.ival);
+            is_binary = 1;
         } else {
             c = parseNumber(L, 10, &ast->d.ival);
+            is_binary = 0;
         }
         if (c == SP_FLOATNUM) {
             int c2;
@@ -3762,6 +3837,15 @@ parse_number:
                 // check for hex or binary prefixes like 0x or 0h
                 if (c2 == 'x' || c2 == 'X') {
                     c = parseNumber(L, 16, &ast->d.ival);
+                    if (c == SP_FLOATNUM) {
+                        ast->kind = AST_FLOAT;
+                        c = C_CONSTANT;
+                        c2 = lexpeekc(L);
+                        if (c2 == 'f' || c2 == 'F') {
+                            lexgetc(L);
+                        }
+                        goto done_number;
+                    }
                     c2 = lexgetc(L);
                 } else if (c2 == 'b' || c2 == 'B') {
                     c = parseNumber(L, 2, &ast->d.ival);
@@ -3772,12 +3856,17 @@ parse_number:
                 // unsigned flag; add in an unsigned type
                 ast->left = ast_type_unsigned_long;
                 c2 = lexgetc(L);
+            } else if (is_binary) {
+                if (((int32_t)ast->d.ival) < 0) {
+                    ast->left = ast_type_unsigned_long;
+                }
             }
             if (c2 == 'L' || c2 == 'l') {
                 // long constant flag, ignore for now
                 c2 = lexgetc(L);
             }
             lexungetc(L, c2);
+        done_number:            
             c = C_CONSTANT;
         }
     } else if (isIdentifierStart(c)) {

@@ -409,7 +409,10 @@ AddEnumerators(AST *identifier, AST *enumlist)
         // they're declared in
         P = current;
     }
+    // we have to process the enumerators now so that they may be used
+    // in struct definitions and such
     P->conblock = AddToList(P->conblock, enumlist);
+    DeclareConstants(P, &P->conblock);
     return ast_type_long;
 }
 
@@ -424,7 +427,8 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
     int max_bitfield_size = 0;
     AST *bitfield_ident = 0;
     int is_private = 0;
-
+    AST *last_pos = 0;
+    
     if (!astlist) return;
     if (astlist->kind != AST_STMTLIST) {
         ERROR(astlist, "Internal error, expected stmt list");
@@ -475,7 +479,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 ident = idlist->left;
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private);
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
                 idlist = idlist->right;
             }
         } else {
@@ -484,6 +488,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 AST *bfield_ast = typ->right;
                 AST *bfield_typ = typ->left;
                 AST *bfield_access;
+                AST *bfield_list = 0;
                 int tsize;
                 int bsize = EvalConstExpr(bfield_ast);
                 tsize = TypeSize(bfield_typ) * 8;
@@ -492,7 +497,7 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                     max_bitfield_size = tsize;
                     bitfield_offset = 0;
                     bitfield_ident = AstTempIdentifier("__bitfield_");
-                    MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ, is_private);
+                    last_pos = MaybeDeclareMemberVar(P, bitfield_ident, bfield_typ, is_private, HIDDEN_VAR);
                 }
                 if (bsize > max_bitfield_size) {
                     ERROR(bfield_ast, "bitfield size %d is greater than type size %d",
@@ -506,11 +511,14 @@ DeclareCMemberVariables(Module *P, AST *astlist, int is_union)
                 bfield_access = NewAST(AST_RANGEREF, bitfield_ident, bfield_access);
                 bfield_access = NewAST(AST_CAST, bfield_typ, bfield_access);
                 DeclareMemberAlias(P, ident, bfield_access);
+                bfield_list = NewAST(AST_DECLARE_BITFIELD, bfield_access, ident);
+                bfield_list = NewAST(AST_LISTHOLDER, bfield_list, NULL);
+                P->pendingvarblock = ListInsertBefore(P->pendingvarblock, last_pos, bfield_list);
                 bitfield_offset += bsize;
             } else {
                 // not in a bitfield
                 max_bitfield_size = bitfield_size = bitfield_offset = 0;
-                MaybeDeclareMemberVar(P, ident, typ, is_private);
+                MaybeDeclareMemberVar(P, ident, typ, is_private, NORMAL_VAR);
             }
         }
     }
@@ -535,7 +543,7 @@ AddStructBody(Module *C, AST *body)
 // file name and line number
 //
 static AST *
-MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
+MakeNewStruct(Module *Parent, AST *skind, AST *identifier, AST *body)
 {
     int is_union;
     int is_class;
@@ -545,7 +553,17 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     Module *C;
     Symbol *sym;
     AST *class_type;
-
+    
+    if (identifier && identifier->kind == AST_LOCAL_IDENTIFIER) {
+        identifier = identifier->right;
+    }
+    if (Parent->mainLanguage == LANG_CFAMILY_C) {
+        // structs inside structs get declared with global scope
+        Module *Q = GetTopLevelModule();
+        if (Q->mainLanguage == LANG_CFAMILY_C) {
+            Parent = Q;
+        }
+    }
     /* attempt to better handle class inside class */
     if (0 && current && !IsTopLevel(current)) {
         /* this causes problems with struct references inside structs */
@@ -570,11 +588,11 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
         sprintf(buf, "_anon_%08x%08x", hash, current->Lptr->lineCounter);
         identifier = AstIdentifier(strdup(buf));
     }
-    if (identifier->kind != AST_IDENTIFIER) {
+    if (!IsIdentifier(identifier)) {
         ERROR(identifier, "internal error: bad struct def");
         return NULL;
     }
-    name = identifier->d.string;
+    name = GetIdentifierName(identifier);
     typname = (char *)malloc(strlen(name)+strlen(classname)+16);
     strcpy(typname, classname);
     strcat(typname, "__struct_");
@@ -583,7 +601,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     /* see if there is already a type with that name */
     sym = LookupSymbolInTable(currentTypes, typname);
     if (!sym) {
-        sym = LookupSymbolInTable(&P->objsyms, typname);
+        sym = LookupSymbolInTable(&Parent->objsyms, typname);
     }
     if (sym && sym->kind == SYM_TYPEDEF) {
         class_type = (AST *)sym->val;
@@ -599,7 +617,7 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
     } else {
         if (body && body->kind == AST_STRING) {
             class_type = NewAbstractObject(AstIdentifier(typname), body);
-            current->objblock = AddToList(current->objblock, class_type);
+            Parent->objblock = AddToList(Parent->objblock, class_type);
             body = NULL;
             C = NULL;
         } else {
@@ -610,8 +628,8 @@ MakeNewStruct(Module *P, AST *skind, AST *identifier, AST *body)
             class_type = NewAbstractObject(AstIdentifier(typname), NULL);
             class_type->d.ptr = C;
             AddSymbol(currentTypes, typname, SYM_TYPEDEF, class_type, NULL);
-            AddSymbol(&P->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
-            AddSubClass(P, C);
+            AddSymbol(&Parent->objsyms, typname, SYM_TYPEDEF, class_type, NULL);
+            AddSubClass(Parent, C);
         }
     }
     AddStructBody(C, body);
@@ -838,6 +856,7 @@ ConstructDefaultValue(AST *decl, AST *val)
 
 // builtin functions
 %token C_BUILTIN_ABS    "__builtin_abs"
+%token C_BUILTIN_CLZ    "__builtin_clz"
 %token C_BUILTIN_SQRT   "__builtin_sqrt"
 
 %token C_BUILTIN_ALLOCA "__builtin_alloca"
@@ -868,7 +887,7 @@ primary_expression
         | C_NULLPTR
             { $$ = AstBitValue(0); }
 	| C_STRING_LITERAL
-            { $$ = NewAST(AST_STRINGPTR, NewAST(AST_EXPRLIST, $1, NULL), NULL); }
+            { $$ = NewAST(AST_STRINGPTR, $1, NULL); }
         | C_BUILTIN_PRINTF
             { $$ = NewAST(AST_PRINT, NULL, NULL); }
 	| '(' expression ')'
@@ -882,6 +901,12 @@ postfix_expression
             { $$ = $1; }
         | C_BUILTIN_ABS '(' assignment_expression ')'
             { $$ = AstOperator(K_ABS, NULL, $3); }
+        | C_BUILTIN_CLZ '(' assignment_expression ')'
+            {
+                AST *expr = AstOperator(K_ENCODE, NULL, $3);
+                expr = AstOperator('-', AstInteger(32), expr);
+                $$ = expr;
+            }
         | C_BUILTIN_SQRT '(' assignment_expression ')'
             { $$ = AstOperator(K_SQRT, NULL, $3); }
         | C_BUILTIN_REV '(' argument_expression_list ')'
@@ -957,9 +982,36 @@ postfix_expression
 	| postfix_expression C_DEC_OP
             { $$ = AstOperator(K_DECREMENT, $1, NULL); }
         | '(' type_name ')' '{' initializer_list '}'
-            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
+            {
+                /* FIXME: treat this like ({ type_name t = initializer_list; t; }) */
+                AST *typ = $2;
+                AST *initlist = $5;
+                AST *id = AstTempIdentifier("_initval_");
+
+                AST *decl;
+                AST *stmt;
+
+                decl = SingleDeclareVar(typ, id);
+                stmt = NewAST(AST_STMTLIST, decl, NULL);
+                stmt = AddToList(stmt,
+                                 NewAST(AST_STMTLIST, AstAssign(id, initlist), NULL));
+                stmt = AddToList(stmt, NewAST(AST_STMTLIST, id, NULL));
+                $$ = stmt;
+            }
         | '(' type_name ')' '{' initializer_list ',' '}'
-            {  SYNTAX_ERROR("inline struct expressions not supported yet"); }
+            {
+                /* treat this like ({ type_name t = initializer_list; t; }) */
+                AST *typ = $2;
+                AST *initlist = $5;
+                AST *id = AstTempIdentifier("_initval_");
+
+                AST *decl = AstAssign(id, initlist);
+                AST *stmt;
+
+                DeclareOneGlobalVar(current, decl, typ, IN_DAT);
+                stmt = NewAST(AST_STMTLIST, id, NULL);
+                $$ = stmt;
+            }
 	;
 
 argument_expression_list
@@ -1304,7 +1356,13 @@ struct_or_union
 
 fromfile_clause
         : '(' C_STRING_LITERAL ')'
-            { $$ = $2; }
+            {
+                AST *str = $2;
+                if (str && str->kind == AST_EXPRLIST) {
+                    str = str->left;
+                }
+                $$ = str;
+            }
         ;
 
 struct_open
@@ -1619,8 +1677,13 @@ initializer_list
             }
         | designation initializer
             {
-                SYNTAX_ERROR("designators not supported yet");
-                $$ = NULL;
+                AST *desig = $1;
+                AST *initval = $2;
+                AST *ast;
+
+                ast = NewAST(AST_INITMODIFIER, desig, initval);
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = ast;
             }
 	| initializer_list ',' initializer
             {
@@ -1631,8 +1694,14 @@ initializer_list
             }
         | initializer_list ',' designation initializer
             {
-                SYNTAX_ERROR("designators not supported yet");
-                $$ = $1;
+                AST *list = $1;
+                AST *desig = $3;
+                AST *initval = $4;
+                AST *ast;
+                
+                ast = NewAST(AST_INITMODIFIER, desig, initval);
+                ast = NewAST(AST_EXPRLIST, ast, NULL);
+                $$ = AddToListEx(list, ast, (AST **)&list->d.ptr);
             }
 	;
 
@@ -1641,14 +1710,27 @@ designation
             { $$ = $1; };
         ;
 
+/* a designator list like [2].x should come out as
+ * ARRAYREF( METHODREF (NULL, x), 2 )
+ */
+
 designator_list
         : designator
+            { $$ = $1; }
         | designator_list designator
+            {
+                AST *upper = $1;
+                AST *lower = $2;
+                upper->left = lower;
+                $$ = upper;
+            }
         ;
 
 designator
          : '[' constant_expression ']'
+            { $$ = NewAST(AST_ARRAYREF, NULL, $2); }
          | '.' any_identifier
+            { $$ = NewAST(AST_METHODREF, NULL, $2); }
          ;
 
 statement
@@ -2100,7 +2182,13 @@ attribute_decl
 
 fromfile_decl
         : C_FROMFILE '(' C_STRING_LITERAL ')' ';'
-            {  $$ = $3; }
+            {
+                AST *str = $3;
+                if (str && str->kind == AST_EXPRLIST) {
+                    str = str->left;
+                }
+                $$ = str;
+            }
         ;
 
 /* PASM syntax: this is awkward, so not fully supported yet */

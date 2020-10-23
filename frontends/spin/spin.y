@@ -399,10 +399,7 @@ BuildDebugList(AST *exprlist)
 %token SP_QLOG       "QLOG"
 %token SP_QEXP       "QEXP"
 %token SP_DEBUG      "DEBUG"
-
-/* special token for foo() : N indicating the number of return values from foo, N */
-/* FIXME: this is not implemented yet in lexer.c! */
-%token SP_FUNCCOLON   ":"
+%token SP_LOOK_SEP   ":"
 
 /* operator precedence */
 %right SP_ASSIGN
@@ -503,12 +500,12 @@ optparamlist:
 /* empty */
   {
       $$ = NULL;
-      LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "omitting () for empty parameter lists is a fastspin extension");
+      LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "omitting () for empty parameter lists is a flexspin extension");
   }
 | '(' ')'
   {
       $$ = NULL;
-      LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "() for empty parameter lists is a fastspin extension");
+      LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "() for empty parameter lists is a flexspin extension");
   }
 | paramidentlist
   { $$ = $1; }
@@ -768,7 +765,7 @@ repeatstmt:
     {
         AST *ast = NewCommentedAST(AST_INLINEASM, $2, AstInteger(0), $1);
         $$ = ast;
-        LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a fastspin extension");
+        LANGUAGE_WARNING(LANG_ANY, NULL, "asm/endasm is a flexspin extension");
     }
   | SP_ORG datblock SP_END
     {
@@ -781,15 +778,15 @@ repeatstmt:
 ;
 
 lookupexpr:
-  SP_LOOKUPZ '(' expr ':' rangeexprlist ')'
+SP_LOOKUPZ '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 0, $3, $5); }
-  | SP_LOOKUP '(' expr ':' rangeexprlist ')'
+  | SP_LOOKUP '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKUP, 1, $3, $5); }
 ;
 lookdownexpr:
-  SP_LOOKDOWNZ '(' expr ':' rangeexprlist ')'
+  SP_LOOKDOWNZ '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 0, $3, $5); }
-  | SP_LOOKDOWN '(' expr ':' rangeexprlist ')'
+  | SP_LOOKDOWN '(' expr SP_LOOK_SEP rangeexprlist ')'
     { $$ = AstLookup(AST_LOOKDOWN, 1, $3, $5); }
 ;
 
@@ -1005,47 +1002,47 @@ paramidentdecl:
   { $$ = NewAST(AST_ARRAYDECL, $1, $3); }
   | identifier '=' expr
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "default parameter values are a flexspin extension");
       $$ = AstAssign($1, $3);
   }
   | identifier '=' SP_LONG
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1);
   }
   | identifier '=' '-' SP_LONG
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_long, $1);
   }
   | identifier '=' '+' SP_LONG
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_unsigned_long, $1);
   }
   | identifier '=' SP_FLOAT
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_float, $1);
   }
   | identifier '=' '@' SP_LONG
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_long, $1);
   }
   | identifier '=' '@' SP_WORD
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_word, $1);
   }
   | identifier '=' '@' SP_BYTE
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_ptr_byte, $1);
   }
   | identifier '=' SP_STRINGPTR
   {
-      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a fastspin extension");
+      LANGUAGE_WARNING(LANG_ANY, $1, "parameter types are a flexspin extension");
       $$ = NewAST(AST_DECLARE_VAR, ast_type_string, $1);
   }
   ;
@@ -1065,7 +1062,10 @@ expr:
   | float
   | string
   | SP_STRINGPTR '(' exprlist ')'
-    { $$ = NewAST(AST_STRINGPTR, $3, NULL); }  
+    {
+        AST *elist = $3;
+        $$ = NewAST(AST_STRINGPTR, elist, NULL);
+    }
   | lhs
   | '@' expr
     {
@@ -1391,7 +1391,15 @@ expr:
 
 lhs: identifier
   | identifier '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $3); }
+    {
+        $$ = NewAST(AST_ARRAYREF, $1, $3);
+    }
+  | identifier '[' expr ']' '.' '[' range ']'
+    {
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        AST *range = $7;
+        $$ = NewAST(AST_ARRAYREF, arr, range);
+    }
   | hwreg
     { $$ = $1; }
   | hwreg '[' range ']'
@@ -1402,8 +1410,14 @@ lhs: identifier
     }
   | memref '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $1, $3); }
-  | memref '.' '[' expr ']'
-    { $$ = NewAST(AST_ARRAYREF, $1, $4); }
+  | memref '[' expr ']' '.' '[' range ']'
+    {
+        AST *ast = NewAST(AST_ARRAYREF, $1, $3);
+        AST *range = $7;
+        $$ = NewAST(AST_RANGEREF, ast, range);
+    }
+  | memref '.' '[' range ']'
+    { $$ = NewAST(AST_RANGEREF, $1, $4); }
   | '(' expr ')' '[' expr ']'
     { $$ = NewAST(AST_ARRAYREF, $2, $5); }
   | memref
@@ -1456,7 +1470,7 @@ memref:
 opt_numrets:
   /* nothing */
     { $$ = NULL; }
-  | SP_FUNCCOLON SP_NUM
+  | ':' SP_NUM
     { $$ = $2; }
 ;
 
@@ -1466,7 +1480,7 @@ funccall:
   | identifier '(' ')' opt_numrets
     {
         $$ = MakeFunccall($1, NULL, $4);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
     }
   | SP_COGINIT '(' exprlist ')'
     {
@@ -1480,7 +1494,7 @@ funccall:
         elist = AddToList(elist, $3);
         elist = FixupList(elist);
         $$ = NewAST(AST_COGINIT, elist, NULL);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a fastspin extension");
+        LANGUAGE_WARNING(LANG_SPIN_SPIN2, NULL, "cognew support in Spin2 is a flexspin extension");
     }
   | identifier '.' identifier '(' exprlist ')' opt_numrets
     { 
@@ -1489,7 +1503,7 @@ funccall:
   | identifier '.' identifier '(' ')' opt_numrets
     { 
         $$ = MakeFunccall(NewAST(AST_METHODREF, $1, $3), NULL, $6);
-        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a fastspin extension");
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
     }
   | identifier '.' identifier
     { 
@@ -1499,6 +1513,12 @@ funccall:
     { 
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
         $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), FixupList($8), $10);
+    }
+  | identifier '[' expr ']' '.' identifier '(' ')' opt_numrets
+    { 
+        AST *arr = NewAST(AST_ARRAYREF, $1, $3);
+        $$ = MakeFunccall(NewAST(AST_METHODREF, arr, $6), NULL, $9);
+        LANGUAGE_WARNING(LANG_SPIN_SPIN1, NULL, "Using () for functions with no parameters is a flexspin extension");
     }
   | identifier '[' expr ']' '.' identifier
     { 

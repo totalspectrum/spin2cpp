@@ -193,7 +193,9 @@ int _dofmt(putfunc fn, const char *fmtstr, va_list *args)
             q = _fmtchar(fn, flags, val);
             break;
         case 's':
-            flags = flags | (prec << MAXWIDTH_BIT);
+            if (prec) {
+                flags |= ((prec-1) << MAXWIDTH_BIT);
+            }
             q = _fmtstr(fn, flags, (const char *)val);
             break;
         case 'd':

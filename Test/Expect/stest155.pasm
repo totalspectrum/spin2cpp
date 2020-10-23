@@ -5,15 +5,15 @@ dat
 entry
 
 _ident
-	mov	_ident_x_01, arg02
 	mov	result1, arg01
-	mov	result2, _ident_x_01
+	mov	_var02, arg02
+	mov	result2, _var02
 _ident_ret
 	ret
 
 _test
-	mov	_ident_x_01, #0
 	mov	result1, #0
+	mov	_ident_x_01, #0
 	mov	result2, _ident_x_01
 _test_ret
 	ret
@@ -28,6 +28,10 @@ COG_BSS_START
 _ident_x
 	res	1
 _ident_x_01
+	res	1
+_var01
+	res	1
+_var02
 	res	1
 arg01
 	res	1

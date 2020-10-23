@@ -72,6 +72,12 @@ struct lexstream {
 
     unsigned flags;
 #define LEXSTREAM_FLAG_NOSRC 0x01
+
+    /* Spin2 hack for handling ':' in LOOKUP/LOOKDOWN
+       (there's a context dependence parsing method calls like 'foo():1'
+       versus 'lookup(foo() : 1, 2, 3)'
+    */
+    int look_counter;
 };
 
 #define getLineInfoIndex(L) (flexbuf_curlen(&(L)->lineInfo) / sizeof(LineInfo))
@@ -174,6 +180,7 @@ extern int gl_lmm_kind;
 #define OUTPUT_DAT  2
 #define OUTPUT_ASM  3
 #define OUTPUT_COGSPIN 4  /* like ASM, but with a Spin wrapper */
+#define OUTPUT_OBJ  5     /* outputs an object file */
 
 /* flags for output */
 #define OUTFLAG_COG_CODE 0x01
@@ -293,7 +300,9 @@ typedef struct funcdef {
     unsigned stack_local:1;  // 1 if function has a local that must go on stack
     unsigned has_throw:1;    // 1 if function has a "throw" in it
     unsigned toplevel:1;     // 1 if function is top level
-
+    unsigned sets_send:1;    // 1 if function sets SEND function
+    unsigned sets_recv:1;    // 1 if function sets RECV function
+    
     /* number of places this function is called from */
     /* 0 == unused function, 1== ripe for inlining */
     unsigned callSites;
@@ -386,7 +395,8 @@ struct modulestate {
     char *datname;     /* the name of the dat section (normally "dat") */
 
     /* for walking through modules and avoiding visiting the same one multiple times */
-    unsigned visitflag;
+    unsigned visitFlag;
+    unsigned all_visitflags;
 
     /* flags for output */
     char pasmLabels;
@@ -585,6 +595,7 @@ void OutputDatFile(const char *name, Module *P, int prefixBin);
 void OutputGasFile(const char *name, Module *P);
 void OutputLstFile(const char *name, Module *P);
 void OutputAsmCode(const char *name, Module *P, int printMain);
+void OutputObjFile(const char *name, Module *P);
 
 /* detect coginit/cognew calls that are for spin methods, return pointer to method involved */
 bool IsSpinCoginit(AST *body, Function **thefunc);
@@ -672,7 +683,6 @@ extern unsigned int gl_hub_base;
    0x18 == CLKSET mode setting
    0x1c == baud rate
    0x20 - 0x30 (VGA settings (not used by fastspin)
-   0x30 == SEND pointer
 */
 
 /*
@@ -711,10 +721,14 @@ Module *ParseFile(const char *filename);
 void DeclareOneGlobalVar(Module *P, AST *ident, AST *typ, int inDat);
 
 /* declare a single member variable of P */
-void DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
+AST *DeclareOneMemberVar(Module *P, AST *ident, AST *typ, int is_private);
 
 /* declare a member variable of P if it does not already exist */
-void MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private);
+/* "flags" is HIDDEN_VAR (for a dummy bitfield holder) or NORMAL_VAR */
+/* returns a pointer to the P->varlist entry for it */
+#define NORMAL_VAR 0
+#define HIDDEN_VAR 1
+AST *MaybeDeclareMemberVar(Module *P, AST *ident, AST *typ, int is_private, unsigned flags);
 
 /* declare a member alias of P */
 void DeclareMemberAlias(Module *P, AST *ident, AST *expr);
@@ -762,7 +776,7 @@ char *NormalizePath(const char *path);
 AST *CheckTypes(AST *expr);
 /* type conversion */
 /* "kind" is AST_ASSIGN, AST_FUNCCALL, AST_RETURN to indicate reason for conversion */
-AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype);
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg);
 
 /* change parameter types as necessary for calling conventions; for example,
  * "large" values are passed as reference to data on the stack rather than
@@ -803,6 +817,15 @@ Symbol *AddSymbolPlaced(SymbolTable *table, const char *name, int type, void *va
 // updates flags based on what we find
 // returns 0 on failure to parse, 1 otherwise
 int ParseOptimizeString(AST *lineNum, const char *str, int *flags);
+
+/* declare constants */
+void DeclareConstants(Module *P, AST **conlist);
+
+/* declare all functions */
+void DeclareFunctions(Module *);
+
+/* find number of elements in aggregate (struct or array) */
+int AggregateCount(AST *typ);
 
 // external vars
 extern AST *basic_get_float;

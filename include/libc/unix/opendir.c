@@ -2,6 +2,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
 DIR *opendir(const char *orig_name)
 {

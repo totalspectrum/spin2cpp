@@ -44,11 +44,12 @@
 #define PIN_DO PIN_MISO
 #define PIN_DI PIN_MOSI
 
-// 160 MHz clock, for 400 kHz operation we need to delay 400 cycles
-//                for 200 kHz delay 800 cycles
-// note though that we typically do a CK_H(); CK_L() sequence so the delay here can be half
-#define PAUSE() (_waitx(80))
-#define SHORTPAUSE() (_waitx(40))
+// 
+// The values here were tested empirically to work at 300 MHz with some cards
+// but it would be nice to have some "reason" for them :)
+//
+#define PAUSE()      (_waitx(16))
+#define SHORTPAUSE() (_waitx(8))
 
 #define DO_INIT()	_dirl(PIN_DO)				/* Initialize port for MMC DO as input */
 #define DO		(SHORTPAUSE(), (_pinr(PIN_DO) & 1))	/* Test for MMC DO ('H':true, 'L':false) */

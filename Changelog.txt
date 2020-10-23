@@ -1,3 +1,49 @@
+Version 5.0.0
+- Renamed "fastspin" to "flexspin"
+- Added --version flag to fastspin
+- Fixed BASIC ^ operator used with --fixedreal
+- Made sin() and cos() work with --fixedreal
+
+Version 4.5.0
+- Added a warning for C functions with mismatched parameters (it used to silently accept this)
+- Added "." character for PRINT USING in BASIC
+- Added support for binary floating point constants in C
+- Added __builtin_clz() for C
+- Added gettimeofday() / settimeofday()
+- Added scanf() family of functions for C
+- Allowed empty FOR loops in BASIC
+- Fixed a number of problems in C struct initialization
+- Fixed printing floats in C when --fixedreal is given
+- Fixed BASIC FOR loops with negative floating point steps
+- Fixed binary and hex constants in C to be unsigned when appropriate
+- Fixed a problem with passing small arrays as parameters in C
+- Fixed ^ in BASIC
+- Made expf and logf use the CORDIC on P2 and ROM on P1
+- Made FIXED a reserved keyword in BASIC (for future expansion)
+- Updated time functions to work sensibly.
+
+Version 4.4.0
+- Added simplified designated initializers (like { .x=1 }) for structs and arrays
+- Added float_t and double_t to math.h
+- Added fseek() and ftell() stdio functions
+- Added Spin2 RECV pointer
+- Fixed a hang due to multiply processing modules
+- Fixed djnz out of range on P2
+- Fixed \0 inside C strings
+- Fixed x[n].method() type calls in Spin2
+- Fixed x[n].[a] method reference lookups in Spin2
+- Fixed some bugs in structure passing/return
+- Fixed incorrect FOR loops using unsigned integers if counting down to 0 or up to MAXINT
+- Fixed order of declarations for C enums
+- Fixed nested initializers in C
+- Improved warnings about missing # in PASM
+- Made SEND pointer per-COG
+- Made some local Spin arrays be held in registers
+- Made SPR keyword be Spin1 only (in Spin2 it is "REG")
+- Modified inline assembly to allow for accessing array variables
+- Reduced the delay for SD card communication to speed up FatFs
+- Save/restore SEND pointer in Spin2 if it is modified by a function
+
 Version 4.3.1
 - Added HUBSET(), POLLATN(), WAITATN()
 - Fix void function calls in SEND

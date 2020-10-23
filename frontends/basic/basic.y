@@ -228,11 +228,11 @@ DeclareBASICMemberVariables(AST *ast)
     if (idlist->kind == AST_LISTHOLDER) {
         while (idlist) {
             ident = idlist->left;
-            MaybeDeclareMemberVar(current, ident, typ, is_private);
+            MaybeDeclareMemberVar(current, ident, typ, is_private, NORMAL_VAR);
             idlist = idlist->right;
         }
     } else {
-        MaybeDeclareMemberVar(current, idlist, typ, is_private);
+        MaybeDeclareMemberVar(current, idlist, typ, is_private, NORMAL_VAR);
     }
     return;
 }
@@ -418,6 +418,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_ENDIF      "endif"
 %token BAS_ENUM       "enum"
 %token BAS_EXIT       "exit"
+%token BAS_FIXED      "fixed"
 %token BAS_FOR        "for"
 %token BAS_FUNCTION   "function"
 %token BAS_GOTO       "goto"
@@ -735,7 +736,7 @@ assign_statement:
         int explicit_flag = EvalConstExpr((AST *)sym->val);
         if (0 == (explicit_flag & 0x1) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL, 0);
+            MaybeDeclareMemberVar(current, ident, NULL, 0, NORMAL_VAR);
         }
         $$ = assign;
     }
@@ -747,7 +748,7 @@ assign_statement:
         int explicit_flag = EvalConstExpr((AST *)sym->val);
         if (0 == (explicit_flag & 0x2) ) {
             ident = assign->left;
-            MaybeDeclareMemberVar(current, ident, NULL, 0);
+            MaybeDeclareMemberVar(current, ident, NULL, 0, NORMAL_VAR);
         }
         $$ = assign;
     }
@@ -883,7 +884,7 @@ inputitem:
         Symbol *sym = GetExplicitDeclares();
         int explicit_flag = EvalConstExpr((AST *)sym->val);
         if (0 == (explicit_flag & 0x4)) {
-            MaybeDeclareMemberVar(current, $1, NULL, 0);
+            MaybeDeclareMemberVar(current, $1, NULL, 0, NORMAL_VAR);
         }
         $$ = NewAST(AST_EXPRLIST, $1, NULL);
     }
@@ -1068,7 +1069,7 @@ casematch:
 // (AST_FOR (initstmt) (AST_TO (condtest (AST_STEP step body))))
 //
 forstmt:
-    BAS_FOR { PushLoop(BAS_FOR); } BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln statementlist endfor
+    BAS_FOR { PushLoop(BAS_FOR); } BAS_IDENTIFIER '=' expr BAS_TO expr optstep eoln optstatementlist endfor
     {
       AST *from, *to, *step;
       AST *ident = $3;
@@ -1939,6 +1940,17 @@ basetypename:
     { $$ = ast_type_float; }
   | BAS_DOUBLE
     { $$ = ast_type_float; }
+  | BAS_FIXED '(' BAS_INTEGER ')'
+    {
+        AST *sizeexpr = $3;
+        int siz = sizeexpr->d.ival;
+        if (siz < 1 || siz > 31) {
+            SYNTAX_ERROR("Fixed point size %d is out of range 1..31", siz);
+            siz = 16;
+        }
+        SYNTAX_ERROR("Fixed point types not implemented yet");
+        $$ = ast_type_float;
+    }
   | BAS_STRING_KW
     { $$ = ast_type_string; }
   | BAS_ANY

@@ -71,7 +71,7 @@ int IsGenericType(AST *typ);
 int IsPointerType(AST *typ);
 int IsRefType(AST *typ);
 
-#define IsIntOrGenericType(t) (IsGenericType(t) || IsIntType(t))
+#define IsIntOrGenericType(t) (!t || IsGenericType(t) || IsIntType(t))
 int IsBoolCompatibleType(AST *typ);
 int IsClassType(AST *typ);
 
@@ -129,5 +129,9 @@ AST *CleanupType(AST *typ);
 
 // build an expression list containing individual object member references
 AST *BuildExprlistFromObject(AST *expr, AST *typ);
+
+// fix up an initializer list of type "type"
+// handles designators like .x = n, and adds any missing 0's
+AST *FixupInitList(AST *typ, AST *initval);
 
 #endif

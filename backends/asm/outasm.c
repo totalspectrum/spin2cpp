@@ -66,6 +66,7 @@ Operand *resultreg[MAX_TUPLE];
 Operand *argreg[MAX_ARG_REGISTER];
 Operand *localreg[MAX_LOCAL_REGISTER];
 Operand *leafreg[MAX_LOCAL_REGISTER];
+Operand *sendreg, *recvreg;
 
 static Operand *nextlabel;
 static Operand *quitlabel;
@@ -97,6 +98,7 @@ static Operand *Dereference(IRList *irl, Operand *op);
 static Operand *CompileIdentifierForFunc(IRList *irl, AST *expr, Function *func);
 static Operand *CompileFunccallFirstResult(IRList *irl, AST *expr);
 static OperandList *CompileFunccall(IRList *irl, AST *expr);
+static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *GetAddressOf(IRList *irl, AST *expr);
 static IR *EmitMove(IRList *irl, Operand *dst, Operand *src);
@@ -178,13 +180,25 @@ static char *cleanname(const char *name)
     return temp;
 }
 
-static char *
+char *
 OffsetName(const char *basename, unsigned long offset)
 {
     size_t len = strlen(basename) + 5;
     char *tempname = calloc(1, len);
-    sprintf(tempname, "%s_%02lu", basename, (unsigned long)offset / LONG_SIZE);
+    sprintf(tempname, "%s_%02lu", basename, offset);
     return tempname;
+}
+
+Operand *
+SubRegister(Operand *reg, unsigned long offset)
+{
+    Operand *sub = NewOperand(REG_SUBREG, (char *)reg, 0);
+    if (reg->size < offset) {
+        reg->size = offset;
+    }
+    reg->used++;
+    sub->val = offset / LONG_SIZE;
+    return sub;
 }
 
 static Operand *
@@ -1101,8 +1115,24 @@ CompileSymbolForFunc(IRList *irl, Symbol *sym, Function *func, AST *ast)
       switch (stype) {
       case SYM_VARIABLE:
           if (sym->flags & SYMF_GLOBAL) {
-              Operand *addr = NewImmediate(sym->offset);
+              int off = sym->offset;
+              Operand *addr;
               Operand *ref;
+              if (off == -1) {
+                  // this is a special internal COG variable
+                  if (!sendreg) {
+                      sendreg = GetOneGlobal(REG_REG, "__sendreg", 0);
+                  }
+                  return sendreg;
+              }
+              if (off == -2) {
+                  // this is a special internal COG variable
+                  if (!recvreg) {
+                      recvreg = GetOneGlobal(REG_REG, "__recvreg", 0);
+                  }
+                  return recvreg;
+              }
+              addr = NewImmediate(off);
               ref = NewOperand(HUBMEM_REF, (char *)addr, 0);
               ref->size = LONG_SIZE;
               return ref;
@@ -1489,6 +1519,10 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->dst = update;
             } else if (ir->dst && ir->dst->kind == COGMEM_REF && ir->dst->name == (char *)old) {
                 ir->dst->name = (char *)update;
+            } else if (old->kind == REG_SUBREG || ir->dst->kind == REG_SUBREG) {
+                if (old->kind == ir->dst->kind && old->name == ir->dst->name && old->val == ir->dst->val) {
+                    ir->dst = update;
+                }
             } else if (IsCogMem(ir->dst) && !strcmp(ir->dst->name, old->name)) {
                 ir->dst->name = update->name;
             }
@@ -1498,6 +1532,10 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
                 ir->src = update;
             } else if (ir->src->kind == COGMEM_REF && ir->src->name == (char *)old) {
                 ir->src->name = (char *)update;
+            } else if (old->kind == REG_SUBREG || ir->src->kind == REG_SUBREG) {
+                if (old->kind == ir->src->kind && old->name == ir->src->name && old->val == ir->src->val) {
+                    ir->src = update;
+                }
             } else if (IsCogMem(ir->src) && !strcmp(ir->src->name, old->name)) {
                 ir->src->name = update->name;
             }
@@ -1505,7 +1543,38 @@ RenameOneReg(IR *ir, Operand *old, Operand *update)
         ir = ir->next;
     }
     // now we can mark "old" as unused in the global variable table
-    old->used = 0;
+    if (old->used) {
+        --old->used;
+    }
+}
+
+static int
+RenameSubregs(IRList *irl, Operand *base, int numlocals, int isLeaf)
+{
+    int num = (base->size + LONG_SIZE) / LONG_SIZE;
+    IR *ir;
+    Operand *replace;
+    
+    replace = GetLocalReg(numlocals, isLeaf);
+    RenameOneReg(irl->head, base, replace);
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->dst && ir->dst->kind == REG_SUBREG && base == (Operand *)ir->dst->name) {
+            replace = GetLocalReg(numlocals + ir->dst->val, isLeaf);
+            RenameOneReg(ir, ir->dst, replace);
+            if (base->used > 0) {
+                base->used--;
+            }
+        }
+        if (ir->src && ir->src->kind == REG_SUBREG && base == (Operand *)ir->src->name) {
+            replace = GetLocalReg(numlocals + ir->src->val, isLeaf);
+            RenameOneReg(ir, ir->src, replace);
+            if (base->used > 0) {
+                base->used--;
+            }
+        }
+    }
+        
+    return num;
 }
 
 /*
@@ -1520,6 +1589,17 @@ RenameLocalRegs(IRList *irl, int isLeaf)
     Operand *replace = NULL;
     int numlocals = 0;
 
+    /* first, look for any subregisters; if found, rename those
+     * in a way that guarantees the arrays stay in order
+     */
+    for (ir = irl->head; ir; ir = ir->next) {
+        if (ir->dst && ir->dst->kind == REG_SUBREG && IsLocal(ir->dst)) {
+            numlocals += RenameSubregs(irl, (Operand *)ir->dst->name, numlocals, isLeaf);
+        }
+        if (ir->src && ir->src->kind == REG_SUBREG && IsLocal(ir->src)) {
+            numlocals += RenameSubregs(irl, (Operand *)ir->src->name, numlocals, isLeaf);
+        }
+    }
     for (ir = irl->head; ir; ir = ir->next) {
         if (IsDummy(ir)) continue;
         if (ir->dst && IsLocal(ir->dst)) {
@@ -1575,6 +1655,26 @@ NeedFramePointer(Function *func)
     return FRAME_NO;
 }
 
+static void
+MarkUsedOneReg(Operand *reg)
+{
+    if (reg && reg->kind == REG_SUBREG) {
+        reg = (Operand *)reg->name;
+    }
+    if (reg) {
+        reg->used = 1;
+    }
+}
+static void
+MarkUsedSubregs(IRList *irl)
+{
+    IR *ir;
+    for (ir = irl->head; ir; ir = ir->next) {
+        MarkUsedOneReg(ir->dst);
+        MarkUsedOneReg(ir->src);
+    }
+}
+
 //
 // the header/footer are code that should only be emitted for
 // non-inline function invocations, at the beginning and
@@ -1606,6 +1706,13 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
         EmitPush(irl, FuncData(func)->asmretname);
     }
     
+    // if SEND is set in function, save it
+    if (func->sets_send) {
+        EmitPush(irl, sendreg);
+    }
+    if (func->sets_recv) {
+        EmitPush(irl, recvreg);
+    }
     //
     // if recursive function, push all local registers
     // we also have to push any local temporary registers that
@@ -1619,7 +1726,11 @@ static void EmitFunctionHeader(IRList *irl, Function *func)
     if (needFrame == FRAME_YES || needFrame == FRAME_MAYBE) {
         if (NeedToSaveLocals(func)) {
             n = RenameLocalRegs(FuncIRL(func), IS_LEAF(func));
+        } else {
+            MarkUsedSubregs(FuncIRL(func));
         }
+    } else {
+        MarkUsedSubregs(FuncIRL(func));
     }
     if (needFrame == FRAME_MAYBE) {
         needFrame = (n > 0) ? FRAME_YES : FRAME_NO;
@@ -1682,6 +1793,13 @@ static void EmitFunctionFooter(IRList *irl, Function *func)
                 EmitPop(irl, GetLocalReg(i, 0));
             }
         }
+    }
+    // if SEND/RECV is set in function, restore it
+    if (func->sets_recv) {
+        EmitPop(irl, recvreg);
+    }
+    if (func->sets_send) {
+        EmitPop(irl, sendreg);
     }
     if (func->is_recursive && InCog(func) && !gl_p2) {
         IR *ir;
@@ -2914,6 +3032,18 @@ CompileMultipleAssign(IRList *irl, AST *lhs, AST *rhs)
     OperandList *opList, *ptr ;
     Operand *r = NULL;
 
+    // compile out statement lists
+    while (rhs && rhs->kind == AST_STMTLIST) {
+        // OK, this is slightly tricky, we have to chase the sequence
+        // down, compiling the parts, until we get to the final
+        // function call
+        if (rhs->right) {
+            CompileStatement(irl, rhs->left);
+            rhs = rhs->right;
+        } else {
+            rhs = rhs->left;
+        }
+    }
     while (rhs && rhs->kind == AST_SEQUENCE) {
         // OK, this is slightly tricky, we have to chase the sequence
         // down, compiling the parts, until we get to the final
@@ -2969,6 +3099,7 @@ IsCogMem(Operand *addr)
     case REG_TEMP:
     case REG_LOCAL:
     case REG_ARG:
+    case REG_SUBREG:
         return true;
     case IMM_HUB_LABEL:
     case IMM_STRING:
@@ -3004,10 +3135,16 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
     int idx;
     int shift;
     int siz;
-    
+
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
+        long offval = offset->val;
+        
+        if (base->kind == REG_SUBREG) {
+            offval += base->val * LONG_SIZE;
+            base = (Operand *)base;
+        }
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
@@ -3017,13 +3154,11 @@ OffsetMemory(IRList *irl, Operand *base, Operand *offset, AST *type)
 #if 1      
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
-                char *tempname;
                 base->used = 1;
-                if (offset->val == 0) {
+                if (offval == 0) {
                     return base;
                 }
-                tempname = OffsetName(base->name, offset->val);
-                return NewOperand(REG_REG, tempname, 0);
+                return SubRegister(base, offval);
             }
 #endif            
             base->used = 1;
@@ -3080,6 +3215,11 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
     // check for COG memory references
     if (!IsMemRef(base) && IsCogMem(base)) {
         Operand *addr;
+        long offval = offset->val * siz;
+        if (base->kind == REG_SUBREG) {
+            offval += base->val * LONG_SIZE;
+            base = (Operand *)base->name;
+        }
         switch(base->kind) {
         case REG_REG:
         case REG_LOCAL:
@@ -3089,13 +3229,11 @@ ApplyArrayIndex(IRList *irl, Operand *base, Operand *offset, int siz)
 #if 1      
             /* special case immediate offsets */
             if (offset->kind == IMM_INT) {
-                char *tempname;
                 base->used = 1;
-                if (offset->val == 0) {
+                if (offval == 0) {
                     return base;
                 }
-                tempname = OffsetName(base->name, offset->val * siz);
-                return NewOperand(REG_REG, tempname, 0);
+                return SubRegister(base, offval);
             }
 #endif            
             base->used = 1;
@@ -3243,6 +3381,12 @@ GetLea(IRList *irl, Operand *src)
     // check for COG memory references
     if (!IsMemRef(src) && IsCogMem(src)) {
         Operand *addr;
+        long offset = 0;
+        if (src->kind == REG_SUBREG) {
+            addr = (Operand *)src->name;
+            offset = src->val;
+            return NewOperand(IMM_COG_LABEL, OffsetName(addr->name, offset / LONG_SIZE), 0);
+        }
         switch(src->kind) {
         case IMM_COG_LABEL:
             return src;
@@ -3252,8 +3396,9 @@ GetLea(IRList *irl, Operand *src)
         case REG_ARG:
         case REG_HW:
             src->used = 1;
-            addr = NewOperand(IMM_COG_LABEL, src->name, 0);
+            addr = NewOperand(IMM_COG_LABEL, src->name, offset);
             return addr;
+
         default:
             break;
         }
@@ -3626,8 +3771,6 @@ EvalStringConst(AST *expr)
         }
     }
 }
-
-static void CompileStatement(IRList *irl, AST *ast); /* forward declaration */
 
 static Operand *
 CompileExpression(IRList *irl, AST *expr, Operand *dest)
@@ -4723,10 +4866,13 @@ static void
 CompileWholeFunction(IRList *irl, Function *f)
 {
     IRList *firl = FuncIRL(f);
-
+    if (FuncData(f)->firl_done) {
+        ERROR(NULL, "firl done");
+    }
     EmitFunctionHeader(irl, f);
     AppendIRList(irl, firl);
     EmitFunctionFooter(irl, f);
+    FuncData(f)->firl_done = 1;
 }
 
 static Operand *newlineOp;
@@ -4810,7 +4956,7 @@ static int EmitAsmVars(struct flexbuf *fb, IRList *datairl, IRList *bssirl, int 
                   char *label;
                   EmitReserve(bssirl, 1, COG_RESERVE);
                   for (n = 1; n < varsize; n++) {
-                      label = OffsetName(g[i].op->name, n * LONG_SIZE);
+                      label = OffsetName(g[i].op->name, n);
                       EmitNamedCogLabel(bssirl, label);
                       EmitReserve(bssirl, 1, COG_RESERVE);
                   }
@@ -4847,13 +4993,13 @@ static void EmitGlobals(IRList *cogdata, IRList *cogbss, IRList *hubdata)
     EmitAsmVars(&hubGlobalVars, hubdata, NULL, NO_SORT);
 }
 
-#define VISITFLAG_COMPILEIR_COG 0x01230000
-#define VISITFLAG_COMPILEIR_HUB 0x01230001
-#define VISITFLAG_COMPILEIR_LUT 0x01230002
-#define VISITFLAG_FUNCNAMES     0x01230008
-#define VISITFLAG_COMPILEFUNCS  0x01230009
-#define VISITFLAG_EXPANDINLINE  0x0123000a
-#define VISITFLAG_EMITDAT       0x0123000b
+#define VISITFLAG_COMPILEIR_COG 0x00000001
+#define VISITFLAG_COMPILEIR_HUB 0x00000002
+#define VISITFLAG_COMPILEIR_LUT 0x00000004
+#define VISITFLAG_FUNCNAMES     0x00000008
+#define VISITFLAG_COMPILEFUNCS  0x00000010
+#define VISITFLAG_EXPANDINLINE  0x00000020
+#define VISITFLAG_EMITDAT       0x00000040
 
 typedef int (*VisitorFunc)(IRList *irl, Module *P);
 
@@ -4866,12 +5012,13 @@ VisitRecursive(IRList *irl, Module *P, VisitorFunc func, unsigned visitval)
     Function *savecurf = curfunc;
     int change = 0;
     
-    if (P->visitflag == visitval)
+    if (P->all_visitflags & visitval)
         return change;
 
     current = P;
 
-    P->visitflag = visitval;
+    P->all_visitflags |= visitval;
+    P->visitFlag = visitval;
     change |= (*func)(irl, P);
 
     // compile intermediate code for submodules
@@ -5156,9 +5303,9 @@ CompileToIR_internal(IRList *irl, Module *P)
     Function *save = curfunc;
     int docog;
 
-    if (P->visitflag == VISITFLAG_COMPILEIR_COG) {
+    if (P->visitFlag == VISITFLAG_COMPILEIR_COG) {
         docog = CODE_PLACE_COG;
-    } else if (P->visitflag == VISITFLAG_COMPILEIR_LUT) {
+    } else if (P->visitFlag == VISITFLAG_COMPILEIR_LUT) {
         docog = CODE_PLACE_LUT;
     } else {
         docog = CODE_PLACE_HUB;

@@ -1041,6 +1041,8 @@ EvalFloatOperator(int op, float lval, float rval, int *valid)
         return (rval < 0) ? -rval : rval;
     case K_SQRT:
         return sqrtf(rval);
+    case K_POWER:
+        return powf(lval, rval);
     default:
         if (valid)
             *valid = 0;
@@ -1640,9 +1642,17 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         }
         break;
     case AST_CAST:
+        rval = EvalExpr(expr->right, flags, valid, depth+1);
         if (IsGenericType(expr->left)) {
-            return EvalExpr(expr->right, flags, valid, depth+1);
+            return rval;
         }
+        if (IsFloatType(expr->left)) {
+            return convToFloat(rval);
+        } else if (IsFloatType(rval.type)) {
+            rval.val = (int)intAsFloat(rval.val);
+        }
+        rval.type = expr->left;
+        return rval;
     default:
         break;
     }
@@ -2053,7 +2063,7 @@ FindFuncSymbol(AST *ast, AST **objrefPtr, int errflag)
         while (objtype && IsRefType(objtype)) {
             objtype = objtype->left;
         }
-        thename = GetIdentifierName(expr->right);
+        thename = GetUserIdentifierName(expr->right);
         if (!thename) {
             return NULL;
         }
@@ -2594,6 +2604,18 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
         }
         return ExprTypeRelative(table, expr, P);
     }
+    case AST_STMTLIST:
+    {
+        // find the last item in the statement list
+        while (expr && expr->kind == AST_STMTLIST) {
+            if (expr->right) {
+                expr = expr->right;
+            } else {
+                expr = expr->left;
+            }
+        }
+        return ExprTypeRelative(table, expr, P);
+    }
     case AST_NEW:
         return expr->left;
     case AST_SIZEOF:
@@ -2939,16 +2961,32 @@ CleanupType(AST *typ)
 // "typ" is the object type
 //
 AST *
-BuildExprlistFromObject(AST *expr, AST *typ)
+BuildExprlistFromObject(AST *origexpr, AST *typ)
 {
     AST *exprlist = NULL;
     AST *temp;
     Module *P;
     Symbol *sym;
     ASTReportInfo saveinfo;
+    AST *expr = origexpr;
+    AST **exprptr = NULL;
     
     int i;
     int n;
+
+    /* chase down any expression statements */
+    while ((expr->kind == AST_STMTLIST)) {
+        if (expr->right) {
+            exprptr = &expr->right;
+        } else {
+            exprptr = &expr->left;
+        }
+        expr = *exprptr;
+    }
+    if (!expr || expr->kind == AST_EXPRLIST) {
+        /* already an expression list */
+        return expr;
+    }
     exprlist = NULL;
     if (!IsClassType(typ)) {
         return expr;
@@ -2968,5 +3006,313 @@ BuildExprlistFromObject(AST *expr, AST *typ)
         exprlist = AddToList(exprlist, temp);
     }
     AstReportDone(&saveinfo);
+    if (exprptr) {
+        *exprptr = exprlist;
+        return origexpr;
+    }
     return exprlist;
+}
+
+/* pull a single element of type "type" out of a list, and update that list */
+/* needs to be able to handle nested arrays, so if "type" is an array type then
+ * call recursively
+ */
+AST *PullElement(AST *type, AST **rawlist_ptr)
+{
+    AST *item = NULL;
+    AST *rawlist = *rawlist_ptr;
+
+    if (!rawlist) return NULL;
+    if (IsArrayType(type)) {
+        int numelems;
+        int elemsize;
+        int i;
+        int typesize = TypeSize(type);
+        type = RemoveTypeModifiers(BaseType(type));
+        elemsize = TypeSize(type);
+        numelems = typesize / elemsize;
+        if (!numelems) {
+            return NULL;
+        }
+        for (i = 0; i < numelems; i++) {
+            item = AddToList(item, PullElement(type, rawlist_ptr));
+        }
+        return item;
+    } else if (IsClassType(type)) {
+        AST *varlist;
+        AST *elem;
+        AST *subtype;
+        int sawBitfield = 0;
+        Module *P = (Module *)type->d.ptr;
+        if (P->pendingvarblock) {
+            ERROR(type, "Internal error: pending variables on object");
+            return NULL;
+        }
+        varlist = P->finalvarblock;
+        while (varlist) {
+            elem = varlist->left;
+            varlist = varlist->right;
+            if (elem->kind == AST_DECLARE_BITFIELD) {
+                sawBitfield = 1;
+                subtype = ast_type_long;
+                item = AddToList(item, PullElement(subtype, rawlist_ptr));
+            } else if (sawBitfield) {
+                sawBitfield = 0;
+            } else {
+                subtype = ExprType(elem);
+                item = AddToList(item, PullElement(subtype, rawlist_ptr));
+            }
+            if (P->isUnion) {
+                break;
+            }
+        }
+        return item;
+    }
+    if (rawlist) {
+        item = rawlist->left;
+        rawlist = rawlist->right;
+    } else {
+        item = AstInteger(0);
+    }
+    item = NewAST(AST_EXPRLIST, item, NULL);
+    *rawlist_ptr = rawlist;
+    return item;
+}
+
+/* find identifier "ident" in variable list "list" */
+/* if curptr != NULL, set it to the index */
+AST *FindMethodInList(AST *list, AST *ident, int *curptr)
+{
+    int curelem = 0;
+    if (!IsIdentifier(ident)) {
+        ERROR(ident, "Expected identifier");
+        return NULL;
+    }
+    if (ident->kind == AST_LOCAL_IDENTIFIER) {
+        // look for the "raw" form
+        ident = ident->right;
+    }
+    while (list) {
+        if (AstUses(list->left, ident)) {
+            break;
+        }
+        list = list->right;
+        curelem++;
+    }
+    if (!list) return NULL;
+    if (curptr) *curptr = curelem;
+    return list;
+}
+
+/* fix up an initializer list of a given type */
+/* creates an array containing the initializer expressions;
+ * each of these may in turn be an array of initializers
+ * returns an EXPRLIST containing the items
+ * returns NULL if list is empty
+ */
+AST *
+FixupInitList(AST *type, AST *initval)
+{
+    int numelems;
+    AST **astarr = 0;
+    int curelem;
+    AST *origtype = type;
+    
+    if (!initval) {
+        return initval;
+    }
+    type = RemoveTypeModifiers(type);
+    //typealign = TypeAlign(type);
+    numelems  = 1;
+
+    if (initval->kind == AST_STRINGPTR) {
+        return initval;
+    }
+    if (initval->kind != AST_EXPRLIST) {
+        initval = NewAST(AST_EXPRLIST, initval, NULL);
+    }
+    
+    type = RemoveTypeModifiers(type);
+    switch(type->kind) {
+    case AST_ARRAYTYPE:
+    {
+        type = RemoveTypeModifiers(BaseType(type));
+        /* if the first element is not an initializer list, then
+           assume we've got a flat initializer like
+             int a[2][3] = { 1, 2, 3, 4, 5, 6 }
+           we need to convert this to { {1, 2, 3}, {4, 5, 6} }
+        */
+        if ( (IsArrayType(type) || IsClassType(type) ) && initval->left && initval->left->kind != AST_EXPRLIST) {
+            AST *rawlist = initval;
+            AST *item;
+            initval = NULL;
+            numelems = 0;
+            for (;;) {
+                item = PullElement(type, &rawlist);
+                if (!item) break;
+                item = NewAST(AST_EXPRLIST, item, NULL);
+                initval = AddToList(initval, item);
+                numelems++;
+            }
+        } else {
+            if (origtype->right) {
+                numelems = EvalConstExpr(origtype->right);
+            } else {
+                numelems = AstListLen(initval);
+            }
+        }
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_ARRAYREF) {
+                    ERROR(fixup, "initialization designator for array is not an array element");
+                    val->left = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    val->left = AstInteger(0);
+                } else if (!IsConstExpr(fixup->right)) {
+                    ERROR(fixup, "initialization designator for array is not constant");
+                    val->left = AstInteger(0);
+                } else {
+                    curelem = EvalConstExpr(fixup->right);
+                    val->left = newval;
+                }
+            }
+            if (astarr[curelem]) {
+                // C99 says the last definition applies, so this probably isn't
+                // an error
+                WARNING(val, "Duplicate definition for element %d of array", curelem);
+            }
+            astarr[curelem] = val;
+            curelem++;
+        }
+        break;
+    }
+    case AST_OBJECT:
+    {
+        Module *P = GetClassPtr(type);
+        int is_union = P->isUnion;
+        AST *varlist = P->finalvarblock;
+        if (!varlist) {
+            return NULL;
+        }
+        numelems = AggregateCount(type);
+        astarr = calloc( numelems, sizeof(AST *) );
+        if (!astarr) {
+            ERROR(NULL, "out of memory");
+            return 0;
+        }
+        /* now pull out the initializers */
+        curelem = 0;
+        while (initval) {
+            AST *val = initval;
+            initval = initval->right;
+            val->right = NULL;
+            if (val->left->kind == AST_INITMODIFIER) {
+                AST *root = val->left;
+                AST *fixup = root->left;
+                AST *newval = root->right;
+                if (!fixup || fixup->kind != AST_METHODREF) {
+                    ERROR(fixup, "initialization designator for struct is not a method reference");
+                    newval = AstInteger(0);
+                } else if (fixup->left != NULL) {
+                    ERROR(fixup, "Internal error: cannot handle nested designators");
+                    newval = AstInteger(0);
+                } else {
+                    varlist = FindMethodInList(P->finalvarblock, fixup->right, &curelem);
+                    if (!varlist) {
+                        ERROR(fixup, "%s not found in struct", GetUserIdentifierName(fixup->right));
+                        break;
+                    }
+                }
+                val->left = newval;
+            }
+            if (is_union) {
+                curelem = 0;
+            }
+            if (is_union) {
+                AST *subtype = ExprType(varlist->left);
+                val->left = NewAST(AST_CAST, subtype, val->left);
+            }
+            if (curelem < numelems) {
+                astarr[curelem] = val;
+                curelem++;
+                varlist = varlist->right;
+            } else {
+                WARNING(val, "ignoring excess element in initializer");
+            }
+        }
+        break;
+    }
+    default:
+        return initval;
+    }
+
+    for (curelem = 0; curelem < numelems; curelem++) {
+        if (!astarr[curelem]) {
+            astarr[curelem] = NewAST(AST_EXPRLIST, AstInteger(0), NULL);
+        }
+    }
+    initval = astarr[0];
+    for (curelem = 0; curelem < numelems-1; curelem++) {
+        astarr[curelem]->right = astarr[curelem+1];
+    }
+    free(astarr);
+    return initval;
+}
+
+/* get number of elements in an array or class */
+int
+AggregateCount(AST *typ)
+{
+    int size;
+    int sawBitfield = 0;
+    if (IsArrayType(typ)) {
+        if (!IsConstExpr(typ->right)) {
+            ERROR(typ, "Unable to determine size of array");
+            size = 1;
+        } else {
+            size = EvalConstExpr(typ->right);
+        }
+        return size;
+    }
+    if (IsClassType(typ)) {
+        Module *P = (Module *)typ->d.ptr;
+        AST *list, *elem;
+        if (P->isUnion) {
+            return 1;
+        }
+        if (P->pendingvarblock) {
+            ERROR(typ, "Internal error: Taking size of an object with pending variables\n");
+        }
+        list = P->finalvarblock;
+        size = 0;
+        while (list) {
+            elem = list->left;
+            if (elem->kind == AST_DECLARE_BITFIELD) {
+                sawBitfield = 1;
+                size++;
+            } else {
+                if (!sawBitfield) {
+                    size++;
+                }
+                sawBitfield = 0;
+            }
+            list = list->right;
+        }
+        return size;
+    }
+    ERROR(typ, "Internal error, expected aggregate type in AggregateCount");
+    return 1;
 }

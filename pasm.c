@@ -323,13 +323,14 @@ reduceStrings(AST *orig_exprlist)
         elem = exprlist->left;
         next = exprlist->right;
         if (elem->kind == AST_STRING) {
-            AST *ast;
+            AST *ast = NULL;
             const char *t = elem->d.string;
             int c;
             first = elem;
             AstReportAs(elem, &saveinfo);
             do {
                 c = *t++;
+                if (!c) break;
                 ast = AstInteger(c);
                 if (first) {
                     *first = *ast;
@@ -345,7 +346,35 @@ reduceStrings(AST *orig_exprlist)
         }
         exprlist = next;
     }
-    return orig_exprlist;
+    // add a trailing 0
+    exprlist = AddToList(orig_exprlist, NewAST(AST_EXPRLIST, AstInteger(0), NULL));
+    return exprlist;
+}
+
+static AST *
+PullFromList(int n, AST *list, AST **leftover)
+{
+    AST *first;
+    
+    if (n > 0) {
+        ASTReportInfo saveinfo;
+        AstReportAs(list, &saveinfo);
+        first = NewAST(AST_EXPRLIST, list->left, NULL);
+        AstReportDone(&saveinfo);
+        first->right = list->right;
+        --n;
+    } else {
+        first = NULL;
+    }
+    while (n > 0 && list->right) {
+        list = list->right;
+        --n;
+    }
+    if (leftover) {
+        *leftover = list->right;
+    }
+    list->right = NULL;
+    return first;
 }
 
 static void
@@ -356,6 +385,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     AST *subtype;
     AST *elem;
     AST *initval = initializer;
+    AST *thiselem = 0;
     
     type = RemoveTypeModifiers(type);
     if (!type) {
@@ -406,7 +436,7 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
             AstReportAs(elem, &saveinfo);
             /* need to move it to its own declaration */
             if (elem->kind == AST_EXPRLIST) {
-                subtype = type->left;
+                subtype = ExprType(type->left);
                 subtype = NewAST(AST_ARRAYTYPE, subtype, AstInteger(AstListLen(elem)));
             } else {
                 subtype = ast_type_ptr_void;
@@ -429,8 +459,10 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
         AST *elem;
         subtype = type->left;
         if (initializer->kind != AST_EXPRLIST) {
-            ERROR(initializer, "wrong kind of initializer for array type");
-            return;
+            /* could be a raw list */
+            while (IsArrayType(subtype)) {
+                subtype = BaseType(subtype);
+            }
         }
         for (elem = initializer; elem; elem = elem->right) {
             fixupInitializer(P, elem->left, subtype);
@@ -438,24 +470,81 @@ fixupInitializer(Module *P, AST *initializer, AST *type)
     } else if (type->kind == AST_OBJECT) {
         Module *Q = GetClassPtr(type);
         AST *varlist, *elem;
+        AST *thisval = NULL;
         varlist = Q->finalvarblock;
         if (Q->pendingvarblock) {
             ERROR(initializer, "internal error, got something in pendingvarblock");
             return;
         }
         if (initializer->kind != AST_EXPRLIST) {
-            ERROR(initializer, "wrong kind of initializer for struct type");
+            if (initializer->kind == AST_INTEGER && initializer->d.ival == 0) {
+                /* do nothing */
+            } else {
+                ERROR(initializer, "wrong kind of initializer for struct type");
+            }
             return;
         }
         for (elem = initializer; elem; elem = elem->right) {
+            int n;
             if (!varlist) {
                 ERROR(initializer, "too many initializers for struct or union");
                 return;
             }
+            thiselem = 0;
+            while (varlist && varlist->left && varlist->left->kind == AST_DECLARE_BITFIELD) {
+                AST *baseval;
+                AST *casttype;
+                baseval = varlist->left->left;
+                if (baseval->kind != AST_CAST) {
+                    ERROR(varlist, "internal error 0");
+                    return;
+                }
+                casttype = baseval->left;
+                baseval = baseval->right;
+                if (baseval->kind != AST_RANGEREF) {
+                    ERROR(varlist, "internal error 1");
+                    return;
+                }
+                baseval = baseval->right;
+                if (baseval->kind != AST_RANGE) {
+                    ERROR(varlist, "internal error 2");
+                    return;
+                }
+                baseval = elem ? AstOperator(K_SHL, elem->left, baseval->right) : AstInteger(0);
+                if (thisval) {
+                    thisval->right = AstOperator('|', thisval->right, baseval);
+                    if (elem) {
+                        thiselem->right = elem->right;  /* remove "elem" from list */
+                    }
+                } else {
+                    thisval = NewAST(AST_CAST, casttype, baseval);
+                    thiselem = elem;
+                    elem->left = thisval;
+                }
+                varlist = varlist->right;
+                if (elem) {
+                    elem = elem->right;
+                }
+            }
+            if (!thisval) {
+                thisval = elem ? elem->left : AstInteger(0);
+            }
+            if (thiselem) {
+                elem = thiselem;
+            }
             subtype = ExprType(varlist->left);
             varlist = varlist->right;
             if (Q->isUnion) varlist = NULL;
-            fixupInitializer(P, elem->left, subtype);
+            if ( (IsArrayType(subtype) || IsClassType(subtype)) && thisval && (thisval->kind != AST_EXPRLIST && thisval->kind != AST_STRINGPTR)) {
+                AST *newsub;
+                AST *oldlist;
+                n = AggregateCount(subtype);
+                newsub = PullFromList(n, elem, &oldlist);
+                elem->left = thisval = newsub;
+                elem->right = oldlist;
+            }
+            fixupInitializer(P, thisval, subtype);
+            thisval = 0;
         }
     }
 }
@@ -672,6 +761,7 @@ DeclareLabels(Module *P)
                 AST *type = ast->left;
                 AST *ident = ast->right;
                 AST *initializer = NULL;
+                AST **initptr = NULL;
                 ASTReportInfo saveinfo;
                 int typalign;
                 int typsize;
@@ -681,6 +771,7 @@ DeclareLabels(Module *P)
                 MARK_DATA(label_flags);
                 AstReportAs(ident, &saveinfo);
                 if (ident->kind == AST_ASSIGN) {
+                    initptr = &ident->right;
                     initializer = ident->right;
                     ident = ident->left;
                 }
@@ -697,7 +788,10 @@ DeclareLabels(Module *P)
                         ERROR(ast, "empty or undefined class used to define %s", GetUserIdentifierName(ident));
                     }
                 }
-                
+                if (initptr && (IsClassType(type) || IsArrayType(type)) ) {
+                    initializer = FixupInitList(type, initializer);
+                    *initptr = initializer;
+                }
                 ALIGNPC(typalign);
                 if (ident->kind == AST_LOCAL_IDENTIFIER) {
                     ident = ident->left;
@@ -709,6 +803,7 @@ DeclareLabels(Module *P)
                 }
                 pendingLabels = emitPendingLabels(P, pendingLabels, hubpc, cogpc, type, lastOrg, inHub, label_flags);
                 INCPC(typsize);
+                
                 fixupInitializer(P, initializer, type);
                 AstReportDone(&saveinfo);
             }

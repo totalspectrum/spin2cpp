@@ -110,8 +110,6 @@ Aliases spinalias[] = {
 
     { "reboot", "_reboot" },
 
-    { "send", "__sendptr" },
-    
     /* obsolete aliases */
     { "dirl_", "_dirl" },
     { "dirh_", "_dirh" },
@@ -175,6 +173,9 @@ Aliases spin2alias[] = {
     { "waitus", "_waitus" },
     { "pollct", "_pollct" },
     { "waitct", "_waitcnt" },
+    
+    { "recv", "__recvptr" },    
+    { "send", "__sendptr" },
     
     /* obsolete aliases */
     { "outl_", "_outl" },
@@ -361,12 +362,12 @@ NewModule(const char *fullname, int language)
  * declare constant symbols
  */
 static Symbol *
-EnterConstant(const char *name, AST *expr)
+EnterConstant(Module *P, const char *name, AST *expr)
 {
     Symbol *sym;
 
     // check to see if the symbol already has a definition
-    sym = FindSymbol(&current->objsyms, name);
+    sym = FindSymbol(&P->objsyms, name);
     if (sym) {
         if (sym->kind == SYM_CONSTANT || sym->kind == SYM_FLOAT_CONSTANT) {
             int32_t origval;
@@ -382,15 +383,15 @@ EnterConstant(const char *name, AST *expr)
         }
     }
     if (IsFloatConst(expr)) {
-        sym = AddSymbol(&current->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
+        sym = AddSymbol(&P->objsyms, name, SYM_FLOAT_CONSTANT, (void *)expr, NULL);
     } else {
-        sym = AddSymbol(&current->objsyms, name, SYM_CONSTANT, (void *)expr, NULL);
+        sym = AddSymbol(&P->objsyms, name, SYM_CONSTANT, (void *)expr, NULL);
     }
     return sym;
 }
 
 void
-DeclareConstants(AST **conlist_ptr)
+DeclareConstants(Module *P, AST **conlist_ptr)
 {
     AST *conlist;
     AST *upper, *ast, *id;
@@ -427,7 +428,7 @@ DeclareConstants(AST **conlist_ptr)
                             ERROR(ast, "Internal error, bad constant declaration");
                             return;
                         }                            
-                        EnterConstant(GetIdentifierName(ast->left), ast->right);
+                        EnterConstant(P, GetIdentifierName(ast->left), ast->right);
                         n++;
                         // now pull the assignment out so we don't see it again
                         RemoveFromList(conlist_ptr, upper);
@@ -470,7 +471,7 @@ DeclareConstants(AST **conlist_ptr)
                         if (id->kind != AST_IDENTIFIER) {
                             ERROR(ast, "Internal error, expected identifier in constant list");
                         } else {
-                            EnterConstant(id->d.string, AstInteger(default_val));
+                            EnterConstant(P, id->d.string, AstInteger(default_val));
                             default_val += EvalConstExpr(ast->right);
                         }
                         n++;
@@ -483,7 +484,7 @@ DeclareConstants(AST **conlist_ptr)
                     break;
                 case AST_IDENTIFIER:
                     if (default_val_ok) {
-                        EnterConstant(ast->d.string, AstInteger(default_val));
+                        EnterConstant(P, ast->d.string, AstInteger(default_val));
                         default_val += default_skip;
                         n++;
                         // now pull the assignment out so we don't see it again
@@ -516,7 +517,7 @@ DeclareConstants(AST **conlist_ptr)
                 default_skip = ast->right ? EvalConstExpr(ast->right) : 1;
                 break;
             case AST_IDENTIFIER:
-                EnterConstant(ast->d.string, AstInteger(default_val));
+                EnterConstant(P, ast->d.string, AstInteger(default_val));
                 default_val += default_skip;
                 break;
             case AST_ENUMSKIP:
@@ -524,12 +525,12 @@ DeclareConstants(AST **conlist_ptr)
                 if (id->kind != AST_IDENTIFIER) {
                     ERROR(ast, "Internal error, expected identifier in constant list");
                 } else {
-                    EnterConstant(id->d.string, AstInteger(default_val));
+                    EnterConstant(P, id->d.string, AstInteger(default_val));
                     default_val += EvalConstExpr(ast->right);
                 }
                 break;
             case AST_ASSIGN:
-                EnterConstant(ast->left->d.string, ast->right);
+                EnterConstant(P, ast->left->d.string, ast->right);
                 default_val = EvalConstExpr(ast->right) + default_skip;
                 break;
             case AST_COMMENT:
@@ -1356,6 +1357,7 @@ GetTopLevelModule(void)
 
 int TypeGoesOnStack(AST *typ)
 {
+    AST *subtyp;
     if (!typ) return 0;
     typ = RemoveTypeModifiers(typ);
     if (TypeSize(typ) > LARGE_SIZE_THRESHOLD) {
@@ -1363,6 +1365,11 @@ int TypeGoesOnStack(AST *typ)
     }
     switch (typ->kind) {
     case AST_ARRAYTYPE:
+        /* array of longs only are OK */
+        subtyp = BaseType(typ);
+        if (!subtyp || TypeSize(subtyp) == 4) {
+            return 0;
+        }
         return 1;
     case AST_OBJECT:
     {
@@ -1438,6 +1445,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
     AST *ast;
     AST *declare;
     AST *initializer = NULL;
+    AST **initptr = NULL;
     Symbol *olddef;
     SymbolTable *table = &P->objsyms;
     const char *name = NULL;
@@ -1467,6 +1475,7 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             ERROR(ident, "typedef cannot have initializer");
         }
         initializer = ident->right;
+        initptr = &ident->right;
         ident = ident->left;
     }
     if (ident->kind == AST_ARRAYDECL) {
@@ -1499,6 +1508,8 @@ DeclareOneGlobalVar(Module *P, AST *ident, AST *type, int inDat)
             type->right = AstInteger(1);
         } else {
             if (initializer->kind == AST_EXPRLIST) {
+                initializer = FixupInitList(type, initializer);
+                *initptr = initializer;
                 type->right = AstInteger(AstListLen(initializer));
             } else if (initializer->kind == AST_STRINGPTR) {
                 type->right = AstInteger(GetExprlistLen(initializer->left) + 1);
@@ -1589,6 +1600,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
                 }
             }
             break;
+        case AST_DECLARE_BITFIELD:
+            /* skip */
+            continue;
         case AST_COMMENT:
             /* skip */
             continue;
@@ -1623,22 +1637,26 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
     return offset;   
 }
 
-void
+AST *
 DeclareOneMemberVar(Module *P, AST *ident, AST *type, int is_private)
 {
+    AST *r = 0;
     if (!type) {
         type = InferTypeFromName(ident);
     }
     if (1) {
         AST *iddecl = NewAST(AST_LISTHOLDER, ident, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, type, iddecl);
-        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        r = NewAST(AST_LISTHOLDER, newdecl, NULL);
+        P->pendingvarblock = AddToList(P->pendingvarblock, r);
     }
+    return r;
 }
 
-void
-MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
+AST *
+MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private, unsigned flags)
 {
+    AST *ret = 0;
     AST *sub;
     const char *name;
     sub = identifier;
@@ -1649,12 +1667,12 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
         sub = sub->left;
     }
     if (!sub || sub->kind != AST_IDENTIFIER) {
-        return;
+        return 0;
     }
     name = GetIdentifierName(sub);
     Symbol *sym = FindSymbol(&P->objsyms, name);
     if (sym && sym->kind == SYM_VARIABLE) {
-        return;
+        return 0;
     }
     if (!typ) {
         typ = InferTypeFromName(identifier);
@@ -1662,8 +1680,10 @@ MaybeDeclareMemberVar(Module *P, AST *identifier, AST *typ, int is_private)
     if (!AstUses(P->pendingvarblock, identifier)) {
         AST *iddecl = NewAST(AST_LISTHOLDER, identifier, NULL);
         AST *newdecl = NewAST(AST_DECLARE_VAR, typ, iddecl);
-        P->pendingvarblock = AddToList(P->pendingvarblock, NewAST(AST_LISTHOLDER, newdecl, NULL));
+        ret = NewAST(AST_LISTHOLDER, newdecl, NULL);
+        P->pendingvarblock = AddToList(P->pendingvarblock, ret);
     }
+    return ret;
 }
 
 void

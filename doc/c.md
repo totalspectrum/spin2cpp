@@ -4,7 +4,7 @@
 
 FlexC is the C dialect implemented by the fastspin compiler used in FlexGUI. It eventually will implement the C99 standard with some C++ extensions.
 
-fastspin recognizes the language by the extension of the file being compiled. If a file ends in `.c` it is treated as a C file. If a file ends in `.cpp`, `.cc`, or `.cxx` then it is treated as a C++ file; this enables a few keywords not available in C, but otherwise is very similar to C mode (FlexC is not a full featured C++ compiler).
+fastspin recognizes the language by the extension of the file being compiled. If a file ends in `.c` it is treated as a C file. If a file ends in `.cpp`, `.cc`, or `.cxx` then it is treated as a C++ file; this enables a few keywords not available in C, but otherwise is very similar to C mode (FlexC is not a fully featured C++ compiler).
 
 This document assumes that you are familiar with programming in C and with the Parallax Propeller chip. It mostly covers the differences between standard C and FlexC.
 
@@ -12,24 +12,41 @@ This document assumes that you are familiar with programming in C and with the P
 
 The C compiler is mostly implemented and could probably be considered "beta" software now, but there are a few missing features.
 
-### Missing Features
-
-An incomplete list of things that still need to be implemented:
-
-  * 64 bit integers (long long) are recognized but mostly do not work
-  * only part of the C standard library is finished
-
 ### Known Bugs
 
-There are several known bugs and deviations from the C standard:
+There are several known bugs and deviations from the C99 standard:
 
-(1) Name Spaces
+#### Name Spaces
 
 The namespaces for types and variable names are not separated as they should be, so some C code that uses the same identifiers for types and variables or struct members may not work properly.
 
-(2) Doubles
+#### Doubles
 
 The `double` type is implemented as a 32 bit IEEE single precision float (the same as `float`). This doesn't meet the requirements in the C99 and later standards for the range available for double.
+
+#### long long
+
+The 64 bit integer type ("long long") is only partially implemented at this time, and does not work properly.
+
+#### Designated initializers
+
+C99 desginated initializers are supported only in their simplest form, that is, for only one level of initializer. So for example a statement like:
+```
+  struct point c = { .x = 1, .y = 2 };
+```
+will work, but a designated initializer for a sub structure field like:
+```
+  struct person p = { .address.streetnum = 10 };
+```
+will not work: the double levels of ".address.streetnum" will fail.
+
+#### Anonymous Structs and Unions
+
+Anonymous structs and unions (i.e. nested struct members without a name) are not supported.
+
+#### Variable length arrays
+
+Variable length arrays are not supported. A work-around is to use the `__builtin_alloca()` function to allocate memory on the stack.
 
 ## Preprocessor
 
@@ -40,12 +57,12 @@ Flex C uses the open source mcpp preprocessor (originally from mcpp.sourceforge.
 Symbol           | When Defined
 -----------------|-------------
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
-`__FLEXC__`      | always defined to the fastspin major version number
-`__FASTSPIN__`   | always defined to the fastspin major version number
+`__FLEXC__`      | always defined to the flexspin/flexcc major version number
+`__FLEXSPIN__`   | always defined to the flexspin/flexcc major version number
 `__P2__`         | only defined if compiling for Propeller 2 (obsolete)
 `__propeller2__` | only defined if compiling for Propeller 2
 `__ILP32__`      | always defined; some programs use this to determine pointer size
-`__VERSION__`    | defined to a string containing the full fastspin version
+`__VERSION__`    | defined to a string containing the full flexspin version
 
 ## Runtime Environment
 
@@ -55,11 +72,11 @@ In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal a
 
 ### P2 Clock Frequency
 
-The P2 does not have a default clock frequency. You may set up the frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+The P2 has a default clock frequency of 160 MHz in C mode. You may set up a different frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
 
-Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 160 MHz you would do:
+Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 180 MHz you would do:
 ```
-#define P2_TARGET_MHZ 160
+#define P2_TARGET_MHZ 180
 #include <sys/p2es_clock.h>
 ...
 _clkset(_SETFREQ, _CLOCKFREQ);
@@ -228,6 +245,13 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
+### Count Leading Zeros
+
+```
+  x = __builtin_clz(y)
+```
+Calculates the number of 0 bits at the start of the unsigned integer `y`. The result is between 0 and 32 (inclusive).
+
 ### COGSTART
 
 Starts a function running in another COG. This builtin is more of a macro than a traditional function, because it does not immediately evaluate its first parameter (which should be a function call); instead, it causes that function call to run in a new COG. For example:
@@ -355,6 +379,27 @@ void _reboot(void);
 ```
 Reboots the P2. Needless to say, this function never returns.
 
+#### _getsec
+
+```
+uint32_t _getsec(void);
+```
+Gets the seconds elapsed on the system timer. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used, so it will wrap around only after many years.
+
+#### _getms
+
+```
+uint32_t _getms(void);
+```
+Gets the time elapsed on the system timer in milliseconds. On the P1 this will wrap around after about 54 seconds. On the P2 a 64 bit counter is used for the system timer, so it will wrap around only after about 50 days.
+
+#### _getus
+
+```
+uint32_t _getus(void);
+```
+Gets the time elapsed on the system timer in microseconds. On the P1 this will wrap around after about 54 seconds.
+
 #### _waitx
 
 ```
@@ -412,3 +457,122 @@ Makes pin `pin` an input and returns its current value (0 or 1).
 void      _pinw(int pin, int val);
 ```
 Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined.
+
+
+## Disk I/O routines (P2 Only)
+
+On the P2 there are some methods available for disk I/O. The `mount` call must be made before any other calls.
+
+### Mount
+
+The `mount` call gives a name to a file system. For example, after
+```
+mount("/host", _vfs_open_host());
+mount("/sd", _vfs_open_sdcard());
+```
+files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
+
+This only works on P2, because it requires a lot of HUB memory, and also needs the host file server built in to `loadp2`.
+
+Available file systems are:
+
+  * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+
+It is OK to make multiple mount calls, but they should have different names.
+
+### Stdio
+
+After mounting a file system, the standard FILE functions like `fopen`, `fprintf`, `fgets` and so on are available and usable.
+
+### Posix file functions
+
+`int remove(const char *path)`
+
+Removes the regular file specified by `path`. Returns non-zero if the removal failed for some reason.
+
+### Posix directory functions
+
+A number of standard POSIX directory functions are available, including:
+
+`int mkdir(const char *path)`
+
+Creates a new directory named `path`. Returns 0 on success, non-zero on error (in which case errno is set to the specific error).
+
+`int rmdir(const char *path)`
+
+Removes the directory specified by `path`. Returns 0 on success, non-zero on failure (in the latter case sets `errno` to the precise error.
+
+`int chdir(const char *path)`
+
+Sets the current directory to `path`. Returns 0 on success, non-zero on failure.
+
+`char *getcwd(char *buf, size_t size)`
+
+Copies the current directory into `buf`, which must have at least `size` bytes available. Returns `buf`, or NULL if `buf` is not larget enough to hold the directory.
+
+`DIR *opendir(const char *path)`
+
+Opens `path` for reading with `readdir`. Returns NULL on error, otherwise a handle to use with `readdir`.
+
+`int closedir(DIR *dir)`
+
+Closes directory previously opened with `opendir`.
+
+`struct dirent *readdir(DIR *dir)`
+
+Reads the next directory entry.
+
+## Time Functions
+
+The standard C99 library functions like `asctime`, `localtime`, `mktime`, and `strftime` are all available. The `time_t` type is an unsigned 32 bit integer, counting the number of non-leap seconds since midnight Jan. 1, 1970. Note that most P2 boards do not have a real time clock built in, so the time returned will not be accurate unless it is first set by `settimeofday` (see below). Also note that all of the time functions make use of an internal counter which is based on the system frequency, and hence must be called at least once every 54 seconds or so (on P1) in order to avoid losing time.
+
+The POSIX functions `settimeofday` and `gettimeofday` are also available, in the header file `<sys/time.h>`. These use a `struct timeval` structure giving the number of (non leap) seconds and microseconds elapsed since midnight Jan. 1, 1970. `settimeofday` is the best way to interface with a hardware RTC. To use it, read the time from the hardware RTC periodically (e.g. once every 30 seconds) and call `settimeofday` to update the internal time based on it. See the example below.
+
+### Sample time program
+
+Here is a simple example of setting the clock and then reading it repeatedly to display the time:
+```
+//
+// simple clock program
+// shows how to set the time to a specific date/time
+// and then display it
+//
+#include <stdio.h>
+#include <sys/time.h>
+
+int main()
+{
+    struct timeval tv;
+    struct tm tm_now;
+    char dispbuf[40];
+    
+    // set the time to 2020-October-17, 1:30 pm
+    // set up struct tm structure
+    memset(&tm_now, 0, sizeof(tm_now));
+    tm_now.tm_sec = 0;
+    tm_now.tm_min = 30;
+    tm_now.tm_hour = 13; // 1pm
+    tm_now.tm_mon = 10 - 1;  // month is offset by 1
+    tm_now.tm_mday = 17;
+    tm_now.tm_year = 2020 - 1900;  // year is offset relative to 1900
+
+    // convert to seconds + microseconds
+    tv.tv_sec = mktime(&tm_now); // set seconds
+    tv.tv_usec = 0;              // no microsecond offset
+
+    // and set the time
+    settimeofday(&tv, 0);
+
+    // now continuously display the time
+    for(;;) {
+        // get current time
+        gettimeofday(&tv, 0);
+        // get an ASCII version of the time
+        // uses the standard C library strftime function to format the time
+        strftime(dispbuf, sizeof(dispbuf), "%a %b %d %H:%M:%S %Y", localtime(&tv.tv_sec));
+        // print it; use carriage return but no linefeed so we keep writing on the same line
+        printf("%s\r", dispbuf);
+    }
+}
+```

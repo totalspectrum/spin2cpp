@@ -115,7 +115,11 @@ InitGlobalModule(void)
 
     sym = AddSymbol(table, "__sendptr", SYM_VARIABLE, ast_type_sendptr, NULL);
     sym->flags |= SYMF_GLOBAL;
-    sym->offset = gl_p2 ? (P2_CONFIG_BASE+0x30) : 8;
+    sym->offset = -1; // special flag for COG internal memory
+
+    sym = AddSymbol(table, "__recvptr", SYM_VARIABLE, ast_type_long, NULL);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = -2; // special flag for COG internal memory
 
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
@@ -232,9 +236,19 @@ InferTypeFromName(AST *identifier)
 AST *
 GetFullFileName(AST *baseString)
 {
-    const char *basename = baseString->d.string;
+    const char *basename;
     char *newname;
     AST *ret;
+
+    if (baseString->kind == AST_EXPRLIST) {
+        baseString = baseString->left;
+    }
+    if (baseString->kind != AST_STRING) {
+        ERROR(baseString, "Expected string");
+        basename = "error";
+    } else {
+        basename = baseString->d.string;
+    }
     newname = find_file_on_path(&gl_pp, basename, NULL, current->fullname);
     if (!newname) {
         newname = strdup(basename);
@@ -267,7 +281,7 @@ InitBasicData(Module *P)
     P->datblock = AddToList(datinfo, P->datblock);
 
     // Add a definition for __basic_data_ptr
-    MaybeDeclareMemberVar(P, varname, ast_type_string, 0);
+    MaybeDeclareMemberVar(P, varname, ast_type_string, 0, NORMAL_VAR);
     
     // now add in an initializer
     init = AstAssign(varname,
@@ -300,7 +314,7 @@ ProcessModule(Module *P)
     }
     
     /* now declare all the symbols that weren't already declared */
-    DeclareConstants(&P->conblock);
+    DeclareConstants(P, &P->conblock);
     DeclareMemberVariables(P);
     DeclareFunctions(P);
 
@@ -350,6 +364,38 @@ doparse(int language)
     AstReportDone(&saveinfo);
 }
 
+static char *
+getObjFileExtension(const char *fname)
+{
+    static char buf[1024];
+    char *ext = 0;
+    char *ptr;
+    FILE *f = fopen(fname, "r");
+    if (!f) {
+        return NULL;
+    }
+    buf[0] = 0;
+    ptr = fgets(buf, sizeof(buf), f);
+    if (ptr) {
+        if (!strncmp(ptr, "#line", 5)) {
+            ptr = strrchr(ptr, '.');
+            if (ptr) {
+                ext = ptr;
+                ptr = buf + strlen(buf) - 1;
+                if (ptr[0] == '\n') {
+                    ptr[0] = 0;
+                    --ptr;
+                }
+                if (ptr[0] == '\"') {
+                    ptr[0] = 0;
+                }
+            }
+        }
+    }
+    fclose(f);
+    return ext;
+}
+
 static Module *
 doParseFile(const char *name, Module *P, int *is_dup)
 {
@@ -365,48 +411,61 @@ doParseFile(const char *name, Module *P, int *is_dup)
     // check language to process
     langptr = strrchr(name, '.');
     if (langptr) {
-      if (!strcmp(langptr, ".bas")
-          || !strcmp(langptr, ".basic")
-          || !strcmp(langptr, ".bi")
-          )
-      {
-	language = LANG_BASIC_FBASIC;
-      } else if (!strcmp(langptr, ".c")
-                 || !strcmp(langptr, ".h")
-                 || !strcmp(langptr, ".a")
-          )
-      {
-	language = LANG_CFAMILY_C;
-      } else if (!strcmp(langptr, ".cpp")
-                 || !strcmp(langptr, ".cc")
-                 || !strcmp(langptr, ".cxx")
-                 || !strcmp(langptr, ".c++")
-                 || !strcmp(langptr, ".hpp")
-                 || !strcmp(langptr, ".hh")
-          )
-      {
-          language = LANG_CFAMILY_CPP;
-      }
-      else if (!strcmp(langptr, ".spin2"))
-      {
-        language = LANG_SPIN_SPIN2;
-        langptr = ".spin2";
-      }
-      else if (!strcmp(langptr, ".spin"))
-      {
-        language = LANG_SPIN_SPIN1;
-        langptr = ".spin";
-      }
-      else if (gl_p2)
-      {
-        language = LANG_SPIN_SPIN2;
-        langptr = ".spin2";
-      }
-      else
-      {
-        language = LANG_SPIN_SPIN1;
-        langptr = ".spin";
-      }
+        if (!strcmp(langptr, ".o")) {
+            // try to figure out language based on contents of file
+            fname = find_file_on_path(&gl_pp, name, langptr, NULL);
+            if (fname) {
+                langptr = getObjFileExtension(fname);
+            } else {
+                langptr = NULL;
+            }
+            if (!langptr) {
+                WARNING(NULL, "Unable to find file type for %s, assuming C", name);
+                langptr = ".c";
+            }
+        }
+        if (!strcmp(langptr, ".bas")
+            || !strcmp(langptr, ".basic")
+            || !strcmp(langptr, ".bi")
+            )
+        {
+            language = LANG_BASIC_FBASIC;
+        } else if (!strcmp(langptr, ".c")
+                   || !strcmp(langptr, ".h")
+                   || !strcmp(langptr, ".a")
+            )
+        {
+            language = LANG_CFAMILY_C;
+        } else if (!strcmp(langptr, ".cpp")
+                   || !strcmp(langptr, ".cc")
+                   || !strcmp(langptr, ".cxx")
+                   || !strcmp(langptr, ".c++")
+                   || !strcmp(langptr, ".hpp")
+                   || !strcmp(langptr, ".hh")
+            )
+        {
+            language = LANG_CFAMILY_CPP;
+        }
+        else if (!strcmp(langptr, ".spin2"))
+        {
+            language = LANG_SPIN_SPIN2;
+            langptr = ".spin2";
+        }
+        else if (!strcmp(langptr, ".spin"))
+        {
+            language = LANG_SPIN_SPIN1;
+            langptr = ".spin";
+        }
+        else if (gl_p2)
+        {
+            language = LANG_SPIN_SPIN2;
+            langptr = ".spin2";
+        }
+        else
+        {
+            language = LANG_SPIN_SPIN1;
+            langptr = ".spin";
+        }
     } else {
         // no extension, see if we can figure one out
       langptr = ".spin2";
@@ -516,7 +575,7 @@ doParseFile(const char *name, Module *P, int *is_dup)
             int argc = 0;
             int r;
             const char *errString;
-            argv[argc++] = "fastspin";
+            argv[argc++] = "flexspin";
             argc = pp_get_defines_as_args(&gl_pp, argc, argv, MAX_MCPP_ARGC);
             if (argc >= MAX_MCPP_ARGC-1) {
                 ERROR(NULL, "ERROR: too many defines\n");
@@ -972,9 +1031,17 @@ FixupCode(Module *P, int isBinary)
             }
         }
         if (need_heap) {
-            Symbol *sym = FindSymbol(&P->objsyms, "heapsize");
+            Symbol *sym = FindSymbol(&P->objsyms, "HEAPSIZE");
             uint32_t heapsize = 0;
             AST *heapAst;
+
+            if (!sym || sym->kind != SYM_CONSTANT) {
+                Symbol *sym2;
+                sym2 = FindSymbol(&P->objsyms, "heapsize");
+                if (sym2) {
+                    sym = sym2;
+                }
+            }
             if (sym) {
                 if (sym->kind != SYM_CONSTANT) {
                     WARNING(NULL, "heapsize is not a constant");

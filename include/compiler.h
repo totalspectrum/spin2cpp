@@ -87,12 +87,14 @@
 #define _WEAK
 #define _CACHED
 #define _INLINE inline
-    
+
 #ifndef _WCHAR_T_TYPE
-#define _WCHAR_T_TYPE __WCHAR_TYPE__
+#define _WCHAR_T_TYPE unsigned char
 #endif
 
 #define _IMPL(x) __fromfile(x)
+
+#define FLT_EVAL_METHOD 0
 
 #else
 

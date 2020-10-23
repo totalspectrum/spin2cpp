@@ -84,6 +84,7 @@ int _fmtstr(putfunc fn, unsigned fmt, const char *str)
     int width = strlen(str);
     int n;
     int r, i;
+
     if (maxwidth && width > maxwidth) {
         width = maxwidth;
     }
@@ -199,18 +200,33 @@ typedef union DI {
     UITYPE i;
 } DI;
 
+#ifdef DEBUG_PRINTF
+UITYPE asInt(FTYPE d)
+{
+    DI u;
+    u.d = d;
+    return u.i;
+}
+#endif
+
+
 #ifdef __propeller__
+
 # ifdef __GNUC__
 extern long double _intpow(long double a, long double b, int n);
-#define _float_pow_n(a, n) _intpow(1.0, a, n)
+#define _float_pow_n(b, a, n) _intpow(b, a, n)
+# endif
+# ifdef __FLEXC__
+// nothing to do here
 # endif
 #else
-// calculate b^n with as much precision as possible
-double _float_pow_n(long double b, int n)
+// calculate a * b^n with as much precision as possible
+double _float_pow_n(long double a, long double b, int n)
 {
     long double r = powl((long double)b, (long double)n);
-    return r;
+    return a*r;
 }
+
 #endif
 
 /*
@@ -223,6 +239,102 @@ double _float_pow_n(long double b, int n)
  * if numdigits is negative, then make numdigits be n-(numdigits+1)
  * so as to get that many digits after the decimal point
  */
+#ifdef __fixedreal__
+#define DOUBLE_BITS 16
+#define MAX_DEC_DIGITS 7
+#define DOUBLE_ONE ((unsigned)(1<<DOUBLE_BITS))
+#define DOUBLE_MASK ((DOUBLE_ONE) - 1)
+
+static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
+{
+    DI un;
+    UITYPE ai;
+    UITYPE afrac;
+    UITYPE limit;
+    FTYPE based;
+    int n;
+    int maxdigits;
+    
+    if (x == 0.0) {
+        *aip = 0;
+        *np = 0;
+        return;
+    }
+    un.d = x;
+    ai = un.i;
+
+    // base 2 we will group digits into 4 to print as hex
+    if (base == 2) {
+        numdigits *= 4;
+        maxdigits = 24;
+    } else {
+        maxdigits = MAX_DEC_DIGITS;
+    }
+
+    afrac = ai & DOUBLE_MASK;
+    ai = ai >> DOUBLE_BITS;
+
+    n = 0;
+    based = (float)base;
+    while (x >= based) {
+        n++;
+        x = x / based;
+    }
+    while (x < 1.0) {
+        --n;
+        x *= based;
+    }
+    if (numdigits < 0) {
+        numdigits = n - (numdigits+1);
+        if (numdigits < 0) {
+            *aip = 0;
+            *np = 0;
+            return;
+        }
+    } else {
+        numdigits = numdigits+1;
+    }
+    if (numdigits > maxdigits) {
+        numdigits = maxdigits;
+    }
+
+    limit = base;
+    n = numdigits;
+    --numdigits;
+    while (numdigits > 0) {
+        limit = limit * base;
+        --numdigits;
+    }
+
+    while (ai < limit) {
+#ifdef DEBUG_PRINTF
+        __builtin_printf("ai=%d n=%d\n", ai, n);
+#endif        
+        --n;
+        afrac = afrac * base;
+        ai = (ai * base) + (afrac >> DOUBLE_BITS);
+        afrac = afrac & DOUBLE_MASK;
+    }
+    limit = limit*base;
+    while (ai >= limit) {
+        UITYPE d;
+        d = ai % base;
+        ai = ai / base;
+        afrac = (afrac + (d<<DOUBLE_BITS)) / base;
+        ++n;
+    }
+    if (afrac >= (1<<(DOUBLE_BITS-1))) {
+        ai++;
+        if (ai >= limit) {
+            ++n;
+            ai = ai / base;
+        }
+    }
+    *aip = ai;
+    *np = n;
+}
+
+#else
 #ifdef SMALL_INT
 #define DOUBLE_BITS 23
 #define MAX_DEC_DIGITS 9
@@ -232,12 +344,12 @@ double _float_pow_n(long double b, int n)
 #define MAX_DEC_DIGITS 17
 #define DOUBLE_ONE (1ULL<<DOUBLE_BITS)
 #endif
+
 #define DOUBLE_MASK (DOUBLE_ONE-1)
 
 static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
 {
     FTYPE a;
-    FTYPE p;
     int maxdigits;
     FTYPE based = (FTYPE)base;
     UITYPE ai;
@@ -248,7 +360,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     int trys = 0;
     DI un;
 
-
     if (x == 0.0) {
         *aip = 0;
         *np = 0;
@@ -257,7 +368,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
 
     // first, find (a,n) such that
     // 1.0 <= a < base and x = a * base^n
- 
     n = ilogb(x);
     if (base == 10) {
         // initial estimate: 2^10 ~= 10^3, so 3/10 of ilogb is a good first guess
@@ -268,9 +378,8 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     }
     
     while (trys++ < 8) {
-        //
-        //
-        p = _float_pow_n(based, n);
+        FTYPE p;
+        p = _float_pow_n(1.0, based, n);
         a = x / p;
         if (a < 1.0) {
             --n;
@@ -290,7 +399,6 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
     ai = un.i & DOUBLE_MASK;
     ai |= DOUBLE_ONE;
     ai = ai<<i;
-
     // base 2 we will group digits into 4 to print as hex
     if (base == 2) {
         numdigits *= 4;
@@ -335,6 +443,7 @@ done:
     *aip = u;
     *np = n;
 }
+#endif
 
 //
 // output the sign and any hex digits required
@@ -436,7 +545,7 @@ int _fmtfloat(putfunc fn, unsigned fmt, FTYPE x, int spec)
     if ( signbit(x) ) {
         // work on non-negative values only
         sign = '-';
-        x = copysign(x, 1.0);
+        x = -x;
     } else {
         // sometimes we need positive sign
         if (signclass == SIGNCHAR_PLUS) {
@@ -707,7 +816,7 @@ int _basic_print_char(unsigned h, int c, unsigned fmt)
 
 int _basic_print_nl(unsigned h)
 {
-    _basic_print_char(h, 10);
+    _basic_print_char(h, 10, 0);
     return 1;
 }
 

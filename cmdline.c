@@ -116,6 +116,9 @@ int ProcessCommandLine(CmdLineOptions *cmd)
         pp_define(&gl_pp, "__P2__", "1");
         pp_define(&gl_pp, "__propeller2__", "1");
     }
+    if (gl_fixedreal) {
+        pp_define(&gl_pp, "__fixedreal__", "1");
+    }
     /* set up the binary offset */
     gl_dat_offset = -1; // by default offset is unknown
     if ( (gl_output == OUTPUT_DAT||gl_output == OUTPUT_ASM) && cmd->outputBin) {
@@ -173,7 +176,13 @@ int ProcessCommandLine(CmdLineOptions *cmd)
             listFile = ReplaceExtension(P->fullname, ".lst");
         }
     
-        if (cmd->outputDat) {
+        if (gl_output == OUTPUT_OBJ) {
+            const char *binname = gl_outname;
+            if (!binname) {
+                binname = ReplaceExtension(P->fullname, ".o");
+            }
+            OutputObjFile(binname, P);
+        } else if (cmd->outputDat) {
             cmd->outname = gl_outname;
             if (gl_gas_dat) {
 	        if (!cmd->outname) {
@@ -260,7 +269,7 @@ int ProcessCommandLine(CmdLineOptions *cmd)
                 }
             }
         } else {
-            fprintf(stderr, "fastspin cannot convert to C\n");
+            fprintf(stderr, "This front end cannot convert to C\n");
         }
     } else {
         fprintf(stderr, "parse error\n");
@@ -360,9 +369,13 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
                 flags = 0;
                 continue;
             case '1':
+            case 's':
                 flags = DEFAULT_ASM_OPTS;
                 continue;
             case '2':
+            case '3':
+            case '4':
+            case '5':
                 flags = DEFAULT_ASM_OPTS | EXTRA_ASM_OPTS;
                 continue;
             default:

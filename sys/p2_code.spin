@@ -426,6 +426,18 @@ pri _getms() : freq = +long | lo, hi
   endasm
   return freq
 
+pri _getus() : freq = +long | lo, hi
+  lo,hi := _getcnthl()
+  freq := __clkfreq_var
+  asm
+    qdiv freq, ##1000000
+    getqx freq
+    setq hi
+    qdiv lo, freq
+    getqx freq
+  endasm
+  return freq
+
 ''
 '' bytefill/bytemove are here (in processor specific code)
 '' because on P2 we can optimize them (long operations do

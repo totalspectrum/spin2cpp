@@ -385,7 +385,7 @@ outputInitItem(Flexbuf *f, int elemsize, AST *item, int reps, Flexbuf *relocs, A
     if (item) {
         exprType = CheckTypes(item);
         if (exprType) {
-            type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType);
+            type = CoerceAssignTypes(item, AST_ASSIGN, &item, type, exprType, "initialization");
             // ignore any casts added
             while (item->kind == AST_CAST) {
                 item = item->right;
@@ -449,6 +449,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     int numelems;
     AST *varlist;
     Module *P;
+    int is_union = 0;
     
     type = RemoveTypeModifiers(type);
     typealign = TypeAlign(type);
@@ -461,6 +462,10 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         outputInitList(f, elemsize, initval, numelems, relocs, type);
         return;
     }
+
+    // done in pasm.c now
+    //initval = FixupInitList(type, initval);
+    
     switch(type->kind) {
     case AST_INTTYPE:
     case AST_UNSIGNEDTYPE:
@@ -473,8 +478,9 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         type = RemoveTypeModifiers(BaseType(type));
         elemsize = TypeSize(type);
         numelems = typesize / elemsize;
-        if (initval->kind != AST_EXPRLIST) {
-            initval = NewAST(AST_EXPRLIST, initval, NULL);
+        if (initval && initval->kind != AST_EXPRLIST) {
+            ERROR(initval, "Internal compiler error, expected initializer list");
+            break;
         }
         while (numelems > 0 && initval) {
             --numelems;
@@ -491,6 +497,7 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
     
     case AST_OBJECT:
         P = GetClassPtr(type);
+        is_union = P->isUnion;
         varlist = P->finalvarblock;
         if (initval->kind != AST_EXPRLIST) {
             initval = NewAST(AST_EXPRLIST, initval, NULL);
@@ -498,13 +505,30 @@ outputInitializer(Flexbuf *f, AST *type, AST *initval, Flexbuf *relocs)
         while (varlist) {
             AST *subtype;
             AST *subinit = initval ? initval->left : NULL;
-            subtype = ExprType(varlist->left);
+            if (varlist->left->kind == AST_DECLARE_BITFIELD) {
+                varlist = varlist->right;
+                continue;
+            }
+            if (is_union) {
+                if (subinit->kind != AST_CAST) {
+                    ERROR(subinit, "Internal error, expected cast for union");
+                    subtype = ExprType(varlist->left);
+                } else {
+                    subtype = subinit->left;
+                    subinit = subinit->right;
+                }
+            } else {
+                subtype = ExprType(varlist->left);
+            }
             outputInitializer(f, subtype, subinit, relocs);
             varlist = varlist->right;
             if (initval) initval = initval->right;
+            if (is_union) {
+                break;
+            }
         }
         if (initval) {
-            ERROR(initval, "too many initializers");
+            WARNING(initval, "too many initializers");
         }
         // objects are padded to a long boundary
         AlignPc(f, LONG_SIZE);
@@ -867,6 +891,8 @@ InstructionWarnAboutConsts(Instruction *instr)
 {
     switch(instr->ops) {
     case TWO_OPERANDS:
+    case TWO_OPERANDS_DEFZ:
+    case TWO_OPERANDS_OPTIONAL:
     case P2_LOC:
         return 2;
     case P2_TWO_OPERANDS:
@@ -1106,12 +1132,12 @@ DecodeAsmOperands(Instruction *instr, AST *ast, AST **operand, uint32_t *opimm, 
         unsigned warn_mask = InstructionWarnAboutConsts(instr);
         if ( (warn_mask & 1) && operand[0] && !opimm[0]) {
             if (IsConstInteger(operand[0])) {
-                WARNING(line, "First operand is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand");
+                WARNING(line, "First operand to %s is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand", instr->name);
             }
         }
         if ( (warn_mask & 2) && operand[1] && !opimm[1]) {
             if (IsConstInteger(operand[1])) {
-                WARNING(line, "Second operand is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand");
+                WARNING(line, "Second operand to %s is a constant used without #; is this correct? If so, you may suppress this warning by putting -0 after the operand", instr->name);
             }
         }
     }

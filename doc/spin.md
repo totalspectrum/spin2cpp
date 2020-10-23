@@ -1,16 +1,16 @@
-# Fastspin Spin
+# Flexspin Spin
 
 ## Introduction
 
-Fastspin was designed to accept the language Spin as documented in the Parallax Propeller Manual. It should be able to compile any Spin program, as long as there is space. The restriction is an important one; other Spin compilers produce Spin bytecode, a compact form that is interpreted by a program in the Propeller's ROM. Fastspin produces LMM code, which is basically a slightly modified Propeller machine code (slightly modified to run in HUB memory instead of COG). This is much larger than Spin bytecode, but also much, much faster.
+Flexspin was designed to accept the language Spin as documented in the Parallax Propeller Manual. It should be able to compile any Spin program, as long as there is space. The restriction is an important one; other Spin compilers produce Spin bytecode, a compact form that is interpreted by a program in the Propeller's ROM. Flexspin produces LMM code, which is basically a slightly modified Propeller machine code (slightly modified to run in HUB memory instead of COG). This is much larger than Spin bytecode, but also much, much faster.
 
-Fastspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
+Flexspin is able to produce binaries for both the P1 and P2 chips. Any assembly language written in DAT sections (or inside inline ASM blocks) must be for the appropriate chip; it will not be translated.
 
-Fastspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
+Flexspin also supports many of the features of the Spin2 language as extensions to Spin 1. It can also accept Spin2 programs as input. Spin1 and Spin2 are not completely compatible. Spin2 features which are not compatible with Spin1 are enabled if the file extension is `.spin2`.
 
 ## Preprocessor
 
-fastspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
+flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
 
 ### Directives
 
@@ -90,11 +90,11 @@ Symbol           | When Defined
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
 `__propeller2__` | if compiling for Propeller 2
 `__P2__`         | if compiling for Propeller 2 (deprecated symbol)
-`__FASTSPIN__`   | if the `fastspin` front end is used
+`__FLEXSPIN__`   | if the `flexspin` front end is used
 `__SPINCVT__`    | always defined
-`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)
-`__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
-`__cplusplus`    | if C++ is being output (never in fastspin)
+`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
+`__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)
+`__cplusplus`    | if C++ is being output (never in flexspin)
 
 
 ## Memory Management
@@ -151,7 +151,7 @@ OBJ
 
 ## Extensions to Spin
 
-Fastspin has a number of extensions to the Spin languages (both Spin1 and Spin2). Many Spin2 features may be used in Spin1, and vice-versa. For example in Spin2 functions with no arguments must be called like `foo()`, whereas fastspin still accepts the Spin1 version `foo`.
+Flexspin has a number of extensions to the Spin languages (both Spin1 and Spin2). Many Spin2 features may be used in Spin1, and vice-versa. For example in Spin2 functions with no arguments must be called like `foo()`, whereas flexspin still accepts the Spin1 version `foo`.
 
 ### Absolute address
 
@@ -160,7 +160,7 @@ The `@@@` operator returns the absolute hub address of a variable. This is the s
 
 ### Access to member variables
 
-Fastspin allows access to member variables and constants using the `.` notation. That is, if `S` is an object like:
+Flexspin allows access to member variables and constants using the `.` notation. That is, if `S` is an object like:
 ```
 CON
   rows = 24
@@ -171,7 +171,7 @@ then one may write `S.x` to access member variable `x` of `S`, and `S.rows` to a
 
 ### Alternate string notation
 
-Fastspin interprets the notation `@"some chars"` to mean the same thing as `STRING("some chars")`. This provides a shorter way to write some messages.
+Flexspin interprets the notation `@"some chars"` to mean the same thing as `STRING("some chars")`. This provides a shorter way to write some messages.
 
 ### Bitfield access
 
@@ -179,7 +179,7 @@ Bits `m` to `n` of a variable `x` may be accessed via the notation `x.[m..n]`. I
 
 ### Boolean short-circuit operators
 
-fastspin has operators `x __andthen__ y` and `x __orelse__ y` which only evaluate the right hand side (`y`) if they need to (like C's `&&` and `||`). Ordinary boolean `AND` and `OR` operators will be optimized to these in the cases where `x` and `y` do not have side effects.
+flexspin has operators `x __andthen__ y` and `x __orelse__ y` which only evaluate the right hand side (`y`) if they need to (like C's `&&` and `||`). Ordinary boolean `AND` and `OR` operators will be optimized to these in the cases where `x` and `y` do not have side effects.
 
 ### CASE_FAST
 
@@ -187,7 +187,7 @@ fastspin has operators `x __andthen__ y` and `x __orelse__ y` which only evaluat
 
 ### coginit/cognew
 
-The `coginit` (and `cognew`) functions in Fastspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)
+The `coginit` (and `cognew`) functions in Flexspin can start functions from other objects than the current. (In "regular" Spin only functions from the same object may be started this way.)
 
 ### Conditional expressions
 
@@ -210,7 +210,7 @@ In the latter form the parentheses around `a` are mandatory to avoid confusion w
 
 ### Default function parameters
 
-fastspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
+flexspin permits function parameters to be given default values by adding `= X` after the parameter declaration, where `X` is a constant expression. For instance:
 ```
 VAR
   long a
@@ -228,7 +228,7 @@ The default values must, for now, be constant. Perhaps in the future this restri
 
 #### Default string parameters
 
-If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically fastspin inserts a `string` operator around the literal in this case. So for example in:
+If a default function parameter is declared as a string, and a string literal is passed to it, that string literal is transformed into a string constant. Normally Spin uses just the first character of a string literal when one is seen in an expression (outside of STRING). Basically flexspin inserts a `string` operator around the literal in this case. So for example in:
 ```
 PUB write(msg = string(""))
   '' do some stuff
@@ -236,7 +236,7 @@ PUB write(msg = string(""))
   write(string("hello, world"))
   write("hello, world")
 ```
-the two calls to `write` will do the same thing. In regular Spin, and in fastspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
+the two calls to `write` will do the same thing. In regular Spin, and in flexspin in the case where the default value is not present on a parameter, the second call will actually be interpreted as:
 ```
   write($68, $65, ..., 0)  ' $68 = ASCII value of "h"
 ```
@@ -256,7 +256,7 @@ Aliases defined this way are "weak"; that is, they may be overridden by later de
 
 ### Inline assembly
 
-fastspin accepts inline assembly in `PUB` and `PRI` sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly is somewhat limited; the only operands permitted are immediate values, hardware registers like `OUTA`, local variables (including parameters and result values) of the containing function, or labels of that function. (Spin doesn't support goto and labels, but you can define labels in `asm` blocks and jump to them from other `asm` blocks that are in the same function. Some other languages supported by fastspin do have labels.) Member variables (declared in the `VAR` block) may not be used directly in inline assembly.
+flexspin accepts inline assembly in `PUB` and `PRI` sections. Inline assembly starts with `asm` and ends with `endasm`. The inline assembly is somewhat limited; the only operands permitted are immediate values, hardware registers like `OUTA`, local variables (including parameters and result values) of the containing function, or labels of that function. (Spin doesn't support goto and labels, but you can define labels in `asm` blocks and jump to them from other `asm` blocks that are in the same function. Some other languages supported by flexspin do have labels.) Member variables (declared in the `VAR` block) may not be used directly in inline assembly.
 
 Branching inside the function should work, but trying to return from it or to otherwise jump outside the function will almost certainly cause you to come to grief, even if the compiler allows it. Calling subroutines is also not permitted.
 
@@ -278,7 +278,7 @@ Note that unlike most Spin blocks, the `asm` block has to end with `endasm`. Thi
 
 #### Spin2 style inline assembly (org/end)
 
-fastspin also accepts Spin2 style inline assembly, marked with `org` and `end` instead of `asm` and `endasm`. So the above example could be written as:
+flexspin also accepts Spin2 style inline assembly, marked with `org` and `end` instead of `asm` and `endasm`. So the above example could be written as:
 ```
 PUB waitcnt2(newcnt, incr)
   org
@@ -291,7 +291,7 @@ There are two important differences between `org`/`end` and `asm`/`endasm`:
 (1) Normally inline assembly is treated the same as code generated by the compiler, and subject to optimization. However, code between `org` and `end` is not optimized. So if your inline assembly is timing sensitive, you should use `org` rather than `asm` to start it.
 (2) Code between `org` and `end` is executed from the FCACHE area (LUT on P2, COG on P1). Ordinary `asm` is hubexec.
 
-Also note that unlike the "official" Spin2 compiler, fastspin does not accept an address for the inline assembly, and the assembly is not called as a subroutine (so no `ret` statement should be included).
+Also note that unlike the "official" Spin2 compiler, flexspin does not accept an address for the inline assembly, and the assembly is not called as a subroutine (so no `ret` statement should be included).
 
 ### Method pointers
 
@@ -322,13 +322,13 @@ For functions returning multiple results, a `:N` notation is required after the 
 ```
   x,y := fptr(a):2
 ```
-The `:2` indicates that fptr is a pointer to a function which returns 2 results. Putting `:0` or `:1` for functions which return 0 or 1 results is optional in fastspin.
+The `:2` indicates that fptr is a pointer to a function which returns 2 results. Putting `:0` or `:1` for functions which return 0 or 1 results is optional in flexspin.
 
 It is the programmer's responsibility to make sure that the number of results and arguments passed to a method called via a pointer are correct. No type checking is done.
 
 ### Multiple return values and assignments
 
-fastspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
+flexspin allows multiple return values and assignments. For example, to swap two variables `a` and `b` you can write:
 ```
   a,b := b,a
 ```
@@ -436,7 +436,7 @@ PUB dostuff(x) : r | byte tempstring[10]
 
 ### Spin2 operators
 
-fastspin accepts some Spin2 operators:
+flexspin accepts some Spin2 operators:
 ```
   a \ b   uses the value of a, but then sets a to b
   x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
@@ -444,7 +444,7 @@ fastspin accepts some Spin2 operators:
 
 ### Unsigned operators
 
-fastspin has some new operators for treating values as unsigned
+flexspin has some new operators for treating values as unsigned
 ```
   a +/ b   is the unsigned quotient of a and b (treating both as unsigned)
   a +// b  is the unsigned remainder of a and b
@@ -457,7 +457,7 @@ fastspin has some new operators for treating values as unsigned
 
 ### Array parameters (deprecated)
 
-fastspin allows method parameters to be small arrays; in this case, the caller must supply one argument for each element of the array. For example:
+flexspin allows method parameters to be small arrays; in this case, the caller must supply one argument for each element of the array. For example:
 ```
 pub selector(n, a[4])
   return a[n]
@@ -471,7 +471,7 @@ This feature is still incomplete, and may not work properly for C/C++ output.
 
 ## New PASM directives
 
-fastspin accepts some Spin2 assembly directives, even in Spin1 mode.
+flexspin accepts some Spin2 assembly directives, even in Spin1 mode.
 
 ### ORGF
 
@@ -494,7 +494,7 @@ Note that labels normally have two values, their COG memory address (specified b
 
 ## New intrinsics for both P1 and P2
 
-Fastspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore.
+Flexspin supports some new builtin functions. These typically start with an underscore to avoid confusion with existing variable names. Note that in Spin2 mode many of these are available without the leading underscore.
 
 ### _PINW
 
@@ -542,7 +542,7 @@ I2C, SPI and similar functions.
 
 ### @@ Operator
 
-The Spin1 `@@` operator always truncates its result to 16 bits; fastspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
+The Spin1 `@@` operator always truncates its result to 16 bits; flexspin does not do this. This won't matter in typical use (on the P1 addresses always fit in 16 bits anyway) but may be noticeable for some exotic uses.
 
 ## Symbols
 
@@ -559,11 +559,11 @@ by preceding them with a backquote, e.g. to define a function `chr$` do:
 
 In regular Spin opcodes like `TEST` are always reserved.
 
-In fastspin, opcodes are only reserved inside `DAT` sections, so it is legal to have a function or variable named `test` or `add`.
+In flexspin, opcodes are only reserved inside `DAT` sections, so it is legal to have a function or variable named `test` or `add`.
 
 ### Reserved words
 
-fastspin adds some reserved words: `asm`, `endasm`, and `then`. Programs which use these reserved words may not work correctly in fastspin, although there has been some effort made to make them work as regular identifiers in many contexts.
+flexspin adds some reserved words: `asm`, `endasm`, and `then`. Programs which use these reserved words may not work correctly in flexspin, although there has been some effort made to make them work as regular identifiers in many contexts.
 
 ## Strings
 
@@ -575,7 +575,7 @@ is parsed as
 ```
     foo("A","B","C")
 ```
-whereas in fastspin it is treated as an array of characters, so
+whereas in flexspin it is treated as an array of characters, so
 it is parsed like:
 ```
     foo("ABC"[0])
@@ -584,9 +584,9 @@ which will be the same as
 ```
     foo("A")
 ```
-The difference is rarely noticeable, because fastspin does convert string literals to lists in many places.
+The difference is rarely noticeable, because flexspin does convert string literals to lists in many places.
 
-As an extension, fastspin allows you to write:
+As an extension, flexspin allows you to write:
 ```
    foo(@"ABC")
 ```
@@ -625,29 +625,43 @@ Many Spin1 programs may be ported from the Propeller 1 to the Propeller 2, but t
 
 ## Compatibility with Spin2
 
-Generally fastspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available, except for those listed below.
+Generally flexspin should be compatible with the standard Spin2 compiler. Not all Spin2 builtin functions are available on the P1; only the ones listed in the "New intrinsics for both P1 and P2" are available on all platforms. But when compiling for P2 all of the Spin2 builtin functions should be available.
 
+### Expressions involving `:`
+
+The `:` character is used in multiple conflicting ways in Spin2:
+```
+  a ? b : 2
+  x := b():1
+  x := lookup(b : 1, 2)
+```
+The flexspin parser works differently from the PNut parser, and in complicated nested expressions with multiple `:` it may not give the same results. Some tips for writing code that will work with both compilers:
+
+  - In general try not to nest expressions involving `:`
+  - Do not use `:` in `lookup`/`lookdown` type expressions except as the separator between the selection expression and the list of results
+  - Make liberal use of parentheses to resolve ambiguity, e.g. write `a ? (b()) : 1` or `a ? (b():1) : 2` to distinguish between `:1` as an indirect method marker nad `:1` as the "else" part of the `?` operator.
+  
 ### @ Operator
 
-The `@` operator always gives an absolute address in fastspin's Spin2 dialect, even inside assembly code. This is different from the standard Spin2 interpreter, where it produces an address relative to the start of the current object. In most contexts the fastspin behavior is more convenient, but it is something to keep in mind.
+The `@` operator always gives an absolute address in flexspin's Spin2 dialect, even inside assembly code. This is different from the standard Spin2 interpreter, where it produces an address relative to the start of the current object. In most contexts the flexspin behavior is more convenient, but it is something to keep in mind.
 
 If you really need a relative offset, declare a label like `entry` at the start of your assembly and use `@label - @entry` to find the offset of `label` from `entry`. This will work in all compilers.
 
 ### ORG/END
 
-No address may be given in an ORG/END pair. In fastspin inline assembly is run from LUT rather than from COG, using the FCACHE mechanism. If no FCACHE is available (e.g. -O0 is given) then the code is run as hubexec.
+No address may be given in an ORG/END pair. In flexspin inline assembly is run from LUT rather than from COG, using the FCACHE mechanism. If no FCACHE is available (e.g. -O0 is given) then the code is run as hubexec.
 
 ### Memory map
 
 The location of the clock frequency is at the standard location $10 used by TAQOZ, micropython, and most C compilers, rather than $40 as used by Spin2.
 
-COG memory is also laid out differently. fastspin leaves COG locations $0 to $1f and $1e0 to $1ef free for use by inline assembly, and does not use the LUT (except as fcache). This is in contrast to the official compiler, which leaves a large block of COG memory starting at $0 "free" (although it is occupied by inline assembly) and which uses LUT to store the interpreter code.
+COG memory is also laid out differently. flexspin leaves COG locations $0 to $1f and $1e0 to $1ef free for use by inline assembly, and does not use the LUT (except as fcache). This is in contrast to the official compiler, which leaves a large block of COG memory starting at $0 "free" (although it is occupied by inline assembly) and which uses LUT to store the interpreter code.
 
 ### DEBUG statements
 
-In fastspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM.
+In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM.
 
-Debug statements are output only when the `-g` flag is given to fastspin.
+Debug statements are output only when the `-g` flag is given to flexspin.
 
 Only a subset of the Spin2 `DEBUG` directives are accepted:
 ```
@@ -656,4 +670,4 @@ ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LO
 Other directives are ignored, with a warning.
 
 
-`DEBUG` in fastspin is implemented differently than in PNut, so timing when debug is enabled may be different.
+`DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.

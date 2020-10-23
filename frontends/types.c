@@ -406,12 +406,7 @@ HandleTwoNumerics(int op, AST *ast, AST *lefttype, AST *righttype)
             *ast = *MakeOperatorCall(float_div, ast->left, ast->right, scale);
             break;
         case K_POWER:
-            if (gl_fixedreal) {
-                ERROR(ast, "exponentiation operator not supported in fixed point mode");
-                ast->d.ival = '*'; // pretend it's multiply instead
-            } else {
-                *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
-            }
+            *ast = *MakeOperatorCall(float_powf, ast->left, ast->right, NULL);
             break;
         default:
             ERROR(ast, "internal error unhandled operator");
@@ -571,6 +566,9 @@ static AST *ScalePointer(AST *type, AST *val)
 // return the address of an array
 AST *ArrayAddress(AST *expr)
 {
+    if (curfunc && IsLocalVariable(expr)) {
+        curfunc->local_address_taken = 1;
+    }
     return NewAST(AST_ABSADDROF,
                   NewAST(AST_ARRAYREF, expr, AstInteger(0)),
                   NULL);
@@ -841,23 +839,12 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
 // returns the new type (should normally be desttype)
 // NOTE: if **astptr is NULL, then we cannot do coercion
 //
-AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype)
+AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *srctype, const char *msg)
 {
     ASTReportInfo saveinfo;
     AST *expr = astptr ? *astptr : NULL;
-    const char *msg;
     int lang = curfunc ? curfunc->language : (current ? current->mainLanguage : LANG_CFAMILY_C);
     
-    if (kind == AST_RETURN) {
-        msg = "return";
-    } else if (kind == AST_FUNCCALL) {
-        msg = "parameter passing";
-    } else if (kind == AST_ARRAYREF) {
-        msg = "array indexing";
-    } else {
-        msg = "assignment";
-    }
-
     if (expr && expr->kind == AST_INTEGER && expr->d.ival == 0) {
         // handle literal '0' specially for C
         if (curfunc && IsCLang(curfunc->language)) {
@@ -1202,7 +1189,7 @@ AST *CheckTypes(AST *ast)
         break;
     case AST_ASSIGN:
         if (rtype) {
-            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_ASSIGN, &ast->right, ltype, rtype, "assignment");
         }
         if (ltype && IsClassType(ltype)) {
             int siz = TypeSize(ltype);
@@ -1220,7 +1207,7 @@ AST *CheckTypes(AST *ast)
         if (ast->left) {
             rtype = ltype; // type of actual expression
             ltype = GetFunctionReturnType(curfunc);
-            ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype);
+            ltype = CoerceAssignTypes(ast, AST_RETURN, &ast->left, ltype, rtype, "return");
         }
         break;
     case AST_FUNCCALL:
@@ -1273,10 +1260,10 @@ AST *CheckTypes(AST *ast)
                     }
                     if (tupleType) {
                         // cannot coerce function arguments, really
-                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType);
+                        CoerceAssignTypes(ast, AST_FUNCCALL, NULL, expectType, passedType, "parameter passing");
                         tupleType = tupleType->right;
                     } else {
-                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType);
+                        CoerceAssignTypes(ast, AST_FUNCCALL, &actualParamList->left, expectType, passedType, "parameter passing");
                     }
                     if (!tupleType) {
                         actualParamList = actualParamList->right;
@@ -1338,7 +1325,7 @@ AST *CheckTypes(AST *ast)
 
             righttype = ExprType(ast->right);
             if (IsFloatType(righttype)) {
-                righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype);
+                righttype = CoerceAssignTypes(ast, AST_ARRAYREF, &ast->right, ast_type_long, righttype, "array indexing");
             }
             if (!lefttype) {
                 lefttype = ExprType(ast->left);
@@ -1547,12 +1534,13 @@ void
 InitGlobalFuncs(void)
 {
     if (!basic_print_integer) {
+        basic_print_float = getBasicPrimitive("_basic_print_float");
+        float_pow_n = getBasicPrimitive("_float_pow_n");
+        float_powf = getBasicPrimitive("__builtin_powf");
         if (gl_fixedreal) {
-            basic_print_float = getBasicPrimitive("_basic_print_fixed");
             float_mul = getBasicPrimitive("_fixed_mul");
             float_div = getBasicPrimitive("_fixed_div");
         } else {
-            basic_print_float = getBasicPrimitive("_basic_print_float");
             basic_get_float = getBasicPrimitive("_basic_get_float");
             float_cmp = getBasicPrimitive("_float_cmp");
             float_add = getBasicPrimitive("_float_add");
@@ -1565,8 +1553,6 @@ InitGlobalFuncs(void)
             float_abs = getBasicPrimitive("_float_abs");
             float_sqrt = getBasicPrimitive("_float_sqrt");
             float_neg = getBasicPrimitive("_float_negate");
-            float_pow_n = getBasicPrimitive("_float_pow_n");
-            float_powf = getBasicPrimitive("__builtin_powf");
         }
         basic_get_integer = getBasicPrimitive("_basic_get_integer");
         basic_get_string = getBasicPrimitive("_basic_get_string");

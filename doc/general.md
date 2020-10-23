@@ -270,7 +270,8 @@ Try to keep inline assembly as simple as possible. Use the high level language f
 
 There are various command line options for the compiler which may modify the compilation:
 ```
-  [ -h ]              display this help
+  [ --version ]      print just the compiler version, then exit
+  [ -h ]             display this help
   [ -L or -I <path> ] add a directory to the include path
   [ -o ]             output filename
   [ -b ]             output binary file format
@@ -278,6 +279,7 @@ There are various command line options for the compiler which may modify the com
   [ -c ]             output only DAT sections
   [ -l ]             output a .lst listing file
   [ -f ]             output list of file names
+  [ -g ]             enable debug statements
   [ -q ]             quiet mode (suppress banner and non-error text)
   [ -p ]             disable the preprocessor
   [ -O[#] ]          set optimization level
@@ -297,11 +299,11 @@ There are various command line options for the compiler which may modify the com
 ```
 The `-2` option is new: it is for compiling for the Propeller 2.
 
-`fastspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use fastspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `fastspin.exe` to `bstc.exe`.
+`flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
 
 ### Changing Hub address
 
-In P2 mode, you may want to change the base hub address for the binary. Normally P2 binaries start at the standard offset of `0x400`. But if you want, for example, to load a fastspin compiled program from TAQOZ or some similar program, you may want to start at a different address (TAQOZ uses the first 64K of RAM). To do this, you may use some combination of the `-H` and `-E` flags.
+In P2 mode, you may want to change the base hub address for the binary. Normally P2 binaries start at the standard offset of `0x400`. But if you want, for example, to load a flexspin compiled program from TAQOZ or some similar program, you may want to start at a different address (TAQOZ uses the first 64K of RAM). To do this, you may use some combination of the `-H` and `-E` flags.
 
 `-H nnnn` changes the base HUB address from `0x400` to `nnnn`, where `nnnn` is either a decimal number like `65536` or a hex number prefixed with `0x`. By default the binary still expects to be loaded at address 0, so it starts with a `coginit #0, ##nnnn` instruction and then zero padding until the hub start. To skip the `coginit` and padding, add the `-E` flag.
 
@@ -309,6 +311,54 @@ In P2 mode, you may want to change the base hub address for the binary. Normally
 
 To compile a program to start at address 65536 (at the 64K boundary), do:
 ```
-fastspin -2 -H 0x10000 -E fibo.bas
+flexspin -2 -H 0x10000 -E fibo.bas
 ```
+
+## Memory Management
+
+There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
+
+### Heap allocation
+
+The main function is `_gc_alloc_managed(siz)`, which allocates `siz` bytes of memory managed by the garbage collector. It returns 0 if not enough memory is avilable, otherwise returns a pointer to the start of the memory (like C's `malloc`). As long as there is some reference in COG or HUB memory to the pointer which got returned, the memory will be considered "in use". If there is no more such reference then the garbage collector will feel free to reclaim it. There's also `_gc_alloc(siz)` which is similar but marks the memory so it will never be reclaimed, and `_gc_free(ptr)` which explicitly frees a pointer previously allocated by `_gc_alloc` or `_gc_alloc_managed`.
+
+ The size of the heap is determined by a constant `HEAPSIZE` declared in the top level object. If none is given then a (small) default value is used.
+
+Example:
+```
+' put this CON in the top level object to specify how much memory should be provided for
+' memory allocation (the "heap"). The default is 4K on P2, 256 bytes on P1
+CON
+   HEAPSIZE = 32768 ' or however much memory you want to provide for the allocator
+
+' here's a function to allocate memory
+' "siz" is the size in bytes
+PUB allocmem(size) : ptr
+  ptr := _gc_alloc_managed(size)
+```
+
+The garbage collection functions and heap are only included in programs which explicitly ask for them.
+
+### Heap size specification
+
+In SPIN:
+```
+   CON HEAPSIZE=32768
+```
+
+In BASIC:
+```
+  const HEAPSIZE=32768
+```
+
+In C:
+```
+   enum { HEAPSIZE=32768 };
+```
+
+The C version is a little unexpected; one would expect HEAPSIZE to be declared as `const int` or with `#define`. This is a technical limitation that I hope to fix someday.
+
+### Stack allocation
+
+Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
 

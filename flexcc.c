@@ -1,7 +1,8 @@
 /*
  * Spin to C/C++ translator
+ * flexcc front end 
  * Copyright 2011-2020 Total Spectrum Software Inc.
- * 
+ *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
  * +--------------------------------------------------------------------
@@ -26,7 +27,7 @@
  * +--------------------------------------------------------------------
  */
 
-// this version of the front end uses the openspin command line flags
+// this version of the front end uses the usual cc command line flags
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -39,44 +40,24 @@
 
 //#define DEBUG_YACC
 
-extern int yyparse(void);
-
-double gl_start_time;
-
 static void
-PrintInfo(FILE *f, int bstcMode)
+PrintInfo(FILE *f)
 {
-    if (bstcMode) {
-        fprintf(f, "FastSpin Compiler v%s - Copyright 2011-2020 Total Spectrum Software Inc.\n", VERSIONSTR);
-        fprintf(f, "Compiled on: " __DATE__ "\n");
-        
-    } else {
-        fprintf(f, "Propeller Spin/PASM Compiler 'FastSpin' (c) 2011-2020 Total Spectrum Software Inc.\n");
-        fprintf(f, "Version %s Compiled on: " __DATE__ "\n", VERSIONSTR);
-    }
+    fprintf(f, "FlexC compiler (c) 2011-2020 Total Spectrum Software Inc.\n");
+    fprintf(f, "Version %s Compiled on: " __DATE__ "\n", VERSIONSTR);
     fflush(f);
 }
 
 static void
-Usage(FILE *f, int bstcMode)
+Usage(FILE *f)
 {
-    if (bstcMode) {
-        fprintf(f, "Program usage :- %s (Options) Filename[.spin]\n", gl_progname);
-    } else {
-        fprintf(f, "usage: %s [options] filename.spin | filename.bas\n", gl_progname);
-    }
-    fprintf(f, "  [ -h ]              display this help\n");
+    fprintf(f, "usage: %s [options] filename.spin | filename.bas\n", gl_progname);
+    fprintf(f, "  [ --help ]         display this help\n");
+    fprintf(f, "  [ -c ]             output only .o file\n");
+    fprintf(f, "  [ -D <define> ]    add a define\n");
+    fprintf(f, "  [ -g ]             include debug info in output\n");
     fprintf(f, "  [ -L or -I <path> ] add a directory to the include path\n");
     fprintf(f, "  [ -o <name> ]      set output filename to <name>\n");
-    fprintf(f, "  [ -b ]             output binary file format\n");
-    fprintf(f, "  [ -e ]             output eeprom file format\n");
-    fprintf(f, "  [ -c ]             output only DAT sections\n");
-    fprintf(f, "  [ -l ]             output DAT as a listing file\n");
-    fprintf(f, "  [ -f ]             output list of file names\n");
-    fprintf(f, "  [ -q ]             quiet mode (suppress banner and non-error text)\n");
-    fprintf(f, "  [ -p ]             disable the preprocessor\n");
-    fprintf(f, "  [ -D <define> ]    add a define\n");
-    fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
     fprintf(f, "  [ -2# ]             compile for Prop2\n");
     fprintf(f, "          -2a = original silicon\n");
     fprintf(f, "          -2b = rev B or rev C silicon\n");
@@ -84,32 +65,21 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
     fprintf(f, "          -O2 = all optimization\n");
-    fprintf(f, "  [ -H nnnn ]        set starting hub address\n");
-    fprintf(f, "  [ -E ]             skip initial coginit code (usually used with -H)\n");
-    fprintf(f, "  [ -w ]             compile for COG with Spin wrappers\n");
     fprintf(f, "  [ -Wall ]          enable warnings for language extensions and other features\n");
     fprintf(f, "  [ -Werror ]        make warnings into errors\n");
-    fprintf(f, "  [ -C ]             enable case sensitive mode\n");
     fprintf(f, "  [ -x ]             capture program exit code (for testing)\n");
     //fprintf(f, "  [ -z ]             compress code\n");
     fprintf(f, "  [ --code=cog ]     compile for COG mode instead of LMM\n");
     fprintf(f, "  [ --fcache=N ]     set FCACHE size to N (0 to disable)\n");
     fprintf(f, "  [ --fixedreal ]    use 16.16 fixed point in place of floats\n");
     fprintf(f, "  [ --lmm=xxx ]      use alternate LMM implementation for P1\n");
-    fprintf(f, "           xxx = orig uses original fastspin LMM\n");
+    fprintf(f, "           xxx = orig uses original flexspin LMM\n");
     fprintf(f, "           xxx = slow uses traditional (slow) LMM\n");
+    fprintf(f, "  [ --version ]      just show compiler version\n");
     
     fflush(stderr);
     exit(2);
 }
-
-double
-getCurTime()
-{
-    clock_t tick = clock();
-    return (double)tick / (double)CLOCKS_PER_SEC;
-}
-
 
 int
 main(int argc, const char **argv)
@@ -123,15 +93,13 @@ main(int argc, const char **argv)
     time_t timep;
     int i;
     
-    gl_start_time = getCurTime();
-
     InitializeSystem(cmd, argv);
     
     /* save our command line arguments and comments describing
        how we were run
     */
     flexbuf_init(&argbuf, 128);
-    flexbuf_printf(&argbuf, "automatically generated by fastspin v %s on ", VERSIONSTR);
+    flexbuf_printf(&argbuf, "automatically generated by flexcc v %s on ", VERSIONSTR);
     time(&timep);
     flexbuf_addstr(&argbuf, asctime(localtime(&timep)));
     flexbuf_addchar(&argbuf, 0);
@@ -191,6 +159,7 @@ main(int argc, const char **argv)
     cmd->outputMain = 1;
     cmd->outputBin = 1;
     cmd->outputAsm = 1;
+    cmd->quiet = 1;
     gl_optimize_flags = DEFAULT_ASM_OPTS;
     
     // put everything in HUB by default
@@ -217,7 +186,7 @@ main(int argc, const char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_DATA;
             } else {
                 fprintf(stderr, "Unknown --data= choice: %s\n", argv[0]);
-                Usage(stderr, cmd->bstcMode);
+                Usage(stderr);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--fcache=", 9)) {
@@ -236,7 +205,7 @@ main(int argc, const char **argv)
                 gl_outputflags &= ~OUTFLAG_COG_CODE;
             } else {
                 fprintf(stderr, "Unknown --code= choice: %s\n", argv[0]);
-                Usage(stderr, cmd->bstcMode);
+                Usage(stderr);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "--lmm=", 6)) {
@@ -252,46 +221,30 @@ main(int argc, const char **argv)
                 gl_lmm_kind = LMM_KIND_CACHE;
             } else {
                 fprintf(stderr, "Unknown --lmm= choice: %s\n", lmmtype);
-                Usage(stderr, cmd->bstcMode);
+                Usage(stderr);
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "--relocatable")) {
             gl_relocatable = 1;
             fprintf(stderr, "WARNING: --relocatable not implemented yet\n");
             argv++; --argc;
-        } else if (!strcmp(argv[0], "-w")) {
-            gl_outputflags |= OUTFLAG_COG_CODE;
-            gl_output = OUTPUT_COGSPIN;
-            gl_debug = 1;
+        } else if (!strcmp(argv[0], "-c")) {
             cmd->compile = 0;
             cmd->outputMain = 0;
             cmd->outputBin = 0;
+            gl_output = OUTPUT_OBJ;
             argv++; --argc;
-        } else if (!strcmp(argv[0], "-c") || !strncmp(argv[0], "--dat", 5)) {
+        } else if (!strcmp(argv[0], "-S")) {
             cmd->compile = 0;
             cmd->outputMain = 0;
             cmd->outputBin = 0;
-            gl_output = OUTPUT_DAT;
-            cmd->outputDat = 1;
+            gl_output = OUTPUT_ASM;
             argv++; --argc;
-        } else if (!strcmp(argv[0], "-C")) {
-            gl_caseSensitive = 1;
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-E")) {
-            gl_no_coginit = 1;
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-l")) {
+        } else if (!strcmp(argv[0], "--listing")) {
             gl_listing = 1;
             argv++; --argc;
-        } else if (!strcmp(argv[0], "-f")) {
-            cmd->outputFiles = 1;
-            cmd->quiet = 1;
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-q")) {
-            cmd->quiet = 1;
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-u")) {
-            // ignore -u, we always eliminate unused methods
+        } else if (!strcmp(argv[0], "-v")) {
+            cmd->quiet = 0;
             argv++; --argc;
         } else if (!strncmp(argv[0], "-2", 2)) {
             gl_p2 = DEFAULT_P2_VERSION;
@@ -300,22 +253,12 @@ main(int argc, const char **argv)
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
-            PrintInfo(stdout, cmd->bstcMode);
-            Usage(stdout, cmd->bstcMode);
+            PrintInfo(stdout);
+            Usage(stdout);
             exit(0);
-        } else if (!strncmp(argv[0], "--bin", 5) || !strcmp(argv[0], "-b")
-                   || !strcmp(argv[0], "-e"))
-        {
-            cmd->compile = 1;
-            cmd->outputMain = 1;
-	    cmd->outputBin = 1;
-            if (!strcmp(argv[0], "-e")) {
-                cmd->useEeprom = 1;
-            }
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-p")) {
-            gl_preprocess = 0;
-            argv++; --argc;
+        } else if (!strcmp(argv[0], "--version")) {
+            PrintInfo(stdout);
+            exit(0);
 	} else if (!strncmp(argv[0], "-o", 2)) {
 	    const char *opt;
 	    opt = argv[0];
@@ -401,7 +344,7 @@ main(int argc, const char **argv)
                 gl_compress = 1;
             } else {
                 fprintf(stderr, "-z option %c is not supported\n", flag);
-                Usage(stderr, cmd->bstcMode);
+                Usage(stderr);
             }
             argv++; --argc;
         } else if (!strncmp(argv[0], "-W", 2) && argv[0][2]) {
@@ -415,38 +358,20 @@ main(int argc, const char **argv)
                 gl_warnings_are_errors = 1;
             } else {
                 fprintf(stderr, "-W option %s is not supported\n", flags);
-                Usage(stderr, cmd->bstcMode);
+                Usage(stderr);
             }
             argv++; --argc;
-        } else if (!strncmp(argv[0], "-H", 2)) {
-            // set ub address
-            const char *addr;
-            if (argv[0][2] != 0) {
-                addr = &argv[0][2];
-            } else {
-                argv++;
-                --argc;
-                addr = argv[0];
-            }
-            gl_hub_base = strtoul(addr, NULL, 0);
-            if (gl_hub_base == 0) {
-                fprintf(stderr, "Warning: hub base set to 0\n");
-            }
-            argv++; --argc;
-        } else if (!strcmp(argv[0], "-x")) {
-            argv++; --argc;
-            gl_exit_status = 1;
         } else {
             fprintf(stderr, "Unrecognized option: %s\n", argv[0]);
-            Usage(stderr, cmd->bstcMode);
+            Usage(stderr);
         }
     }
     
     if (!cmd->quiet) {
-        PrintInfo(stdout, cmd->bstcMode);
+        PrintInfo(stdout);
     }
     if (cmd->file_argc == 0) {
-        Usage(stderr, cmd->bstcMode);
+        Usage(stderr);
     }
 
     /* tweak flags */
@@ -457,11 +382,9 @@ main(int argc, const char **argv)
     if (cmd->bstcMode && cmd->compile) {
         int loc = 0;
         Module *Q;
-        double now = getCurTime();
         for (Q = allparse; Q; Q = Q->next) {
             loc += Q->Lptr->lineCounter;
         }
-        printf("Compiled %d Lines of Code in %.3f Seconds\n", loc, now - gl_start_time);
     }
     if (gl_errors > 0) {
         exit(1);

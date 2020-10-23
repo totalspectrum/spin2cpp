@@ -37,7 +37,10 @@ Operand *NewPcRelative(int32_t val);
 Operand *NewCodeLabel();  // use only while compiling a function
 Operand *NewHubLabel();
 Operand *CogMemRef(Operand *addr, int offset);
+Operand *SubRegister(Operand *reg, unsigned long offset);
 void FreeTempRegisters(IRList *irl, int starttempreg);
+
+char *OffsetName(const char *basename, unsigned long offset);
 
 // utility functions
 IRCond InvertCond(IRCond v);
@@ -126,6 +129,9 @@ typedef struct ir_bedata {
 
     /* actual call instructions emitted for this function */
     int actual_callsites;
+
+    /* firl emitted already */
+    bool firl_done;
 } IRFuncData;
 
 #define FuncData(f) ((IRFuncData *)(f)->bedata)

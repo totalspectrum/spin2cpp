@@ -164,6 +164,16 @@ bool
 InstrModifies(IR *ir, Operand *reg)
 {
     Operand *dst = ir->dst;
+    Operand *src = ir->src;
+    if (reg && reg->kind == REG_SUBREG) {
+        reg = (Operand *)reg->name;
+    }
+    if (dst && dst->kind == REG_SUBREG) {
+        dst = (Operand *)dst->name;
+    }
+    if (src && src->kind == REG_SUBREG) {
+        src = (Operand *)src->name;
+    }
     if (dst == reg) {
         return InstrSetsDst(ir);
     }
@@ -172,7 +182,7 @@ InstrModifies(IR *ir, Operand *reg)
             return true;
         }
     }
-    if (ir->src == reg && OPEFFECT_NONE != (ir->srceffect & 0xff)) {
+    if (src == reg && OPEFFECT_NONE != (ir->srceffect & 0xff)) {
         return true;
     }
     return false;
@@ -185,6 +195,15 @@ InstrUses(IR *ir, Operand *reg)
     Operand *dst = ir->dst;
     Operand *src = ir->src;
 
+    if (reg && reg->kind == REG_SUBREG) {
+        reg = (Operand *)reg->name;
+    }
+    if (dst && dst->kind == REG_SUBREG) {
+        dst = (Operand *)dst->name;
+    }
+    if (src && src->kind == REG_SUBREG) {
+        src = (Operand *)src->name;
+    }
     if (src == reg) {
         return true;
     }
@@ -203,6 +222,7 @@ InstrUses(IR *ir, Operand *reg)
 static bool
 IsArg(Operand *op)
 {
+    if (op->kind == REG_SUBREG) op = (Operand *)op->name;
     return op->kind == REG_ARG;
 }
 
@@ -210,6 +230,7 @@ IsArg(Operand *op)
 bool
 IsLocal(Operand *op)
 {
+    if (op->kind == REG_SUBREG) op = (Operand *)op->name;
     return op->kind == REG_LOCAL || op->kind == REG_TEMP;
 }
 
@@ -217,6 +238,7 @@ IsLocal(Operand *op)
 bool
 IsLocalOrArg(Operand *op)
 {
+    if (op->kind == REG_SUBREG) op = (Operand *)op->name;
     return op->kind == REG_LOCAL || op->kind == REG_ARG || op->kind == REG_TEMP;
 }
 
@@ -236,6 +258,7 @@ bool
 IsValidDstReg(Operand *op)
 {
     switch(op->kind) {
+    case REG_SUBREG:
     case REG_LOCAL:
     case REG_TEMP:
     case REG_ARG:
@@ -498,6 +521,10 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
       // hardware registers are never dead
       return false;
   }
+  if (op->kind == REG_SUBREG) {
+      // cannot handle sub registers properly yet
+      return false;
+  }
   if (level >= MAX_FOLLOWED_JUMPS) {
       // give up!
       return false;
@@ -564,9 +591,24 @@ doIsDeadAfter(IR *instr, Operand *op, int level, IR **stack)
             // assume live
             return false;
         }
+        if (op->kind == REG_SUBREG) {
+            return false;
+        }
+        if (ir->dst && ir->dst->kind == REG_SUBREG) {
+            return false;
+        }
+        if (ir->src && ir->src->kind == REG_SUBREG) {
+            return false;
+        }
     } else if (InstrModifies(ir, op)) {
         // if the instruction modifies but does not use the op,
         // then we're setting it from another register and it's dead
+        if (op->kind == REG_SUBREG) {
+            return false;
+        }
+        if (ir->dst && ir->dst->kind == REG_SUBREG) {
+            return false;
+        }
         if (ir->cond == COND_TRUE) {
             return true;
         }
@@ -625,6 +667,9 @@ SafeToReplaceBack(IR *instr, Operand *orig, Operand *replace)
 
   if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind))
       return false;
+  if (replace->kind == REG_SUBREG || (orig && orig->kind == REG_SUBREG) ) {
+      return false;
+  }
   for (ir = instr; ir; ir = ir->prev) {
       if (IsDummy(ir)) {
           continue;
@@ -708,6 +753,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   bool orig_modified = false;
   
   if (SrcOnlyHwReg(replace) || !IsRegister(replace->kind)) {
+      return NULL;
+  }
+  if (replace->kind == REG_SUBREG) {
+      return NULL;
+  }
+  if (orig && orig->kind == REG_SUBREG) {
       return NULL;
   }
   if (!first_ir) {
