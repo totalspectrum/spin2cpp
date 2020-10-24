@@ -1,7 +1,8 @@
 Version 5.0.0
 - Renamed "fastspin" to "flexspin"
+- Added "flexcc" compiler front end
 - Added --version flag to fastspin
-- Fixed BASIC ^ operator used with --fixedreal
+- Fixed BASIC ^ operator when used with --fixedreal
 - Made sin() and cos() work with --fixedreal
 
 Version 4.5.0

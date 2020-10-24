@@ -1,7 +1,7 @@
-# fastspin BASIC tutorial
+# FlexBASIC tutorial
 
 This is a simple tutorial showing some of the ways to blink an LED in
-fastspin BASIC
+FlexBASIC
 
 ## do loop
 

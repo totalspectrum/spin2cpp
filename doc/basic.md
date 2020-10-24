@@ -2,13 +2,19 @@
 
 ## Introduction
 
-FlexBASIC is the BASIC language supported by the fastspin compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
+FlexBASIC is the BASIC language supported by the FlexProp compiler for the Parallax Propeller and Prop2. It is a BASIC dialect similar to FreeBASIC or Microsoft BASIC, but with a few differences. On the Propeller chip it compiles to LMM code (machine language) which runs quite quickly.
 
-fastspin recognizes the language in a file by the extension. If a file has a ".bas" extension it is assumed to be BASIC. Otherwise it is assumed to be a different language (the default is Spin).
+The FlexProp GUI supports BASIC development.
+
+### Command Line compilation
+
+At the moment there is no stand-alone BASIC compiler, but both the C compiler (flexcc) and Spin compiler (flexspin) can compile BASIC programs. The compiler recognizes the language in a file by the extension. If a file has a ".bas" extension it is assumed to be BASIC. Otherwise it is assumed to be a different language (the default is Spin for flexspin and C for flexcc).
+
+Because Spin has similar comment structures to BASIC, the flexspin compiler front end is generally a good choice for BASIC development.
 
 ## Preprocessor
 
-fastspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
+flexspin has a pre-processor that understands basic directives like `#include`, `#define`, and`#ifdef / #ifndef / #else / #endif`.
 
 ### Directives
 
@@ -68,7 +74,7 @@ Includes a file. The contents of the file are placed in the compilation just as 
 ```
 #include "foo.h"
 ```
-Included files are searched for first in the same directory as the file that contains the `#include`. If they are not found there, then they are searched for in any directories specified by a `-I` or `-L` option on the command line. If the environment variable `FLEXCC_INCLUDE` is defined, that gives a directory to be searched after command line options. Finally the path `../include` relative to the fastspin executable binary is checked.
+Included files are searched for first in the same directory as the file that contains the `#include`. If they are not found there, then they are searched for in any directories specified by a `-I` or `-L` option on the command line. If the environment variable `FLEXCC_INCLUDE` is defined, that gives a directory to be searched after command line options. Finally the path `../include` relative to the FlexProp executable binary is checked.
 
 #### PRAGMA
 
@@ -94,12 +100,12 @@ Symbol           | When Defined
 `__propeller__`  | always defined to 1 (for P1) or 2 (for P2)
 `__propeller2__` | only defined if compiling for Propeller 2
 `__P2__`         | obsolete version of `__propeller2__`
-`__FLEXBASIC__`  | always defined to the fastspin version number
-`__FASTSPIN__`   | if the `fastspin` front end is used
-`__SPINCVT__`    | always defined to the fastspin version number
-`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by fastspin)
-`__SPIN2CPP__`   | if C++ or C is being output (never in fastspin)
-`__cplusplus`    | if C++ is being output (never in fastspin)
+`__FLEXBASIC__`  | always defined to the FlexProp version number
+`__FLEXSPIN__`   | if the `flexspin` front end is used
+`__SPINCVT__`    | always defined to the FlexProp version number
+`__SPIN2PASM__`  | if --asm is given (PASM output) (always defined by flexspin)
+`__SPIN2CPP__`   | if C++ or C is being output (never in flexspin)
+`__cplusplus`    | if C++ is being output (never in flexspin)
 
 ## Language Syntax
 
