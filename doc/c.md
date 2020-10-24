@@ -328,7 +328,7 @@ Inverts the output pin `pin`.
 
 Propeller 2 specific functions are contained in the header file `propeller2.h`. This file is usually quite portable among C compilers.
 
-### COG and Clock control
+### Clock and time control
 
 #### _clkset
 
@@ -351,34 +351,6 @@ uint32_t _cnth(void);
 ```
 Returns the upper 32 bits of the system clock counter.
 
-#### _cogchk
-
-```
-int _cogchk(int n);
-```
-Checks to see if cog `n` is running. Returns 1 if it is, 0 if it is not.
-
-#### _coginit
-
-```
-int _coginit(int cogid, void *cogpgm, void *ptra)
-```
-Starts PASM code in another COG. `cogid` is the ID of the COG to start, or `ANY_COG` if a new one should be allocated. `cogpgm` points to the compiled PASM code to start, and `ptra` is a value to be placed in the new COG's `ptra` register. Returns the ID of the new COG, or -1 on failure.
-
-#### _cogstop
-
-```
-void _cogstop(int cogid);
-```
-Stops the given COG.
-
-#### _reboot
-
-```
-void _reboot(void);
-```
-Reboots the P2. Needless to say, this function never returns.
-
 #### _getsec
 
 ```
@@ -400,12 +372,116 @@ uint32_t _getus(void);
 ```
 Gets the time elapsed on the system timer in microseconds. On the P1 this will wrap around after about 54 seconds.
 
+#### _waitms
+
+```
+void _waitms(uint32_t delay);
+```
+Waits for `delay` milliseconds.
+
+#### _waitus
+
+```
+void _waitus(uint32_t delay);
+```
+Waits for `delay` microseconds.
+
 #### _waitx
 
 ```
 void _waitx(uint32_t delay);
 ```
 Waits for `delay` clock cycles.
+
+### COG control
+
+#### _cogatn
+
+```
+void _cogatn(uint32_t mask)
+```
+Raises the ATN signal on the COGs specified by `mask`. `mask` is a bitmask with 1 set in position `n` if COG `n` should be signalled, So for example, to signal COGs 2 and 3 you would say `_cogatn((1<<2)|(1<<3))`.
+
+#### _cogchk
+
+```
+int _cogchk(int n);
+```
+Checks to see if cog `n` is running. Returns nonzero if it is, 0 if it is not.
+
+#### _coginit
+
+```
+int _coginit(int cogid, void *cogpgm, void *ptra)
+```
+Starts PASM code in another COG. `cogid` is the ID of the COG to start, or `ANY_COG` if a new one should be allocated. `cogpgm` points to the compiled PASM code to start, and `ptra` is a value to be placed in the new COG's `ptra` register. Returns the ID of the new COG, or -1 on failure.
+
+Some compilers (e.g. Catalina) use `_cogstart_PASM` for this.
+
+#### _cogstart_C
+
+```
+int _cogstart_C(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_size)
+```
+Starts C code in another COG. `func` is the address of a C function which expects one argument, and which will run in another COG (cpu core). `arg` is the argument to pass to the function for this invocation. `stack_base` is the base address of a block of memory to use for the stack. `stack_size` is the size in bytes of the memory.
+
+#### _cogstop
+
+```
+void _cogstop(int cogid);
+```
+Stops the given COG.
+
+#### _pollatn
+
+```
+int _pollatn(void);
+```
+Checks to see if ATN has been signalled for this COG by `_cogatn`. Returns nonzero if it has, 0 if not.
+
+#### _reboot
+
+```
+void _reboot(void);
+```
+Reboots the P2. Needless to say, this function never returns.
+
+#### _waitatn
+
+```
+int _waitatn(void);
+```
+Waits for an ATN signal to be sent by `_cogatn`. Doesn't really return any useful information at this time.
+
+### Locks
+
+#### _locknew
+
+```
+int _locknew(void);
+```
+Allocate a new lock and return its value. Returns -1 if no locks are avilable.
+
+#### _lockret
+
+```
+void _lockret(int lockid);
+```
+Frees a lock previously allocated by `_locknew`.
+
+#### _locktry
+
+```
+int _locktry(int lockid);
+```
+Attempts to lock the lock with id `lockid`. Returns 0 on failure, non-zero on success.
+
+#### _lockrel
+
+```
+int _lockrel(int lockid);
+```
+Releases a lock held due to a successful call to `_locktry`.
 
 ### Regular Pin I/O
 
@@ -457,6 +533,50 @@ Makes pin `pin` an input and returns its current value (0 or 1).
 void      _pinw(int pin, int val);
 ```
 Makes pin `pin` an output and writes `val` to it. `val` should be only 0 or 1; results for other values are undefined.
+
+### Smart Pin controls
+
+#### _akpin
+
+```
+void _akpin(int pin);
+```
+Acknowledge input from the given smart pin. Necessary only if you use `rqpin`.
+
+#### _rdpin
+
+```
+uint32_t _rdpin(int pin);
+```
+Reads data from the smart pin and acknowledges the input. The value returned is the 32 bit smart pin data value.
+
+#### _rqpin
+
+```
+uint32_t _rqpin(int pin);
+```
+Reads data from the smart pin and *without* acknowledging the input. The value returned is the 32 bit smart pin data value. `_akpin` must be called later in order to allow further smart pin input.
+
+#### _wrpin
+
+```
+void _wrpin(int pin, uint32_t val);
+```
+Write `val` to the smart pin mode of pin `pin`.
+
+#### _wxpin
+
+```
+void _wxpin(int pin, uint32_t val);
+```
+Write `val` to the smart pin X register of pin `pin`.
+
+#### _wypin
+
+```
+void _wypin(int pin, uint32_t val);
+```
+Write `val` to the smart pin Y register of pin `pin`.
 
 
 ## Disk I/O routines (P2 Only)
