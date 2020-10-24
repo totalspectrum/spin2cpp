@@ -199,7 +199,7 @@ zip: flexcc.exe flexspin.exe spin2cpp.exe
 	$(SIGN) flexcc
 	mv flexcc.signed.exe flexcc.exe
 	zip -r spin2cpp.zip $(ALLDOCS) spin2cpp.exe flexspin.exe flexcc.exe
-	zip -r flexspin.zip flexcc.exe flexspin.exe Flexspin.md doc include
+	zip -r flexptools.zip flexcc.exe flexspin.exe Flexspin.md doc include
 
 #
 # target to build a windows spincvt GUI
