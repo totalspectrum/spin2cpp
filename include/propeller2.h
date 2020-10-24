@@ -106,6 +106,7 @@ int _cogstart(void (*func)(void *), void *arg, void *stack_base, uint32_t stack_
 #endif
 
 // alias used by Catalina
+#define _cogstart_PASM(cogid, pgm, arg)     _coginit(cogid, pgm, arg)
 #define _cogstart_C(func, arg, stack, size) _cogstart(func, arg, stack, size)
 
 /* stop/check status of COGs */
