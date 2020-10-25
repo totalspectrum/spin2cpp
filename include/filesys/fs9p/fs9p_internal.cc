@@ -109,7 +109,7 @@ int fs_init(sendrecv_func fn)
     msize = FETCH4(ptr+3);
 
     s = FETCH2(ptr+7);
-    if (s != 6 || 0 != strncmp(&ptr[9], "9P2000")) {
+    if (s != 6 || 0 != strncmp(&ptr[9], "9P2000", 6)) {
 #ifdef _DEBUG      
         __builtin_printf("Bad version response from host: s=%d ver=%s\n", s, &ptr[9]);
 #endif	
