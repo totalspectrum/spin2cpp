@@ -5,7 +5,7 @@ if [ "$1" != "" ]; then
     FASTSPIN="$1 --asm --binary --code=hub"
 else
     SPIN2CPP=../build/spin2cpp
-    FASTSPIN="../build/fastspin -g -q"
+    FASTSPIN="../build/flexspin -g -q"
 fi
 
 PROG_C="$SPIN2CPP -I../Lib"
