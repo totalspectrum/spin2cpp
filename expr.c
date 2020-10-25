@@ -1646,6 +1646,13 @@ EvalExpr(AST *expr, unsigned flags, int *valid, int depth)
         if (IsGenericType(expr->left)) {
             return rval;
         }
+        /* avoid redundant casts */
+        if (IsFloatType(expr->left) && IsFloatType(rval.type)) {
+            return rval;
+        }
+        if (!IsFloatType(expr->left) && !IsFloatType(rval.type)) {
+            return rval;
+        }
         if (IsFloatType(expr->left)) {
             return convToFloat(rval);
         } else if (IsFloatType(rval.type)) {
