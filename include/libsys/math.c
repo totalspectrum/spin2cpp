@@ -118,62 +118,79 @@ float __builtin_tanf(float x)
     return __builtin_sinf(x) / __builtin_cosf(x);
 }
 
-// Approximates atan(x) normalized to the [-1,1] range
-// with a maximum error of 0.1620 degrees.
+#ifdef __P2__
+// ATAN2 using the P2 CORDIC hardware
+#define SCALE ((float)(1<<30))
 
-static float normalized_atanf( float x )
+// returns a value between -1 and +1, where
+// -1 corresponds to -PI and +1 to +PI
+int32_t _qpolar(int32_t x, int32_t y)
 {
-    static const uint32_t sign_mask = 0x80000000;
-    static const float b = 0.596227f;
-
-    // Extract the sign bit
-    uint32_t ux_s  = sign_mask & *((uint32_t *)&x);
-
-    // Calculate the arctangent in the first quadrant
-    float bx_a = __builtin_fabsf( b * x );
-    float num = bx_a + x * x;
-    float atan_1q = num / ( 1.f + bx_a + num );
-
-    // Restore the sign bit
-    uint32_t atan_2q = ux_s | *((uint32_t *)&atan_1q);
-    return *((float *)&atan_2q);
-}
-
-float __builtin_atanf(float x)
-{
-    return normalized_atanf(x) * PI_2;
-}
-
-// Approximates atan2(y, x) normalized to the -2 to 2 range
-// with a maximum error of 0.1620 degrees
-
-static float normalized_atan2f(float y, float x)
-{
-    static const uint32_t sign_mask = 0x80000000;
-    static const float b = 0.596227f;
-
-    // Extract the sign bits
-    uint32_t ux_s = sign_mask & *((uint32_t *)&x);
-    uint32_t uy_s = sign_mask & *((uint32_t *)&y);
-
-    // Determine the quadrant offset
-    int32_t qa = ((ux_s >> 31) * 2);
-    int32_t qb = (((ux_s & uy_s) >> 31) * -4);
-    float q = (float)(qa + qb);
-
-    // Calculate the arctangent in the first quadrant
-    float bxy_a = __builtin_fabsf(b * x * y);
-    float num = bxy_a + y * y;
-    float atan_1q = num / (x * x + bxy_a + num);
-
-    // Translate it to the proper quadrant
-    uint32_t uatan_2q = (ux_s ^ uy_s) | *((uint32_t *)&atan_1q);
-    return q + *((float *)&uatan_2q);
+    int32_t angle;
+    __asm {
+        qvector x, y
+        getqy angle
+        sar   angle, #1  /* convert from 1.31 to 2.30 */
+    };
+    //__builtin_printf("  ..polar(%x,%x) -> %x (%d)\n", x, y, angle, angle); 
+    return angle;
 }
 
 float __builtin_atan2f(float y, float x)
 {
-    return normalized_atan2f(y,x) * PI_2;
+    float r;
+    int32_t a, b, c;
+    if (y == 0) {
+        if (x < 0) {
+            return -PI;
+        } else {
+            return 0;
+        }
+    }
+    r = __builtin_sqrt(x*x + y*y);
+    x = x / r;
+    y = y / r;
+    /* now -1.0 <= x,y <= 1.0 */
+    /* convert to 2.30 fixed point */
+    a = SCALE * x;
+    b = SCALE * y;
+    c = _qpolar(a, b);
+    r = PI * (c / SCALE);
+    return r;
+}
+
+#else
+
+/* fast ATAN2 approximation derived from Jim Shima's fixed point Atan2
+ * http://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization/
+ */
+float __builtin_atan2f(float y, float x)
+{
+    float coeff_1 = PI/4.0f;
+    float coeff_2 = (3.0f*PI)/4.0f;
+    float abs_y = __builtin_abs(y);
+    float r, angle;
+    
+    if (x >= 0) {
+        r = (x - abs_y) / (x + abs_y);
+        angle = coeff_1;
+    } else {
+        r = (x + abs_y) / (abs_y - x);
+        angle = coeff_2;
+    }
+    angle += (0.1963f * r * r - 0.9817f) * r;
+    if (y < 0) {
+        return -angle;
+    }
+    return angle;
+}
+
+#endif
+
+// note: atan(y/x) == atan2(y, x)
+float __builtin_atanf(float y)
+{
+    return __builtin_atan2f(y, 1.0f);
 }
 
 float __builtin_asinf(float x)
