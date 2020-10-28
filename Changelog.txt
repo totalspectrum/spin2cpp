@@ -2,8 +2,10 @@ Version 5.0.0
 - Renamed "fastspin" to "flexspin"
 - Added "flexcc" compiler front end
 - Added --version flag to fastspin
+- Added asin(), acos(), atan(), atan2() to BASIC
 - Fixed BASIC ^ operator when used with --fixedreal
 - Made sin() and cos() work with --fixedreal
+- New atan2() implementation using the CORDIC on P2
 
 Version 4.5.0
 - Added a warning for C functions with mismatched parameters (it used to silently accept this)

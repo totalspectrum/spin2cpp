@@ -221,6 +221,10 @@ Aliases basicalias[] = {
     { "instrrev", "_instrrev" },
     
     /* math functions */
+    { "acos", "__builtin_acosf" },
+    { "asin", "__builtin_asinf" },
+    { "atan", "__builtin_atanf" },
+    { "atan2", "__builtin_atan2f" },
     { "cos", "__builtin_cosf" },
     { "exp", "__builtin_expf" },
     { "log", "__builtin_logf" },

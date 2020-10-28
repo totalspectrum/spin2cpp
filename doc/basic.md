@@ -905,6 +905,10 @@ The hardware registers are not keywords, so they are not reserved to the system.
 ```
 Returns the absolute value of x. If x is a floating point number then so will be the result; if x is an unsigned number then it will be unchanged; otherwise the result will be an Integer.
 
+### ACOS
+
+Predefined function. `acos(x)` returns the inverse cosine of `x`. The result is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
+
 ### AND
 
 ```
@@ -973,6 +977,10 @@ Reserved word. For now, its only use is in `open` statements to specify that an 
 returns the integer (ASCII) value of the first character of a string. If the
 argument is not a string it is an error.
 
+### ASIN
+
+Predefined function. `asin(x)` returns the inverse sine of `x`. The result is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
+
 ### ASM
 
 Introduces inline assembly. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code must be explicitly executed with a `cpu` directive.
@@ -1018,6 +1026,14 @@ An `asm shared` block declares some static code and/or data which is not intende
 The main difference between `asm` and `asm shared` is that the `asm shared` blocks are kept separate, outside of all functions and subroutines, whereas `asm` blocks are always part of a function or subroutine (or the main program). `asm` blocks are executed when control flow reaches them; code within `asm shared` must be explicitly invoked via `cpu`.
 
 `asm shared` blocks, like `asm const`, are not optimized by the optimizer.
+
+### ATAN
+
+Predefined function. `atan(x)` returns the inverse tangent of `x`. The result is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
+
+### ATAN2
+
+Predefined function. `atan2(y, x)` returns the angle (in radians) that the line from the origin to `(x, y)` makes with the x-axis. Note the order of arguments to `atan2` (the y comes first!)
 
 ### BIN$
 
