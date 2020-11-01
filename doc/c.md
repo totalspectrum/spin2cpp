@@ -72,7 +72,17 @@ In C code, the P1 clock frequency defaults to 80 MHz, assuming a 5 MHz crystal a
 
 ### P2 Clock Frequency
 
-The P2 has a default clock frequency of 160 MHz in C mode. You may set up a different frequency with the loader (loadp2), but it is probably best to explicitly set it using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+The P2 has a default clock frequency of 160 MHz in C mode. You may set up a different frequency with the loader (loadp2), but it is probably best to explicitly set it, either with a `_clkfreq` enum, or by using `_clkset(mode, freq)`. This is similar to the P1 `clkset` except that `mode` is a P2 `HUBSET` mode.
+
+#### _clkfreq
+
+If an enumeration constant named `_clkfreq` is defined in the top level file (near the `main` function) then its value is used for the clock frequency instead of 160 MHz. For example:
+```
+enum { _clkfreq = 297000000 };
+```
+may be used to specify 297 MHz.
+
+#### _clkset
 
 Header files `sys/p2es_clock.h` and `sys/p2d2_clock.h` are provided for convenience in calculating a mode. To use these, define the macro P2_TARGET_MHZ before including the appropriate header file for your board. The header will calculate and define macros `_SETFREQ` (containing the mode bits) and `_CLOCKFREQ` (containing the frequency; this should normally be `P2_TARGET_MHZ * 1000000`). So for example to set the frequency to 180 MHz you would do:
 ```
