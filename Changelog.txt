@@ -1,3 +1,6 @@
+Version 5.0.1
+- Allow ptra++ in BASIC assembly
+
 Version 5.0.0
 - Renamed "fastspin" to "flexspin"
 - Added "flexcc" compiler front end

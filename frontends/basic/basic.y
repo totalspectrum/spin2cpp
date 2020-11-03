@@ -2195,6 +2195,8 @@ operand:
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
  | pasmexpr '[' pasmexpr ']'
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+ | pasmexpr '+' '+'
+   { $$ = NewAST(AST_EXPRLIST, AstOperator(K_INCREMENT, $1, NULL), NULL); } 
 ;
 
 pasmexpr:
