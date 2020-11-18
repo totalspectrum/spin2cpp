@@ -261,8 +261,10 @@ dirb
 exp
 false
 getcnt
+getms
 getrnd
 getsec
+getus
 hex$
 ina
 inb
@@ -1219,9 +1221,9 @@ Propeller built in variable which gives the current clock frequency.
 ### CLKSET
 
 ```
-  clkset(mode, freq, xsel)
+  clkset(mode, freq)
 ```
-Propeller built in function. On the P1, this acts the same as the Spin `clkset` function. On P2, this does two `hubset` instructions, the first to set the oscillator and the second (after a short delay) to actually enable it. The `mode` parameter gives the setup value for the oscillator, and the second hubset to enable the oscillator uses `mode + xsel` as its parameter. If `xsel` is omitted, it defaults to `3`.
+Propeller built in function. On the P1, this acts the same as the Spin `clkset` function. On P2, this does two `hubset` instructions, the first to set the oscillator and the second (after a short delay) to actually enable it. The `mode` parameter gives the setup value for the oscillator. For backwards compatibility, if the xsel field (bottom 2 bits) is 0b00 then 0b11 is used instead.
 
 For example:
 ```
@@ -1759,6 +1761,14 @@ Propeller specific builtin function.
 ```
 Returns the current cycle counter. This is an unsigned 32 bit value that counts the number of system clocks elapsed since the device was turned on. It wraps after approximately 54 seconds on propeller 1 and 27 seconds on propeller 2.
 
+### GETMS
+
+```
+  function getms() as uinteger
+  x = getms()
+```
+Builtin function. Returns the number of milliseconds since the device was turned on. On the Propeller 1 this wraps around after approximately 54 seconds. On the P2 the system counter has 64 bits, so it will work for about 49 days.
+
 ### GETRND
 
 ```
@@ -1774,6 +1784,14 @@ Builtin function. Returns a 32 bit random number (unsigned integer).
   x = getsec()
 ```
 Builtin function. Returns the number of seconds since the device was turned on. On the Propeller 1 this wraps around after approximately 54 seconds. On the P2 the system counter has 64 bits, so it will work for millions of years.
+
+### GETUS
+
+```
+  function getus() as uinteger
+  x = getus()
+```
+Builtin function. Returns the number of microseconds since the device was turned on. On the Propeller 1 this wraps around after approximately 54 seconds. On the P2 the system counter has 64 bits, so it will work for about an hour.
 
 ### GOSUB
 

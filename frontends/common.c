@@ -203,6 +203,8 @@ Aliases basicalias[] = {
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
     { "getrnd", "_rnd" },
+    { "getms", "_getms" },
+    { "getus", "_getus" },
     { "getsec", "_getsec" },
     { "len", "__builtin_strlen" },
     { "mount", "_mount" },
