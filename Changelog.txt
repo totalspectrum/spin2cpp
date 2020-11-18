@@ -1,5 +1,7 @@
 Version 5.0.1
 - Allow ptra++ in BASIC assembly
+- Added getms() and getus() for BASIC
+- Fixed a C parser crash
 
 Version 5.0.0
 - Renamed "fastspin" to "flexspin"

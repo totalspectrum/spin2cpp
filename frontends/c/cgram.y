@@ -365,7 +365,7 @@ ProcessParamList(AST *list)
             }
             return NULL;
         }
-        if (entry->kind == AST_DECLARE_VAR) {
+        if (entry && entry->kind == AST_DECLARE_VAR) {
             type = entry->left;
             while (type->kind == AST_MODIFIER_CONST || type->kind == AST_MODIFIER_VOLATILE) {
                 type = type->left;
