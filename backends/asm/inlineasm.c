@@ -226,6 +226,9 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
     } else if (expr->kind == AST_HERE) {
         /* handle $ */
         return NewPcRelative(0);
+    } else if (IsConstExpr(expr)) {
+        int32_t val = EvalConstExpr(expr);
+        return ImmediateRef(immflag, val);
     } else if (expr->kind == AST_OPERATOR) {
         // have to handle things like ptra++
         if (expr->d.ival == K_INCREMENT || expr->d.ival == K_DECREMENT) {
