@@ -1624,7 +1624,9 @@ DeclareMemberVariablesOfSize(Module *P, int basetypesize, int offset)
         }
         if (basetypesize == 0) {
             // round offset up to necessary alignment
-            if (!gl_p2) {
+            // If you change this, be sure to change code for aligning
+            // initializers, too!
+            if (1 /*!gl_p2*/) { /* FIXME: what about PACKED structs */
                 if (curtypesize == 2) {
                     offset = (offset + 1) & ~1;
                 } else if (curtypesize >= 4) {
