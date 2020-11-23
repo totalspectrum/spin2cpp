@@ -289,7 +289,7 @@ There are various command line options for the compiler which may modify the com
   [ -Wall ]          enable all warnings, including warnings about language extensions
   [ -Werror ]        turn warnings into errors
   [ -D <define> ]    add a define
-  [ -2 ]             compile for Prop2 (-2a for original Rev A silicon)
+  [ -2 ]             compile for Prop2
   [ -w ]             produce Spin wrappers for PASM code
   [ -H nnnn ]        change the base HUB address (see below)
   [ -E ]             omit any coginit header

@@ -147,7 +147,7 @@ which may modify the compilation:
                        -O1 apply default optimization (same as no -O flag)
 		       -O2 apply all optimization (same as -O)
   [ -D <define> ]    add a define
-  [ -2 ]             compile for Prop2 (-2a for original Rev A silicon)
+  [ -2 ]             compile for Prop2
   [ -w ]             produce Spin wrappers for PASM code
   [ -H nnnn ]        change the base HUB address (see below)
   [ -E ]             omit any coginit header

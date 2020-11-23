@@ -78,9 +78,7 @@ Usage(FILE *f, int bstcMode)
     fprintf(f, "  [ -p ]             disable the preprocessor\n");
     fprintf(f, "  [ -D <define> ]    add a define\n");
     fprintf(f, "  [ -u ]             ignore for openspin compatibility (unused method elimination always enabled)\n");
-    fprintf(f, "  [ -2# ]             compile for Prop2\n");
-    fprintf(f, "          -2a = original silicon\n");
-    fprintf(f, "          -2b = rev B or rev C silicon\n");
+    fprintf(f, "  [ -2 ]             compile for Prop2\n");
     fprintf(f, "  [ -O# ]            set optimization level:\n");
     fprintf(f, "          -O0 = no optimization\n");
     fprintf(f, "          -O1 = basic optimization\n");
@@ -299,6 +297,10 @@ main(int argc, const char **argv)
             gl_p2 = DEFAULT_P2_VERSION;
             if (argv[0][2] >= 'a' && argv[0][2] <= 'z') {
                 gl_p2 = argv[0][2] - 'a' + 1;
+                if (gl_p2 == 1) {
+                    fprintf(stderr, "-2a option no longer supported\n");
+                    exit(1);
+                }
             }
             argv++; --argc;
         } else if (!strcmp(argv[0], "-h")) {
