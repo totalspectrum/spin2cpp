@@ -40,7 +40,7 @@ bool IsDummy(IR *op)
 //
 // replace an opcode
 //
-static void
+void
 ReplaceOpcode(IR *ir, IROpcode op)
 {
   ir->opc = op;

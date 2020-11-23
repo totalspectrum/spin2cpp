@@ -168,7 +168,7 @@ __system___gc_nextBlockPtr
 	mov	__system___gc_nextBlockPtr_ptr, arg01
 	rdword	__system___gc_nextBlockPtr_t, __system___gc_nextBlockPtr_ptr wz
  if_ne	jmp	#LR__0009
-	mov	arg01, ptr_L__0023_
+	mov	arg01, ptr_L__0026_
 	call	#__system___gc_errmsg
 	jmp	#__system___gc_nextBlockPtr_ret
 LR__0009
@@ -306,7 +306,7 @@ __system___gc_alloc_managed
  if_ne	jmp	#LR__0016
 	cmps	__system___gc_alloc_managed_size, #0 wc,wz
  if_be	jmp	#LR__0016
-	mov	arg01, ptr_L__0035_
+	mov	arg01, ptr_L__0038_
 	call	#__system___gc_errmsg
 	jmp	#__system___gc_alloc_managed_ret
 LR__0016
@@ -590,7 +590,7 @@ LR__0033
 	call	#__system___gc_nextBlockPtr
 	mov	__system___gc_collect_nextptr, result1 wz
  if_ne	jmp	#LR__0034
-	mov	arg01, ptr_L__0061_
+	mov	arg01, ptr_L__0064_
 	call	#__system___gc_errmsg
 	jmp	#__system___gc_collect_ret
 LR__0034
@@ -685,11 +685,11 @@ imm_4293918720_
 	long	-1048576
 imm_65472_
 	long	65472
-ptr_L__0023_
+ptr_L__0026_
 	long	@@@LR__0042
-ptr_L__0035_
+ptr_L__0038_
 	long	@@@LR__0043
-ptr_L__0061_
+ptr_L__0064_
 	long	@@@LR__0044
 ptr___system__dat__
 	long	@@@__system__dat_

@@ -65,6 +65,8 @@ bool ShouldBeInlined(Function *f);
 bool RemoveIfInlined(Function *f);
 int  ExpandInlines(IRList *irl);
 
+void ReplaceOpcode(IR *ir, IROpcode op);
+
 bool IsDummy(IR *ir);
 bool IsValidDstReg(Operand *reg);
 bool SrcOnlyHwReg(Operand *reg);

@@ -1,7 +1,8 @@
 Version 5.0.1
+- Added getms() and getus() for BASIC
 - Allow ptra++ in BASIC assembly
 - Allow use of constants from other objects in inline assembly
-- Added getms() and getus() for BASIC
+- Convert "ret" in inline assembly to a jump to the end of it
 - Fixed a C parser crash
 
 Version 5.0.0

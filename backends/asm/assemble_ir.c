@@ -361,6 +361,7 @@ PrintCond(struct flexbuf *fb, IRCond cond)
       flexbuf_addstr(fb, " if_nc_and_nz");
       break;
     default:
+      ERROR(NULL, "Internal error, unexpected condition");
       flexbuf_addstr(fb, " if_??");
       break;
     }
@@ -1121,6 +1122,10 @@ DoAssembleIR(struct flexbuf *fb, IR *ir, Module *P)
     if (ir->instr) {
         int ccset;
 
+        if (ir->cond == COND_FALSE) {
+            flexbuf_addstr(fb, "\tnop\n");
+            return;
+        }
         if (lmmMode && gl_lmm_kind == LMM_KIND_COMPRESS) {
             if (ir->cond == COND_TRUE) {
                 flexbuf_addstr(fb, "\t<");

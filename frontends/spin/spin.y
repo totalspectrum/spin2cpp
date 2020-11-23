@@ -904,6 +904,11 @@ basedatline:
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
   | SP_FILE string SP_EOLN
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
+  | SP_DEBUG '(' debug_exprlist ')' SP_EOLN
+    {
+        // for now just ignore DEBUG in PASM
+        $$ = NULL;
+    }
   ;
 
 objblock:

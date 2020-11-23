@@ -462,12 +462,13 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
         return;
     }
 
+    enddst = NewHubLabel();
+
     if (asmFlags & INLINE_ASM_FLAG_FCACHE) {
         if (gl_fcache_size <= 0) {
             WARNING(origtop, "FCACHE is disabled, asm will be in HUB");
         } else {
             startdst = NewHubLabel();
-            enddst = NewHubLabel();
             fcache = NewIR(OPC_FCACHE);
             fcache->src = startdst;
             fcache->dst = enddst;
@@ -518,6 +519,15 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ir->addr = relpc;
             if (!firstir) firstir = ir;
             relpc++;
+            if (ir->opc == OPC_RET) {
+                WARNING(ast, "ret instruction in inline asm converted to jump to end of asm");
+                ReplaceOpcode(ir, OPC_JUMP);
+                ir->dst = enddst;
+                if (!endlabel) {
+                    endlabel = NewIR(OPC_LABEL);
+                    endlabel->dst = enddst;
+                }
+            }
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
             Operand *op;
@@ -540,7 +550,7 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             break;
         }
     }
-    if (fcache) {
+    if (fcache || endlabel) {
         if (relpc > gl_fcache_size) {
             ERROR(origtop, "Inline assembly too large to fit in fcache");
         }
