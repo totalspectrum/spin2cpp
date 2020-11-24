@@ -545,7 +545,7 @@ parseSpinIdentifier(LexStream *L, AST **ast_ptr, const char *prefix)
         }
     }
     c = lexgetc(L);
-    while (isIdentifierChar(c) || c == '`') {
+    while (isIdentifierChar(c) || c == '`' || (c == ':' && InDatBlock(L))) {
         if (c == '`') {
             c = lexgetc(L);
         } else if (forceLower) {

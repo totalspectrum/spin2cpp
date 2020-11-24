@@ -80,6 +80,19 @@ LengthenType(AST *type)
 }
 
 static AST *
+LabelName(AST *x)
+{
+    const char *orig_name = GetUserIdentifierName(x);
+    char *new_name;
+
+    if (!orig_name) return x;
+    new_name = calloc(strlen(orig_name) + 8, 1);
+    strcpy(new_name, "label:");
+    strcat(new_name, orig_name);
+    return AstIdentifier(new_name);
+}
+
+static AST *
 C_ModifySignedUnsigned(AST *modifier, AST *type)
 {
     if (modifier == ast_type_c_signed) {
@@ -1746,7 +1759,7 @@ statement
 labeled_statement
 	: any_identifier ':' statement
             {
-                AST *label = NewAST(AST_LABEL, $1, NULL);
+                AST *label = NewAST(AST_LABEL, LabelName($1), NULL);
                 $$ = NewAST(AST_STMTLIST, label,
                               NewAST(AST_STMTLIST, $3, NULL));
             }
@@ -2078,7 +2091,7 @@ for_declaration
 
 jump_statement
 	: C_GOTO any_identifier ';'
-            { $$ = NewCommentedAST(AST_GOTO, $2, NULL, $1); }
+            { $$ = NewCommentedAST(AST_GOTO, LabelName($2), NULL, $1); }
 	| C_CONTINUE ';'
             { $$ = NewCommentedAST(AST_CONTINUE, NULL, NULL, $1); }
 	| C_BREAK ';'
