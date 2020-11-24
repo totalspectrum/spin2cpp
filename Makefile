@@ -43,11 +43,12 @@ endif
 INC=-I. -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
 
-# byacc will fail some of the error tests, but mostly works
+# byacc will probably not work any more :(
 #YACC = byacc -s
 #
 # note: to produce detailed debug, use YACC="bison --report=all"
 YACC = bison
+#YACC = bison372
 CFLAGS = -g -Wall $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
@@ -82,13 +83,13 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
-	$(YACC) -p spinyy -t -b $(BUILD)/spin -d frontends/spin/spin.y
+	$(YACC) -t -b $(BUILD)/spin -d frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
-	$(YACC) -p basicyy -t -b $(BUILD)/basic -d frontends/basic/basic.y
+	$(YACC) -t -b $(BUILD)/basic -d frontends/basic/basic.y
 
 $(BUILD)/cgram.tab.c $(BUILD)/cgram.tab.h: frontends/c/cgram.y
-	$(YACC) -p cgramyy -t -b $(BUILD)/cgram -d frontends/c/cgram.y
+	$(YACC) -t -b $(BUILD)/cgram -d frontends/c/cgram.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 $(BUILD)/outasm.o: outasm.c $(PASM_SUPPORT_CODE)

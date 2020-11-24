@@ -4,7 +4,10 @@
  * See the file COPYING for terms of use.
  */
 
-/* %define api.prefix {spinyy} */
+%define api.prefix {spinyy}
+%define api.pure true
+%define api.value.type {AST*}
+%define parse.error verbose
 
 %{
 #include <stdio.h>
@@ -12,8 +15,6 @@
 #include <ctype.h>
 #include "spinc.h"
 
-#define YYSTYPE AST*
-    
 /* Yacc functions */
     void spinyyerror(const char *);
     int spinyylex();
@@ -254,10 +255,6 @@ BuildDebugList(AST *exprlist)
 
 #define YYERROR_VERBOSE 1
 %}
-
-%pure-parser
- //%define parse.error verbose
- //%define parse.lac full
 
 %token SP_IDENTIFIER "identifier"
 %token SP_NUM        "number"

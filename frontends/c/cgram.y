@@ -4,7 +4,10 @@
  * See the file COPYING for terms of use.
  */
 
-/* %define api.prefix {basicyy} */
+%define api.prefix {cgramyy}
+%define api.pure true
+%define api.value.type {AST*}
+%define parse.error verbose
 
 %{
 #include <stdio.h>
@@ -30,7 +33,6 @@
     extern AST *CommentedListHolder(AST *); // in spin.y
 
 #define YYERROR_VERBOSE 1
-#define YYSTYPE AST*
 
 extern int allow_type_names;
     
@@ -760,8 +762,6 @@ ConstructDefaultValue(AST *decl, AST *val)
 }
 
 %}
-
-%pure-parser
 
 %token C_IDENTIFIER "identifier"
 %token C_CONSTANT   "constant"
