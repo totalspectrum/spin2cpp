@@ -33,7 +33,6 @@
 #include "spinc.h"
 #include "preprocess.h"
 #include "version.h"
-#include "spin.tab.h"
 #include "mcpp/mcpp_lib.h"
 
 //#define DEBUG_YACC
