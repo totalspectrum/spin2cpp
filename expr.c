@@ -2982,7 +2982,7 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
     int n;
 
     /* chase down any expression statements */
-    while ((expr->kind == AST_STMTLIST)) {
+    while (expr->kind == AST_STMTLIST) {
         if (expr->right) {
             exprptr = &expr->right;
         } else {
