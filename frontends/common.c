@@ -1159,7 +1159,9 @@ ReplaceIdentifiers(AST **parent, const char *oldName, AST *newIdent)
         }
     } else {
         ReplaceIdentifiers(&item->left, oldName, newIdent);
-        ReplaceIdentifiers(&item->right, oldName, newIdent);
+        if (item->kind != AST_METHODREF) {
+            ReplaceIdentifiers(&item->right, oldName, newIdent);
+        }
     }
 }
 
