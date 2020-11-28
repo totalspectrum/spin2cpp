@@ -5,6 +5,7 @@ Version 5.0.1
 - Convert "ret" in inline assembly to a jump to the end of it
 - Fixed a C parser crash
 - Fixed a problem with padding C structs
+- Fixed a bug parsing strings in C __pasm
 - Provided separate namespace for labels in C
 - Removed support for Rev A silicon (it was not working anyway)
 

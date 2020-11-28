@@ -583,6 +583,9 @@ outputDataList(Flexbuf *f, int size, AST *ast, Flexbuf *relocs)
     origval = 0;
     while (ast) {
         sub = ast->left;
+        if (sub->kind == AST_EXPRLIST && sub->right == 0) {
+            sub = sub->left;
+        }
         if (sub->kind == AST_BYTELIST) {
             size = 1;
             sub = ExpectOneListElem(sub->left);
