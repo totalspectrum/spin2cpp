@@ -1396,6 +1396,16 @@ lhs: identifier
     {
         $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
+| identifier '.' identifier '[' expr ']'
+    {
+        AST *objroot = $1;
+        AST *method = $3;
+        AST *index = $5;
+        AST *expr;
+        expr = NewAST(AST_METHODREF, objroot, method);
+        expr = NewAST(AST_ARRAYREF, expr, index);
+        $$ = expr;
+    }
   | identifier '[' expr ']' '.' '[' range ']'
     {
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
