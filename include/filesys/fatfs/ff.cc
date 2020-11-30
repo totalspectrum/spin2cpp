@@ -6956,7 +6956,7 @@ static int v_opendir(DIR *dir, const char *name)
 #endif    
       return _seterror(ENOMEM);
     }
-    r = f_opendir(f, name, 0);
+    r = f_opendir(f, name);
 #ifdef _DEBUG
     __builtin_printf("f_opendir returned %d\n", r);
 #endif    

@@ -1,3 +1,6 @@
+Version 5.0.2
+- Fixed a compiler warning in ff.cc
+
 Version 5.0.1
 - Added getms() and getus() for BASIC
 - Allow ptra++ in BASIC assembly
