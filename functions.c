@@ -901,6 +901,9 @@ doDeclareFunction(AST *funcblock)
             }
         }
     }
+    if (FindAnnotation(annotation, "noinline") != 0) {
+        fdef->no_inline = 1;
+    }
     fdef->name = funcname_internal;
     fdef->user_name = funcname_user;
     fdef->annotations = annotation;

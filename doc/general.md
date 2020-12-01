@@ -136,7 +136,7 @@ The if statement and call to `foo` are removed since the condition is always fal
 
 ### Small Method inlining (-O1, -Oinline-small)
 
-Very small methods are expanded inline.
+Very small methods are expanded inline. This may be prevented by declaring the method with the "noinline" attribute.
 
 ### Register optimization (-O1, -Oregs)
 
