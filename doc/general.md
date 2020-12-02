@@ -266,54 +266,6 @@ Do not try to declare registers; the inline assembly probably will not be runnin
 
 Try to keep inline assembly as simple as possible. Use the high level language for loops and conditional control structures; the high level language is there for a reason!
 
-## Command Line Options
-
-There are various command line options for the compiler which may modify the compilation:
-```
-  [ --version ]      print just the compiler version, then exit
-  [ -h ]             display this help
-  [ -L or -I <path> ] add a directory to the include path
-  [ -o ]             output filename
-  [ -b ]             output binary file format
-  [ -e ]             output eeprom file format
-  [ -c ]             output only DAT sections
-  [ -l ]             output a .lst listing file
-  [ -f ]             output list of file names
-  [ -g ]             enable debug statements
-  [ -q ]             quiet mode (suppress banner and non-error text)
-  [ -p ]             disable the preprocessor
-  [ -O[#] ]          set optimization level
-                       -O0 disable all optimization
-                       -O1 apply default optimization (same as no -O flag)
-		       -O2 apply all optimization (same as -O)
-  [ -Wall ]          enable all warnings, including warnings about language extensions
-  [ -Werror ]        turn warnings into errors
-  [ -D <define> ]    add a define
-  [ -2 ]             compile for Prop2
-  [ -w ]             produce Spin wrappers for PASM code
-  [ -H nnnn ]        change the base HUB address (see below)
-  [ -E ]             omit any coginit header
-  [ --code=cog  ]    compile to run in COG memory instead of HUB
-  [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
-  [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
-```
-The `-2` option is new: it is for compiling for the Propeller 2.
-
-`flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
-
-### Changing Hub address
-
-In P2 mode, you may want to change the base hub address for the binary. Normally P2 binaries start at the standard offset of `0x400`. But if you want, for example, to load a flexspin compiled program from TAQOZ or some similar program, you may want to start at a different address (TAQOZ uses the first 64K of RAM). To do this, you may use some combination of the `-H` and `-E` flags.
-
-`-H nnnn` changes the base HUB address from `0x400` to `nnnn`, where `nnnn` is either a decimal number like `65536` or a hex number prefixed with `0x`. By default the binary still expects to be loaded at address 0, so it starts with a `coginit #0, ##nnnn` instruction and then zero padding until the hub start. To skip the `coginit` and padding, add the `-E` flag.
-
-#### Example
-
-To compile a program to start at address 65536 (at the 64K boundary), do:
-```
-flexspin -2 -H 0x10000 -E fibo.bas
-```
-
 ## Memory Management
 
 There are some built in functions for doing memory allocation. These are intended for C or BASIC, but may be used by Spin programs as well.
@@ -361,4 +313,66 @@ The C version is a little unexpected; one would expect HEAPSIZE to be declared a
 ### Stack allocation
 
 Temporary memory may be allocated on the stack by means of the call `__builtin_alloca(siz)`, which allocates `siz` bytes of memory on the stack. This is like the C `alloca` function. Note that the pointer returned by `__builtin_alloca` will become invalid as soon as the current function returns, so it should not be placed in any global variable (and definitely should not be returned from the function!)
+
+## Terminal Control
+
+The FlexProp system uses the default system terminal, configured when possible to accept VT100 (ANSI) escape sequences.
+
+### Changing baud rate
+
+All languages have a `_setbaud(N)` function to set the baud rate to `N`.
+
+### Changing echo and CR/LF interpretation
+
+Normally input (e.g. from a C `getchar()`) is echoed back to the screen, and carriage return (ASCII 13) is converted to line feed (ASCII 10). Both of these behaviors may be changed via the `_setrxtxflags(mode)` function. The bits in `mode` control terminal behavior: if `mode & 1` is true, then characters are echoed, and if `mode & 2` is true then carriage return (CR) is converted to line feed (LF) on input, and line feed is converted to CR + LF on output.
+
+The current state of the flags may be retrieved via `_getrxtxflags()`.
+
+## Command Line Options
+
+There are various command line options for the compiler which may modify the compilation:
+```
+  [ --version ]      print just the compiler version, then exit
+  [ -h ]             display this help
+  [ -L or -I <path> ] add a directory to the include path
+  [ -o ]             output filename
+  [ -b ]             output binary file format
+  [ -e ]             output eeprom file format
+  [ -c ]             output only DAT sections
+  [ -l ]             output a .lst listing file
+  [ -f ]             output list of file names
+  [ -g ]             enable debug statements
+  [ -q ]             quiet mode (suppress banner and non-error text)
+  [ -p ]             disable the preprocessor
+  [ -O[#] ]          set optimization level
+                       -O0 disable all optimization
+                       -O1 apply default optimization (same as no -O flag)
+		       -O2 apply all optimization (same as -O)
+  [ -Wall ]          enable all warnings, including warnings about language extensions
+  [ -Werror ]        turn warnings into errors
+  [ -D <define> ]    add a define
+  [ -2 ]             compile for Prop2
+  [ -w ]             produce Spin wrappers for PASM code
+  [ -H nnnn ]        change the base HUB address (see below)
+  [ -E ]             omit any coginit header
+  [ --code=cog  ]    compile to run in COG memory instead of HUB
+  [ --fcache=N  ]    set size of FCACHE space in longs (0 to disable)
+  [ --fixed ]        use 16.16 fixed point instead of IEEE floating point
+```
+The `-2` option is new: it is for compiling for the Propeller 2.
+
+`flexspin.exe` checks the name it was invoked by. If the name starts with the string "bstc" (case matters) then its output messages mimic that of the bstc compiler; otherwise it tries to match openspin's messages. This is for compatibility with Propeller IDE. For example, you can use flexspin with the PropellerIDE by renaming `bstc.exe` to `bstc.orig.exe` and then copying `flexspin.exe` to `bstc.exe`.
+
+### Changing Hub address
+
+In P2 mode, you may want to change the base hub address for the binary. Normally P2 binaries start at the standard offset of `0x400`. But if you want, for example, to load a flexspin compiled program from TAQOZ or some similar program, you may want to start at a different address (TAQOZ uses the first 64K of RAM). To do this, you may use some combination of the `-H` and `-E` flags.
+
+`-H nnnn` changes the base HUB address from `0x400` to `nnnn`, where `nnnn` is either a decimal number like `65536` or a hex number prefixed with `0x`. By default the binary still expects to be loaded at address 0, so it starts with a `coginit #0, ##nnnn` instruction and then zero padding until the hub start. To skip the `coginit` and padding, add the `-E` flag.
+
+#### Example
+
+To compile a program to start at address 65536 (at the 64K boundary), do:
+```
+flexspin -2 -H 0x10000 -E fibo.bas
+```
 
