@@ -2982,7 +2982,7 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
     int n;
 
     /* chase down any expression statements */
-    while (expr->kind == AST_STMTLIST) {
+    while (expr->kind == AST_STMTLIST || expr->kind == AST_SEQUENCE) {
         if (expr->right) {
             exprptr = &expr->right;
         } else {
@@ -2990,9 +2990,9 @@ BuildExprlistFromObject(AST *origexpr, AST *typ)
         }
         expr = *exprptr;
     }
-    if (!expr || expr->kind == AST_EXPRLIST) {
+    if (!expr || expr->kind == AST_EXPRLIST || expr->kind == AST_FUNCCALL) {
         /* already an expression list */
-        return expr;
+        return origexpr;
     }
     exprlist = NULL;
     if (!IsClassType(typ)) {
