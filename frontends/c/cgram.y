@@ -2100,6 +2100,8 @@ jump_statement
             { $$ = NewCommentedAST(AST_RETURN, NULL, NULL, $1); }
 	| C_RETURN expression ';'
             { $$ = NewCommentedAST(AST_RETURN, $2, NULL, $1); }
+	| C_THROW expression ';'
+            { $$ = NewCommentedAST(AST_THROW, $2, NULL, $1); }
 	;
 
 translation_unit

@@ -4,13 +4,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #ifdef __FLEXC__
 #define SMALL_INT
 #define strlen __builtin_strlen
 #define strcpy __builtin_strcpy
+#define THROW_RETURN(x) __throw(x)
 #include <compiler.h>
 #else
+#define THROW_RETURN(x) return -1
 #include <string.h>
 #endif
 
@@ -772,12 +775,14 @@ int _basic_open(unsigned h, TxFunc sendf, RxFunc recvf, CloseFunc closef)
     vfs_file_t *v;
 
     v = __getftab(h);
-    if (!v) return -1;
+    if (!v) {
+        THROW_RETURN(EIO);
+    }
 
     if (sendf) {
         wrapper = _gc_alloc_managed(sizeof(_bas_wrap_sender));
         if (!wrapper) {
-            return -1; /* out of memory */
+            THROW_RETURN(ENOMEM); /* out of memory */
         }
         wrapper->f = sendf;
         v->putcf = (putcfunc_t)&wrapper->tx;
@@ -795,9 +800,14 @@ int _basic_open_string(unsigned h, char *fname, unsigned iomode)
     int r;
     
     v = __getftab(h);
-    if (!v) return -1;
+    if (!v) {
+        THROW_RETURN(EIO);
+    }
 
     r = _openraw(v, fname, iomode, 0666);
+    if (r < 0) {
+        THROW_RETURN(_geterror());
+    }
     return r;
 }
 

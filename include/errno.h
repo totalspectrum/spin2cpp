@@ -170,9 +170,9 @@ extern "C" {
 /**  Permission denied */
 #define EPERM        EACCES
 
-    int _seterror(int errnum) _IMPL("libc/stdlib/errno.c");
-    int _geterror() _IMPL("libc/stdlib/errno.c");
-    int *_geterrnoptr() _IMPL("libc/stdlib/errno.c");
+    int _seterror(int errnum);
+    int _geterror();
+    int *_geterrnoptr();
 
 #define errno (*(_geterrnoptr()))
 

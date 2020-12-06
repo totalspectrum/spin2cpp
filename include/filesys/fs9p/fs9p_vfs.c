@@ -34,7 +34,7 @@ static unsigned int zdoGet4()
 // startbuf is that start of the buffer (used for both send and
 // receive); endbuf is the end of data to send; maxlen is maximum
 // size
-static int basic_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
+static int plain_sendrecv(uint8_t *startbuf, uint8_t *endbuf, int maxlen)
 {
     int len = endbuf - startbuf;
     uint8_t *buf = startbuf;
@@ -83,7 +83,7 @@ _vfs_open_host(void)
 #ifdef _DEBUG
     __builtin_printf("vfs_open_host called\n");
 #endif    
-    r = FS.fs_init(&basic_sendrecv);
+    r = FS.fs_init(&plain_sendrecv);
     if (r != 0) {
 #ifdef _DEBUG
        __builtin_printf("fs_init failed: result=[%d]\n", r);

@@ -364,5 +364,8 @@ pri file "libsys/stringlibp2.bas" ucase`$(x): r=string
 pri file "libsys/stringlibp2.bas" _instr(off, x, y): r=long
 pri file "libsys/stringlibp2.bas" _instrrev(off, x, y): r=long
 
+pri file "libc/stdlib/errno.c" _seterror(r)
+pri file "libc/stdlib/errno.c" _geterror(): r=long
+pri file "libc/stdlib/errno.c" _geterrnoptr(): r=@long
 
 pri file "libsys/c_startup.c" _c_startup()

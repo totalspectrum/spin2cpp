@@ -743,15 +743,18 @@ static int v_open(vfs_file_t *fil, const char *name, int flags)
   __builtin_printf("fs9: calling fs_open\n");
 #endif  
   r = fs_open(f, name, fs_flags);
+  if (r) {
+    free(f);
+#ifdef _DEBUG
+   __builtin_printf("fs_open(%s) returned error %d\n", name, r);
+#endif
+    return _seterror(-r);
+  }
 #ifdef _DEBUG
   __builtin_printf("fs_open(%s) returned %d, offset=%d\n", name, r, f->offlo);
   __builtin_printf("offset at %d, size at %d\n", offsetof(fs9_file, offlo), sizeof(fs9_file));
   __builtin_printf("default buffer size=%d\n", sizeof(struct _default_buffer));
 #endif  
-  if (r) {
-    free(f);
-    return _seterror(-r);
-  }
   fil->vfsdata = f;
   return 0;
 }

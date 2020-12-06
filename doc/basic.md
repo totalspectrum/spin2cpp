@@ -2148,6 +2148,10 @@ This opens the given file for input, output, or append. A file opened for output
 
 This second form of `open` is really only useful after a `mount` call is used to establish a file system.
 
+#### Error Handling
+
+The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file.
+
 ### OPTION
 
 Gives a compiler option. The following options are supported:
