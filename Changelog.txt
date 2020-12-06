@@ -1,5 +1,6 @@
 Version 5.0.2
 - Added "noinline" attribute
+- Added a warning for some non-terminating loops
 - Fixed a compiler warning in ff.cc
 - Fixed a bug with returning structures in C
 

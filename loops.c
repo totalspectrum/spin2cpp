@@ -1185,6 +1185,45 @@ DumpLVS(LoopValueSet *lvs)
 }
 
 /*
+ * check for trivial loop tests
+ */
+static int
+LoopTestAlwaysTrue(AST *expr)
+{
+    AST *typ;
+    int32_t endval;
+    int32_t maxval;
+    int siz;
+    
+    if (expr->kind != AST_OPERATOR) {
+        return 0;
+    }
+    if (!IsConstExpr(expr->right)) {
+        return 0;
+    }
+    typ = ExprType(expr->left);
+    if (!typ || (siz = TypeSize(typ)) >= 4) {
+        return 0;
+    }
+    if (!IsUnsignedType(typ) || !IsIntType(typ)) {
+        return 0;
+    }
+    if (expr->d.ival != '<' && expr->d.ival != K_LTU) {
+        return 0;
+    }
+    endval = EvalConstExpr(expr->right);
+    if ( expr->d.ival == K_LTU ) {
+        maxval = (1<<(8*siz)) - 1;
+    } else {
+        maxval = (1<<((8*siz)-1)) - 1;
+    }
+    if (endval > maxval) {
+        return 1;
+    }
+    return 0;
+}
+
+/*
  * transform AST for a counting repeat loop
  */
 AST *
@@ -1497,6 +1536,9 @@ TransformCountRepeat(AST *ast)
         }
     }
 
+    if (LoopTestAlwaysTrue(condtest)) {
+        WARNING(ast, "Loop will never terminate");
+    }
     stepstmt = NewAST(AST_STEP, stepstmt, body);
     condtest = NewAST(AST_TO, condtest, stepstmt);
     forast = NewAST((enum astkind)loopkind, initstmt, condtest);
