@@ -873,6 +873,12 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       return NULL;
     }
     if (InstrModifies(ir, orig)) {
+        if (ir->src == orig && ir->srceffect != OPEFFECT_NONE) {
+            return NULL;
+        }
+        if (ir->dst == orig && ir->dsteffect != OPEFFECT_NONE) {
+            return NULL;
+        }
         if (ir->cond != COND_TRUE) {
             assignments_are_safe = false;
         }
@@ -1363,6 +1369,9 @@ HasSideEffectsOtherThanReg(IR *ir)
     if ( (ir->dst && ir->dst->kind == REG_HW)
          || (ir->src && ir->src->kind == REG_HW) )
     {
+        return true;
+    }
+    if (ir->dsteffect != OPEFFECT_NONE || ir->srceffect != OPEFFECT_NONE) {
         return true;
     }
     if (InstrSetsAnyFlags(ir)) {
@@ -2326,7 +2335,7 @@ OptimizePeepholes(IRList *irl)
         while (ir_next && IsDummy(ir_next)) {
             ir_next = ir_next->next;
         }
-        if (InstrIsVolatile(ir)) {
+        if (InstrIsVolatile(ir) || ir->srceffect != OPEFFECT_NONE || ir->dsteffect != OPEFFECT_NONE) {
             goto done;
         }
         opc = ir->opc;
@@ -3128,6 +3137,9 @@ restart_check:
             next_ir = next_ir->next;
         }
         if (InstrIsVolatile(ir)) {
+            goto get_next;
+        }
+        if (ir->srceffect != OPEFFECT_NONE || ir->dsteffect != OPEFFECT_NONE) {
             goto get_next;
         }
         if (ir->opc == OPC_RDLONG || ir->opc == OPC_WRLONG) {
