@@ -659,7 +659,7 @@ COG memory is also laid out differently. flexspin leaves COG locations $0 to $1f
 
 ### DEBUG statements
 
-In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM.
+In flexspin, `DEBUG` statements are accepted only in Spin2 methods, *not* in PASM (they are ignored in PASM).
 
 Debug statements are output only when the `-g` flag is given to flexspin.
 
@@ -667,7 +667,10 @@ Only a subset of the Spin2 `DEBUG` directives are accepted:
 ```
 ZSTR, UDEC, UDEC_BYTE, UDEC_WORD, UDEC_LONG, SDEC, SDEC_BYTE, SDEC_WORD, SDEC_LONG, UHEX, UHEX_BYTE, UHEX_WORD, UHEX_LONG
 ```
-Other directives are ignored, with a warning.
-
+Other debug directives are ignored, with a warning.
 
 `DEBUG` in flexspin is implemented differently than in PNut, so timing when debug is enabled may be different.
+
+### ASMCLK instruction
+
+The `ASMCLK` pseudo-instruction is not supported in FlexProp at this time.

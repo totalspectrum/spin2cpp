@@ -1621,6 +1621,7 @@ struct reservedword init_spin2_words[] = {
     
     { "addbits", SP_ADDBITS },
     { "addpins", SP_ADDPINS },
+    { "asmclk", SP_ASMCLK },
     { "bmask", SP_BMASK },
     { "cogspin", SP_COGINIT },
     { "debug", SP_DEBUG },

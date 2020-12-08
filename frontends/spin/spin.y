@@ -279,6 +279,7 @@ BuildDebugList(AST *exprlist)
 %token SP_LONG       "LONG"
 %token SP_FVAR       "FVAR"
 %token SP_FVARS      "FVARS"
+%token SP_ASMCLK     "ASMCLK"
 
 %token SP_INSTR      "instruction"
 %token SP_INSTRMODIFIER "instruction modifier"
@@ -906,6 +907,10 @@ basedatline:
         // for now just ignore DEBUG in PASM
         $$ = NULL;
     }
+  | SP_ASMCLK
+  {
+      SYNTAX_ERROR("ASMCLK instruction is not supported");
+  }
   ;
 
 objblock:
