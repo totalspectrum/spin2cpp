@@ -298,8 +298,7 @@ main(int argc, const char **argv)
             if (argv[0][2] >= 'a' && argv[0][2] <= 'z') {
                 gl_p2 = argv[0][2] - 'a' + 1;
                 if (gl_p2 == 1) {
-                    fprintf(stderr, "-2a option no longer supported\n");
-                    exit(1);
+                    fprintf(stderr, "warning: -2a option not officially supported\n");
                 }
             }
             argv++; --argc;

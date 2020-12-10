@@ -5591,7 +5591,8 @@ const char *builtin_pushregs_p2 =
     "    add  ptra, COUNT_\n"
     "    shr  COUNT_, #2\n"
     "    setq #2 ' push 3 registers starting at COUNT_\n"
-    "    wrlong COUNT_, ptra++\n"
+    "    wrlong COUNT_, ptra\n"
+    "    add    ptra, #12\n"
     "    mov    fp, ptra\n"
     "    jmp  pa\n"
 
