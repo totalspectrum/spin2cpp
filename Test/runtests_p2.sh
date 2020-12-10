@@ -61,7 +61,6 @@ do
   else
     echo $j failed
     endmsg="TEST FAILURES"
-    exit 1
   fi  
 done
 
