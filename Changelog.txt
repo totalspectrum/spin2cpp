@@ -4,6 +4,7 @@ Version 5.0.2
 - Fixed a compiler warning in ff.cc
 - Fixed a bug with returning structures in C
 - Fixed an optimizer bug with trying to replace ptra++
+- Fixed an overly aggressive loop reduction optimization
 - Made BASIC open command throw an error
 
 Version 5.0.1

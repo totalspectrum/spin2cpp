@@ -708,7 +708,7 @@ doLoopStrengthReduction(LoopValueSet *initial, AST *body, AST *condition, AST *u
                 continue;
             }
             initEntry = FindName(initial, entry->basename);
-            if (!initEntry) {
+            if (!initEntry || (initEntry->flags & LVFLAG_CONDITIONAL) ) {
                 continue;
             }
             lastAssign = FindName(&lv, entry->basename);
