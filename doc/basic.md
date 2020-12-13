@@ -2443,7 +2443,7 @@ Operator for shifting left. For example:
 ```
   x shl 3
 ```
-is the same as `x << 3` and multiplies x by 8 (2 raised to the power 3).
+is the same as `x << 3` and returns x multiplied by 8 (2 raised to the power 3).
 
 ### SHORT
 
@@ -2451,11 +2451,11 @@ A signed 16 bit integer, occupying two bytes of computer memory. The unsigned ve
 
 ### SHR
 
-Operator for shifting right. For example:
+Operator for shifting bits right. For example:
 ```
   x shr 3
 ```
-is the same as `x >> 3` and shifts the bits of `x` right by 3. If `x` is unsigned the new bits are filled with 0, otherwise they are filled with the sign bit of `x`.
+is the same as `x >> 3` and returns the bits of `x` shifted right by 3. If `x` is unsigned the new bits are filled with 0, otherwise they are filled with the sign bit of `x`. Note that the original value of `x` is left unchanged.
 
 ### SIN
 
