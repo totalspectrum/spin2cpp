@@ -112,7 +112,7 @@ function number$(val as uinteger, n as uinteger, B as uinteger) as string
      ' we have to watch out for overflow in very large
      ' numbers; if tmp wraps around (so tmp < last tmp)
      ' then stop
-     while tmp < val and lasttmp < tmp
+     while tmp <= val and lasttmp < tmp
        lasttmp = tmp
        tmp = tmp * B
        n = n + 1
