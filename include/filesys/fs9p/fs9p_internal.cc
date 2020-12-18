@@ -339,7 +339,10 @@ int fs_read(fs9_file *f, uint8_t *buf, int count)
         ptr = doPut4(ptr, (uint32_t)f);
         ptr = doPut4(ptr, f->offlo);
         ptr = doPut4(ptr, f->offhi);
-        left = maxlen - (ptr + 4 - txbuf);
+        left = (maxlen - (ptr + 4 - txbuf)) - 1;
+#ifdef _DEBUG
+	__builtin_printf("  [ count=%d left=%d maxlen=%d ]\n", count, left, maxlen);
+#endif	
         if (count < left) {
             curcount = count;
         } else {
@@ -348,20 +351,32 @@ int fs_read(fs9_file *f, uint8_t *buf, int count)
         ptr = doPut4(ptr, curcount);
         r = (*sendRecv)(txbuf, ptr, maxlen);
         if (r < 0) {
+#ifdef _DEBUG
+	  __builtin_printf(" fs_read: sendrecv returned %d\n", r);
+#endif	  
 	    return -EIO;
 	}
         ptr = txbuf + 4;
         if (*ptr++ != r_read) {
+#ifdef _DEBUG
+	  __builtin_printf(" fs_read: bad response\n");
+#endif	  
             return -EIO;
         }
         ptr += 2; // skip tag
         r = FETCH4(ptr); ptr += 4;
         if (r < 0 || r > curcount) {
+#ifdef _DEBUG
+	  __builtin_printf(" fs_read: got %d\n", r);
+#endif	  
             return -EIO;
         }
         if (r == 0) {
-            // EOF reached
-            break;
+	  // EOF reached
+#ifdef _DEBUG
+	  __builtin_printf(" fs_read: EOF\n");
+#endif	  
+	  break;
         }
         memcpy(buf, ptr, r);
         buf += r;
@@ -373,6 +388,9 @@ int fs_read(fs9_file *f, uint8_t *buf, int count)
             f->offhi++;
         }
     }
+#ifdef _DEBUG
+    __builtin_printf(" fs_read: returning %d\n", totalread);
+#endif	  
     return totalread;
 }
 
@@ -394,7 +412,7 @@ int fs_write(fs9_file *f, const uint8_t *buf, int count)
         ptr = doPut4(ptr, (uint32_t)f);
         ptr = doPut4(ptr, f->offlo);
         ptr = doPut4(ptr, f->offhi);
-        left = maxlen - (ptr + 4 - txbuf);
+        left = (maxlen - (ptr + 4 - txbuf)) - 1;
         if (count < left) {
             curcount = count;
         } else {
