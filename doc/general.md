@@ -34,6 +34,10 @@ Fcache is a special feature of the compiler whereby small loops are copied from 
 
 Some inline assembly blocks may also be marked to be copied to fcache before execution; see the section on inline assembly for a description of this.
 
+### What loops will be placed in fcache
+
+Loops will be placed in fcache only if (a) they will fit, and (b) they contain no branches to outside the loop (including subroutine calls). The size of the fcache may be set by the `--fcache` flag, but is generally 1024 bytes on P2 and 128 bytes on P1.
+
 ## Functions in COG or LUT memory
 
 Normally functions are placed in HUB memory, because there is a lot more of that. However, it is possible to force some functions to be placed in the chip's internal memory, where they will execute much more quickly. This must be done with care, because internal memory is a very limited resource.
