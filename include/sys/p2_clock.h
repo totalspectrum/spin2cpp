@@ -35,37 +35,37 @@
 #endif
 
 #ifdef P2_TARGET_MHZ
-#if defined(_XDIV_20MHZ) && (0 == P2_TARGET_MHZ % 20)
+#if defined(_XDIV_20MHZ) && (0 == (P2_TARGET_MHZ % 20))
 
 #define _XDIV_BASE _XDIV_20MHZ
 #define _XMUL (P2_TARGET_MHZ/20)
 
-#elif defined(_XDIV_16MHZ) && (0 == P2_TARGET_MHZ % 16)
+#elif defined(_XDIV_16MHZ) && (0 == (P2_TARGET_MHZ % 16))
 
 #define _XDIV_BASE _XDIV_16MHZ
 #define _XMUL (P2_TARGET_MHZ/16)
 
-#elif defined(_XDIV_12MHZ) && (0 == P2_TARGET_MHZ % 12)
+#elif defined(_XDIV_12MHZ) && (0 == (P2_TARGET_MHZ % 12))
 
 #define _XDIV_BASE _XDIV_12MHZ
 #define _XMUL (P2_TARGET_MHZ/12)
 
-#elif defined(_XDIV_10MHZ) && (0 == P2_TARGET_MHZ % 10)
+#elif defined(_XDIV_10MHZ) && (0 == (P2_TARGET_MHZ % 10))
 
 #define _XDIV_BASE _XDIV_10MHZ
 #define _XMUL (P2_TARGET_MHZ/10)
 
-#elif defined(_XDIV_8MHZ) && (0 == P2_TARGET_MHZ % 8)
+#elif defined(_XDIV_8MHZ) && (0 == (P2_TARGET_MHZ % 8))
 
 #define _XDIV_BASE _XDIV_8MHZ
 #define _XMUL (P2_TARGET_MHZ/8)
 
-#elif defined(_XDIV_4MHZ) && (0 == P2_TARGET_MHZ % 4)
+#elif defined(_XDIV_4MHZ) && (0 == (P2_TARGET_MHZ % 4))
 
 #define _XDIV_BASE _XDIV_4MHZ
 #define _XMUL (P2_TARGET_MHZ/4)
 
-#elif defined(_XDIV_3MHZ) && (0 == P2_TARGET_MHZ % 3)
+#elif defined(_XDIV_3MHZ) && (0 == (P2_TARGET_MHZ % 3))
 
 #define _XDIV_BASE _XDIV_3MHZ
 #define _XMUL (P2_TARGET_MHZ/3)
@@ -77,7 +77,8 @@
 
 #endif
 
-#if (_XDIV_BASE > 1) && (0 == _XDIV_BASE % 2)
+#if 0 && (_XDIV_BASE > 1) && (0 == _XDIV_BASE % 2)
+// this code seems broken...
 #define _XDIVP 2
 #define _XDIV (_XDIV_BASE/2)
 #else
