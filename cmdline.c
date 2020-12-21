@@ -353,7 +353,7 @@ int ParseOptimizeString(AST *line, const char *str, int *flag_ptr)
     while (str && *str) {
         buf = buf_base;
         str = GetOptionString(buf, sizeof(buf_base), str);
-        if (*buf == '!') {
+        if (*buf == '!' || *buf == '~') {
             buf++;
             notflag = 1;
         } else {
