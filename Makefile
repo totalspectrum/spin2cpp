@@ -75,8 +75,7 @@ DEFS=-DFLEXSPIN_BUILD
 
 ifeq ($(YACCVER),bison3)
 
-YACC = bison -Wno-deprecated -Wyacc
-YACCPARMS=-D api.pure=true -D parse.error=verbose
+RUNYACC = $(YACC) -Wno-deprecated -D parse.error=verbose
 YY_SPINPREFIX= -D api.prefix={spinyy}
 YY_BASICPREFIX= -D api.prefix={basicyy}
 YY_CPREFIX= -D api.prefix={cgramyy}
@@ -85,16 +84,19 @@ else
 YY_SPINPREFIX= -p spinyy
 YY_BASICPREFIX= -p basicyy
 YY_CPREFIX= -p cgramyy
-YACCPARMS= -D api.pure=true
 
 ifeq ($(YACCVER),byacc)
-YACC = byacc -s
+RUNYACC = byacc -s
 else
 YACC ?= bison
-
+RUNYACC = $(YACC)
 endif
 
 endif
+
+# crufty debug code
+#check:
+#	echo YACC="$(RUNYACC)" YACCVER="$(YACCVER)" YACC_CHECK="$(YACC_CHECK)"
 
 CFLAGS = -g -Wall $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
@@ -143,13 +145,13 @@ $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
-	$(YACC) $(YY_SPINPREFIX) -t -b $(BUILD)/spin -d frontends/spin/spin.y
+	$(RUNYACC) $(YY_SPINPREFIX) -t -b $(BUILD)/spin -d frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
-	$(YACC) $(YY_BASICPREFIX) -t -b $(BUILD)/basic -d frontends/basic/basic.y
+	$(RUNYACC) $(YY_BASICPREFIX) -t -b $(BUILD)/basic -d frontends/basic/basic.y
 
 $(BUILD)/cgram.tab.c $(BUILD)/cgram.tab.h: frontends/c/cgram.y
-	$(YACC) $(YY_CPREFIX) -t -b $(BUILD)/cgram -d frontends/c/cgram.y
+	$(RUNYACC) $(YY_CPREFIX) -t -b $(BUILD)/cgram -d frontends/c/cgram.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 $(BUILD)/outasm.o: outasm.c $(PASM_SUPPORT_CODE)
