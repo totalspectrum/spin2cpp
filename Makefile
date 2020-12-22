@@ -25,7 +25,20 @@ default: all
 #
 #YACCVER=byacc
 #YACCVER=bison2
-YACCVER ?= bison3
+#YACCVER=bison3
+
+ifndef YACCVER
+YACC_CHECK := $(shell $(YACC) --version | fgrep 3.)
+ifeq ($(YACC_CHECK),)
+    ifeq ($(YACC),byacc)
+	YACCVER=byacc
+    else
+	YACCVER=bison2
+    endif
+else
+    YACCVER=bison3
+endif
+endif
 
 # the script used to turn foo.exe into foo.signed.exe
 SIGN ?= ./sign.dummy.sh

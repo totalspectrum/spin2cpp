@@ -4,6 +4,7 @@
 //
 // Copyright (c) 2011-2020 Total Spectrum Software Inc.
 //
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
