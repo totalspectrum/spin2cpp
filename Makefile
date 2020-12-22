@@ -20,12 +20,16 @@
 default: all
 
 #
-# select one of the following options to describe the version of yacc/bison
-# you are using
+# We try to figure out the version of yacc/bison
+# you are using, but you can define this explicitly
+# if you want too.
 #
 #YACCVER=byacc
 #YACCVER=bison2
 #YACCVER=bison3
+
+# use bison unless user forces something different
+YACC = bison
 
 ifndef YACCVER
 YACC_CHECK := $(shell $(YACC) --version | fgrep 3.)
