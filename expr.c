@@ -2449,6 +2449,10 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
                 if (typexpr && typexpr->kind == AST_FUNCTYPE) {
                     return typexpr->left;
                 }
+                if ( (IsArrayType(typexpr) || IsPointerType(typexpr)) && curfunc && IsBasicLang(curfunc->language)) {
+                    // in BASIC we may not have converted x(i) into an array reference yet
+                    return BaseType(typexpr);
+                }
                 ERROR(expr, "Object called is not a function");
                 break;
             default:

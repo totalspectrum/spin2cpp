@@ -4,6 +4,7 @@ Version 5.0.3
 - Fixed off-by-one error in fs9p code
 - Fixed an off-by-one error in BASIC numeric formatting
 - Fixed a bad calculation in p2_clock.h
+- Fixed a problem with assignment operators like += in BASIC
 
 Version 5.0.2
 - Added "noinline" attribute
