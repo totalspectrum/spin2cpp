@@ -1706,6 +1706,7 @@ struct reservedword basic_keywords[] = {
   { "output", BAS_OUTPUT },
   { "pointer", BAS_POINTER },
   { "print", BAS_PRINT },
+  { "private", BAS_PRIVATE },
   { "program", BAS_PROGRAM },
   { "ptr", BAS_PTR },
   { "put", BAS_PUT },

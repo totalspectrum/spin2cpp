@@ -4,10 +4,7 @@
  * See the file COPYING for terms of use.
  */
 
-%define api.prefix {cgramyy}
-%define api.pure true
-%define api.value.type {AST*}
-%define parse.error verbose
+%pure-parser
 
 %{
 #include <stdio.h>
@@ -17,6 +14,9 @@
 #include "frontends/common.h"
 #include "frontends/lexer.h"
 
+#define CGRAMYYSTYPE AST*
+#undef  YYSTYPE
+#define YYSTYPE CGRAMYYSTYPE
 #define IN_DAT 1
     
 /* special flag */

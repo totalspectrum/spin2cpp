@@ -205,6 +205,7 @@ orelse
 output
 pointer
 print
+private
 program
 ptr
 put
@@ -2336,6 +2337,10 @@ Within the string literal output fields are specified by special forms, which ar
 ' print x with 4 digits (including leading 0's)
 print using "%%%%"; x
 ```
+
+### PRIVATE
+
+This keyword is reserved for future use.
 
 ### PROGRAM
 

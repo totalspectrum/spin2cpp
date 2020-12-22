@@ -1,4 +1,6 @@
 Version 5.0.3
+- Added new reserved word `private` in BASIC (not used yet)
+- Changed Makefile to accept YACCVER=bison2 or YACCVER=bison3
 - Fixed off-by-one error in fs9p code
 - Fixed an off-by-one error in BASIC numeric formatting
 - Fixed a bad calculation in p2_clock.h

@@ -10,9 +10,22 @@
 # "i586-mingw32msvc-gcc" for mingw, whereas Debian uses
 # "i686-w64-mingw32-gcc"
 #
+# to use a different version of YACC from the default (bison3) define
+# YACCVER to bison2 or byacc
+#
 # to build a release .zip, do "make zip"
 # to build a signed release, do "make zip SIGN=sign.digikey.sh"
 #
+
+default: all
+
+#
+# select one of the following options to describe the version of yacc/bison
+# you are using
+#
+#YACCVER=byacc
+#YACCVER=bison2
+YACCVER ?= bison3
 
 # the script used to turn foo.exe into foo.signed.exe
 SIGN ?= ./sign.dummy.sh
@@ -43,12 +56,33 @@ endif
 INC=-I. -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
 
-# byacc will probably not work any more :(
-#YACC = byacc -s
 #
-# note: to produce detailed debug, use YACC="bison --report=all"
-YACC = bison
-#YACC = bison372
+# note: to produce detailed debug, use YACC="bison --report=all" with bison 3.7.2 or later
+#
+
+ifeq ($(YACCVER),bison3)
+
+YACC = bison -Wno-deprecated -Wyacc
+YACCPARMS=-D api.pure=true -D parse.error=verbose
+YY_SPINPREFIX= -D api.prefix={spinyy}
+YY_BASICPREFIX= -D api.prefix={basicyy}
+YY_CPREFIX= -D api.prefix={cgramyy}
+
+else
+YY_SPINPREFIX= -p spinyy
+YY_BASICPREFIX= -p basicyy
+YY_CPREFIX= -p cgramyy
+YACCPARMS= -D api.pure=true
+
+ifeq ($(YACCVER),byacc)
+YACC = byacc -s
+else
+YACC ?= bison
+
+endif
+
+endif
+
 CFLAGS = -g -Wall $(INC) $(DEFS)
 #CFLAGS = -no-pie -pg -Wall $(INC) $(DEFS)
 #CFLAGS = -g -Og -Wall -Wc++-compat -Werror $(INC) $(DEFS)
@@ -77,19 +111,32 @@ OBJS = $(SPINOBJS) $(BUILD)/spin.tab.o $(BUILD)/basic.tab.o $(BUILD)/cgram.tab.o
 SPIN_CODE = sys/p1_code.spin.h sys/p2_code.spin.h sys/common.spin.h sys/float.spin.h sys/gcalloc.spin.h
 PASM_SUPPORT_CODE = sys/lmm_orig.spin.h sys/lmm_slow.spin.h sys/lmm_trace.spin.h sys/lmm_cache.spin.h sys/lmm_compress.spin.h
 
+help:
+	@echo "make all: builds the defaults"
+	@echo "make zip: builds a .zip file for distribution"
+	@echo
+	@echo "there are some modifiers, e.g."
+	@echo "   make all YACCVER=<yacc> CROSS=<platform> SIGN=<signing script>"
+	@echo "<yacc> is one of: "
+	@echo "  bison2, bison3, byacc"
+	@echo "<platform> is one of: "
+	@echo "  win32, rpi, linux32, macosx"
+	@echo "<signing script> is a script for signing executables"
+
+
 all: $(BUILD) $(PROGS)
 
 $(BUILD)/testlex$(EXT): testlex.c $(LEXOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/spin.tab.c $(BUILD)/spin.tab.h: frontends/spin/spin.y
-	$(YACC) -t -b $(BUILD)/spin -d frontends/spin/spin.y
+	$(YACC) $(YY_SPINPREFIX) -t -b $(BUILD)/spin -d frontends/spin/spin.y
 
 $(BUILD)/basic.tab.c $(BUILD)/basic.tab.h: frontends/basic/basic.y
-	$(YACC) -t -b $(BUILD)/basic -d frontends/basic/basic.y
+	$(YACC) $(YY_BASICPREFIX) -t -b $(BUILD)/basic -d frontends/basic/basic.y
 
 $(BUILD)/cgram.tab.c $(BUILD)/cgram.tab.h: frontends/c/cgram.y
-	$(YACC) -t -b $(BUILD)/cgram -d frontends/c/cgram.y
+	$(YACC) $(YY_CPREFIX) -t -b $(BUILD)/cgram -d frontends/c/cgram.y
 
 $(BUILD)/spinc.o: spinc.c $(SPIN_CODE)
 $(BUILD)/outasm.o: outasm.c $(PASM_SUPPORT_CODE)

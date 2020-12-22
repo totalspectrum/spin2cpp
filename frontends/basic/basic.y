@@ -4,10 +4,7 @@
  * See the file COPYING for terms of use.
  */
 
-%define api.prefix {basicyy}
-%define api.pure true
-%define api.value.type {AST*}
-%define parse.error verbose
+%pure-parser
 
 %{
 #include <stdio.h>
@@ -16,6 +13,10 @@
 #include <stdlib.h>
 #include "frontends/common.h"
 #include "frontends/lexer.h"
+
+#define BASICYYSTYPE AST*
+#undef  YYSTYPE
+#define YYSTYPE BASICYYSTYPE
     
 /* Yacc functions */
     void basicyyerror(const char *);
@@ -445,6 +446,7 @@ AdjustParamForByVal(AST *param)
 %token BAS_OUTPUT     "output"
 %token BAS_POINTER    "pointer"
 %token BAS_PRINT      "print"
+%token BAS_PRIVATE    "private"
 %token BAS_PROGRAM    "program"
 %token BAS_PTR        "ptr"
 %token BAS_PUT        "put"
