@@ -2592,7 +2592,7 @@ OptimizePeepholes(IRList *irl)
         if (ir->opc == OPC_TEST && ir->cond == COND_TRUE)
         {
             IR *previr = FindPrevSetterForReplace(ir, ir->dst);
-            if (previr && previr->opc == OPC_AND && !InstrSetsAnyFlags(previr) && previr->cond == COND_TRUE )
+            if (previr && previr->opc == OPC_AND && !InstrSetsAnyFlags(previr) && previr->cond == COND_TRUE && SameOperand(previr->src, ir->src))
             {
                 if (IsDeadAfter(ir, ir->dst)) {
                     DeleteIR(irl, previr);
