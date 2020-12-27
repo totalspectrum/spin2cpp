@@ -426,7 +426,7 @@ Operand *GetArgReg(int n)
 {
     static char rvalname[32];
     if (n < 0 || n >= MAX_ARG_REGISTER) {
-        ERROR(NULL, "Internal error exceeded arg register limit");
+        ERROR(NULL, "Internal error exceeded arg register limit; too many parameters to function");
         return NULL;
     }
     if (!argreg[n]) {
@@ -440,7 +440,7 @@ static Operand *GetGeneralLocalReg(int n)
 {
     static char rvalname[32];
     if (n < 0 || n >= MAX_LOCAL_REGISTER) {
-        ERROR(NULL, "Internal error exceeded local register limit");
+        ERROR(NULL, "Internal error exceeded local register limit, possibly due to -O2 optimization needing additional registers or code being too complicated");
         return NULL;
     }
     if (!localreg[n]) {
