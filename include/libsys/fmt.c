@@ -834,6 +834,7 @@ int _basic_print_string(unsigned h, const char *ptr, unsigned fmt)
 {
     TxFunc tf = _gettxfunc(h);
     if (!tf) return 0;
+    if (!ptr) return 0;
     return _fmtstr(tf, fmt, ptr);
 }
 

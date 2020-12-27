@@ -1,5 +1,6 @@
 Version 5.0.3
 - Fixed a serious peephole bug in TEST/AND merging
+- Fixed printing of NULL strings in BASIC
 
 Version 5.0.3
 - Added new reserved word `private` in BASIC (not used yet)
