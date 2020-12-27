@@ -1095,6 +1095,7 @@ forstmt:
       if (closeident && !AstMatch(ident, closeident)) {
           ERRORHEADER(current->Lptr->fileName, current->Lptr->lineCounter, "error");
           fprintf(stderr, "Wrong variable in next: expected %s, saw %s\n", ident->d.string, closeident->d.string);
+          gl_errors++;
       }
       loop = NewAST(AST_STMTLIST, loop, NULL);
       if (declare) {
