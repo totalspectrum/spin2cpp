@@ -2072,6 +2072,7 @@ struct constants p2_constants[] = {
     { "false", SYM_CONSTANT, 0 },
     { "posx", SYM_CONSTANT, 0x7fffffff },
     { "negx", SYM_CONSTANT, 0x80000000U },
+    
     { "rcfast", SYM_CONSTANT, 0x00000001 },
     { "rcslow", SYM_CONSTANT, 0x00000002 },
     { "xinput", SYM_CONSTANT, 0x00000004 },
@@ -2261,6 +2262,8 @@ struct constants p2_constants[] = {
     { "hubexec_new", SYM_CONSTANT, 0x30 },
     { "cogexec_new_pair", SYM_CONSTANT, 0x11 },
     { "hubexec_new_pair", SYM_CONSTANT, 0x31 },
+
+    { "newcog", SYM_CONSTANT, 0x10  },
 };
 
 #if defined(WIN32)

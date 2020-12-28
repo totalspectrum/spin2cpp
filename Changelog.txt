@@ -1,5 +1,6 @@
 Version 5.0.4
 - Added protection for multiple cogs calling memory allocation
+- Added NEWCOG constant for COGSPIN
 - Fixed a serious peephole bug in TEST/AND merging
 - Fixed printing of NULL strings in BASIC
 - Fixed error for wrong variable in BASIC NEXT
