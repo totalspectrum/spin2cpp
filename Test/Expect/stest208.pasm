@@ -67,12 +67,16 @@ LR__0009
 _casetest3_ret
 	ret
 
+__lockreg
+	long	0
 ptr_L__0010_
 	long	LR__0001
 ptr_L__0014_
 	long	LR__0004
 ptr_L__0018_
 	long	LR__0007
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

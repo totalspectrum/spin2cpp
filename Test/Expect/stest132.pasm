@@ -70,10 +70,14 @@ unsdivide__ret
 DIVCNT
 	long	0
 
+__lockreg
+	long	0
 itmp1_
 	long	0
 itmp2_
 	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 result1

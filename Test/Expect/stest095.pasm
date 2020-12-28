@@ -15,8 +15,12 @@ LR__0001
 _start_ret
 	ret
 
+__lockreg
+	long	0
 imm_1073741824_
 	long	1073741824
+ptr___lockreg_
+	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 	org	COG_BSS_START

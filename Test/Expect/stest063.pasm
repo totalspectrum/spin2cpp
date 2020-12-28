@@ -17,10 +17,14 @@ _blinky
 _blinky_ret
 	ret
 
+__lockreg
+	long	0
 imm_15728640_
 	long	15728640
 imm_65532_
 	long	65532
+ptr___lockreg_
+	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 result1

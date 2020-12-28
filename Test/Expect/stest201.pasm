@@ -21,8 +21,12 @@ LR__0003
 _check_ret
 	ret
 
+__lockreg
+	long	0
 imm_4294967295_
 	long	-1
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

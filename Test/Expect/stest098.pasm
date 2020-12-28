@@ -42,10 +42,14 @@ LR__0002
 _dounpack_x_ret
 	ret
 
+__lockreg
+	long	0
 imm_536870912_
 	long	536870912
 imm_8388607_
 	long	8388607
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

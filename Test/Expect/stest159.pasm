@@ -25,8 +25,12 @@ _setone
 _setone_ret
 	ret
 
+__lockreg
+	long	0
 fp
 	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 sp

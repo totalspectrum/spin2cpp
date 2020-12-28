@@ -15,8 +15,12 @@ LR__0001
 _demo_ret
 	ret
 
+__lockreg
+	long	0
 ptr_L__0006_
 	long	@@@LR__0002
+ptr___lockreg_
+	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 

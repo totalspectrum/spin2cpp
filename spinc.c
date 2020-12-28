@@ -120,6 +120,10 @@ InitGlobalModule(void)
     sym->flags |= SYMF_GLOBAL;
     sym->offset = -2; // special flag for COG internal memory
 
+    sym = AddSymbol(table, "__lockreg", SYM_VARIABLE, ast_type_long, NULL);
+    sym->flags |= SYMF_GLOBAL;
+    sym->offset = -3; // special flag for COG internal memory
+
     if (gl_p2) {
         sym = AddSymbol(table, "_baudrate", SYM_VARIABLE, ast_type_byte, NULL);
         sym->flags |= SYMF_GLOBAL;

@@ -15,8 +15,12 @@ _userdef_spin_start
 _userdef_spin_start_ret
 	ret
 
+__lockreg
+	long	0
 imm_10000_
 	long	10000
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

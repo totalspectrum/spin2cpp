@@ -21,8 +21,12 @@ _bar
 _bar_ret
 	ret
 
+__lockreg
+	long	0
 ptr_L__0004_
 	long	@@@LR__0002
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

@@ -30,8 +30,12 @@ _Proc_5
 _Proc_5_ret
 	ret
 
+__lockreg
+	long	0
 fp
 	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 sp
 	long	@@@stackspace
 COG_BSS_START

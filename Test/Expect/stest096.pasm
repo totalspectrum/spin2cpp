@@ -91,12 +91,16 @@ unsdivide__ret
 DIVCNT
 	long	0
 
+__lockreg
+	long	0
 itmp1_
 	long	0
 itmp2_
 	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

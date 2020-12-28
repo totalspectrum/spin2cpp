@@ -1405,6 +1405,10 @@ HasSideEffectsOtherThanReg(IR *ir)
     switch (ir->opc) {
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_LOCKCLR:
+    case OPC_LOCKNEW:
+    case OPC_LOCKRET:
+    case OPC_LOCKSET:
     case OPC_SETQ:
     case OPC_SETQ2:
     case OPC_WAITCNT:
@@ -2188,6 +2192,10 @@ ReplaceZWithNC(IR *ir)
     case OPC_MUXNC:
     case OPC_GENERIC:
     case OPC_GENERIC_NR:
+    case OPC_LOCKNEW:
+    case OPC_LOCKSET:
+    case OPC_LOCKCLR:
+    case OPC_LOCKRET:
     case OPC_SETQ:
     case OPC_SETQ2:
     case OPC_PUSH:

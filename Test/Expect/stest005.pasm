@@ -14,8 +14,12 @@ _val512
 _val512_ret
 	ret
 
+__lockreg
+	long	0
 imm_512_
 	long	512
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

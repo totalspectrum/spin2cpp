@@ -89,6 +89,11 @@ con
   POINTER_MAGIC =      $63800000
   POINTER_MAGIC_MASK = $fff00000
 
+dat
+_memory_mutex
+  long 0
+
+  
 ''
 '' return gc pointers
 '' if called before gc pointers are set up, initialize
@@ -214,13 +219,20 @@ pri _gc_doalloc(size, reserveflag) | ptr, zptr
   ' convert to pages
   size := size >> pagesizeshift
 
+  _drvl(59)
+  _lockmem(@_memory_mutex)
+  _drvh(59)
+
   ' try to find a free block big enough
   ptr := _gc_tryalloc(size, reserveflag)
   if (ptr == 0)
+    _drvl(61)
     '' run garbage collection here
-    _gc_collect
+    _gc_docollect
     ' see if gc freed up enough space
     ptr := _gc_tryalloc(size, reserveflag)
+
+  _unlockmem(@_memory_mutex)
     
   if ptr
     ' zero the returned memory
@@ -263,7 +275,11 @@ pri _gc_free(ptr) | heapbase, heapend
   (heapbase, heapend) := _gc_ptrs
   ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
+    _drvl(57)
+    _lockmem(@_memory_mutex)
+    _drvh(57)
     _gc_dofree(ptr)
+    _unlockmem(@_memory_mutex)
 
 '
 ' un-reserve a pointer previously returned by alloc
@@ -331,11 +347,21 @@ pri __getsp | x
     mov x, sp
   endasm
   return x
+
+''
+'' user accessible garbage collection
+''
+pri _gc_collect
+  _drvl(58)
+  _lockmem(@_memory_mutex)
+  _drvh(58)
+  _gc_docollect
+  _unlockmem(@_memory_mutex)
   
 ''
 '' actual garbage collection routine
 ''
-pri _gc_collect | ptr, nextptr, startheap, endheap, flags, ourid, size
+pri _gc_docollect | ptr, nextptr, startheap, endheap, flags, ourid, size
 
   (startheap, endheap) := _gc_ptrs
 

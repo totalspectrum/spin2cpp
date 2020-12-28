@@ -15,6 +15,10 @@ _main
 _main_ret
 	ret
 
+__lockreg
+	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 result1

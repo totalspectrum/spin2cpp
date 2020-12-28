@@ -22,8 +22,12 @@ _test
 _test_ret
 	ret
 
+__lockreg
+	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 objmem

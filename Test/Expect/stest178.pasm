@@ -18,8 +18,12 @@ _set2
 _set2_ret
 	ret
 
+__lockreg
+	long	0
 imm_780_
 	long	780
+ptr___lockreg_
+	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 COG_BSS_START

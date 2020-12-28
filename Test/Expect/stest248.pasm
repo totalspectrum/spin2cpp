@@ -19,8 +19,12 @@ _arrobj_info
 _arrobj_info_ret
 	ret
 
+__lockreg
+	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

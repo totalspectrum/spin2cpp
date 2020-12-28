@@ -35,8 +35,12 @@ _simplepin_spin_tx
 _simplepin_spin_tx_ret
 	ret
 
+__lockreg
+	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 ptr__dat__
 	long	@@@_dat_
 COG_BSS_START

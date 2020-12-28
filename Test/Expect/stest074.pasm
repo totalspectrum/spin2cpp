@@ -36,10 +36,14 @@ LR__0001
 _get_ret
 	ret
 
+__lockreg
+	long	0
 fp
 	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 sp

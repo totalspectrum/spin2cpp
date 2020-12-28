@@ -11,8 +11,12 @@ _demo
 _demo_ret
 	ret
 
+__lockreg
+	long	0
 ptr_L__0001_
 	long	@@@LR__0001
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

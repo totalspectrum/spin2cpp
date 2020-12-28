@@ -42,10 +42,14 @@ _info
 _info_ret
 	ret
 
+__lockreg
+	long	0
 imm_22136_
 	long	22136
 imm_4660_
 	long	4660
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 result2

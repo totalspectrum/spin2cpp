@@ -9,6 +9,10 @@ _id
 _id_ret
 	ret
 
+__lockreg
+	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

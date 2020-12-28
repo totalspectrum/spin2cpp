@@ -22,8 +22,12 @@ _main
 _main_ret
 	ret
 
+__lockreg
+	long	0
 fp
 	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 sp
 	long	@@@stackspace
 COG_BSS_START

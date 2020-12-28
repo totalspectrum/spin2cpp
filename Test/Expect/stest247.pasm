@@ -151,6 +151,8 @@ mul_lp_
 multiply__ret
 	ret
 
+__lockreg
+	long	0
 imm_1199570944_
 	long	1199570944
 imm_2147483648_
@@ -171,6 +173,8 @@ muldiva_
 	long	0
 muldivb_
 	long	0
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 result2

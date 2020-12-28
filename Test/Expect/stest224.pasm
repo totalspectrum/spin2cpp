@@ -17,10 +17,14 @@ LR__0003
 _main_ret
 	ret
 
+__lockreg
+	long	0
 ptr_L__0003_
 	long	@@@LR__0004
 ptr_L__0005_
 	long	@@@LR__0005
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START

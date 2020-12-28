@@ -17,8 +17,12 @@ LR__0001
 _clr_ret
 	ret
 
+__lockreg
+	long	0
 objptr
 	long	@@@objmem
+ptr___lockreg_
+	long	@@@__lockreg
 COG_BSS_START
 	fit	496
 objmem

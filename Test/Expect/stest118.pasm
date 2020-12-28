@@ -32,8 +32,12 @@ __float_fromint
 __float_fromint_ret
 	ret
 
+__lockreg
+	long	0
 imm_2147483648_
 	long	-2147483648
+ptr___lockreg_
+	long	@@@__lockreg
 result1
 	long	0
 COG_BSS_START
