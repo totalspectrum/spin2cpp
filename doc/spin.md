@@ -674,3 +674,7 @@ Other debug directives are ignored, with a warning.
 ### ASMCLK instruction
 
 The `ASMCLK` pseudo-instruction is not supported in FlexProp at this time.
+
+### REGLOAD/REGEXEC
+
+The `REGLOAD` and `REGEXEC` Spin2 instructions are not supported at this time, mainly because they depend on a particular layout of memory in the Spin2 interpreter.

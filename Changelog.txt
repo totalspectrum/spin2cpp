@@ -1,3 +1,6 @@
+Version 5.0.5
+- Added the EVENT_* symbols for Spin2
+
 Version 5.0.4
 - Added protection for multiple cogs calling memory allocation
 - Added NEWCOG constant for COGSPIN

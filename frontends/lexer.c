@@ -2237,6 +2237,31 @@ struct constants p2_constants[] = {
     { "p_async_tx", SYM_CONSTANT, 0x3c },
     { "p_async_rx", SYM_CONSTANT, 0x3e },
 
+    { "x_imm_32x1_lut",    SYM_CONSTANT, 0x0000 << 16 },
+    { "x_imm_16x2_lut",    SYM_CONSTANT, 0x1000 << 16 },
+    { "x_imm_8x4_lut",     SYM_CONSTANT, 0x2000 << 16 },
+    { "x_imm_4x8_lut",     SYM_CONSTANT, 0x3000 << 16 },
+
+    { "x_imm_32x1_1dac1",  SYM_CONSTANT, 0x4000 << 16 },
+    { "x_imm_16x2_2dac1",  SYM_CONSTANT, 0x5000 << 16 },
+    { "x_imm_16x2_1dac2",  SYM_CONSTANT, 0x5002 << 16 },
+    { "x_imm_8x4_4dac1",   SYM_CONSTANT, 0x6000 << 16 },
+    { "x_imm_8x4_2dac2",   SYM_CONSTANT, 0x6002 << 16 },
+    { "x_imm_8x4_1dac4",   SYM_CONSTANT, 0x6004 << 16 },
+
+    { "x_imm_4x8_4dac2",   SYM_CONSTANT, 0x6006 << 16 },
+    { "x_imm_4x8_2dac4",   SYM_CONSTANT, 0x6007 << 16 },
+    { "x_imm_4x8_1dac8",   SYM_CONSTANT, 0x600e << 16 },
+    { "x_imm_2x16_4dac4",  SYM_CONSTANT, 0x600f << 16 },
+
+    { "x_imm_2x16_2dac8",  SYM_CONSTANT, 0x7000 << 16 },
+    { "x_imm_1x32_4dac8",  SYM_CONSTANT, 0x7001 << 16 },
+
+    { "x_rflong_32x1_lut", SYM_CONSTANT, 0x7002 << 16 },
+    { "x_rflong_16x2_lut", SYM_CONSTANT, 0x7004 << 16 },
+    { "x_rflong_8x4_lut",  SYM_CONSTANT, 0x7006 << 16 },
+    { "x_rflong_4x8_lut",  SYM_CONSTANT, 0x7008 << 16 },
+    
     { "x_rfbyte_1p_1dac1", SYM_CONSTANT, 0x8000 << 16 },
     { "x_rfbyte_2p_2dac1", SYM_CONSTANT, 0x9000 << 16 },
     { "x_rfbyte_2p_1dac2", SYM_CONSTANT, 0x9002 << 16 },
@@ -2264,6 +2289,26 @@ struct constants p2_constants[] = {
     { "hubexec_new_pair", SYM_CONSTANT, 0x31 },
 
     { "newcog", SYM_CONSTANT, 0x10  },
+
+    { "event_int", SYM_CONSTANT, 0 },
+    { "int_off",   SYM_CONSTANT, 0 },
+    { "event_ct1", SYM_CONSTANT, 1 },
+    { "event_ct2", SYM_CONSTANT, 2 },
+    { "event_ct3", SYM_CONSTANT, 3 },
+    { "event_se1", SYM_CONSTANT, 4 },
+    { "event_se2", SYM_CONSTANT, 5 },
+    { "event_se3", SYM_CONSTANT, 6 },
+    { "event_se4", SYM_CONSTANT, 7 },
+
+    { "event_pat", SYM_CONSTANT, 8 },
+    { "event_fbw", SYM_CONSTANT, 9 },
+    { "event_xmt", SYM_CONSTANT, 10 },
+    { "event_xfi", SYM_CONSTANT, 11 },
+    { "event_xro", SYM_CONSTANT, 12 },
+    { "event_xrl", SYM_CONSTANT, 13 },
+    { "event_atn", SYM_CONSTANT, 14 },
+    { "event_qmt", SYM_CONSTANT, 15 },
+    
 };
 
 #if defined(WIN32)
