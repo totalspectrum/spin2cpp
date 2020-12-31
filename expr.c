@@ -1987,6 +1987,8 @@ int TypeAlignment(AST *typ)
     case AST_GENERICTYPE:
     case AST_FLOATTYPE:
         return EvalConstExpr(typ->left);
+    case AST_VOIDTYPE:
+        return LONG_SIZE; // "void" type is used for res statements
     default:
         ERROR(typ, "Internal error: unknown type %d passed to TypeAlignment",
               typ->kind);

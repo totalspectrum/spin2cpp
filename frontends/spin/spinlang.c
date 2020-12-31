@@ -320,13 +320,18 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                 sym = LookupSymbol(ast->d.string);
                 if (sym && sym->kind == SYM_VARIABLE && IsAddrRef(body, sym)) {
                     current->volatileVariables = 1;
-                } else if (sym && sym->kind == SYM_LABEL && upper->kind == AST_MEMREF) {
+                } else if (sym && sym->kind == SYM_LABEL) {
                     Label *lab = (Label *)sym->val;
-                    int refalign = TypeAlignment(upper->left);
-                    int labalign = TypeAlignment(lab->type);
-                    if ( (refalign > labalign) && !gl_p2 ) {
-                        lab->flags |= (LABEL_NEEDS_EXTRA_ALIGN|LABEL_USED_IN_SPIN);
-                        WARNING(body, "Label is dereferenced with greater alignment than it was declared with");
+                    if (lab->type == ast_type_void) {
+                        WARNING(body, "Taking address of reserved memory is not supported in standard Spin");
+                    }
+                    if (upper->kind == AST_MEMREF) {
+                        int refalign = TypeAlignment(upper->left);
+                        int labalign = TypeAlignment(lab->type);
+                        if ( (refalign > labalign) && !gl_p2 ) {
+                            lab->flags |= (LABEL_NEEDS_EXTRA_ALIGN|LABEL_USED_IN_SPIN);
+                            WARNING(body, "Label is dereferenced with greater alignment than it was declared with");
+                        }
                     }
                 } else if (sym && sym->kind == SYM_FUNCTION) {
                     // insert an explicit function address
