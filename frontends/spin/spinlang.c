@@ -323,7 +323,7 @@ ScanFunctionBody(Function *fdef, AST *body, AST *upper, AST *expectType)
                 } else if (sym && sym->kind == SYM_LABEL) {
                     Label *lab = (Label *)sym->val;
                     if (lab->type == ast_type_void) {
-                        WARNING(body, "Taking address of reserved memory is not supported in standard Spin");
+                        WARNING(body, "Applying @ to RES memory `%s' is not supported in standard Spin", GetIdentifierName(ast));
                     }
                     if (upper->kind == AST_MEMREF) {
                         int refalign = TypeAlignment(upper->left);
@@ -668,6 +668,9 @@ doSpinTransform(AST **astptr, int level, AST *parent)
         }
         if (ast->left && IsIdentifier(ast->left)) {
             const char *name = GetUserIdentifierName(ast->left);
+            if (IsVoidType(ExprType(ast->left))) {
+                WARNING(ast->left, "assigning value to RES memory");
+            }
             if ( !strcasecmp("send", name) ) {
                 curfunc->sets_send = 1;
             } else if (!strcasecmp("recv", name)) {

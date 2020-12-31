@@ -2384,6 +2384,9 @@ ExprTypeRelative(SymbolTable *table, AST *expr, Module *P)
             lab = (Label *)sym->val;
             typ = lab->type;
             if (curfunc && IsSpinLang(curfunc->language) && typ && typ->kind != AST_ARRAYTYPE) {
+                if (typ == ast_type_void) {
+                    return typ;
+                }
                 return NewAST(AST_ARRAYTYPE, typ, AstInteger(1));
             }
             return typ;

@@ -1,5 +1,6 @@
 Version 5.0.5
 - Added the EVENT_* symbols for Spin2
+- Added warnings for use of RES memory
 - Fixed lseek with SEEK_END on 9p file system
 
 Version 5.0.4

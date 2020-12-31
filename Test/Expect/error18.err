@@ -1,0 +1,2 @@
+error18.spin:2: warning: Applying @ to RES memory `example' is not supported in standard Spin
+error18.spin:5: warning: assigning value to RES memory
