@@ -485,6 +485,7 @@ int fs_fstat(fs9_file *f, struct stat *buf)
     memset(buf, 0, sizeof(struct stat));
     buf->st_nlink = 1;
     buf->st_size = flenlo;
+    //buf->st_sizeh = flenhi;
     buf->st_atime = atime;
     buf->st_mtime = mtime;
     buf->st_ino = ino;
@@ -703,8 +704,14 @@ static off_t v_lseek(vfs_file_t *fil, off_t offset, int whence)
         }
         f->offlo = tmp;
     } else {
-        // FIXME: should do a stat on the file and then seek accordingly
-        return _seterror(EINVAL);
+        // SEEK_END; do a stat on the file and seek accordingly
+        struct stat stbuf;
+	int r = fs_fstat(f, &stbuf);
+	if (r < 0) {
+	    return _seterror(EINVAL);
+	}
+	f->offlo = stbuf.st_size - offset;
+	f->offhi = 0;
     }
 #ifdef _DEBUG
     __builtin_printf("end=%d\n", f->offlo);
