@@ -1,7 +1,7 @@
 /*
  * Spin to C/C++ translator
  * flexcc front end 
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  *
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
