@@ -602,7 +602,7 @@ mount("/sd", _vfs_open_sdcard());
 ```
 files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
 
-This only works on P2, because it requires a lot of HUB memory, and also needs the host file server built in to `loadp2`.
+This only works on P2, because it requires a lot of HUB memory. Also, the host file server requires features built in to `loadp2`.
 
 Available file systems are:
 
@@ -652,6 +652,10 @@ Closes directory previously opened with `opendir`.
 `struct dirent *readdir(DIR *dir)`
 
 Reads the next directory entry.
+
+### Further information
+
+For further information see the `File I/O` section of the general documentation.
 
 ## Time Functions
 

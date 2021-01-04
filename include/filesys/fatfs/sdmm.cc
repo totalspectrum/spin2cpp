@@ -36,10 +36,12 @@
 
 #include <propeller2.h>			/* Include device specific declareation file here */
 
+#ifndef PIN_CLK
+#define PIN_CLK  61
 #define PIN_SS   60
 #define PIN_MOSI 59
 #define PIN_MISO 58
-#define PIN_CLK  61
+#endif
 
 #define PIN_DO PIN_MISO
 #define PIN_DI PIN_MOSI

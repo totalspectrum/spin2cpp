@@ -332,6 +332,41 @@ Normally input (e.g. from a C `getchar()`) is echoed back to the screen, and car
 
 The current state of the flags may be retrieved via `_getrxtxflags()`.
 
+## File I/O (P2 Only)
+
+C and BASIC have built in support for accessing file systems. The file systems first must be given a name with the `mount` system call, and then may be accessed with the normal language functions.
+
+### Mount
+
+The `mount` call gives a name to a file system. For example, after
+```
+mount("/host", _vfs_open_host());
+mount("/sd", _vfs_open_sdcard());
+```
+files on the host PC may be accessed via names like "/host/foo.txt", "/host/bar/bar.txt", and so on, and files on the SD card may be accessed by names like "/sd/root.txt", "/sd/subdir/file.txt", and so on.
+
+This only works on P2, because it requires a lot of HUB memory. Also, the host file server requires features built in to `loadp2`.
+
+Available file systems are:
+
+  * `_vfs_open_host()` (for the loadp2 Plan 9 file system)
+  * `_vfs_open_sdcard()` for a FAT file system on the P2 SD card.
+
+It is OK to make multiple mount calls, but they should have different names.
+
+### Options for SD Card
+
+If you define the symbol `FF_USE_LFN` on the command line with an option like `-DFF_USE_LFN` then long file names will be enabled for the SD card.
+
+The pins to use for the SD card may be changed by changing the following defines on the command line:
+```
+PIN_CLK  (default 61)
+PIN_SS   (default 60)
+PIN_MOSI (default 59)
+PIN_MISO (default 58)
+```
+So for example to change to using pins 0-3 for these you would add `-DPIN_MISO=0 -DPIN_MOSI=1 -DPIN_SS=2 -DPIN_CLK=3` to the command line.
+
 ## Command Line Options
 
 There are various command line options for the compiler which may modify the compilation:
