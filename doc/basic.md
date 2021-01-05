@@ -273,9 +273,12 @@ input$
 insert$
 instr
 instrrev
+lcase$
 left$
 len
 log
+lpad$
+ltrim$
 mid$
 mount
 oct$
@@ -286,15 +289,18 @@ pauseus
 pi
 rdpin
 _reboot
+reverse$
 right$
 rnd
 round
+rtrim$
 sendrecvdevice
 _setbaud
 sin
 str$
 tan
 true
+ucase$
 val
 val%
 waitcnt
@@ -1983,6 +1989,13 @@ Convert a floating point value to integer. Any fractional parts are truncated.
 
 A 32 bit signed integer type. The unsigned 32 bit integer type is `uinteger`.
 
+### LCASE$
+
+```
+y$ = lcase$(x$)
+```
+Returns a new string which is the same as the original string but with all alphabetical characters converted to lower case.
+
 ### LEFT$
 
 A predefined string function. `left$(s, n)` returns the left-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
@@ -2022,6 +2035,20 @@ A signed 64 bit integer. The unsigned version of this is `ulongint`. This type i
 ### LOOP
 
 Marks the end of a loop introduced by `do`. See DO for details.
+
+### LPAD$
+
+```
+y$ = lpad$(x$, w, ch$)
+```
+Returns a new string which is like the original string but padded on the left so that it has length `w`. If `w` is less than the current length of the string, the function returns the rightmost `w` characters, otherwise it prepends enough copies of `ch$` to make the string `w` characters long.
+
+### LTRIM$
+
+```
+y$ = ltrim$(x$)
+```
+Returns a new string which is like the original string but with leading spaces removed.
 
 ### MID$
 
@@ -2385,6 +2412,13 @@ function sum(x, y)
 end function
 ```
 
+### REVERSE$
+
+```
+y$ = reverse$(x$)
+```
+Returns a new string which has the same characters as the original, but in the reverse order (so for example `reverse$("abc")` would return "cba").
+
 ### RIGHT$
 
 A predefined string function. `right$(s, n)` returns the right-most `n` characters of `s`. If `n` is longer than the length of `s`, returns `s`. If `n` =< 0, returns an empty string. If a memory allocation error occurs, returns `nil`.
@@ -2400,6 +2434,20 @@ A predefined function which returns a random floating point number `x` such that
 ### ROUND
 
 A predefined function which takes a floating point number and converts it to an integer, doing rounding towards the nearest integer.
+
+### RPAD$
+
+```
+y$ = rpad$(x$, w, ch$)
+```
+Returns a new string which is like the original string but padded on the right so that it has length `w`. If `w` is less than the current length of the string, the function returns the leftmost `w` characters, otherwise it appends enough copies of `ch$` to make the string `w` characters long.
+
+### RTRIM$
+
+```
+y$ = rtrim$(x$)
+```
+Returns a new string which is like the original string but with trailing spaces removed.
 
 ### SELECT CASE
 
@@ -2607,6 +2655,13 @@ creates a new type name `uptr` which is a pointer to a `ubyte`. You may use the 
 ### UBYTE
 
 An unsigned 8 bit integer, occupying one byte of computer memory. The signed version of this is `byte`. The difference arises with the treatment of the upper bit. Both `byte` and `ubyte` treat 0-127 the same, but for `byte` 128 to 255 are considered equivalent to -128 to -1 respectively (that is, when a `byte` is copied to a larger sized integer the upper bit is repeated into all the other bits; for `ubyte` the new bytes are filled with 0 instead).
+
+### UCASE$
+
+```
+y$ = ucase$(x$)
+```
+Returns a new string which is the same as the original string but with all alphabetical characters converted to upper case.
 
 ### UINTEGER
 

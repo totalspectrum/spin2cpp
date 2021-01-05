@@ -4,6 +4,7 @@ Version 5.0.5
 - Fixed lseek with SEEK_END on 9p file system
 - Fixed error reporting for bad rdxxx/wrxxx pointers
 - Improved checks for language when no explicit extension is given in object names
+- Updated BASIC documentation to include some built-ins that weren't documented
 
 Version 5.0.4
 - Added protection for multiple cogs calling memory allocation
