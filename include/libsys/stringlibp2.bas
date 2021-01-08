@@ -136,7 +136,7 @@ FUNCTION Insert$(base$ as string, toInsert$ as string, offset as integer) as str
 	end if
 
 	leftChunk$ = left$(base$, offset - 1)
-	rightChunk$ = mid$(base$, offset, len(base$) - offset)
+	rightChunk$ = mid$(base$, offset, len(base$) - (offset-1))
 
 	return (leftChunk$ + toInsert$ + rightChunk$)
  
