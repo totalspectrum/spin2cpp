@@ -1,6 +1,8 @@
 Version 5.0.6
 - Added cog_* functions from libsimpletools
 - Added get_directions() and get_outputs() functions from simpletools
+- Added getms() in Spin2
+- Documented _pinstart() function for C
 - Fixed an off-by-one in the BASIC INSERT$ function.
 - Made libsimpletext safe_gets() use _rxraw() to avoid echo.
 
