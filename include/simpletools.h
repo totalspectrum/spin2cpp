@@ -127,4 +127,8 @@ int mapInt(int value, int fromMin, int fromMax, int toMin, int toMax) _IMPL("lib
 
 int random(int limitLow, int limitHigh) _IMPL("libsimpletools/random.c");
 
+void cog_end(int *coginfo) _IMPL("libsimpletools/cogend.c");
+int  cog_num(int *coginfo) _IMPL("libsimpletools/cognum.c");
+int* cog_run(void (*function)(void *par), int stacksize) _IMPL("libsimpletools/cogrun.c");
+
 #endif

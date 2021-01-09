@@ -1,4 +1,5 @@
 Version 5.0.6
+- Added cog_* functions from libsimpletools
 - Fixed an off-by-one in the BASIC INSERT$ function.
 - Made libsimpletext safe_gets() use _rxraw() to avoid echo.
 
