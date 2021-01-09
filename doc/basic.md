@@ -505,6 +505,8 @@ The `+` operator normally means addition, but for strings it means concatentatio
 ```
 produces the string "hello, world".
 
+As noted above, comparison operators work as expected on string values, which are compared greater than or less than according to the UTF-8 values of the characters in the strings.
+
 #### Assignment operators
 
 Normally assignment is performed with the `=` symbol:
@@ -736,7 +738,7 @@ Parameters to functions (and subroutines) may be passed "by value" or "by refere
 
 FlexBASIC supports allocation of memory and garbage collection. Memory allocation is done from a small built-in heap. This heap defaults to 256 bytes in size on Propeller 1, and 4096 bytes on Propeller 2. This may be changed by defining a constant `HEAPSIZE` in the top level file of the program.
 
-Garbage collection works by scanning memory for pointers that were returned from the memory allocation function. As long as references to the original pointers returned by functions like `left$` or `right$` exist, the memory will not be re-used for anything else.
+Garbage collection works by scanning memory for pointers that were returned from the memory allocation function. As long as references to the original pointers returned by functions like `left$` or `right$` exist, the memory will not be re-used for anything else. The memory is treated purely as binary blocks; no special interpretation of strings is performed, for example.
 
 Note that a CPU ("COG" in Spin terms) cannot scan the internal memory of other CPUs, so memory allocated by one CPU will only be garbage collected by that same CPU. This can lead to an out of memory situation even if in fact there is memory available to be claimed. For this reason we suggest that all allocation of temporary memory be done in one CPU only.
 
@@ -2155,16 +2157,18 @@ Open a handle for input and/or output. There are two forms. The most general for
 ```
 where `device` is a device driver structure returned by a system function such as `SendRecvDevice`, and `n` evaluates to an integer between 2 and 7. (Handles 0 and 1 also exist, but are reserved for system use.)
 
-Example:
+Example (for P1):
 ```
   ' declare ser as an object based on a Spin object
-  dim ser as class using("SerialDriver.spin")
+  dim ser as class using("spin/FullDuplexSerial.spin")
   ' initialize the serial device
   ser.start(31, 30, 0, 115_200)
   ' now connect it to handle #2
   open SendRecvDevice(@ser.tx, @ser.rx, @ser.stop) as #2
 ```
 Here `SendRecvDevice` is given pointers to functions to call to send a single character, to receive a single character, and to be called when the handle is closed. Any of these may be `nil`, in which case the corresponding function (output, input, or close) does nothing.
+
+For P2 you would replace "FullDuplexSerial.spin" with "SmartSerial.spin" and adjust the pins and baud rates accordingly.
 
 The second form of `open` uses a file name:
 ```
@@ -2174,11 +2178,11 @@ The second form of `open` uses a file name:
 ```
 This opens the given file for input, output, or append. A file opened for output will be created if it does not already exist, otherwise it will be truncated to 0 bytes long. A file opened for append will be created if it does not exist, but if it does exist it will be opened for output at the end of the file.
 
-This second form of `open` is really only useful after a `mount` call is used to establish a file system.
+This second form of `open` is only useful after a `mount` call is used to establish a file system.
 
 #### Error Handling
 
-The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file.
+The `open` command will throw an integer error corresponding to one of the error numbers in the C `errno.h` header file. This may be caught using the usual `try` / `catch` paradigm.
 
 ### OPTION
 
