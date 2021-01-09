@@ -4,7 +4,7 @@ Version 5.0.6
 - Added getms() in Spin2
 - Documented _pinstart() function for C
 - Fixed an off-by-one in the BASIC INSERT$ function.
-- Fixed errors in C modf() and frexp() functions.
+- Fixed errors in declarations of C modf() and frexp() functions.
 - Improved error messages for type mismatches.
 - Made libsimpletext text read use _rxraw() to avoid echo.
 
