@@ -169,6 +169,11 @@ void      _akpin(int pin);
 uint32_t  _rdpin(int pin);
 uint32_t  _rqpin(int pin);
 
+/* set up smart pin: WRPIN=mode, WXVAL=xval, WYPIN=YVAL */
+void      _pinstart(int pin, uint32_t mode, uint32_t xval, uint32_t yval);
+/* turn off smart pin */
+void      _pinclear(int pin);
+
 /* access to previously set clock mode and frequency */
 extern uint32_t _clockfreq(void);
 extern uint32_t _clockmode(void);

@@ -588,6 +588,19 @@ void _wypin(int pin, uint32_t val);
 ```
 Write `val` to the smart pin Y register of pin `pin`.
 
+### _pinstart
+
+```
+void _pinstart(int pin, uint32_t mode, uint32_t xval, uint32_t yval);
+```
+Activate a smart pin. `mode` is the smart pin mode (written with `_wrpin`), and `xval` and `yval` are the values for the smart pin X and Y registers.
+
+### _pinclear
+
+```
+void _pinclear(int pin);
+```
+Turn off a smart pin (writes 0 to mode).
 
 ## Disk I/O routines (P2 Only)
 
