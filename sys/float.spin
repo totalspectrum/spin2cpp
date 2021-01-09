@@ -402,9 +402,9 @@ pri file "libsys/math.c"  __builtin_asinf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_acosf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_atanf(x = float) : r=float
 pri file "libsys/math.c"  __builtin_atan2f(y = float, x = float) : r=float
-pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=long) : r=float
+pri file "libsys/s_frexpf.c" __builtin_frexpf(x = float, p=@long) : r=float
 pri file "libsys/s_ldexpf.c" __builtin_ldexpf(x = float, n=long) : r=float
-pri file "libsys/s_modf.c" __builtin_modff(x = float, p=long) : r=float
+pri file "libsys/s_modf.c" __builtin_modff(x = float, p) : r=float
 pri file "libsys/powers.c" __builtin_expf(x = float) : r=float
 pri file "libsys/powers.c" __builtin_logf(x = float) : r=float
 pri file "libsys/powers.c" __builtin_log10f(x = float) : r=float
