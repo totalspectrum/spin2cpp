@@ -41,6 +41,10 @@ int input(int pin) _IMPL("libsimpletools/input.c");
 //void set_io_timeout(long clockTicks) { st_timeout = clockTicks; }
 //void set_io_dt(long clockticks) { st_iodt = clockTicks; }
 
+unsigned get_direction(int pin) _IMPL("libsimpletools/getDirection.c");
+unsigned get_directions(int startPin, int endPin) _IMPL("libsimpletools/getDirections.c");
+unsigned get_output(int pin) _IMPL("libsimpletools/getOutput.c");
+unsigned get_outputs(int startPin, int endPin) _IMPL("libsimpletools/getOutputs.c");
 unsigned get_states(int endPin, int startPin) _IMPL("libsimpletools/getStates.c");
 void set_directions(int endPin, int startPin, unsigned int pattern) _IMPL("libsimpletools/setDirections.c");
 void set_outputs(int endPin, int startPin, unsigned int pattern) _IMPL("libsimpletools/setOutputs.c");
@@ -127,6 +131,7 @@ int mapInt(int value, int fromMin, int fromMax, int toMin, int toMax) _IMPL("lib
 
 int random(int limitLow, int limitHigh) _IMPL("libsimpletools/random.c");
 
+// cog functions
 void cog_end(int *coginfo) _IMPL("libsimpletools/cogend.c");
 int  cog_num(int *coginfo) _IMPL("libsimpletools/cognum.c");
 int* cog_run(void (*function)(void *par), int stacksize) _IMPL("libsimpletools/cogrun.c");
