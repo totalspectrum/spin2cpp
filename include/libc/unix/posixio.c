@@ -267,6 +267,7 @@ ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
     ssize_t r, q;
     getcfunc_t rx;
     unsigned char *buf = (unsigned char *)vbuf;
+    int break_on_nl = 0;
     
     if (! (f->state & _VFS_STATE_RDOK) ) {
         return _seterror(EACCES);
@@ -283,6 +284,13 @@ ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
     if (!rx) {
         return _seterror(EACCES);
     }
+    if (f->ioctl) {
+        unsigned long val;
+        r = (*f->ioctl)(f, TTYIOCTLGETFLAGS, &val);
+        if (r == 0 && (val & TTY_FLAG_CRNL)) {
+            break_on_nl = 1;
+        }
+    }
     r = 0;
     while (count > 0) {
         q = (*rx)(f);
@@ -290,6 +298,9 @@ ssize_t _vfsread(vfs_file_t *f, void *vbuf, size_t count)
         *buf++ = q;
         ++r;
         --count;
+        if (break_on_nl && q == 10) {
+            break;
+        }
     }
     return r;
 }
