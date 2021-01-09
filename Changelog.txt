@@ -1,5 +1,6 @@
 Version 5.0.6
 - Fixed an off-by-one in the BASIC INSERT$ function.
+- Made libsimpletext safe_gets() use _rxraw() to avoid echo.
 
 Version 5.0.5
 - Added the EVENT_* symbols for Spin2

@@ -29,7 +29,7 @@ char* _safe_gets(text_t *text, char* origBuf, int count)
   }
   while (count-- > 0)
   { 
-    int ch = text ? text->rxChar(text) : _rx();
+    int ch = text ? text->rxChar(text) : _rxraw();
       
     if(terminalEcho)
     {  
