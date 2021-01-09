@@ -1,3 +1,7 @@
+#ifndef __P2__
+#error This driver is for P2 only
+#endif
+
 '
 ' SmartSerial.spin2
 ' simple smart pin serial object for P2 eval board
