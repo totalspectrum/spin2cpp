@@ -4,7 +4,9 @@ Version 5.0.6
 - Added getms() in Spin2
 - Documented _pinstart() function for C
 - Fixed an off-by-one in the BASIC INSERT$ function.
-- Made libsimpletext safe_gets() use _rxraw() to avoid echo.
+- Fixed errors in C modf() and frexp() functions.
+- Improved error messages for type mismatches.
+- Made libsimpletext text read use _rxraw() to avoid echo.
 
 Version 5.0.5
 - Added the EVENT_* symbols for Spin2

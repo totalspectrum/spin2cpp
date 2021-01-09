@@ -134,4 +134,7 @@ AST *BuildExprlistFromObject(AST *expr, AST *typ);
 // handles designators like .x = n, and adds any missing 0's
 AST *FixupInitList(AST *typ, AST *initval);
 
+/* type name */
+const char *TypeName(AST *typ);
+
 #endif

@@ -1,6 +1,6 @@
 /*
  * Spin to C/C++ translator
- * Copyright 2011-2020 Total Spectrum Software Inc.
+ * Copyright 2011-2021 Total Spectrum Software Inc.
  * 
  * +--------------------------------------------------------------------
  * ¦  TERMS OF USE: MIT License
@@ -72,6 +72,7 @@ static AST *funcptr_cmp;
 AST *BuildMethodPointer(AST *ast);
 static AST * getBasicPrimitive(const char *name);
 
+/* check that "typ" is an integer type */
 bool VerifyIntegerType(AST *astForError, AST *typ, const char *opname)
 {
     if (!typ)
@@ -932,14 +933,17 @@ AST *CoerceAssignTypes(AST *line, int kind, AST **astptr, AST *desttype, AST *sr
         }
     }
     if (!CompatibleTypes(desttype, srctype)) {
+        const char *desttype_name, *srctype_name;
+        desttype_name = TypeName(desttype);
+        srctype_name = TypeName(srctype);
         if (IsPointerType(desttype) && IsPointerType(srctype)) {
             if (curfunc && IsBasicLang(curfunc->language) && IsRefType(desttype) && TypeSize(desttype->left) == 0) {
                 /* OK, parameter declared as foo() so can accept any array */
             } else {
-                WARNING(line, "incompatible pointer types in %s", msg);
+                WARNING(line, "incompatible pointer types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
             }
         } else {
-            ERROR(line, "incompatible types in %s", msg);
+            ERROR(line, "incompatible types in %s: expected %s but got %s", msg, desttype_name, srctype_name);
             return desttype;
         }
     }
