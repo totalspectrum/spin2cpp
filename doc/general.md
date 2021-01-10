@@ -101,9 +101,9 @@ Pretty much all of COG RAM is used by the compiler. No specific hardware registe
 
 Most of COG RAM is used by the compiler, except that $0-$1f and $1e0-$1ef are left free for application use. The second half of LUT is used for FCACHE; the first half is used by any functions placed into LUT.
 
-`ptra` is used for the stack pointer.
+`ptra` is used for the stack pointer. Applications should avoid using it.
 
-`pa` is used internally for fcache loading.
+`pa` is used internally for fcache loading. Applications may use it as a temporary variable, but be aware that any code execution which may trigger an fcache load (e.g. any loop or subroutine call) may trash its value.
 
 ## Optimizations
 
@@ -415,3 +415,63 @@ To compile a program to start at address 65536 (at the 64K boundary), do:
 flexspin -2 -H 0x10000 -E fibo.bas
 ```
 
+## Common low level functions
+
+A number of low level functions are available in all languages. The C prototypes are given below, but they may be called from any language and are always available. If a user function with the same name is provided, the built-in function will not be available from user code (but internally the libraries *may* continue to use the built-in version; this isn't defined).
+
+Unless otherwise noted, these functions are available for both P1 and P2.
+
+### Serial port access
+
+#### _txraw
+
+```
+int _txraw(int c)
+```
+sends character `c` out the default serial port. Always returns 1.
+
+#### _rxraw
+
+```
+int _rxraw(int n=0)
+```
+Receives a character on the default serial port. `n` is a timeout in milliseconds. If the timeout elapses with no character received, `_rxraw` returns -1, otherwise it returns the received character. The default timeout (0) signifies "forever"; that is, if `n` is 0 the `_rxraw` function will wait as long as necessary until a character is received.
+
+#### _setbaud
+
+```
+void _setbaud(int rate)
+```
+Sets the baud rate on the default serial port to `rate`. For example, to change the serial port to 115200 baud you would call `_setbaud(115200)`. The default rates set up in C and BASIC initialization code are are 115200 for P1 and 230400 for P2. In Spin you may need to call `_setbaud` explicitly before calling `_rxraw` or `_txraw`.
+
+### Time related functions
+
+#### _getsec
+
+Gets elapsed seconds.
+
+#### _getms
+
+Gets elapsed microseconds.
+
+#### _getus
+
+Gets elapsed microseconds.
+
+#### _waitx
+
+```
+void _waitx(unsigned cycles)
+```
+Pauses for `cycles` cycles.
+
+### Cog control
+
+#### _cogchk
+
+```
+int _cogchk(int id)
+```
+Checks to see if cog number id is running. Returns -1 if running, 0 if not.
+
+This function may be relatively slow on P1, as it has to manually probe the COGs (on P2 it's a built in instruction).
