@@ -255,7 +255,7 @@ Calculates the absolute value of `y`. This is not like a normal C function in th
 ```
 Allocates `size` bytes of memory on the stack, and returns a pointer to that memory. When the enclosing function returns, the allocated memory will become invalid (so do not attempt to return the result from a function!)
 
-### Count Leading Zeros
+### CLZ (Count Leading Zeros)
 
 ```
   x = __builtin_clz(y)
@@ -292,6 +292,23 @@ Reverses the bits of `y` and then shifts the result right by `32-n` places. This
   x = __builtin_sqrt(y)
 ```
 Calculates the square root of `y`. This is not like a normal C function in that the result type depends on the input type. If the input is an integer, the result is an integer. If the input is a float, the result is a float.
+
+## Builtin Constants
+
+FlexC has many built-in constants for P1 and P2 hardware access. These constants are inherited from the Spin / Spin2 support, and so they are actually case insensitive. See the Parallax Spin2 "Built-In Symbols" sections for a list of these.
+
+For example, the Spin2 `P_INVERT_A` smart pin symbol is available in C, and may be referred to as `P_INVERT_A`, `p_invert_a`, or `P_Invert_A`. The all-caps form is preferred, as it is most likely to be compatible with other C compilers. These built-in symbols are "weak" and may be overridden by the user, but any such override only affects the exact (case sensitive) version defined by the user. The following program illustrates this:
+```
+#include <stdio.h>
+
+int main()
+{
+    int p_invert_a = 0xdeadbeef; // overrides the built-in symbol
+    printf("P_INVERT_A = 0x%08x\n", P_INVERT_A); // prints 0x80000000
+    printf("P_Invert_A = 0x%08x\n", P_Invert_A); // prints 0x80000000
+    printf("p_invert_a = 0x%08x\n", p_invert_a); // prints 0xdeadbeef
+}
+```
 
 ## propeller.h
 
@@ -588,14 +605,14 @@ void _wypin(int pin, uint32_t val);
 ```
 Write `val` to the smart pin Y register of pin `pin`.
 
-### _pinstart
+#### _pinstart
 
 ```
 void _pinstart(int pin, uint32_t mode, uint32_t xval, uint32_t yval);
 ```
 Activate a smart pin. `mode` is the smart pin mode (written with `_wrpin`), and `xval` and `yval` are the values for the smart pin X and Y registers.
 
-### _pinclear
+#### _pinclear
 
 ```
 void _pinclear(int pin);
