@@ -7,6 +7,7 @@
 
 #ifdef __propeller2__
 #include <propeller2.h>
+#define cogstart _cogstart
 #else
 #include <propeller.h>
 #endif

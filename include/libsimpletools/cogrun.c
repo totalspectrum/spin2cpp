@@ -9,7 +9,7 @@
  * @brief Source code for cog_run function.
  */
 
-
+#include <stdlib.h>
 #include "simpletools.h"
 
 int *cog_run(void (*function)(void *par), int stacksize)

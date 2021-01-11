@@ -1,5 +1,6 @@
 Version 5.0.7
 - Fixed rdlong x, ptra[##BIG] instruction form
+- Fixed some bugs in cog_run
 
 Version 5.0.6
 - Added cog_* functions from libsimpletools
