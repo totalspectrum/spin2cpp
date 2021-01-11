@@ -1416,7 +1416,7 @@ lhs: identifier
     {
         AST *arr = NewAST(AST_ARRAYREF, $1, $3);
         AST *range = $7;
-        $$ = NewAST(AST_ARRAYREF, arr, range);
+        $$ = NewAST(AST_RANGEREF, arr, range);
     }
   | hwreg
     { $$ = $1; }

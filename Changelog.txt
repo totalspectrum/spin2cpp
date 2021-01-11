@@ -1,6 +1,7 @@
 Version 5.0.7
 - Fixed rdlong x, ptra[##BIG] instruction form
 - Fixed some bugs in cog_run
+- Fixed bit references in arrays like A[x].[y]
 
 Version 5.0.6
 - Added cog_* functions from libsimpletools

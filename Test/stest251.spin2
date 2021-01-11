@@ -1,0 +1,10 @@
+var
+  byte dht[5]
+  byte ddd
+  
+pub set1(x, y)
+  ddd.[y] := 1
+
+pub set2(x, y)
+  dht[x].[y] := 1
+
