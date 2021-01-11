@@ -291,7 +291,7 @@ CompileInlineOperand(IRList *irl, AST *expr, int *effects, int immflag)
 #define MAX_OPERANDS 4
 
 static IR *
-CompileInlineInstr(IRList *irl, AST *ast)
+CompileInlineInstr_only(IRList *irl, AST *ast)
 {
     Instruction *instr;
     IR *ir;
@@ -355,6 +355,15 @@ CompileInlineInstr(IRList *irl, AST *ast)
     case 0x1:
         ir->cond = COND_GT;
         break;
+    case 0x0:
+        if (gl_p2) {
+            IR *newir = NewIR(OPC_RET);
+            ir->next = newir;
+            //ERROR(ast, "Cannot handle _ret_ on instruction in inline asm; convert to regular ret for flexspin compatibility");
+        } else {
+            ir->cond = COND_FALSE;
+        }
+        break;
     default:
         ERROR(ast, "Cannot handle this condition on instruction in inline asm");
         break;
@@ -407,7 +416,6 @@ CompileInlineInstr(IRList *irl, AST *ast)
             }
         }
     }
-    AppendIR(irl, ir);
     return ir;
 }
 
@@ -511,7 +519,13 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             ast = ast->left;
         }
         if (ast->kind == AST_INSTRHOLDER) {
-            IR *ir = CompileInlineInstr(irl, ast->left);
+            IR *ir = CompileInlineInstr_only(irl, ast->left);
+            IR *extrair = ir->next;
+
+            if (extrair) {
+                ir->next = NULL;
+            }
+            AppendIR(irl, ir);
             if (!ir) break;
             if (isConst) {
                 ir->flags |= FLAG_KEEP_INSTR;
@@ -520,13 +534,24 @@ CompileInlineAsm(IRList *irl, AST *origtop, unsigned asmFlags)
             if (!firstir) firstir = ir;
             relpc++;
             if (ir->opc == OPC_RET) {
-                WARNING(ast, "ret instruction in inline asm converted to jump to end of asm");
+                //WARNING(ast, "ret instruction in inline asm converted to jump to end of asm");
                 ReplaceOpcode(ir, OPC_JUMP);
                 ir->dst = enddst;
                 if (!endlabel) {
                     endlabel = NewIR(OPC_LABEL);
                     endlabel->dst = enddst;
                 }
+            }
+            if (extrair) {
+                if (extrair->opc == OPC_RET) {
+                    ReplaceOpcode(extrair, OPC_JUMP);
+                    extrair->dst = enddst;
+                    if (!endlabel) {
+                        endlabel = NewIR(OPC_LABEL);
+                        endlabel->dst = enddst;
+                    }
+                }
+                AppendIR(irl, extrair);
             }
         } else if (ast->kind == AST_IDENTIFIER) {
             Symbol *sym = FindSymbol(&curfunc->localsyms, ast->d.string);
