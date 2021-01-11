@@ -739,7 +739,7 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
     int negsubval = 0;
     int saw_array = 0;
     
-    if (opimm) {
+    if (opimm && ast->kind != AST_RANGEREF) {
         // user provided an immediate value; make sure it
         // fits in $00-$ff
         val = EvalPasmExpr(ast);
@@ -820,6 +820,14 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
         return 0x100;
     }
 
+    if (opimm & BIG_IMM_SRC) {
+        // the "val" bits have to go up
+        if (val & 0x100) {
+            val = val << 15;
+            val |= subval & 0xfffff;
+            return val;
+        }
+    }
     // index ranges from -32 to 31 for all modes on rev A,
     // and for most of them on rev B (except for plain indexing)
     if (0 != (val & 0x60) || gl_p2 == P2_REV_A) {

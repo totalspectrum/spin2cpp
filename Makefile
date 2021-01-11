@@ -29,6 +29,10 @@ default: all
 #YACCVER=bison3
 
 # use bison unless user forces something different
+#
+# note: to produce detailed debug, use YACC="bison --verbose --report=all" with bison 3.7.2 or later (just --verbose otherwise)
+#
+
 YACC = bison
 
 ifndef YACCVER
@@ -72,10 +76,6 @@ endif
 
 INC=-I. -I$(BUILD)
 DEFS=-DFLEXSPIN_BUILD
-
-#
-# note: to produce detailed debug, use YACC="bison --report=all" with bison 3.7.2 or later
-#
 
 ifeq ($(YACCVER),bison3)
 

@@ -1,6 +1,6 @@
 /*
  * Spin compiler parser
- * Copyright (c) 2011-2020 Total Spectrum Software Inc.
+ * Copyright (c) 2011-2021 Total Spectrum Software Inc.
  * See the file COPYING for terms of use.
  */
 
@@ -1402,7 +1402,7 @@ lhs: identifier
     {
         $$ = NewAST(AST_ARRAYREF, $1, $3);
     }
-| identifier '.' identifier '[' expr ']'
+  | identifier '.' identifier '[' expr ']'
     {
         AST *objroot = $1;
         AST *method = $3;
@@ -1422,6 +1422,14 @@ lhs: identifier
     { $$ = $1; }
   | hwreg '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $3);
+    }
+  | hwreg '[' '#' '#' range ']'
+    {
+        AST *reg = $1;
+        AST *index = $5;
+        AST *base = NewAST(AST_RANGEREF, reg, index);
+        AST *holder = NewAST(AST_BIGIMMHOLDER, base, NULL);
+        $$ = holder;
     }
   | hwreg '.' '[' range ']'
     { $$ = NewAST(AST_RANGEREF, $1, $4);
@@ -1610,7 +1618,10 @@ operand:
  | '#' '#' expr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
  | expr '[' expr ']'
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+   {
+       /* this is an extra rule for LONG, BYTE, etc. */
+       $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL);
+   }
 ;
 
 operandlist:

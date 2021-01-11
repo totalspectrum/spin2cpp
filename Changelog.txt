@@ -1,3 +1,6 @@
+Version 5.0.7
+- Fixed rdlong x, ptra[##BIG] instruction form
+
 Version 5.0.6
 - Added cog_* functions from libsimpletools
 - Added get_directions() and get_outputs() functions from simpletools

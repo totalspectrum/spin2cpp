@@ -1,0 +1,6 @@
+dat
+   org 0
+   rdlong x, ptra[##900]
+   mov    outb, x
+
+x long 0
