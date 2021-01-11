@@ -131,7 +131,7 @@ static struct s_dbgfmt {
     { "sdec_byte", "%3d", -8 },
     { "sdec_word", "%5d", -16 },
     { "sdec_long", "%9d", 0 },
-    { "uhex", "$%x", -1 },
+    { "uhex", "$%x", 0 },
     { "uhex_byte", "$%02x", 8 },
     { "uhex_word", "$%04x", 16 },
     { "uhex_long", "$%08x", 0 },

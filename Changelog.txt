@@ -1,7 +1,9 @@
 Version 5.0.7
+- Added code to support _ret_ in inline assembly
 - Fixed rdlong x, ptra[##BIG] instruction form
 - Fixed some bugs in cog_run
 - Fixed bit references in arrays like A[x].[y]
+- Fixed uhex() bug where it only output 1 bit
 
 Version 5.0.6
 - Added cog_* functions from libsimpletools
