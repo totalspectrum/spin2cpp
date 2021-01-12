@@ -360,6 +360,30 @@ PrintCond(struct flexbuf *fb, IRCond cond)
     case COND_NC_AND_NZ:
       flexbuf_addstr(fb, " if_nc_and_nz");
       break;
+    case COND_NC_AND_Z:
+      flexbuf_addstr(fb, " if_nc_and_z");
+      break;        
+    case COND_C_AND_NZ:
+      flexbuf_addstr(fb, " if_c_and_nz");
+      break;
+    case COND_C_AND_Z:
+      flexbuf_addstr(fb, " if_nc_and_z");
+      break;        
+    case COND_C_OR_NZ:
+      flexbuf_addstr(fb, " if_c_or_nz");
+      break;        
+    case COND_NC_OR_NZ:
+      flexbuf_addstr(fb, " if_nc_or_nz");
+      break;        
+    case COND_NC_OR_Z:
+      flexbuf_addstr(fb, " if_nc_or_z");
+      break;        
+    case COND_C_EQ_Z:
+      flexbuf_addstr(fb, " if_c_eq_z");
+      break;
+    case COND_C_NE_Z:
+      flexbuf_addstr(fb, " if_c_ne_z");
+      break;
     default:
       ERROR(NULL, "Internal error, unexpected condition");
       flexbuf_addstr(fb, " if_??");

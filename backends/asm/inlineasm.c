@@ -340,17 +340,38 @@ CompileInlineInstr_only(IRList *irl, AST *ast)
     case 0xe:
         ir->cond = COND_LE;
         break;
+    case 0xd:
+        ir->cond = COND_C_OR_NZ;
+        break;
     case 0xc:
         ir->cond = COND_LT;
+        break;
+    case 0xb:
+        ir->cond = COND_NC_OR_Z;
         break;
     case 0xa:
         ir->cond = COND_EQ;
         break;
+    case 0x9:
+        ir->cond = COND_C_EQ_Z;
+        break;
+    case 0x7:
+        ir->cond = COND_NC_OR_NZ;
+        break;
+    case 0x6:
+        ir->cond = COND_C_NE_Z;
+        break;
     case 0x5:
         ir->cond = COND_NE;
         break;
+    case 0x4:
+        ir->cond = COND_C_AND_NZ;
+        break;
     case 0x3:
         ir->cond = COND_GE;
+        break;
+    case 0x2:
+        ir->cond = COND_NC_AND_Z;
         break;
     case 0x1:
         ir->cond = COND_GT;

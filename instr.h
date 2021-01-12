@@ -207,6 +207,17 @@ typedef enum IRCond {
     COND_C,
     COND_NC,
     COND_NC_AND_NZ,
+    COND_NC_AND_Z,
+    COND_C_AND_NZ,
+    COND_C_AND_Z,
+    
+    COND_NC_OR_NZ,
+    COND_NC_OR_Z,
+    COND_C_OR_NZ,
+    
+    COND_C_EQ_Z,
+    COND_C_NE_Z,
+    
 } IRCond;
 
 enum flags {
