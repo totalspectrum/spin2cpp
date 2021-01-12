@@ -203,7 +203,7 @@ Aliases basicalias[] = {
     { "cpuwait", "_cogwait" },
     { "err", "_geterror" },
     { "getcnt",  "_getcnt" },
-    { "getrnd", "_rnd" },
+    { "getrnd", "_getrnd" },
     { "getms", "_getms" },
     { "getus", "_getus" },
     { "getsec", "_getsec" },
