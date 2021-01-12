@@ -316,6 +316,11 @@ pri _rnd : r = +long
   asm
     getrnd r
   endasm
+
+pri _getrnd : r = +long
+  asm
+    getrnd r
+  endasm
   
 pri _rotxy(x, y, angle)
   asm
