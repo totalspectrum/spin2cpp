@@ -94,7 +94,7 @@ __system___tx_ret
 __system___gc_ptrs
 	mov	_var01, __heap_ptr
 	mov	_var02, _var01
-	add	_var02, imm_1008_
+	add	_var02, imm_1016_
 	rdlong	_var03, _var01 wz
  if_ne	jmp	#LR__0008
 	mov	_var04, _var02
@@ -322,7 +322,6 @@ __system___gc_doalloc
 	add	__system___gc_doalloc_size, #23
 	andn	__system___gc_doalloc_size, #15
 	shr	__system___gc_doalloc_size, #4
-	andn	outa, #0
 	add	ptr___system__dat__, #28
 	mov	__system___gc_doalloc__cse__0005, ptr___system__dat__
 	sub	ptr___system__dat__, #28
@@ -346,8 +345,6 @@ LR__0018
 	call	#__system___gc_tryalloc
 	mov	__system___gc_doalloc_ptr, result1 wz
  if_ne	jmp	#LR__0019
-	mov	arg01, #61
-	andn	outa, #0
 	call	#__system___gc_docollect
 	mov	arg01, __system___gc_doalloc_size
 	mov	arg02, __system___gc_doalloc_reserveflag
@@ -694,8 +691,8 @@ __lockreg
 	long	0
 fp
 	long	0
-imm_1008_
-	long	1008
+imm_1016_
+	long	1016
 imm_1073741824_
 	long	1073741824
 imm_1669332992_

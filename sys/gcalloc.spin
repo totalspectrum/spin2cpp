@@ -104,7 +104,7 @@ pri _gc_ptrs : base, end | size
   asm
     mov base, __heap_ptr
   endasm
-  end := base + (__real_heapsize__-4)*4
+  end := base + (__real_heapsize__*4) - headersize
   if (long[base] == 0)
     size := end - base
     word[base + OFF_SIZE] := 1 
@@ -219,24 +219,22 @@ pri _gc_doalloc(size, reserveflag) | ptr, zptr
   ' convert to pages
   size := size >> pagesizeshift
 
-  _drvl(59)
   _lockmem(@_memory_mutex)
-  _drvh(59)
 
   ' try to find a free block big enough
   ptr := _gc_tryalloc(size, reserveflag)
+
   if (ptr == 0)
-    _drvl(61)
     '' run garbage collection here
     _gc_docollect
     ' see if gc freed up enough space
     ptr := _gc_tryalloc(size, reserveflag)
-
+    
   _unlockmem(@_memory_mutex)
     
   if ptr
     ' zero the returned memory
-    size := ((size << pagesizeshift) - 8)/4
+    size := ((size << pagesizeshift) - headersize)/4
     zptr := ptr ' skip the header
     repeat size
       long[zptr] := 0
@@ -275,9 +273,7 @@ pri _gc_free(ptr) | heapbase, heapend
   (heapbase, heapend) := _gc_ptrs
   ptr := _gc_isvalidptr(heapbase, heapend, ptr)
   if (ptr)
-    _drvl(57)
     _lockmem(@_memory_mutex)
-    _drvh(57)
     _gc_dofree(ptr)
     _unlockmem(@_memory_mutex)
 
@@ -352,9 +348,7 @@ pri __getsp | x
 '' user accessible garbage collection
 ''
 pri _gc_collect
-  _drvl(58)
   _lockmem(@_memory_mutex)
-  _drvh(58)
   _gc_docollect
   _unlockmem(@_memory_mutex)
   
