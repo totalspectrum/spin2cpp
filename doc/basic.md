@@ -1080,7 +1080,7 @@ Specifies that a parameter is to be passed by reference. This means that changes
    var x = 2
    incr(x)
 ```
-the final value of `x` is 3. Normally simple parameters (integers, floats, and strings) are passed by value, which means that changes inside the function do not affect the callers variables. However, classes and arrays default to being passed by reference, so the `byref` declaration is optional for these.
+the final value of `x` is 3. Normally simple parameters (integers and floats) are passed by value, which means that changes inside the function do not affect the caller's variables. However, classes and arrays default to being passed by reference, so the `byref` declaration is optional for these. Strings and pointers are a special case: the pointers themselves are typically passed by value, but the underlying memory area is not copied. This means that changes to the pointer value itself do not propagate back to the caller, but changes to memory pointed to by the pointer do.
 
 Note that if a parameter is specified as `byref` then literal constants like `1` or `-2.0` cannot be passed to it; only variables (or pointers to values) may be passed as `byref` parameters.
 
@@ -1091,6 +1091,8 @@ A signed 8 bit integer, occupying one byte of computer memory. The unsigned vers
 ### BYVAL
 
 Specifies that a parameter is to be passed by value. This is the default for simple integers, floats, and strings, but arrays and classes are normally passed by reference. If `byval` is specified for such a parameter, a copy will be made of the array or class and that copy will be passed in to the function. This can be expensive if the parameter is large.
+
+Note that strings and pointers that are passed `byval` do _not_ cause the underlying memory to be copied. Changes to the pointer value itself do not affect the caller, but changes to the pointed to memory _are_ globally visible.
 
 ### CASE
 
