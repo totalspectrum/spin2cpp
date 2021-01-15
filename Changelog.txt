@@ -1,3 +1,6 @@
+Version 5.0.8
+- Added a warning for casting const pointers to non-const
+
 Version 5.0.7
 - Added code to support _ret_ in inline assembly
 - Fixed rdlong x, ptra[##BIG] instruction form

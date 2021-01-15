@@ -1026,6 +1026,15 @@ doCast(AST *desttype, AST *srctype, AST *src)
             return ArrayAddress(src);
         }
         if (IsPointerType(srctype)) {
+            if (IsPointerType(desttype)) {
+                /* check for casting away "const" */
+                AST *srcbase, *dstbase;
+                srcbase = BaseType(srctype);
+                dstbase = BaseType(desttype);
+                if (IsConstType(srcbase) && !IsConstType(dstbase)) {
+                    WARNING(src, "cast removes const from pointer type");
+                }
+            }
             return src;
         }
         if (IsIntType(srctype)) {
