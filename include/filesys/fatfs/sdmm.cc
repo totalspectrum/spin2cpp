@@ -38,8 +38,14 @@
 
 #ifndef PIN_CLK
 #define PIN_CLK  61
+#endif
+#ifndef PIN_SS
 #define PIN_SS   60
+#endif
+#ifndef PIN_MOSI
 #define PIN_MOSI 59
+#endif
+#ifndef PIN_MISO
 #define PIN_MISO 58
 #endif
 
