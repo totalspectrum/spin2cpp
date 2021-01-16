@@ -1077,6 +1077,13 @@ cast_expression
             { $$ = $1; }
 	| '(' type_name ')' cast_expression
             { $$ = NewAST(AST_CAST, $2, $4); }
+/*
+	| type_name '(' unary_expression ')'
+            {
+                LANGUAGE_WARNING(LANG_CFAMILY_C, NULL, "Allowing C++ style casts in C code is a FlexC extension");
+                $$ = NewAST(AST_CAST, $1, $3);
+            }
+*/
 	;
 
 multiplicative_expression
@@ -2295,8 +2302,8 @@ pasm_operand:
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_IMMHOLDER, $2, NULL), NULL); }
  | '#' '#' pasmexpr
    { $$ = NewAST(AST_EXPRLIST, NewAST(AST_BIGIMMHOLDER, $3, NULL), NULL); }
- | pasmexpr '[' pasmexpr ']'
-   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); }
+/* | pasmexpr '[' pasmexpr ']'
+   { $$ = NewAST(AST_EXPRLIST, NewAST(AST_ARRAYREF, $1, $3), NULL); } */
 ;
 
 pasm_operandlist:
@@ -2306,13 +2313,35 @@ pasm_operandlist:
    { $$ = AddToList($1, $3); }
  ;
 
+optpasmrange
+      : '[' pasmexpr ']'
+            { $$ = $2; }
+      | '[' '#' '#' pasmexpr ']'
+            { $$ = NewAST(AST_BIGIMMHOLDER, $4, NULL); }
+      | /* nothing */
+            { $$ = NULL; }
+;
+
 pasmatom
       : C_IDENTIFIER
             { $$ = $1; }
       | C_CONSTANT
             { $$ = $1; }
-      | C_HWREG
-            { $$ = $1; }
+      | C_HWREG optpasmrange
+            {
+                AST *reg = $1;
+                AST *index = $2;
+                if (index) {
+                    if (index->kind == AST_BIGIMMHOLDER) {
+                        index->left = NewAST(AST_RANGEREF, reg, index->left);
+                        $$ = index;
+                    } else {
+                        $$ = NewAST(AST_RANGEREF, reg, index);
+                    }
+                } else {
+                    $$ = reg;
+                }
+            }
       | C_STRING_LITERAL
             { $$ = $1; }
       | '@' C_IDENTIFIER

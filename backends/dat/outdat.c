@@ -796,6 +796,9 @@ SpecialRdOperand(AST *ast, uint32_t opimm)
             }
             subval = EvalPasmExpr(idx->left) * negsubval;
             ast = ast->left;
+        } else if (IsConstExpr(idx)) {
+            subval = EvalPasmExpr(idx) * negsubval;
+            ast = ast->left;
         } else {
             ERROR(ast, "bad ptr expression");
             return 0;
