@@ -859,6 +859,10 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
       if (ir->cond != COND_TRUE) {
           return NULL;
       }
+      if (ir->dst->kind == REG_SUBREG || replace->kind == REG_SUBREG) {
+          // sub register usage is problematic
+          return NULL;
+      }
       if (!assignments_are_safe) {
           return NULL;
       }
@@ -877,6 +881,10 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
             return NULL;
         }
         if (ir->dst == orig && ir->dsteffect != OPEFFECT_NONE) {
+            return NULL;
+        }
+        if (ir->dst->kind == REG_SUBREG) {
+            // sub registers are complicated, punt
             return NULL;
         }
         if (ir->cond != COND_TRUE) {
