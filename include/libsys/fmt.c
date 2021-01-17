@@ -392,7 +392,7 @@ static void disassemble(FTYPE x, UITYPE *aip, int *np, int numdigits, int base)
             break;
         }
     }
-#if defined(TEST) && !defined(__FLEXC__)
+#if defined(_TEST_FMT) && !defined(__FLEXC__)
     if (trys == 8) {
         fprintf(stderr, "Warning hit retry count\n");
     }
@@ -734,9 +734,11 @@ done:
     return _fmtstr(fn, fmt, origbuf);
 }
 
+#ifndef __FLEXC__
 // BASIC support routines
 extern int _tx(int c);
 extern int _rx(void);
+#endif
 
 typedef int (*TxFunc)(int c);
 typedef int (*RxFunc)(void);
@@ -874,7 +876,7 @@ int _basic_print_float(unsigned h, FTYPE x, unsigned fmt, int ch)
     return _fmtfloat(tf, fmt, x, ch);
 }
 
-#ifdef TEST
+#ifdef _TEST_FMT
 #include <stdio.h>
 
 int _tx(int c)
