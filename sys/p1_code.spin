@@ -217,6 +217,7 @@ pri _drvw(pin, c) | mask
   else
     outa &= !mask
 
+' special case of _pinread where "pin" is a single pin
 pri _pinr(pin)
   return (ina >> pin) & 1
     

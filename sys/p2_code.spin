@@ -271,6 +271,7 @@ pri _fltw(pin, val)
     fltc pin
   endasm
 
+' special case of _pinread where "pin" is a single pin
 pri _pinr(pin) : val
   asm
     testp   pin wc

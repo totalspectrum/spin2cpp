@@ -283,6 +283,12 @@ pri _pinwrite(pingrp, val) | mask, basepin, reg
     dira |= mask
     outa := (outa & !mask) | val
 
+pri _pinread(pingrp) : y
+  y := (pingrp & $20) ? outb : outa
+  y >>= pingrp   ' implicitly relies on only bottom 5 bits being used
+  pingrp >>= 6   ' now pingrp has number of pins to use
+  y := y +~~ pingrp  ' y ZEROX pingrp in Spin2
+  
 '' wait for a COG to finish
 pri _cogwait(id)
   repeat while _cogchk(id) <> 0

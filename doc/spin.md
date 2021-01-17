@@ -434,14 +434,6 @@ PUB dostuff(x) : r | byte tempstring[10]
  ' may use tempstring here as an array
 ```
 
-### Spin2 operators
-
-flexspin accepts some Spin2 operators:
-```
-  a \ b   uses the value of a, but then sets a to b
-  x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
-```
-
 ### Unsigned operators
 
 flexspin has some new operators for treating values as unsigned
@@ -453,6 +445,23 @@ flexspin has some new operators for treating values as unsigned
   a +> b   is an unsigned version of >
   a +=< b  is an unsigned version of =<
   a +=> b  is an unsigned version of =>
+```
+Most of these are also in Spin2.
+
+### Additional Spin2 operators
+
+flexspin accepts some other Spin2 operators:
+```
+  a \ b   uses the value of a, but then sets a to b
+  x <=> y returns -1, 0, or 1 if x < y, x == y, or x > y
+```
+
+### New operators
+
+flexspin implements some new operators:
+```
+  a +~~ b  is the same as a ZEROX b in Spin2
+  a -~~ b  is the same as a SIGNX b in Spin2
 ```
 
 ### Array parameters (deprecated)

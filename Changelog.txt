@@ -1,5 +1,6 @@
 Version 5.0.8
 - Added a warning for casting const pointers to non-const
+- Fixed Spin2 pinread to work correctly with multiple pins
 
 Version 5.0.7
 - Added code to support _ret_ in inline assembly

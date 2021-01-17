@@ -202,38 +202,45 @@ SpinFunctionSpecialCase(AST **astptr, AST *ast)
         return TransformLongMove(astptr, ast);
     }
     if (!strcasecmp(name, "pinw") || !strcasecmp(name, "pinwrite")) {
-        // check for simple cases: 0, 1, x & 1, or !(x & 1)
+        // check for simple cases:
+        // pinwrite(p, x) where x is in { 0, 1, x & 1, or !(x & 1) }
+        // or where p is <= 32
         // change function name
-        AST *args;
-        args = ast->right;
-        if (!args || !args->right) {
+        AST *arglist;
+        AST *pin_expr;
+        AST *x_expr;
+        arglist = ast->right;
+        if (!arglist || !arglist->right) {
             return false;
         }
-        args = args->right->left;
-        if (!args) {
+        pin_expr = arglist->left;
+        x_expr = arglist->right->left;
+        if (!x_expr) {
             return false;
         }
-        if (IsConstExpr(args)) {
-            int x = EvalConstExpr(args);
+        if (IsConstExpr(pin_expr) && (64 > (unsigned)EvalConstExpr(pin_expr))) {
+            /* yes, do the switch */
+        } else if (IsConstExpr(x_expr)) {
+            int x = EvalConstExpr(x_expr);
             if (x != 0 && x != 1) {
                 return false;
             }
-        } else if (args->kind == AST_OPERATOR) {
+        } else if (x_expr->kind == AST_OPERATOR) {
             int x = 9999;
-            if (args->d.ival == '&') {
-                if (IsConstExpr(args->left)) {
-                    x = EvalConstExpr(args->left);
-                } else if (IsConstExpr(args->right)) {
-                    x = EvalConstExpr(args->right);
+            if (x_expr->d.ival == '&') {
+                if (IsConstExpr(x_expr->left)) {
+                    x = EvalConstExpr(x_expr->left);
+                } else if (IsConstExpr(x_expr->right)) {
+                    x = EvalConstExpr(x_expr->right);
                 }
                 if (x != 0 && x != 1) {
                     return false;
                 }
-            } else if (args->d.ival == K_SHR) {
-                if (!IsConstExpr(args->right)) {
+            } else if (x_expr->d.ival == K_SHR) {
+                if (!IsConstExpr(x_expr->right)) {
                     return false;
                 }
-                x = EvalConstExpr(args->right);
+                x = EvalConstExpr(x_expr->right);
                 if (x != 31) {
                     return false;
                 }
@@ -245,6 +252,23 @@ SpinFunctionSpecialCase(AST **astptr, AST *ast)
         }
         ast->left = AstIdentifier("_drvw");
         return true;
+    }
+    if (!strcasecmp(name, "pinr") || !strcasecmp(name, "pinread")) {
+        // check for simple cases:
+        // pinwrite(p) where p is known to be a single pin
+        // change function name
+        AST *arglist;
+        AST *pin_expr;
+        arglist = ast->right;
+        if (!arglist) {
+            return false;
+        }
+        pin_expr = arglist->left;
+        if (IsConstExpr(pin_expr) && (64 > (unsigned)EvalConstExpr(pin_expr))) {
+            /* yes, do the switch */
+            ast->left = AstIdentifier("_pinr");
+            return true;
+        }
     }
     return false;
 }

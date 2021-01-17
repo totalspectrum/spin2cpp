@@ -131,7 +131,7 @@ Aliases spin2alias[] = {
     { "pinl", "_drvl" },    
     { "pinh", "_drvh" },
     { "pint", "_drvnot" },
-    { "pinr", "_pinr" },
+    { "pinr", "_pinread" },
     { "pinf", "_fltl" },
     { "pinstart", "_pinstart" },
     { "pinsetup", "_pinsetup" },
@@ -142,7 +142,7 @@ Aliases spin2alias[] = {
     { "pinlow", "_drvl" },    
     { "pinhigh", "_drvh" },
     { "pintoggle", "_drvnot" },
-    { "pinread", "_pinr" },
+    { "pinread", "_pinread" },
     { "pinfloat", "_fltl" },
     { "pinmode", "_pinmode" },
     

@@ -2,7 +2,7 @@
 // Simple lexical analyzer for a language where indentation
 // may be significant (Spin); also contains lexers for BASIC and C
 //
-// Copyright (c) 2011-2020 Total Spectrum Software Inc.
+// Copyright (c) 2011-2021 Total Spectrum Software Inc.
 //
 #include <stdio.h>
 #include <string.h>
@@ -1595,6 +1595,9 @@ struct reservedword {
     { "++", SP_INCREMENT },
     { "--", SP_DECREMENT },
     { "^^", SP_SQRT },
+
+    { "+~~", SP_ZEROX },
+    { "-~~", SP_SIGNX },
 
     { "??", SP_RANDOM },
     
