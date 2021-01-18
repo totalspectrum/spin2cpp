@@ -789,9 +789,19 @@ AST *CoerceOperatorTypes(AST *ast, AST *lefttype, AST *righttype)
             ERROR(ast, "expected string argument to ASC");
         } else {
             AST *newast;
-            if (ast->right && ast->right->kind == AST_STRING) {
+            AST *sexpr = ast->right;
+            if (sexpr && sexpr->kind == AST_STRINGPTR) {
+                sexpr = sexpr->left;
+                if (sexpr && sexpr->kind == AST_EXPRLIST) {
+                    sexpr = sexpr->left;
+                }
+            }
+            if (sexpr && sexpr->kind == AST_STRING) {
                 // literal: fix it up here
-                newast = AstInteger(ast->right->d.string[0]);
+                newast = AstInteger(sexpr->d.string[0]);
+                *ast = *newast;
+            } else if (sexpr && sexpr->kind == AST_INTEGER) {
+                newast = AstInteger(sexpr->d.ival);
                 *ast = *newast;
             } else {
                 newast = NewAST(AST_MEMREF, ast_type_byte, ast->right);
