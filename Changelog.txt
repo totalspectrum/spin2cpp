@@ -3,6 +3,7 @@ Version 5.0.8
 - Fixed Spin2 pinread to work correctly with multiple pins
 - Fixed an optimizer bug that could cause corruption of small multi-word structs being returned from a C function
 - Properly implemented compile time optimization of BASIC ASC("x") function
+- New BASIC string functions from JRoark: improved implementations of some existing functions, and added functions CountStr, RemoveChar$, ReplaceChar$, and StrInt$
 
 Version 5.0.7
 - Added code to support _ret_ in inline assembly

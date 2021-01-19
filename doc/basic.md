@@ -252,6 +252,7 @@ _clkfreq
 clkfreq
 clkset
 cos
+countstr
 cpuchk
 cpuid
 cpustop
@@ -261,6 +262,10 @@ dira
 dirb
 exp
 false
+_gc_alloc
+_gc_alloc_managed
+_gc_collect
+_gc_free
 getcnt
 getms
 getrnd
@@ -289,6 +294,8 @@ pauseus
 pi
 rdpin
 _reboot
+removechar$
+replacechar$
 reverse$
 right$
 rnd
@@ -435,7 +442,7 @@ FlexBASIC contains a number of built in operators.
 
 `NOT x` is the bitwise inverse of `x`. It is defined only for integers; when applied to a float the float will be converted to an integer first, and then the result will be an integer.
 
-`@x` takes the address of `x`, producing a pointer to `x`
+`@x` takes the address of `x`, producing a pointer to the variable `x`,
 
 #### Binary arithmetic operators
 
@@ -746,12 +753,12 @@ Note that a CPU ("COG" in Spin terms) cannot scan the internal memory of other C
 
 The `new` operator may be used to allocate memory. `new` returns a pointer to enough memory to hold objects, or `nil` if not enough space is available for the allocation. For example, to allocate 40 bytes one can do:
 ```
-  var ptr = new ubyte(40)
-  if ptr then
+  var p = new ubyte(40)
+  if p then
     '' do stuff with the allocated memory
     ...
     '' now free it (this is optional)
-    delete ptr
+    delete p
   else
     print "not enough memory"
   endif
@@ -775,7 +782,7 @@ the variable `tx` holds a pointer both to the `ser` object and to the particular
 
 #### __builtin_alloca
 
-Instead of `new`, which allocates persistent memory on the heap, it is possible to allocate temporary memory with the `__builtin_alloca` operator. Memory allocated in this way may only be used during the lifetime of the function which allocated it, and may not be returned from that function or assigned to a global variable. Almost always it is better to use `new` than `__builtin_alloca`, but the latter is more efficient (but dangerous, because the pointer becomes invalid after the function that uses `__builtin_alloca` exits).
+Instead of `new`, which allocates persistent memory on the heap, it is possible to allocate temporary memory on the stack with the `__builtin_alloca` operator. Memory allocated in this way may only be used during the lifetime of the function which allocated it, and may not be returned from that function or assigned to a global variable. Almost always it is better to use `new` than `__builtin_alloca`, but the latter is more efficient (but dangerous, because the pointer becomes invalid after the function that uses `__builtin_alloca` exits).
 
 #### _gc_alloc_managed
 
@@ -1297,6 +1304,10 @@ next
 ### COS
 
 Predefined function. `cos(x)` returns the cosine of `x`, which is a floating point value given in radians (*not* degrees). To convert from degrees to radians, multiply by `3.1415926536 / 180.0`.
+
+### COUNTSTR
+
+Predefined function. `countstr(x$, s$)` counts the number of occurences of substring s$ in the string x$. If `x$` is an empty string, returns 0. If `s$` is an empty string returns the length of `x$`.
 
 ### CPU
 
@@ -2303,6 +2314,14 @@ Force a pin to be an output, and invert its current value.
   pintoggle(p)
 ```
 
+### POINTER
+
+`pointer` is a keyword used in type declarations to declare a pointer, for example:
+```
+   dim x as ulong pointer
+```
+declares `x` as a pointer to an unsigned long value.
+
 ### PRINT
 
 `print` is a special subroutine that prints data to a serial port or other stream. The default destination for `print` is the pin 30 (pin 62 on P2) serial port, running at 115_200 baud (230_400 baud on P2).
@@ -2381,6 +2400,10 @@ This keyword is reserved for future use.
 
 The statements in the top level of the file (not inside any subroutine or function) are placed in a method called `program`. This is only really useful for calling them from another language (for example a Spin program using a BASIC program as an object).
 
+### PTR
+
+`ptr` is a synonym for `pointer` used for compatibility with FreeBasic. Please use the longer `pointer` form; `ptr` may go away in future versions of FlexBASIC.
+
 ### RDPIN (available on P2 only)
 
 `rdpin(p)` reads the current value of the smartpin Z register for pin `p`.
@@ -2396,6 +2419,20 @@ The statements in the top level of the file (not inside any subroutine or functi
 ### REM
 
 Introduces a comment, which continues until the end of the line. A single quote character `'` may also be used for this.
+
+### REMOVECHAR
+
+```
+y$ = removechar$(x$, c$)
+```
+Returns a new string which is like the original, but with all occurances of the single character `c$` removed. If the string `c$` is longer than one character, only the first character is removed.
+
+### REPLACECHAR
+
+```
+y$ = replacechar$(x$, o$, n$)
+```
+Returns a new string which is like the original, but with all occurances of the single character `o$` replaced by the first character of `n$`. Only the first characters of `o$` and `n$` are significant.
 
 ### RESTORE
 
@@ -2549,6 +2586,10 @@ will print 2, 4, 6, and 8 on separate lines.
 ### STR$
 
 Convert a number to a string. The input is a floating point number (integers will automatically be converted to `single`) and the output is a string representing the number. Unlike the format used for regular `print`, `str$` tries to avoid trailing zeros, so the output is somewhat more compact than `print`.
+
+### STRINT$
+
+Convert an integer to a string. This is similar to `str$` but faster since the input is known to be an integer.
 
 ### SUB
 

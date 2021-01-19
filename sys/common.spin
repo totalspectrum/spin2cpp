@@ -371,25 +371,29 @@ pri file "libsys/strings.bas" right`$(x=string, n): r=string
 pri file "libsys/strings.bas" mid`$(s=string, n=0, m=9999999): r=string
 pri file "libsys/strings.bas" chr`$(x): r=string
 pri file "libsys/strings.bas" str`$(x=float): r=string
+pri file "libsys/strings.bas" strint`$(x=long): r=string
 pri file "libsys/strings.bas" bin`$(x, n=0): r=string
 pri file "libsys/strings.bas" decuns`$(x, n=0): r=string
 pri file "libsys/strings.bas" hex`$(x, n=0): r=string
 pri file "libsys/strings.bas" oct`$(x, n=0): r=string
 
-pri file "libsys/stringlibp2.bas" delete`$(t=string,o,n): r=string
-pri file "libsys/stringlibp2.bas" insert`$(x=string,y=string,p=0): r=string
-pri file "libsys/stringlibp2.bas" lcase`$(x=string): r=string
-pri file "libsys/stringlibp2.bas" lpad`$(x=string, w, ch=string): r=string
-pri file "libsys/stringlibp2.bas" ltrim`$(s=string): r=string
-pri file "libsys/stringlibp2.bas" reverse`$(x=string): r=string
-pri file "libsys/stringlibp2.bas" rpad`$(x=string, w, ch=string): r=string
-pri file "libsys/stringlibp2.bas" rtrim`$(s=string): r=string
-pri file "libsys/stringlibp2.bas" space`$(n): r=string
-pri file "libsys/stringlibp2.bas" string`$(n, x): r=string
-pri file "libsys/stringlibp2.bas" trim`$(s=string): r=string
-pri file "libsys/stringlibp2.bas" ucase`$(x=string): r=string
-pri file "libsys/stringlibp2.bas" _instr(off, x, y): r=long
-pri file "libsys/stringlibp2.bas" _instrrev(off, x, y): r=long
+pri file "libsys/strings.bas" countstr(x=string,s=string): r=long
+pri file "libsys/strings.bas" delete`$(t=string,o,n): r=string
+pri file "libsys/strings.bas" insert`$(x=string,y=string,p=0): r=string
+pri file "libsys/strings.bas" lcase`$(x=string): r=string
+pri file "libsys/strings.bas" lpad`$(x=string, w, ch=string): r=string
+pri file "libsys/strings.bas" ltrim`$(s=string): r=string
+pri file "libsys/strings.bas" removechar`$(x=string, c=string): r=string
+pri file "libsys/strings.bas" replacechar`$(x=string, c=string, n=string): r=string
+pri file "libsys/strings.bas" reverse`$(x=string): r=string
+pri file "libsys/strings.bas" rpad`$(x=string, w, ch=string): r=string
+pri file "libsys/strings.bas" rtrim`$(s=string): r=string
+pri file "libsys/strings.bas" space`$(n): r=string
+pri file "libsys/strings.bas" string`$(n, x): r=string
+pri file "libsys/strings.bas" trim`$(s=string): r=string
+pri file "libsys/strings.bas" ucase`$(x=string): r=string
+pri file "libsys/strings.bas" instr(off, x, y): r=long
+pri file "libsys/strings.bas" instrrev(off, x, y): r=long
 
 pri file "libc/stdlib/errno.c" _seterror(r)
 pri file "libc/stdlib/errno.c" _geterror(): r=long
