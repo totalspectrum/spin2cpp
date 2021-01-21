@@ -46,7 +46,7 @@
 '
 FUNCTION CountStr(x as string, s as string) as integer
 '
-'	Purpose:	Counts all occurances of the string S in X
+'	Purpose:		Counts all occurances of the string S in X
 '	Errors:		None known
 '	Author:		JRoark 16Jan2020 / ersmith 19Jan2021
 '	Version:		2.0 of 16Jan2021
@@ -56,53 +56,54 @@ FUNCTION CountStr(x as string, s as string) as integer
 
 	dim p as ubyte pointer				' setup p as a pointer to ubytes
   	dim i, j, m, z as integer			' i,j=loop cntr, m=len of input string, z=result
-	dim slen as integer				' length of source string
-	dim ch as integer				' temp variable
+	dim slen as integer					' length of source string
+	dim ch as integer						' temp variable
 
   	m = __builtin_strlen(x)				' get the length of the input string
   	
-  	if (m = 0) then 				' trap for zero length input string
-  		return 0				' return a count of zero
+  	if (m = 0) then 						' trap for zero length input string
+  		return 0								' return a count of zero
 	end if
 
 	slen = __builtin_strlen(s)
-	if slen = 0 then				' trap for zero-length S argument
-		return m				' return appropriate number of matches
+	if slen = 0 then						' trap for zero-length S argument
+		return m								' return appropriate number of matches
 	end if
 	
-	z = 0						' initialize count
+	z = 0										' initialize count
 
-	slen -= 1					' adjust for starting index of 0
-	m -= 1						' ditto
-	m -= slen					' only need to check first (m-slen) positions
+	slen -= 1								' adjust for starting index of 0
+	m -= 1									' ditto
+	m -= slen								' only need to check first (m-slen) positions
+	
 	if m < 0 then
 	    return 0
 	end if
 	
 	' special case fast match for single character
-	if slen = 0 then				' searching a single character
-	    ch = s(0)					' fetch that character
-	    for i = 0 to m				' iterate through input
-	        if x(i) = ch then
-		  z += 1
-		end if
-	    next i
-	    return z
+	if slen = 0 then						' searching a single character
+		ch = s(0)							' fetch that character
+		for i = 0 to m						' iterate through input
+			if x(i) = ch then
+				z += 1
+			end if
+		next i
+		return z
 	end if
 
 	' for longer strings
-	for i = 0 to m					' iterate through the input string
-	    ch = 1					' assume a match
-	    for j = 0 to slen
-		if (x(i+j) <> s(j)) then		' look char-by-char for a match in X with S
-		    ch = 0				' no match possible
-		    exit for   				' break out of the loop
-		end if
-	    next j
-	    z += ch
+	for i = 0 to m							' iterate through the input string
+		ch = 1								' assume a match
+		for j = 0 to slen
+			if (x(i+j) <> s(j)) then	' look char-by-char for a match in X with S
+				ch = 0						' no match possible
+				exit for						' break out of the loop
+			end if
+		next j
+		z += ch
 	next i
 
-	return z					' return count of how many S's were found in X
+	return z									' return count of how many S's were found in X
 	
 END FUNCTION
 '
@@ -436,7 +437,7 @@ FUNCTION LTrim$(x as string) as string
   				p(m-i) = 0					' terminate the string
 				return p						' return the string
 			else
-				return 0						' if here then memory alloc failed. return null
+				return 						' if here then memory alloc failed. return null
 			end if
 		end if
 	next i
@@ -473,7 +474,7 @@ FUNCTION RemoveChar$(x as string, s as string) as string
 		return x								' return X unchanged
 	end if
 
-	z = Count(x, s)						' count occurances of target in the source string
+	z = CountStr(x, s)					' count occurances of target in the source string
 												' so we know how long to make our output string
 	
   	p = new ubyte(m-z+1)					' attempt to set pointer P to a new array of ubytes 
@@ -514,7 +515,7 @@ FUNCTION ReplaceChar$(x as string, s as string, r as string) as string
 
 	dim p as ubyte pointer				' setup p as a pointer to ubytes
   	dim i, m as integer				' i=loop cntr, m=len of input string						
-	dim origC, newC as uinteger			' original and replacement char
+	dim origC, replaceC as uinteger			' original and replacement char
   	m = __builtin_strlen(x)				' get the length of the input string
   	
   	if (m = 0) then 				' trap for zero length input string
@@ -748,7 +749,7 @@ FUNCTION STRInt$(number as long) as string
 	i = 0										' zero the byte pointer
 
 	if (number < 0) then					' is number negative?
-		p(i) = asc("-")							' add-in a "-" as first character (ascii 45)
+		p(i) = 45							' add-in a "-" as first character (ascii 45)
 		i += 1								' increment the byte pointer for the next use
 		if (number = &h80000000) then
 			p(i) = asc("2")						' add-in a "2" as next char (ascii 50)

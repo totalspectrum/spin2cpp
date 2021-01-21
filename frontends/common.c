@@ -219,10 +219,6 @@ Aliases basicalias[] = {
     { "val", "__builtin_atof" },
     { "val%", "__builtin_atoi" },
 
-    /* extra string functions */
-    { "instr", "_instr" },
-    { "instrrev", "_instrrev" },
-    
     /* math functions */
     { "acos", "__builtin_acosf" },
     { "asin", "__builtin_asinf" },
