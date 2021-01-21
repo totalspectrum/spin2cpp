@@ -284,7 +284,7 @@ pri _pinwrite(pingrp, val) | mask, basepin, reg
     outa := (outa & !mask) | val
 
 pri _pinread(pingrp) : y
-  y := (pingrp & $20) ? outb : outa
+  y := (pingrp & $20) ? inb : ina
   y >>= pingrp   ' implicitly relies on only bottom 5 bits being used
   pingrp >>= 6   ' now pingrp has number of pins to use
   y := y +~~ pingrp  ' y ZEROX pingrp in Spin2

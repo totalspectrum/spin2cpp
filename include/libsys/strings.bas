@@ -748,7 +748,7 @@ FUNCTION STRInt$(number as long) as string
 	i = 0										' zero the byte pointer
 
 	if (number < 0) then					' is number negative?
-		p(i) = 45							' add-in a "-" as first character (ascii 45)
+		p(i) = asc("-")							' add-in a "-" as first character (ascii 45)
 		i += 1								' increment the byte pointer for the next use
 		if (number = &h80000000) then
 			p(i) = asc("2")						' add-in a "2" as next char (ascii 50)
