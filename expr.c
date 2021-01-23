@@ -3345,11 +3345,11 @@ const char *TypeName(AST *typ)
     }
     while (typ) {
         if (typ == ast_type_string) {
-            strcat(buf, "string");
+            strcat(buf, "string ");
             nexttyp = NULL;
         }
         if (typ == ast_type_void) {
-            strcat(buf, "void");
+            strcat(buf, "void ");
             nexttyp = NULL;
         }
         nexttyp = typ->left;
@@ -3375,7 +3375,7 @@ const char *TypeName(AST *typ)
             strcat(buf, "reference to ");
             break;
         case AST_GENERICTYPE:
-            strcat(buf, "any");
+            strcat(buf, "any ");
             break;
         case AST_UNSIGNEDTYPE:
             isUnsigned = 1;
@@ -3404,27 +3404,27 @@ const char *TypeName(AST *typ)
                     }
                 }
                 if (IsCLang(lang)) {
-                    strcat(buf, "short");
+                    strcat(buf, "short ");
                 } else {
-                    strcat(buf, "word");
+                    strcat(buf, "word ");
                 }
                 break;
             case 8:
                 if (isUnsigned) {
                     strcat(buf, "unsigned ");
                 }
-                strcat(buf, "64 bit integer");
+                strcat(buf, "64 bit integer ");
                 break;
             default:
                 if (isUnsigned) {
                     strcat(buf, "unsigned ");
                 }
                 if (IsCLang(lang)) {
-                    strcat(buf, "int");
+                    strcat(buf, "int ");
                 } else if (IsSpinLang(lang)) {
-                    strcat(buf, "long");
+                    strcat(buf, "long ");
                 } else {
-                    strcat(buf, "integer");
+                    strcat(buf, "integer ");
                 }
                 break;
             }
@@ -3434,16 +3434,17 @@ const char *TypeName(AST *typ)
             size = EvalPasmExpr(typ->left);
             switch (size) {
             case 8:
-                strcat(buf, "double precision float");
+                strcat(buf, "double precision float ");
                 break;
             default:
-                strcat(buf, "single precision float");
+                strcat(buf, "single precision float ");
                 break;
             }
             nexttyp = NULL;
             break;
         case AST_TUPLE_TYPE:
-            strcat(buf, "multiple values");
+            strcat(buf, "multiple values ");
+            nexttyp = NULL;
             break;
         case AST_OBJECT:
         {
@@ -3453,7 +3454,7 @@ const char *TypeName(AST *typ)
             break;
         }
         default:
-            strcat(buf, "type");
+            strcat(buf, "unknown type ");
             nexttyp = NULL;
             break;
         }
