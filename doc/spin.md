@@ -460,8 +460,8 @@ flexspin accepts some other Spin2 operators:
 
 flexspin implements some new operators:
 ```
-  a +~~ b  is the same as a ZEROX b in Spin2
-  a -~~ b  is the same as a SIGNX b in Spin2
+  a +| b  is the same as a ZEROX b in Spin2
+  a -| b  is the same as a SIGNX b in Spin2
 ```
 
 ### Array parameters (deprecated)

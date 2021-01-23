@@ -1596,8 +1596,8 @@ struct reservedword {
     { "--", SP_DECREMENT },
     { "^^", SP_SQRT },
 
-    { "+~~", SP_ZEROX },
-    { "-~~", SP_SIGNX },
+    { "+|", SP_ZEROX },
+    { "-|", SP_SIGNX },
 
     { "??", SP_RANDOM },
     
