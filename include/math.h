@@ -54,6 +54,8 @@
 #define sinf(x) __builtin_sinf(x)
 #define cos(x) __builtin_cosf(x)
 #define cosf(x) __builtin_cosf(x)
+#define tan(x) __builtin_tanf(x)
+#define tanf(x) __builtin_tanf(x)
 #define atan(x) __builtin_atanf(x)
 #define atanf(x) __builtin_atanf(x)
 #define atan2(y, x) __builtin_atan2f((y), (x))
