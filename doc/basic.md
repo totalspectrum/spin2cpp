@@ -1001,7 +1001,7 @@ Predefined function. `asin(x)` returns the inverse sine of `x`. The result is a 
 
 ### ASM
 
-Introduces inline assembly. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code must be explicitly executed with a `cpu` directive.
+Introduces inline assembly. The block between `asm` and `end asm` is parsed slightly differently than usual; in particular, instruction names are treated as reserved identifiers. There are two kinds of `asm` blocks. A regular `asm` block introduces some assembly code to be executed when the block is reached. An `asm shared` block declares some assembly code and/or data that exists outside of any function. Such code is typically executed with a `cpu` directive. Another use for `asm shared` is to declare static data.
 
 #### ASM 
 
@@ -2826,6 +2826,44 @@ Writes a value to a smartpin Y register. `wypin(pin, val)` writes the value `val
 ```
 Returns the bit-wise exclusive or of x and y. If x or y is a floating point number then it will be converted to integer before the operation is performed. `xor` is often used for flipping bits.
 
+## Tips and Tricks
+
+### Including binary data
+
+#### Initialized Arrays
+
+There are a variety of ways to include binary data in a BASIC program. You can use an initialized array. So for example to declare an array `mydata` with bytes from 1 to 8 you could do:
+```
+dim shared as ubyte mydata(8) = { _
+   0x01, 0x02, 0x03, 0x04,   _
+   0x05, 0x06, 0x07, 0x08    _
+}
+```
+#### Data in inline assembly
+
+Another alternative is to use the `asm shared` directive, and the assembler `byte`, `word`, and `long` directives. There is an important difference between the `asm shared` way and the initialized array. The initialized array has an array type. The `asm shared` declares a plain label which isn't intrinsically an array. That means that in practice you will usually want to use a pointer to the label.
+
+```
+asm shared
+mydata
+   byte 0x01, 0x02, 0x03, 0x04
+   byte $05, $06, $07, $08
+end asm
+...
+' declare a pointer for the initialized data
+dim p as ubyte pointer
+p = @mydata
+' now we can access the data as p(0), p(1), and so on
+```
+Note that BASIC is pretty forgiving about the syntax for hex constants, more so than Spin.
+
+Finally, the PASM `FILE` directive may be used inside `asm shared` to include a file full of binary data:
+```
+asm shared
+mydata
+   file "mydata.bin"
+```
+
 ## Sample Programs
 
 ### Toggle a pin
@@ -2843,3 +2881,4 @@ do
   pausems 1000
 loop
 ```
+
