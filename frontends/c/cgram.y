@@ -1877,52 +1877,57 @@ asmline:
     }
   ;
 
-asm_baseline:
+asm_eoln:
   C_EOLN
+  | ';'
+;
+
+asm_baseline:
+  asm_eoln
     { $$ = NULL; }
-  | error C_EOLN
+  | error asm_eoln
     { $$ = NULL; }
-  | C_BYTE C_EOLN
+  | C_BYTE asm_eoln
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | C_BYTE asm_operandlist C_EOLN
+  | C_BYTE asm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
-  | C_WORD C_EOLN
+  | C_WORD asm_eoln
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | C_WORD asm_operandlist C_EOLN
+  | C_WORD asm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
-  | C_LONG C_EOLN
+  | C_LONG asm_eoln
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | C_LONG asm_operandlist C_EOLN
+  | C_LONG asm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
-  | instruction C_EOLN
+  | instruction asm_eoln
     { $$ = NewCommentedInstr($1); }
-  | instruction asm_operandlist C_EOLN
+  | instruction asm_operandlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction modifierlist C_EOLN
+  | instruction modifierlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction asm_operandlist modifierlist C_EOLN
+  | instruction asm_operandlist modifierlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
-  | C_ALIGNL C_EOLN
+  | C_ALIGNL asm_eoln
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
-  | C_ALIGNW C_EOLN
+  | C_ALIGNW asm_eoln
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
-  | C_ORG C_EOLN
+  | C_ORG asm_eoln
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
-  | C_ORG asmexpr C_EOLN
+  | C_ORG asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
-  | C_ORGH C_EOLN
+  | C_ORGH asm_eoln
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
-  | C_ORGH asmexpr C_EOLN
+  | C_ORGH asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
-  | C_ORGF asmexpr C_EOLN
+  | C_ORGF asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
-  | C_RES asmexpr C_EOLN
+  | C_RES asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
-  | C_FIT asmexpr C_EOLN
+  | C_FIT asmexpr asm_eoln
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
-  | C_FIT C_EOLN
+  | C_FIT asm_eoln
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
-  | C_FILE C_STRING_LITERAL C_EOLN
+  | C_FILE C_STRING_LITERAL asm_eoln
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 
@@ -2247,51 +2252,51 @@ pasmline:
   ;
 
 pasm_baseline:
-  C_EOLN
+  asm_eoln
     { $$ = NULL; }
-  | error C_EOLN
+  | error asm_eoln
     { $$ = NULL; }
-  | C_BYTE C_EOLN
+  | C_BYTE asm_eoln
     { $$ = NewCommentedAST(AST_BYTELIST, NULL, NULL, $1); }
-  | C_BYTE pasm_operandlist C_EOLN
+  | C_BYTE pasm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_BYTELIST, $2, NULL, $1); }
-  | C_WORD C_EOLN
+  | C_WORD asm_eoln
     { $$ = NewCommentedAST(AST_WORDLIST, NULL, NULL, $1); }
-  | C_WORD pasm_operandlist C_EOLN
+  | C_WORD pasm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_WORDLIST, $2, NULL, $1); }
-  | C_LONG C_EOLN
+  | C_LONG asm_eoln
     { $$ = NewCommentedAST(AST_LONGLIST, NULL, NULL, $1); }
-  | C_LONG pasm_operandlist C_EOLN
+  | C_LONG pasm_operandlist asm_eoln
     { $$ = NewCommentedAST(AST_LONGLIST, $2, NULL, $1); }
-  | instruction C_EOLN
+  | instruction asm_eoln
     { $$ = NewCommentedInstr($1); }
-  | instruction pasm_operandlist C_EOLN
+  | instruction pasm_operandlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction modifierlist C_EOLN
+  | instruction modifierlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, $2)); }
-  | instruction pasm_operandlist modifierlist C_EOLN
+  | instruction pasm_operandlist modifierlist asm_eoln
     { $$ = NewCommentedInstr(AddToList($1, AddToList($2, $3))); }
-  | C_ALIGNL C_EOLN
+  | C_ALIGNL asm_eoln
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(4), NULL, $1); }
-  | C_ALIGNW C_EOLN
+  | C_ALIGNW asm_eoln
     { $$ = NewCommentedAST(AST_ALIGN, AstInteger(2), NULL, $1); }
-  | C_ORG C_EOLN
+  | C_ORG asm_eoln
     { $$ = NewCommentedAST(AST_ORG, NULL, NULL, $1); }
-  | C_ORG pasmexpr C_EOLN
+  | C_ORG pasmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORG, $2, NULL, $1); }
-  | C_ORGH C_EOLN
+  | C_ORGH asm_eoln
     { $$ = NewCommentedAST(AST_ORGH, NULL, NULL, $1); }
-  | C_ORGH pasmexpr C_EOLN
+  | C_ORGH pasmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORGH, $2, NULL, $1); }
-  | C_ORGF pasmexpr C_EOLN
+  | C_ORGF pasmexpr asm_eoln
     { $$ = NewCommentedAST(AST_ORGF, $2, NULL, $1); }
-  | C_RES pasmexpr C_EOLN
+  | C_RES pasmexpr asm_eoln
     { $$ = NewCommentedAST(AST_RES, $2, NULL, $1); }
-  | C_FIT pasmexpr C_EOLN
+  | C_FIT pasmexpr asm_eoln
     { $$ = NewCommentedAST(AST_FIT, $2, NULL, $1); }
-  | C_FIT C_EOLN
+  | C_FIT asm_eoln
     { $$ = NewCommentedAST(AST_FIT, AstInteger(0x1f0), NULL, $1); }
-  | C_FILE C_STRING_LITERAL C_EOLN
+  | C_FILE C_STRING_LITERAL asm_eoln
     { $$ = NewCommentedAST(AST_FILE, GetFullFileName($2), NULL, $1); }
   ;
 

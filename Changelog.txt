@@ -1,3 +1,7 @@
+Version 5.1.0
+- Allow semicolons to seperate lines in C inline assembly (this makes it possible to put inline assembly in macros)
+
+
 Version 5.0.8
 - Added a warning for casting const pointers to non-const
 - Added missing tan function to math.h

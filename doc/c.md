@@ -127,6 +127,20 @@ Because much existing assembly code is written in the Spin language, FlexC suppo
 
 Note that FlexC supports calling Spin methods directly, so to adapt existing Spin code it may be easier to just include the Spin object with `struct __using` (see below).
 
+### Using Inline Assembly in Macros
+
+Note that the C preprocessor replaces all newlines in macros with spaces. This makes it impossible to support the traditional assembly language layout with newlines at the end of each line. To support the use of assembly in macros, you may use a semicolon character `;` to mark the end of line. This also allows you to place multiple assembly instructions on the same text line in code you write.
+
+Example:
+```
+#define ADD_LONG(desthi, destlo, srchi, srclo)      \
+    __asm {                                         \
+        add destlo, srclo  wc;                      \
+        addx desthi, srchi;                         \
+    }
+```
+Note the necessity of placing a semicolon at the end of each line, even before the final bracket!
+
 ### Classes
 
 The C `struct` declaration is extended slightly to allow functions (methods) to be declared. All methods must be defined in the struct definition itself; there is at present no way to declare a method outside of the definition.
