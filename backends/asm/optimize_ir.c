@@ -764,7 +764,6 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
   if (!first_ir) {
       return NULL;
   }
-
 #if 1
   // special case: if orig is dead after this,
   // and if first_ir does not modify it, then it is safe to
@@ -777,6 +776,13 @@ SafeToReplaceForward(IR *first_ir, Operand *orig, Operand *replace)
     if (IsDummy(ir)) {
 	continue;
     }
+#if 1
+    // paranoia: subregisters are more complicated than we realize,
+    // so be careful if any are in use
+    if (ir->src && ir->src->kind == REG_SUBREG) {
+        assignments_are_safe = false;
+    }
+#endif    
     if (ir->opc == OPC_LIVE && !strcmp(orig->name, ir->dst->name)) {
         return NULL;
     }

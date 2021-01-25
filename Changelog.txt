@@ -1,5 +1,6 @@
 Version 5.1.0
 - Allow semicolons to seperate lines in C inline assembly (this makes it possible to put inline assembly in macros)
+- Fixed another optimizer issue affecting C struct returns
 
 
 Version 5.0.8
