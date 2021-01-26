@@ -1,0 +1,4 @@
+pub mul32x32(a, b) : rlo, rhi
+  rlo := a * b
+  rhi := a +** b
+  
